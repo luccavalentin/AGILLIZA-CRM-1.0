@@ -2500,6 +2500,162 @@ export type Database = {
           },
         ]
       }
+      report_audit_logs: {
+        Row: {
+          acao: string
+          correspondente_id: string
+          created_at: string
+          filtros: Json
+          formato: string | null
+          id: string
+          registros: number
+          report_codigo: string
+          user_id: string
+        }
+        Insert: {
+          acao: string
+          correspondente_id: string
+          created_at?: string
+          filtros?: Json
+          formato?: string | null
+          id?: string
+          registros?: number
+          report_codigo: string
+          user_id: string
+        }
+        Update: {
+          acao?: string
+          correspondente_id?: string
+          created_at?: string
+          filtros?: Json
+          formato?: string | null
+          id?: string
+          registros?: number
+          report_codigo?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      report_definitions: {
+        Row: {
+          ativo: boolean
+          codigo: string
+          created_at: string
+          descricao: string | null
+          id: string
+          modulo: string
+          ordem: number
+          titulo: string
+          view_base: string | null
+        }
+        Insert: {
+          ativo?: boolean
+          codigo: string
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          modulo: string
+          ordem?: number
+          titulo: string
+          view_base?: string | null
+        }
+        Update: {
+          ativo?: boolean
+          codigo?: string
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          modulo?: string
+          ordem?: number
+          titulo?: string
+          view_base?: string | null
+        }
+        Relationships: []
+      }
+      report_exports: {
+        Row: {
+          arquivo_path: string | null
+          correspondente_id: string
+          created_at: string
+          filtros: Json
+          formato: string
+          id: string
+          registros: number
+          report_codigo: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          arquivo_path?: string | null
+          correspondente_id: string
+          created_at?: string
+          filtros?: Json
+          formato: string
+          id?: string
+          registros?: number
+          report_codigo: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          arquivo_path?: string | null
+          correspondente_id?: string
+          created_at?: string
+          filtros?: Json
+          formato?: string
+          id?: string
+          registros?: number
+          report_codigo?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      report_saved_filters: {
+        Row: {
+          colunas: Json | null
+          correspondente_id: string
+          created_at: string
+          filtros: Json
+          grafico: string | null
+          id: string
+          nome: string
+          report_codigo: string
+          updated_at: string
+          user_id: string
+          view_base: string | null
+          visibilidade: string
+        }
+        Insert: {
+          colunas?: Json | null
+          correspondente_id: string
+          created_at?: string
+          filtros?: Json
+          grafico?: string | null
+          id?: string
+          nome: string
+          report_codigo: string
+          updated_at?: string
+          user_id: string
+          view_base?: string | null
+          visibilidade?: string
+        }
+        Update: {
+          colunas?: Json | null
+          correspondente_id?: string
+          created_at?: string
+          filtros?: Json
+          grafico?: string | null
+          id?: string
+          nome?: string
+          report_codigo?: string
+          updated_at?: string
+          user_id?: string
+          view_base?: string | null
+          visibilidade?: string
+        }
+        Relationships: []
+      }
       simulacao_bancos: {
         Row: {
           banco_id: string | null
@@ -3378,6 +3534,8 @@ export type Database = {
         Args: { _prop_id: string }
         Returns: string
       }
+      can_view_global_reports: { Args: { _user_id: string }; Returns: boolean }
+      can_view_team_reports: { Args: { _user_id: string }; Returns: boolean }
       cliente_pipeline_avancar_para: {
         Args: {
           _acao?: string
