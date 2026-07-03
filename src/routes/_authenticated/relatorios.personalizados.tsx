@@ -138,7 +138,7 @@ function Pagina() {
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
                   <Badge variant="secondary">{s.visibilidade === "shared_team" ? "Equipe" : "Privado"}</Badge>
-                  <Link to={`/relatorios/${s.report_codigo}` as any} search={(s.filtros ?? {}) as Record<string, string>}>
+                  <Link to={`/relatorios/${s.report_codigo}` as any} search={(s.filtros ?? {}) as any}>
                     <Button variant="outline" size="sm"><Play className="mr-1 h-3.5 w-3.5" /> Executar</Button>
                   </Link>
                   <Button variant="ghost" size="icon" onClick={() => remover(s.id)} aria-label="Excluir">
