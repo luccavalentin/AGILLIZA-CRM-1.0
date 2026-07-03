@@ -590,6 +590,138 @@ export type Database = {
           },
         ]
       }
+      homefin_auth_cache: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          id_parceiro: string | null
+          id_regional: string | null
+          id_usuario_parceiro: string | null
+          token: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          id?: string
+          id_parceiro?: string | null
+          id_regional?: string | null
+          id_usuario_parceiro?: string | null
+          token: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          id_parceiro?: string | null
+          id_regional?: string | null
+          id_usuario_parceiro?: string | null
+          token?: string
+        }
+        Relationships: []
+      }
+      homefin_bancos: {
+        Row: {
+          ativo: boolean
+          codigo_banco: number
+          created_at: string
+          flag_padrao: boolean
+          flag_simulacao: string
+          id: string
+          id_banco: number | null
+          nome_banco: string
+          ordem: number
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          codigo_banco: number
+          created_at?: string
+          flag_padrao?: boolean
+          flag_simulacao?: string
+          id?: string
+          id_banco?: number | null
+          nome_banco: string
+          ordem?: number
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          codigo_banco?: number
+          created_at?: string
+          flag_padrao?: boolean
+          flag_simulacao?: string
+          id?: string
+          id_banco?: number | null
+          nome_banco?: string
+          ordem?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      homefin_email_otp: {
+        Row: {
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          ip: string | null
+          tentativas: number
+          token_hash: string
+          used_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          expires_at: string
+          id?: string
+          ip?: string | null
+          tentativas?: number
+          token_hash: string
+          used_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          ip?: string | null
+          tentativas?: number
+          token_hash?: string
+          used_at?: string | null
+        }
+        Relationships: []
+      }
+      homefin_operacoes: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          id: string
+          id_operacao: number
+          nome_operacao: string
+          produto_sistema: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          id_operacao: number
+          nome_operacao: string
+          produto_sistema: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          id_operacao?: number
+          nome_operacao?: string
+          produto_sistema?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       notificacoes: {
         Row: {
           corpo: string | null
@@ -773,7 +905,36 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      vw_bancos_ativos: {
+        Row: {
+          codigo_banco: number | null
+          flag_padrao: boolean | null
+          flag_simulacao: string | null
+          id: string | null
+          id_banco: number | null
+          nome_banco: string | null
+          ordem: number | null
+        }
+        Insert: {
+          codigo_banco?: number | null
+          flag_padrao?: boolean | null
+          flag_simulacao?: string | null
+          id?: string | null
+          id_banco?: number | null
+          nome_banco?: string | null
+          ordem?: number | null
+        }
+        Update: {
+          codigo_banco?: number | null
+          flag_padrao?: boolean | null
+          flag_simulacao?: string | null
+          id?: string | null
+          id_banco?: number | null
+          nome_banco?: string | null
+          ordem?: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       cliente_pipeline_avancar_para: {
