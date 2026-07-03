@@ -18,6 +18,9 @@ import {
   ShieldCheck,
   UserRound,
   Lock,
+  LineChart,
+  ArrowUpCircle,
+  ArrowDownCircle,
 } from "lucide-react";
 
 /** Permissão exigida por um item (chave = `${modulo}:view`). */
