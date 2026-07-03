@@ -590,6 +590,138 @@ export type Database = {
           },
         ]
       }
+      homefin_auth_cache: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          id_parceiro: string | null
+          id_regional: string | null
+          id_usuario_parceiro: string | null
+          token: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          id?: string
+          id_parceiro?: string | null
+          id_regional?: string | null
+          id_usuario_parceiro?: string | null
+          token: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          id_parceiro?: string | null
+          id_regional?: string | null
+          id_usuario_parceiro?: string | null
+          token?: string
+        }
+        Relationships: []
+      }
+      homefin_bancos: {
+        Row: {
+          ativo: boolean
+          codigo_banco: number
+          created_at: string
+          flag_padrao: boolean
+          flag_simulacao: string
+          id: string
+          id_banco: number | null
+          nome_banco: string
+          ordem: number
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          codigo_banco: number
+          created_at?: string
+          flag_padrao?: boolean
+          flag_simulacao?: string
+          id?: string
+          id_banco?: number | null
+          nome_banco: string
+          ordem?: number
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          codigo_banco?: number
+          created_at?: string
+          flag_padrao?: boolean
+          flag_simulacao?: string
+          id?: string
+          id_banco?: number | null
+          nome_banco?: string
+          ordem?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      homefin_email_otp: {
+        Row: {
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          ip: string | null
+          tentativas: number
+          token_hash: string
+          used_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          expires_at: string
+          id?: string
+          ip?: string | null
+          tentativas?: number
+          token_hash: string
+          used_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          ip?: string | null
+          tentativas?: number
+          token_hash?: string
+          used_at?: string | null
+        }
+        Relationships: []
+      }
+      homefin_operacoes: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          id: string
+          id_operacao: number
+          nome_operacao: string
+          produto_sistema: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          id_operacao: number
+          nome_operacao: string
+          produto_sistema: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          id_operacao?: number
+          nome_operacao?: string
+          produto_sistema?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       notificacoes: {
         Row: {
           corpo: string | null
@@ -750,6 +882,470 @@ export type Database = {
           },
         ]
       }
+      simulacao_bancos: {
+        Row: {
+          banco_id: string | null
+          codigo_banco: number | null
+          codigo_indexador: string | null
+          created_at: string
+          flag_simulacao: string | null
+          homefin_id_banco: number | null
+          homefin_id_simulacao_banco: string | null
+          id: string
+          mensagem_banco: string | null
+          nome_banco: string | null
+          prazo_pagamento_max: number | null
+          raw_request: Json | null
+          raw_response: Json | null
+          selecionado: boolean
+          simulacao_id: string
+          simulado_em: string | null
+          sistema_amortizacao_banco: string | null
+          status_banco: Database["public"]["Enums"]["simulacao_banco_status"]
+          taxa_juros_ano: number | null
+          updated_at: string
+          valor_financiamento_max: number | null
+          valor_iof: number | null
+          valor_parcela: number | null
+          valor_parcela_max: number | null
+        }
+        Insert: {
+          banco_id?: string | null
+          codigo_banco?: number | null
+          codigo_indexador?: string | null
+          created_at?: string
+          flag_simulacao?: string | null
+          homefin_id_banco?: number | null
+          homefin_id_simulacao_banco?: string | null
+          id?: string
+          mensagem_banco?: string | null
+          nome_banco?: string | null
+          prazo_pagamento_max?: number | null
+          raw_request?: Json | null
+          raw_response?: Json | null
+          selecionado?: boolean
+          simulacao_id: string
+          simulado_em?: string | null
+          sistema_amortizacao_banco?: string | null
+          status_banco?: Database["public"]["Enums"]["simulacao_banco_status"]
+          taxa_juros_ano?: number | null
+          updated_at?: string
+          valor_financiamento_max?: number | null
+          valor_iof?: number | null
+          valor_parcela?: number | null
+          valor_parcela_max?: number | null
+        }
+        Update: {
+          banco_id?: string | null
+          codigo_banco?: number | null
+          codigo_indexador?: string | null
+          created_at?: string
+          flag_simulacao?: string | null
+          homefin_id_banco?: number | null
+          homefin_id_simulacao_banco?: string | null
+          id?: string
+          mensagem_banco?: string | null
+          nome_banco?: string | null
+          prazo_pagamento_max?: number | null
+          raw_request?: Json | null
+          raw_response?: Json | null
+          selecionado?: boolean
+          simulacao_id?: string
+          simulado_em?: string | null
+          sistema_amortizacao_banco?: string | null
+          status_banco?: Database["public"]["Enums"]["simulacao_banco_status"]
+          taxa_juros_ano?: number | null
+          updated_at?: string
+          valor_financiamento_max?: number | null
+          valor_iof?: number | null
+          valor_parcela?: number | null
+          valor_parcela_max?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "simulacao_bancos_banco_id_fkey"
+            columns: ["banco_id"]
+            isOneToOne: false
+            referencedRelation: "homefin_bancos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "simulacao_bancos_banco_id_fkey"
+            columns: ["banco_id"]
+            isOneToOne: false
+            referencedRelation: "vw_bancos_ativos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "simulacao_bancos_simulacao_id_fkey"
+            columns: ["simulacao_id"]
+            isOneToOne: false
+            referencedRelation: "simulacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      simulacao_historico: {
+        Row: {
+          ator_id: string | null
+          created_at: string
+          descricao: string
+          id: string
+          simulacao_id: string
+          tipo: string
+        }
+        Insert: {
+          ator_id?: string | null
+          created_at?: string
+          descricao: string
+          id?: string
+          simulacao_id: string
+          tipo: string
+        }
+        Update: {
+          ator_id?: string | null
+          created_at?: string
+          descricao?: string
+          id?: string
+          simulacao_id?: string
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "simulacao_historico_simulacao_id_fkey"
+            columns: ["simulacao_id"]
+            isOneToOne: false
+            referencedRelation: "simulacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      simulacao_logs_homefin: {
+        Row: {
+          correspondente_id: string | null
+          created_at: string
+          endpoint: string
+          erro: string | null
+          id: string
+          metodo: string
+          request_masked: Json | null
+          response: Json | null
+          simulacao_id: string | null
+          status_http: number | null
+        }
+        Insert: {
+          correspondente_id?: string | null
+          created_at?: string
+          endpoint: string
+          erro?: string | null
+          id?: string
+          metodo: string
+          request_masked?: Json | null
+          response?: Json | null
+          simulacao_id?: string | null
+          status_http?: number | null
+        }
+        Update: {
+          correspondente_id?: string | null
+          created_at?: string
+          endpoint?: string
+          erro?: string | null
+          id?: string
+          metodo?: string
+          request_masked?: Json | null
+          response?: Json | null
+          simulacao_id?: string | null
+          status_http?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "simulacao_logs_homefin_simulacao_id_fkey"
+            columns: ["simulacao_id"]
+            isOneToOne: false
+            referencedRelation: "simulacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      simulacao_participantes: {
+        Row: {
+          cpf_cnpj: string | null
+          created_at: string
+          dados: Json | null
+          data_nascimento: string | null
+          estado_civil: string | null
+          homefin_id_participante: string | null
+          id: string
+          nome: string | null
+          renda: number | null
+          simulacao_id: string
+          tipo_pessoa: string | null
+          tipo_qualificacao: string | null
+          updated_at: string
+        }
+        Insert: {
+          cpf_cnpj?: string | null
+          created_at?: string
+          dados?: Json | null
+          data_nascimento?: string | null
+          estado_civil?: string | null
+          homefin_id_participante?: string | null
+          id?: string
+          nome?: string | null
+          renda?: number | null
+          simulacao_id: string
+          tipo_pessoa?: string | null
+          tipo_qualificacao?: string | null
+          updated_at?: string
+        }
+        Update: {
+          cpf_cnpj?: string | null
+          created_at?: string
+          dados?: Json | null
+          data_nascimento?: string | null
+          estado_civil?: string | null
+          homefin_id_participante?: string | null
+          id?: string
+          nome?: string | null
+          renda?: number | null
+          simulacao_id?: string
+          tipo_pessoa?: string | null
+          tipo_qualificacao?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "simulacao_participantes_simulacao_id_fkey"
+            columns: ["simulacao_id"]
+            isOneToOne: false
+            referencedRelation: "simulacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      simulacao_pdfs: {
+        Row: {
+          banco_id: string | null
+          created_at: string
+          gerado_por: string | null
+          id: string
+          simulacao_id: string
+          storage_path: string
+        }
+        Insert: {
+          banco_id?: string | null
+          created_at?: string
+          gerado_por?: string | null
+          id?: string
+          simulacao_id: string
+          storage_path: string
+        }
+        Update: {
+          banco_id?: string | null
+          created_at?: string
+          gerado_por?: string | null
+          id?: string
+          simulacao_id?: string
+          storage_path?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "simulacao_pdfs_simulacao_id_fkey"
+            columns: ["simulacao_id"]
+            isOneToOne: false
+            referencedRelation: "simulacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      simulacoes: {
+        Row: {
+          analista_id: string | null
+          celular: string | null
+          celular_conjuge: string | null
+          cep_imovel: string | null
+          cliente_id: string | null
+          codigo_oportunidade_homefin: string | null
+          comercial_id: string | null
+          compoe_renda: boolean
+          consentimento_em: string | null
+          consentimento_ip: string | null
+          consentimento_lgpd: boolean
+          consentimento_scr: boolean
+          correspondente_id: string
+          cpf_cnpj: string | null
+          cpf_conjuge: string | null
+          created_at: string
+          data_nascimento: string | null
+          data_nascimento_conjuge: string | null
+          email: string | null
+          email_conjuge: string | null
+          email_verificado_em: string | null
+          email_verificado_por: string | null
+          estado_civil: string | null
+          estado_civil_conjuge: string | null
+          fg_financiar_despesas: boolean | null
+          homefin_id_oportunidade: string | null
+          id: string
+          id_operacao_homefin: number | null
+          nome_cliente: string | null
+          nome_conjuge: string | null
+          numero_simulacao: string
+          parceiro_id: string | null
+          percentual_despesas: number | null
+          possui_conjuge: boolean
+          possui_imovel_escolhido: boolean | null
+          prazo: number | null
+          prazo_anos: number | null
+          produto: string | null
+          regime_casamento: string | null
+          renda_conjuge: number | null
+          renda_total: number | null
+          sistema_amortizacao: string | null
+          situacao_imovel: string | null
+          status: Database["public"]["Enums"]["simulacao_status"]
+          tipo_imovel: string | null
+          tipo_simulacao: Database["public"]["Enums"]["simulacao_tipo"]
+          uf: string | null
+          ultimo_envio_em: string | null
+          ultimo_erro: string | null
+          updated_at: string
+          uso_imovel: string | null
+          usuario_criador_id: string
+          usuario_responsavel_id: string | null
+          utiliza_fgts: string | null
+          valor_entrada: number | null
+          valor_financiamento: number | null
+          valor_imovel: number | null
+        }
+        Insert: {
+          analista_id?: string | null
+          celular?: string | null
+          celular_conjuge?: string | null
+          cep_imovel?: string | null
+          cliente_id?: string | null
+          codigo_oportunidade_homefin?: string | null
+          comercial_id?: string | null
+          compoe_renda?: boolean
+          consentimento_em?: string | null
+          consentimento_ip?: string | null
+          consentimento_lgpd?: boolean
+          consentimento_scr?: boolean
+          correspondente_id: string
+          cpf_cnpj?: string | null
+          cpf_conjuge?: string | null
+          created_at?: string
+          data_nascimento?: string | null
+          data_nascimento_conjuge?: string | null
+          email?: string | null
+          email_conjuge?: string | null
+          email_verificado_em?: string | null
+          email_verificado_por?: string | null
+          estado_civil?: string | null
+          estado_civil_conjuge?: string | null
+          fg_financiar_despesas?: boolean | null
+          homefin_id_oportunidade?: string | null
+          id?: string
+          id_operacao_homefin?: number | null
+          nome_cliente?: string | null
+          nome_conjuge?: string | null
+          numero_simulacao: string
+          parceiro_id?: string | null
+          percentual_despesas?: number | null
+          possui_conjuge?: boolean
+          possui_imovel_escolhido?: boolean | null
+          prazo?: number | null
+          prazo_anos?: number | null
+          produto?: string | null
+          regime_casamento?: string | null
+          renda_conjuge?: number | null
+          renda_total?: number | null
+          sistema_amortizacao?: string | null
+          situacao_imovel?: string | null
+          status?: Database["public"]["Enums"]["simulacao_status"]
+          tipo_imovel?: string | null
+          tipo_simulacao?: Database["public"]["Enums"]["simulacao_tipo"]
+          uf?: string | null
+          ultimo_envio_em?: string | null
+          ultimo_erro?: string | null
+          updated_at?: string
+          uso_imovel?: string | null
+          usuario_criador_id: string
+          usuario_responsavel_id?: string | null
+          utiliza_fgts?: string | null
+          valor_entrada?: number | null
+          valor_financiamento?: number | null
+          valor_imovel?: number | null
+        }
+        Update: {
+          analista_id?: string | null
+          celular?: string | null
+          celular_conjuge?: string | null
+          cep_imovel?: string | null
+          cliente_id?: string | null
+          codigo_oportunidade_homefin?: string | null
+          comercial_id?: string | null
+          compoe_renda?: boolean
+          consentimento_em?: string | null
+          consentimento_ip?: string | null
+          consentimento_lgpd?: boolean
+          consentimento_scr?: boolean
+          correspondente_id?: string
+          cpf_cnpj?: string | null
+          cpf_conjuge?: string | null
+          created_at?: string
+          data_nascimento?: string | null
+          data_nascimento_conjuge?: string | null
+          email?: string | null
+          email_conjuge?: string | null
+          email_verificado_em?: string | null
+          email_verificado_por?: string | null
+          estado_civil?: string | null
+          estado_civil_conjuge?: string | null
+          fg_financiar_despesas?: boolean | null
+          homefin_id_oportunidade?: string | null
+          id?: string
+          id_operacao_homefin?: number | null
+          nome_cliente?: string | null
+          nome_conjuge?: string | null
+          numero_simulacao?: string
+          parceiro_id?: string | null
+          percentual_despesas?: number | null
+          possui_conjuge?: boolean
+          possui_imovel_escolhido?: boolean | null
+          prazo?: number | null
+          prazo_anos?: number | null
+          produto?: string | null
+          regime_casamento?: string | null
+          renda_conjuge?: number | null
+          renda_total?: number | null
+          sistema_amortizacao?: string | null
+          situacao_imovel?: string | null
+          status?: Database["public"]["Enums"]["simulacao_status"]
+          tipo_imovel?: string | null
+          tipo_simulacao?: Database["public"]["Enums"]["simulacao_tipo"]
+          uf?: string | null
+          ultimo_envio_em?: string | null
+          ultimo_erro?: string | null
+          updated_at?: string
+          uso_imovel?: string | null
+          usuario_criador_id?: string
+          usuario_responsavel_id?: string | null
+          utiliza_fgts?: string | null
+          valor_entrada?: number | null
+          valor_financiamento?: number | null
+          valor_imovel?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "simulacoes_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -773,7 +1369,36 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      vw_bancos_ativos: {
+        Row: {
+          codigo_banco: number | null
+          flag_padrao: boolean | null
+          flag_simulacao: string | null
+          id: string | null
+          id_banco: number | null
+          nome_banco: string | null
+          ordem: number | null
+        }
+        Insert: {
+          codigo_banco?: number | null
+          flag_padrao?: boolean | null
+          flag_simulacao?: string | null
+          id?: string | null
+          id_banco?: number | null
+          nome_banco?: string | null
+          ordem?: number | null
+        }
+        Update: {
+          codigo_banco?: number | null
+          flag_padrao?: boolean | null
+          flag_simulacao?: string | null
+          id?: string | null
+          id_banco?: number | null
+          nome_banco?: string | null
+          ordem?: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       cliente_pipeline_avancar_para: {
@@ -810,6 +1435,10 @@ export type Database = {
       }
       usuario_tem_acesso_cliente: {
         Args: { _cliente_id: string; _user_id: string }
+        Returns: boolean
+      }
+      usuario_tem_acesso_simulacao: {
+        Args: { _sim_id: string; _user_id: string }
         Returns: boolean
       }
       usuario_tem_permissao: {
@@ -857,6 +1486,17 @@ export type Database = {
         | "separacao_total"
         | "participacao_final"
         | "nao_aplicavel"
+      simulacao_banco_status: "aguardando" | "simulada" | "erro" | "expirada"
+      simulacao_status:
+        | "rascunho"
+        | "enviando"
+        | "simulada"
+        | "parcialmente_simulada"
+        | "erro_banco"
+        | "expirada"
+        | "cancelada"
+        | "promovida"
+      simulacao_tipo: "simplificada" | "completa"
       tipo_pessoa: "PF" | "PJ"
     }
     CompositeTypes: {
@@ -1023,6 +1663,18 @@ export const Constants = {
         "participacao_final",
         "nao_aplicavel",
       ],
+      simulacao_banco_status: ["aguardando", "simulada", "erro", "expirada"],
+      simulacao_status: [
+        "rascunho",
+        "enviando",
+        "simulada",
+        "parcialmente_simulada",
+        "erro_banco",
+        "expirada",
+        "cancelada",
+        "promovida",
+      ],
+      simulacao_tipo: ["simplificada", "completa"],
       tipo_pessoa: ["PF", "PJ"],
     },
   },
