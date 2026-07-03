@@ -4,7 +4,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 export interface CompraLinha {
   id: string;
-  numero: string;
+  numero: string | null;
   descricao: string;
   valor: number;
   categoria: string | null;
