@@ -16,6 +16,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ParceiroIndexRouteImport } from './routes/parceiro.index'
+import { Route as ParceiroSimulacoesRouteImport } from './routes/parceiro.simulacoes'
 import { Route as ParceiroClientesRouteImport } from './routes/parceiro.clientes'
 import { Route as ClienteVisaoGeralRouteImport } from './routes/cliente.visao-geral'
 import { Route as ClientePerfilRouteImport } from './routes/cliente.perfil'
@@ -107,6 +108,11 @@ const IndexRoute = IndexRouteImport.update({
 const ParceiroIndexRoute = ParceiroIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => ParceiroRoute,
+} as any)
+const ParceiroSimulacoesRoute = ParceiroSimulacoesRouteImport.update({
+  id: '/simulacoes',
+  path: '/simulacoes',
   getParentRoute: () => ParceiroRoute,
 } as any)
 const ParceiroClientesRoute = ParceiroClientesRouteImport.update({
@@ -464,6 +470,7 @@ export interface FileRoutesByFullPath {
   '/cliente/perfil': typeof ClientePerfilRoute
   '/cliente/visao-geral': typeof ClienteVisaoGeralRoute
   '/parceiro/clientes': typeof ParceiroClientesRoute
+  '/parceiro/simulacoes': typeof ParceiroSimulacoesRoute
   '/parceiro/': typeof ParceiroIndexRoute
   '/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
   '/admin/notificacoes': typeof AuthenticatedAdminNotificacoesRoute
@@ -528,6 +535,7 @@ export interface FileRoutesByTo {
   '/cliente/perfil': typeof ClientePerfilRoute
   '/cliente/visao-geral': typeof ClienteVisaoGeralRoute
   '/parceiro/clientes': typeof ParceiroClientesRoute
+  '/parceiro/simulacoes': typeof ParceiroSimulacoesRoute
   '/parceiro': typeof ParceiroIndexRoute
   '/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
   '/admin/notificacoes': typeof AuthenticatedAdminNotificacoesRoute
@@ -596,6 +604,7 @@ export interface FileRoutesById {
   '/cliente/perfil': typeof ClientePerfilRoute
   '/cliente/visao-geral': typeof ClienteVisaoGeralRoute
   '/parceiro/clientes': typeof ParceiroClientesRoute
+  '/parceiro/simulacoes': typeof ParceiroSimulacoesRoute
   '/parceiro/': typeof ParceiroIndexRoute
   '/_authenticated/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
   '/_authenticated/admin/notificacoes': typeof AuthenticatedAdminNotificacoesRoute
@@ -664,6 +673,7 @@ export interface FileRouteTypes {
     | '/cliente/perfil'
     | '/cliente/visao-geral'
     | '/parceiro/clientes'
+    | '/parceiro/simulacoes'
     | '/parceiro/'
     | '/admin/auditoria'
     | '/admin/notificacoes'
@@ -728,6 +738,7 @@ export interface FileRouteTypes {
     | '/cliente/perfil'
     | '/cliente/visao-geral'
     | '/parceiro/clientes'
+    | '/parceiro/simulacoes'
     | '/parceiro'
     | '/admin/auditoria'
     | '/admin/notificacoes'
@@ -795,6 +806,7 @@ export interface FileRouteTypes {
     | '/cliente/perfil'
     | '/cliente/visao-geral'
     | '/parceiro/clientes'
+    | '/parceiro/simulacoes'
     | '/parceiro/'
     | '/_authenticated/admin/auditoria'
     | '/_authenticated/admin/notificacoes'
@@ -907,6 +919,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/parceiro/'
       preLoaderRoute: typeof ParceiroIndexRouteImport
+      parentRoute: typeof ParceiroRoute
+    }
+    '/parceiro/simulacoes': {
+      id: '/parceiro/simulacoes'
+      path: '/simulacoes'
+      fullPath: '/parceiro/simulacoes'
+      preLoaderRoute: typeof ParceiroSimulacoesRouteImport
       parentRoute: typeof ParceiroRoute
     }
     '/parceiro/clientes': {
@@ -1485,11 +1504,13 @@ const ClienteRouteWithChildren =
 
 interface ParceiroRouteChildren {
   ParceiroClientesRoute: typeof ParceiroClientesRoute
+  ParceiroSimulacoesRoute: typeof ParceiroSimulacoesRoute
   ParceiroIndexRoute: typeof ParceiroIndexRoute
 }
 
 const ParceiroRouteChildren: ParceiroRouteChildren = {
   ParceiroClientesRoute: ParceiroClientesRoute,
+  ParceiroSimulacoesRoute: ParceiroSimulacoesRoute,
   ParceiroIndexRoute: ParceiroIndexRoute,
 }
 
