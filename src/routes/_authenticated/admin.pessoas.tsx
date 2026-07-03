@@ -61,7 +61,6 @@ const ROTULO_PAPEL: Record<string, string> = {
 };
 
 function PessoasPage() {
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [filtro, setFiltro] = useState<"todos" | "sistema" | "portal_parceiro">("todos");
   const [busca, setBusca] = useState("");
