@@ -1,0 +1,577 @@
+import { createServerFn } from "@tanstack/react-start";
+import { getRequestHeader } from "@tanstack/react-start/server";
+import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { transicaoPermitida, STATUS_EDITAVEIS, type PropostaStatus } from "./state-machine";
+
+/** ===== Tipos de saída ===== */
+export interface PropostaListaItem {
+  id: string;
+  numero_proposta: string;
+  nome_cliente: string | null;
+  nome_banco: string | null;
+  produto: string | null;
+  valor_financiamento: number | null;
+  status: string;
+  created_at: string;
+}
+
+export interface PropostaCompleta {
+  proposta: any;
+  bancos: any[];
+  envolvidos: any[];
+  documentos: any[];
+  followups: any[];
+  historico: any[];
+}
+
+async function correspondenteId(supabase: any, userId: string): Promise<string> {
+  const { data, error } = await supabase.rpc("correspondente_do_usuario", { _user_id: userId });
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("Usuário sem correspondente vinculado.");
+  return data as string;
+}
+
+/** ===== Listagem ===== */
+export const listarPropostas = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z
+      .object({
+        escopo: z.enum(["todas", "minhas"]).default("todas"),
+        status: z.string().optional(),
+        q: z.string().optional(),
+        pagina: z.number().int().min(1).default(1),
+        porPagina: z.number().int().min(1).max(100).default(30),
+      })
+      .parse(data),
+  )
+  .handler(async ({ context, data }): Promise<{ itens: PropostaListaItem[]; total: number }> => {
+    const { supabase, userId } = context;
+    let query = supabase
+      .from("propostas")
+      .select(
+        "id, numero_proposta, nome_cliente, nome_banco, produto, valor_financiamento, status, created_at",
+        { count: "exact" },
+      );
+
+    if (data.escopo === "minhas") {
+      query = query.or(`usuario_responsavel_id.eq.${userId},usuario_criador_id.eq.${userId}`);
+    }
+    if (data.status) query = query.eq("status", data.status as any);
+    if (data.q) {
+      const q = data.q.trim();
+      query = query.or(
+        `numero_proposta.ilike.%${q}%,nome_cliente.ilike.%${q}%,cpf_cnpj.ilike.%${q.replace(/\D/g, "")}%`,
+      );
+    }
+
+    const from = (data.pagina - 1) * data.porPagina;
+    query = query.order("created_at", { ascending: false }).range(from, from + data.porPagina - 1);
+
+    const { data: itens, count, error } = await query;
+    if (error) throw new Error(error.message);
+    return { itens: (itens ?? []) as PropostaListaItem[], total: count ?? 0 };
+  });
+
+/** ===== Detalhe ===== */
+export const obterProposta = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => z.object({ id: z.string().uuid() }).parse(data))
+  .handler(async ({ context, data }): Promise<PropostaCompleta> => {
+    const { supabase } = context;
+    const { data: proposta, error } = await supabase
+      .from("propostas")
+      .select("*")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!proposta) throw new Error("Proposta não encontrada.");
+
+    const [bancos, envolvidos, documentos, followups, historico] = await Promise.all([
+      supabase.from("proposta_bancos").select("*").eq("proposta_id", data.id).order("created_at"),
+      supabase.from("proposta_envolvidos").select("*").eq("proposta_id", data.id).order("created_at"),
+      supabase.from("proposta_documentos").select("*").eq("proposta_id", data.id).order("created_at"),
+      supabase.from("proposta_followups").select("*").eq("proposta_id", data.id).order("created_at", { ascending: false }),
+      supabase.from("proposta_historico").select("*").eq("proposta_id", data.id).order("created_at", { ascending: false }),
+    ]);
+
+    return {
+      proposta,
+      bancos: bancos.data ?? [],
+      envolvidos: envolvidos.data ?? [],
+      documentos: documentos.data ?? [],
+      followups: followups.data ?? [],
+      historico: historico.data ?? [],
+    };
+  });
+
+/** ===== Simulações elegíveis para virar proposta ===== */
+export const listarSimulacoesElegiveis = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => z.object({ q: z.string().optional() }).parse(data))
+  .handler(async ({ context, data }) => {
+    const { supabase } = context;
+    let query = supabase
+      .from("simulacoes")
+      .select(
+        "id, numero_simulacao, nome_cliente, cpf_cnpj, produto, valor_imovel, valor_financiamento, prazo, status, cliente_id, simulacao_bancos(id, banco_id, nome_banco, status_banco, homefin_id_simulacao_banco, valor_parcela, taxa_juros_ano)",
+      )
+      .in("status", ["simulada", "parcialmente_simulada"]);
+    if (data.q) {
+      const q = data.q.trim();
+      query = query.or(`numero_simulacao.ilike.%${q}%,nome_cliente.ilike.%${q}%`);
+    }
+    query = query.order("created_at", { ascending: false }).limit(30);
+    const { data: rows, error } = await query;
+    if (error) throw new Error(error.message);
+    // apenas com ao menos um banco simulado e ainda sem proposta
+    const ids = (rows ?? []).map((r: any) => r.id);
+    const { data: jaProposta } = await supabase
+      .from("propostas")
+      .select("simulacao_id")
+      .in("simulacao_id", ids.length ? ids : ["00000000-0000-0000-0000-000000000000"]);
+    const usadas = new Set((jaProposta ?? []).map((p: any) => p.simulacao_id));
+    return (rows ?? [])
+      .filter((r: any) => !usadas.has(r.id))
+      .map((r: any) => ({
+        ...r,
+        simulacao_bancos: (r.simulacao_bancos ?? []).filter((b: any) => b.status_banco === "simulada"),
+      }))
+      .filter((r: any) => r.simulacao_bancos.length > 0);
+  });
+
+/** ===== Criar proposta ===== */
+export const criarProposta = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z
+      .object({
+        simulacao_id: z.string().uuid().optional(),
+        banco_id: z.string().uuid().optional(),
+        cliente_id: z.string().uuid().optional(),
+      })
+      .parse(data),
+  )
+  .handler(async ({ context, data }): Promise<{ proposta_id: string; numero_proposta: string }> => {
+    const { supabase, userId } = context;
+    const corr = await correspondenteId(supabase, userId);
+
+    let snapshot: Record<string, unknown> = {
+      correspondente_id: corr,
+      status: "rascunho",
+      cliente_id: data.cliente_id ?? null,
+      banco_id: data.banco_id ?? null,
+      usuario_criador_id: userId,
+      usuario_responsavel_id: userId,
+    };
+    let bancosSimulados: any[] = [];
+
+    if (data.simulacao_id) {
+      const { data: sim, error } = await supabase
+        .from("simulacoes")
+        .select("*, simulacao_bancos(*)")
+        .eq("id", data.simulacao_id)
+        .maybeSingle();
+      if (error) throw new Error(error.message);
+      if (!sim) throw new Error("Simulação não encontrada.");
+
+      bancosSimulados = (sim.simulacao_bancos ?? []).filter((b: any) => b.status_banco === "simulada");
+      const bancoEscolhido = data.banco_id
+        ? bancosSimulados.find((b: any) => b.banco_id === data.banco_id)
+        : bancosSimulados[0];
+
+      snapshot = {
+        ...snapshot,
+        simulacao_id: sim.id,
+        cliente_id: sim.cliente_id ?? data.cliente_id ?? null,
+        banco_id: bancoEscolhido?.banco_id ?? data.banco_id ?? null,
+        nome_banco: bancoEscolhido?.nome_banco ?? null,
+        produto: sim.produto,
+        cpf_cnpj: sim.cpf_cnpj,
+        nome_cliente: sim.nome_cliente,
+        email: sim.email,
+        celular: sim.celular,
+        data_nascimento: sim.data_nascimento,
+        renda_total: sim.renda_total,
+        estado_civil: sim.estado_civil,
+        possui_conjuge: sim.possui_conjuge,
+        compoe_renda: sim.compoe_renda,
+        utiliza_fgts: sim.utiliza_fgts === "S",
+        id_operacao_homefin: sim.id_operacao_homefin,
+        tipo_imovel: sim.tipo_imovel,
+        uso_imovel: sim.uso_imovel,
+        situacao_imovel: sim.situacao_imovel,
+        uf: sim.uf,
+        cep_imovel: sim.cep_imovel,
+        valor_imovel: sim.valor_imovel,
+        valor_financiamento: sim.valor_financiamento,
+        prazo: sim.prazo,
+        sistema_amortizacao: sim.sistema_amortizacao,
+        financia_despesas_cartorarias: sim.fg_financiar_despesas,
+        homefin_id_oportunidade: sim.homefin_id_oportunidade,
+        homefin_id_simulacao: bancoEscolhido?.homefin_id_simulacao_banco ?? null,
+        codigo_oportunidade_homefin: sim.codigo_oportunidade_homefin,
+        consentimento_lgpd: sim.consentimento_lgpd,
+        consentimento_scr: sim.consentimento_scr,
+        analista_id: sim.analista_id,
+        comercial_id: sim.comercial_id,
+      };
+    }
+
+    const { data: inserted, error: insErr } = await supabase
+      .from("propostas")
+      .insert(snapshot as any)
+      .select("id, numero_proposta")
+      .single();
+    if (insErr) throw new Error(insErr.message);
+
+    // vincula bancos
+    if (bancosSimulados.length > 0) {
+      const linhas = bancosSimulados.map((b: any) => ({
+        proposta_id: inserted.id,
+        banco_id: b.banco_id,
+        homefin_id_banco: b.homefin_id_banco,
+        codigo_banco: b.codigo_banco,
+        nome_banco: b.nome_banco,
+        simulacao_banco_id: b.id,
+        homefin_id_simulacao_banco: b.homefin_id_simulacao_banco,
+        selecionado: b.banco_id === snapshot.banco_id,
+        status_banco: "aguardando",
+        valor_parcela: b.valor_parcela,
+        taxa_juros_ano: b.taxa_juros_ano,
+        prazo_pagamento_max: b.prazo_pagamento_max,
+        valor_financiamento_max: b.valor_financiamento_max,
+        codigo_indexador: b.codigo_indexador,
+        valor_iof: b.valor_iof,
+        sistema_amortizacao_banco: b.sistema_amortizacao_banco,
+      }));
+      await supabase.from("proposta_bancos").insert(linhas);
+    }
+
+    await supabase.from("proposta_historico").insert({
+      proposta_id: inserted.id,
+      tipo_evento: "criada",
+      descricao: "Proposta criada",
+      status_novo: "rascunho",
+      ator_id: userId,
+    });
+
+    return { proposta_id: inserted.id, numero_proposta: inserted.numero_proposta };
+  });
+
+/** ===== Atualizar dados (apenas rascunho/aguardando_documentos) ===== */
+export const atualizarDadosProposta = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z.object({ id: z.string().uuid(), patch: z.record(z.string(), z.unknown()) }).parse(data),
+  )
+  .handler(async ({ context, data }) => {
+    const { supabase } = context;
+    const { data: prop } = await supabase.from("propostas").select("status").eq("id", data.id).maybeSingle();
+    if (!prop) throw new Error("Proposta não encontrada.");
+    if (!STATUS_EDITAVEIS.includes(prop.status as PropostaStatus)) {
+      throw new Error("A proposta não pode ser editada neste status.");
+    }
+    const patch = { ...data.patch };
+    delete (patch as any).id;
+    delete (patch as any).status;
+    delete (patch as any).correspondente_id;
+    const { error } = await supabase.from("propostas").update(patch as any).eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+/** ===== Selecionar banco vencedor ===== */
+export const selecionarBancoProposta = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z.object({ proposta_id: z.string().uuid(), proposta_banco_id: z.string().uuid() }).parse(data),
+  )
+  .handler(async ({ context, data }) => {
+    const { supabase } = context;
+    const { data: banco } = await supabase
+      .from("proposta_bancos")
+      .select("*")
+      .eq("id", data.proposta_banco_id)
+      .maybeSingle();
+    if (!banco) throw new Error("Banco não encontrado.");
+    await supabase.from("proposta_bancos").update({ selecionado: false }).eq("proposta_id", data.proposta_id);
+    await supabase.from("proposta_bancos").update({ selecionado: true }).eq("id", data.proposta_banco_id);
+    await supabase
+      .from("propostas")
+      .update({
+        banco_id: banco.banco_id,
+        nome_banco: banco.nome_banco,
+        homefin_id_simulacao: banco.homefin_id_simulacao_banco,
+      })
+      .eq("id", data.proposta_id);
+    return { ok: true };
+  });
+
+/** ===== Envolvidos (compradores/vendedores) ===== */
+export const adicionarEnvolvido = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z.object({ proposta_id: z.string().uuid(), dados: z.record(z.string(), z.unknown()) }).parse(data),
+  )
+  .handler(async ({ context, data }) => {
+    const { supabase } = context;
+    const { data: row, error } = await supabase
+      .from("proposta_envolvidos")
+      .insert({ proposta_id: data.proposta_id, ...data.dados } as any)
+      .select("id")
+      .single();
+    if (error) throw new Error(error.message);
+    return { id: row.id };
+  });
+
+/** ===== Documentos ===== */
+export const registrarDocumento = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z
+      .object({
+        proposta_id: z.string().uuid(),
+        nome_documento: z.string().min(1),
+        tipo_documento: z.string().optional(),
+        parte: z.string().optional(),
+        storage_path: z.string().min(1),
+        mime_type: z.string().optional(),
+        tamanho_bytes: z.number().optional(),
+        obrigatorio: z.boolean().optional(),
+      })
+      .parse(data),
+  )
+  .handler(async ({ context, data }) => {
+    const { supabase, userId } = context;
+    const corr = await correspondenteId(supabase, userId);
+    const { data: row, error } = await supabase
+      .from("proposta_documentos")
+      .insert({
+        proposta_id: data.proposta_id,
+        correspondente_id: corr,
+        nome_documento: data.nome_documento,
+        tipo_documento: data.tipo_documento ?? null,
+        parte: data.parte ?? null,
+        storage_path: data.storage_path,
+        mime_type: data.mime_type ?? null,
+        tamanho_bytes: data.tamanho_bytes ?? null,
+        obrigatorio: data.obrigatorio ?? false,
+        status: "enviado",
+        enviado_em: new Date().toISOString(),
+        enviado_por: userId,
+      } as any)
+      .select("id")
+      .single();
+    if (error) throw new Error(error.message);
+    return { id: row.id };
+  });
+
+export const removerDocumento = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => z.object({ id: z.string().uuid() }).parse(data))
+  .handler(async ({ context, data }) => {
+    const { data: doc } = await context.supabase
+      .from("proposta_documentos")
+      .select("storage_path")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (doc?.storage_path) {
+      await context.supabase.storage.from("documentos-proposta").remove([doc.storage_path]);
+    }
+    const { error } = await context.supabase.from("proposta_documentos").delete().eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+/** URL assinada de curta duração (5 min) para um documento. */
+export const urlDocumento = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => z.object({ storage_path: z.string() }).parse(data))
+  .handler(async ({ context, data }) => {
+    const { data: signed, error } = await context.supabase.storage
+      .from("documentos-proposta")
+      .createSignedUrl(data.storage_path, 300);
+    if (error) throw new Error(error.message);
+    return { url: signed.signedUrl };
+  });
+
+/** Salva dados do IQ (interveniente quitante). */
+export const salvarIq = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z
+      .object({
+        proposta_id: z.string().uuid(),
+        iq_nome: z.string().max(200).optional(),
+        iq_comentario: z.string().max(2000).optional(),
+      })
+      .parse(data),
+  )
+  .handler(async ({ context, data }) => {
+    const { error } = await context.supabase
+      .from("propostas")
+      .update({ iq_nome: data.iq_nome ?? null, iq_comentario: data.iq_comentario ?? null } as any)
+      .eq("id", data.proposta_id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const removerEnvolvido = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => z.object({ id: z.string().uuid() }).parse(data))
+  .handler(async ({ context, data }) => {
+    const { error } = await context.supabase.from("proposta_envolvidos").delete().eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+/** ===== Follow-ups ===== */
+export const adicionarFollowup = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z
+      .object({
+        proposta_id: z.string().uuid(),
+        tipo: z.enum(["interno", "externo"]),
+        titulo: z.string().trim().max(200).optional(),
+        comentario: z.string().trim().min(1).max(4000),
+        data_previsao: z.string().optional(),
+        responsavel_id: z.string().uuid().optional(),
+      })
+      .parse(data),
+  )
+  .handler(async ({ context, data }) => {
+    const { supabase, userId } = context;
+    const { error } = await supabase.from("proposta_followups").insert({
+      proposta_id: data.proposta_id,
+      tipo: data.tipo,
+      titulo: data.titulo ?? null,
+      comentario: data.comentario,
+      data_previsao: data.data_previsao ?? null,
+      responsavel_id: data.responsavel_id ?? null,
+      autor_id: userId,
+    });
+    if (error) throw new Error(error.message);
+
+    if (data.tipo === "externo") {
+      try {
+        const { enviarFollowupHomefinImpl } = await import("./enviar.server");
+        await enviarFollowupHomefinImpl({
+          propostaId: data.proposta_id,
+          titulo: data.titulo ?? "",
+          comentario: data.comentario,
+          supabase,
+        });
+      } catch {
+        /* falha externa não bloqueia o registro interno */
+      }
+    }
+    return { ok: true };
+  });
+
+/** ===== Máquina de estados ===== */
+export const moverStatusProposta = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z
+      .object({
+        proposta_id: z.string().uuid(),
+        novo_status: z.string(),
+        motivo: z.string().optional(),
+      })
+      .parse(data),
+  )
+  .handler(async ({ context, data }) => {
+    const { supabase, userId } = context;
+    const { data: prop } = await supabase
+      .from("propostas")
+      .select("status")
+      .eq("id", data.proposta_id)
+      .maybeSingle();
+    if (!prop) throw new Error("Proposta não encontrada.");
+
+    const de = prop.status as PropostaStatus;
+    const para = data.novo_status as PropostaStatus;
+    if (!transicaoPermitida(de, para)) {
+      throw new Error(`Transição inválida: ${de} → ${para}.`);
+    }
+    const patch: Record<string, unknown> = { status: para };
+    if (para === "contrato_emitido") patch.contrato_emitido_em = new Date().toISOString();
+    const { error } = await supabase.from("propostas").update(patch as any).eq("id", data.proposta_id);
+    if (error) throw new Error(error.message);
+
+    await supabase.from("proposta_historico").insert({
+      proposta_id: data.proposta_id,
+      tipo_evento: "status",
+      descricao: data.motivo ?? null,
+      status_anterior: de,
+      status_novo: para,
+      ator_id: userId,
+    });
+    return { ok: true };
+  });
+
+/** ===== Cancelamento ===== */
+export const cancelarProposta = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z
+      .object({
+        proposta_id: z.string().uuid(),
+        motivo: z.string().trim().min(5, "Informe um motivo com pelo menos 5 caracteres."),
+      })
+      .parse(data),
+  )
+  .handler(async ({ context, data }) => {
+    const { supabase, userId } = context;
+    const { data: prop } = await supabase
+      .from("propostas")
+      .select("status, enviada_em")
+      .eq("id", data.proposta_id)
+      .maybeSingle();
+    if (!prop) throw new Error("Proposta não encontrada.");
+    if (prop.status === "cancelada") throw new Error("Proposta já está cancelada.");
+
+    const { error } = await supabase
+      .from("propostas")
+      .update({ status: "cancelada", motivo_cancelamento: data.motivo })
+      .eq("id", data.proposta_id);
+    if (error) throw new Error(error.message);
+
+    await supabase.from("proposta_historico").insert({
+      proposta_id: data.proposta_id,
+      tipo_evento: "cancelada",
+      descricao: data.motivo,
+      status_anterior: prop.status,
+      status_novo: "cancelada",
+      ator_id: userId,
+    });
+
+    if (prop.enviada_em) {
+      try {
+        const { cancelarPropostaHomefinImpl } = await import("./enviar.server");
+        await cancelarPropostaHomefinImpl({ propostaId: data.proposta_id, supabase });
+      } catch {
+        /* falha externa não bloqueia o cancelamento local */
+      }
+    }
+    return { ok: true };
+  });
+
+/** ===== Enviar / reenviar ao banco ===== */
+export const enviarPropostaHomeFin = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => z.object({ proposta_id: z.string().uuid() }).parse(data))
+  .handler(async ({ context, data }) => {
+    const { supabase, userId } = context;
+    const ip =
+      getRequestHeader("x-forwarded-for")?.split(",")[0]?.trim() ??
+      getRequestHeader("cf-connecting-ip") ??
+      null;
+    const { enviarPropostaImpl } = await import("./enviar.server");
+    return enviarPropostaImpl({ propostaId: data.proposta_id, userId, ip, supabase });
+  });
+
+export const reenviarHomeFin = enviarPropostaHomeFin;
