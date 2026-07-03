@@ -64,6 +64,7 @@ import { Route as AuthenticatedContaSegurancaRouteImport } from './routes/_authe
 import { Route as AuthenticatedContaPerfilRouteImport } from './routes/_authenticated/conta.perfil'
 import { Route as AuthenticatedAdminRegrasModulosRouteImport } from './routes/_authenticated/admin.regras-modulos'
 import { Route as AuthenticatedAdminPessoasRouteImport } from './routes/_authenticated/admin.pessoas'
+import { Route as AuthenticatedAdminParametrosRouteImport } from './routes/_authenticated/admin.parametros'
 import { Route as AuthenticatedAdminNotificacoesRouteImport } from './routes/_authenticated/admin.notificacoes'
 import { Route as AuthenticatedAdminIntegracoesRouteImport } from './routes/_authenticated/admin.integracoes'
 import { Route as AuthenticatedAdminAuditoriaRouteImport } from './routes/_authenticated/admin.auditoria'
@@ -389,6 +390,12 @@ const AuthenticatedAdminPessoasRoute =
     path: '/admin/pessoas',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAdminParametrosRoute =
+  AuthenticatedAdminParametrosRouteImport.update({
+    id: '/admin/parametros',
+    path: '/admin/parametros',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAdminNotificacoesRoute =
   AuthenticatedAdminNotificacoesRouteImport.update({
     id: '/admin/notificacoes',
@@ -503,6 +510,7 @@ export interface FileRoutesByFullPath {
   '/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
   '/admin/integracoes': typeof AuthenticatedAdminIntegracoesRoute
   '/admin/notificacoes': typeof AuthenticatedAdminNotificacoesRoute
+  '/admin/parametros': typeof AuthenticatedAdminParametrosRoute
   '/admin/pessoas': typeof AuthenticatedAdminPessoasRoute
   '/admin/regras-modulos': typeof AuthenticatedAdminRegrasModulosRoute
   '/conta/perfil': typeof AuthenticatedContaPerfilRoute
@@ -572,6 +580,7 @@ export interface FileRoutesByTo {
   '/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
   '/admin/integracoes': typeof AuthenticatedAdminIntegracoesRoute
   '/admin/notificacoes': typeof AuthenticatedAdminNotificacoesRoute
+  '/admin/parametros': typeof AuthenticatedAdminParametrosRoute
   '/admin/pessoas': typeof AuthenticatedAdminPessoasRoute
   '/admin/regras-modulos': typeof AuthenticatedAdminRegrasModulosRoute
   '/conta/perfil': typeof AuthenticatedContaPerfilRoute
@@ -645,6 +654,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
   '/_authenticated/admin/integracoes': typeof AuthenticatedAdminIntegracoesRoute
   '/_authenticated/admin/notificacoes': typeof AuthenticatedAdminNotificacoesRoute
+  '/_authenticated/admin/parametros': typeof AuthenticatedAdminParametrosRoute
   '/_authenticated/admin/pessoas': typeof AuthenticatedAdminPessoasRoute
   '/_authenticated/admin/regras-modulos': typeof AuthenticatedAdminRegrasModulosRoute
   '/_authenticated/conta/perfil': typeof AuthenticatedContaPerfilRoute
@@ -718,6 +728,7 @@ export interface FileRouteTypes {
     | '/admin/auditoria'
     | '/admin/integracoes'
     | '/admin/notificacoes'
+    | '/admin/parametros'
     | '/admin/pessoas'
     | '/admin/regras-modulos'
     | '/conta/perfil'
@@ -787,6 +798,7 @@ export interface FileRouteTypes {
     | '/admin/auditoria'
     | '/admin/integracoes'
     | '/admin/notificacoes'
+    | '/admin/parametros'
     | '/admin/pessoas'
     | '/admin/regras-modulos'
     | '/conta/perfil'
@@ -859,6 +871,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/auditoria'
     | '/_authenticated/admin/integracoes'
     | '/_authenticated/admin/notificacoes'
+    | '/_authenticated/admin/parametros'
     | '/_authenticated/admin/pessoas'
     | '/_authenticated/admin/regras-modulos'
     | '/_authenticated/conta/perfil'
@@ -1306,6 +1319,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminPessoasRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin/parametros': {
+      id: '/_authenticated/admin/parametros'
+      path: '/admin/parametros'
+      fullPath: '/admin/parametros'
+      preLoaderRoute: typeof AuthenticatedAdminParametrosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/admin/notificacoes': {
       id: '/_authenticated/admin/notificacoes'
       path: '/admin/notificacoes'
@@ -1477,6 +1497,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminAuditoriaRoute: typeof AuthenticatedAdminAuditoriaRoute
   AuthenticatedAdminIntegracoesRoute: typeof AuthenticatedAdminIntegracoesRoute
   AuthenticatedAdminNotificacoesRoute: typeof AuthenticatedAdminNotificacoesRoute
+  AuthenticatedAdminParametrosRoute: typeof AuthenticatedAdminParametrosRoute
   AuthenticatedAdminPessoasRoute: typeof AuthenticatedAdminPessoasRoute
   AuthenticatedAdminRegrasModulosRoute: typeof AuthenticatedAdminRegrasModulosRoute
   AuthenticatedContaPerfilRoute: typeof AuthenticatedContaPerfilRoute
@@ -1516,6 +1537,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminAuditoriaRoute: AuthenticatedAdminAuditoriaRoute,
   AuthenticatedAdminIntegracoesRoute: AuthenticatedAdminIntegracoesRoute,
   AuthenticatedAdminNotificacoesRoute: AuthenticatedAdminNotificacoesRoute,
+  AuthenticatedAdminParametrosRoute: AuthenticatedAdminParametrosRoute,
   AuthenticatedAdminPessoasRoute: AuthenticatedAdminPessoasRoute,
   AuthenticatedAdminRegrasModulosRoute: AuthenticatedAdminRegrasModulosRoute,
   AuthenticatedContaPerfilRoute: AuthenticatedContaPerfilRoute,
