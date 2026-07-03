@@ -1,16 +1,118 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Percent } from "lucide-react";
-import { ModuloPlaceholder } from "@/components/app-shell/modulo-placeholder";
+import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { Percent, RefreshCw } from "lucide-react";
 import { assertModuloPermitido } from "@/lib/route-guards";
+import { listarComissoes, recalcularComissao } from "@/lib/financeiro/financeiro.functions";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ComissaoStatusBadge } from "@/components/financeiro/status-badge";
+import { formatBRL } from "@/lib/financeiro/format";
 
 export const Route = createFileRoute("/_authenticated/financeiro/comissoes")({
   head: () => ({ meta: [{ title: "Comissões — Agilliza" }] }),
   beforeLoad: () => assertModuloPermitido("financeiro.comissoes"),
   component: Pagina,
+  errorComponent: () => (
+    <div className="p-6 text-sm text-muted-foreground">Não foi possível carregar as comissões.</div>
+  ),
 });
 
+const STATUS = ["", "a_receber", "recebida", "paga_parceiro", "encerrada"];
+const STATUS_LABEL: Record<string, string> = {
+  "": "Todas",
+  a_receber: "A receber",
+  recebida: "Recebidas",
+  paga_parceiro: "Pagas parceiro",
+  encerrada: "Encerradas",
+};
+
 function Pagina() {
+  const qc = useQueryClient();
+  const [status, setStatus] = useState<string>("");
+  const { data, isLoading } = useQuery({
+    queryKey: ["fin-comissoes", status],
+    queryFn: () => listarComissoes({ data: { status: status || undefined } }),
+  });
+
+  const recalc = useMutation({
+    mutationFn: (comissao_id: string) => recalcularComissao({ data: { comissao_id } }),
+    onSuccess: () => {
+      toast.success("Comissão recalculada.");
+      qc.invalidateQueries({ queryKey: ["fin-comissoes"] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Falha ao recalcular."),
+  });
+
   return (
-    <ModuloPlaceholder icon={Percent} titulo="Comissões" descricao="Comissões da equipe e parceiros." />
+    <div className="mx-auto w-full max-w-6xl space-y-6 p-4 md:p-6">
+      <div>
+        <h1 className="text-xl font-semibold text-foreground">Comissões</h1>
+        <p className="text-sm text-muted-foreground">Comissões calculadas a partir de contratos emitidos.</p>
+      </div>
+
+      <Tabs value={status} onValueChange={setStatus}>
+        <TabsList>
+          {STATUS.map((s) => (
+            <TabsTrigger key={s || "all"} value={s}>{STATUS_LABEL[s]}</TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
+
+      <div className="overflow-x-auto rounded-lg border border-border">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-muted">
+              <TableHead className="text-xs uppercase tracking-wide text-muted-foreground">Proposta</TableHead>
+              <TableHead className="text-xs uppercase tracking-wide text-muted-foreground">Banco</TableHead>
+              <TableHead className="text-right text-xs uppercase tracking-wide text-muted-foreground">Valor bruto</TableHead>
+              <TableHead className="text-right text-xs uppercase tracking-wide text-muted-foreground">Split parceiro</TableHead>
+              <TableHead className="text-right text-xs uppercase tracking-wide text-muted-foreground">Split interno</TableHead>
+              <TableHead className="text-xs uppercase tracking-wide text-muted-foreground">Status</TableHead>
+              <TableHead className="w-10" />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading && (
+              <TableRow>
+                <TableCell colSpan={7} className="py-10 text-center text-sm text-muted-foreground">Carregando…</TableCell>
+              </TableRow>
+            )}
+            {!isLoading && (data?.length ?? 0) === 0 && (
+              <TableRow>
+                <TableCell colSpan={7}>
+                  <div className="flex flex-col items-center gap-3 py-12 text-center">
+                    <Percent className="h-8 w-8 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">Nenhuma comissão calculada ainda.</p>
+                  </div>
+                </TableCell>
+              </TableRow>
+            )}
+            {data?.map((c) => (
+              <TableRow key={c.id} className="even:bg-muted/40 dark:even:bg-muted/60">
+                <TableCell className="font-medium">{c.numero_proposta ?? "—"}</TableCell>
+                <TableCell>{c.banco_nome ?? "—"}</TableCell>
+                <TableCell className="text-right tabular-nums">{formatBRL(c.valor_bruto)}</TableCell>
+                <TableCell className="text-right tabular-nums">{formatBRL(c.split_parceiro)}</TableCell>
+                <TableCell className="text-right tabular-nums">{formatBRL(c.split_interno)}</TableCell>
+                <TableCell><ComissaoStatusBadge status={c.status} /></TableCell>
+                <TableCell>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={recalc.isPending}
+                    onClick={() => recalc.mutate(c.id)}
+                  >
+                    <RefreshCw className="mr-1 h-3.5 w-3.5" /> Recalcular
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
   );
 }
