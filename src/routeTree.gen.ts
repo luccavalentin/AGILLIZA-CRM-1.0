@@ -22,7 +22,10 @@ import { Route as AuthenticatedOperacionalTarefasRouteImport } from './routes/_a
 import { Route as AuthenticatedOperacionalSimulacoesRouteImport } from './routes/_authenticated/operacional.simulacoes'
 import { Route as AuthenticatedOperacionalPropostasRouteImport } from './routes/_authenticated/operacional.propostas'
 import { Route as AuthenticatedOperacionalContratosRouteImport } from './routes/_authenticated/operacional.contratos'
-import { Route as AuthenticatedFinanceiroRecebiveisRouteImport } from './routes/_authenticated/financeiro.recebiveis'
+import { Route as AuthenticatedFinanceiroPainelRouteImport } from './routes/_authenticated/financeiro.painel'
+import { Route as AuthenticatedFinanceiroFluxoDeCaixaRouteImport } from './routes/_authenticated/financeiro.fluxo-de-caixa'
+import { Route as AuthenticatedFinanceiroContasAReceberRouteImport } from './routes/_authenticated/financeiro.contas-a-receber'
+import { Route as AuthenticatedFinanceiroContasAPagarRouteImport } from './routes/_authenticated/financeiro.contas-a-pagar'
 import { Route as AuthenticatedFinanceiroComissoesRouteImport } from './routes/_authenticated/financeiro.comissoes'
 import { Route as AuthenticatedCrmParceirosRouteImport } from './routes/_authenticated/crm.parceiros'
 import { Route as AuthenticatedCrmPainelRouteImport } from './routes/_authenticated/crm.painel'
@@ -112,10 +115,28 @@ const AuthenticatedOperacionalContratosRoute =
     path: '/operacional/contratos',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedFinanceiroRecebiveisRoute =
-  AuthenticatedFinanceiroRecebiveisRouteImport.update({
-    id: '/financeiro/recebiveis',
-    path: '/financeiro/recebiveis',
+const AuthenticatedFinanceiroPainelRoute =
+  AuthenticatedFinanceiroPainelRouteImport.update({
+    id: '/financeiro/painel',
+    path: '/financeiro/painel',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedFinanceiroFluxoDeCaixaRoute =
+  AuthenticatedFinanceiroFluxoDeCaixaRouteImport.update({
+    id: '/financeiro/fluxo-de-caixa',
+    path: '/financeiro/fluxo-de-caixa',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedFinanceiroContasAReceberRoute =
+  AuthenticatedFinanceiroContasAReceberRouteImport.update({
+    id: '/financeiro/contas-a-receber',
+    path: '/financeiro/contas-a-receber',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedFinanceiroContasAPagarRoute =
+  AuthenticatedFinanceiroContasAPagarRouteImport.update({
+    id: '/financeiro/contas-a-pagar',
+    path: '/financeiro/contas-a-pagar',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedFinanceiroComissoesRoute =
@@ -257,7 +278,10 @@ export interface FileRoutesByFullPath {
   '/crm/painel': typeof AuthenticatedCrmPainelRoute
   '/crm/parceiros': typeof AuthenticatedCrmParceirosRoute
   '/financeiro/comissoes': typeof AuthenticatedFinanceiroComissoesRoute
-  '/financeiro/recebiveis': typeof AuthenticatedFinanceiroRecebiveisRoute
+  '/financeiro/contas-a-pagar': typeof AuthenticatedFinanceiroContasAPagarRoute
+  '/financeiro/contas-a-receber': typeof AuthenticatedFinanceiroContasAReceberRoute
+  '/financeiro/fluxo-de-caixa': typeof AuthenticatedFinanceiroFluxoDeCaixaRoute
+  '/financeiro/painel': typeof AuthenticatedFinanceiroPainelRoute
   '/operacional/contratos': typeof AuthenticatedOperacionalContratosRoute
   '/operacional/propostas': typeof AuthenticatedOperacionalPropostasRoute
   '/operacional/simulacoes': typeof AuthenticatedOperacionalSimulacoesRoute
@@ -292,7 +316,10 @@ export interface FileRoutesByTo {
   '/crm/painel': typeof AuthenticatedCrmPainelRoute
   '/crm/parceiros': typeof AuthenticatedCrmParceirosRoute
   '/financeiro/comissoes': typeof AuthenticatedFinanceiroComissoesRoute
-  '/financeiro/recebiveis': typeof AuthenticatedFinanceiroRecebiveisRoute
+  '/financeiro/contas-a-pagar': typeof AuthenticatedFinanceiroContasAPagarRoute
+  '/financeiro/contas-a-receber': typeof AuthenticatedFinanceiroContasAReceberRoute
+  '/financeiro/fluxo-de-caixa': typeof AuthenticatedFinanceiroFluxoDeCaixaRoute
+  '/financeiro/painel': typeof AuthenticatedFinanceiroPainelRoute
   '/operacional/contratos': typeof AuthenticatedOperacionalContratosRoute
   '/operacional/propostas': typeof AuthenticatedOperacionalPropostasRoute
   '/operacional/simulacoes': typeof AuthenticatedOperacionalSimulacoesRoute
@@ -329,7 +356,10 @@ export interface FileRoutesById {
   '/_authenticated/crm/painel': typeof AuthenticatedCrmPainelRoute
   '/_authenticated/crm/parceiros': typeof AuthenticatedCrmParceirosRoute
   '/_authenticated/financeiro/comissoes': typeof AuthenticatedFinanceiroComissoesRoute
-  '/_authenticated/financeiro/recebiveis': typeof AuthenticatedFinanceiroRecebiveisRoute
+  '/_authenticated/financeiro/contas-a-pagar': typeof AuthenticatedFinanceiroContasAPagarRoute
+  '/_authenticated/financeiro/contas-a-receber': typeof AuthenticatedFinanceiroContasAReceberRoute
+  '/_authenticated/financeiro/fluxo-de-caixa': typeof AuthenticatedFinanceiroFluxoDeCaixaRoute
+  '/_authenticated/financeiro/painel': typeof AuthenticatedFinanceiroPainelRoute
   '/_authenticated/operacional/contratos': typeof AuthenticatedOperacionalContratosRoute
   '/_authenticated/operacional/propostas': typeof AuthenticatedOperacionalPropostasRoute
   '/_authenticated/operacional/simulacoes': typeof AuthenticatedOperacionalSimulacoesRoute
@@ -366,7 +396,10 @@ export interface FileRouteTypes {
     | '/crm/painel'
     | '/crm/parceiros'
     | '/financeiro/comissoes'
-    | '/financeiro/recebiveis'
+    | '/financeiro/contas-a-pagar'
+    | '/financeiro/contas-a-receber'
+    | '/financeiro/fluxo-de-caixa'
+    | '/financeiro/painel'
     | '/operacional/contratos'
     | '/operacional/propostas'
     | '/operacional/simulacoes'
@@ -401,7 +434,10 @@ export interface FileRouteTypes {
     | '/crm/painel'
     | '/crm/parceiros'
     | '/financeiro/comissoes'
-    | '/financeiro/recebiveis'
+    | '/financeiro/contas-a-pagar'
+    | '/financeiro/contas-a-receber'
+    | '/financeiro/fluxo-de-caixa'
+    | '/financeiro/painel'
     | '/operacional/contratos'
     | '/operacional/propostas'
     | '/operacional/simulacoes'
@@ -437,7 +473,10 @@ export interface FileRouteTypes {
     | '/_authenticated/crm/painel'
     | '/_authenticated/crm/parceiros'
     | '/_authenticated/financeiro/comissoes'
-    | '/_authenticated/financeiro/recebiveis'
+    | '/_authenticated/financeiro/contas-a-pagar'
+    | '/_authenticated/financeiro/contas-a-receber'
+    | '/_authenticated/financeiro/fluxo-de-caixa'
+    | '/_authenticated/financeiro/painel'
     | '/_authenticated/operacional/contratos'
     | '/_authenticated/operacional/propostas'
     | '/_authenticated/operacional/simulacoes'
@@ -557,11 +596,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOperacionalContratosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/financeiro/recebiveis': {
-      id: '/_authenticated/financeiro/recebiveis'
-      path: '/financeiro/recebiveis'
-      fullPath: '/financeiro/recebiveis'
-      preLoaderRoute: typeof AuthenticatedFinanceiroRecebiveisRouteImport
+    '/_authenticated/financeiro/painel': {
+      id: '/_authenticated/financeiro/painel'
+      path: '/financeiro/painel'
+      fullPath: '/financeiro/painel'
+      preLoaderRoute: typeof AuthenticatedFinanceiroPainelRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/financeiro/fluxo-de-caixa': {
+      id: '/_authenticated/financeiro/fluxo-de-caixa'
+      path: '/financeiro/fluxo-de-caixa'
+      fullPath: '/financeiro/fluxo-de-caixa'
+      preLoaderRoute: typeof AuthenticatedFinanceiroFluxoDeCaixaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/financeiro/contas-a-receber': {
+      id: '/_authenticated/financeiro/contas-a-receber'
+      path: '/financeiro/contas-a-receber'
+      fullPath: '/financeiro/contas-a-receber'
+      preLoaderRoute: typeof AuthenticatedFinanceiroContasAReceberRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/financeiro/contas-a-pagar': {
+      id: '/_authenticated/financeiro/contas-a-pagar'
+      path: '/financeiro/contas-a-pagar'
+      fullPath: '/financeiro/contas-a-pagar'
+      preLoaderRoute: typeof AuthenticatedFinanceiroContasAPagarRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/financeiro/comissoes': {
@@ -722,7 +782,10 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCrmPainelRoute: typeof AuthenticatedCrmPainelRoute
   AuthenticatedCrmParceirosRoute: typeof AuthenticatedCrmParceirosRoute
   AuthenticatedFinanceiroComissoesRoute: typeof AuthenticatedFinanceiroComissoesRoute
-  AuthenticatedFinanceiroRecebiveisRoute: typeof AuthenticatedFinanceiroRecebiveisRoute
+  AuthenticatedFinanceiroContasAPagarRoute: typeof AuthenticatedFinanceiroContasAPagarRoute
+  AuthenticatedFinanceiroContasAReceberRoute: typeof AuthenticatedFinanceiroContasAReceberRoute
+  AuthenticatedFinanceiroFluxoDeCaixaRoute: typeof AuthenticatedFinanceiroFluxoDeCaixaRoute
+  AuthenticatedFinanceiroPainelRoute: typeof AuthenticatedFinanceiroPainelRoute
   AuthenticatedOperacionalContratosRoute: typeof AuthenticatedOperacionalContratosRoute
   AuthenticatedOperacionalPropostasRoute: typeof AuthenticatedOperacionalPropostasRoute
   AuthenticatedOperacionalSimulacoesRoute: typeof AuthenticatedOperacionalSimulacoesRoute
@@ -752,8 +815,13 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCrmPainelRoute: AuthenticatedCrmPainelRoute,
   AuthenticatedCrmParceirosRoute: AuthenticatedCrmParceirosRoute,
   AuthenticatedFinanceiroComissoesRoute: AuthenticatedFinanceiroComissoesRoute,
-  AuthenticatedFinanceiroRecebiveisRoute:
-    AuthenticatedFinanceiroRecebiveisRoute,
+  AuthenticatedFinanceiroContasAPagarRoute:
+    AuthenticatedFinanceiroContasAPagarRoute,
+  AuthenticatedFinanceiroContasAReceberRoute:
+    AuthenticatedFinanceiroContasAReceberRoute,
+  AuthenticatedFinanceiroFluxoDeCaixaRoute:
+    AuthenticatedFinanceiroFluxoDeCaixaRoute,
+  AuthenticatedFinanceiroPainelRoute: AuthenticatedFinanceiroPainelRoute,
   AuthenticatedOperacionalContratosRoute:
     AuthenticatedOperacionalContratosRoute,
   AuthenticatedOperacionalPropostasRoute:

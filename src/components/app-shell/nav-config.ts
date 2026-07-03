@@ -18,6 +18,9 @@ import {
   ShieldCheck,
   UserRound,
   Lock,
+  LineChart,
+  ArrowUpCircle,
+  ArrowDownCircle,
 } from "lucide-react";
 
 /** Permissão exigida por um item (chave = `${modulo}:view`). */
@@ -78,8 +81,11 @@ export const navInterno: NavGroup[] = [
     id: "financeiro",
     label: "Financeiro",
     items: [
-      { label: "Recebíveis", icon: Wallet, to: "/financeiro/recebiveis", perm: { modulo: "financeiro.recebiveis" } },
+      { label: "Painel", icon: LineChart, to: "/financeiro/painel", perm: { modulo: "financeiro.painel" } },
+      { label: "Contas a pagar", icon: ArrowUpCircle, to: "/financeiro/contas-a-pagar", perm: { modulo: "financeiro.contas_pagar" } },
+      { label: "Contas a receber", icon: ArrowDownCircle, to: "/financeiro/contas-a-receber", perm: { modulo: "financeiro.contas_receber" } },
       { label: "Comissões", icon: Percent, to: "/financeiro/comissoes", perm: { modulo: "financeiro.comissoes" } },
+      { label: "Fluxo de caixa", icon: Wallet, to: "/financeiro/fluxo-de-caixa", perm: { modulo: "financeiro.fluxo_caixa" } },
     ],
   },
   {
