@@ -15,6 +15,7 @@ import { Route as ClienteRouteImport } from './routes/cliente'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ParceiroIndexRouteImport } from './routes/parceiro.index'
 import { Route as ClienteVisaoGeralRouteImport } from './routes/cliente.visao-geral'
 import { Route as ClientePerfilRouteImport } from './routes/cliente.perfil'
 import { Route as ClienteLogoutRouteImport } from './routes/cliente.logout'
@@ -101,6 +102,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const ParceiroIndexRoute = ParceiroIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ParceiroRoute,
 } as any)
 const ClienteVisaoGeralRoute = ClienteVisaoGeralRouteImport.update({
   id: '/visao-geral',
@@ -441,7 +447,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/cliente': typeof ClienteRouteWithChildren
-  '/parceiro': typeof ParceiroRoute
+  '/parceiro': typeof ParceiroRouteWithChildren
   '/portal': typeof PortalRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/documentos': typeof AuthenticatedDocumentosRoute
@@ -451,6 +457,7 @@ export interface FileRoutesByFullPath {
   '/cliente/logout': typeof ClienteLogoutRoute
   '/cliente/perfil': typeof ClientePerfilRoute
   '/cliente/visao-geral': typeof ClienteVisaoGeralRoute
+  '/parceiro/': typeof ParceiroIndexRoute
   '/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
   '/admin/notificacoes': typeof AuthenticatedAdminNotificacoesRoute
   '/admin/pessoas': typeof AuthenticatedAdminPessoasRoute
@@ -505,7 +512,6 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/cliente': typeof ClienteRouteWithChildren
-  '/parceiro': typeof ParceiroRoute
   '/portal': typeof PortalRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/documentos': typeof AuthenticatedDocumentosRoute
@@ -514,6 +520,7 @@ export interface FileRoutesByTo {
   '/cliente/logout': typeof ClienteLogoutRoute
   '/cliente/perfil': typeof ClientePerfilRoute
   '/cliente/visao-geral': typeof ClienteVisaoGeralRoute
+  '/parceiro': typeof ParceiroIndexRoute
   '/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
   '/admin/notificacoes': typeof AuthenticatedAdminNotificacoesRoute
   '/admin/pessoas': typeof AuthenticatedAdminPessoasRoute
@@ -570,7 +577,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/cliente': typeof ClienteRouteWithChildren
-  '/parceiro': typeof ParceiroRoute
+  '/parceiro': typeof ParceiroRouteWithChildren
   '/portal': typeof PortalRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/documentos': typeof AuthenticatedDocumentosRoute
@@ -580,6 +587,7 @@ export interface FileRoutesById {
   '/cliente/logout': typeof ClienteLogoutRoute
   '/cliente/perfil': typeof ClientePerfilRoute
   '/cliente/visao-geral': typeof ClienteVisaoGeralRoute
+  '/parceiro/': typeof ParceiroIndexRoute
   '/_authenticated/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
   '/_authenticated/admin/notificacoes': typeof AuthenticatedAdminNotificacoesRoute
   '/_authenticated/admin/pessoas': typeof AuthenticatedAdminPessoasRoute
@@ -646,6 +654,7 @@ export interface FileRouteTypes {
     | '/cliente/logout'
     | '/cliente/perfil'
     | '/cliente/visao-geral'
+    | '/parceiro/'
     | '/admin/auditoria'
     | '/admin/notificacoes'
     | '/admin/pessoas'
@@ -700,7 +709,6 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/cliente'
-    | '/parceiro'
     | '/portal'
     | '/dashboard'
     | '/documentos'
@@ -709,6 +717,7 @@ export interface FileRouteTypes {
     | '/cliente/logout'
     | '/cliente/perfil'
     | '/cliente/visao-geral'
+    | '/parceiro'
     | '/admin/auditoria'
     | '/admin/notificacoes'
     | '/admin/pessoas'
@@ -774,6 +783,7 @@ export interface FileRouteTypes {
     | '/cliente/logout'
     | '/cliente/perfil'
     | '/cliente/visao-geral'
+    | '/parceiro/'
     | '/_authenticated/admin/auditoria'
     | '/_authenticated/admin/notificacoes'
     | '/_authenticated/admin/pessoas'
@@ -830,7 +840,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   ClienteRoute: typeof ClienteRouteWithChildren
-  ParceiroRoute: typeof ParceiroRoute
+  ParceiroRoute: typeof ParceiroRouteWithChildren
   PortalRoute: typeof PortalRoute
   ApiPublicHomefinCallbackRoute: typeof ApiPublicHomefinCallbackRoute
   ApiPublicWebhookHomefinPropostaRoute: typeof ApiPublicWebhookHomefinPropostaRoute
@@ -879,6 +889,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/parceiro/': {
+      id: '/parceiro/'
+      path: '/'
+      fullPath: '/parceiro/'
+      preLoaderRoute: typeof ParceiroIndexRouteImport
+      parentRoute: typeof ParceiroRoute
     }
     '/cliente/visao-geral': {
       id: '/cliente/visao-geral'
@@ -1447,12 +1464,24 @@ const ClienteRouteChildren: ClienteRouteChildren = {
 const ClienteRouteWithChildren =
   ClienteRoute._addFileChildren(ClienteRouteChildren)
 
+interface ParceiroRouteChildren {
+  ParceiroIndexRoute: typeof ParceiroIndexRoute
+}
+
+const ParceiroRouteChildren: ParceiroRouteChildren = {
+  ParceiroIndexRoute: ParceiroIndexRoute,
+}
+
+const ParceiroRouteWithChildren = ParceiroRoute._addFileChildren(
+  ParceiroRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   ClienteRoute: ClienteRouteWithChildren,
-  ParceiroRoute: ParceiroRoute,
+  ParceiroRoute: ParceiroRouteWithChildren,
   PortalRoute: PortalRoute,
   ApiPublicHomefinCallbackRoute: ApiPublicHomefinCallbackRoute,
   ApiPublicWebhookHomefinPropostaRoute: ApiPublicWebhookHomefinPropostaRoute,
