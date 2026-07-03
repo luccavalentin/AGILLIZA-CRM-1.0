@@ -93,12 +93,6 @@ function PessoasPage() {
     onError: (err: Error) => toast.error(err.message),
   });
 
-  async function sair() {
-    await queryClient.cancelQueries();
-    queryClient.clear();
-    await supabase.auth.signOut();
-    navigate({ to: "/auth", replace: true });
-  }
 
   function abrirNova() {
     setPortalParceiro(false);
@@ -137,15 +131,9 @@ function PessoasPage() {
     );
 
   return (
-    <div className="min-h-[100dvh] bg-muted">
-      <header className="flex items-center justify-between border-b bg-background px-4 py-3 sm:px-6">
-        <Logo variant="dark" className="h-7" />
-        <Button variant="ghost" size="sm" onClick={sair}>
-          <LogOut className="mr-2 h-4 w-4" /> Sair
-        </Button>
-      </header>
+    <>
+      <div className="mx-auto max-w-5xl">
 
-      <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-semibold text-foreground">
@@ -229,7 +217,7 @@ function PessoasPage() {
             </TableBody>
           </Table>
         </div>
-      </main>
+      </div>
 
       {/* Modal: nova pessoa */}
       <Dialog open={dialogAberto} onOpenChange={setDialogAberto}>
@@ -369,6 +357,7 @@ function PessoasPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
+
   );
 }

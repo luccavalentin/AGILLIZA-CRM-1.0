@@ -1,5 +1,13 @@
-import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
+import { createFileRoute, Outlet, redirect, useNavigate } from "@tanstack/react-router";
+import { useMemo } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { AppShell } from "@/components/app-shell/app-shell";
+import { navInterno } from "@/components/app-shell/nav-config";
+import { filterNavByPermissions, permsToSet } from "@/components/app-shell/filter-nav";
+import { SidebarSkeleton } from "@/components/app-shell/sidebar-nav";
+import { getMinhaSessao } from "@/lib/session.functions";
+import { getMinhasPermissoes } from "@/lib/permissions.functions";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -10,5 +18,70 @@ export const Route = createFileRoute("/_authenticated")({
     }
     return { user: data.user };
   },
-  component: () => <Outlet />,
+  component: InternalLayout,
 });
+
+function InternalLayout() {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  const sessaoQuery = useQuery({
+    queryKey: ["minha-sessao"],
+    queryFn: () => getMinhaSessao(),
+  });
+  const permsQuery = useQuery({
+    queryKey: ["minhas-permissoes"],
+    queryFn: () => getMinhasPermissoes(),
+  });
+
+  const navFiltrada = useMemo(() => {
+    if (!permsQuery.data) return [];
+    return filterNavByPermissions(
+      navInterno,
+      permsToSet(permsQuery.data),
+      permsQuery.data.todas,
+    );
+  }, [permsQuery.data]);
+
+  async function sair() {
+    await queryClient.cancelQueries();
+    queryClient.clear();
+    await supabase.auth.signOut();
+    navigate({ to: "/auth", replace: true });
+  }
+
+  const carregando = sessaoQuery.isLoading || permsQuery.isLoading;
+
+  if (carregando || !sessaoQuery.data || !permsQuery.data) {
+    return (
+      <div className="flex min-h-[100dvh] w-full bg-muted/40">
+        <aside className="hidden w-64 shrink-0 border-r border-sidebar-border bg-sidebar lg:block">
+          <div className="h-16 border-b border-sidebar-border" />
+          <SidebarSkeleton />
+        </aside>
+        <div className="flex-1">
+          <div className="h-16 border-b border-border bg-background" />
+          <div className="p-6">
+            <div className="h-64 animate-pulse rounded-xl bg-muted" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const profile = sessaoQuery.data.profile;
+
+  return (
+    <AppShell
+      nav={navFiltrada}
+      user={{
+        id: profile?.id ?? "",
+        nome: profile?.nome ?? null,
+        email: profile?.email ?? null,
+      }}
+      onSignOut={sair}
+    >
+      <Outlet />
+    </AppShell>
+  );
+}

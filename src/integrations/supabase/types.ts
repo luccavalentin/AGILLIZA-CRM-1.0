@@ -89,6 +89,42 @@ export type Database = {
         }
         Relationships: []
       }
+      notificacoes: {
+        Row: {
+          corpo: string | null
+          correspondente_id: string | null
+          created_at: string
+          id: string
+          lida: boolean
+          link: string | null
+          tipo: string
+          titulo: string
+          user_id: string
+        }
+        Insert: {
+          corpo?: string | null
+          correspondente_id?: string | null
+          created_at?: string
+          id?: string
+          lida?: boolean
+          link?: string | null
+          tipo?: string
+          titulo: string
+          user_id: string
+        }
+        Update: {
+          corpo?: string | null
+          correspondente_id?: string | null
+          created_at?: string
+          id?: string
+          lida?: boolean
+          link?: string | null
+          tipo?: string
+          titulo?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       permissions: {
         Row: {
           acao: string

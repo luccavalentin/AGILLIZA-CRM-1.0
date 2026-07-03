@@ -14,6 +14,7 @@ import { Route as ParceiroRouteImport } from './routes/parceiro'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedSemAcessoRouteImport } from './routes/_authenticated/sem-acesso'
 import { Route as AuthenticatedAdminPessoasRouteImport } from './routes/_authenticated/admin.pessoas'
 
 const PortalRoute = PortalRouteImport.update({
@@ -40,6 +41,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedSemAcessoRoute = AuthenticatedSemAcessoRouteImport.update({
+  id: '/sem-acesso',
+  path: '/sem-acesso',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedAdminPessoasRoute =
   AuthenticatedAdminPessoasRouteImport.update({
     id: '/admin/pessoas',
@@ -52,6 +58,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/parceiro': typeof ParceiroRoute
   '/portal': typeof PortalRoute
+  '/sem-acesso': typeof AuthenticatedSemAcessoRoute
   '/admin/pessoas': typeof AuthenticatedAdminPessoasRoute
 }
 export interface FileRoutesByTo {
@@ -59,6 +66,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/parceiro': typeof ParceiroRoute
   '/portal': typeof PortalRoute
+  '/sem-acesso': typeof AuthenticatedSemAcessoRoute
   '/admin/pessoas': typeof AuthenticatedAdminPessoasRoute
 }
 export interface FileRoutesById {
@@ -68,13 +76,20 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/parceiro': typeof ParceiroRoute
   '/portal': typeof PortalRoute
+  '/_authenticated/sem-acesso': typeof AuthenticatedSemAcessoRoute
   '/_authenticated/admin/pessoas': typeof AuthenticatedAdminPessoasRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/parceiro' | '/portal' | '/admin/pessoas'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/parceiro'
+    | '/portal'
+    | '/sem-acesso'
+    | '/admin/pessoas'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/parceiro' | '/portal' | '/admin/pessoas'
+  to: '/' | '/auth' | '/parceiro' | '/portal' | '/sem-acesso' | '/admin/pessoas'
   id:
     | '__root__'
     | '/'
@@ -82,6 +97,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/parceiro'
     | '/portal'
+    | '/_authenticated/sem-acesso'
     | '/_authenticated/admin/pessoas'
   fileRoutesById: FileRoutesById
 }
@@ -130,6 +146,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/sem-acesso': {
+      id: '/_authenticated/sem-acesso'
+      path: '/sem-acesso'
+      fullPath: '/sem-acesso'
+      preLoaderRoute: typeof AuthenticatedSemAcessoRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/admin/pessoas': {
       id: '/_authenticated/admin/pessoas'
       path: '/admin/pessoas'
@@ -141,10 +164,12 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedSemAcessoRoute: typeof AuthenticatedSemAcessoRoute
   AuthenticatedAdminPessoasRoute: typeof AuthenticatedAdminPessoasRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedSemAcessoRoute: AuthenticatedSemAcessoRoute,
   AuthenticatedAdminPessoasRoute: AuthenticatedAdminPessoasRoute,
 }
 
