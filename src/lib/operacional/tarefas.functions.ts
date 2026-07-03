@@ -31,7 +31,7 @@ export interface TarefaItem {
   created_at: string;
 }
 
-async function nomesPorId(supabase: any, ids: (string | null)[]): Promise<Map<string, string>> {
+async function nomesPorId(supabase: any, ids: (string | null | undefined)[]): Promise<Map<string, string>> {
   const uniq = [...new Set(ids.filter(Boolean) as string[])];
   if (uniq.length === 0) return new Map();
   const { data } = await supabase.from("profiles").select("id, nome").in("id", uniq);
