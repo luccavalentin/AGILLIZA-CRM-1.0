@@ -14,16 +14,244 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      access_levels: {
+        Row: {
+          ativo: boolean
+          correspondente_id: string | null
+          created_at: string
+          descricao: string | null
+          id: string
+          is_padrao: boolean
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          correspondente_id?: string | null
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          is_padrao?: boolean
+          nome: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          correspondente_id?: string | null
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          is_padrao?: boolean
+          nome?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      admin_audit_logs: {
+        Row: {
+          acao: string
+          correspondente_id: string | null
+          created_at: string
+          entidade: string | null
+          entidade_id: string | null
+          id: string
+          ip: string | null
+          payload_anterior: Json | null
+          payload_novo: Json | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          acao: string
+          correspondente_id?: string | null
+          created_at?: string
+          entidade?: string | null
+          entidade_id?: string | null
+          id?: string
+          ip?: string | null
+          payload_anterior?: Json | null
+          payload_novo?: Json | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          acao?: string
+          correspondente_id?: string | null
+          created_at?: string
+          entidade?: string | null
+          entidade_id?: string | null
+          id?: string
+          ip?: string | null
+          payload_anterior?: Json | null
+          payload_novo?: Json | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      permissions: {
+        Row: {
+          acao: string
+          created_at: string
+          escopo_dados: Database["public"]["Enums"]["escopo_dados"]
+          id: string
+          modulo: string
+          nivel_acesso_id: string
+          permitido: boolean
+          updated_at: string
+        }
+        Insert: {
+          acao: string
+          created_at?: string
+          escopo_dados?: Database["public"]["Enums"]["escopo_dados"]
+          id?: string
+          modulo: string
+          nivel_acesso_id: string
+          permitido?: boolean
+          updated_at?: string
+        }
+        Update: {
+          acao?: string
+          created_at?: string
+          escopo_dados?: Database["public"]["Enums"]["escopo_dados"]
+          id?: string
+          modulo?: string
+          nivel_acesso_id?: string
+          permitido?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "permissions_nivel_acesso_id_fkey"
+            columns: ["nivel_acesso_id"]
+            isOneToOne: false
+            referencedRelation: "access_levels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          acesso_tipo: Database["public"]["Enums"]["acesso_tipo"]
+          ativo: boolean
+          bloqueado_em: string | null
+          consentimento_lgpd_em: string | null
+          correspondente_id: string | null
+          created_at: string
+          email: string | null
+          foto_url: string | null
+          id: string
+          nivel_acesso_id: string | null
+          nome: string | null
+          telefone: string | null
+          updated_at: string
+        }
+        Insert: {
+          acesso_tipo?: Database["public"]["Enums"]["acesso_tipo"]
+          ativo?: boolean
+          bloqueado_em?: string | null
+          consentimento_lgpd_em?: string | null
+          correspondente_id?: string | null
+          created_at?: string
+          email?: string | null
+          foto_url?: string | null
+          id: string
+          nivel_acesso_id?: string | null
+          nome?: string | null
+          telefone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          acesso_tipo?: Database["public"]["Enums"]["acesso_tipo"]
+          ativo?: boolean
+          bloqueado_em?: string | null
+          consentimento_lgpd_em?: string | null
+          correspondente_id?: string | null
+          created_at?: string
+          email?: string | null
+          foto_url?: string | null
+          id?: string
+          nivel_acesso_id?: string | null
+          nome?: string | null
+          telefone?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_nivel_acesso_id_fkey"
+            columns: ["nivel_acesso_id"]
+            isOneToOne: false
+            referencedRelation: "access_levels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      correspondente_do_usuario: { Args: { _user_id: string }; Returns: string }
+      has_any_role: {
+        Args: {
+          _roles: Database["public"]["Enums"]["app_role"][]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_correspondente: { Args: { _user_id: string }; Returns: boolean }
+      is_interno: { Args: { _user_id: string }; Returns: boolean }
+      mask_pii_jsonb: { Args: { _data: Json }; Returns: Json }
+      pode_gerenciar_pessoas: { Args: { _user_id: string }; Returns: boolean }
+      usuario_escopo_dados: {
+        Args: { _modulo: string; _user_id: string }
+        Returns: Database["public"]["Enums"]["escopo_dados"]
+      }
+      usuario_tem_permissao: {
+        Args: { _acao: string; _modulo: string; _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      acesso_tipo: "sistema" | "portal_parceiro"
+      app_role:
+        | "admin"
+        | "correspondente"
+        | "gestor"
+        | "comercial"
+        | "analista"
+        | "imobiliaria"
+        | "corretor"
+        | "cliente"
+      escopo_dados: "todos" | "equipe" | "proprios"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +378,19 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      acesso_tipo: ["sistema", "portal_parceiro"],
+      app_role: [
+        "admin",
+        "correspondente",
+        "gestor",
+        "comercial",
+        "analista",
+        "imobiliaria",
+        "corretor",
+        "cliente",
+      ],
+      escopo_dados: ["todos", "equipe", "proprios"],
+    },
   },
 } as const
