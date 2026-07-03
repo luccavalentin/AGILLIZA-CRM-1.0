@@ -23,6 +23,9 @@ import {
   ArrowDownCircle,
   Inbox,
   Gauge,
+  Plug,
+  Settings2,
+  ShoppingCart,
 } from "lucide-react";
 
 /** Permissão exigida por um item (chave = `${modulo}:view`). */
