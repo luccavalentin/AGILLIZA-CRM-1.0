@@ -18,6 +18,7 @@ import { Route as AuthenticatedSemAcessoRouteImport } from './routes/_authentica
 import { Route as AuthenticatedRelatoriosRouteImport } from './routes/_authenticated/relatorios'
 import { Route as AuthenticatedDocumentosRouteImport } from './routes/_authenticated/documentos'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedRelatoriosIndexRouteImport } from './routes/_authenticated/relatorios.index'
 import { Route as AuthenticatedRelatoriosTarefasRouteImport } from './routes/_authenticated/relatorios.tarefas'
 import { Route as AuthenticatedRelatoriosSimulacoesRouteImport } from './routes/_authenticated/relatorios.simulacoes'
 import { Route as AuthenticatedRelatoriosPropostasRouteImport } from './routes/_authenticated/relatorios.propostas'
@@ -107,6 +108,12 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedRelatoriosIndexRoute =
+  AuthenticatedRelatoriosIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedRelatoriosRoute,
+  } as any)
 const AuthenticatedRelatoriosTarefasRoute =
   AuthenticatedRelatoriosTarefasRouteImport.update({
     id: '/tarefas',
@@ -412,6 +419,7 @@ export interface FileRoutesByFullPath {
   '/relatorios/propostas': typeof AuthenticatedRelatoriosPropostasRoute
   '/relatorios/simulacoes': typeof AuthenticatedRelatoriosSimulacoesRoute
   '/relatorios/tarefas': typeof AuthenticatedRelatoriosTarefasRoute
+  '/relatorios/': typeof AuthenticatedRelatoriosIndexRoute
   '/crm/clientes/$id': typeof AuthenticatedCrmClientesIdRoute
   '/crm/clientes/novo': typeof AuthenticatedCrmClientesNovoRoute
   '/operacional/demandas/$id': typeof AuthenticatedOperacionalDemandasIdRoute
@@ -432,7 +440,6 @@ export interface FileRoutesByTo {
   '/portal': typeof PortalRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/documentos': typeof AuthenticatedDocumentosRoute
-  '/relatorios': typeof AuthenticatedRelatoriosRouteWithChildren
   '/sem-acesso': typeof AuthenticatedSemAcessoRoute
   '/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
   '/admin/notificacoes': typeof AuthenticatedAdminNotificacoesRoute
@@ -466,6 +473,7 @@ export interface FileRoutesByTo {
   '/relatorios/propostas': typeof AuthenticatedRelatoriosPropostasRoute
   '/relatorios/simulacoes': typeof AuthenticatedRelatoriosSimulacoesRoute
   '/relatorios/tarefas': typeof AuthenticatedRelatoriosTarefasRoute
+  '/relatorios': typeof AuthenticatedRelatoriosIndexRoute
   '/crm/clientes/$id': typeof AuthenticatedCrmClientesIdRoute
   '/crm/clientes/novo': typeof AuthenticatedCrmClientesNovoRoute
   '/operacional/demandas/$id': typeof AuthenticatedOperacionalDemandasIdRoute
@@ -522,6 +530,7 @@ export interface FileRoutesById {
   '/_authenticated/relatorios/propostas': typeof AuthenticatedRelatoriosPropostasRoute
   '/_authenticated/relatorios/simulacoes': typeof AuthenticatedRelatoriosSimulacoesRoute
   '/_authenticated/relatorios/tarefas': typeof AuthenticatedRelatoriosTarefasRoute
+  '/_authenticated/relatorios/': typeof AuthenticatedRelatoriosIndexRoute
   '/_authenticated/crm/clientes_/$id': typeof AuthenticatedCrmClientesIdRoute
   '/_authenticated/crm/clientes_/novo': typeof AuthenticatedCrmClientesNovoRoute
   '/_authenticated/operacional/demandas_/$id': typeof AuthenticatedOperacionalDemandasIdRoute
@@ -578,6 +587,7 @@ export interface FileRouteTypes {
     | '/relatorios/propostas'
     | '/relatorios/simulacoes'
     | '/relatorios/tarefas'
+    | '/relatorios/'
     | '/crm/clientes/$id'
     | '/crm/clientes/novo'
     | '/operacional/demandas/$id'
@@ -598,7 +608,6 @@ export interface FileRouteTypes {
     | '/portal'
     | '/dashboard'
     | '/documentos'
-    | '/relatorios'
     | '/sem-acesso'
     | '/admin/auditoria'
     | '/admin/notificacoes'
@@ -632,6 +641,7 @@ export interface FileRouteTypes {
     | '/relatorios/propostas'
     | '/relatorios/simulacoes'
     | '/relatorios/tarefas'
+    | '/relatorios'
     | '/crm/clientes/$id'
     | '/crm/clientes/novo'
     | '/operacional/demandas/$id'
@@ -687,6 +697,7 @@ export interface FileRouteTypes {
     | '/_authenticated/relatorios/propostas'
     | '/_authenticated/relatorios/simulacoes'
     | '/_authenticated/relatorios/tarefas'
+    | '/_authenticated/relatorios/'
     | '/_authenticated/crm/clientes_/$id'
     | '/_authenticated/crm/clientes_/novo'
     | '/_authenticated/operacional/demandas_/$id'
@@ -775,6 +786,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/dashboard'
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/relatorios/': {
+      id: '/_authenticated/relatorios/'
+      path: '/'
+      fullPath: '/relatorios/'
+      preLoaderRoute: typeof AuthenticatedRelatoriosIndexRouteImport
+      parentRoute: typeof AuthenticatedRelatoriosRoute
     }
     '/_authenticated/relatorios/tarefas': {
       id: '/_authenticated/relatorios/tarefas'
@@ -1101,6 +1119,7 @@ interface AuthenticatedRelatoriosRouteChildren {
   AuthenticatedRelatoriosPropostasRoute: typeof AuthenticatedRelatoriosPropostasRoute
   AuthenticatedRelatoriosSimulacoesRoute: typeof AuthenticatedRelatoriosSimulacoesRoute
   AuthenticatedRelatoriosTarefasRoute: typeof AuthenticatedRelatoriosTarefasRoute
+  AuthenticatedRelatoriosIndexRoute: typeof AuthenticatedRelatoriosIndexRoute
 }
 
 const AuthenticatedRelatoriosRouteChildren: AuthenticatedRelatoriosRouteChildren =
@@ -1127,6 +1146,7 @@ const AuthenticatedRelatoriosRouteChildren: AuthenticatedRelatoriosRouteChildren
     AuthenticatedRelatoriosSimulacoesRoute:
       AuthenticatedRelatoriosSimulacoesRoute,
     AuthenticatedRelatoriosTarefasRoute: AuthenticatedRelatoriosTarefasRoute,
+    AuthenticatedRelatoriosIndexRoute: AuthenticatedRelatoriosIndexRoute,
   }
 
 const AuthenticatedRelatoriosRouteWithChildren =
