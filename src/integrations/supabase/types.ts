@@ -2206,6 +2206,7 @@ export type Database = {
         | "imobiliaria"
         | "corretor"
         | "cliente"
+        | "financeiro"
       cliente_estado_civil:
         | "solteiro"
         | "casado"
@@ -2403,6 +2404,7 @@ export const Constants = {
         "imobiliaria",
         "corretor",
         "cliente",
+        "financeiro",
       ],
       cliente_estado_civil: [
         "solteiro",
