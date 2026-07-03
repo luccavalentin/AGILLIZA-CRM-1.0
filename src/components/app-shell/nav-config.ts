@@ -2,6 +2,7 @@ import type { LucideIcon } from "lucide-react";
 import {
   LayoutDashboard,
   Users,
+  KanbanSquare,
   Handshake,
   Calculator,
   FileText,
@@ -52,6 +53,7 @@ export const navInterno: NavGroup[] = [
     label: "CRM",
     items: [
       { label: "Clientes", icon: Users, to: "/crm/clientes", perm: { modulo: "crm.clientes" } },
+      { label: "Painel", icon: KanbanSquare, to: "/crm/painel", perm: { modulo: "crm.clientes" } },
       { label: "Parceiros", icon: Handshake, to: "/crm/parceiros", perm: { modulo: "crm.parceiros" } },
     ],
   },
