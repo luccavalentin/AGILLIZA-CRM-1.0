@@ -1,0 +1,14 @@
+
+ALTER TABLE public.task_checklist_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.task_participants ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.task_comments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.task_attachments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.task_tags ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.task_tag_links ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.task_history ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.task_audit_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.demanda_participantes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.demanda_historico ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.demanda_mensagens ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.demanda_leituras ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.demanda_anexos ENABLE ROW LEVEL SECURITY;
