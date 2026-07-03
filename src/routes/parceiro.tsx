@@ -1,7 +1,10 @@
 import { useState } from "react";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Outlet, useNavigate } from "@tanstack/react-router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { AuthSplitLayout } from "@/components/auth/AuthSplitLayout";
+import { AppShell } from "@/components/app-shell/app-shell";
+import { navParceiro } from "@/components/app-shell/nav-config";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,8 +23,23 @@ export const Route = createFileRoute("/parceiro")({
 });
 
 function PortalParceiro() {
+  const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [carregando, setCarregando] = useState(false);
+
+  const sessaoQuery = useQuery({
+    queryKey: ["minha-sessao"],
+    queryFn: () => getMinhaSessao(),
+    retry: false,
+  });
+
+  const sessao = sessaoQuery.data;
+  const autorizado =
+    !!sessao?.profile?.ativo &&
+    !sessao.profile.bloqueado_em &&
+    sessao.profile.acesso_tipo === "portal_parceiro" &&
+    (ehPapelParceiro(sessao.roles) ||
+      sessao.profile.acesso_tipo === "portal_parceiro");
 
   async function entrar(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -38,26 +56,19 @@ function PortalParceiro() {
         toast.error(ERRO_CREDENCIAIS);
         return;
       }
-      const sessao = await getMinhaSessao();
-
-      if (!sessao.profile?.ativo || sessao.profile?.bloqueado_em) {
+      const s = await getMinhaSessao();
+      if (!s.profile?.ativo || s.profile?.bloqueado_em) {
         await supabase.auth.signOut();
         toast.error("Seu acesso está inativo.");
         return;
       }
-
-      const parceiro =
-        ehPapelParceiro(sessao.roles) ||
-        sessao.profile.acesso_tipo === "portal_parceiro";
-
-      if (!parceiro) {
+      if (s.profile.acesso_tipo !== "portal_parceiro") {
         await supabase.auth.signOut();
-        toast.error("Acesso restrito.");
+        toast.error("Este acesso não pertence ao Portal do Parceiro.");
         return;
       }
-      // Telas internas do parceiro entram nas Etapas 03–10.
-      toast.success("Acesso confirmado.");
-      navigate({ to: "/parceiro" });
+      await queryClient.invalidateQueries({ queryKey: ["minha-sessao"] });
+      toast.success("Bem-vindo(a) de volta.");
     } catch {
       toast.error(ERRO_CREDENCIAIS);
     } finally {
@@ -65,13 +76,36 @@ function PortalParceiro() {
     }
   }
 
-  async function esqueciSenha() {
-    const email = prompt("Informe seu e-mail para redefinir a senha:");
-    if (!email) return;
-    await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/parceiro`,
-    });
-    toast.success("Se o e-mail existir, você receberá as instruções.");
+  async function sair() {
+    await queryClient.cancelQueries();
+    queryClient.clear();
+    await supabase.auth.signOut();
+    navigate({ to: "/parceiro", replace: true });
+  }
+
+  if (sessaoQuery.isLoading) {
+    return (
+      <div className="flex min-h-[100dvh] items-center justify-center bg-muted/40">
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+
+  if (autorizado && sessao?.profile) {
+    return (
+      <AppShell
+        nav={navParceiro}
+        user={{
+          id: sessao.profile.id,
+          nome: sessao.profile.nome,
+          email: sessao.profile.email,
+        }}
+        showSearch={false}
+        onSignOut={sair}
+      >
+        <Outlet />
+      </AppShell>
+    );
   }
 
   return (
@@ -101,13 +135,6 @@ function PortalParceiro() {
             required
           />
         </div>
-        <button
-          type="button"
-          onClick={esqueciSenha}
-          className="text-sm text-primary hover:underline"
-        >
-          Esqueci minha senha
-        </button>
         <Button type="submit" className="w-full" disabled={carregando}>
           {carregando ? "Entrando…" : "Entrar"}
         </Button>

@@ -47,6 +47,48 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_api_integrations: {
+        Row: {
+          ativo: boolean
+          base_url: string | null
+          chave: string
+          correspondente_id: string
+          created_at: string
+          id: string
+          nome: string
+          secret_names: Json
+          status: string
+          ultimo_ping_em: string | null
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          base_url?: string | null
+          chave: string
+          correspondente_id: string
+          created_at?: string
+          id?: string
+          nome: string
+          secret_names?: Json
+          status?: string
+          ultimo_ping_em?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          base_url?: string | null
+          chave?: string
+          correspondente_id?: string
+          created_at?: string
+          id?: string
+          nome?: string
+          secret_names?: Json
+          status?: string
+          ultimo_ping_em?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       admin_audit_logs: {
         Row: {
           acao: string
@@ -88,6 +130,99 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      backup_jobs: {
+        Row: {
+          concluido_em: string | null
+          correspondente_id: string
+          created_at: string
+          criador_id: string | null
+          erro: string | null
+          id: string
+          iniciado_em: string
+          manifesto: Json
+          status: string
+          tamanho_bytes: number | null
+        }
+        Insert: {
+          concluido_em?: string | null
+          correspondente_id: string
+          created_at?: string
+          criador_id?: string | null
+          erro?: string | null
+          id?: string
+          iniciado_em?: string
+          manifesto?: Json
+          status?: string
+          tamanho_bytes?: number | null
+        }
+        Update: {
+          concluido_em?: string | null
+          correspondente_id?: string
+          created_at?: string
+          criador_id?: string | null
+          erro?: string | null
+          id?: string
+          iniciado_em?: string
+          manifesto?: Json
+          status?: string
+          tamanho_bytes?: number | null
+        }
+        Relationships: []
+      }
+      banco_credenciais: {
+        Row: {
+          ambiente: string
+          ativo: boolean
+          banco_id: string | null
+          base_url: string | null
+          client_id_secret_name: string | null
+          client_secret_name: string | null
+          correspondente_id: string
+          created_at: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          ambiente?: string
+          ativo?: boolean
+          banco_id?: string | null
+          base_url?: string | null
+          client_id_secret_name?: string | null
+          client_secret_name?: string | null
+          correspondente_id: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          ambiente?: string
+          ativo?: boolean
+          banco_id?: string | null
+          base_url?: string | null
+          client_id_secret_name?: string | null
+          client_secret_name?: string | null
+          correspondente_id?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "banco_credenciais_banco_id_fkey"
+            columns: ["banco_id"]
+            isOneToOne: false
+            referencedRelation: "homefin_bancos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "banco_credenciais_banco_id_fkey"
+            columns: ["banco_id"]
+            isOneToOne: false
+            referencedRelation: "vw_bancos_ativos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       cliente_app_acessos: {
         Row: {
@@ -490,6 +625,45 @@ export type Database = {
           {
             foreignKeyName: "cliente_interacoes_responsavel_id_fkey"
             columns: ["responsavel_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cliente_parceiros: {
+        Row: {
+          cliente_id: string
+          correspondente_id: string
+          created_at: string
+          id: string
+          parceiro_id: string
+        }
+        Insert: {
+          cliente_id: string
+          correspondente_id: string
+          created_at?: string
+          id?: string
+          parceiro_id: string
+        }
+        Update: {
+          cliente_id?: string
+          correspondente_id?: string
+          created_at?: string
+          id?: string
+          parceiro_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cliente_parceiros_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cliente_parceiros_parceiro_id_fkey"
+            columns: ["parceiro_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -1605,38 +1779,53 @@ export type Database = {
       homefin_bancos: {
         Row: {
           ativo: boolean
+          codigo_agencia_padrao: string | null
           codigo_banco: number
+          codigo_parceiro: string | null
+          contatos: Json
           created_at: string
           flag_padrao: boolean
           flag_simulacao: string
           id: string
           id_banco: number | null
+          logo_url: string | null
           nome_banco: string
           ordem: number
+          produtos: string[]
           updated_at: string
         }
         Insert: {
           ativo?: boolean
+          codigo_agencia_padrao?: string | null
           codigo_banco: number
+          codigo_parceiro?: string | null
+          contatos?: Json
           created_at?: string
           flag_padrao?: boolean
           flag_simulacao?: string
           id?: string
           id_banco?: number | null
+          logo_url?: string | null
           nome_banco: string
           ordem?: number
+          produtos?: string[]
           updated_at?: string
         }
         Update: {
           ativo?: boolean
+          codigo_agencia_padrao?: string | null
           codigo_banco?: number
+          codigo_parceiro?: string | null
+          contatos?: Json
           created_at?: string
           flag_padrao?: boolean
           flag_simulacao?: string
           id?: string
           id_banco?: number | null
+          logo_url?: string | null
           nome_banco?: string
           ordem?: number
+          produtos?: string[]
           updated_at?: string
         }
         Relationships: []
@@ -1701,6 +1890,39 @@ export type Database = {
           nome_operacao?: string
           produto_sistema?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      integracao_health_checks: {
+        Row: {
+          ator_id: string | null
+          correspondente_id: string
+          created_at: string
+          detalhe: string | null
+          id: string
+          integracao: string
+          latencia_ms: number | null
+          sucesso: boolean
+        }
+        Insert: {
+          ator_id?: string | null
+          correspondente_id: string
+          created_at?: string
+          detalhe?: string | null
+          id?: string
+          integracao: string
+          latencia_ms?: number | null
+          sucesso: boolean
+        }
+        Update: {
+          ator_id?: string | null
+          correspondente_id?: string
+          created_at?: string
+          detalhe?: string | null
+          id?: string
+          integracao?: string
+          latencia_ms?: number | null
+          sucesso?: boolean
         }
         Relationships: []
       }
@@ -1772,6 +1994,111 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      parametros_globais: {
+        Row: {
+          cnpj: string | null
+          cor_primaria: string | null
+          correspondente_id: string
+          created_at: string
+          email_dpo: string | null
+          endereco: string | null
+          id: string
+          logo_url: string | null
+          nome_empresa: string | null
+          politica_lgpd: string | null
+          politica_privacidade: string | null
+          telefone_sac: string | null
+          updated_at: string
+        }
+        Insert: {
+          cnpj?: string | null
+          cor_primaria?: string | null
+          correspondente_id: string
+          created_at?: string
+          email_dpo?: string | null
+          endereco?: string | null
+          id?: string
+          logo_url?: string | null
+          nome_empresa?: string | null
+          politica_lgpd?: string | null
+          politica_privacidade?: string | null
+          telefone_sac?: string | null
+          updated_at?: string
+        }
+        Update: {
+          cnpj?: string | null
+          cor_primaria?: string | null
+          correspondente_id?: string
+          created_at?: string
+          email_dpo?: string | null
+          endereco?: string | null
+          id?: string
+          logo_url?: string | null
+          nome_empresa?: string | null
+          politica_lgpd?: string | null
+          politica_privacidade?: string | null
+          telefone_sac?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      parceiro_detalhes: {
+        Row: {
+          correspondente_id: string
+          created_at: string
+          creci: string | null
+          id: string
+          imobiliaria_id: string | null
+          logo_url: string | null
+          percentual_comissao: number
+          profile_id: string
+          razao_social: string | null
+          tipo_pessoa: string
+          updated_at: string
+        }
+        Insert: {
+          correspondente_id: string
+          created_at?: string
+          creci?: string | null
+          id?: string
+          imobiliaria_id?: string | null
+          logo_url?: string | null
+          percentual_comissao?: number
+          profile_id: string
+          razao_social?: string | null
+          tipo_pessoa?: string
+          updated_at?: string
+        }
+        Update: {
+          correspondente_id?: string
+          created_at?: string
+          creci?: string | null
+          id?: string
+          imobiliaria_id?: string | null
+          logo_url?: string | null
+          percentual_comissao?: number
+          profile_id?: string
+          razao_social?: string | null
+          tipo_pessoa?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parceiro_detalhes_imobiliaria_id_fkey"
+            columns: ["imobiliaria_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parceiro_detalhes_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       permissions: {
         Row: {
@@ -1849,12 +2176,15 @@ export type Database = {
           consentimento_lgpd_em: string | null
           correspondente_id: string | null
           created_at: string
+          deleted_at: string | null
+          documento: string | null
           email: string | null
           foto_url: string | null
           id: string
           nivel_acesso_id: string | null
           nome: string | null
           telefone: string | null
+          ultima_atividade: string | null
           updated_at: string
         }
         Insert: {
@@ -1864,12 +2194,15 @@ export type Database = {
           consentimento_lgpd_em?: string | null
           correspondente_id?: string | null
           created_at?: string
+          deleted_at?: string | null
+          documento?: string | null
           email?: string | null
           foto_url?: string | null
           id: string
           nivel_acesso_id?: string | null
           nome?: string | null
           telefone?: string | null
+          ultima_atividade?: string | null
           updated_at?: string
         }
         Update: {
@@ -1879,12 +2212,15 @@ export type Database = {
           consentimento_lgpd_em?: string | null
           correspondente_id?: string | null
           created_at?: string
+          deleted_at?: string | null
+          documento?: string | null
           email?: string | null
           foto_url?: string | null
           id?: string
           nivel_acesso_id?: string | null
           nome?: string | null
           telefone?: string | null
+          ultima_atividade?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -2642,6 +2978,65 @@ export type Database = {
           },
         ]
       }
+      purchase_requests: {
+        Row: {
+          aprovado_em: string | null
+          aprovador_id: string | null
+          categoria: string | null
+          correspondente_id: string
+          created_at: string
+          descricao: string
+          id: string
+          numero: string | null
+          observacao: string | null
+          payable_id: string | null
+          solicitante_id: string
+          status: string
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          aprovado_em?: string | null
+          aprovador_id?: string | null
+          categoria?: string | null
+          correspondente_id: string
+          created_at?: string
+          descricao: string
+          id?: string
+          numero?: string | null
+          observacao?: string | null
+          payable_id?: string | null
+          solicitante_id: string
+          status?: string
+          updated_at?: string
+          valor?: number
+        }
+        Update: {
+          aprovado_em?: string | null
+          aprovador_id?: string | null
+          categoria?: string | null
+          correspondente_id?: string
+          created_at?: string
+          descricao?: string
+          id?: string
+          numero?: string | null
+          observacao?: string | null
+          payable_id?: string | null
+          solicitante_id?: string
+          status?: string
+          updated_at?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_requests_payable_id_fkey"
+            columns: ["payable_id"]
+            isOneToOne: false
+            referencedRelation: "financial_payables"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       report_audit_logs: {
         Row: {
           acao: string
@@ -2797,6 +3192,128 @@ export type Database = {
           visibilidade?: string
         }
         Relationships: []
+      }
+      scan_ia_auditoria: {
+        Row: {
+          acao: string
+          ator_id: string | null
+          correspondente_id: string
+          created_at: string
+          dados: Json
+          id: string
+          leitura_id: string | null
+        }
+        Insert: {
+          acao: string
+          ator_id?: string | null
+          correspondente_id: string
+          created_at?: string
+          dados?: Json
+          id?: string
+          leitura_id?: string | null
+        }
+        Update: {
+          acao?: string
+          ator_id?: string | null
+          correspondente_id?: string
+          created_at?: string
+          dados?: Json
+          id?: string
+          leitura_id?: string | null
+        }
+        Relationships: []
+      }
+      scan_ia_campos_extraidos: {
+        Row: {
+          campo: string
+          confianca: number
+          created_at: string
+          id: string
+          leitura_id: string
+          valor: string | null
+        }
+        Insert: {
+          campo: string
+          confianca?: number
+          created_at?: string
+          id?: string
+          leitura_id: string
+          valor?: string | null
+        }
+        Update: {
+          campo?: string
+          confianca?: number
+          created_at?: string
+          id?: string
+          leitura_id?: string
+          valor?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scan_ia_campos_extraidos_leitura_id_fkey"
+            columns: ["leitura_id"]
+            isOneToOne: false
+            referencedRelation: "scan_ia_leituras"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scan_ia_leituras: {
+        Row: {
+          arquivo_url: string
+          cliente_id: string | null
+          correspondente_id: string
+          created_at: string
+          criador_id: string | null
+          erro: string | null
+          id: string
+          proposta_id: string | null
+          status: string
+          tipo_documento: string | null
+          updated_at: string
+        }
+        Insert: {
+          arquivo_url: string
+          cliente_id?: string | null
+          correspondente_id: string
+          created_at?: string
+          criador_id?: string | null
+          erro?: string | null
+          id?: string
+          proposta_id?: string | null
+          status?: string
+          tipo_documento?: string | null
+          updated_at?: string
+        }
+        Update: {
+          arquivo_url?: string
+          cliente_id?: string | null
+          correspondente_id?: string
+          created_at?: string
+          criador_id?: string | null
+          erro?: string | null
+          id?: string
+          proposta_id?: string | null
+          status?: string
+          tipo_documento?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scan_ia_leituras_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scan_ia_leituras_proposta_id_fkey"
+            columns: ["proposta_id"]
+            isOneToOne: false
+            referencedRelation: "propostas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       simulacao_bancos: {
         Row: {
@@ -3723,6 +4240,7 @@ export type Database = {
         Args: { _modulo: string; _user_id: string }
         Returns: Database["public"]["Enums"]["escopo_dados"]
       }
+      usuario_pode_admin: { Args: { _user_id: string }; Returns: boolean }
       usuario_pode_financeiro: { Args: { _user_id: string }; Returns: boolean }
       usuario_tem_acesso_cliente: {
         Args: { _cliente_id: string; _user_id: string }
