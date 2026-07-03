@@ -191,7 +191,7 @@ export const criarSimulacao = createServerFn({ method: "POST" })
 
     if (data.modo === "completa" && !dd.email_verificado_em) {
       // permite quando cliente do CRM já verificado; senão exige OTP
-      // (validação de bloqueio ocorre no enviarHomeFin)
+      // (validação de bloqueio ocorre no enviarSimulacaoBanco)
     }
 
     // resolve/insere cliente
