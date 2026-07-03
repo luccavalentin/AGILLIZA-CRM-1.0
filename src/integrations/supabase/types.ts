@@ -89,6 +89,148 @@ export type Database = {
         }
         Relationships: []
       }
+      cliente_app_acessos: {
+        Row: {
+          cliente_id: string | null
+          created_at: string
+          documento_hash: string
+          id: string
+          ip: string | null
+          motivo_bloqueio: string | null
+          sucesso: boolean
+          tipo_acesso: string
+          user_agent: string | null
+        }
+        Insert: {
+          cliente_id?: string | null
+          created_at?: string
+          documento_hash: string
+          id?: string
+          ip?: string | null
+          motivo_bloqueio?: string | null
+          sucesso?: boolean
+          tipo_acesso?: string
+          user_agent?: string | null
+        }
+        Update: {
+          cliente_id?: string | null
+          created_at?: string
+          documento_hash?: string
+          id?: string
+          ip?: string | null
+          motivo_bloqueio?: string | null
+          sucesso?: boolean
+          tipo_acesso?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cliente_app_acessos_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cliente_app_mensagens: {
+        Row: {
+          anexo_url: string | null
+          cliente_id: string
+          correspondente_id: string | null
+          criada_em: string
+          id: string
+          lida_em: string | null
+          mensagem: string
+          proposta_id: string | null
+          remetente_id: string | null
+          remetente_tipo: string
+        }
+        Insert: {
+          anexo_url?: string | null
+          cliente_id: string
+          correspondente_id?: string | null
+          criada_em?: string
+          id?: string
+          lida_em?: string | null
+          mensagem: string
+          proposta_id?: string | null
+          remetente_id?: string | null
+          remetente_tipo: string
+        }
+        Update: {
+          anexo_url?: string | null
+          cliente_id?: string
+          correspondente_id?: string | null
+          criada_em?: string
+          id?: string
+          lida_em?: string | null
+          mensagem?: string
+          proposta_id?: string | null
+          remetente_id?: string | null
+          remetente_tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cliente_app_mensagens_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cliente_app_mensagens_proposta_id_fkey"
+            columns: ["proposta_id"]
+            isOneToOne: false
+            referencedRelation: "propostas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cliente_app_notificacoes: {
+        Row: {
+          cliente_id: string
+          corpo: string | null
+          correspondente_id: string | null
+          criada_em: string
+          id: string
+          lida: boolean
+          link: string | null
+          tipo: string
+          titulo: string
+        }
+        Insert: {
+          cliente_id: string
+          corpo?: string | null
+          correspondente_id?: string | null
+          criada_em?: string
+          id?: string
+          lida?: boolean
+          link?: string | null
+          tipo?: string
+          titulo: string
+        }
+        Update: {
+          cliente_id?: string
+          corpo?: string | null
+          correspondente_id?: string | null
+          criada_em?: string
+          id?: string
+          lida?: boolean
+          link?: string | null
+          tipo?: string
+          titulo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cliente_app_notificacoes_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cliente_documentos: {
         Row: {
           aprovado_em: string | null

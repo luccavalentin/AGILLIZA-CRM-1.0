@@ -1,0 +1,311 @@
+import { useEffect, useRef, useState } from "react";
+import { createFileRoute } from "@tanstack/react-router";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { Send, Upload, Paperclip } from "lucide-react";
+import { z } from "zod";
+import {
+  clienteObterVisaoGeral,
+  clienteMeusDocumentos,
+  clienteMinhasPropostas,
+  clienteListarMensagens,
+  clienteEnviarMensagem,
+  clienteMarcarLida,
+  clienteEnviarDocumentoPendente,
+} from "@/lib/portal/cliente.functions";
+import { TimelineCliente } from "@/components/cliente/timeline-cliente";
+import { ChipDocumento } from "@/components/cliente/chip-documento";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
+
+const searchSchema = z.object({
+  tab: z.enum(["processo", "documentos", "mensagens", "propostas"]).catch("processo"),
+});
+
+export const Route = createFileRoute("/cliente/acompanhar-minha-proposta")({
+  validateSearch: (s) => searchSchema.parse(s),
+  head: () => ({ meta: [{ title: "Acompanhar — Meu Financiamento" }] }),
+  component: Acompanhar,
+});
+
+function moeda(v: number | null) {
+  if (v == null) return "—";
+  return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+
+function Acompanhar() {
+  const { tab } = Route.useSearch();
+  const navigate = Route.useNavigate();
+
+  return (
+    <Tabs
+      value={tab}
+      onValueChange={(v) => navigate({ search: { tab: v as typeof tab } })}
+      className="w-full"
+    >
+      <TabsList className="grid w-full grid-cols-4">
+        <TabsTrigger value="processo">Processo</TabsTrigger>
+        <TabsTrigger value="documentos">Docs</TabsTrigger>
+        <TabsTrigger value="mensagens">Mensagens</TabsTrigger>
+        <TabsTrigger value="propostas">Propostas</TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="processo" className="mt-4">
+        <AbaProcesso />
+      </TabsContent>
+      <TabsContent value="documentos" className="mt-4">
+        <AbaDocumentos />
+      </TabsContent>
+      <TabsContent value="mensagens" className="mt-4">
+        <AbaMensagens />
+      </TabsContent>
+      <TabsContent value="propostas" className="mt-4">
+        <AbaPropostas />
+      </TabsContent>
+    </Tabs>
+  );
+}
+
+function AbaProcesso() {
+  const { data, isLoading } = useQuery({
+    queryKey: ["cliente", "visao-geral"],
+    queryFn: () => clienteObterVisaoGeral(),
+  });
+  if (isLoading || !data) return <Skeleton className="h-96 w-full rounded-lg" />;
+  return (
+    <Card className="border-border">
+      <CardContent className="pt-6">
+        <TimelineCliente etapas={data.etapas} />
+      </CardContent>
+    </Card>
+  );
+}
+
+function AbaDocumentos() {
+  const qc = useQueryClient();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [tipoAlvo, setTipoAlvo] = useState<string>("Documento");
+  const { data, isLoading } = useQuery({
+    queryKey: ["cliente", "documentos"],
+    queryFn: () => clienteMeusDocumentos(),
+  });
+
+  const upload = useMutation({
+    mutationFn: async (file: File) => {
+      const buf = await file.arrayBuffer();
+      let bin = "";
+      const bytes = new Uint8Array(buf);
+      for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+      const base64 = btoa(bin);
+      return clienteEnviarDocumentoPendente({
+        data: {
+          tipo: tipoAlvo,
+          nome_arquivo: file.name,
+          mime_type: file.type || "application/octet-stream",
+          conteudo_base64: base64,
+        },
+      });
+    },
+    onSuccess: () => {
+      toast.success("Documento enviado! Vamos analisar em breve.");
+      qc.invalidateQueries({ queryKey: ["cliente", "documentos"] });
+      qc.invalidateQueries({ queryKey: ["cliente", "visao-geral"] });
+    },
+    onError: () => toast.error("Falha ao enviar. Verifique o arquivo e tente novamente."),
+  });
+
+  function escolher(tipo: string) {
+    setTipoAlvo(tipo);
+    inputRef.current?.click();
+  }
+
+  if (isLoading || !data) return <Skeleton className="h-64 w-full rounded-lg" />;
+
+  return (
+    <div className="space-y-3">
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*,application/pdf"
+        capture="environment"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) upload.mutate(f);
+          e.target.value = "";
+        }}
+      />
+      {data.length === 0 ? (
+        <Card className="border-border">
+          <CardContent className="pt-6 text-center text-sm text-muted-foreground">
+            Nenhum documento solicitado no momento.
+          </CardContent>
+        </Card>
+      ) : (
+        data.map((d) => (
+          <Card key={d.id} className="border-border">
+            <CardContent className="space-y-2 pt-4">
+              <div className="flex items-center justify-between gap-2">
+                <span className="truncate font-medium">{d.tipo_documento ?? d.nome_arquivo}</span>
+                <ChipDocumento status={d.status} />
+              </div>
+              {(d.status === "pendente" || d.status === "reprovado") && (
+                <Button
+                  size="lg"
+                  className="w-full"
+                  disabled={upload.isPending}
+                  onClick={() => escolher(d.tipo_documento ?? "Documento")}
+                >
+                  <Upload className="mr-2 h-5 w-5" />
+                  {d.status === "reprovado" ? "Reenviar" : "Enviar / Substituir"}
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        ))
+      )}
+      <Button
+        variant="outline"
+        size="lg"
+        className="w-full"
+        disabled={upload.isPending}
+        onClick={() => escolher("Documento adicional")}
+      >
+        <Paperclip className="mr-2 h-5 w-5" /> Enviar outro documento
+      </Button>
+    </div>
+  );
+}
+
+function AbaMensagens() {
+  const qc = useQueryClient();
+  const [texto, setTexto] = useState("");
+  const fimRef = useRef<HTMLDivElement>(null);
+  const { data: mensagens } = useQuery({
+    queryKey: ["cliente", "mensagens"],
+    queryFn: () => clienteListarMensagens(),
+    refetchInterval: 4000,
+  });
+
+  const enviar = useMutation({
+    mutationFn: (mensagem: string) => clienteEnviarMensagem({ data: { mensagem } }),
+    onSuccess: () => {
+      setTexto("");
+      qc.invalidateQueries({ queryKey: ["cliente", "mensagens"] });
+    },
+    onError: () => toast.error("Falha de conexão. Tente novamente."),
+  });
+
+  // Marca as mensagens do time como lidas.
+  useEffect(() => {
+    const naoLidas = (mensagens ?? [])
+      .filter((m) => m.remetente_tipo === "time" && !m.lida_em)
+      .map((m) => m.id);
+    if (naoLidas.length > 0) {
+      clienteMarcarLida({ data: { mensagem_ids: naoLidas } }).then(() => {
+        qc.invalidateQueries({ queryKey: ["cliente", "notificacoes"] });
+      });
+    }
+  }, [mensagens, qc]);
+
+  useEffect(() => {
+    fimRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [mensagens]);
+
+  return (
+    <div className="flex flex-col">
+      <div className="min-h-[45dvh] space-y-3">
+        {(mensagens ?? []).length === 0 ? (
+          <p className="py-10 text-center text-sm text-muted-foreground">
+            Envie uma mensagem para falar com o time.
+          </p>
+        ) : (
+          (mensagens ?? []).map((m) => {
+            const doCliente = m.remetente_tipo === "cliente";
+            return (
+              <div
+                key={m.id}
+                className={cn("flex flex-col", doCliente ? "items-end" : "items-start")}
+              >
+                <div
+                  className={cn(
+                    "max-w-[80%] rounded-2xl px-3 py-2 text-sm",
+                    doCliente
+                      ? "rounded-br-sm bg-accent text-accent-foreground"
+                      : "rounded-bl-sm bg-muted text-foreground",
+                  )}
+                >
+                  {m.mensagem}
+                </div>
+                <span className="mt-0.5 text-xs text-muted-foreground">
+                  {new Date(m.criada_em).toLocaleString("pt-BR", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </span>
+              </div>
+            );
+          })
+        )}
+        <div ref={fimRef} />
+      </div>
+
+      <form
+        className="sticky bottom-0 mt-3 flex items-end gap-2 bg-background pt-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+          const v = texto.trim();
+          if (v) enviar.mutate(v);
+        }}
+      >
+        <Textarea
+          value={texto}
+          onChange={(e) => setTexto(e.target.value)}
+          placeholder="Escreva sua mensagem…"
+          rows={1}
+          className="min-h-11 resize-none"
+        />
+        <Button type="submit" size="lg" disabled={enviar.isPending || !texto.trim()}>
+          <Send className="h-5 w-5" />
+        </Button>
+      </form>
+    </div>
+  );
+}
+
+function AbaPropostas() {
+  const { data, isLoading } = useQuery({
+    queryKey: ["cliente", "propostas"],
+    queryFn: () => clienteMinhasPropostas(),
+  });
+  if (isLoading || !data) return <Skeleton className="h-40 w-full rounded-lg" />;
+  if (data.length === 0)
+    return (
+      <Card className="border-border">
+        <CardContent className="pt-6 text-center text-sm text-muted-foreground">
+          Nenhuma proposta ativa no momento.
+        </CardContent>
+      </Card>
+    );
+  return (
+    <div className="space-y-3">
+      {data.map((p) => (
+        <Card key={p.id} className="border-border">
+          <CardContent className="space-y-1 pt-4">
+            <p className="font-semibold">{p.banco ?? "Banco"}</p>
+            <p className="text-sm text-muted-foreground">
+              {p.produto ?? "Financiamento"} · {moeda(p.valor)}
+            </p>
+            <p className="text-sm font-medium text-primary">{p.status_amigavel}</p>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
