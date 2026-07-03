@@ -590,6 +590,573 @@ export type Database = {
           },
         ]
       }
+      comissao_regras: {
+        Row: {
+          ativo: boolean
+          banco_codigo: string | null
+          banco_nome: string | null
+          correspondente_id: string
+          created_at: string
+          faixa_max: number | null
+          faixa_min: number
+          id: string
+          percentual_interno: number
+          percentual_parceiro: number
+          produto: string | null
+          tipo: Database["public"]["Enums"]["comissao_regra_tipo"]
+          updated_at: string
+          valor: number
+          vigencia_fim: string | null
+          vigencia_inicio: string | null
+        }
+        Insert: {
+          ativo?: boolean
+          banco_codigo?: string | null
+          banco_nome?: string | null
+          correspondente_id: string
+          created_at?: string
+          faixa_max?: number | null
+          faixa_min?: number
+          id?: string
+          percentual_interno?: number
+          percentual_parceiro?: number
+          produto?: string | null
+          tipo?: Database["public"]["Enums"]["comissao_regra_tipo"]
+          updated_at?: string
+          valor?: number
+          vigencia_fim?: string | null
+          vigencia_inicio?: string | null
+        }
+        Update: {
+          ativo?: boolean
+          banco_codigo?: string | null
+          banco_nome?: string | null
+          correspondente_id?: string
+          created_at?: string
+          faixa_max?: number | null
+          faixa_min?: number
+          id?: string
+          percentual_interno?: number
+          percentual_parceiro?: number
+          produto?: string | null
+          tipo?: Database["public"]["Enums"]["comissao_regra_tipo"]
+          updated_at?: string
+          valor?: number
+          vigencia_fim?: string | null
+          vigencia_inicio?: string | null
+        }
+        Relationships: []
+      }
+      comissoes: {
+        Row: {
+          banco_codigo: string | null
+          banco_nome: string | null
+          correspondente_id: string
+          created_at: string
+          id: string
+          parceiro_id: string | null
+          payable_id: string | null
+          percentual: number
+          produto: string | null
+          proposta_id: string | null
+          receivable_id: string | null
+          regra_id: string | null
+          split_interno: number
+          split_parceiro: number
+          status: Database["public"]["Enums"]["comissao_status"]
+          updated_at: string
+          usuario_responsavel_id: string | null
+          valor_base: number
+          valor_bruto: number
+        }
+        Insert: {
+          banco_codigo?: string | null
+          banco_nome?: string | null
+          correspondente_id: string
+          created_at?: string
+          id?: string
+          parceiro_id?: string | null
+          payable_id?: string | null
+          percentual?: number
+          produto?: string | null
+          proposta_id?: string | null
+          receivable_id?: string | null
+          regra_id?: string | null
+          split_interno?: number
+          split_parceiro?: number
+          status?: Database["public"]["Enums"]["comissao_status"]
+          updated_at?: string
+          usuario_responsavel_id?: string | null
+          valor_base?: number
+          valor_bruto?: number
+        }
+        Update: {
+          banco_codigo?: string | null
+          banco_nome?: string | null
+          correspondente_id?: string
+          created_at?: string
+          id?: string
+          parceiro_id?: string | null
+          payable_id?: string | null
+          percentual?: number
+          produto?: string | null
+          proposta_id?: string | null
+          receivable_id?: string | null
+          regra_id?: string | null
+          split_interno?: number
+          split_parceiro?: number
+          status?: Database["public"]["Enums"]["comissao_status"]
+          updated_at?: string
+          usuario_responsavel_id?: string | null
+          valor_base?: number
+          valor_bruto?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comissoes_proposta_id_fkey"
+            columns: ["proposta_id"]
+            isOneToOne: false
+            referencedRelation: "propostas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comissoes_regra_id_fkey"
+            columns: ["regra_id"]
+            isOneToOne: false
+            referencedRelation: "comissao_regras"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      financial_audit_logs: {
+        Row: {
+          acao: string
+          ator_id: string | null
+          correspondente_id: string
+          created_at: string
+          dados: Json | null
+          entidade: string
+          entidade_id: string | null
+          id: string
+        }
+        Insert: {
+          acao: string
+          ator_id?: string | null
+          correspondente_id: string
+          created_at?: string
+          dados?: Json | null
+          entidade: string
+          entidade_id?: string | null
+          id?: string
+        }
+        Update: {
+          acao?: string
+          ator_id?: string | null
+          correspondente_id?: string
+          created_at?: string
+          dados?: Json | null
+          entidade?: string
+          entidade_id?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
+      financial_categories: {
+        Row: {
+          ativo: boolean
+          correspondente_id: string
+          created_at: string
+          id: string
+          nome: string
+          tipo: Database["public"]["Enums"]["financial_categoria_tipo"]
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          correspondente_id: string
+          created_at?: string
+          id?: string
+          nome: string
+          tipo?: Database["public"]["Enums"]["financial_categoria_tipo"]
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          correspondente_id?: string
+          created_at?: string
+          id?: string
+          nome?: string
+          tipo?: Database["public"]["Enums"]["financial_categoria_tipo"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      financial_cost_centers: {
+        Row: {
+          ativo: boolean
+          correspondente_id: string
+          created_at: string
+          id: string
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          correspondente_id: string
+          created_at?: string
+          id?: string
+          nome: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          correspondente_id?: string
+          created_at?: string
+          id?: string
+          nome?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      financial_payable_history: {
+        Row: {
+          ator_id: string | null
+          correspondente_id: string
+          created_at: string
+          descricao: string | null
+          entidade: string
+          entidade_id: string
+          evento: string
+          id: string
+          valor: number | null
+        }
+        Insert: {
+          ator_id?: string | null
+          correspondente_id: string
+          created_at?: string
+          descricao?: string | null
+          entidade?: string
+          entidade_id: string
+          evento: string
+          id?: string
+          valor?: number | null
+        }
+        Update: {
+          ator_id?: string | null
+          correspondente_id?: string
+          created_at?: string
+          descricao?: string | null
+          entidade?: string
+          entidade_id?: string
+          evento?: string
+          id?: string
+          valor?: number | null
+        }
+        Relationships: []
+      }
+      financial_payables: {
+        Row: {
+          aprovado_em: string | null
+          aprovado_por: string | null
+          categoria_id: string | null
+          comissao_id: string | null
+          comprovante_path: string | null
+          correspondente_id: string
+          cost_center_id: string | null
+          created_at: string
+          criador_id: string | null
+          data_pagamento: string | null
+          descricao: string
+          estornada: boolean
+          estorno_de: string | null
+          estorno_motivo: string | null
+          fornecedor: string | null
+          id: string
+          numero: string | null
+          parceiro_id: string | null
+          payment_method_id: string | null
+          recorrencia: Database["public"]["Enums"]["financial_recorrencia"]
+          recorrencia_ate: string | null
+          recorrencia_origem_id: string | null
+          status: Database["public"]["Enums"]["financial_status"]
+          updated_at: string
+          valor: number
+          valor_pago: number
+          vencimento: string
+        }
+        Insert: {
+          aprovado_em?: string | null
+          aprovado_por?: string | null
+          categoria_id?: string | null
+          comissao_id?: string | null
+          comprovante_path?: string | null
+          correspondente_id: string
+          cost_center_id?: string | null
+          created_at?: string
+          criador_id?: string | null
+          data_pagamento?: string | null
+          descricao: string
+          estornada?: boolean
+          estorno_de?: string | null
+          estorno_motivo?: string | null
+          fornecedor?: string | null
+          id?: string
+          numero?: string | null
+          parceiro_id?: string | null
+          payment_method_id?: string | null
+          recorrencia?: Database["public"]["Enums"]["financial_recorrencia"]
+          recorrencia_ate?: string | null
+          recorrencia_origem_id?: string | null
+          status?: Database["public"]["Enums"]["financial_status"]
+          updated_at?: string
+          valor?: number
+          valor_pago?: number
+          vencimento: string
+        }
+        Update: {
+          aprovado_em?: string | null
+          aprovado_por?: string | null
+          categoria_id?: string | null
+          comissao_id?: string | null
+          comprovante_path?: string | null
+          correspondente_id?: string
+          cost_center_id?: string | null
+          created_at?: string
+          criador_id?: string | null
+          data_pagamento?: string | null
+          descricao?: string
+          estornada?: boolean
+          estorno_de?: string | null
+          estorno_motivo?: string | null
+          fornecedor?: string | null
+          id?: string
+          numero?: string | null
+          parceiro_id?: string | null
+          payment_method_id?: string | null
+          recorrencia?: Database["public"]["Enums"]["financial_recorrencia"]
+          recorrencia_ate?: string | null
+          recorrencia_origem_id?: string | null
+          status?: Database["public"]["Enums"]["financial_status"]
+          updated_at?: string
+          valor?: number
+          valor_pago?: number
+          vencimento?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_payables_categoria_id_fkey"
+            columns: ["categoria_id"]
+            isOneToOne: false
+            referencedRelation: "financial_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_payables_cost_center_id_fkey"
+            columns: ["cost_center_id"]
+            isOneToOne: false
+            referencedRelation: "financial_cost_centers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_payables_payment_method_id_fkey"
+            columns: ["payment_method_id"]
+            isOneToOne: false
+            referencedRelation: "financial_payment_methods"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      financial_payment_methods: {
+        Row: {
+          ativo: boolean
+          correspondente_id: string
+          created_at: string
+          id: string
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          correspondente_id: string
+          created_at?: string
+          id?: string
+          nome: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          correspondente_id?: string
+          created_at?: string
+          id?: string
+          nome?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      financial_receivables: {
+        Row: {
+          aprovado_em: string | null
+          aprovado_por: string | null
+          banco_codigo: string | null
+          banco_nome: string | null
+          categoria_id: string | null
+          comissao_id: string | null
+          comprovante_path: string | null
+          correspondente_id: string
+          cost_center_id: string | null
+          created_at: string
+          criador_id: string | null
+          data_pagamento: string | null
+          descricao: string
+          estornada: boolean
+          estorno_de: string | null
+          estorno_motivo: string | null
+          id: string
+          numero: string | null
+          pagador: string | null
+          payment_method_id: string | null
+          proposta_id: string | null
+          recorrencia: Database["public"]["Enums"]["financial_recorrencia"]
+          recorrencia_ate: string | null
+          recorrencia_origem_id: string | null
+          status: Database["public"]["Enums"]["financial_status"]
+          updated_at: string
+          valor: number
+          valor_pago: number
+          vencimento: string
+        }
+        Insert: {
+          aprovado_em?: string | null
+          aprovado_por?: string | null
+          banco_codigo?: string | null
+          banco_nome?: string | null
+          categoria_id?: string | null
+          comissao_id?: string | null
+          comprovante_path?: string | null
+          correspondente_id: string
+          cost_center_id?: string | null
+          created_at?: string
+          criador_id?: string | null
+          data_pagamento?: string | null
+          descricao: string
+          estornada?: boolean
+          estorno_de?: string | null
+          estorno_motivo?: string | null
+          id?: string
+          numero?: string | null
+          pagador?: string | null
+          payment_method_id?: string | null
+          proposta_id?: string | null
+          recorrencia?: Database["public"]["Enums"]["financial_recorrencia"]
+          recorrencia_ate?: string | null
+          recorrencia_origem_id?: string | null
+          status?: Database["public"]["Enums"]["financial_status"]
+          updated_at?: string
+          valor?: number
+          valor_pago?: number
+          vencimento: string
+        }
+        Update: {
+          aprovado_em?: string | null
+          aprovado_por?: string | null
+          banco_codigo?: string | null
+          banco_nome?: string | null
+          categoria_id?: string | null
+          comissao_id?: string | null
+          comprovante_path?: string | null
+          correspondente_id?: string
+          cost_center_id?: string | null
+          created_at?: string
+          criador_id?: string | null
+          data_pagamento?: string | null
+          descricao?: string
+          estornada?: boolean
+          estorno_de?: string | null
+          estorno_motivo?: string | null
+          id?: string
+          numero?: string | null
+          pagador?: string | null
+          payment_method_id?: string | null
+          proposta_id?: string | null
+          recorrencia?: Database["public"]["Enums"]["financial_recorrencia"]
+          recorrencia_ate?: string | null
+          recorrencia_origem_id?: string | null
+          status?: Database["public"]["Enums"]["financial_status"]
+          updated_at?: string
+          valor?: number
+          valor_pago?: number
+          vencimento?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_receivables_categoria_id_fkey"
+            columns: ["categoria_id"]
+            isOneToOne: false
+            referencedRelation: "financial_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_receivables_cost_center_id_fkey"
+            columns: ["cost_center_id"]
+            isOneToOne: false
+            referencedRelation: "financial_cost_centers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_receivables_payment_method_id_fkey"
+            columns: ["payment_method_id"]
+            isOneToOne: false
+            referencedRelation: "financial_payment_methods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_receivables_proposta_id_fkey"
+            columns: ["proposta_id"]
+            isOneToOne: false
+            referencedRelation: "propostas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fluxo_caixa: {
+        Row: {
+          correspondente_id: string
+          created_at: string
+          data: string
+          descricao: string | null
+          id: string
+          origem: string | null
+          realizado: boolean
+          ref_id: string | null
+          tipo: Database["public"]["Enums"]["fluxo_tipo"]
+          valor: number
+        }
+        Insert: {
+          correspondente_id: string
+          created_at?: string
+          data: string
+          descricao?: string | null
+          id?: string
+          origem?: string | null
+          realizado?: boolean
+          ref_id?: string | null
+          tipo: Database["public"]["Enums"]["fluxo_tipo"]
+          valor?: number
+        }
+        Update: {
+          correspondente_id?: string
+          created_at?: string
+          data?: string
+          descricao?: string | null
+          id?: string
+          origem?: string | null
+          realizado?: boolean
+          ref_id?: string | null
+          tipo?: Database["public"]["Enums"]["fluxo_tipo"]
+          valor?: number
+        }
+        Relationships: []
+      }
       homefin_auth_cache: {
         Row: {
           created_at: string
@@ -2146,6 +2713,10 @@ export type Database = {
       }
     }
     Functions: {
+      calcular_comissao_proposta: {
+        Args: { _prop_id: string }
+        Returns: string
+      }
       cliente_pipeline_avancar_para: {
         Args: {
           _acao?: string
@@ -2178,6 +2749,7 @@ export type Database = {
         Args: { _modulo: string; _user_id: string }
         Returns: Database["public"]["Enums"]["escopo_dados"]
       }
+      usuario_pode_financeiro: { Args: { _user_id: string }; Returns: boolean }
       usuario_tem_acesso_cliente: {
         Args: { _cliente_id: string; _user_id: string }
         Returns: boolean
@@ -2206,6 +2778,7 @@ export type Database = {
         | "imobiliaria"
         | "corretor"
         | "cliente"
+        | "financeiro"
       cliente_estado_civil:
         | "solteiro"
         | "casado"
@@ -2213,6 +2786,8 @@ export type Database = {
         | "divorciado"
         | "viuvo"
       cliente_origem: "direto" | "parceiro" | "indicacao" | "importacao"
+      comissao_regra_tipo: "percentual" | "fixo"
+      comissao_status: "a_receber" | "recebida" | "paga_parceiro" | "encerrada"
       doc_categoria: "comprador" | "conjuge" | "vendedor" | "imovel" | "outros"
       doc_status:
         | "pendente"
@@ -2221,6 +2796,16 @@ export type Database = {
         | "reprovado"
         | "expirado"
       escopo_dados: "todos" | "equipe" | "proprios"
+      financial_categoria_tipo: "despesa" | "receita"
+      financial_recorrencia: "nenhuma" | "mensal" | "anual"
+      financial_status:
+        | "aberta"
+        | "parcial"
+        | "paga"
+        | "atrasada"
+        | "cancelada"
+        | "estornada"
+      fluxo_tipo: "entrada" | "saida"
       interacao_canal:
         | "ligacao"
         | "whatsapp"
@@ -2403,6 +2988,7 @@ export const Constants = {
         "imobiliaria",
         "corretor",
         "cliente",
+        "financeiro",
       ],
       cliente_estado_civil: [
         "solteiro",
@@ -2412,9 +2998,22 @@ export const Constants = {
         "viuvo",
       ],
       cliente_origem: ["direto", "parceiro", "indicacao", "importacao"],
+      comissao_regra_tipo: ["percentual", "fixo"],
+      comissao_status: ["a_receber", "recebida", "paga_parceiro", "encerrada"],
       doc_categoria: ["comprador", "conjuge", "vendedor", "imovel", "outros"],
       doc_status: ["pendente", "recebido", "aprovado", "reprovado", "expirado"],
       escopo_dados: ["todos", "equipe", "proprios"],
+      financial_categoria_tipo: ["despesa", "receita"],
+      financial_recorrencia: ["nenhuma", "mensal", "anual"],
+      financial_status: [
+        "aberta",
+        "parcial",
+        "paga",
+        "atrasada",
+        "cancelada",
+        "estornada",
+      ],
+      fluxo_tipo: ["entrada", "saida"],
       interacao_canal: [
         "ligacao",
         "whatsapp",
