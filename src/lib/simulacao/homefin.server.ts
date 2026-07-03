@@ -183,7 +183,7 @@ export async function chamarIntegracao<T = unknown>(
     metodo: method,
     status_http: resp.status,
     request: body,
-    response: json as object,
+    response: json as any,
     erro: resp.ok ? undefined : `HTTP ${resp.status}`,
   });
 
