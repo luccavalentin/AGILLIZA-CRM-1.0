@@ -43,9 +43,11 @@ import {
   type ResultadoCriarPessoa,
   type CriarPessoaInput,
 } from "@/lib/admin/pessoas.functions";
+import { assertModuloPermitido } from "@/lib/route-guards";
 
 export const Route = createFileRoute("/_authenticated/admin/pessoas")({
   head: () => ({ meta: [{ title: "Pessoas do meu ecossistema — Agilliza" }] }),
+  beforeLoad: () => assertModuloPermitido("admin.pessoas"),
   component: PessoasPage,
 });
 
