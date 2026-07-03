@@ -36,8 +36,6 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
-import { Logo } from "@/components/brand/Logo";
-import { supabase } from "@/integrations/supabase/client";
 import { getMinhaSessao } from "@/lib/session.functions";
 import {
   listarPessoas,
