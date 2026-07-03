@@ -65,6 +65,7 @@ import { Route as AuthenticatedContaPerfilRouteImport } from './routes/_authenti
 import { Route as AuthenticatedAdminRegrasModulosRouteImport } from './routes/_authenticated/admin.regras-modulos'
 import { Route as AuthenticatedAdminPessoasRouteImport } from './routes/_authenticated/admin.pessoas'
 import { Route as AuthenticatedAdminNotificacoesRouteImport } from './routes/_authenticated/admin.notificacoes'
+import { Route as AuthenticatedAdminIntegracoesRouteImport } from './routes/_authenticated/admin.integracoes'
 import { Route as AuthenticatedAdminAuditoriaRouteImport } from './routes/_authenticated/admin.auditoria'
 import { Route as ApiPublicHomefinCallbackRouteImport } from './routes/api/public/homefin.callback'
 import { Route as AuthenticatedOperacionalTarefasKanbanRouteImport } from './routes/_authenticated/operacional.tarefas_.kanban'
@@ -394,6 +395,12 @@ const AuthenticatedAdminNotificacoesRoute =
     path: '/admin/notificacoes',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAdminIntegracoesRoute =
+  AuthenticatedAdminIntegracoesRouteImport.update({
+    id: '/admin/integracoes',
+    path: '/admin/integracoes',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAdminAuditoriaRoute =
   AuthenticatedAdminAuditoriaRouteImport.update({
     id: '/admin/auditoria',
@@ -494,6 +501,7 @@ export interface FileRoutesByFullPath {
   '/parceiro/simulacoes': typeof ParceiroSimulacoesRoute
   '/parceiro/': typeof ParceiroIndexRoute
   '/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
+  '/admin/integracoes': typeof AuthenticatedAdminIntegracoesRoute
   '/admin/notificacoes': typeof AuthenticatedAdminNotificacoesRoute
   '/admin/pessoas': typeof AuthenticatedAdminPessoasRoute
   '/admin/regras-modulos': typeof AuthenticatedAdminRegrasModulosRoute
@@ -562,6 +570,7 @@ export interface FileRoutesByTo {
   '/parceiro/simulacoes': typeof ParceiroSimulacoesRoute
   '/parceiro': typeof ParceiroIndexRoute
   '/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
+  '/admin/integracoes': typeof AuthenticatedAdminIntegracoesRoute
   '/admin/notificacoes': typeof AuthenticatedAdminNotificacoesRoute
   '/admin/pessoas': typeof AuthenticatedAdminPessoasRoute
   '/admin/regras-modulos': typeof AuthenticatedAdminRegrasModulosRoute
@@ -634,6 +643,7 @@ export interface FileRoutesById {
   '/parceiro/simulacoes': typeof ParceiroSimulacoesRoute
   '/parceiro/': typeof ParceiroIndexRoute
   '/_authenticated/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
+  '/_authenticated/admin/integracoes': typeof AuthenticatedAdminIntegracoesRoute
   '/_authenticated/admin/notificacoes': typeof AuthenticatedAdminNotificacoesRoute
   '/_authenticated/admin/pessoas': typeof AuthenticatedAdminPessoasRoute
   '/_authenticated/admin/regras-modulos': typeof AuthenticatedAdminRegrasModulosRoute
@@ -706,6 +716,7 @@ export interface FileRouteTypes {
     | '/parceiro/simulacoes'
     | '/parceiro/'
     | '/admin/auditoria'
+    | '/admin/integracoes'
     | '/admin/notificacoes'
     | '/admin/pessoas'
     | '/admin/regras-modulos'
@@ -774,6 +785,7 @@ export interface FileRouteTypes {
     | '/parceiro/simulacoes'
     | '/parceiro'
     | '/admin/auditoria'
+    | '/admin/integracoes'
     | '/admin/notificacoes'
     | '/admin/pessoas'
     | '/admin/regras-modulos'
@@ -845,6 +857,7 @@ export interface FileRouteTypes {
     | '/parceiro/simulacoes'
     | '/parceiro/'
     | '/_authenticated/admin/auditoria'
+    | '/_authenticated/admin/integracoes'
     | '/_authenticated/admin/notificacoes'
     | '/_authenticated/admin/pessoas'
     | '/_authenticated/admin/regras-modulos'
@@ -1300,6 +1313,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminNotificacoesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin/integracoes': {
+      id: '/_authenticated/admin/integracoes'
+      path: '/admin/integracoes'
+      fullPath: '/admin/integracoes'
+      preLoaderRoute: typeof AuthenticatedAdminIntegracoesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/admin/auditoria': {
       id: '/_authenticated/admin/auditoria'
       path: '/admin/auditoria'
@@ -1455,6 +1475,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedRelatoriosRoute: typeof AuthenticatedRelatoriosRouteWithChildren
   AuthenticatedSemAcessoRoute: typeof AuthenticatedSemAcessoRoute
   AuthenticatedAdminAuditoriaRoute: typeof AuthenticatedAdminAuditoriaRoute
+  AuthenticatedAdminIntegracoesRoute: typeof AuthenticatedAdminIntegracoesRoute
   AuthenticatedAdminNotificacoesRoute: typeof AuthenticatedAdminNotificacoesRoute
   AuthenticatedAdminPessoasRoute: typeof AuthenticatedAdminPessoasRoute
   AuthenticatedAdminRegrasModulosRoute: typeof AuthenticatedAdminRegrasModulosRoute
@@ -1493,6 +1514,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedRelatoriosRoute: AuthenticatedRelatoriosRouteWithChildren,
   AuthenticatedSemAcessoRoute: AuthenticatedSemAcessoRoute,
   AuthenticatedAdminAuditoriaRoute: AuthenticatedAdminAuditoriaRoute,
+  AuthenticatedAdminIntegracoesRoute: AuthenticatedAdminIntegracoesRoute,
   AuthenticatedAdminNotificacoesRoute: AuthenticatedAdminNotificacoesRoute,
   AuthenticatedAdminPessoasRoute: AuthenticatedAdminPessoasRoute,
   AuthenticatedAdminRegrasModulosRoute: AuthenticatedAdminRegrasModulosRoute,
