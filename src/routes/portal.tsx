@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import { createFileRoute } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { AuthSplitLayout } from "@/components/auth/AuthSplitLayout";
@@ -40,6 +41,7 @@ function maskCNPJ(v: string) {
 function PortalCliente() {
   const [documento, setDocumento] = useState("");
   const [carregando, setCarregando] = useState(false);
+  const navigate = useNavigate();
 
   async function acessar(
     e: React.FormEvent<HTMLFormElement>,
@@ -57,7 +59,7 @@ function PortalCliente() {
         toast.error(resultado.error ?? "Não foi possível acessar.");
         return;
       }
-      // Fluxo interno do cliente entra na Etapa 09.
+      navigate({ to: "/cliente/visao-geral", replace: true });
     } catch {
       toast.error("Não foi possível acessar. Tente novamente.");
     } finally {

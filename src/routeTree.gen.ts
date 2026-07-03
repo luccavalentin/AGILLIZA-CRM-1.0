@@ -11,9 +11,14 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as PortalRouteImport } from './routes/portal'
 import { Route as ParceiroRouteImport } from './routes/parceiro'
+import { Route as ClienteRouteImport } from './routes/cliente'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ClienteVisaoGeralRouteImport } from './routes/cliente.visao-geral'
+import { Route as ClientePerfilRouteImport } from './routes/cliente.perfil'
+import { Route as ClienteLogoutRouteImport } from './routes/cliente.logout'
+import { Route as ClienteAcompanharMinhaPropostaRouteImport } from './routes/cliente.acompanhar-minha-proposta'
 import { Route as AuthenticatedSemAcessoRouteImport } from './routes/_authenticated/sem-acesso'
 import { Route as AuthenticatedRelatoriosRouteImport } from './routes/_authenticated/relatorios'
 import { Route as AuthenticatedDocumentosRouteImport } from './routes/_authenticated/documentos'
@@ -78,6 +83,11 @@ const ParceiroRoute = ParceiroRouteImport.update({
   path: '/parceiro',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ClienteRoute = ClienteRouteImport.update({
+  id: '/cliente',
+  path: '/cliente',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
@@ -92,6 +102,27 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ClienteVisaoGeralRoute = ClienteVisaoGeralRouteImport.update({
+  id: '/visao-geral',
+  path: '/visao-geral',
+  getParentRoute: () => ClienteRoute,
+} as any)
+const ClientePerfilRoute = ClientePerfilRouteImport.update({
+  id: '/perfil',
+  path: '/perfil',
+  getParentRoute: () => ClienteRoute,
+} as any)
+const ClienteLogoutRoute = ClienteLogoutRouteImport.update({
+  id: '/logout',
+  path: '/logout',
+  getParentRoute: () => ClienteRoute,
+} as any)
+const ClienteAcompanharMinhaPropostaRoute =
+  ClienteAcompanharMinhaPropostaRouteImport.update({
+    id: '/acompanhar-minha-proposta',
+    path: '/acompanhar-minha-proposta',
+    getParentRoute: () => ClienteRoute,
+  } as any)
 const AuthenticatedSemAcessoRoute = AuthenticatedSemAcessoRouteImport.update({
   id: '/sem-acesso',
   path: '/sem-acesso',
@@ -409,12 +440,17 @@ const ApiPublicWebhookHomefinPropostaRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/cliente': typeof ClienteRouteWithChildren
   '/parceiro': typeof ParceiroRoute
   '/portal': typeof PortalRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/documentos': typeof AuthenticatedDocumentosRoute
   '/relatorios': typeof AuthenticatedRelatoriosRouteWithChildren
   '/sem-acesso': typeof AuthenticatedSemAcessoRoute
+  '/cliente/acompanhar-minha-proposta': typeof ClienteAcompanharMinhaPropostaRoute
+  '/cliente/logout': typeof ClienteLogoutRoute
+  '/cliente/perfil': typeof ClientePerfilRoute
+  '/cliente/visao-geral': typeof ClienteVisaoGeralRoute
   '/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
   '/admin/notificacoes': typeof AuthenticatedAdminNotificacoesRoute
   '/admin/pessoas': typeof AuthenticatedAdminPessoasRoute
@@ -468,11 +504,16 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/cliente': typeof ClienteRouteWithChildren
   '/parceiro': typeof ParceiroRoute
   '/portal': typeof PortalRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/documentos': typeof AuthenticatedDocumentosRoute
   '/sem-acesso': typeof AuthenticatedSemAcessoRoute
+  '/cliente/acompanhar-minha-proposta': typeof ClienteAcompanharMinhaPropostaRoute
+  '/cliente/logout': typeof ClienteLogoutRoute
+  '/cliente/perfil': typeof ClientePerfilRoute
+  '/cliente/visao-geral': typeof ClienteVisaoGeralRoute
   '/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
   '/admin/notificacoes': typeof AuthenticatedAdminNotificacoesRoute
   '/admin/pessoas': typeof AuthenticatedAdminPessoasRoute
@@ -528,12 +569,17 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/cliente': typeof ClienteRouteWithChildren
   '/parceiro': typeof ParceiroRoute
   '/portal': typeof PortalRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/documentos': typeof AuthenticatedDocumentosRoute
   '/_authenticated/relatorios': typeof AuthenticatedRelatoriosRouteWithChildren
   '/_authenticated/sem-acesso': typeof AuthenticatedSemAcessoRoute
+  '/cliente/acompanhar-minha-proposta': typeof ClienteAcompanharMinhaPropostaRoute
+  '/cliente/logout': typeof ClienteLogoutRoute
+  '/cliente/perfil': typeof ClientePerfilRoute
+  '/cliente/visao-geral': typeof ClienteVisaoGeralRoute
   '/_authenticated/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
   '/_authenticated/admin/notificacoes': typeof AuthenticatedAdminNotificacoesRoute
   '/_authenticated/admin/pessoas': typeof AuthenticatedAdminPessoasRoute
@@ -589,12 +635,17 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/cliente'
     | '/parceiro'
     | '/portal'
     | '/dashboard'
     | '/documentos'
     | '/relatorios'
     | '/sem-acesso'
+    | '/cliente/acompanhar-minha-proposta'
+    | '/cliente/logout'
+    | '/cliente/perfil'
+    | '/cliente/visao-geral'
     | '/admin/auditoria'
     | '/admin/notificacoes'
     | '/admin/pessoas'
@@ -648,11 +699,16 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/cliente'
     | '/parceiro'
     | '/portal'
     | '/dashboard'
     | '/documentos'
     | '/sem-acesso'
+    | '/cliente/acompanhar-minha-proposta'
+    | '/cliente/logout'
+    | '/cliente/perfil'
+    | '/cliente/visao-geral'
     | '/admin/auditoria'
     | '/admin/notificacoes'
     | '/admin/pessoas'
@@ -707,12 +763,17 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/cliente'
     | '/parceiro'
     | '/portal'
     | '/_authenticated/dashboard'
     | '/_authenticated/documentos'
     | '/_authenticated/relatorios'
     | '/_authenticated/sem-acesso'
+    | '/cliente/acompanhar-minha-proposta'
+    | '/cliente/logout'
+    | '/cliente/perfil'
+    | '/cliente/visao-geral'
     | '/_authenticated/admin/auditoria'
     | '/_authenticated/admin/notificacoes'
     | '/_authenticated/admin/pessoas'
@@ -768,6 +829,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  ClienteRoute: typeof ClienteRouteWithChildren
   ParceiroRoute: typeof ParceiroRoute
   PortalRoute: typeof PortalRoute
   ApiPublicHomefinCallbackRoute: typeof ApiPublicHomefinCallbackRoute
@@ -790,6 +852,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ParceiroRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/cliente': {
+      id: '/cliente'
+      path: '/cliente'
+      fullPath: '/cliente'
+      preLoaderRoute: typeof ClienteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth': {
       id: '/auth'
       path: '/auth'
@@ -810,6 +879,34 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/cliente/visao-geral': {
+      id: '/cliente/visao-geral'
+      path: '/visao-geral'
+      fullPath: '/cliente/visao-geral'
+      preLoaderRoute: typeof ClienteVisaoGeralRouteImport
+      parentRoute: typeof ClienteRoute
+    }
+    '/cliente/perfil': {
+      id: '/cliente/perfil'
+      path: '/perfil'
+      fullPath: '/cliente/perfil'
+      preLoaderRoute: typeof ClientePerfilRouteImport
+      parentRoute: typeof ClienteRoute
+    }
+    '/cliente/logout': {
+      id: '/cliente/logout'
+      path: '/logout'
+      fullPath: '/cliente/logout'
+      preLoaderRoute: typeof ClienteLogoutRouteImport
+      parentRoute: typeof ClienteRoute
+    }
+    '/cliente/acompanhar-minha-proposta': {
+      id: '/cliente/acompanhar-minha-proposta'
+      path: '/acompanhar-minha-proposta'
+      fullPath: '/cliente/acompanhar-minha-proposta'
+      preLoaderRoute: typeof ClienteAcompanharMinhaPropostaRouteImport
+      parentRoute: typeof ClienteRoute
     }
     '/_authenticated/sem-acesso': {
       id: '/_authenticated/sem-acesso'
@@ -1333,10 +1430,28 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
 const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
+interface ClienteRouteChildren {
+  ClienteAcompanharMinhaPropostaRoute: typeof ClienteAcompanharMinhaPropostaRoute
+  ClienteLogoutRoute: typeof ClienteLogoutRoute
+  ClientePerfilRoute: typeof ClientePerfilRoute
+  ClienteVisaoGeralRoute: typeof ClienteVisaoGeralRoute
+}
+
+const ClienteRouteChildren: ClienteRouteChildren = {
+  ClienteAcompanharMinhaPropostaRoute: ClienteAcompanharMinhaPropostaRoute,
+  ClienteLogoutRoute: ClienteLogoutRoute,
+  ClientePerfilRoute: ClientePerfilRoute,
+  ClienteVisaoGeralRoute: ClienteVisaoGeralRoute,
+}
+
+const ClienteRouteWithChildren =
+  ClienteRoute._addFileChildren(ClienteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  ClienteRoute: ClienteRouteWithChildren,
   ParceiroRoute: ParceiroRoute,
   PortalRoute: PortalRoute,
   ApiPublicHomefinCallbackRoute: ApiPublicHomefinCallbackRoute,

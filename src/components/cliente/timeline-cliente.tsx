@@ -1,0 +1,64 @@
+import { Check } from "lucide-react";
+import { cn } from "@/lib/utils";
+import type { EtapaCliente } from "@/lib/portal/cliente.functions";
+
+function formatarData(iso: string | null) {
+  if (!iso) return null;
+  return new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
+}
+
+export function TimelineCliente({ etapas }: { etapas: EtapaCliente[] }) {
+  return (
+    <ol className="space-y-0">
+      {etapas.map((etapa, i) => {
+        const ultimo = i === etapas.length - 1;
+        return (
+          <li key={etapa.ordem} className="flex gap-3">
+            <div className="flex flex-col items-center">
+              <span
+                className={cn(
+                  "flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-xs font-semibold",
+                  etapa.status === "concluida" &&
+                    "border-transparent bg-success text-success-foreground",
+                  etapa.status === "atual" &&
+                    "border-transparent bg-primary text-primary-foreground animate-pulse",
+                  etapa.status === "proxima" &&
+                    "border-border bg-muted text-muted-foreground",
+                )}
+              >
+                {etapa.status === "concluida" ? <Check className="h-4 w-4" /> : etapa.ordem}
+              </span>
+              {!ultimo && (
+                <span
+                  className={cn(
+                    "w-0.5 flex-1 min-h-6",
+                    etapa.status === "concluida" ? "bg-success" : "bg-border",
+                  )}
+                />
+              )}
+            </div>
+            <div className={cn("pb-6", ultimo && "pb-0")}>
+              <p
+                className={cn(
+                  "font-medium leading-tight",
+                  etapa.status === "atual" ? "text-primary" : "text-foreground",
+                  etapa.status === "proxima" && "text-muted-foreground",
+                )}
+              >
+                {etapa.nome}
+              </p>
+              {etapa.status !== "proxima" && etapa.descricao_cliente && (
+                <p className="mt-0.5 text-sm text-muted-foreground">{etapa.descricao_cliente}</p>
+              )}
+              {etapa.concluida_em && (
+                <p className="mt-0.5 text-xs text-success">
+                  Concluída em {formatarData(etapa.concluida_em)}
+                </p>
+              )}
+            </div>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
