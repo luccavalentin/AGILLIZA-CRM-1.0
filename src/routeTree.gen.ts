@@ -15,6 +15,12 @@ import { Route as ClienteRouteImport } from './routes/cliente'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ParceiroIndexRouteImport } from './routes/parceiro.index'
+import { Route as ParceiroSimulacoesRouteImport } from './routes/parceiro.simulacoes'
+import { Route as ParceiroPropostasRouteImport } from './routes/parceiro.propostas'
+import { Route as ParceiroDocumentosRouteImport } from './routes/parceiro.documentos'
+import { Route as ParceiroComissoesRouteImport } from './routes/parceiro.comissoes'
+import { Route as ParceiroClientesRouteImport } from './routes/parceiro.clientes'
 import { Route as ClienteVisaoGeralRouteImport } from './routes/cliente.visao-geral'
 import { Route as ClientePerfilRouteImport } from './routes/cliente.perfil'
 import { Route as ClienteLogoutRouteImport } from './routes/cliente.logout'
@@ -101,6 +107,36 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const ParceiroIndexRoute = ParceiroIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ParceiroRoute,
+} as any)
+const ParceiroSimulacoesRoute = ParceiroSimulacoesRouteImport.update({
+  id: '/simulacoes',
+  path: '/simulacoes',
+  getParentRoute: () => ParceiroRoute,
+} as any)
+const ParceiroPropostasRoute = ParceiroPropostasRouteImport.update({
+  id: '/propostas',
+  path: '/propostas',
+  getParentRoute: () => ParceiroRoute,
+} as any)
+const ParceiroDocumentosRoute = ParceiroDocumentosRouteImport.update({
+  id: '/documentos',
+  path: '/documentos',
+  getParentRoute: () => ParceiroRoute,
+} as any)
+const ParceiroComissoesRoute = ParceiroComissoesRouteImport.update({
+  id: '/comissoes',
+  path: '/comissoes',
+  getParentRoute: () => ParceiroRoute,
+} as any)
+const ParceiroClientesRoute = ParceiroClientesRouteImport.update({
+  id: '/clientes',
+  path: '/clientes',
+  getParentRoute: () => ParceiroRoute,
 } as any)
 const ClienteVisaoGeralRoute = ClienteVisaoGeralRouteImport.update({
   id: '/visao-geral',
@@ -441,7 +477,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/cliente': typeof ClienteRouteWithChildren
-  '/parceiro': typeof ParceiroRoute
+  '/parceiro': typeof ParceiroRouteWithChildren
   '/portal': typeof PortalRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/documentos': typeof AuthenticatedDocumentosRoute
@@ -451,6 +487,12 @@ export interface FileRoutesByFullPath {
   '/cliente/logout': typeof ClienteLogoutRoute
   '/cliente/perfil': typeof ClientePerfilRoute
   '/cliente/visao-geral': typeof ClienteVisaoGeralRoute
+  '/parceiro/clientes': typeof ParceiroClientesRoute
+  '/parceiro/comissoes': typeof ParceiroComissoesRoute
+  '/parceiro/documentos': typeof ParceiroDocumentosRoute
+  '/parceiro/propostas': typeof ParceiroPropostasRoute
+  '/parceiro/simulacoes': typeof ParceiroSimulacoesRoute
+  '/parceiro/': typeof ParceiroIndexRoute
   '/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
   '/admin/notificacoes': typeof AuthenticatedAdminNotificacoesRoute
   '/admin/pessoas': typeof AuthenticatedAdminPessoasRoute
@@ -505,7 +547,6 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/cliente': typeof ClienteRouteWithChildren
-  '/parceiro': typeof ParceiroRoute
   '/portal': typeof PortalRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/documentos': typeof AuthenticatedDocumentosRoute
@@ -514,6 +555,12 @@ export interface FileRoutesByTo {
   '/cliente/logout': typeof ClienteLogoutRoute
   '/cliente/perfil': typeof ClientePerfilRoute
   '/cliente/visao-geral': typeof ClienteVisaoGeralRoute
+  '/parceiro/clientes': typeof ParceiroClientesRoute
+  '/parceiro/comissoes': typeof ParceiroComissoesRoute
+  '/parceiro/documentos': typeof ParceiroDocumentosRoute
+  '/parceiro/propostas': typeof ParceiroPropostasRoute
+  '/parceiro/simulacoes': typeof ParceiroSimulacoesRoute
+  '/parceiro': typeof ParceiroIndexRoute
   '/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
   '/admin/notificacoes': typeof AuthenticatedAdminNotificacoesRoute
   '/admin/pessoas': typeof AuthenticatedAdminPessoasRoute
@@ -570,7 +617,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/cliente': typeof ClienteRouteWithChildren
-  '/parceiro': typeof ParceiroRoute
+  '/parceiro': typeof ParceiroRouteWithChildren
   '/portal': typeof PortalRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/documentos': typeof AuthenticatedDocumentosRoute
@@ -580,6 +627,12 @@ export interface FileRoutesById {
   '/cliente/logout': typeof ClienteLogoutRoute
   '/cliente/perfil': typeof ClientePerfilRoute
   '/cliente/visao-geral': typeof ClienteVisaoGeralRoute
+  '/parceiro/clientes': typeof ParceiroClientesRoute
+  '/parceiro/comissoes': typeof ParceiroComissoesRoute
+  '/parceiro/documentos': typeof ParceiroDocumentosRoute
+  '/parceiro/propostas': typeof ParceiroPropostasRoute
+  '/parceiro/simulacoes': typeof ParceiroSimulacoesRoute
+  '/parceiro/': typeof ParceiroIndexRoute
   '/_authenticated/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
   '/_authenticated/admin/notificacoes': typeof AuthenticatedAdminNotificacoesRoute
   '/_authenticated/admin/pessoas': typeof AuthenticatedAdminPessoasRoute
@@ -646,6 +699,12 @@ export interface FileRouteTypes {
     | '/cliente/logout'
     | '/cliente/perfil'
     | '/cliente/visao-geral'
+    | '/parceiro/clientes'
+    | '/parceiro/comissoes'
+    | '/parceiro/documentos'
+    | '/parceiro/propostas'
+    | '/parceiro/simulacoes'
+    | '/parceiro/'
     | '/admin/auditoria'
     | '/admin/notificacoes'
     | '/admin/pessoas'
@@ -700,7 +759,6 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/cliente'
-    | '/parceiro'
     | '/portal'
     | '/dashboard'
     | '/documentos'
@@ -709,6 +767,12 @@ export interface FileRouteTypes {
     | '/cliente/logout'
     | '/cliente/perfil'
     | '/cliente/visao-geral'
+    | '/parceiro/clientes'
+    | '/parceiro/comissoes'
+    | '/parceiro/documentos'
+    | '/parceiro/propostas'
+    | '/parceiro/simulacoes'
+    | '/parceiro'
     | '/admin/auditoria'
     | '/admin/notificacoes'
     | '/admin/pessoas'
@@ -774,6 +838,12 @@ export interface FileRouteTypes {
     | '/cliente/logout'
     | '/cliente/perfil'
     | '/cliente/visao-geral'
+    | '/parceiro/clientes'
+    | '/parceiro/comissoes'
+    | '/parceiro/documentos'
+    | '/parceiro/propostas'
+    | '/parceiro/simulacoes'
+    | '/parceiro/'
     | '/_authenticated/admin/auditoria'
     | '/_authenticated/admin/notificacoes'
     | '/_authenticated/admin/pessoas'
@@ -830,7 +900,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   ClienteRoute: typeof ClienteRouteWithChildren
-  ParceiroRoute: typeof ParceiroRoute
+  ParceiroRoute: typeof ParceiroRouteWithChildren
   PortalRoute: typeof PortalRoute
   ApiPublicHomefinCallbackRoute: typeof ApiPublicHomefinCallbackRoute
   ApiPublicWebhookHomefinPropostaRoute: typeof ApiPublicWebhookHomefinPropostaRoute
@@ -879,6 +949,48 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/parceiro/': {
+      id: '/parceiro/'
+      path: '/'
+      fullPath: '/parceiro/'
+      preLoaderRoute: typeof ParceiroIndexRouteImport
+      parentRoute: typeof ParceiroRoute
+    }
+    '/parceiro/simulacoes': {
+      id: '/parceiro/simulacoes'
+      path: '/simulacoes'
+      fullPath: '/parceiro/simulacoes'
+      preLoaderRoute: typeof ParceiroSimulacoesRouteImport
+      parentRoute: typeof ParceiroRoute
+    }
+    '/parceiro/propostas': {
+      id: '/parceiro/propostas'
+      path: '/propostas'
+      fullPath: '/parceiro/propostas'
+      preLoaderRoute: typeof ParceiroPropostasRouteImport
+      parentRoute: typeof ParceiroRoute
+    }
+    '/parceiro/documentos': {
+      id: '/parceiro/documentos'
+      path: '/documentos'
+      fullPath: '/parceiro/documentos'
+      preLoaderRoute: typeof ParceiroDocumentosRouteImport
+      parentRoute: typeof ParceiroRoute
+    }
+    '/parceiro/comissoes': {
+      id: '/parceiro/comissoes'
+      path: '/comissoes'
+      fullPath: '/parceiro/comissoes'
+      preLoaderRoute: typeof ParceiroComissoesRouteImport
+      parentRoute: typeof ParceiroRoute
+    }
+    '/parceiro/clientes': {
+      id: '/parceiro/clientes'
+      path: '/clientes'
+      fullPath: '/parceiro/clientes'
+      preLoaderRoute: typeof ParceiroClientesRouteImport
+      parentRoute: typeof ParceiroRoute
     }
     '/cliente/visao-geral': {
       id: '/cliente/visao-geral'
@@ -1447,12 +1559,34 @@ const ClienteRouteChildren: ClienteRouteChildren = {
 const ClienteRouteWithChildren =
   ClienteRoute._addFileChildren(ClienteRouteChildren)
 
+interface ParceiroRouteChildren {
+  ParceiroClientesRoute: typeof ParceiroClientesRoute
+  ParceiroComissoesRoute: typeof ParceiroComissoesRoute
+  ParceiroDocumentosRoute: typeof ParceiroDocumentosRoute
+  ParceiroPropostasRoute: typeof ParceiroPropostasRoute
+  ParceiroSimulacoesRoute: typeof ParceiroSimulacoesRoute
+  ParceiroIndexRoute: typeof ParceiroIndexRoute
+}
+
+const ParceiroRouteChildren: ParceiroRouteChildren = {
+  ParceiroClientesRoute: ParceiroClientesRoute,
+  ParceiroComissoesRoute: ParceiroComissoesRoute,
+  ParceiroDocumentosRoute: ParceiroDocumentosRoute,
+  ParceiroPropostasRoute: ParceiroPropostasRoute,
+  ParceiroSimulacoesRoute: ParceiroSimulacoesRoute,
+  ParceiroIndexRoute: ParceiroIndexRoute,
+}
+
+const ParceiroRouteWithChildren = ParceiroRoute._addFileChildren(
+  ParceiroRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   ClienteRoute: ClienteRouteWithChildren,
-  ParceiroRoute: ParceiroRoute,
+  ParceiroRoute: ParceiroRouteWithChildren,
   PortalRoute: PortalRoute,
   ApiPublicHomefinCallbackRoute: ApiPublicHomefinCallbackRoute,
   ApiPublicWebhookHomefinPropostaRoute: ApiPublicWebhookHomefinPropostaRoute,

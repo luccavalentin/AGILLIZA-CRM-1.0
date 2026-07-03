@@ -140,3 +140,19 @@ export const navInterno: NavGroup[] = [
     ],
   },
 ];
+
+/** Navegação reduzida do Portal do Parceiro (imobiliárias/corretores). */
+export const navParceiro: NavGroup[] = [
+  {
+    id: "parceiro",
+    label: "Portal do Parceiro",
+    items: [
+      { label: "Início", icon: Gauge, to: "/parceiro" },
+      { label: "Meus clientes", icon: Users, to: "/parceiro/clientes" },
+      { label: "Simulações", icon: Calculator, to: "/parceiro/simulacoes" },
+      { label: "Propostas", icon: FileText, to: "/parceiro/propostas" },
+      { label: "Comissões", icon: Percent, to: "/parceiro/comissoes" },
+      { label: "Documentos", icon: FolderOpen, to: "/parceiro/documentos" },
+    ],
+  },
+];
