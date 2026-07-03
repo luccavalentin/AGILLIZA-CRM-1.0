@@ -19,6 +19,7 @@ import { Route as AuthenticatedRelatoriosRouteImport } from './routes/_authentic
 import { Route as AuthenticatedDocumentosRouteImport } from './routes/_authenticated/documentos'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedRelatoriosIndexRouteImport } from './routes/_authenticated/relatorios.index'
+import { Route as AuthenticatedVisaoGeralPainelRouteImport } from './routes/_authenticated/visao-geral.painel'
 import { Route as AuthenticatedRelatoriosTarefasRouteImport } from './routes/_authenticated/relatorios.tarefas'
 import { Route as AuthenticatedRelatoriosSimulacoesRouteImport } from './routes/_authenticated/relatorios.simulacoes'
 import { Route as AuthenticatedRelatoriosPropostasRouteImport } from './routes/_authenticated/relatorios.propostas'
@@ -115,6 +116,12 @@ const AuthenticatedRelatoriosIndexRoute =
     id: '/',
     path: '/',
     getParentRoute: () => AuthenticatedRelatoriosRoute,
+  } as any)
+const AuthenticatedVisaoGeralPainelRoute =
+  AuthenticatedVisaoGeralPainelRouteImport.update({
+    id: '/visao-geral/painel',
+    path: '/visao-geral/painel',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedRelatoriosTarefasRoute =
   AuthenticatedRelatoriosTarefasRouteImport.update({
@@ -435,6 +442,7 @@ export interface FileRoutesByFullPath {
   '/relatorios/propostas': typeof AuthenticatedRelatoriosPropostasRoute
   '/relatorios/simulacoes': typeof AuthenticatedRelatoriosSimulacoesRoute
   '/relatorios/tarefas': typeof AuthenticatedRelatoriosTarefasRoute
+  '/visao-geral/painel': typeof AuthenticatedVisaoGeralPainelRoute
   '/relatorios/': typeof AuthenticatedRelatoriosIndexRoute
   '/crm/clientes/$id': typeof AuthenticatedCrmClientesIdRoute
   '/crm/clientes/novo': typeof AuthenticatedCrmClientesNovoRoute
@@ -491,6 +499,7 @@ export interface FileRoutesByTo {
   '/relatorios/propostas': typeof AuthenticatedRelatoriosPropostasRoute
   '/relatorios/simulacoes': typeof AuthenticatedRelatoriosSimulacoesRoute
   '/relatorios/tarefas': typeof AuthenticatedRelatoriosTarefasRoute
+  '/visao-geral/painel': typeof AuthenticatedVisaoGeralPainelRoute
   '/relatorios': typeof AuthenticatedRelatoriosIndexRoute
   '/crm/clientes/$id': typeof AuthenticatedCrmClientesIdRoute
   '/crm/clientes/novo': typeof AuthenticatedCrmClientesNovoRoute
@@ -550,6 +559,7 @@ export interface FileRoutesById {
   '/_authenticated/relatorios/propostas': typeof AuthenticatedRelatoriosPropostasRoute
   '/_authenticated/relatorios/simulacoes': typeof AuthenticatedRelatoriosSimulacoesRoute
   '/_authenticated/relatorios/tarefas': typeof AuthenticatedRelatoriosTarefasRoute
+  '/_authenticated/visao-geral/painel': typeof AuthenticatedVisaoGeralPainelRoute
   '/_authenticated/relatorios/': typeof AuthenticatedRelatoriosIndexRoute
   '/_authenticated/crm/clientes_/$id': typeof AuthenticatedCrmClientesIdRoute
   '/_authenticated/crm/clientes_/novo': typeof AuthenticatedCrmClientesNovoRoute
@@ -609,6 +619,7 @@ export interface FileRouteTypes {
     | '/relatorios/propostas'
     | '/relatorios/simulacoes'
     | '/relatorios/tarefas'
+    | '/visao-geral/painel'
     | '/relatorios/'
     | '/crm/clientes/$id'
     | '/crm/clientes/novo'
@@ -665,6 +676,7 @@ export interface FileRouteTypes {
     | '/relatorios/propostas'
     | '/relatorios/simulacoes'
     | '/relatorios/tarefas'
+    | '/visao-geral/painel'
     | '/relatorios'
     | '/crm/clientes/$id'
     | '/crm/clientes/novo'
@@ -723,6 +735,7 @@ export interface FileRouteTypes {
     | '/_authenticated/relatorios/propostas'
     | '/_authenticated/relatorios/simulacoes'
     | '/_authenticated/relatorios/tarefas'
+    | '/_authenticated/visao-geral/painel'
     | '/_authenticated/relatorios/'
     | '/_authenticated/crm/clientes_/$id'
     | '/_authenticated/crm/clientes_/novo'
@@ -819,6 +832,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/relatorios/'
       preLoaderRoute: typeof AuthenticatedRelatoriosIndexRouteImport
       parentRoute: typeof AuthenticatedRelatoriosRoute
+    }
+    '/_authenticated/visao-geral/painel': {
+      id: '/_authenticated/visao-geral/painel'
+      path: '/visao-geral/painel'
+      fullPath: '/visao-geral/painel'
+      preLoaderRoute: typeof AuthenticatedVisaoGeralPainelRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/relatorios/tarefas': {
       id: '/_authenticated/relatorios/tarefas'
@@ -1224,6 +1244,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedOperacionalPropostasRoute: typeof AuthenticatedOperacionalPropostasRoute
   AuthenticatedOperacionalSimulacoesRoute: typeof AuthenticatedOperacionalSimulacoesRoute
   AuthenticatedOperacionalTarefasRoute: typeof AuthenticatedOperacionalTarefasRoute
+  AuthenticatedVisaoGeralPainelRoute: typeof AuthenticatedVisaoGeralPainelRoute
   AuthenticatedCrmClientesIdRoute: typeof AuthenticatedCrmClientesIdRoute
   AuthenticatedCrmClientesNovoRoute: typeof AuthenticatedCrmClientesNovoRoute
   AuthenticatedOperacionalDemandasIdRoute: typeof AuthenticatedOperacionalDemandasIdRoute
@@ -1266,6 +1287,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedOperacionalSimulacoesRoute:
     AuthenticatedOperacionalSimulacoesRoute,
   AuthenticatedOperacionalTarefasRoute: AuthenticatedOperacionalTarefasRoute,
+  AuthenticatedVisaoGeralPainelRoute: AuthenticatedVisaoGeralPainelRoute,
   AuthenticatedCrmClientesIdRoute: AuthenticatedCrmClientesIdRoute,
   AuthenticatedCrmClientesNovoRoute: AuthenticatedCrmClientesNovoRoute,
   AuthenticatedOperacionalDemandasIdRoute:
