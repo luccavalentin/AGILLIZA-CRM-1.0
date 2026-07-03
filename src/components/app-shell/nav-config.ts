@@ -22,6 +22,7 @@ import {
   ArrowUpCircle,
   ArrowDownCircle,
   Inbox,
+  Gauge,
 } from "lucide-react";
 
 /** Permissão exigida por um item (chave = `${modulo}:view`). */
