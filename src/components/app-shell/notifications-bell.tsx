@@ -89,7 +89,7 @@ export function NotificationsBell({ userId }: NotificationsBellProps) {
         <Button variant="ghost" size="icon" className="relative" aria-label="Notificações">
           <Bell className="h-5 w-5 text-muted-foreground" />
           {naoLidas > 0 && (
-            <Badge className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-semibold text-destructive-foreground">
+            <Badge className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
               {naoLidas > 9 ? "9+" : naoLidas}
             </Badge>
           )}
