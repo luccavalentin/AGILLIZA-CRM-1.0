@@ -10,6 +10,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import {
   listarNotificacoes,
@@ -89,7 +90,7 @@ export function NotificationsBell({ userId }: NotificationsBellProps) {
         <Button variant="ghost" size="icon" className="relative" aria-label="Notificações">
           <Bell className="h-5 w-5 text-muted-foreground" />
           {naoLidas > 0 && (
-            <Badge className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-semibold text-destructive-foreground">
+            <Badge className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
               {naoLidas > 9 ? "9+" : naoLidas}
             </Badge>
           )}
@@ -121,10 +122,13 @@ export function NotificationsBell({ userId }: NotificationsBellProps) {
                   <button
                     type="button"
                     onClick={() => aoClicar(n)}
-                    className="flex w-full flex-col gap-1 px-4 py-3 text-left transition-colors hover:bg-accent focus-visible:bg-accent focus-visible:outline-none"
+                    className={cn(
+                      "flex w-full flex-col gap-1 px-4 py-3 text-left transition-colors hover:bg-accent focus-visible:bg-accent focus-visible:outline-none",
+                      n.lida ? "bg-popover" : "bg-accent",
+                    )}
                   >
                     <div className="flex items-center gap-2">
-                      {!n.lida && <span className="h-2 w-2 shrink-0 rounded-full bg-primary" />}
+                      {!n.lida && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />}
                       <span className="text-sm font-medium text-foreground">{n.titulo}</span>
                     </div>
                     {n.corpo && (

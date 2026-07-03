@@ -728,6 +728,279 @@ export type Database = {
           },
         ]
       }
+      demanda_anexos: {
+        Row: {
+          autor_id: string | null
+          created_at: string
+          demanda_id: string
+          id: string
+          nome: string
+          storage_path: string
+          tamanho: number | null
+        }
+        Insert: {
+          autor_id?: string | null
+          created_at?: string
+          demanda_id: string
+          id?: string
+          nome: string
+          storage_path: string
+          tamanho?: number | null
+        }
+        Update: {
+          autor_id?: string | null
+          created_at?: string
+          demanda_id?: string
+          id?: string
+          nome?: string
+          storage_path?: string
+          tamanho?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "demanda_anexos_demanda_id_fkey"
+            columns: ["demanda_id"]
+            isOneToOne: false
+            referencedRelation: "demandas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      demanda_historico: {
+        Row: {
+          acao: string
+          ator_id: string | null
+          created_at: string
+          demanda_id: string
+          detalhe: string | null
+          id: string
+          motivo: string | null
+          responsavel_anterior_id: string | null
+          responsavel_novo_id: string | null
+        }
+        Insert: {
+          acao: string
+          ator_id?: string | null
+          created_at?: string
+          demanda_id: string
+          detalhe?: string | null
+          id?: string
+          motivo?: string | null
+          responsavel_anterior_id?: string | null
+          responsavel_novo_id?: string | null
+        }
+        Update: {
+          acao?: string
+          ator_id?: string | null
+          created_at?: string
+          demanda_id?: string
+          detalhe?: string | null
+          id?: string
+          motivo?: string | null
+          responsavel_anterior_id?: string | null
+          responsavel_novo_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "demanda_historico_demanda_id_fkey"
+            columns: ["demanda_id"]
+            isOneToOne: false
+            referencedRelation: "demandas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      demanda_leituras: {
+        Row: {
+          demanda_id: string
+          lida_em: string
+          user_id: string
+        }
+        Insert: {
+          demanda_id: string
+          lida_em?: string
+          user_id: string
+        }
+        Update: {
+          demanda_id?: string
+          lida_em?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "demanda_leituras_demanda_id_fkey"
+            columns: ["demanda_id"]
+            isOneToOne: false
+            referencedRelation: "demandas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      demanda_mensagens: {
+        Row: {
+          autor_id: string
+          corpo: string
+          created_at: string
+          demanda_id: string
+          id: string
+          visivel_cliente: boolean
+        }
+        Insert: {
+          autor_id: string
+          corpo: string
+          created_at?: string
+          demanda_id: string
+          id?: string
+          visivel_cliente?: boolean
+        }
+        Update: {
+          autor_id?: string
+          corpo?: string
+          created_at?: string
+          demanda_id?: string
+          id?: string
+          visivel_cliente?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "demanda_mensagens_demanda_id_fkey"
+            columns: ["demanda_id"]
+            isOneToOne: false
+            referencedRelation: "demandas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      demanda_participantes: {
+        Row: {
+          created_at: string
+          demanda_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          demanda_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          demanda_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "demanda_participantes_demanda_id_fkey"
+            columns: ["demanda_id"]
+            isOneToOne: false
+            referencedRelation: "demandas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      demandas: {
+        Row: {
+          cliente_id: string | null
+          concluida_em: string | null
+          correspondente_id: string
+          created_at: string
+          criador_id: string | null
+          descricao: string | null
+          escalonada: boolean
+          escalonada_em: string | null
+          id: string
+          numero: string | null
+          origem: string
+          prazo_sla: string | null
+          prioridade: Database["public"]["Enums"]["prioridade_op"]
+          responsavel_id: string | null
+          sla_horas: number | null
+          sla_inicio: string
+          status: Database["public"]["Enums"]["demanda_status"]
+          tipo: string
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          cliente_id?: string | null
+          concluida_em?: string | null
+          correspondente_id: string
+          created_at?: string
+          criador_id?: string | null
+          descricao?: string | null
+          escalonada?: boolean
+          escalonada_em?: string | null
+          id?: string
+          numero?: string | null
+          origem?: string
+          prazo_sla?: string | null
+          prioridade?: Database["public"]["Enums"]["prioridade_op"]
+          responsavel_id?: string | null
+          sla_horas?: number | null
+          sla_inicio?: string
+          status?: Database["public"]["Enums"]["demanda_status"]
+          tipo?: string
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          cliente_id?: string | null
+          concluida_em?: string | null
+          correspondente_id?: string
+          created_at?: string
+          criador_id?: string | null
+          descricao?: string | null
+          escalonada?: boolean
+          escalonada_em?: string | null
+          id?: string
+          numero?: string | null
+          origem?: string
+          prazo_sla?: string | null
+          prioridade?: Database["public"]["Enums"]["prioridade_op"]
+          responsavel_id?: string | null
+          sla_horas?: number | null
+          sla_inicio?: string
+          status?: Database["public"]["Enums"]["demanda_status"]
+          tipo?: string
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "demandas_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      feriados: {
+        Row: {
+          correspondente_id: string | null
+          created_at: string
+          data: string
+          descricao: string
+          id: string
+        }
+        Insert: {
+          correspondente_id?: string | null
+          created_at?: string
+          data: string
+          descricao: string
+          id?: string
+        }
+        Update: {
+          correspondente_id?: string | null
+          created_at?: string
+          data?: string
+          descricao?: string
+          id?: string
+        }
+        Relationships: []
+      }
       financial_audit_logs: {
         Row: {
           acao: string
@@ -1285,6 +1558,39 @@ export type Database = {
           id_operacao?: number
           nome_operacao?: string
           produto_sistema?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      notificacao_regras: {
+        Row: {
+          ativo: boolean
+          canal: string
+          correspondente_id: string
+          created_at: string
+          destinatarios: string[]
+          evento: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          canal?: string
+          correspondente_id: string
+          created_at?: string
+          destinatarios?: string[]
+          evento: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          canal?: string
+          correspondente_id?: string
+          created_at?: string
+          destinatarios?: string[]
+          evento?: string
+          id?: string
           updated_at?: string
         }
         Relationships: []
@@ -2658,6 +2964,357 @@ export type Database = {
           },
         ]
       }
+      sla_configuracoes: {
+        Row: {
+          ativo: boolean
+          canal_escalonamento: string
+          correspondente_id: string
+          created_at: string
+          horas_uteis: number
+          id: string
+          prioridade: Database["public"]["Enums"]["prioridade_op"]
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          canal_escalonamento?: string
+          correspondente_id: string
+          created_at?: string
+          horas_uteis?: number
+          id?: string
+          prioridade?: Database["public"]["Enums"]["prioridade_op"]
+          tipo: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          canal_escalonamento?: string
+          correspondente_id?: string
+          created_at?: string
+          horas_uteis?: number
+          id?: string
+          prioridade?: Database["public"]["Enums"]["prioridade_op"]
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      task_attachments: {
+        Row: {
+          autor_id: string | null
+          created_at: string
+          id: string
+          nome: string
+          storage_path: string
+          tamanho: number | null
+          task_id: string
+        }
+        Insert: {
+          autor_id?: string | null
+          created_at?: string
+          id?: string
+          nome: string
+          storage_path: string
+          tamanho?: number | null
+          task_id: string
+        }
+        Update: {
+          autor_id?: string | null
+          created_at?: string
+          id?: string
+          nome?: string
+          storage_path?: string
+          tamanho?: number | null
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_attachments_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_audit_logs: {
+        Row: {
+          acao: string
+          ator_id: string | null
+          correspondente_id: string | null
+          created_at: string
+          dados: Json | null
+          id: string
+          task_id: string | null
+        }
+        Insert: {
+          acao: string
+          ator_id?: string | null
+          correspondente_id?: string | null
+          created_at?: string
+          dados?: Json | null
+          id?: string
+          task_id?: string | null
+        }
+        Update: {
+          acao?: string
+          ator_id?: string | null
+          correspondente_id?: string | null
+          created_at?: string
+          dados?: Json | null
+          id?: string
+          task_id?: string | null
+        }
+        Relationships: []
+      }
+      task_checklist_items: {
+        Row: {
+          concluido: boolean
+          created_at: string
+          descricao: string
+          id: string
+          ordem: number
+          task_id: string
+        }
+        Insert: {
+          concluido?: boolean
+          created_at?: string
+          descricao: string
+          id?: string
+          ordem?: number
+          task_id: string
+        }
+        Update: {
+          concluido?: boolean
+          created_at?: string
+          descricao?: string
+          id?: string
+          ordem?: number
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_checklist_items_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_comments: {
+        Row: {
+          autor_id: string
+          corpo: string
+          created_at: string
+          id: string
+          task_id: string
+        }
+        Insert: {
+          autor_id: string
+          corpo: string
+          created_at?: string
+          id?: string
+          task_id: string
+        }
+        Update: {
+          autor_id?: string
+          corpo?: string
+          created_at?: string
+          id?: string
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_comments_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_history: {
+        Row: {
+          acao: string
+          ator_id: string | null
+          created_at: string
+          detalhe: string | null
+          id: string
+          task_id: string
+        }
+        Insert: {
+          acao: string
+          ator_id?: string | null
+          created_at?: string
+          detalhe?: string | null
+          id?: string
+          task_id: string
+        }
+        Update: {
+          acao?: string
+          ator_id?: string | null
+          created_at?: string
+          detalhe?: string | null
+          id?: string
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_history_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_participants: {
+        Row: {
+          created_at: string
+          id: string
+          task_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          task_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          task_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_participants_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_tag_links: {
+        Row: {
+          tag_id: string
+          task_id: string
+        }
+        Insert: {
+          tag_id: string
+          task_id: string
+        }
+        Update: {
+          tag_id?: string
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_tag_links_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "task_tags"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_tag_links_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_tags: {
+        Row: {
+          cor: string
+          correspondente_id: string
+          created_at: string
+          id: string
+          nome: string
+        }
+        Insert: {
+          cor?: string
+          correspondente_id: string
+          created_at?: string
+          id?: string
+          nome: string
+        }
+        Update: {
+          cor?: string
+          correspondente_id?: string
+          created_at?: string
+          id?: string
+          nome?: string
+        }
+        Relationships: []
+      }
+      tasks: {
+        Row: {
+          cliente_id: string | null
+          concluida_em: string | null
+          correspondente_id: string
+          created_at: string
+          criador_id: string | null
+          descricao: string | null
+          id: string
+          numero: string | null
+          origem: string
+          prazo: string | null
+          prioridade: Database["public"]["Enums"]["prioridade_op"]
+          responsavel_id: string | null
+          status: Database["public"]["Enums"]["tarefa_status"]
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          cliente_id?: string | null
+          concluida_em?: string | null
+          correspondente_id: string
+          created_at?: string
+          criador_id?: string | null
+          descricao?: string | null
+          id?: string
+          numero?: string | null
+          origem?: string
+          prazo?: string | null
+          prioridade?: Database["public"]["Enums"]["prioridade_op"]
+          responsavel_id?: string | null
+          status?: Database["public"]["Enums"]["tarefa_status"]
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          cliente_id?: string | null
+          concluida_em?: string | null
+          correspondente_id?: string
+          created_at?: string
+          criador_id?: string | null
+          descricao?: string | null
+          id?: string
+          numero?: string | null
+          origem?: string
+          prazo?: string | null
+          prioridade?: Database["public"]["Enums"]["prioridade_op"]
+          responsavel_id?: string | null
+          status?: Database["public"]["Enums"]["tarefa_status"]
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -2713,6 +3370,10 @@ export type Database = {
       }
     }
     Functions: {
+      add_horas_uteis: {
+        Args: { _corr: string; _horas: number; _inicio: string }
+        Returns: string
+      }
       calcular_comissao_proposta: {
         Args: { _prop_id: string }
         Returns: string
@@ -2727,6 +3388,18 @@ export type Database = {
         Returns: undefined
       }
       correspondente_do_usuario: { Args: { _user_id: string }; Returns: string }
+      demanda_escalar_vencidas: { Args: { _corr: string }; Returns: number }
+      emitir_notificacao: {
+        Args: {
+          _corpo: string
+          _corr: string
+          _link: string
+          _tipo: string
+          _titulo: string
+          _user_id: string
+        }
+        Returns: undefined
+      }
       has_any_role: {
         Args: {
           _roles: Database["public"]["Enums"]["app_role"][]
@@ -2742,6 +3415,7 @@ export type Database = {
         Returns: boolean
       }
       is_correspondente: { Args: { _user_id: string }; Returns: boolean }
+      is_dia_util: { Args: { _corr: string; _d: string }; Returns: boolean }
       is_interno: { Args: { _user_id: string }; Returns: boolean }
       mask_pii_jsonb: { Args: { _data: Json }; Returns: Json }
       pode_gerenciar_pessoas: { Args: { _user_id: string }; Returns: boolean }
@@ -2754,12 +3428,20 @@ export type Database = {
         Args: { _cliente_id: string; _user_id: string }
         Returns: boolean
       }
+      usuario_tem_acesso_demanda: {
+        Args: { _dem_id: string; _user_id: string }
+        Returns: boolean
+      }
       usuario_tem_acesso_proposta: {
         Args: { _prop_id: string; _user_id: string }
         Returns: boolean
       }
       usuario_tem_acesso_simulacao: {
         Args: { _sim_id: string; _user_id: string }
+        Returns: boolean
+      }
+      usuario_tem_acesso_tarefa: {
+        Args: { _task_id: string; _user_id: string }
         Returns: boolean
       }
       usuario_tem_permissao: {
@@ -2788,6 +3470,12 @@ export type Database = {
       cliente_origem: "direto" | "parceiro" | "indicacao" | "importacao"
       comissao_regra_tipo: "percentual" | "fixo"
       comissao_status: "a_receber" | "recebida" | "paga_parceiro" | "encerrada"
+      demanda_status:
+        | "aberta"
+        | "em_andamento"
+        | "aguardando"
+        | "concluida"
+        | "cancelada"
       doc_categoria: "comprador" | "conjuge" | "vendedor" | "imovel" | "outros"
       doc_status:
         | "pendente"
@@ -2814,6 +3502,7 @@ export type Database = {
         | "presencial"
         | "followup"
         | "outro"
+      prioridade_op: "p1" | "p2" | "p3"
       proposta_doc_status:
         | "pendente"
         | "enviado"
@@ -2850,6 +3539,7 @@ export type Database = {
         | "cancelada"
         | "promovida"
       simulacao_tipo: "simplificada" | "completa"
+      tarefa_status: "aberta" | "em_andamento" | "concluida" | "cancelada"
       tipo_pessoa: "PF" | "PJ"
     }
     CompositeTypes: {
@@ -3000,6 +3690,13 @@ export const Constants = {
       cliente_origem: ["direto", "parceiro", "indicacao", "importacao"],
       comissao_regra_tipo: ["percentual", "fixo"],
       comissao_status: ["a_receber", "recebida", "paga_parceiro", "encerrada"],
+      demanda_status: [
+        "aberta",
+        "em_andamento",
+        "aguardando",
+        "concluida",
+        "cancelada",
+      ],
       doc_categoria: ["comprador", "conjuge", "vendedor", "imovel", "outros"],
       doc_status: ["pendente", "recebido", "aprovado", "reprovado", "expirado"],
       escopo_dados: ["todos", "equipe", "proprios"],
@@ -3023,6 +3720,7 @@ export const Constants = {
         "followup",
         "outro",
       ],
+      prioridade_op: ["p1", "p2", "p3"],
       proposta_doc_status: [
         "pendente",
         "enviado",
@@ -3063,6 +3761,7 @@ export const Constants = {
         "promovida",
       ],
       simulacao_tipo: ["simplificada", "completa"],
+      tarefa_status: ["aberta", "em_andamento", "concluida", "cancelada"],
       tipo_pessoa: ["PF", "PJ"],
     },
   },

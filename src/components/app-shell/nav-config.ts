@@ -21,6 +21,7 @@ import {
   LineChart,
   ArrowUpCircle,
   ArrowDownCircle,
+  Inbox,
 } from "lucide-react";
 
 /** Permissão exigida por um item (chave = `${modulo}:view`). */
@@ -68,6 +69,7 @@ export const navInterno: NavGroup[] = [
       { label: "Propostas", icon: FileText, to: "/operacional/propostas", perm: { modulo: "operacional.propostas" } },
       { label: "Contratos", icon: FileSignature, to: "/operacional/contratos", perm: { modulo: "operacional.contratos" } },
       { label: "Tarefas", icon: ListChecks, to: "/operacional/tarefas", perm: { modulo: "operacional.tarefas" } },
+      { label: "Demandas", icon: Inbox, to: "/operacional/demandas", perm: { modulo: "operacional.demandas" } },
     ],
   },
   {
