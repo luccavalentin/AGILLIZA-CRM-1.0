@@ -857,6 +857,17 @@ export type Database = {
         | "separacao_total"
         | "participacao_final"
         | "nao_aplicavel"
+      simulacao_banco_status: "aguardando" | "simulada" | "erro" | "expirada"
+      simulacao_status:
+        | "rascunho"
+        | "enviando"
+        | "simulada"
+        | "parcialmente_simulada"
+        | "erro_banco"
+        | "expirada"
+        | "cancelada"
+        | "promovida"
+      simulacao_tipo: "simplificada" | "completa"
       tipo_pessoa: "PF" | "PJ"
     }
     CompositeTypes: {
@@ -1023,6 +1034,18 @@ export const Constants = {
         "participacao_final",
         "nao_aplicavel",
       ],
+      simulacao_banco_status: ["aguardando", "simulada", "erro", "expirada"],
+      simulacao_status: [
+        "rascunho",
+        "enviando",
+        "simulada",
+        "parcialmente_simulada",
+        "erro_banco",
+        "expirada",
+        "cancelada",
+        "promovida",
+      ],
+      simulacao_tipo: ["simplificada", "completa"],
       tipo_pessoa: ["PF", "PJ"],
     },
   },
