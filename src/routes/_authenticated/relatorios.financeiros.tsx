@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ReportView, parseReportSearch } from "@/components/reports/report-view";
+import { ReportView } from "@/components/reports/report-view";
 
 export const Route = createFileRoute("/_authenticated/relatorios/financeiros")({
   head: () => ({ meta: [{ title: "Relatório financeiro — Relatórios — Agilliza" }] }),

@@ -18,6 +18,19 @@ import { Route as AuthenticatedSemAcessoRouteImport } from './routes/_authentica
 import { Route as AuthenticatedRelatoriosRouteImport } from './routes/_authenticated/relatorios'
 import { Route as AuthenticatedDocumentosRouteImport } from './routes/_authenticated/documentos'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedRelatoriosTarefasRouteImport } from './routes/_authenticated/relatorios.tarefas'
+import { Route as AuthenticatedRelatoriosSimulacoesRouteImport } from './routes/_authenticated/relatorios.simulacoes'
+import { Route as AuthenticatedRelatoriosPropostasRouteImport } from './routes/_authenticated/relatorios.propostas'
+import { Route as AuthenticatedRelatoriosPainelGeralRouteImport } from './routes/_authenticated/relatorios.painel-geral'
+import { Route as AuthenticatedRelatoriosOperacionaisRouteImport } from './routes/_authenticated/relatorios.operacionais'
+import { Route as AuthenticatedRelatoriosFinanceirosRouteImport } from './routes/_authenticated/relatorios.financeiros'
+import { Route as AuthenticatedRelatoriosDemandasRouteImport } from './routes/_authenticated/relatorios.demandas'
+import { Route as AuthenticatedRelatoriosCrmRouteImport } from './routes/_authenticated/relatorios.crm'
+import { Route as AuthenticatedRelatoriosConsolidadoRouteImport } from './routes/_authenticated/relatorios.consolidado'
+import { Route as AuthenticatedRelatoriosComissoesRouteImport } from './routes/_authenticated/relatorios.comissoes'
+import { Route as AuthenticatedRelatoriosComerciaisRouteImport } from './routes/_authenticated/relatorios.comerciais'
+import { Route as AuthenticatedRelatoriosClientesRouteImport } from './routes/_authenticated/relatorios.clientes'
+import { Route as AuthenticatedRelatoriosAppClienteRouteImport } from './routes/_authenticated/relatorios.app-cliente'
 import { Route as AuthenticatedOperacionalTarefasRouteImport } from './routes/_authenticated/operacional.tarefas'
 import { Route as AuthenticatedOperacionalSimulacoesRouteImport } from './routes/_authenticated/operacional.simulacoes'
 import { Route as AuthenticatedOperacionalPropostasRouteImport } from './routes/_authenticated/operacional.propostas'
@@ -94,6 +107,84 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedRelatoriosTarefasRoute =
+  AuthenticatedRelatoriosTarefasRouteImport.update({
+    id: '/tarefas',
+    path: '/tarefas',
+    getParentRoute: () => AuthenticatedRelatoriosRoute,
+  } as any)
+const AuthenticatedRelatoriosSimulacoesRoute =
+  AuthenticatedRelatoriosSimulacoesRouteImport.update({
+    id: '/simulacoes',
+    path: '/simulacoes',
+    getParentRoute: () => AuthenticatedRelatoriosRoute,
+  } as any)
+const AuthenticatedRelatoriosPropostasRoute =
+  AuthenticatedRelatoriosPropostasRouteImport.update({
+    id: '/propostas',
+    path: '/propostas',
+    getParentRoute: () => AuthenticatedRelatoriosRoute,
+  } as any)
+const AuthenticatedRelatoriosPainelGeralRoute =
+  AuthenticatedRelatoriosPainelGeralRouteImport.update({
+    id: '/painel-geral',
+    path: '/painel-geral',
+    getParentRoute: () => AuthenticatedRelatoriosRoute,
+  } as any)
+const AuthenticatedRelatoriosOperacionaisRoute =
+  AuthenticatedRelatoriosOperacionaisRouteImport.update({
+    id: '/operacionais',
+    path: '/operacionais',
+    getParentRoute: () => AuthenticatedRelatoriosRoute,
+  } as any)
+const AuthenticatedRelatoriosFinanceirosRoute =
+  AuthenticatedRelatoriosFinanceirosRouteImport.update({
+    id: '/financeiros',
+    path: '/financeiros',
+    getParentRoute: () => AuthenticatedRelatoriosRoute,
+  } as any)
+const AuthenticatedRelatoriosDemandasRoute =
+  AuthenticatedRelatoriosDemandasRouteImport.update({
+    id: '/demandas',
+    path: '/demandas',
+    getParentRoute: () => AuthenticatedRelatoriosRoute,
+  } as any)
+const AuthenticatedRelatoriosCrmRoute =
+  AuthenticatedRelatoriosCrmRouteImport.update({
+    id: '/crm',
+    path: '/crm',
+    getParentRoute: () => AuthenticatedRelatoriosRoute,
+  } as any)
+const AuthenticatedRelatoriosConsolidadoRoute =
+  AuthenticatedRelatoriosConsolidadoRouteImport.update({
+    id: '/consolidado',
+    path: '/consolidado',
+    getParentRoute: () => AuthenticatedRelatoriosRoute,
+  } as any)
+const AuthenticatedRelatoriosComissoesRoute =
+  AuthenticatedRelatoriosComissoesRouteImport.update({
+    id: '/comissoes',
+    path: '/comissoes',
+    getParentRoute: () => AuthenticatedRelatoriosRoute,
+  } as any)
+const AuthenticatedRelatoriosComerciaisRoute =
+  AuthenticatedRelatoriosComerciaisRouteImport.update({
+    id: '/comerciais',
+    path: '/comerciais',
+    getParentRoute: () => AuthenticatedRelatoriosRoute,
+  } as any)
+const AuthenticatedRelatoriosClientesRoute =
+  AuthenticatedRelatoriosClientesRouteImport.update({
+    id: '/clientes',
+    path: '/clientes',
+    getParentRoute: () => AuthenticatedRelatoriosRoute,
+  } as any)
+const AuthenticatedRelatoriosAppClienteRoute =
+  AuthenticatedRelatoriosAppClienteRouteImport.update({
+    id: '/app-cliente',
+    path: '/app-cliente',
+    getParentRoute: () => AuthenticatedRelatoriosRoute,
+  } as any)
 const AuthenticatedOperacionalTarefasRoute =
   AuthenticatedOperacionalTarefasRouteImport.update({
     id: '/operacional/tarefas',
@@ -287,7 +378,7 @@ export interface FileRoutesByFullPath {
   '/portal': typeof PortalRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/documentos': typeof AuthenticatedDocumentosRoute
-  '/relatorios': typeof AuthenticatedRelatoriosRoute
+  '/relatorios': typeof AuthenticatedRelatoriosRouteWithChildren
   '/sem-acesso': typeof AuthenticatedSemAcessoRoute
   '/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
   '/admin/notificacoes': typeof AuthenticatedAdminNotificacoesRoute
@@ -308,6 +399,19 @@ export interface FileRoutesByFullPath {
   '/operacional/propostas': typeof AuthenticatedOperacionalPropostasRoute
   '/operacional/simulacoes': typeof AuthenticatedOperacionalSimulacoesRoute
   '/operacional/tarefas': typeof AuthenticatedOperacionalTarefasRoute
+  '/relatorios/app-cliente': typeof AuthenticatedRelatoriosAppClienteRoute
+  '/relatorios/clientes': typeof AuthenticatedRelatoriosClientesRoute
+  '/relatorios/comerciais': typeof AuthenticatedRelatoriosComerciaisRoute
+  '/relatorios/comissoes': typeof AuthenticatedRelatoriosComissoesRoute
+  '/relatorios/consolidado': typeof AuthenticatedRelatoriosConsolidadoRoute
+  '/relatorios/crm': typeof AuthenticatedRelatoriosCrmRoute
+  '/relatorios/demandas': typeof AuthenticatedRelatoriosDemandasRoute
+  '/relatorios/financeiros': typeof AuthenticatedRelatoriosFinanceirosRoute
+  '/relatorios/operacionais': typeof AuthenticatedRelatoriosOperacionaisRoute
+  '/relatorios/painel-geral': typeof AuthenticatedRelatoriosPainelGeralRoute
+  '/relatorios/propostas': typeof AuthenticatedRelatoriosPropostasRoute
+  '/relatorios/simulacoes': typeof AuthenticatedRelatoriosSimulacoesRoute
+  '/relatorios/tarefas': typeof AuthenticatedRelatoriosTarefasRoute
   '/crm/clientes/$id': typeof AuthenticatedCrmClientesIdRoute
   '/crm/clientes/novo': typeof AuthenticatedCrmClientesNovoRoute
   '/operacional/demandas/$id': typeof AuthenticatedOperacionalDemandasIdRoute
@@ -328,7 +432,7 @@ export interface FileRoutesByTo {
   '/portal': typeof PortalRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/documentos': typeof AuthenticatedDocumentosRoute
-  '/relatorios': typeof AuthenticatedRelatoriosRoute
+  '/relatorios': typeof AuthenticatedRelatoriosRouteWithChildren
   '/sem-acesso': typeof AuthenticatedSemAcessoRoute
   '/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
   '/admin/notificacoes': typeof AuthenticatedAdminNotificacoesRoute
@@ -349,6 +453,19 @@ export interface FileRoutesByTo {
   '/operacional/propostas': typeof AuthenticatedOperacionalPropostasRoute
   '/operacional/simulacoes': typeof AuthenticatedOperacionalSimulacoesRoute
   '/operacional/tarefas': typeof AuthenticatedOperacionalTarefasRoute
+  '/relatorios/app-cliente': typeof AuthenticatedRelatoriosAppClienteRoute
+  '/relatorios/clientes': typeof AuthenticatedRelatoriosClientesRoute
+  '/relatorios/comerciais': typeof AuthenticatedRelatoriosComerciaisRoute
+  '/relatorios/comissoes': typeof AuthenticatedRelatoriosComissoesRoute
+  '/relatorios/consolidado': typeof AuthenticatedRelatoriosConsolidadoRoute
+  '/relatorios/crm': typeof AuthenticatedRelatoriosCrmRoute
+  '/relatorios/demandas': typeof AuthenticatedRelatoriosDemandasRoute
+  '/relatorios/financeiros': typeof AuthenticatedRelatoriosFinanceirosRoute
+  '/relatorios/operacionais': typeof AuthenticatedRelatoriosOperacionaisRoute
+  '/relatorios/painel-geral': typeof AuthenticatedRelatoriosPainelGeralRoute
+  '/relatorios/propostas': typeof AuthenticatedRelatoriosPropostasRoute
+  '/relatorios/simulacoes': typeof AuthenticatedRelatoriosSimulacoesRoute
+  '/relatorios/tarefas': typeof AuthenticatedRelatoriosTarefasRoute
   '/crm/clientes/$id': typeof AuthenticatedCrmClientesIdRoute
   '/crm/clientes/novo': typeof AuthenticatedCrmClientesNovoRoute
   '/operacional/demandas/$id': typeof AuthenticatedOperacionalDemandasIdRoute
@@ -371,7 +488,7 @@ export interface FileRoutesById {
   '/portal': typeof PortalRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/documentos': typeof AuthenticatedDocumentosRoute
-  '/_authenticated/relatorios': typeof AuthenticatedRelatoriosRoute
+  '/_authenticated/relatorios': typeof AuthenticatedRelatoriosRouteWithChildren
   '/_authenticated/sem-acesso': typeof AuthenticatedSemAcessoRoute
   '/_authenticated/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
   '/_authenticated/admin/notificacoes': typeof AuthenticatedAdminNotificacoesRoute
@@ -392,6 +509,19 @@ export interface FileRoutesById {
   '/_authenticated/operacional/propostas': typeof AuthenticatedOperacionalPropostasRoute
   '/_authenticated/operacional/simulacoes': typeof AuthenticatedOperacionalSimulacoesRoute
   '/_authenticated/operacional/tarefas': typeof AuthenticatedOperacionalTarefasRoute
+  '/_authenticated/relatorios/app-cliente': typeof AuthenticatedRelatoriosAppClienteRoute
+  '/_authenticated/relatorios/clientes': typeof AuthenticatedRelatoriosClientesRoute
+  '/_authenticated/relatorios/comerciais': typeof AuthenticatedRelatoriosComerciaisRoute
+  '/_authenticated/relatorios/comissoes': typeof AuthenticatedRelatoriosComissoesRoute
+  '/_authenticated/relatorios/consolidado': typeof AuthenticatedRelatoriosConsolidadoRoute
+  '/_authenticated/relatorios/crm': typeof AuthenticatedRelatoriosCrmRoute
+  '/_authenticated/relatorios/demandas': typeof AuthenticatedRelatoriosDemandasRoute
+  '/_authenticated/relatorios/financeiros': typeof AuthenticatedRelatoriosFinanceirosRoute
+  '/_authenticated/relatorios/operacionais': typeof AuthenticatedRelatoriosOperacionaisRoute
+  '/_authenticated/relatorios/painel-geral': typeof AuthenticatedRelatoriosPainelGeralRoute
+  '/_authenticated/relatorios/propostas': typeof AuthenticatedRelatoriosPropostasRoute
+  '/_authenticated/relatorios/simulacoes': typeof AuthenticatedRelatoriosSimulacoesRoute
+  '/_authenticated/relatorios/tarefas': typeof AuthenticatedRelatoriosTarefasRoute
   '/_authenticated/crm/clientes_/$id': typeof AuthenticatedCrmClientesIdRoute
   '/_authenticated/crm/clientes_/novo': typeof AuthenticatedCrmClientesNovoRoute
   '/_authenticated/operacional/demandas_/$id': typeof AuthenticatedOperacionalDemandasIdRoute
@@ -435,6 +565,19 @@ export interface FileRouteTypes {
     | '/operacional/propostas'
     | '/operacional/simulacoes'
     | '/operacional/tarefas'
+    | '/relatorios/app-cliente'
+    | '/relatorios/clientes'
+    | '/relatorios/comerciais'
+    | '/relatorios/comissoes'
+    | '/relatorios/consolidado'
+    | '/relatorios/crm'
+    | '/relatorios/demandas'
+    | '/relatorios/financeiros'
+    | '/relatorios/operacionais'
+    | '/relatorios/painel-geral'
+    | '/relatorios/propostas'
+    | '/relatorios/simulacoes'
+    | '/relatorios/tarefas'
     | '/crm/clientes/$id'
     | '/crm/clientes/novo'
     | '/operacional/demandas/$id'
@@ -476,6 +619,19 @@ export interface FileRouteTypes {
     | '/operacional/propostas'
     | '/operacional/simulacoes'
     | '/operacional/tarefas'
+    | '/relatorios/app-cliente'
+    | '/relatorios/clientes'
+    | '/relatorios/comerciais'
+    | '/relatorios/comissoes'
+    | '/relatorios/consolidado'
+    | '/relatorios/crm'
+    | '/relatorios/demandas'
+    | '/relatorios/financeiros'
+    | '/relatorios/operacionais'
+    | '/relatorios/painel-geral'
+    | '/relatorios/propostas'
+    | '/relatorios/simulacoes'
+    | '/relatorios/tarefas'
     | '/crm/clientes/$id'
     | '/crm/clientes/novo'
     | '/operacional/demandas/$id'
@@ -518,6 +674,19 @@ export interface FileRouteTypes {
     | '/_authenticated/operacional/propostas'
     | '/_authenticated/operacional/simulacoes'
     | '/_authenticated/operacional/tarefas'
+    | '/_authenticated/relatorios/app-cliente'
+    | '/_authenticated/relatorios/clientes'
+    | '/_authenticated/relatorios/comerciais'
+    | '/_authenticated/relatorios/comissoes'
+    | '/_authenticated/relatorios/consolidado'
+    | '/_authenticated/relatorios/crm'
+    | '/_authenticated/relatorios/demandas'
+    | '/_authenticated/relatorios/financeiros'
+    | '/_authenticated/relatorios/operacionais'
+    | '/_authenticated/relatorios/painel-geral'
+    | '/_authenticated/relatorios/propostas'
+    | '/_authenticated/relatorios/simulacoes'
+    | '/_authenticated/relatorios/tarefas'
     | '/_authenticated/crm/clientes_/$id'
     | '/_authenticated/crm/clientes_/novo'
     | '/_authenticated/operacional/demandas_/$id'
@@ -606,6 +775,97 @@ declare module '@tanstack/react-router' {
       fullPath: '/dashboard'
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/relatorios/tarefas': {
+      id: '/_authenticated/relatorios/tarefas'
+      path: '/tarefas'
+      fullPath: '/relatorios/tarefas'
+      preLoaderRoute: typeof AuthenticatedRelatoriosTarefasRouteImport
+      parentRoute: typeof AuthenticatedRelatoriosRoute
+    }
+    '/_authenticated/relatorios/simulacoes': {
+      id: '/_authenticated/relatorios/simulacoes'
+      path: '/simulacoes'
+      fullPath: '/relatorios/simulacoes'
+      preLoaderRoute: typeof AuthenticatedRelatoriosSimulacoesRouteImport
+      parentRoute: typeof AuthenticatedRelatoriosRoute
+    }
+    '/_authenticated/relatorios/propostas': {
+      id: '/_authenticated/relatorios/propostas'
+      path: '/propostas'
+      fullPath: '/relatorios/propostas'
+      preLoaderRoute: typeof AuthenticatedRelatoriosPropostasRouteImport
+      parentRoute: typeof AuthenticatedRelatoriosRoute
+    }
+    '/_authenticated/relatorios/painel-geral': {
+      id: '/_authenticated/relatorios/painel-geral'
+      path: '/painel-geral'
+      fullPath: '/relatorios/painel-geral'
+      preLoaderRoute: typeof AuthenticatedRelatoriosPainelGeralRouteImport
+      parentRoute: typeof AuthenticatedRelatoriosRoute
+    }
+    '/_authenticated/relatorios/operacionais': {
+      id: '/_authenticated/relatorios/operacionais'
+      path: '/operacionais'
+      fullPath: '/relatorios/operacionais'
+      preLoaderRoute: typeof AuthenticatedRelatoriosOperacionaisRouteImport
+      parentRoute: typeof AuthenticatedRelatoriosRoute
+    }
+    '/_authenticated/relatorios/financeiros': {
+      id: '/_authenticated/relatorios/financeiros'
+      path: '/financeiros'
+      fullPath: '/relatorios/financeiros'
+      preLoaderRoute: typeof AuthenticatedRelatoriosFinanceirosRouteImport
+      parentRoute: typeof AuthenticatedRelatoriosRoute
+    }
+    '/_authenticated/relatorios/demandas': {
+      id: '/_authenticated/relatorios/demandas'
+      path: '/demandas'
+      fullPath: '/relatorios/demandas'
+      preLoaderRoute: typeof AuthenticatedRelatoriosDemandasRouteImport
+      parentRoute: typeof AuthenticatedRelatoriosRoute
+    }
+    '/_authenticated/relatorios/crm': {
+      id: '/_authenticated/relatorios/crm'
+      path: '/crm'
+      fullPath: '/relatorios/crm'
+      preLoaderRoute: typeof AuthenticatedRelatoriosCrmRouteImport
+      parentRoute: typeof AuthenticatedRelatoriosRoute
+    }
+    '/_authenticated/relatorios/consolidado': {
+      id: '/_authenticated/relatorios/consolidado'
+      path: '/consolidado'
+      fullPath: '/relatorios/consolidado'
+      preLoaderRoute: typeof AuthenticatedRelatoriosConsolidadoRouteImport
+      parentRoute: typeof AuthenticatedRelatoriosRoute
+    }
+    '/_authenticated/relatorios/comissoes': {
+      id: '/_authenticated/relatorios/comissoes'
+      path: '/comissoes'
+      fullPath: '/relatorios/comissoes'
+      preLoaderRoute: typeof AuthenticatedRelatoriosComissoesRouteImport
+      parentRoute: typeof AuthenticatedRelatoriosRoute
+    }
+    '/_authenticated/relatorios/comerciais': {
+      id: '/_authenticated/relatorios/comerciais'
+      path: '/comerciais'
+      fullPath: '/relatorios/comerciais'
+      preLoaderRoute: typeof AuthenticatedRelatoriosComerciaisRouteImport
+      parentRoute: typeof AuthenticatedRelatoriosRoute
+    }
+    '/_authenticated/relatorios/clientes': {
+      id: '/_authenticated/relatorios/clientes'
+      path: '/clientes'
+      fullPath: '/relatorios/clientes'
+      preLoaderRoute: typeof AuthenticatedRelatoriosClientesRouteImport
+      parentRoute: typeof AuthenticatedRelatoriosRoute
+    }
+    '/_authenticated/relatorios/app-cliente': {
+      id: '/_authenticated/relatorios/app-cliente'
+      path: '/app-cliente'
+      fullPath: '/relatorios/app-cliente'
+      preLoaderRoute: typeof AuthenticatedRelatoriosAppClienteRouteImport
+      parentRoute: typeof AuthenticatedRelatoriosRoute
     }
     '/_authenticated/operacional/tarefas': {
       id: '/_authenticated/operacional/tarefas'
@@ -827,10 +1087,57 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthenticatedRelatoriosRouteChildren {
+  AuthenticatedRelatoriosAppClienteRoute: typeof AuthenticatedRelatoriosAppClienteRoute
+  AuthenticatedRelatoriosClientesRoute: typeof AuthenticatedRelatoriosClientesRoute
+  AuthenticatedRelatoriosComerciaisRoute: typeof AuthenticatedRelatoriosComerciaisRoute
+  AuthenticatedRelatoriosComissoesRoute: typeof AuthenticatedRelatoriosComissoesRoute
+  AuthenticatedRelatoriosConsolidadoRoute: typeof AuthenticatedRelatoriosConsolidadoRoute
+  AuthenticatedRelatoriosCrmRoute: typeof AuthenticatedRelatoriosCrmRoute
+  AuthenticatedRelatoriosDemandasRoute: typeof AuthenticatedRelatoriosDemandasRoute
+  AuthenticatedRelatoriosFinanceirosRoute: typeof AuthenticatedRelatoriosFinanceirosRoute
+  AuthenticatedRelatoriosOperacionaisRoute: typeof AuthenticatedRelatoriosOperacionaisRoute
+  AuthenticatedRelatoriosPainelGeralRoute: typeof AuthenticatedRelatoriosPainelGeralRoute
+  AuthenticatedRelatoriosPropostasRoute: typeof AuthenticatedRelatoriosPropostasRoute
+  AuthenticatedRelatoriosSimulacoesRoute: typeof AuthenticatedRelatoriosSimulacoesRoute
+  AuthenticatedRelatoriosTarefasRoute: typeof AuthenticatedRelatoriosTarefasRoute
+}
+
+const AuthenticatedRelatoriosRouteChildren: AuthenticatedRelatoriosRouteChildren =
+  {
+    AuthenticatedRelatoriosAppClienteRoute:
+      AuthenticatedRelatoriosAppClienteRoute,
+    AuthenticatedRelatoriosClientesRoute: AuthenticatedRelatoriosClientesRoute,
+    AuthenticatedRelatoriosComerciaisRoute:
+      AuthenticatedRelatoriosComerciaisRoute,
+    AuthenticatedRelatoriosComissoesRoute:
+      AuthenticatedRelatoriosComissoesRoute,
+    AuthenticatedRelatoriosConsolidadoRoute:
+      AuthenticatedRelatoriosConsolidadoRoute,
+    AuthenticatedRelatoriosCrmRoute: AuthenticatedRelatoriosCrmRoute,
+    AuthenticatedRelatoriosDemandasRoute: AuthenticatedRelatoriosDemandasRoute,
+    AuthenticatedRelatoriosFinanceirosRoute:
+      AuthenticatedRelatoriosFinanceirosRoute,
+    AuthenticatedRelatoriosOperacionaisRoute:
+      AuthenticatedRelatoriosOperacionaisRoute,
+    AuthenticatedRelatoriosPainelGeralRoute:
+      AuthenticatedRelatoriosPainelGeralRoute,
+    AuthenticatedRelatoriosPropostasRoute:
+      AuthenticatedRelatoriosPropostasRoute,
+    AuthenticatedRelatoriosSimulacoesRoute:
+      AuthenticatedRelatoriosSimulacoesRoute,
+    AuthenticatedRelatoriosTarefasRoute: AuthenticatedRelatoriosTarefasRoute,
+  }
+
+const AuthenticatedRelatoriosRouteWithChildren =
+  AuthenticatedRelatoriosRoute._addFileChildren(
+    AuthenticatedRelatoriosRouteChildren,
+  )
+
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedDocumentosRoute: typeof AuthenticatedDocumentosRoute
-  AuthenticatedRelatoriosRoute: typeof AuthenticatedRelatoriosRoute
+  AuthenticatedRelatoriosRoute: typeof AuthenticatedRelatoriosRouteWithChildren
   AuthenticatedSemAcessoRoute: typeof AuthenticatedSemAcessoRoute
   AuthenticatedAdminAuditoriaRoute: typeof AuthenticatedAdminAuditoriaRoute
   AuthenticatedAdminNotificacoesRoute: typeof AuthenticatedAdminNotificacoesRoute
@@ -866,7 +1173,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedDocumentosRoute: AuthenticatedDocumentosRoute,
-  AuthenticatedRelatoriosRoute: AuthenticatedRelatoriosRoute,
+  AuthenticatedRelatoriosRoute: AuthenticatedRelatoriosRouteWithChildren,
   AuthenticatedSemAcessoRoute: AuthenticatedSemAcessoRoute,
   AuthenticatedAdminAuditoriaRoute: AuthenticatedAdminAuditoriaRoute,
   AuthenticatedAdminNotificacoesRoute: AuthenticatedAdminNotificacoesRoute,
