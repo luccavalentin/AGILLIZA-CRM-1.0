@@ -33,8 +33,6 @@ export function BaixarDialog({ tipo, conta, open, onOpenChange }: Props) {
   const [file, setFile] = useState<File | null>(null);
   const [enviando, setEnviando] = useState(false);
 
-  // sincroniza valor sugerido ao abrir
-  useState(() => {});
 
   const mut = useMutation({
     mutationFn: (args: { comprovante_path?: string; valorFinal: number }) =>
