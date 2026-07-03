@@ -21,6 +21,7 @@ import {
   LineChart,
   ArrowUpCircle,
   ArrowDownCircle,
+  Inbox,
 } from "lucide-react";
 
 /** Permissão exigida por um item (chave = `${modulo}:view`). */
