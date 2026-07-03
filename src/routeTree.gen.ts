@@ -45,6 +45,7 @@ import { Route as AuthenticatedOperacionalSimulacoesIdRouteImport } from './rout
 import { Route as AuthenticatedOperacionalPropostasKanbanRouteImport } from './routes/_authenticated/operacional.propostas_.kanban'
 import { Route as AuthenticatedOperacionalPropostasEnviarRouteImport } from './routes/_authenticated/operacional.propostas_.enviar'
 import { Route as AuthenticatedOperacionalPropostasIdRouteImport } from './routes/_authenticated/operacional.propostas_.$id'
+import { Route as AuthenticatedOperacionalDemandasIdRouteImport } from './routes/_authenticated/operacional.demandas_.$id'
 import { Route as AuthenticatedCrmClientesNovoRouteImport } from './routes/_authenticated/crm.clientes_.novo'
 import { Route as AuthenticatedCrmClientesIdRouteImport } from './routes/_authenticated/crm.clientes_.$id'
 import { Route as ApiPublicWebhookHomefinPropostaRouteImport } from './routes/api/public/webhook.homefin.proposta'
@@ -254,6 +255,12 @@ const AuthenticatedOperacionalPropostasIdRoute =
     path: '/operacional/propostas/$id',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedOperacionalDemandasIdRoute =
+  AuthenticatedOperacionalDemandasIdRouteImport.update({
+    id: '/operacional/demandas_/$id',
+    path: '/operacional/demandas/$id',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedCrmClientesNovoRoute =
   AuthenticatedCrmClientesNovoRouteImport.update({
     id: '/crm/clientes_/novo',
@@ -303,6 +310,7 @@ export interface FileRoutesByFullPath {
   '/operacional/tarefas': typeof AuthenticatedOperacionalTarefasRoute
   '/crm/clientes/$id': typeof AuthenticatedCrmClientesIdRoute
   '/crm/clientes/novo': typeof AuthenticatedCrmClientesNovoRoute
+  '/operacional/demandas/$id': typeof AuthenticatedOperacionalDemandasIdRoute
   '/operacional/propostas/$id': typeof AuthenticatedOperacionalPropostasIdRoute
   '/operacional/propostas/enviar': typeof AuthenticatedOperacionalPropostasEnviarRoute
   '/operacional/propostas/kanban': typeof AuthenticatedOperacionalPropostasKanbanRoute
@@ -343,6 +351,7 @@ export interface FileRoutesByTo {
   '/operacional/tarefas': typeof AuthenticatedOperacionalTarefasRoute
   '/crm/clientes/$id': typeof AuthenticatedCrmClientesIdRoute
   '/crm/clientes/novo': typeof AuthenticatedCrmClientesNovoRoute
+  '/operacional/demandas/$id': typeof AuthenticatedOperacionalDemandasIdRoute
   '/operacional/propostas/$id': typeof AuthenticatedOperacionalPropostasIdRoute
   '/operacional/propostas/enviar': typeof AuthenticatedOperacionalPropostasEnviarRoute
   '/operacional/propostas/kanban': typeof AuthenticatedOperacionalPropostasKanbanRoute
@@ -385,6 +394,7 @@ export interface FileRoutesById {
   '/_authenticated/operacional/tarefas': typeof AuthenticatedOperacionalTarefasRoute
   '/_authenticated/crm/clientes_/$id': typeof AuthenticatedCrmClientesIdRoute
   '/_authenticated/crm/clientes_/novo': typeof AuthenticatedCrmClientesNovoRoute
+  '/_authenticated/operacional/demandas_/$id': typeof AuthenticatedOperacionalDemandasIdRoute
   '/_authenticated/operacional/propostas_/$id': typeof AuthenticatedOperacionalPropostasIdRoute
   '/_authenticated/operacional/propostas_/enviar': typeof AuthenticatedOperacionalPropostasEnviarRoute
   '/_authenticated/operacional/propostas_/kanban': typeof AuthenticatedOperacionalPropostasKanbanRoute
@@ -427,6 +437,7 @@ export interface FileRouteTypes {
     | '/operacional/tarefas'
     | '/crm/clientes/$id'
     | '/crm/clientes/novo'
+    | '/operacional/demandas/$id'
     | '/operacional/propostas/$id'
     | '/operacional/propostas/enviar'
     | '/operacional/propostas/kanban'
@@ -467,6 +478,7 @@ export interface FileRouteTypes {
     | '/operacional/tarefas'
     | '/crm/clientes/$id'
     | '/crm/clientes/novo'
+    | '/operacional/demandas/$id'
     | '/operacional/propostas/$id'
     | '/operacional/propostas/enviar'
     | '/operacional/propostas/kanban'
@@ -508,6 +520,7 @@ export interface FileRouteTypes {
     | '/_authenticated/operacional/tarefas'
     | '/_authenticated/crm/clientes_/$id'
     | '/_authenticated/crm/clientes_/novo'
+    | '/_authenticated/operacional/demandas_/$id'
     | '/_authenticated/operacional/propostas_/$id'
     | '/_authenticated/operacional/propostas_/enviar'
     | '/_authenticated/operacional/propostas_/kanban'
@@ -783,6 +796,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOperacionalPropostasIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/operacional/demandas_/$id': {
+      id: '/_authenticated/operacional/demandas_/$id'
+      path: '/operacional/demandas/$id'
+      fullPath: '/operacional/demandas/$id'
+      preLoaderRoute: typeof AuthenticatedOperacionalDemandasIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/crm/clientes_/novo': {
       id: '/_authenticated/crm/clientes_/novo'
       path: '/crm/clientes/novo'
@@ -833,6 +853,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedOperacionalTarefasRoute: typeof AuthenticatedOperacionalTarefasRoute
   AuthenticatedCrmClientesIdRoute: typeof AuthenticatedCrmClientesIdRoute
   AuthenticatedCrmClientesNovoRoute: typeof AuthenticatedCrmClientesNovoRoute
+  AuthenticatedOperacionalDemandasIdRoute: typeof AuthenticatedOperacionalDemandasIdRoute
   AuthenticatedOperacionalPropostasIdRoute: typeof AuthenticatedOperacionalPropostasIdRoute
   AuthenticatedOperacionalPropostasEnviarRoute: typeof AuthenticatedOperacionalPropostasEnviarRoute
   AuthenticatedOperacionalPropostasKanbanRoute: typeof AuthenticatedOperacionalPropostasKanbanRoute
@@ -874,6 +895,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedOperacionalTarefasRoute: AuthenticatedOperacionalTarefasRoute,
   AuthenticatedCrmClientesIdRoute: AuthenticatedCrmClientesIdRoute,
   AuthenticatedCrmClientesNovoRoute: AuthenticatedCrmClientesNovoRoute,
+  AuthenticatedOperacionalDemandasIdRoute:
+    AuthenticatedOperacionalDemandasIdRoute,
   AuthenticatedOperacionalPropostasIdRoute:
     AuthenticatedOperacionalPropostasIdRoute,
   AuthenticatedOperacionalPropostasEnviarRoute:
