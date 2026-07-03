@@ -274,7 +274,7 @@ export const criarSimulacao = createServerFn({ method: "POST" })
 
     const { data: sim, error } = await supabase
       .from("simulacoes")
-      .insert(insert)
+      .insert(insert as any)
       .select("id, numero_simulacao")
       .single();
     if (error) throw new Error(error.message);
