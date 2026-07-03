@@ -20,7 +20,7 @@ import { listarBancosAtivos } from "@/lib/simulacao/simulacoes.functions";
 import { enviarOtpEmail, validarOtpEmail } from "@/lib/simulacao/simulacoes.functions";
 import { compararBancosRapido, taxaAnoDeBanco } from "@/lib/simulacao/simulacao-rapida";
 
-export const Route = createFileRoute("/_authenticated/operacional/simulacoes/nova")({
+export const Route = createFileRoute("/_authenticated/operacional/simulacoes_/nova")({
   head: () => ({ meta: [{ title: "Nova simulação — Agilliza" }] }),
   beforeLoad: () => assertModuloPermitido("operacional.simulacoes"),
   component: Pagina,
