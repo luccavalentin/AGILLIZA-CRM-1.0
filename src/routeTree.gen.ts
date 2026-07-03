@@ -18,6 +18,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ParceiroIndexRouteImport } from './routes/parceiro.index'
 import { Route as ParceiroSimulacoesRouteImport } from './routes/parceiro.simulacoes'
 import { Route as ParceiroPropostasRouteImport } from './routes/parceiro.propostas'
+import { Route as ParceiroComissoesRouteImport } from './routes/parceiro.comissoes'
 import { Route as ParceiroClientesRouteImport } from './routes/parceiro.clientes'
 import { Route as ClienteVisaoGeralRouteImport } from './routes/cliente.visao-geral'
 import { Route as ClientePerfilRouteImport } from './routes/cliente.perfil'
@@ -119,6 +120,11 @@ const ParceiroSimulacoesRoute = ParceiroSimulacoesRouteImport.update({
 const ParceiroPropostasRoute = ParceiroPropostasRouteImport.update({
   id: '/propostas',
   path: '/propostas',
+  getParentRoute: () => ParceiroRoute,
+} as any)
+const ParceiroComissoesRoute = ParceiroComissoesRouteImport.update({
+  id: '/comissoes',
+  path: '/comissoes',
   getParentRoute: () => ParceiroRoute,
 } as any)
 const ParceiroClientesRoute = ParceiroClientesRouteImport.update({
@@ -476,6 +482,7 @@ export interface FileRoutesByFullPath {
   '/cliente/perfil': typeof ClientePerfilRoute
   '/cliente/visao-geral': typeof ClienteVisaoGeralRoute
   '/parceiro/clientes': typeof ParceiroClientesRoute
+  '/parceiro/comissoes': typeof ParceiroComissoesRoute
   '/parceiro/propostas': typeof ParceiroPropostasRoute
   '/parceiro/simulacoes': typeof ParceiroSimulacoesRoute
   '/parceiro/': typeof ParceiroIndexRoute
@@ -542,6 +549,7 @@ export interface FileRoutesByTo {
   '/cliente/perfil': typeof ClientePerfilRoute
   '/cliente/visao-geral': typeof ClienteVisaoGeralRoute
   '/parceiro/clientes': typeof ParceiroClientesRoute
+  '/parceiro/comissoes': typeof ParceiroComissoesRoute
   '/parceiro/propostas': typeof ParceiroPropostasRoute
   '/parceiro/simulacoes': typeof ParceiroSimulacoesRoute
   '/parceiro': typeof ParceiroIndexRoute
@@ -612,6 +620,7 @@ export interface FileRoutesById {
   '/cliente/perfil': typeof ClientePerfilRoute
   '/cliente/visao-geral': typeof ClienteVisaoGeralRoute
   '/parceiro/clientes': typeof ParceiroClientesRoute
+  '/parceiro/comissoes': typeof ParceiroComissoesRoute
   '/parceiro/propostas': typeof ParceiroPropostasRoute
   '/parceiro/simulacoes': typeof ParceiroSimulacoesRoute
   '/parceiro/': typeof ParceiroIndexRoute
@@ -682,6 +691,7 @@ export interface FileRouteTypes {
     | '/cliente/perfil'
     | '/cliente/visao-geral'
     | '/parceiro/clientes'
+    | '/parceiro/comissoes'
     | '/parceiro/propostas'
     | '/parceiro/simulacoes'
     | '/parceiro/'
@@ -748,6 +758,7 @@ export interface FileRouteTypes {
     | '/cliente/perfil'
     | '/cliente/visao-geral'
     | '/parceiro/clientes'
+    | '/parceiro/comissoes'
     | '/parceiro/propostas'
     | '/parceiro/simulacoes'
     | '/parceiro'
@@ -817,6 +828,7 @@ export interface FileRouteTypes {
     | '/cliente/perfil'
     | '/cliente/visao-geral'
     | '/parceiro/clientes'
+    | '/parceiro/comissoes'
     | '/parceiro/propostas'
     | '/parceiro/simulacoes'
     | '/parceiro/'
@@ -945,6 +957,13 @@ declare module '@tanstack/react-router' {
       path: '/propostas'
       fullPath: '/parceiro/propostas'
       preLoaderRoute: typeof ParceiroPropostasRouteImport
+      parentRoute: typeof ParceiroRoute
+    }
+    '/parceiro/comissoes': {
+      id: '/parceiro/comissoes'
+      path: '/comissoes'
+      fullPath: '/parceiro/comissoes'
+      preLoaderRoute: typeof ParceiroComissoesRouteImport
       parentRoute: typeof ParceiroRoute
     }
     '/parceiro/clientes': {
@@ -1523,6 +1542,7 @@ const ClienteRouteWithChildren =
 
 interface ParceiroRouteChildren {
   ParceiroClientesRoute: typeof ParceiroClientesRoute
+  ParceiroComissoesRoute: typeof ParceiroComissoesRoute
   ParceiroPropostasRoute: typeof ParceiroPropostasRoute
   ParceiroSimulacoesRoute: typeof ParceiroSimulacoesRoute
   ParceiroIndexRoute: typeof ParceiroIndexRoute
@@ -1530,6 +1550,7 @@ interface ParceiroRouteChildren {
 
 const ParceiroRouteChildren: ParceiroRouteChildren = {
   ParceiroClientesRoute: ParceiroClientesRoute,
+  ParceiroComissoesRoute: ParceiroComissoesRoute,
   ParceiroPropostasRoute: ParceiroPropostasRoute,
   ParceiroSimulacoesRoute: ParceiroSimulacoesRoute,
   ParceiroIndexRoute: ParceiroIndexRoute,
