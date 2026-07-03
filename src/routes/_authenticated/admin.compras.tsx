@@ -24,7 +24,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useQuery as _u } from "@tanstack/react-query";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { getMinhaSessao } from "@/lib/session.functions";
 import {
@@ -55,7 +54,7 @@ function Pagina() {
   const [valor, setValor] = useState("");
   const [categoria, setCategoria] = useState("");
 
-  const sessao = _u({ queryKey: ["minha-sessao"], queryFn: () => getMinhaSessao() });
+  const sessao = useQuery({ queryKey: ["minha-sessao"], queryFn: () => getMinhaSessao() });
   const podeAprovar = ["admin", "correspondente", "gestor"].some((r) =>
     (sessao.data?.roles ?? []).includes(r as never),
   );
