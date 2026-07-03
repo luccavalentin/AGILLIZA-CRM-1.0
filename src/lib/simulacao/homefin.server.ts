@@ -63,8 +63,8 @@ async function registrarLog(entrada: {
       endpoint: entrada.endpoint,
       metodo: entrada.metodo,
       status_http: entrada.status_http ?? null,
-      request_masked: entrada.request ? (mascarar(entrada.request) as object) : null,
-      response: (entrada.response as object) ?? null,
+      request_masked: entrada.request ? (mascarar(entrada.request) as any) : null,
+      response: (entrada.response as any) ?? null,
       erro: entrada.erro ?? null,
     });
   } catch (e) {
