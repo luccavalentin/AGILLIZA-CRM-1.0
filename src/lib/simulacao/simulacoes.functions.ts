@@ -221,7 +221,7 @@ export const criarSimulacao = createServerFn({ method: "POST" })
           renda_total_declarada: dd.renda_total ?? null,
           criador_id: userId,
           responsavel_id: userId,
-        })
+        } as any)
         .select("id")
         .maybeSingle();
       if (!errCli && novo) cliente_id = novo.id;
