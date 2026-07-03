@@ -1,0 +1,624 @@
+{
+  "info": {
+    "_postman_id": "4c43bfc3-57ce-4bc0-9e8c-51cb67e7f8ef",
+    "name": "API HomeFin",
+    "description": "Coleção Postman para a API HomeFin, organizada por fluxo de negócio conforme documentação oficial.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "53467183",
+    "_collection_link": "https://go.postman.co/collection/53467183-4c43bfc3-57ce-4bc0-9e8c-51cb67e7f8ef?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "1. Autenticação",
+      "item": [
+        {
+          "name": "Gerar Token (JWT)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.jwt) {",
+                  "    pm.environment.set(\"jwt\", jsonData.jwt);",
+                  "    pm.environment.set(\"idParceiro\", jsonData.usuario.idParceiro);",
+                  "    pm.environment.set(\"idRegional\", jsonData.usuario.idRegional);",
+                  "    pm.environment.set(\"idUsuarioParceiro\", jsonData.usuario.idUsuarioParceiro);",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "packages": {},
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"secretId\": \"{{SECRET_ID}}\",\n  \"secretKey\": \"{{SECRET_KEY}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/token",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "token"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "2. Usuários Parceiros",
+      "item": [
+        {
+          "name": "Listar Usuários Parceiros",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/usuarios-parceiros",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "usuarios-parceiros"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "3. Domínios",
+      "item": [
+        {
+          "name": "Listar Operações",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/dominios/operacoes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "dominios",
+                "operacoes"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Listar Bancos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/dominios/bancos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "dominios",
+                "bancos"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "4. Oportunidade",
+      "item": [
+        {
+          "name": "Criar Oportunidade",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.idOportunidade) {",
+                  "    pm.environment.set(\"idOportunidade\", jsonData.idOportunidade);",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"operacao\": {\n    \"idOperacao\": \"1\"\n  },\n  \"regional\": {\n    \"idRegional\": \"{{idRegional}}\"\n  },\n  \"parceiro\": {\n    \"idParceiro\": \"{{idParceiro}}\"\n  },\n  \"usuarioParceiro\": {\n    \"idUsuarioParceiro\": \"{{idUsuarioParceiro}}\"\n  },\n  \"tipoImovel\": {\n    \"id\": \"AP\"\n  },\n  \"usoImovel\": {\n    \"id\": \"R\"\n  },\n  \"uf\": {\n    \"codigo\": \"SP\"\n  },\n  \"valorImovel\": {{valorImovel}},\n  \"valorFinanciamento\": {{valorFinanciamento}},\n  \"prazo\": {{prazo}},\n  \"utilizaFgtsSimulacao\": \"N\",\n  \"bancos\": [\n    {\n      \"idBanco\": 45,\n      \"codigoBanco\": 237,\n      \"nomeBanco\": \"Banco Bradesco\",\n      \"flagSimulacao\": \"{{flagSimulacao_Bradesco}}\"\n    },\n    {\n      \"idBanco\": 61,\n      \"codigoBanco\": 341,\n      \"nomeBanco\": \"Banco Itaú\",\n      \"flagSimulacao\": \"{{flagSimulacao_Itau}}\"\n    },\n    {\n      \"idBanco\": 9,\n      \"codigoBanco\": 33,\n      \"nomeBanco\": \"Banco Santander\",\n      \"flagSimulacao\": \"{{flagSimulacao_Santander}}\"\n    }\n  ],\n  \"cpfCnpj\": \"{{cpfCnpj_Cliente}}\",\n  \"nome\": \"{{nome_Cliente}}\",\n  \"rendaTotal\": {{renda_Cliente}},\n  \"codigoSistemaAmortizacaoBanco\": {\n    \"id\": \"S\"\n  },\n  \"dataNascimento\": \"2001-02-12\",\n  \"email\": \"joaofarias@homefin.com.br\",\n  \"celular\": \"41999107330\",\n  \"fgCompoeRenda\": false,\n  \"situacaoImovel\": {\n    \"codigo\": \"U\"\n  },\n  \"fgFinanciarDespesas\": \"N\",\n  \"tipoEstadoCivil\": {\n    \"id\": \"S\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/oportunidade",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "oportunidade"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Consultar Oportunidade",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/oportunidade/{{idOportunidade}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "oportunidade",
+                "{{idOportunidade}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Atualizar Oportunidade",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"valorImovel\": 550000.0,\n  \"valorFinanciamento\": 400000.0,\n  \"prazo\": 420\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/oportunidade/{{idOportunidade}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "oportunidade",
+                "{{idOportunidade}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "5. Simulação",
+      "item": [
+        {
+          "name": "Criar Simulação",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.idSimulacao) {",
+                  "    pm.environment.set(\"idSimulacao\", jsonData.idSimulacao);",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"valorImovel\": 500000.0,\n  \"valorFinanciamento\": 350000.0,\n  \"prazo\": 360,\n  \"codigoSistemaAmortizacaoBanco\": {\n    \"id\": \"S\"\n  },\n  \"codigoOportunidadeBanco\": null,\n  \"valorParcelaBanco\": null,\n  \"taxaJurosAnoBanco\": null,\n  \"codigoIndexadorBanco\": null,\n  \"valorIofBanco\": null,\n  \"valorFinanciamentoBancoMax\": null,\n  \"valorParcelaBancoMax\": null,\n  \"prazoPagamentoBancoMax\": null,\n  \"banco\": {\n    \"idBanco\": 45\n  },\n  \"fgAutorizacaoDados\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/oportunidade/{{idOportunidade}}/simulacao",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "oportunidade",
+                "{{idOportunidade}}",
+                "simulacao"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Atualizar Simulação",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"valorImovel\": 500000.0,\n  \"valorFinanciamento\": 360000.0,\n  \"prazo\": 360,\n  \"codigoSistemaAmortizacaoBanco\": {\n    \"id\": \"S\"\n  },\n  \"fgAutorizacaoDados\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/oportunidade/{{idOportunidade}}/simulacao/{{idSimulacao}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "oportunidade",
+                "{{idOportunidade}}",
+                "simulacao",
+                "{{idSimulacao}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "6. Participante",
+      "item": [
+        {
+          "name": "Incluir Participante",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.idParticipante) {",
+                  "    pm.environment.set(\"idParticipante\", jsonData.idParticipante);",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipoSituacao\": \"A\",\n  \"nomeParticipante\": \"Joao Gabriel Farias Nascimento\",\n  \"tipoQualificacao\": \"CO\",\n  \"tipoPessoa\": \"F\",\n  \"cpfCnpj\": \"12538726938\",\n  \"dataNascimento\": \"2001-12-02\",\n  \"nomeMae\": \"Elis Regina Farias\",\n  \"tipoSexo\": \"M\",\n  \"tipoEstadoCivil\": \"S\",\n  \"tipoDocumentoIdentidade\": \"RG\",\n  \"numeroDocumento\": \"134673168\",\n  \"orgaoExpedidor\": \"SESP\",\n  \"ufExpedicao\": \"PR\",\n  \"nomeProfissao\": \"AUTONOMO\",\n  \"renda\": 15000.0,\n  \"idBanco\": \"\",\n  \"codigoAgencia\": \"\",\n  \"codigoContaCorrente\": \"\",\n  \"digitoContaCorrente\": \"\",\n  \"email\": \"joaofarias@homefin.com.br\",\n  \"celular\": \"41999107330\",\n  \"cep\": \"80230110\",\n  \"logradouro\": \"Avenida Marechal Floriano Peixoto\",\n  \"numeroLogradouro\": \"1605\",\n  \"bairro\": \"Reboucas\",\n  \"municipio\": \"Curitiba\",\n  \"uf\": \"PR\",\n  \"utilizaFgts\": \"N\",\n  \"fgAutorizacaoDados\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/oportunidade/{{idOportunidade}}/participante",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "oportunidade",
+                "{{idOportunidade}}",
+                "participante"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Atualizar Participante",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipoSituacao\": \"A\",\n  \"nomeParticipante\": \"João Gabriel Farias Nascimento\",\n  \"tipoQualificacao\": \"CO\",\n  \"tipoPessoa\": \"F\",\n  \"cpfCnpj\": \"12538726948\",\n  \"dataNascimento\": \"2001-02-12\",\n  \"nomeMae\": \"Elis Regina Farias\",\n  \"tipoSexo\": \"M\",\n  \"tipoEstadoCivil\": \"S\",\n//   \"tipoRegimeCasamento\": \"CP/CU/PA/SC/SO (Comunhão Parcial de Bens/Comunhão Universal de Bens/Participação Final nos Aquestos/Separação Convencional de Bens/Separação Obrigatória de Bens)\",\n  \"tipoDocumentoIdentidade\": \"RG\",\n  \"numeroDocumento\": \"134673168\",\n  \"dataExpedicao\": \"2011-11-02\",\n  \"orgaoExpedidor\": \"SESP\",\n  \"ufExpedicao\": \"PR\",\n  \"nomeProfissao\": \"AUTONOMO\",\n  \"nomeEmpresaProfissao\": \"HOMEFIN\",\n  \"renda\": 15000.00,\n  \"idBanco\": null,\n  \"codigoAgencia\": null,\n  \"codigoContaCorrente\": null,\n  \"digitoContaCorrente\": null,\n  \"email\": \"joaofarias@homefin.com.br\",\n  \"celular\": \"41999107330\",\n  \"cep\": \"80230110\",\n  \"logradouro\": \"Av Marechal Floriano Peixoto\",\n  \"numeroLogradouro\": \"1605\",\n  \"complementoLogradouro\": \"AP2\",\n  \"bairro\": \"Rebouças\",\n  \"municipio\": \"Curitiba\",\n  \"uf\": \"PR\",\n//   \"tipoEmpresa\": \"SA/EPP/ME/MEI/EIRELI\",\n//   \"dataRegistroEmpresa\": \"yyyy-MM-dd\",\n//   \"faturamentoEmpresa\": 12345678.9,\n//   \"patrimonioLiquidoEmpresa\": 12345678.9,\n//   \"capitalSocialEmpresa\": 12345678.9,\n  \"utilizaFgts\": \"N\",\n  \"fgAutorizacaoDados\": true\n//   \"nomeConjuge\": \"Nome do cônjuge\",\n//   \"cpfConjuge\": \"12345678909 (apenas números)\",\n//   \"dataNascimentoConjuge\": \"yyyy-MM-dd\",\n//   \"tipoEstadoCivilConjuge\": \"CA/S/VI/DI/SL/UE (Casado(a)/Solteiro(a)/Viúvo(a)/Divorciado(a)/Separado(a) Legalmente/União Estável)\",\n//   \"tipoDocumentoIdentidadeConjuge\": \"RG/CNH\",\n//   \"numeroDocumentoConjuge\": \"Número do documento do conjuge\",\n//   \"dataExpedicaoConjuge\": \"yyyy-MM-dd\",\n//   \"orgaoExpedidorConjuge\": \"Órgão expedidor do documento do conjuge\",\n//   \"ufExpedicaoConjuge\": \"UF expedidor do documento do conjuge\",\n//   \"nomeProfissaoConjuge\": \"Profissão do conjuge\",\n//   \"rendaConjuge\": 123456.78,\n//   \"nomeEmpresaProfissaoConjuge\": \"Empresa da profissão do conjuge\",\n//   \"tipoSexoConjuge\": \"M/F (Masculino/Feminino)\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/oportunidade/{{idOportunidade}}/participante/{{idParticipante}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "oportunidade",
+                "{{idOportunidade}}",
+                "participante",
+                "{{idParticipante}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Excluir Participante",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/oportunidade/{{idOportunidade}}/participante/{{idParticipante}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "oportunidade",
+                "{{idOportunidade}}",
+                "participante",
+                "{{idParticipante}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "7. Integração Bancária",
+      "item": [
+        {
+          "name": "Enviar Proposta ao Banco",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idSimulacao\": {{idSimulacao}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/oportunidade/{{idOportunidade}}/incluir-proposta-integracao",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "oportunidade",
+                "{{idOportunidade}}",
+                "incluir-proposta-integracao"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "8. Documentos",
+      "item": [
+        {
+          "name": "Upload de Arquivo",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "value": null
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/documento/{{idDocumento}}/upload",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "documento",
+                "{{idDocumento}}",
+                "upload"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Vincular Documentos à Integração",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idSimulacao\": {{idSimulacao}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/oportunidade/{{idOportunidade}}/incluir-documentos-integracao",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "oportunidade",
+                "{{idOportunidade}}",
+                "incluir-documentos-integracao"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "9. Follow-up",
+      "item": [
+        {
+          "name": "Registrar Follow-up",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idOportunidade\": {{idOportunidade}},\n  \"tipoFup\": \"I\",\n  \"titulo\": \"Pendência de documento\",\n  \"comentario\": \"Aguardando comprovante atualizado do comprador.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/oportunidade/{{idOportunidade}}/follow-up",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "oportunidade",
+                "{{idOportunidade}}",
+                "follow-up"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{jwt}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://api.homefin.com.br/external"
+    },
+    {
+      "key": "jwt",
+      "value": ""
+    },
+    {
+      "key": "SECRET_ID",
+      "value": "SEU_SECRET_ID"
+    },
+    {
+      "key": "SECRET_KEY",
+      "value": "SEU_SECRET_KEY"
+    },
+    {
+      "key": "idOportunidade",
+      "value": ""
+    },
+    {
+      "key": "idSimulacao",
+      "value": ""
+    },
+    {
+      "key": "idParticipante",
+      "value": ""
+    },
+    {
+      "key": "idDocumento",
+      "value": ""
+    },
+    {
+      "key": "idParceiro",
+      "value": ""
+    },
+    {
+      "key": "idRegional",
+      "value": ""
+    },
+    {
+      "key": "idUsuarioParceiro",
+      "value": ""
+    },
+    {
+      "key": "cpfCnpj_Cliente",
+      "value": ""
+    },
+    {
+      "key": "nome_Cliente",
+      "value": ""
+    },
+    {
+      "key": "renda_Cliente",
+      "value": ""
+    },
+    {
+      "key": "valorImovel",
+      "value": ""
+    },
+    {
+      "key": "valorFinanciamento",
+      "value": ""
+    },
+    {
+      "key": "prazo",
+      "value": ""
+    },
+    {
+      "key": "flagSimulacao_Bradesco",
+      "value": ""
+    },
+    {
+      "key": "flagSimulacao_Itau",
+      "value": ""
+    },
+    {
+      "key": "flagSimulacao_Santander",
+      "value": ""
+    }
+  ]
+}
