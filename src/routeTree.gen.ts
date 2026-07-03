@@ -34,6 +34,7 @@ import { Route as AuthenticatedAdminPessoasRouteImport } from './routes/_authent
 import { Route as AuthenticatedAdminNotificacoesRouteImport } from './routes/_authenticated/admin.notificacoes'
 import { Route as AuthenticatedAdminAuditoriaRouteImport } from './routes/_authenticated/admin.auditoria'
 import { Route as AuthenticatedOperacionalSimulacoesNovaRouteImport } from './routes/_authenticated/operacional.simulacoes_.nova'
+import { Route as AuthenticatedOperacionalSimulacoesCompletaRouteImport } from './routes/_authenticated/operacional.simulacoes_.completa'
 import { Route as AuthenticatedCrmClientesNovoRouteImport } from './routes/_authenticated/crm.clientes_.novo'
 import { Route as AuthenticatedCrmClientesIdRouteImport } from './routes/_authenticated/crm.clientes_.$id'
 
@@ -176,6 +177,12 @@ const AuthenticatedOperacionalSimulacoesNovaRoute =
     path: '/operacional/simulacoes/nova',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedOperacionalSimulacoesCompletaRoute =
+  AuthenticatedOperacionalSimulacoesCompletaRouteImport.update({
+    id: '/operacional/simulacoes_/completa',
+    path: '/operacional/simulacoes/completa',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedCrmClientesNovoRoute =
   AuthenticatedCrmClientesNovoRouteImport.update({
     id: '/crm/clientes_/novo',
@@ -215,6 +222,7 @@ export interface FileRoutesByFullPath {
   '/operacional/tarefas': typeof AuthenticatedOperacionalTarefasRoute
   '/crm/clientes/$id': typeof AuthenticatedCrmClientesIdRoute
   '/crm/clientes/novo': typeof AuthenticatedCrmClientesNovoRoute
+  '/operacional/simulacoes/completa': typeof AuthenticatedOperacionalSimulacoesCompletaRoute
   '/operacional/simulacoes/nova': typeof AuthenticatedOperacionalSimulacoesNovaRoute
 }
 export interface FileRoutesByTo {
@@ -243,6 +251,7 @@ export interface FileRoutesByTo {
   '/operacional/tarefas': typeof AuthenticatedOperacionalTarefasRoute
   '/crm/clientes/$id': typeof AuthenticatedCrmClientesIdRoute
   '/crm/clientes/novo': typeof AuthenticatedCrmClientesNovoRoute
+  '/operacional/simulacoes/completa': typeof AuthenticatedOperacionalSimulacoesCompletaRoute
   '/operacional/simulacoes/nova': typeof AuthenticatedOperacionalSimulacoesNovaRoute
 }
 export interface FileRoutesById {
@@ -273,6 +282,7 @@ export interface FileRoutesById {
   '/_authenticated/operacional/tarefas': typeof AuthenticatedOperacionalTarefasRoute
   '/_authenticated/crm/clientes_/$id': typeof AuthenticatedCrmClientesIdRoute
   '/_authenticated/crm/clientes_/novo': typeof AuthenticatedCrmClientesNovoRoute
+  '/_authenticated/operacional/simulacoes_/completa': typeof AuthenticatedOperacionalSimulacoesCompletaRoute
   '/_authenticated/operacional/simulacoes_/nova': typeof AuthenticatedOperacionalSimulacoesNovaRoute
 }
 export interface FileRouteTypes {
@@ -303,6 +313,7 @@ export interface FileRouteTypes {
     | '/operacional/tarefas'
     | '/crm/clientes/$id'
     | '/crm/clientes/novo'
+    | '/operacional/simulacoes/completa'
     | '/operacional/simulacoes/nova'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -331,6 +342,7 @@ export interface FileRouteTypes {
     | '/operacional/tarefas'
     | '/crm/clientes/$id'
     | '/crm/clientes/novo'
+    | '/operacional/simulacoes/completa'
     | '/operacional/simulacoes/nova'
   id:
     | '__root__'
@@ -360,6 +372,7 @@ export interface FileRouteTypes {
     | '/_authenticated/operacional/tarefas'
     | '/_authenticated/crm/clientes_/$id'
     | '/_authenticated/crm/clientes_/novo'
+    | '/_authenticated/operacional/simulacoes_/completa'
     | '/_authenticated/operacional/simulacoes_/nova'
   fileRoutesById: FileRoutesById
 }
@@ -548,6 +561,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOperacionalSimulacoesNovaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/operacional/simulacoes_/completa': {
+      id: '/_authenticated/operacional/simulacoes_/completa'
+      path: '/operacional/simulacoes/completa'
+      fullPath: '/operacional/simulacoes/completa'
+      preLoaderRoute: typeof AuthenticatedOperacionalSimulacoesCompletaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/crm/clientes_/novo': {
       id: '/_authenticated/crm/clientes_/novo'
       path: '/crm/clientes/novo'
@@ -587,6 +607,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedOperacionalTarefasRoute: typeof AuthenticatedOperacionalTarefasRoute
   AuthenticatedCrmClientesIdRoute: typeof AuthenticatedCrmClientesIdRoute
   AuthenticatedCrmClientesNovoRoute: typeof AuthenticatedCrmClientesNovoRoute
+  AuthenticatedOperacionalSimulacoesCompletaRoute: typeof AuthenticatedOperacionalSimulacoesCompletaRoute
   AuthenticatedOperacionalSimulacoesNovaRoute: typeof AuthenticatedOperacionalSimulacoesNovaRoute
 }
 
@@ -616,6 +637,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedOperacionalTarefasRoute: AuthenticatedOperacionalTarefasRoute,
   AuthenticatedCrmClientesIdRoute: AuthenticatedCrmClientesIdRoute,
   AuthenticatedCrmClientesNovoRoute: AuthenticatedCrmClientesNovoRoute,
+  AuthenticatedOperacionalSimulacoesCompletaRoute:
+    AuthenticatedOperacionalSimulacoesCompletaRoute,
   AuthenticatedOperacionalSimulacoesNovaRoute:
     AuthenticatedOperacionalSimulacoesNovaRoute,
 }

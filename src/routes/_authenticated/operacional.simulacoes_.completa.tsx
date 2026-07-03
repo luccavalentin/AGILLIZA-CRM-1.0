@@ -17,7 +17,7 @@ import {
 import { UFS, maskCpfCnpj, maskCelular } from "@/lib/simulacao/format";
 import { listarBancosAtivos, listarOperacoes, criarSimulacao, enviarSimulacaoBanco } from "@/lib/simulacao/simulacoes.functions";
 
-export const Route = createFileRoute("/_authenticated/operacional/simulacoes/completa")({
+export const Route = createFileRoute("/_authenticated/operacional/simulacoes_/completa")({
   head: () => ({ meta: [{ title: "Simulação personalizada — Agilliza" }] }),
   beforeLoad: () => assertModuloPermitido("operacional.simulacoes"),
   component: Pagina,
