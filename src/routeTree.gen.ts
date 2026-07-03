@@ -32,6 +32,7 @@ import { Route as AuthenticatedAdminRegrasModulosRouteImport } from './routes/_a
 import { Route as AuthenticatedAdminPessoasRouteImport } from './routes/_authenticated/admin.pessoas'
 import { Route as AuthenticatedAdminNotificacoesRouteImport } from './routes/_authenticated/admin.notificacoes'
 import { Route as AuthenticatedAdminAuditoriaRouteImport } from './routes/_authenticated/admin.auditoria'
+import { Route as AuthenticatedCrmClientesNovoRouteImport } from './routes/_authenticated/crm.clientes_.novo'
 
 const PortalRoute = PortalRouteImport.update({
   id: '/portal',
@@ -161,6 +162,12 @@ const AuthenticatedAdminAuditoriaRoute =
     path: '/admin/auditoria',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedCrmClientesNovoRoute =
+  AuthenticatedCrmClientesNovoRouteImport.update({
+    id: '/crm/clientes_/novo',
+    path: '/crm/clientes/novo',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -185,6 +192,7 @@ export interface FileRoutesByFullPath {
   '/operacional/propostas': typeof AuthenticatedOperacionalPropostasRoute
   '/operacional/simulacoes': typeof AuthenticatedOperacionalSimulacoesRoute
   '/operacional/tarefas': typeof AuthenticatedOperacionalTarefasRoute
+  '/crm/clientes/novo': typeof AuthenticatedCrmClientesNovoRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -209,6 +217,7 @@ export interface FileRoutesByTo {
   '/operacional/propostas': typeof AuthenticatedOperacionalPropostasRoute
   '/operacional/simulacoes': typeof AuthenticatedOperacionalSimulacoesRoute
   '/operacional/tarefas': typeof AuthenticatedOperacionalTarefasRoute
+  '/crm/clientes/novo': typeof AuthenticatedCrmClientesNovoRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -235,6 +244,7 @@ export interface FileRoutesById {
   '/_authenticated/operacional/propostas': typeof AuthenticatedOperacionalPropostasRoute
   '/_authenticated/operacional/simulacoes': typeof AuthenticatedOperacionalSimulacoesRoute
   '/_authenticated/operacional/tarefas': typeof AuthenticatedOperacionalTarefasRoute
+  '/_authenticated/crm/clientes_/novo': typeof AuthenticatedCrmClientesNovoRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -261,6 +271,7 @@ export interface FileRouteTypes {
     | '/operacional/propostas'
     | '/operacional/simulacoes'
     | '/operacional/tarefas'
+    | '/crm/clientes/novo'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -285,6 +296,7 @@ export interface FileRouteTypes {
     | '/operacional/propostas'
     | '/operacional/simulacoes'
     | '/operacional/tarefas'
+    | '/crm/clientes/novo'
   id:
     | '__root__'
     | '/'
@@ -310,6 +322,7 @@ export interface FileRouteTypes {
     | '/_authenticated/operacional/propostas'
     | '/_authenticated/operacional/simulacoes'
     | '/_authenticated/operacional/tarefas'
+    | '/_authenticated/crm/clientes_/novo'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -483,6 +496,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminAuditoriaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/crm/clientes_/novo': {
+      id: '/_authenticated/crm/clientes_/novo'
+      path: '/crm/clientes/novo'
+      fullPath: '/crm/clientes/novo'
+      preLoaderRoute: typeof AuthenticatedCrmClientesNovoRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
@@ -505,6 +525,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedOperacionalPropostasRoute: typeof AuthenticatedOperacionalPropostasRoute
   AuthenticatedOperacionalSimulacoesRoute: typeof AuthenticatedOperacionalSimulacoesRoute
   AuthenticatedOperacionalTarefasRoute: typeof AuthenticatedOperacionalTarefasRoute
+  AuthenticatedCrmClientesNovoRoute: typeof AuthenticatedCrmClientesNovoRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -530,6 +551,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedOperacionalSimulacoesRoute:
     AuthenticatedOperacionalSimulacoesRoute,
   AuthenticatedOperacionalTarefasRoute: AuthenticatedOperacionalTarefasRoute,
+  AuthenticatedCrmClientesNovoRoute: AuthenticatedCrmClientesNovoRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
