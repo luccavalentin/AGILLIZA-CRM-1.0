@@ -22,6 +22,7 @@ import {
   ArrowUpCircle,
   ArrowDownCircle,
   Inbox,
+  Gauge,
 } from "lucide-react";
 
 /** Permissão exigida por um item (chave = `${modulo}:view`). */
@@ -50,7 +51,10 @@ export const navInterno: NavGroup[] = [
   {
     id: "visao-geral",
     label: "Visão Geral",
-    items: [{ label: "Dashboard", icon: LayoutDashboard, to: "/dashboard" }],
+    items: [
+      { label: "Dashboard", icon: LayoutDashboard, to: "/dashboard" },
+      { label: "Painel", icon: Gauge, to: "/visao-geral/painel" },
+    ],
   },
   {
     id: "crm",
@@ -65,6 +69,7 @@ export const navInterno: NavGroup[] = [
     id: "operacional",
     label: "Operacional",
     items: [
+      { label: "Painel", icon: Gauge, to: "/operacional/painel", perm: { modulo: "operacional.propostas" } },
       { label: "Simulações", icon: Calculator, to: "/operacional/simulacoes", perm: { modulo: "operacional.simulacoes" } },
       { label: "Propostas", icon: FileText, to: "/operacional/propostas", perm: { modulo: "operacional.propostas" } },
       { label: "Contratos", icon: FileSignature, to: "/operacional/contratos", perm: { modulo: "operacional.contratos" } },
@@ -94,7 +99,26 @@ export const navInterno: NavGroup[] = [
     id: "relatorios",
     label: "Relatórios",
     items: [
-      { label: "Relatórios", icon: BarChart3, to: "/relatorios", perm: { modulo: "relatorios.geral" } },
+      {
+        label: "Relatórios",
+        icon: BarChart3,
+        to: "/relatorios",
+        perm: { modulo: "relatorios.geral" },
+        children: [
+          { label: "Central", icon: BarChart3, to: "/relatorios" },
+          { label: "Painel geral", icon: LayoutDashboard, to: "/relatorios/painel-geral" },
+          { label: "Comercial", icon: LineChart, to: "/relatorios/comerciais" },
+          { label: "Simulações", icon: Calculator, to: "/relatorios/simulacoes" },
+          { label: "Propostas", icon: FileText, to: "/relatorios/propostas" },
+          { label: "Clientes", icon: Users, to: "/relatorios/clientes" },
+          { label: "Demandas", icon: Inbox, to: "/relatorios/demandas" },
+          { label: "Tarefas", icon: ListChecks, to: "/relatorios/tarefas" },
+          { label: "Financeiro", icon: Wallet, to: "/relatorios/financeiros" },
+          { label: "Comissões", icon: Percent, to: "/relatorios/comissoes" },
+          { label: "Personalizados", icon: SlidersHorizontal, to: "/relatorios/personalizados" },
+          { label: "Exportações", icon: FolderOpen, to: "/relatorios/exportacoes" },
+        ],
+      },
     ],
   },
   {
