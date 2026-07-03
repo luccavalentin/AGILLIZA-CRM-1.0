@@ -882,6 +882,194 @@ export type Database = {
           },
         ]
       }
+      simulacoes: {
+        Row: {
+          analista_id: string | null
+          celular: string | null
+          celular_conjuge: string | null
+          cep_imovel: string | null
+          cliente_id: string | null
+          codigo_oportunidade_homefin: string | null
+          comercial_id: string | null
+          compoe_renda: boolean
+          consentimento_em: string | null
+          consentimento_ip: string | null
+          consentimento_lgpd: boolean
+          consentimento_scr: boolean
+          correspondente_id: string
+          cpf_cnpj: string | null
+          cpf_conjuge: string | null
+          created_at: string
+          data_nascimento: string | null
+          data_nascimento_conjuge: string | null
+          email: string | null
+          email_conjuge: string | null
+          email_verificado_em: string | null
+          email_verificado_por: string | null
+          estado_civil: string | null
+          estado_civil_conjuge: string | null
+          fg_financiar_despesas: boolean | null
+          homefin_id_oportunidade: string | null
+          id: string
+          id_operacao_homefin: number | null
+          nome_cliente: string | null
+          nome_conjuge: string | null
+          numero_simulacao: string
+          parceiro_id: string | null
+          percentual_despesas: number | null
+          possui_conjuge: boolean
+          possui_imovel_escolhido: boolean | null
+          prazo: number | null
+          prazo_anos: number | null
+          produto: string | null
+          regime_casamento: string | null
+          renda_conjuge: number | null
+          renda_total: number | null
+          sistema_amortizacao: string | null
+          situacao_imovel: string | null
+          status: Database["public"]["Enums"]["simulacao_status"]
+          tipo_imovel: string | null
+          tipo_simulacao: Database["public"]["Enums"]["simulacao_tipo"]
+          uf: string | null
+          ultimo_envio_em: string | null
+          ultimo_erro: string | null
+          updated_at: string
+          uso_imovel: string | null
+          usuario_criador_id: string
+          usuario_responsavel_id: string | null
+          utiliza_fgts: string | null
+          valor_entrada: number | null
+          valor_financiamento: number | null
+          valor_imovel: number | null
+        }
+        Insert: {
+          analista_id?: string | null
+          celular?: string | null
+          celular_conjuge?: string | null
+          cep_imovel?: string | null
+          cliente_id?: string | null
+          codigo_oportunidade_homefin?: string | null
+          comercial_id?: string | null
+          compoe_renda?: boolean
+          consentimento_em?: string | null
+          consentimento_ip?: string | null
+          consentimento_lgpd?: boolean
+          consentimento_scr?: boolean
+          correspondente_id: string
+          cpf_cnpj?: string | null
+          cpf_conjuge?: string | null
+          created_at?: string
+          data_nascimento?: string | null
+          data_nascimento_conjuge?: string | null
+          email?: string | null
+          email_conjuge?: string | null
+          email_verificado_em?: string | null
+          email_verificado_por?: string | null
+          estado_civil?: string | null
+          estado_civil_conjuge?: string | null
+          fg_financiar_despesas?: boolean | null
+          homefin_id_oportunidade?: string | null
+          id?: string
+          id_operacao_homefin?: number | null
+          nome_cliente?: string | null
+          nome_conjuge?: string | null
+          numero_simulacao: string
+          parceiro_id?: string | null
+          percentual_despesas?: number | null
+          possui_conjuge?: boolean
+          possui_imovel_escolhido?: boolean | null
+          prazo?: number | null
+          prazo_anos?: number | null
+          produto?: string | null
+          regime_casamento?: string | null
+          renda_conjuge?: number | null
+          renda_total?: number | null
+          sistema_amortizacao?: string | null
+          situacao_imovel?: string | null
+          status?: Database["public"]["Enums"]["simulacao_status"]
+          tipo_imovel?: string | null
+          tipo_simulacao?: Database["public"]["Enums"]["simulacao_tipo"]
+          uf?: string | null
+          ultimo_envio_em?: string | null
+          ultimo_erro?: string | null
+          updated_at?: string
+          uso_imovel?: string | null
+          usuario_criador_id: string
+          usuario_responsavel_id?: string | null
+          utiliza_fgts?: string | null
+          valor_entrada?: number | null
+          valor_financiamento?: number | null
+          valor_imovel?: number | null
+        }
+        Update: {
+          analista_id?: string | null
+          celular?: string | null
+          celular_conjuge?: string | null
+          cep_imovel?: string | null
+          cliente_id?: string | null
+          codigo_oportunidade_homefin?: string | null
+          comercial_id?: string | null
+          compoe_renda?: boolean
+          consentimento_em?: string | null
+          consentimento_ip?: string | null
+          consentimento_lgpd?: boolean
+          consentimento_scr?: boolean
+          correspondente_id?: string
+          cpf_cnpj?: string | null
+          cpf_conjuge?: string | null
+          created_at?: string
+          data_nascimento?: string | null
+          data_nascimento_conjuge?: string | null
+          email?: string | null
+          email_conjuge?: string | null
+          email_verificado_em?: string | null
+          email_verificado_por?: string | null
+          estado_civil?: string | null
+          estado_civil_conjuge?: string | null
+          fg_financiar_despesas?: boolean | null
+          homefin_id_oportunidade?: string | null
+          id?: string
+          id_operacao_homefin?: number | null
+          nome_cliente?: string | null
+          nome_conjuge?: string | null
+          numero_simulacao?: string
+          parceiro_id?: string | null
+          percentual_despesas?: number | null
+          possui_conjuge?: boolean
+          possui_imovel_escolhido?: boolean | null
+          prazo?: number | null
+          prazo_anos?: number | null
+          produto?: string | null
+          regime_casamento?: string | null
+          renda_conjuge?: number | null
+          renda_total?: number | null
+          sistema_amortizacao?: string | null
+          situacao_imovel?: string | null
+          status?: Database["public"]["Enums"]["simulacao_status"]
+          tipo_imovel?: string | null
+          tipo_simulacao?: Database["public"]["Enums"]["simulacao_tipo"]
+          uf?: string | null
+          ultimo_envio_em?: string | null
+          ultimo_erro?: string | null
+          updated_at?: string
+          uso_imovel?: string | null
+          usuario_criador_id?: string
+          usuario_responsavel_id?: string | null
+          utiliza_fgts?: string | null
+          valor_entrada?: number | null
+          valor_financiamento?: number | null
+          valor_imovel?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "simulacoes_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -971,6 +1159,10 @@ export type Database = {
       }
       usuario_tem_acesso_cliente: {
         Args: { _cliente_id: string; _user_id: string }
+        Returns: boolean
+      }
+      usuario_tem_acesso_simulacao: {
+        Args: { _sim_id: string; _user_id: string }
         Returns: boolean
       }
       usuario_tem_permissao: {
