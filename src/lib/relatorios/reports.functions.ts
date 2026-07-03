@@ -525,3 +525,15 @@ export const listarExportacoes = createServerFn({ method: "GET" })
     const { data } = await supabase.from("report_exports").select("*").order("created_at", { ascending: false }).limit(200);
     return (data ?? []) as any[];
   });
+
+/** Retorna se o usuário pode ver escopo de equipe/geral em relatórios. */
+export const getEscopoRelatorios = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<{ podeEquipe: boolean; podeGeral: boolean }> => {
+    const { supabase, userId } = context;
+    const [{ data: geral }, { data: equipe }] = await Promise.all([
+      supabase.rpc("can_view_global_reports", { _user_id: userId }),
+      supabase.rpc("can_view_team_reports", { _user_id: userId }),
+    ]);
+    return { podeEquipe: Boolean(equipe), podeGeral: Boolean(geral) };
+  });
