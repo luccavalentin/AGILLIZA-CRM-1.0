@@ -211,7 +211,7 @@ export const criarSimulacao = createServerFn({ method: "POST" })
         .from("clientes")
         .insert({
           correspondente_id,
-          tipo_pessoa: digitos.length > 11 ? "pj" : "pf",
+          tipo_pessoa: digitos.length > 11 ? "PJ" : "PF",
           nome: dd.nome_cliente,
           documento: digitos,
           email: dd.email ?? null,
