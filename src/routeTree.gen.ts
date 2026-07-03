@@ -16,6 +16,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ParceiroIndexRouteImport } from './routes/parceiro.index'
+import { Route as ParceiroClientesRouteImport } from './routes/parceiro.clientes'
 import { Route as ClienteVisaoGeralRouteImport } from './routes/cliente.visao-geral'
 import { Route as ClientePerfilRouteImport } from './routes/cliente.perfil'
 import { Route as ClienteLogoutRouteImport } from './routes/cliente.logout'
@@ -106,6 +107,11 @@ const IndexRoute = IndexRouteImport.update({
 const ParceiroIndexRoute = ParceiroIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => ParceiroRoute,
+} as any)
+const ParceiroClientesRoute = ParceiroClientesRouteImport.update({
+  id: '/clientes',
+  path: '/clientes',
   getParentRoute: () => ParceiroRoute,
 } as any)
 const ClienteVisaoGeralRoute = ClienteVisaoGeralRouteImport.update({
@@ -457,6 +463,7 @@ export interface FileRoutesByFullPath {
   '/cliente/logout': typeof ClienteLogoutRoute
   '/cliente/perfil': typeof ClientePerfilRoute
   '/cliente/visao-geral': typeof ClienteVisaoGeralRoute
+  '/parceiro/clientes': typeof ParceiroClientesRoute
   '/parceiro/': typeof ParceiroIndexRoute
   '/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
   '/admin/notificacoes': typeof AuthenticatedAdminNotificacoesRoute
@@ -520,6 +527,7 @@ export interface FileRoutesByTo {
   '/cliente/logout': typeof ClienteLogoutRoute
   '/cliente/perfil': typeof ClientePerfilRoute
   '/cliente/visao-geral': typeof ClienteVisaoGeralRoute
+  '/parceiro/clientes': typeof ParceiroClientesRoute
   '/parceiro': typeof ParceiroIndexRoute
   '/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
   '/admin/notificacoes': typeof AuthenticatedAdminNotificacoesRoute
@@ -587,6 +595,7 @@ export interface FileRoutesById {
   '/cliente/logout': typeof ClienteLogoutRoute
   '/cliente/perfil': typeof ClientePerfilRoute
   '/cliente/visao-geral': typeof ClienteVisaoGeralRoute
+  '/parceiro/clientes': typeof ParceiroClientesRoute
   '/parceiro/': typeof ParceiroIndexRoute
   '/_authenticated/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
   '/_authenticated/admin/notificacoes': typeof AuthenticatedAdminNotificacoesRoute
@@ -654,6 +663,7 @@ export interface FileRouteTypes {
     | '/cliente/logout'
     | '/cliente/perfil'
     | '/cliente/visao-geral'
+    | '/parceiro/clientes'
     | '/parceiro/'
     | '/admin/auditoria'
     | '/admin/notificacoes'
@@ -717,6 +727,7 @@ export interface FileRouteTypes {
     | '/cliente/logout'
     | '/cliente/perfil'
     | '/cliente/visao-geral'
+    | '/parceiro/clientes'
     | '/parceiro'
     | '/admin/auditoria'
     | '/admin/notificacoes'
@@ -783,6 +794,7 @@ export interface FileRouteTypes {
     | '/cliente/logout'
     | '/cliente/perfil'
     | '/cliente/visao-geral'
+    | '/parceiro/clientes'
     | '/parceiro/'
     | '/_authenticated/admin/auditoria'
     | '/_authenticated/admin/notificacoes'
@@ -895,6 +907,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/parceiro/'
       preLoaderRoute: typeof ParceiroIndexRouteImport
+      parentRoute: typeof ParceiroRoute
+    }
+    '/parceiro/clientes': {
+      id: '/parceiro/clientes'
+      path: '/clientes'
+      fullPath: '/parceiro/clientes'
+      preLoaderRoute: typeof ParceiroClientesRouteImport
       parentRoute: typeof ParceiroRoute
     }
     '/cliente/visao-geral': {
@@ -1465,10 +1484,12 @@ const ClienteRouteWithChildren =
   ClienteRoute._addFileChildren(ClienteRouteChildren)
 
 interface ParceiroRouteChildren {
+  ParceiroClientesRoute: typeof ParceiroClientesRoute
   ParceiroIndexRoute: typeof ParceiroIndexRoute
 }
 
 const ParceiroRouteChildren: ParceiroRouteChildren = {
+  ParceiroClientesRoute: ParceiroClientesRoute,
   ParceiroIndexRoute: ParceiroIndexRoute,
 }
 
