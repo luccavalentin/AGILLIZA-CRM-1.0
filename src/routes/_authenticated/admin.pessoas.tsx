@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Plus, LogOut, Copy, Search } from "lucide-react";
+import { Plus, Copy, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -36,8 +36,6 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
-import { Logo } from "@/components/brand/Logo";
-import { supabase } from "@/integrations/supabase/client";
 import { getMinhaSessao } from "@/lib/session.functions";
 import {
   listarPessoas,
@@ -45,9 +43,11 @@ import {
   type ResultadoCriarPessoa,
   type CriarPessoaInput,
 } from "@/lib/admin/pessoas.functions";
+import { assertModuloPermitido } from "@/lib/route-guards";
 
 export const Route = createFileRoute("/_authenticated/admin/pessoas")({
   head: () => ({ meta: [{ title: "Pessoas do meu ecossistema — Agilliza" }] }),
+  beforeLoad: () => assertModuloPermitido("admin.pessoas"),
   component: PessoasPage,
 });
 
@@ -63,7 +63,6 @@ const ROTULO_PAPEL: Record<string, string> = {
 };
 
 function PessoasPage() {
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [filtro, setFiltro] = useState<"todos" | "sistema" | "portal_parceiro">("todos");
   const [busca, setBusca] = useState("");
@@ -93,12 +92,6 @@ function PessoasPage() {
     onError: (err: Error) => toast.error(err.message),
   });
 
-  async function sair() {
-    await queryClient.cancelQueries();
-    queryClient.clear();
-    await supabase.auth.signOut();
-    navigate({ to: "/auth", replace: true });
-  }
 
   function abrirNova() {
     setPortalParceiro(false);
@@ -137,15 +130,9 @@ function PessoasPage() {
     );
 
   return (
-    <div className="min-h-[100dvh] bg-muted">
-      <header className="flex items-center justify-between border-b bg-background px-4 py-3 sm:px-6">
-        <Logo variant="dark" className="h-7" />
-        <Button variant="ghost" size="sm" onClick={sair}>
-          <LogOut className="mr-2 h-4 w-4" /> Sair
-        </Button>
-      </header>
+    <>
+      <div className="mx-auto max-w-5xl">
 
-      <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-semibold text-foreground">
@@ -229,7 +216,7 @@ function PessoasPage() {
             </TableBody>
           </Table>
         </div>
-      </main>
+      </div>
 
       {/* Modal: nova pessoa */}
       <Dialog open={dialogAberto} onOpenChange={setDialogAberto}>
@@ -369,6 +356,7 @@ function PessoasPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
+
   );
 }

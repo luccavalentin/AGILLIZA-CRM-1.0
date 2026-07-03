@@ -1,0 +1,153 @@
+import { useEffect } from "react";
+import { useNavigate } from "@tanstack/react-router";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Bell, CheckCheck } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  listarNotificacoes,
+  marcarNotificacaoLida,
+  marcarTodasLidas,
+  type Notificacao,
+} from "@/lib/notificacoes.functions";
+
+function formatarData(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+interface NotificationsBellProps {
+  userId: string;
+}
+
+/** Sino de notificações com contagem em tempo real e popover das últimas 10. */
+export function NotificationsBell({ userId }: NotificationsBellProps) {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  const { data } = useQuery({
+    queryKey: ["notificacoes"],
+    queryFn: () => listarNotificacoes(),
+  });
+
+  // Subscription realtime: revalida a lista a cada novo evento.
+  useEffect(() => {
+    const canal = supabase
+      .channel(`notif:${userId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "notificacoes",
+          filter: `user_id=eq.${userId}`,
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["notificacoes"] });
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(canal);
+    };
+  }, [userId, queryClient]);
+
+  const marcarLida = useMutation({
+    mutationFn: (id: string) => marcarNotificacaoLida({ data: { id } }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["notificacoes"] }),
+  });
+
+  const marcarTodas = useMutation({
+    mutationFn: () => marcarTodasLidas(),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["notificacoes"] }),
+  });
+
+  const naoLidas = data?.naoLidas ?? 0;
+  const itens = data?.itens ?? [];
+
+  function aoClicar(n: Notificacao) {
+    if (!n.lida) marcarLida.mutate(n.id);
+    if (n.link) navigate({ to: n.link as string });
+  }
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button variant="ghost" size="icon" className="relative" aria-label="Notificações">
+          <Bell className="h-5 w-5 text-muted-foreground" />
+          {naoLidas > 0 && (
+            <Badge className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-semibold text-destructive-foreground">
+              {naoLidas > 9 ? "9+" : naoLidas}
+            </Badge>
+          )}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-80 p-0">
+        <div className="flex items-center justify-between border-b px-4 py-3">
+          <span className="text-sm font-semibold text-foreground">Notificações</span>
+          {naoLidas > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-auto px-2 py-1 text-xs"
+              onClick={() => marcarTodas.mutate()}
+            >
+              <CheckCheck className="mr-1 h-3.5 w-3.5" /> Marcar todas
+            </Button>
+          )}
+        </div>
+        <ScrollArea className="max-h-80">
+          {itens.length === 0 ? (
+            <p className="px-4 py-8 text-center text-sm text-muted-foreground">
+              Você não tem notificações.
+            </p>
+          ) : (
+            <ul className="divide-y">
+              {itens.map((n) => (
+                <li key={n.id}>
+                  <button
+                    type="button"
+                    onClick={() => aoClicar(n)}
+                    className="flex w-full flex-col gap-1 px-4 py-3 text-left transition-colors hover:bg-accent focus-visible:bg-accent focus-visible:outline-none"
+                  >
+                    <div className="flex items-center gap-2">
+                      {!n.lida && <span className="h-2 w-2 shrink-0 rounded-full bg-primary" />}
+                      <span className="text-sm font-medium text-foreground">{n.titulo}</span>
+                    </div>
+                    {n.corpo && (
+                      <span className="line-clamp-2 text-xs text-muted-foreground">{n.corpo}</span>
+                    )}
+                    <span className="text-[11px] text-muted-foreground">{formatarData(n.created_at)}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </ScrollArea>
+        <div className="border-t p-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full justify-center text-sm"
+            onClick={() => navigate({ to: "/admin/notificacoes" as string })}
+          >
+            Ver todas
+          </Button>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}

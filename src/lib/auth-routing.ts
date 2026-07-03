@@ -33,8 +33,8 @@ export function destinoPosLogin(porta: PortaEntrada): string {
       return "/parceiro";
     case "sistema":
     default:
-      // Etapa 02 monta o shell interno completo; por ora cai em Pessoas.
-      return "/admin/pessoas";
+      // Shell interno (Etapa 02): destino padrão é a Visão Geral.
+      return "/dashboard";
   }
 }
 

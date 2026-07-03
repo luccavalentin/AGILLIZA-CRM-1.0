@@ -1,0 +1,189 @@
+import { Link, useRouterState } from "@tanstack/react-router";
+import { ChevronRight } from "lucide-react";
+import { cn } from "@/lib/utils";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import type { NavGroup, NavItem } from "./nav-config";
+
+function useActivePath() {
+  return useRouterState({ select: (s) => s.location.pathname });
+}
+
+function itemAtivo(item: NavItem, pathname: string): boolean {
+  if (item.to) return pathname === item.to || pathname.startsWith(item.to + "/");
+  if (item.children) return item.children.some((c) => itemAtivo(c, pathname));
+  return false;
+}
+
+interface SidebarProps {
+  nav: NavGroup[];
+  onNavigate?: () => void;
+}
+
+/** Sidebar completa (desktop expandida / drawer mobile). */
+export function SidebarNav({ nav, onNavigate }: SidebarProps) {
+  const pathname = useActivePath();
+
+  return (
+    <nav aria-label="Navegação principal" className="flex flex-col gap-4 px-3 py-4">
+      {nav.map((group) => (
+        <div key={group.id} className="flex flex-col gap-1">
+          <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-sidebar-foreground/50">
+            {group.label}
+          </p>
+          {group.items.map((item) =>
+            item.children && item.children.length > 0 ? (
+              <CollapsibleGroup
+                key={item.label}
+                item={item}
+                pathname={pathname}
+                onNavigate={onNavigate}
+              />
+            ) : (
+              <SidebarLink
+                key={item.label}
+                item={item}
+                active={itemAtivo(item, pathname)}
+                onNavigate={onNavigate}
+              />
+            ),
+          )}
+        </div>
+      ))}
+    </nav>
+  );
+}
+
+function SidebarLink({
+  item,
+  active,
+  onNavigate,
+}: {
+  item: NavItem;
+  active: boolean;
+  onNavigate?: () => void;
+}) {
+  const Icon = item.icon;
+  return (
+    <Link
+      to={item.to as string}
+      onClick={onNavigate}
+      className={cn(
+        "group relative flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
+        active
+          ? "bg-sidebar-accent text-sidebar-accent-foreground"
+          : "text-sidebar-foreground/80 hover:bg-accent hover:text-sidebar-foreground dark:hover:bg-white/5",
+      )}
+    >
+      {active && (
+        <span className="absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-full bg-primary" />
+      )}
+      <Icon
+        className={cn(
+          "h-[18px] w-[18px] shrink-0",
+          active ? "text-sidebar-accent-foreground" : "text-sidebar-foreground/70",
+        )}
+      />
+      <span className="truncate">{item.label}</span>
+      {item.badge && (
+        <span className="ml-auto rounded-full bg-primary px-1.5 text-[10px] font-semibold text-primary-foreground">
+          {item.badge}
+        </span>
+      )}
+    </Link>
+  );
+}
+
+function CollapsibleGroup({
+  item,
+  pathname,
+  onNavigate,
+}: {
+  item: NavItem;
+  pathname: string;
+  onNavigate?: () => void;
+}) {
+  const Icon = item.icon;
+  const algumAtivo = itemAtivo(item, pathname);
+  return (
+    <Collapsible defaultOpen={algumAtivo}>
+      <CollapsibleTrigger
+        className={cn(
+          "flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-sidebar-foreground/80 transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring dark:hover:bg-white/5",
+          "[&[data-state=open]>svg:last-child]:rotate-90",
+        )}
+      >
+        <Icon className="h-[18px] w-[18px] shrink-0 text-sidebar-foreground/70" />
+        <span className="truncate">{item.label}</span>
+        <ChevronRight className="ml-auto h-4 w-4 transition-transform" />
+      </CollapsibleTrigger>
+      <CollapsibleContent className="ml-4 mt-1 flex flex-col gap-1 border-l border-sidebar-border pl-2">
+        {item.children!.map((child) => (
+          <SidebarLink
+            key={child.label}
+            item={child}
+            active={itemAtivo(child, pathname)}
+            onNavigate={onNavigate}
+          />
+        ))}
+      </CollapsibleContent>
+    </Collapsible>
+  );
+}
+
+/** Sidebar colapsada: apenas ícones com tooltip. */
+export function SidebarRail({ nav, onNavigate }: SidebarProps) {
+  const pathname = useActivePath();
+  const itens = nav.flatMap((g) => g.items);
+
+  return (
+    <nav aria-label="Navegação principal" className="flex flex-col items-center gap-1 px-2 py-4">
+      {itens.map((item) => {
+        const Icon = item.icon;
+        const active = itemAtivo(item, pathname);
+        const to = item.to ?? item.children?.[0]?.to;
+        return (
+          <Tooltip key={item.label}>
+            <TooltipTrigger asChild>
+              <Link
+                to={to as string}
+                onClick={onNavigate}
+                className={cn(
+                  "relative flex h-10 w-10 items-center justify-center rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
+                  active
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                    : "text-sidebar-foreground/70 hover:bg-accent hover:text-sidebar-foreground dark:hover:bg-white/5",
+                )}
+              >
+                {active && (
+                  <span className="absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-full bg-primary" />
+                )}
+                <Icon className="h-[18px] w-[18px]" />
+              </Link>
+            </TooltipTrigger>
+            <TooltipContent side="right">{item.label}</TooltipContent>
+          </Tooltip>
+        );
+      })}
+    </nav>
+  );
+}
+
+/** Skeleton exibido enquanto as permissões carregam (evita flash/salto). */
+export function SidebarSkeleton() {
+  return (
+    <div className="flex flex-col gap-2 px-3 py-4">
+      {Array.from({ length: 8 }).map((_, i) => (
+        <div key={i} className="h-9 animate-pulse rounded-md bg-muted" />
+      ))}
+    </div>
+  );
+}

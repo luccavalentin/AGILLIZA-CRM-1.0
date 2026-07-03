@@ -14,7 +14,24 @@ import { Route as ParceiroRouteImport } from './routes/parceiro'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedSemAcessoRouteImport } from './routes/_authenticated/sem-acesso'
+import { Route as AuthenticatedRelatoriosRouteImport } from './routes/_authenticated/relatorios'
+import { Route as AuthenticatedDocumentosRouteImport } from './routes/_authenticated/documentos'
+import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedOperacionalTarefasRouteImport } from './routes/_authenticated/operacional.tarefas'
+import { Route as AuthenticatedOperacionalSimulacoesRouteImport } from './routes/_authenticated/operacional.simulacoes'
+import { Route as AuthenticatedOperacionalPropostasRouteImport } from './routes/_authenticated/operacional.propostas'
+import { Route as AuthenticatedOperacionalContratosRouteImport } from './routes/_authenticated/operacional.contratos'
+import { Route as AuthenticatedFinanceiroRecebiveisRouteImport } from './routes/_authenticated/financeiro.recebiveis'
+import { Route as AuthenticatedFinanceiroComissoesRouteImport } from './routes/_authenticated/financeiro.comissoes'
+import { Route as AuthenticatedCrmParceirosRouteImport } from './routes/_authenticated/crm.parceiros'
+import { Route as AuthenticatedCrmClientesRouteImport } from './routes/_authenticated/crm.clientes'
+import { Route as AuthenticatedContaSegurancaRouteImport } from './routes/_authenticated/conta.seguranca'
+import { Route as AuthenticatedContaPerfilRouteImport } from './routes/_authenticated/conta.perfil'
+import { Route as AuthenticatedAdminRegrasModulosRouteImport } from './routes/_authenticated/admin.regras-modulos'
 import { Route as AuthenticatedAdminPessoasRouteImport } from './routes/_authenticated/admin.pessoas'
+import { Route as AuthenticatedAdminNotificacoesRouteImport } from './routes/_authenticated/admin.notificacoes'
+import { Route as AuthenticatedAdminAuditoriaRouteImport } from './routes/_authenticated/admin.auditoria'
 
 const PortalRoute = PortalRouteImport.update({
   id: '/portal',
@@ -40,10 +57,108 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedSemAcessoRoute = AuthenticatedSemAcessoRouteImport.update({
+  id: '/sem-acesso',
+  path: '/sem-acesso',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedRelatoriosRoute = AuthenticatedRelatoriosRouteImport.update({
+  id: '/relatorios',
+  path: '/relatorios',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedDocumentosRoute = AuthenticatedDocumentosRouteImport.update({
+  id: '/documentos',
+  path: '/documentos',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedOperacionalTarefasRoute =
+  AuthenticatedOperacionalTarefasRouteImport.update({
+    id: '/operacional/tarefas',
+    path: '/operacional/tarefas',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedOperacionalSimulacoesRoute =
+  AuthenticatedOperacionalSimulacoesRouteImport.update({
+    id: '/operacional/simulacoes',
+    path: '/operacional/simulacoes',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedOperacionalPropostasRoute =
+  AuthenticatedOperacionalPropostasRouteImport.update({
+    id: '/operacional/propostas',
+    path: '/operacional/propostas',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedOperacionalContratosRoute =
+  AuthenticatedOperacionalContratosRouteImport.update({
+    id: '/operacional/contratos',
+    path: '/operacional/contratos',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedFinanceiroRecebiveisRoute =
+  AuthenticatedFinanceiroRecebiveisRouteImport.update({
+    id: '/financeiro/recebiveis',
+    path: '/financeiro/recebiveis',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedFinanceiroComissoesRoute =
+  AuthenticatedFinanceiroComissoesRouteImport.update({
+    id: '/financeiro/comissoes',
+    path: '/financeiro/comissoes',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedCrmParceirosRoute =
+  AuthenticatedCrmParceirosRouteImport.update({
+    id: '/crm/parceiros',
+    path: '/crm/parceiros',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedCrmClientesRoute =
+  AuthenticatedCrmClientesRouteImport.update({
+    id: '/crm/clientes',
+    path: '/crm/clientes',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedContaSegurancaRoute =
+  AuthenticatedContaSegurancaRouteImport.update({
+    id: '/conta/seguranca',
+    path: '/conta/seguranca',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedContaPerfilRoute =
+  AuthenticatedContaPerfilRouteImport.update({
+    id: '/conta/perfil',
+    path: '/conta/perfil',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAdminRegrasModulosRoute =
+  AuthenticatedAdminRegrasModulosRouteImport.update({
+    id: '/admin/regras-modulos',
+    path: '/admin/regras-modulos',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAdminPessoasRoute =
   AuthenticatedAdminPessoasRouteImport.update({
     id: '/admin/pessoas',
     path: '/admin/pessoas',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAdminNotificacoesRoute =
+  AuthenticatedAdminNotificacoesRouteImport.update({
+    id: '/admin/notificacoes',
+    path: '/admin/notificacoes',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAdminAuditoriaRoute =
+  AuthenticatedAdminAuditoriaRouteImport.update({
+    id: '/admin/auditoria',
+    path: '/admin/auditoria',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 
@@ -52,14 +167,48 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/parceiro': typeof ParceiroRoute
   '/portal': typeof PortalRoute
+  '/dashboard': typeof AuthenticatedDashboardRoute
+  '/documentos': typeof AuthenticatedDocumentosRoute
+  '/relatorios': typeof AuthenticatedRelatoriosRoute
+  '/sem-acesso': typeof AuthenticatedSemAcessoRoute
+  '/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
+  '/admin/notificacoes': typeof AuthenticatedAdminNotificacoesRoute
   '/admin/pessoas': typeof AuthenticatedAdminPessoasRoute
+  '/admin/regras-modulos': typeof AuthenticatedAdminRegrasModulosRoute
+  '/conta/perfil': typeof AuthenticatedContaPerfilRoute
+  '/conta/seguranca': typeof AuthenticatedContaSegurancaRoute
+  '/crm/clientes': typeof AuthenticatedCrmClientesRoute
+  '/crm/parceiros': typeof AuthenticatedCrmParceirosRoute
+  '/financeiro/comissoes': typeof AuthenticatedFinanceiroComissoesRoute
+  '/financeiro/recebiveis': typeof AuthenticatedFinanceiroRecebiveisRoute
+  '/operacional/contratos': typeof AuthenticatedOperacionalContratosRoute
+  '/operacional/propostas': typeof AuthenticatedOperacionalPropostasRoute
+  '/operacional/simulacoes': typeof AuthenticatedOperacionalSimulacoesRoute
+  '/operacional/tarefas': typeof AuthenticatedOperacionalTarefasRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/parceiro': typeof ParceiroRoute
   '/portal': typeof PortalRoute
+  '/dashboard': typeof AuthenticatedDashboardRoute
+  '/documentos': typeof AuthenticatedDocumentosRoute
+  '/relatorios': typeof AuthenticatedRelatoriosRoute
+  '/sem-acesso': typeof AuthenticatedSemAcessoRoute
+  '/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
+  '/admin/notificacoes': typeof AuthenticatedAdminNotificacoesRoute
   '/admin/pessoas': typeof AuthenticatedAdminPessoasRoute
+  '/admin/regras-modulos': typeof AuthenticatedAdminRegrasModulosRoute
+  '/conta/perfil': typeof AuthenticatedContaPerfilRoute
+  '/conta/seguranca': typeof AuthenticatedContaSegurancaRoute
+  '/crm/clientes': typeof AuthenticatedCrmClientesRoute
+  '/crm/parceiros': typeof AuthenticatedCrmParceirosRoute
+  '/financeiro/comissoes': typeof AuthenticatedFinanceiroComissoesRoute
+  '/financeiro/recebiveis': typeof AuthenticatedFinanceiroRecebiveisRoute
+  '/operacional/contratos': typeof AuthenticatedOperacionalContratosRoute
+  '/operacional/propostas': typeof AuthenticatedOperacionalPropostasRoute
+  '/operacional/simulacoes': typeof AuthenticatedOperacionalSimulacoesRoute
+  '/operacional/tarefas': typeof AuthenticatedOperacionalTarefasRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -68,13 +217,74 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/parceiro': typeof ParceiroRoute
   '/portal': typeof PortalRoute
+  '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/documentos': typeof AuthenticatedDocumentosRoute
+  '/_authenticated/relatorios': typeof AuthenticatedRelatoriosRoute
+  '/_authenticated/sem-acesso': typeof AuthenticatedSemAcessoRoute
+  '/_authenticated/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
+  '/_authenticated/admin/notificacoes': typeof AuthenticatedAdminNotificacoesRoute
   '/_authenticated/admin/pessoas': typeof AuthenticatedAdminPessoasRoute
+  '/_authenticated/admin/regras-modulos': typeof AuthenticatedAdminRegrasModulosRoute
+  '/_authenticated/conta/perfil': typeof AuthenticatedContaPerfilRoute
+  '/_authenticated/conta/seguranca': typeof AuthenticatedContaSegurancaRoute
+  '/_authenticated/crm/clientes': typeof AuthenticatedCrmClientesRoute
+  '/_authenticated/crm/parceiros': typeof AuthenticatedCrmParceirosRoute
+  '/_authenticated/financeiro/comissoes': typeof AuthenticatedFinanceiroComissoesRoute
+  '/_authenticated/financeiro/recebiveis': typeof AuthenticatedFinanceiroRecebiveisRoute
+  '/_authenticated/operacional/contratos': typeof AuthenticatedOperacionalContratosRoute
+  '/_authenticated/operacional/propostas': typeof AuthenticatedOperacionalPropostasRoute
+  '/_authenticated/operacional/simulacoes': typeof AuthenticatedOperacionalSimulacoesRoute
+  '/_authenticated/operacional/tarefas': typeof AuthenticatedOperacionalTarefasRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/parceiro' | '/portal' | '/admin/pessoas'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/parceiro'
+    | '/portal'
+    | '/dashboard'
+    | '/documentos'
+    | '/relatorios'
+    | '/sem-acesso'
+    | '/admin/auditoria'
+    | '/admin/notificacoes'
+    | '/admin/pessoas'
+    | '/admin/regras-modulos'
+    | '/conta/perfil'
+    | '/conta/seguranca'
+    | '/crm/clientes'
+    | '/crm/parceiros'
+    | '/financeiro/comissoes'
+    | '/financeiro/recebiveis'
+    | '/operacional/contratos'
+    | '/operacional/propostas'
+    | '/operacional/simulacoes'
+    | '/operacional/tarefas'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/parceiro' | '/portal' | '/admin/pessoas'
+  to:
+    | '/'
+    | '/auth'
+    | '/parceiro'
+    | '/portal'
+    | '/dashboard'
+    | '/documentos'
+    | '/relatorios'
+    | '/sem-acesso'
+    | '/admin/auditoria'
+    | '/admin/notificacoes'
+    | '/admin/pessoas'
+    | '/admin/regras-modulos'
+    | '/conta/perfil'
+    | '/conta/seguranca'
+    | '/crm/clientes'
+    | '/crm/parceiros'
+    | '/financeiro/comissoes'
+    | '/financeiro/recebiveis'
+    | '/operacional/contratos'
+    | '/operacional/propostas'
+    | '/operacional/simulacoes'
+    | '/operacional/tarefas'
   id:
     | '__root__'
     | '/'
@@ -82,7 +292,24 @@ export interface FileRouteTypes {
     | '/auth'
     | '/parceiro'
     | '/portal'
+    | '/_authenticated/dashboard'
+    | '/_authenticated/documentos'
+    | '/_authenticated/relatorios'
+    | '/_authenticated/sem-acesso'
+    | '/_authenticated/admin/auditoria'
+    | '/_authenticated/admin/notificacoes'
     | '/_authenticated/admin/pessoas'
+    | '/_authenticated/admin/regras-modulos'
+    | '/_authenticated/conta/perfil'
+    | '/_authenticated/conta/seguranca'
+    | '/_authenticated/crm/clientes'
+    | '/_authenticated/crm/parceiros'
+    | '/_authenticated/financeiro/comissoes'
+    | '/_authenticated/financeiro/recebiveis'
+    | '/_authenticated/operacional/contratos'
+    | '/_authenticated/operacional/propostas'
+    | '/_authenticated/operacional/simulacoes'
+    | '/_authenticated/operacional/tarefas'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -130,6 +357,111 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/sem-acesso': {
+      id: '/_authenticated/sem-acesso'
+      path: '/sem-acesso'
+      fullPath: '/sem-acesso'
+      preLoaderRoute: typeof AuthenticatedSemAcessoRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/relatorios': {
+      id: '/_authenticated/relatorios'
+      path: '/relatorios'
+      fullPath: '/relatorios'
+      preLoaderRoute: typeof AuthenticatedRelatoriosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/documentos': {
+      id: '/_authenticated/documentos'
+      path: '/documentos'
+      fullPath: '/documentos'
+      preLoaderRoute: typeof AuthenticatedDocumentosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/dashboard': {
+      id: '/_authenticated/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/operacional/tarefas': {
+      id: '/_authenticated/operacional/tarefas'
+      path: '/operacional/tarefas'
+      fullPath: '/operacional/tarefas'
+      preLoaderRoute: typeof AuthenticatedOperacionalTarefasRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/operacional/simulacoes': {
+      id: '/_authenticated/operacional/simulacoes'
+      path: '/operacional/simulacoes'
+      fullPath: '/operacional/simulacoes'
+      preLoaderRoute: typeof AuthenticatedOperacionalSimulacoesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/operacional/propostas': {
+      id: '/_authenticated/operacional/propostas'
+      path: '/operacional/propostas'
+      fullPath: '/operacional/propostas'
+      preLoaderRoute: typeof AuthenticatedOperacionalPropostasRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/operacional/contratos': {
+      id: '/_authenticated/operacional/contratos'
+      path: '/operacional/contratos'
+      fullPath: '/operacional/contratos'
+      preLoaderRoute: typeof AuthenticatedOperacionalContratosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/financeiro/recebiveis': {
+      id: '/_authenticated/financeiro/recebiveis'
+      path: '/financeiro/recebiveis'
+      fullPath: '/financeiro/recebiveis'
+      preLoaderRoute: typeof AuthenticatedFinanceiroRecebiveisRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/financeiro/comissoes': {
+      id: '/_authenticated/financeiro/comissoes'
+      path: '/financeiro/comissoes'
+      fullPath: '/financeiro/comissoes'
+      preLoaderRoute: typeof AuthenticatedFinanceiroComissoesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/crm/parceiros': {
+      id: '/_authenticated/crm/parceiros'
+      path: '/crm/parceiros'
+      fullPath: '/crm/parceiros'
+      preLoaderRoute: typeof AuthenticatedCrmParceirosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/crm/clientes': {
+      id: '/_authenticated/crm/clientes'
+      path: '/crm/clientes'
+      fullPath: '/crm/clientes'
+      preLoaderRoute: typeof AuthenticatedCrmClientesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/conta/seguranca': {
+      id: '/_authenticated/conta/seguranca'
+      path: '/conta/seguranca'
+      fullPath: '/conta/seguranca'
+      preLoaderRoute: typeof AuthenticatedContaSegurancaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/conta/perfil': {
+      id: '/_authenticated/conta/perfil'
+      path: '/conta/perfil'
+      fullPath: '/conta/perfil'
+      preLoaderRoute: typeof AuthenticatedContaPerfilRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/admin/regras-modulos': {
+      id: '/_authenticated/admin/regras-modulos'
+      path: '/admin/regras-modulos'
+      fullPath: '/admin/regras-modulos'
+      preLoaderRoute: typeof AuthenticatedAdminRegrasModulosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/admin/pessoas': {
       id: '/_authenticated/admin/pessoas'
       path: '/admin/pessoas'
@@ -137,15 +469,67 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminPessoasRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin/notificacoes': {
+      id: '/_authenticated/admin/notificacoes'
+      path: '/admin/notificacoes'
+      fullPath: '/admin/notificacoes'
+      preLoaderRoute: typeof AuthenticatedAdminNotificacoesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/admin/auditoria': {
+      id: '/_authenticated/admin/auditoria'
+      path: '/admin/auditoria'
+      fullPath: '/admin/auditoria'
+      preLoaderRoute: typeof AuthenticatedAdminAuditoriaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedDocumentosRoute: typeof AuthenticatedDocumentosRoute
+  AuthenticatedRelatoriosRoute: typeof AuthenticatedRelatoriosRoute
+  AuthenticatedSemAcessoRoute: typeof AuthenticatedSemAcessoRoute
+  AuthenticatedAdminAuditoriaRoute: typeof AuthenticatedAdminAuditoriaRoute
+  AuthenticatedAdminNotificacoesRoute: typeof AuthenticatedAdminNotificacoesRoute
   AuthenticatedAdminPessoasRoute: typeof AuthenticatedAdminPessoasRoute
+  AuthenticatedAdminRegrasModulosRoute: typeof AuthenticatedAdminRegrasModulosRoute
+  AuthenticatedContaPerfilRoute: typeof AuthenticatedContaPerfilRoute
+  AuthenticatedContaSegurancaRoute: typeof AuthenticatedContaSegurancaRoute
+  AuthenticatedCrmClientesRoute: typeof AuthenticatedCrmClientesRoute
+  AuthenticatedCrmParceirosRoute: typeof AuthenticatedCrmParceirosRoute
+  AuthenticatedFinanceiroComissoesRoute: typeof AuthenticatedFinanceiroComissoesRoute
+  AuthenticatedFinanceiroRecebiveisRoute: typeof AuthenticatedFinanceiroRecebiveisRoute
+  AuthenticatedOperacionalContratosRoute: typeof AuthenticatedOperacionalContratosRoute
+  AuthenticatedOperacionalPropostasRoute: typeof AuthenticatedOperacionalPropostasRoute
+  AuthenticatedOperacionalSimulacoesRoute: typeof AuthenticatedOperacionalSimulacoesRoute
+  AuthenticatedOperacionalTarefasRoute: typeof AuthenticatedOperacionalTarefasRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedDocumentosRoute: AuthenticatedDocumentosRoute,
+  AuthenticatedRelatoriosRoute: AuthenticatedRelatoriosRoute,
+  AuthenticatedSemAcessoRoute: AuthenticatedSemAcessoRoute,
+  AuthenticatedAdminAuditoriaRoute: AuthenticatedAdminAuditoriaRoute,
+  AuthenticatedAdminNotificacoesRoute: AuthenticatedAdminNotificacoesRoute,
   AuthenticatedAdminPessoasRoute: AuthenticatedAdminPessoasRoute,
+  AuthenticatedAdminRegrasModulosRoute: AuthenticatedAdminRegrasModulosRoute,
+  AuthenticatedContaPerfilRoute: AuthenticatedContaPerfilRoute,
+  AuthenticatedContaSegurancaRoute: AuthenticatedContaSegurancaRoute,
+  AuthenticatedCrmClientesRoute: AuthenticatedCrmClientesRoute,
+  AuthenticatedCrmParceirosRoute: AuthenticatedCrmParceirosRoute,
+  AuthenticatedFinanceiroComissoesRoute: AuthenticatedFinanceiroComissoesRoute,
+  AuthenticatedFinanceiroRecebiveisRoute:
+    AuthenticatedFinanceiroRecebiveisRoute,
+  AuthenticatedOperacionalContratosRoute:
+    AuthenticatedOperacionalContratosRoute,
+  AuthenticatedOperacionalPropostasRoute:
+    AuthenticatedOperacionalPropostasRoute,
+  AuthenticatedOperacionalSimulacoesRoute:
+    AuthenticatedOperacionalSimulacoesRoute,
+  AuthenticatedOperacionalTarefasRoute: AuthenticatedOperacionalTarefasRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
@@ -161,3 +545,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
