@@ -117,7 +117,7 @@ export const obterDemanda = createServerFn({ method: "GET" })
       ...(participantes.data ?? []).map((p: any) => p.user_id),
     ];
     const nomes = await nomesPorId(supabase, uids);
-    const nm = (id: string | null) => (id ? nomes.get(id) ?? null : null);
+    const nm = (id: string | null | undefined) => (id ? nomes.get(id) ?? null : null);
     return {
       demanda: demanda.data,
       nome_responsavel: nm(demanda.data?.responsavel_id),
