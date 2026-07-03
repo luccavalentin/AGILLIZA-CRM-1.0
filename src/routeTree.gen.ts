@@ -37,6 +37,7 @@ import { Route as AuthenticatedAdminPessoasRouteImport } from './routes/_authent
 import { Route as AuthenticatedAdminNotificacoesRouteImport } from './routes/_authenticated/admin.notificacoes'
 import { Route as AuthenticatedAdminAuditoriaRouteImport } from './routes/_authenticated/admin.auditoria'
 import { Route as ApiPublicHomefinCallbackRouteImport } from './routes/api/public/homefin.callback'
+import { Route as AuthenticatedOperacionalTarefasKanbanRouteImport } from './routes/_authenticated/operacional.tarefas_.kanban'
 import { Route as AuthenticatedOperacionalSimulacoesNovaRouteImport } from './routes/_authenticated/operacional.simulacoes_.nova'
 import { Route as AuthenticatedOperacionalSimulacoesCompletaRouteImport } from './routes/_authenticated/operacional.simulacoes_.completa'
 import { Route as AuthenticatedOperacionalSimulacoesIdRouteImport } from './routes/_authenticated/operacional.simulacoes_.$id'
@@ -204,6 +205,12 @@ const ApiPublicHomefinCallbackRoute =
     path: '/api/public/homefin/callback',
     getParentRoute: () => rootRouteImport,
   } as any)
+const AuthenticatedOperacionalTarefasKanbanRoute =
+  AuthenticatedOperacionalTarefasKanbanRouteImport.update({
+    id: '/operacional/tarefas_/kanban',
+    path: '/operacional/tarefas/kanban',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedOperacionalSimulacoesNovaRoute =
   AuthenticatedOperacionalSimulacoesNovaRouteImport.update({
     id: '/operacional/simulacoes_/nova',
@@ -294,6 +301,7 @@ export interface FileRoutesByFullPath {
   '/operacional/simulacoes/$id': typeof AuthenticatedOperacionalSimulacoesIdRoute
   '/operacional/simulacoes/completa': typeof AuthenticatedOperacionalSimulacoesCompletaRoute
   '/operacional/simulacoes/nova': typeof AuthenticatedOperacionalSimulacoesNovaRoute
+  '/operacional/tarefas/kanban': typeof AuthenticatedOperacionalTarefasKanbanRoute
   '/api/public/homefin/callback': typeof ApiPublicHomefinCallbackRoute
   '/api/public/webhook/homefin/proposta': typeof ApiPublicWebhookHomefinPropostaRoute
 }
@@ -332,6 +340,7 @@ export interface FileRoutesByTo {
   '/operacional/simulacoes/$id': typeof AuthenticatedOperacionalSimulacoesIdRoute
   '/operacional/simulacoes/completa': typeof AuthenticatedOperacionalSimulacoesCompletaRoute
   '/operacional/simulacoes/nova': typeof AuthenticatedOperacionalSimulacoesNovaRoute
+  '/operacional/tarefas/kanban': typeof AuthenticatedOperacionalTarefasKanbanRoute
   '/api/public/homefin/callback': typeof ApiPublicHomefinCallbackRoute
   '/api/public/webhook/homefin/proposta': typeof ApiPublicWebhookHomefinPropostaRoute
 }
@@ -372,6 +381,7 @@ export interface FileRoutesById {
   '/_authenticated/operacional/simulacoes_/$id': typeof AuthenticatedOperacionalSimulacoesIdRoute
   '/_authenticated/operacional/simulacoes_/completa': typeof AuthenticatedOperacionalSimulacoesCompletaRoute
   '/_authenticated/operacional/simulacoes_/nova': typeof AuthenticatedOperacionalSimulacoesNovaRoute
+  '/_authenticated/operacional/tarefas_/kanban': typeof AuthenticatedOperacionalTarefasKanbanRoute
   '/api/public/homefin/callback': typeof ApiPublicHomefinCallbackRoute
   '/api/public/webhook/homefin/proposta': typeof ApiPublicWebhookHomefinPropostaRoute
 }
@@ -412,6 +422,7 @@ export interface FileRouteTypes {
     | '/operacional/simulacoes/$id'
     | '/operacional/simulacoes/completa'
     | '/operacional/simulacoes/nova'
+    | '/operacional/tarefas/kanban'
     | '/api/public/homefin/callback'
     | '/api/public/webhook/homefin/proposta'
   fileRoutesByTo: FileRoutesByTo
@@ -450,6 +461,7 @@ export interface FileRouteTypes {
     | '/operacional/simulacoes/$id'
     | '/operacional/simulacoes/completa'
     | '/operacional/simulacoes/nova'
+    | '/operacional/tarefas/kanban'
     | '/api/public/homefin/callback'
     | '/api/public/webhook/homefin/proposta'
   id:
@@ -489,6 +501,7 @@ export interface FileRouteTypes {
     | '/_authenticated/operacional/simulacoes_/$id'
     | '/_authenticated/operacional/simulacoes_/completa'
     | '/_authenticated/operacional/simulacoes_/nova'
+    | '/_authenticated/operacional/tarefas_/kanban'
     | '/api/public/homefin/callback'
     | '/api/public/webhook/homefin/proposta'
   fileRoutesById: FileRoutesById
@@ -701,6 +714,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHomefinCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/operacional/tarefas_/kanban': {
+      id: '/_authenticated/operacional/tarefas_/kanban'
+      path: '/operacional/tarefas/kanban'
+      fullPath: '/operacional/tarefas/kanban'
+      preLoaderRoute: typeof AuthenticatedOperacionalTarefasKanbanRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/operacional/simulacoes_/nova': {
       id: '/_authenticated/operacional/simulacoes_/nova'
       path: '/operacional/simulacoes/nova'
@@ -798,6 +818,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedOperacionalSimulacoesIdRoute: typeof AuthenticatedOperacionalSimulacoesIdRoute
   AuthenticatedOperacionalSimulacoesCompletaRoute: typeof AuthenticatedOperacionalSimulacoesCompletaRoute
   AuthenticatedOperacionalSimulacoesNovaRoute: typeof AuthenticatedOperacionalSimulacoesNovaRoute
+  AuthenticatedOperacionalTarefasKanbanRoute: typeof AuthenticatedOperacionalTarefasKanbanRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -843,6 +864,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
     AuthenticatedOperacionalSimulacoesCompletaRoute,
   AuthenticatedOperacionalSimulacoesNovaRoute:
     AuthenticatedOperacionalSimulacoesNovaRoute,
+  AuthenticatedOperacionalTarefasKanbanRoute:
+    AuthenticatedOperacionalTarefasKanbanRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
