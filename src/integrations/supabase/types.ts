@@ -882,6 +882,751 @@ export type Database = {
           },
         ]
       }
+      proposta_bancos: {
+        Row: {
+          agencia: string | null
+          banco_id: string | null
+          codigo_banco: number | null
+          codigo_indexador: string | null
+          conta_corrente: string | null
+          created_at: string
+          digito_conta: string | null
+          homefin_id_banco: number | null
+          homefin_id_simulacao_banco: string | null
+          id: string
+          mensagem_banco: string | null
+          nome_banco: string | null
+          numero_proposta_banco: string | null
+          prazo_pagamento_max: number | null
+          proposta_id: string
+          selecionado: boolean | null
+          simulacao_banco_id: string | null
+          sistema_amortizacao_banco: string | null
+          status_banco: string | null
+          taxa_juros_ano: number | null
+          updated_at: string
+          valor_financiamento_max: number | null
+          valor_iof: number | null
+          valor_parcela: number | null
+        }
+        Insert: {
+          agencia?: string | null
+          banco_id?: string | null
+          codigo_banco?: number | null
+          codigo_indexador?: string | null
+          conta_corrente?: string | null
+          created_at?: string
+          digito_conta?: string | null
+          homefin_id_banco?: number | null
+          homefin_id_simulacao_banco?: string | null
+          id?: string
+          mensagem_banco?: string | null
+          nome_banco?: string | null
+          numero_proposta_banco?: string | null
+          prazo_pagamento_max?: number | null
+          proposta_id: string
+          selecionado?: boolean | null
+          simulacao_banco_id?: string | null
+          sistema_amortizacao_banco?: string | null
+          status_banco?: string | null
+          taxa_juros_ano?: number | null
+          updated_at?: string
+          valor_financiamento_max?: number | null
+          valor_iof?: number | null
+          valor_parcela?: number | null
+        }
+        Update: {
+          agencia?: string | null
+          banco_id?: string | null
+          codigo_banco?: number | null
+          codigo_indexador?: string | null
+          conta_corrente?: string | null
+          created_at?: string
+          digito_conta?: string | null
+          homefin_id_banco?: number | null
+          homefin_id_simulacao_banco?: string | null
+          id?: string
+          mensagem_banco?: string | null
+          nome_banco?: string | null
+          numero_proposta_banco?: string | null
+          prazo_pagamento_max?: number | null
+          proposta_id?: string
+          selecionado?: boolean | null
+          simulacao_banco_id?: string | null
+          sistema_amortizacao_banco?: string | null
+          status_banco?: string | null
+          taxa_juros_ano?: number | null
+          updated_at?: string
+          valor_financiamento_max?: number | null
+          valor_iof?: number | null
+          valor_parcela?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proposta_bancos_proposta_id_fkey"
+            columns: ["proposta_id"]
+            isOneToOne: false
+            referencedRelation: "propostas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proposta_bancos_simulacao_banco_id_fkey"
+            columns: ["simulacao_banco_id"]
+            isOneToOne: false
+            referencedRelation: "simulacao_bancos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      proposta_documentos: {
+        Row: {
+          arquivo_url: string | null
+          correspondente_id: string
+          created_at: string
+          enviado_em: string | null
+          enviado_por: string | null
+          erro_integracao: string | null
+          expira_em: string | null
+          homefin_id_documento: string | null
+          homefin_id_oportunidade: string | null
+          homefin_id_simulacao: string | null
+          id: string
+          integrado_em: string | null
+          mime_type: string | null
+          nome_documento: string
+          obrigatorio: boolean | null
+          parte: string | null
+          proposta_id: string
+          request_payload: Json | null
+          response_payload: Json | null
+          simulacao_id: string | null
+          situacao_integracao: string | null
+          status: Database["public"]["Enums"]["proposta_doc_status"]
+          storage_path: string | null
+          tamanho_bytes: number | null
+          tipo_documento: string | null
+          updated_at: string
+          versao: number | null
+        }
+        Insert: {
+          arquivo_url?: string | null
+          correspondente_id: string
+          created_at?: string
+          enviado_em?: string | null
+          enviado_por?: string | null
+          erro_integracao?: string | null
+          expira_em?: string | null
+          homefin_id_documento?: string | null
+          homefin_id_oportunidade?: string | null
+          homefin_id_simulacao?: string | null
+          id?: string
+          integrado_em?: string | null
+          mime_type?: string | null
+          nome_documento: string
+          obrigatorio?: boolean | null
+          parte?: string | null
+          proposta_id: string
+          request_payload?: Json | null
+          response_payload?: Json | null
+          simulacao_id?: string | null
+          situacao_integracao?: string | null
+          status?: Database["public"]["Enums"]["proposta_doc_status"]
+          storage_path?: string | null
+          tamanho_bytes?: number | null
+          tipo_documento?: string | null
+          updated_at?: string
+          versao?: number | null
+        }
+        Update: {
+          arquivo_url?: string | null
+          correspondente_id?: string
+          created_at?: string
+          enviado_em?: string | null
+          enviado_por?: string | null
+          erro_integracao?: string | null
+          expira_em?: string | null
+          homefin_id_documento?: string | null
+          homefin_id_oportunidade?: string | null
+          homefin_id_simulacao?: string | null
+          id?: string
+          integrado_em?: string | null
+          mime_type?: string | null
+          nome_documento?: string
+          obrigatorio?: boolean | null
+          parte?: string | null
+          proposta_id?: string
+          request_payload?: Json | null
+          response_payload?: Json | null
+          simulacao_id?: string | null
+          situacao_integracao?: string | null
+          status?: Database["public"]["Enums"]["proposta_doc_status"]
+          storage_path?: string | null
+          tamanho_bytes?: number | null
+          tipo_documento?: string | null
+          updated_at?: string
+          versao?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proposta_documentos_proposta_id_fkey"
+            columns: ["proposta_id"]
+            isOneToOne: false
+            referencedRelation: "propostas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      proposta_envolvidos: {
+        Row: {
+          agencia: string | null
+          bairro: string | null
+          banco_id_conta: number | null
+          celular: string | null
+          cep: string | null
+          cliente_id: string | null
+          complemento: string | null
+          conta_corrente: string | null
+          cpf_cnpj: string | null
+          created_at: string
+          dados: Json | null
+          data_expedicao: string | null
+          data_nascimento: string | null
+          digito_conta: string | null
+          email: string | null
+          empresa: string | null
+          estado_civil: string | null
+          homefin_id_participante: string | null
+          id: string
+          logradouro: string | null
+          municipio: string | null
+          nome: string | null
+          nome_mae: string | null
+          numero_documento: string | null
+          numero_logradouro: string | null
+          orgao_expedidor: string | null
+          profissao: string | null
+          proposta_id: string
+          regime_casamento: string | null
+          renda: number | null
+          tipo_documento_identidade: string | null
+          tipo_pessoa: string | null
+          tipo_qualificacao: string
+          tipo_sexo: string | null
+          uf: string | null
+          uf_expedicao: string | null
+          updated_at: string
+        }
+        Insert: {
+          agencia?: string | null
+          bairro?: string | null
+          banco_id_conta?: number | null
+          celular?: string | null
+          cep?: string | null
+          cliente_id?: string | null
+          complemento?: string | null
+          conta_corrente?: string | null
+          cpf_cnpj?: string | null
+          created_at?: string
+          dados?: Json | null
+          data_expedicao?: string | null
+          data_nascimento?: string | null
+          digito_conta?: string | null
+          email?: string | null
+          empresa?: string | null
+          estado_civil?: string | null
+          homefin_id_participante?: string | null
+          id?: string
+          logradouro?: string | null
+          municipio?: string | null
+          nome?: string | null
+          nome_mae?: string | null
+          numero_documento?: string | null
+          numero_logradouro?: string | null
+          orgao_expedidor?: string | null
+          profissao?: string | null
+          proposta_id: string
+          regime_casamento?: string | null
+          renda?: number | null
+          tipo_documento_identidade?: string | null
+          tipo_pessoa?: string | null
+          tipo_qualificacao?: string
+          tipo_sexo?: string | null
+          uf?: string | null
+          uf_expedicao?: string | null
+          updated_at?: string
+        }
+        Update: {
+          agencia?: string | null
+          bairro?: string | null
+          banco_id_conta?: number | null
+          celular?: string | null
+          cep?: string | null
+          cliente_id?: string | null
+          complemento?: string | null
+          conta_corrente?: string | null
+          cpf_cnpj?: string | null
+          created_at?: string
+          dados?: Json | null
+          data_expedicao?: string | null
+          data_nascimento?: string | null
+          digito_conta?: string | null
+          email?: string | null
+          empresa?: string | null
+          estado_civil?: string | null
+          homefin_id_participante?: string | null
+          id?: string
+          logradouro?: string | null
+          municipio?: string | null
+          nome?: string | null
+          nome_mae?: string | null
+          numero_documento?: string | null
+          numero_logradouro?: string | null
+          orgao_expedidor?: string | null
+          profissao?: string | null
+          proposta_id?: string
+          regime_casamento?: string | null
+          renda?: number | null
+          tipo_documento_identidade?: string | null
+          tipo_pessoa?: string | null
+          tipo_qualificacao?: string
+          tipo_sexo?: string | null
+          uf?: string | null
+          uf_expedicao?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proposta_envolvidos_proposta_id_fkey"
+            columns: ["proposta_id"]
+            isOneToOne: false
+            referencedRelation: "propostas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      proposta_followups: {
+        Row: {
+          autor_id: string | null
+          comentario: string
+          created_at: string
+          data_previsao: string | null
+          homefin_enviado: boolean | null
+          id: string
+          proposta_id: string
+          responsavel_id: string | null
+          tipo: string
+          titulo: string | null
+        }
+        Insert: {
+          autor_id?: string | null
+          comentario: string
+          created_at?: string
+          data_previsao?: string | null
+          homefin_enviado?: boolean | null
+          id?: string
+          proposta_id: string
+          responsavel_id?: string | null
+          tipo?: string
+          titulo?: string | null
+        }
+        Update: {
+          autor_id?: string | null
+          comentario?: string
+          created_at?: string
+          data_previsao?: string | null
+          homefin_enviado?: boolean | null
+          id?: string
+          proposta_id?: string
+          responsavel_id?: string | null
+          tipo?: string
+          titulo?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proposta_followups_proposta_id_fkey"
+            columns: ["proposta_id"]
+            isOneToOne: false
+            referencedRelation: "propostas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      proposta_historico: {
+        Row: {
+          ator_id: string | null
+          created_at: string
+          descricao: string | null
+          id: string
+          proposta_id: string
+          status_anterior: Database["public"]["Enums"]["proposta_status"] | null
+          status_novo: Database["public"]["Enums"]["proposta_status"] | null
+          tipo_evento: string
+        }
+        Insert: {
+          ator_id?: string | null
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          proposta_id: string
+          status_anterior?:
+            | Database["public"]["Enums"]["proposta_status"]
+            | null
+          status_novo?: Database["public"]["Enums"]["proposta_status"] | null
+          tipo_evento: string
+        }
+        Update: {
+          ator_id?: string | null
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          proposta_id?: string
+          status_anterior?:
+            | Database["public"]["Enums"]["proposta_status"]
+            | null
+          status_novo?: Database["public"]["Enums"]["proposta_status"] | null
+          tipo_evento?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proposta_historico_proposta_id_fkey"
+            columns: ["proposta_id"]
+            isOneToOne: false
+            referencedRelation: "propostas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      proposta_logs_homefin: {
+        Row: {
+          correspondente_id: string | null
+          created_at: string
+          endpoint: string
+          erro: string | null
+          id: string
+          metodo: string
+          proposta_id: string | null
+          request_masked: Json | null
+          response: Json | null
+          status_http: number | null
+        }
+        Insert: {
+          correspondente_id?: string | null
+          created_at?: string
+          endpoint: string
+          erro?: string | null
+          id?: string
+          metodo: string
+          proposta_id?: string | null
+          request_masked?: Json | null
+          response?: Json | null
+          status_http?: number | null
+        }
+        Update: {
+          correspondente_id?: string | null
+          created_at?: string
+          endpoint?: string
+          erro?: string | null
+          id?: string
+          metodo?: string
+          proposta_id?: string | null
+          request_masked?: Json | null
+          response?: Json | null
+          status_http?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proposta_logs_homefin_proposta_id_fkey"
+            columns: ["proposta_id"]
+            isOneToOne: false
+            referencedRelation: "propostas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      proposta_pdfs: {
+        Row: {
+          created_at: string
+          gerado_por: string | null
+          id: string
+          proposta_id: string
+          storage_path: string
+        }
+        Insert: {
+          created_at?: string
+          gerado_por?: string | null
+          id?: string
+          proposta_id: string
+          storage_path: string
+        }
+        Update: {
+          created_at?: string
+          gerado_por?: string | null
+          id?: string
+          proposta_id?: string
+          storage_path?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proposta_pdfs_proposta_id_fkey"
+            columns: ["proposta_id"]
+            isOneToOne: false
+            referencedRelation: "propostas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      propostas: {
+        Row: {
+          agencia: string | null
+          analista_id: string | null
+          analista_nome: string | null
+          bairro_imovel: string | null
+          banco_id: string | null
+          celular: string | null
+          cep_imovel: string | null
+          cidade_imovel: string | null
+          cliente_id: string | null
+          codigo_indexador_aprovado: string | null
+          codigo_oportunidade_homefin: string | null
+          comercial_id: string | null
+          comissao_status: string | null
+          complemento_imovel: string | null
+          compoe_renda: boolean | null
+          consentimento_lgpd: boolean | null
+          consentimento_scr: boolean | null
+          consultor_nome: string | null
+          conta_corrente: string | null
+          contato_avaliacao_nome: string | null
+          contato_avaliacao_telefone: string | null
+          contrato_emitido_em: string | null
+          correspondente_id: string
+          cpf_cnpj: string | null
+          created_at: string
+          data_nascimento: string | null
+          detalhe_status_atual: string | null
+          digito_conta: string | null
+          email: string | null
+          endereco_imovel: string | null
+          enviada_em: string | null
+          estado_civil: string | null
+          financia_despesas_cartorarias: boolean | null
+          homefin_id_oportunidade: string | null
+          homefin_id_simulacao: string | null
+          id: string
+          id_operacao_homefin: number | null
+          ip_consentimento: string | null
+          iq_comentario: string | null
+          iq_nome: string | null
+          motivo_cancelamento: string | null
+          nome_banco: string | null
+          nome_cliente: string | null
+          numero_imovel: string | null
+          numero_proposta: string
+          numero_proposta_banco: string | null
+          parceiro_id: string | null
+          parceiro_nome: string | null
+          possui_conjuge: boolean | null
+          prazo: number | null
+          prazo_aprovado: number | null
+          produto: string | null
+          regional_nome: string | null
+          regra_comissao_id: string | null
+          renda_total: number | null
+          simulacao_id: string | null
+          sistema_amortizacao: string | null
+          sistema_amortizacao_aprovado: string | null
+          situacao_imovel: string | null
+          status: Database["public"]["Enums"]["proposta_status"]
+          taxa_juros_ano_aprovado: number | null
+          tipo_imovel: string | null
+          uf: string | null
+          ultimo_erro: string | null
+          updated_at: string
+          uso_imovel: string | null
+          usuario_criador_id: string | null
+          usuario_parceiro_id: string | null
+          usuario_responsavel_id: string | null
+          utiliza_fgts: boolean | null
+          valor_comissao_calculada: number | null
+          valor_financiamento: number | null
+          valor_financiamento_aprovado: number | null
+          valor_imovel: number | null
+          valor_iof_aprovado: number | null
+          valor_parcela_aprovado: number | null
+        }
+        Insert: {
+          agencia?: string | null
+          analista_id?: string | null
+          analista_nome?: string | null
+          bairro_imovel?: string | null
+          banco_id?: string | null
+          celular?: string | null
+          cep_imovel?: string | null
+          cidade_imovel?: string | null
+          cliente_id?: string | null
+          codigo_indexador_aprovado?: string | null
+          codigo_oportunidade_homefin?: string | null
+          comercial_id?: string | null
+          comissao_status?: string | null
+          complemento_imovel?: string | null
+          compoe_renda?: boolean | null
+          consentimento_lgpd?: boolean | null
+          consentimento_scr?: boolean | null
+          consultor_nome?: string | null
+          conta_corrente?: string | null
+          contato_avaliacao_nome?: string | null
+          contato_avaliacao_telefone?: string | null
+          contrato_emitido_em?: string | null
+          correspondente_id: string
+          cpf_cnpj?: string | null
+          created_at?: string
+          data_nascimento?: string | null
+          detalhe_status_atual?: string | null
+          digito_conta?: string | null
+          email?: string | null
+          endereco_imovel?: string | null
+          enviada_em?: string | null
+          estado_civil?: string | null
+          financia_despesas_cartorarias?: boolean | null
+          homefin_id_oportunidade?: string | null
+          homefin_id_simulacao?: string | null
+          id?: string
+          id_operacao_homefin?: number | null
+          ip_consentimento?: string | null
+          iq_comentario?: string | null
+          iq_nome?: string | null
+          motivo_cancelamento?: string | null
+          nome_banco?: string | null
+          nome_cliente?: string | null
+          numero_imovel?: string | null
+          numero_proposta: string
+          numero_proposta_banco?: string | null
+          parceiro_id?: string | null
+          parceiro_nome?: string | null
+          possui_conjuge?: boolean | null
+          prazo?: number | null
+          prazo_aprovado?: number | null
+          produto?: string | null
+          regional_nome?: string | null
+          regra_comissao_id?: string | null
+          renda_total?: number | null
+          simulacao_id?: string | null
+          sistema_amortizacao?: string | null
+          sistema_amortizacao_aprovado?: string | null
+          situacao_imovel?: string | null
+          status?: Database["public"]["Enums"]["proposta_status"]
+          taxa_juros_ano_aprovado?: number | null
+          tipo_imovel?: string | null
+          uf?: string | null
+          ultimo_erro?: string | null
+          updated_at?: string
+          uso_imovel?: string | null
+          usuario_criador_id?: string | null
+          usuario_parceiro_id?: string | null
+          usuario_responsavel_id?: string | null
+          utiliza_fgts?: boolean | null
+          valor_comissao_calculada?: number | null
+          valor_financiamento?: number | null
+          valor_financiamento_aprovado?: number | null
+          valor_imovel?: number | null
+          valor_iof_aprovado?: number | null
+          valor_parcela_aprovado?: number | null
+        }
+        Update: {
+          agencia?: string | null
+          analista_id?: string | null
+          analista_nome?: string | null
+          bairro_imovel?: string | null
+          banco_id?: string | null
+          celular?: string | null
+          cep_imovel?: string | null
+          cidade_imovel?: string | null
+          cliente_id?: string | null
+          codigo_indexador_aprovado?: string | null
+          codigo_oportunidade_homefin?: string | null
+          comercial_id?: string | null
+          comissao_status?: string | null
+          complemento_imovel?: string | null
+          compoe_renda?: boolean | null
+          consentimento_lgpd?: boolean | null
+          consentimento_scr?: boolean | null
+          consultor_nome?: string | null
+          conta_corrente?: string | null
+          contato_avaliacao_nome?: string | null
+          contato_avaliacao_telefone?: string | null
+          contrato_emitido_em?: string | null
+          correspondente_id?: string
+          cpf_cnpj?: string | null
+          created_at?: string
+          data_nascimento?: string | null
+          detalhe_status_atual?: string | null
+          digito_conta?: string | null
+          email?: string | null
+          endereco_imovel?: string | null
+          enviada_em?: string | null
+          estado_civil?: string | null
+          financia_despesas_cartorarias?: boolean | null
+          homefin_id_oportunidade?: string | null
+          homefin_id_simulacao?: string | null
+          id?: string
+          id_operacao_homefin?: number | null
+          ip_consentimento?: string | null
+          iq_comentario?: string | null
+          iq_nome?: string | null
+          motivo_cancelamento?: string | null
+          nome_banco?: string | null
+          nome_cliente?: string | null
+          numero_imovel?: string | null
+          numero_proposta?: string
+          numero_proposta_banco?: string | null
+          parceiro_id?: string | null
+          parceiro_nome?: string | null
+          possui_conjuge?: boolean | null
+          prazo?: number | null
+          prazo_aprovado?: number | null
+          produto?: string | null
+          regional_nome?: string | null
+          regra_comissao_id?: string | null
+          renda_total?: number | null
+          simulacao_id?: string | null
+          sistema_amortizacao?: string | null
+          sistema_amortizacao_aprovado?: string | null
+          situacao_imovel?: string | null
+          status?: Database["public"]["Enums"]["proposta_status"]
+          taxa_juros_ano_aprovado?: number | null
+          tipo_imovel?: string | null
+          uf?: string | null
+          ultimo_erro?: string | null
+          updated_at?: string
+          uso_imovel?: string | null
+          usuario_criador_id?: string | null
+          usuario_parceiro_id?: string | null
+          usuario_responsavel_id?: string | null
+          utiliza_fgts?: boolean | null
+          valor_comissao_calculada?: number | null
+          valor_financiamento?: number | null
+          valor_financiamento_aprovado?: number | null
+          valor_imovel?: number | null
+          valor_iof_aprovado?: number | null
+          valor_parcela_aprovado?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "propostas_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "propostas_simulacao_id_fkey"
+            columns: ["simulacao_id"]
+            isOneToOne: false
+            referencedRelation: "simulacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       simulacao_bancos: {
         Row: {
           banco_id: string | null
@@ -1437,6 +2182,10 @@ export type Database = {
         Args: { _cliente_id: string; _user_id: string }
         Returns: boolean
       }
+      usuario_tem_acesso_proposta: {
+        Args: { _prop_id: string; _user_id: string }
+        Returns: boolean
+      }
       usuario_tem_acesso_simulacao: {
         Args: { _sim_id: string; _user_id: string }
         Returns: boolean
@@ -1480,6 +2229,25 @@ export type Database = {
         | "presencial"
         | "followup"
         | "outro"
+      proposta_doc_status:
+        | "pendente"
+        | "enviado"
+        | "aprovado"
+        | "reprovado"
+        | "expirado"
+      proposta_status:
+        | "rascunho"
+        | "enviada_banco"
+        | "em_analise_credito"
+        | "credito_aprovado"
+        | "credito_recusado"
+        | "aguardando_documentos"
+        | "engenharia_vistoria"
+        | "analise_juridica"
+        | "contrato_emitido"
+        | "registrado"
+        | "erro_envio"
+        | "cancelada"
       regime_casamento:
         | "comunhao_parcial"
         | "comunhao_universal"
@@ -1655,6 +2423,27 @@ export const Constants = {
         "presencial",
         "followup",
         "outro",
+      ],
+      proposta_doc_status: [
+        "pendente",
+        "enviado",
+        "aprovado",
+        "reprovado",
+        "expirado",
+      ],
+      proposta_status: [
+        "rascunho",
+        "enviada_banco",
+        "em_analise_credito",
+        "credito_aprovado",
+        "credito_recusado",
+        "aguardando_documentos",
+        "engenharia_vistoria",
+        "analise_juridica",
+        "contrato_emitido",
+        "registrado",
+        "erro_envio",
+        "cancelada",
       ],
       regime_casamento: [
         "comunhao_parcial",
