@@ -127,6 +127,9 @@ export const navInterno: NavGroup[] = [
     items: [
       { label: "Pessoas", icon: UserCog, to: "/admin/pessoas", perm: { modulo: "admin.pessoas" } },
       { label: "Regras & Módulos", icon: SlidersHorizontal, to: "/admin/regras-modulos", perm: { modulo: "admin.regras" } },
+      { label: "Integrações", icon: Plug, to: "/admin/integracoes", perm: { modulo: "admin.integracoes" } },
+      { label: "Parâmetros", icon: Settings2, to: "/admin/parametros", perm: { modulo: "admin.parametros" } },
+      { label: "Compras", icon: ShoppingCart, to: "/admin/compras", perm: { modulo: "admin.compras" } },
       { label: "Notificações", icon: Bell, to: "/admin/notificacoes", perm: { modulo: "admin.notificacoes" } },
       { label: "Auditoria", icon: ShieldCheck, to: "/admin/auditoria", perm: { modulo: "admin.auditoria" } },
     ],
