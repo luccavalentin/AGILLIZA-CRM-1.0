@@ -25,6 +25,7 @@ import { Route as AuthenticatedOperacionalContratosRouteImport } from './routes/
 import { Route as AuthenticatedFinanceiroRecebiveisRouteImport } from './routes/_authenticated/financeiro.recebiveis'
 import { Route as AuthenticatedFinanceiroComissoesRouteImport } from './routes/_authenticated/financeiro.comissoes'
 import { Route as AuthenticatedCrmParceirosRouteImport } from './routes/_authenticated/crm.parceiros'
+import { Route as AuthenticatedCrmPainelRouteImport } from './routes/_authenticated/crm.painel'
 import { Route as AuthenticatedCrmClientesRouteImport } from './routes/_authenticated/crm.clientes'
 import { Route as AuthenticatedContaSegurancaRouteImport } from './routes/_authenticated/conta.seguranca'
 import { Route as AuthenticatedContaPerfilRouteImport } from './routes/_authenticated/conta.perfil'
@@ -121,6 +122,11 @@ const AuthenticatedCrmParceirosRoute =
     path: '/crm/parceiros',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedCrmPainelRoute = AuthenticatedCrmPainelRouteImport.update({
+  id: '/crm/painel',
+  path: '/crm/painel',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedCrmClientesRoute =
   AuthenticatedCrmClientesRouteImport.update({
     id: '/crm/clientes',
@@ -192,6 +198,7 @@ export interface FileRoutesByFullPath {
   '/conta/perfil': typeof AuthenticatedContaPerfilRoute
   '/conta/seguranca': typeof AuthenticatedContaSegurancaRoute
   '/crm/clientes': typeof AuthenticatedCrmClientesRoute
+  '/crm/painel': typeof AuthenticatedCrmPainelRoute
   '/crm/parceiros': typeof AuthenticatedCrmParceirosRoute
   '/financeiro/comissoes': typeof AuthenticatedFinanceiroComissoesRoute
   '/financeiro/recebiveis': typeof AuthenticatedFinanceiroRecebiveisRoute
@@ -218,6 +225,7 @@ export interface FileRoutesByTo {
   '/conta/perfil': typeof AuthenticatedContaPerfilRoute
   '/conta/seguranca': typeof AuthenticatedContaSegurancaRoute
   '/crm/clientes': typeof AuthenticatedCrmClientesRoute
+  '/crm/painel': typeof AuthenticatedCrmPainelRoute
   '/crm/parceiros': typeof AuthenticatedCrmParceirosRoute
   '/financeiro/comissoes': typeof AuthenticatedFinanceiroComissoesRoute
   '/financeiro/recebiveis': typeof AuthenticatedFinanceiroRecebiveisRoute
@@ -246,6 +254,7 @@ export interface FileRoutesById {
   '/_authenticated/conta/perfil': typeof AuthenticatedContaPerfilRoute
   '/_authenticated/conta/seguranca': typeof AuthenticatedContaSegurancaRoute
   '/_authenticated/crm/clientes': typeof AuthenticatedCrmClientesRoute
+  '/_authenticated/crm/painel': typeof AuthenticatedCrmPainelRoute
   '/_authenticated/crm/parceiros': typeof AuthenticatedCrmParceirosRoute
   '/_authenticated/financeiro/comissoes': typeof AuthenticatedFinanceiroComissoesRoute
   '/_authenticated/financeiro/recebiveis': typeof AuthenticatedFinanceiroRecebiveisRoute
@@ -274,6 +283,7 @@ export interface FileRouteTypes {
     | '/conta/perfil'
     | '/conta/seguranca'
     | '/crm/clientes'
+    | '/crm/painel'
     | '/crm/parceiros'
     | '/financeiro/comissoes'
     | '/financeiro/recebiveis'
@@ -300,6 +310,7 @@ export interface FileRouteTypes {
     | '/conta/perfil'
     | '/conta/seguranca'
     | '/crm/clientes'
+    | '/crm/painel'
     | '/crm/parceiros'
     | '/financeiro/comissoes'
     | '/financeiro/recebiveis'
@@ -327,6 +338,7 @@ export interface FileRouteTypes {
     | '/_authenticated/conta/perfil'
     | '/_authenticated/conta/seguranca'
     | '/_authenticated/crm/clientes'
+    | '/_authenticated/crm/painel'
     | '/_authenticated/crm/parceiros'
     | '/_authenticated/financeiro/comissoes'
     | '/_authenticated/financeiro/recebiveis'
@@ -460,6 +472,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCrmParceirosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/crm/painel': {
+      id: '/_authenticated/crm/painel'
+      path: '/crm/painel'
+      fullPath: '/crm/painel'
+      preLoaderRoute: typeof AuthenticatedCrmPainelRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/crm/clientes': {
       id: '/_authenticated/crm/clientes'
       path: '/crm/clientes'
@@ -538,6 +557,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedContaPerfilRoute: typeof AuthenticatedContaPerfilRoute
   AuthenticatedContaSegurancaRoute: typeof AuthenticatedContaSegurancaRoute
   AuthenticatedCrmClientesRoute: typeof AuthenticatedCrmClientesRoute
+  AuthenticatedCrmPainelRoute: typeof AuthenticatedCrmPainelRoute
   AuthenticatedCrmParceirosRoute: typeof AuthenticatedCrmParceirosRoute
   AuthenticatedFinanceiroComissoesRoute: typeof AuthenticatedFinanceiroComissoesRoute
   AuthenticatedFinanceiroRecebiveisRoute: typeof AuthenticatedFinanceiroRecebiveisRoute
@@ -561,6 +581,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedContaPerfilRoute: AuthenticatedContaPerfilRoute,
   AuthenticatedContaSegurancaRoute: AuthenticatedContaSegurancaRoute,
   AuthenticatedCrmClientesRoute: AuthenticatedCrmClientesRoute,
+  AuthenticatedCrmPainelRoute: AuthenticatedCrmPainelRoute,
   AuthenticatedCrmParceirosRoute: AuthenticatedCrmParceirosRoute,
   AuthenticatedFinanceiroComissoesRoute: AuthenticatedFinanceiroComissoesRoute,
   AuthenticatedFinanceiroRecebiveisRoute:
