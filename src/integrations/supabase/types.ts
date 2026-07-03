@@ -882,6 +882,282 @@ export type Database = {
           },
         ]
       }
+      simulacao_bancos: {
+        Row: {
+          banco_id: string | null
+          codigo_banco: number | null
+          codigo_indexador: string | null
+          created_at: string
+          flag_simulacao: string | null
+          homefin_id_banco: number | null
+          homefin_id_simulacao_banco: string | null
+          id: string
+          mensagem_banco: string | null
+          nome_banco: string | null
+          prazo_pagamento_max: number | null
+          raw_request: Json | null
+          raw_response: Json | null
+          selecionado: boolean
+          simulacao_id: string
+          simulado_em: string | null
+          sistema_amortizacao_banco: string | null
+          status_banco: Database["public"]["Enums"]["simulacao_banco_status"]
+          taxa_juros_ano: number | null
+          updated_at: string
+          valor_financiamento_max: number | null
+          valor_iof: number | null
+          valor_parcela: number | null
+          valor_parcela_max: number | null
+        }
+        Insert: {
+          banco_id?: string | null
+          codigo_banco?: number | null
+          codigo_indexador?: string | null
+          created_at?: string
+          flag_simulacao?: string | null
+          homefin_id_banco?: number | null
+          homefin_id_simulacao_banco?: string | null
+          id?: string
+          mensagem_banco?: string | null
+          nome_banco?: string | null
+          prazo_pagamento_max?: number | null
+          raw_request?: Json | null
+          raw_response?: Json | null
+          selecionado?: boolean
+          simulacao_id: string
+          simulado_em?: string | null
+          sistema_amortizacao_banco?: string | null
+          status_banco?: Database["public"]["Enums"]["simulacao_banco_status"]
+          taxa_juros_ano?: number | null
+          updated_at?: string
+          valor_financiamento_max?: number | null
+          valor_iof?: number | null
+          valor_parcela?: number | null
+          valor_parcela_max?: number | null
+        }
+        Update: {
+          banco_id?: string | null
+          codigo_banco?: number | null
+          codigo_indexador?: string | null
+          created_at?: string
+          flag_simulacao?: string | null
+          homefin_id_banco?: number | null
+          homefin_id_simulacao_banco?: string | null
+          id?: string
+          mensagem_banco?: string | null
+          nome_banco?: string | null
+          prazo_pagamento_max?: number | null
+          raw_request?: Json | null
+          raw_response?: Json | null
+          selecionado?: boolean
+          simulacao_id?: string
+          simulado_em?: string | null
+          sistema_amortizacao_banco?: string | null
+          status_banco?: Database["public"]["Enums"]["simulacao_banco_status"]
+          taxa_juros_ano?: number | null
+          updated_at?: string
+          valor_financiamento_max?: number | null
+          valor_iof?: number | null
+          valor_parcela?: number | null
+          valor_parcela_max?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "simulacao_bancos_banco_id_fkey"
+            columns: ["banco_id"]
+            isOneToOne: false
+            referencedRelation: "homefin_bancos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "simulacao_bancos_banco_id_fkey"
+            columns: ["banco_id"]
+            isOneToOne: false
+            referencedRelation: "vw_bancos_ativos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "simulacao_bancos_simulacao_id_fkey"
+            columns: ["simulacao_id"]
+            isOneToOne: false
+            referencedRelation: "simulacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      simulacao_historico: {
+        Row: {
+          ator_id: string | null
+          created_at: string
+          descricao: string
+          id: string
+          simulacao_id: string
+          tipo: string
+        }
+        Insert: {
+          ator_id?: string | null
+          created_at?: string
+          descricao: string
+          id?: string
+          simulacao_id: string
+          tipo: string
+        }
+        Update: {
+          ator_id?: string | null
+          created_at?: string
+          descricao?: string
+          id?: string
+          simulacao_id?: string
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "simulacao_historico_simulacao_id_fkey"
+            columns: ["simulacao_id"]
+            isOneToOne: false
+            referencedRelation: "simulacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      simulacao_logs_homefin: {
+        Row: {
+          correspondente_id: string | null
+          created_at: string
+          endpoint: string
+          erro: string | null
+          id: string
+          metodo: string
+          request_masked: Json | null
+          response: Json | null
+          simulacao_id: string | null
+          status_http: number | null
+        }
+        Insert: {
+          correspondente_id?: string | null
+          created_at?: string
+          endpoint: string
+          erro?: string | null
+          id?: string
+          metodo: string
+          request_masked?: Json | null
+          response?: Json | null
+          simulacao_id?: string | null
+          status_http?: number | null
+        }
+        Update: {
+          correspondente_id?: string | null
+          created_at?: string
+          endpoint?: string
+          erro?: string | null
+          id?: string
+          metodo?: string
+          request_masked?: Json | null
+          response?: Json | null
+          simulacao_id?: string | null
+          status_http?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "simulacao_logs_homefin_simulacao_id_fkey"
+            columns: ["simulacao_id"]
+            isOneToOne: false
+            referencedRelation: "simulacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      simulacao_participantes: {
+        Row: {
+          cpf_cnpj: string | null
+          created_at: string
+          dados: Json | null
+          data_nascimento: string | null
+          estado_civil: string | null
+          homefin_id_participante: string | null
+          id: string
+          nome: string | null
+          renda: number | null
+          simulacao_id: string
+          tipo_pessoa: string | null
+          tipo_qualificacao: string | null
+          updated_at: string
+        }
+        Insert: {
+          cpf_cnpj?: string | null
+          created_at?: string
+          dados?: Json | null
+          data_nascimento?: string | null
+          estado_civil?: string | null
+          homefin_id_participante?: string | null
+          id?: string
+          nome?: string | null
+          renda?: number | null
+          simulacao_id: string
+          tipo_pessoa?: string | null
+          tipo_qualificacao?: string | null
+          updated_at?: string
+        }
+        Update: {
+          cpf_cnpj?: string | null
+          created_at?: string
+          dados?: Json | null
+          data_nascimento?: string | null
+          estado_civil?: string | null
+          homefin_id_participante?: string | null
+          id?: string
+          nome?: string | null
+          renda?: number | null
+          simulacao_id?: string
+          tipo_pessoa?: string | null
+          tipo_qualificacao?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "simulacao_participantes_simulacao_id_fkey"
+            columns: ["simulacao_id"]
+            isOneToOne: false
+            referencedRelation: "simulacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      simulacao_pdfs: {
+        Row: {
+          banco_id: string | null
+          created_at: string
+          gerado_por: string | null
+          id: string
+          simulacao_id: string
+          storage_path: string
+        }
+        Insert: {
+          banco_id?: string | null
+          created_at?: string
+          gerado_por?: string | null
+          id?: string
+          simulacao_id: string
+          storage_path: string
+        }
+        Update: {
+          banco_id?: string | null
+          created_at?: string
+          gerado_por?: string | null
+          id?: string
+          simulacao_id?: string
+          storage_path?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "simulacao_pdfs_simulacao_id_fkey"
+            columns: ["simulacao_id"]
+            isOneToOne: false
+            referencedRelation: "simulacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       simulacoes: {
         Row: {
           analista_id: string | null
