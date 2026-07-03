@@ -37,8 +37,12 @@ import { Route as ApiPublicHomefinCallbackRouteImport } from './routes/api/publi
 import { Route as AuthenticatedOperacionalSimulacoesNovaRouteImport } from './routes/_authenticated/operacional.simulacoes_.nova'
 import { Route as AuthenticatedOperacionalSimulacoesCompletaRouteImport } from './routes/_authenticated/operacional.simulacoes_.completa'
 import { Route as AuthenticatedOperacionalSimulacoesIdRouteImport } from './routes/_authenticated/operacional.simulacoes_.$id'
+import { Route as AuthenticatedOperacionalPropostasKanbanRouteImport } from './routes/_authenticated/operacional.propostas_.kanban'
+import { Route as AuthenticatedOperacionalPropostasEnviarRouteImport } from './routes/_authenticated/operacional.propostas_.enviar'
+import { Route as AuthenticatedOperacionalPropostasIdRouteImport } from './routes/_authenticated/operacional.propostas_.$id'
 import { Route as AuthenticatedCrmClientesNovoRouteImport } from './routes/_authenticated/crm.clientes_.novo'
 import { Route as AuthenticatedCrmClientesIdRouteImport } from './routes/_authenticated/crm.clientes_.$id'
+import { Route as ApiPublicWebhookHomefinPropostaRouteImport } from './routes/api/public/webhook.homefin.proposta'
 
 const PortalRoute = PortalRouteImport.update({
   id: '/portal',
@@ -197,6 +201,24 @@ const AuthenticatedOperacionalSimulacoesIdRoute =
     path: '/operacional/simulacoes/$id',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedOperacionalPropostasKanbanRoute =
+  AuthenticatedOperacionalPropostasKanbanRouteImport.update({
+    id: '/operacional/propostas_/kanban',
+    path: '/operacional/propostas/kanban',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedOperacionalPropostasEnviarRoute =
+  AuthenticatedOperacionalPropostasEnviarRouteImport.update({
+    id: '/operacional/propostas_/enviar',
+    path: '/operacional/propostas/enviar',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedOperacionalPropostasIdRoute =
+  AuthenticatedOperacionalPropostasIdRouteImport.update({
+    id: '/operacional/propostas_/$id',
+    path: '/operacional/propostas/$id',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedCrmClientesNovoRoute =
   AuthenticatedCrmClientesNovoRouteImport.update({
     id: '/crm/clientes_/novo',
@@ -208,6 +230,12 @@ const AuthenticatedCrmClientesIdRoute =
     id: '/crm/clientes_/$id',
     path: '/crm/clientes/$id',
     getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const ApiPublicWebhookHomefinPropostaRoute =
+  ApiPublicWebhookHomefinPropostaRouteImport.update({
+    id: '/api/public/webhook/homefin/proposta',
+    path: '/api/public/webhook/homefin/proposta',
+    getParentRoute: () => rootRouteImport,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -236,10 +264,14 @@ export interface FileRoutesByFullPath {
   '/operacional/tarefas': typeof AuthenticatedOperacionalTarefasRoute
   '/crm/clientes/$id': typeof AuthenticatedCrmClientesIdRoute
   '/crm/clientes/novo': typeof AuthenticatedCrmClientesNovoRoute
+  '/operacional/propostas/$id': typeof AuthenticatedOperacionalPropostasIdRoute
+  '/operacional/propostas/enviar': typeof AuthenticatedOperacionalPropostasEnviarRoute
+  '/operacional/propostas/kanban': typeof AuthenticatedOperacionalPropostasKanbanRoute
   '/operacional/simulacoes/$id': typeof AuthenticatedOperacionalSimulacoesIdRoute
   '/operacional/simulacoes/completa': typeof AuthenticatedOperacionalSimulacoesCompletaRoute
   '/operacional/simulacoes/nova': typeof AuthenticatedOperacionalSimulacoesNovaRoute
   '/api/public/homefin/callback': typeof ApiPublicHomefinCallbackRoute
+  '/api/public/webhook/homefin/proposta': typeof ApiPublicWebhookHomefinPropostaRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -267,10 +299,14 @@ export interface FileRoutesByTo {
   '/operacional/tarefas': typeof AuthenticatedOperacionalTarefasRoute
   '/crm/clientes/$id': typeof AuthenticatedCrmClientesIdRoute
   '/crm/clientes/novo': typeof AuthenticatedCrmClientesNovoRoute
+  '/operacional/propostas/$id': typeof AuthenticatedOperacionalPropostasIdRoute
+  '/operacional/propostas/enviar': typeof AuthenticatedOperacionalPropostasEnviarRoute
+  '/operacional/propostas/kanban': typeof AuthenticatedOperacionalPropostasKanbanRoute
   '/operacional/simulacoes/$id': typeof AuthenticatedOperacionalSimulacoesIdRoute
   '/operacional/simulacoes/completa': typeof AuthenticatedOperacionalSimulacoesCompletaRoute
   '/operacional/simulacoes/nova': typeof AuthenticatedOperacionalSimulacoesNovaRoute
   '/api/public/homefin/callback': typeof ApiPublicHomefinCallbackRoute
+  '/api/public/webhook/homefin/proposta': typeof ApiPublicWebhookHomefinPropostaRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -300,10 +336,14 @@ export interface FileRoutesById {
   '/_authenticated/operacional/tarefas': typeof AuthenticatedOperacionalTarefasRoute
   '/_authenticated/crm/clientes_/$id': typeof AuthenticatedCrmClientesIdRoute
   '/_authenticated/crm/clientes_/novo': typeof AuthenticatedCrmClientesNovoRoute
+  '/_authenticated/operacional/propostas_/$id': typeof AuthenticatedOperacionalPropostasIdRoute
+  '/_authenticated/operacional/propostas_/enviar': typeof AuthenticatedOperacionalPropostasEnviarRoute
+  '/_authenticated/operacional/propostas_/kanban': typeof AuthenticatedOperacionalPropostasKanbanRoute
   '/_authenticated/operacional/simulacoes_/$id': typeof AuthenticatedOperacionalSimulacoesIdRoute
   '/_authenticated/operacional/simulacoes_/completa': typeof AuthenticatedOperacionalSimulacoesCompletaRoute
   '/_authenticated/operacional/simulacoes_/nova': typeof AuthenticatedOperacionalSimulacoesNovaRoute
   '/api/public/homefin/callback': typeof ApiPublicHomefinCallbackRoute
+  '/api/public/webhook/homefin/proposta': typeof ApiPublicWebhookHomefinPropostaRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -333,10 +373,14 @@ export interface FileRouteTypes {
     | '/operacional/tarefas'
     | '/crm/clientes/$id'
     | '/crm/clientes/novo'
+    | '/operacional/propostas/$id'
+    | '/operacional/propostas/enviar'
+    | '/operacional/propostas/kanban'
     | '/operacional/simulacoes/$id'
     | '/operacional/simulacoes/completa'
     | '/operacional/simulacoes/nova'
     | '/api/public/homefin/callback'
+    | '/api/public/webhook/homefin/proposta'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -364,10 +408,14 @@ export interface FileRouteTypes {
     | '/operacional/tarefas'
     | '/crm/clientes/$id'
     | '/crm/clientes/novo'
+    | '/operacional/propostas/$id'
+    | '/operacional/propostas/enviar'
+    | '/operacional/propostas/kanban'
     | '/operacional/simulacoes/$id'
     | '/operacional/simulacoes/completa'
     | '/operacional/simulacoes/nova'
     | '/api/public/homefin/callback'
+    | '/api/public/webhook/homefin/proposta'
   id:
     | '__root__'
     | '/'
@@ -396,10 +444,14 @@ export interface FileRouteTypes {
     | '/_authenticated/operacional/tarefas'
     | '/_authenticated/crm/clientes_/$id'
     | '/_authenticated/crm/clientes_/novo'
+    | '/_authenticated/operacional/propostas_/$id'
+    | '/_authenticated/operacional/propostas_/enviar'
+    | '/_authenticated/operacional/propostas_/kanban'
     | '/_authenticated/operacional/simulacoes_/$id'
     | '/_authenticated/operacional/simulacoes_/completa'
     | '/_authenticated/operacional/simulacoes_/nova'
     | '/api/public/homefin/callback'
+    | '/api/public/webhook/homefin/proposta'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -409,6 +461,7 @@ export interface RootRouteChildren {
   ParceiroRoute: typeof ParceiroRoute
   PortalRoute: typeof PortalRoute
   ApiPublicHomefinCallbackRoute: typeof ApiPublicHomefinCallbackRoute
+  ApiPublicWebhookHomefinPropostaRoute: typeof ApiPublicWebhookHomefinPropostaRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -609,6 +662,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOperacionalSimulacoesIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/operacional/propostas_/kanban': {
+      id: '/_authenticated/operacional/propostas_/kanban'
+      path: '/operacional/propostas/kanban'
+      fullPath: '/operacional/propostas/kanban'
+      preLoaderRoute: typeof AuthenticatedOperacionalPropostasKanbanRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/operacional/propostas_/enviar': {
+      id: '/_authenticated/operacional/propostas_/enviar'
+      path: '/operacional/propostas/enviar'
+      fullPath: '/operacional/propostas/enviar'
+      preLoaderRoute: typeof AuthenticatedOperacionalPropostasEnviarRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/operacional/propostas_/$id': {
+      id: '/_authenticated/operacional/propostas_/$id'
+      path: '/operacional/propostas/$id'
+      fullPath: '/operacional/propostas/$id'
+      preLoaderRoute: typeof AuthenticatedOperacionalPropostasIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/crm/clientes_/novo': {
       id: '/_authenticated/crm/clientes_/novo'
       path: '/crm/clientes/novo'
@@ -622,6 +696,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/crm/clientes/$id'
       preLoaderRoute: typeof AuthenticatedCrmClientesIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/api/public/webhook/homefin/proposta': {
+      id: '/api/public/webhook/homefin/proposta'
+      path: '/api/public/webhook/homefin/proposta'
+      fullPath: '/api/public/webhook/homefin/proposta'
+      preLoaderRoute: typeof ApiPublicWebhookHomefinPropostaRouteImport
+      parentRoute: typeof rootRouteImport
     }
   }
 }
@@ -648,6 +729,9 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedOperacionalTarefasRoute: typeof AuthenticatedOperacionalTarefasRoute
   AuthenticatedCrmClientesIdRoute: typeof AuthenticatedCrmClientesIdRoute
   AuthenticatedCrmClientesNovoRoute: typeof AuthenticatedCrmClientesNovoRoute
+  AuthenticatedOperacionalPropostasIdRoute: typeof AuthenticatedOperacionalPropostasIdRoute
+  AuthenticatedOperacionalPropostasEnviarRoute: typeof AuthenticatedOperacionalPropostasEnviarRoute
+  AuthenticatedOperacionalPropostasKanbanRoute: typeof AuthenticatedOperacionalPropostasKanbanRoute
   AuthenticatedOperacionalSimulacoesIdRoute: typeof AuthenticatedOperacionalSimulacoesIdRoute
   AuthenticatedOperacionalSimulacoesCompletaRoute: typeof AuthenticatedOperacionalSimulacoesCompletaRoute
   AuthenticatedOperacionalSimulacoesNovaRoute: typeof AuthenticatedOperacionalSimulacoesNovaRoute
@@ -679,6 +763,12 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedOperacionalTarefasRoute: AuthenticatedOperacionalTarefasRoute,
   AuthenticatedCrmClientesIdRoute: AuthenticatedCrmClientesIdRoute,
   AuthenticatedCrmClientesNovoRoute: AuthenticatedCrmClientesNovoRoute,
+  AuthenticatedOperacionalPropostasIdRoute:
+    AuthenticatedOperacionalPropostasIdRoute,
+  AuthenticatedOperacionalPropostasEnviarRoute:
+    AuthenticatedOperacionalPropostasEnviarRoute,
+  AuthenticatedOperacionalPropostasKanbanRoute:
+    AuthenticatedOperacionalPropostasKanbanRoute,
   AuthenticatedOperacionalSimulacoesIdRoute:
     AuthenticatedOperacionalSimulacoesIdRoute,
   AuthenticatedOperacionalSimulacoesCompletaRoute:
@@ -697,6 +787,7 @@ const rootRouteChildren: RootRouteChildren = {
   ParceiroRoute: ParceiroRoute,
   PortalRoute: PortalRoute,
   ApiPublicHomefinCallbackRoute: ApiPublicHomefinCallbackRoute,
+  ApiPublicWebhookHomefinPropostaRoute: ApiPublicWebhookHomefinPropostaRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
