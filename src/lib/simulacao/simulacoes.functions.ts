@@ -1,0 +1,426 @@
+import { createServerFn } from "@tanstack/react-start";
+import { getRequestHeader } from "@tanstack/react-start/server";
+import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { completaSchema } from "./schemas";
+import { humanizarErroBanco } from "./bank-error-humanizer";
+
+/** ===== Tipos de saída ===== */
+export interface BancoAtivo {
+  id: string;
+  codigo_banco: number;
+  nome_banco: string;
+  flag_padrao: boolean;
+  id_banco: number | null;
+}
+
+export interface SimulacaoBancoView {
+  id: string;
+  banco_id: string | null;
+  codigo_banco: number | null;
+  nome_banco: string | null;
+  status_banco: string;
+  valor_parcela: number | null;
+  taxa_juros_ano: number | null;
+  prazo_pagamento_max: number | null;
+  valor_financiamento_max: number | null;
+  valor_parcela_max: number | null;
+  codigo_indexador: string | null;
+  valor_iof: number | null;
+  sistema_amortizacao_banco: string | null;
+  mensagem_banco: string | null;
+}
+
+export interface SimulacaoListaItem {
+  id: string;
+  numero_simulacao: string;
+  nome_cliente: string | null;
+  produto: string | null;
+  valor_imovel: number | null;
+  valor_financiamento: number | null;
+  prazo: number | null;
+  status: string;
+  created_at: string;
+}
+
+/** ===== Bancos e operações (cache) ===== */
+export const listarBancosAtivos = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<BancoAtivo[]> => {
+    const { data, error } = await context.supabase
+      .from("vw_bancos_ativos")
+      .select("id, codigo_banco, nome_banco, flag_padrao, id_banco");
+    if (error) throw new Error(error.message);
+    return (data ?? []) as BancoAtivo[];
+  });
+
+export const listarOperacoes = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data, error } = await context.supabase
+      .from("homefin_operacoes")
+      .select("id_operacao, nome_operacao, produto_sistema")
+      .eq("ativo", true)
+      .order("id_operacao");
+    if (error) throw new Error(error.message);
+    return data ?? [];
+  });
+
+/** ===== Busca de clientes do CRM (combobox) ===== */
+export const buscarClientesCRM = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ q: z.string().min(2) }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const termo = data.q.trim();
+    const digitos = termo.replace(/\D/g, "");
+    let query = supabase
+      .from("clientes")
+      .select("id, nome, documento, email, telefone_celular, data_nascimento, estado_civil, renda_total_declarada, tipo_pessoa")
+      .limit(8);
+    if (digitos.length >= 3) {
+      query = query.or(`nome.ilike.%${termo}%,documento.ilike.%${digitos}%`);
+    } else {
+      query = query.ilike("nome", `%${termo}%`);
+    }
+    const { data: rows, error } = await query;
+    if (error) throw new Error(error.message);
+    return rows ?? [];
+  });
+
+/** ===== Verificação por e-mail (OTP) ===== */
+export const enviarOtpEmail = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ email: z.string().email() }).parse(d))
+  .handler(async ({ data }): Promise<{ ok: boolean; expires_at: string }> => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const email = data.email.toLowerCase();
+    const { createHash, randomInt } = await import("crypto");
+
+    // rate limit: 5 tentativas / 15 min
+    const desde = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+    const { count } = await supabaseAdmin
+      .from("homefin_email_otp")
+      .select("id", { count: "exact", head: true })
+      .eq("email", email)
+      .gte("created_at", desde);
+    if ((count ?? 0) >= 5) {
+      throw new Error("Muitas tentativas. Aguarde 15 minutos e tente novamente.");
+    }
+
+    const codigo = String(randomInt(0, 1_000_000)).padStart(6, "0");
+    const token_hash = createHash("sha256").update(`${email}:${codigo}`).digest("hex");
+    const expires_at = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+
+    // invalida OTPs anteriores ainda ativos
+    await supabaseAdmin
+      .from("homefin_email_otp")
+      .update({ used_at: new Date().toISOString() })
+      .eq("email", email)
+      .is("used_at", null);
+
+    await supabaseAdmin.from("homefin_email_otp").insert({ email, token_hash, expires_at });
+
+    // Em produção, o envio é feito pela verificação de e-mail do provedor.
+    // Em dev sem provedor, o código fica registrado no log do servidor.
+    console.info(`[otp] código de verificação para ${email}: ${codigo}`);
+    return { ok: true, expires_at };
+  });
+
+export const validarOtpEmail = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({ email: z.string().email(), codigo: z.string().length(6) }).parse(d),
+  )
+  .handler(async ({ data }): Promise<{ ok: boolean; verificado_em: string }> => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { createHash } = await import("crypto");
+    const email = data.email.toLowerCase();
+    const token_hash = createHash("sha256").update(`${email}:${data.codigo}`).digest("hex");
+
+    const { data: otp } = await supabaseAdmin
+      .from("homefin_email_otp")
+      .select("*")
+      .eq("email", email)
+      .is("used_at", null)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (!otp) throw new Error("Nenhum código ativo. Solicite um novo código.");
+    if (new Date(otp.expires_at).getTime() < Date.now()) {
+      throw new Error("Código expirado. Solicite um novo código.");
+    }
+    if (otp.tentativas >= 5) throw new Error("Muitas tentativas. Solicite um novo código.");
+
+    if (otp.token_hash !== token_hash) {
+      await supabaseAdmin
+        .from("homefin_email_otp")
+        .update({ tentativas: otp.tentativas + 1 })
+        .eq("id", otp.id);
+      throw new Error("Código incorreto.");
+    }
+
+    const verificado_em = new Date().toISOString();
+    await supabaseAdmin.from("homefin_email_otp").update({ used_at: verificado_em }).eq("id", otp.id);
+    return { ok: true, verificado_em };
+  });
+
+/** ===== Criar simulação ===== */
+const criarSchema = z.object({
+  modo: z.enum(["simplificada", "completa"]),
+  dados: completaSchema.partial().extend({
+    email_verificado_em: z.string().optional().nullable(),
+  }),
+});
+
+export const criarSimulacao = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => criarSchema.parse(d))
+  .handler(async ({ data, context }): Promise<{ id: string; numero_simulacao: string }> => {
+    const { supabase, userId } = context;
+    const dd = data.dados;
+
+    const { data: prof } = await supabase
+      .from("profiles")
+      .select("correspondente_id")
+      .eq("id", userId)
+      .maybeSingle();
+    const correspondente_id = prof?.correspondente_id;
+    if (!correspondente_id) throw new Error("Usuário sem correspondente vinculado.");
+
+    if (data.modo === "completa" && !dd.email_verificado_em) {
+      // permite quando cliente do CRM já verificado; senão exige OTP
+      // (validação de bloqueio ocorre no enviarSimulacaoBanco)
+    }
+
+    // resolve/insere cliente
+    let cliente_id = dd.cliente_id ?? null;
+    if (!cliente_id && dd.cpf_cnpj) {
+      const digitos = dd.cpf_cnpj.replace(/\D/g, "");
+      const { data: existente } = await supabase
+        .from("clientes")
+        .select("id")
+        .eq("documento", digitos)
+        .maybeSingle();
+      if (existente) cliente_id = existente.id;
+    }
+    if (!cliente_id && dd.nome_cliente && dd.cpf_cnpj) {
+      const digitos = dd.cpf_cnpj.replace(/\D/g, "");
+      const { data: novo, error: errCli } = await supabase
+        .from("clientes")
+        .insert({
+          correspondente_id,
+          tipo_pessoa: digitos.length > 11 ? "PJ" : "PF",
+          nome: dd.nome_cliente,
+          documento: digitos,
+          email: dd.email ?? null,
+          telefone_celular: dd.celular ?? null,
+          data_nascimento: dd.data_nascimento ?? null,
+          estado_civil: (dd.estado_civil as any) ?? null,
+          renda_total_declarada: dd.renda_total ?? null,
+          criador_id: userId,
+          responsavel_id: userId,
+        } as any)
+        .select("id")
+        .maybeSingle();
+      if (!errCli && novo) cliente_id = novo.id;
+    }
+
+    const insert = {
+      correspondente_id,
+      tipo_simulacao: data.modo,
+      status: "rascunho" as const,
+      cliente_id,
+      cpf_cnpj: dd.cpf_cnpj ?? null,
+      nome_cliente: dd.nome_cliente ?? null,
+      email: dd.email ?? null,
+      celular: dd.celular ?? null,
+      data_nascimento: dd.data_nascimento ?? null,
+      renda_total: dd.renda_total ?? null,
+      estado_civil: dd.estado_civil ?? null,
+      possui_conjuge: dd.possui_conjuge ?? false,
+      compoe_renda: dd.compoe_renda ?? false,
+      nome_conjuge: dd.nome_conjuge ?? null,
+      cpf_conjuge: dd.cpf_conjuge ?? null,
+      data_nascimento_conjuge: dd.data_nascimento_conjuge ?? null,
+      email_conjuge: dd.email_conjuge ?? null,
+      celular_conjuge: dd.celular_conjuge ?? null,
+      renda_conjuge: dd.renda_conjuge ?? null,
+      estado_civil_conjuge: dd.estado_civil_conjuge ?? null,
+      regime_casamento: dd.regime_casamento ?? null,
+      produto: dd.produto ?? null,
+      id_operacao_homefin: dd.id_operacao_homefin ?? null,
+      tipo_imovel: dd.tipo_imovel ?? null,
+      uso_imovel: dd.uso_imovel ?? null,
+      situacao_imovel: dd.situacao_imovel ?? null,
+      uf: dd.uf ?? null,
+      cep_imovel: dd.cep_imovel ?? null,
+      valor_imovel: dd.valor_imovel ?? null,
+      valor_entrada: dd.valor_entrada ?? null,
+      valor_financiamento: dd.valor_financiamento ?? null,
+      prazo: dd.prazo ?? null,
+      prazo_anos: dd.prazo_anos ?? null,
+      possui_imovel_escolhido: dd.possui_imovel_escolhido ?? null,
+      utiliza_fgts: dd.utiliza_fgts ?? null,
+      sistema_amortizacao: dd.sistema_amortizacao ?? null,
+      email_verificado_em: dd.email_verificado_em ?? null,
+      email_verificado_por: dd.email_verificado_em ? "homefin_otp" : null,
+      consentimento_lgpd: dd.consentimento_lgpd ?? false,
+      consentimento_scr: dd.consentimento_scr ?? false,
+      usuario_criador_id: userId,
+      usuario_responsavel_id: userId,
+    };
+
+    const { data: sim, error } = await supabase
+      .from("simulacoes")
+      .insert(insert as any)
+      .select("id, numero_simulacao")
+      .single();
+    if (error) throw new Error(error.message);
+
+    // registra bancos selecionados
+    if (dd.bancos_ids && dd.bancos_ids.length > 0) {
+      const { data: bancos } = await supabase
+        .from("vw_bancos_ativos")
+        .select("id, codigo_banco, nome_banco, id_banco")
+        .in("id", dd.bancos_ids);
+      if (bancos && bancos.length > 0) {
+        await supabase.from("simulacao_bancos").insert(
+          bancos.map((b) => ({
+            simulacao_id: sim.id,
+            banco_id: b.id,
+            codigo_banco: b.codigo_banco,
+            nome_banco: b.nome_banco,
+            homefin_id_banco: b.id_banco,
+            selecionado: true,
+          })),
+        );
+      }
+    }
+
+    await supabase.from("simulacao_historico").insert({
+      simulacao_id: sim.id,
+      tipo: "cadastro",
+      descricao: "Simulação criada",
+      ator_id: userId,
+    });
+
+    return { id: sim.id, numero_simulacao: sim.numero_simulacao };
+  });
+
+/** ===== Obter simulação ===== */
+export const obterSimulacao = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { data: simulacao, error } = await supabase
+      .from("simulacoes")
+      .select("*")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!simulacao) throw new Error("Simulação não encontrada.");
+
+    const { data: bancos } = await supabase
+      .from("simulacao_bancos")
+      .select("*")
+      .eq("simulacao_id", data.id)
+      .order("valor_parcela", { ascending: true, nullsFirst: false });
+
+    const { data: historico } = await supabase
+      .from("simulacao_historico")
+      .select("*")
+      .eq("simulacao_id", data.id)
+      .order("created_at", { ascending: false });
+
+    return { simulacao, bancos: bancos ?? [], historico: historico ?? [] };
+  });
+
+/** ===== Listar simulações (paginado, escopo por RLS) ===== */
+const listarSchema = z.object({
+  q: z.string().optional(),
+  status: z.string().optional(),
+  escopo: z.enum(["todas", "minhas"]).default("todas"),
+  pagina: z.number().int().min(1).default(1),
+  porPagina: z.number().int().min(1).max(100).default(20),
+});
+
+export const listarSimulacoes = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => listarSchema.parse(d))
+  .handler(async ({ data, context }): Promise<{ itens: SimulacaoListaItem[]; total: number }> => {
+    const { supabase, userId } = context;
+    const from = (data.pagina - 1) * data.porPagina;
+    const to = from + data.porPagina - 1;
+
+    let query = supabase
+      .from("simulacoes")
+      .select(
+        "id, numero_simulacao, nome_cliente, produto, valor_imovel, valor_financiamento, prazo, status, created_at",
+        { count: "exact" },
+      )
+      .order("created_at", { ascending: false })
+      .range(from, to);
+
+    if (data.escopo === "minhas") query = query.eq("usuario_criador_id", userId);
+    if (data.status) query = query.eq("status", data.status as any);
+    if (data.q) {
+      const digitos = data.q.replace(/\D/g, "");
+      const filtros = [`numero_simulacao.ilike.%${data.q}%`, `nome_cliente.ilike.%${data.q}%`];
+      if (digitos.length >= 3) filtros.push(`cpf_cnpj.ilike.%${digitos}%`);
+      query = query.or(filtros.join(","));
+    }
+
+    const { data: rows, error, count } = await query;
+    if (error) throw new Error(error.message);
+    return { itens: (rows ?? []) as SimulacaoListaItem[], total: count ?? 0 };
+  });
+
+/** ===== Duplicar simulação ===== */
+export const duplicarSimulacao = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }): Promise<{ id: string; numero_simulacao: string }> => {
+    const { supabase, userId } = context;
+    const { data: orig, error } = await supabase.from("simulacoes").select("*").eq("id", data.id).maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!orig) throw new Error("Simulação não encontrada.");
+
+    const { id, numero_simulacao, created_at, updated_at, status, homefin_id_oportunidade,
+      codigo_oportunidade_homefin, ultimo_envio_em, ultimo_erro, ...resto } = orig as any;
+
+    const { data: nova, error: errNova } = await supabase
+      .from("simulacoes")
+      .insert({ ...resto, status: "rascunho", usuario_criador_id: userId })
+      .select("id, numero_simulacao")
+      .single();
+    if (errNova) throw new Error(errNova.message);
+
+    const { data: bancos } = await supabase
+      .from("simulacao_bancos")
+      .select("banco_id, codigo_banco, nome_banco, homefin_id_banco, selecionado")
+      .eq("simulacao_id", data.id);
+    if (bancos && bancos.length > 0) {
+      await supabase.from("simulacao_bancos").insert(
+        bancos.map((b) => ({ ...b, simulacao_id: nova.id, status_banco: "aguardando" as const })),
+      );
+    }
+    return { id: nova.id, numero_simulacao: nova.numero_simulacao };
+  });
+
+/** ===== Enviar à integração bancária ===== */
+export const enviarSimulacaoBanco = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ simulacao_id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const ip = getRequestHeader("x-forwarded-for") ?? null;
+    const { enviarSimulacaoImpl } = await import("./enviar.server");
+    return enviarSimulacaoImpl({ simulacaoId: data.simulacao_id, userId, ip, supabase });
+  });
+
+export const reenviarSimulacaoBanco = enviarSimulacaoBanco;
+
+export { humanizarErroBanco };

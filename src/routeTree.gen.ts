@@ -33,6 +33,10 @@ import { Route as AuthenticatedAdminRegrasModulosRouteImport } from './routes/_a
 import { Route as AuthenticatedAdminPessoasRouteImport } from './routes/_authenticated/admin.pessoas'
 import { Route as AuthenticatedAdminNotificacoesRouteImport } from './routes/_authenticated/admin.notificacoes'
 import { Route as AuthenticatedAdminAuditoriaRouteImport } from './routes/_authenticated/admin.auditoria'
+import { Route as ApiPublicHomefinCallbackRouteImport } from './routes/api/public/homefin.callback'
+import { Route as AuthenticatedOperacionalSimulacoesNovaRouteImport } from './routes/_authenticated/operacional.simulacoes_.nova'
+import { Route as AuthenticatedOperacionalSimulacoesCompletaRouteImport } from './routes/_authenticated/operacional.simulacoes_.completa'
+import { Route as AuthenticatedOperacionalSimulacoesIdRouteImport } from './routes/_authenticated/operacional.simulacoes_.$id'
 import { Route as AuthenticatedCrmClientesNovoRouteImport } from './routes/_authenticated/crm.clientes_.novo'
 import { Route as AuthenticatedCrmClientesIdRouteImport } from './routes/_authenticated/crm.clientes_.$id'
 
@@ -169,6 +173,30 @@ const AuthenticatedAdminAuditoriaRoute =
     path: '/admin/auditoria',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiPublicHomefinCallbackRoute =
+  ApiPublicHomefinCallbackRouteImport.update({
+    id: '/api/public/homefin/callback',
+    path: '/api/public/homefin/callback',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const AuthenticatedOperacionalSimulacoesNovaRoute =
+  AuthenticatedOperacionalSimulacoesNovaRouteImport.update({
+    id: '/operacional/simulacoes_/nova',
+    path: '/operacional/simulacoes/nova',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedOperacionalSimulacoesCompletaRoute =
+  AuthenticatedOperacionalSimulacoesCompletaRouteImport.update({
+    id: '/operacional/simulacoes_/completa',
+    path: '/operacional/simulacoes/completa',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedOperacionalSimulacoesIdRoute =
+  AuthenticatedOperacionalSimulacoesIdRouteImport.update({
+    id: '/operacional/simulacoes_/$id',
+    path: '/operacional/simulacoes/$id',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedCrmClientesNovoRoute =
   AuthenticatedCrmClientesNovoRouteImport.update({
     id: '/crm/clientes_/novo',
@@ -208,6 +236,10 @@ export interface FileRoutesByFullPath {
   '/operacional/tarefas': typeof AuthenticatedOperacionalTarefasRoute
   '/crm/clientes/$id': typeof AuthenticatedCrmClientesIdRoute
   '/crm/clientes/novo': typeof AuthenticatedCrmClientesNovoRoute
+  '/operacional/simulacoes/$id': typeof AuthenticatedOperacionalSimulacoesIdRoute
+  '/operacional/simulacoes/completa': typeof AuthenticatedOperacionalSimulacoesCompletaRoute
+  '/operacional/simulacoes/nova': typeof AuthenticatedOperacionalSimulacoesNovaRoute
+  '/api/public/homefin/callback': typeof ApiPublicHomefinCallbackRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -235,6 +267,10 @@ export interface FileRoutesByTo {
   '/operacional/tarefas': typeof AuthenticatedOperacionalTarefasRoute
   '/crm/clientes/$id': typeof AuthenticatedCrmClientesIdRoute
   '/crm/clientes/novo': typeof AuthenticatedCrmClientesNovoRoute
+  '/operacional/simulacoes/$id': typeof AuthenticatedOperacionalSimulacoesIdRoute
+  '/operacional/simulacoes/completa': typeof AuthenticatedOperacionalSimulacoesCompletaRoute
+  '/operacional/simulacoes/nova': typeof AuthenticatedOperacionalSimulacoesNovaRoute
+  '/api/public/homefin/callback': typeof ApiPublicHomefinCallbackRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -264,6 +300,10 @@ export interface FileRoutesById {
   '/_authenticated/operacional/tarefas': typeof AuthenticatedOperacionalTarefasRoute
   '/_authenticated/crm/clientes_/$id': typeof AuthenticatedCrmClientesIdRoute
   '/_authenticated/crm/clientes_/novo': typeof AuthenticatedCrmClientesNovoRoute
+  '/_authenticated/operacional/simulacoes_/$id': typeof AuthenticatedOperacionalSimulacoesIdRoute
+  '/_authenticated/operacional/simulacoes_/completa': typeof AuthenticatedOperacionalSimulacoesCompletaRoute
+  '/_authenticated/operacional/simulacoes_/nova': typeof AuthenticatedOperacionalSimulacoesNovaRoute
+  '/api/public/homefin/callback': typeof ApiPublicHomefinCallbackRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -293,6 +333,10 @@ export interface FileRouteTypes {
     | '/operacional/tarefas'
     | '/crm/clientes/$id'
     | '/crm/clientes/novo'
+    | '/operacional/simulacoes/$id'
+    | '/operacional/simulacoes/completa'
+    | '/operacional/simulacoes/nova'
+    | '/api/public/homefin/callback'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -320,6 +364,10 @@ export interface FileRouteTypes {
     | '/operacional/tarefas'
     | '/crm/clientes/$id'
     | '/crm/clientes/novo'
+    | '/operacional/simulacoes/$id'
+    | '/operacional/simulacoes/completa'
+    | '/operacional/simulacoes/nova'
+    | '/api/public/homefin/callback'
   id:
     | '__root__'
     | '/'
@@ -348,6 +396,10 @@ export interface FileRouteTypes {
     | '/_authenticated/operacional/tarefas'
     | '/_authenticated/crm/clientes_/$id'
     | '/_authenticated/crm/clientes_/novo'
+    | '/_authenticated/operacional/simulacoes_/$id'
+    | '/_authenticated/operacional/simulacoes_/completa'
+    | '/_authenticated/operacional/simulacoes_/nova'
+    | '/api/public/homefin/callback'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -356,6 +408,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   ParceiroRoute: typeof ParceiroRoute
   PortalRoute: typeof PortalRoute
+  ApiPublicHomefinCallbackRoute: typeof ApiPublicHomefinCallbackRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -528,6 +581,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminAuditoriaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/homefin/callback': {
+      id: '/api/public/homefin/callback'
+      path: '/api/public/homefin/callback'
+      fullPath: '/api/public/homefin/callback'
+      preLoaderRoute: typeof ApiPublicHomefinCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/operacional/simulacoes_/nova': {
+      id: '/_authenticated/operacional/simulacoes_/nova'
+      path: '/operacional/simulacoes/nova'
+      fullPath: '/operacional/simulacoes/nova'
+      preLoaderRoute: typeof AuthenticatedOperacionalSimulacoesNovaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/operacional/simulacoes_/completa': {
+      id: '/_authenticated/operacional/simulacoes_/completa'
+      path: '/operacional/simulacoes/completa'
+      fullPath: '/operacional/simulacoes/completa'
+      preLoaderRoute: typeof AuthenticatedOperacionalSimulacoesCompletaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/operacional/simulacoes_/$id': {
+      id: '/_authenticated/operacional/simulacoes_/$id'
+      path: '/operacional/simulacoes/$id'
+      fullPath: '/operacional/simulacoes/$id'
+      preLoaderRoute: typeof AuthenticatedOperacionalSimulacoesIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/crm/clientes_/novo': {
       id: '/_authenticated/crm/clientes_/novo'
       path: '/crm/clientes/novo'
@@ -567,6 +648,9 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedOperacionalTarefasRoute: typeof AuthenticatedOperacionalTarefasRoute
   AuthenticatedCrmClientesIdRoute: typeof AuthenticatedCrmClientesIdRoute
   AuthenticatedCrmClientesNovoRoute: typeof AuthenticatedCrmClientesNovoRoute
+  AuthenticatedOperacionalSimulacoesIdRoute: typeof AuthenticatedOperacionalSimulacoesIdRoute
+  AuthenticatedOperacionalSimulacoesCompletaRoute: typeof AuthenticatedOperacionalSimulacoesCompletaRoute
+  AuthenticatedOperacionalSimulacoesNovaRoute: typeof AuthenticatedOperacionalSimulacoesNovaRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -595,6 +679,12 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedOperacionalTarefasRoute: AuthenticatedOperacionalTarefasRoute,
   AuthenticatedCrmClientesIdRoute: AuthenticatedCrmClientesIdRoute,
   AuthenticatedCrmClientesNovoRoute: AuthenticatedCrmClientesNovoRoute,
+  AuthenticatedOperacionalSimulacoesIdRoute:
+    AuthenticatedOperacionalSimulacoesIdRoute,
+  AuthenticatedOperacionalSimulacoesCompletaRoute:
+    AuthenticatedOperacionalSimulacoesCompletaRoute,
+  AuthenticatedOperacionalSimulacoesNovaRoute:
+    AuthenticatedOperacionalSimulacoesNovaRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
@@ -606,6 +696,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   ParceiroRoute: ParceiroRoute,
   PortalRoute: PortalRoute,
+  ApiPublicHomefinCallbackRoute: ApiPublicHomefinCallbackRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
