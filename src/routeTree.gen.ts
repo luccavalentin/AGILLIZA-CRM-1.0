@@ -37,6 +37,7 @@ import { Route as ApiPublicHomefinCallbackRouteImport } from './routes/api/publi
 import { Route as AuthenticatedOperacionalSimulacoesNovaRouteImport } from './routes/_authenticated/operacional.simulacoes_.nova'
 import { Route as AuthenticatedOperacionalSimulacoesCompletaRouteImport } from './routes/_authenticated/operacional.simulacoes_.completa'
 import { Route as AuthenticatedOperacionalSimulacoesIdRouteImport } from './routes/_authenticated/operacional.simulacoes_.$id'
+import { Route as AuthenticatedOperacionalPropostasKanbanRouteImport } from './routes/_authenticated/operacional.propostas_.kanban'
 import { Route as AuthenticatedOperacionalPropostasEnviarRouteImport } from './routes/_authenticated/operacional.propostas_.enviar'
 import { Route as AuthenticatedOperacionalPropostasIdRouteImport } from './routes/_authenticated/operacional.propostas_.$id'
 import { Route as AuthenticatedCrmClientesNovoRouteImport } from './routes/_authenticated/crm.clientes_.novo'
@@ -200,6 +201,12 @@ const AuthenticatedOperacionalSimulacoesIdRoute =
     path: '/operacional/simulacoes/$id',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedOperacionalPropostasKanbanRoute =
+  AuthenticatedOperacionalPropostasKanbanRouteImport.update({
+    id: '/operacional/propostas_/kanban',
+    path: '/operacional/propostas/kanban',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedOperacionalPropostasEnviarRoute =
   AuthenticatedOperacionalPropostasEnviarRouteImport.update({
     id: '/operacional/propostas_/enviar',
@@ -259,6 +266,7 @@ export interface FileRoutesByFullPath {
   '/crm/clientes/novo': typeof AuthenticatedCrmClientesNovoRoute
   '/operacional/propostas/$id': typeof AuthenticatedOperacionalPropostasIdRoute
   '/operacional/propostas/enviar': typeof AuthenticatedOperacionalPropostasEnviarRoute
+  '/operacional/propostas/kanban': typeof AuthenticatedOperacionalPropostasKanbanRoute
   '/operacional/simulacoes/$id': typeof AuthenticatedOperacionalSimulacoesIdRoute
   '/operacional/simulacoes/completa': typeof AuthenticatedOperacionalSimulacoesCompletaRoute
   '/operacional/simulacoes/nova': typeof AuthenticatedOperacionalSimulacoesNovaRoute
@@ -293,6 +301,7 @@ export interface FileRoutesByTo {
   '/crm/clientes/novo': typeof AuthenticatedCrmClientesNovoRoute
   '/operacional/propostas/$id': typeof AuthenticatedOperacionalPropostasIdRoute
   '/operacional/propostas/enviar': typeof AuthenticatedOperacionalPropostasEnviarRoute
+  '/operacional/propostas/kanban': typeof AuthenticatedOperacionalPropostasKanbanRoute
   '/operacional/simulacoes/$id': typeof AuthenticatedOperacionalSimulacoesIdRoute
   '/operacional/simulacoes/completa': typeof AuthenticatedOperacionalSimulacoesCompletaRoute
   '/operacional/simulacoes/nova': typeof AuthenticatedOperacionalSimulacoesNovaRoute
@@ -329,6 +338,7 @@ export interface FileRoutesById {
   '/_authenticated/crm/clientes_/novo': typeof AuthenticatedCrmClientesNovoRoute
   '/_authenticated/operacional/propostas_/$id': typeof AuthenticatedOperacionalPropostasIdRoute
   '/_authenticated/operacional/propostas_/enviar': typeof AuthenticatedOperacionalPropostasEnviarRoute
+  '/_authenticated/operacional/propostas_/kanban': typeof AuthenticatedOperacionalPropostasKanbanRoute
   '/_authenticated/operacional/simulacoes_/$id': typeof AuthenticatedOperacionalSimulacoesIdRoute
   '/_authenticated/operacional/simulacoes_/completa': typeof AuthenticatedOperacionalSimulacoesCompletaRoute
   '/_authenticated/operacional/simulacoes_/nova': typeof AuthenticatedOperacionalSimulacoesNovaRoute
@@ -365,6 +375,7 @@ export interface FileRouteTypes {
     | '/crm/clientes/novo'
     | '/operacional/propostas/$id'
     | '/operacional/propostas/enviar'
+    | '/operacional/propostas/kanban'
     | '/operacional/simulacoes/$id'
     | '/operacional/simulacoes/completa'
     | '/operacional/simulacoes/nova'
@@ -399,6 +410,7 @@ export interface FileRouteTypes {
     | '/crm/clientes/novo'
     | '/operacional/propostas/$id'
     | '/operacional/propostas/enviar'
+    | '/operacional/propostas/kanban'
     | '/operacional/simulacoes/$id'
     | '/operacional/simulacoes/completa'
     | '/operacional/simulacoes/nova'
@@ -434,6 +446,7 @@ export interface FileRouteTypes {
     | '/_authenticated/crm/clientes_/novo'
     | '/_authenticated/operacional/propostas_/$id'
     | '/_authenticated/operacional/propostas_/enviar'
+    | '/_authenticated/operacional/propostas_/kanban'
     | '/_authenticated/operacional/simulacoes_/$id'
     | '/_authenticated/operacional/simulacoes_/completa'
     | '/_authenticated/operacional/simulacoes_/nova'
@@ -649,6 +662,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOperacionalSimulacoesIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/operacional/propostas_/kanban': {
+      id: '/_authenticated/operacional/propostas_/kanban'
+      path: '/operacional/propostas/kanban'
+      fullPath: '/operacional/propostas/kanban'
+      preLoaderRoute: typeof AuthenticatedOperacionalPropostasKanbanRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/operacional/propostas_/enviar': {
       id: '/_authenticated/operacional/propostas_/enviar'
       path: '/operacional/propostas/enviar'
@@ -711,6 +731,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCrmClientesNovoRoute: typeof AuthenticatedCrmClientesNovoRoute
   AuthenticatedOperacionalPropostasIdRoute: typeof AuthenticatedOperacionalPropostasIdRoute
   AuthenticatedOperacionalPropostasEnviarRoute: typeof AuthenticatedOperacionalPropostasEnviarRoute
+  AuthenticatedOperacionalPropostasKanbanRoute: typeof AuthenticatedOperacionalPropostasKanbanRoute
   AuthenticatedOperacionalSimulacoesIdRoute: typeof AuthenticatedOperacionalSimulacoesIdRoute
   AuthenticatedOperacionalSimulacoesCompletaRoute: typeof AuthenticatedOperacionalSimulacoesCompletaRoute
   AuthenticatedOperacionalSimulacoesNovaRoute: typeof AuthenticatedOperacionalSimulacoesNovaRoute
@@ -746,6 +767,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
     AuthenticatedOperacionalPropostasIdRoute,
   AuthenticatedOperacionalPropostasEnviarRoute:
     AuthenticatedOperacionalPropostasEnviarRoute,
+  AuthenticatedOperacionalPropostasKanbanRoute:
+    AuthenticatedOperacionalPropostasKanbanRoute,
   AuthenticatedOperacionalSimulacoesIdRoute:
     AuthenticatedOperacionalSimulacoesIdRoute,
   AuthenticatedOperacionalSimulacoesCompletaRoute:
