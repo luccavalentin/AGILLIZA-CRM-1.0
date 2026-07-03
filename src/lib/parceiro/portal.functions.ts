@@ -267,3 +267,37 @@ export const listarMinhasComissoes = createServerFn({ method: "GET" })
       created_at: c.created_at,
     }));
   });
+
+export interface DocumentoParceiroLinha {
+  id: string;
+  cliente_nome: string | null;
+  nome_arquivo: string;
+  categoria: string | null;
+  status: string;
+  created_at: string;
+}
+
+export const listarDocumentosParceiro = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<DocumentoParceiroLinha[]> => {
+    const { supabase, userId } = context;
+    const ctx = await resolverContexto(supabase, userId);
+    if (ctx.clienteIds.length === 0) return [];
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data } = await supabaseAdmin
+      .from("cliente_documentos")
+      .select("id, nome_arquivo, categoria, status, created_at, clientes(nome)")
+      .in("cliente_id", ctx.clienteIds)
+      .order("created_at", { ascending: false })
+      .limit(200);
+
+    return (data ?? []).map((d) => ({
+      id: d.id,
+      cliente_nome: (d.clientes as { nome: string } | null)?.nome ?? null,
+      nome_arquivo: d.nome_arquivo,
+      categoria: d.categoria,
+      status: d.status,
+      created_at: d.created_at,
+    }));
+  });
