@@ -64,7 +64,10 @@ import { Route as AuthenticatedContaSegurancaRouteImport } from './routes/_authe
 import { Route as AuthenticatedContaPerfilRouteImport } from './routes/_authenticated/conta.perfil'
 import { Route as AuthenticatedAdminRegrasModulosRouteImport } from './routes/_authenticated/admin.regras-modulos'
 import { Route as AuthenticatedAdminPessoasRouteImport } from './routes/_authenticated/admin.pessoas'
+import { Route as AuthenticatedAdminParametrosRouteImport } from './routes/_authenticated/admin.parametros'
 import { Route as AuthenticatedAdminNotificacoesRouteImport } from './routes/_authenticated/admin.notificacoes'
+import { Route as AuthenticatedAdminIntegracoesRouteImport } from './routes/_authenticated/admin.integracoes'
+import { Route as AuthenticatedAdminComprasRouteImport } from './routes/_authenticated/admin.compras'
 import { Route as AuthenticatedAdminAuditoriaRouteImport } from './routes/_authenticated/admin.auditoria'
 import { Route as ApiPublicHomefinCallbackRouteImport } from './routes/api/public/homefin.callback'
 import { Route as AuthenticatedOperacionalTarefasKanbanRouteImport } from './routes/_authenticated/operacional.tarefas_.kanban'
@@ -388,10 +391,28 @@ const AuthenticatedAdminPessoasRoute =
     path: '/admin/pessoas',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAdminParametrosRoute =
+  AuthenticatedAdminParametrosRouteImport.update({
+    id: '/admin/parametros',
+    path: '/admin/parametros',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAdminNotificacoesRoute =
   AuthenticatedAdminNotificacoesRouteImport.update({
     id: '/admin/notificacoes',
     path: '/admin/notificacoes',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAdminIntegracoesRoute =
+  AuthenticatedAdminIntegracoesRouteImport.update({
+    id: '/admin/integracoes',
+    path: '/admin/integracoes',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAdminComprasRoute =
+  AuthenticatedAdminComprasRouteImport.update({
+    id: '/admin/compras',
+    path: '/admin/compras',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedAdminAuditoriaRoute =
@@ -494,7 +515,10 @@ export interface FileRoutesByFullPath {
   '/parceiro/simulacoes': typeof ParceiroSimulacoesRoute
   '/parceiro/': typeof ParceiroIndexRoute
   '/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
+  '/admin/compras': typeof AuthenticatedAdminComprasRoute
+  '/admin/integracoes': typeof AuthenticatedAdminIntegracoesRoute
   '/admin/notificacoes': typeof AuthenticatedAdminNotificacoesRoute
+  '/admin/parametros': typeof AuthenticatedAdminParametrosRoute
   '/admin/pessoas': typeof AuthenticatedAdminPessoasRoute
   '/admin/regras-modulos': typeof AuthenticatedAdminRegrasModulosRoute
   '/conta/perfil': typeof AuthenticatedContaPerfilRoute
@@ -562,7 +586,10 @@ export interface FileRoutesByTo {
   '/parceiro/simulacoes': typeof ParceiroSimulacoesRoute
   '/parceiro': typeof ParceiroIndexRoute
   '/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
+  '/admin/compras': typeof AuthenticatedAdminComprasRoute
+  '/admin/integracoes': typeof AuthenticatedAdminIntegracoesRoute
   '/admin/notificacoes': typeof AuthenticatedAdminNotificacoesRoute
+  '/admin/parametros': typeof AuthenticatedAdminParametrosRoute
   '/admin/pessoas': typeof AuthenticatedAdminPessoasRoute
   '/admin/regras-modulos': typeof AuthenticatedAdminRegrasModulosRoute
   '/conta/perfil': typeof AuthenticatedContaPerfilRoute
@@ -634,7 +661,10 @@ export interface FileRoutesById {
   '/parceiro/simulacoes': typeof ParceiroSimulacoesRoute
   '/parceiro/': typeof ParceiroIndexRoute
   '/_authenticated/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
+  '/_authenticated/admin/compras': typeof AuthenticatedAdminComprasRoute
+  '/_authenticated/admin/integracoes': typeof AuthenticatedAdminIntegracoesRoute
   '/_authenticated/admin/notificacoes': typeof AuthenticatedAdminNotificacoesRoute
+  '/_authenticated/admin/parametros': typeof AuthenticatedAdminParametrosRoute
   '/_authenticated/admin/pessoas': typeof AuthenticatedAdminPessoasRoute
   '/_authenticated/admin/regras-modulos': typeof AuthenticatedAdminRegrasModulosRoute
   '/_authenticated/conta/perfil': typeof AuthenticatedContaPerfilRoute
@@ -706,7 +736,10 @@ export interface FileRouteTypes {
     | '/parceiro/simulacoes'
     | '/parceiro/'
     | '/admin/auditoria'
+    | '/admin/compras'
+    | '/admin/integracoes'
     | '/admin/notificacoes'
+    | '/admin/parametros'
     | '/admin/pessoas'
     | '/admin/regras-modulos'
     | '/conta/perfil'
@@ -774,7 +807,10 @@ export interface FileRouteTypes {
     | '/parceiro/simulacoes'
     | '/parceiro'
     | '/admin/auditoria'
+    | '/admin/compras'
+    | '/admin/integracoes'
     | '/admin/notificacoes'
+    | '/admin/parametros'
     | '/admin/pessoas'
     | '/admin/regras-modulos'
     | '/conta/perfil'
@@ -845,7 +881,10 @@ export interface FileRouteTypes {
     | '/parceiro/simulacoes'
     | '/parceiro/'
     | '/_authenticated/admin/auditoria'
+    | '/_authenticated/admin/compras'
+    | '/_authenticated/admin/integracoes'
     | '/_authenticated/admin/notificacoes'
+    | '/_authenticated/admin/parametros'
     | '/_authenticated/admin/pessoas'
     | '/_authenticated/admin/regras-modulos'
     | '/_authenticated/conta/perfil'
@@ -1293,11 +1332,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminPessoasRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin/parametros': {
+      id: '/_authenticated/admin/parametros'
+      path: '/admin/parametros'
+      fullPath: '/admin/parametros'
+      preLoaderRoute: typeof AuthenticatedAdminParametrosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/admin/notificacoes': {
       id: '/_authenticated/admin/notificacoes'
       path: '/admin/notificacoes'
       fullPath: '/admin/notificacoes'
       preLoaderRoute: typeof AuthenticatedAdminNotificacoesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/admin/integracoes': {
+      id: '/_authenticated/admin/integracoes'
+      path: '/admin/integracoes'
+      fullPath: '/admin/integracoes'
+      preLoaderRoute: typeof AuthenticatedAdminIntegracoesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/admin/compras': {
+      id: '/_authenticated/admin/compras'
+      path: '/admin/compras'
+      fullPath: '/admin/compras'
+      preLoaderRoute: typeof AuthenticatedAdminComprasRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/admin/auditoria': {
@@ -1455,7 +1515,10 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedRelatoriosRoute: typeof AuthenticatedRelatoriosRouteWithChildren
   AuthenticatedSemAcessoRoute: typeof AuthenticatedSemAcessoRoute
   AuthenticatedAdminAuditoriaRoute: typeof AuthenticatedAdminAuditoriaRoute
+  AuthenticatedAdminComprasRoute: typeof AuthenticatedAdminComprasRoute
+  AuthenticatedAdminIntegracoesRoute: typeof AuthenticatedAdminIntegracoesRoute
   AuthenticatedAdminNotificacoesRoute: typeof AuthenticatedAdminNotificacoesRoute
+  AuthenticatedAdminParametrosRoute: typeof AuthenticatedAdminParametrosRoute
   AuthenticatedAdminPessoasRoute: typeof AuthenticatedAdminPessoasRoute
   AuthenticatedAdminRegrasModulosRoute: typeof AuthenticatedAdminRegrasModulosRoute
   AuthenticatedContaPerfilRoute: typeof AuthenticatedContaPerfilRoute
@@ -1493,7 +1556,10 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedRelatoriosRoute: AuthenticatedRelatoriosRouteWithChildren,
   AuthenticatedSemAcessoRoute: AuthenticatedSemAcessoRoute,
   AuthenticatedAdminAuditoriaRoute: AuthenticatedAdminAuditoriaRoute,
+  AuthenticatedAdminComprasRoute: AuthenticatedAdminComprasRoute,
+  AuthenticatedAdminIntegracoesRoute: AuthenticatedAdminIntegracoesRoute,
   AuthenticatedAdminNotificacoesRoute: AuthenticatedAdminNotificacoesRoute,
+  AuthenticatedAdminParametrosRoute: AuthenticatedAdminParametrosRoute,
   AuthenticatedAdminPessoasRoute: AuthenticatedAdminPessoasRoute,
   AuthenticatedAdminRegrasModulosRoute: AuthenticatedAdminRegrasModulosRoute,
   AuthenticatedContaPerfilRoute: AuthenticatedContaPerfilRoute,
