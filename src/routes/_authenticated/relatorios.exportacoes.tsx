@@ -49,7 +49,7 @@ function Pagina() {
                   <td className="px-3 py-2 text-right font-mono tabular-nums text-foreground">{Number(e.registros).toLocaleString("pt-BR")}</td>
                   <td className="px-3 py-2 text-muted-foreground">{formatData(e.created_at)}</td>
                   <td className="px-3 py-2 text-right">
-                    <Link to={`/relatorios/${e.report_codigo}` as string} search={(e.filtros ?? {}) as Record<string, string>} className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline">
+                    <Link to={`/relatorios/${e.report_codigo}` as any} search={(e.filtros ?? {}) as Record<string, string>} className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline">
                       <RotateCw className="h-3 w-3" /> Reexecutar
                     </Link>
                   </td>

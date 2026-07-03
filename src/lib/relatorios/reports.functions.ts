@@ -537,3 +537,55 @@ export const getEscopoRelatorios = createServerFn({ method: "GET" })
     ]);
     return { podeEquipe: Boolean(equipe), podeGeral: Boolean(geral) };
   });
+
+const REPORTS_DISPONIVEIS = [
+  "consolidado", "comerciais", "simulacoes", "propostas", "crm", "clientes",
+  "demandas", "tarefas", "financeiros", "comissoes", "app-cliente", "operacionais",
+] as const;
+
+/** Lista relatórios base disponíveis para o construtor de personalizados. */
+export const listarReportsBase = createServerFn({ method: "GET" }).handler(async () => {
+  return REPORTS_DISPONIVEIS as unknown as string[];
+});
+
+/** Lista filtros salvos (próprios + compartilhados da equipe). */
+export const listarFiltrosSalvos = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase } = context;
+    const { data } = await supabase.from("report_saved_filters").select("*").order("created_at", { ascending: false }).limit(100);
+    return (data ?? []) as any[];
+  });
+
+const salvarSchema = z.object({
+  nome: z.string().min(1),
+  report_codigo: z.string().min(1),
+  filtros: z.record(z.string(), z.any()).default({}),
+  visibilidade: z.enum(["private", "shared_team"]).default("private"),
+});
+
+/** Salva um relatório personalizado (filtro salvo). */
+export const salvarFiltro = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: z.infer<typeof salvarSchema>) => salvarSchema.parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: corr } = await supabase.rpc("correspondente_do_usuario", { _user_id: userId });
+    const { error } = await supabase.from("report_saved_filters").insert({
+      correspondente_id: corr as string, user_id: userId, report_codigo: data.report_codigo,
+      nome: data.nome, filtros: data.filtros as any, visibilidade: data.visibilidade,
+    } as any);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+/** Exclui um relatório personalizado próprio. */
+export const excluirFiltro = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { id: string }) => d)
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { error } = await supabase.from("report_saved_filters").delete().eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });

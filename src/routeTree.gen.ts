@@ -25,6 +25,7 @@ import { Route as AuthenticatedRelatoriosPropostasRouteImport } from './routes/_
 import { Route as AuthenticatedRelatoriosPainelGeralRouteImport } from './routes/_authenticated/relatorios.painel-geral'
 import { Route as AuthenticatedRelatoriosOperacionaisRouteImport } from './routes/_authenticated/relatorios.operacionais'
 import { Route as AuthenticatedRelatoriosFinanceirosRouteImport } from './routes/_authenticated/relatorios.financeiros'
+import { Route as AuthenticatedRelatoriosExportacoesRouteImport } from './routes/_authenticated/relatorios.exportacoes'
 import { Route as AuthenticatedRelatoriosDemandasRouteImport } from './routes/_authenticated/relatorios.demandas'
 import { Route as AuthenticatedRelatoriosCrmRouteImport } from './routes/_authenticated/relatorios.crm'
 import { Route as AuthenticatedRelatoriosConsolidadoRouteImport } from './routes/_authenticated/relatorios.consolidado'
@@ -148,6 +149,12 @@ const AuthenticatedRelatoriosFinanceirosRoute =
   AuthenticatedRelatoriosFinanceirosRouteImport.update({
     id: '/financeiros',
     path: '/financeiros',
+    getParentRoute: () => AuthenticatedRelatoriosRoute,
+  } as any)
+const AuthenticatedRelatoriosExportacoesRoute =
+  AuthenticatedRelatoriosExportacoesRouteImport.update({
+    id: '/exportacoes',
+    path: '/exportacoes',
     getParentRoute: () => AuthenticatedRelatoriosRoute,
   } as any)
 const AuthenticatedRelatoriosDemandasRoute =
@@ -413,6 +420,7 @@ export interface FileRoutesByFullPath {
   '/relatorios/consolidado': typeof AuthenticatedRelatoriosConsolidadoRoute
   '/relatorios/crm': typeof AuthenticatedRelatoriosCrmRoute
   '/relatorios/demandas': typeof AuthenticatedRelatoriosDemandasRoute
+  '/relatorios/exportacoes': typeof AuthenticatedRelatoriosExportacoesRoute
   '/relatorios/financeiros': typeof AuthenticatedRelatoriosFinanceirosRoute
   '/relatorios/operacionais': typeof AuthenticatedRelatoriosOperacionaisRoute
   '/relatorios/painel-geral': typeof AuthenticatedRelatoriosPainelGeralRoute
@@ -467,6 +475,7 @@ export interface FileRoutesByTo {
   '/relatorios/consolidado': typeof AuthenticatedRelatoriosConsolidadoRoute
   '/relatorios/crm': typeof AuthenticatedRelatoriosCrmRoute
   '/relatorios/demandas': typeof AuthenticatedRelatoriosDemandasRoute
+  '/relatorios/exportacoes': typeof AuthenticatedRelatoriosExportacoesRoute
   '/relatorios/financeiros': typeof AuthenticatedRelatoriosFinanceirosRoute
   '/relatorios/operacionais': typeof AuthenticatedRelatoriosOperacionaisRoute
   '/relatorios/painel-geral': typeof AuthenticatedRelatoriosPainelGeralRoute
@@ -524,6 +533,7 @@ export interface FileRoutesById {
   '/_authenticated/relatorios/consolidado': typeof AuthenticatedRelatoriosConsolidadoRoute
   '/_authenticated/relatorios/crm': typeof AuthenticatedRelatoriosCrmRoute
   '/_authenticated/relatorios/demandas': typeof AuthenticatedRelatoriosDemandasRoute
+  '/_authenticated/relatorios/exportacoes': typeof AuthenticatedRelatoriosExportacoesRoute
   '/_authenticated/relatorios/financeiros': typeof AuthenticatedRelatoriosFinanceirosRoute
   '/_authenticated/relatorios/operacionais': typeof AuthenticatedRelatoriosOperacionaisRoute
   '/_authenticated/relatorios/painel-geral': typeof AuthenticatedRelatoriosPainelGeralRoute
@@ -581,6 +591,7 @@ export interface FileRouteTypes {
     | '/relatorios/consolidado'
     | '/relatorios/crm'
     | '/relatorios/demandas'
+    | '/relatorios/exportacoes'
     | '/relatorios/financeiros'
     | '/relatorios/operacionais'
     | '/relatorios/painel-geral'
@@ -635,6 +646,7 @@ export interface FileRouteTypes {
     | '/relatorios/consolidado'
     | '/relatorios/crm'
     | '/relatorios/demandas'
+    | '/relatorios/exportacoes'
     | '/relatorios/financeiros'
     | '/relatorios/operacionais'
     | '/relatorios/painel-geral'
@@ -691,6 +703,7 @@ export interface FileRouteTypes {
     | '/_authenticated/relatorios/consolidado'
     | '/_authenticated/relatorios/crm'
     | '/_authenticated/relatorios/demandas'
+    | '/_authenticated/relatorios/exportacoes'
     | '/_authenticated/relatorios/financeiros'
     | '/_authenticated/relatorios/operacionais'
     | '/_authenticated/relatorios/painel-geral'
@@ -834,6 +847,13 @@ declare module '@tanstack/react-router' {
       path: '/financeiros'
       fullPath: '/relatorios/financeiros'
       preLoaderRoute: typeof AuthenticatedRelatoriosFinanceirosRouteImport
+      parentRoute: typeof AuthenticatedRelatoriosRoute
+    }
+    '/_authenticated/relatorios/exportacoes': {
+      id: '/_authenticated/relatorios/exportacoes'
+      path: '/exportacoes'
+      fullPath: '/relatorios/exportacoes'
+      preLoaderRoute: typeof AuthenticatedRelatoriosExportacoesRouteImport
       parentRoute: typeof AuthenticatedRelatoriosRoute
     }
     '/_authenticated/relatorios/demandas': {
@@ -1113,6 +1133,7 @@ interface AuthenticatedRelatoriosRouteChildren {
   AuthenticatedRelatoriosConsolidadoRoute: typeof AuthenticatedRelatoriosConsolidadoRoute
   AuthenticatedRelatoriosCrmRoute: typeof AuthenticatedRelatoriosCrmRoute
   AuthenticatedRelatoriosDemandasRoute: typeof AuthenticatedRelatoriosDemandasRoute
+  AuthenticatedRelatoriosExportacoesRoute: typeof AuthenticatedRelatoriosExportacoesRoute
   AuthenticatedRelatoriosFinanceirosRoute: typeof AuthenticatedRelatoriosFinanceirosRoute
   AuthenticatedRelatoriosOperacionaisRoute: typeof AuthenticatedRelatoriosOperacionaisRoute
   AuthenticatedRelatoriosPainelGeralRoute: typeof AuthenticatedRelatoriosPainelGeralRoute
@@ -1135,6 +1156,8 @@ const AuthenticatedRelatoriosRouteChildren: AuthenticatedRelatoriosRouteChildren
       AuthenticatedRelatoriosConsolidadoRoute,
     AuthenticatedRelatoriosCrmRoute: AuthenticatedRelatoriosCrmRoute,
     AuthenticatedRelatoriosDemandasRoute: AuthenticatedRelatoriosDemandasRoute,
+    AuthenticatedRelatoriosExportacoesRoute:
+      AuthenticatedRelatoriosExportacoesRoute,
     AuthenticatedRelatoriosFinanceirosRoute:
       AuthenticatedRelatoriosFinanceirosRoute,
     AuthenticatedRelatoriosOperacionaisRoute:
