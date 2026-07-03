@@ -16,7 +16,7 @@ import { ToneBadge } from "@/components/crm/tone-badge";
 import { SimulacaoStatusBadge, BancoStatusBadge } from "@/components/simulacao/status-badge";
 import { formatBRL, formatPercent } from "@/lib/simulacao/format";
 
-export const Route = createFileRoute("/_authenticated/operacional/simulacoes/$id")({
+export const Route = createFileRoute("/_authenticated/operacional/simulacoes_/$id")({
   head: () => ({ meta: [{ title: "Simulação — Agilliza" }] }),
   beforeLoad: () => assertModuloPermitido("operacional.simulacoes"),
   component: Pagina,
