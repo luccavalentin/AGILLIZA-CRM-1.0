@@ -69,6 +69,7 @@ export const navInterno: NavGroup[] = [
     id: "operacional",
     label: "Operacional",
     items: [
+      { label: "Painel", icon: Gauge, to: "/operacional/painel", perm: { modulo: "operacional.propostas" } },
       { label: "Simulações", icon: Calculator, to: "/operacional/simulacoes", perm: { modulo: "operacional.simulacoes" } },
       { label: "Propostas", icon: FileText, to: "/operacional/propostas", perm: { modulo: "operacional.propostas" } },
       { label: "Contratos", icon: FileSignature, to: "/operacional/contratos", perm: { modulo: "operacional.contratos" } },
