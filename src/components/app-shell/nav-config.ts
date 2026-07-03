@@ -2,6 +2,7 @@ import type { LucideIcon } from "lucide-react";
 import {
   LayoutDashboard,
   Users,
+  KanbanSquare,
   Handshake,
   Calculator,
   FileText,
