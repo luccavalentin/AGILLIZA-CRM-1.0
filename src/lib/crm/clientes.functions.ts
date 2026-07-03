@@ -212,7 +212,39 @@ export const getCliente = createServerFn({ method: "GET" })
     };
   });
 
-/** Etapas fixas da esteira. */
+export interface PainelStage {
+  codigo: string;
+  nome: string;
+  ordem: number;
+  clientes: { id: string; nome: string; numero_cliente: string }[];
+}
+
+/** Kanban da esteira: etapas com clientes posicionados (RLS aplica escopo). */
+export const listarPainel = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<PainelStage[]> => {
+    const { supabase } = context;
+    const { data: stages, error: e1 } = await supabase
+      .from("pipeline_stages")
+      .select("codigo, nome, ordem")
+      .order("ordem");
+    if (e1) throw e1;
+    const { data: rows, error: e2 } = await supabase
+      .from("clientes")
+      .select("id, nome, numero_cliente, cliente_pipeline(pipeline_stages(codigo))")
+      .eq("ativo", true)
+      .order("nome");
+    if (e2) throw e2;
+    return (stages ?? []).map((s) => ({
+      codigo: s.codigo,
+      nome: s.nome,
+      ordem: s.ordem,
+      clientes: (rows ?? [])
+        .filter((r: any) => r.cliente_pipeline?.pipeline_stages?.codigo === s.codigo)
+        .map((r: any) => ({ id: r.id, nome: r.nome, numero_cliente: r.numero_cliente })),
+    }));
+  });
+
 export const getPipelineStages = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
