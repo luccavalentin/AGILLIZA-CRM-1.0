@@ -222,8 +222,13 @@ export interface PainelStage {
 /** Kanban da esteira: etapas com clientes posicionados (RLS aplica escopo). */
 export const listarPainel = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }): Promise<PainelStage[]> => {
+  .inputValidator((d: unknown) =>
+    z.object({ desde: z.string().optional(), ate: z.string().optional() }).optional().parse(d) ?? {},
+  )
+  .handler(async ({ data, context }): Promise<PainelStage[]> => {
     const { supabase } = context;
+    const desde = data?.desde ? new Date(data.desde).getTime() : null;
+    const ate = data?.ate ? new Date(`${data.ate}T23:59:59.999`).getTime() : null;
     const { data: stages, error: e1 } = await supabase
       .from("pipeline_stages")
       .select("codigo, nome, ordem")
@@ -231,15 +236,24 @@ export const listarPainel = createServerFn({ method: "GET" })
     if (e1) throw e1;
     const { data: rows, error: e2 } = await supabase
       .from("clientes")
-      .select("id, nome, numero_cliente, cliente_pipeline(pipeline_stages(codigo))")
+      .select("id, nome, numero_cliente, cliente_pipeline(ultima_atualizacao_em, pipeline_stages(codigo))")
       .eq("ativo", true)
       .order("nome");
     if (e2) throw e2;
+    const filtradas = (rows ?? []).filter((r: any) => {
+      if (!desde && !ate) return true;
+      const atualizado = r.cliente_pipeline?.ultima_atualizacao_em;
+      if (!atualizado) return false;
+      const t = new Date(atualizado).getTime();
+      if (desde && t < desde) return false;
+      if (ate && t > ate) return false;
+      return true;
+    });
     return (stages ?? []).map((s) => ({
       codigo: s.codigo,
       nome: s.nome,
       ordem: s.ordem,
-      clientes: (rows ?? [])
+      clientes: filtradas
         .filter((r: any) => r.cliente_pipeline?.pipeline_stages?.codigo === s.codigo)
         .map((r: any) => ({ id: r.id, nome: r.nome, numero_cliente: r.numero_cliente })),
     }));
