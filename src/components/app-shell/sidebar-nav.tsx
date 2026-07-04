@@ -117,7 +117,7 @@ function CollapsibleGroup({
     <Collapsible defaultOpen={algumAtivo}>
       <CollapsibleTrigger
         className={cn(
-          "flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-sidebar-foreground/80 transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring dark:hover:bg-white/5",
+          "flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-sidebar-foreground/80 transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
           "[&[data-state=open]>svg:last-child]:rotate-90",
         )}
       >
