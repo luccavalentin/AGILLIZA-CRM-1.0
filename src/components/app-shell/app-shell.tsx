@@ -4,7 +4,6 @@ import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/brand/Logo";
-import symbolDark from "@/assets/brand/agilliza-symbol.png";
 import symbolLight from "@/assets/brand/agilliza-symbol-light.png";
 import { SidebarNav, SidebarRail } from "./sidebar-nav";
 import { Topbar, type ShellUser } from "./topbar";
@@ -22,12 +21,7 @@ export interface AppShellProps {
 }
 
 function BrandSymbol() {
-  return (
-    <>
-      <img src={symbolDark} alt="Agilliza" className="h-7 w-auto dark:hidden" />
-      <img src={symbolLight} alt="Agilliza" className="hidden h-7 w-auto dark:block" />
-    </>
-  );
+  return <img src={symbolLight} alt="Agilliza" className="h-7 w-auto" />;
 }
 
 export function AppShell({
@@ -90,7 +84,7 @@ export function AppShell({
             )}
           >
             <Link to={"/dashboard" as string} aria-label="Ir para o início">
-              {hydrated && collapsed ? <BrandSymbol /> : <Logo className="h-7" />}
+              {hydrated && collapsed ? <BrandSymbol /> : <Logo variant="light" className="h-7" />}
             </Link>
           </div>
           <div className="flex-1 overflow-y-auto">
@@ -110,7 +104,7 @@ export function AppShell({
           >
             <SheetTitle className="sr-only">Menu de navegação</SheetTitle>
             <div className="flex h-16 items-center border-b border-sidebar-border px-4">
-              <Logo className="h-7" />
+              <Logo variant="light" className="h-7" />
             </div>
             <div className="h-[calc(100dvh-4rem)] overflow-y-auto">
               <SidebarNav nav={nav} onNavigate={() => setMobileOpen(false)} />
