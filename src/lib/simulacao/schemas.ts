@@ -9,7 +9,7 @@ export const wizardSchema = z.object({
   valor_financiamento: z.number().positive("Informe o valor do crédito"),
   possui_imovel_escolhido: z.boolean(),
   data_nascimento: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data inválida"),
-  prazo_anos: z.number().int().min(1).max(35),
+  prazo_meses: z.number().int().min(60, "Prazo mínimo 60 meses").max(420, "Prazo máximo 420 meses"),
 }).refine((d) => d.valor_entrada < d.valor_imovel, {
   message: "A entrada deve ser menor que o valor do imóvel",
   path: ["valor_entrada"],
