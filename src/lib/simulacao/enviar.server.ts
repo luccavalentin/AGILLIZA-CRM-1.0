@@ -3,7 +3,7 @@
  * Segue o fluxo Oportunidade → Simulação → Integração do contrato oficial.
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { chamarIntegracao, IntegracaoBancariaError } from "./homefin.server";
+import { chamarIntegracao, obterToken, IntegracaoBancariaError } from "./homefin.server";
 import { humanizarErroBanco } from "./bank-error-humanizer";
 
 interface EnviarArgs {
