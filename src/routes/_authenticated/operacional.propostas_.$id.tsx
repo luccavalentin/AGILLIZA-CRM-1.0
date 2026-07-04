@@ -9,6 +9,7 @@ import {
   obterProposta,
   selecionarBancoProposta,
   enviarPropostaHomeFin,
+  sincronizarProposta,
   cancelarProposta,
   moverStatusProposta,
   adicionarFollowup,
