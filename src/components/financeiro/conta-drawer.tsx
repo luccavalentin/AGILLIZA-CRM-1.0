@@ -49,7 +49,7 @@ export function ContaDrawer({
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
             {conta?.numero ?? "Conta"}
-            {conta && <ContaStatusBadge status={conta.status} />}
+            {conta && <ContaStatusBadge status={statusEfetivoUI(conta.status, conta.vencimento)} />}
           </SheetTitle>
         </SheetHeader>
 
