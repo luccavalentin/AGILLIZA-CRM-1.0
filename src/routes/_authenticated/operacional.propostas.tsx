@@ -104,6 +104,7 @@ function Pagina() {
               <TableHead>Banco</TableHead>
               <TableHead className="text-right">R$ Financiamento</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead className="w-12 text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
