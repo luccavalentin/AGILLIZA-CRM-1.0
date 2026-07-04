@@ -295,7 +295,23 @@ export function ClienteForm({
         <CardContent className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
             <Label>CEP</Label>
-            <Input value={end.cep} onChange={(e) => setEnd((p) => ({ ...p, cep: e.target.value }))} />
+            <div className="relative">
+              <Input
+                inputMode="numeric"
+                value={end.cep}
+                onChange={(e) => {
+                  const masked = mascararCep(e.target.value);
+                  setEnd((p) => ({ ...p, cep: masked }));
+                  if (masked.replace(/\D/g, "").length === 8) buscarCep(masked);
+                }}
+                onBlur={(e) => buscarCep(e.target.value)}
+                placeholder="00000-000"
+                maxLength={9}
+              />
+              {buscandoCep && (
+                <Loader2 className="absolute right-3 top-1/2 size-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+              )}
+            </div>
           </div>
           <div className="space-y-1.5">
             <Label>Logradouro</Label>
