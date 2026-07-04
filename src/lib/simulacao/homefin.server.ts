@@ -79,23 +79,17 @@ interface TokenInfo {
   idUsuarioParceiro: string | null;
 }
 
+/**
+ * Cache do token em memória do worker (válido por 55 min).
+ * Evita depender de chave de serviço do banco de dados só para guardar o token;
+ * o token é reobtido no primeiro uso após um cold start.
+ */
+let _tokenCache: { info: TokenInfo; expiresAt: number } | null = null;
+
 /** Retorna token válido, reutilizando o cache (55 min) quando possível. */
 export async function obterToken(): Promise<TokenInfo> {
-  const { data: cache } = await supabaseAdmin
-    .from("homefin_auth_cache")
-    .select("*")
-    .gt("expires_at", new Date().toISOString())
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (cache) {
-    return {
-      token: cache.token,
-      idRegional: cache.id_regional,
-      idParceiro: cache.id_parceiro,
-      idUsuarioParceiro: cache.id_usuario_parceiro,
-    };
+  if (_tokenCache && _tokenCache.expiresAt > Date.now()) {
+    return _tokenCache.info;
   }
 
   const { base, secretId, secretKey } = config();
@@ -133,16 +127,10 @@ export async function obterToken(): Promise<TokenInfo> {
     idUsuarioParceiro: String(usuario.idUsuarioParceiro ?? json.idUsuarioParceiro ?? "") || null,
   };
 
-  const expiresAt = new Date(Date.now() + 55 * 60 * 1000).toISOString();
-  await supabaseAdmin.from("homefin_auth_cache").insert({
-    token: info.token,
-    expires_at: expiresAt,
-    id_regional: info.idRegional,
-    id_parceiro: info.idParceiro,
-    id_usuario_parceiro: info.idUsuarioParceiro,
-  });
+  _tokenCache = { info, expiresAt: Date.now() + 55 * 60 * 1000 };
   return info;
 }
+
 
 export interface HomefinRequestCtx {
   simulacao_id?: string | null;
