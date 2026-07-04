@@ -207,10 +207,16 @@ export const getSessaoCliente = createServerFn({ method: "GET" }).handler(
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: cliente } = await supabaseAdmin
       .from("clientes")
-      .select("id, nome, tipo_pessoa, foto_url")
+      .select("id, nome, tipo_pessoa, foto_url, ativo, portal_acesso_ativo")
       .eq("id", sess.cid)
       .maybeSingle();
-    return { cliente: cliente ?? null };
+    // Acesso revogado no CRM invalida a sessão imediatamente (mesmo com cookie válido).
+    if (!cliente || cliente.ativo === false || cliente.portal_acesso_ativo === false) {
+      limparCookieSessao();
+      return { cliente: null };
+    }
+    const { ativo: _a, portal_acesso_ativo: _p, ...publico } = cliente as any;
+    return { cliente: publico ?? null };
   },
 );
 
