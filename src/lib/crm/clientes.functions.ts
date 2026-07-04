@@ -19,6 +19,20 @@ async function temPii(supabase: any, userId: string): Promise<boolean> {
   }).then((r: any) => r.data));
 }
 
+/** Verifica papel amplo (admin/correspondente) ou permissão específica do módulo. */
+async function podeAcao(supabase: any, userId: string, modulo: string, acao: string): Promise<boolean> {
+  const { data: tudo } = await supabase.rpc("has_any_role", {
+    _user_id: userId,
+    _roles: ["admin", "correspondente"],
+  });
+  if (tudo) return true;
+  return Boolean(
+    await supabase
+      .rpc("usuario_tem_permissao", { _user_id: userId, _modulo: modulo, _acao: acao })
+      .then((r: any) => r.data),
+  );
+}
+
 export interface ClienteListaItem {
   id: string;
   numero_cliente: string;
