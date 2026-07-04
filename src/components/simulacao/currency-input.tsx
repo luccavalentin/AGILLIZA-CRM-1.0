@@ -1,6 +1,6 @@
 import { forwardRef } from "react";
 import { Input } from "@/components/ui/input";
-import { maskBRLInput, parseBRL } from "@/lib/simulacao/format";
+import { maskBRLInput } from "@/lib/simulacao/format";
 
 interface CurrencyInputProps {
   value: number;
