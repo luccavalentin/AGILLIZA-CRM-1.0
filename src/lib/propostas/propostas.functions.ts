@@ -304,6 +304,7 @@ export const selecionarBancoProposta = createServerFn({ method: "POST" })
   )
   .handler(async ({ context, data }) => {
     const { supabase } = context;
+    await assertPropostaEditavel(supabase, data.proposta_id);
     const { data: banco } = await supabase
       .from("proposta_bancos")
       .select("*")
