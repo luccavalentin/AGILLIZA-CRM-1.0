@@ -103,6 +103,7 @@ function VisaoGeral() {
           )}
           <Link
             to="/cliente/acompanhar-minha-proposta"
+            search={{ tab: "documentos" }}
             className="mt-3 inline-block text-sm font-medium text-primary underline underline-offset-2"
           >
             Ver documentos
