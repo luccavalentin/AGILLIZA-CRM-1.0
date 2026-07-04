@@ -116,6 +116,13 @@ function Pagina() {
                     <span className="ml-2 text-xs text-muted-foreground">{PRIORIDADE[d.prioridade].label}</span>
                   </td>
                   <td className="px-3 py-2"><ToneBadge tone={statusDemanda(d.status).tone}>{statusDemanda(d.status).label}</ToneBadge></td>
+                  <td className="px-3 py-2 text-right">
+                    <ConfirmDelete
+                      titulo="Excluir demanda"
+                      descricao={`A demanda ${d.numero} será removida permanentemente.`}
+                      onConfirm={() => handleExcluir(d.id)}
+                    />
+                  </td>
                 </tr>
               ))}
             </tbody>
