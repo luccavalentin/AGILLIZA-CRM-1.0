@@ -207,10 +207,16 @@ export const getSessaoCliente = createServerFn({ method: "GET" }).handler(
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: cliente } = await supabaseAdmin
       .from("clientes")
-      .select("id, nome, tipo_pessoa, foto_url")
+      .select("id, nome, tipo_pessoa, foto_url, ativo, portal_acesso_ativo")
       .eq("id", sess.cid)
       .maybeSingle();
-    return { cliente: cliente ?? null };
+    // Acesso revogado no CRM invalida a sessão imediatamente (mesmo com cookie válido).
+    if (!cliente || cliente.ativo === false || cliente.portal_acesso_ativo === false) {
+      limparCookieSessao();
+      return { cliente: null };
+    }
+    const { ativo: _a, portal_acesso_ativo: _p, ...publico } = cliente as any;
+    return { cliente: publico ?? null };
   },
 );
 
@@ -231,7 +237,8 @@ async function montarEtapas(cid: string) {
 
   const lista = stages ?? [];
   const stageAtual = lista.find((s) => s.id === atual?.stage_id);
-  const ordemAtual = stageAtual?.ordem ?? 0;
+  // Cliente sem linha de pipeline: assume a primeira etapa como "atual".
+  const ordemAtual = stageAtual?.ordem ?? (lista.length > 0 ? lista[0].ordem : 0);
   const primeiraData = new Map<string, string>();
   for (const h of hist ?? []) {
     if (!primeiraData.has(h.stage_id)) primeiraData.set(h.stage_id, h.created_at);
@@ -556,7 +563,7 @@ export const clienteSolicitarLGPD = createServerFn({ method: "POST" })
       .select("nome, responsavel_id, correspondente_id")
       .eq("id", sess.cid)
       .maybeSingle();
-    const corr = sess.corr ?? cliente?.correspondente_id;
+    const corr = cliente?.correspondente_id ?? sess.corr;
     if (!corr) throw new Error("Não foi possível registrar a solicitação.");
     const titulo =
       data.acao === "exclusao"

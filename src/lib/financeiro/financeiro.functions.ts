@@ -105,7 +105,13 @@ export const listarContas = createServerFn({ method: "GET" })
         { count: "exact" },
       );
 
-    if (data.status) query = query.eq("status", data.status as any);
+    if (data.status === "atrasada") {
+      // "atrasada" é um status derivado (não existe na coluna): abertas/parciais vencidas.
+      const hojeStr = new Date().toLocaleDateString("sv", { timeZone: "America/Sao_Paulo" });
+      query = query.in("status", ["aberta", "parcial"] as any).lt("vencimento", hojeStr);
+    } else if (data.status) {
+      query = query.eq("status", data.status as any);
+    }
     if (data.categoria_id) query = query.eq("categoria_id", data.categoria_id);
     if (data.cost_center_id) query = query.eq("cost_center_id", data.cost_center_id);
     if (data.contraparte) query = query.ilike(contraCol, `%${data.contraparte}%`);
@@ -219,7 +225,7 @@ export const baixarConta = createServerFn({ method: "POST" })
 
     const novoPago = Number(conta.valor_pago) + data.valor;
     const quitada = novoPago >= Number(conta.valor) - 0.005;
-    const novoStatus = quitada ? (data.tipo === "pagar" ? "paga" : "paga") : "parcial";
+    const novoStatus = quitada ? "paga" : "parcial";
 
     const { error: e2 } = await supabase
       .from(TABELA[data.tipo])
@@ -351,6 +357,14 @@ export const cancelarConta = createServerFn({ method: "POST" })
   .handler(async ({ context, data }): Promise<{ ok: true }> => {
     const { supabase, userId } = context;
     const correspondente_id = await correspondenteId(supabase, userId);
+    const { data: atual } = await supabase
+      .from(TABELA[data.tipo])
+      .select("status")
+      .eq("id", data.id)
+      .single();
+    if (!atual) throw new Error("Conta não encontrada.");
+    if (atual.status === "cancelada") throw new Error("Conta já está cancelada.");
+    if (atual.status === "estornada") throw new Error("Conta estornada não pode ser cancelada.");
     const { error } = await supabase
       .from(TABELA[data.tipo])
       .update({ status: "cancelada", estorno_motivo: data.motivo })
@@ -565,13 +579,13 @@ export const obterKpisFinanceiros = createServerFn({ method: "GET" })
         .in("status", abertos),
       supabase
         .from("financial_receivables")
-        .select("valor, data_pagamento, banco_nome")
-        .in("status", ["paga"] as any)
+        .select("valor_pago, data_pagamento, banco_nome")
+        .in("status", ["paga", "parcial"] as any)
         .gte("data_pagamento", dozeStr),
       supabase
         .from("financial_payables")
-        .select("valor, data_pagamento, categoria:financial_categories(nome)")
-        .in("status", ["paga"] as any)
+        .select("valor_pago, data_pagamento, categoria:financial_categories(nome)")
+        .in("status", ["paga", "parcial"] as any)
         .gte("data_pagamento", dozeStr),
       supabase
         .from("financial_receivables")
@@ -585,9 +599,9 @@ export const obterKpisFinanceiros = createServerFn({ method: "GET" })
     const recRows = recAll.data ?? [];
     const payRows = payAll.data ?? [];
 
-    const aReceberHoje = recRows.filter((r: any) => r.vencimento <= hojeStr).reduce((s: number, r: any) => s + saldoAberto(r), 0);
+    const aReceberHoje = recRows.filter((r: any) => r.vencimento === hojeStr).reduce((s: number, r: any) => s + saldoAberto(r), 0);
     const aReceber30d = recRows.filter((r: any) => r.vencimento <= em30Str).reduce((s: number, r: any) => s + saldoAberto(r), 0);
-    const aPagarHoje = payRows.filter((r: any) => r.vencimento <= hojeStr).reduce((s: number, r: any) => s + saldoAberto(r), 0);
+    const aPagarHoje = payRows.filter((r: any) => r.vencimento === hojeStr).reduce((s: number, r: any) => s + saldoAberto(r), 0);
     const aPagar30d = payRows.filter((r: any) => r.vencimento <= em30Str).reduce((s: number, r: any) => s + saldoAberto(r), 0);
     const saldoProjetado = aReceber30d - aPagar30d;
     const inadimplencia = (inadim.data ?? []).reduce((s: number, r: any) => s + saldoAberto(r), 0);
@@ -603,11 +617,11 @@ export const obterKpisFinanceiros = createServerFn({ method: "GET" })
     meses.forEach((m) => (mapMes[m] = { receita: 0, despesa: 0 }));
     (recRealizado.data ?? []).forEach((r: any) => {
       const m = (r.data_pagamento ?? "").slice(0, 7);
-      if (mapMes[m]) mapMes[m].receita += Number(r.valor);
+      if (mapMes[m]) mapMes[m].receita += Number(r.valor_pago ?? 0);
     });
     (payRealizado.data ?? []).forEach((r: any) => {
       const m = (r.data_pagamento ?? "").slice(0, 7);
-      if (mapMes[m]) mapMes[m].despesa += Number(r.valor);
+      if (mapMes[m]) mapMes[m].despesa += Number(r.valor_pago ?? 0);
     });
     const receitaDespesaMensal = meses.map((m) => ({ mes: m, receita: mapMes[m].receita, despesa: mapMes[m].despesa }));
 

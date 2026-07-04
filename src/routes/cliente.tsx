@@ -66,7 +66,7 @@ function ClienteLayout() {
   const { data: notificacoes } = useQuery({
     queryKey: ["cliente", "notificacoes"],
     queryFn: () => clienteListarNotificacoes(),
-    refetchInterval: 4000,
+    refetchInterval: (q: any) => (q.state.status === "error" ? false : 4000),
   });
   const naoLidas = (notificacoes ?? []).filter((n) => !n.lida).length;
 

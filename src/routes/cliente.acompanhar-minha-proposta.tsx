@@ -97,9 +97,13 @@ function AbaDocumentos() {
   const upload = useMutation({
     mutationFn: async (file: File) => {
       const buf = await file.arrayBuffer();
-      let bin = "";
+      // Converte para base64 em blocos para não travar a UI thread com arquivos grandes.
       const bytes = new Uint8Array(buf);
-      for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+      let bin = "";
+      const CHUNK = 0x8000;
+      for (let i = 0; i < bytes.length; i += CHUNK) {
+        bin += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
+      }
       const base64 = btoa(bin);
       return clienteEnviarDocumentoPendente({
         data: {
@@ -188,7 +192,7 @@ function AbaMensagens() {
   const { data: mensagens } = useQuery({
     queryKey: ["cliente", "mensagens"],
     queryFn: () => clienteListarMensagens(),
-    refetchInterval: 4000,
+    refetchInterval: (q: any) => (q.state.status === "error" ? false : 4000),
   });
 
   const enviar = useMutation({
@@ -200,15 +204,20 @@ function AbaMensagens() {
     onError: () => toast.error("Falha de conexão. Tente novamente."),
   });
 
-  // Marca as mensagens do time como lidas.
+  // Marca as mensagens do time como lidas (uma vez por id, sem reenvio em loop).
+  const marcadosRef = useRef<Set<string>>(new Set());
   useEffect(() => {
     const naoLidas = (mensagens ?? [])
-      .filter((m) => m.remetente_tipo === "time" && !m.lida_em)
+      .filter((m) => m.remetente_tipo === "time" && !m.lida_em && !marcadosRef.current.has(m.id))
       .map((m) => m.id);
     if (naoLidas.length > 0) {
-      clienteMarcarLida({ data: { mensagem_ids: naoLidas } }).then(() => {
-        qc.invalidateQueries({ queryKey: ["cliente", "notificacoes"] });
-      });
+      naoLidas.forEach((id) => marcadosRef.current.add(id));
+      clienteMarcarLida({ data: { mensagem_ids: naoLidas } })
+        .then(() => qc.invalidateQueries({ queryKey: ["cliente", "notificacoes"] }))
+        .catch(() => {
+          // Falhou: libera para nova tentativa no próximo ciclo.
+          naoLidas.forEach((id) => marcadosRef.current.delete(id));
+        });
     }
   }, [mensagens, qc]);
 

@@ -30,6 +30,7 @@ export interface DemandaItem {
   nome_responsavel: string | null;
   prazo_sla: string | null;
   sla_inicio: string;
+  concluida_em: string | null;
   escalonada: boolean;
   created_at: string;
 }
@@ -66,7 +67,7 @@ export const listarDemandas = createServerFn({ method: "GET" })
     let query = supabase
       .from("demandas")
       .select(
-        "id, numero, tipo, titulo, status, prioridade, cliente_id, responsavel_id, prazo_sla, sla_inicio, escalonada, created_at, clientes(nome)",
+        "id, numero, tipo, titulo, status, prioridade, cliente_id, responsavel_id, prazo_sla, sla_inicio, concluida_em, escalonada, created_at, clientes(nome)",
       )
       .order("created_at", { ascending: false })
       .limit(300);
@@ -92,6 +93,7 @@ export const listarDemandas = createServerFn({ method: "GET" })
       nome_responsavel: r.responsavel_id ? nomes.get(r.responsavel_id) ?? null : null,
       prazo_sla: r.prazo_sla,
       sla_inicio: r.sla_inicio,
+      concluida_em: r.concluida_em ?? null,
       escalonada: r.escalonada,
       created_at: r.created_at,
     }));
@@ -223,7 +225,14 @@ export const moverStatusDemanda = createServerFn({ method: "POST" })
   )
   .handler(async ({ context, data }) => {
     const { supabase, userId } = context;
-    const { error } = await supabase.from("demandas").update({ status: data.status }).eq("id", data.id);
+    const { data: atual } = await supabase.from("demandas").select("status").eq("id", data.id).single();
+    if (!atual) throw new Error("Demanda não encontrada.");
+    if (!transicaoDemandaPermitida(atual.status as DemandaStatus, data.status)) {
+      throw new Error(`Transição de status inválida: ${atual.status} → ${data.status}.`);
+    }
+    const patch: Record<string, unknown> = { status: data.status };
+    if (data.status === "concluida") patch.concluida_em = new Date().toISOString();
+    const { error } = await supabase.from("demandas").update(patch as any).eq("id", data.id);
     if (error) throw new Error(error.message);
     await supabase
       .from("demanda_historico")

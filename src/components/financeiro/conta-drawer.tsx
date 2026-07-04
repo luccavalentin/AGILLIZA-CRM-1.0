@@ -21,6 +21,16 @@ function eventoTone(evento: string): string {
   return "text-muted-foreground";
 }
 
+/** Deriva "atrasada" a partir do vencimento, alinhado à listagem. */
+function statusEfetivoUI(status: string, vencimento?: string | null): string {
+  if ((status === "aberta" || status === "parcial") && vencimento) {
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+    if (new Date(vencimento + "T00:00:00") < hoje) return "atrasada";
+  }
+  return status;
+}
+
 export function ContaDrawer({
   tipo,
   contaId,
@@ -49,7 +59,7 @@ export function ContaDrawer({
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
             {conta?.numero ?? "Conta"}
-            {conta && <ContaStatusBadge status={conta.status} />}
+            {conta && <ContaStatusBadge status={statusEfetivoUI(conta.status, conta.vencimento)} />}
           </SheetTitle>
         </SheetHeader>
 

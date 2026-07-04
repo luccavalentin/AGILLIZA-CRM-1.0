@@ -5,6 +5,34 @@
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { chamarIntegracao, IntegracaoBancariaError } from "@/lib/simulacao/homefin.server";
+import { transicaoPermitida, type PropostaStatus } from "./state-machine";
+
+/** Ordem de progressão do funil (para sincronização vinda do banco). */
+const ORDEM_STATUS: PropostaStatus[] = [
+  "rascunho",
+  "enviada_banco",
+  "em_analise_credito",
+  "credito_aprovado",
+  "aguardando_documentos",
+  "engenharia_vistoria",
+  "analise_juridica",
+  "contrato_emitido",
+  "registrado",
+];
+
+/** Deriva o status interno a partir do nome da etapa ativa retornada pelo banco. */
+function statusDaEtapa(nomeEtapa: string | null): PropostaStatus | null {
+  if (!nomeEtapa) return null;
+  const n = nomeEtapa.toLowerCase();
+  if (n.includes("registr")) return "registrado";
+  if (n.includes("contrato")) return "contrato_emitido";
+  if (n.includes("jurídic") || n.includes("juridic")) return "analise_juridica";
+  if (n.includes("engenharia") || n.includes("vistoria") || n.includes("avaliaç")) return "engenharia_vistoria";
+  if (n.includes("document")) return "aguardando_documentos";
+  if (n.includes("aprov")) return "credito_aprovado";
+  if (n.includes("análise") || n.includes("analise") || n.includes("crédito") || n.includes("credito")) return "em_analise_credito";
+  return null;
+}
 
 interface EnviarArgs {
   propostaId: string;
@@ -38,9 +66,17 @@ export async function enviarPropostaImpl({
     .select("id, status")
     .eq("proposta_id", propostaId)
     .eq("obrigatorio", true);
-  const pendentes = (docsObrig ?? []).filter((d: any) => d.status === "pendente");
-  if (pendentes.length > 0) {
-    throw new Error(`Existem ${pendentes.length} documento(s) obrigatório(s) pendente(s).`);
+  // valida a transição pela máquina de estados (só rascunho/erro_envio podem enviar)
+  if (!transicaoPermitida(prop.status as PropostaStatus, "enviada_banco")) {
+    throw new Error("Esta proposta não pode ser enviada no estado atual.");
+  }
+
+  // documentos obrigatórios pendentes OU reprovados bloqueiam o envio
+  const bloqueantes = (docsObrig ?? []).filter(
+    (d: any) => d.status === "pendente" || d.status === "reprovado",
+  );
+  if (bloqueantes.length > 0) {
+    throw new Error(`Existem ${bloqueantes.length} documento(s) obrigatório(s) pendente(s) ou reprovado(s).`);
   }
 
   const { data: bancos } = await supabase
@@ -184,6 +220,16 @@ export async function sincronizarPropostaImpl({
   let novoStatus: string | null = null;
   if (situacao === "T") novoStatus = "contrato_emitido";
   else if (situacao === "C") novoStatus = "cancelada";
+  else {
+    // Situação ativa: avança o estado interno conforme a etapa do banco,
+    // apenas para frente (nunca regride o funil).
+    const derivado = statusDaEtapa(nomeEtapa);
+    if (derivado) {
+      const atual = ORDEM_STATUS.indexOf(prop.status as PropostaStatus);
+      const alvo = ORDEM_STATUS.indexOf(derivado);
+      if (alvo > atual && atual !== -1) novoStatus = derivado;
+    }
+  }
 
   const patch: Record<string, unknown> = { detalhe_status_atual: nomeEtapa };
   if (op?.codigoOportunidadeBanco) patch.codigo_oportunidade_homefin = op.codigoOportunidadeBanco;

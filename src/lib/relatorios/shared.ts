@@ -49,11 +49,12 @@ export const filtrosPadrao = (): ReportFiltros => ({ periodo: "mes", escopo: "mi
 
 /** Resolve um intervalo [de, ate] em ISO (yyyy-mm-dd) a partir do filtro de período. */
 export function resolverIntervalo(f: ReportFiltros): { de: string; ate: string } {
-  const hoje = new Date();
-  const iso = (d: Date) => {
-    const off = d.getTimezoneOffset();
-    return new Date(d.getTime() - off * 60000).toISOString().slice(0, 10);
-  };
+  // "Hoje" ancorado no fuso America/Sao_Paulo (o servidor roda em UTC).
+  const hojeStr = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+  const [hy, hm, hd] = hojeStr.split("-").map(Number);
+  const hoje = new Date(hy, hm - 1, hd);
+  const iso = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   const menosDias = (n: number) => {
     const d = new Date(hoje);
     d.setDate(d.getDate() - n);

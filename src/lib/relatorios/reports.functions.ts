@@ -124,7 +124,7 @@ export const runReport = createServerFn({ method: "POST" })
         fetchAll("simulacoes", "id,status,created_at", "created_at", "usuario_responsavel_id"),
         fetchAll("propostas", "id,status,valor_financiamento,valor_financiamento_aprovado,nome_banco,created_at", "created_at", "usuario_responsavel_id"),
         fetchAll("clientes", "id,created_at", "created_at", "responsavel_id"),
-        supabase.from("comissoes").select("valor_bruto,created_at").gte("created_at", de).lte("created_at", ateFim).limit(5000).then((r: any) => r.data ?? []),
+        fetchAll("comissoes", "valor_bruto,created_at", "created_at", "usuario_responsavel_id"),
       ]);
       const enviadas = props.filter((p) => p.status !== "rascunho");
       const aprovadas = props.filter((p) => ["credito_aprovado", "contrato_emitido", "registrado"].includes(p.status));
@@ -521,8 +521,13 @@ export const registrarExport = createServerFn({ method: "POST" })
 export const listarExportacoes = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { supabase } = context;
-    const { data } = await supabase.from("report_exports").select("*").order("created_at", { ascending: false }).limit(200);
+    const { supabase, userId } = context;
+    const { data } = await supabase
+      .from("report_exports")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(200);
     return (data ?? []) as any[];
   });
 
@@ -582,10 +587,14 @@ export const salvarFiltro = createServerFn({ method: "POST" })
 /** Exclui um relatório personalizado próprio. */
 export const excluirFiltro = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { id: string }) => d)
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
-    const { supabase } = context;
-    const { error } = await supabase.from("report_saved_filters").delete().eq("id", data.id);
+    const { supabase, userId } = context;
+    const { error } = await supabase
+      .from("report_saved_filters")
+      .delete()
+      .eq("id", data.id)
+      .eq("user_id", userId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });

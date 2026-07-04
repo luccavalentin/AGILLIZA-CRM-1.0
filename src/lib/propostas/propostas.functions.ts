@@ -32,6 +32,19 @@ async function correspondenteId(supabase: any, userId: string): Promise<string> 
   return data as string;
 }
 
+/** Garante que a proposta ainda aceita edição de dados (rascunho / aguardando_documentos). */
+async function assertPropostaEditavel(supabase: any, propostaId: string): Promise<void> {
+  const { data: prop } = await supabase
+    .from("propostas")
+    .select("status")
+    .eq("id", propostaId)
+    .maybeSingle();
+  if (!prop) throw new Error("Proposta não encontrada.");
+  if (!STATUS_EDITAVEIS.includes(prop.status as PropostaStatus)) {
+    throw new Error("Esta proposta não pode mais ser editada no estado atual.");
+  }
+}
+
 /** ===== Listagem ===== */
 export const listarPropostas = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -130,6 +143,7 @@ export const listarSimulacoesElegiveis = createServerFn({ method: "GET" })
     const { data: jaProposta } = await supabase
       .from("propostas")
       .select("simulacao_id")
+      .neq("status", "cancelada")
       .in("simulacao_id", ids.length ? ids : ["00000000-0000-0000-0000-000000000000"]);
     const usadas = new Set((jaProposta ?? []).map((p: any) => p.simulacao_id));
     return (rows ?? [])
@@ -290,6 +304,7 @@ export const selecionarBancoProposta = createServerFn({ method: "POST" })
   )
   .handler(async ({ context, data }) => {
     const { supabase } = context;
+    await assertPropostaEditavel(supabase, data.proposta_id);
     const { data: banco } = await supabase
       .from("proposta_bancos")
       .select("*")
@@ -317,6 +332,7 @@ export const adicionarEnvolvido = createServerFn({ method: "POST" })
   )
   .handler(async ({ context, data }) => {
     const { supabase } = context;
+    await assertPropostaEditavel(supabase, data.proposta_id);
     const { data: row, error } = await supabase
       .from("proposta_envolvidos")
       .insert({ proposta_id: data.proposta_id, ...data.dados } as any)
@@ -374,9 +390,11 @@ export const removerDocumento = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     const { data: doc } = await context.supabase
       .from("proposta_documentos")
-      .select("storage_path")
+      .select("storage_path, proposta_id")
       .eq("id", data.id)
       .maybeSingle();
+    if (!doc) throw new Error("Documento não encontrado.");
+    await assertPropostaEditavel(context.supabase, doc.proposta_id);
     if (doc?.storage_path) {
       await context.supabase.storage.from("documentos-proposta").remove([doc.storage_path]);
     }
@@ -410,6 +428,7 @@ export const salvarIq = createServerFn({ method: "POST" })
       .parse(data),
   )
   .handler(async ({ context, data }) => {
+    await assertPropostaEditavel(context.supabase, data.proposta_id);
     const { error } = await context.supabase
       .from("propostas")
       .update({ iq_nome: data.iq_nome ?? null, iq_comentario: data.iq_comentario ?? null } as any)
@@ -422,6 +441,13 @@ export const removerEnvolvido = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ context, data }) => {
+    const { data: env } = await context.supabase
+      .from("proposta_envolvidos")
+      .select("proposta_id")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (!env) throw new Error("Registro não encontrado.");
+    await assertPropostaEditavel(context.supabase, env.proposta_id);
     const { error } = await context.supabase.from("proposta_envolvidos").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
@@ -591,6 +617,15 @@ export const excluirProposta = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
+    const { data: prop } = await context.supabase
+      .from("propostas")
+      .select("status")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (!prop) throw new Error("Proposta não encontrada.");
+    if (!["rascunho", "erro_envio"].includes(prop.status)) {
+      throw new Error("Só é possível excluir propostas em rascunho ou com erro de envio. Cancele a proposta.");
+    }
     const { error } = await context.supabase.from("propostas").delete().eq("id", data.id);
     if (error) throw error;
     return { ok: true };

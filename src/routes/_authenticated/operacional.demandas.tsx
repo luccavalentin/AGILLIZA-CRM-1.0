@@ -109,7 +109,7 @@ function Pagina() {
                   <td className="px-3 py-2 text-muted-foreground">{d.nome_cliente ?? "—"}</td>
                   <td className="px-3 py-2 text-muted-foreground">{d.nome_responsavel ?? "—"}</td>
                   <td className="px-3 py-2">
-                    <SlaCountdown inicio={d.sla_inicio} prazo={d.prazo_sla} concluida={d.status === "concluida"} />
+                    <SlaCountdown inicio={d.sla_inicio} prazo={d.prazo_sla} concluida={d.status === "concluida"} concluidaEm={d.concluida_em} />
                   </td>
                   <td className="px-3 py-2">
                     <span className={cn("inline-block h-1.5 w-8 rounded-full", PRIORIDADE[d.prioridade].bar)} />

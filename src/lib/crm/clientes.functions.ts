@@ -19,6 +19,20 @@ async function temPii(supabase: any, userId: string): Promise<boolean> {
   }).then((r: any) => r.data));
 }
 
+/** Verifica papel amplo (admin/correspondente) ou permissão específica do módulo. */
+async function podeAcao(supabase: any, userId: string, modulo: string, acao: string): Promise<boolean> {
+  const { data: tudo } = await supabase.rpc("has_any_role", {
+    _user_id: userId,
+    _roles: ["admin", "correspondente"],
+  });
+  if (tudo) return true;
+  return Boolean(
+    await supabase
+      .rpc("usuario_tem_permissao", { _user_id: userId, _modulo: modulo, _acao: acao })
+      .then((r: any) => r.data),
+  );
+}
+
 export interface ClienteListaItem {
   id: string;
   numero_cliente: string;
@@ -473,6 +487,9 @@ export const revisarDocumento = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const { supabase, userId } = context;
+    if (!(await podeAcao(supabase, userId, "crm.clientes", "edit"))) {
+      throw new Error("Você não tem permissão para revisar documentos.");
+    }
     const { error } = await supabase
       .from("cliente_documentos")
       .update({ status: data.status, aprovado_por: userId, aprovado_em: new Date().toISOString() })
@@ -486,6 +503,13 @@ export const urlDocumento = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ storage_path: z.string() }).parse(d))
   .handler(async ({ data, context }): Promise<{ url: string }> => {
+    // Confirma que o path pertence a um documento visível ao usuário (RLS aplicada na leitura).
+    const { data: doc } = await context.supabase
+      .from("cliente_documentos")
+      .select("id")
+      .eq("storage_path", data.storage_path)
+      .maybeSingle();
+    if (!doc) throw new Error("Documento não encontrado.");
     const { data: signed, error } = await context.supabase.storage
       .from("cliente-documentos")
       .createSignedUrl(data.storage_path, 300);
@@ -538,7 +562,11 @@ export const excluirCliente = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
-    const { error } = await context.supabase.from("clientes").delete().eq("id", data.id);
+    const { supabase, userId } = context;
+    if (!(await podeAcao(supabase, userId, "crm.clientes", "delete"))) {
+      throw new Error("Você não tem permissão para excluir clientes.");
+    }
+    const { error } = await supabase.from("clientes").delete().eq("id", data.id);
     if (error) throw error;
     return { ok: true };
   });
@@ -633,7 +661,14 @@ export const desvincularParceiro = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
-    const { error } = await context.supabase.from("cliente_parceiros").delete().eq("id", data.id);
+    const { supabase, userId } = context;
+    const { data: corr } = await supabase.rpc("correspondente_do_usuario", { _user_id: userId });
+    if (!corr) throw new Error("Sem correspondente.");
+    const { error } = await supabase
+      .from("cliente_parceiros")
+      .delete()
+      .eq("id", data.id)
+      .eq("correspondente_id", corr);
     if (error) throw error;
     return { ok: true };
   });
