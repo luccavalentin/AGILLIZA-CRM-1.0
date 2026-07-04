@@ -182,10 +182,6 @@ function AuthPage() {
               <Input id="reg-email" name="email" type="email" autoComplete="email" required />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="reg-tel">Telefone</Label>
-              <Input id="reg-tel" name="telefone" type="tel" placeholder="(11) 99999-9999" />
-            </div>
-            <div className="space-y-2">
               <Label htmlFor="reg-senha">Senha</Label>
               <Input
                 id="reg-senha"
