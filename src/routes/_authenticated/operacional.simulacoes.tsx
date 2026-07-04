@@ -101,6 +101,22 @@ function Pagina() {
         </form>
       </div>
 
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="space-y-1">
+          <label className="text-xs text-muted-foreground">De</label>
+          <Input type="date" value={desde} onChange={(e) => setDesde(e.target.value)} className="w-40" />
+        </div>
+        <div className="space-y-1">
+          <label className="text-xs text-muted-foreground">Até</label>
+          <Input type="date" value={ate} onChange={(e) => setAte(e.target.value)} className="w-40" />
+        </div>
+        {(desde || ate) && (
+          <Button variant="ghost" size="sm" onClick={() => { setDesde(""); setAte(""); }}>
+            Limpar datas
+          </Button>
+        )}
+      </div>
+
       <div className="rounded-lg border border-border">
         <Table>
           <TableHeader>
