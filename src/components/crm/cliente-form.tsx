@@ -222,9 +222,11 @@ export function ClienteForm({
         <CardContent className="flex items-center justify-between gap-4">
           <div className="text-sm text-muted-foreground">
             O login do cliente em /portal é por documento + data de nascimento. Nenhuma senha é criada.
+            {!v.id && <span className="mt-1 block text-xs">Salve o cadastro primeiro para habilitar o acesso.</span>}
           </div>
           <div className="flex items-center gap-2">
-            <Switch id="portal" checked={portal} onCheckedChange={setPortal} disabled={!v.id} />
+            {portalSalvando && <Loader2 className="size-4 animate-spin text-muted-foreground" />}
+            <Switch id="portal" checked={portal} onCheckedChange={alternarPortal} disabled={!v.id || portalSalvando} />
             <Label htmlFor="portal">Habilitar acesso</Label>
           </div>
         </CardContent>
