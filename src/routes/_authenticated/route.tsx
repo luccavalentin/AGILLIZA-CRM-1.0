@@ -1,5 +1,5 @@
 import { createFileRoute, Outlet, redirect, useNavigate } from "@tanstack/react-router";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/app-shell/app-shell";
@@ -24,6 +24,7 @@ export const Route = createFileRoute("/_authenticated")({
 function InternalLayout() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [carregamentoTravado, setCarregamentoTravado] = useState(false);
 
   const sessaoQuery = useQuery({
     queryKey: ["minha-sessao"],
@@ -47,6 +48,19 @@ function InternalLayout() {
     );
   }, [permsQuery.data]);
 
+  useEffect(() => {
+    if (!sessaoQuery.isLoading && !permsQuery.isLoading) {
+      setCarregamentoTravado(false);
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      setCarregamentoTravado(true);
+    }, 8_000);
+
+    return () => window.clearTimeout(timer);
+  }, [permsQuery.isLoading, sessaoQuery.isLoading]);
+
   async function sair() {
     await queryClient.cancelQueries();
     queryClient.clear();
@@ -55,7 +69,7 @@ function InternalLayout() {
   }
 
   const carregando = sessaoQuery.isLoading || permsQuery.isLoading;
-  const comErro = sessaoQuery.isError || permsQuery.isError;
+  const comErro = sessaoQuery.isError || permsQuery.isError || carregamentoTravado;
 
   if (comErro) {
     return (
@@ -71,6 +85,7 @@ function InternalLayout() {
         <div className="flex gap-3">
           <button
             onClick={() => {
+              setCarregamentoTravado(false);
               sessaoQuery.refetch();
               permsQuery.refetch();
             }}
