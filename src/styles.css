@@ -51,11 +51,11 @@
   --input: #e5e7eb;
   --ring: #000f9f;
 
-  --sidebar: #000f9f;
+  --sidebar: #000a6e;
   --sidebar-foreground: #eef0ff;
   --sidebar-primary: #ffffff;
-  --sidebar-primary-foreground: #000f9f;
-  --sidebar-accent: #1a27a9;
+  --sidebar-primary-foreground: #000a6e;
+  --sidebar-accent: rgba(255, 255, 255, 0.12);
   --sidebar-accent-foreground: #ffffff;
   --sidebar-border: rgba(255, 255, 255, 0.10);
   --sidebar-ring: #4b56d1;
