@@ -64,6 +64,15 @@ function Pagina() {
     onError: (e: any) => toast.error(e?.message ?? "Falha ao processar."),
   });
 
+  const excluir = useMutation({
+    mutationFn: (id: string) => excluirLeitura({ data: { id } }),
+    onSuccess: () => {
+      toast.success("Leitura excluída (registrada em auditoria).");
+      qc.invalidateQueries({ queryKey: ["scan-ia-leituras"] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Falha ao excluir."),
+  });
+
   async function enviarArquivo(file: File) {
     if (!file) return;
     setEnviando(true);
