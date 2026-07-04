@@ -105,14 +105,14 @@ function Pagina() {
           <TableBody>
             {isLoading && (
               <TableRow>
-                <TableCell colSpan={6} className="py-10 text-center text-sm text-muted-foreground">
+                <TableCell colSpan={7} className="py-10 text-center text-sm text-muted-foreground">
                   Carregando…
                 </TableCell>
               </TableRow>
             )}
             {!isLoading && (data?.itens.length ?? 0) === 0 && (
               <TableRow>
-                <TableCell colSpan={6}>
+                <TableCell colSpan={7}>
                   <div className="flex flex-col items-center gap-3 py-12 text-center">
                     <Calculator className="h-8 w-8 text-muted-foreground" />
                     <p className="text-sm text-muted-foreground">Nenhuma simulação encontrada.</p>
