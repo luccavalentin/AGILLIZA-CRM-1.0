@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -15,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { criarCliente, atualizarCliente, salvarEndereco } from "@/lib/crm/clientes.functions";
+import { criarCliente, atualizarCliente, salvarEndereco, definirAcessoPortal } from "@/lib/crm/clientes.functions";
 import { validarDocumento, soDigitos } from "@/lib/crm/documento";
 
 export interface ClienteFormValues {
