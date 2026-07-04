@@ -111,8 +111,40 @@ export function ClienteForm({
   });
   const [portal, setPortal] = useState(Boolean(portalAtivo));
   const [salvando, setSalvando] = useState(false);
+  const [buscandoCep, setBuscandoCep] = useState(false);
   const set = <K extends keyof ClienteFormValues>(k: K, val: ClienteFormValues[K]) =>
     setV((prev) => ({ ...prev, [k]: val }));
+
+  // Busca automática do endereço pelo CEP (ViaCEP) — apenas visual/preenchimento.
+  async function buscarCep(cepRaw: string) {
+    const cep = cepRaw.replace(/\D/g, "");
+    if (cep.length !== 8) return;
+    setBuscandoCep(true);
+    try {
+      const resp = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+      const dados = await resp.json();
+      if (dados?.erro) {
+        toast.error("CEP não encontrado.");
+        return;
+      }
+      setEnd((p) => ({
+        ...p,
+        logradouro: dados.logradouro || p.logradouro,
+        bairro: dados.bairro || p.bairro,
+        cidade: dados.localidade || p.cidade,
+        uf: dados.uf || p.uf,
+      }));
+    } catch {
+      toast.error("Não foi possível consultar o CEP.");
+    } finally {
+      setBuscandoCep(false);
+    }
+  }
+
+  function mascararCep(raw: string) {
+    const d = raw.replace(/\D/g, "").slice(0, 8);
+    return d.length > 5 ? `${d.slice(0, 5)}-${d.slice(5)}` : d;
+  }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
