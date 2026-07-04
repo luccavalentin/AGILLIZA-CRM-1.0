@@ -11,6 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CurrencyInput } from "@/components/simulacao/currency-input";
 import { ConsultandoOverlay } from "@/components/simulacao/consultando-overlay";
+import { ClienteCRMPicker } from "@/components/simulacao/cliente-crm-picker";
 import {
   completaSchema, ESTADOS_CIVIS, TIPOS_IMOVEL, USOS_IMOVEL, SITUACOES_IMOVEL, PRODUTOS,
 } from "@/lib/simulacao/schemas";
