@@ -225,7 +225,14 @@ export const moverStatusDemanda = createServerFn({ method: "POST" })
   )
   .handler(async ({ context, data }) => {
     const { supabase, userId } = context;
-    const { error } = await supabase.from("demandas").update({ status: data.status }).eq("id", data.id);
+    const { data: atual } = await supabase.from("demandas").select("status").eq("id", data.id).single();
+    if (!atual) throw new Error("Demanda não encontrada.");
+    if (!transicaoDemandaPermitida(atual.status as DemandaStatus, data.status)) {
+      throw new Error(`Transição de status inválida: ${atual.status} → ${data.status}.`);
+    }
+    const patch: Record<string, unknown> = { status: data.status };
+    if (data.status === "concluida") patch.concluida_em = new Date().toISOString();
+    const { error } = await supabase.from("demandas").update(patch).eq("id", data.id);
     if (error) throw new Error(error.message);
     await supabase
       .from("demanda_historico")
