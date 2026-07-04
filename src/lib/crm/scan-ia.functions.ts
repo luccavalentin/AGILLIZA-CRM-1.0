@@ -108,7 +108,7 @@ export const obterLeitura = createServerFn({ method: "GET" })
 
     const { data: leitura, error } = await supabase
       .from("scan_ia_leituras")
-      .select("id, arquivo_url, tipo_documento, status, erro, created_at, correspondente_id")
+      .select("id, arquivo_url, tipo_documento, status, erro, created_at, correspondente_id, criador_id")
       .eq("id", data.id)
       .maybeSingle();
     if (error) throw error;
@@ -124,6 +124,16 @@ export const obterLeitura = createServerFn({ method: "GET" })
       .from("scan-ia")
       .createSignedUrl(leitura.arquivo_url, 600);
 
+    let criadorNome: string | null = null;
+    if (leitura.criador_id) {
+      const { data: perfil } = await supabase
+        .from("profiles")
+        .select("nome")
+        .eq("id", leitura.criador_id)
+        .maybeSingle();
+      criadorNome = perfil?.nome ?? null;
+    }
+
     return {
       id: leitura.id,
       arquivo_url: leitura.arquivo_url,
@@ -133,6 +143,8 @@ export const obterLeitura = createServerFn({ method: "GET" })
       created_at: leitura.created_at,
       campos: (campos ?? []) as CampoExtraido[],
       arquivo_assinado: signed?.signedUrl ?? null,
+      criador_id: leitura.criador_id ?? null,
+      criador_nome: criadorNome,
     };
   });
 
