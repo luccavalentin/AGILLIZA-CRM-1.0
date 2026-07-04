@@ -139,12 +139,14 @@ function Pagina() {
                 <TableCell>{p.nome_banco ?? "—"}</TableCell>
                 <TableCell className="text-right tabular-nums">{formatBRL(p.valor_financiamento)}</TableCell>
                 <TableCell><PropostaStatusBadge status={p.status} /></TableCell>
-                <TableCell className="text-right">
-                  <ConfirmDelete
-                    titulo="Excluir proposta"
-                    descricao={`A proposta ${p.numero_proposta} será removida permanentemente.`}
-                    onConfirm={() => handleExcluir(p.id)}
-                  />
+                <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                  {["rascunho", "erro_envio"].includes(p.status) ? (
+                    <ConfirmDelete
+                      titulo="Excluir proposta"
+                      descricao={`A proposta ${p.numero_proposta} será removida permanentemente.`}
+                      onConfirm={() => handleExcluir(p.id)}
+                    />
+                  ) : null}
                 </TableCell>
               </TableRow>
             ))}
