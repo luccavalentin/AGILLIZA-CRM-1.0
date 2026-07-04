@@ -144,28 +144,31 @@ export async function enviarSimulacaoImpl({
         );
         const idSimulacao = String(simResp?.idSimulacao ?? "");
 
-        await chamarIntegracao<any>(
+        // A resposta da integração traz os valores retornados pelo banco
+        const integ = await chamarIntegracao<any>(
           `/oportunidade/${idOportunidade}/simulacao/${idSimulacao}/integracao`,
           "POST",
           {},
           ctx,
         );
 
+        const dados = integ ?? simResp;
+
         await supabase
           .from("simulacao_bancos")
           .update({
             homefin_id_simulacao_banco: idSimulacao,
             status_banco: "simulada",
-            raw_response: simResp,
+            raw_response: dados,
             simulado_em: new Date().toISOString(),
-            valor_parcela: simResp?.valorParcelaBanco ?? simResp?.valorParcelaSimulacao ?? null,
-            taxa_juros_ano: simResp?.taxaJurosAnoBanco ?? null,
-            prazo_pagamento_max: simResp?.prazoPagamentoBancoMax ?? null,
-            valor_financiamento_max: simResp?.valorFinanciamentoBancoMax ?? null,
-            valor_parcela_max: simResp?.valorParcelaBancoMax ?? null,
-            codigo_indexador: simResp?.codigoIndexadorBanco ?? null,
-            valor_iof: simResp?.valorIofBanco ?? null,
-            sistema_amortizacao_banco: simResp?.codigoSistemaAmortizacaoBanco ?? null,
+            valor_parcela: dados?.valorParcelaBanco ?? dados?.valorParcelaSimulacao ?? null,
+            taxa_juros_ano: dados?.taxaJurosAnoBanco ?? null,
+            prazo_pagamento_max: dados?.prazoPagamentoBancoMax ?? dados?.prazoPagamentoBanco ?? null,
+            valor_financiamento_max: dados?.valorFinanciamentoBancoMax ?? dados?.valorFinanciamentoBanco ?? null,
+            valor_parcela_max: dados?.valorParcelaBancoMax ?? null,
+            codigo_indexador: dados?.codigoIndexadorBanco ?? null,
+            valor_iof: dados?.valorIofBanco ?? null,
+            sistema_amortizacao_banco: dados?.codigoSistemaAmortizacaoBanco ?? null,
           })
           .eq("id", b.id);
         sucesso++;
