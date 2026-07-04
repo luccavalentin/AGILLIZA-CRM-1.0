@@ -23,8 +23,14 @@ import { compararBancosRapido, taxaAnoDeBanco } from "@/lib/simulacao/simulacao-
 export const Route = createFileRoute("/_authenticated/operacional/simulacoes_/nova")({
   head: () => ({ meta: [{ title: "Nova simulação — Agilliza" }] }),
   beforeLoad: () => assertModuloPermitido("operacional.simulacoes"),
+  validateSearch: (search: Record<string, unknown>): { modo?: "rapida" | "personalizada" } => ({
+    modo: search.modo === "rapida" || search.modo === "personalizada" ? search.modo : undefined,
+  }),
   component: Pagina,
 });
+
+const PRAZO_MIN = 60;
+const PRAZO_MAX = 420;
 
 interface WizardState {
   produto: "financiamento_imobiliario" | "home_equity";
@@ -33,11 +39,12 @@ interface WizardState {
   valor_financiamento: number;
   possui_imovel_escolhido: boolean | null;
   data_nascimento: string;
-  prazo_anos: number;
+  prazo_meses: number;
 }
 
 function Pagina() {
   const router = useRouter();
+  const { modo } = Route.useSearch();
   const [w, setW] = useState<WizardState>({
     produto: "financiamento_imobiliario",
     valor_imovel: 0,
@@ -45,7 +52,7 @@ function Pagina() {
     valor_financiamento: 0,
     possui_imovel_escolhido: null,
     data_nascimento: "",
-    prazo_anos: 0,
+    prazo_meses: 360,
   });
   const [mostrarRapida, setMostrarRapida] = useState(false);
   const [otpAberto, setOtpAberto] = useState(false);
@@ -69,7 +76,11 @@ function Pagina() {
   }
 
   const valido =
-    w.valor_imovel > 0 && w.valor_financiamento > 0 && w.data_nascimento !== "" && w.prazo_anos > 0;
+    w.valor_imovel > 0 &&
+    w.valor_financiamento > 0 &&
+    w.data_nascimento !== "" &&
+    w.prazo_meses >= PRAZO_MIN &&
+    w.prazo_meses <= PRAZO_MAX;
 
   const comparativo = useMemo(() => {
     if (!bancos || !mostrarRapida) return [];
@@ -80,14 +91,14 @@ function Pagina() {
         nome_banco: b.nome_banco,
         taxa_ano: taxaAnoDeBanco(b.codigo_banco),
       })),
-      { valor_financiamento: w.valor_financiamento, prazo_meses: w.prazo_anos * 12, sistema: "S" },
+      { valor_financiamento: w.valor_financiamento, prazo_meses: w.prazo_meses, sistema: "S" },
     );
-  }, [bancos, mostrarRapida, w.valor_financiamento, w.prazo_anos]);
+  }, [bancos, mostrarRapida, w.valor_financiamento, w.prazo_meses]);
 
   function irParaPersonalizada(email: string) {
     sessionStorage.setItem(
       "simulacao_wizard",
-      JSON.stringify({ ...w, email, prazo: w.prazo_anos * 12, email_verificado_em: new Date().toISOString() }),
+      JSON.stringify({ ...w, email, prazo: w.prazo_meses, email_verificado_em: new Date().toISOString() }),
     );
     router.navigate({ to: "/operacional/simulacoes/completa" });
   }
@@ -148,28 +159,39 @@ function Pagina() {
             <Input type="date" value={w.data_nascimento} onChange={(e) => set("data_nascimento", e.target.value)} />
           </div>
           <div className="space-y-1.5">
-            <Label>Em quantos anos irá financiar <span className="text-destructive">*</span></Label>
+            <Label>Em quantos meses irá financiar <span className="text-destructive">*</span></Label>
             <Input
               type="number"
-              min={1}
-              max={35}
-              placeholder="0 anos"
-              value={w.prazo_anos || ""}
-              onChange={(e) => set("prazo_anos", Number(e.target.value))}
+              min={PRAZO_MIN}
+              max={PRAZO_MAX}
+              step={12}
+              placeholder="360 meses"
+              value={w.prazo_meses || ""}
+              onChange={(e) => set("prazo_meses", Number(e.target.value))}
             />
+            <p className="text-xs text-muted-foreground">
+              {w.prazo_meses > 0
+                ? `Equivale a ${(w.prazo_meses / 12).toFixed(1).replace(".0", "")} anos · mín. ${PRAZO_MIN} / máx. ${PRAZO_MAX} meses`
+                : `Entre ${PRAZO_MIN} e ${PRAZO_MAX} meses`}
+            </p>
           </div>
         </div>
 
         <div className="grid grid-cols-1 gap-3 pt-2 sm:grid-cols-2">
           <Button
-            variant="secondary"
+            variant={modo === "rapida" ? "default" : "secondary"}
             className="h-12"
             disabled={!valido}
             onClick={() => setMostrarRapida(true)}
           >
             Simulação rápida
           </Button>
-          <Button className="h-12" disabled={!valido} onClick={() => setOtpAberto(true)}>
+          <Button
+            variant={modo === "rapida" ? "secondary" : "default"}
+            className="h-12"
+            disabled={!valido}
+            onClick={() => setOtpAberto(true)}
+          >
             Simulação personalizada
           </Button>
         </div>
@@ -178,7 +200,7 @@ function Pagina() {
           <div className="space-y-3 rounded-lg border border-border p-4">
             <div className="flex items-center justify-between">
               <h3 className="font-semibold text-foreground">Comparativo estimado</h3>
-              <span className="text-xs text-muted-foreground">Sistema SAC · {w.prazo_anos * 12} meses</span>
+              <span className="text-xs text-muted-foreground">Sistema SAC · {w.prazo_meses} meses</span>
             </div>
             {comparativo.length === 0 && (
               <p className="text-sm text-muted-foreground">

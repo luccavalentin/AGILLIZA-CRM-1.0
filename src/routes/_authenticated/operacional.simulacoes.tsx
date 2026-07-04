@@ -2,7 +2,7 @@ import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Plus, Search, Calculator } from "lucide-react";
+import { Plus, Search, Calculator, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { listarSimulacoes, excluirSimulacao } from "@/lib/simulacao/simulacoes.functions";
@@ -15,6 +15,9 @@ import {
 import { SimulacaoStatusBadge } from "@/components/simulacao/status-badge";
 import { ConfirmDelete } from "@/components/shared/confirm-delete";
 import { formatBRL } from "@/lib/simulacao/format";
+import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 
 export const Route = createFileRoute("/_authenticated/operacional/simulacoes")({
   head: () => ({ meta: [{ title: "Simulações — Agilliza" }] }),
@@ -67,11 +70,26 @@ function Pagina() {
           <h1 className="text-xl font-semibold text-foreground">Simulações</h1>
           <p className="text-sm text-muted-foreground">Financiamento imobiliário e home equity.</p>
         </div>
-        <Button asChild>
-          <Link to="/operacional/simulacoes/nova">
-            <Plus className="mr-1 h-4 w-4" /> Nova simulação
-          </Link>
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button>
+              <Plus className="mr-1 h-4 w-4" /> Nova simulação
+              <ChevronDown className="ml-1 h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem asChild>
+              <Link to="/operacional/simulacoes/nova" search={{ modo: "rapida" }}>
+                Simulação rápida
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link to="/operacional/simulacoes/nova" search={{ modo: "personalizada" }}>
+                Simulação personalizada
+              </Link>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
