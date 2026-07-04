@@ -19,14 +19,37 @@ export const Route = createFileRoute("/_authenticated/crm/painel")({
 function Pagina() {
   const navigate = useNavigate();
   const listar = useServerFn(listarPainel);
-  const { data, isLoading } = useQuery({ queryKey: ["crm-painel"], queryFn: () => listar() });
+  const [desde, setDesde] = useState("");
+  const [ate, setAte] = useState("");
+  const { data, isLoading } = useQuery({
+    queryKey: ["crm-painel", desde, ate],
+    queryFn: () => listar({ data: { desde: desde || undefined, ate: ate || undefined } }),
+  });
 
   return (
     <div className="space-y-4 p-4 sm:p-6">
-      <div>
-        <h1 className="text-xl font-semibold text-foreground">Painel da esteira</h1>
-        <p className="text-sm text-muted-foreground">Visão das 12 etapas. A esteira avança automaticamente.</p>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-semibold text-foreground">Painel da esteira</h1>
+          <p className="text-sm text-muted-foreground">Visão das 12 etapas. A esteira avança automaticamente.</p>
+        </div>
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="space-y-1">
+            <label className="text-xs text-muted-foreground">De</label>
+            <Input type="date" value={desde} onChange={(e) => setDesde(e.target.value)} className="w-40" />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs text-muted-foreground">Até</label>
+            <Input type="date" value={ate} onChange={(e) => setAte(e.target.value)} className="w-40" />
+          </div>
+          {(desde || ate) && (
+            <Button variant="ghost" size="sm" onClick={() => { setDesde(""); setAte(""); }}>
+              Limpar
+            </Button>
+          )}
+        </div>
       </div>
+
 
       {isLoading ? (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
