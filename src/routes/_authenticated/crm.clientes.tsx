@@ -1,8 +1,9 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { useQuery, keepPreviousData } from "@tanstack/react-query";
+import { useQuery, keepPreviousData, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Plus, Search, Users } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -16,8 +17,9 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge, ToneBadge } from "@/components/crm/tone-badge";
+import { ConfirmDelete } from "@/components/shared/confirm-delete";
 import { assertModuloPermitido } from "@/lib/route-guards";
-import { listarClientes } from "@/lib/crm/clientes.functions";
+import { listarClientes, excluirCliente } from "@/lib/crm/clientes.functions";
 import { formatarDocumento, mascararDocumento, formatarCelular } from "@/lib/crm/documento";
 
 export const Route = createFileRoute("/_authenticated/crm/clientes")({
