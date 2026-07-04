@@ -76,7 +76,11 @@ function Pagina() {
   }
 
   const valido =
-    w.valor_imovel > 0 && w.valor_financiamento > 0 && w.data_nascimento !== "" && w.prazo_anos > 0;
+    w.valor_imovel > 0 &&
+    w.valor_financiamento > 0 &&
+    w.data_nascimento !== "" &&
+    w.prazo_meses >= PRAZO_MIN &&
+    w.prazo_meses <= PRAZO_MAX;
 
   const comparativo = useMemo(() => {
     if (!bancos || !mostrarRapida) return [];
