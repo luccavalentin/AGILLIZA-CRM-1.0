@@ -23,8 +23,14 @@ import { compararBancosRapido, taxaAnoDeBanco } from "@/lib/simulacao/simulacao-
 export const Route = createFileRoute("/_authenticated/operacional/simulacoes_/nova")({
   head: () => ({ meta: [{ title: "Nova simulação — Agilliza" }] }),
   beforeLoad: () => assertModuloPermitido("operacional.simulacoes"),
+  validateSearch: (search: Record<string, unknown>): { modo?: "rapida" | "personalizada" } => ({
+    modo: search.modo === "rapida" || search.modo === "personalizada" ? search.modo : undefined,
+  }),
   component: Pagina,
 });
+
+const PRAZO_MIN = 60;
+const PRAZO_MAX = 420;
 
 interface WizardState {
   produto: "financiamento_imobiliario" | "home_equity";
@@ -33,11 +39,12 @@ interface WizardState {
   valor_financiamento: number;
   possui_imovel_escolhido: boolean | null;
   data_nascimento: string;
-  prazo_anos: number;
+  prazo_meses: number;
 }
 
 function Pagina() {
   const router = useRouter();
+  const { modo } = Route.useSearch();
   const [w, setW] = useState<WizardState>({
     produto: "financiamento_imobiliario",
     valor_imovel: 0,
@@ -45,7 +52,7 @@ function Pagina() {
     valor_financiamento: 0,
     possui_imovel_escolhido: null,
     data_nascimento: "",
-    prazo_anos: 0,
+    prazo_meses: 360,
   });
   const [mostrarRapida, setMostrarRapida] = useState(false);
   const [otpAberto, setOtpAberto] = useState(false);
