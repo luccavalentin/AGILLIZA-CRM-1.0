@@ -4,7 +4,6 @@ import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/brand/Logo";
-import symbolDark from "@/assets/brand/agilliza-symbol.png";
 import symbolLight from "@/assets/brand/agilliza-symbol-light.png";
 import { SidebarNav, SidebarRail } from "./sidebar-nav";
 import { Topbar, type ShellUser } from "./topbar";
