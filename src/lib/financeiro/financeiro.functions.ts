@@ -585,9 +585,9 @@ export const obterKpisFinanceiros = createServerFn({ method: "GET" })
     const recRows = recAll.data ?? [];
     const payRows = payAll.data ?? [];
 
-    const aReceberHoje = recRows.filter((r: any) => r.vencimento <= hojeStr).reduce((s: number, r: any) => s + saldoAberto(r), 0);
+    const aReceberHoje = recRows.filter((r: any) => r.vencimento === hojeStr).reduce((s: number, r: any) => s + saldoAberto(r), 0);
     const aReceber30d = recRows.filter((r: any) => r.vencimento <= em30Str).reduce((s: number, r: any) => s + saldoAberto(r), 0);
-    const aPagarHoje = payRows.filter((r: any) => r.vencimento <= hojeStr).reduce((s: number, r: any) => s + saldoAberto(r), 0);
+    const aPagarHoje = payRows.filter((r: any) => r.vencimento === hojeStr).reduce((s: number, r: any) => s + saldoAberto(r), 0);
     const aPagar30d = payRows.filter((r: any) => r.vencimento <= em30Str).reduce((s: number, r: any) => s + saldoAberto(r), 0);
     const saldoProjetado = aReceber30d - aPagar30d;
     const inadimplencia = (inadim.data ?? []).reduce((s: number, r: any) => s + saldoAberto(r), 0);
