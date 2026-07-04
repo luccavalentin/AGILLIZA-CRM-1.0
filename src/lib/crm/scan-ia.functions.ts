@@ -66,14 +66,25 @@ export const listarLeituras = createServerFn({ method: "GET" })
     const { data, error } = await supabase
       .from("scan_ia_leituras")
       .select(
-        "id, tipo_documento, status, erro, cliente_id, proposta_id, created_at, scan_ia_campos_extraidos(count)",
+        "id, tipo_documento, status, erro, cliente_id, proposta_id, created_at, criador_id, scan_ia_campos_extraidos(count)",
       )
       .eq("correspondente_id", corr)
       .order("created_at", { ascending: false })
       .limit(200);
     if (error) throw error;
 
-    return (data ?? []).map((r: any) => ({
+    const linhas = data ?? [];
+    const criadorIds = [...new Set(linhas.map((r: any) => r.criador_id).filter(Boolean))];
+    let nomes = new Map<string, string | null>();
+    if (criadorIds.length > 0) {
+      const { data: perfis } = await supabase
+        .from("profiles")
+        .select("id, nome")
+        .in("id", criadorIds);
+      nomes = new Map((perfis ?? []).map((p: any) => [p.id, p.nome]));
+    }
+
+    return linhas.map((r: any) => ({
       id: r.id,
       tipo_documento: r.tipo_documento,
       status: r.status,
@@ -82,6 +93,8 @@ export const listarLeituras = createServerFn({ method: "GET" })
       proposta_id: r.proposta_id,
       created_at: r.created_at,
       total_campos: r.scan_ia_campos_extraidos?.[0]?.count ?? 0,
+      criador_id: r.criador_id ?? null,
+      criador_nome: r.criador_id ? nomes.get(r.criador_id) ?? null : null,
     }));
   });
 
