@@ -33,6 +33,15 @@ export function BaixarDialog({ tipo, conta, open, onOpenChange }: Props) {
   const [file, setFile] = useState<File | null>(null);
   const [enviando, setEnviando] = useState(false);
 
+  // Reseta o formulário sempre que abrir ou trocar de conta (evita usar valor residual).
+  useEffect(() => {
+    if (open) {
+      setValor(0);
+      setData(hojeISO());
+      setFile(null);
+    }
+  }, [open, conta?.id]);
+
 
   const mut = useMutation({
     mutationFn: (args: { comprovante_path?: string; valorFinal: number }) =>
