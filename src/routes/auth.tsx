@@ -106,7 +106,6 @@ function AuthPage() {
           emailRedirectTo: `${window.location.origin}/auth`,
           data: {
             full_name: nome,
-            telefone,
             papel_inicial: "correspondente",
           },
         },
