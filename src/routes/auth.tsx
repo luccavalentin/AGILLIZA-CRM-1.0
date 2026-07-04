@@ -203,9 +203,7 @@ function AuthPage() {
             </div>
             <label className="flex items-start gap-2 text-sm text-muted-foreground">
               <Checkbox name="aceite" id="reg-aceite" className="mt-0.5" />
-              <span>
-                Li e aceito os termos de uso e a política de privacidade (LGPD).
-              </span>
+              <span>Li e aceito os termos de uso e a política de privacidade.</span>
             </label>
             <Button type="submit" className="w-full" disabled={carregando}>
               {carregando ? "Criando…" : "Criar conta de correspondente"}
