@@ -30,6 +30,7 @@ export interface DemandaItem {
   nome_responsavel: string | null;
   prazo_sla: string | null;
   sla_inicio: string;
+  concluida_em: string | null;
   escalonada: boolean;
   created_at: string;
 }
