@@ -99,14 +99,14 @@ function Pagina() {
             {isLoading ? (
               Array.from({ length: 6 }).map((_, i) => (
                 <TableRow key={i}>
-                  {Array.from({ length: 7 }).map((__, j) => (
+                  {Array.from({ length: 8 }).map((__, j) => (
                     <TableCell key={j}><Skeleton className="h-4 w-24" /></TableCell>
                   ))}
                 </TableRow>
               ))
             ) : (data?.itens.length ?? 0) === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="py-12 text-center">
+                <TableCell colSpan={8} className="py-12 text-center">
                   <Users className="mx-auto mb-2 size-8 text-muted-foreground" />
                   <p className="text-sm text-muted-foreground">Nenhum cliente encontrado. Cadastre o primeiro.</p>
                 </TableCell>
