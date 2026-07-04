@@ -105,7 +105,13 @@ export const listarContas = createServerFn({ method: "GET" })
         { count: "exact" },
       );
 
-    if (data.status) query = query.eq("status", data.status as any);
+    if (data.status === "atrasada") {
+      // "atrasada" é um status derivado (não existe na coluna): abertas/parciais vencidas.
+      const hojeStr = new Date().toLocaleDateString("sv", { timeZone: "America/Sao_Paulo" });
+      query = query.in("status", ["aberta", "parcial"] as any).lt("vencimento", hojeStr);
+    } else if (data.status) {
+      query = query.eq("status", data.status as any);
+    }
     if (data.categoria_id) query = query.eq("categoria_id", data.categoria_id);
     if (data.cost_center_id) query = query.eq("cost_center_id", data.cost_center_id);
     if (data.contraparte) query = query.ilike(contraCol, `%${data.contraparte}%`);
