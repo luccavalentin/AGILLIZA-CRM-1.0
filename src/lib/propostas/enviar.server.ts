@@ -137,3 +137,89 @@ export async function cancelarPropostaHomefinImpl({
     { simulacao_id: prop.simulacao_id, correspondente_id: prop.correspondente_id },
   );
 }
+
+/**
+ * Sincroniza o andamento da proposta consultando a integração bancária.
+ * A API é baseada em consulta (polling): não há webhook/callback. Este
+ * handler lê GET /oportunidade/{id} e atualiza status, valores aprovados,
+ * histórico e notificação a partir de `tipoSituacao` (A/T/C) e da etapa ativa.
+ */
+export async function sincronizarPropostaImpl({
+  propostaId,
+  userId,
+  supabase,
+}: {
+  propostaId: string;
+  userId: string;
+  supabase: SupabaseClient<any, any, any>;
+}): Promise<{ status: string; etapa: string | null; atualizado: boolean }> {
+  const { data: prop, error } = await supabase.from("propostas").select("*").eq("id", propostaId).maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!prop) throw new Error("Proposta não encontrada.");
+  if (!prop.homefin_id_oportunidade) {
+    throw new Error("Proposta ainda não foi enviada ao banco.");
+  }
+
+  const ctx = { simulacao_id: prop.simulacao_id, correspondente_id: prop.correspondente_id };
+  const resp = await chamarIntegracao<any>(
+    `/oportunidade/${prop.homefin_id_oportunidade}`,
+    "GET",
+    undefined,
+    ctx,
+  );
+  const op = resp?.oportunidade ?? resp ?? {};
+  const etapas: any[] = Array.isArray(resp?.etapa) ? resp.etapa : [];
+
+  // etapa ativa (não concluída) de maior ordem, senão a última concluída
+  const ativa = etapas
+    .filter((e) => e?.active && !e?.completed)
+    .sort((a, b) => (b?.ordemEtapa ?? 0) - (a?.ordemEtapa ?? 0))[0];
+  const ultimaConcluida = etapas
+    .filter((e) => e?.completed)
+    .sort((a, b) => (b?.ordemEtapa ?? 0) - (a?.ordemEtapa ?? 0))[0];
+  const nomeEtapa: string | null = (ativa?.nomeEtapa ?? ultimaConcluida?.nomeEtapa ?? null) || null;
+
+  // tipoSituacao: A (Ativa) / T (Contrato Emitido) / C (Cancelada)
+  const situacao = String(op?.tipoSituacao ?? "").toUpperCase().charAt(0);
+  let novoStatus: string | null = null;
+  if (situacao === "T") novoStatus = "contrato_emitido";
+  else if (situacao === "C") novoStatus = "cancelada";
+
+  const patch: Record<string, unknown> = { detalhe_status_atual: nomeEtapa };
+  if (op?.codigoOportunidadeBanco) patch.codigo_oportunidade_homefin = op.codigoOportunidadeBanco;
+  if (op?.valorFinanciamentoBanco != null) patch.valor_financiamento_aprovado = op.valorFinanciamentoBanco;
+  if (op?.valorParcelaBanco != null) patch.valor_parcela_aprovado = op.valorParcelaBanco;
+  if (op?.prazoPagamentoBanco != null) patch.prazo_aprovado = op.prazoPagamentoBanco;
+  if (op?.taxaJurosAnoBanco != null) patch.taxa_juros_ano_aprovado = op.taxaJurosAnoBanco;
+
+  const mudouStatus = novoStatus != null && novoStatus !== prop.status;
+  if (mudouStatus) {
+    patch.status = novoStatus;
+    if (novoStatus === "contrato_emitido") patch.contrato_emitido_em = new Date().toISOString();
+  }
+
+  await supabase.from("propostas").update(patch as any).eq("id", propostaId);
+
+  if (mudouStatus) {
+    await supabase.from("proposta_historico").insert({
+      proposta_id: propostaId,
+      tipo_evento: "sincronizacao",
+      descricao: nomeEtapa ? `Atualização do banco: ${nomeEtapa}` : "Situação atualizada pelo banco",
+      status_anterior: prop.status as any,
+      status_novo: novoStatus as any,
+      ator_id: userId,
+    });
+    if (prop.usuario_responsavel_id) {
+      await supabase.from("notificacoes").insert({
+        user_id: prop.usuario_responsavel_id,
+        correspondente_id: prop.correspondente_id,
+        tipo: "proposta",
+        titulo: "Atualização de proposta",
+        corpo: nomeEtapa ? `Nova situação: ${nomeEtapa}.` : `Status alterado para ${novoStatus}.`,
+        link: `/operacional/propostas/${propostaId}`,
+      } as any);
+    }
+  }
+
+  return { status: novoStatus ?? prop.status, etapa: nomeEtapa, atualizado: mudouStatus };
+}

@@ -575,3 +575,13 @@ export const enviarPropostaHomeFin = createServerFn({ method: "POST" })
   });
 
 export const reenviarHomeFin = enviarPropostaHomeFin;
+
+/** ===== Sincronizar andamento (polling — a API não tem webhook) ===== */
+export const sincronizarProposta = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => z.object({ proposta_id: z.string().uuid() }).parse(data))
+  .handler(async ({ context, data }) => {
+    const { supabase, userId } = context;
+    const { sincronizarPropostaImpl } = await import("./enviar.server");
+    return sincronizarPropostaImpl({ propostaId: data.proposta_id, userId, supabase });
+  });

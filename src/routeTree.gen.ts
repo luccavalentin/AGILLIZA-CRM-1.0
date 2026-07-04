@@ -71,7 +71,6 @@ import { Route as AuthenticatedAdminIntegracoesRouteImport } from './routes/_aut
 import { Route as AuthenticatedAdminComprasRouteImport } from './routes/_authenticated/admin.compras'
 import { Route as AuthenticatedAdminBackupRouteImport } from './routes/_authenticated/admin.backup'
 import { Route as AuthenticatedAdminAuditoriaRouteImport } from './routes/_authenticated/admin.auditoria'
-import { Route as ApiPublicHomefinCallbackRouteImport } from './routes/api/public/homefin.callback'
 import { Route as AuthenticatedOperacionalTarefasKanbanRouteImport } from './routes/_authenticated/operacional.tarefas_.kanban'
 import { Route as AuthenticatedOperacionalSimulacoesNovaRouteImport } from './routes/_authenticated/operacional.simulacoes_.nova'
 import { Route as AuthenticatedOperacionalSimulacoesCompletaRouteImport } from './routes/_authenticated/operacional.simulacoes_.completa'
@@ -83,7 +82,6 @@ import { Route as AuthenticatedOperacionalDemandasIdRouteImport } from './routes
 import { Route as AuthenticatedCrmScanIaIdRouteImport } from './routes/_authenticated/crm.scan-ia_.$id'
 import { Route as AuthenticatedCrmClientesNovoRouteImport } from './routes/_authenticated/crm.clientes_.novo'
 import { Route as AuthenticatedCrmClientesIdRouteImport } from './routes/_authenticated/crm.clientes_.$id'
-import { Route as ApiPublicWebhookHomefinPropostaRouteImport } from './routes/api/public/webhook.homefin.proposta'
 
 const PortalRoute = PortalRouteImport.update({
   id: '/portal',
@@ -435,12 +433,6 @@ const AuthenticatedAdminAuditoriaRoute =
     path: '/admin/auditoria',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const ApiPublicHomefinCallbackRoute =
-  ApiPublicHomefinCallbackRouteImport.update({
-    id: '/api/public/homefin/callback',
-    path: '/api/public/homefin/callback',
-    getParentRoute: () => rootRouteImport,
-  } as any)
 const AuthenticatedOperacionalTarefasKanbanRoute =
   AuthenticatedOperacionalTarefasKanbanRouteImport.update({
     id: '/operacional/tarefas_/kanban',
@@ -506,12 +498,6 @@ const AuthenticatedCrmClientesIdRoute =
     id: '/crm/clientes_/$id',
     path: '/crm/clientes/$id',
     getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const ApiPublicWebhookHomefinPropostaRoute =
-  ApiPublicWebhookHomefinPropostaRouteImport.update({
-    id: '/api/public/webhook/homefin/proposta',
-    path: '/api/public/webhook/homefin/proposta',
-    getParentRoute: () => rootRouteImport,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -587,8 +573,6 @@ export interface FileRoutesByFullPath {
   '/operacional/simulacoes/completa': typeof AuthenticatedOperacionalSimulacoesCompletaRoute
   '/operacional/simulacoes/nova': typeof AuthenticatedOperacionalSimulacoesNovaRoute
   '/operacional/tarefas/kanban': typeof AuthenticatedOperacionalTarefasKanbanRoute
-  '/api/public/homefin/callback': typeof ApiPublicHomefinCallbackRoute
-  '/api/public/webhook/homefin/proposta': typeof ApiPublicWebhookHomefinPropostaRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -661,8 +645,6 @@ export interface FileRoutesByTo {
   '/operacional/simulacoes/completa': typeof AuthenticatedOperacionalSimulacoesCompletaRoute
   '/operacional/simulacoes/nova': typeof AuthenticatedOperacionalSimulacoesNovaRoute
   '/operacional/tarefas/kanban': typeof AuthenticatedOperacionalTarefasKanbanRoute
-  '/api/public/homefin/callback': typeof ApiPublicHomefinCallbackRoute
-  '/api/public/webhook/homefin/proposta': typeof ApiPublicWebhookHomefinPropostaRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -739,8 +721,6 @@ export interface FileRoutesById {
   '/_authenticated/operacional/simulacoes_/completa': typeof AuthenticatedOperacionalSimulacoesCompletaRoute
   '/_authenticated/operacional/simulacoes_/nova': typeof AuthenticatedOperacionalSimulacoesNovaRoute
   '/_authenticated/operacional/tarefas_/kanban': typeof AuthenticatedOperacionalTarefasKanbanRoute
-  '/api/public/homefin/callback': typeof ApiPublicHomefinCallbackRoute
-  '/api/public/webhook/homefin/proposta': typeof ApiPublicWebhookHomefinPropostaRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -817,8 +797,6 @@ export interface FileRouteTypes {
     | '/operacional/simulacoes/completa'
     | '/operacional/simulacoes/nova'
     | '/operacional/tarefas/kanban'
-    | '/api/public/homefin/callback'
-    | '/api/public/webhook/homefin/proposta'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -891,8 +869,6 @@ export interface FileRouteTypes {
     | '/operacional/simulacoes/completa'
     | '/operacional/simulacoes/nova'
     | '/operacional/tarefas/kanban'
-    | '/api/public/homefin/callback'
-    | '/api/public/webhook/homefin/proposta'
   id:
     | '__root__'
     | '/'
@@ -968,8 +944,6 @@ export interface FileRouteTypes {
     | '/_authenticated/operacional/simulacoes_/completa'
     | '/_authenticated/operacional/simulacoes_/nova'
     | '/_authenticated/operacional/tarefas_/kanban'
-    | '/api/public/homefin/callback'
-    | '/api/public/webhook/homefin/proposta'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -979,8 +953,6 @@ export interface RootRouteChildren {
   ClienteRoute: typeof ClienteRouteWithChildren
   ParceiroRoute: typeof ParceiroRouteWithChildren
   PortalRoute: typeof PortalRoute
-  ApiPublicHomefinCallbackRoute: typeof ApiPublicHomefinCallbackRoute
-  ApiPublicWebhookHomefinPropostaRoute: typeof ApiPublicWebhookHomefinPropostaRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -1419,13 +1391,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminAuditoriaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/api/public/homefin/callback': {
-      id: '/api/public/homefin/callback'
-      path: '/api/public/homefin/callback'
-      fullPath: '/api/public/homefin/callback'
-      preLoaderRoute: typeof ApiPublicHomefinCallbackRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/_authenticated/operacional/tarefas_/kanban': {
       id: '/_authenticated/operacional/tarefas_/kanban'
       path: '/operacional/tarefas/kanban'
@@ -1502,13 +1467,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/crm/clientes/$id'
       preLoaderRoute: typeof AuthenticatedCrmClientesIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/api/public/webhook/homefin/proposta': {
-      id: '/api/public/webhook/homefin/proposta'
-      path: '/api/public/webhook/homefin/proposta'
-      fullPath: '/api/public/webhook/homefin/proposta'
-      preLoaderRoute: typeof ApiPublicWebhookHomefinPropostaRouteImport
-      parentRoute: typeof rootRouteImport
     }
   }
 }
@@ -1719,19 +1677,7 @@ const rootRouteChildren: RootRouteChildren = {
   ClienteRoute: ClienteRouteWithChildren,
   ParceiroRoute: ParceiroRouteWithChildren,
   PortalRoute: PortalRoute,
-  ApiPublicHomefinCallbackRoute: ApiPublicHomefinCallbackRoute,
-  ApiPublicWebhookHomefinPropostaRoute: ApiPublicWebhookHomefinPropostaRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

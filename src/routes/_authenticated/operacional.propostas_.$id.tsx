@@ -3,12 +3,13 @@ import { useState, useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { ArrowLeft, Send, Ban, Loader2, Plus, Trash2, Download, Upload } from "lucide-react";
+import { ArrowLeft, Send, Ban, Loader2, Plus, Trash2, Download, Upload, RefreshCw } from "lucide-react";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import {
   obterProposta,
   selecionarBancoProposta,
   enviarPropostaHomeFin,
+  sincronizarProposta,
   cancelarProposta,
   moverStatusProposta,
   adicionarFollowup,
@@ -160,6 +161,7 @@ function AcoesTopo({ proposta, propostaId }: { proposta: any; propostaId: string
   const enviarFn = useServerFn(enviarPropostaHomeFin);
   const cancelarFn = useServerFn(cancelarProposta);
   const moverFn = useServerFn(moverStatusProposta);
+  const sincronizarFn = useServerFn(sincronizarProposta);
   const status = proposta.status as PropostaStatus;
   const proximos = TRANSICOES[status].filter((s) => s !== "cancelada");
 
@@ -171,6 +173,23 @@ function AcoesTopo({ proposta, propostaId }: { proposta: any; propostaId: string
       qc.invalidateQueries({ queryKey: ["proposta", propostaId] });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Falha ao enviar.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function sincronizar() {
+    setBusy(true);
+    try {
+      const r = await sincronizarFn({ data: { proposta_id: propostaId } });
+      toast.success(
+        r.atualizado
+          ? `Situação atualizada${r.etapa ? `: ${r.etapa}` : ""}.`
+          : "Nenhuma novidade do banco.",
+      );
+      qc.invalidateQueries({ queryKey: ["proposta", propostaId] });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao consultar o banco.");
     } finally {
       setBusy(false);
     }
@@ -212,6 +231,12 @@ function AcoesTopo({ proposta, propostaId }: { proposta: any; propostaId: string
         <Button size="sm" onClick={enviar} disabled={busy}>
           {busy ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Send className="mr-1 h-4 w-4" />}
           {proposta.enviada_em ? "Reenviar" : "Enviar ao banco"}
+        </Button>
+      )}
+      {proposta.homefin_id_oportunidade && status !== "cancelada" && (
+        <Button size="sm" variant="outline" onClick={sincronizar} disabled={busy}>
+          {busy ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-1 h-4 w-4" />}
+          Atualizar status
         </Button>
       )}
       {proximos.map((s) => (
