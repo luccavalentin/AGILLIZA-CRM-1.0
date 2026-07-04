@@ -487,6 +487,9 @@ export const revisarDocumento = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const { supabase, userId } = context;
+    if (!(await podeAcao(supabase, userId, "crm.clientes", "edit"))) {
+      throw new Error("Você não tem permissão para revisar documentos.");
+    }
     const { error } = await supabase
       .from("cliente_documentos")
       .update({ status: data.status, aprovado_por: userId, aprovado_em: new Date().toISOString() })
