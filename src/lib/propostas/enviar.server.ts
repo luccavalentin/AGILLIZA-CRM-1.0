@@ -220,6 +220,16 @@ export async function sincronizarPropostaImpl({
   let novoStatus: string | null = null;
   if (situacao === "T") novoStatus = "contrato_emitido";
   else if (situacao === "C") novoStatus = "cancelada";
+  else {
+    // Situação ativa: avança o estado interno conforme a etapa do banco,
+    // apenas para frente (nunca regride o funil).
+    const derivado = statusDaEtapa(nomeEtapa);
+    if (derivado) {
+      const atual = ORDEM_STATUS.indexOf(prop.status as PropostaStatus);
+      const alvo = ORDEM_STATUS.indexOf(derivado);
+      if (alvo > atual && atual !== -1) novoStatus = derivado;
+    }
+  }
 
   const patch: Record<string, unknown> = { detalhe_status_atual: nomeEtapa };
   if (op?.codigoOportunidadeBanco) patch.codigo_oportunidade_homefin = op.codigoOportunidadeBanco;
