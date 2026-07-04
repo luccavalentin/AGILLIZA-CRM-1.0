@@ -232,7 +232,7 @@ export const moverStatusDemanda = createServerFn({ method: "POST" })
     }
     const patch: Record<string, unknown> = { status: data.status };
     if (data.status === "concluida") patch.concluida_em = new Date().toISOString();
-    const { error } = await supabase.from("demandas").update(patch).eq("id", data.id);
+    const { error } = await supabase.from("demandas").update(patch as any).eq("id", data.id);
     if (error) throw new Error(error.message);
     await supabase
       .from("demanda_historico")
