@@ -16,6 +16,8 @@ import {
   SlidersHorizontal,
   Bell,
   ShieldCheck,
+  ScanLine,
+  DatabaseBackup,
   UserRound,
   Lock,
   LineChart,
