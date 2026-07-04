@@ -68,30 +68,30 @@
 }
 
 .dark {
-  /* MODO ESCURO — tema completo, sofisticado. */
-  --background: #0b0d16;
-  --foreground: #e6e8f0;
-  --card: #12141f;
-  --card-foreground: #e6e8f0;
-  --popover: #12141f;
-  --popover-foreground: #e6e8f0;
-  --primary: #5661e3;
+  /* MODO ESCURO — conteúdo permanece BRANCO; apenas o menu é escuro. */
+  --background: #ffffff;
+  --foreground: #0b0b0f;
+  --card: #ffffff;
+  --card-foreground: #0b0b0f;
+  --popover: #ffffff;
+  --popover-foreground: #0b0b0f;
+  --primary: #000f9f;
   --primary-foreground: #ffffff;
-  --secondary: #1a1d2b;
-  --secondary-foreground: #e6e8f0;
-  --muted: #161826;
-  --muted-foreground: #9aa0b8;
-  --accent: #1c2140;
-  --accent-foreground: #c7ceff;
+  --secondary: #f1f2f7;
+  --secondary-foreground: #0b0b0f;
+  --muted: #f7f8fa;
+  --muted-foreground: #6b7280;
+  --accent: #eef0ff;
+  --accent-foreground: #000f9f;
   --destructive: #f5333f;
   --destructive-foreground: #ffffff;
-  --success: #22c79a;
-  --success-foreground: #02241b;
-  --warning: #f5c044;
+  --success: #10a37f;
+  --success-foreground: #ffffff;
+  --warning: #eab308;
   --warning-foreground: #1a1400;
-  --border: #232636;
-  --input: #232636;
-  --ring: #5661e3;
+  --border: #e5e7eb;
+  --input: #e5e7eb;
+  --ring: #000f9f;
 
   /* Menu (sidebar): gradiente escuro da marca. */
   --sidebar: #000a6e;
@@ -103,10 +103,10 @@
   --sidebar-border: rgba(255, 255, 255, 0.08);
   --sidebar-ring: #4b56d1;
 
-  --chart-1: #6b74e8;
+  --chart-1: #000f9f;
   --chart-2: #4b56d1;
-  --chart-3: #22c79a;
-  --chart-4: #f5c044;
+  --chart-3: #10a37f;
+  --chart-4: #eab308;
   --chart-5: #f5333f;
 }
 
