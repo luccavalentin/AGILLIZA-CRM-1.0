@@ -90,6 +90,7 @@ function Pagina() {
                 <th className="px-3 py-2">Prazo</th>
                 <th className="px-3 py-2">Prioridade</th>
                 <th className="px-3 py-2">Status</th>
+                <th className="px-3 py-2 text-right">Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
