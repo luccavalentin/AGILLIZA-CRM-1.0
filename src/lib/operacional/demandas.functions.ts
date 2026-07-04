@@ -67,7 +67,7 @@ export const listarDemandas = createServerFn({ method: "GET" })
     let query = supabase
       .from("demandas")
       .select(
-        "id, numero, tipo, titulo, status, prioridade, cliente_id, responsavel_id, prazo_sla, sla_inicio, escalonada, created_at, clientes(nome)",
+        "id, numero, tipo, titulo, status, prioridade, cliente_id, responsavel_id, prazo_sla, sla_inicio, concluida_em, escalonada, created_at, clientes(nome)",
       )
       .order("created_at", { ascending: false })
       .limit(300);
