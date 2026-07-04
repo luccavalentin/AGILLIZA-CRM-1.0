@@ -29,7 +29,7 @@ function VisaoGeral() {
   const { data, isLoading } = useQuery({
     queryKey: ["cliente", "visao-geral"],
     queryFn: () => clienteObterVisaoGeral(),
-    refetchInterval: 4000,
+    refetchInterval: (q: any) => (q.state.status === "error" ? false : 4000),
   });
 
   if (isLoading || !data) {

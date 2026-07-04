@@ -192,7 +192,7 @@ function AbaMensagens() {
   const { data: mensagens } = useQuery({
     queryKey: ["cliente", "mensagens"],
     queryFn: () => clienteListarMensagens(),
-    refetchInterval: 4000,
+    refetchInterval: (q: any) => (q.state.status === "error" ? false : 4000),
   });
 
   const enviar = useMutation({
