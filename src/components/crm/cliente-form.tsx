@@ -50,6 +50,18 @@ const REGIMES = [
   { v: "nao_aplicavel", l: "Não aplicável" },
 ];
 
+// Exibe um número no formato R$ pt-BR (ex.: 20000 -> "20.000,00").
+function formatarMoedaBR(n: number): string {
+  return n.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+// Aplica máscara de moeda enquanto o usuário digita (tratando os dígitos como centavos).
+function mascararMoedaBR(raw: string): string {
+  const digitos = raw.replace(/\D/g, "");
+  if (!digitos) return "";
+  return formatarMoedaBR(parseInt(digitos, 10) / 100);
+}
+
 const emptyValues: ClienteFormValues = {
   tipo_pessoa: "PF",
   nome: "",
