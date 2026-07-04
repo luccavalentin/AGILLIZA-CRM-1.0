@@ -565,13 +565,13 @@ export const obterKpisFinanceiros = createServerFn({ method: "GET" })
         .in("status", abertos),
       supabase
         .from("financial_receivables")
-        .select("valor, data_pagamento, banco_nome")
-        .in("status", ["paga"] as any)
+        .select("valor_pago, data_pagamento, banco_nome")
+        .in("status", ["paga", "parcial"] as any)
         .gte("data_pagamento", dozeStr),
       supabase
         .from("financial_payables")
-        .select("valor, data_pagamento, categoria:financial_categories(nome)")
-        .in("status", ["paga"] as any)
+        .select("valor_pago, data_pagamento, categoria:financial_categories(nome)")
+        .in("status", ["paga", "parcial"] as any)
         .gte("data_pagamento", dozeStr),
       supabase
         .from("financial_receivables")
