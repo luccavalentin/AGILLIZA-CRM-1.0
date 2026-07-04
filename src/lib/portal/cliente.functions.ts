@@ -563,7 +563,7 @@ export const clienteSolicitarLGPD = createServerFn({ method: "POST" })
       .select("nome, responsavel_id, correspondente_id")
       .eq("id", sess.cid)
       .maybeSingle();
-    const corr = sess.corr ?? cliente?.correspondente_id;
+    const corr = cliente?.correspondente_id ?? sess.corr;
     if (!corr) throw new Error("Não foi possível registrar a solicitação.");
     const titulo =
       data.acao === "exclusao"
