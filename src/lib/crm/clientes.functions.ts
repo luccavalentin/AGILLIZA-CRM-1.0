@@ -486,6 +486,13 @@ export const urlDocumento = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ storage_path: z.string() }).parse(d))
   .handler(async ({ data, context }): Promise<{ url: string }> => {
+    // Confirma que o path pertence a um documento visível ao usuário (RLS aplicada na leitura).
+    const { data: doc } = await context.supabase
+      .from("cliente_documentos")
+      .select("id")
+      .eq("storage_path", data.storage_path)
+      .maybeSingle();
+    if (!doc) throw new Error("Documento não encontrado.");
     const { data: signed, error } = await context.supabase.storage
       .from("cliente-documentos")
       .createSignedUrl(data.storage_path, 300);
