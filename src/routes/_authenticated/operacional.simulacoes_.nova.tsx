@@ -1,7 +1,6 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { toast } from "sonner";
 import { assertModuloPermitido } from "@/lib/route-guards";
 
 import { Button } from "@/components/ui/button";
@@ -9,15 +8,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
-} from "@/components/ui/dialog";
 import { CurrencyInput } from "@/components/simulacao/currency-input";
 import { ToneBadge } from "@/components/crm/tone-badge";
 import { PRODUTOS } from "@/lib/simulacao/schemas";
 import { formatBRL, formatPercent } from "@/lib/simulacao/format";
 import { listarBancosAtivos } from "@/lib/simulacao/simulacoes.functions";
-import { enviarOtpEmail, validarOtpEmail } from "@/lib/simulacao/simulacoes.functions";
 import { compararBancosRapido, taxaAnoDeBanco } from "@/lib/simulacao/simulacao-rapida";
 
 export const Route = createFileRoute("/_authenticated/operacional/simulacoes_/nova")({
@@ -55,7 +50,6 @@ function Pagina() {
     prazo_meses: 360,
   });
   const [mostrarRapida, setMostrarRapida] = useState(false);
-  const [otpAberto, setOtpAberto] = useState(false);
 
   const { data: bancos } = useQuery({
     queryKey: ["bancos-ativos"],
@@ -95,10 +89,10 @@ function Pagina() {
     );
   }, [bancos, mostrarRapida, w.valor_financiamento, w.prazo_meses]);
 
-  function irParaPersonalizada(email: string) {
+  function irParaPersonalizada() {
     sessionStorage.setItem(
       "simulacao_wizard",
-      JSON.stringify({ ...w, email, prazo: w.prazo_meses, email_verificado_em: new Date().toISOString() }),
+      JSON.stringify({ ...w, prazo: w.prazo_meses }),
     );
     router.navigate({ to: "/operacional/simulacoes/completa" });
   }
@@ -190,7 +184,7 @@ function Pagina() {
             variant={modo === "rapida" ? "secondary" : "default"}
             className="h-12"
             disabled={!valido}
-            onClick={() => setOtpAberto(true)}
+            onClick={() => irParaPersonalizada()}
           >
             Simulação personalizada
           </Button>
@@ -229,88 +223,6 @@ function Pagina() {
           </div>
         )}
       </div>
-
-      <OtpDialog
-        aberto={otpAberto}
-        onClose={() => setOtpAberto(false)}
-        onValidado={irParaPersonalizada}
-      />
     </div>
-  );
-}
-
-function OtpDialog({
-  aberto,
-  onClose,
-  onValidado,
-}: {
-  aberto: boolean;
-  onClose: () => void;
-  onValidado: (email: string) => void;
-}) {
-  const [email, setEmail] = useState("");
-  const [codigo, setCodigo] = useState("");
-  const [enviado, setEnviado] = useState(false);
-  const [carregando, setCarregando] = useState(false);
-
-  async function enviar() {
-    if (!email) return;
-    setCarregando(true);
-    try {
-      await enviarOtpEmail({ data: { email } });
-      setEnviado(true);
-      toast.success("Código enviado para o e-mail informado.");
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Falha ao enviar código.");
-    } finally {
-      setCarregando(false);
-    }
-  }
-
-  async function validar() {
-    setCarregando(true);
-    try {
-      await validarOtpEmail({ data: { email, codigo } });
-      toast.success("E-mail verificado.");
-      onValidado(email);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Código inválido.");
-    } finally {
-      setCarregando(false);
-    }
-  }
-
-  return (
-    <Dialog open={aberto} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle className="text-primary">Solicitar Simulação Personalizada</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4">
-          <div className="space-y-1.5">
-            <Label>E-mail <span className="text-destructive">*</span></Label>
-            <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="cliente@email.com" />
-          </div>
-          <div className="space-y-1.5">
-            <Label>Código de verificação</Label>
-            <Input
-              value={codigo}
-              onChange={(e) => setCodigo(e.target.value.replace(/\D/g, "").slice(0, 6))}
-              placeholder="000000"
-              disabled={!enviado}
-            />
-          </div>
-        </div>
-        <DialogFooter>
-          <Button variant="ghost" onClick={onClose}>Cancelar</Button>
-          <Button variant="secondary" onClick={enviar} disabled={carregando || !email}>
-            {enviado ? "Reenviar código" : "Enviar código"}
-          </Button>
-          <Button onClick={validar} disabled={carregando || !enviado || codigo.length !== 6}>
-            Validar código
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
   );
 }
