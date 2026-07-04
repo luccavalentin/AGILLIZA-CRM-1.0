@@ -587,10 +587,14 @@ export const salvarFiltro = createServerFn({ method: "POST" })
 /** Exclui um relatório personalizado próprio. */
 export const excluirFiltro = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { id: string }) => d)
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
-    const { supabase } = context;
-    const { error } = await supabase.from("report_saved_filters").delete().eq("id", data.id);
+    const { supabase, userId } = context;
+    const { error } = await supabase
+      .from("report_saved_filters")
+      .delete()
+      .eq("id", data.id)
+      .eq("user_id", userId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
