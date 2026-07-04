@@ -93,25 +93,11 @@ function Pagina() {
   }
 
   return (
-    <div className="grid min-h-[calc(100vh-4rem)] grid-cols-1 md:grid-cols-2">
-      {/* Coluna esquerda — hero */}
-      <div className="hidden flex-col justify-between bg-muted p-10 md:flex">
-        <Logo />
-        <div className="space-y-4">
-          <h2 className="text-2xl font-semibold text-foreground">
-            Trabalhamos com os maiores bancos do mercado
-          </h2>
-          <p className="max-w-sm text-muted-foreground">
-            Simule em segundos e compare as melhores condições de financiamento imobiliário e home equity
-            para o seu cliente.
-          </p>
-        </div>
-        <p className="text-xs text-muted-foreground">Ambiente seguro · Dados protegidos (LGPD)</p>
-      </div>
-
-      {/* Coluna direita — wizard */}
-      <div className="flex flex-col gap-5 p-6 md:p-10">
+    <div className="mx-auto w-full max-w-3xl p-6 md:p-10">
+      {/* Wizard */}
+      <div className="flex flex-col gap-5">
         <h1 className="text-lg font-semibold text-foreground">Simular financiamento</h1>
+
 
         <div className="space-y-1.5">
           <Label>Produto</Label>
