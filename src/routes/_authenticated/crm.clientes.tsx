@@ -131,6 +131,13 @@ function Pagina() {
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">{c.responsavel_nome ?? "—"}</TableCell>
                   <TableCell><StatusBadge status={c.portal_acesso_ativo ? "ativo" : "inativo"} /></TableCell>
+                  <TableCell className="text-right">
+                    <ConfirmDelete
+                      titulo="Excluir cliente"
+                      descricao={`O cliente "${c.nome}" e seus registros vinculados serão removidos permanentemente.`}
+                      onConfirm={() => handleExcluir(c.id)}
+                    />
+                  </TableCell>
                 </TableRow>
               ))
             )}
