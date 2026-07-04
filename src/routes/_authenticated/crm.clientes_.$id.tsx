@@ -152,6 +152,11 @@ function Pagina() {
           <DocumentosTab clienteId={id} />
         </TabsContent>
 
+        <TabsContent value="vinculo" className="mt-4">
+          <VinculoTab clienteId={id} responsavelNome={det.responsavel_nome} />
+        </TabsContent>
+
+
         <TabsContent value="interacoes" className="mt-4">
           <InteracoesTab clienteId={id} />
         </TabsContent>
