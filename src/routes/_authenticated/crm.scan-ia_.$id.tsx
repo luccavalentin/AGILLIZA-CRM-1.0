@@ -79,9 +79,14 @@ function Pagina() {
         <div className="grid gap-6 lg:grid-cols-2">
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold">
-                {leitura.data.tipo_documento ?? "Documento"}
-              </h2>
+              <div>
+                <h2 className="text-sm font-semibold">
+                  {leitura.data.tipo_documento ?? "Documento"}
+                </h2>
+                <p className="text-xs text-muted-foreground">
+                  Enviado por {leitura.data.criador_nome ?? "—"} · {new Date(leitura.data.created_at).toLocaleString("pt-BR")}
+                </p>
+              </div>
               <Badge variant="outline">{leitura.data.status}</Badge>
             </div>
             <div className="overflow-hidden rounded-lg border border-border bg-muted">
