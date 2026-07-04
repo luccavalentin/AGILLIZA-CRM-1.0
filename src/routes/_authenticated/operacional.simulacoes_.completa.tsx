@@ -11,6 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CurrencyInput } from "@/components/simulacao/currency-input";
 import { ConsultandoOverlay } from "@/components/simulacao/consultando-overlay";
+import { ClienteCRMPicker } from "@/components/simulacao/cliente-crm-picker";
 import {
   completaSchema, ESTADOS_CIVIS, TIPOS_IMOVEL, USOS_IMOVEL, SITUACOES_IMOVEL, PRODUTOS,
 } from "@/lib/simulacao/schemas";
@@ -197,8 +198,31 @@ function Pagina() {
 
       {/* Bloco 2 — Titular */}
       <section className="space-y-4">
-        <h2 className="text-sm font-semibold text-foreground">Titular</h2>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <h2 className="text-sm font-semibold text-foreground">Titular</h2>
+          <div className="w-full sm:w-72">
+            <ClienteCRMPicker
+              selecionado={f.cliente_id ? f.nome_cliente : null}
+              onSelect={(c) => {
+                setF((prev) => ({
+                  ...prev,
+                  cliente_id: c.id,
+                  nome_cliente: c.nome ?? "",
+                  cpf_cnpj: c.documento ? maskCpfCnpj(c.documento) : "",
+                  email: c.email ?? "",
+                  celular: c.telefone_celular ? maskCelular(c.telefone_celular) : "",
+                  data_nascimento: c.data_nascimento ?? "",
+                  estado_civil: c.estado_civil ?? prev.estado_civil,
+                  renda_total: c.renda_total_declarada ?? prev.renda_total,
+                  possui_conjuge: c.estado_civil === "CA" || c.estado_civil === "UE",
+                }));
+                toast.success("Dados do cliente preenchidos.");
+              }}
+            />
+          </div>
+        </div>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+
           <Campo label={<>Nome <Ast /></>}>
             <Input value={f.nome_cliente} onChange={(e) => set("nome_cliente", e.target.value)} aria-invalid={!!erros.nome_cliente} />
             {err("nome_cliente")}

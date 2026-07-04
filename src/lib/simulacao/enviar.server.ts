@@ -3,7 +3,7 @@
  * Segue o fluxo Oportunidade → Simulação → Integração do contrato oficial.
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { chamarIntegracao, IntegracaoBancariaError } from "./homefin.server";
+import { chamarIntegracao, obterToken, IntegracaoBancariaError } from "./homefin.server";
 import { humanizarErroBanco } from "./bank-error-humanizer";
 
 interface EnviarArgs {
@@ -62,15 +62,23 @@ export async function enviarSimulacaoImpl({
   const ctx = { simulacao_id: simulacaoId, correspondente_id };
 
   try {
+    // Identificadores do parceiro/regional/usuário vêm da autenticação da integração
+    const auth = await obterToken();
+
     // 1) Oportunidade (idempotência: reutiliza se já existe)
     let idOportunidade = sim.homefin_id_oportunidade as string | null;
     if (!idOportunidade) {
-      const payload = {
+      const payload: Record<string, unknown> = {
         operacao: { idOperacao: String(sim.id_operacao_homefin) },
+        ...(auth.idRegional ? { regional: { idRegional: auth.idRegional } } : {}),
+        ...(auth.idParceiro ? { parceiro: { idParceiro: auth.idParceiro } } : {}),
+        ...(auth.idUsuarioParceiro
+          ? { usuarioParceiro: { idUsuarioParceiro: auth.idUsuarioParceiro } }
+          : {}),
         tipoImovel: { id: sim.tipo_imovel },
         usoImovel: { id: sim.uso_imovel },
         uf: { codigo: sim.uf },
-        situacaoImovel: { id: sim.situacao_imovel },
+        situacaoImovel: { codigo: sim.situacao_imovel },
         valorImovel: num(sim.valor_imovel),
         valorFinanciamento: num(sim.valor_financiamento),
         prazo: num(sim.prazo),
@@ -136,28 +144,31 @@ export async function enviarSimulacaoImpl({
         );
         const idSimulacao = String(simResp?.idSimulacao ?? "");
 
-        await chamarIntegracao<any>(
+        // A resposta da integração traz os valores retornados pelo banco
+        const integ = await chamarIntegracao<any>(
           `/oportunidade/${idOportunidade}/simulacao/${idSimulacao}/integracao`,
           "POST",
           {},
           ctx,
         );
 
+        const dados = integ ?? simResp;
+
         await supabase
           .from("simulacao_bancos")
           .update({
             homefin_id_simulacao_banco: idSimulacao,
             status_banco: "simulada",
-            raw_response: simResp,
+            raw_response: dados,
             simulado_em: new Date().toISOString(),
-            valor_parcela: simResp?.valorParcelaBanco ?? simResp?.valorParcelaSimulacao ?? null,
-            taxa_juros_ano: simResp?.taxaJurosAnoBanco ?? null,
-            prazo_pagamento_max: simResp?.prazoPagamentoBancoMax ?? null,
-            valor_financiamento_max: simResp?.valorFinanciamentoBancoMax ?? null,
-            valor_parcela_max: simResp?.valorParcelaBancoMax ?? null,
-            codigo_indexador: simResp?.codigoIndexadorBanco ?? null,
-            valor_iof: simResp?.valorIofBanco ?? null,
-            sistema_amortizacao_banco: simResp?.codigoSistemaAmortizacaoBanco ?? null,
+            valor_parcela: dados?.valorParcelaBanco ?? dados?.valorParcelaSimulacao ?? null,
+            taxa_juros_ano: dados?.taxaJurosAnoBanco ?? null,
+            prazo_pagamento_max: dados?.prazoPagamentoBancoMax ?? dados?.prazoPagamentoBanco ?? null,
+            valor_financiamento_max: dados?.valorFinanciamentoBancoMax ?? dados?.valorFinanciamentoBanco ?? null,
+            valor_parcela_max: dados?.valorParcelaBancoMax ?? null,
+            codigo_indexador: dados?.codigoIndexadorBanco ?? null,
+            valor_iof: dados?.valorIofBanco ?? null,
+            sistema_amortizacao_banco: dados?.codigoSistemaAmortizacaoBanco ?? null,
           })
           .eq("id", b.id);
         sucesso++;
@@ -189,7 +200,12 @@ export async function enviarSimulacaoImpl({
 
     return { oportunidade_id: idOportunidade, status: novoStatus, bancos: resultados };
   } catch (e) {
-    const msg = e instanceof IntegracaoBancariaError ? e.message : "Falha ao enviar ao banco.";
+    const msg =
+      e instanceof IntegracaoBancariaError
+        ? e.message
+        : e instanceof Error && e.message
+          ? e.message
+          : "Falha ao enviar ao banco.";
     await supabase.from("simulacoes").update({ status: "erro_banco", ultimo_erro: msg }).eq("id", simulacaoId);
     throw new Error(msg);
   }
