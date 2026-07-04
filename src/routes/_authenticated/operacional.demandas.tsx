@@ -9,6 +9,7 @@ import { listarDemandas, escalarDemanda, excluirDemanda } from "@/lib/operaciona
 import { NovaDemandaDialog } from "@/components/operacional/nova-demanda-dialog";
 import { SlaCountdown } from "@/components/operacional/sla-countdown";
 import { ToneBadge } from "@/components/crm/tone-badge";
+import { ConfirmDelete } from "@/components/shared/confirm-delete";
 import { PRIORIDADE, statusDemanda } from "@/components/operacional/status";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
