@@ -73,7 +73,7 @@ function Pagina() {
         <div className="flex items-center gap-2">
           <StatusBadge status={c.portal_acesso_ativo ? "ativo" : "inativo"} />
           <Button asChild variant="default">
-            <Link to="/operacional/simulacoes/nova" search={{ cliente: id } as any}>
+            <Link to="/operacional/simulacoes/nova">
               <Calculator className="size-4" /> Nova simulação personalizada
             </Link>
           </Button>
