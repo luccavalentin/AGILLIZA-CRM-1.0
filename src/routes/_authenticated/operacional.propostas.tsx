@@ -117,7 +117,7 @@ function Pagina() {
             )}
             {!isLoading && (data?.itens.length ?? 0) === 0 && (
               <TableRow>
-                <TableCell colSpan={5}>
+                <TableCell colSpan={6}>
                   <div className="flex flex-col items-center gap-3 py-12 text-center">
                     <FileText className="h-8 w-8 text-muted-foreground" />
                     <p className="text-sm text-muted-foreground">Nenhuma proposta encontrada.</p>
