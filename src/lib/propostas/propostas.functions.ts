@@ -130,6 +130,7 @@ export const listarSimulacoesElegiveis = createServerFn({ method: "GET" })
     const { data: jaProposta } = await supabase
       .from("propostas")
       .select("simulacao_id")
+      .neq("status", "cancelada")
       .in("simulacao_id", ids.length ? ids : ["00000000-0000-0000-0000-000000000000"]);
     const usadas = new Set((jaProposta ?? []).map((p: any) => p.simulacao_id));
     return (rows ?? [])
