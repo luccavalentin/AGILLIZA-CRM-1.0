@@ -591,6 +591,15 @@ export const excluirProposta = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
+    const { data: prop } = await context.supabase
+      .from("propostas")
+      .select("status")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (!prop) throw new Error("Proposta não encontrada.");
+    if (!["rascunho", "erro_envio"].includes(prop.status)) {
+      throw new Error("Só é possível excluir propostas em rascunho ou com erro de envio. Cancele a proposta.");
+    }
     const { error } = await context.supabase.from("propostas").delete().eq("id", data.id);
     if (error) throw error;
     return { ok: true };
