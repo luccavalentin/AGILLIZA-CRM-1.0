@@ -79,6 +79,7 @@ import { Route as AuthenticatedOperacionalPropostasKanbanRouteImport } from './r
 import { Route as AuthenticatedOperacionalPropostasEnviarRouteImport } from './routes/_authenticated/operacional.propostas_.enviar'
 import { Route as AuthenticatedOperacionalPropostasIdRouteImport } from './routes/_authenticated/operacional.propostas_.$id'
 import { Route as AuthenticatedOperacionalDemandasIdRouteImport } from './routes/_authenticated/operacional.demandas_.$id'
+import { Route as AuthenticatedCrmScanIaIdRouteImport } from './routes/_authenticated/crm.scan-ia_.$id'
 import { Route as AuthenticatedCrmClientesNovoRouteImport } from './routes/_authenticated/crm.clientes_.novo'
 import { Route as AuthenticatedCrmClientesIdRouteImport } from './routes/_authenticated/crm.clientes_.$id'
 import { Route as ApiPublicWebhookHomefinPropostaRouteImport } from './routes/api/public/webhook.homefin.proposta'
@@ -481,6 +482,12 @@ const AuthenticatedOperacionalDemandasIdRoute =
     path: '/operacional/demandas/$id',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedCrmScanIaIdRoute =
+  AuthenticatedCrmScanIaIdRouteImport.update({
+    id: '/crm/scan-ia_/$id',
+    path: '/crm/scan-ia/$id',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedCrmClientesNovoRoute =
   AuthenticatedCrmClientesNovoRouteImport.update({
     id: '/crm/clientes_/novo',
@@ -563,6 +570,7 @@ export interface FileRoutesByFullPath {
   '/relatorios/': typeof AuthenticatedRelatoriosIndexRoute
   '/crm/clientes/$id': typeof AuthenticatedCrmClientesIdRoute
   '/crm/clientes/novo': typeof AuthenticatedCrmClientesNovoRoute
+  '/crm/scan-ia/$id': typeof AuthenticatedCrmScanIaIdRoute
   '/operacional/demandas/$id': typeof AuthenticatedOperacionalDemandasIdRoute
   '/operacional/propostas/$id': typeof AuthenticatedOperacionalPropostasIdRoute
   '/operacional/propostas/enviar': typeof AuthenticatedOperacionalPropostasEnviarRoute
@@ -635,6 +643,7 @@ export interface FileRoutesByTo {
   '/relatorios': typeof AuthenticatedRelatoriosIndexRoute
   '/crm/clientes/$id': typeof AuthenticatedCrmClientesIdRoute
   '/crm/clientes/novo': typeof AuthenticatedCrmClientesNovoRoute
+  '/crm/scan-ia/$id': typeof AuthenticatedCrmScanIaIdRoute
   '/operacional/demandas/$id': typeof AuthenticatedOperacionalDemandasIdRoute
   '/operacional/propostas/$id': typeof AuthenticatedOperacionalPropostasIdRoute
   '/operacional/propostas/enviar': typeof AuthenticatedOperacionalPropostasEnviarRoute
@@ -711,6 +720,7 @@ export interface FileRoutesById {
   '/_authenticated/relatorios/': typeof AuthenticatedRelatoriosIndexRoute
   '/_authenticated/crm/clientes_/$id': typeof AuthenticatedCrmClientesIdRoute
   '/_authenticated/crm/clientes_/novo': typeof AuthenticatedCrmClientesNovoRoute
+  '/_authenticated/crm/scan-ia_/$id': typeof AuthenticatedCrmScanIaIdRoute
   '/_authenticated/operacional/demandas_/$id': typeof AuthenticatedOperacionalDemandasIdRoute
   '/_authenticated/operacional/propostas_/$id': typeof AuthenticatedOperacionalPropostasIdRoute
   '/_authenticated/operacional/propostas_/enviar': typeof AuthenticatedOperacionalPropostasEnviarRoute
@@ -787,6 +797,7 @@ export interface FileRouteTypes {
     | '/relatorios/'
     | '/crm/clientes/$id'
     | '/crm/clientes/novo'
+    | '/crm/scan-ia/$id'
     | '/operacional/demandas/$id'
     | '/operacional/propostas/$id'
     | '/operacional/propostas/enviar'
@@ -859,6 +870,7 @@ export interface FileRouteTypes {
     | '/relatorios'
     | '/crm/clientes/$id'
     | '/crm/clientes/novo'
+    | '/crm/scan-ia/$id'
     | '/operacional/demandas/$id'
     | '/operacional/propostas/$id'
     | '/operacional/propostas/enviar'
@@ -934,6 +946,7 @@ export interface FileRouteTypes {
     | '/_authenticated/relatorios/'
     | '/_authenticated/crm/clientes_/$id'
     | '/_authenticated/crm/clientes_/novo'
+    | '/_authenticated/crm/scan-ia_/$id'
     | '/_authenticated/operacional/demandas_/$id'
     | '/_authenticated/operacional/propostas_/$id'
     | '/_authenticated/operacional/propostas_/enviar'
@@ -1449,6 +1462,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOperacionalDemandasIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/crm/scan-ia_/$id': {
+      id: '/_authenticated/crm/scan-ia_/$id'
+      path: '/crm/scan-ia/$id'
+      fullPath: '/crm/scan-ia/$id'
+      preLoaderRoute: typeof AuthenticatedCrmScanIaIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/crm/clientes_/novo': {
       id: '/_authenticated/crm/clientes_/novo'
       path: '/crm/clientes/novo'
@@ -1560,6 +1580,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedVisaoGeralPainelRoute: typeof AuthenticatedVisaoGeralPainelRoute
   AuthenticatedCrmClientesIdRoute: typeof AuthenticatedCrmClientesIdRoute
   AuthenticatedCrmClientesNovoRoute: typeof AuthenticatedCrmClientesNovoRoute
+  AuthenticatedCrmScanIaIdRoute: typeof AuthenticatedCrmScanIaIdRoute
   AuthenticatedOperacionalDemandasIdRoute: typeof AuthenticatedOperacionalDemandasIdRoute
   AuthenticatedOperacionalPropostasIdRoute: typeof AuthenticatedOperacionalPropostasIdRoute
   AuthenticatedOperacionalPropostasEnviarRoute: typeof AuthenticatedOperacionalPropostasEnviarRoute
@@ -1608,6 +1629,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedVisaoGeralPainelRoute: AuthenticatedVisaoGeralPainelRoute,
   AuthenticatedCrmClientesIdRoute: AuthenticatedCrmClientesIdRoute,
   AuthenticatedCrmClientesNovoRoute: AuthenticatedCrmClientesNovoRoute,
+  AuthenticatedCrmScanIaIdRoute: AuthenticatedCrmScanIaIdRoute,
   AuthenticatedOperacionalDemandasIdRoute:
     AuthenticatedOperacionalDemandasIdRoute,
   AuthenticatedOperacionalPropostasIdRoute:
