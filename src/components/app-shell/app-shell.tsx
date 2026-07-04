@@ -100,14 +100,14 @@ export function AppShell({
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
           <SheetContent
             side="left"
-            style={{ background: "linear-gradient(180deg, #000a6e 0%, #00052e 100%)" }}
-            className="w-72 border-sidebar-border p-0 text-sidebar-foreground"
+            className="app-sidebar w-72 border-sidebar-border p-0 text-sidebar-foreground"
           >
             <SheetTitle className="sr-only">Menu de navegação</SheetTitle>
             <div className="flex h-16 items-center border-b border-sidebar-border px-4">
               <Logo variant="light" className="h-7" />
             </div>
-            <div className="h-[calc(100dvh-4rem)] overflow-y-auto">
+            <div className="sidebar-scroll h-[calc(100dvh-4rem)] overflow-y-auto">
+
               <SidebarNav nav={nav} onNavigate={() => setMobileOpen(false)} />
             </div>
           </SheetContent>
