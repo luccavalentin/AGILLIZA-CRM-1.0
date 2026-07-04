@@ -83,8 +83,7 @@ export const criarBackup = createServerFn({ method: "POST" })
       const manifesto: Record<string, number> = {};
       let total = 0;
       for (const tabela of TABELAS_BACKUP) {
-        const { count } = await supabase
-          .from(tabela)
+        const { count } = await (supabase.from(tabela as never) as any)
           .select("id", { count: "exact", head: true })
           .eq("correspondente_id", corr);
         const n = count ?? 0;
