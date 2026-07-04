@@ -238,7 +238,16 @@ export function ClienteForm({
           </div>
           <div className="space-y-1.5">
             <Label>Renda total declarada (R$) *</Label>
-            <Input value={v.renda_total_declarada} onChange={(e) => set("renda_total_declarada", e.target.value)} placeholder="0,00" />
+            <div className="relative">
+              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">R$</span>
+              <Input
+                inputMode="numeric"
+                className="pl-9"
+                value={v.renda_total_declarada}
+                onChange={(e) => set("renda_total_declarada", mascararMoedaBR(e.target.value))}
+                placeholder="0,00"
+              />
+            </div>
           </div>
           <div className="space-y-1.5">
             <Label>UF de interesse</Label>
