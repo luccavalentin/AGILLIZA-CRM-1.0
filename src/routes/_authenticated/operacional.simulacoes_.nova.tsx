@@ -195,7 +195,7 @@ function Pagina() {
           <div className="space-y-3 rounded-lg border border-border p-4">
             <div className="flex items-center justify-between">
               <h3 className="font-semibold text-foreground">Comparativo estimado</h3>
-              <span className="text-xs text-muted-foreground">Sistema SAC · {w.prazo_anos * 12} meses</span>
+              <span className="text-xs text-muted-foreground">Sistema SAC · {w.prazo_meses} meses</span>
             </div>
             {comparativo.length === 0 && (
               <p className="text-sm text-muted-foreground">
