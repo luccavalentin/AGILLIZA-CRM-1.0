@@ -107,6 +107,7 @@ function Pagina() {
                     key={c.id}
                     draggable
                     onDragStart={() => setArrastando({ id: c.id, status: c.status as PropostaStatus })}
+                    onDragEnd={() => setArrastando(null)}
                     onClick={() => router.navigate({ to: "/operacional/propostas/$id", params: { id: c.id } })}
                     className="cursor-grab rounded-md border border-border bg-card p-3 text-sm shadow-sm active:cursor-grabbing"
                   >
