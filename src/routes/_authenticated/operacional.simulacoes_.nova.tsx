@@ -91,14 +91,14 @@ function Pagina() {
         nome_banco: b.nome_banco,
         taxa_ano: taxaAnoDeBanco(b.codigo_banco),
       })),
-      { valor_financiamento: w.valor_financiamento, prazo_meses: w.prazo_anos * 12, sistema: "S" },
+      { valor_financiamento: w.valor_financiamento, prazo_meses: w.prazo_meses, sistema: "S" },
     );
-  }, [bancos, mostrarRapida, w.valor_financiamento, w.prazo_anos]);
+  }, [bancos, mostrarRapida, w.valor_financiamento, w.prazo_meses]);
 
   function irParaPersonalizada(email: string) {
     sessionStorage.setItem(
       "simulacao_wizard",
-      JSON.stringify({ ...w, email, prazo: w.prazo_anos * 12, email_verificado_em: new Date().toISOString() }),
+      JSON.stringify({ ...w, email, prazo: w.prazo_meses, email_verificado_em: new Date().toISOString() }),
     );
     router.navigate({ to: "/operacional/simulacoes/completa" });
   }
