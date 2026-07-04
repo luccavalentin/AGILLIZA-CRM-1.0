@@ -90,7 +90,7 @@ export function AppShell({
             )}
           >
             <Link to={"/dashboard" as string} aria-label="Ir para o início">
-              {hydrated && collapsed ? <BrandSymbol /> : <Logo className="h-7" />}
+              {hydrated && collapsed ? <BrandSymbol /> : <Logo variant="light" className="h-7" />}
             </Link>
           </div>
           <div className="flex-1 overflow-y-auto">
