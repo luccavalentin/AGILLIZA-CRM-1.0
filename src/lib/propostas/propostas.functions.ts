@@ -441,6 +441,13 @@ export const removerEnvolvido = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ context, data }) => {
+    const { data: env } = await context.supabase
+      .from("proposta_envolvidos")
+      .select("proposta_id")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (!env) throw new Error("Registro não encontrado.");
+    await assertPropostaEditavel(context.supabase, env.proposta_id);
     const { error } = await context.supabase.from("proposta_envolvidos").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
