@@ -15,6 +15,9 @@ import {
 import { SimulacaoStatusBadge } from "@/components/simulacao/status-badge";
 import { ConfirmDelete } from "@/components/shared/confirm-delete";
 import { formatBRL } from "@/lib/simulacao/format";
+import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 
 export const Route = createFileRoute("/_authenticated/operacional/simulacoes")({
   head: () => ({ meta: [{ title: "Simulações — Agilliza" }] }),
