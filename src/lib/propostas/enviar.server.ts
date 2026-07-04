@@ -4,7 +4,7 @@
  * cita o fornecedor.
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { chamarIntegracao, IntegracaoBancariaError } from "@/lib/simulacao/homefin.server";
+import { chamarIntegracao, IntegracaoBancariaError, sanitizarMensagemErro } from "@/lib/simulacao/homefin.server";
 import { transicaoPermitida, type PropostaStatus } from "./state-machine";
 
 /** Ordem de progressão do funil (para sincronização vinda do banco). */
