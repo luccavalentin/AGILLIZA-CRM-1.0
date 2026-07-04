@@ -83,6 +83,7 @@ function Pagina() {
                     key={t.id}
                     draggable
                     onDragStart={() => setArrastando({ id: t.id, status: t.status })}
+                    onDragEnd={() => setArrastando(null)}
                     className="overflow-hidden rounded-lg border border-border bg-card"
                   >
                     <div className={cn("h-[2px]", PRIORIDADE[t.prioridade].bar)} />
