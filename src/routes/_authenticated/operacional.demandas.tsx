@@ -5,7 +5,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { AlertTriangle } from "lucide-react";
 import { assertModuloPermitido } from "@/lib/route-guards";
-import { listarDemandas, escalarDemanda } from "@/lib/operacional/demandas.functions";
+import { listarDemandas, escalarDemanda, excluirDemanda } from "@/lib/operacional/demandas.functions";
 import { NovaDemandaDialog } from "@/components/operacional/nova-demanda-dialog";
 import { SlaCountdown } from "@/components/operacional/sla-countdown";
 import { ToneBadge } from "@/components/crm/tone-badge";
