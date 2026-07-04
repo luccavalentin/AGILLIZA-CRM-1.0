@@ -332,6 +332,7 @@ export const adicionarEnvolvido = createServerFn({ method: "POST" })
   )
   .handler(async ({ context, data }) => {
     const { supabase } = context;
+    await assertPropostaEditavel(supabase, data.proposta_id);
     const { data: row, error } = await supabase
       .from("proposta_envolvidos")
       .insert({ proposta_id: data.proposta_id, ...data.dados } as any)
