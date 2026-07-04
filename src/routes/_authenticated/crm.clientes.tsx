@@ -31,7 +31,9 @@ export const Route = createFileRoute("/_authenticated/crm/clientes")({
 
 function Pagina() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const listar = useServerFn(listarClientes);
+  const excluir = useServerFn(excluirCliente);
   const [q, setQ] = useState("");
   const [busca, setBusca] = useState("");
   const [pagina, setPagina] = useState(1);
@@ -41,6 +43,16 @@ function Pagina() {
     queryFn: () => listar({ data: { q: busca, pagina, porPagina: 20 } }),
     placeholderData: keepPreviousData,
   });
+
+  async function handleExcluir(id: string) {
+    try {
+      await excluir({ data: { id } });
+      toast.success("Cliente excluído.");
+      queryClient.invalidateQueries({ queryKey: ["clientes"] });
+    } catch {
+      toast.error("Não foi possível excluir o cliente.");
+    }
+  }
 
   return (
     <div className="space-y-4 p-4 sm:p-6">
