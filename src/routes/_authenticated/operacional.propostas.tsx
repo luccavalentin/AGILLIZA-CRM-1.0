@@ -25,6 +25,8 @@ export const Route = createFileRoute("/_authenticated/operacional/propostas")({
 
 function Pagina() {
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const excluir = useServerFn(excluirProposta);
   const [escopo, setEscopo] = useState<"todas" | "minhas">("todas");
   const [q, setQ] = useState("");
   const [busca, setBusca] = useState("");
@@ -33,6 +35,17 @@ function Pagina() {
     queryKey: ["propostas", escopo, busca],
     queryFn: () => listarPropostas({ data: { escopo, q: busca || undefined, pagina: 1, porPagina: 30 } }),
   });
+
+  async function handleExcluir(id: string) {
+    try {
+      await excluir({ data: { id } });
+      toast.success("Proposta excluída.");
+      queryClient.invalidateQueries({ queryKey: ["propostas"] });
+    } catch {
+      toast.error("Não foi possível excluir a proposta.");
+    }
+  }
+
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-6 p-4 md:p-6">
