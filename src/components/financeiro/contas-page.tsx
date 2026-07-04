@@ -49,6 +49,23 @@ export function ContasPage({ tipo }: { tipo: ContaTipo }) {
   const [baixarConta, setBaixarConta] = useState<any>(null);
   const [estorno, setEstorno] = useState<{ id: string; acao: "estornar" | "cancelar" } | null>(null);
   const [detalheId, setDetalheId] = useState<string | null>(null);
+  const [excluirAlvo, setExcluirAlvo] = useState<{ id: string; numero: string } | null>(null);
+
+  const queryClient = useQueryClient();
+  const excluir = useServerFn(excluirConta);
+
+  async function handleExcluir() {
+    if (!excluirAlvo) return;
+    try {
+      await excluir({ data: { tipo, id: excluirAlvo.id } });
+      toast.success("Conta excluída.");
+      queryClient.invalidateQueries({ queryKey: ["fin-contas"] });
+    } catch {
+      toast.error("Não foi possível excluir a conta.");
+    } finally {
+      setExcluirAlvo(null);
+    }
+  }
 
   const { data: cfg } = useQuery({ queryKey: ["fin-configs"], queryFn: () => listarConfigs() });
   const { data, isLoading } = useQuery({
