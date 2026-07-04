@@ -42,6 +42,7 @@ function Pagina() {
       refetch();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Falha ao verificar SLA.");
+    }
   }
 
   async function handleExcluir(id: string) {
@@ -52,7 +53,6 @@ function Pagina() {
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Não foi possível excluir a demanda.");
     }
-  }
   }
 
   return (
