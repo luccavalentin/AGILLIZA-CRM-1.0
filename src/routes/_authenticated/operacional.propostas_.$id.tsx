@@ -175,6 +175,7 @@ function AcoesTopo({ proposta, propostaId }: { proposta: any; propostaId: string
       toast.error(e instanceof Error ? e.message : "Falha ao enviar.");
     } finally {
       setBusy(false);
+    }
   }
 
   async function sincronizar() {
@@ -192,7 +193,6 @@ function AcoesTopo({ proposta, propostaId }: { proposta: any; propostaId: string
     } finally {
       setBusy(false);
     }
-  }
   }
 
   async function mover(novo: string) {
