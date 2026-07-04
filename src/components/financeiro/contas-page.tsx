@@ -1,7 +1,9 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { MoreHorizontal, Wallet } from "lucide-react";
-import { listarContas, listarConfigs, type ContaTipo } from "@/lib/financeiro/financeiro.functions";
+import { toast } from "sonner";
+import { listarContas, listarConfigs, excluirConta, type ContaTipo } from "@/lib/financeiro/financeiro.functions";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   Select,
@@ -18,6 +20,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { ContaStatusBadge } from "@/components/financeiro/status-badge";
 import { NovaContaDialog } from "@/components/financeiro/nova-conta-dialog";
 import { BaixarDialog } from "@/components/financeiro/baixar-dialog";
