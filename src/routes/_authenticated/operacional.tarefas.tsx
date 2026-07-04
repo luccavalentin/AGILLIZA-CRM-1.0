@@ -31,6 +31,7 @@ function Pagina() {
   const [escopo, setEscopo] = useState<"todas" | "minhas">("todas");
   const [q, setQ] = useState("");
   const [sel, setSel] = useState<string | null>(null);
+  const excluir = useServerFn(excluirTarefa);
 
   const { data, refetch } = useQuery({
     queryKey: ["tarefas", escopo, q],
@@ -38,6 +39,17 @@ function Pagina() {
   });
 
   const itens = data ?? [];
+
+  async function handleExcluir(id: string) {
+    try {
+      await excluir({ data: { id } });
+      toast.success("Tarefa excluída.");
+      refetch();
+    } catch {
+      toast.error("Não foi possível excluir a tarefa.");
+    }
+  }
+
 
   return (
     <div className="space-y-4 p-4 md:p-6">
