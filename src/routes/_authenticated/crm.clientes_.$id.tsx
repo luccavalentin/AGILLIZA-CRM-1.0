@@ -97,6 +97,7 @@ function Pagina() {
           <TabsTrigger value="resumo">Resumo</TabsTrigger>
           <TabsTrigger value="dados">Dados</TabsTrigger>
           <TabsTrigger value="documentos">Documentos</TabsTrigger>
+          <TabsTrigger value="vinculo">Vínculo de atendimento</TabsTrigger>
           <TabsTrigger value="interacoes">Interações</TabsTrigger>
           <TabsTrigger value="historico">Histórico</TabsTrigger>
         </TabsList>
