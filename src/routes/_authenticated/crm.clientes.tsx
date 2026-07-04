@@ -92,6 +92,7 @@ function Pagina() {
               <TableHead>Etapa</TableHead>
               <TableHead>Responsável</TableHead>
               <TableHead>Portal</TableHead>
+              <TableHead className="w-12 text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
