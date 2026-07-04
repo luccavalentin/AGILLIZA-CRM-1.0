@@ -11,6 +11,8 @@ export interface LeituraLista {
   proposta_id: string | null;
   created_at: string;
   total_campos: number;
+  criador_id: string | null;
+  criador_nome: string | null;
 }
 
 export interface CampoExtraido {
@@ -29,6 +31,8 @@ export interface LeituraDetalhe {
   created_at: string;
   campos: CampoExtraido[];
   arquivo_assinado: string | null;
+  criador_id: string | null;
+  criador_nome: string | null;
 }
 
 async function correspondenteDoUsuario(
