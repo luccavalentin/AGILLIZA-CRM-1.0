@@ -87,7 +87,7 @@ export function AppShell({
               {hydrated && collapsed ? <BrandSymbol /> : <Logo variant="light" className="h-7" />}
             </Link>
           </div>
-          <div className="flex-1 overflow-y-auto">
+          <div className="sidebar-scroll flex-1 overflow-y-auto">
             {hydrated && collapsed ? (
               <SidebarRail nav={nav} />
             ) : (
