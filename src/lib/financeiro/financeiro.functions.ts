@@ -603,11 +603,11 @@ export const obterKpisFinanceiros = createServerFn({ method: "GET" })
     meses.forEach((m) => (mapMes[m] = { receita: 0, despesa: 0 }));
     (recRealizado.data ?? []).forEach((r: any) => {
       const m = (r.data_pagamento ?? "").slice(0, 7);
-      if (mapMes[m]) mapMes[m].receita += Number(r.valor);
+      if (mapMes[m]) mapMes[m].receita += Number(r.valor_pago ?? 0);
     });
     (payRealizado.data ?? []).forEach((r: any) => {
       const m = (r.data_pagamento ?? "").slice(0, 7);
-      if (mapMes[m]) mapMes[m].despesa += Number(r.valor);
+      if (mapMes[m]) mapMes[m].despesa += Number(r.valor_pago ?? 0);
     });
     const receitaDespesaMensal = meses.map((m) => ({ mes: m, receita: mapMes[m].receita, despesa: mapMes[m].despesa }));
 
