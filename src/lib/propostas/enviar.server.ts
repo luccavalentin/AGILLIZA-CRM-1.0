@@ -66,9 +66,17 @@ export async function enviarPropostaImpl({
     .select("id, status")
     .eq("proposta_id", propostaId)
     .eq("obrigatorio", true);
-  const pendentes = (docsObrig ?? []).filter((d: any) => d.status === "pendente");
-  if (pendentes.length > 0) {
-    throw new Error(`Existem ${pendentes.length} documento(s) obrigatório(s) pendente(s).`);
+  // valida a transição pela máquina de estados (só rascunho/erro_envio podem enviar)
+  if (!transicaoPermitida(prop.status as PropostaStatus, "enviada_banco")) {
+    throw new Error("Esta proposta não pode ser enviada no estado atual.");
+  }
+
+  // documentos obrigatórios pendentes OU reprovados bloqueiam o envio
+  const bloqueantes = (docsObrig ?? []).filter(
+    (d: any) => d.status === "pendente" || d.status === "reprovado",
+  );
+  if (bloqueantes.length > 0) {
+    throw new Error(`Existem ${bloqueantes.length} documento(s) obrigatório(s) pendente(s) ou reprovado(s).`);
   }
 
   const { data: bancos } = await supabase
