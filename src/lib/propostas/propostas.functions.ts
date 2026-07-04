@@ -32,6 +32,19 @@ async function correspondenteId(supabase: any, userId: string): Promise<string> 
   return data as string;
 }
 
+/** Garante que a proposta ainda aceita edição de dados (rascunho / aguardando_documentos). */
+async function assertPropostaEditavel(supabase: any, propostaId: string): Promise<void> {
+  const { data: prop } = await supabase
+    .from("propostas")
+    .select("status")
+    .eq("id", propostaId)
+    .maybeSingle();
+  if (!prop) throw new Error("Proposta não encontrada.");
+  if (!STATUS_EDITAVEIS.includes(prop.status as PropostaStatus)) {
+    throw new Error("Esta proposta não pode mais ser editada no estado atual.");
+  }
+}
+
 /** ===== Listagem ===== */
 export const listarPropostas = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
