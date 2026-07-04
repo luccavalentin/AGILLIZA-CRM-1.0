@@ -521,8 +521,13 @@ export const registrarExport = createServerFn({ method: "POST" })
 export const listarExportacoes = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { supabase } = context;
-    const { data } = await supabase.from("report_exports").select("*").order("created_at", { ascending: false }).limit(200);
+    const { supabase, userId } = context;
+    const { data } = await supabase
+      .from("report_exports")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(200);
     return (data ?? []) as any[];
   });
 
