@@ -237,7 +237,8 @@ async function montarEtapas(cid: string) {
 
   const lista = stages ?? [];
   const stageAtual = lista.find((s) => s.id === atual?.stage_id);
-  const ordemAtual = stageAtual?.ordem ?? 0;
+  // Cliente sem linha de pipeline: assume a primeira etapa como "atual".
+  const ordemAtual = stageAtual?.ordem ?? (lista.length > 0 ? lista[0].ordem : 0);
   const primeiraData = new Map<string, string>();
   for (const h of hist ?? []) {
     if (!primeiraData.has(h.stage_id)) primeiraData.set(h.stage_id, h.created_at);
