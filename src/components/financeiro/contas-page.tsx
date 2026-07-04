@@ -194,7 +194,7 @@ export function ContasPage({ tipo }: { tipo: ContaTipo }) {
                           Cancelar
                         </DropdownMenuItem>
                       )}
-                      <DropdownMenuItem className="text-destructive" onClick={() => setExcluirAlvo({ id: c.id, numero: c.numero })}>
+                      <DropdownMenuItem className="text-destructive" onClick={() => setExcluirAlvo({ id: c.id, numero: c.numero ?? "" })}>
                         Excluir
                       </DropdownMenuItem>
                     </DropdownMenuContent>
