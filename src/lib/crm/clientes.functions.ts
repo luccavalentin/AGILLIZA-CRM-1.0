@@ -661,7 +661,14 @@ export const desvincularParceiro = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
-    const { error } = await context.supabase.from("cliente_parceiros").delete().eq("id", data.id);
+    const { supabase, userId } = context;
+    const { data: corr } = await supabase.rpc("correspondente_do_usuario", { _user_id: userId });
+    if (!corr) throw new Error("Sem correspondente.");
+    const { error } = await supabase
+      .from("cliente_parceiros")
+      .delete()
+      .eq("id", data.id)
+      .eq("correspondente_id", corr);
     if (error) throw error;
     return { ok: true };
   });
