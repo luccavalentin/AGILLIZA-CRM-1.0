@@ -26,6 +26,7 @@ function Pagina() {
   const [escopo, setEscopo] = useState<"minhas" | "equipe">("equipe");
   const [q, setQ] = useState("");
   const escalarFn = useServerFn(escalarDemanda);
+  const excluir = useServerFn(excluirDemanda);
 
   const { data, refetch } = useQuery({
     queryKey: ["demandas", escopo, q],
