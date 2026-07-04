@@ -80,11 +80,11 @@ function SidebarLink({
         "group relative flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
         active
           ? "bg-sidebar-accent text-sidebar-accent-foreground"
-          : "text-sidebar-foreground/80 hover:bg-accent hover:text-sidebar-foreground dark:hover:bg-white/5",
+          : "text-sidebar-foreground/80 hover:bg-white/10 hover:text-sidebar-foreground",
       )}
     >
       {active && (
-        <span className="absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-full bg-primary" />
+        <span className="absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-full bg-sidebar-primary" />
       )}
       <Icon
         className={cn(
@@ -94,7 +94,7 @@ function SidebarLink({
       />
       <span className="truncate">{item.label}</span>
       {item.badge && (
-        <span className="ml-auto rounded-full bg-primary px-1.5 text-[10px] font-semibold text-primary-foreground">
+        <span className="ml-auto rounded-full bg-sidebar-primary px-1.5 text-[10px] font-semibold text-sidebar-primary-foreground">
           {item.badge}
         </span>
       )}
