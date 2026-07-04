@@ -175,7 +175,24 @@ function AcoesTopo({ proposta, propostaId }: { proposta: any; propostaId: string
       toast.error(e instanceof Error ? e.message : "Falha ao enviar.");
     } finally {
       setBusy(false);
+  }
+
+  async function sincronizar() {
+    setBusy(true);
+    try {
+      const r = await sincronizarFn({ data: { proposta_id: propostaId } });
+      toast.success(
+        r.atualizado
+          ? `Situação atualizada${r.etapa ? `: ${r.etapa}` : ""}.`
+          : "Nenhuma novidade do banco.",
+      );
+      qc.invalidateQueries({ queryKey: ["proposta", propostaId] });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao consultar o banco.");
+    } finally {
+      setBusy(false);
     }
+  }
   }
 
   async function mover(novo: string) {
