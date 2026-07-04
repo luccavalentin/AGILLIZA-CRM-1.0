@@ -428,6 +428,7 @@ export const salvarIq = createServerFn({ method: "POST" })
       .parse(data),
   )
   .handler(async ({ context, data }) => {
+    await assertPropostaEditavel(context.supabase, data.proposta_id);
     const { error } = await context.supabase
       .from("propostas")
       .update({ iq_nome: data.iq_nome ?? null, iq_comentario: data.iq_comentario ?? null } as any)
