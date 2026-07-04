@@ -26,7 +26,10 @@ export const CurrencyInput = forwardRef<HTMLInputElement, CurrencyInputProps>(
           className={`pl-9 tabular-nums ${className ?? ""}`}
           placeholder={placeholder}
           value={value ? maskBRLInput(value) : ""}
-          onChange={(e) => onChange(parseBRL(e.target.value))}
+          onChange={(e) => {
+            const digitos = e.target.value.replace(/\D/g, "");
+            onChange(digitos ? Number(digitos) / 100 : 0);
+          }}
           {...rest}
         />
       </div>
