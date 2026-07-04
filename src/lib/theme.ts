@@ -34,6 +34,7 @@ export function toggleTheme(): Theme {
 
 /**
  * Snippet executado no <head> antes da hidratação para evitar flash.
- * Usa preferência salva ou, na ausência, o `prefers-color-scheme`.
+ * Padrão sempre CLARO (cores da marca Agilliza). Só aplica escuro quando o
+ * usuário escolhe explicitamente pelo botão de tema.
  */
-export const THEME_INIT_SCRIPT = `(function(){try{var t=localStorage.getItem('${STORAGE_KEY}');if(!t){t=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}if(t==='dark'){document.documentElement.classList.add('dark');}}catch(e){}})();`;
+export const THEME_INIT_SCRIPT = `(function(){try{var t=localStorage.getItem('${STORAGE_KEY}');if(t==='dark'){document.documentElement.classList.add('dark');}else{document.documentElement.classList.remove('dark');}}catch(e){}})();`;
