@@ -1,14 +1,17 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { Plus, Search, FileText, KanbanSquare } from "lucide-react";
+import { toast } from "sonner";
 import { assertModuloPermitido } from "@/lib/route-guards";
-import { listarPropostas } from "@/lib/propostas/propostas.functions";
+import { listarPropostas, excluirProposta } from "@/lib/propostas/propostas.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { PropostaStatusBadge } from "@/components/propostas/status-badge";
+import { ConfirmDelete } from "@/components/shared/confirm-delete";
 import { formatBRL } from "@/lib/simulacao/format";
 
 export const Route = createFileRoute("/_authenticated/operacional/propostas")({
