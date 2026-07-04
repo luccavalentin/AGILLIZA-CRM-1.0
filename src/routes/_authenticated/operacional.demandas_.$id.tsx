@@ -104,7 +104,7 @@ function Pagina() {
           <div><span className="text-muted-foreground">Responsável:</span> {data?.nome_responsavel ?? "—"}</div>
           <div><span className="text-muted-foreground">Cliente:</span> {d.clientes?.nome ?? "—"}</div>
           <div><span className="text-muted-foreground">Tipo:</span> {d.tipo}</div>
-          <div><SlaCountdown inicio={d.sla_inicio} prazo={d.prazo_sla} concluida={d.status === "concluida"} /></div>
+          <div><SlaCountdown inicio={d.sla_inicio} prazo={d.prazo_sla} concluida={d.status === "concluida"} concluidaEm={d.concluida_em} /></div>
         </div>
       </div>
 
