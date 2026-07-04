@@ -32,10 +32,22 @@ function Pagina() {
   const [escopo, setEscopo] = useState<"todas" | "minhas">("todas");
   const [q, setQ] = useState("");
   const [busca, setBusca] = useState("");
+  const [desde, setDesde] = useState("");
+  const [ate, setAte] = useState("");
 
   const { data, isLoading } = useQuery({
-    queryKey: ["simulacoes", escopo, busca],
-    queryFn: () => listarSimulacoes({ data: { escopo, q: busca || undefined, pagina: 1, porPagina: 30 } }),
+    queryKey: ["simulacoes", escopo, busca, desde, ate],
+    queryFn: () =>
+      listarSimulacoes({
+        data: {
+          escopo,
+          q: busca || undefined,
+          desde: desde || undefined,
+          ate: ate || undefined,
+          pagina: 1,
+          porPagina: 30,
+        },
+      }),
   });
 
   async function handleExcluir(id: string) {
