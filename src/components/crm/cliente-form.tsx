@@ -114,8 +114,25 @@ export function ClienteForm({
     uf: enderecoInicial?.uf ?? "",
   });
   const [portal, setPortal] = useState(Boolean(portalAtivo));
+  const [portalSalvando, setPortalSalvando] = useState(false);
   const [salvando, setSalvando] = useState(false);
   const [buscandoCep, setBuscandoCep] = useState(false);
+
+  async function alternarPortal(ativo: boolean) {
+    if (!v.id) return;
+    setPortal(ativo);
+    setPortalSalvando(true);
+    try {
+      await definirPortal({ data: { cliente_id: v.id, ativo } });
+      toast.success(ativo ? "Acesso ao portal habilitado." : "Acesso ao portal desabilitado.");
+      qc.invalidateQueries({ queryKey: ["cliente", v.id] });
+    } catch (err: any) {
+      setPortal(!ativo);
+      toast.error(err?.message ?? "Não foi possível salvar o acesso.");
+    } finally {
+      setPortalSalvando(false);
+    }
+  }
   const set = <K extends keyof ClienteFormValues>(k: K, val: ClienteFormValues[K]) =>
     setV((prev) => ({ ...prev, [k]: val }));
 
