@@ -46,6 +46,19 @@ function config() {
   return { base: base.replace(/\/$/, ""), secretId, secretKey };
 }
 
+/**
+ * Remove qualquer referência de infraestrutura de mensagens exibidas ao usuário
+ * (marca branca). Nunca vazar nomes de provedores/plataforma.
+ */
+export function sanitizarMensagemErro(msg: string | null | undefined): string {
+  const fallback = "Não foi possível enviar ao banco. Tente novamente em instantes.";
+  if (!msg) return fallback;
+  if (/supabase|lovable|service[_ ]role|environment variable|cloud/i.test(msg)) {
+    return fallback;
+  }
+  return msg;
+}
+
 async function registrarLog(entrada: {
   simulacao_id?: string | null;
   correspondente_id?: string | null;
