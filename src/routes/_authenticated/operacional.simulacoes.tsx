@@ -137,6 +137,13 @@ function Pagina() {
                 <TableCell className="text-right tabular-nums">{formatBRL(s.valor_imovel)}</TableCell>
                 <TableCell className="text-right tabular-nums">{s.prazo ? `${s.prazo}m` : "—"}</TableCell>
                 <TableCell><SimulacaoStatusBadge status={s.status} /></TableCell>
+                <TableCell className="text-right">
+                  <ConfirmDelete
+                    titulo="Excluir simulação"
+                    descricao={`A simulação ${s.numero_simulacao} será removida permanentemente.`}
+                    onConfirm={() => handleExcluir(s.id)}
+                  />
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
