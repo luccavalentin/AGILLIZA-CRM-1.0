@@ -93,6 +93,7 @@ export const listarDemandas = createServerFn({ method: "GET" })
       nome_responsavel: r.responsavel_id ? nomes.get(r.responsavel_id) ?? null : null,
       prazo_sla: r.prazo_sla,
       sla_inicio: r.sla_inicio,
+      concluida_em: r.concluida_em ?? null,
       escalonada: r.escalonada,
       created_at: r.created_at,
     }));
