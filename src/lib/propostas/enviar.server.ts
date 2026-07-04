@@ -5,6 +5,34 @@
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { chamarIntegracao, IntegracaoBancariaError } from "@/lib/simulacao/homefin.server";
+import { transicaoPermitida, type PropostaStatus } from "./state-machine";
+
+/** Ordem de progressão do funil (para sincronização vinda do banco). */
+const ORDEM_STATUS: PropostaStatus[] = [
+  "rascunho",
+  "enviada_banco",
+  "em_analise_credito",
+  "credito_aprovado",
+  "aguardando_documentos",
+  "engenharia_vistoria",
+  "analise_juridica",
+  "contrato_emitido",
+  "registrado",
+];
+
+/** Deriva o status interno a partir do nome da etapa ativa retornada pelo banco. */
+function statusDaEtapa(nomeEtapa: string | null): PropostaStatus | null {
+  if (!nomeEtapa) return null;
+  const n = nomeEtapa.toLowerCase();
+  if (n.includes("registr")) return "registrado";
+  if (n.includes("contrato")) return "contrato_emitido";
+  if (n.includes("jurídic") || n.includes("juridic")) return "analise_juridica";
+  if (n.includes("engenharia") || n.includes("vistoria") || n.includes("avaliaç")) return "engenharia_vistoria";
+  if (n.includes("document")) return "aguardando_documentos";
+  if (n.includes("aprov")) return "credito_aprovado";
+  if (n.includes("análise") || n.includes("analise") || n.includes("crédito") || n.includes("credito")) return "em_analise_credito";
+  return null;
+}
 
 interface EnviarArgs {
   propostaId: string;
