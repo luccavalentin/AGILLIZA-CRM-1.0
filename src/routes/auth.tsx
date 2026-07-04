@@ -80,7 +80,6 @@ function AuthPage() {
     const form = new FormData(e.currentTarget);
     const nome = String(form.get("nome"));
     const email = String(form.get("email"));
-    const telefone = String(form.get("telefone"));
     const senha = String(form.get("senha"));
     const confirmar = String(form.get("confirmar"));
     const aceite = form.get("aceite");
