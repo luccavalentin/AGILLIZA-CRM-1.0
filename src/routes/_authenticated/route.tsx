@@ -28,10 +28,14 @@ function InternalLayout() {
   const sessaoQuery = useQuery({
     queryKey: ["minha-sessao"],
     queryFn: () => getMinhaSessao(),
+    retry: 1,
+    staleTime: 60_000,
   });
   const permsQuery = useQuery({
     queryKey: ["minhas-permissoes"],
     queryFn: () => getMinhasPermissoes(),
+    retry: 1,
+    staleTime: 60_000,
   });
 
   const navFiltrada = useMemo(() => {
