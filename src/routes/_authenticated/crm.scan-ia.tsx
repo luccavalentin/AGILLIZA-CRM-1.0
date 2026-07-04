@@ -18,11 +18,13 @@ import {
 } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 import { assertModuloPermitido } from "@/lib/route-guards";
+import { ConfirmDelete } from "@/components/shared/confirm-delete";
 import {
   contextoScanIa,
   listarLeituras,
   criarLeitura,
   processarLeitura,
+  excluirLeitura,
 } from "@/lib/crm/scan-ia.functions";
 
 export const Route = createFileRoute("/_authenticated/crm/scan-ia")({
