@@ -1,12 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { KanbanSquare } from "lucide-react";
+import { toast } from "sonner";
 import { assertModuloPermitido } from "@/lib/route-guards";
-import { listarTarefas } from "@/lib/operacional/tarefas.functions";
+import { listarTarefas, excluirTarefa } from "@/lib/operacional/tarefas.functions";
 import { NovaTarefaDialog } from "@/components/operacional/nova-tarefa-dialog";
 import { TarefaDrawer } from "@/components/operacional/tarefa-drawer";
 import { ToneBadge } from "@/components/crm/tone-badge";
+import { ConfirmDelete } from "@/components/shared/confirm-delete";
 import { PRIORIDADE, statusTarefa } from "@/components/operacional/status";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
