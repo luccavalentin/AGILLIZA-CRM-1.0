@@ -90,9 +90,11 @@ export function ClienteForm({
   enderecoInicial?: { cep?: string; logradouro?: string; numero?: string; bairro?: string; cidade?: string; uf?: string } | null;
 }) {
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const criar = useServerFn(criarCliente);
   const atualizar = useServerFn(atualizarCliente);
   const salvarEnd = useServerFn(salvarEndereco);
+  const definirPortal = useServerFn(definirAcessoPortal);
 
   const [v, setV] = useState<ClienteFormValues>(() => {
     const base = { ...emptyValues, ...inicial };
