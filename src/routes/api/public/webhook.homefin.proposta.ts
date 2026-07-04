@@ -13,13 +13,15 @@ export const Route = createFileRoute("/api/public/webhook/homefin/proposta")({
         const signature = request.headers.get("x-homefin-signature") ?? "";
         const body = await request.text();
 
-        if (secret) {
-          const expected = createHmac("sha256", secret).update(body).digest("hex");
-          const sig = Buffer.from(signature);
-          const exp = Buffer.from(expected);
-          if (sig.length !== exp.length || !timingSafeEqual(sig, exp)) {
-            return new Response("Invalid signature", { status: 401 });
-          }
+        // Fail-closed: sem segredo configurado, o webhook não é confiável.
+        if (!secret) {
+          return new Response("Webhook secret not configured", { status: 503 });
+        }
+        const expected = createHmac("sha256", secret).update(body).digest("hex");
+        const sig = Buffer.from(signature);
+        const exp = Buffer.from(expected);
+        if (sig.length !== exp.length || !timingSafeEqual(sig, exp)) {
+          return new Response("Invalid signature", { status: 401 });
         }
 
         let payload: any;
