@@ -225,7 +225,7 @@ export const baixarConta = createServerFn({ method: "POST" })
 
     const novoPago = Number(conta.valor_pago) + data.valor;
     const quitada = novoPago >= Number(conta.valor) - 0.005;
-    const novoStatus = quitada ? (data.tipo === "pagar" ? "paga" : "paga") : "parcial";
+    const novoStatus = quitada ? "paga" : "parcial";
 
     const { error: e2 } = await supabase
       .from(TABELA[data.tipo])
