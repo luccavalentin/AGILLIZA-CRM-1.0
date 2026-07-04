@@ -10,6 +10,7 @@ import { PipelineTimeline } from "@/components/crm/pipeline-timeline";
 import { ClienteForm } from "@/components/crm/cliente-form";
 import { DocumentosTab } from "@/components/crm/documentos-tab";
 import { InteracoesTab } from "@/components/crm/interacoes-tab";
+import { VinculoTab } from "@/components/crm/vinculo-tab";
 import { StatusBadge } from "@/components/crm/tone-badge";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import {
@@ -72,8 +73,10 @@ function Pagina() {
         </div>
         <div className="flex items-center gap-2">
           <StatusBadge status={c.portal_acesso_ativo ? "ativo" : "inativo"} />
-          <Button variant="default" disabled title="Disponível na Etapa 04">
-            <Calculator className="size-4" /> Nova simulação personalizada
+          <Button asChild variant="default">
+            <Link to="/operacional/simulacoes/nova">
+              <Calculator className="size-4" /> Nova simulação personalizada
+            </Link>
           </Button>
         </div>
       </div>
@@ -94,6 +97,7 @@ function Pagina() {
           <TabsTrigger value="resumo">Resumo</TabsTrigger>
           <TabsTrigger value="dados">Dados</TabsTrigger>
           <TabsTrigger value="documentos">Documentos</TabsTrigger>
+          <TabsTrigger value="vinculo">Vínculo de atendimento</TabsTrigger>
           <TabsTrigger value="interacoes">Interações</TabsTrigger>
           <TabsTrigger value="historico">Histórico</TabsTrigger>
         </TabsList>
@@ -147,6 +151,11 @@ function Pagina() {
         <TabsContent value="documentos" className="mt-4">
           <DocumentosTab clienteId={id} />
         </TabsContent>
+
+        <TabsContent value="vinculo" className="mt-4">
+          <VinculoTab clienteId={id} responsavelNome={det.responsavel_nome} />
+        </TabsContent>
+
 
         <TabsContent value="interacoes" className="mt-4">
           <InteracoesTab clienteId={id} />

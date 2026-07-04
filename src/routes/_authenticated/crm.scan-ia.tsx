@@ -18,11 +18,13 @@ import {
 } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 import { assertModuloPermitido } from "@/lib/route-guards";
+import { ConfirmDelete } from "@/components/shared/confirm-delete";
 import {
   contextoScanIa,
   listarLeituras,
   criarLeitura,
   processarLeitura,
+  excluirLeitura,
 } from "@/lib/crm/scan-ia.functions";
 
 export const Route = createFileRoute("/_authenticated/crm/scan-ia")({
@@ -60,6 +62,15 @@ function Pagina() {
       qc.invalidateQueries({ queryKey: ["scan-ia-leituras"] });
     },
     onError: (e: any) => toast.error(e?.message ?? "Falha ao processar."),
+  });
+
+  const excluir = useMutation({
+    mutationFn: (id: string) => excluirLeitura({ data: { id } }),
+    onSuccess: () => {
+      toast.success("Leitura excluída (registrada em auditoria).");
+      qc.invalidateQueries({ queryKey: ["scan-ia-leituras"] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Falha ao excluir."),
   });
 
   async function enviarArquivo(file: File) {
@@ -181,6 +192,7 @@ function Pagina() {
                 <TableHead>Documento</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-center">Campos</TableHead>
+                <TableHead>Enviado por</TableHead>
                 <TableHead>Data</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
@@ -196,6 +208,7 @@ function Pagina() {
                     ) : null}
                   </TableCell>
                   <TableCell className="text-center">{l.total_campos}</TableCell>
+                  <TableCell className="text-muted-foreground">{l.criador_nome ?? "—"}</TableCell>
                   <TableCell className="text-muted-foreground">
                     {new Date(l.created_at).toLocaleString("pt-BR")}
                   </TableCell>
@@ -216,6 +229,11 @@ function Pagina() {
                           Revisar <ChevronRight className="ml-1 h-4 w-4" />
                         </Link>
                       </Button>
+                      <ConfirmDelete
+                        titulo="Excluir leitura"
+                        descricao="A leitura e seus campos serão removidos. A exclusão fica registrada nos logs de auditoria."
+                        onConfirm={() => excluir.mutateAsync(l.id).then(() => undefined)}
+                      />
                     </div>
                   </TableCell>
                 </TableRow>

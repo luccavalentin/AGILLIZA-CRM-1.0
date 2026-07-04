@@ -343,6 +343,8 @@ const listarSchema = z.object({
   q: z.string().optional(),
   status: z.string().optional(),
   escopo: z.enum(["todas", "minhas"]).default("todas"),
+  desde: z.string().optional(),
+  ate: z.string().optional(),
   pagina: z.number().int().min(1).default(1),
   porPagina: z.number().int().min(1).max(100).default(20),
 });
@@ -366,6 +368,8 @@ export const listarSimulacoes = createServerFn({ method: "GET" })
 
     if (data.escopo === "minhas") query = query.eq("usuario_criador_id", userId);
     if (data.status) query = query.eq("status", data.status as any);
+    if (data.desde) query = query.gte("created_at", data.desde);
+    if (data.ate) query = query.lte("created_at", `${data.ate}T23:59:59.999`);
     if (data.q) {
       const digitos = data.q.replace(/\D/g, "");
       const filtros = [`numero_simulacao.ilike.%${data.q}%`, `nome_cliente.ilike.%${data.q}%`];

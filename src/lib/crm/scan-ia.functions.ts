@@ -11,6 +11,8 @@ export interface LeituraLista {
   proposta_id: string | null;
   created_at: string;
   total_campos: number;
+  criador_id: string | null;
+  criador_nome: string | null;
 }
 
 export interface CampoExtraido {
@@ -29,6 +31,8 @@ export interface LeituraDetalhe {
   created_at: string;
   campos: CampoExtraido[];
   arquivo_assinado: string | null;
+  criador_id: string | null;
+  criador_nome: string | null;
 }
 
 async function correspondenteDoUsuario(
@@ -62,14 +66,25 @@ export const listarLeituras = createServerFn({ method: "GET" })
     const { data, error } = await supabase
       .from("scan_ia_leituras")
       .select(
-        "id, tipo_documento, status, erro, cliente_id, proposta_id, created_at, scan_ia_campos_extraidos(count)",
+        "id, tipo_documento, status, erro, cliente_id, proposta_id, created_at, criador_id, scan_ia_campos_extraidos(count)",
       )
       .eq("correspondente_id", corr)
       .order("created_at", { ascending: false })
       .limit(200);
     if (error) throw error;
 
-    return (data ?? []).map((r: any) => ({
+    const linhas = data ?? [];
+    const criadorIds = [...new Set(linhas.map((r: any) => r.criador_id).filter(Boolean))];
+    let nomes = new Map<string, string | null>();
+    if (criadorIds.length > 0) {
+      const { data: perfis } = await supabase
+        .from("profiles")
+        .select("id, nome")
+        .in("id", criadorIds);
+      nomes = new Map((perfis ?? []).map((p: any) => [p.id, p.nome]));
+    }
+
+    return linhas.map((r: any) => ({
       id: r.id,
       tipo_documento: r.tipo_documento,
       status: r.status,
@@ -78,6 +93,8 @@ export const listarLeituras = createServerFn({ method: "GET" })
       proposta_id: r.proposta_id,
       created_at: r.created_at,
       total_campos: r.scan_ia_campos_extraidos?.[0]?.count ?? 0,
+      criador_id: r.criador_id ?? null,
+      criador_nome: r.criador_id ? nomes.get(r.criador_id) ?? null : null,
     }));
   });
 
@@ -91,7 +108,7 @@ export const obterLeitura = createServerFn({ method: "GET" })
 
     const { data: leitura, error } = await supabase
       .from("scan_ia_leituras")
-      .select("id, arquivo_url, tipo_documento, status, erro, created_at, correspondente_id")
+      .select("id, arquivo_url, tipo_documento, status, erro, created_at, correspondente_id, criador_id")
       .eq("id", data.id)
       .maybeSingle();
     if (error) throw error;
@@ -107,6 +124,16 @@ export const obterLeitura = createServerFn({ method: "GET" })
       .from("scan-ia")
       .createSignedUrl(leitura.arquivo_url, 600);
 
+    let criadorNome: string | null = null;
+    if (leitura.criador_id) {
+      const { data: perfil } = await supabase
+        .from("profiles")
+        .select("nome")
+        .eq("id", leitura.criador_id)
+        .maybeSingle();
+      criadorNome = perfil?.nome ?? null;
+    }
+
     return {
       id: leitura.id,
       arquivo_url: leitura.arquivo_url,
@@ -116,6 +143,8 @@ export const obterLeitura = createServerFn({ method: "GET" })
       created_at: leitura.created_at,
       campos: (campos ?? []) as CampoExtraido[],
       arquivo_assinado: signed?.signedUrl ?? null,
+      criador_id: leitura.criador_id ?? null,
+      criador_nome: criadorNome,
     };
   });
 
@@ -323,5 +352,49 @@ export const salvarCampos = createServerFn({ method: "POST" })
       dados: { campos_editados: data.campos.length },
     });
 
+    return { ok: true };
+  });
+
+/** Exclui uma leitura do Scan IA, registrando a ação em auditoria antes de remover. */
+export const excluirLeitura = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }): Promise<{ ok: true }> => {
+    const { supabase, userId } = context;
+    const corr = await correspondenteDoUsuario(supabase, userId);
+    if (!corr) throw new Error("Sem correspondente.");
+
+    const { data: leitura } = await supabase
+      .from("scan_ia_leituras")
+      .select("id, tipo_documento, status, arquivo_url, cliente_id, proposta_id, criador_id, correspondente_id, created_at")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (!leitura || leitura.correspondente_id !== corr) throw new Error("Leitura não encontrada.");
+
+    const { data: campos } = await supabase
+      .from("scan_ia_campos_extraidos")
+      .select("campo, valor, confianca")
+      .eq("leitura_id", data.id);
+
+    // Trilha de auditoria: mantém o registro do que foi excluído (leitura_id fica nulo pois a leitura é removida).
+    await supabase.from("scan_ia_auditoria").insert({
+      correspondente_id: corr,
+      leitura_id: null,
+      ator_id: userId,
+      acao: "excluida",
+      dados: {
+        leitura_id: leitura.id,
+        tipo_documento: leitura.tipo_documento,
+        status: leitura.status,
+        arquivo_url: leitura.arquivo_url,
+        criador_id: leitura.criador_id,
+        created_at: leitura.created_at,
+        campos: campos ?? [],
+      },
+    });
+
+    await supabase.from("scan_ia_campos_extraidos").delete().eq("leitura_id", data.id);
+    const { error } = await supabase.from("scan_ia_leituras").delete().eq("id", data.id);
+    if (error) throw error;
     return { ok: true };
   });

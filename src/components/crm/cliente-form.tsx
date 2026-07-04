@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -15,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { criarCliente, atualizarCliente, salvarEndereco } from "@/lib/crm/clientes.functions";
+import { criarCliente, atualizarCliente, salvarEndereco, definirAcessoPortal } from "@/lib/crm/clientes.functions";
 import { validarDocumento, soDigitos } from "@/lib/crm/documento";
 
 export interface ClienteFormValues {
@@ -89,9 +90,11 @@ export function ClienteForm({
   enderecoInicial?: { cep?: string; logradouro?: string; numero?: string; bairro?: string; cidade?: string; uf?: string } | null;
 }) {
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const criar = useServerFn(criarCliente);
   const atualizar = useServerFn(atualizarCliente);
   const salvarEnd = useServerFn(salvarEndereco);
+  const definirPortal = useServerFn(definirAcessoPortal);
 
   const [v, setV] = useState<ClienteFormValues>(() => {
     const base = { ...emptyValues, ...inicial };
@@ -111,8 +114,25 @@ export function ClienteForm({
     uf: enderecoInicial?.uf ?? "",
   });
   const [portal, setPortal] = useState(Boolean(portalAtivo));
+  const [portalSalvando, setPortalSalvando] = useState(false);
   const [salvando, setSalvando] = useState(false);
   const [buscandoCep, setBuscandoCep] = useState(false);
+
+  async function alternarPortal(ativo: boolean) {
+    if (!v.id) return;
+    setPortal(ativo);
+    setPortalSalvando(true);
+    try {
+      await definirPortal({ data: { cliente_id: v.id, ativo } });
+      toast.success(ativo ? "Acesso ao portal habilitado." : "Acesso ao portal desabilitado.");
+      qc.invalidateQueries({ queryKey: ["cliente", v.id] });
+    } catch (err: any) {
+      setPortal(!ativo);
+      toast.error(err?.message ?? "Não foi possível salvar o acesso.");
+    } finally {
+      setPortalSalvando(false);
+    }
+  }
   const set = <K extends keyof ClienteFormValues>(k: K, val: ClienteFormValues[K]) =>
     setV((prev) => ({ ...prev, [k]: val }));
 
@@ -202,9 +222,11 @@ export function ClienteForm({
         <CardContent className="flex items-center justify-between gap-4">
           <div className="text-sm text-muted-foreground">
             O login do cliente em /portal é por documento + data de nascimento. Nenhuma senha é criada.
+            {!v.id && <span className="mt-1 block text-xs">Salve o cadastro primeiro para habilitar o acesso.</span>}
           </div>
           <div className="flex items-center gap-2">
-            <Switch id="portal" checked={portal} onCheckedChange={setPortal} disabled={!v.id} />
+            {portalSalvando && <Loader2 className="size-4 animate-spin text-muted-foreground" />}
+            <Switch id="portal" checked={portal} onCheckedChange={alternarPortal} disabled={!v.id || portalSalvando} />
             <Label htmlFor="portal">Habilitar acesso</Label>
           </div>
         </CardContent>

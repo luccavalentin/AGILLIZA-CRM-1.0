@@ -222,8 +222,13 @@ export interface PainelStage {
 /** Kanban da esteira: etapas com clientes posicionados (RLS aplica escopo). */
 export const listarPainel = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }): Promise<PainelStage[]> => {
+  .inputValidator((d: unknown) =>
+    z.object({ desde: z.string().optional(), ate: z.string().optional() }).optional().parse(d) ?? {},
+  )
+  .handler(async ({ data, context }): Promise<PainelStage[]> => {
     const { supabase } = context;
+    const desde = data?.desde ? new Date(data.desde).getTime() : null;
+    const ate = data?.ate ? new Date(`${data.ate}T23:59:59.999`).getTime() : null;
     const { data: stages, error: e1 } = await supabase
       .from("pipeline_stages")
       .select("codigo, nome, ordem")
@@ -231,15 +236,24 @@ export const listarPainel = createServerFn({ method: "GET" })
     if (e1) throw e1;
     const { data: rows, error: e2 } = await supabase
       .from("clientes")
-      .select("id, nome, numero_cliente, cliente_pipeline(pipeline_stages(codigo))")
+      .select("id, nome, numero_cliente, cliente_pipeline(ultima_atualizacao_em, pipeline_stages(codigo))")
       .eq("ativo", true)
       .order("nome");
     if (e2) throw e2;
+    const filtradas = (rows ?? []).filter((r: any) => {
+      if (!desde && !ate) return true;
+      const atualizado = r.cliente_pipeline?.ultima_atualizacao_em;
+      if (!atualizado) return false;
+      const t = new Date(atualizado).getTime();
+      if (desde && t < desde) return false;
+      if (ate && t > ate) return false;
+      return true;
+    });
     return (stages ?? []).map((s) => ({
       codigo: s.codigo,
       nome: s.nome,
       ordem: s.ordem,
-      clientes: (rows ?? [])
+      clientes: filtradas
         .filter((r: any) => r.cliente_pipeline?.pipeline_stages?.codigo === s.codigo)
         .map((r: any) => ({ id: r.id, nome: r.nome, numero_cliente: r.numero_cliente })),
     }));
@@ -525,6 +539,101 @@ export const excluirCliente = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const { error } = await context.supabase.from("clientes").delete().eq("id", data.id);
+    if (error) throw error;
+    return { ok: true };
+  });
+
+/** Habilita/desabilita o acesso do cliente ao portal (persiste no cadastro). */
+export const definirAcessoPortal = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({ cliente_id: z.string().uuid(), ativo: z.boolean() }).parse(d),
+  )
+  .handler(async ({ data, context }): Promise<{ ok: true; ativo: boolean }> => {
+    const { error } = await context.supabase
+      .from("clientes")
+      .update({ portal_acesso_ativo: data.ativo })
+      .eq("id", data.cliente_id);
+    if (error) throw error;
+    return { ok: true, ativo: data.ativo };
+  });
+
+export interface VinculoParceiro {
+  id: string;
+  parceiro_id: string;
+  nome: string | null;
+  email: string | null;
+  created_at: string;
+}
+
+/** Lista os parceiros/usuários vinculados a um cliente. */
+export const listarVinculosCliente = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ cliente_id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }): Promise<VinculoParceiro[]> => {
+    const { supabase } = context;
+    const { data: rows, error } = await supabase
+      .from("cliente_parceiros")
+      .select("id, parceiro_id, created_at")
+      .eq("cliente_id", data.cliente_id)
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+    const lista = rows ?? [];
+    if (lista.length === 0) return [];
+    const ids = lista.map((r: any) => r.parceiro_id);
+    const { data: perfis } = await supabase
+      .from("profiles")
+      .select("id, nome, email")
+      .in("id", ids);
+    const mapa = new Map((perfis ?? []).map((p: any) => [p.id, p]));
+    return lista.map((r: any) => ({
+      id: r.id,
+      parceiro_id: r.parceiro_id,
+      nome: mapa.get(r.parceiro_id)?.nome ?? null,
+      email: mapa.get(r.parceiro_id)?.email ?? null,
+      created_at: r.created_at,
+    }));
+  });
+
+/** Lista usuários do sistema disponíveis para vincular (mesmo correspondente). */
+export const listarParceirosDisponiveis = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<{ id: string; nome: string | null; email: string | null }[]> => {
+    const { supabase, userId } = context;
+    const { data: corr } = await supabase.rpc("correspondente_do_usuario", { _user_id: userId });
+    let query = supabase.from("profiles").select("id, nome, email").order("nome");
+    if (corr) query = query.eq("correspondente_id", corr);
+    const { data, error } = await query.limit(500);
+    if (error) throw error;
+    return (data ?? []) as any;
+  });
+
+/** Cria um vínculo de atendimento entre o cliente e um usuário/parceiro. */
+export const vincularParceiro = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({ cliente_id: z.string().uuid(), parceiro_id: z.string().uuid() }).parse(d),
+  )
+  .handler(async ({ data, context }): Promise<{ ok: true }> => {
+    const { supabase, userId } = context;
+    const { data: corr } = await supabase.rpc("correspondente_do_usuario", { _user_id: userId });
+    if (!corr) throw new Error("Sem correspondente.");
+    const { error } = await supabase
+      .from("cliente_parceiros")
+      .insert({ cliente_id: data.cliente_id, parceiro_id: data.parceiro_id, correspondente_id: corr });
+    if (error) {
+      if ((error as any).code === "23505") throw new Error("Este usuário já está vinculado.");
+      throw error;
+    }
+    return { ok: true };
+  });
+
+/** Remove um vínculo de atendimento. */
+export const desvincularParceiro = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }): Promise<{ ok: true }> => {
+    const { error } = await context.supabase.from("cliente_parceiros").delete().eq("id", data.id);
     if (error) throw error;
     return { ok: true };
   });

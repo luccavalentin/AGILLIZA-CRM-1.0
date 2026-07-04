@@ -32,10 +32,22 @@ function Pagina() {
   const [escopo, setEscopo] = useState<"todas" | "minhas">("todas");
   const [q, setQ] = useState("");
   const [busca, setBusca] = useState("");
+  const [desde, setDesde] = useState("");
+  const [ate, setAte] = useState("");
 
   const { data, isLoading } = useQuery({
-    queryKey: ["simulacoes", escopo, busca],
-    queryFn: () => listarSimulacoes({ data: { escopo, q: busca || undefined, pagina: 1, porPagina: 30 } }),
+    queryKey: ["simulacoes", escopo, busca, desde, ate],
+    queryFn: () =>
+      listarSimulacoes({
+        data: {
+          escopo,
+          q: busca || undefined,
+          desde: desde || undefined,
+          ate: ate || undefined,
+          pagina: 1,
+          porPagina: 30,
+        },
+      }),
   });
 
   async function handleExcluir(id: string) {
@@ -87,6 +99,22 @@ function Pagina() {
           </div>
           <Button type="submit" variant="secondary">Buscar</Button>
         </form>
+      </div>
+
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="space-y-1">
+          <label className="text-xs text-muted-foreground">De</label>
+          <Input type="date" value={desde} onChange={(e) => setDesde(e.target.value)} className="w-40" />
+        </div>
+        <div className="space-y-1">
+          <label className="text-xs text-muted-foreground">Até</label>
+          <Input type="date" value={ate} onChange={(e) => setAte(e.target.value)} className="w-40" />
+        </div>
+        {(desde || ate) && (
+          <Button variant="ghost" size="sm" onClick={() => { setDesde(""); setAte(""); }}>
+            Limpar datas
+          </Button>
+        )}
       </div>
 
       <div className="rounded-lg border border-border">
