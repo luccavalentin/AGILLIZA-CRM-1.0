@@ -22,12 +22,7 @@ export interface AppShellProps {
 }
 
 function BrandSymbol() {
-  return (
-    <>
-      <img src={symbolDark} alt="Agilliza" className="h-7 w-auto dark:hidden" />
-      <img src={symbolLight} alt="Agilliza" className="hidden h-7 w-auto dark:block" />
-    </>
-  );
+  return <img src={symbolLight} alt="Agilliza" className="h-7 w-auto" />;
 }
 
 export function AppShell({
