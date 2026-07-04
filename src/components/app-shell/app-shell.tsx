@@ -110,7 +110,7 @@ export function AppShell({
           >
             <SheetTitle className="sr-only">Menu de navegação</SheetTitle>
             <div className="flex h-16 items-center border-b border-sidebar-border px-4">
-              <Logo className="h-7" />
+              <Logo variant="light" className="h-7" />
             </div>
             <div className="h-[calc(100dvh-4rem)] overflow-y-auto">
               <SidebarNav nav={nav} onNavigate={() => setMobileOpen(false)} />
