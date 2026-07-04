@@ -21,7 +21,7 @@ function fmt(ms: number): string {
 }
 
 /** Countdown de SLA em horas úteis — tons conforme % consumido (00b-tons-cores). */
-export function SlaCountdown({ inicio, prazo, concluida, className }: SlaCountdownProps) {
+export function SlaCountdown({ inicio, prazo, concluida, concluidaEm, className }: SlaCountdownProps) {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 30_000);
@@ -37,9 +37,20 @@ export function SlaCountdown({ inicio, prazo, concluida, className }: SlaCountdo
   const restante = fim - now;
 
   if (concluida) {
-    return <span className={cn("inline-flex items-center gap-1 text-xs text-success tabular-nums", className)}>
-      <Clock className="h-3.5 w-3.5" /> Concluída no prazo
-    </span>;
+    // Compara a conclusão com o prazo para não rotular atraso como "no prazo".
+    const noPrazo = !concluidaEm || new Date(concluidaEm).getTime() <= fim;
+    return (
+      <span
+        className={cn(
+          "inline-flex items-center gap-1 text-xs tabular-nums",
+          noPrazo ? "text-success" : "text-destructive",
+          className,
+        )}
+      >
+        {noPrazo ? <Clock className="h-3.5 w-3.5" /> : <AlertTriangle className="h-3.5 w-3.5" />}
+        {noPrazo ? "Concluída no prazo" : "Concluída com atraso"}
+      </span>
+    );
   }
 
   let cls = "text-success";
