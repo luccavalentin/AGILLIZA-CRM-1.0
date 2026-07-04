@@ -357,6 +357,14 @@ export const cancelarConta = createServerFn({ method: "POST" })
   .handler(async ({ context, data }): Promise<{ ok: true }> => {
     const { supabase, userId } = context;
     const correspondente_id = await correspondenteId(supabase, userId);
+    const { data: atual } = await supabase
+      .from(TABELA[data.tipo])
+      .select("status")
+      .eq("id", data.id)
+      .single();
+    if (!atual) throw new Error("Conta não encontrada.");
+    if (atual.status === "cancelada") throw new Error("Conta já está cancelada.");
+    if (atual.status === "estornada") throw new Error("Conta estornada não pode ser cancelada.");
     const { error } = await supabase
       .from(TABELA[data.tipo])
       .update({ status: "cancelada", estorno_motivo: data.motivo })
