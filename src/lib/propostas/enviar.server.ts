@@ -4,7 +4,7 @@
  * cita o fornecedor.
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { chamarIntegracao, IntegracaoBancariaError } from "@/lib/simulacao/homefin.server";
+import { chamarIntegracao, IntegracaoBancariaError, sanitizarMensagemErro } from "@/lib/simulacao/homefin.server";
 import { transicaoPermitida, type PropostaStatus } from "./state-machine";
 
 /** Ordem de progressão do funil (para sincronização vinda do banco). */
@@ -109,7 +109,7 @@ export async function enviarPropostaImpl({
       sucesso++;
       resultados.push({ banco_id: b.banco_id, nome_banco: b.nome_banco, status: "enviada" });
     } catch (e) {
-      const msg = e instanceof IntegracaoBancariaError ? e.message : "Falha ao enviar ao banco.";
+      const msg = sanitizarMensagemErro(e instanceof IntegracaoBancariaError ? e.message : "Falha ao enviar ao banco.");
       await supabase.from("proposta_bancos").update({ status_banco: "erro", mensagem_banco: msg }).eq("id", b.id);
       resultados.push({ banco_id: b.banco_id, nome_banco: b.nome_banco, status: "erro", mensagem: msg });
     }

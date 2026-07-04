@@ -3,7 +3,7 @@
  * Segue o fluxo Oportunidade → Simulação → Integração do contrato oficial.
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { chamarIntegracao, obterToken, IntegracaoBancariaError } from "./homefin.server";
+import { chamarIntegracao, obterToken, IntegracaoBancariaError, sanitizarMensagemErro } from "./homefin.server";
 import { humanizarErroBanco } from "./bank-error-humanizer";
 
 interface EnviarArgs {
@@ -200,12 +200,13 @@ export async function enviarSimulacaoImpl({
 
     return { oportunidade_id: idOportunidade, status: novoStatus, bancos: resultados };
   } catch (e) {
-    const msg =
+    const bruto =
       e instanceof IntegracaoBancariaError
         ? e.message
         : e instanceof Error && e.message
           ? e.message
           : "Falha ao enviar ao banco.";
+    const msg = sanitizarMensagemErro(bruto);
     await supabase.from("simulacoes").update({ status: "erro_banco", ultimo_erro: msg }).eq("id", simulacaoId);
     throw new Error(msg);
   }
