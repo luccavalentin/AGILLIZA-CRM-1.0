@@ -55,6 +55,39 @@ function InternalLayout() {
   }
 
   const carregando = sessaoQuery.isLoading || permsQuery.isLoading;
+  const comErro = sessaoQuery.isError || permsQuery.isError;
+
+  if (comErro) {
+    return (
+      <div className="flex min-h-[100dvh] w-full flex-col items-center justify-center gap-4 bg-muted/40 p-6 text-center">
+        <div className="space-y-1">
+          <p className="text-base font-semibold text-foreground">
+            Não foi possível carregar sua sessão.
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Verifique sua conexão e tente novamente.
+          </p>
+        </div>
+        <div className="flex gap-3">
+          <button
+            onClick={() => {
+              sessaoQuery.refetch();
+              permsQuery.refetch();
+            }}
+            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+          >
+            Tentar novamente
+          </button>
+          <button
+            onClick={sair}
+            className="rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
+          >
+            Sair
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (carregando || !sessaoQuery.data || !permsQuery.data) {
     return (
