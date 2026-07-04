@@ -160,11 +160,11 @@ export function SidebarRail({ nav, onNavigate }: SidebarProps) {
                   "relative flex h-10 w-10 items-center justify-center rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
                   active
                     ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                    : "text-sidebar-foreground/70 hover:bg-accent hover:text-sidebar-foreground dark:hover:bg-white/5",
+                    : "text-sidebar-foreground/70 hover:bg-white/10 hover:text-sidebar-foreground",
                 )}
               >
                 {active && (
-                  <span className="absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-full bg-primary" />
+                  <span className="absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-full bg-sidebar-primary" />
                 )}
                 <Icon className="h-[18px] w-[18px]" />
               </Link>
