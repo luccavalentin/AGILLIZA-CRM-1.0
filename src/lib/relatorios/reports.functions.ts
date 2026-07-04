@@ -124,7 +124,7 @@ export const runReport = createServerFn({ method: "POST" })
         fetchAll("simulacoes", "id,status,created_at", "created_at", "usuario_responsavel_id"),
         fetchAll("propostas", "id,status,valor_financiamento,valor_financiamento_aprovado,nome_banco,created_at", "created_at", "usuario_responsavel_id"),
         fetchAll("clientes", "id,created_at", "created_at", "responsavel_id"),
-        supabase.from("comissoes").select("valor_bruto,created_at").gte("created_at", de).lte("created_at", ateFim).limit(5000).then((r: any) => r.data ?? []),
+        fetchAll("comissoes", "valor_bruto,created_at", "created_at", "usuario_responsavel_id"),
       ]);
       const enviadas = props.filter((p) => p.status !== "rascunho");
       const aprovadas = props.filter((p) => ["credito_aprovado", "contrato_emitido", "registrado"].includes(p.status));
