@@ -1,7 +1,9 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { MoreHorizontal, Wallet } from "lucide-react";
-import { listarContas, listarConfigs, type ContaTipo } from "@/lib/financeiro/financeiro.functions";
+import { toast } from "sonner";
+import { listarContas, listarConfigs, excluirConta, type ContaTipo } from "@/lib/financeiro/financeiro.functions";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   Select,
@@ -18,6 +20,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { ContaStatusBadge } from "@/components/financeiro/status-badge";
 import { NovaContaDialog } from "@/components/financeiro/nova-conta-dialog";
 import { BaixarDialog } from "@/components/financeiro/baixar-dialog";
@@ -37,6 +49,23 @@ export function ContasPage({ tipo }: { tipo: ContaTipo }) {
   const [baixarConta, setBaixarConta] = useState<any>(null);
   const [estorno, setEstorno] = useState<{ id: string; acao: "estornar" | "cancelar" } | null>(null);
   const [detalheId, setDetalheId] = useState<string | null>(null);
+  const [excluirAlvo, setExcluirAlvo] = useState<{ id: string; numero: string } | null>(null);
+
+  const queryClient = useQueryClient();
+  const excluir = useServerFn(excluirConta);
+
+  async function handleExcluir() {
+    if (!excluirAlvo) return;
+    try {
+      await excluir({ data: { tipo, id: excluirAlvo.id } });
+      toast.success("Conta excluída.");
+      queryClient.invalidateQueries({ queryKey: ["fin-contas"] });
+    } catch {
+      toast.error("Não foi possível excluir a conta.");
+    } finally {
+      setExcluirAlvo(null);
+    }
+  }
 
   const { data: cfg } = useQuery({ queryKey: ["fin-configs"], queryFn: () => listarConfigs() });
   const { data, isLoading } = useQuery({
@@ -165,6 +194,9 @@ export function ContasPage({ tipo }: { tipo: ContaTipo }) {
                           Cancelar
                         </DropdownMenuItem>
                       )}
+                      <DropdownMenuItem className="text-destructive" onClick={() => setExcluirAlvo({ id: c.id, numero: c.numero ?? "" })}>
+                        Excluir
+                      </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>
@@ -183,6 +215,29 @@ export function ContasPage({ tipo }: { tipo: ContaTipo }) {
         onOpenChange={(o) => !o && setEstorno(null)}
       />
       <ContaDrawer tipo={tipo} contaId={detalheId} open={!!detalheId} onOpenChange={(o) => !o && setDetalheId(null)} />
+
+      <AlertDialog open={!!excluirAlvo} onOpenChange={(o) => !o && setExcluirAlvo(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir conta</AlertDialogTitle>
+            <AlertDialogDescription>
+              A conta {excluirAlvo?.numero} será removida permanentemente. Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                void handleExcluir();
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -271,3 +271,13 @@ export const escalarDemanda = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { escalonadas: (data as number) ?? 0 };
   });
+
+/** Exclui uma demanda. */
+export const excluirDemanda = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }): Promise<{ ok: true }> => {
+    const { error } = await context.supabase.from("demandas").delete().eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });

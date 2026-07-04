@@ -1,14 +1,17 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { Plus, Search, FileText, KanbanSquare } from "lucide-react";
+import { toast } from "sonner";
 import { assertModuloPermitido } from "@/lib/route-guards";
-import { listarPropostas } from "@/lib/propostas/propostas.functions";
+import { listarPropostas, excluirProposta } from "@/lib/propostas/propostas.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { PropostaStatusBadge } from "@/components/propostas/status-badge";
+import { ConfirmDelete } from "@/components/shared/confirm-delete";
 import { formatBRL } from "@/lib/simulacao/format";
 
 export const Route = createFileRoute("/_authenticated/operacional/propostas")({
@@ -22,6 +25,8 @@ export const Route = createFileRoute("/_authenticated/operacional/propostas")({
 
 function Pagina() {
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const excluir = useServerFn(excluirProposta);
   const [escopo, setEscopo] = useState<"todas" | "minhas">("todas");
   const [q, setQ] = useState("");
   const [busca, setBusca] = useState("");
@@ -30,6 +35,17 @@ function Pagina() {
     queryKey: ["propostas", escopo, busca],
     queryFn: () => listarPropostas({ data: { escopo, q: busca || undefined, pagina: 1, porPagina: 30 } }),
   });
+
+  async function handleExcluir(id: string) {
+    try {
+      await excluir({ data: { id } });
+      toast.success("Proposta excluída.");
+      queryClient.invalidateQueries({ queryKey: ["propostas"] });
+    } catch {
+      toast.error("Não foi possível excluir a proposta.");
+    }
+  }
+
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-6 p-4 md:p-6">
@@ -88,19 +104,20 @@ function Pagina() {
               <TableHead>Banco</TableHead>
               <TableHead className="text-right">R$ Financiamento</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead className="w-12 text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading && (
               <TableRow>
-                <TableCell colSpan={5} className="py-10 text-center text-sm text-muted-foreground">
+                <TableCell colSpan={6} className="py-10 text-center text-sm text-muted-foreground">
                   Carregando…
                 </TableCell>
               </TableRow>
             )}
             {!isLoading && (data?.itens.length ?? 0) === 0 && (
               <TableRow>
-                <TableCell colSpan={5}>
+                <TableCell colSpan={6}>
                   <div className="flex flex-col items-center gap-3 py-12 text-center">
                     <FileText className="h-8 w-8 text-muted-foreground" />
                     <p className="text-sm text-muted-foreground">Nenhuma proposta encontrada.</p>
@@ -122,6 +139,13 @@ function Pagina() {
                 <TableCell>{p.nome_banco ?? "—"}</TableCell>
                 <TableCell className="text-right tabular-nums">{formatBRL(p.valor_financiamento)}</TableCell>
                 <TableCell><PropostaStatusBadge status={p.status} /></TableCell>
+                <TableCell className="text-right">
+                  <ConfirmDelete
+                    titulo="Excluir proposta"
+                    descricao={`A proposta ${p.numero_proposta} será removida permanentemente.`}
+                    onConfirm={() => handleExcluir(p.id)}
+                  />
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>

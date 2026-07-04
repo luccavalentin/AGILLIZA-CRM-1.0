@@ -424,3 +424,13 @@ export const enviarSimulacaoBanco = createServerFn({ method: "POST" })
 export const reenviarSimulacaoBanco = enviarSimulacaoBanco;
 
 export { humanizarErroBanco };
+
+/** Exclui uma simulação. */
+export const excluirSimulacao = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }): Promise<{ ok: true }> => {
+    const { error } = await context.supabase.from("simulacoes").delete().eq("id", data.id);
+    if (error) throw error;
+    return { ok: true };
+  });

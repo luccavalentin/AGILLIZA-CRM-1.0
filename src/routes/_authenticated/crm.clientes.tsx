@@ -1,8 +1,9 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { useQuery, keepPreviousData } from "@tanstack/react-query";
+import { useQuery, keepPreviousData, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Plus, Search, Users } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -16,8 +17,9 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge, ToneBadge } from "@/components/crm/tone-badge";
+import { ConfirmDelete } from "@/components/shared/confirm-delete";
 import { assertModuloPermitido } from "@/lib/route-guards";
-import { listarClientes } from "@/lib/crm/clientes.functions";
+import { listarClientes, excluirCliente } from "@/lib/crm/clientes.functions";
 import { formatarDocumento, mascararDocumento, formatarCelular } from "@/lib/crm/documento";
 
 export const Route = createFileRoute("/_authenticated/crm/clientes")({
@@ -29,7 +31,9 @@ export const Route = createFileRoute("/_authenticated/crm/clientes")({
 
 function Pagina() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const listar = useServerFn(listarClientes);
+  const excluir = useServerFn(excluirCliente);
   const [q, setQ] = useState("");
   const [busca, setBusca] = useState("");
   const [pagina, setPagina] = useState(1);
@@ -39,6 +43,16 @@ function Pagina() {
     queryFn: () => listar({ data: { q: busca, pagina, porPagina: 20 } }),
     placeholderData: keepPreviousData,
   });
+
+  async function handleExcluir(id: string) {
+    try {
+      await excluir({ data: { id } });
+      toast.success("Cliente excluído.");
+      queryClient.invalidateQueries({ queryKey: ["clientes"] });
+    } catch {
+      toast.error("Não foi possível excluir o cliente.");
+    }
+  }
 
   return (
     <div className="space-y-4 p-4 sm:p-6">
@@ -78,20 +92,21 @@ function Pagina() {
               <TableHead>Etapa</TableHead>
               <TableHead>Responsável</TableHead>
               <TableHead>Portal</TableHead>
+              <TableHead className="w-12 text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               Array.from({ length: 6 }).map((_, i) => (
                 <TableRow key={i}>
-                  {Array.from({ length: 7 }).map((__, j) => (
+                  {Array.from({ length: 8 }).map((__, j) => (
                     <TableCell key={j}><Skeleton className="h-4 w-24" /></TableCell>
                   ))}
                 </TableRow>
               ))
             ) : (data?.itens.length ?? 0) === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="py-12 text-center">
+                <TableCell colSpan={8} className="py-12 text-center">
                   <Users className="mx-auto mb-2 size-8 text-muted-foreground" />
                   <p className="text-sm text-muted-foreground">Nenhum cliente encontrado. Cadastre o primeiro.</p>
                 </TableCell>
@@ -116,6 +131,13 @@ function Pagina() {
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">{c.responsavel_nome ?? "—"}</TableCell>
                   <TableCell><StatusBadge status={c.portal_acesso_ativo ? "ativo" : "inativo"} /></TableCell>
+                  <TableCell className="text-right">
+                    <ConfirmDelete
+                      titulo="Excluir cliente"
+                      descricao={`O cliente "${c.nome}" e seus registros vinculados serão removidos permanentemente.`}
+                      onConfirm={() => handleExcluir(c.id)}
+                    />
+                  </TableCell>
                 </TableRow>
               ))
             )}

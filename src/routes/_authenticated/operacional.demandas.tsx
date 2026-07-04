@@ -5,10 +5,11 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { AlertTriangle } from "lucide-react";
 import { assertModuloPermitido } from "@/lib/route-guards";
-import { listarDemandas, escalarDemanda } from "@/lib/operacional/demandas.functions";
+import { listarDemandas, escalarDemanda, excluirDemanda } from "@/lib/operacional/demandas.functions";
 import { NovaDemandaDialog } from "@/components/operacional/nova-demanda-dialog";
 import { SlaCountdown } from "@/components/operacional/sla-countdown";
 import { ToneBadge } from "@/components/crm/tone-badge";
+import { ConfirmDelete } from "@/components/shared/confirm-delete";
 import { PRIORIDADE, statusDemanda } from "@/components/operacional/status";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,6 +26,7 @@ function Pagina() {
   const [escopo, setEscopo] = useState<"minhas" | "equipe">("equipe");
   const [q, setQ] = useState("");
   const escalarFn = useServerFn(escalarDemanda);
+  const excluir = useServerFn(excluirDemanda);
 
   const { data, refetch } = useQuery({
     queryKey: ["demandas", escopo, q],
@@ -40,6 +42,16 @@ function Pagina() {
       refetch();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Falha ao verificar SLA.");
+    }
+  }
+
+  async function handleExcluir(id: string) {
+    try {
+      await excluir({ data: { id } });
+      toast.success("Demanda excluída.");
+      refetch();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Não foi possível excluir a demanda.");
     }
   }
 
@@ -82,6 +94,7 @@ function Pagina() {
                 <th className="px-3 py-2">SLA</th>
                 <th className="px-3 py-2">Prioridade</th>
                 <th className="px-3 py-2">Status</th>
+                <th className="px-3 py-2 text-right">Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -103,6 +116,13 @@ function Pagina() {
                     <span className="ml-2 text-xs text-muted-foreground">{PRIORIDADE[d.prioridade].label}</span>
                   </td>
                   <td className="px-3 py-2"><ToneBadge tone={statusDemanda(d.status).tone}>{statusDemanda(d.status).label}</ToneBadge></td>
+                  <td className="px-3 py-2 text-right">
+                    <ConfirmDelete
+                      titulo="Excluir demanda"
+                      descricao={`A demanda ${d.numero} será removida permanentemente.`}
+                      onConfirm={() => handleExcluir(d.id)}
+                    />
+                  </td>
                 </tr>
               ))}
             </tbody>
