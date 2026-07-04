@@ -50,6 +50,18 @@ const REGIMES = [
   { v: "nao_aplicavel", l: "Não aplicável" },
 ];
 
+// Exibe um número no formato R$ pt-BR (ex.: 20000 -> "20.000,00").
+function formatarMoedaBR(n: number): string {
+  return n.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+// Aplica máscara de moeda enquanto o usuário digita (tratando os dígitos como centavos).
+function mascararMoedaBR(raw: string): string {
+  const digitos = raw.replace(/\D/g, "");
+  if (!digitos) return "";
+  return formatarMoedaBR(parseInt(digitos, 10) / 100);
+}
+
 const emptyValues: ClienteFormValues = {
   tipo_pessoa: "PF",
   nome: "",
@@ -80,7 +92,15 @@ export function ClienteForm({
   const atualizar = useServerFn(atualizarCliente);
   const salvarEnd = useServerFn(salvarEndereco);
 
-  const [v, setV] = useState<ClienteFormValues>({ ...emptyValues, ...inicial });
+  const [v, setV] = useState<ClienteFormValues>(() => {
+    const base = { ...emptyValues, ...inicial };
+    // Formata a renda inicial (vinda como número cru) para exibição em R$.
+    if (base.renda_total_declarada) {
+      const n = Number(base.renda_total_declarada);
+      if (!isNaN(n)) base.renda_total_declarada = formatarMoedaBR(n);
+    }
+    return base;
+  });
   const [end, setEnd] = useState({
     cep: enderecoInicial?.cep ?? "",
     logradouro: enderecoInicial?.logradouro ?? "",
@@ -218,7 +238,16 @@ export function ClienteForm({
           </div>
           <div className="space-y-1.5">
             <Label>Renda total declarada (R$) *</Label>
-            <Input value={v.renda_total_declarada} onChange={(e) => set("renda_total_declarada", e.target.value)} placeholder="0,00" />
+            <div className="relative">
+              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">R$</span>
+              <Input
+                inputMode="numeric"
+                className="pl-9"
+                value={v.renda_total_declarada}
+                onChange={(e) => set("renda_total_declarada", mascararMoedaBR(e.target.value))}
+                placeholder="0,00"
+              />
+            </div>
           </div>
           <div className="space-y-1.5">
             <Label>UF de interesse</Label>
