@@ -17,7 +17,6 @@ import { ToneBadge } from "@/components/crm/tone-badge";
 import { PRODUTOS } from "@/lib/simulacao/schemas";
 import { formatBRL, formatPercent } from "@/lib/simulacao/format";
 import { listarBancosAtivos } from "@/lib/simulacao/simulacoes.functions";
-import { enviarOtpEmail, validarOtpEmail } from "@/lib/simulacao/simulacoes.functions";
 import { compararBancosRapido, taxaAnoDeBanco } from "@/lib/simulacao/simulacao-rapida";
 
 export const Route = createFileRoute("/_authenticated/operacional/simulacoes_/nova")({
@@ -55,7 +54,6 @@ function Pagina() {
     prazo_meses: 360,
   });
   const [mostrarRapida, setMostrarRapida] = useState(false);
-  const [otpAberto, setOtpAberto] = useState(false);
 
   const { data: bancos } = useQuery({
     queryKey: ["bancos-ativos"],
@@ -190,7 +188,7 @@ function Pagina() {
             variant={modo === "rapida" ? "secondary" : "default"}
             className="h-12"
             disabled={!valido}
-            onClick={() => setOtpAberto(true)}
+            onClick={() => irParaPersonalizada()}
           >
             Simulação personalizada
           </Button>
