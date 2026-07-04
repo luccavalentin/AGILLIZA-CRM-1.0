@@ -233,6 +233,12 @@ function AcoesTopo({ proposta, propostaId }: { proposta: any; propostaId: string
           {proposta.enviada_em ? "Reenviar" : "Enviar ao banco"}
         </Button>
       )}
+      {proposta.homefin_id_oportunidade && status !== "cancelada" && (
+        <Button size="sm" variant="outline" onClick={sincronizar} disabled={busy}>
+          {busy ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-1 h-4 w-4" />}
+          Atualizar status
+        </Button>
+      )}
       {proximos.map((s) => (
         <Button key={s} size="sm" variant="secondary" onClick={() => mover(s)} disabled={busy}>
           → {statusProposta(s).label}
