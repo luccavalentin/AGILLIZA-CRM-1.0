@@ -6,6 +6,7 @@ interface SlaCountdownProps {
   inicio: string;
   prazo: string | null;
   concluida?: boolean;
+  concluidaEm?: string | null;
   className?: string;
 }
 
