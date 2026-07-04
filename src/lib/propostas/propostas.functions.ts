@@ -390,9 +390,11 @@ export const removerDocumento = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     const { data: doc } = await context.supabase
       .from("proposta_documentos")
-      .select("storage_path")
+      .select("storage_path, proposta_id")
       .eq("id", data.id)
       .maybeSingle();
+    if (!doc) throw new Error("Documento não encontrado.");
+    await assertPropostaEditavel(context.supabase, doc.proposta_id);
     if (doc?.storage_path) {
       await context.supabase.storage.from("documentos-proposta").remove([doc.storage_path]);
     }
