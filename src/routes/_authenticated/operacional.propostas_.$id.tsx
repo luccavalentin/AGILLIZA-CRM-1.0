@@ -161,6 +161,7 @@ function AcoesTopo({ proposta, propostaId }: { proposta: any; propostaId: string
   const enviarFn = useServerFn(enviarPropostaHomeFin);
   const cancelarFn = useServerFn(cancelarProposta);
   const moverFn = useServerFn(moverStatusProposta);
+  const sincronizarFn = useServerFn(sincronizarProposta);
   const status = proposta.status as PropostaStatus;
   const proximos = TRANSICOES[status].filter((s) => s !== "cancelada");
 
