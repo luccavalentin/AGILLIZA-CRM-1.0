@@ -95,10 +95,10 @@ function Pagina() {
     );
   }, [bancos, mostrarRapida, w.valor_financiamento, w.prazo_meses]);
 
-  function irParaPersonalizada(email: string) {
+  function irParaPersonalizada() {
     sessionStorage.setItem(
       "simulacao_wizard",
-      JSON.stringify({ ...w, email, prazo: w.prazo_meses, email_verificado_em: new Date().toISOString() }),
+      JSON.stringify({ ...w, prazo: w.prazo_meses }),
     );
     router.navigate({ to: "/operacional/simulacoes/completa" });
   }
