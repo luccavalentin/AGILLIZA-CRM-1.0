@@ -28,6 +28,9 @@ const COLUNAS: PropostaStatus[] = [
   "analise_juridica",
   "contrato_emitido",
   "registrado",
+  "credito_recusado",
+  "erro_envio",
+  "cancelada",
 ];
 
 const TONE_BAR: Record<string, string> = {
