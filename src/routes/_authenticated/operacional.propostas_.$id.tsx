@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { ArrowLeft, Send, Ban, Loader2, Plus, Trash2, Download, Upload } from "lucide-react";
+import { ArrowLeft, Send, Ban, Loader2, Plus, Trash2, Download, Upload, RefreshCw } from "lucide-react";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import {
   obterProposta,
