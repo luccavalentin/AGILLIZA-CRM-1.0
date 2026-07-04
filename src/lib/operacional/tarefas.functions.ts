@@ -185,6 +185,11 @@ export const moverStatusTarefa = createServerFn({ method: "POST" })
   )
   .handler(async ({ context, data }) => {
     const { supabase, userId } = context;
+    const { data: atual } = await supabase.from("tasks").select("status").eq("id", data.id).single();
+    if (!atual) throw new Error("Tarefa não encontrada.");
+    if (!transicaoTarefaPermitida(atual.status as TarefaStatus, data.status)) {
+      throw new Error(`Transição de status inválida: ${atual.status} → ${data.status}.`);
+    }
     const { error } = await supabase.from("tasks").update({ status: data.status }).eq("id", data.id);
     if (error) throw new Error(error.message);
     await supabase.from("task_history").insert({ task_id: data.id, ator_id: userId, acao: "status", detalhe: data.status });
@@ -196,6 +201,11 @@ export const concluirTarefa = createServerFn({ method: "POST" })
   .inputValidator((data) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ context, data }) => {
     const { supabase, userId } = context;
+    const { data: atual } = await supabase.from("tasks").select("status").eq("id", data.id).single();
+    if (!atual) throw new Error("Tarefa não encontrada.");
+    if (!transicaoTarefaPermitida(atual.status as TarefaStatus, "concluida")) {
+      throw new Error("Esta tarefa não pode ser concluída no estado atual.");
+    }
     const { error } = await supabase.from("tasks").update({ status: "concluida" }).eq("id", data.id);
     if (error) throw new Error(error.message);
     await supabase.from("task_history").insert({ task_id: data.id, ator_id: userId, acao: "concluida" });
