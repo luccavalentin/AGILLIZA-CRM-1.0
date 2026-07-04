@@ -16,6 +16,8 @@ import {
   SlidersHorizontal,
   Bell,
   ShieldCheck,
+  ScanLine,
+  DatabaseBackup,
   UserRound,
   Lock,
   LineChart,
@@ -66,6 +68,7 @@ export const navInterno: NavGroup[] = [
       { label: "Clientes", icon: Users, to: "/crm/clientes", perm: { modulo: "crm.clientes" } },
       { label: "Painel", icon: KanbanSquare, to: "/crm/painel", perm: { modulo: "crm.clientes" } },
       { label: "Parceiros", icon: Handshake, to: "/crm/parceiros", perm: { modulo: "crm.parceiros" } },
+      { label: "Scan IA", icon: ScanLine, to: "/crm/scan-ia", perm: { modulo: "crm.scan_ia" } },
     ],
   },
   {
@@ -135,6 +138,7 @@ export const navInterno: NavGroup[] = [
       { label: "Compras", icon: ShoppingCart, to: "/admin/compras", perm: { modulo: "admin.compras" } },
       { label: "Notificações", icon: Bell, to: "/admin/notificacoes", perm: { modulo: "admin.notificacoes" } },
       { label: "Auditoria", icon: ShieldCheck, to: "/admin/auditoria", perm: { modulo: "admin.auditoria" } },
+      { label: "Backup", icon: DatabaseBackup, to: "/admin/backup", perm: { modulo: "admin.backup" } },
     ],
   },
   {

@@ -1,0 +1,229 @@
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useRef, useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { ScanLine, UploadCloud, FileText, RefreshCw, ChevronRight } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { supabase } from "@/integrations/supabase/client";
+import { assertModuloPermitido } from "@/lib/route-guards";
+import {
+  contextoScanIa,
+  listarLeituras,
+  criarLeitura,
+  processarLeitura,
+} from "@/lib/crm/scan-ia.functions";
+
+export const Route = createFileRoute("/_authenticated/crm/scan-ia")({
+  head: () => ({ meta: [{ title: "Scan IA — Agilliza" }] }),
+  beforeLoad: () => assertModuloPermitido("crm.scan_ia"),
+  component: Pagina,
+});
+
+const STATUS_TONE: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
+  pendente: "secondary",
+  processando: "outline",
+  concluida: "default",
+  revisada: "default",
+  erro: "destructive",
+};
+
+function StatusBadge({ status }: { status: string }) {
+  return <Badge variant={STATUS_TONE[status] ?? "secondary"}>{status}</Badge>;
+}
+
+function Pagina() {
+  const qc = useQueryClient();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [tipo, setTipo] = useState("");
+  const [dragging, setDragging] = useState(false);
+  const [enviando, setEnviando] = useState(false);
+
+  const leituras = useQuery({ queryKey: ["scan-ia-leituras"], queryFn: () => listarLeituras() });
+
+  const processar = useMutation({
+    mutationFn: (id: string) => processarLeitura({ data: { id } }),
+    onSuccess: (r) => {
+      if (r.ok) toast.success("Documento processado.");
+      else toast.error(r.erro ?? "Falha ao processar.");
+      qc.invalidateQueries({ queryKey: ["scan-ia-leituras"] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Falha ao processar."),
+  });
+
+  async function enviarArquivo(file: File) {
+    if (!file) return;
+    setEnviando(true);
+    try {
+      const { correspondenteId } = await contextoScanIa();
+      if (!correspondenteId) throw new Error("Sem correspondente.");
+      const safe = file.name.replace(/[^\w.\-]/g, "_");
+      const path = `${correspondenteId}/${crypto.randomUUID()}-${safe}`;
+      const { error: upErr } = await supabase.storage.from("scan-ia").upload(path, file, {
+        contentType: file.type || "application/octet-stream",
+        upsert: false,
+      });
+      if (upErr) throw upErr;
+
+      const { id } = await criarLeitura({
+        data: { arquivo_url: path, tipo_documento: tipo.trim() || "documento" },
+      });
+      toast.success("Arquivo enviado. Processando com IA…");
+      setTipo("");
+      qc.invalidateQueries({ queryKey: ["scan-ia-leituras"] });
+      processar.mutate(id);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha no envio.");
+    } finally {
+      setEnviando(false);
+    }
+  }
+
+  return (
+    <div className="space-y-6 p-4 md:p-6">
+      <div className="flex items-center gap-3">
+        <ScanLine className="h-6 w-6 text-primary" />
+        <div>
+          <h1 className="text-xl font-semibold">Scan IA</h1>
+          <p className="text-sm text-muted-foreground">
+            Leitura automática de documentos com extração de campos por IA.
+          </p>
+        </div>
+      </div>
+
+      <div className="space-y-3 rounded-lg border border-border bg-card p-4">
+        <div className="grid gap-2 sm:max-w-sm">
+          <Label htmlFor="tipo-doc">Tipo de documento</Label>
+          <Input
+            id="tipo-doc"
+            placeholder="Ex.: RG, CNH, comprovante de renda…"
+            value={tipo}
+            onChange={(e) => setTipo(e.target.value)}
+          />
+        </div>
+
+        <button
+          type="button"
+          disabled={enviando}
+          onClick={() => inputRef.current?.click()}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setDragging(true);
+          }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setDragging(false);
+            const f = e.dataTransfer.files?.[0];
+            if (f) enviarArquivo(f);
+          }}
+          className={`flex w-full flex-col items-center justify-center gap-2 rounded-lg border border-dashed p-8 text-center transition-colors ${
+            dragging ? "border-primary bg-accent" : "border-border hover:border-primary"
+          } ${enviando ? "opacity-60" : ""}`}
+        >
+          <UploadCloud className="h-8 w-8 text-muted-foreground" />
+          <span className="text-sm font-medium">
+            {enviando ? "Enviando…" : "Arraste um arquivo ou clique para selecionar"}
+          </span>
+          <span className="text-xs text-muted-foreground">PDF, JPG ou PNG</span>
+        </button>
+        <input
+          ref={inputRef}
+          type="file"
+          accept="application/pdf,image/*"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) enviarArquivo(f);
+            e.target.value = "";
+          }}
+        />
+      </div>
+
+      <div className="rounded-lg border border-border bg-card">
+        <div className="flex items-center justify-between border-b border-border p-4">
+          <h2 className="text-sm font-semibold">Leituras recentes</h2>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => qc.invalidateQueries({ queryKey: ["scan-ia-leituras"] })}
+          >
+            <RefreshCw className="mr-2 h-4 w-4" /> Atualizar
+          </Button>
+        </div>
+
+        {leituras.isLoading ? (
+          <div className="space-y-2 p-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-10 w-full" />
+            ))}
+          </div>
+        ) : (leituras.data?.length ?? 0) === 0 ? (
+          <div className="flex flex-col items-center gap-2 p-10 text-center text-muted-foreground">
+            <FileText className="h-8 w-8" />
+            <p className="text-sm">Nenhuma leitura ainda. Envie um documento para começar.</p>
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Documento</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-center">Campos</TableHead>
+                <TableHead>Data</TableHead>
+                <TableHead className="text-right">Ações</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {leituras.data!.map((l) => (
+                <TableRow key={l.id}>
+                  <TableCell className="font-medium">{l.tipo_documento ?? "—"}</TableCell>
+                  <TableCell>
+                    <StatusBadge status={l.status} />
+                    {l.status === "erro" && l.erro ? (
+                      <p className="mt-1 text-xs text-destructive">{l.erro}</p>
+                    ) : null}
+                  </TableCell>
+                  <TableCell className="text-center">{l.total_campos}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {new Date(l.created_at).toLocaleString("pt-BR")}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2">
+                      {(l.status === "erro" || l.status === "pendente") && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={processar.isPending}
+                          onClick={() => processar.mutate(l.id)}
+                        >
+                          Reprocessar
+                        </Button>
+                      )}
+                      <Button asChild variant="ghost" size="sm">
+                        <Link to="/crm/scan-ia/$id" params={{ id: l.id }}>
+                          Revisar <ChevronRight className="ml-1 h-4 w-4" />
+                        </Link>
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </div>
+    </div>
+  );
+}
