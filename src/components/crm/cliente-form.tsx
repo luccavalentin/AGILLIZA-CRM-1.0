@@ -80,7 +80,15 @@ export function ClienteForm({
   const atualizar = useServerFn(atualizarCliente);
   const salvarEnd = useServerFn(salvarEndereco);
 
-  const [v, setV] = useState<ClienteFormValues>({ ...emptyValues, ...inicial });
+  const [v, setV] = useState<ClienteFormValues>(() => {
+    const base = { ...emptyValues, ...inicial };
+    // Formata a renda inicial (vinda como número cru) para exibição em R$.
+    if (base.renda_total_declarada) {
+      const n = Number(base.renda_total_declarada);
+      if (!isNaN(n)) base.renda_total_declarada = formatarMoedaBR(n);
+    }
+    return base;
+  });
   const [end, setEnd] = useState({
     cep: enderecoInicial?.cep ?? "",
     logradouro: enderecoInicial?.logradouro ?? "",
