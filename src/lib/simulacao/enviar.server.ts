@@ -62,15 +62,23 @@ export async function enviarSimulacaoImpl({
   const ctx = { simulacao_id: simulacaoId, correspondente_id };
 
   try {
+    // Identificadores do parceiro/regional/usuário vêm da autenticação da integração
+    const auth = await obterToken();
+
     // 1) Oportunidade (idempotência: reutiliza se já existe)
     let idOportunidade = sim.homefin_id_oportunidade as string | null;
     if (!idOportunidade) {
-      const payload = {
+      const payload: Record<string, unknown> = {
         operacao: { idOperacao: String(sim.id_operacao_homefin) },
+        ...(auth.idRegional ? { regional: { idRegional: auth.idRegional } } : {}),
+        ...(auth.idParceiro ? { parceiro: { idParceiro: auth.idParceiro } } : {}),
+        ...(auth.idUsuarioParceiro
+          ? { usuarioParceiro: { idUsuarioParceiro: auth.idUsuarioParceiro } }
+          : {}),
         tipoImovel: { id: sim.tipo_imovel },
         usoImovel: { id: sim.uso_imovel },
         uf: { codigo: sim.uf },
-        situacaoImovel: { id: sim.situacao_imovel },
+        situacaoImovel: { codigo: sim.situacao_imovel },
         valorImovel: num(sim.valor_imovel),
         valorFinanciamento: num(sim.valor_financiamento),
         prazo: num(sim.prazo),
