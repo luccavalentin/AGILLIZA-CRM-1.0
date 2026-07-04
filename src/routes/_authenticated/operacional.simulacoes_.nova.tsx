@@ -159,15 +159,21 @@ function Pagina() {
             <Input type="date" value={w.data_nascimento} onChange={(e) => set("data_nascimento", e.target.value)} />
           </div>
           <div className="space-y-1.5">
-            <Label>Em quantos anos irá financiar <span className="text-destructive">*</span></Label>
+            <Label>Em quantos meses irá financiar <span className="text-destructive">*</span></Label>
             <Input
               type="number"
-              min={1}
-              max={35}
-              placeholder="0 anos"
-              value={w.prazo_anos || ""}
-              onChange={(e) => set("prazo_anos", Number(e.target.value))}
+              min={PRAZO_MIN}
+              max={PRAZO_MAX}
+              step={12}
+              placeholder="360 meses"
+              value={w.prazo_meses || ""}
+              onChange={(e) => set("prazo_meses", Number(e.target.value))}
             />
+            <p className="text-xs text-muted-foreground">
+              {w.prazo_meses > 0
+                ? `Equivale a ${(w.prazo_meses / 12).toFixed(1).replace(".0", "")} anos · mín. ${PRAZO_MIN} / máx. ${PRAZO_MAX} meses`
+                : `Entre ${PRAZO_MIN} e ${PRAZO_MAX} meses`}
+            </p>
           </div>
         </div>
 
