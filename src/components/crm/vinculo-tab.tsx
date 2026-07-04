@@ -133,7 +133,7 @@ export function VinculoTab({
                   <ConfirmDelete
                     titulo="Remover vínculo"
                     descricao="O vínculo deste usuário com o cliente será removido."
-                    onConfirm={() => remover.mutate(v.id)}
+                    onConfirm={() => remover.mutateAsync(v.id).then(() => undefined)}
                   />
                 </div>
               ))}
