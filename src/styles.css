@@ -51,10 +51,10 @@
   --input: #e5e7eb;
   --ring: #000f9f;
 
-  --sidebar: #000a6e;
+  --sidebar: #000f9f;
   --sidebar-foreground: #eef0ff;
   --sidebar-primary: #ffffff;
-  --sidebar-primary-foreground: #000a6e;
+  --sidebar-primary-foreground: #000f9f;
   --sidebar-accent: rgba(255, 255, 255, 0.12);
   --sidebar-accent-foreground: #ffffff;
   --sidebar-border: rgba(255, 255, 255, 0.10);
@@ -68,30 +68,30 @@
 }
 
 .dark {
-  /* Conteúdo permanece branco no modo escuro — SOMENTE o menu muda. */
-  --background: #ffffff;
-  --foreground: #0b0b0f;
-  --card: #ffffff;
-  --card-foreground: #0b0b0f;
-  --popover: #ffffff;
-  --popover-foreground: #0b0b0f;
-  --primary: #000f9f;
+  /* MODO ESCURO — tema completo, sofisticado. */
+  --background: #0b0d16;
+  --foreground: #e6e8f0;
+  --card: #12141f;
+  --card-foreground: #e6e8f0;
+  --popover: #12141f;
+  --popover-foreground: #e6e8f0;
+  --primary: #5661e3;
   --primary-foreground: #ffffff;
-  --secondary: #f1f2f7;
-  --secondary-foreground: #0b0b0f;
-  --muted: #f7f8fa;
-  --muted-foreground: #6b7280;
-  --accent: #eef0ff;
-  --accent-foreground: #000f9f;
+  --secondary: #1a1d2b;
+  --secondary-foreground: #e6e8f0;
+  --muted: #161826;
+  --muted-foreground: #9aa0b8;
+  --accent: #1c2140;
+  --accent-foreground: #c7ceff;
   --destructive: #f5333f;
   --destructive-foreground: #ffffff;
-  --success: #10a37f;
-  --success-foreground: #ffffff;
-  --warning: #eab308;
+  --success: #22c79a;
+  --success-foreground: #02241b;
+  --warning: #f5c044;
   --warning-foreground: #1a1400;
-  --border: #e5e7eb;
-  --input: #e5e7eb;
-  --ring: #000f9f;
+  --border: #232636;
+  --input: #232636;
+  --ring: #5661e3;
 
   /* Menu (sidebar): gradiente escuro da marca. */
   --sidebar: #000a6e;
@@ -103,11 +103,38 @@
   --sidebar-border: rgba(255, 255, 255, 0.08);
   --sidebar-ring: #4b56d1;
 
-  --chart-1: #000f9f;
+  --chart-1: #6b74e8;
   --chart-2: #4b56d1;
-  --chart-3: #10a37f;
-  --chart-4: #eab308;
+  --chart-3: #22c79a;
+  --chart-4: #f5c044;
   --chart-5: #f5333f;
+}
+
+/* Menu lateral: cor sólida da marca no claro, gradiente no escuro. */
+.app-sidebar {
+  background-color: var(--sidebar);
+}
+.dark .app-sidebar {
+  background-image: linear-gradient(180deg, #000a6e 0%, #00052e 100%);
+}
+
+/* Scrollbar discreta dentro do menu — sem barra branca feia. */
+.sidebar-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.28) transparent;
+}
+.sidebar-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.sidebar-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.sidebar-scroll::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.28);
+  border-radius: 9999px;
+}
+.sidebar-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.45);
 }
 
 @theme inline {
