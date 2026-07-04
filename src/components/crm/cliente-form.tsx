@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -111,8 +112,40 @@ export function ClienteForm({
   });
   const [portal, setPortal] = useState(Boolean(portalAtivo));
   const [salvando, setSalvando] = useState(false);
+  const [buscandoCep, setBuscandoCep] = useState(false);
   const set = <K extends keyof ClienteFormValues>(k: K, val: ClienteFormValues[K]) =>
     setV((prev) => ({ ...prev, [k]: val }));
+
+  // Busca automática do endereço pelo CEP (ViaCEP) — apenas visual/preenchimento.
+  async function buscarCep(cepRaw: string) {
+    const cep = cepRaw.replace(/\D/g, "");
+    if (cep.length !== 8) return;
+    setBuscandoCep(true);
+    try {
+      const resp = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+      const dados = await resp.json();
+      if (dados?.erro) {
+        toast.error("CEP não encontrado.");
+        return;
+      }
+      setEnd((p) => ({
+        ...p,
+        logradouro: dados.logradouro || p.logradouro,
+        bairro: dados.bairro || p.bairro,
+        cidade: dados.localidade || p.cidade,
+        uf: dados.uf || p.uf,
+      }));
+    } catch {
+      toast.error("Não foi possível consultar o CEP.");
+    } finally {
+      setBuscandoCep(false);
+    }
+  }
+
+  function mascararCep(raw: string) {
+    const d = raw.replace(/\D/g, "").slice(0, 8);
+    return d.length > 5 ? `${d.slice(0, 5)}-${d.slice(5)}` : d;
+  }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -263,7 +296,23 @@ export function ClienteForm({
         <CardContent className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
             <Label>CEP</Label>
-            <Input value={end.cep} onChange={(e) => setEnd((p) => ({ ...p, cep: e.target.value }))} />
+            <div className="relative">
+              <Input
+                inputMode="numeric"
+                value={end.cep}
+                onChange={(e) => {
+                  const masked = mascararCep(e.target.value);
+                  setEnd((p) => ({ ...p, cep: masked }));
+                  if (masked.replace(/\D/g, "").length === 8) buscarCep(masked);
+                }}
+                onBlur={(e) => buscarCep(e.target.value)}
+                placeholder="00000-000"
+                maxLength={9}
+              />
+              {buscandoCep && (
+                <Loader2 className="absolute right-3 top-1/2 size-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+              )}
+            </div>
           </div>
           <div className="space-y-1.5">
             <Label>Logradouro</Label>
