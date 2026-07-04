@@ -691,3 +691,15 @@ export const obterFluxoCaixa = createServerFn({ method: "GET" })
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([periodo, v]) => ({ periodo, entrada: v.entrada, saida: v.saida, saldo: v.entrada - v.saida }));
   });
+
+/** Exclui uma conta a pagar ou a receber. */
+export const excluirConta = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({ tipo: z.enum(["pagar", "receber"]), id: z.string().uuid() }).parse(d),
+  )
+  .handler(async ({ data, context }): Promise<{ ok: true }> => {
+    const { error } = await context.supabase.from(TABELA[data.tipo]).delete().eq("id", data.id);
+    if (error) throw error;
+    return { ok: true };
+  });
