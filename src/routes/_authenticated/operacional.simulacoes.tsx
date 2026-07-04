@@ -99,6 +99,7 @@ function Pagina() {
               <TableHead className="text-right">Valor imóvel</TableHead>
               <TableHead className="text-right">Prazo</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead className="w-12 text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
