@@ -97,9 +97,13 @@ function AbaDocumentos() {
   const upload = useMutation({
     mutationFn: async (file: File) => {
       const buf = await file.arrayBuffer();
-      let bin = "";
+      // Converte para base64 em blocos para não travar a UI thread com arquivos grandes.
       const bytes = new Uint8Array(buf);
-      for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+      let bin = "";
+      const CHUNK = 0x8000;
+      for (let i = 0; i < bytes.length; i += CHUNK) {
+        bin += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
+      }
       const base64 = btoa(bin);
       return clienteEnviarDocumentoPendente({
         data: {
