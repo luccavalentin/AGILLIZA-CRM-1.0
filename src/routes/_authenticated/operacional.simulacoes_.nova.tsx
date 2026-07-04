@@ -179,14 +179,19 @@ function Pagina() {
 
         <div className="grid grid-cols-1 gap-3 pt-2 sm:grid-cols-2">
           <Button
-            variant="secondary"
+            variant={modo === "rapida" ? "default" : "secondary"}
             className="h-12"
             disabled={!valido}
             onClick={() => setMostrarRapida(true)}
           >
             Simulação rápida
           </Button>
-          <Button className="h-12" disabled={!valido} onClick={() => setOtpAberto(true)}>
+          <Button
+            variant={modo === "rapida" ? "secondary" : "default"}
+            className="h-12"
+            disabled={!valido}
+            onClick={() => setOtpAberto(true)}
+          >
             Simulação personalizada
           </Button>
         </div>
