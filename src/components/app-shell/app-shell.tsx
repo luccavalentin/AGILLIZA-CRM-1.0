@@ -72,8 +72,9 @@ export function AppShell({
       <div className="flex min-h-[100dvh] w-full bg-muted/40">
         {/* Sidebar desktop */}
         <aside
+          style={{ background: "linear-gradient(180deg, #000a6e 0%, #00052e 100%)" }}
           className={cn(
-            "sticky top-0 hidden h-[100dvh] shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] duration-200 lg:flex",
+            "sticky top-0 hidden h-[100dvh] shrink-0 flex-col border-r border-sidebar-border text-sidebar-foreground transition-[width] duration-200 lg:flex",
             larguraDesktop,
           )}
         >
