@@ -518,3 +518,13 @@ export const buscarClientesCRM = createServerFn({ method: "GET" })
     if (error) throw error;
     return rows ?? [];
   });
+
+/** Exclui um cliente (e seus registros dependentes via cascata). */
+export const excluirCliente = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }): Promise<{ ok: true }> => {
+    const { error } = await context.supabase.from("clientes").delete().eq("id", data.id);
+    if (error) throw error;
+    return { ok: true };
+  });
