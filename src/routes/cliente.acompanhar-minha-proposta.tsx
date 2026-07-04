@@ -204,15 +204,20 @@ function AbaMensagens() {
     onError: () => toast.error("Falha de conexão. Tente novamente."),
   });
 
-  // Marca as mensagens do time como lidas.
+  // Marca as mensagens do time como lidas (uma vez por id, sem reenvio em loop).
+  const marcadosRef = useRef<Set<string>>(new Set());
   useEffect(() => {
     const naoLidas = (mensagens ?? [])
-      .filter((m) => m.remetente_tipo === "time" && !m.lida_em)
+      .filter((m) => m.remetente_tipo === "time" && !m.lida_em && !marcadosRef.current.has(m.id))
       .map((m) => m.id);
     if (naoLidas.length > 0) {
-      clienteMarcarLida({ data: { mensagem_ids: naoLidas } }).then(() => {
-        qc.invalidateQueries({ queryKey: ["cliente", "notificacoes"] });
-      });
+      naoLidas.forEach((id) => marcadosRef.current.add(id));
+      clienteMarcarLida({ data: { mensagem_ids: naoLidas } })
+        .then(() => qc.invalidateQueries({ queryKey: ["cliente", "notificacoes"] }))
+        .catch(() => {
+          // Falhou: libera para nova tentativa no próximo ciclo.
+          naoLidas.forEach((id) => marcadosRef.current.delete(id));
+        });
     }
   }, [mensagens, qc]);
 
