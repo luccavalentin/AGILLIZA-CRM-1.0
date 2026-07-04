@@ -80,7 +80,6 @@ function AuthPage() {
     const form = new FormData(e.currentTarget);
     const nome = String(form.get("nome"));
     const email = String(form.get("email"));
-    const telefone = String(form.get("telefone"));
     const senha = String(form.get("senha"));
     const confirmar = String(form.get("confirmar"));
     const aceite = form.get("aceite");
@@ -107,7 +106,6 @@ function AuthPage() {
           emailRedirectTo: `${window.location.origin}/auth`,
           data: {
             full_name: nome,
-            telefone,
             papel_inicial: "correspondente",
           },
         },
@@ -184,10 +182,6 @@ function AuthPage() {
               <Input id="reg-email" name="email" type="email" autoComplete="email" required />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="reg-tel">Telefone</Label>
-              <Input id="reg-tel" name="telefone" type="tel" placeholder="(11) 99999-9999" />
-            </div>
-            <div className="space-y-2">
               <Label htmlFor="reg-senha">Senha</Label>
               <Input
                 id="reg-senha"
@@ -209,9 +203,7 @@ function AuthPage() {
             </div>
             <label className="flex items-start gap-2 text-sm text-muted-foreground">
               <Checkbox name="aceite" id="reg-aceite" className="mt-0.5" />
-              <span>
-                Li e aceito os termos de uso e a política de privacidade (LGPD).
-              </span>
+              <span>Li e aceito os termos de uso e a política de privacidade.</span>
             </label>
             <Button type="submit" className="w-full" disabled={carregando}>
               {carregando ? "Criando…" : "Criar conta de correspondente"}

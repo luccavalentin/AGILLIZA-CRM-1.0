@@ -22,13 +22,16 @@ export function AuthSplitLayout({
   return (
     <div className="flex min-h-[100dvh] flex-col bg-background lg:flex-row">
       {/* Banner */}
-      <aside className="relative hidden flex-col justify-between overflow-hidden bg-primary p-10 text-primary-foreground lg:flex lg:w-[45%]">
-        <Logo variant="light" className="h-9" />
-        <div className="max-w-md">
-          <h2 className="text-3xl font-semibold leading-tight">{bannerTitulo}</h2>
-          <p className="mt-3 text-primary-foreground/80">{bannerSubtitulo}</p>
+      <aside className="relative hidden flex-col justify-between overflow-hidden bg-gradient-to-br from-primary to-[#000a70] p-12 text-primary-foreground lg:flex lg:w-[45%]">
+        {/* Ornamento sutil de fundo */}
+        <div className="pointer-events-none absolute -right-24 -top-24 h-96 w-96 rounded-full bg-primary-foreground/5 blur-2xl" />
+        <div className="pointer-events-none absolute -bottom-32 -left-16 h-80 w-80 rounded-full bg-primary-foreground/5 blur-2xl" />
+        <Logo variant="light" className="relative h-12" />
+        <div className="relative max-w-md">
+          <h2 className="text-4xl font-semibold leading-tight tracking-tight">{bannerTitulo}</h2>
+          <p className="mt-4 text-lg leading-relaxed text-primary-foreground/80">{bannerSubtitulo}</p>
         </div>
-        <p className="text-xs text-primary-foreground/60">
+        <p className="relative text-xs text-primary-foreground/60">
           © {new Date().getFullYear()} Agilliza — Crédito Imobiliário.
         </p>
       </aside>
