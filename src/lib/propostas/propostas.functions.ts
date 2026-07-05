@@ -138,18 +138,20 @@ export const listarSimulacoesElegiveis = createServerFn({ method: "GET" })
     query = query.order("created_at", { ascending: false }).limit(30);
     const { data: rows, error } = await query;
     if (error) throw new Error(error.message);
-    // apenas com ao menos um banco simulado e ainda sem proposta
+    // apenas com ao menos um banco simulado; marca as que já têm proposta
     const ids = (rows ?? []).map((r: any) => r.id);
     const { data: jaProposta } = await supabase
       .from("propostas")
-      .select("simulacao_id")
+      .select("id, simulacao_id")
       .neq("status", "cancelada")
       .in("simulacao_id", ids.length ? ids : ["00000000-0000-0000-0000-000000000000"]);
-    const usadas = new Set((jaProposta ?? []).map((p: any) => p.simulacao_id));
+    const propostaPorSim = new Map<string, string>(
+      (jaProposta ?? []).map((p: any) => [p.simulacao_id, p.id]),
+    );
     return (rows ?? [])
-      .filter((r: any) => !usadas.has(r.id))
       .map((r: any) => ({
         ...r,
+        proposta_existente_id: propostaPorSim.get(r.id) ?? null,
         simulacao_bancos: (r.simulacao_bancos ?? []).filter((b: any) => b.status_banco === "simulada"),
       }))
       .filter((r: any) => r.simulacao_bancos.length > 0);
