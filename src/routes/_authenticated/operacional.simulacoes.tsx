@@ -32,6 +32,7 @@ function Pagina() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const excluir = useServerFn(excluirSimulacao);
+  const duplicar = useServerFn(duplicarSimulacao);
   const [escopo, setEscopo] = useState<"todas" | "minhas">("todas");
   const [q, setQ] = useState("");
   const [busca, setBusca] = useState("");
