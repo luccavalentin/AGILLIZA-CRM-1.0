@@ -225,12 +225,28 @@ function AcoesTopo({ proposta, propostaId, bancos }: { proposta: any; propostaId
     }
   }
 
+  // Bancos selecionados que ainda não foram ao banco (para envio adicional).
+  const bancosPendentes = (bancos ?? []).filter(
+    (b: any) => b.selecionado && b.status_banco !== "enviada",
+  );
+  const jaEnviou = Boolean(proposta.enviada_em);
+  const podeEnviarNovos =
+    jaEnviou &&
+    bancosPendentes.length > 0 &&
+    !["cancelada", "registrado", "credito_recusado", "contrato_emitido"].includes(status);
+
   return (
     <div className="flex flex-wrap items-center gap-2">
       {(status === "rascunho" || status === "erro_envio") && (
         <Button size="sm" onClick={enviar} disabled={busy}>
           {busy ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Send className="mr-1 h-4 w-4" />}
           {proposta.enviada_em ? "Reenviar" : "Enviar ao banco"}
+        </Button>
+      )}
+      {podeEnviarNovos && (
+        <Button size="sm" onClick={enviar} disabled={busy}>
+          {busy ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Send className="mr-1 h-4 w-4" />}
+          Enviar a {bancosPendentes.length > 1 ? `${bancosPendentes.length} novos bancos` : "novo banco"}
         </Button>
       )}
       {proposta.homefin_id_oportunidade && status !== "cancelada" && (
