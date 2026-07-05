@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { ArrowLeft, Calculator } from "lucide-react";
+import { ArrowLeft, Calculator, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -103,7 +103,9 @@ function Pagina() {
           <TabsTrigger value="dados">Dados</TabsTrigger>
           <TabsTrigger value="documentos">Documentos</TabsTrigger>
           <TabsTrigger value="vinculo">Vínculo de atendimento</TabsTrigger>
-          <TabsTrigger value="mensagens">Mensagens</TabsTrigger>
+          <TabsTrigger value="mensagens" className="gap-1.5">
+            <MessageCircle className="size-4" /> APP cliente
+          </TabsTrigger>
           <TabsTrigger value="interacoes">Interações</TabsTrigger>
           <TabsTrigger value="historico">Histórico</TabsTrigger>
         </TabsList>
@@ -214,7 +216,23 @@ function Pagina() {
         </TabsContent>
 
         <TabsContent value="mensagens" className="mt-4">
-          <ChatClienteTab clienteId={id} />
+          <ChatClienteTab
+            clienteId={id}
+            info={{
+              nome: c.nome,
+              documento: docExib,
+              email: c.email,
+              celular: c.telefone_celular ? formatarCelular(c.telefone_celular) : null,
+              contexto: (() => {
+                const nSim = negocios?.simulacoes.length ?? 0;
+                const nProp = negocios?.propostas.length ?? 0;
+                const partes: string[] = [];
+                if (nProp > 0) partes.push(`${nProp} proposta${nProp > 1 ? "s" : ""}`);
+                if (nSim > 0) partes.push(`${nSim} simulação${nSim > 1 ? "ões" : ""}`);
+                return partes.join(" · ") || null;
+              })(),
+            }}
+          />
         </TabsContent>
 
 
