@@ -31,6 +31,23 @@ const brl = (v: number) => (v || 0).toLocaleString("pt-BR", { style: "currency",
 const int = (v: number) => (v || 0).toLocaleString("pt-BR");
 const pct = (v: number) => `${(v || 0).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`;
 
+/** Rótulos oficiais dos status de proposta (espelha components/propostas/status.ts). */
+const STATUS_PROPOSTA_LABEL: Record<string, string> = {
+  rascunho: "Rascunho",
+  enviada_banco: "Enviada ao banco",
+  em_analise_credito: "Em análise de crédito",
+  aguardando_documentos: "Aguardando documentos",
+  credito_aprovado: "Crédito aprovado",
+  engenharia_vistoria: "Engenharia / vistoria",
+  analise_juridica: "Análise jurídica",
+  contrato_emitido: "Contrato emitido",
+  registrado: "Registrado",
+  credito_recusado: "Crédito recusado",
+  erro_envio: "Erro no envio",
+  cancelada: "Cancelada",
+};
+const rotuloStatus = (s: string) => STATUS_PROPOSTA_LABEL[s] ?? s;
+
 async function temPii(supabase: any, userId: string): Promise<boolean> {
   const { data: tudo } = await supabase.rpc("has_any_role", { _user_id: userId, _roles: ["admin", "correspondente"] });
   if (tudo) return true;
@@ -256,41 +273,105 @@ export const runReport = createServerFn({ method: "POST" })
     }
 
     async function relPropostas(): Promise<ReportResult> {
-      const props = await fetchAll("propostas", "id,numero_proposta,status,valor_financiamento,valor_financiamento_aprovado,nome_banco,produto,created_at", "created_at", "usuario_responsavel_id");
+      const todas = await fetchAll(
+        "propostas",
+        "id,numero_proposta,nome_cliente,status,valor_financiamento,valor_financiamento_aprovado,nome_banco,produto,prazo,created_at",
+        "created_at",
+        "usuario_responsavel_id",
+      );
+
+      // Lista completa de bancos e produtos cadastrados (independe do resultado filtrado).
+      const [{ data: bancosCad }, { data: prodProps }] = await Promise.all([
+        supabase.from("homefin_bancos").select("nome_banco").order("nome_banco", { ascending: true }),
+        supabase.from("propostas").select("produto"),
+      ]);
+      const bancosDisponiveis = [
+        ...new Set([
+          ...((bancosCad ?? []) as any[]).map((b) => String(b.nome_banco ?? "")),
+          ...todas.map((p) => String(p.nome_banco ?? "")),
+        ].filter(Boolean)),
+      ].sort((a, b) => a.localeCompare(b, "pt-BR"));
+      const produtosDisponiveis = [
+        ...new Set(((prodProps ?? []) as any[]).map((p) => String(p.produto ?? "")).filter(Boolean)),
+      ].sort((a, b) => a.localeCompare(b, "pt-BR"));
+
+      // Filtros server-side (banco, produto, status, faixa de valor, busca textual).
+      const buscaLc = filtros.busca?.trim().toLowerCase();
+      const props = todas.filter((p) => {
+        if (filtros.banco && (p.nome_banco ?? "") !== filtros.banco) return false;
+        if (filtros.produto && (p.produto ?? "") !== filtros.produto) return false;
+        if (filtros.status && p.status !== filtros.status) return false;
+        const v = p.valor_financiamento_aprovado ?? p.valor_financiamento ?? 0;
+        if (filtros.valorMin != null && v < filtros.valorMin) return false;
+        if (filtros.valorMax != null && v > filtros.valorMax) return false;
+        if (buscaLc) {
+          const alvo = `${p.numero_proposta ?? ""} ${p.nome_cliente ?? ""} ${p.nome_banco ?? ""}`.toLowerCase();
+          if (!alvo.includes(buscaLc)) return false;
+        }
+        return true;
+      });
+
       const enviadas = props.filter((p) => p.status !== "rascunho");
-      const analise = props.filter((p) => ["enviada_banco", "em_analise_credito"].includes(p.status)).length;
-      const aprovadas = props.filter((p) => p.status === "credito_aprovado").length;
-      const recusadas = props.filter((p) => p.status === "credito_recusado").length;
-      const contratos = props.filter((p) => ["contrato_emitido", "registrado"].includes(p.status)).length;
+      const emAnalise = props.filter((p) => ["enviada_banco", "em_analise_credito", "aguardando_documentos", "engenharia_vistoria", "analise_juridica"].includes(p.status));
+      const aprovadas = props.filter((p) => p.status === "credito_aprovado");
+      const recusadas = props.filter((p) => p.status === "credito_recusado");
+      const contratos = props.filter((p) => ["contrato_emitido", "registrado"].includes(p.status));
+      const volumeEnviado = enviadas.reduce((s, p) => s + (p.valor_financiamento ?? 0), 0);
+      const volumeContratado = contratos.reduce((s, p) => s + (p.valor_financiamento_aprovado ?? p.valor_financiamento ?? 0), 0);
+      const ticket = contratos.length ? volumeContratado / contratos.length : 0;
+      const decididas = aprovadas.length + recusadas.length + contratos.length;
+      const taxaAprov = decididas ? ((aprovadas.length + contratos.length) / decididas) * 100 : 0;
+
       const bancoMap = new Map<string, number>();
       enviadas.forEach((p) => bancoMap.set(p.nome_banco ?? "—", (bancoMap.get(p.nome_banco ?? "—") ?? 0) + 1));
       const statusMap = new Map<string, number>();
-      props.forEach((p) => statusMap.set(p.status, (statusMap.get(p.status) ?? 0) + 1));
+      props.forEach((p) => statusMap.set(rotuloStatus(p.status), (statusMap.get(rotuloStatus(p.status)) ?? 0) + 1));
+      const produtoMap = new Map<string, number>();
+      enviadas.forEach((p) => produtoMap.set(p.produto ?? "—", (produtoMap.get(p.produto ?? "—") ?? 0) + 1));
+
       return {
         titulo: "Relatório de propostas",
-        descricao: "Status, bancos e volumes das propostas no período.",
+        descricao: "Status, bancos, produtos e volumes das propostas no período.",
         modulo: "Propostas",
         kpis: [
           { label: "Total", valor: int(props.length), tone: "neutral" },
-          { label: "Em análise", valor: int(analise), tone: "warning" },
-          { label: "Aprovadas", valor: int(aprovadas), tone: "success" },
-          { label: "Recusadas", valor: int(recusadas), tone: "danger" },
-          { label: "Contratos", valor: int(contratos), tone: "success" },
-          { label: "Volume enviado", valor: brl(enviadas.reduce((s, p) => s + (p.valor_financiamento ?? 0), 0)), tone: "brand" },
+          { label: "Em análise", valor: int(emAnalise.length), tone: "warning" },
+          { label: "Contratos", valor: int(contratos.length), tone: "success" },
+          { label: "Taxa de aprovação", valor: pct(taxaAprov), tone: "success" },
+          { label: "Ticket médio", valor: brl(ticket), tone: "brand" },
+          { label: "Volume contratado", valor: brl(volumeContratado), hint: `Enviado ${brl(volumeEnviado)}`, tone: "brand" },
         ],
         charts: [
-          { titulo: "Distribuição por banco", tipo: "barh", dados: topN(bancoMap, 8) },
-          { titulo: "Distribuição por status", tipo: "bar", dados: topN(statusMap, 10) },
+          { titulo: "Distribuição por banco", subtitulo: "Propostas enviadas", tipo: "barh", dados: topN(bancoMap, 10) },
+          { titulo: "Distribuição por status", tipo: "bar", dados: topN(statusMap, 12) },
+          { titulo: "Distribuição por produto", subtitulo: "Propostas enviadas", tipo: "barh", dados: topN(produtoMap, 8) },
+          { titulo: "Evolução mensal", subtitulo: "Propostas x volume enviado", tipo: "line", moeda: true, dados: serieMensal(enviadas.map((p) => ({ data: p.created_at, valor: p.valor_financiamento ?? 0 }))) },
         ],
         columns: [
           { key: "numero_proposta", label: "Número" },
+          { key: "nome_cliente", label: "Cliente" },
           { key: "nome_banco", label: "Banco" },
           { key: "produto", label: "Produto" },
           { key: "status", label: "Status" },
+          { key: "prazo", label: "Prazo (meses)", align: "right", format: "int" },
           { key: "valor", label: "Financiamento", align: "right", footer: "sum", format: "brl" },
           { key: "created_at", label: "Criada em", format: "date" },
         ],
-        rows: props.slice(0, 500).map((p) => ({ numero_proposta: p.numero_proposta, nome_banco: p.nome_banco ?? "—", produto: p.produto ?? "—", status: p.status, valor: p.valor_financiamento_aprovado ?? p.valor_financiamento ?? 0, created_at: p.created_at })),
+        rows: props.slice(0, 1000).map((p) => ({
+          numero_proposta: p.numero_proposta,
+          nome_cliente: p.nome_cliente ?? "—",
+          nome_banco: p.nome_banco ?? "—",
+          produto: p.produto ?? "—",
+          status: rotuloStatus(p.status),
+          prazo: p.prazo ?? null,
+          valor: p.valor_financiamento_aprovado ?? p.valor_financiamento ?? 0,
+          created_at: p.created_at,
+        })),
+        filtrosDisponiveis: {
+          bancos: bancosDisponiveis,
+          produtos: produtosDisponiveis,
+          statuses: Object.entries(STATUS_PROPOSTA_LABEL).map(([value, label]) => ({ value, label })),
+        },
       };
     }
 

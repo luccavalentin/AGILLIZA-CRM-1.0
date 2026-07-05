@@ -50,14 +50,17 @@ export function ReportFiltersBar({
   onChange: (f: ReportFiltros) => void;
   bancos?: string[];
   produtos?: string[];
-  statuses?: string[];
+  statuses?: { value: string; label: string }[];
 }) {
   const set = (patch: Partial<ReportFiltros>) => onChange({ ...filtros, ...patch });
+  const statusLabel = (v: string) => statuses?.find((s) => s.value === v)?.label ?? v;
 
   const chips: { key: keyof ReportFiltros; label: string }[] = [];
   if (filtros.banco) chips.push({ key: "banco", label: `Banco: ${filtros.banco}` });
   if (filtros.produto) chips.push({ key: "produto", label: `Produto: ${filtros.produto}` });
-  if (filtros.status) chips.push({ key: "status", label: `Status: ${filtros.status}` });
+  if (filtros.status) chips.push({ key: "status", label: `Status: ${statusLabel(filtros.status)}` });
+  if (filtros.valorMin != null) chips.push({ key: "valorMin", label: `Mín: ${filtros.valorMin.toLocaleString("pt-BR")}` });
+  if (filtros.valorMax != null) chips.push({ key: "valorMax", label: `Máx: ${filtros.valorMax.toLocaleString("pt-BR")}` });
   if (filtros.busca) chips.push({ key: "busca", label: `Busca: ${filtros.busca}` });
 
   const temExtra = (bancos?.length || produtos?.length || statuses?.length) ?? 0;
@@ -72,12 +75,24 @@ export function ReportFiltersBar({
           </SelectContent>
         </Select>
 
-        {filtros.periodo === "custom" && (
-          <>
-            <Input type="date" value={filtros.de ?? ""} onChange={(e) => set({ de: e.target.value })} className="h-9 w-40" />
-            <Input type="date" value={filtros.ate ?? ""} onChange={(e) => set({ ate: e.target.value })} className="h-9 w-40" />
-          </>
-        )}
+        {/* Intervalo de datas sempre disponível; ao editar, o período vira personalizado. */}
+        <div className="flex items-center gap-1">
+          <Input
+            type="date"
+            aria-label="Data inicial"
+            value={filtros.de ?? ""}
+            onChange={(e) => set({ periodo: "custom", de: e.target.value || undefined })}
+            className="h-9 w-40"
+          />
+          <span className="text-xs text-muted-foreground">até</span>
+          <Input
+            type="date"
+            aria-label="Data final"
+            value={filtros.ate ?? ""}
+            onChange={(e) => set({ periodo: "custom", ate: e.target.value || undefined })}
+            className="h-9 w-40"
+          />
+        </div>
 
         {!!bancos?.length && (
           <Select value={filtros.banco ?? "__all"} onValueChange={(v) => set({ banco: v === "__all" ? undefined : v })}>
@@ -88,12 +103,21 @@ export function ReportFiltersBar({
             </SelectContent>
           </Select>
         )}
+        {!!produtos?.length && (
+          <Select value={filtros.produto ?? "__all"} onValueChange={(v) => set({ produto: v === "__all" ? undefined : v })}>
+            <SelectTrigger className="h-9 w-44"><SelectValue placeholder="Produto" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__all">Todos os produtos</SelectItem>
+              {produtos.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        )}
         {!!statuses?.length && (
           <Select value={filtros.status ?? "__all"} onValueChange={(v) => set({ status: v === "__all" ? undefined : v })}>
-            <SelectTrigger className="h-9 w-44"><SelectValue placeholder="Status" /></SelectTrigger>
+            <SelectTrigger className="h-9 w-48"><SelectValue placeholder="Status" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="__all">Todos os status</SelectItem>
-              {statuses.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+              {statuses.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
             </SelectContent>
           </Select>
         )}
