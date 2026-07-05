@@ -165,6 +165,15 @@ export const criarCliente = createServerFn({ method: "POST" })
       .select("id")
       .single();
     if (error) throw error;
+    const { registrarAuditoria } = await import("@/lib/admin/audit.server");
+    await registrarAuditoria({
+      userId,
+      correspondenteId: me.correspondente_id,
+      acao: "cliente.criar",
+      entidade: "clientes",
+      entidadeId: novo.id,
+      payloadNovo: { nome: data.nome, tipo_pessoa: data.tipo_pessoa },
+    });
     return { id: novo.id };
   });
 
