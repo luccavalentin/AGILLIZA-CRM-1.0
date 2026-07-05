@@ -60,6 +60,12 @@ function Pagina() {
         </div>
         <div className="flex items-center gap-2">
           <Button asChild variant="outline" size="sm">
+            <Link to="/operacional/tarefas/calendario"><CalendarDays className="mr-1 h-4 w-4" /> Calendário</Link>
+          </Button>
+          <Button asChild variant="outline" size="sm">
+            <Link to="/operacional/tarefas/equipe"><Users className="mr-1 h-4 w-4" /> Equipe</Link>
+          </Button>
+          <Button asChild variant="outline" size="sm">
             <Link to="/operacional/tarefas/kanban"><KanbanSquare className="mr-1 h-4 w-4" /> Kanban</Link>
           </Button>
           <NovaTarefaDialog onCriada={refetch} />
