@@ -139,6 +139,8 @@ export interface ReportResult {
   columns: ReportColumn[];
   rows: ReportRow[];
   ranking?: { titulo: string; columns: ReportColumn[]; rows: ReportRow[] };
+  /** Blocos de tabelas agrupadas (usado no relatório gerencial). */
+  tabelas?: ReportTabelaGrupo[];
   /** Comparativo mês a mês (últimos 6 meses) aplicado a todos os relatórios. */
   comparativoMensal?: ComparativoMensal;
   /** Opções completas para os filtros (independem do resultado filtrado). */
