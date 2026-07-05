@@ -6,10 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { SwipeToDelete } from "@/components/app-shell/swipe-to-delete";
 import {
   listarTodasNotificacoes,
   marcarNotificacaoLida,
   marcarTodasLidas,
+  excluirNotificacao,
   type Notificacao,
 } from "@/lib/notificacoes.functions";
 
@@ -70,6 +72,14 @@ function Pagina() {
     },
   });
 
+  const excluir = useMutation({
+    mutationFn: (id: string) => excluirNotificacao({ data: { id } }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notificacoes"] });
+      queryClient.invalidateQueries({ queryKey: ["notificacoes", "todas"] });
+    },
+  });
+
   const naoLidas = itens.filter((n) => !n.lida);
   const lidas = itens.filter((n) => n.lida);
 
@@ -80,22 +90,23 @@ function Pagina() {
 
   function renderItem(n: Notificacao) {
     return (
-      <button
-        key={n.id}
-        type="button"
-        onClick={() => aoClicar(n)}
-        className={cn(
-          "flex w-full flex-col gap-1 border-b px-4 py-3 text-left transition-colors last:border-b-0 hover:bg-accent focus-visible:bg-accent focus-visible:outline-none",
-          n.lida ? "bg-card" : "bg-accent/60",
-        )}
-      >
-        <div className="flex items-center gap-2">
-          {!n.lida && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />}
-          <span className="text-sm font-medium text-foreground">{n.titulo}</span>
-        </div>
-        {n.corpo && <span className="text-xs text-muted-foreground">{n.corpo}</span>}
-        <span className="text-[11px] text-muted-foreground">{formatarData(n.created_at)}</span>
-      </button>
+      <SwipeToDelete key={n.id} onDelete={() => excluir.mutate(n.id)}>
+        <button
+          type="button"
+          onClick={() => aoClicar(n)}
+          className={cn(
+            "flex w-full flex-col gap-1 border-b px-4 py-3 text-left transition-colors last:border-b-0 hover:bg-accent focus-visible:bg-accent focus-visible:outline-none",
+            n.lida ? "bg-card" : "bg-accent/60",
+          )}
+        >
+          <div className="flex items-center gap-2">
+            {!n.lida && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />}
+            <span className="text-sm font-medium text-foreground">{n.titulo}</span>
+          </div>
+          {n.corpo && <span className="text-xs text-muted-foreground">{n.corpo}</span>}
+          <span className="text-[11px] text-muted-foreground">{formatarData(n.created_at)}</span>
+        </button>
+      </SwipeToDelete>
     );
   }
 

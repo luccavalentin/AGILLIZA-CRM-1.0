@@ -85,3 +85,18 @@ export const marcarTodasLidas = createServerFn({ method: "POST" })
     if (error) throw new Error("Não foi possível atualizar as notificações.");
     return { ok: true };
   });
+
+/** Exclui uma notificação do usuário. */
+export const excluirNotificacao = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => z.object({ id: z.string().uuid() }).parse(data))
+  .handler(async ({ context, data }) => {
+    const { supabase, userId } = context;
+    const { error } = await supabase
+      .from("notificacoes")
+      .delete()
+      .eq("id", data.id)
+      .eq("user_id", userId);
+    if (error) throw new Error("Não foi possível excluir a notificação.");
+    return { ok: true };
+  });
