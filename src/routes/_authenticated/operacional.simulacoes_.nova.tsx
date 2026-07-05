@@ -108,7 +108,7 @@ function Pagina() {
     );
   }, [bancos, mostrarRapida, w.valor_financiamento, w.prazo_meses]);
 
-  function irParaPersonalizada() {
+  function irParaCompleta() {
     sessionStorage.setItem(
       "simulacao_wizard",
       JSON.stringify({ ...w, prazo: w.prazo_meses }),
