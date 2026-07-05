@@ -235,6 +235,11 @@ function Pagina() {
   );
 }
 
+function fmtValor(v: number | null): string {
+  if (v == null) return "—";
+  return `R$ ${Number(v).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
+}
+
 function Linha({ rotulo, valor }: { rotulo: string; valor: string }) {
   return (
     <div className="flex justify-between gap-4 border-b border-border py-1 last:border-0">
