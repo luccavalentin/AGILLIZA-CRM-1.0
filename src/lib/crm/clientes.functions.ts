@@ -587,6 +587,15 @@ export const excluirCliente = createServerFn({ method: "POST" })
     }
     const { error } = await supabase.from("clientes").delete().eq("id", data.id);
     if (error) throw error;
+    const { data: corr } = await supabase.rpc("correspondente_do_usuario", { _user_id: userId });
+    const { registrarAuditoria } = await import("@/lib/admin/audit.server");
+    await registrarAuditoria({
+      userId,
+      correspondenteId: corr ?? null,
+      acao: "cliente.excluir",
+      entidade: "clientes",
+      entidadeId: data.id,
+    });
     return { ok: true };
   });
 
