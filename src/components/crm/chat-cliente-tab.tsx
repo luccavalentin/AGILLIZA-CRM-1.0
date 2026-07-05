@@ -133,7 +133,7 @@ export function ChatClienteTab({ clienteId, info }: { clienteId: string; info?: 
                 >
                   <p className="whitespace-pre-wrap break-words">{m.mensagem}</p>
                   <p className={cn("mt-1 text-[10px]", doTime ? "text-primary-foreground/70" : "text-muted-foreground")}>
-                    {doTime ? "Você" : "Cliente"} · {formatarHora(m.criada_em)}
+                    {doTime ? (m.remetente_nome || "Equipe") : (info?.nome || "Cliente")} · {formatarHora(m.criada_em)}
                   </p>
                 </div>
               </div>
