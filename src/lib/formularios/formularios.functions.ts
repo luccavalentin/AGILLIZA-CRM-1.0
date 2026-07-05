@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-export const BANCOS_FORMULARIO = ["itau", "bradesco", "santander", "inter"] as const;
+export const BANCOS_FORMULARIO = ["itau", "bradesco", "santander", "inter", "diversos", "dps"] as const;
 export type BancoFormulario = (typeof BANCOS_FORMULARIO)[number];
 
 export interface FormularioBancario {
