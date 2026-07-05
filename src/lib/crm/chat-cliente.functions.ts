@@ -5,13 +5,15 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 export interface ChatMensagem {
   id: string;
   remetente_tipo: string;
+  remetente_id: string | null;
+  remetente_nome: string | null;
   mensagem: string;
   anexo_url: string | null;
   lida_em: string | null;
   criada_em: string;
 }
 
-/** Lista as mensagens do chat do App do Cliente (time ↔ cliente). */
+/** Lista as mensagens do chat do App do Cliente (time ↔ cliente), com o nome completo do remetente. */
 export const listarChatCliente = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { cliente_id: string }) =>
@@ -21,12 +23,34 @@ export const listarChatCliente = createServerFn({ method: "GET" })
     const { supabase } = context;
     const { data: rows, error } = await supabase
       .from("cliente_app_mensagens")
-      .select("id, remetente_tipo, mensagem, anexo_url, lida_em, criada_em")
+      .select("id, remetente_tipo, remetente_id, mensagem, anexo_url, lida_em, criada_em")
       .eq("cliente_id", data.cliente_id)
       .order("criada_em", { ascending: true })
       .limit(500);
     if (error) throw new Error(error.message);
-    return (rows ?? []) as ChatMensagem[];
+    const lista = (rows ?? []) as Omit<ChatMensagem, "remetente_nome">[];
+
+    // Nome completo dos membros da equipe que enviaram mensagens
+    const idsTime = Array.from(
+      new Set(
+        lista
+          .filter((m) => m.remetente_tipo === "time" && m.remetente_id)
+          .map((m) => m.remetente_id as string),
+      ),
+    );
+    const nomes = new Map<string, string>();
+    if (idsTime.length > 0) {
+      const { data: perfis } = await supabase
+        .from("profiles")
+        .select("id, nome")
+        .in("id", idsTime);
+      for (const p of perfis ?? []) nomes.set(p.id, p.nome ?? "");
+    }
+
+    return lista.map((m) => ({
+      ...m,
+      remetente_nome: m.remetente_tipo === "time" ? nomes.get(m.remetente_id ?? "") ?? null : null,
+    }));
   });
 
 /** Envia uma mensagem ao cliente como time e notifica o cliente no App. */
