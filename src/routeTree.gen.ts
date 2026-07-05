@@ -64,6 +64,7 @@ import { Route as AuthenticatedCrmPainelRouteImport } from './routes/_authentica
 import { Route as AuthenticatedCrmClientesRouteImport } from './routes/_authenticated/crm.clientes'
 import { Route as AuthenticatedContaSegurancaRouteImport } from './routes/_authenticated/conta.seguranca'
 import { Route as AuthenticatedContaPerfilRouteImport } from './routes/_authenticated/conta.perfil'
+import { Route as AuthenticatedAdminSlaRouteImport } from './routes/_authenticated/admin.sla'
 import { Route as AuthenticatedAdminRegrasModulosRouteImport } from './routes/_authenticated/admin.regras-modulos'
 import { Route as AuthenticatedAdminPessoasRouteImport } from './routes/_authenticated/admin.pessoas'
 import { Route as AuthenticatedAdminParametrosRouteImport } from './routes/_authenticated/admin.parametros'
@@ -391,6 +392,11 @@ const AuthenticatedContaPerfilRoute =
     path: '/conta/perfil',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAdminSlaRoute = AuthenticatedAdminSlaRouteImport.update({
+  id: '/admin/sla',
+  path: '/admin/sla',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedAdminRegrasModulosRoute =
   AuthenticatedAdminRegrasModulosRouteImport.update({
     id: '/admin/regras-modulos',
@@ -535,6 +541,7 @@ export interface FileRoutesByFullPath {
   '/admin/parametros': typeof AuthenticatedAdminParametrosRoute
   '/admin/pessoas': typeof AuthenticatedAdminPessoasRoute
   '/admin/regras-modulos': typeof AuthenticatedAdminRegrasModulosRoute
+  '/admin/sla': typeof AuthenticatedAdminSlaRoute
   '/conta/perfil': typeof AuthenticatedContaPerfilRoute
   '/conta/seguranca': typeof AuthenticatedContaSegurancaRoute
   '/crm/clientes': typeof AuthenticatedCrmClientesRoute
@@ -608,6 +615,7 @@ export interface FileRoutesByTo {
   '/admin/parametros': typeof AuthenticatedAdminParametrosRoute
   '/admin/pessoas': typeof AuthenticatedAdminPessoasRoute
   '/admin/regras-modulos': typeof AuthenticatedAdminRegrasModulosRoute
+  '/admin/sla': typeof AuthenticatedAdminSlaRoute
   '/conta/perfil': typeof AuthenticatedContaPerfilRoute
   '/conta/seguranca': typeof AuthenticatedContaSegurancaRoute
   '/crm/clientes': typeof AuthenticatedCrmClientesRoute
@@ -685,6 +693,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/parametros': typeof AuthenticatedAdminParametrosRoute
   '/_authenticated/admin/pessoas': typeof AuthenticatedAdminPessoasRoute
   '/_authenticated/admin/regras-modulos': typeof AuthenticatedAdminRegrasModulosRoute
+  '/_authenticated/admin/sla': typeof AuthenticatedAdminSlaRoute
   '/_authenticated/conta/perfil': typeof AuthenticatedContaPerfilRoute
   '/_authenticated/conta/seguranca': typeof AuthenticatedContaSegurancaRoute
   '/_authenticated/crm/clientes': typeof AuthenticatedCrmClientesRoute
@@ -762,6 +771,7 @@ export interface FileRouteTypes {
     | '/admin/parametros'
     | '/admin/pessoas'
     | '/admin/regras-modulos'
+    | '/admin/sla'
     | '/conta/perfil'
     | '/conta/seguranca'
     | '/crm/clientes'
@@ -835,6 +845,7 @@ export interface FileRouteTypes {
     | '/admin/parametros'
     | '/admin/pessoas'
     | '/admin/regras-modulos'
+    | '/admin/sla'
     | '/conta/perfil'
     | '/conta/seguranca'
     | '/crm/clientes'
@@ -911,6 +922,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/parametros'
     | '/_authenticated/admin/pessoas'
     | '/_authenticated/admin/regras-modulos'
+    | '/_authenticated/admin/sla'
     | '/_authenticated/conta/perfil'
     | '/_authenticated/conta/seguranca'
     | '/_authenticated/crm/clientes'
@@ -1355,6 +1367,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedContaPerfilRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin/sla': {
+      id: '/_authenticated/admin/sla'
+      path: '/admin/sla'
+      fullPath: '/admin/sla'
+      preLoaderRoute: typeof AuthenticatedAdminSlaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/admin/regras-modulos': {
       id: '/_authenticated/admin/regras-modulos'
       path: '/admin/regras-modulos'
@@ -1559,6 +1578,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminParametrosRoute: typeof AuthenticatedAdminParametrosRoute
   AuthenticatedAdminPessoasRoute: typeof AuthenticatedAdminPessoasRoute
   AuthenticatedAdminRegrasModulosRoute: typeof AuthenticatedAdminRegrasModulosRoute
+  AuthenticatedAdminSlaRoute: typeof AuthenticatedAdminSlaRoute
   AuthenticatedContaPerfilRoute: typeof AuthenticatedContaPerfilRoute
   AuthenticatedContaSegurancaRoute: typeof AuthenticatedContaSegurancaRoute
   AuthenticatedCrmClientesRoute: typeof AuthenticatedCrmClientesRoute
@@ -1603,6 +1623,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminParametrosRoute: AuthenticatedAdminParametrosRoute,
   AuthenticatedAdminPessoasRoute: AuthenticatedAdminPessoasRoute,
   AuthenticatedAdminRegrasModulosRoute: AuthenticatedAdminRegrasModulosRoute,
+  AuthenticatedAdminSlaRoute: AuthenticatedAdminSlaRoute,
   AuthenticatedContaPerfilRoute: AuthenticatedContaPerfilRoute,
   AuthenticatedContaSegurancaRoute: AuthenticatedContaSegurancaRoute,
   AuthenticatedCrmClientesRoute: AuthenticatedCrmClientesRoute,
