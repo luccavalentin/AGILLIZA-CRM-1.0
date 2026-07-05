@@ -53,6 +53,7 @@ export async function enviarPropostaImpl({
   userId,
   ip,
   supabase,
+  bancoId,
 }: EnviarArgs): Promise<EnviarResultado> {
   const { data: prop, error } = await supabase.from("propostas").select("*").eq("id", propostaId).maybeSingle();
   if (error) throw new Error(error.message);
