@@ -51,8 +51,22 @@ export function PainelView({
 
   const [periodo, setPeriodo] = useState<Periodo>("mes");
   const [escopo, setEscopo] = useState<Escopo>("minha");
+  const escopoTocado = useRef(false);
 
   const { data: perms } = useQuery({ queryKey: ["report-escopo"], queryFn: () => escopoFn(), staleTime: 5 * 60_000 });
+
+  // Amplia o escopo automaticamente para quem pode ver equipe/geral (até o usuário mudar manualmente).
+  useEffect(() => {
+    if (escopoTocado.current || !perms) return;
+    if (perms.podeGeral) setEscopo("geral");
+    else if (perms.podeEquipe) setEscopo("equipe");
+  }, [perms]);
+
+  const mudarEscopo = (e: Escopo) => {
+    escopoTocado.current = true;
+    setEscopo(e);
+  };
+
   const queryKey = ["panel", modulo, periodo, escopo];
   const { data, isLoading, error, dataUpdatedAt } = useQuery({
     queryKey,
