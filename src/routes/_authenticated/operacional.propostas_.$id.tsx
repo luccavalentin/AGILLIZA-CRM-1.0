@@ -22,6 +22,7 @@ import {
 } from "@/lib/propostas/propostas.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -90,7 +91,7 @@ function Pagina() {
         <Button asChild variant="ghost" size="sm">
           <Link to="/operacional/propostas"><ArrowLeft className="mr-1 h-4 w-4" /> Voltar</Link>
         </Button>
-        <AcoesTopo proposta={p} propostaId={id} />
+        <AcoesTopo proposta={p} propostaId={id} bancos={data.bancos} />
       </div>
 
       {/* Header linha 1 */}
@@ -153,7 +154,7 @@ function Kpi({ label, valor }: { label: string; valor: React.ReactNode }) {
 }
 
 /* ===== Ações do topo ===== */
-function AcoesTopo({ proposta, propostaId }: { proposta: any; propostaId: string }) {
+function AcoesTopo({ proposta, propostaId, bancos }: { proposta: any; propostaId: string; bancos: any[] }) {
   const qc = useQueryClient();
   const [busy, setBusy] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
@@ -225,12 +226,28 @@ function AcoesTopo({ proposta, propostaId }: { proposta: any; propostaId: string
     }
   }
 
+  // Bancos selecionados que ainda não foram ao banco (para envio adicional).
+  const bancosPendentes = (bancos ?? []).filter(
+    (b: any) => b.selecionado && b.status_banco !== "enviada",
+  );
+  const jaEnviou = Boolean(proposta.enviada_em);
+  const podeEnviarNovos =
+    jaEnviou &&
+    bancosPendentes.length > 0 &&
+    !["cancelada", "registrado", "credito_recusado", "contrato_emitido"].includes(status);
+
   return (
     <div className="flex flex-wrap items-center gap-2">
       {(status === "rascunho" || status === "erro_envio") && (
         <Button size="sm" onClick={enviar} disabled={busy}>
           {busy ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Send className="mr-1 h-4 w-4" />}
           {proposta.enviada_em ? "Reenviar" : "Enviar ao banco"}
+        </Button>
+      )}
+      {podeEnviarNovos && (
+        <Button size="sm" onClick={enviar} disabled={busy}>
+          {busy ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Send className="mr-1 h-4 w-4" />}
+          Enviar a {bancosPendentes.length > 1 ? `${bancosPendentes.length} novos bancos` : "novo banco"}
         </Button>
       )}
       {proposta.homefin_id_oportunidade && status !== "cancelada" && (
@@ -301,18 +318,18 @@ function TabResumo({ proposta, bancos, propostaId }: { proposta: any; bancos: an
 
       <div className="rounded-lg border border-border">
         <div className="border-b border-border px-4 py-2 text-sm font-medium text-muted-foreground">
-          Bancos / Simulações vinculadas
+          Bancos / Simulações vinculadas — selecione um ou mais bancos para enviar a proposta
         </div>
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-10"></TableHead>
               <TableHead>Banco</TableHead>
               <TableHead className="text-right">R$ Financiamento</TableHead>
               <TableHead className="text-right">Parcela</TableHead>
               <TableHead className="text-right">Prazo</TableHead>
               <TableHead className="text-right">Taxa/ano</TableHead>
               <TableHead>Situação</TableHead>
-              <TableHead></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -325,6 +342,14 @@ function TabResumo({ proposta, bancos, propostaId }: { proposta: any; bancos: an
             )}
             {bancos.map((b) => (
               <TableRow key={b.id} className={cn(b.selecionado && "bg-accent/40")}>
+                <TableCell>
+                  <Checkbox
+                    checked={b.selecionado}
+                    disabled={b.status_banco === "enviada"}
+                    onCheckedChange={() => selecionar(b.id)}
+                    aria-label={`Selecionar ${b.nome_banco}`}
+                  />
+                </TableCell>
                 <TableCell className="font-medium">{b.nome_banco}</TableCell>
                 <TableCell className="text-right tabular-nums">{formatBRL(b.valor_financiamento_max)}</TableCell>
                 <TableCell className="text-right tabular-nums">{formatBRL(b.valor_parcela)}</TableCell>
@@ -336,13 +361,6 @@ function TabResumo({ proposta, bancos, propostaId }: { proposta: any; bancos: an
                   <ToneBadge tone={b.status_banco === "erro" ? "danger" : b.status_banco === "enviada" ? "success" : "info"}>
                     {b.status_banco}
                   </ToneBadge>
-                </TableCell>
-                <TableCell className="text-right">
-                  {!b.selecionado ? (
-                    <Button size="sm" variant="outline" onClick={() => selecionar(b.id)}>Selecionar</Button>
-                  ) : (
-                    <ToneBadge tone="success">Escolhido</ToneBadge>
-                  )}
                 </TableCell>
               </TableRow>
             ))}

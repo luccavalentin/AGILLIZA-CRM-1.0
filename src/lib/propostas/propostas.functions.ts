@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { getRequestHeader } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { transicaoPermitida, STATUS_EDITAVEIS, type PropostaStatus } from "./state-machine";
+import { transicaoPermitida, STATUS_EDITAVEIS, STATUS_TERMINAIS, type PropostaStatus } from "./state-machine";
 
 /** ===== Tipos de saída ===== */
 export interface PropostaListaItem {
@@ -304,25 +304,58 @@ export const selecionarBancoProposta = createServerFn({ method: "POST" })
   )
   .handler(async ({ context, data }) => {
     const { supabase } = context;
-    await assertPropostaEditavel(supabase, data.proposta_id);
+    // Seleção múltipla: a mesma proposta pode ser enviada a vários bancos.
+    // Bloqueia apenas propostas em estado terminal.
+    const { data: prop } = await supabase
+      .from("propostas")
+      .select("status")
+      .eq("id", data.proposta_id)
+      .maybeSingle();
+    if (!prop) throw new Error("Proposta não encontrada.");
+    if (STATUS_TERMINAIS.includes(prop.status as PropostaStatus)) {
+      throw new Error("Esta proposta não pode mais ser alterada no estado atual.");
+    }
+
     const { data: banco } = await supabase
       .from("proposta_bancos")
       .select("*")
       .eq("id", data.proposta_banco_id)
       .maybeSingle();
     if (!banco) throw new Error("Banco não encontrado.");
-    await supabase.from("proposta_bancos").update({ selecionado: false }).eq("proposta_id", data.proposta_id);
-    await supabase.from("proposta_bancos").update({ selecionado: true }).eq("id", data.proposta_banco_id);
+
+    // Um banco já enviado não pode ser desmarcado.
+    const novoSelecionado = !banco.selecionado;
+    if (!novoSelecionado && banco.status_banco === "enviada") {
+      throw new Error("Este banco já foi enviado e não pode ser removido.");
+    }
+
+    await supabase
+      .from("proposta_bancos")
+      .update({ selecionado: novoSelecionado })
+      .eq("id", data.proposta_banco_id);
+
+    // Mantém o "banco principal" da proposta apontando para um banco selecionado
+    // (usado em telas de resumo/PDF). Prioriza um já enviado, senão qualquer selecionado.
+    const { data: selecionados } = await supabase
+      .from("proposta_bancos")
+      .select("banco_id, nome_banco, homefin_id_simulacao_banco, status_banco")
+      .eq("proposta_id", data.proposta_id)
+      .eq("selecionado", true);
+    const principal =
+      (selecionados ?? []).find((b: any) => b.status_banco === "enviada") ??
+      (selecionados ?? [])[0] ??
+      null;
     await supabase
       .from("propostas")
       .update({
-        banco_id: banco.banco_id,
-        nome_banco: banco.nome_banco,
-        homefin_id_simulacao: banco.homefin_id_simulacao_banco,
+        banco_id: principal?.banco_id ?? null,
+        nome_banco: principal?.nome_banco ?? null,
+        homefin_id_simulacao: principal?.homefin_id_simulacao_banco ?? null,
       })
       .eq("id", data.proposta_id);
-    return { ok: true };
+    return { ok: true, selecionado: novoSelecionado };
   });
+
 
 /** ===== Envolvidos (compradores/vendedores) ===== */
 export const adicionarEnvolvido = createServerFn({ method: "POST" })

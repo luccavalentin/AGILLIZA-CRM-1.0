@@ -60,18 +60,33 @@ export async function enviarPropostaImpl({
     throw new Error("Proposta sem oportunidade vinculada. Origine a partir de uma simulação enviada ao banco.");
   }
 
-  // documentos obrigatórios pendentes bloqueiam o envio
+  const statusAtual = prop.status as PropostaStatus;
+  // Primeiro envio = ainda em rascunho ou após um erro de envio.
+  // Envio adicional = a proposta já foi ao banco e queremos incluir outro(s)
+  // banco(s) na MESMA oportunidade (a API permite várias propostas por oportunidade).
+  const primeiroEnvio = statusAtual === "rascunho" || statusAtual === "erro_envio";
+  const STATUS_BLOQUEIA_NOVO_BANCO: PropostaStatus[] = [
+    "cancelada",
+    "registrado",
+    "credito_recusado",
+    "contrato_emitido",
+  ];
+
+  if (primeiroEnvio) {
+    // valida a transição pela máquina de estados (só rascunho/erro_envio podem iniciar)
+    if (!transicaoPermitida(statusAtual, "enviada_banco")) {
+      throw new Error("Esta proposta não pode ser enviada no estado atual.");
+    }
+  } else if (STATUS_BLOQUEIA_NOVO_BANCO.includes(statusAtual)) {
+    throw new Error("Esta proposta não aceita novos bancos no estado atual.");
+  }
+
+  // documentos obrigatórios pendentes OU reprovados bloqueiam o envio
   const { data: docsObrig } = await supabase
     .from("proposta_documentos")
     .select("id, status")
     .eq("proposta_id", propostaId)
     .eq("obrigatorio", true);
-  // valida a transição pela máquina de estados (só rascunho/erro_envio podem enviar)
-  if (!transicaoPermitida(prop.status as PropostaStatus, "enviada_banco")) {
-    throw new Error("Esta proposta não pode ser enviada no estado atual.");
-  }
-
-  // documentos obrigatórios pendentes OU reprovados bloqueiam o envio
   const bloqueantes = (docsObrig ?? []).filter(
     (d: any) => d.status === "pendente" || d.status === "reprovado",
   );
@@ -79,19 +94,27 @@ export async function enviarPropostaImpl({
     throw new Error(`Existem ${bloqueantes.length} documento(s) obrigatório(s) pendente(s) ou reprovado(s).`);
   }
 
-  const { data: bancos } = await supabase
+  // Bancos selecionados que ainda NÃO foram enviados ao banco.
+  const { data: bancosSel } = await supabase
     .from("proposta_bancos")
     .select("*")
     .eq("proposta_id", propostaId)
     .eq("selecionado", true);
-  if (!bancos || bancos.length === 0) {
-    throw new Error("Selecione ao menos um banco antes de enviar.");
+  const bancos = (bancosSel ?? []).filter((b: any) => b.status_banco !== "enviada");
+  if (bancos.length === 0) {
+    throw new Error(
+      primeiroEnvio
+        ? "Selecione ao menos um banco antes de enviar."
+        : "Nenhum banco novo selecionado. Selecione outro banco para enviar.",
+    );
   }
 
-  await supabase
-    .from("propostas")
-    .update({ status: "enviada_banco", enviada_em: new Date().toISOString(), ip_consentimento: ip, ultimo_erro: null })
-    .eq("id", propostaId);
+  if (primeiroEnvio) {
+    await supabase
+      .from("propostas")
+      .update({ status: "enviada_banco", enviada_em: new Date().toISOString(), ip_consentimento: ip, ultimo_erro: null })
+      .eq("id", propostaId);
+  }
 
   const ctx = { simulacao_id: prop.simulacao_id, proposta_id: propostaId, correspondente_id: prop.correspondente_id };
   const resultados: EnviarResultado["bancos"] = [];
@@ -115,8 +138,14 @@ export async function enviarPropostaImpl({
     }
   }
 
-  const novoStatus = sucesso > 0 ? "em_analise_credito" : "erro_envio";
-  await supabase.from("propostas").update({ status: novoStatus }).eq("id", propostaId);
+  // No primeiro envio o status avança; em envios adicionais o status já reflete
+  // a análise em andamento e não deve retroceder.
+  let novoStatus = statusAtual;
+  if (primeiroEnvio) {
+    novoStatus = sucesso > 0 ? "em_analise_credito" : "erro_envio";
+    await supabase.from("propostas").update({ status: novoStatus }).eq("id", propostaId);
+  }
+
   await supabase.from("proposta_historico").insert({
     proposta_id: propostaId,
     tipo_evento: sucesso > 0 ? "enviada_ao_banco" : "erro_envio",
