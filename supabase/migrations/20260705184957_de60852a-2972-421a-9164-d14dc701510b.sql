@@ -1,0 +1,2 @@
+ALTER TABLE public.formularios_bancarios DROP CONSTRAINT IF EXISTS formularios_bancarios_banco_check;
+ALTER TABLE public.formularios_bancarios ADD CONSTRAINT formularios_bancarios_banco_check CHECK (banco IN ('itau','bradesco','santander','inter','diversos','dps'));
