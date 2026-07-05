@@ -135,6 +135,8 @@ export const navInterno: NavGroup[] = [
       { label: "Pessoas", icon: UserCog, to: "/admin/pessoas", perm: { modulo: "admin.pessoas" } },
       { label: "Regras & Módulos", icon: SlidersHorizontal, to: "/admin/regras-modulos", perm: { modulo: "admin.regras" } },
       { label: "Integrações", icon: Plug, to: "/admin/integracoes", perm: { modulo: "admin.integracoes" } },
+      { label: "Bancos", icon: Landmark, to: "/admin/bancos", perm: { modulo: "admin.integracoes" } },
+      { label: "APIs de IA", icon: Sparkles, to: "/admin/apis-ia", perm: { modulo: "admin.integracoes" } },
       { label: "Parâmetros", icon: Settings2, to: "/admin/parametros", perm: { modulo: "admin.parametros" } },
       { label: "Compras", icon: ShoppingCart, to: "/admin/compras", perm: { modulo: "admin.compras" } },
       { label: "SLA & Feriados", icon: Timer, to: "/admin/sla", perm: { modulo: "admin.sla" } },
