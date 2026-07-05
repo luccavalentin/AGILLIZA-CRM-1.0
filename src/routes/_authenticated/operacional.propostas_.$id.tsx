@@ -354,6 +354,7 @@ function TabResumo({ proposta, bancos, propostaId }: { proposta: any; bancos: an
               <TableHead className="text-right">Prazo</TableHead>
               <TableHead className="text-right">Taxa/ano</TableHead>
               <TableHead>Situação</TableHead>
+              <TableHead className="text-right">Ação</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
