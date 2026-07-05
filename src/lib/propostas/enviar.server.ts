@@ -135,7 +135,7 @@ export async function enviarPropostaImpl({
         { idSimulacao: b.homefin_id_simulacao_banco ?? prop.homefin_id_simulacao },
         ctx,
       );
-      await supabase.from("proposta_bancos").update({ status_banco: "enviada" }).eq("id", b.id);
+      await supabase.from("proposta_bancos").update({ status_banco: "enviada", selecionado: true, mensagem_banco: null }).eq("id", b.id);
       sucesso++;
       resultados.push({ banco_id: b.banco_id, nome_banco: b.nome_banco, status: "enviada" });
     } catch (e) {
