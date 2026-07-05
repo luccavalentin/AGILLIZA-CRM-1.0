@@ -7,15 +7,15 @@ import { createFileRoute } from "@tanstack/react-router";
  * o status das propostas, garantindo que o retorno do banco chegue ao usuário
  * sem depender de clique manual em "Atualizar status".
  *
- * Segurança: exige o cabeçalho `x-cron-secret` igual ao segredo CRON_SECRET.
+ * Segurança: exige o cabeçalho `apikey` igual à chave pública do projeto.
  */
 export const Route = createFileRoute("/api/public/sync-propostas")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const secret = process.env.CRON_SECRET;
-        const provided = request.headers.get("x-cron-secret");
-        if (!secret || provided !== secret) {
+        const anon = process.env.SUPABASE_ANON_KEY ?? process.env.SUPABASE_PUBLISHABLE_KEY;
+        const provided = request.headers.get("apikey");
+        if (!anon || provided !== anon) {
           return new Response("Unauthorized", { status: 401 });
         }
 
