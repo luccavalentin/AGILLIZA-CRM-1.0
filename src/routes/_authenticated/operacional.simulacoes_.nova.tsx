@@ -18,8 +18,8 @@ import { compararBancosRapido, taxaAnoDeBanco } from "@/lib/simulacao/simulacao-
 export const Route = createFileRoute("/_authenticated/operacional/simulacoes_/nova")({
   head: () => ({ meta: [{ title: "Nova simulação — Agilliza" }] }),
   beforeLoad: () => assertModuloPermitido("operacional.simulacoes"),
-  validateSearch: (search: Record<string, unknown>): { modo?: "rapida" | "personalizada" } => ({
-    modo: search.modo === "rapida" || search.modo === "personalizada" ? search.modo : undefined,
+  validateSearch: (search: Record<string, unknown>): { modo?: "rapida" } => ({
+    modo: search.modo === "rapida" ? "rapida" : undefined,
   }),
   component: Pagina,
 });
