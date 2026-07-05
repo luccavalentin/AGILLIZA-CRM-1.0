@@ -95,16 +95,18 @@ export const salvarBancoAdmin = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => bancoSchema.parse(d))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
-    const payload: Record<string, string | number | boolean | null> = {
+    const payload = {
       updated_at: new Date().toISOString(),
+      ...(data.ativo !== undefined ? { ativo: data.ativo } : {}),
+      ...(data.flag_padrao !== undefined ? { flag_padrao: data.flag_padrao } : {}),
+      ...(data.ordem !== undefined ? { ordem: data.ordem } : {}),
+      ...(data.codigo_agencia_padrao !== undefined
+        ? { codigo_agencia_padrao: data.codigo_agencia_padrao || null }
+        : {}),
+      ...(data.codigo_parceiro !== undefined
+        ? { codigo_parceiro: data.codigo_parceiro || null }
+        : {}),
     };
-    if (data.ativo !== undefined) payload.ativo = data.ativo;
-    if (data.flag_padrao !== undefined) payload.flag_padrao = data.flag_padrao;
-    if (data.ordem !== undefined) payload.ordem = data.ordem;
-    if (data.codigo_agencia_padrao !== undefined)
-      payload.codigo_agencia_padrao = data.codigo_agencia_padrao || null;
-    if (data.codigo_parceiro !== undefined)
-      payload.codigo_parceiro = data.codigo_parceiro || null;
 
     const { error } = await context.supabase
       .from("homefin_bancos")
