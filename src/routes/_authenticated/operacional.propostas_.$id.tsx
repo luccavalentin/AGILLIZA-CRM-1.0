@@ -19,6 +19,8 @@ import {
   removerDocumento,
   urlDocumento,
   salvarIq,
+  definirSituacaoBanco,
+  SITUACOES_BANCO,
 } from "@/lib/propostas/propostas.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
