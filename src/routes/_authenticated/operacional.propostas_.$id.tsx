@@ -449,6 +449,24 @@ function TabResumo({ proposta, bancos, propostaId }: { proposta: any; bancos: an
                     {b.status_banco}
                   </ToneBadge>
                 </TableCell>
+                <TableCell>
+                  <Select
+                    value={(b.situacao_banco as SituacaoBanco) ?? "nao_enviado"}
+                    onValueChange={(v) => mudarSituacao(b.id, v as SituacaoBanco)}
+                  >
+                    <SelectTrigger className="h-8 w-48">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SITUACOES_BANCO.map((s) => (
+                        <SelectItem key={s} value={s}>
+                          {SITUACAO_BANCO_LABEL[s]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </TableCell>
+
                 <TableCell className="text-right">
                   {b.status_banco === "enviada" ? (
                     <span className="text-xs text-muted-foreground">Enviado</span>
