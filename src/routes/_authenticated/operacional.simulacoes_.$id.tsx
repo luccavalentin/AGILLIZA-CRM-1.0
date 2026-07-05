@@ -194,9 +194,14 @@ function Pagina() {
           <Card className="divide-y divide-border p-0">
             {data.historico.length === 0 && <p className="p-4 text-sm text-muted-foreground">Sem histórico.</p>}
             {data.historico.map((h: any) => (
-              <div key={h.id} className="flex items-center justify-between p-4 text-sm">
-                <span>{h.descricao}</span>
-                <span className="text-xs text-muted-foreground">{new Date(h.created_at).toLocaleString("pt-BR")}</span>
+              <div key={h.id} className="flex items-center justify-between gap-3 p-4 text-sm">
+                <div>
+                  <span>{h.descricao}</span>
+                  {h.ator_nome && (
+                    <span className="text-muted-foreground"> · por {h.ator_nome}</span>
+                  )}
+                </div>
+                <span className="shrink-0 text-xs text-muted-foreground">{new Date(h.created_at).toLocaleString("pt-BR")}</span>
               </div>
             ))}
           </Card>
