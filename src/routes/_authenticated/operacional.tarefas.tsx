@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { KanbanSquare } from "lucide-react";
+import { KanbanSquare, CalendarDays, Users } from "lucide-react";
 import { toast } from "sonner";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { listarTarefas, excluirTarefa } from "@/lib/operacional/tarefas.functions";
