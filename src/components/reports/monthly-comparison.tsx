@@ -9,7 +9,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { ChartCard } from "@/components/reports/report-kpi-card";
+import { Card } from "@/components/ui/card";
 import type { ComparativoMensal } from "@/lib/relatorios/shared";
 
 const tooltipStyle = {
