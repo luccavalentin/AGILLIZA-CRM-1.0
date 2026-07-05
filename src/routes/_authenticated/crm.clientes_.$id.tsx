@@ -103,7 +103,9 @@ function Pagina() {
           <TabsTrigger value="dados">Dados</TabsTrigger>
           <TabsTrigger value="documentos">Documentos</TabsTrigger>
           <TabsTrigger value="vinculo">Vínculo de atendimento</TabsTrigger>
-          <TabsTrigger value="mensagens">Mensagens</TabsTrigger>
+          <TabsTrigger value="mensagens" className="gap-1.5">
+            <MessageCircle className="size-4" /> APP cliente
+          </TabsTrigger>
           <TabsTrigger value="interacoes">Interações</TabsTrigger>
           <TabsTrigger value="historico">Histórico</TabsTrigger>
         </TabsList>
