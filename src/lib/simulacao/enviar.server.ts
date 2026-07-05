@@ -211,6 +211,7 @@ export async function enviarSimulacaoImpl({
 
     const { registrarAuditoria } = await import("@/lib/admin/audit.server");
     await registrarAuditoria({
+      supabase,
       userId,
       correspondenteId: correspondente_id,
       acao: "simulacao.enviar_banco",

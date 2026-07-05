@@ -4313,6 +4313,18 @@ export type Database = {
         Returns: Json
       }
       portal_visao_geral: { Args: { _cid: string }; Returns: Json }
+      registrar_auditoria: {
+        Args: {
+          _acao: string
+          _entidade?: string
+          _entidade_id?: string
+          _ip?: string
+          _payload_anterior?: Json
+          _payload_novo?: Json
+          _user_agent?: string
+        }
+        Returns: string
+      }
       usuario_escopo_dados: {
         Args: { _modulo: string; _user_id: string }
         Returns: Database["public"]["Enums"]["escopo_dados"]

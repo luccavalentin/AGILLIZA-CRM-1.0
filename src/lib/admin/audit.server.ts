@@ -24,6 +24,12 @@ export interface AuditoriaEntrada {
   payloadAnterior?: Record<string, unknown> | null;
   /** Estado novo (para creates/updates). */
   payloadNovo?: Record<string, unknown> | null;
+  /**
+   * Cliente Supabase autenticado (context.supabase da server function).
+   * Quando informado, o registro é gravado via função SECURITY DEFINER
+   * `registrar_auditoria` — não depende da chave de serviço. Preferencial.
+   */
+  supabase?: any;
 }
 
 /** Extrai o IP do cliente a partir dos cabeçalhos da requisição. */
@@ -51,6 +57,23 @@ function obterUserAgent(): string | null {
  */
 export async function registrarAuditoria(entrada: AuditoriaEntrada): Promise<void> {
   try {
+    // Caminho preferencial: cliente autenticado + função SECURITY DEFINER.
+    // Não depende da chave de serviço (indisponível no runtime).
+    if (entrada.supabase) {
+      const { error } = await entrada.supabase.rpc("registrar_auditoria", {
+        _acao: entrada.acao,
+        _entidade: entrada.entidade ?? null,
+        _entidade_id: entrada.entidadeId ?? null,
+        _payload_anterior: (entrada.payloadAnterior as any) ?? null,
+        _payload_novo: (entrada.payloadNovo as any) ?? null,
+        _ip: obterIp(),
+        _user_agent: obterUserAgent(),
+      });
+      if (error) throw error;
+      return;
+    }
+
+    // Fallback (contextos sem cliente autenticado): chave de serviço.
     if (!entrada.correspondenteId) return;
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     await supabaseAdmin.from("admin_audit_logs").insert({

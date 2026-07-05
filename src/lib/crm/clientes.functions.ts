@@ -167,6 +167,7 @@ export const criarCliente = createServerFn({ method: "POST" })
     if (error) throw error;
     const { registrarAuditoria } = await import("@/lib/admin/audit.server");
     await registrarAuditoria({
+      supabase,
       userId,
       correspondenteId: me.correspondente_id,
       acao: "cliente.criar",
@@ -206,6 +207,7 @@ export const atualizarCliente = createServerFn({ method: "POST" })
     const { data: corr } = await supabase.rpc("correspondente_do_usuario", { _user_id: userId });
     const { registrarAuditoria } = await import("@/lib/admin/audit.server");
     await registrarAuditoria({
+      supabase,
       userId,
       correspondenteId: corr ?? null,
       acao: "cliente.atualizar",
@@ -590,6 +592,7 @@ export const excluirCliente = createServerFn({ method: "POST" })
     const { data: corr } = await supabase.rpc("correspondente_do_usuario", { _user_id: userId });
     const { registrarAuditoria } = await import("@/lib/admin/audit.server");
     await registrarAuditoria({
+      supabase,
       userId,
       correspondenteId: corr ?? null,
       acao: "cliente.excluir",

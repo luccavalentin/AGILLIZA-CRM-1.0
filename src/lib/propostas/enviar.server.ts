@@ -163,6 +163,7 @@ export async function enviarPropostaImpl({
 
   const { registrarAuditoria } = await import("@/lib/admin/audit.server");
   await registrarAuditoria({
+    supabase,
     userId,
     correspondenteId: prop.correspondente_id,
     acao: "proposta.enviar_banco",

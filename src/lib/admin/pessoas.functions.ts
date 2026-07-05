@@ -156,13 +156,15 @@ export const criarPessoaComAcesso = createServerFn({ method: "POST" })
     }
 
     // Auditoria (o trigger já criou profiles + user_roles).
-    await supabaseAdmin.from("admin_audit_logs").insert({
-      user_id: userId,
-      correspondente_id: correspondenteId,
+    const { registrarAuditoria } = await import("@/lib/admin/audit.server");
+    await registrarAuditoria({
+      supabase,
+      userId,
+      correspondenteId,
       acao: "pessoa.criar",
       entidade: "profiles",
-      entidade_id: created.user.id,
-      payload_novo: {
+      entidadeId: created.user.id,
+      payloadNovo: {
         nome: data.nome,
         acesso_tipo: data.acesso_tipo,
         papel: data.papel,
