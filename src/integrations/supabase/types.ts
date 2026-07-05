@@ -4236,6 +4236,51 @@ export type Database = {
       is_interno: { Args: { _user_id: string }; Returns: boolean }
       mask_pii_jsonb: { Args: { _data: Json }; Returns: Json }
       pode_gerenciar_pessoas: { Args: { _user_id: string }; Returns: boolean }
+      portal_baixar_dados: { Args: { _cid: string }; Returns: Json }
+      portal_cliente_login: {
+        Args: {
+          _data_nasc: string
+          _doc_hash: string
+          _documento: string
+          _ip: string
+          _tipo: string
+          _ua: string
+        }
+        Returns: Json
+      }
+      portal_cliente_sessao: { Args: { _cid: string }; Returns: Json }
+      portal_enviar_mensagem: {
+        Args: { _anexo: string; _cid: string; _corr: string; _msg: string }
+        Returns: Json
+      }
+      portal_listar_mensagens: { Args: { _cid: string }; Returns: Json }
+      portal_listar_notificacoes: { Args: { _cid: string }; Returns: Json }
+      portal_marcar_lida: {
+        Args: { _cid: string; _ids: string[] }
+        Returns: undefined
+      }
+      portal_marcar_notif_lida: {
+        Args: { _cid: string; _id: string }
+        Returns: undefined
+      }
+      portal_meus_documentos: { Args: { _cid: string }; Returns: Json }
+      portal_minhas_propostas: { Args: { _cid: string }; Returns: Json }
+      portal_registrar_documento: {
+        Args: {
+          _cid: string
+          _mime: string
+          _nome: string
+          _path: string
+          _tamanho: number
+          _tipo: string
+        }
+        Returns: undefined
+      }
+      portal_solicitar_lgpd: {
+        Args: { _acao: string; _cid: string; _corr: string }
+        Returns: undefined
+      }
+      portal_visao_geral: { Args: { _cid: string }; Returns: Json }
       usuario_escopo_dados: {
         Args: { _modulo: string; _user_id: string }
         Returns: Database["public"]["Enums"]["escopo_dados"]
