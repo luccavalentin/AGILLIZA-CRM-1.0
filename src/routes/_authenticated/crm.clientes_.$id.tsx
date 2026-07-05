@@ -113,7 +113,7 @@ function Pagina() {
               <Linha rotulo="Documento" valor={docExib} />
               <Linha rotulo="E-mail" valor={c.email ?? "—"} />
               <Linha rotulo="Celular" valor={c.telefone_celular ? formatarCelular(c.telefone_celular) : "—"} />
-              <Linha rotulo="Nascimento" valor={c.data_nascimento ? new Date(c.data_nascimento).toLocaleDateString("pt-BR") : "—"} />
+              <Linha rotulo="Nascimento" valor={formatarDataCivil(c.data_nascimento)} />
               <Linha rotulo="Renda declarada" valor={c.renda_total_declarada != null ? `R$ ${Number(c.renda_total_declarada).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "—"} />
               <Linha rotulo="UF de interesse" valor={c.uf_interesse ?? "—"} />
             </CardContent>
@@ -238,6 +238,13 @@ function Pagina() {
 function fmtValor(v: number | null): string {
   if (v == null) return "—";
   return `R$ ${Number(v).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
+}
+
+function formatarDataCivil(data: string | null): string {
+  if (!data) return "—";
+  const [ano, mes, dia] = data.split("-");
+  if (!ano || !mes || !dia) return data;
+  return `${dia}/${mes}/${ano}`;
 }
 
 function Linha({ rotulo, valor }: { rotulo: string; valor: string }) {
