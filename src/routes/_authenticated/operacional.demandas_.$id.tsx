@@ -1,12 +1,13 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Paperclip, Download, Trash2 } from "lucide-react";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import {
   obterDemanda, comentarDemanda, moverStatusDemanda, marcarDemandaLida,
+  registrarAnexoDemanda, removerAnexoDemanda, urlAnexoDemanda,
   type DemandaStatus,
 } from "@/lib/operacional/demandas.functions";
 import { TransferirDialog } from "@/components/operacional/transferir-dialog";
