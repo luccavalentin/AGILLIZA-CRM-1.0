@@ -60,8 +60,8 @@ export const navInterno: NavGroup[] = [
     id: "visao-geral",
     label: "Visão Geral",
     items: [
-      { label: "Dashboard", icon: LayoutDashboard, to: "/dashboard" },
       { label: "Painel", icon: Gauge, to: "/visao-geral/painel" },
+
     ],
   },
   {
