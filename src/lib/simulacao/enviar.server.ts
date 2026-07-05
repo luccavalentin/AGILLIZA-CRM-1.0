@@ -163,7 +163,12 @@ export async function enviarSimulacaoImpl({
             simulado_em: new Date().toISOString(),
             valor_parcela: dados?.valorParcelaBanco ?? dados?.valorParcelaSimulacao ?? null,
             taxa_juros_ano: dados?.taxaJurosAnoBanco ?? null,
-            prazo_pagamento_max: dados?.prazoPagamentoBancoMax ?? dados?.prazoPagamentoBanco ?? null,
+            prazo_pagamento_max:
+              dados?.prazoPagamentoBancoMax ??
+              dados?.prazoPagamentoBanco ??
+              dados?.prazoPagamentoSimulacao ??
+              num(sim.prazo) ??
+              null,
             valor_financiamento_max:
               dados?.valorFinanciamentoBancoMax ??
               dados?.valorFinanciamentoBanco ??
