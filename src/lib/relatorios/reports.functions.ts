@@ -31,6 +31,23 @@ const brl = (v: number) => (v || 0).toLocaleString("pt-BR", { style: "currency",
 const int = (v: number) => (v || 0).toLocaleString("pt-BR");
 const pct = (v: number) => `${(v || 0).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`;
 
+/** Rótulos oficiais dos status de proposta (espelha components/propostas/status.ts). */
+const STATUS_PROPOSTA_LABEL: Record<string, string> = {
+  rascunho: "Rascunho",
+  enviada_banco: "Enviada ao banco",
+  em_analise_credito: "Em análise de crédito",
+  aguardando_documentos: "Aguardando documentos",
+  credito_aprovado: "Crédito aprovado",
+  engenharia_vistoria: "Engenharia / vistoria",
+  analise_juridica: "Análise jurídica",
+  contrato_emitido: "Contrato emitido",
+  registrado: "Registrado",
+  credito_recusado: "Crédito recusado",
+  erro_envio: "Erro no envio",
+  cancelada: "Cancelada",
+};
+const rotuloStatus = (s: string) => STATUS_PROPOSTA_LABEL[s] ?? s;
+
 async function temPii(supabase: any, userId: string): Promise<boolean> {
   const { data: tudo } = await supabase.rpc("has_any_role", { _user_id: userId, _roles: ["admin", "correspondente"] });
   if (tudo) return true;
