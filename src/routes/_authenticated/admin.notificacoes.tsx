@@ -6,10 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { SwipeToDelete } from "@/components/app-shell/swipe-to-delete";
 import {
   listarTodasNotificacoes,
   marcarNotificacaoLida,
   marcarTodasLidas,
+  excluirNotificacao,
   type Notificacao,
 } from "@/lib/notificacoes.functions";
 
