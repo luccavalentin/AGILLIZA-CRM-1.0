@@ -43,6 +43,20 @@ export const listarNotificacoes = createServerFn({ method: "GET" })
     };
   });
 
+/** Lista todas as notificações do usuário (para a central de notificações). */
+export const listarTodasNotificacoes = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<Notificacao[]> => {
+    const { supabase, userId } = context;
+    const { data } = await supabase
+      .from("notificacoes")
+      .select("id, tipo, titulo, corpo, link, lida, created_at")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(200);
+    return (data ?? []) as Notificacao[];
+  });
+
 /** Marca uma notificação como lida. */
 export const marcarNotificacaoLida = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
