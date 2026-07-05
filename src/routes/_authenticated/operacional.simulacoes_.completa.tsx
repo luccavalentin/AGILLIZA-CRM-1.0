@@ -15,7 +15,7 @@ import { ClienteCRMPicker } from "@/components/simulacao/cliente-crm-picker";
 import {
   completaSchema, ESTADOS_CIVIS, TIPOS_IMOVEL, USOS_IMOVEL, SITUACOES_IMOVEL, PRODUTOS,
 } from "@/lib/simulacao/schemas";
-import { UFS, maskCpfCnpj, maskCelular } from "@/lib/simulacao/format";
+import { UFS, maskCpfCnpj, maskCelular, formatBRL } from "@/lib/simulacao/format";
 import { listarBancosAtivos, listarOperacoes, criarSimulacao, enviarSimulacaoBanco } from "@/lib/simulacao/simulacoes.functions";
 
 export const Route = createFileRoute("/_authenticated/operacional/simulacoes_/completa")({
