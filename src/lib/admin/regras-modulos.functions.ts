@@ -262,6 +262,9 @@ export const listarNiveisAcesso = createServerFn({ method: "GET" })
     const { data: corresp } = await supabase.rpc("correspondente_do_usuario", {
       _user_id: userId,
     });
+    const { data: podeGerenciar } = await supabase.rpc("pode_gerenciar_pessoas", {
+      _user_id: userId,
+    });
 
     const { data: niveis, error } = await supabase
       .from("access_levels")
@@ -284,7 +287,10 @@ export const listarNiveisAcesso = createServerFn({ method: "GET" })
       descricao: n.descricao,
       ativo: n.ativo,
       is_padrao: n.is_padrao,
-      editavel: !n.is_padrao && n.correspondente_id === corresp,
+      // Qualquer usuário que pode gerenciar pessoas edita todos os níveis.
+      // Níveis padrão (globais) são clonados automaticamente em uma cópia
+      // editável do correspondente na primeira alteração.
+      editavel: podeGerenciar === true,
       permissoes: (perms ?? [])
         .filter((p: any) => p.nivel_acesso_id === n.id)
         .map((p: any) => ({
@@ -295,6 +301,54 @@ export const listarNiveisAcesso = createServerFn({ method: "GET" })
         })),
     }));
   });
+
+/** Clona um nível padrão (global) em uma cópia editável do correspondente,
+ *  copiando as permissões. Retorna o id da cópia. */
+async function forkNivelPadrao(
+  supabase: any,
+  corresp: string,
+  origemId: string,
+  overrides?: { nome?: string; descricao?: string | null },
+): Promise<string> {
+  const { data: origem, error: erroOrigem } = await supabase
+    .from("access_levels")
+    .select("id, nome, descricao")
+    .eq("id", origemId)
+    .maybeSingle();
+  if (erroOrigem) throw new Error(erroOrigem.message);
+  if (!origem) throw new Error("Nível de acesso não encontrado.");
+
+  const { data: copia, error: erroCopia } = await supabase
+    .from("access_levels")
+    .insert({
+      nome: overrides?.nome ?? origem.nome,
+      descricao: overrides?.descricao ?? origem.descricao ?? null,
+      correspondente_id: corresp,
+      ativo: true,
+      is_padrao: false,
+    })
+    .select("id")
+    .single();
+  if (erroCopia) throw new Error(erroCopia.message);
+
+  const { data: perms } = await supabase
+    .from("permissions")
+    .select("modulo, acao, permitido, escopo_dados")
+    .eq("nivel_acesso_id", origemId)
+    .eq("permitido", true);
+  const rows = (perms ?? []).map((p: any) => ({
+    nivel_acesso_id: copia.id,
+    modulo: p.modulo,
+    acao: p.acao,
+    permitido: true,
+    escopo_dados: p.escopo_dados,
+  }));
+  if (rows.length) {
+    const { error: erroPerms } = await supabase.from("permissions").insert(rows);
+    if (erroPerms) throw new Error(erroPerms.message);
+  }
+  return copia.id;
+}
 
 /** Cria um novo nível de acesso customizado para o correspondente do usuário.
  *  Já nasce com uma matriz de permissões: copiada de outro nível (`copiar_de`)
