@@ -67,6 +67,20 @@ function Pagina() {
     }
   }
 
+  const [criandoBanco, setCriandoBanco] = useState<string | null>(null);
+  async function criar(bancoId: string) {
+    setCriandoBanco(bancoId);
+    try {
+      const { proposta_id } = await criarProposta({ data: { simulacao_id: id, banco_id: bancoId } });
+      toast.success("Proposta criada.");
+      router.navigate({ to: "/operacional/propostas/$id", params: { id: proposta_id } });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao criar proposta.");
+    } finally {
+      setCriandoBanco(null);
+    }
+  }
+
   if (isLoading || !data) return <div className="p-6 text-sm text-muted-foreground">Carregando…</div>;
   const s = data.simulacao;
   const bancos = data.bancos;
