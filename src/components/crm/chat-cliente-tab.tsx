@@ -24,8 +24,16 @@ function formatarHora(iso: string): string {
   });
 }
 
+export interface ChatClienteInfo {
+  nome: string;
+  documento?: string | null;
+  email?: string | null;
+  celular?: string | null;
+  contexto?: string | null;
+}
+
 /** Chat interno: equipe conversa com o cliente pelas mensagens do App do Cliente. */
-export function ChatClienteTab({ clienteId }: { clienteId: string }) {
+export function ChatClienteTab({ clienteId, info }: { clienteId: string; info?: ChatClienteInfo }) {
   const qc = useQueryClient();
   const listar = useServerFn(listarChatCliente);
   const responder = useServerFn(responderChatCliente);
@@ -79,9 +87,25 @@ export function ChatClienteTab({ clienteId }: { clienteId: string }) {
 
   return (
     <Card className="flex h-[32rem] flex-col">
-      <div className="border-b px-4 py-3">
-        <p className="text-sm font-semibold text-foreground">Conversa com o cliente</p>
-        <p className="text-xs text-muted-foreground">Mensagens trocadas pelo App do Cliente</p>
+      <div className="flex items-center gap-3 border-b px-4 py-3">
+        <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+          <MessageCircle className="size-5" />
+        </div>
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold text-foreground">
+            {info?.nome ?? "Conversa com o cliente"}
+          </p>
+          <p className="truncate text-xs text-muted-foreground">
+            {[
+              info?.documento,
+              info?.celular,
+              info?.email,
+              info?.contexto,
+            ]
+              .filter(Boolean)
+              .join(" · ") || "App do Cliente"}
+          </p>
+        </div>
       </div>
 
       <div className="flex-1 space-y-3 overflow-y-auto p-4">
