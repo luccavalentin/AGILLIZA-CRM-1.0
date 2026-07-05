@@ -73,13 +73,26 @@ function Pagina() {
   }, [operacoes, f.produto]);
 
   function set(k: string, v: any) {
+    if (k === "valor_entrada") setEntradaTocada(true);
     setF((prev) => {
       const next = { ...prev, [k]: v };
+      // Sugere 20% de entrada automaticamente enquanto o usuário não editar o campo manualmente.
+      if (k === "valor_imovel" && !entradaTocada) next.valor_entrada = Math.round((next.valor_imovel || 0) * 0.2);
       if (k === "valor_imovel" || k === "valor_entrada") next.valor_financiamento = Math.max(0, next.valor_imovel - next.valor_entrada);
       if (k === "estado_civil") next.possui_conjuge = v === "CA" || v === "UE";
       return next;
     });
   }
+
+  function aplicarEntradaSugerida() {
+    setEntradaTocada(true);
+    setF((prev) => {
+      const entrada = Math.round((prev.valor_imovel || 0) * 0.2);
+      return { ...prev, valor_entrada: entrada, valor_financiamento: Math.max(0, prev.valor_imovel - entrada) };
+    });
+  }
+
+
 
   function toggleBanco(id: string) {
     setF((prev) => {
