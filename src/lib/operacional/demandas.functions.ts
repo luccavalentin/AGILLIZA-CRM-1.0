@@ -104,11 +104,12 @@ export const obterDemanda = createServerFn({ method: "GET" })
   .inputValidator((data) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ context, data }) => {
     const { supabase } = context;
-    const [demanda, historico, mensagens, participantes] = await Promise.all([
+    const [demanda, historico, mensagens, participantes, anexos] = await Promise.all([
       supabase.from("demandas").select("*, clientes(nome, numero_cliente)").eq("id", data.id).maybeSingle(),
       supabase.from("demanda_historico").select("*").eq("demanda_id", data.id).order("created_at", { ascending: false }),
       supabase.from("demanda_mensagens").select("*").eq("demanda_id", data.id).order("created_at"),
       supabase.from("demanda_participantes").select("*").eq("demanda_id", data.id),
+      supabase.from("demanda_anexos").select("*").eq("demanda_id", data.id).order("created_at", { ascending: false }),
     ]);
     if (demanda.error) throw new Error(demanda.error.message);
     const uids = [
@@ -117,6 +118,7 @@ export const obterDemanda = createServerFn({ method: "GET" })
       ...(historico.data ?? []).flatMap((h: any) => [h.ator_id, h.responsavel_anterior_id, h.responsavel_novo_id]),
       ...(mensagens.data ?? []).map((m: any) => m.autor_id),
       ...(participantes.data ?? []).map((p: any) => p.user_id),
+      ...(anexos.data ?? []).map((a: any) => a.autor_id),
     ];
     const nomes = await nomesPorId(supabase, uids);
     const nm = (id: string | null | undefined) => (id ? nomes.get(id) ?? null : null);
@@ -131,6 +133,7 @@ export const obterDemanda = createServerFn({ method: "GET" })
       })),
       mensagens: (mensagens.data ?? []).map((m: any) => ({ ...m, nome_autor: nm(m.autor_id) })),
       participantes: (participantes.data ?? []).map((p: any) => ({ ...p, nome: nm(p.user_id) })),
+      anexos: (anexos.data ?? []).map((a: any) => ({ ...a, nome_autor: nm(a.autor_id) })),
     };
   });
 
@@ -256,7 +259,77 @@ export const comentarDemanda = createServerFn({ method: "POST" })
       visivel_cliente: data.visivel_cliente,
     });
     if (error) throw new Error(error.message);
+
+    // Espelha comentários públicos no chat do App do Cliente, quando a demanda tem cliente vinculado.
+    if (data.visivel_cliente) {
+      const { data: dem } = await supabase
+        .from("demandas")
+        .select("cliente_id, correspondente_id")
+        .eq("id", data.demanda_id)
+        .maybeSingle();
+      if (dem?.cliente_id) {
+        await supabase.rpc("portal_time_responder", { _cid: dem.cliente_id, _msg: data.corpo, _anexo: null as unknown as string });
+      }
+    }
     return { ok: true };
+  });
+
+/** Registra um anexo enviado ao storage de uma demanda. */
+export const registrarAnexoDemanda = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z
+      .object({
+        demanda_id: z.string().uuid(),
+        nome: z.string().min(1),
+        storage_path: z.string().min(1),
+        tamanho: z.number().int().nonnegative().optional(),
+      })
+      .parse(data),
+  )
+  .handler(async ({ context, data }) => {
+    const { supabase, userId } = context;
+    const { error } = await supabase.from("demanda_anexos").insert({
+      demanda_id: data.demanda_id,
+      nome: data.nome,
+      storage_path: data.storage_path,
+      tamanho: data.tamanho ?? null,
+      autor_id: userId,
+    });
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+/** Remove um anexo da demanda (registro + arquivo). */
+export const removerAnexoDemanda = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => z.object({ id: z.string().uuid() }).parse(data))
+  .handler(async ({ context, data }) => {
+    const { supabase } = context;
+    const { data: anexo } = await supabase
+      .from("demanda_anexos")
+      .select("storage_path")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (anexo?.storage_path) {
+      await supabase.storage.from("demanda-anexos").remove([anexo.storage_path]);
+    }
+    const { error } = await supabase.from("demanda_anexos").delete().eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+/** Gera uma URL assinada temporária para baixar um anexo. */
+export const urlAnexoDemanda = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => z.object({ storage_path: z.string().min(1) }).parse(data))
+  .handler(async ({ context, data }) => {
+    const { supabase } = context;
+    const { data: signed, error } = await supabase.storage
+      .from("demanda-anexos")
+      .createSignedUrl(data.storage_path, 300);
+    if (error) throw new Error(error.message);
+    return { url: signed.signedUrl };
   });
 
 export const marcarDemandaLida = createServerFn({ method: "POST" })

@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, KanbanSquare } from "lucide-react";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { listarDemandas, escalarDemanda, excluirDemanda } from "@/lib/operacional/demandas.functions";
 import { NovaDemandaDialog } from "@/components/operacional/nova-demanda-dialog";
@@ -65,6 +65,9 @@ function Pagina() {
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={verificarSla}>
             <AlertTriangle className="mr-1 h-4 w-4" /> Verificar SLA
+          </Button>
+          <Button asChild variant="outline" size="sm">
+            <Link to="/operacional/demandas/kanban"><KanbanSquare className="mr-1 h-4 w-4" /> Kanban</Link>
           </Button>
           <NovaDemandaDialog onCriada={refetch} />
         </div>

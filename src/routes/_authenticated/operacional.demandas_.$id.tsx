@@ -1,12 +1,13 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Paperclip, Download, Trash2 } from "lucide-react";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import {
   obterDemanda, comentarDemanda, moverStatusDemanda, marcarDemandaLida,
+  registrarAnexoDemanda, removerAnexoDemanda, urlAnexoDemanda,
   type DemandaStatus,
 } from "@/lib/operacional/demandas.functions";
 import { TransferirDialog } from "@/components/operacional/transferir-dialog";
@@ -44,6 +45,39 @@ function Pagina() {
   const comentarFn = useServerFn(comentarDemanda);
   const moverFn = useServerFn(moverStatusDemanda);
   const lidaFn = useServerFn(marcarDemandaLida);
+  const registrarAnexoFn = useServerFn(registrarAnexoDemanda);
+  const removerAnexoFn = useServerFn(removerAnexoDemanda);
+  const urlAnexoFn = useServerFn(urlAnexoDemanda);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [enviando, setEnviando] = useState(false);
+
+  async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setEnviando(true);
+    try {
+      const path = `${id}/${Date.now()}-${file.name.replace(/[^\w.\-]/g, "_")}`;
+      const { error } = await supabase.storage.from("demanda-anexos").upload(path, file);
+      if (error) throw error;
+      await registrarAnexoFn({ data: { demanda_id: id, nome: file.name, storage_path: path, tamanho: file.size } });
+      invalidar();
+      toast.success("Anexo enviado.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Falha no upload.");
+    } finally {
+      setEnviando(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  }
+
+  async function baixarAnexo(storage_path: string) {
+    try {
+      const { url } = await urlAnexoFn({ data: { storage_path } });
+      window.open(url, "_blank", "noopener");
+    } catch {
+      toast.error("Falha ao gerar link do anexo.");
+    }
+  }
 
   const { data } = useQuery({ queryKey: ["demanda", id], queryFn: () => obterDemanda({ data: { id } }) });
 
@@ -176,6 +210,41 @@ function Pagina() {
               </div>
             ))}
           </div>
+        </div>
+      </div>
+
+      {/* Anexos */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-foreground">Anexos</h2>
+          <input ref={fileRef} type="file" className="hidden" onChange={handleUpload} />
+          <Button variant="outline" size="sm" disabled={enviando} onClick={() => fileRef.current?.click()}>
+            <Paperclip className="mr-1 h-3.5 w-3.5" /> {enviando ? "Enviando…" : "Anexar"}
+          </Button>
+        </div>
+        <div className="space-y-2">
+          {(data?.anexos ?? []).length === 0 ? (
+            <p className="text-sm text-muted-foreground">Nenhum anexo.</p>
+          ) : (
+            (data?.anexos ?? []).map((a: any) => (
+              <div key={a.id} className="flex items-center gap-2 rounded-md border border-border bg-card p-2 text-sm">
+                <Paperclip className="h-4 w-4 shrink-0 text-muted-foreground" />
+                <span className="flex-1 truncate text-foreground">{a.nome}</span>
+                <span className="text-xs text-muted-foreground">{a.nome_autor ?? "—"}</span>
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => baixarAnexo(a.storage_path)}>
+                  <Download className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 text-destructive"
+                  onClick={async () => { await removerAnexoFn({ data: { id: a.id } }); invalidar(); }}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>
