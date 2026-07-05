@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { getRequestHeader } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { transicaoPermitida, STATUS_EDITAVEIS, type PropostaStatus } from "./state-machine";
+import { transicaoPermitida, STATUS_EDITAVEIS, STATUS_TERMINAIS, type PropostaStatus } from "./state-machine";
 
 /** ===== Tipos de saída ===== */
 export interface PropostaListaItem {
