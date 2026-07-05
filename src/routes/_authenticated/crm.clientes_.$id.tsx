@@ -19,6 +19,7 @@ import {
   getClientePipeline,
   getEndereco,
   listarHistorico,
+  getClienteNegocios,
 } from "@/lib/crm/clientes.functions";
 import { formatarDocumento, mascararDocumento, formatarCelular } from "@/lib/crm/documento";
 
@@ -37,6 +38,7 @@ function Pagina() {
   const getPipe = useServerFn(getClientePipeline);
   const getEnd = useServerFn(getEndereco);
   const getHist = useServerFn(listarHistorico);
+  const getNeg = useServerFn(getClienteNegocios);
 
   const { data: det, isLoading } = useQuery({
     queryKey: ["cliente", id],
@@ -46,6 +48,7 @@ function Pagina() {
   const { data: pipe } = useQuery({ queryKey: ["cliente-pipeline", id], queryFn: () => getPipe({ data: { cliente_id: id } }) });
   const { data: endereco } = useQuery({ queryKey: ["cliente-end", id], queryFn: () => getEnd({ data: { cliente_id: id } }) });
   const { data: historico } = useQuery({ queryKey: ["cliente-hist", id], queryFn: () => getHist({ data: { cliente_id: id } }) });
+  const { data: negocios } = useQuery({ queryKey: ["cliente-negocios", id], queryFn: () => getNeg({ data: { cliente_id: id } }) });
 
   if (isLoading || !det) {
     return (
@@ -95,6 +98,7 @@ function Pagina() {
       <Tabs defaultValue="resumo">
         <TabsList className="flex-wrap">
           <TabsTrigger value="resumo">Resumo</TabsTrigger>
+          <TabsTrigger value="negocios">Negócios</TabsTrigger>
           <TabsTrigger value="dados">Dados</TabsTrigger>
           <TabsTrigger value="documentos">Documentos</TabsTrigger>
           <TabsTrigger value="vinculo">Vínculo de atendimento</TabsTrigger>
@@ -121,6 +125,57 @@ function Pagina() {
               <Linha rotulo="Etapa atual" valor={pipe ? stages?.find((s: any) => s.ordem === pipe.ordem)?.nome ?? "—" : "—"} />
               <Linha rotulo="Origem" valor={c.origem} />
               <Linha rotulo="Cadastrado em" valor={new Date(c.created_at).toLocaleDateString("pt-BR")} />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="negocios" className="mt-4 space-y-4">
+          <Card>
+            <CardHeader className="pb-2"><CardTitle className="text-sm">Simulações</CardTitle></CardHeader>
+            <CardContent className="space-y-2">
+              {(negocios?.simulacoes.length ?? 0) === 0 ? (
+                <p className="py-4 text-center text-sm text-muted-foreground">Nenhuma simulação para este cliente.</p>
+              ) : (
+                negocios!.simulacoes.map((s) => (
+                  <Link
+                    key={s.id}
+                    to="/operacional/simulacoes/$id"
+                    params={{ id: s.id }}
+                    className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-card p-3 text-sm transition-colors hover:bg-accent"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-xs text-muted-foreground">{s.numero_simulacao ?? "—"}</span>
+                      <span className="text-foreground">{s.produto === "home_equity" ? "Home Equity" : "Financiamento"}</span>
+                      <StatusBadge status={s.status ?? "—"} />
+                    </div>
+                    <span className="tabular-nums text-muted-foreground">{fmtValor(s.valor_financiamento)}</span>
+                  </Link>
+                ))
+              )}
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2"><CardTitle className="text-sm">Propostas</CardTitle></CardHeader>
+            <CardContent className="space-y-2">
+              {(negocios?.propostas.length ?? 0) === 0 ? (
+                <p className="py-4 text-center text-sm text-muted-foreground">Nenhuma proposta para este cliente.</p>
+              ) : (
+                negocios!.propostas.map((p) => (
+                  <Link
+                    key={p.id}
+                    to="/operacional/propostas/$id"
+                    params={{ id: p.id }}
+                    className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-card p-3 text-sm transition-colors hover:bg-accent"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-xs text-muted-foreground">{p.numero_proposta ?? "—"}</span>
+                      <span className="text-foreground">{p.nome_banco ?? "—"}</span>
+                      <StatusBadge status={p.status ?? "—"} />
+                    </div>
+                    <span className="tabular-nums text-muted-foreground">{fmtValor(p.valor_financiamento)}</span>
+                  </Link>
+                ))
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -178,6 +233,11 @@ function Pagina() {
       </Tabs>
     </div>
   );
+}
+
+function fmtValor(v: number | null): string {
+  if (v == null) return "—";
+  return `R$ ${Number(v).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
 }
 
 function Linha({ rotulo, valor }: { rotulo: string; valor: string }) {

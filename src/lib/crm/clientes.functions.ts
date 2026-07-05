@@ -700,3 +700,49 @@ export const desvincularParceiro = createServerFn({ method: "POST" })
     if (error) throw error;
     return { ok: true };
   });
+
+export interface ClienteNegocios {
+  simulacoes: Array<{
+    id: string;
+    numero_simulacao: string | null;
+    produto: string | null;
+    status: string | null;
+    valor_financiamento: number | null;
+    created_at: string;
+  }>;
+  propostas: Array<{
+    id: string;
+    numero_proposta: string | null;
+    nome_banco: string | null;
+    produto: string | null;
+    status: string | null;
+    valor_financiamento: number | null;
+    created_at: string;
+  }>;
+}
+
+/** Lista as simulações e propostas vinculadas a um cliente (RLS aplica escopo). */
+export const getClienteNegocios = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ cliente_id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }): Promise<ClienteNegocios> => {
+    const { supabase } = context;
+
+    const [{ data: sims }, { data: props }] = await Promise.all([
+      supabase
+        .from("simulacoes")
+        .select("id, numero_simulacao, produto, status, valor_financiamento, created_at")
+        .eq("cliente_id", data.cliente_id)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("propostas")
+        .select("id, numero_proposta, nome_banco, produto, status, valor_financiamento, created_at")
+        .eq("cliente_id", data.cliente_id)
+        .order("created_at", { ascending: false }),
+    ]);
+
+    return {
+      simulacoes: (sims ?? []) as ClienteNegocios["simulacoes"],
+      propostas: (props ?? []) as ClienteNegocios["propostas"],
+    };
+  });
