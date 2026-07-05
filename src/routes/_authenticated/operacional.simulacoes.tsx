@@ -195,12 +195,37 @@ function Pagina() {
                 <TableCell className="text-right tabular-nums">{formatBRL(s.valor_imovel)}</TableCell>
                 <TableCell className="text-right tabular-nums">{s.prazo ? `${s.prazo}m` : "—"}</TableCell>
                 <TableCell><SimulacaoStatusBadge status={s.status} /></TableCell>
-                <TableCell className="text-right">
-                  <ConfirmDelete
-                    titulo="Excluir simulação"
-                    descricao={`A simulação ${s.numero_simulacao} será removida permanentemente.`}
-                    onConfirm={() => handleExcluir(s.id)}
-                  />
+                <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" aria-label="Ações">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem
+                        onSelect={() => router.navigate({ to: "/operacional/simulacoes/$id", params: { id: s.id } })}
+                      >
+                        <Eye className="mr-2 h-4 w-4" /> Visualizar
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onSelect={() => handleDuplicar(s.id)}>
+                        <Copy className="mr-2 h-4 w-4" /> Duplicar
+                      </DropdownMenuItem>
+                      <ConfirmDelete
+                        titulo="Excluir simulação"
+                        descricao={`A simulação ${s.numero_simulacao} será removida permanentemente.`}
+                        onConfirm={() => handleExcluir(s.id)}
+                        trigger={
+                          <DropdownMenuItem
+                            className="text-destructive focus:text-destructive"
+                            onSelect={(e) => e.preventDefault()}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" /> Excluir
+                          </DropdownMenuItem>
+                        }
+                      />
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </TableCell>
               </TableRow>
             ))}
