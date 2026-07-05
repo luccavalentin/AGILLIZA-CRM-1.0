@@ -4235,6 +4235,17 @@ export type Database = {
       is_dia_util: { Args: { _corr: string; _d: string }; Returns: boolean }
       is_interno: { Args: { _user_id: string }; Returns: boolean }
       mask_pii_jsonb: { Args: { _data: Json }; Returns: Json }
+      notificar_cliente_portal: {
+        Args: {
+          _cliente_id: string
+          _corpo: string
+          _corr: string
+          _link?: string
+          _tipo: string
+          _titulo: string
+        }
+        Returns: undefined
+      }
       pode_gerenciar_pessoas: { Args: { _user_id: string }; Returns: boolean }
       portal_baixar_dados: { Args: { _cid: string }; Returns: Json }
       portal_cliente_login: {
