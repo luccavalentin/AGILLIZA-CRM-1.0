@@ -130,8 +130,8 @@ export const validarAcessoCliente = createServerFn({ method: "POST" })
       _tipo: data.tipo,
       _data_nasc: dataRef,
       _doc_hash: doc_hash,
-      _ip: ip,
-      _ua: userAgent,
+      _ip: ip ?? "",
+      _ua: userAgent ?? "",
     });
     if (error) {
       return { ok: false, error: ERRO_GENERICO };
