@@ -14,7 +14,7 @@ function DashboardPage() {
       titulo="Produção comercial"
       descricao="Simulações, propostas e contratos atualizados com os dados reais do sistema."
       realtimeTabelas={["simulacoes", "propostas"]}
-      abrirTo="/relatorios/consolidado"
+      abrirTo="/relatorios/painel-geral"
     />
   );
 }
