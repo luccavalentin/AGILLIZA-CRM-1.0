@@ -163,6 +163,7 @@ function Pagina() {
                     <p className="font-medium text-foreground">{s.numero_simulacao} · {s.nome_cliente ?? "—"}</p>
                     <p className="text-xs text-muted-foreground">
                       {formatBRL(s.valor_imovel)} · {s.simulacao_bancos.length} banco(s) simulado(s)
+                      {s.proposta_existente_id && " · já convertida em proposta"}
                     </p>
                   </div>
                   {ativa && <Check className="h-5 w-5 text-primary" />}
