@@ -72,6 +72,14 @@ function Pagina() {
     },
   });
 
+  const excluir = useMutation({
+    mutationFn: (id: string) => excluirNotificacao({ data: { id } }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notificacoes"] });
+      queryClient.invalidateQueries({ queryKey: ["notificacoes", "todas"] });
+    },
+  });
+
   const naoLidas = itens.filter((n) => !n.lida);
   const lidas = itens.filter((n) => n.lida);
 
