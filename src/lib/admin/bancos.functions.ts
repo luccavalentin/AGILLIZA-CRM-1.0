@@ -95,7 +95,9 @@ export const salvarBancoAdmin = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => bancoSchema.parse(d))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
-    const payload: Record<string, unknown> = { updated_at: new Date().toISOString() };
+    const payload: Record<string, string | number | boolean | null> = {
+      updated_at: new Date().toISOString(),
+    };
     if (data.ativo !== undefined) payload.ativo = data.ativo;
     if (data.flag_padrao !== undefined) payload.flag_padrao = data.flag_padrao;
     if (data.ordem !== undefined) payload.ordem = data.ordem;
