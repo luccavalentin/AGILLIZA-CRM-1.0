@@ -61,6 +61,7 @@ export function sanitizarMensagemErro(msg: string | null | undefined): string {
 
 async function registrarLog(entrada: {
   simulacao_id?: string | null;
+  proposta_id?: string | null;
   correspondente_id?: string | null;
   endpoint: string;
   metodo: string;
@@ -70,6 +71,21 @@ async function registrarLog(entrada: {
   erro?: string;
 }) {
   try {
+    // Chamadas de proposta vão para a tabela de auditoria de propostas;
+    // as demais (simulação/auth) ficam na tabela de simulação.
+    if (entrada.proposta_id) {
+      await supabaseAdmin.from("proposta_logs_homefin").insert({
+        proposta_id: entrada.proposta_id,
+        correspondente_id: entrada.correspondente_id ?? null,
+        endpoint: entrada.endpoint,
+        metodo: entrada.metodo,
+        status_http: entrada.status_http ?? null,
+        request_masked: entrada.request ? (mascarar(entrada.request) as any) : null,
+        response: (entrada.response as any) ?? null,
+        erro: entrada.erro ?? null,
+      });
+      return;
+    }
     await supabaseAdmin.from("simulacao_logs_homefin").insert({
       simulacao_id: entrada.simulacao_id ?? null,
       correspondente_id: entrada.correspondente_id ?? null,
