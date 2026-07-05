@@ -42,6 +42,7 @@ function Pagina() {
   });
   const [enviando, setEnviando] = useState(false);
   const [erros, setErros] = useState<Record<string, string>>({});
+  const [entradaTocada, setEntradaTocada] = useState(false);
 
   const { data: bancos } = useQuery({ queryKey: ["bancos-ativos"], queryFn: () => listarBancosAtivos() });
   const { data: operacoes } = useQuery({ queryKey: ["operacoes"], queryFn: () => listarOperacoes() });
