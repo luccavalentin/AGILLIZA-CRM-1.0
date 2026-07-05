@@ -249,3 +249,177 @@ export const excluirTarefa = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+/* ------------------------- Tags (etiquetas) ------------------------- */
+
+export interface TarefaTag {
+  id: string;
+  nome: string;
+  cor: string;
+}
+
+/** Lista as etiquetas do correspondente. */
+export const listarTagsTarefa = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<TarefaTag[]> => {
+    const { supabase } = context;
+    const { data, error } = await supabase
+      .from("task_tags")
+      .select("id, nome, cor")
+      .order("nome");
+    if (error) throw new Error(error.message);
+    return (data ?? []) as TarefaTag[];
+  });
+
+/** Cria uma nova etiqueta. */
+export const criarTagTarefa = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z.object({ nome: z.string().trim().min(1), cor: z.string().trim().min(1).default("#64748b") }).parse(d),
+  )
+  .handler(async ({ context, data }): Promise<TarefaTag> => {
+    const { supabase, userId } = context;
+    const corr = await correspondenteId(supabase, userId);
+    const { data: nova, error } = await supabase
+      .from("task_tags")
+      .insert({ correspondente_id: corr, nome: data.nome, cor: data.cor })
+      .select("id, nome, cor")
+      .single();
+    if (error) throw new Error(error.message);
+    return nova as TarefaTag;
+  });
+
+/** Vincula ou desvincula uma etiqueta a uma tarefa. */
+export const alternarTagTarefa = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z.object({ task_id: z.string().uuid(), tag_id: z.string().uuid(), vincular: z.boolean() }).parse(d),
+  )
+  .handler(async ({ context, data }): Promise<{ ok: true }> => {
+    const { supabase } = context;
+    if (data.vincular) {
+      const { error } = await supabase
+        .from("task_tag_links")
+        .upsert({ task_id: data.task_id, tag_id: data.tag_id }, { onConflict: "task_id,tag_id" });
+      if (error) throw new Error(error.message);
+    } else {
+      const { error } = await supabase
+        .from("task_tag_links")
+        .delete()
+        .eq("task_id", data.task_id)
+        .eq("tag_id", data.tag_id);
+      if (error) throw new Error(error.message);
+    }
+    return { ok: true };
+  });
+
+/* --------------------------- Anexos --------------------------- */
+
+/** Registra um anexo já enviado ao storage (bucket tarefa-anexos). */
+export const registrarAnexoTarefa = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        task_id: z.string().uuid(),
+        nome: z.string().trim().min(1),
+        storage_path: z.string().trim().min(1),
+        tamanho: z.number().int().nonnegative().optional(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ context, data }): Promise<{ ok: true }> => {
+    const { supabase, userId } = context;
+    const { error } = await supabase.from("task_attachments").insert({
+      task_id: data.task_id,
+      nome: data.nome,
+      storage_path: data.storage_path,
+      tamanho: data.tamanho ?? null,
+      autor_id: userId,
+    });
+    if (error) throw new Error(error.message);
+    await supabase.from("task_history").insert({
+      task_id: data.task_id,
+      ator_id: userId,
+      acao: "anexo",
+      detalhe: data.nome,
+    });
+    return { ok: true };
+  });
+
+/** Remove um anexo (registro + arquivo do storage). */
+export const removerAnexoTarefa = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ context, data }): Promise<{ ok: true }> => {
+    const { supabase } = context;
+    const { data: anexo } = await supabase
+      .from("task_attachments")
+      .select("storage_path")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (anexo?.storage_path) {
+      await supabase.storage.from("tarefa-anexos").remove([anexo.storage_path]);
+    }
+    const { error } = await supabase.from("task_attachments").delete().eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+/** URL assinada temporária para baixar um anexo. */
+export const urlAnexoTarefa = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ storage_path: z.string().trim().min(1) }).parse(d))
+  .handler(async ({ context, data }): Promise<{ url: string }> => {
+    const { supabase } = context;
+    const { data: signed, error } = await supabase.storage
+      .from("tarefa-anexos")
+      .createSignedUrl(data.storage_path, 300);
+    if (error || !signed?.signedUrl) throw new Error(error?.message ?? "Falha ao gerar link.");
+    return { url: signed.signedUrl };
+  });
+
+/* --------------------------- Equipe --------------------------- */
+
+export interface MembroEquipe {
+  id: string;
+  nome: string;
+  abertas: number;
+  em_andamento: number;
+  concluidas: number;
+}
+
+/** Membros do correspondente com contagem de tarefas por status (visão de equipe). */
+export const listarEquipeTarefas = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<MembroEquipe[]> => {
+    const { supabase, userId } = context;
+    const corr = await correspondenteId(supabase, userId);
+    const { data: membros, error } = await supabase
+      .from("profiles")
+      .select("id, nome")
+      .eq("correspondente_id", corr)
+      .order("nome");
+    if (error) throw new Error(error.message);
+    const { data: tarefas } = await supabase
+      .from("tasks")
+      .select("responsavel_id, status")
+      .eq("correspondente_id", corr)
+      .limit(2000);
+    const cont = new Map<string, { abertas: number; em_andamento: number; concluidas: number }>();
+    (tarefas ?? []).forEach((t: any) => {
+      if (!t.responsavel_id) return;
+      const c = cont.get(t.responsavel_id) ?? { abertas: 0, em_andamento: 0, concluidas: 0 };
+      if (t.status === "aberta") c.abertas += 1;
+      else if (t.status === "em_andamento") c.em_andamento += 1;
+      else if (t.status === "concluida") c.concluidas += 1;
+      cont.set(t.responsavel_id, c);
+    });
+    return (membros ?? []).map((m: any) => ({
+      id: m.id,
+      nome: m.nome ?? "—",
+      abertas: cont.get(m.id)?.abertas ?? 0,
+      em_andamento: cont.get(m.id)?.em_andamento ?? 0,
+      concluidas: cont.get(m.id)?.concluidas ?? 0,
+    }));
+  });
