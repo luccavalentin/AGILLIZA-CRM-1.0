@@ -33,9 +33,11 @@ import {
 } from "@/components/ui/table";
 import {
   Tabs,
+  TabsContent,
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
+import { RegrasModulosPanel } from "@/components/admin/regras-modulos-panel";
 import { getMinhaSessao } from "@/lib/session.functions";
 import {
   listarPessoas,
