@@ -816,6 +816,9 @@ export type Database = {
             | null
           foto_url: string | null
           id: string
+          lgpd_aceite_em: string | null
+          lgpd_aceite_ip: string | null
+          lgpd_aceite_versao: string | null
           mae: string | null
           nome: string
           numero_cliente: string
@@ -845,6 +848,9 @@ export type Database = {
             | null
           foto_url?: string | null
           id?: string
+          lgpd_aceite_em?: string | null
+          lgpd_aceite_ip?: string | null
+          lgpd_aceite_versao?: string | null
           mae?: string | null
           nome: string
           numero_cliente: string
@@ -874,6 +880,9 @@ export type Database = {
             | null
           foto_url?: string | null
           id?: string
+          lgpd_aceite_em?: string | null
+          lgpd_aceite_ip?: string | null
+          lgpd_aceite_versao?: string | null
           mae?: string | null
           nome?: string
           numero_cliente?: string
@@ -4276,6 +4285,10 @@ export type Database = {
       }
       portal_meus_documentos: { Args: { _cid: string }; Returns: Json }
       portal_minhas_propostas: { Args: { _cid: string }; Returns: Json }
+      portal_registrar_consentimento_lgpd: {
+        Args: { _cid: string; _ip: string; _ua: string; _versao: string }
+        Returns: Json
+      }
       portal_registrar_documento: {
         Args: {
           _cid: string
