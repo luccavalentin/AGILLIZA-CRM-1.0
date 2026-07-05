@@ -24,6 +24,14 @@ export interface AuditoriaEntrada {
   payloadAnterior?: Record<string, unknown> | null;
   /** Estado novo (para creates/updates). */
   payloadNovo?: Record<string, unknown> | null;
+  /**
+   * Cliente Supabase autenticado (context.supabase da server function).
+   * Quando informado, o registro é gravado via função SECURITY DEFINER
+   * `registrar_auditoria` — não depende da chave de serviço. Preferencial.
+   */
+  supabase?: {
+    rpc: (fn: string, args: Record<string, unknown>) => Promise<{ error: unknown }>;
+  } | null;
 }
 
 /** Extrai o IP do cliente a partir dos cabeçalhos da requisição. */
