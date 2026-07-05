@@ -91,6 +91,7 @@ export const navInterno: NavGroup[] = [
     label: "Documentos",
     items: [
       { label: "Arquivos", icon: FolderOpen, to: "/documentos", perm: { modulo: "documentos.arquivos" } },
+      { label: "Formulários", icon: FileText, to: "/formularios" },
     ],
   },
   {

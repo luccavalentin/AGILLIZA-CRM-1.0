@@ -28,6 +28,7 @@ import { Route as ClienteLogoutRouteImport } from './routes/cliente.logout'
 import { Route as ClienteAcompanharMinhaPropostaRouteImport } from './routes/cliente.acompanhar-minha-proposta'
 import { Route as AuthenticatedSemAcessoRouteImport } from './routes/_authenticated/sem-acesso'
 import { Route as AuthenticatedRelatoriosRouteImport } from './routes/_authenticated/relatorios'
+import { Route as AuthenticatedFormulariosRouteImport } from './routes/_authenticated/formularios'
 import { Route as AuthenticatedDocumentosRouteImport } from './routes/_authenticated/documentos'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedRelatoriosIndexRouteImport } from './routes/_authenticated/relatorios.index'
@@ -187,6 +188,12 @@ const AuthenticatedRelatoriosRoute = AuthenticatedRelatoriosRouteImport.update({
   path: '/relatorios',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedFormulariosRoute =
+  AuthenticatedFormulariosRouteImport.update({
+    id: '/formularios',
+    path: '/formularios',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedDocumentosRoute = AuthenticatedDocumentosRouteImport.update({
   id: '/documentos',
   path: '/documentos',
@@ -569,6 +576,7 @@ export interface FileRoutesByFullPath {
   '/portal': typeof PortalRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/documentos': typeof AuthenticatedDocumentosRoute
+  '/formularios': typeof AuthenticatedFormulariosRoute
   '/relatorios': typeof AuthenticatedRelatoriosRouteWithChildren
   '/sem-acesso': typeof AuthenticatedSemAcessoRoute
   '/cliente/acompanhar-minha-proposta': typeof ClienteAcompanharMinhaPropostaRoute
@@ -651,6 +659,7 @@ export interface FileRoutesByTo {
   '/portal': typeof PortalRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/documentos': typeof AuthenticatedDocumentosRoute
+  '/formularios': typeof AuthenticatedFormulariosRoute
   '/sem-acesso': typeof AuthenticatedSemAcessoRoute
   '/cliente/acompanhar-minha-proposta': typeof ClienteAcompanharMinhaPropostaRoute
   '/cliente/logout': typeof ClienteLogoutRoute
@@ -735,6 +744,7 @@ export interface FileRoutesById {
   '/portal': typeof PortalRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/documentos': typeof AuthenticatedDocumentosRoute
+  '/_authenticated/formularios': typeof AuthenticatedFormulariosRoute
   '/_authenticated/relatorios': typeof AuthenticatedRelatoriosRouteWithChildren
   '/_authenticated/sem-acesso': typeof AuthenticatedSemAcessoRoute
   '/cliente/acompanhar-minha-proposta': typeof ClienteAcompanharMinhaPropostaRoute
@@ -820,6 +830,7 @@ export interface FileRouteTypes {
     | '/portal'
     | '/dashboard'
     | '/documentos'
+    | '/formularios'
     | '/relatorios'
     | '/sem-acesso'
     | '/cliente/acompanhar-minha-proposta'
@@ -902,6 +913,7 @@ export interface FileRouteTypes {
     | '/portal'
     | '/dashboard'
     | '/documentos'
+    | '/formularios'
     | '/sem-acesso'
     | '/cliente/acompanhar-minha-proposta'
     | '/cliente/logout'
@@ -985,6 +997,7 @@ export interface FileRouteTypes {
     | '/portal'
     | '/_authenticated/dashboard'
     | '/_authenticated/documentos'
+    | '/_authenticated/formularios'
     | '/_authenticated/relatorios'
     | '/_authenticated/sem-acesso'
     | '/cliente/acompanhar-minha-proposta'
@@ -1204,6 +1217,13 @@ declare module '@tanstack/react-router' {
       path: '/relatorios'
       fullPath: '/relatorios'
       preLoaderRoute: typeof AuthenticatedRelatoriosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/formularios': {
+      id: '/_authenticated/formularios'
+      path: '/formularios'
+      fullPath: '/formularios'
+      preLoaderRoute: typeof AuthenticatedFormulariosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/documentos': {
@@ -1708,6 +1728,7 @@ const AuthenticatedRelatoriosRouteWithChildren =
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedDocumentosRoute: typeof AuthenticatedDocumentosRoute
+  AuthenticatedFormulariosRoute: typeof AuthenticatedFormulariosRoute
   AuthenticatedRelatoriosRoute: typeof AuthenticatedRelatoriosRouteWithChildren
   AuthenticatedSemAcessoRoute: typeof AuthenticatedSemAcessoRoute
   AuthenticatedAdminApisIaRoute: typeof AuthenticatedAdminApisIaRoute
@@ -1759,6 +1780,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedDocumentosRoute: AuthenticatedDocumentosRoute,
+  AuthenticatedFormulariosRoute: AuthenticatedFormulariosRoute,
   AuthenticatedRelatoriosRoute: AuthenticatedRelatoriosRouteWithChildren,
   AuthenticatedSemAcessoRoute: AuthenticatedSemAcessoRoute,
   AuthenticatedAdminApisIaRoute: AuthenticatedAdminApisIaRoute,
