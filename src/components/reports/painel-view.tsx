@@ -54,7 +54,7 @@ export function PainelView({
 
   const { data: perms } = useQuery({ queryKey: ["report-escopo"], queryFn: () => escopoFn(), staleTime: 5 * 60_000 });
   const queryKey = ["panel", modulo, periodo, escopo];
-  const { data, isLoading, dataUpdatedAt } = useQuery({
+  const { data, isLoading, error, dataUpdatedAt } = useQuery({
     queryKey,
     queryFn: () => dadosFn({ data: { modulo, periodo, escopo } }),
     staleTime: 30_000,
@@ -96,7 +96,11 @@ export function PainelView({
         }
       />
 
-      {isLoading || !data ? (
+      {error ? (
+        <Card className="flex items-center gap-3 p-4">
+          <p className="text-sm text-muted-foreground">Não foi possível carregar os indicadores. Tente atualizar.</p>
+        </Card>
+      ) : isLoading || !data ? (
         <div className="space-y-6">
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-24" />)}</div>
           <Skeleton className="h-64" />

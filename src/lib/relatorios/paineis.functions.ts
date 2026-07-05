@@ -51,7 +51,7 @@ export const getPanelDados = createServerFn({ method: "POST" })
 
     if (data.modulo === "visao-geral") {
       const [sims, props] = await Promise.all([
-        escopoEq(supabase.from("simulacoes").select("id,status,tipo_simulacao,valor_financiamento,nome_banco,created_at").gte("created_at", de).lte("created_at", ateFim).limit(5000), "usuario_responsavel_id"),
+        escopoEq(supabase.from("simulacoes").select("id,status,tipo_simulacao,valor_financiamento,created_at").gte("created_at", de).lte("created_at", ateFim).limit(5000), "usuario_responsavel_id"),
         escopoEq(supabase.from("propostas").select("status,valor_financiamento_aprovado,valor_financiamento,nome_banco,created_at").gte("created_at", de).lte("created_at", ateFim).limit(5000), "usuario_responsavel_id"),
       ]);
       if (sims.error) throw new Error(sims.error.message);
