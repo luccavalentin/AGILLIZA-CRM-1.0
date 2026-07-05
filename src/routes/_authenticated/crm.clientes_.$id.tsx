@@ -129,6 +129,57 @@ function Pagina() {
           </Card>
         </TabsContent>
 
+        <TabsContent value="negocios" className="mt-4 space-y-4">
+          <Card>
+            <CardHeader className="pb-2"><CardTitle className="text-sm">Simulações</CardTitle></CardHeader>
+            <CardContent className="space-y-2">
+              {(negocios?.simulacoes.length ?? 0) === 0 ? (
+                <p className="py-4 text-center text-sm text-muted-foreground">Nenhuma simulação para este cliente.</p>
+              ) : (
+                negocios!.simulacoes.map((s) => (
+                  <Link
+                    key={s.id}
+                    to="/operacional/simulacoes/$id"
+                    params={{ id: s.id }}
+                    className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-card p-3 text-sm transition-colors hover:bg-accent"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-xs text-muted-foreground">{s.numero_simulacao ?? "—"}</span>
+                      <span className="text-foreground">{s.produto === "home_equity" ? "Home Equity" : "Financiamento"}</span>
+                      <StatusBadge status={s.status ?? "—"} />
+                    </div>
+                    <span className="tabular-nums text-muted-foreground">{fmtValor(s.valor_financiamento)}</span>
+                  </Link>
+                ))
+              )}
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2"><CardTitle className="text-sm">Propostas</CardTitle></CardHeader>
+            <CardContent className="space-y-2">
+              {(negocios?.propostas.length ?? 0) === 0 ? (
+                <p className="py-4 text-center text-sm text-muted-foreground">Nenhuma proposta para este cliente.</p>
+              ) : (
+                negocios!.propostas.map((p) => (
+                  <Link
+                    key={p.id}
+                    to="/operacional/propostas/$id"
+                    params={{ id: p.id }}
+                    className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-card p-3 text-sm transition-colors hover:bg-accent"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-xs text-muted-foreground">{p.numero_proposta ?? "—"}</span>
+                      <span className="text-foreground">{p.nome_banco ?? "—"}</span>
+                      <StatusBadge status={p.status ?? "—"} />
+                    </div>
+                    <span className="tabular-nums text-muted-foreground">{fmtValor(p.valor_financiamento)}</span>
+                  </Link>
+                ))
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         <TabsContent value="dados" className="mt-4">
           <ClienteForm
             portalAtivo={c.portal_acesso_ativo}
