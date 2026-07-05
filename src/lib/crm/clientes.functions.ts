@@ -165,6 +165,15 @@ export const criarCliente = createServerFn({ method: "POST" })
       .select("id")
       .single();
     if (error) throw error;
+    const { registrarAuditoria } = await import("@/lib/admin/audit.server");
+    await registrarAuditoria({
+      userId,
+      correspondenteId: me.correspondente_id,
+      acao: "cliente.criar",
+      entidade: "clientes",
+      entidadeId: novo.id,
+      payloadNovo: { nome: data.nome, tipo_pessoa: data.tipo_pessoa },
+    });
     return { id: novo.id };
   });
 
@@ -173,7 +182,7 @@ export const atualizarCliente = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => clienteInputSchema.extend({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
-    const { supabase } = context;
+    const { supabase, userId } = context;
     const { id, ...campos } = data;
     const { error } = await supabase
       .from("clientes")
@@ -194,6 +203,16 @@ export const atualizarCliente = createServerFn({ method: "POST" })
       })
       .eq("id", id);
     if (error) throw error;
+    const { data: corr } = await supabase.rpc("correspondente_do_usuario", { _user_id: userId });
+    const { registrarAuditoria } = await import("@/lib/admin/audit.server");
+    await registrarAuditoria({
+      userId,
+      correspondenteId: corr ?? null,
+      acao: "cliente.atualizar",
+      entidade: "clientes",
+      entidadeId: id,
+      payloadNovo: { nome: campos.nome },
+    });
     return { ok: true };
   });
 
@@ -568,6 +587,15 @@ export const excluirCliente = createServerFn({ method: "POST" })
     }
     const { error } = await supabase.from("clientes").delete().eq("id", data.id);
     if (error) throw error;
+    const { data: corr } = await supabase.rpc("correspondente_do_usuario", { _user_id: userId });
+    const { registrarAuditoria } = await import("@/lib/admin/audit.server");
+    await registrarAuditoria({
+      userId,
+      correspondenteId: corr ?? null,
+      acao: "cliente.excluir",
+      entidade: "clientes",
+      entidadeId: data.id,
+    });
     return { ok: true };
   });
 

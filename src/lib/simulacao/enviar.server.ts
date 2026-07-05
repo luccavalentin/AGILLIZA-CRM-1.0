@@ -198,6 +198,16 @@ export async function enviarSimulacaoImpl({
       ator_id: userId,
     });
 
+    const { registrarAuditoria } = await import("@/lib/admin/audit.server");
+    await registrarAuditoria({
+      userId,
+      correspondenteId: correspondente_id,
+      acao: "simulacao.enviar_banco",
+      entidade: "simulacoes",
+      entidadeId: simulacaoId,
+      payloadNovo: { status: novoStatus, bancos: resultados.length },
+    });
+
     return { oportunidade_id: idOportunidade, status: novoStatus, bancos: resultados };
   } catch (e) {
     const bruto =

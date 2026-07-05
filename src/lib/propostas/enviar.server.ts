@@ -125,6 +125,16 @@ export async function enviarPropostaImpl({
     ator_id: userId,
   });
 
+  const { registrarAuditoria } = await import("@/lib/admin/audit.server");
+  await registrarAuditoria({
+    userId,
+    correspondenteId: prop.correspondente_id,
+    acao: "proposta.enviar_banco",
+    entidade: "propostas",
+    entidadeId: propostaId,
+    payloadNovo: { status: novoStatus, bancos: resultados.length },
+  });
+
   return { status: novoStatus, bancos: resultados };
 }
 
