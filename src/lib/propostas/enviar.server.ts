@@ -93,7 +93,7 @@ export async function enviarPropostaImpl({
     .update({ status: "enviada_banco", enviada_em: new Date().toISOString(), ip_consentimento: ip, ultimo_erro: null })
     .eq("id", propostaId);
 
-  const ctx = { simulacao_id: prop.simulacao_id, correspondente_id: prop.correspondente_id };
+  const ctx = { simulacao_id: prop.simulacao_id, proposta_id: propostaId, correspondente_id: prop.correspondente_id };
   const resultados: EnviarResultado["bancos"] = [];
   let sucesso = 0;
 
@@ -159,7 +159,7 @@ export async function enviarFollowupHomefinImpl({
     `/oportunidade/${prop.homefin_id_oportunidade}/follow-up`,
     "POST",
     { idOportunidade: prop.homefin_id_oportunidade, tipoFup: "E", titulo, comentario },
-    { simulacao_id: prop.simulacao_id, correspondente_id: prop.correspondente_id },
+    { simulacao_id: prop.simulacao_id, proposta_id: propostaId, correspondente_id: prop.correspondente_id },
   );
 }
 
@@ -180,7 +180,7 @@ export async function cancelarPropostaHomefinImpl({
     `/oportunidade/${prop.homefin_id_oportunidade}`,
     "PUT",
     { tipoSituacao: "C" },
-    { simulacao_id: prop.simulacao_id, correspondente_id: prop.correspondente_id },
+    { simulacao_id: prop.simulacao_id, proposta_id: propostaId, correspondente_id: prop.correspondente_id },
   );
 }
 
@@ -206,7 +206,7 @@ export async function sincronizarPropostaImpl({
     throw new Error("Proposta ainda não foi enviada ao banco.");
   }
 
-  const ctx = { simulacao_id: prop.simulacao_id, correspondente_id: prop.correspondente_id };
+  const ctx = { simulacao_id: prop.simulacao_id, proposta_id: propostaId, correspondente_id: prop.correspondente_id };
   const resp = await chamarIntegracao<any>(
     `/oportunidade/${prop.homefin_id_oportunidade}`,
     "GET",
