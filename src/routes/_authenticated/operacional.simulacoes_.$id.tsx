@@ -32,6 +32,17 @@ function Pagina() {
   const { data, isLoading } = useQuery({
     queryKey: ["simulacao", id],
     queryFn: () => obterSimulacao({ data: { id } }),
+    // Enquanto a simulação/algum banco ainda está processando, faz polling
+    // para garantir que os retornos apareçam mesmo se o realtime falhar.
+    refetchInterval: (query) => {
+      const d = query.state.data as any;
+      if (!d) return 2000;
+      const simProcessando = ["enviando", "rascunho"].includes(d.simulacao?.status);
+      const bancoProcessando = (d.bancos ?? []).some(
+        (b: any) => b.status_banco === "aguardando" || b.status_banco === "enviando",
+      );
+      return simProcessando || bancoProcessando ? 3000 : false;
+    },
   });
 
   // realtime: atualiza ao receber retorno de banco
