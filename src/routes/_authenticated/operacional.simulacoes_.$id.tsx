@@ -6,6 +6,7 @@ import { ArrowLeft, RefreshCw, Copy } from "lucide-react";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { supabase } from "@/integrations/supabase/client";
 import { obterSimulacao, enviarSimulacaoBanco, duplicarSimulacao } from "@/lib/simulacao/simulacoes.functions";
+import { criarProposta } from "@/lib/propostas/propostas.functions";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
