@@ -188,7 +188,22 @@ function Pagina() {
           </Campo>
           <Campo label={<>Valor de entrada (R$) <Ast /></>}>
             <CurrencyInput value={f.valor_entrada} onChange={(v) => set("valor_entrada", v)} placeholder="Ex: 100.000,00" />
+            {f.valor_imovel > 0 && (
+              <p className="text-xs text-muted-foreground">
+                Entrada sugerida (20%): <span className="font-medium text-foreground">{formatBRL(Math.round(f.valor_imovel * 0.2))}</span>
+                {f.valor_entrada !== Math.round(f.valor_imovel * 0.2) && (
+                  <button
+                    type="button"
+                    onClick={aplicarEntradaSugerida}
+                    className="ml-2 font-medium text-primary underline-offset-2 hover:underline"
+                  >
+                    Aplicar
+                  </button>
+                )}
+              </p>
+            )}
           </Campo>
+
           <Campo label={<>Prazo (meses) <Ast /></>}>
             <Input type="number" min={60} max={420} value={f.prazo || ""} onChange={(e) => set("prazo", Number(e.target.value))} aria-invalid={!!erros.prazo} />
             {err("prazo")}
