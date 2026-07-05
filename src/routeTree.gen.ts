@@ -31,6 +31,7 @@ import { Route as AuthenticatedRelatoriosRouteImport } from './routes/_authentic
 import { Route as AuthenticatedDocumentosRouteImport } from './routes/_authenticated/documentos'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedRelatoriosIndexRouteImport } from './routes/_authenticated/relatorios.index'
+import { Route as ApiPublicSyncPropostasRouteImport } from './routes/api/public/sync-propostas'
 import { Route as AuthenticatedVisaoGeralPainelRouteImport } from './routes/_authenticated/visao-geral.painel'
 import { Route as AuthenticatedRelatoriosTarefasRouteImport } from './routes/_authenticated/relatorios.tarefas'
 import { Route as AuthenticatedRelatoriosSimulacoesRouteImport } from './routes/_authenticated/relatorios.simulacoes'
@@ -202,6 +203,11 @@ const AuthenticatedRelatoriosIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedRelatoriosRoute,
   } as any)
+const ApiPublicSyncPropostasRoute = ApiPublicSyncPropostasRouteImport.update({
+  id: '/api/public/sync-propostas',
+  path: '/api/public/sync-propostas',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedVisaoGeralPainelRoute =
   AuthenticatedVisaoGeralPainelRouteImport.update({
     id: '/visao-geral/painel',
@@ -620,6 +626,7 @@ export interface FileRoutesByFullPath {
   '/relatorios/simulacoes': typeof AuthenticatedRelatoriosSimulacoesRoute
   '/relatorios/tarefas': typeof AuthenticatedRelatoriosTarefasRoute
   '/visao-geral/painel': typeof AuthenticatedVisaoGeralPainelRoute
+  '/api/public/sync-propostas': typeof ApiPublicSyncPropostasRoute
   '/relatorios/': typeof AuthenticatedRelatoriosIndexRoute
   '/crm/clientes/$id': typeof AuthenticatedCrmClientesIdRoute
   '/crm/clientes/novo': typeof AuthenticatedCrmClientesNovoRoute
@@ -700,6 +707,7 @@ export interface FileRoutesByTo {
   '/relatorios/simulacoes': typeof AuthenticatedRelatoriosSimulacoesRoute
   '/relatorios/tarefas': typeof AuthenticatedRelatoriosTarefasRoute
   '/visao-geral/painel': typeof AuthenticatedVisaoGeralPainelRoute
+  '/api/public/sync-propostas': typeof ApiPublicSyncPropostasRoute
   '/relatorios': typeof AuthenticatedRelatoriosIndexRoute
   '/crm/clientes/$id': typeof AuthenticatedCrmClientesIdRoute
   '/crm/clientes/novo': typeof AuthenticatedCrmClientesNovoRoute
@@ -784,6 +792,7 @@ export interface FileRoutesById {
   '/_authenticated/relatorios/simulacoes': typeof AuthenticatedRelatoriosSimulacoesRoute
   '/_authenticated/relatorios/tarefas': typeof AuthenticatedRelatoriosTarefasRoute
   '/_authenticated/visao-geral/painel': typeof AuthenticatedVisaoGeralPainelRoute
+  '/api/public/sync-propostas': typeof ApiPublicSyncPropostasRoute
   '/_authenticated/relatorios/': typeof AuthenticatedRelatoriosIndexRoute
   '/_authenticated/crm/clientes_/$id': typeof AuthenticatedCrmClientesIdRoute
   '/_authenticated/crm/clientes_/novo': typeof AuthenticatedCrmClientesNovoRoute
@@ -868,6 +877,7 @@ export interface FileRouteTypes {
     | '/relatorios/simulacoes'
     | '/relatorios/tarefas'
     | '/visao-geral/painel'
+    | '/api/public/sync-propostas'
     | '/relatorios/'
     | '/crm/clientes/$id'
     | '/crm/clientes/novo'
@@ -948,6 +958,7 @@ export interface FileRouteTypes {
     | '/relatorios/simulacoes'
     | '/relatorios/tarefas'
     | '/visao-geral/painel'
+    | '/api/public/sync-propostas'
     | '/relatorios'
     | '/crm/clientes/$id'
     | '/crm/clientes/novo'
@@ -1031,6 +1042,7 @@ export interface FileRouteTypes {
     | '/_authenticated/relatorios/simulacoes'
     | '/_authenticated/relatorios/tarefas'
     | '/_authenticated/visao-geral/painel'
+    | '/api/public/sync-propostas'
     | '/_authenticated/relatorios/'
     | '/_authenticated/crm/clientes_/$id'
     | '/_authenticated/crm/clientes_/novo'
@@ -1056,6 +1068,7 @@ export interface RootRouteChildren {
   ClienteConsentimentoRoute: typeof ClienteConsentimentoRoute
   ParceiroRoute: typeof ParceiroRouteWithChildren
   PortalRoute: typeof PortalRoute
+  ApiPublicSyncPropostasRoute: typeof ApiPublicSyncPropostasRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -1213,6 +1226,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/relatorios/'
       preLoaderRoute: typeof AuthenticatedRelatoriosIndexRouteImport
       parentRoute: typeof AuthenticatedRelatoriosRoute
+    }
+    '/api/public/sync-propostas': {
+      id: '/api/public/sync-propostas'
+      path: '/api/public/sync-propostas'
+      fullPath: '/api/public/sync-propostas'
+      preLoaderRoute: typeof ApiPublicSyncPropostasRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/visao-geral/painel': {
       id: '/_authenticated/visao-geral/painel'
@@ -1854,6 +1874,7 @@ const rootRouteChildren: RootRouteChildren = {
   ClienteConsentimentoRoute: ClienteConsentimentoRoute,
   ParceiroRoute: ParceiroRouteWithChildren,
   PortalRoute: PortalRoute,
+  ApiPublicSyncPropostasRoute: ApiPublicSyncPropostasRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
