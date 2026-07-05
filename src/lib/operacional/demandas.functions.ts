@@ -118,6 +118,7 @@ export const obterDemanda = createServerFn({ method: "GET" })
       ...(historico.data ?? []).flatMap((h: any) => [h.ator_id, h.responsavel_anterior_id, h.responsavel_novo_id]),
       ...(mensagens.data ?? []).map((m: any) => m.autor_id),
       ...(participantes.data ?? []).map((p: any) => p.user_id),
+      ...(anexos.data ?? []).map((a: any) => a.autor_id),
     ];
     const nomes = await nomesPorId(supabase, uids);
     const nm = (id: string | null | undefined) => (id ? nomes.get(id) ?? null : null);
