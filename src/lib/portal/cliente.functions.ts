@@ -378,7 +378,7 @@ export const clienteSolicitarLGPD = createServerFn({ method: "POST" })
     const { portalDb } = await import("./portal-db.server");
     const { error } = await portalDb().rpc("portal_solicitar_lgpd", {
       _cid: sess.cid,
-      _corr: sess.corr,
+      _corr: sess.corr ?? "",
       _acao: data.acao,
     });
     if (error) throw new Error("Não foi possível registrar a solicitação.");
