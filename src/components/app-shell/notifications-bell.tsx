@@ -96,23 +96,25 @@ export function NotificationsBell({ userId }: NotificationsBellProps) {
   function renderItem(n: Notificacao) {
     return (
       <li key={n.id}>
-        <button
-          type="button"
-          onClick={() => aoClicar(n)}
-          className={cn(
-            "flex w-full flex-col gap-1 px-4 py-3 text-left transition-colors hover:bg-accent focus-visible:bg-accent focus-visible:outline-none",
-            n.lida ? "bg-popover" : "bg-accent",
-          )}
-        >
-          <div className="flex items-center gap-2">
-            {!n.lida && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />}
-            <span className="text-sm font-medium text-foreground">{n.titulo}</span>
-          </div>
-          {n.corpo && (
-            <span className="line-clamp-2 text-xs text-muted-foreground">{n.corpo}</span>
-          )}
-          <span className="text-[11px] text-muted-foreground">{formatarData(n.created_at)}</span>
-        </button>
+        <SwipeToDelete onDelete={() => excluir.mutate(n.id)}>
+          <button
+            type="button"
+            onClick={() => aoClicar(n)}
+            className={cn(
+              "flex w-full flex-col gap-1 px-4 py-3 text-left transition-colors hover:bg-accent focus-visible:bg-accent focus-visible:outline-none",
+              n.lida ? "bg-popover" : "bg-accent",
+            )}
+          >
+            <div className="flex items-center gap-2">
+              {!n.lida && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />}
+              <span className="text-sm font-medium text-foreground">{n.titulo}</span>
+            </div>
+            {n.corpo && (
+              <span className="line-clamp-2 text-xs text-muted-foreground">{n.corpo}</span>
+            )}
+            <span className="text-[11px] text-muted-foreground">{formatarData(n.created_at)}</span>
+          </button>
+        </SwipeToDelete>
       </li>
     );
   }
