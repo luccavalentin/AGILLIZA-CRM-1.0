@@ -219,7 +219,7 @@ function Pagina() {
       <div className="flex justify-end">
         <Button size="lg" onClick={criar} disabled={enviando}>
           {enviando ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
-          ENVIAR PROPOSTA
+          {modo === "simulacao" && simSelecionada?.proposta_existente_id ? "ABRIR PROPOSTA" : "ENVIAR PROPOSTA"}
         </Button>
       </div>
     </div>
