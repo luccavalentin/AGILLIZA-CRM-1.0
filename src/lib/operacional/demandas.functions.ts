@@ -104,11 +104,12 @@ export const obterDemanda = createServerFn({ method: "GET" })
   .inputValidator((data) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ context, data }) => {
     const { supabase } = context;
-    const [demanda, historico, mensagens, participantes] = await Promise.all([
+    const [demanda, historico, mensagens, participantes, anexos] = await Promise.all([
       supabase.from("demandas").select("*, clientes(nome, numero_cliente)").eq("id", data.id).maybeSingle(),
       supabase.from("demanda_historico").select("*").eq("demanda_id", data.id).order("created_at", { ascending: false }),
       supabase.from("demanda_mensagens").select("*").eq("demanda_id", data.id).order("created_at"),
       supabase.from("demanda_participantes").select("*").eq("demanda_id", data.id),
+      supabase.from("demanda_anexos").select("*").eq("demanda_id", data.id).order("created_at", { ascending: false }),
     ]);
     if (demanda.error) throw new Error(demanda.error.message);
     const uids = [
