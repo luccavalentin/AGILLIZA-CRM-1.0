@@ -38,7 +38,16 @@ const AlertDialogContent = React.forwardRef<
         className,
       )}
       {...props}
-    />
+    >
+      <img
+        src="/favicon.png"
+        alt="Agilliza"
+        aria-hidden="true"
+        className="h-8 w-8 select-none"
+        draggable={false}
+      />
+      {children}
+    </AlertDialogPrimitive.Content>
   </AlertDialogPortal>
 ));
 AlertDialogContent.displayName = AlertDialogPrimitive.Content.displayName;
