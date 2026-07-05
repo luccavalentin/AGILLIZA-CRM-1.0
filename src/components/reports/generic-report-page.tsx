@@ -107,6 +107,12 @@ export function GenericReportPage({
             </ReportSection>
           )}
 
+          {data.comparativoMensal && (
+            <ReportSection titulo="Comparativo entre os meses — últimos 6 meses">
+              <MonthlyComparison dados={data.comparativoMensal} />
+            </ReportSection>
+          )}
+
           <ReportSection titulo={`Detalhamento — ${data.rows.length} registros`}>
             <DrilldownTable columns={data.columns} rows={data.rows} />
           </ReportSection>
