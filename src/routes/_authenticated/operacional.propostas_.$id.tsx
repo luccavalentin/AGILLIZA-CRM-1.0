@@ -360,7 +360,7 @@ function TabResumo({ proposta, bancos, propostaId }: { proposta: any; bancos: an
           <TableBody>
             {bancos.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7} className="py-8 text-center text-sm text-muted-foreground">
+                <TableCell colSpan={8} className="py-8 text-center text-sm text-muted-foreground">
                   Nenhum banco vinculado.
                 </TableCell>
               </TableRow>
@@ -386,6 +386,27 @@ function TabResumo({ proposta, bancos, propostaId }: { proposta: any; bancos: an
                   <ToneBadge tone={b.status_banco === "erro" ? "danger" : b.status_banco === "enviada" ? "success" : "info"}>
                     {b.status_banco}
                   </ToneBadge>
+                </TableCell>
+                <TableCell className="text-right">
+                  {b.status_banco === "enviada" ? (
+                    <span className="text-xs text-muted-foreground">Enviado</span>
+                  ) : podeEnviarBanco ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => enviarBanco(b.id)}
+                      disabled={enviandoId !== null}
+                    >
+                      {enviandoId === b.id ? (
+                        <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Send className="mr-1 h-4 w-4" />
+                      )}
+                      {b.status_banco === "erro" ? "Reenviar" : "Enviar"}
+                    </Button>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">—</span>
+                  )}
                 </TableCell>
               </TableRow>
             ))}
