@@ -50,3 +50,29 @@ export const getMinhaSessao = createServerFn({ method: "GET" })
       podeGerenciarPessoas: Boolean(podeGerenciar),
     };
   });
+
+/** Atualiza os dados básicos do próprio perfil (nome, telefone, foto). */
+export const atualizarMeuPerfil = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { nome: string; telefone?: string; foto_url?: string }) =>
+    z
+      .object({
+        nome: z.string().trim().min(2).max(120),
+        telefone: z.string().trim().max(30).optional(),
+        foto_url: z.string().trim().url().max(500).optional().or(z.literal("")),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        nome: data.nome,
+        telefone: data.telefone || null,
+        foto_url: data.foto_url || null,
+      })
+      .eq("id", userId);
+    if (error) throw new Error("Não foi possível salvar o perfil.");
+    return { ok: true };
+  });
