@@ -29,6 +29,7 @@ const grupos: { titulo: string; itens: Item[] }[] = [
     titulo: "Visão executiva",
     itens: [
       { to: "/relatorios/painel-geral", label: "Painel geral", desc: "Consolidado da produção", icon: LayoutDashboard },
+      { to: "/relatorios/gerencial", label: "Gerencial", desc: "Andamento, aprovadas e contratos", icon: TrendingUp },
       { to: "/relatorios/consolidado", label: "Consolidado", desc: "Funil, bancos e evolução", icon: TrendingUp },
       { to: "/relatorios/comerciais", label: "Comercial", desc: "Desempenho por responsável", icon: TrendingUp },
     ],

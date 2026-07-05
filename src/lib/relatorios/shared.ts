@@ -130,6 +130,19 @@ export interface ComparativoMensal {
   bancos: { nome: string; valores: number[] }[];
 }
 
+export interface ReportTabela {
+  titulo: string;
+  subtitulo?: string;
+  columns: ReportColumn[];
+  rows: ReportRow[];
+}
+
+export interface ReportTabelaGrupo {
+  titulo: string;
+  descricao?: string;
+  tabelas: ReportTabela[];
+}
+
 export interface ReportResult {
   titulo: string;
   descricao: string;
@@ -139,6 +152,8 @@ export interface ReportResult {
   columns: ReportColumn[];
   rows: ReportRow[];
   ranking?: { titulo: string; columns: ReportColumn[]; rows: ReportRow[] };
+  /** Blocos de tabelas agrupadas (usado no relatório gerencial). */
+  tabelas?: ReportTabelaGrupo[];
   /** Comparativo mês a mês (últimos 6 meses) aplicado a todos os relatórios. */
   comparativoMensal?: ComparativoMensal;
   /** Opções completas para os filtros (independem do resultado filtrado). */

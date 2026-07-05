@@ -113,6 +113,23 @@ export function GenericReportPage({
             </ReportSection>
           )}
 
+          {data.tabelas && data.tabelas.length > 0 && data.tabelas.map((grupo) => (
+            <ReportSection key={grupo.titulo} titulo={grupo.titulo}>
+              <div className="space-y-6">
+                {grupo.descricao && <p className="text-xs text-muted-foreground">{grupo.descricao}</p>}
+                {grupo.tabelas.map((t) => (
+                  <div key={t.titulo} className="space-y-2">
+                    <div>
+                      <p className="text-sm font-medium text-foreground">{t.titulo}</p>
+                      {t.subtitulo && <p className="text-xs text-muted-foreground">{t.subtitulo}</p>}
+                    </div>
+                    <DrilldownTable columns={t.columns} rows={t.rows} />
+                  </div>
+                ))}
+              </div>
+            </ReportSection>
+          ))}
+
           <ReportSection titulo={`Detalhamento — ${data.rows.length} registros`}>
             <DrilldownTable columns={data.columns} rows={data.rows} />
           </ReportSection>
