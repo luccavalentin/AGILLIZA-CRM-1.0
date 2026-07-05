@@ -285,6 +285,12 @@ function AcoesTopo({ proposta, propostaId, bancos }: { proposta: any; propostaId
 function TabResumo({ proposta, bancos, propostaId }: { proposta: any; bancos: any[]; propostaId: string }) {
   const qc = useQueryClient();
   const selecionarFn = useServerFn(selecionarBancoProposta);
+  const enviarFn = useServerFn(enviarPropostaHomeFin);
+  const [enviandoId, setEnviandoId] = useState<string | null>(null);
+  const status = proposta.status as PropostaStatus;
+  const podeEnviarBanco =
+    Boolean(proposta.homefin_id_oportunidade) &&
+    !["cancelada", "registrado", "credito_recusado", "contrato_emitido"].includes(status);
   const campos: [string, string][] = [
     ["Operação", proposta.produto ?? "—"],
     ["Regional", proposta.regional_nome ?? "—"],
@@ -300,6 +306,24 @@ function TabResumo({ proposta, bancos, propostaId }: { proposta: any; bancos: an
       qc.invalidateQueries({ queryKey: ["proposta", propostaId] });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Falha ao selecionar banco.");
+    }
+  }
+
+  async function enviarBanco(pbId: string) {
+    setEnviandoId(pbId);
+    try {
+      const r = await enviarFn({ data: { proposta_id: propostaId, banco_id: pbId } });
+      const res = r.bancos[0];
+      if (res?.status === "erro") {
+        toast.error(res.mensagem ?? "Falha ao enviar ao banco.");
+      } else {
+        toast.success("Banco enviado.");
+      }
+      qc.invalidateQueries({ queryKey: ["proposta", propostaId] });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao enviar ao banco.");
+    } finally {
+      setEnviandoId(null);
     }
   }
 
