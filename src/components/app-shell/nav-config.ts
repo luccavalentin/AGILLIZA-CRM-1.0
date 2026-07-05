@@ -79,8 +79,29 @@ export const navInterno: NavGroup[] = [
     label: "Operacional",
     items: [
       { label: "Painel", icon: Gauge, to: "/operacional/painel", perm: { modulo: "operacional.propostas" } },
-      { label: "Simulações", icon: Calculator, to: "/operacional/simulacoes", perm: { modulo: "operacional.simulacoes" } },
-      { label: "Propostas", icon: FileText, to: "/operacional/propostas", perm: { modulo: "operacional.propostas" } },
+      {
+        label: "Simulações",
+        icon: Calculator,
+        to: "/operacional/simulacoes",
+        perm: { modulo: "operacional.simulacoes" },
+        children: [
+          { label: "Consultar simulações", icon: Calculator, to: "/operacional/simulacoes" },
+          { label: "Simulação rápida", icon: Gauge, to: "/operacional/simulacoes/nova" },
+          { label: "Simulação completa", icon: FileText, to: "/operacional/simulacoes/completa" },
+        ],
+      },
+      {
+        label: "Propostas",
+        icon: FileText,
+        to: "/operacional/propostas",
+        perm: { modulo: "operacional.propostas" },
+        children: [
+          { label: "Consultar propostas", icon: FileText, to: "/operacional/propostas" },
+          { label: "Nova proposta", icon: FileSignature, to: "/operacional/propostas/enviar" },
+          { label: "Kanban", icon: KanbanSquare, to: "/operacional/propostas/kanban" },
+        ],
+      },
+
       { label: "Contratos", icon: FileSignature, to: "/operacional/contratos", perm: { modulo: "operacional.contratos" } },
       { label: "Tarefas", icon: ListChecks, to: "/operacional/tarefas", perm: { modulo: "operacional.tarefas" } },
       { label: "Demandas", icon: Inbox, to: "/operacional/demandas", perm: { modulo: "operacional.demandas" } },
