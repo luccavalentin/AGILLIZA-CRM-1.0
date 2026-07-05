@@ -475,7 +475,7 @@ export const salvarPermissoes = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => permSchema.parse(d))
   .handler(async ({ data, context }) => {
-    const { supabase } = context;
+    const { supabase, userId } = context;
 
     // Remove as permissões antigas e regrava (RLS garante que só níveis do
     // próprio correspondente e gestor autorizado podem escrever).
@@ -499,5 +499,16 @@ export const salvarPermissoes = createServerFn({ method: "POST" })
       const { error } = await supabase.from("permissions").insert(rows);
       if (error) throw new Error(error.message);
     }
+
+    const { registrarAuditoria } = await import("@/lib/admin/audit.server");
+    await registrarAuditoria({
+      supabase,
+      userId,
+      correspondenteId: null,
+      acao: "nivel_acesso.salvar_permissoes",
+      entidade: "access_levels",
+      entidadeId: data.nivel_acesso_id,
+      payloadNovo: { total: rows.length },
+    });
     return { ok: true, total: rows.length };
   });
