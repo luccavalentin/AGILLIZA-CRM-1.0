@@ -421,10 +421,10 @@ export const excluirNivelAcesso = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
-    const { supabase } = context;
+    const { supabase, userId } = context;
     const { data: nivel } = await supabase
       .from("access_levels")
-      .select("id, is_padrao")
+      .select("id, is_padrao, nome")
       .eq("id", data.id)
       .maybeSingle();
     if (!nivel) throw new Error("Nível de acesso não encontrado.");
@@ -442,6 +442,17 @@ export const excluirNivelAcesso = createServerFn({ method: "POST" })
     await supabase.from("permissions").delete().eq("nivel_acesso_id", data.id);
     const { error } = await supabase.from("access_levels").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
+
+    const { registrarAuditoria } = await import("@/lib/admin/audit.server");
+    await registrarAuditoria({
+      supabase,
+      userId,
+      correspondenteId: null,
+      acao: "nivel_acesso.excluir",
+      entidade: "access_levels",
+      entidadeId: data.id,
+      payloadAnterior: { nome: nivel.nome },
+    });
     return { ok: true };
   });
 
