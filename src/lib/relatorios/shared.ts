@@ -130,6 +130,19 @@ export interface ComparativoMensal {
   bancos: { nome: string; valores: number[] }[];
 }
 
+export interface ReportTabela {
+  titulo: string;
+  subtitulo?: string;
+  columns: ReportColumn[];
+  rows: ReportRow[];
+}
+
+export interface ReportTabelaGrupo {
+  titulo: string;
+  descricao?: string;
+  tabelas: ReportTabela[];
+}
+
 export interface ReportResult {
   titulo: string;
   descricao: string;
