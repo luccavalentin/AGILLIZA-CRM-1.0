@@ -259,7 +259,77 @@ export const comentarDemanda = createServerFn({ method: "POST" })
       visivel_cliente: data.visivel_cliente,
     });
     if (error) throw new Error(error.message);
+
+    // Espelha comentários públicos no chat do App do Cliente, quando a demanda tem cliente vinculado.
+    if (data.visivel_cliente) {
+      const { data: dem } = await supabase
+        .from("demandas")
+        .select("cliente_id, correspondente_id")
+        .eq("id", data.demanda_id)
+        .maybeSingle();
+      if (dem?.cliente_id) {
+        await supabase.rpc("portal_time_responder", { _cid: dem.cliente_id, _msg: data.corpo, _anexo: null });
+      }
+    }
     return { ok: true };
+  });
+
+/** Registra um anexo enviado ao storage de uma demanda. */
+export const registrarAnexoDemanda = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z
+      .object({
+        demanda_id: z.string().uuid(),
+        nome: z.string().min(1),
+        storage_path: z.string().min(1),
+        tamanho: z.number().int().nonnegative().optional(),
+      })
+      .parse(data),
+  )
+  .handler(async ({ context, data }) => {
+    const { supabase, userId } = context;
+    const { error } = await supabase.from("demanda_anexos").insert({
+      demanda_id: data.demanda_id,
+      nome: data.nome,
+      storage_path: data.storage_path,
+      tamanho: data.tamanho ?? null,
+      autor_id: userId,
+    });
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+/** Remove um anexo da demanda (registro + arquivo). */
+export const removerAnexoDemanda = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => z.object({ id: z.string().uuid() }).parse(data))
+  .handler(async ({ context, data }) => {
+    const { supabase } = context;
+    const { data: anexo } = await supabase
+      .from("demanda_anexos")
+      .select("storage_path")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (anexo?.storage_path) {
+      await supabase.storage.from("demanda-anexos").remove([anexo.storage_path]);
+    }
+    const { error } = await supabase.from("demanda_anexos").delete().eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+/** Gera uma URL assinada temporária para baixar um anexo. */
+export const urlAnexoDemanda = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => z.object({ storage_path: z.string().min(1) }).parse(data))
+  .handler(async ({ context, data }) => {
+    const { supabase } = context;
+    const { data: signed, error } = await supabase.storage
+      .from("demanda-anexos")
+      .createSignedUrl(data.storage_path, 300);
+    if (error) throw new Error(error.message);
+    return { url: signed.signedUrl };
   });
 
 export const marcarDemandaLida = createServerFn({ method: "POST" })
