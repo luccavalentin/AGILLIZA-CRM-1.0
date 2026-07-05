@@ -18,8 +18,8 @@ import { compararBancosRapido, taxaAnoDeBanco } from "@/lib/simulacao/simulacao-
 export const Route = createFileRoute("/_authenticated/operacional/simulacoes_/nova")({
   head: () => ({ meta: [{ title: "Nova simulação — Agilliza" }] }),
   beforeLoad: () => assertModuloPermitido("operacional.simulacoes"),
-  validateSearch: (search: Record<string, unknown>): { modo?: "rapida" | "personalizada" } => ({
-    modo: search.modo === "rapida" || search.modo === "personalizada" ? search.modo : undefined,
+  validateSearch: (search: Record<string, unknown>): { modo?: "rapida" } => ({
+    modo: search.modo === "rapida" ? "rapida" : undefined,
   }),
   component: Pagina,
 });
@@ -39,7 +39,7 @@ interface WizardState {
 
 function Pagina() {
   const router = useRouter();
-  const { modo } = Route.useSearch();
+  
   const [w, setW] = useState<WizardState>({
     produto: "financiamento_imobiliario",
     valor_imovel: 0,
@@ -108,7 +108,7 @@ function Pagina() {
     );
   }, [bancos, mostrarRapida, w.valor_financiamento, w.prazo_meses]);
 
-  function irParaPersonalizada() {
+  function irParaCompleta() {
     sessionStorage.setItem(
       "simulacao_wizard",
       JSON.stringify({ ...w, prazo: w.prazo_meses }),
@@ -207,7 +207,7 @@ function Pagina() {
 
         <div className="grid grid-cols-1 gap-3 pt-2 sm:grid-cols-2">
           <Button
-            variant={modo === "rapida" ? "default" : "secondary"}
+            variant="default"
             className="h-12"
             disabled={!valido}
             onClick={() => setMostrarRapida(true)}
@@ -215,14 +215,15 @@ function Pagina() {
             Simulação rápida
           </Button>
           <Button
-            variant={modo === "rapida" ? "secondary" : "default"}
+            variant="secondary"
             className="h-12"
             disabled={!valido}
-            onClick={() => irParaPersonalizada()}
+            onClick={() => irParaCompleta()}
           >
-            Simulação personalizada
+            Simulação completa
           </Button>
         </div>
+
 
         {mostrarRapida && (
           <div className="space-y-3 rounded-lg border border-border p-4">

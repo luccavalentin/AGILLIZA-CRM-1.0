@@ -84,10 +84,11 @@ function Pagina() {
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
-              <Link to="/operacional/simulacoes/nova" search={{ modo: "personalizada" }}>
-                Simulação personalizada
+              <Link to="/operacional/simulacoes/completa">
+                Simulação completa
               </Link>
             </DropdownMenuItem>
+
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
