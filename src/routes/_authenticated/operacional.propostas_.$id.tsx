@@ -19,6 +19,8 @@ import {
   removerDocumento,
   urlDocumento,
   salvarIq,
+  definirSituacaoBanco,
+  SITUACOES_BANCO,
 } from "@/lib/propostas/propostas.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -40,6 +42,28 @@ import { TRANSICOES, STATUS_EDITAVEIS, type PropostaStatus } from "@/lib/propost
 import { statusProposta } from "@/components/propostas/status";
 import { formatBRL } from "@/lib/simulacao/format";
 import { cn } from "@/lib/utils";
+
+type SituacaoBanco = (typeof SITUACOES_BANCO)[number];
+
+const SITUACAO_BANCO_LABEL: Record<SituacaoBanco, string> = {
+  nao_enviado: "Não enviado",
+  em_analise: "Em análise de crédito",
+  condicionado: "Aprovado com condições",
+  aprovado: "Crédito aprovado",
+  recusado: "Crédito recusado",
+  cancelado: "Cancelado",
+};
+
+const SITUACAO_BANCO_TONE: Record<SituacaoBanco, "success" | "danger" | "warning" | "info" | "muted"> = {
+  nao_enviado: "muted",
+  em_analise: "info",
+  condicionado: "warning",
+  aprovado: "success",
+  recusado: "danger",
+  cancelado: "muted",
+};
+
+
 
 export const Route = createFileRoute("/_authenticated/operacional/propostas_/$id")({
   head: () => ({ meta: [{ title: "Proposta — Agilliza" }] }),
@@ -84,6 +108,8 @@ function Pagina() {
   const p = data.proposta as any;
   const status = p.status as PropostaStatus;
   const diasDesde = Math.max(0, Math.round((Date.now() - new Date(p.created_at).getTime()) / 86400000));
+  const bancosEnviados = (data.bancos ?? []).filter((b: any) => b.selecionado || b.status_banco === "enviada");
+  const multiBanco = bancosEnviados.length > 1;
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-5 p-4 md:p-6">
@@ -106,11 +132,33 @@ function Pagina() {
             </p>
           </div>
           <div className="flex flex-wrap gap-6 text-sm">
-            <Kpi label="Banco escolhido" valor={p.nome_banco ?? "—"} />
+            <Kpi label={multiBanco ? "Bancos enviados" : "Banco escolhido"} valor={multiBanco ? `${bancosEnviados.length} bancos` : (p.nome_banco ?? "—")} />
             <Kpi label="R$ Financiado" valor={formatBRL(p.valor_financiamento)} />
-            <Kpi label="Situação" valor={<PropostaStatusBadge status={status} />} />
+            {!multiBanco && <Kpi label="Situação" valor={<PropostaStatusBadge status={status} />} />}
           </div>
         </div>
+
+        {multiBanco && (
+          <div className="mt-5 rounded-lg border border-border bg-muted/30 p-4">
+            <p className="mb-3 text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
+              Situação por banco
+            </p>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {bancosEnviados.map((b: any) => (
+                <div
+                  key={b.id}
+                  className="flex items-center justify-between gap-2 rounded-md border border-border bg-card px-3 py-2"
+                >
+                  <span className="truncate text-sm font-medium text-foreground">{b.nome_banco}</span>
+                  <ToneBadge tone={SITUACAO_BANCO_TONE[(b.situacao_banco as SituacaoBanco) ?? "nao_enviado"]}>
+                    {SITUACAO_BANCO_LABEL[(b.situacao_banco as SituacaoBanco) ?? "nao_enviado"]}
+                  </ToneBadge>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="mt-6">
           <PipelineStepper status={status} detalheStatus={p.detalhe_status_atual} />
         </div>
@@ -286,7 +334,19 @@ function TabResumo({ proposta, bancos, propostaId }: { proposta: any; bancos: an
   const qc = useQueryClient();
   const selecionarFn = useServerFn(selecionarBancoProposta);
   const enviarFn = useServerFn(enviarPropostaHomeFin);
+  const situacaoFn = useServerFn(definirSituacaoBanco);
   const [enviandoId, setEnviandoId] = useState<string | null>(null);
+
+  async function mudarSituacao(pbId: string, situacao: SituacaoBanco) {
+    try {
+      await situacaoFn({ data: { proposta_id: propostaId, proposta_banco_id: pbId, situacao_banco: situacao } });
+      qc.invalidateQueries({ queryKey: ["proposta", propostaId] });
+      toast.success("Situação do banco atualizada.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao atualizar situação.");
+    }
+  }
+
   const status = proposta.status as PropostaStatus;
   const podeEnviarBanco =
     Boolean(proposta.homefin_id_oportunidade) &&
@@ -353,14 +413,16 @@ function TabResumo({ proposta, bancos, propostaId }: { proposta: any; bancos: an
               <TableHead className="text-right">Parcela</TableHead>
               <TableHead className="text-right">Prazo</TableHead>
               <TableHead className="text-right">Taxa/ano</TableHead>
-              <TableHead>Situação</TableHead>
+              <TableHead>Envio</TableHead>
+              <TableHead>Situação de crédito</TableHead>
               <TableHead className="text-right">Ação</TableHead>
+
             </TableRow>
           </TableHeader>
           <TableBody>
             {bancos.length === 0 && (
               <TableRow>
-                <TableCell colSpan={8} className="py-8 text-center text-sm text-muted-foreground">
+                <TableCell colSpan={9} className="py-8 text-center text-sm text-muted-foreground">
                   Nenhum banco vinculado.
                 </TableCell>
               </TableRow>
@@ -387,6 +449,24 @@ function TabResumo({ proposta, bancos, propostaId }: { proposta: any; bancos: an
                     {b.status_banco}
                   </ToneBadge>
                 </TableCell>
+                <TableCell>
+                  <Select
+                    value={(b.situacao_banco as SituacaoBanco) ?? "nao_enviado"}
+                    onValueChange={(v) => mudarSituacao(b.id, v as SituacaoBanco)}
+                  >
+                    <SelectTrigger className="h-8 w-48">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SITUACOES_BANCO.map((s) => (
+                        <SelectItem key={s} value={s}>
+                          {SITUACAO_BANCO_LABEL[s]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </TableCell>
+
                 <TableCell className="text-right">
                   {b.status_banco === "enviada" ? (
                     <span className="text-xs text-muted-foreground">Enviado</span>

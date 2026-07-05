@@ -29,6 +29,26 @@ import { PERIODO_LABEL, type Periodo, type Escopo } from "@/lib/relatorios/share
 
 const PERIODOS: Periodo[] = ["hoje", "7d", "15d", "30d", "mes", "mes_anterior", "ano", "custom"];
 
+/** Mapeia o rótulo de uma métrica para a rota correspondente (cards clicáveis). */
+function linkParaMetrica(label: string): string | undefined {
+  const l = label.toLowerCase();
+  if (l.includes("taxa de aprova")) return "/relatorios/propostas";
+  if (l.includes("contrato")) return "/operacional/contratos";
+  if (l.includes("simula")) return "/operacional/simulacoes";
+  if (l.includes("tarefa")) return "/operacional/tarefas";
+  if (l.includes("demanda") || l.includes("sla")) return "/operacional/demandas";
+  if (
+    l.includes("proposta") ||
+    l.includes("aprovad") ||
+    l.includes("recusad") ||
+    l.includes("análise") ||
+    l.includes("analise") ||
+    l.includes("rascunho")
+  )
+    return "/operacional/propostas";
+  return undefined;
+}
+
 /** Painel de monitoramento reutilizável (visão-geral / operacional). */
 export function PainelView({
   modulo,
@@ -123,13 +143,14 @@ export function PainelView({
         <>
           <SectionTitle>Indicadores executivos</SectionTitle>
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            {data.heros.map((h) => <HeroMetric key={h.label} label={h.label} valor={h.valor} hint={h.hint} tone={h.tone} />)}
+            {data.heros.map((h) => <HeroMetric key={h.label} label={h.label} valor={h.valor} hint={h.hint} tone={h.tone} to={linkParaMetrica(h.label)} />)}
           </div>
 
           <SectionTitle>Volumes</SectionTitle>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-            {data.minis.map((m) => <MiniMetric key={m.label} label={m.label} valor={m.valor} tone={m.tone} />)}
+            {data.minis.map((m) => <MiniMetric key={m.label} label={m.label} valor={m.valor} tone={m.tone} to={linkParaMetrica(m.label)} />)}
           </div>
+
 
           <SectionTitle>Operação</SectionTitle>
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
