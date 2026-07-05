@@ -85,9 +85,9 @@ export const navInterno: NavGroup[] = [
         to: "/operacional/simulacoes",
         perm: { modulo: "operacional.simulacoes" },
         children: [
-          { label: "Consultar simulações", icon: Calculator, to: "/operacional/simulacoes" },
-          { label: "Simulação rápida", icon: Gauge, to: "/operacional/simulacoes/nova" },
-          { label: "Simulação completa", icon: FileText, to: "/operacional/simulacoes/completa" },
+          { label: "Consultar simulações", icon: Calculator, to: "/operacional/simulacoes", perm: { modulo: "operacional.simulacoes" } },
+          { label: "Simulação rápida", icon: Gauge, to: "/operacional/simulacoes/nova", perm: { modulo: "operacional.simulacoes" } },
+          { label: "Simulação completa", icon: FileText, to: "/operacional/simulacoes/completa", perm: { modulo: "operacional.simulacoes" } },
         ],
       },
       {
@@ -96,9 +96,10 @@ export const navInterno: NavGroup[] = [
         to: "/operacional/propostas",
         perm: { modulo: "operacional.propostas" },
         children: [
-          { label: "Consultar propostas", icon: FileText, to: "/operacional/propostas" },
-          { label: "Nova proposta", icon: FileSignature, to: "/operacional/propostas/enviar" },
-          { label: "Kanban", icon: KanbanSquare, to: "/operacional/propostas/kanban" },
+          { label: "Consultar propostas", icon: FileText, to: "/operacional/propostas", perm: { modulo: "operacional.propostas" } },
+          { label: "Nova proposta", icon: FileSignature, to: "/operacional/propostas/enviar", perm: { modulo: "operacional.propostas" } },
+          { label: "Kanban", icon: KanbanSquare, to: "/operacional/propostas/kanban", perm: { modulo: "operacional.propostas" } },
+
         ],
       },
 
