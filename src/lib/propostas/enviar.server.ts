@@ -97,18 +97,22 @@ export async function enviarPropostaImpl({
     throw new Error(`Existem ${bloqueantes.length} documento(s) obrigatório(s) pendente(s) ou reprovado(s).`);
   }
 
-  // Bancos selecionados que ainda NÃO foram enviados ao banco.
-  const { data: bancosSel } = await supabase
-    .from("proposta_bancos")
-    .select("*")
-    .eq("proposta_id", propostaId)
-    .eq("selecionado", true);
+  // Bancos a enviar: por linha (bancoId) ou todos os selecionados ainda não enviados.
+  let query = supabase.from("proposta_bancos").select("*").eq("proposta_id", propostaId);
+  if (bancoId) {
+    query = query.eq("id", bancoId);
+  } else {
+    query = query.eq("selecionado", true);
+  }
+  const { data: bancosSel } = await query;
   const bancos = (bancosSel ?? []).filter((b: any) => b.status_banco !== "enviada");
   if (bancos.length === 0) {
     throw new Error(
-      primeiroEnvio
-        ? "Selecione ao menos um banco antes de enviar."
-        : "Nenhum banco novo selecionado. Selecione outro banco para enviar.",
+      bancoId
+        ? "Este banco já foi enviado ou não está disponível para envio."
+        : primeiroEnvio
+          ? "Selecione ao menos um banco antes de enviar."
+          : "Nenhum banco novo selecionado. Selecione outro banco para enviar.",
     );
   }
 
