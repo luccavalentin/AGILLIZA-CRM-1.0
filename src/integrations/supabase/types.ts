@@ -2304,6 +2304,7 @@ export type Database = {
           selecionado: boolean | null
           simulacao_banco_id: string | null
           sistema_amortizacao_banco: string | null
+          situacao_banco: string
           status_banco: string | null
           taxa_juros_ano: number | null
           updated_at: string
@@ -2330,6 +2331,7 @@ export type Database = {
           selecionado?: boolean | null
           simulacao_banco_id?: string | null
           sistema_amortizacao_banco?: string | null
+          situacao_banco?: string
           status_banco?: string | null
           taxa_juros_ano?: number | null
           updated_at?: string
@@ -2356,6 +2358,7 @@ export type Database = {
           selecionado?: boolean | null
           simulacao_banco_id?: string | null
           sistema_amortizacao_banco?: string | null
+          situacao_banco?: string
           status_banco?: string | null
           taxa_juros_ano?: number | null
           updated_at?: string
