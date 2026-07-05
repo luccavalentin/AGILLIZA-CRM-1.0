@@ -75,6 +75,32 @@ function normalizarDoc(doc: string): string {
   return doc.replace(/\D/g, "");
 }
 
+function normalizarDataCivil(valor: string): string | null {
+  const v = valor.trim();
+  const iso = v.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const br = v.match(/^(\d{2})[/-](\d{2})[/-](\d{4})$/);
+  const partes = iso
+    ? { ano: Number(iso[1]), mes: Number(iso[2]), dia: Number(iso[3]) }
+    : br
+      ? { ano: Number(br[3]), mes: Number(br[2]), dia: Number(br[1]) }
+      : null;
+
+  if (!partes || partes.mes < 1 || partes.mes > 12 || partes.dia < 1 || partes.dia > 31) {
+    return null;
+  }
+
+  const teste = new Date(Date.UTC(partes.ano, partes.mes - 1, partes.dia));
+  if (
+    teste.getUTCFullYear() !== partes.ano ||
+    teste.getUTCMonth() !== partes.mes - 1 ||
+    teste.getUTCDate() !== partes.dia
+  ) {
+    return null;
+  }
+
+  return `${String(partes.ano).padStart(4, "0")}-${String(partes.mes).padStart(2, "0")}-${String(partes.dia).padStart(2, "0")}`;
+}
+
 // Traduz status internos de proposta para linguagem do cliente.
 const STATUS_PROPOSTA_AMIGAVEL: Record<string, string> = {
   rascunho: "Em preparação",
@@ -119,11 +145,10 @@ export const validarAcessoCliente = createServerFn({ method: "POST" })
     const doc_hash = hashDoc(documento);
     const { ip, userAgent } = dadosRequisicao();
 
-    // Normaliza a data (aceita dd/mm/aaaa ou aaaa-mm-dd) para aaaa-mm-dd.
-    let dataRef = data.data.trim();
-    if (/^\d{2}\/\d{2}\/\d{4}$/.test(dataRef)) {
-      const [dd, mm, aaaa] = dataRef.split("/");
-      dataRef = `${aaaa}-${mm}-${dd}`;
+    // Normaliza a data como data civil, sem conversão por fuso horário.
+    const dataRef = normalizarDataCivil(data.data);
+    if (!dataRef) {
+      return { ok: false, error: "Informe uma data válida no formato dia, mês e ano." };
     }
 
     const { data: res, error } = await portalDb().rpc("portal_cliente_login", {
