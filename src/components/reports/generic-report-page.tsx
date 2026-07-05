@@ -39,13 +39,16 @@ export function GenericReportPage({
   const meta = `Período: ${PERIODO_LABEL[filtros.periodo]} · Escopo: ${ESCOPO_LABEL[filtros.escopo]} · Registros: ${data?.rows.length ?? 0}`;
   const metaArr = [`Período: ${PERIODO_LABEL[filtros.periodo]}`, `Escopo: ${ESCOPO_LABEL[filtros.escopo]}`, `Registros: ${data?.rows.length ?? 0}`];
 
-  // bancos disponíveis a partir do resultado (para filtro rápido)
+  // Opções completas de filtro vindas do servidor (todos os bancos/produtos/status cadastrados);
+  // fallback para os valores presentes no resultado quando o relatório não as fornece.
+  const disp = data?.filtrosDisponiveis;
   const bancos = comFiltroBanco
-    ? [...new Set((data?.rows ?? []).map((r) => String(r.nome_banco ?? "")).filter(Boolean))].sort()
+    ? disp?.bancos ?? [...new Set((data?.rows ?? []).map((r) => String(r.nome_banco ?? "")).filter(Boolean))].sort()
     : undefined;
-  const statuses = comFiltroStatus
-    ? [...new Set((data?.rows ?? []).map((r) => String(r.status ?? "")).filter(Boolean))].sort()
+  const produtos = comFiltroBanco
+    ? disp?.produtos ?? [...new Set((data?.rows ?? []).map((r) => String(r.produto ?? "")).filter(Boolean))].sort()
     : undefined;
+  const statuses = comFiltroStatus ? disp?.statuses : undefined;
 
   return (
     <ReportShell
@@ -55,7 +58,7 @@ export function GenericReportPage({
       meta={meta}
       scopeSelector={<VisionSelector escopo={filtros.escopo} onChange={(e) => onFiltros({ ...filtros, escopo: e })} podeEquipe={podeEquipe} podeGeral={podeGeral} />}
       exportButtons={data ? <ExportButtons codigo={codigo} result={data} meta={metaArr} filtros={filtros} /> : null}
-      filtros={<ReportFiltersBar filtros={filtros} onChange={onFiltros} bancos={bancos} statuses={statuses} />}
+      filtros={<ReportFiltersBar filtros={filtros} onChange={onFiltros} bancos={bancos} produtos={produtos} statuses={statuses} />}
     >
       {isLoading ? (
         <div className="space-y-4">
