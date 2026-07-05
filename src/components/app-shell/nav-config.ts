@@ -138,6 +138,7 @@ export const navInterno: NavGroup[] = [
       { label: "Parâmetros", icon: Settings2, to: "/admin/parametros", perm: { modulo: "admin.parametros" } },
       { label: "Compras", icon: ShoppingCart, to: "/admin/compras", perm: { modulo: "admin.compras" } },
       { label: "SLA & Feriados", icon: Timer, to: "/admin/sla", perm: { modulo: "admin.sla" } },
+      { label: "Comissões", icon: Percent, to: "/admin/comissoes", perm: { modulo: "admin.comissoes" } },
       { label: "Notificações", icon: Bell, to: "/admin/notificacoes", perm: { modulo: "admin.notificacoes" } },
       { label: "Auditoria", icon: ShieldCheck, to: "/admin/auditoria", perm: { modulo: "admin.auditoria" } },
       { label: "Backup", icon: DatabaseBackup, to: "/admin/backup", perm: { modulo: "admin.backup" } },
