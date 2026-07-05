@@ -1,5 +1,5 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
-import { FormulariosView, CATEGORIA_LABEL } from "@/components/formularios/formularios-view";
+import { FormulariosView } from "@/components/formularios/formularios-view";
 import { BANCOS_FORMULARIO, type BancoFormulario } from "@/lib/formularios/formularios.functions";
 
 export const Route = createFileRoute("/_authenticated/formularios/$banco")({
@@ -13,5 +13,3 @@ function Pagina() {
   return <FormulariosView banco={banco as BancoFormulario} />;
 }
 
-// Referência para manter o label em uso e evitar tree-shaking indesejado do mapa.
-export { CATEGORIA_LABEL };

@@ -57,6 +57,7 @@ import { Route as AuthenticatedOperacionalPropostasRouteImport } from './routes/
 import { Route as AuthenticatedOperacionalPainelRouteImport } from './routes/_authenticated/operacional.painel'
 import { Route as AuthenticatedOperacionalDemandasRouteImport } from './routes/_authenticated/operacional.demandas'
 import { Route as AuthenticatedOperacionalContratosRouteImport } from './routes/_authenticated/operacional.contratos'
+import { Route as AuthenticatedFormulariosBancoRouteImport } from './routes/_authenticated/formularios.$banco'
 import { Route as AuthenticatedFinanceiroPainelRouteImport } from './routes/_authenticated/financeiro.painel'
 import { Route as AuthenticatedFinanceiroFluxoDeCaixaRouteImport } from './routes/_authenticated/financeiro.fluxo-de-caixa'
 import { Route as AuthenticatedFinanceiroContasAReceberRouteImport } from './routes/_authenticated/financeiro.contas-a-receber'
@@ -361,6 +362,12 @@ const AuthenticatedOperacionalContratosRoute =
     path: '/operacional/contratos',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedFormulariosBancoRoute =
+  AuthenticatedFormulariosBancoRouteImport.update({
+    id: '/$banco',
+    path: '/$banco',
+    getParentRoute: () => AuthenticatedFormulariosRoute,
+  } as any)
 const AuthenticatedFinanceiroPainelRoute =
   AuthenticatedFinanceiroPainelRouteImport.update({
     id: '/financeiro/painel',
@@ -626,6 +633,7 @@ export interface FileRoutesByFullPath {
   '/financeiro/contas-a-receber': typeof AuthenticatedFinanceiroContasAReceberRoute
   '/financeiro/fluxo-de-caixa': typeof AuthenticatedFinanceiroFluxoDeCaixaRoute
   '/financeiro/painel': typeof AuthenticatedFinanceiroPainelRoute
+  '/formularios/$banco': typeof AuthenticatedFormulariosBancoRoute
   '/operacional/contratos': typeof AuthenticatedOperacionalContratosRoute
   '/operacional/demandas': typeof AuthenticatedOperacionalDemandasRoute
   '/operacional/painel': typeof AuthenticatedOperacionalPainelRoute
@@ -709,6 +717,7 @@ export interface FileRoutesByTo {
   '/financeiro/contas-a-receber': typeof AuthenticatedFinanceiroContasAReceberRoute
   '/financeiro/fluxo-de-caixa': typeof AuthenticatedFinanceiroFluxoDeCaixaRoute
   '/financeiro/painel': typeof AuthenticatedFinanceiroPainelRoute
+  '/formularios/$banco': typeof AuthenticatedFormulariosBancoRoute
   '/operacional/contratos': typeof AuthenticatedOperacionalContratosRoute
   '/operacional/demandas': typeof AuthenticatedOperacionalDemandasRoute
   '/operacional/painel': typeof AuthenticatedOperacionalPainelRoute
@@ -797,6 +806,7 @@ export interface FileRoutesById {
   '/_authenticated/financeiro/contas-a-receber': typeof AuthenticatedFinanceiroContasAReceberRoute
   '/_authenticated/financeiro/fluxo-de-caixa': typeof AuthenticatedFinanceiroFluxoDeCaixaRoute
   '/_authenticated/financeiro/painel': typeof AuthenticatedFinanceiroPainelRoute
+  '/_authenticated/formularios/$banco': typeof AuthenticatedFormulariosBancoRoute
   '/_authenticated/operacional/contratos': typeof AuthenticatedOperacionalContratosRoute
   '/_authenticated/operacional/demandas': typeof AuthenticatedOperacionalDemandasRoute
   '/_authenticated/operacional/painel': typeof AuthenticatedOperacionalPainelRoute
@@ -885,6 +895,7 @@ export interface FileRouteTypes {
     | '/financeiro/contas-a-receber'
     | '/financeiro/fluxo-de-caixa'
     | '/financeiro/painel'
+    | '/formularios/$banco'
     | '/operacional/contratos'
     | '/operacional/demandas'
     | '/operacional/painel'
@@ -968,6 +979,7 @@ export interface FileRouteTypes {
     | '/financeiro/contas-a-receber'
     | '/financeiro/fluxo-de-caixa'
     | '/financeiro/painel'
+    | '/formularios/$banco'
     | '/operacional/contratos'
     | '/operacional/demandas'
     | '/operacional/painel'
@@ -1055,6 +1067,7 @@ export interface FileRouteTypes {
     | '/_authenticated/financeiro/contas-a-receber'
     | '/_authenticated/financeiro/fluxo-de-caixa'
     | '/_authenticated/financeiro/painel'
+    | '/_authenticated/formularios/$banco'
     | '/_authenticated/operacional/contratos'
     | '/_authenticated/operacional/demandas'
     | '/_authenticated/operacional/painel'
@@ -1446,6 +1459,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOperacionalContratosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/formularios/$banco': {
+      id: '/_authenticated/formularios/$banco'
+      path: '/$banco'
+      fullPath: '/formularios/$banco'
+      preLoaderRoute: typeof AuthenticatedFormulariosBancoRouteImport
+      parentRoute: typeof AuthenticatedFormulariosRoute
+    }
     '/_authenticated/financeiro/painel': {
       id: '/_authenticated/financeiro/painel'
       path: '/financeiro/painel'
@@ -1709,11 +1729,13 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedFormulariosRouteChildren {
+  AuthenticatedFormulariosBancoRoute: typeof AuthenticatedFormulariosBancoRoute
   AuthenticatedFormulariosIndexRoute: typeof AuthenticatedFormulariosIndexRoute
 }
 
 const AuthenticatedFormulariosRouteChildren: AuthenticatedFormulariosRouteChildren =
   {
+    AuthenticatedFormulariosBancoRoute: AuthenticatedFormulariosBancoRoute,
     AuthenticatedFormulariosIndexRoute: AuthenticatedFormulariosIndexRoute,
   }
 
