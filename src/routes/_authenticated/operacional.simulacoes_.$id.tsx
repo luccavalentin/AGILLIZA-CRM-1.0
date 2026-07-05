@@ -162,10 +162,10 @@ function Pagina() {
                     <TableCell className="text-right">
                       <Button
                         size="sm"
-                        disabled={b.status_banco !== "simulada"}
-                        onClick={() => toast.info("A criação de proposta estará disponível no módulo de Propostas.")}
+                        disabled={b.status_banco !== "simulada" || criandoBanco !== null}
+                        onClick={() => criar(b.banco_id)}
                       >
-                        Criar proposta
+                        {criandoBanco === b.banco_id ? "Criando…" : "Criar proposta"}
                       </Button>
                     </TableCell>
                   </TableRow>
