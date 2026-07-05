@@ -1,0 +1,14 @@
+REVOKE EXECUTE ON FUNCTION public.notificar_cliente_portal(uuid, uuid, text, text, text, text) FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.simulacao_sincronizar_esteira() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.proposta_sincronizar_esteira() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.on_proposta_contrato_emitido() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.simulacao_before_write() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.proposta_before_write() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.crm_seed_cliente_pipeline() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.crm_normalize_documento() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.cliente_endereco_sincronizar_esteira() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.demanda_before_write() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.demanda_after_insert() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.task_before_write() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.financial_receivable_before_write() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.financial_payable_before_write() FROM PUBLIC, anon, authenticated;
