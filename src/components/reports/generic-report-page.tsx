@@ -8,6 +8,7 @@ import { ReportChartView } from "@/components/reports/report-chart";
 import { DrilldownTable } from "@/components/reports/drilldown-table";
 import { ExportButtons } from "@/components/reports/export-buttons";
 import { EmptyReport } from "@/components/reports/empty-report";
+import { MonthlyComparison } from "@/components/reports/monthly-comparison";
 import { runReport } from "@/lib/relatorios/reports.functions";
 import { ESCOPO_LABEL, PERIODO_LABEL, type ReportFiltros } from "@/lib/relatorios/shared";
 
