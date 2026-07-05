@@ -98,6 +98,7 @@ function Pagina() {
       <Tabs defaultValue="resumo">
         <TabsList className="flex-wrap">
           <TabsTrigger value="resumo">Resumo</TabsTrigger>
+          <TabsTrigger value="negocios">Negócios</TabsTrigger>
           <TabsTrigger value="dados">Dados</TabsTrigger>
           <TabsTrigger value="documentos">Documentos</TabsTrigger>
           <TabsTrigger value="vinculo">Vínculo de atendimento</TabsTrigger>
