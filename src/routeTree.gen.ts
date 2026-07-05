@@ -77,6 +77,7 @@ import { Route as AuthenticatedAdminBackupRouteImport } from './routes/_authenti
 import { Route as AuthenticatedAdminAuditoriaRouteImport } from './routes/_authenticated/admin.auditoria'
 import { Route as AuthenticatedAdminApisIaRouteImport } from './routes/_authenticated/admin.apis-ia'
 import { Route as AuthenticatedOperacionalTarefasKanbanRouteImport } from './routes/_authenticated/operacional.tarefas_.kanban'
+import { Route as AuthenticatedOperacionalTarefasCalendarioRouteImport } from './routes/_authenticated/operacional.tarefas_.calendario'
 import { Route as AuthenticatedOperacionalSimulacoesNovaRouteImport } from './routes/_authenticated/operacional.simulacoes_.nova'
 import { Route as AuthenticatedOperacionalSimulacoesCompletaRouteImport } from './routes/_authenticated/operacional.simulacoes_.completa'
 import { Route as AuthenticatedOperacionalSimulacoesIdRouteImport } from './routes/_authenticated/operacional.simulacoes_.$id'
@@ -472,6 +473,12 @@ const AuthenticatedOperacionalTarefasKanbanRoute =
     path: '/operacional/tarefas/kanban',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedOperacionalTarefasCalendarioRoute =
+  AuthenticatedOperacionalTarefasCalendarioRouteImport.update({
+    id: '/operacional/tarefas_/calendario',
+    path: '/operacional/tarefas/calendario',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedOperacionalSimulacoesNovaRoute =
   AuthenticatedOperacionalSimulacoesNovaRouteImport.update({
     id: '/operacional/simulacoes_/nova',
@@ -610,6 +617,7 @@ export interface FileRoutesByFullPath {
   '/operacional/simulacoes/$id': typeof AuthenticatedOperacionalSimulacoesIdRoute
   '/operacional/simulacoes/completa': typeof AuthenticatedOperacionalSimulacoesCompletaRoute
   '/operacional/simulacoes/nova': typeof AuthenticatedOperacionalSimulacoesNovaRoute
+  '/operacional/tarefas/calendario': typeof AuthenticatedOperacionalTarefasCalendarioRoute
   '/operacional/tarefas/kanban': typeof AuthenticatedOperacionalTarefasKanbanRoute
 }
 export interface FileRoutesByTo {
@@ -687,6 +695,7 @@ export interface FileRoutesByTo {
   '/operacional/simulacoes/$id': typeof AuthenticatedOperacionalSimulacoesIdRoute
   '/operacional/simulacoes/completa': typeof AuthenticatedOperacionalSimulacoesCompletaRoute
   '/operacional/simulacoes/nova': typeof AuthenticatedOperacionalSimulacoesNovaRoute
+  '/operacional/tarefas/calendario': typeof AuthenticatedOperacionalTarefasCalendarioRoute
   '/operacional/tarefas/kanban': typeof AuthenticatedOperacionalTarefasKanbanRoute
 }
 export interface FileRoutesById {
@@ -768,6 +777,7 @@ export interface FileRoutesById {
   '/_authenticated/operacional/simulacoes_/$id': typeof AuthenticatedOperacionalSimulacoesIdRoute
   '/_authenticated/operacional/simulacoes_/completa': typeof AuthenticatedOperacionalSimulacoesCompletaRoute
   '/_authenticated/operacional/simulacoes_/nova': typeof AuthenticatedOperacionalSimulacoesNovaRoute
+  '/_authenticated/operacional/tarefas_/calendario': typeof AuthenticatedOperacionalTarefasCalendarioRoute
   '/_authenticated/operacional/tarefas_/kanban': typeof AuthenticatedOperacionalTarefasKanbanRoute
 }
 export interface FileRouteTypes {
@@ -849,6 +859,7 @@ export interface FileRouteTypes {
     | '/operacional/simulacoes/$id'
     | '/operacional/simulacoes/completa'
     | '/operacional/simulacoes/nova'
+    | '/operacional/tarefas/calendario'
     | '/operacional/tarefas/kanban'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -926,6 +937,7 @@ export interface FileRouteTypes {
     | '/operacional/simulacoes/$id'
     | '/operacional/simulacoes/completa'
     | '/operacional/simulacoes/nova'
+    | '/operacional/tarefas/calendario'
     | '/operacional/tarefas/kanban'
   id:
     | '__root__'
@@ -1006,6 +1018,7 @@ export interface FileRouteTypes {
     | '/_authenticated/operacional/simulacoes_/$id'
     | '/_authenticated/operacional/simulacoes_/completa'
     | '/_authenticated/operacional/simulacoes_/nova'
+    | '/_authenticated/operacional/tarefas_/calendario'
     | '/_authenticated/operacional/tarefas_/kanban'
   fileRoutesById: FileRoutesById
 }
@@ -1497,6 +1510,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOperacionalTarefasKanbanRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/operacional/tarefas_/calendario': {
+      id: '/_authenticated/operacional/tarefas_/calendario'
+      path: '/operacional/tarefas/calendario'
+      fullPath: '/operacional/tarefas/calendario'
+      preLoaderRoute: typeof AuthenticatedOperacionalTarefasCalendarioRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/operacional/simulacoes_/nova': {
       id: '/_authenticated/operacional/simulacoes_/nova'
       path: '/operacional/simulacoes/nova'
@@ -1670,6 +1690,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedOperacionalSimulacoesIdRoute: typeof AuthenticatedOperacionalSimulacoesIdRoute
   AuthenticatedOperacionalSimulacoesCompletaRoute: typeof AuthenticatedOperacionalSimulacoesCompletaRoute
   AuthenticatedOperacionalSimulacoesNovaRoute: typeof AuthenticatedOperacionalSimulacoesNovaRoute
+  AuthenticatedOperacionalTarefasCalendarioRoute: typeof AuthenticatedOperacionalTarefasCalendarioRoute
   AuthenticatedOperacionalTarefasKanbanRoute: typeof AuthenticatedOperacionalTarefasKanbanRoute
 }
 
@@ -1731,6 +1752,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
     AuthenticatedOperacionalSimulacoesCompletaRoute,
   AuthenticatedOperacionalSimulacoesNovaRoute:
     AuthenticatedOperacionalSimulacoesNovaRoute,
+  AuthenticatedOperacionalTarefasCalendarioRoute:
+    AuthenticatedOperacionalTarefasCalendarioRoute,
   AuthenticatedOperacionalTarefasKanbanRoute:
     AuthenticatedOperacionalTarefasKanbanRoute,
 }

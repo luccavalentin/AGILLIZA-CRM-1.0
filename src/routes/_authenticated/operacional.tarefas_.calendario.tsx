@@ -109,7 +109,7 @@ function Pagina() {
                     onClick={() => setSel(t.id)}
                     className="flex w-full items-center gap-1 overflow-hidden rounded bg-muted/60 px-1 py-0.5 text-left text-[11px] hover:bg-muted"
                   >
-                    <span className={cn("h-2.5 w-[3px] shrink-0 rounded-full", PRIORIDADE[t.prioridade].bar)} />
+                    <span className={cn("h-2.5 w-[3px] shrink-0 rounded-full", PRIORIDADE[t.prioridade as "p1"].bar)} />
                     <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", TONE_BAR[statusTarefa(t.status).tone])} />
                     <span className="truncate text-foreground">{t.titulo}</span>
                   </button>
