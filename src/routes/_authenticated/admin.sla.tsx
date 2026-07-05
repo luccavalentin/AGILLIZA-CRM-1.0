@@ -158,7 +158,7 @@ function SecaoSla() {
                       <ConfirmDelete
                         title="Remover regra de SLA?"
                         description="Demandas passarão a usar o padrão do sistema."
-                        onConfirm={() => excluirM.mutate(s.id)}
+                        onConfirm={() => excluirM.mutateAsync(s.id).then(() => {})}
                         trigger={
                           <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive">
                             <Trash2 className="h-4 w-4" />
