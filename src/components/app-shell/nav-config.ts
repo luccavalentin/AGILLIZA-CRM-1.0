@@ -28,6 +28,7 @@ import {
   Plug,
   Settings2,
   ShoppingCart,
+  Timer,
 } from "lucide-react";
 
 /** Permissão exigida por um item (chave = `${modulo}:view`). */
