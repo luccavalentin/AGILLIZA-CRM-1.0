@@ -361,6 +361,17 @@ export const criarNivelAcesso = createServerFn({ method: "POST" })
       if (permErr) throw new Error(permErr.message);
     }
 
+    const { registrarAuditoria } = await import("@/lib/admin/audit.server");
+    await registrarAuditoria({
+      supabase,
+      userId,
+      correspondenteId: corresp,
+      acao: "nivel_acesso.criar",
+      entidade: "access_levels",
+      entidadeId: novo.id,
+      payloadNovo: { nome: data.nome, copiar_de: data.copiar_de ?? null },
+    });
+
     return { id: novo.id };
   });
 
