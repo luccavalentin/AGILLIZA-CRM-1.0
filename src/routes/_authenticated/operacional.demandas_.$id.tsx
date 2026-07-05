@@ -248,6 +248,5 @@ function Pagina() {
         </div>
       </div>
     </div>
-    </div>
   );
 }
