@@ -43,6 +43,28 @@ import { statusProposta } from "@/components/propostas/status";
 import { formatBRL } from "@/lib/simulacao/format";
 import { cn } from "@/lib/utils";
 
+type SituacaoBanco = (typeof SITUACOES_BANCO)[number];
+
+const SITUACAO_BANCO_LABEL: Record<SituacaoBanco, string> = {
+  nao_enviado: "Não enviado",
+  em_analise: "Em análise de crédito",
+  condicionado: "Aprovado com condições",
+  aprovado: "Crédito aprovado",
+  recusado: "Crédito recusado",
+  cancelado: "Cancelado",
+};
+
+const SITUACAO_BANCO_TONE: Record<SituacaoBanco, "success" | "danger" | "warning" | "info" | "muted"> = {
+  nao_enviado: "muted",
+  em_analise: "info",
+  condicionado: "warning",
+  aprovado: "success",
+  recusado: "danger",
+  cancelado: "muted",
+};
+
+
+
 export const Route = createFileRoute("/_authenticated/operacional/propostas_/$id")({
   head: () => ({ meta: [{ title: "Proposta — Agilliza" }] }),
   beforeLoad: () => assertModuloPermitido("operacional.propostas"),
