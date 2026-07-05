@@ -141,7 +141,22 @@ function Pagina() {
         <div className="space-y-1.5">
           <Label>Valor da entrada <span className="text-destructive">*</span></Label>
           <CurrencyInput value={w.valor_entrada} onChange={(v) => set("valor_entrada", v)} placeholder="0,00" />
+          {w.valor_imovel > 0 && (
+            <p className="text-xs text-muted-foreground">
+              Entrada sugerida (20%): <span className="font-medium text-foreground">{formatBRL(entradaSugerida)}</span>
+              {w.valor_entrada !== entradaSugerida && (
+                <button
+                  type="button"
+                  onClick={aplicarEntradaSugerida}
+                  className="ml-2 font-medium text-primary underline-offset-2 hover:underline"
+                >
+                  Aplicar
+                </button>
+              )}
+            </p>
+          )}
         </div>
+
 
         <div className="space-y-1.5">
           <Label>Valor do crédito que precisa <span className="text-destructive">*</span></Label>
