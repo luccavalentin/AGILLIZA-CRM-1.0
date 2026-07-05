@@ -29,6 +29,26 @@ import { PERIODO_LABEL, type Periodo, type Escopo } from "@/lib/relatorios/share
 
 const PERIODOS: Periodo[] = ["hoje", "7d", "15d", "30d", "mes", "mes_anterior", "ano", "custom"];
 
+/** Mapeia o rótulo de uma métrica para a rota correspondente (cards clicáveis). */
+function linkParaMetrica(label: string): string | undefined {
+  const l = label.toLowerCase();
+  if (l.includes("taxa de aprova")) return "/relatorios/propostas";
+  if (l.includes("contrato")) return "/operacional/contratos";
+  if (l.includes("simula")) return "/operacional/simulacoes";
+  if (l.includes("tarefa")) return "/operacional/tarefas";
+  if (l.includes("demanda") || l.includes("sla")) return "/operacional/demandas";
+  if (
+    l.includes("proposta") ||
+    l.includes("aprovad") ||
+    l.includes("recusad") ||
+    l.includes("análise") ||
+    l.includes("analise") ||
+    l.includes("rascunho")
+  )
+    return "/operacional/propostas";
+  return undefined;
+}
+
 /** Painel de monitoramento reutilizável (visão-geral / operacional). */
 export function PainelView({
   modulo,
