@@ -17,6 +17,7 @@ export interface ClientePublico {
   nome: string;
   tipo_pessoa: string;
   foto_url: string | null;
+  lgpd_aceito?: boolean;
 }
 
 export interface EtapaCliente {
