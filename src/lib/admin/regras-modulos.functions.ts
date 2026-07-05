@@ -388,10 +388,10 @@ export const atualizarNivelAcesso = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
-    const { supabase } = context;
+    const { supabase, userId } = context;
     const { data: nivel } = await supabase
       .from("access_levels")
-      .select("id, is_padrao")
+      .select("id, is_padrao, nome, descricao")
       .eq("id", data.id)
       .maybeSingle();
     if (!nivel) throw new Error("Nível de acesso não encontrado.");
@@ -401,6 +401,18 @@ export const atualizarNivelAcesso = createServerFn({ method: "POST" })
       .update({ nome: data.nome, descricao: data.descricao ?? null })
       .eq("id", data.id);
     if (error) throw new Error(error.message);
+
+    const { registrarAuditoria } = await import("@/lib/admin/audit.server");
+    await registrarAuditoria({
+      supabase,
+      userId,
+      correspondenteId: null,
+      acao: "nivel_acesso.atualizar",
+      entidade: "access_levels",
+      entidadeId: data.id,
+      payloadAnterior: { nome: nivel.nome, descricao: nivel.descricao },
+      payloadNovo: { nome: data.nome, descricao: data.descricao ?? null },
+    });
     return { ok: true };
   });
 
