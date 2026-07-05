@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { KanbanSquare } from "lucide-react";
+import { KanbanSquare, CalendarDays, Users } from "lucide-react";
 import { toast } from "sonner";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { listarTarefas, excluirTarefa } from "@/lib/operacional/tarefas.functions";
@@ -59,6 +59,12 @@ function Pagina() {
           <p className="text-sm text-muted-foreground">Itens de trabalho, checklists e prazos.</p>
         </div>
         <div className="flex items-center gap-2">
+          <Button asChild variant="outline" size="sm">
+            <Link to="/operacional/tarefas/calendario"><CalendarDays className="mr-1 h-4 w-4" /> Calendário</Link>
+          </Button>
+          <Button asChild variant="outline" size="sm">
+            <Link to="/operacional/tarefas/equipe"><Users className="mr-1 h-4 w-4" /> Equipe</Link>
+          </Button>
           <Button asChild variant="outline" size="sm">
             <Link to="/operacional/tarefas/kanban"><KanbanSquare className="mr-1 h-4 w-4" /> Kanban</Link>
           </Button>
