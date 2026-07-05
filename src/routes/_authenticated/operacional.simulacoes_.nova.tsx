@@ -207,7 +207,7 @@ function Pagina() {
 
         <div className="grid grid-cols-1 gap-3 pt-2 sm:grid-cols-2">
           <Button
-            variant={modo === "rapida" ? "default" : "secondary"}
+            variant="default"
             className="h-12"
             disabled={!valido}
             onClick={() => setMostrarRapida(true)}
@@ -215,14 +215,15 @@ function Pagina() {
             Simulação rápida
           </Button>
           <Button
-            variant={modo === "rapida" ? "secondary" : "default"}
+            variant="secondary"
             className="h-12"
             disabled={!valido}
-            onClick={() => irParaPersonalizada()}
+            onClick={() => irParaCompleta()}
           >
-            Simulação personalizada
+            Simulação completa
           </Button>
         </div>
+
 
         {mostrarRapida && (
           <div className="space-y-3 rounded-lg border border-border p-4">
