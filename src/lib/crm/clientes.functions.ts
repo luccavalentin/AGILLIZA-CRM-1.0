@@ -182,7 +182,7 @@ export const atualizarCliente = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => clienteInputSchema.extend({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
-    const { supabase } = context;
+    const { supabase, userId } = context;
     const { id, ...campos } = data;
     const { error } = await supabase
       .from("clientes")
@@ -203,6 +203,16 @@ export const atualizarCliente = createServerFn({ method: "POST" })
       })
       .eq("id", id);
     if (error) throw error;
+    const { data: corr } = await supabase.rpc("correspondente_do_usuario", { _user_id: userId });
+    const { registrarAuditoria } = await import("@/lib/admin/audit.server");
+    await registrarAuditoria({
+      userId,
+      correspondenteId: corr ?? null,
+      acao: "cliente.atualizar",
+      entidade: "clientes",
+      entidadeId: id,
+      payloadNovo: { nome: campos.nome },
+    });
     return { ok: true };
   });
 
