@@ -66,6 +66,9 @@ function Pagina() {
           <Button variant="outline" size="sm" onClick={verificarSla}>
             <AlertTriangle className="mr-1 h-4 w-4" /> Verificar SLA
           </Button>
+          <Button asChild variant="outline" size="sm">
+            <Link to="/operacional/demandas/kanban"><KanbanSquare className="mr-1 h-4 w-4" /> Kanban</Link>
+          </Button>
           <NovaDemandaDialog onCriada={refetch} />
         </div>
       </div>
