@@ -356,6 +356,40 @@ export const selecionarBancoProposta = createServerFn({ method: "POST" })
     return { ok: true, selecionado: novoSelecionado };
   });
 
+export const SITUACOES_BANCO = [
+  "nao_enviado",
+  "em_analise",
+  "condicionado",
+  "aprovado",
+  "recusado",
+  "cancelado",
+] as const;
+
+/** Define a situação de crédito de um banco específico dentro da proposta. */
+export const definirSituacaoBanco = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z
+      .object({
+        proposta_id: z.string().uuid(),
+        proposta_banco_id: z.string().uuid(),
+        situacao_banco: z.enum(SITUACOES_BANCO),
+      })
+      .parse(data),
+  )
+  .handler(async ({ context, data }) => {
+    const { supabase } = context;
+    const { error } = await supabase
+      .from("proposta_bancos")
+      .update({ situacao_banco: data.situacao_banco })
+      .eq("id", data.proposta_banco_id)
+      .eq("proposta_id", data.proposta_id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+
+
 
 /** ===== Envolvidos (compradores/vendedores) ===== */
 export const adicionarEnvolvido = createServerFn({ method: "POST" })
