@@ -221,11 +221,57 @@ export async function cancelarPropostaHomefinImpl({
   );
 }
 
+/** Extrai mensagem de erro legível do campo retornoIntegracao do banco. */
+function extrairErroRetorno(retorno: unknown): string | null {
+  if (!retorno) return null;
+  let obj: any = retorno;
+  if (typeof retorno === "string") {
+    try {
+      obj = JSON.parse(retorno);
+    } catch {
+      return retorno;
+    }
+  }
+  if (obj && Array.isArray(obj.fields) && obj.fields.length > 0) {
+    return obj.fields.map((f: any) => f?.message).filter(Boolean).join("; ") || obj.message || null;
+  }
+  return obj?.message ?? null;
+}
+
+/** Traduz o tipoSituacao da proposta (por banco) para status interno do banco. */
+function statusInternoBanco(tipo: string, temErro: boolean): {
+  banco: string;
+  proposta: PropostaStatus | "credito_recusado" | null;
+} {
+  const t = String(tipo ?? "").toUpperCase().charAt(0);
+  if (temErro) return { banco: "erro", proposta: null };
+  switch (t) {
+    case "A":
+      return { banco: "aprovada", proposta: "credito_aprovado" };
+    case "R":
+      return { banco: "recusada", proposta: "credito_recusado" };
+    case "N":
+      return { banco: "em_analise", proposta: "em_analise_credito" };
+    case "P":
+      return { banco: "erro", proposta: null };
+    case "E":
+      // "E" observado como enviada/em análise quando não há erro de retorno.
+      return { banco: "em_analise", proposta: "em_analise_credito" };
+    case "S":
+      return { banco: "enviada", proposta: "em_analise_credito" };
+    default:
+      return { banco: "enviada", proposta: null };
+  }
+}
+
 /**
  * Sincroniza o andamento da proposta consultando a integração bancária.
- * A API é baseada em consulta (polling): não há webhook/callback. Este
- * handler lê GET /oportunidade/{id} e atualiza status, valores aprovados,
- * histórico e notificação a partir de `tipoSituacao` (A/T/C) e da etapa ativa.
+ * A API é baseada em consulta (polling): não há webhook/callback. Este handler
+ * lê GET /oportunidade/{id} e reconcilia o status a partir de DUAS fontes:
+ *  1. `oportunidade.simulacoes[]` — status por banco da integração automática
+ *     (Análise Crédito / Crédito Aprovado / Crédito Recusado / erro de envio);
+ *  2. a etapa ativa do funil (Engenharia / Jurídica / Contrato / Registro) e
+ *     `tipoSituacao` da oportunidade (T = Contrato / C = Cancelada).
  */
 export async function sincronizarPropostaImpl({
   propostaId,
@@ -252,6 +298,7 @@ export async function sincronizarPropostaImpl({
   );
   const op = resp?.oportunidade ?? resp ?? {};
   const etapas: any[] = Array.isArray(resp?.etapa) ? resp.etapa : [];
+  const simulacoes: any[] = Array.isArray(op?.simulacoes) ? op.simulacoes : [];
 
   // etapa ativa (não concluída) de maior ordem, senão a última concluída
   const ativa = etapas
@@ -262,33 +309,102 @@ export async function sincronizarPropostaImpl({
     .sort((a, b) => (b?.ordemEtapa ?? 0) - (a?.ordemEtapa ?? 0))[0];
   const nomeEtapa: string | null = (ativa?.nomeEtapa ?? ultimaConcluida?.nomeEtapa ?? null) || null;
 
-  // tipoSituacao: A (Ativa) / T (Contrato Emitido) / C (Cancelada)
+  // ---- 1) Reconciliação por banco (oportunidade.simulacoes) ----
+  const { data: bancosProp } = await supabase
+    .from("proposta_bancos")
+    .select("*")
+    .eq("proposta_id", propostaId);
+
+  let algumAprovado = false;
+  let algumEmAnalise = false;
+  let algumRecusado = false;
+  let algumErro = false;
+  const errosBanco: string[] = [];
+  let simEscolhida: any = null;
+
+  for (const pb of (bancosProp ?? []) as any[]) {
+    const sim = simulacoes.find(
+      (s) => String(s?.idSimulacao) === String(pb.homefin_id_simulacao_banco),
+    );
+    if (!sim) continue;
+
+    const erroMsg = extrairErroRetorno(sim.retornoIntegracao);
+    const mapa = statusInternoBanco(sim.tipoSituacao, Boolean(erroMsg));
+
+    if (mapa.proposta === "credito_aprovado") algumAprovado = true;
+    else if (mapa.proposta === "em_analise_credito") algumEmAnalise = true;
+    else if (mapa.proposta === "credito_recusado") algumRecusado = true;
+    if (mapa.banco === "erro") {
+      algumErro = true;
+      if (erroMsg) errosBanco.push(`${pb.nome_banco ?? "Banco"}: ${sanitizarMensagemErro(erroMsg)}`);
+    }
+    if (sim.bancoEscolhido === "S" || mapa.proposta === "credito_aprovado") simEscolhida = sim;
+
+    const patchBanco: Record<string, unknown> = {
+      status_banco: mapa.banco,
+      mensagem_banco: erroMsg ? sanitizarMensagemErro(erroMsg) : null,
+    };
+    if (sim.valorParcelaBanco != null) patchBanco.valor_parcela = sim.valorParcelaBanco;
+    if (sim.taxaJurosAnoBanco != null) patchBanco.taxa_juros_ano = sim.taxaJurosAnoBanco;
+    if (sim.prazoPagamentoBancoMax != null) patchBanco.prazo_pagamento_max = sim.prazoPagamentoBancoMax;
+    if (sim.valorFinanciamentoBancoMax != null) patchBanco.valor_financiamento_max = sim.valorFinanciamentoBancoMax;
+    if (sim.valorIofBanco != null) patchBanco.valor_iof = sim.valorIofBanco;
+    if (sim.codigoSistemaAmortizacaoBanco) patchBanco.sistema_amortizacao_banco = sim.codigoSistemaAmortizacaoBanco;
+    if (sim.codigoIndexadorBanco) patchBanco.codigo_indexador = sim.codigoIndexadorBanco;
+    await supabase.from("proposta_bancos").update(patchBanco as any).eq("id", pb.id);
+  }
+
+  // Status candidato a partir dos bancos (melhor desfecho prevalece).
+  let statusBancos: PropostaStatus | null = null;
+  if (algumAprovado) statusBancos = "credito_aprovado";
+  else if (algumEmAnalise) statusBancos = "em_analise_credito";
+  else if (algumRecusado) statusBancos = "credito_recusado";
+  else if (algumErro) statusBancos = "erro_envio";
+
+  // ---- 2) Situação da oportunidade / etapa do funil ----
   const situacao = String(op?.tipoSituacao ?? "").toUpperCase().charAt(0);
+  const statusEtapa = statusDaEtapa(nomeEtapa);
+
+  // ---- Decisão final ----
   let novoStatus: string | null = null;
-  if (situacao === "T") novoStatus = "contrato_emitido";
-  else if (situacao === "C") novoStatus = "cancelada";
-  else {
-    // Situação ativa: avança o estado interno conforme a etapa do banco,
-    // apenas para frente (nunca regride o funil).
-    const derivado = statusDaEtapa(nomeEtapa);
-    if (derivado) {
-      const atual = ORDEM_STATUS.indexOf(prop.status as PropostaStatus);
-      const alvo = ORDEM_STATUS.indexOf(derivado);
-      if (alvo > atual && atual !== -1) novoStatus = derivado;
+  if (situacao === "T") {
+    novoStatus = "contrato_emitido";
+  } else if (situacao === "C") {
+    novoStatus = "cancelada";
+  } else {
+    // Avança apenas para frente no funil (nunca regride).
+    const atual = ORDEM_STATUS.indexOf(prop.status as PropostaStatus);
+    const candidatos = [statusBancos, statusEtapa].filter(Boolean) as PropostaStatus[];
+    for (const c of candidatos) {
+      const idx = ORDEM_STATUS.indexOf(c);
+      if (idx > atual) novoStatus = c;
+    }
+    // Desfecho terminal de crédito recusado quando não houve avanço no funil.
+    if (!novoStatus && statusBancos === "credito_recusado" && prop.status !== "credito_recusado") {
+      novoStatus = "credito_recusado";
     }
   }
 
   const patch: Record<string, unknown> = { detalhe_status_atual: nomeEtapa };
-  if (op?.codigoOportunidadeBanco) patch.codigo_oportunidade_homefin = op.codigoOportunidadeBanco;
-  if (op?.valorFinanciamentoBanco != null) patch.valor_financiamento_aprovado = op.valorFinanciamentoBanco;
-  if (op?.valorParcelaBanco != null) patch.valor_parcela_aprovado = op.valorParcelaBanco;
-  if (op?.prazoPagamentoBanco != null) patch.prazo_aprovado = op.prazoPagamentoBanco;
-  if (op?.taxaJurosAnoBanco != null) patch.taxa_juros_ano_aprovado = op.taxaJurosAnoBanco;
+  const escolhida = simEscolhida ?? {};
+  if (op?.codigoOportunidadeBanco || escolhida.codigoOportunidadeBanco)
+    patch.codigo_oportunidade_homefin = op?.codigoOportunidadeBanco ?? escolhida.codigoOportunidadeBanco;
+  const vFin = op?.valorFinanciamentoBanco ?? escolhida.valorFinanciamentoBanco;
+  const vParc = op?.valorParcelaBanco ?? escolhida.valorParcelaBanco;
+  const vPrazo = op?.prazoPagamentoBanco ?? escolhida.prazoPagamentoBanco;
+  const vTaxa = op?.taxaJurosAnoBanco ?? escolhida.taxaJurosAnoBanco;
+  if (vFin != null) patch.valor_financiamento_aprovado = vFin;
+  if (vParc != null) patch.valor_parcela_aprovado = vParc;
+  if (vPrazo != null) patch.prazo_aprovado = vPrazo;
+  if (vTaxa != null) patch.taxa_juros_ano_aprovado = vTaxa;
 
   const mudouStatus = novoStatus != null && novoStatus !== prop.status;
   if (mudouStatus) {
     patch.status = novoStatus;
     if (novoStatus === "contrato_emitido") patch.contrato_emitido_em = new Date().toISOString();
+    if (errosBanco.length > 0 && (novoStatus === "erro_envio" || novoStatus === "credito_recusado")) {
+      patch.ultimo_erro = errosBanco.join(" | ");
+    }
   }
 
   await supabase.from("propostas").update(patch as any).eq("id", propostaId);
@@ -308,7 +424,12 @@ export async function sincronizarPropostaImpl({
         correspondente_id: prop.correspondente_id,
         tipo: "proposta",
         titulo: "Atualização de proposta",
-        corpo: nomeEtapa ? `Nova situação: ${nomeEtapa}.` : `Status alterado para ${novoStatus}.`,
+        corpo:
+          errosBanco.length > 0
+            ? errosBanco.join(" | ")
+            : nomeEtapa
+              ? `Nova situação: ${nomeEtapa}.`
+              : `Status alterado para ${novoStatus}.`,
         link: `/operacional/propostas/${propostaId}`,
       } as any);
     }
