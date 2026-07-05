@@ -553,18 +553,34 @@ export const salvarPermissoes = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
 
+    // Se o nível é padrão (global), cria uma cópia editável do correspondente
+    // e grava as permissões nela em vez de tentar escrever no template global.
+    let alvoId = data.nivel_acesso_id;
+    let clonado = false;
+    const { data: nivel } = await supabase
+      .from("access_levels")
+      .select("id, is_padrao")
+      .eq("id", data.nivel_acesso_id)
+      .maybeSingle();
+    if (nivel?.is_padrao) {
+      const { data: corresp } = await supabase.rpc("correspondente_do_usuario", { _user_id: userId });
+      if (!corresp) throw new Error("Correspondente não encontrado para o usuário.");
+      alvoId = await forkNivelPadrao(supabase, corresp, data.nivel_acesso_id);
+      clonado = true;
+    }
+
     // Remove as permissões antigas e regrava (RLS garante que só níveis do
     // próprio correspondente e gestor autorizado podem escrever).
     const { error: delErr } = await supabase
       .from("permissions")
       .delete()
-      .eq("nivel_acesso_id", data.nivel_acesso_id);
+      .eq("nivel_acesso_id", alvoId);
     if (delErr) throw new Error(delErr.message);
 
     const rows = data.permissoes
       .filter((p) => p.permitido)
       .map((p) => ({
-        nivel_acesso_id: data.nivel_acesso_id,
+        nivel_acesso_id: alvoId,
         modulo: p.modulo,
         acao: p.acao,
         permitido: true,
@@ -581,10 +597,10 @@ export const salvarPermissoes = createServerFn({ method: "POST" })
       supabase,
       userId,
       correspondenteId: null,
-      acao: "nivel_acesso.salvar_permissoes",
+      acao: clonado ? "nivel_acesso.personalizar_permissoes" : "nivel_acesso.salvar_permissoes",
       entidade: "access_levels",
-      entidadeId: data.nivel_acesso_id,
-      payloadNovo: { total: rows.length },
+      entidadeId: alvoId,
+      payloadNovo: { total: rows.length, origem: clonado ? data.nivel_acesso_id : undefined },
     });
-    return { ok: true, total: rows.length };
+    return { ok: true, total: rows.length, nivel_acesso_id: alvoId, clonado };
   });
