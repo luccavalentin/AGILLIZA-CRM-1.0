@@ -163,6 +163,7 @@ export async function obterToken(): Promise<TokenInfo> {
 
 export interface HomefinRequestCtx {
   simulacao_id?: string | null;
+  proposta_id?: string | null;
   correspondente_id?: string | null;
 }
 
