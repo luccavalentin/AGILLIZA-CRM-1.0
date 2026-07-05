@@ -50,24 +50,43 @@ function Pagina() {
     prazo_meses: 360,
   });
   const [mostrarRapida, setMostrarRapida] = useState(false);
+  const [entradaTocada, setEntradaTocada] = useState(false);
 
   const { data: bancos } = useQuery({
     queryKey: ["bancos-ativos"],
     queryFn: () => listarBancosAtivos(),
   });
 
+  // Entrada sugerida padrão de 20% do valor do imóvel.
+  const entradaSugerida = Math.round((w.valor_imovel || 0) * 0.2);
+
   function set<K extends keyof WizardState>(k: K, v: WizardState[K]) {
+    if (k === "valor_entrada") setEntradaTocada(true);
     setW((prev) => {
       const next = { ...prev, [k]: v };
+      // Sugere 20% de entrada automaticamente enquanto o usuário não editar o campo manualmente.
+      if (k === "valor_imovel" && !entradaTocada) {
+        next.valor_entrada = Math.round((next.valor_imovel || 0) * 0.2);
+      }
       if (k === "valor_imovel" || k === "valor_entrada") {
         next.valor_financiamento = Math.max(0, next.valor_imovel - next.valor_entrada);
       }
       if (k === "valor_financiamento") {
         next.valor_entrada = Math.max(0, next.valor_imovel - next.valor_financiamento);
+        setEntradaTocada(true);
       }
       return next;
     });
   }
+
+  function aplicarEntradaSugerida() {
+    setEntradaTocada(true);
+    setW((prev) => {
+      const entrada = Math.round((prev.valor_imovel || 0) * 0.2);
+      return { ...prev, valor_entrada: entrada, valor_financiamento: Math.max(0, prev.valor_imovel - entrada) };
+    });
+  }
+
 
   const valido =
     w.valor_imovel > 0 &&
