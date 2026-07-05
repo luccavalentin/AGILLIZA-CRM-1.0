@@ -57,7 +57,11 @@ export function MonthlyComparison({ dados }: { dados: ComparativoMensal }) {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <ChartCard titulo="Volume de propostas por mês" subtitulo="Propostas enviadas — últimos 6 meses">
+        <Card className="flex flex-col p-4">
+          <div className="mb-1">
+            <h3 className="text-sm font-medium text-foreground">Volume de propostas por mês</h3>
+            <p className="text-xs text-muted-foreground">Propostas enviadas — últimos 6 meses</p>
+          </div>
           <div className="mb-2 flex items-center gap-2 text-[11px] uppercase tracking-[0.12em] text-muted-foreground print:hidden">
             <span>vs. mês anterior</span>
             <VarChip serie={quantidade} />
@@ -73,9 +77,13 @@ export function MonthlyComparison({ dados }: { dados: ComparativoMensal }) {
               </BarChart>
             </ResponsiveContainer>
           </div>
-        </ChartCard>
+        </Card>
 
-        <ChartCard titulo="Taxa de aprovação por mês" subtitulo="% de propostas decididas aprovadas">
+        <Card className="flex flex-col p-4">
+          <div className="mb-1">
+            <h3 className="text-sm font-medium text-foreground">Taxa de aprovação por mês</h3>
+            <p className="text-xs text-muted-foreground">% de propostas decididas aprovadas</p>
+          </div>
           <div className="mb-2 flex items-center gap-2 text-[11px] uppercase tracking-[0.12em] text-muted-foreground print:hidden">
             <span>vs. mês anterior</span>
             <VarChip serie={taxaAprovacao} />
@@ -91,7 +99,7 @@ export function MonthlyComparison({ dados }: { dados: ComparativoMensal }) {
               </LineChart>
             </ResponsiveContainer>
           </div>
-        </ChartCard>
+        </Card>
       </div>
 
       <div className="overflow-x-auto rounded-lg border border-border">
