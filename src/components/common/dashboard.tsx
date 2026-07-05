@@ -85,36 +85,77 @@ export function HeroMetric({
   hint,
   tone = "neutral",
   icon: Icon,
+  to,
 }: {
   label: string;
   valor: string;
   hint?: string;
   tone?: Tone;
   icon?: LucideIcon;
+  to?: string;
 }) {
-  return (
-    <Card className="relative overflow-hidden p-4 pl-5">
+  const conteudo = (
+    <Card
+      className={cn(
+        "group relative h-full overflow-hidden p-4 pl-5 transition-all duration-200",
+        to && "cursor-pointer hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5",
+      )}
+    >
       <span className={cn("absolute left-0 top-0 h-full w-[3px]", toneBar[tone])} />
       <div className="flex items-center justify-between">
         <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">{label}</p>
-        {Icon && <Icon className="h-3.5 w-3.5 opacity-70" />}
+        {Icon ? (
+          <Icon className="h-3.5 w-3.5 opacity-70" />
+        ) : to ? (
+          <ArrowUpRight className="h-3.5 w-3.5 text-muted-foreground/50 transition-colors group-hover:text-primary" />
+        ) : null}
       </div>
       <p className="mt-2 font-mono text-[30px] font-semibold leading-none tabular-nums text-foreground">{valor}</p>
       {hint && <p className="mt-1.5 truncate text-xs text-muted-foreground">{hint}</p>}
     </Card>
   );
+  return to ? (
+    <Link to={to} className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-xl">
+      {conteudo}
+    </Link>
+  ) : (
+    conteudo
+  );
 }
 
 /** Métrica secundária compacta em linha única. */
-export function MiniMetric({ label, valor, tone = "neutral" }: { label: string; valor: string; tone?: Tone }) {
-  return (
-    <Card className="relative overflow-hidden p-3 pl-4">
+export function MiniMetric({
+  label,
+  valor,
+  tone = "neutral",
+  to,
+}: {
+  label: string;
+  valor: string;
+  tone?: Tone;
+  to?: string;
+}) {
+  const conteudo = (
+    <Card
+      className={cn(
+        "group relative h-full overflow-hidden p-3 pl-4 transition-all duration-200",
+        to && "cursor-pointer hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md hover:shadow-primary/5",
+      )}
+    >
       <span className={cn("absolute left-0 top-0 h-full w-[2px]", toneBar[tone])} />
       <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-muted-foreground">{label}</p>
       <p className="mt-1 font-mono text-lg font-semibold tabular-nums text-foreground">{valor}</p>
     </Card>
   );
+  return to ? (
+    <Link to={to} className="block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+      {conteudo}
+    </Link>
+  ) : (
+    conteudo
+  );
 }
+
 
 /** Moldura padrão de gráfico/lista com título, subtítulo e link "Abrir". */
 export function PanelCard({
