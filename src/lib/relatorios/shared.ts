@@ -127,6 +127,8 @@ export interface ReportResult {
   columns: ReportColumn[];
   rows: ReportRow[];
   ranking?: { titulo: string; columns: ReportColumn[]; rows: ReportRow[] };
+  /** Opções completas para os filtros (independem do resultado filtrado). */
+  filtrosDisponiveis?: { bancos?: string[]; statuses?: { value: string; label: string }[]; produtos?: string[] };
 }
 
 export type ReportCell = string | number | boolean | null;
