@@ -108,6 +108,8 @@ function Pagina() {
   const p = data.proposta as any;
   const status = p.status as PropostaStatus;
   const diasDesde = Math.max(0, Math.round((Date.now() - new Date(p.created_at).getTime()) / 86400000));
+  const bancosEnviados = (data.bancos ?? []).filter((b: any) => b.selecionado || b.status_banco === "enviada");
+  const multiBanco = bancosEnviados.length > 1;
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-5 p-4 md:p-6">
