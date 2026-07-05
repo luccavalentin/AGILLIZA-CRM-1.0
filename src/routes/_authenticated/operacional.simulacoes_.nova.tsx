@@ -39,7 +39,7 @@ interface WizardState {
 
 function Pagina() {
   const router = useRouter();
-  const { modo } = Route.useSearch();
+  const { modo: _modo } = Route.useSearch();
   const [w, setW] = useState<WizardState>({
     produto: "financiamento_imobiliario",
     valor_imovel: 0,
