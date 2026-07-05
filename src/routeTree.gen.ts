@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as PortalRouteImport } from './routes/portal'
 import { Route as ParceiroRouteImport } from './routes/parceiro'
+import { Route as ClienteConsentimentoRouteImport } from './routes/cliente-consentimento'
 import { Route as ClienteRouteImport } from './routes/cliente'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
@@ -91,6 +92,11 @@ const PortalRoute = PortalRouteImport.update({
 const ParceiroRoute = ParceiroRouteImport.update({
   id: '/parceiro',
   path: '/parceiro',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ClienteConsentimentoRoute = ClienteConsentimentoRouteImport.update({
+  id: '/cliente-consentimento',
+  path: '/cliente-consentimento',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ClienteRoute = ClienteRouteImport.update({
@@ -504,6 +510,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/cliente': typeof ClienteRouteWithChildren
+  '/cliente-consentimento': typeof ClienteConsentimentoRoute
   '/parceiro': typeof ParceiroRouteWithChildren
   '/portal': typeof PortalRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -578,6 +585,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/cliente': typeof ClienteRouteWithChildren
+  '/cliente-consentimento': typeof ClienteConsentimentoRoute
   '/portal': typeof PortalRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/documentos': typeof AuthenticatedDocumentosRoute
@@ -652,6 +660,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/cliente': typeof ClienteRouteWithChildren
+  '/cliente-consentimento': typeof ClienteConsentimentoRoute
   '/parceiro': typeof ParceiroRouteWithChildren
   '/portal': typeof PortalRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
@@ -728,6 +737,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/cliente'
+    | '/cliente-consentimento'
     | '/parceiro'
     | '/portal'
     | '/dashboard'
@@ -802,6 +812,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/cliente'
+    | '/cliente-consentimento'
     | '/portal'
     | '/dashboard'
     | '/documentos'
@@ -875,6 +886,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/cliente'
+    | '/cliente-consentimento'
     | '/parceiro'
     | '/portal'
     | '/_authenticated/dashboard'
@@ -951,6 +963,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   ClienteRoute: typeof ClienteRouteWithChildren
+  ClienteConsentimentoRoute: typeof ClienteConsentimentoRoute
   ParceiroRoute: typeof ParceiroRouteWithChildren
   PortalRoute: typeof PortalRoute
 }
@@ -969,6 +982,13 @@ declare module '@tanstack/react-router' {
       path: '/parceiro'
       fullPath: '/parceiro'
       preLoaderRoute: typeof ParceiroRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cliente-consentimento': {
+      id: '/cliente-consentimento'
+      path: '/cliente-consentimento'
+      fullPath: '/cliente-consentimento'
+      preLoaderRoute: typeof ClienteConsentimentoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/cliente': {
@@ -1675,6 +1695,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   ClienteRoute: ClienteRouteWithChildren,
+  ClienteConsentimentoRoute: ClienteConsentimentoRoute,
   ParceiroRoute: ParceiroRouteWithChildren,
   PortalRoute: PortalRoute,
 }
