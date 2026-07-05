@@ -5,6 +5,7 @@ import { getRequest, setResponseHeader } from "@tanstack/react-start/server";
 
 const COOKIE_NAME = "agz_cliente_app";
 const TTL_MS = 8 * 60 * 60 * 1000; // 8h
+const COOKIE_SCOPE = "HttpOnly; Secure; SameSite=None; Partitioned; Path=/";
 
 export interface ClienteSession {
   cid: string; // cliente_id
@@ -66,14 +67,14 @@ export function gravarCookieSessao(cid: string, corr: string | null): void {
   const maxAge = Math.floor(TTL_MS / 1000);
   setResponseHeader(
     "Set-Cookie",
-    `${COOKIE_NAME}=${encodeURIComponent(token)}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=${maxAge}`,
+    `${COOKIE_NAME}=${encodeURIComponent(token)}; ${COOKIE_SCOPE}; Max-Age=${maxAge}`,
   );
 }
 
 export function limparCookieSessao(): void {
   setResponseHeader(
     "Set-Cookie",
-    `${COOKIE_NAME}=; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0`,
+    `${COOKIE_NAME}=; ${COOKIE_SCOPE}; Max-Age=0`,
   );
 }
 
