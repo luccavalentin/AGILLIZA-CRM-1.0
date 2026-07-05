@@ -135,22 +135,28 @@ function PessoasPage() {
   return (
     <>
       <div className="mx-auto max-w-5xl">
+        <Tabs value={aba} onValueChange={(v) => setAba(v as typeof aba)}>
+          <TabsList className="mb-6">
+            <TabsTrigger value="pessoas">Pessoas</TabsTrigger>
+            <TabsTrigger value="regras">Regras & Módulos</TabsTrigger>
+          </TabsList>
 
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold text-foreground">
-              Pessoas do meu ecossistema
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              Equipe interna e parceiros em uma única lista.
-            </p>
-          </div>
-          {podeGerenciar && (
-            <Button onClick={abrirNova}>
-              <Plus className="mr-2 h-4 w-4" /> Nova pessoa
-            </Button>
-          )}
-        </div>
+          <TabsContent value="pessoas">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h1 className="text-2xl font-semibold text-foreground">
+                  Pessoas do meu ecossistema
+                </h1>
+                <p className="text-sm text-muted-foreground">
+                  Equipe interna e parceiros em uma única lista.
+                </p>
+              </div>
+              {podeGerenciar && (
+                <Button onClick={abrirNova}>
+                  <Plus className="mr-2 h-4 w-4" /> Nova pessoa
+                </Button>
+              )}
+            </div>
 
         <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <Tabs value={filtro} onValueChange={(v) => setFiltro(v as typeof filtro)}>
