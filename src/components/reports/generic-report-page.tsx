@@ -114,8 +114,9 @@ export function GenericReportPage({
           )}
 
           {data.tabelas && data.tabelas.length > 0 && data.tabelas.map((grupo) => (
-            <ReportSection key={grupo.titulo} titulo={grupo.titulo} descricao={grupo.descricao}>
+            <ReportSection key={grupo.titulo} titulo={grupo.titulo}>
               <div className="space-y-6">
+                {grupo.descricao && <p className="text-xs text-muted-foreground">{grupo.descricao}</p>}
                 {grupo.tabelas.map((t) => (
                   <div key={t.titulo} className="space-y-2">
                     <div>
