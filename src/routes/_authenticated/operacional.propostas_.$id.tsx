@@ -90,7 +90,7 @@ function Pagina() {
         <Button asChild variant="ghost" size="sm">
           <Link to="/operacional/propostas"><ArrowLeft className="mr-1 h-4 w-4" /> Voltar</Link>
         </Button>
-        <AcoesTopo proposta={p} propostaId={id} />
+        <AcoesTopo proposta={p} propostaId={id} bancos={data.bancos} />
       </div>
 
       {/* Header linha 1 */}
