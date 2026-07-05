@@ -298,6 +298,199 @@ export const runReport = createServerFn({ method: "POST" })
       };
     }
 
+    async function relGerencial(): Promise<ReportResult> {
+      const PRODUTO_LABEL = (p?: string) =>
+        p === "home_equity" ? "Home Equity" : p === "financiamento_imobiliario" ? "Financiamento" : p ? p : "—";
+      const cols = [
+        "id", "status", "produto", "nome_banco", "valor_financiamento", "valor_financiamento_aprovado",
+        "analista_id", "analista_nome", "comercial_id", "consultor_nome", "parceiro_id", "parceiro_nome",
+        "usuario_responsavel_id", "created_at", "contrato_emitido_em",
+      ].join(",");
+
+      // Busca por período em created_at OU em contrato_emitido_em (para contratos emitidos no período).
+      let q = (supabase as any)
+        .from("propostas")
+        .select(cols)
+        .or(`and(created_at.gte.${de},created_at.lte.${ateFim}),and(contrato_emitido_em.gte.${de},contrato_emitido_em.lte.${ateFim})`)
+        .order("created_at", { ascending: false })
+        .limit(10000);
+      q = aplicarEscopo(q, filtros, userId, "usuario_responsavel_id");
+      if (filtros.responsavel) q = q.eq("usuario_responsavel_id", filtros.responsavel);
+      if (filtros.banco) q = q.eq("nome_banco", filtros.banco);
+      if (filtros.produto) q = q.eq("produto", filtros.produto);
+      const { data: rowsRaw, error } = await q;
+      if (error) throw new Error(error.message);
+      const props = (rowsRaw ?? []) as any[];
+
+      // Nomes de analistas/comerciais quando só há id (sem nome desnormalizado).
+      const idsFaltando = new Set<string>();
+      for (const p of props) {
+        if (!p.analista_nome && p.analista_id) idsFaltando.add(p.analista_id);
+        if (!p.consultor_nome && p.comercial_id) idsFaltando.add(p.comercial_id);
+      }
+      const nomes = await nomesUsuarios([...idsFaltando]);
+      const nomeAnalista = (p: any) => p.analista_nome || nomes.get(p.analista_id) || "Não atribuído";
+      const nomeComercial = (p: any) => p.consultor_nome || nomes.get(p.comercial_id) || "Não atribuído";
+      const nomeParceiro = (p: any) => p.parceiro_nome || "Não atribuído";
+      const valorProc = (p: any) => p.valor_financiamento_aprovado ?? p.valor_financiamento ?? 0;
+
+      const emAndamento = ["enviada_banco", "em_analise_credito", "aguardando_documentos", "credito_aprovado", "engenharia_vistoria", "analise_juridica"];
+      const aprovado = ["credito_aprovado", "contrato_emitido", "registrado"];
+      const contrato = ["contrato_emitido", "registrado"];
+
+      const dentro = (iso?: string) => !!iso && iso.slice(0, 10) >= de && iso.slice(0, 10) <= ate;
+      const andamento = props.filter((p) => emAndamento.includes(p.status) && dentro(p.created_at));
+      const aprovadas = props.filter((p) => aprovado.includes(p.status) && dentro(p.created_at));
+      const contratos = props.filter((p) => contrato.includes(p.status) && dentro(p.contrato_emitido_em));
+
+      // Helper: agrupamento simples por 1 dimensão -> {chave, qtd, valor}
+      const colsBreak = (label: string) => [
+        { key: "k", label },
+        { key: "qtd", label: "Qtd", align: "right" as const, footer: "sum" as const, format: "int" as const },
+        { key: "valor", label: "Valor", align: "right" as const, footer: "sum" as const, format: "brl" as const },
+      ];
+      const breakdown = (rows: any[], keyFn: (p: any) => string, valFn: (p: any) => number) => {
+        const m = new Map<string, { qtd: number; valor: number }>();
+        for (const p of rows) {
+          const k = keyFn(p) || "—";
+          const cur = m.get(k) ?? { qtd: 0, valor: 0 };
+          cur.qtd += 1;
+          cur.valor += valFn(p) || 0;
+          m.set(k, cur);
+        }
+        return [...m.entries()]
+          .sort((a, b) => b[1].valor - a[1].valor)
+          .map(([k, v]) => ({ k, qtd: v.qtd, valor: v.valor }));
+      };
+
+      // Helper: agrupamento por 2 dimensões (ex.: analista x banco)
+      const colsBreak2 = (l1: string, l2: string) => [
+        { key: "k1", label: l1 },
+        { key: "k2", label: l2 },
+        { key: "qtd", label: "Qtd", align: "right" as const, footer: "sum" as const, format: "int" as const },
+        { key: "valor", label: "Valor", align: "right" as const, footer: "sum" as const, format: "brl" as const },
+      ];
+      const breakdown2 = (rows: any[], k1Fn: (p: any) => string, k2Fn: (p: any) => string, valFn: (p: any) => number) => {
+        const m = new Map<string, { k1: string; k2: string; qtd: number; valor: number }>();
+        for (const p of rows) {
+          const a = k1Fn(p) || "—";
+          const b = k2Fn(p) || "—";
+          const key = `${a}||${b}`;
+          const cur = m.get(key) ?? { k1: a, k2: b, qtd: 0, valor: 0 };
+          cur.qtd += 1;
+          cur.valor += valFn(p) || 0;
+          m.set(key, cur);
+        }
+        return [...m.values()].sort((x, y) => (x.k1 === y.k1 ? y.valor - x.valor : x.k1.localeCompare(y.k1)));
+      };
+
+      const secaoTabelas = (rows: any[], dataLabel: string, dataFn: (p: any) => string, valFn: (p: any) => number): { titulo: string; subtitulo?: string; columns: any[]; rows: any[] }[] => {
+        const porData = new Map<string, { qtd: number; valor: number }>();
+        for (const p of rows) {
+          const d = (dataFn(p) || "").slice(0, 10);
+          if (!d) continue;
+          const cur = porData.get(d) ?? { qtd: 0, valor: 0 };
+          cur.qtd += 1;
+          cur.valor += valFn(p) || 0;
+          porData.set(d, cur);
+        }
+        return [
+          {
+            titulo: dataLabel,
+            columns: [
+              { key: "k", label: "Data", format: "date" as const },
+              { key: "qtd", label: "Qtd", align: "right" as const, footer: "sum" as const, format: "int" as const },
+              { key: "valor", label: "Valor", align: "right" as const, footer: "sum" as const, format: "brl" as const },
+            ],
+            rows: [...porData.entries()].sort((a, b) => b[0].localeCompare(a[0])).map(([k, v]) => ({ k, qtd: v.qtd, valor: v.valor })),
+          },
+          { titulo: "Por banco", columns: colsBreak("Banco"), rows: breakdown(rows, (p) => p.nome_banco, valFn) },
+          { titulo: "Por tipo (Financiamento / Home Equity)", columns: colsBreak("Tipo"), rows: breakdown(rows, (p) => PRODUTO_LABEL(p.produto), valFn) },
+          { titulo: "Por analista Adm", columns: colsBreak("Analista Adm"), rows: breakdown(rows, nomeAnalista, valFn) },
+          { titulo: "Por analista Comercial · separado por banco", columns: colsBreak2("Analista Comercial", "Banco"), rows: breakdown2(rows, nomeComercial, (p) => p.nome_banco, valFn) },
+          { titulo: "Por Imobiliária / Corretor", columns: colsBreak("Imobiliária / Corretor"), rows: breakdown(rows, nomeParceiro, valFn) },
+        ];
+      };
+
+      const totalAnd = andamento.reduce((s, p) => s + valorProc(p), 0);
+      const totalAprov = aprovadas.reduce((s, p) => s + valorProc(p), 0);
+      const totalContr = contratos.reduce((s, p) => s + valorProc(p), 0);
+
+      const tabelas = [
+        {
+          titulo: "Processos em andamento",
+          descricao: "Propostas ativas na esteira dentro do período.",
+          tabelas: [
+            { titulo: "Por valor · separado por banco", columns: colsBreak("Banco"), rows: breakdown(andamento, (p) => p.nome_banco, valorProc) },
+            { titulo: "Por tipo (Financiamento / Home Equity)", columns: colsBreak("Tipo"), rows: breakdown(andamento, (p) => PRODUTO_LABEL(p.produto), valorProc) },
+            { titulo: "Por analista Adm", columns: colsBreak("Analista Adm"), rows: breakdown(andamento, nomeAnalista, valorProc) },
+            { titulo: "Por analista Comercial · separado por banco", columns: colsBreak2("Analista Comercial", "Banco"), rows: breakdown2(andamento, nomeComercial, (p) => p.nome_banco, valorProc) },
+            { titulo: "Por Imobiliária / Corretor", columns: colsBreak("Imobiliária / Corretor"), rows: breakdown(andamento, nomeParceiro, valorProc) },
+            { titulo: "Por fase (status atual)", columns: colsBreak("Fase"), rows: breakdown(andamento, (p) => rotuloStatus(p.status), valorProc) },
+          ],
+        },
+        {
+          titulo: "Propostas aprovadas",
+          descricao: "Propostas com crédito aprovado no período.",
+          tabelas: secaoTabelas(aprovadas, "Por data", (p) => p.created_at, valorProc),
+        },
+        {
+          titulo: "Contratos emitidos",
+          descricao: "Contratos emitidos por data de emissão no período.",
+          tabelas: [
+            ...secaoTabelas(contratos, "Por data de emissão", (p) => p.contrato_emitido_em, valorProc),
+            { titulo: "Por valor · separado por banco", columns: colsBreak("Banco"), rows: breakdown(contratos, (p) => p.nome_banco, valorProc) },
+          ],
+        },
+      ];
+
+      return {
+        titulo: "Relatório gerencial",
+        descricao: "Processos em andamento, propostas aprovadas e contratos emitidos com quebras por banco, tipo, analistas, imobiliária/corretor e fase.",
+        modulo: "Gerencial",
+        kpis: [
+          { label: "Em andamento", valor: int(andamento.length), tone: "neutral" },
+          { label: "Valor em andamento", valor: brl(totalAnd), tone: "brand" },
+          { label: "Aprovadas", valor: int(aprovadas.length), tone: "success" },
+          { label: "Valor aprovado", valor: brl(totalAprov), tone: "brand" },
+          { label: "Contratos emitidos", valor: int(contratos.length), tone: "success" },
+          { label: "Valor contratado", valor: brl(totalContr), tone: "brand" },
+        ],
+        charts: [
+          { titulo: "Funil", subtitulo: "Andamento → Aprovadas → Contratos", tipo: "funnel", dados: [
+            { label: "Em andamento", valor: andamento.length },
+            { label: "Aprovadas", valor: aprovadas.length },
+            { label: "Contratos", valor: contratos.length },
+          ] },
+          { titulo: "Contratos por banco", subtitulo: "Valor contratado", tipo: "barh", dados: breakdown(contratos, (p) => p.nome_banco, valorProc).map((r) => ({ label: r.k, valor: r.valor })).slice(0, 8) },
+        ],
+        columns: [
+          { key: "nome_banco", label: "Banco" },
+          { key: "produto", label: "Tipo" },
+          { key: "status", label: "Fase" },
+          { key: "analista", label: "Analista Adm" },
+          { key: "comercial", label: "Analista Comercial" },
+          { key: "parceiro", label: "Imobiliária / Corretor" },
+          { key: "valor", label: "Valor", align: "right", footer: "sum", format: "brl" },
+          { key: "created_at", label: "Criada em", format: "date" },
+        ],
+        rows: [...andamento, ...aprovadas.filter((p) => !emAndamento.includes(p.status)), ...contratos.filter((p) => !aprovado.includes(p.status) || contrato.includes(p.status))]
+          .slice(0, 1000)
+          .map((p) => ({
+            nome_banco: p.nome_banco ?? "—",
+            produto: PRODUTO_LABEL(p.produto),
+            status: rotuloStatus(p.status),
+            analista: nomeAnalista(p),
+            comercial: nomeComercial(p),
+            parceiro: nomeParceiro(p),
+            valor: valorProc(p),
+            created_at: p.created_at,
+          })),
+      };
+    }
+
+
+
     async function relSimulacoes(): Promise<ReportResult> {
       const sims = await fetchAll("simulacoes", "id,tipo_simulacao,status,valor_financiamento,nome_cliente,numero_simulacao,created_at", "created_at", "usuario_responsavel_id");
       const props = await fetchAll("propostas", "id,created_at", "created_at", "usuario_responsavel_id");
