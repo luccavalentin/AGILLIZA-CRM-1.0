@@ -172,7 +172,13 @@ function Pagina() {
             })}
           </div>
 
-          {simSelecionada && (
+          {simSelecionada?.proposta_existente_id && (
+            <div className="rounded-md border border-border bg-muted/40 p-3 text-sm text-muted-foreground">
+              Esta simulação já foi convertida em proposta. Clique em “Abrir proposta” para ir à ficha.
+            </div>
+          )}
+
+          {simSelecionada && !simSelecionada.proposta_existente_id && (
             <div className="space-y-2 border-t border-border pt-4">
               <Label className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                 Banco vencedor
