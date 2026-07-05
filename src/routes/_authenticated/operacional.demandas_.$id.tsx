@@ -212,6 +212,42 @@ function Pagina() {
           </div>
         </div>
       </div>
+
+      {/* Anexos */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-foreground">Anexos</h2>
+          <input ref={fileRef} type="file" className="hidden" onChange={handleUpload} />
+          <Button variant="outline" size="sm" disabled={enviando} onClick={() => fileRef.current?.click()}>
+            <Paperclip className="mr-1 h-3.5 w-3.5" /> {enviando ? "Enviando…" : "Anexar"}
+          </Button>
+        </div>
+        <div className="space-y-2">
+          {(data?.anexos ?? []).length === 0 ? (
+            <p className="text-sm text-muted-foreground">Nenhum anexo.</p>
+          ) : (
+            (data?.anexos ?? []).map((a: any) => (
+              <div key={a.id} className="flex items-center gap-2 rounded-md border border-border bg-card p-2 text-sm">
+                <Paperclip className="h-4 w-4 shrink-0 text-muted-foreground" />
+                <span className="flex-1 truncate text-foreground">{a.nome}</span>
+                <span className="text-xs text-muted-foreground">{a.nome_autor ?? "—"}</span>
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => baixarAnexo(a.storage_path)}>
+                  <Download className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 text-destructive"
+                  onClick={async () => { await removerAnexoFn({ data: { id: a.id } }); invalidar(); }}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
     </div>
   );
 }
