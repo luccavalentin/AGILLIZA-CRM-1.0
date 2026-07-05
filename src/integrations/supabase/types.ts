@@ -4304,6 +4304,11 @@ export type Database = {
         Args: { _acao: string; _cid: string; _corr: string }
         Returns: undefined
       }
+      portal_time_marcar_lidas: { Args: { _cid: string }; Returns: undefined }
+      portal_time_responder: {
+        Args: { _anexo: string; _cid: string; _msg: string }
+        Returns: Json
+      }
       portal_visao_geral: { Args: { _cid: string }; Returns: Json }
       usuario_escopo_dados: {
         Args: { _modulo: string; _user_id: string }

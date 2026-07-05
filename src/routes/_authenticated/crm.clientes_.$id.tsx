@@ -11,6 +11,7 @@ import { ClienteForm } from "@/components/crm/cliente-form";
 import { DocumentosTab } from "@/components/crm/documentos-tab";
 import { InteracoesTab } from "@/components/crm/interacoes-tab";
 import { VinculoTab } from "@/components/crm/vinculo-tab";
+import { ChatClienteTab } from "@/components/crm/chat-cliente-tab";
 import { StatusBadge } from "@/components/crm/tone-badge";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import {
@@ -102,6 +103,7 @@ function Pagina() {
           <TabsTrigger value="dados">Dados</TabsTrigger>
           <TabsTrigger value="documentos">Documentos</TabsTrigger>
           <TabsTrigger value="vinculo">Vínculo de atendimento</TabsTrigger>
+          <TabsTrigger value="mensagens">Mensagens</TabsTrigger>
           <TabsTrigger value="interacoes">Interações</TabsTrigger>
           <TabsTrigger value="historico">Histórico</TabsTrigger>
         </TabsList>
@@ -210,6 +212,11 @@ function Pagina() {
         <TabsContent value="vinculo" className="mt-4">
           <VinculoTab clienteId={id} responsavelNome={det.responsavel_nome} />
         </TabsContent>
+
+        <TabsContent value="mensagens" className="mt-4">
+          <ChatClienteTab clienteId={id} />
+        </TabsContent>
+
 
 
         <TabsContent value="interacoes" className="mt-4">

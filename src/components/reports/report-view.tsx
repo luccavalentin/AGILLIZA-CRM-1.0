@@ -40,6 +40,14 @@ export function ReportView({ codigo, comFiltroBanco, comFiltroStatus }: { codigo
   const escopoFn = useServerFn(getEscopoRelatorios);
   const { data: escopo } = useQuery({ queryKey: ["report-escopo"], queryFn: () => escopoFn(), staleTime: 5 * 60_000 });
 
+  // "Painel geral" deve mostrar toda a operação: se o usuário pode ver geral/equipe
+  // e não escolheu um escopo na URL, amplia o escopo automaticamente.
+  const escopoInformadoNaUrl = ESCOPOS.includes(search.escopo as Escopo);
+  const filtrosEfetivos: ReportFiltros =
+    !escopoInformadoNaUrl && escopo
+      ? { ...filtros, escopo: escopo.podeGeral ? "geral" : escopo.podeEquipe ? "equipe" : "minha" }
+      : filtros;
+
   const onFiltros = (f: ReportFiltros) => {
     const s: Record<string, string> = {};
     for (const [k, v] of Object.entries(f)) if (v !== undefined && v !== "" && v !== null) s[k] = String(v);
@@ -49,7 +57,7 @@ export function ReportView({ codigo, comFiltroBanco, comFiltroStatus }: { codigo
   return (
     <GenericReportPage
       codigo={codigo}
-      filtros={filtros}
+      filtros={filtrosEfetivos}
       onFiltros={onFiltros}
       podeEquipe={escopo?.podeEquipe ?? false}
       podeGeral={escopo?.podeGeral ?? false}
@@ -58,3 +66,4 @@ export function ReportView({ codigo, comFiltroBanco, comFiltroStatus }: { codigo
     />
   );
 }
+

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
@@ -51,8 +51,22 @@ export function PainelView({
 
   const [periodo, setPeriodo] = useState<Periodo>("mes");
   const [escopo, setEscopo] = useState<Escopo>("minha");
+  const escopoTocado = useRef(false);
 
   const { data: perms } = useQuery({ queryKey: ["report-escopo"], queryFn: () => escopoFn(), staleTime: 5 * 60_000 });
+
+  // Amplia o escopo automaticamente para quem pode ver equipe/geral (até o usuário mudar manualmente).
+  useEffect(() => {
+    if (escopoTocado.current || !perms) return;
+    if (perms.podeGeral) setEscopo("geral");
+    else if (perms.podeEquipe) setEscopo("equipe");
+  }, [perms]);
+
+  const mudarEscopo = (e: Escopo) => {
+    escopoTocado.current = true;
+    setEscopo(e);
+  };
+
   const queryKey = ["panel", modulo, periodo, escopo];
   const { data, isLoading, error, dataUpdatedAt } = useQuery({
     queryKey,
@@ -85,7 +99,7 @@ export function PainelView({
         onRefresh={() => qc.invalidateQueries({ queryKey })}
         actions={
           <>
-            <VisionSelector escopo={escopo} onChange={setEscopo} podeEquipe={perms?.podeEquipe ?? false} podeGeral={perms?.podeGeral ?? false} />
+            <VisionSelector escopo={escopo} onChange={mudarEscopo} podeEquipe={perms?.podeEquipe ?? false} podeGeral={perms?.podeGeral ?? false} />
             <Select value={periodo} onValueChange={(v) => setPeriodo(v as Periodo)}>
               <SelectTrigger className="h-9 w-40"><SelectValue /></SelectTrigger>
               <SelectContent>
