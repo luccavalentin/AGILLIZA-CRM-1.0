@@ -268,7 +268,7 @@ export const comentarDemanda = createServerFn({ method: "POST" })
         .eq("id", data.demanda_id)
         .maybeSingle();
       if (dem?.cliente_id) {
-        await supabase.rpc("portal_time_responder", { _cid: dem.cliente_id, _msg: data.corpo, _anexo: null });
+        await supabase.rpc("portal_time_responder", { _cid: dem.cliente_id, _msg: data.corpo, _anexo: null as unknown as string });
       }
     }
     return { ok: true };
