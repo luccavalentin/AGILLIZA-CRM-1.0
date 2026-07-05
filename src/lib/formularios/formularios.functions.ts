@@ -93,7 +93,14 @@ export const atualizarFormulario = createServerFn({ method: "POST" })
       .single();
     if (erroBusca) throw new Error(erroBusca.message);
 
-    const patch: Record<string, unknown> = {
+    const patch: {
+      nome: string;
+      descricao: string | null;
+      banco: BancoFormulario;
+      storage_path?: string;
+      content_type?: string | null;
+      tamanho?: number | null;
+    } = {
       nome: data.nome,
       descricao: data.descricao ?? null,
       banco: data.banco,
