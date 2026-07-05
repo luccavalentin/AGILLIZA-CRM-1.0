@@ -72,8 +72,10 @@ import { Route as AuthenticatedAdminNotificacoesRouteImport } from './routes/_au
 import { Route as AuthenticatedAdminIntegracoesRouteImport } from './routes/_authenticated/admin.integracoes'
 import { Route as AuthenticatedAdminComprasRouteImport } from './routes/_authenticated/admin.compras'
 import { Route as AuthenticatedAdminComissoesRouteImport } from './routes/_authenticated/admin.comissoes'
+import { Route as AuthenticatedAdminBancosRouteImport } from './routes/_authenticated/admin.bancos'
 import { Route as AuthenticatedAdminBackupRouteImport } from './routes/_authenticated/admin.backup'
 import { Route as AuthenticatedAdminAuditoriaRouteImport } from './routes/_authenticated/admin.auditoria'
+import { Route as AuthenticatedAdminApisIaRouteImport } from './routes/_authenticated/admin.apis-ia'
 import { Route as AuthenticatedOperacionalTarefasKanbanRouteImport } from './routes/_authenticated/operacional.tarefas_.kanban'
 import { Route as AuthenticatedOperacionalSimulacoesNovaRouteImport } from './routes/_authenticated/operacional.simulacoes_.nova'
 import { Route as AuthenticatedOperacionalSimulacoesCompletaRouteImport } from './routes/_authenticated/operacional.simulacoes_.completa'
@@ -440,6 +442,12 @@ const AuthenticatedAdminComissoesRoute =
     path: '/admin/comissoes',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAdminBancosRoute =
+  AuthenticatedAdminBancosRouteImport.update({
+    id: '/admin/bancos',
+    path: '/admin/bancos',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAdminBackupRoute =
   AuthenticatedAdminBackupRouteImport.update({
     id: '/admin/backup',
@@ -450,6 +458,12 @@ const AuthenticatedAdminAuditoriaRoute =
   AuthenticatedAdminAuditoriaRouteImport.update({
     id: '/admin/auditoria',
     path: '/admin/auditoria',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAdminApisIaRoute =
+  AuthenticatedAdminApisIaRouteImport.update({
+    id: '/admin/apis-ia',
+    path: '/admin/apis-ia',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedOperacionalTarefasKanbanRoute =
@@ -540,8 +554,10 @@ export interface FileRoutesByFullPath {
   '/parceiro/propostas': typeof ParceiroPropostasRoute
   '/parceiro/simulacoes': typeof ParceiroSimulacoesRoute
   '/parceiro/': typeof ParceiroIndexRoute
+  '/admin/apis-ia': typeof AuthenticatedAdminApisIaRoute
   '/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
   '/admin/backup': typeof AuthenticatedAdminBackupRoute
+  '/admin/bancos': typeof AuthenticatedAdminBancosRoute
   '/admin/comissoes': typeof AuthenticatedAdminComissoesRoute
   '/admin/compras': typeof AuthenticatedAdminComprasRoute
   '/admin/integracoes': typeof AuthenticatedAdminIntegracoesRoute
@@ -615,8 +631,10 @@ export interface FileRoutesByTo {
   '/parceiro/propostas': typeof ParceiroPropostasRoute
   '/parceiro/simulacoes': typeof ParceiroSimulacoesRoute
   '/parceiro': typeof ParceiroIndexRoute
+  '/admin/apis-ia': typeof AuthenticatedAdminApisIaRoute
   '/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
   '/admin/backup': typeof AuthenticatedAdminBackupRoute
+  '/admin/bancos': typeof AuthenticatedAdminBancosRoute
   '/admin/comissoes': typeof AuthenticatedAdminComissoesRoute
   '/admin/compras': typeof AuthenticatedAdminComprasRoute
   '/admin/integracoes': typeof AuthenticatedAdminIntegracoesRoute
@@ -694,8 +712,10 @@ export interface FileRoutesById {
   '/parceiro/propostas': typeof ParceiroPropostasRoute
   '/parceiro/simulacoes': typeof ParceiroSimulacoesRoute
   '/parceiro/': typeof ParceiroIndexRoute
+  '/_authenticated/admin/apis-ia': typeof AuthenticatedAdminApisIaRoute
   '/_authenticated/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
   '/_authenticated/admin/backup': typeof AuthenticatedAdminBackupRoute
+  '/_authenticated/admin/bancos': typeof AuthenticatedAdminBancosRoute
   '/_authenticated/admin/comissoes': typeof AuthenticatedAdminComissoesRoute
   '/_authenticated/admin/compras': typeof AuthenticatedAdminComprasRoute
   '/_authenticated/admin/integracoes': typeof AuthenticatedAdminIntegracoesRoute
@@ -773,8 +793,10 @@ export interface FileRouteTypes {
     | '/parceiro/propostas'
     | '/parceiro/simulacoes'
     | '/parceiro/'
+    | '/admin/apis-ia'
     | '/admin/auditoria'
     | '/admin/backup'
+    | '/admin/bancos'
     | '/admin/comissoes'
     | '/admin/compras'
     | '/admin/integracoes'
@@ -848,8 +870,10 @@ export interface FileRouteTypes {
     | '/parceiro/propostas'
     | '/parceiro/simulacoes'
     | '/parceiro'
+    | '/admin/apis-ia'
     | '/admin/auditoria'
     | '/admin/backup'
+    | '/admin/bancos'
     | '/admin/comissoes'
     | '/admin/compras'
     | '/admin/integracoes'
@@ -926,8 +950,10 @@ export interface FileRouteTypes {
     | '/parceiro/propostas'
     | '/parceiro/simulacoes'
     | '/parceiro/'
+    | '/_authenticated/admin/apis-ia'
     | '/_authenticated/admin/auditoria'
     | '/_authenticated/admin/backup'
+    | '/_authenticated/admin/bancos'
     | '/_authenticated/admin/comissoes'
     | '/_authenticated/admin/compras'
     | '/_authenticated/admin/integracoes'
@@ -1436,6 +1462,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminComissoesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin/bancos': {
+      id: '/_authenticated/admin/bancos'
+      path: '/admin/bancos'
+      fullPath: '/admin/bancos'
+      preLoaderRoute: typeof AuthenticatedAdminBancosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/admin/backup': {
       id: '/_authenticated/admin/backup'
       path: '/admin/backup'
@@ -1448,6 +1481,13 @@ declare module '@tanstack/react-router' {
       path: '/admin/auditoria'
       fullPath: '/admin/auditoria'
       preLoaderRoute: typeof AuthenticatedAdminAuditoriaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/admin/apis-ia': {
+      id: '/_authenticated/admin/apis-ia'
+      path: '/admin/apis-ia'
+      fullPath: '/admin/apis-ia'
+      preLoaderRoute: typeof AuthenticatedAdminApisIaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/operacional/tarefas_/kanban': {
@@ -1590,8 +1630,10 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDocumentosRoute: typeof AuthenticatedDocumentosRoute
   AuthenticatedRelatoriosRoute: typeof AuthenticatedRelatoriosRouteWithChildren
   AuthenticatedSemAcessoRoute: typeof AuthenticatedSemAcessoRoute
+  AuthenticatedAdminApisIaRoute: typeof AuthenticatedAdminApisIaRoute
   AuthenticatedAdminAuditoriaRoute: typeof AuthenticatedAdminAuditoriaRoute
   AuthenticatedAdminBackupRoute: typeof AuthenticatedAdminBackupRoute
+  AuthenticatedAdminBancosRoute: typeof AuthenticatedAdminBancosRoute
   AuthenticatedAdminComissoesRoute: typeof AuthenticatedAdminComissoesRoute
   AuthenticatedAdminComprasRoute: typeof AuthenticatedAdminComprasRoute
   AuthenticatedAdminIntegracoesRoute: typeof AuthenticatedAdminIntegracoesRoute
@@ -1636,8 +1678,10 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDocumentosRoute: AuthenticatedDocumentosRoute,
   AuthenticatedRelatoriosRoute: AuthenticatedRelatoriosRouteWithChildren,
   AuthenticatedSemAcessoRoute: AuthenticatedSemAcessoRoute,
+  AuthenticatedAdminApisIaRoute: AuthenticatedAdminApisIaRoute,
   AuthenticatedAdminAuditoriaRoute: AuthenticatedAdminAuditoriaRoute,
   AuthenticatedAdminBackupRoute: AuthenticatedAdminBackupRoute,
+  AuthenticatedAdminBancosRoute: AuthenticatedAdminBancosRoute,
   AuthenticatedAdminComissoesRoute: AuthenticatedAdminComissoesRoute,
   AuthenticatedAdminComprasRoute: AuthenticatedAdminComprasRoute,
   AuthenticatedAdminIntegracoesRoute: AuthenticatedAdminIntegracoesRoute,

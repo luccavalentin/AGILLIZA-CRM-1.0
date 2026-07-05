@@ -52,6 +52,7 @@ export type Database = {
           ativo: boolean
           base_url: string | null
           chave: string
+          config: Json
           correspondente_id: string
           created_at: string
           id: string
@@ -65,6 +66,7 @@ export type Database = {
           ativo?: boolean
           base_url?: string | null
           chave: string
+          config?: Json
           correspondente_id: string
           created_at?: string
           id?: string
@@ -78,6 +80,7 @@ export type Database = {
           ativo?: boolean
           base_url?: string | null
           chave?: string
+          config?: Json
           correspondente_id?: string
           created_at?: string
           id?: string
