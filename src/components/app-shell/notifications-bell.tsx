@@ -78,10 +78,36 @@ export function NotificationsBell({ userId }: NotificationsBellProps) {
 
   const naoLidas = data?.naoLidas ?? 0;
   const itens = data?.itens ?? [];
+  const itensNaoLidos = itens.filter((n) => !n.lida);
+  const itensLidos = itens.filter((n) => n.lida);
 
   function aoClicar(n: Notificacao) {
     if (!n.lida) marcarLida.mutate(n.id);
     if (n.link) navigate({ to: n.link as string });
+  }
+
+  function renderItem(n: Notificacao) {
+    return (
+      <li key={n.id}>
+        <button
+          type="button"
+          onClick={() => aoClicar(n)}
+          className={cn(
+            "flex w-full flex-col gap-1 px-4 py-3 text-left transition-colors hover:bg-accent focus-visible:bg-accent focus-visible:outline-none",
+            n.lida ? "bg-popover" : "bg-accent",
+          )}
+        >
+          <div className="flex items-center gap-2">
+            {!n.lida && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />}
+            <span className="text-sm font-medium text-foreground">{n.titulo}</span>
+          </div>
+          {n.corpo && (
+            <span className="line-clamp-2 text-xs text-muted-foreground">{n.corpo}</span>
+          )}
+          <span className="text-[11px] text-muted-foreground">{formatarData(n.created_at)}</span>
+        </button>
+      </li>
+    );
   }
 
   return (
