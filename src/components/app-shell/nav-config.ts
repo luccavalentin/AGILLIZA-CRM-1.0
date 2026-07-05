@@ -29,6 +29,8 @@ import {
   Settings2,
   ShoppingCart,
   Timer,
+  Landmark,
+  Sparkles,
 } from "lucide-react";
 
 /** Permissão exigida por um item (chave = `${modulo}:view`). */
