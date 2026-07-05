@@ -15,7 +15,7 @@ import { ClienteCRMPicker } from "@/components/simulacao/cliente-crm-picker";
 import {
   completaSchema, ESTADOS_CIVIS, TIPOS_IMOVEL, USOS_IMOVEL, SITUACOES_IMOVEL, PRODUTOS,
 } from "@/lib/simulacao/schemas";
-import { UFS, maskCpfCnpj, maskCelular } from "@/lib/simulacao/format";
+import { UFS, maskCpfCnpj, maskCelular, formatBRL } from "@/lib/simulacao/format";
 import { listarBancosAtivos, listarOperacoes, criarSimulacao, enviarSimulacaoBanco } from "@/lib/simulacao/simulacoes.functions";
 
 export const Route = createFileRoute("/_authenticated/operacional/simulacoes_/completa")({
@@ -42,6 +42,7 @@ function Pagina() {
   });
   const [enviando, setEnviando] = useState(false);
   const [erros, setErros] = useState<Record<string, string>>({});
+  const [entradaTocada, setEntradaTocada] = useState(false);
 
   const { data: bancos } = useQuery({ queryKey: ["bancos-ativos"], queryFn: () => listarBancosAtivos() });
   const { data: operacoes } = useQuery({ queryKey: ["operacoes"], queryFn: () => listarOperacoes() });
@@ -72,13 +73,26 @@ function Pagina() {
   }, [operacoes, f.produto]);
 
   function set(k: string, v: any) {
+    if (k === "valor_entrada") setEntradaTocada(true);
     setF((prev) => {
       const next = { ...prev, [k]: v };
+      // Sugere 20% de entrada automaticamente enquanto o usuário não editar o campo manualmente.
+      if (k === "valor_imovel" && !entradaTocada) next.valor_entrada = Math.round((next.valor_imovel || 0) * 0.2);
       if (k === "valor_imovel" || k === "valor_entrada") next.valor_financiamento = Math.max(0, next.valor_imovel - next.valor_entrada);
       if (k === "estado_civil") next.possui_conjuge = v === "CA" || v === "UE";
       return next;
     });
   }
+
+  function aplicarEntradaSugerida() {
+    setEntradaTocada(true);
+    setF((prev) => {
+      const entrada = Math.round((prev.valor_imovel || 0) * 0.2);
+      return { ...prev, valor_entrada: entrada, valor_financiamento: Math.max(0, prev.valor_imovel - entrada) };
+    });
+  }
+
+
 
   function toggleBanco(id: string) {
     setF((prev) => {
@@ -174,7 +188,22 @@ function Pagina() {
           </Campo>
           <Campo label={<>Valor de entrada (R$) <Ast /></>}>
             <CurrencyInput value={f.valor_entrada} onChange={(v) => set("valor_entrada", v)} placeholder="Ex: 100.000,00" />
+            {f.valor_imovel > 0 && (
+              <p className="text-xs text-muted-foreground">
+                Entrada sugerida (20%): <span className="font-medium text-foreground">{formatBRL(Math.round(f.valor_imovel * 0.2))}</span>
+                {f.valor_entrada !== Math.round(f.valor_imovel * 0.2) && (
+                  <button
+                    type="button"
+                    onClick={aplicarEntradaSugerida}
+                    className="ml-2 font-medium text-primary underline-offset-2 hover:underline"
+                  >
+                    Aplicar
+                  </button>
+                )}
+              </p>
+            )}
           </Campo>
+
           <Campo label={<>Prazo (meses) <Ast /></>}>
             <Input type="number" min={60} max={420} value={f.prazo || ""} onChange={(e) => set("prazo", Number(e.target.value))} aria-invalid={!!erros.prazo} />
             {err("prazo")}
