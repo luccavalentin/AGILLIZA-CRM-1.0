@@ -275,10 +275,10 @@ export const clienteEnviarMensagem = createServerFn({ method: "POST" })
     const { portalDb } = await import("./portal-db.server");
     const { data: nova, error } = await portalDb().rpc("portal_enviar_mensagem", {
       _cid: sess.cid,
-      _corr: sess.corr ?? "",
+      _corr: sess.corr,
       _msg: data.mensagem,
-      _anexo: data.anexo_url ?? "",
-    });
+      _anexo: data.anexo_url ?? null,
+    } as any);
     if (error || !nova) throw new Error("Não foi possível enviar a mensagem.");
     return nova as unknown as MensagemCliente;
   });
