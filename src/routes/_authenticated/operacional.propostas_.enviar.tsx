@@ -47,6 +47,14 @@ function Pagina() {
           toast.error("Selecione uma simulação.");
           return;
         }
+        // simulação já convertida: abre a proposta existente
+        if (simSelecionada.proposta_existente_id) {
+          router.navigate({
+            to: "/operacional/propostas/$id",
+            params: { id: simSelecionada.proposta_existente_id },
+          });
+          return;
+        }
         const banco = bancoSel ?? simSelecionada.simulacao_bancos[0]?.banco_id;
         if (!banco) {
           toast.error("Selecione o banco vencedor.");
