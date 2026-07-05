@@ -224,7 +224,13 @@ function PessoasPage() {
               )}
             </TableBody>
           </Table>
-        </div>
+          </div>
+          </TabsContent>
+
+          <TabsContent value="regras">
+            <RegrasModulosPanel />
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* Modal: nova pessoa */}
