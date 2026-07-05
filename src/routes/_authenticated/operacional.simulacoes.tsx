@@ -2,10 +2,10 @@ import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Plus, Search, Calculator, ChevronDown } from "lucide-react";
+import { Plus, Search, Calculator, ChevronDown, MoreHorizontal, Eye, Copy, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { assertModuloPermitido } from "@/lib/route-guards";
-import { listarSimulacoes, excluirSimulacao } from "@/lib/simulacao/simulacoes.functions";
+import { listarSimulacoes, excluirSimulacao, duplicarSimulacao } from "@/lib/simulacao/simulacoes.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -32,6 +32,7 @@ function Pagina() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const excluir = useServerFn(excluirSimulacao);
+  const duplicar = useServerFn(duplicarSimulacao);
   const [escopo, setEscopo] = useState<"todas" | "minhas">("todas");
   const [q, setQ] = useState("");
   const [busca, setBusca] = useState("");
@@ -60,6 +61,16 @@ function Pagina() {
       queryClient.invalidateQueries({ queryKey: ["simulacoes"] });
     } catch {
       toast.error("Não foi possível excluir a simulação.");
+    }
+  }
+
+  async function handleDuplicar(id: string) {
+    try {
+      const { id: novo } = await duplicar({ data: { id } });
+      toast.success("Simulação duplicada.");
+      router.navigate({ to: "/operacional/simulacoes/$id", params: { id: novo } });
+    } catch {
+      toast.error("Não foi possível duplicar a simulação.");
     }
   }
 
@@ -184,12 +195,37 @@ function Pagina() {
                 <TableCell className="text-right tabular-nums">{formatBRL(s.valor_imovel)}</TableCell>
                 <TableCell className="text-right tabular-nums">{s.prazo ? `${s.prazo}m` : "—"}</TableCell>
                 <TableCell><SimulacaoStatusBadge status={s.status} /></TableCell>
-                <TableCell className="text-right">
-                  <ConfirmDelete
-                    titulo="Excluir simulação"
-                    descricao={`A simulação ${s.numero_simulacao} será removida permanentemente.`}
-                    onConfirm={() => handleExcluir(s.id)}
-                  />
+                <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" aria-label="Ações">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem
+                        onSelect={() => router.navigate({ to: "/operacional/simulacoes/$id", params: { id: s.id } })}
+                      >
+                        <Eye className="mr-2 h-4 w-4" /> Visualizar
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onSelect={() => handleDuplicar(s.id)}>
+                        <Copy className="mr-2 h-4 w-4" /> Duplicar
+                      </DropdownMenuItem>
+                      <ConfirmDelete
+                        titulo="Excluir simulação"
+                        descricao={`A simulação ${s.numero_simulacao} será removida permanentemente.`}
+                        onConfirm={() => handleExcluir(s.id)}
+                        trigger={
+                          <DropdownMenuItem
+                            className="text-destructive focus:text-destructive"
+                            onSelect={(e) => e.preventDefault()}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" /> Excluir
+                          </DropdownMenuItem>
+                        }
+                      />
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </TableCell>
               </TableRow>
             ))}
