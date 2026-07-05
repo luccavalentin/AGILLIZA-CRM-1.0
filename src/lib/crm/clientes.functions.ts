@@ -167,6 +167,7 @@ export const criarCliente = createServerFn({ method: "POST" })
     if (error) throw error;
     const { registrarAuditoria } = await import("@/lib/admin/audit.server");
     await registrarAuditoria({
+      supabase,
       userId,
       correspondenteId: me.correspondente_id,
       acao: "cliente.criar",
