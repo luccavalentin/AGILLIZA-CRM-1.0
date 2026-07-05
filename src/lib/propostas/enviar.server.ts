@@ -39,6 +39,8 @@ interface EnviarArgs {
   userId: string;
   ip: string | null;
   supabase: SupabaseClient<any, any, any>;
+  /** Quando informado, envia apenas este proposta_banco (envio por linha). */
+  bancoId?: string | null;
 }
 
 interface EnviarResultado {
