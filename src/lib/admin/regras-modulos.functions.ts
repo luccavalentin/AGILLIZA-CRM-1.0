@@ -260,7 +260,7 @@ export const listarNiveisAcesso = createServerFn({ method: "GET" })
     const { supabase, userId } = context;
 
     const { data: corresp } = await supabase.rpc("correspondente_do_usuario", {
-      _uid: userId,
+      _user_id: userId,
     });
 
     const { data: niveis, error } = await supabase
@@ -306,7 +306,7 @@ export const criarNivelAcesso = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const { data: corresp } = await supabase.rpc("correspondente_do_usuario", { _uid: userId });
+    const { data: corresp } = await supabase.rpc("correspondente_do_usuario", { _user_id: userId });
     if (!corresp) throw new Error("Correspondente não encontrado para o usuário.");
     const { data: novo, error } = await supabase
       .from("access_levels")
