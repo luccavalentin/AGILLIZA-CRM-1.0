@@ -72,6 +72,7 @@ import { Route as AuthenticatedAdminNotificacoesRouteImport } from './routes/_au
 import { Route as AuthenticatedAdminIntegracoesRouteImport } from './routes/_authenticated/admin.integracoes'
 import { Route as AuthenticatedAdminComprasRouteImport } from './routes/_authenticated/admin.compras'
 import { Route as AuthenticatedAdminComissoesRouteImport } from './routes/_authenticated/admin.comissoes'
+import { Route as AuthenticatedAdminBancosRouteImport } from './routes/_authenticated/admin.bancos'
 import { Route as AuthenticatedAdminBackupRouteImport } from './routes/_authenticated/admin.backup'
 import { Route as AuthenticatedAdminAuditoriaRouteImport } from './routes/_authenticated/admin.auditoria'
 import { Route as AuthenticatedOperacionalTarefasKanbanRouteImport } from './routes/_authenticated/operacional.tarefas_.kanban'
@@ -440,6 +441,12 @@ const AuthenticatedAdminComissoesRoute =
     path: '/admin/comissoes',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAdminBancosRoute =
+  AuthenticatedAdminBancosRouteImport.update({
+    id: '/admin/bancos',
+    path: '/admin/bancos',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAdminBackupRoute =
   AuthenticatedAdminBackupRouteImport.update({
     id: '/admin/backup',
@@ -542,6 +549,7 @@ export interface FileRoutesByFullPath {
   '/parceiro/': typeof ParceiroIndexRoute
   '/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
   '/admin/backup': typeof AuthenticatedAdminBackupRoute
+  '/admin/bancos': typeof AuthenticatedAdminBancosRoute
   '/admin/comissoes': typeof AuthenticatedAdminComissoesRoute
   '/admin/compras': typeof AuthenticatedAdminComprasRoute
   '/admin/integracoes': typeof AuthenticatedAdminIntegracoesRoute
@@ -617,6 +625,7 @@ export interface FileRoutesByTo {
   '/parceiro': typeof ParceiroIndexRoute
   '/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
   '/admin/backup': typeof AuthenticatedAdminBackupRoute
+  '/admin/bancos': typeof AuthenticatedAdminBancosRoute
   '/admin/comissoes': typeof AuthenticatedAdminComissoesRoute
   '/admin/compras': typeof AuthenticatedAdminComprasRoute
   '/admin/integracoes': typeof AuthenticatedAdminIntegracoesRoute
@@ -696,6 +705,7 @@ export interface FileRoutesById {
   '/parceiro/': typeof ParceiroIndexRoute
   '/_authenticated/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
   '/_authenticated/admin/backup': typeof AuthenticatedAdminBackupRoute
+  '/_authenticated/admin/bancos': typeof AuthenticatedAdminBancosRoute
   '/_authenticated/admin/comissoes': typeof AuthenticatedAdminComissoesRoute
   '/_authenticated/admin/compras': typeof AuthenticatedAdminComprasRoute
   '/_authenticated/admin/integracoes': typeof AuthenticatedAdminIntegracoesRoute
@@ -775,6 +785,7 @@ export interface FileRouteTypes {
     | '/parceiro/'
     | '/admin/auditoria'
     | '/admin/backup'
+    | '/admin/bancos'
     | '/admin/comissoes'
     | '/admin/compras'
     | '/admin/integracoes'
@@ -850,6 +861,7 @@ export interface FileRouteTypes {
     | '/parceiro'
     | '/admin/auditoria'
     | '/admin/backup'
+    | '/admin/bancos'
     | '/admin/comissoes'
     | '/admin/compras'
     | '/admin/integracoes'
@@ -928,6 +940,7 @@ export interface FileRouteTypes {
     | '/parceiro/'
     | '/_authenticated/admin/auditoria'
     | '/_authenticated/admin/backup'
+    | '/_authenticated/admin/bancos'
     | '/_authenticated/admin/comissoes'
     | '/_authenticated/admin/compras'
     | '/_authenticated/admin/integracoes'
@@ -1436,6 +1449,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminComissoesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin/bancos': {
+      id: '/_authenticated/admin/bancos'
+      path: '/admin/bancos'
+      fullPath: '/admin/bancos'
+      preLoaderRoute: typeof AuthenticatedAdminBancosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/admin/backup': {
       id: '/_authenticated/admin/backup'
       path: '/admin/backup'
@@ -1592,6 +1612,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedSemAcessoRoute: typeof AuthenticatedSemAcessoRoute
   AuthenticatedAdminAuditoriaRoute: typeof AuthenticatedAdminAuditoriaRoute
   AuthenticatedAdminBackupRoute: typeof AuthenticatedAdminBackupRoute
+  AuthenticatedAdminBancosRoute: typeof AuthenticatedAdminBancosRoute
   AuthenticatedAdminComissoesRoute: typeof AuthenticatedAdminComissoesRoute
   AuthenticatedAdminComprasRoute: typeof AuthenticatedAdminComprasRoute
   AuthenticatedAdminIntegracoesRoute: typeof AuthenticatedAdminIntegracoesRoute
@@ -1638,6 +1659,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedSemAcessoRoute: AuthenticatedSemAcessoRoute,
   AuthenticatedAdminAuditoriaRoute: AuthenticatedAdminAuditoriaRoute,
   AuthenticatedAdminBackupRoute: AuthenticatedAdminBackupRoute,
+  AuthenticatedAdminBancosRoute: AuthenticatedAdminBancosRoute,
   AuthenticatedAdminComissoesRoute: AuthenticatedAdminComissoesRoute,
   AuthenticatedAdminComprasRoute: AuthenticatedAdminComprasRoute,
   AuthenticatedAdminIntegracoesRoute: AuthenticatedAdminIntegracoesRoute,
