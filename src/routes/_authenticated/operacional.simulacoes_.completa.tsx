@@ -137,7 +137,7 @@ function Pagina() {
   return (
     <div className="mx-auto w-full max-w-4xl space-y-6 p-4 md:p-8">
       <div>
-        <h1 className="text-xl font-semibold text-primary">Solicitar Simulação Personalizada</h1>
+        <h1 className="text-xl font-semibold text-primary">Solicitar Simulação Completa</h1>
         <p className="text-sm text-muted-foreground">Preencha os dados para enviar aos bancos parceiros.</p>
       </div>
 
