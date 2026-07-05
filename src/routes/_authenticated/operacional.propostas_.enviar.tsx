@@ -47,6 +47,14 @@ function Pagina() {
           toast.error("Selecione uma simulação.");
           return;
         }
+        // simulação já convertida: abre a proposta existente
+        if (simSelecionada.proposta_existente_id) {
+          router.navigate({
+            to: "/operacional/propostas/$id",
+            params: { id: simSelecionada.proposta_existente_id },
+          });
+          return;
+        }
         const banco = bancoSel ?? simSelecionada.simulacao_bancos[0]?.banco_id;
         if (!banco) {
           toast.error("Selecione o banco vencedor.");
@@ -155,6 +163,7 @@ function Pagina() {
                     <p className="font-medium text-foreground">{s.numero_simulacao} · {s.nome_cliente ?? "—"}</p>
                     <p className="text-xs text-muted-foreground">
                       {formatBRL(s.valor_imovel)} · {s.simulacao_bancos.length} banco(s) simulado(s)
+                      {s.proposta_existente_id && " · já convertida em proposta"}
                     </p>
                   </div>
                   {ativa && <Check className="h-5 w-5 text-primary" />}
@@ -163,7 +172,13 @@ function Pagina() {
             })}
           </div>
 
-          {simSelecionada && (
+          {simSelecionada?.proposta_existente_id && (
+            <div className="rounded-md border border-border bg-muted/40 p-3 text-sm text-muted-foreground">
+              Esta simulação já foi convertida em proposta. Clique em “Abrir proposta” para ir à ficha.
+            </div>
+          )}
+
+          {simSelecionada && !simSelecionada.proposta_existente_id && (
             <div className="space-y-2 border-t border-border pt-4">
               <Label className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                 Banco vencedor
@@ -204,7 +219,7 @@ function Pagina() {
       <div className="flex justify-end">
         <Button size="lg" onClick={criar} disabled={enviando}>
           {enviando ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
-          ENVIAR PROPOSTA
+          {modo === "simulacao" && simSelecionada?.proposta_existente_id ? "ABRIR PROPOSTA" : "ENVIAR PROPOSTA"}
         </Button>
       </div>
     </div>
