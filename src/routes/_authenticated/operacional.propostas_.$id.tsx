@@ -285,6 +285,12 @@ function AcoesTopo({ proposta, propostaId, bancos }: { proposta: any; propostaId
 function TabResumo({ proposta, bancos, propostaId }: { proposta: any; bancos: any[]; propostaId: string }) {
   const qc = useQueryClient();
   const selecionarFn = useServerFn(selecionarBancoProposta);
+  const enviarFn = useServerFn(enviarPropostaHomeFin);
+  const [enviandoId, setEnviandoId] = useState<string | null>(null);
+  const status = proposta.status as PropostaStatus;
+  const podeEnviarBanco =
+    Boolean(proposta.homefin_id_oportunidade) &&
+    !["cancelada", "registrado", "credito_recusado", "contrato_emitido"].includes(status);
   const campos: [string, string][] = [
     ["Operação", proposta.produto ?? "—"],
     ["Regional", proposta.regional_nome ?? "—"],
@@ -300,6 +306,24 @@ function TabResumo({ proposta, bancos, propostaId }: { proposta: any; bancos: an
       qc.invalidateQueries({ queryKey: ["proposta", propostaId] });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Falha ao selecionar banco.");
+    }
+  }
+
+  async function enviarBanco(pbId: string) {
+    setEnviandoId(pbId);
+    try {
+      const r = await enviarFn({ data: { proposta_id: propostaId, banco_id: pbId } });
+      const res = r.bancos[0];
+      if (res?.status === "erro") {
+        toast.error(res.mensagem ?? "Falha ao enviar ao banco.");
+      } else {
+        toast.success("Banco enviado.");
+      }
+      qc.invalidateQueries({ queryKey: ["proposta", propostaId] });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao enviar ao banco.");
+    } finally {
+      setEnviandoId(null);
     }
   }
 
@@ -330,12 +354,13 @@ function TabResumo({ proposta, bancos, propostaId }: { proposta: any; bancos: an
               <TableHead className="text-right">Prazo</TableHead>
               <TableHead className="text-right">Taxa/ano</TableHead>
               <TableHead>Situação</TableHead>
+              <TableHead className="text-right">Ação</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {bancos.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7} className="py-8 text-center text-sm text-muted-foreground">
+                <TableCell colSpan={8} className="py-8 text-center text-sm text-muted-foreground">
                   Nenhum banco vinculado.
                 </TableCell>
               </TableRow>
@@ -361,6 +386,27 @@ function TabResumo({ proposta, bancos, propostaId }: { proposta: any; bancos: an
                   <ToneBadge tone={b.status_banco === "erro" ? "danger" : b.status_banco === "enviada" ? "success" : "info"}>
                     {b.status_banco}
                   </ToneBadge>
+                </TableCell>
+                <TableCell className="text-right">
+                  {b.status_banco === "enviada" ? (
+                    <span className="text-xs text-muted-foreground">Enviado</span>
+                  ) : podeEnviarBanco ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => enviarBanco(b.id)}
+                      disabled={enviandoId !== null}
+                    >
+                      {enviandoId === b.id ? (
+                        <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Send className="mr-1 h-4 w-4" />
+                      )}
+                      {b.status_banco === "erro" ? "Reenviar" : "Enviar"}
+                    </Button>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">—</span>
+                  )}
                 </TableCell>
               </TableRow>
             ))}

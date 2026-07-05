@@ -39,6 +39,8 @@ interface EnviarArgs {
   userId: string;
   ip: string | null;
   supabase: SupabaseClient<any, any, any>;
+  /** Quando informado, envia apenas este proposta_banco (envio por linha). */
+  bancoId?: string | null;
 }
 
 interface EnviarResultado {
@@ -51,6 +53,7 @@ export async function enviarPropostaImpl({
   userId,
   ip,
   supabase,
+  bancoId,
 }: EnviarArgs): Promise<EnviarResultado> {
   const { data: prop, error } = await supabase.from("propostas").select("*").eq("id", propostaId).maybeSingle();
   if (error) throw new Error(error.message);
@@ -94,18 +97,22 @@ export async function enviarPropostaImpl({
     throw new Error(`Existem ${bloqueantes.length} documento(s) obrigatório(s) pendente(s) ou reprovado(s).`);
   }
 
-  // Bancos selecionados que ainda NÃO foram enviados ao banco.
-  const { data: bancosSel } = await supabase
-    .from("proposta_bancos")
-    .select("*")
-    .eq("proposta_id", propostaId)
-    .eq("selecionado", true);
+  // Bancos a enviar: por linha (bancoId) ou todos os selecionados ainda não enviados.
+  let query = supabase.from("proposta_bancos").select("*").eq("proposta_id", propostaId);
+  if (bancoId) {
+    query = query.eq("id", bancoId);
+  } else {
+    query = query.eq("selecionado", true);
+  }
+  const { data: bancosSel } = await query;
   const bancos = (bancosSel ?? []).filter((b: any) => b.status_banco !== "enviada");
   if (bancos.length === 0) {
     throw new Error(
-      primeiroEnvio
-        ? "Selecione ao menos um banco antes de enviar."
-        : "Nenhum banco novo selecionado. Selecione outro banco para enviar.",
+      bancoId
+        ? "Este banco já foi enviado ou não está disponível para envio."
+        : primeiroEnvio
+          ? "Selecione ao menos um banco antes de enviar."
+          : "Nenhum banco novo selecionado. Selecione outro banco para enviar.",
     );
   }
 
@@ -128,7 +135,7 @@ export async function enviarPropostaImpl({
         { idSimulacao: b.homefin_id_simulacao_banco ?? prop.homefin_id_simulacao },
         ctx,
       );
-      await supabase.from("proposta_bancos").update({ status_banco: "enviada" }).eq("id", b.id);
+      await supabase.from("proposta_bancos").update({ status_banco: "enviada", selecionado: true, mensagem_banco: null }).eq("id", b.id);
       sucesso++;
       resultados.push({ banco_id: b.banco_id, nome_banco: b.nome_banco, status: "enviada" });
     } catch (e) {

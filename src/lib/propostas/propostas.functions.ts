@@ -622,7 +622,9 @@ export const cancelarProposta = createServerFn({ method: "POST" })
 /** ===== Enviar / reenviar ao banco ===== */
 export const enviarPropostaHomeFin = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) => z.object({ proposta_id: z.string().uuid() }).parse(data))
+  .inputValidator((data) =>
+    z.object({ proposta_id: z.string().uuid(), banco_id: z.string().uuid().optional() }).parse(data),
+  )
   .handler(async ({ context, data }) => {
     const { supabase, userId } = context;
     const ip =
@@ -630,7 +632,7 @@ export const enviarPropostaHomeFin = createServerFn({ method: "POST" })
       getRequestHeader("cf-connecting-ip") ??
       null;
     const { enviarPropostaImpl } = await import("./enviar.server");
-    return enviarPropostaImpl({ propostaId: data.proposta_id, userId, ip, supabase });
+    return enviarPropostaImpl({ propostaId: data.proposta_id, userId, ip, supabase, bancoId: data.banco_id });
   });
 
 export const reenviarHomeFin = enviarPropostaHomeFin;
