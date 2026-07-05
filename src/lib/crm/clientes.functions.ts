@@ -207,6 +207,7 @@ export const atualizarCliente = createServerFn({ method: "POST" })
     const { data: corr } = await supabase.rpc("correspondente_do_usuario", { _user_id: userId });
     const { registrarAuditoria } = await import("@/lib/admin/audit.server");
     await registrarAuditoria({
+      supabase,
       userId,
       correspondenteId: corr ?? null,
       acao: "cliente.atualizar",
