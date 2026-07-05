@@ -153,7 +153,7 @@ function Kpi({ label, valor }: { label: string; valor: React.ReactNode }) {
 }
 
 /* ===== Ações do topo ===== */
-function AcoesTopo({ proposta, propostaId }: { proposta: any; propostaId: string }) {
+function AcoesTopo({ proposta, propostaId, bancos }: { proposta: any; propostaId: string; bancos: any[] }) {
   const qc = useQueryClient();
   const [busy, setBusy] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
