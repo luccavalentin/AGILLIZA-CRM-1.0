@@ -1,11 +1,12 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ArrowLeft, RefreshCw, Copy } from "lucide-react";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { supabase } from "@/integrations/supabase/client";
 import { obterSimulacao, enviarSimulacaoBanco, duplicarSimulacao } from "@/lib/simulacao/simulacoes.functions";
+import { criarProposta } from "@/lib/propostas/propostas.functions";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -63,6 +64,20 @@ function Pagina() {
       router.navigate({ to: "/operacional/simulacoes/$id", params: { id: novo } });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Falha ao duplicar.");
+    }
+  }
+
+  const [criandoBanco, setCriandoBanco] = useState<string | null>(null);
+  async function criar(bancoId: string) {
+    setCriandoBanco(bancoId);
+    try {
+      const { proposta_id } = await criarProposta({ data: { simulacao_id: id, banco_id: bancoId } });
+      toast.success("Proposta criada.");
+      router.navigate({ to: "/operacional/propostas/$id", params: { id: proposta_id } });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao criar proposta.");
+    } finally {
+      setCriandoBanco(null);
     }
   }
 
@@ -147,10 +162,10 @@ function Pagina() {
                     <TableCell className="text-right">
                       <Button
                         size="sm"
-                        disabled={b.status_banco !== "simulada"}
-                        onClick={() => toast.info("A criação de proposta estará disponível no módulo de Propostas.")}
+                        disabled={b.status_banco !== "simulada" || criandoBanco !== null}
+                        onClick={() => criar(b.banco_id)}
                       >
-                        Criar proposta
+                        {criandoBanco === b.banco_id ? "Criando…" : "Criar proposta"}
                       </Button>
                     </TableCell>
                   </TableRow>
