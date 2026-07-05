@@ -54,7 +54,7 @@ export function PainelView({
 
   const { data: perms } = useQuery({ queryKey: ["report-escopo"], queryFn: () => escopoFn(), staleTime: 5 * 60_000 });
   const queryKey = ["panel", modulo, periodo, escopo];
-  const { data, isLoading, dataUpdatedAt } = useQuery({
+  const { data, isLoading, error, dataUpdatedAt } = useQuery({
     queryKey,
     queryFn: () => dadosFn({ data: { modulo, periodo, escopo } }),
     staleTime: 30_000,
