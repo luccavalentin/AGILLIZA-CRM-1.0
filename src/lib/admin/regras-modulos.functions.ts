@@ -504,7 +504,10 @@ export const excluirNivelAcesso = createServerFn({ method: "POST" })
       .eq("id", data.id)
       .maybeSingle();
     if (!nivel) throw new Error("Nível de acesso não encontrado.");
-    if (nivel.is_padrao) throw new Error("Níveis padrão não podem ser excluídos.");
+    if (nivel.is_padrao)
+      throw new Error(
+        "Este é um nível padrão do sistema e não pode ser excluído. Edite-o para criar uma cópia personalizada — essa cópia pode ser excluída depois.",
+      );
 
     // Impede exclusão se houver pessoas usando este nível.
     const { count } = await supabase
