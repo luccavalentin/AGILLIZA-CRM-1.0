@@ -317,18 +317,18 @@ function TabResumo({ proposta, bancos, propostaId }: { proposta: any; bancos: an
 
       <div className="rounded-lg border border-border">
         <div className="border-b border-border px-4 py-2 text-sm font-medium text-muted-foreground">
-          Bancos / Simulações vinculadas
+          Bancos / Simulações vinculadas — selecione um ou mais bancos para enviar a proposta
         </div>
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-10"></TableHead>
               <TableHead>Banco</TableHead>
               <TableHead className="text-right">R$ Financiamento</TableHead>
               <TableHead className="text-right">Parcela</TableHead>
               <TableHead className="text-right">Prazo</TableHead>
               <TableHead className="text-right">Taxa/ano</TableHead>
               <TableHead>Situação</TableHead>
-              <TableHead></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -341,6 +341,14 @@ function TabResumo({ proposta, bancos, propostaId }: { proposta: any; bancos: an
             )}
             {bancos.map((b) => (
               <TableRow key={b.id} className={cn(b.selecionado && "bg-accent/40")}>
+                <TableCell>
+                  <Checkbox
+                    checked={b.selecionado}
+                    disabled={b.status_banco === "enviada"}
+                    onCheckedChange={() => selecionar(b.id)}
+                    aria-label={`Selecionar ${b.nome_banco}`}
+                  />
+                </TableCell>
                 <TableCell className="font-medium">{b.nome_banco}</TableCell>
                 <TableCell className="text-right tabular-nums">{formatBRL(b.valor_financiamento_max)}</TableCell>
                 <TableCell className="text-right tabular-nums">{formatBRL(b.valor_parcela)}</TableCell>
@@ -352,13 +360,6 @@ function TabResumo({ proposta, bancos, propostaId }: { proposta: any; bancos: an
                   <ToneBadge tone={b.status_banco === "erro" ? "danger" : b.status_banco === "enviada" ? "success" : "info"}>
                     {b.status_banco}
                   </ToneBadge>
-                </TableCell>
-                <TableCell className="text-right">
-                  {!b.selecionado ? (
-                    <Button size="sm" variant="outline" onClick={() => selecionar(b.id)}>Selecionar</Button>
-                  ) : (
-                    <ToneBadge tone="success">Escolhido</ToneBadge>
-                  )}
                 </TableCell>
               </TableRow>
             ))}
