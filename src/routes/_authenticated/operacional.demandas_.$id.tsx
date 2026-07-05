@@ -45,6 +45,39 @@ function Pagina() {
   const comentarFn = useServerFn(comentarDemanda);
   const moverFn = useServerFn(moverStatusDemanda);
   const lidaFn = useServerFn(marcarDemandaLida);
+  const registrarAnexoFn = useServerFn(registrarAnexoDemanda);
+  const removerAnexoFn = useServerFn(removerAnexoDemanda);
+  const urlAnexoFn = useServerFn(urlAnexoDemanda);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [enviando, setEnviando] = useState(false);
+
+  async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setEnviando(true);
+    try {
+      const path = `${id}/${Date.now()}-${file.name.replace(/[^\w.\-]/g, "_")}`;
+      const { error } = await supabase.storage.from("demanda-anexos").upload(path, file);
+      if (error) throw error;
+      await registrarAnexoFn({ data: { demanda_id: id, nome: file.name, storage_path: path, tamanho: file.size } });
+      invalidar();
+      toast.success("Anexo enviado.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Falha no upload.");
+    } finally {
+      setEnviando(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  }
+
+  async function baixarAnexo(storage_path: string) {
+    try {
+      const { url } = await urlAnexoFn({ data: { storage_path } });
+      window.open(url, "_blank", "noopener");
+    } catch {
+      toast.error("Falha ao gerar link do anexo.");
+    }
+  }
 
   const { data } = useQuery({ queryKey: ["demanda", id], queryFn: () => obterDemanda({ data: { id } }) });
 
