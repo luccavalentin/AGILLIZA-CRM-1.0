@@ -1758,6 +1758,45 @@ export type Database = {
         }
         Relationships: []
       }
+      formularios_bancarios: {
+        Row: {
+          banco: string
+          content_type: string | null
+          created_at: string
+          criado_por: string | null
+          descricao: string | null
+          id: string
+          nome: string
+          storage_path: string
+          tamanho: number | null
+          updated_at: string
+        }
+        Insert: {
+          banco: string
+          content_type?: string | null
+          created_at?: string
+          criado_por?: string | null
+          descricao?: string | null
+          id?: string
+          nome: string
+          storage_path: string
+          tamanho?: number | null
+          updated_at?: string
+        }
+        Update: {
+          banco?: string
+          content_type?: string | null
+          created_at?: string
+          criado_por?: string | null
+          descricao?: string | null
+          id?: string
+          nome?: string
+          storage_path?: string
+          tamanho?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       homefin_auth_cache: {
         Row: {
           created_at: string
@@ -4245,6 +4284,7 @@ export type Database = {
       }
       is_correspondente: { Args: { _user_id: string }; Returns: boolean }
       is_dia_util: { Args: { _corr: string; _d: string }; Returns: boolean }
+      is_equipe_interna: { Args: { _user_id: string }; Returns: boolean }
       is_interno: { Args: { _user_id: string }; Returns: boolean }
       mask_pii_jsonb: { Args: { _data: Json }; Returns: Json }
       notificar_cliente_portal: {
