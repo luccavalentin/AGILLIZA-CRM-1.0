@@ -315,8 +315,8 @@ function SecaoFeriados() {
                   <TableCell className="text-right">
                     {f.correspondente_id ? (
                       <ConfirmDelete
-                        title="Remover feriado?"
-                        onConfirm={() => excluirM.mutate(f.id)}
+                        titulo="Remover feriado?"
+                        onConfirm={() => excluirM.mutateAsync(f.id).then(() => {})}
                         trigger={
                           <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive">
                             <Trash2 className="h-4 w-4" />
