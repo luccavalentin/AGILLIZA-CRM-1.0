@@ -19,6 +19,7 @@ import {
   getClientePipeline,
   getEndereco,
   listarHistorico,
+  getClienteNegocios,
 } from "@/lib/crm/clientes.functions";
 import { formatarDocumento, mascararDocumento, formatarCelular } from "@/lib/crm/documento";
 
