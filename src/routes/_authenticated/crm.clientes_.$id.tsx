@@ -213,6 +213,11 @@ function Pagina() {
           <VinculoTab clienteId={id} responsavelNome={det.responsavel_nome} />
         </TabsContent>
 
+        <TabsContent value="mensagens" className="mt-4">
+          <ChatClienteTab clienteId={id} />
+        </TabsContent>
+
+
 
         <TabsContent value="interacoes" className="mt-4">
           <InteracoesTab clienteId={id} />
