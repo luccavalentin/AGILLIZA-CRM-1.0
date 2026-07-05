@@ -42,7 +42,7 @@ export const responderChatCliente = createServerFn({ method: "POST" })
     const { data: nova, error } = await supabase.rpc("portal_time_responder", {
       _cid: data.cliente_id,
       _msg: data.mensagem,
-      _anexo: null,
+      _anexo: null as unknown as string,
     });
     if (error) throw new Error(error.message);
     return nova as unknown as ChatMensagem;
