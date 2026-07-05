@@ -133,6 +133,7 @@ export const obterDemanda = createServerFn({ method: "GET" })
       })),
       mensagens: (mensagens.data ?? []).map((m: any) => ({ ...m, nome_autor: nm(m.autor_id) })),
       participantes: (participantes.data ?? []).map((p: any) => ({ ...p, nome: nm(p.user_id) })),
+      anexos: (anexos.data ?? []).map((a: any) => ({ ...a, nome_autor: nm(a.autor_id) })),
     };
   });
 
