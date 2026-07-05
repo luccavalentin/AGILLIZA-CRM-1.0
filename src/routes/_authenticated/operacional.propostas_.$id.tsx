@@ -132,11 +132,33 @@ function Pagina() {
             </p>
           </div>
           <div className="flex flex-wrap gap-6 text-sm">
-            <Kpi label="Banco escolhido" valor={p.nome_banco ?? "—"} />
+            <Kpi label={multiBanco ? "Bancos enviados" : "Banco escolhido"} valor={multiBanco ? `${bancosEnviados.length} bancos` : (p.nome_banco ?? "—")} />
             <Kpi label="R$ Financiado" valor={formatBRL(p.valor_financiamento)} />
-            <Kpi label="Situação" valor={<PropostaStatusBadge status={status} />} />
+            {!multiBanco && <Kpi label="Situação" valor={<PropostaStatusBadge status={status} />} />}
           </div>
         </div>
+
+        {multiBanco && (
+          <div className="mt-5 rounded-lg border border-border bg-muted/30 p-4">
+            <p className="mb-3 text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
+              Situação por banco
+            </p>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {bancosEnviados.map((b: any) => (
+                <div
+                  key={b.id}
+                  className="flex items-center justify-between gap-2 rounded-md border border-border bg-card px-3 py-2"
+                >
+                  <span className="truncate text-sm font-medium text-foreground">{b.nome_banco}</span>
+                  <ToneBadge tone={SITUACAO_BANCO_TONE[(b.situacao_banco as SituacaoBanco) ?? "nao_enviado"]}>
+                    {SITUACAO_BANCO_LABEL[(b.situacao_banco as SituacaoBanco) ?? "nao_enviado"]}
+                  </ToneBadge>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="mt-6">
           <PipelineStepper status={status} detalheStatus={p.detalhe_status_atual} />
         </div>
