@@ -38,6 +38,7 @@ function Pagina() {
   const getPipe = useServerFn(getClientePipeline);
   const getEnd = useServerFn(getEndereco);
   const getHist = useServerFn(listarHistorico);
+  const getNeg = useServerFn(getClienteNegocios);
 
   const { data: det, isLoading } = useQuery({
     queryKey: ["cliente", id],
@@ -47,6 +48,7 @@ function Pagina() {
   const { data: pipe } = useQuery({ queryKey: ["cliente-pipeline", id], queryFn: () => getPipe({ data: { cliente_id: id } }) });
   const { data: endereco } = useQuery({ queryKey: ["cliente-end", id], queryFn: () => getEnd({ data: { cliente_id: id } }) });
   const { data: historico } = useQuery({ queryKey: ["cliente-hist", id], queryFn: () => getHist({ data: { cliente_id: id } }) });
+  const { data: negocios } = useQuery({ queryKey: ["cliente-negocios", id], queryFn: () => getNeg({ data: { cliente_id: id } }) });
 
   if (isLoading || !det) {
     return (
