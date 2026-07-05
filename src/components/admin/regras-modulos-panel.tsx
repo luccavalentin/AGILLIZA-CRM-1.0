@@ -125,10 +125,18 @@ export function RegrasModulosPanel() {
 
   const atualizarMut = useMutation({
     mutationFn: (v: { id: string; nome: string; descricao?: string }) => atualizar({ data: v }),
-    onSuccess: async () => {
-      toast.success("Nível atualizado.");
+    onSuccess: async (r: any) => {
+      toast.success(
+        r?.clonado
+          ? "Criamos uma cópia editável do nível padrão com o novo nome."
+          : "Nível atualizado.",
+      );
       setEditarOpen(false);
       await qc.invalidateQueries({ queryKey: ["niveis-acesso"] });
+      if (r?.id) {
+        setSelecionadoId(r.id);
+        setCarregadoPara("");
+      }
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -154,10 +162,18 @@ export function RegrasModulosPanel() {
       });
       return salvar({ data: { nivel_acesso_id: selecionado.id, permissoes } });
     },
-    onSuccess: async () => {
-      toast.success("Permissões salvas.");
+    onSuccess: async (r: any) => {
+      toast.success(
+        r?.clonado
+          ? "Criamos uma cópia editável do nível padrão com essas permissões."
+          : "Permissões salvas.",
+      );
       setDirty(false);
       await qc.invalidateQueries({ queryKey: ["niveis-acesso"] });
+      if (r?.nivel_acesso_id) {
+        setSelecionadoId(r.nivel_acesso_id);
+        setCarregadoPara("");
+      }
     },
     onError: (e: Error) => toast.error(e.message),
   });
