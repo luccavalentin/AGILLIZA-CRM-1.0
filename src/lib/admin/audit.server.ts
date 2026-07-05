@@ -29,9 +29,7 @@ export interface AuditoriaEntrada {
    * Quando informado, o registro é gravado via função SECURITY DEFINER
    * `registrar_auditoria` — não depende da chave de serviço. Preferencial.
    */
-  supabase?: {
-    rpc: (fn: string, args: Record<string, unknown>) => Promise<{ error: unknown }>;
-  } | null;
+  supabase?: any;
 }
 
 /** Extrai o IP do cliente a partir dos cabeçalhos da requisição. */
