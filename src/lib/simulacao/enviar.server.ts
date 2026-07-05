@@ -164,7 +164,13 @@ export async function enviarSimulacaoImpl({
             valor_parcela: dados?.valorParcelaBanco ?? dados?.valorParcelaSimulacao ?? null,
             taxa_juros_ano: dados?.taxaJurosAnoBanco ?? null,
             prazo_pagamento_max: dados?.prazoPagamentoBancoMax ?? dados?.prazoPagamentoBanco ?? null,
-            valor_financiamento_max: dados?.valorFinanciamentoBancoMax ?? dados?.valorFinanciamentoBanco ?? null,
+            valor_financiamento_max:
+              dados?.valorFinanciamentoBancoMax ??
+              dados?.valorFinanciamentoBanco ??
+              dados?.valorTotalFinanciamento ??
+              dados?.valorFinanciamentoSimulacao ??
+              num(sim.valor_financiamento) ??
+              null,
             valor_parcela_max: dados?.valorParcelaBancoMax ?? null,
             codigo_indexador: dados?.codigoIndexadorBanco ?? null,
             valor_iof: dados?.valorIofBanco ?? null,
