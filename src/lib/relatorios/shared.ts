@@ -118,6 +118,18 @@ export interface ReportChart {
   moeda?: boolean;
 }
 
+/** Comparativo mês a mês (últimos 6 meses) — independe do período do filtro. */
+export interface ComparativoMensal {
+  /** Rótulos dos 6 meses, do mais antigo ao mais recente (ex.: "Jul/25"). */
+  meses: string[];
+  /** Propostas enviadas por mês. */
+  quantidade: number[];
+  /** Taxa de aprovação (%) por mês. */
+  taxaAprovacao: number[];
+  /** Ranking de bancos com a quantidade por mês. */
+  bancos: { nome: string; valores: number[] }[];
+}
+
 export interface ReportResult {
   titulo: string;
   descricao: string;
@@ -127,6 +139,8 @@ export interface ReportResult {
   columns: ReportColumn[];
   rows: ReportRow[];
   ranking?: { titulo: string; columns: ReportColumn[]; rows: ReportRow[] };
+  /** Comparativo mês a mês (últimos 6 meses) aplicado a todos os relatórios. */
+  comparativoMensal?: ComparativoMensal;
   /** Opções completas para os filtros (independem do resultado filtrado). */
   filtrosDisponiveis?: { bancos?: string[]; statuses?: { value: string; label: string }[]; produtos?: string[] };
 }

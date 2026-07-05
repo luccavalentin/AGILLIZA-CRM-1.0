@@ -6,6 +6,7 @@ import {
   type ReportFiltros,
   type ReportResult,
   type ChartSerie,
+  type ComparativoMensal,
 } from "@/lib/relatorios/shared";
 import { mascararDocumento } from "@/lib/crm/documento";
 
@@ -99,32 +100,94 @@ export const runReport = createServerFn({ method: "POST" })
       correspondente_id: corr as string, user_id: userId, report_codigo: codigo, acao: "visualizou", filtros: filtros as any,
     } as any);
 
-    switch (codigo) {
-      case "consolidado":
-      case "painel-geral":
-        return await relConsolidado();
-      case "comerciais":
-        return await relComerciais();
-      case "simulacoes":
-        return await relSimulacoes();
-      case "propostas":
-      case "operacionais":
-        return await relPropostas();
-      case "crm":
-      case "clientes":
-        return await relClientes();
-      case "demandas":
-        return await relDemandas("demandas");
-      case "tarefas":
-        return await relTarefas();
-      case "financeiros":
-        return await relFinanceiro();
-      case "comissoes":
-        return await relComissoes();
-      case "app-cliente":
-        return await relAppCliente();
-      default:
-        return await relConsolidado();
+    const resultado = await (async (): Promise<ReportResult> => {
+      switch (codigo) {
+        case "consolidado":
+        case "painel-geral":
+          return await relConsolidado();
+        case "comerciais":
+          return await relComerciais();
+        case "simulacoes":
+          return await relSimulacoes();
+        case "propostas":
+        case "operacionais":
+          return await relPropostas();
+        case "crm":
+        case "clientes":
+          return await relClientes();
+        case "demandas":
+          return await relDemandas("demandas");
+        case "tarefas":
+          return await relTarefas();
+        case "financeiros":
+          return await relFinanceiro();
+        case "comissoes":
+          return await relComissoes();
+        case "app-cliente":
+          return await relAppCliente();
+        default:
+          return await relConsolidado();
+      }
+    })();
+
+    // Comparativo mês a mês (últimos 6 meses) — anexado a todos os relatórios.
+    resultado.comparativoMensal = await comparativoMensalPropostas();
+    return resultado;
+
+    async function comparativoMensalPropostas(): Promise<ComparativoMensal | undefined> {
+      const hojeStr = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+      const [hy, hm] = hojeStr.split("-").map(Number);
+      const inicio = new Date(hy, hm - 1 - 5, 1); // 1º dia, 5 meses atrás
+      const isoDia = (d: Date) =>
+        `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+      let q = (supabase as any)
+        .from("propostas")
+        .select("status,nome_banco,created_at")
+        .gte("created_at", isoDia(inicio))
+        .order("created_at", { ascending: true })
+        .limit(20000);
+      q = aplicarEscopo(q, filtros, userId, "usuario_responsavel_id");
+      if (filtros.responsavel) q = q.eq("usuario_responsavel_id", filtros.responsavel);
+      const { data: rows } = await q;
+      const props = ((rows ?? []) as any[]).filter((p) => p.status !== "rascunho");
+      if (!props.length) return undefined;
+
+      const MESES_PT = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+      const meses: string[] = [];
+      const idx = new Map<string, number>();
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date(hy, hm - 1 - i, 1);
+        idx.set(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`, 5 - i);
+        meses.push(`${MESES_PT[d.getMonth()]}/${String(d.getFullYear()).slice(2)}`);
+      }
+
+      const quantidade = Array(6).fill(0) as number[];
+      const aprov = Array(6).fill(0) as number[];
+      const decid = Array(6).fill(0) as number[];
+      const bancoMap = new Map<string, number[]>();
+      for (const p of props) {
+        const i = idx.get(String(p.created_at ?? "").slice(0, 7));
+        if (i == null) continue;
+        quantidade[i]++;
+        const aprovada = ["credito_aprovado", "contrato_emitido", "registrado"].includes(p.status);
+        const recusada = p.status === "credito_recusado";
+        if (aprovada || recusada) {
+          decid[i]++;
+          if (aprovada) aprov[i]++;
+        }
+        const nb = p.nome_banco ?? "—";
+        if (!bancoMap.has(nb)) bancoMap.set(nb, Array(6).fill(0));
+        bancoMap.get(nb)![i]++;
+      }
+      const taxaAprovacao = quantidade.map((_, i) => (decid[i] ? (aprov[i] / decid[i]) * 100 : 0));
+      const bancos = [...bancoMap.entries()]
+        .map(([nome, valores]) => ({ nome, valores, total: valores.reduce((a, b) => a + b, 0) }))
+        .sort((a, b) => b.total - a.total)
+        .slice(0, 8)
+        .map(({ nome, valores }) => ({ nome, valores }));
+
+      return { meses, quantidade, taxaAprovacao, bancos };
     }
 
     async function fetchAll(table: string, cols: string, dateCol: string, colResp: string) {
