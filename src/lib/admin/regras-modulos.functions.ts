@@ -449,7 +449,29 @@ export const atualizarNivelAcesso = createServerFn({ method: "POST" })
       .eq("id", data.id)
       .maybeSingle();
     if (!nivel) throw new Error("Nível de acesso não encontrado.");
-    if (nivel.is_padrao) throw new Error("Níveis padrão não podem ser editados.");
+
+    // Níveis padrão são globais: cria uma cópia editável do correspondente
+    // já com o novo nome/descrição e retorna o id dela.
+    if (nivel.is_padrao) {
+      const { data: corresp } = await supabase.rpc("correspondente_do_usuario", { _user_id: userId });
+      if (!corresp) throw new Error("Correspondente não encontrado para o usuário.");
+      const novoId = await forkNivelPadrao(supabase, corresp, data.id, {
+        nome: data.nome,
+        descricao: data.descricao ?? null,
+      });
+      const { registrarAuditoria } = await import("@/lib/admin/audit.server");
+      await registrarAuditoria({
+        supabase,
+        userId,
+        correspondenteId: corresp,
+        acao: "nivel_acesso.personalizar",
+        entidade: "access_levels",
+        entidadeId: novoId,
+        payloadNovo: { origem: data.id, nome: data.nome },
+      });
+      return { ok: true, id: novoId, clonado: true };
+    }
+
     const { error } = await supabase
       .from("access_levels")
       .update({ nome: data.nome, descricao: data.descricao ?? null })
@@ -467,7 +489,7 @@ export const atualizarNivelAcesso = createServerFn({ method: "POST" })
       payloadAnterior: { nome: nivel.nome, descricao: nivel.descricao },
       payloadNovo: { nome: data.nome, descricao: data.descricao ?? null },
     });
-    return { ok: true };
+    return { ok: true, id: data.id, clonado: false };
   });
 
 /** Exclui um nível de acesso customizado (e suas permissões). */
