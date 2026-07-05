@@ -335,7 +335,24 @@ export const obterSimulacao = createServerFn({ method: "GET" })
       .eq("simulacao_id", data.id)
       .order("created_at", { ascending: false });
 
-    return { simulacao, bancos: bancos ?? [], historico: historico ?? [] };
+    // resolve nomes dos autores
+    const atorIds = Array.from(
+      new Set((historico ?? []).map((h: any) => h.ator_id).filter(Boolean)),
+    ) as string[];
+    let nomesAtores: Record<string, string> = {};
+    if (atorIds.length > 0) {
+      const { data: perfis } = await supabase
+        .from("profiles")
+        .select("id, nome")
+        .in("id", atorIds);
+      nomesAtores = Object.fromEntries((perfis ?? []).map((p: any) => [p.id, p.nome]));
+    }
+    const historicoComAutor = (historico ?? []).map((h: any) => ({
+      ...h,
+      ator_nome: h.ator_id ? (nomesAtores[h.ator_id] ?? null) : null,
+    }));
+
+    return { simulacao, bancos: bancos ?? [], historico: historicoComAutor };
   });
 
 /** ===== Listar simulações (paginado, escopo por RLS) ===== */
