@@ -125,10 +125,18 @@ export function RegrasModulosPanel() {
 
   const atualizarMut = useMutation({
     mutationFn: (v: { id: string; nome: string; descricao?: string }) => atualizar({ data: v }),
-    onSuccess: async () => {
-      toast.success("Nível atualizado.");
+    onSuccess: async (r: any) => {
+      toast.success(
+        r?.clonado
+          ? "Criamos uma cópia editável do nível padrão com o novo nome."
+          : "Nível atualizado.",
+      );
       setEditarOpen(false);
       await qc.invalidateQueries({ queryKey: ["niveis-acesso"] });
+      if (r?.id) {
+        setSelecionadoId(r.id);
+        setCarregadoPara("");
+      }
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -154,10 +162,18 @@ export function RegrasModulosPanel() {
       });
       return salvar({ data: { nivel_acesso_id: selecionado.id, permissoes } });
     },
-    onSuccess: async () => {
-      toast.success("Permissões salvas.");
+    onSuccess: async (r: any) => {
+      toast.success(
+        r?.clonado
+          ? "Criamos uma cópia editável do nível padrão com essas permissões."
+          : "Permissões salvas.",
+      );
       setDirty(false);
       await qc.invalidateQueries({ queryKey: ["niveis-acesso"] });
+      if (r?.nivel_acesso_id) {
+        setSelecionadoId(r.nivel_acesso_id);
+        setCarregadoPara("");
+      }
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -255,9 +271,9 @@ export function RegrasModulosPanel() {
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="flex items-center gap-2">
                     <h2 className="text-lg font-medium text-foreground">{selecionado.nome}</h2>
-                    {!editavel ? (
+                    {selecionado.is_padrao ? (
                       <Badge variant="secondary" className="gap-1">
-                        <Lock className="h-3 w-3" /> Somente leitura
+                        <Lock className="h-3 w-3" /> Padrão
                       </Badge>
                     ) : null}
                   </div>
@@ -267,14 +283,16 @@ export function RegrasModulosPanel() {
                         <Button variant="outline" size="sm" onClick={abrirEditar}>
                           <Pencil className="h-4 w-4" /> Renomear
                         </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="text-destructive hover:text-destructive"
-                          onClick={() => setExcluirOpen(true)}
-                        >
-                          <Trash2 className="h-4 w-4" /> Excluir
-                        </Button>
+                        {!selecionado.is_padrao ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-destructive hover:text-destructive"
+                            onClick={() => setExcluirOpen(true)}
+                          >
+                            <Trash2 className="h-4 w-4" /> Excluir
+                          </Button>
+                        ) : null}
                       </>
                     ) : null}
                     <Button onClick={() => salvarMut.mutate()} disabled={!editavel || !dirty || salvarMut.isPending}>
@@ -284,7 +302,12 @@ export function RegrasModulosPanel() {
                 </div>
                 {!editavel ? (
                   <p className="text-sm text-muted-foreground">
-                    Níveis padrão não podem ser editados. Crie um nível customizado para ajustar permissões.
+                    Você não tem permissão para editar níveis de acesso.
+                  </p>
+                ) : selecionado.is_padrao ? (
+                  <p className="text-sm text-muted-foreground">
+                    Este é um nível padrão do sistema. Ao renomear ou salvar permissões, criaremos
+                    automaticamente uma cópia editável — que você poderá ajustar e excluir livremente.
                   </p>
                 ) : null}
 

@@ -262,6 +262,9 @@ export const listarNiveisAcesso = createServerFn({ method: "GET" })
     const { data: corresp } = await supabase.rpc("correspondente_do_usuario", {
       _user_id: userId,
     });
+    const { data: podeGerenciar } = await supabase.rpc("pode_gerenciar_pessoas", {
+      _user_id: userId,
+    });
 
     const { data: niveis, error } = await supabase
       .from("access_levels")
@@ -284,7 +287,10 @@ export const listarNiveisAcesso = createServerFn({ method: "GET" })
       descricao: n.descricao,
       ativo: n.ativo,
       is_padrao: n.is_padrao,
-      editavel: !n.is_padrao && n.correspondente_id === corresp,
+      // Qualquer usuário que pode gerenciar pessoas edita todos os níveis.
+      // Níveis padrão (globais) são clonados automaticamente em uma cópia
+      // editável do correspondente na primeira alteração.
+      editavel: podeGerenciar === true,
       permissoes: (perms ?? [])
         .filter((p: any) => p.nivel_acesso_id === n.id)
         .map((p: any) => ({
@@ -295,6 +301,54 @@ export const listarNiveisAcesso = createServerFn({ method: "GET" })
         })),
     }));
   });
+
+/** Clona um nível padrão (global) em uma cópia editável do correspondente,
+ *  copiando as permissões. Retorna o id da cópia. */
+async function forkNivelPadrao(
+  supabase: any,
+  corresp: string,
+  origemId: string,
+  overrides?: { nome?: string; descricao?: string | null },
+): Promise<string> {
+  const { data: origem, error: erroOrigem } = await supabase
+    .from("access_levels")
+    .select("id, nome, descricao")
+    .eq("id", origemId)
+    .maybeSingle();
+  if (erroOrigem) throw new Error(erroOrigem.message);
+  if (!origem) throw new Error("Nível de acesso não encontrado.");
+
+  const { data: copia, error: erroCopia } = await supabase
+    .from("access_levels")
+    .insert({
+      nome: overrides?.nome ?? origem.nome,
+      descricao: overrides?.descricao ?? origem.descricao ?? null,
+      correspondente_id: corresp,
+      ativo: true,
+      is_padrao: false,
+    })
+    .select("id")
+    .single();
+  if (erroCopia) throw new Error(erroCopia.message);
+
+  const { data: perms } = await supabase
+    .from("permissions")
+    .select("modulo, acao, permitido, escopo_dados")
+    .eq("nivel_acesso_id", origemId)
+    .eq("permitido", true);
+  const rows = (perms ?? []).map((p: any) => ({
+    nivel_acesso_id: copia.id,
+    modulo: p.modulo,
+    acao: p.acao,
+    permitido: true,
+    escopo_dados: p.escopo_dados,
+  }));
+  if (rows.length) {
+    const { error: erroPerms } = await supabase.from("permissions").insert(rows);
+    if (erroPerms) throw new Error(erroPerms.message);
+  }
+  return copia.id;
+}
 
 /** Cria um novo nível de acesso customizado para o correspondente do usuário.
  *  Já nasce com uma matriz de permissões: copiada de outro nível (`copiar_de`)
@@ -395,7 +449,29 @@ export const atualizarNivelAcesso = createServerFn({ method: "POST" })
       .eq("id", data.id)
       .maybeSingle();
     if (!nivel) throw new Error("Nível de acesso não encontrado.");
-    if (nivel.is_padrao) throw new Error("Níveis padrão não podem ser editados.");
+
+    // Níveis padrão são globais: cria uma cópia editável do correspondente
+    // já com o novo nome/descrição e retorna o id dela.
+    if (nivel.is_padrao) {
+      const { data: corresp } = await supabase.rpc("correspondente_do_usuario", { _user_id: userId });
+      if (!corresp) throw new Error("Correspondente não encontrado para o usuário.");
+      const novoId = await forkNivelPadrao(supabase, corresp, data.id, {
+        nome: data.nome,
+        descricao: data.descricao ?? null,
+      });
+      const { registrarAuditoria } = await import("@/lib/admin/audit.server");
+      await registrarAuditoria({
+        supabase,
+        userId,
+        correspondenteId: corresp,
+        acao: "nivel_acesso.personalizar",
+        entidade: "access_levels",
+        entidadeId: novoId,
+        payloadNovo: { origem: data.id, nome: data.nome },
+      });
+      return { ok: true, id: novoId, clonado: true };
+    }
+
     const { error } = await supabase
       .from("access_levels")
       .update({ nome: data.nome, descricao: data.descricao ?? null })
@@ -413,7 +489,7 @@ export const atualizarNivelAcesso = createServerFn({ method: "POST" })
       payloadAnterior: { nome: nivel.nome, descricao: nivel.descricao },
       payloadNovo: { nome: data.nome, descricao: data.descricao ?? null },
     });
-    return { ok: true };
+    return { ok: true, id: data.id, clonado: false };
   });
 
 /** Exclui um nível de acesso customizado (e suas permissões). */
@@ -428,7 +504,10 @@ export const excluirNivelAcesso = createServerFn({ method: "POST" })
       .eq("id", data.id)
       .maybeSingle();
     if (!nivel) throw new Error("Nível de acesso não encontrado.");
-    if (nivel.is_padrao) throw new Error("Níveis padrão não podem ser excluídos.");
+    if (nivel.is_padrao)
+      throw new Error(
+        "Este é um nível padrão do sistema e não pode ser excluído. Edite-o para criar uma cópia personalizada — essa cópia pode ser excluída depois.",
+      );
 
     // Impede exclusão se houver pessoas usando este nível.
     const { count } = await supabase
@@ -477,18 +556,34 @@ export const salvarPermissoes = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
 
+    // Se o nível é padrão (global), cria uma cópia editável do correspondente
+    // e grava as permissões nela em vez de tentar escrever no template global.
+    let alvoId = data.nivel_acesso_id;
+    let clonado = false;
+    const { data: nivel } = await supabase
+      .from("access_levels")
+      .select("id, is_padrao")
+      .eq("id", data.nivel_acesso_id)
+      .maybeSingle();
+    if (nivel?.is_padrao) {
+      const { data: corresp } = await supabase.rpc("correspondente_do_usuario", { _user_id: userId });
+      if (!corresp) throw new Error("Correspondente não encontrado para o usuário.");
+      alvoId = await forkNivelPadrao(supabase, corresp, data.nivel_acesso_id);
+      clonado = true;
+    }
+
     // Remove as permissões antigas e regrava (RLS garante que só níveis do
     // próprio correspondente e gestor autorizado podem escrever).
     const { error: delErr } = await supabase
       .from("permissions")
       .delete()
-      .eq("nivel_acesso_id", data.nivel_acesso_id);
+      .eq("nivel_acesso_id", alvoId);
     if (delErr) throw new Error(delErr.message);
 
     const rows = data.permissoes
       .filter((p) => p.permitido)
       .map((p) => ({
-        nivel_acesso_id: data.nivel_acesso_id,
+        nivel_acesso_id: alvoId,
         modulo: p.modulo,
         acao: p.acao,
         permitido: true,
@@ -505,10 +600,10 @@ export const salvarPermissoes = createServerFn({ method: "POST" })
       supabase,
       userId,
       correspondenteId: null,
-      acao: "nivel_acesso.salvar_permissoes",
+      acao: clonado ? "nivel_acesso.personalizar_permissoes" : "nivel_acesso.salvar_permissoes",
       entidade: "access_levels",
-      entidadeId: data.nivel_acesso_id,
-      payloadNovo: { total: rows.length },
+      entidadeId: alvoId,
+      payloadNovo: { total: rows.length, origem: clonado ? data.nivel_acesso_id : undefined },
     });
-    return { ok: true, total: rows.length };
+    return { ok: true, total: rows.length, nivel_acesso_id: alvoId, clonado };
   });
