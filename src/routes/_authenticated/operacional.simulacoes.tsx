@@ -64,6 +64,16 @@ function Pagina() {
     }
   }
 
+  async function handleDuplicar(id: string) {
+    try {
+      const { id: novo } = await duplicar({ data: { id } });
+      toast.success("Simulação duplicada.");
+      router.navigate({ to: "/operacional/simulacoes/$id", params: { id: novo } });
+    } catch {
+      toast.error("Não foi possível duplicar a simulação.");
+    }
+  }
+
   return (
     <div className="mx-auto w-full max-w-6xl space-y-6 p-4 md:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
