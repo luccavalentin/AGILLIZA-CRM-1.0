@@ -17,6 +17,7 @@ export interface ClientePublico {
   nome: string;
   tipo_pessoa: string;
   foto_url: string | null;
+  lgpd_aceito?: boolean;
 }
 
 export interface EtapaCliente {
@@ -149,6 +150,27 @@ export const logoutCliente = createServerFn({ method: "POST" }).handler(async ()
   limparCookieSessao();
   return { ok: true };
 });
+
+// ----------------------------------------------------------------------------
+// Consentimento LGPD — registrado no primeiro acesso do cliente
+// ----------------------------------------------------------------------------
+export const clienteRegistrarConsentimentoLGPD = createServerFn({ method: "POST" }).handler(
+  async (): Promise<{ ok: boolean }> => {
+    const sess = requireClienteSession();
+    const { portalDb } = await import("./portal-db.server");
+    const { ip, userAgent } = dadosRequisicao();
+    const { data, error } = await portalDb().rpc("portal_registrar_consentimento_lgpd", {
+      _cid: sess.cid,
+      _versao: "v1",
+      _ip: ip ?? "",
+      _ua: userAgent ?? "",
+    } as any);
+    if (error || !(data as any)?.ok) {
+      throw new Error("Não foi possível registrar o consentimento. Tente novamente.");
+    }
+    return { ok: true };
+  },
+);
 
 // ----------------------------------------------------------------------------
 // Sessao (usada no layout)

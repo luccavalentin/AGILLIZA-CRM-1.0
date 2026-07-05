@@ -40,6 +40,7 @@ export const Route = createFileRoute("/cliente")({
   loader: async () => {
     const { cliente } = await getSessaoCliente();
     if (!cliente) throw redirect({ to: "/portal" });
+    if (!cliente.lgpd_aceito) throw redirect({ to: "/cliente-consentimento" });
     return { cliente };
   },
   component: ClienteLayout,
