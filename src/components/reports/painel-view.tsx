@@ -123,13 +123,14 @@ export function PainelView({
         <>
           <SectionTitle>Indicadores executivos</SectionTitle>
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            {data.heros.map((h) => <HeroMetric key={h.label} label={h.label} valor={h.valor} hint={h.hint} tone={h.tone} />)}
+            {data.heros.map((h) => <HeroMetric key={h.label} label={h.label} valor={h.valor} hint={h.hint} tone={h.tone} to={linkParaMetrica(h.label)} />)}
           </div>
 
           <SectionTitle>Volumes</SectionTitle>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-            {data.minis.map((m) => <MiniMetric key={m.label} label={m.label} valor={m.valor} tone={m.tone} />)}
+            {data.minis.map((m) => <MiniMetric key={m.label} label={m.label} valor={m.valor} tone={m.tone} to={linkParaMetrica(m.label)} />)}
           </div>
+
 
           <SectionTitle>Operação</SectionTitle>
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
