@@ -99,7 +99,7 @@ export function PainelView({
         onRefresh={() => qc.invalidateQueries({ queryKey })}
         actions={
           <>
-            <VisionSelector escopo={escopo} onChange={mudarEscopo} podeEquipe={perms?.podeEquipe ?? false} podeGeral={perms?.podeGeral ?? false} />value
+            <VisionSelector escopo={escopo} onChange={mudarEscopo} podeEquipe={perms?.podeEquipe ?? false} podeGeral={perms?.podeGeral ?? false} />
             <Select value={periodo} onValueChange={(v) => setPeriodo(v as Periodo)}>
               <SelectTrigger className="h-9 w-40"><SelectValue /></SelectTrigger>
               <SelectContent>
