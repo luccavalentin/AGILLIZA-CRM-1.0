@@ -11,6 +11,7 @@ import { ClienteForm } from "@/components/crm/cliente-form";
 import { DocumentosTab } from "@/components/crm/documentos-tab";
 import { InteracoesTab } from "@/components/crm/interacoes-tab";
 import { VinculoTab } from "@/components/crm/vinculo-tab";
+import { ChatClienteTab } from "@/components/crm/chat-cliente-tab";
 import { StatusBadge } from "@/components/crm/tone-badge";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import {
