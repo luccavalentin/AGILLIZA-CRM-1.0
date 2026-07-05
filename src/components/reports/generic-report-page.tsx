@@ -48,7 +48,12 @@ export function GenericReportPage({
   const produtos = comFiltroBanco
     ? disp?.produtos ?? [...new Set((data?.rows ?? []).map((r) => String(r.produto ?? "")).filter(Boolean))].sort()
     : undefined;
-  const statuses = comFiltroStatus ? disp?.statuses : undefined;
+  const statuses = comFiltroStatus
+    ? disp?.statuses ??
+      [...new Set((data?.rows ?? []).map((r) => String(r.status ?? "")).filter(Boolean))]
+        .sort()
+        .map((v) => ({ value: v, label: v }))
+    : undefined;
 
   return (
     <ReportShell
