@@ -334,7 +334,19 @@ function TabResumo({ proposta, bancos, propostaId }: { proposta: any; bancos: an
   const qc = useQueryClient();
   const selecionarFn = useServerFn(selecionarBancoProposta);
   const enviarFn = useServerFn(enviarPropostaHomeFin);
+  const situacaoFn = useServerFn(definirSituacaoBanco);
   const [enviandoId, setEnviandoId] = useState<string | null>(null);
+
+  async function mudarSituacao(pbId: string, situacao: SituacaoBanco) {
+    try {
+      await situacaoFn({ data: { proposta_id: propostaId, proposta_banco_id: pbId, situacao_banco: situacao } });
+      qc.invalidateQueries({ queryKey: ["proposta", propostaId] });
+      toast.success("Situação do banco atualizada.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao atualizar situação.");
+    }
+  }
+
   const status = proposta.status as PropostaStatus;
   const podeEnviarBanco =
     Boolean(proposta.homefin_id_oportunidade) &&
