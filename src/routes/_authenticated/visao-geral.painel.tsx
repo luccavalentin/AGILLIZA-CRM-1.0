@@ -14,7 +14,7 @@ function Pagina() {
       titulo="Produção comercial"
       descricao="Como está a produção comercial agora."
       realtimeTabelas={["propostas", "simulacoes"]}
-      abrirTo="/relatorios/consolidado"
+      abrirTo="/relatorios/painel-geral"
     />
   );
 }
