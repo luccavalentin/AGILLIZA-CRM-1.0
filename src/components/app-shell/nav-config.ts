@@ -28,6 +28,7 @@ import {
   Plug,
   Settings2,
   ShoppingCart,
+  Timer,
 } from "lucide-react";
 
 /** Permissão exigida por um item (chave = `${modulo}:view`). */
@@ -136,6 +137,7 @@ export const navInterno: NavGroup[] = [
       { label: "Integrações", icon: Plug, to: "/admin/integracoes", perm: { modulo: "admin.integracoes" } },
       { label: "Parâmetros", icon: Settings2, to: "/admin/parametros", perm: { modulo: "admin.parametros" } },
       { label: "Compras", icon: ShoppingCart, to: "/admin/compras", perm: { modulo: "admin.compras" } },
+      { label: "SLA & Feriados", icon: Timer, to: "/admin/sla", perm: { modulo: "admin.sla" } },
       { label: "Notificações", icon: Bell, to: "/admin/notificacoes", perm: { modulo: "admin.notificacoes" } },
       { label: "Auditoria", icon: ShieldCheck, to: "/admin/auditoria", perm: { modulo: "admin.auditoria" } },
       { label: "Backup", icon: DatabaseBackup, to: "/admin/backup", perm: { modulo: "admin.backup" } },
