@@ -87,17 +87,20 @@ export const obterTarefa = createServerFn({ method: "GET" })
   .inputValidator((data) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ context, data }) => {
     const { supabase } = context;
-    const [tarefa, checklist, participantes, comentarios, historico] = await Promise.all([
+    const [tarefa, checklist, participantes, comentarios, historico, tagLinks, anexos] = await Promise.all([
       supabase.from("tasks").select("*, clientes(nome, numero_cliente)").eq("id", data.id).maybeSingle(),
       supabase.from("task_checklist_items").select("*").eq("task_id", data.id).order("ordem"),
       supabase.from("task_participants").select("*").eq("task_id", data.id),
       supabase.from("task_comments").select("*").eq("task_id", data.id).order("created_at"),
       supabase.from("task_history").select("*").eq("task_id", data.id).order("created_at", { ascending: false }),
+      supabase.from("task_tag_links").select("tag_id, task_tags(id, nome, cor)").eq("task_id", data.id),
+      supabase.from("task_attachments").select("*").eq("task_id", data.id).order("created_at", { ascending: false }),
     ]);
     if (tarefa.error) throw new Error(tarefa.error.message);
     const uids = [
       ...(participantes.data ?? []).map((p: any) => p.user_id),
       ...(comentarios.data ?? []).map((c: any) => c.autor_id),
+      ...(anexos.data ?? []).map((a: any) => a.autor_id),
       tarefa.data?.responsavel_id,
       tarefa.data?.criador_id,
     ];
@@ -109,8 +112,11 @@ export const obterTarefa = createServerFn({ method: "GET" })
       participantes: (participantes.data ?? []).map((p: any) => ({ ...p, nome: nomes.get(p.user_id) ?? null })),
       comentarios: (comentarios.data ?? []).map((c: any) => ({ ...c, nome_autor: nomes.get(c.autor_id) ?? null })),
       historico: historico.data ?? [],
+      tags: (tagLinks.data ?? []).map((l: any) => l.task_tags).filter(Boolean),
+      anexos: (anexos.data ?? []).map((a: any) => ({ ...a, nome_autor: a.autor_id ? nomes.get(a.autor_id) ?? null : null })),
     };
   });
+
 
 async function correspondenteId(supabase: any, userId: string): Promise<string> {
   const { data, error } = await supabase.rpc("correspondente_do_usuario", { _user_id: userId });
