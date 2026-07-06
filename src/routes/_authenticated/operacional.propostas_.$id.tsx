@@ -603,64 +603,6 @@ function TabResumo({
                     <SelectTrigger className="h-8 w-48">
                       <SelectValue />
                     </SelectTrigger>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-10"></TableHead>
-              <TableHead>Banco</TableHead>
-              <TableHead className="text-right">R$ Financiamento</TableHead>
-              <TableHead className="text-right">Parcela</TableHead>
-              <TableHead className="text-right">Prazo</TableHead>
-              <TableHead className="text-right">Taxa/ano</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Situação de crédito</TableHead>
-              <TableHead className="text-right">Ação</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {bancos.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={9} className="py-8 text-center text-sm text-muted-foreground">
-                  Nenhum banco vinculado.
-                </TableCell>
-              </TableRow>
-            )}
-            {bancos.map((b) => (
-              <TableRow key={b.id} className={cn(b.selecionado && "bg-accent/40")}>
-                <TableCell>
-                  <Checkbox
-                    checked={b.selecionado}
-                    disabled={b.status_banco === "enviada"}
-                    onCheckedChange={() => selecionar(b.id)}
-                    aria-label={`Selecionar ${b.nome_banco}`}
-                  />
-                </TableCell>
-                <TableCell className="font-medium" style={{ color: corDoBanco(b.nome_banco) }}>{b.nome_banco}</TableCell>
-                <TableCell className="text-right tabular-nums">
-                  {formatBRL(b.valor_financiamento_max)}
-                </TableCell>
-                <TableCell className="text-right tabular-nums">
-                  {formatBRL(b.valor_parcela)}
-                </TableCell>
-                <TableCell className="text-right tabular-nums">
-                  {b.prazo_pagamento_max ?? "—"}
-                </TableCell>
-                <TableCell className="text-right tabular-nums">
-                  {b.taxa_juros_ano != null ? `${b.taxa_juros_ano}%` : "—"}
-                </TableCell>
-                <TableCell>
-                  <ToneBadge tone={statusBancoConfig(b.status_banco).tone}>
-                    {statusBancoConfig(b.status_banco).label}
-                  </ToneBadge>
-                </TableCell>
-                <TableCell>
-                  <Select
-                    value={(b.situacao_banco as SituacaoBanco) ?? "nao_enviado"}
-                    onValueChange={(v) => mudarSituacao(b.id, v as SituacaoBanco)}
-                  >
-                    <SelectTrigger className="h-8 w-48">
-                      <SelectValue />
-                    </SelectTrigger>
                     <SelectContent>
                       {SITUACOES_BANCO.map((s) => (
                         <SelectItem key={s} value={s}>
