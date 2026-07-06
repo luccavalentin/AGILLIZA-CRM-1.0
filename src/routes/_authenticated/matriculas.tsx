@@ -43,7 +43,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ConfirmDelete } from "@/components/shared/confirm-delete";
-import { InputAutocomplete } from "@/components/ui/input-autocomplete";
+import { Combobox, AsyncCombobox } from "@/components/ui/combobox";
+import { buscarClientesCRM } from "@/lib/crm/clientes.functions";
 import { formatBRL, maskBRLInput, maskBRLCents, parseBRL } from "@/lib/simulacao/format";
 import {
   obterControleMatriculas,
