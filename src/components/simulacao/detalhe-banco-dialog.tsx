@@ -74,12 +74,18 @@ export function DetalheBancoDialog({ banco }: { banco: any }) {
                       : "—"
                   }
                 />
-                <InfoCard rotulo="Valor do imóvel" valor={formatBRL(detalhe!.valorImovel)} />
-                <InfoCard rotulo="Financiamento" valor={formatBRL(detalhe!.valorFinanciamento)} />
-                <InfoCard rotulo="Entrada" valor={formatBRL(detalhe!.valorEntrada)} />
-                <InfoCard rotulo="IOF" valor={formatBRL(detalhe!.iof)} />
+                <InfoCard rotulo="Valor de compra e venda" valor={formatBRL(detalhe!.valorImovel)} />
+                <InfoCard rotulo="Despesas financiadas" valor={formatBRL(detalhe!.despesasFinanciadas)} />
+                <InfoCard rotulo="Tarifa de av. de garantia" valor={formatBRL(detalhe!.tarifaAvaliacao)} />
                 <InfoCard
-                  rotulo="Prazo"
+                  rotulo="Financiamento total"
+                  valor={formatBRL(detalhe!.financiamentoTotal ?? detalhe!.valorFinanciamento)}
+                />
+                <InfoCard rotulo="Entrada" valor={formatBRL(detalhe!.valorEntrada)} />
+                <InfoCard rotulo="IOF crédito" valor={formatBRL(detalhe!.iof)} />
+                <InfoCard rotulo="Tipo da parcela" valor={detalhe!.tipoParcela ?? detalhe!.indexador ?? "—"} />
+                <InfoCard
+                  rotulo="Prazo total"
                   valor={detalhe!.prazoMeses != null ? `${detalhe!.prazoMeses} meses` : "—"}
                 />
                 <InfoCard rotulo="Sistema" valor={normalizarSistemaAmortizacao(detalhe!.sistemaAmortizacao)} />
@@ -91,6 +97,7 @@ export function DetalheBancoDialog({ banco }: { banco: any }) {
                 />
                 <InfoCard rotulo="Seguradora" valor={detalhe!.seguradora ?? "—"} />
               </div>
+
 
               <div>
                 <h3 className="mb-2 text-sm font-semibold text-foreground">
