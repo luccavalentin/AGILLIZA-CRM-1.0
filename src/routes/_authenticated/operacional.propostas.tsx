@@ -138,7 +138,7 @@ function Pagina() {
                 <TableCell>{p.nome_cliente ?? "—"}</TableCell>
                 <TableCell>{p.nome_banco ?? "—"}</TableCell>
                 <TableCell className="text-right tabular-nums">{formatBRL(p.valor_financiamento)}</TableCell>
-                <TableCell><PropostaStatusBadge status={p.status} /></TableCell>
+                <TableCell><PropostaStatusBadge status={p.status} banco={p.nome_banco} /></TableCell>
                 <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                   {["rascunho", "erro_envio"].includes(p.status) ? (
                     <ConfirmDelete
