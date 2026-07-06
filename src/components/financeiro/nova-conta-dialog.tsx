@@ -49,13 +49,13 @@ export function NovaContaDialog({ tipo }: { tipo: ContaTipo }) {
         data: {
           tipo,
           descricao: descricao.trim(),
-          contraparte: contraparte.trim() || undefined,
           valor,
           vencimento,
           categoria_id: categoriaId || undefined,
           cost_center_id: ccId || undefined,
           comprovante_path,
           recorrencia,
+          parcelas: recorrencia === "parcelado" ? parcelas : undefined,
         },
       }),
     onSuccess: () => {
