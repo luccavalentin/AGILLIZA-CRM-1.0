@@ -105,6 +105,36 @@ export const obterControleMatriculas = createServerFn({ method: "GET" })
     };
   });
 
+export interface UsuarioOpcao {
+  id: string;
+  nome: string;
+}
+
+/**
+ * Lista TODOS os usuários cadastrados no ecossistema do correspondente,
+ * independentemente do portal/tipo de acesso (sistema, parceiro, etc.).
+ * Usado para autocompletar Solicitante e Corretor.
+ */
+export const listarUsuariosCorrespondente = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<UsuarioOpcao[]> => {
+    const supabase = context.supabase as any;
+    const { userId } = context;
+    const corr = await correspondenteDoUsuario(supabase, userId);
+
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("id,nome")
+      .eq("correspondente_id", corr)
+      .not("nome", "is", null)
+      .order("nome", { ascending: true });
+
+    if (error) throw new Error(error.message);
+    return ((data ?? []) as UsuarioOpcao[]).filter((u) => (u.nome ?? "").trim().length > 0);
+  });
+
+
+
 /** Salva a chave Pix e o titular exibidos na faixa azul. */
 export const salvarPixMatriculas = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
