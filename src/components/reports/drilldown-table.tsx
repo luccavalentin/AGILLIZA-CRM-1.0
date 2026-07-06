@@ -5,8 +5,21 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { ReportColumn, ReportRow } from "@/lib/relatorios/shared";
 import { formatCell, footerValue } from "@/lib/relatorios/report-format";
+import { BancoLogo } from "@/components/bancos/banco-logo";
 
 const PAGE = 25;
+
+/** Indica se a coluna representa um banco (para exibir o logo ao lado do nome). */
+function ehColunaBanco(c: ReportColumn): boolean {
+  const key = c.key.toLowerCase();
+  return (
+    key === "nome_banco" ||
+    key === "banco" ||
+    key.endsWith("_banco") ||
+    c.label.trim().toLowerCase() === "banco"
+  );
+}
+
 
 /** Tabela detalhada com busca, ordenação, paginação e rodapé de totais. */
 export function DrilldownTable({ columns, rows }: { columns: ReportColumn[]; rows: ReportRow[] }) {
@@ -113,19 +126,31 @@ export function DrilldownTable({ columns, rows }: { columns: ReportColumn[]; row
             ) : (
               visiveis.map((r, i) => (
                 <tr key={i} className={cn("border-t border-border", i % 2 === 1 && "bg-muted/25")}>
-                  {columns.map((c) => (
-                    <td
-                      key={c.key}
-                      className={cn(
-                        "whitespace-nowrap px-3 py-2 text-foreground",
-                        alinha(c),
-                        (c.format === "brl" || c.format === "int" || c.format === "pct") &&
-                          "font-mono tabular-nums",
-                      )}
-                    >
-                      {formatCell(r[c.key], c.format)}
-                    </td>
-                  ))}
+                  {columns.map((c) => {
+                    const banco = ehColunaBanco(c);
+                    const valor = r[c.key];
+                    return (
+                      <td
+                        key={c.key}
+                        className={cn(
+                          "whitespace-nowrap px-3 py-2 text-foreground",
+                          alinha(c),
+                          (c.format === "brl" || c.format === "int" || c.format === "pct") &&
+                            "font-mono tabular-nums",
+                        )}
+                      >
+                        {banco && valor ? (
+                          <span className="inline-flex items-center gap-2">
+                            <BancoLogo nome={String(valor)} size="xs" />
+                            {formatCell(valor, c.format)}
+                          </span>
+                        ) : (
+                          formatCell(valor, c.format)
+                        )}
+                      </td>
+                    );
+                  })}
+
                 </tr>
               ))
             )}

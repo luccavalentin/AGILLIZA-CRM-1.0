@@ -14,6 +14,48 @@ import {
 import type { ReportChart } from "@/lib/relatorios/shared";
 import { formatBRL } from "@/lib/simulacao/format";
 import { corDoBanco } from "@/lib/bancos/cores";
+import { logoUrlDoBanco } from "@/components/bancos/banco-logo";
+
+/** Tick do eixo Y que exibe o logo do banco ao lado do nome. */
+function BankYAxisTick(props: {
+  x?: number;
+  y?: number;
+  width?: number;
+  payload?: { value?: string };
+}) {
+  const { x = 0, y = 0, payload } = props;
+  const label = String(payload?.value ?? "");
+  const logo = logoUrlDoBanco(label);
+  const size = 16;
+  const left = -128;
+  const textX = logo ? left + size + 6 : left;
+  return (
+    <g transform={`translate(${x},${y})`}>
+      {logo && (
+        <image
+          href={logo}
+          x={left}
+          y={-size / 2}
+          width={size}
+          height={size}
+          preserveAspectRatio="xMidYMid meet"
+        />
+      )}
+      <text
+        x={textX}
+        y={0}
+        dy={4}
+        textAnchor="start"
+        fontSize={11}
+        fill="hsl(var(--muted-foreground))"
+      >
+        {label}
+      </text>
+    </g>
+  );
+}
+
+
 
 const tooltipStyle = {
   background: "hsl(var(--card))",
@@ -97,10 +139,11 @@ export function ReportChartView({
           <YAxis
             type="category"
             dataKey="label"
-            tick={{ fontSize: 11 }}
+            tick={colorByBank ? <BankYAxisTick /> : { fontSize: 11 }}
             stroke="hsl(var(--muted-foreground))"
-            width={110}
+            width={colorByBank ? 136 : 110}
           />
+
           <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => fmt(v)} />
           <Bar dataKey="valor" radius={[0, 4, 4, 0]} fill="var(--chart-1)">
             {chart.dados.map((d, i) => (
