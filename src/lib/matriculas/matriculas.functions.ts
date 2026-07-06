@@ -141,9 +141,12 @@ export const excluirCreditoMatricula = createServerFn({ method: "POST" })
 const solicitacaoSchema = z.object({
   data_solicitacao: z.string().min(1),
   solicitante: z.string().trim().min(1, "Informe o solicitante").max(200),
+  corretor: z.string().trim().max(200).optional().nullable(),
+  cliente: z.string().trim().max(200).optional().nullable(),
   numero_matricula: z.string().trim().max(100).optional().nullable(),
   valor: z.number().nonnegative(),
   reembolsado: z.boolean().optional(),
+  data_pagto_reembolso: z.string().optional().nullable(),
   observacao: z.string().trim().max(500).optional().nullable(),
 });
 
