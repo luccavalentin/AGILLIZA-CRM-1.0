@@ -81,7 +81,7 @@ export function DetalheBancoDialog({ banco }: { banco: any }) {
                   rotulo="Prazo"
                   valor={detalhe!.prazoMeses != null ? `${detalhe!.prazoMeses} meses` : "—"}
                 />
-                <InfoCard rotulo="Sistema" valor={detalhe!.sistemaAmortizacao ?? "—"} />
+                <InfoCard rotulo="Sistema" valor={normalizarSistemaAmortizacao(detalhe!.sistemaAmortizacao)} />
                 <InfoCard rotulo="1ª parcela" valor={formatBRL(detalhe!.primeiraParcela)} />
                 <InfoCard rotulo="Última parcela" valor={formatBRL(detalhe!.ultimaParcela)} />
                 <InfoCard
