@@ -299,11 +299,15 @@ function Pagina() {
             />
           </div>
         ) : (
-          <Card className="flex h-[36rem] items-center justify-center">
-            <p className="text-sm text-muted-foreground">
-              Selecione uma conversa para começar.
+          <Card className="flex h-[36rem] flex-col items-center justify-center gap-3 border-border/60 border-dashed text-center shadow-sm">
+            <div className="flex size-14 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <MessagesSquare className="h-6 w-6" />
+            </div>
+            <p className="max-w-[16rem] text-sm text-muted-foreground">
+              Selecione uma conversa ao lado ou busque um cliente para começar.
             </p>
           </Card>
+
         )}
       </div>
     </div>
