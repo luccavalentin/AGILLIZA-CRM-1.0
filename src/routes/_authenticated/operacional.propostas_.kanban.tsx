@@ -25,23 +25,32 @@ export const Route = createFileRoute("/_authenticated/operacional/propostas_/kan
   component: Pagina,
 });
 
-const COLUNAS: PropostaStatus[] = [
-  "rascunho",
-  "enviada_banco",
-  "em_analise_credito",
-  "credito_aprovado",
-  "checklist_documentacao",
-  "cadastro_complementar",
-  "dossie_completo",
-  "formularios",
-  "envio_documentos_banco",
-  "vistoria_agendamento",
-  "vistoria_concluida",
-  "emissao_contrato",
-  "contrato_emitido",
-  "credito_recusado",
-  "erro_envio",
-  "cancelada",
+/**
+ * Colunas do kanban. Cada coluna tem um status "destino" (usado ao soltar um card)
+ * e a lista de status que ela agrega (para exibir os cards).
+ * "enviada_banco" e "em_analise_credito" compartilham a mesma etapa visual.
+ */
+type ColunaKanban = {
+  destino: PropostaStatus;
+  agrega: PropostaStatus[];
+};
+
+const COLUNAS: ColunaKanban[] = [
+  { destino: "rascunho", agrega: ["rascunho"] },
+  { destino: "enviada_banco", agrega: ["enviada_banco", "em_analise_credito"] },
+  { destino: "credito_aprovado", agrega: ["credito_aprovado"] },
+  { destino: "credito_recusado", agrega: ["credito_recusado"] },
+  { destino: "checklist_documentacao", agrega: ["checklist_documentacao"] },
+  { destino: "cadastro_complementar", agrega: ["cadastro_complementar"] },
+  { destino: "dossie_completo", agrega: ["dossie_completo"] },
+  { destino: "formularios", agrega: ["formularios"] },
+  { destino: "envio_documentos_banco", agrega: ["envio_documentos_banco"] },
+  { destino: "vistoria_agendamento", agrega: ["vistoria_agendamento"] },
+  { destino: "vistoria_concluida", agrega: ["vistoria_concluida"] },
+  { destino: "emissao_contrato", agrega: ["emissao_contrato"] },
+  { destino: "contrato_emitido", agrega: ["contrato_emitido"] },
+  { destino: "erro_envio", agrega: ["erro_envio"] },
+  { destino: "cancelada", agrega: ["cancelada"] },
 ];
 
 const TONE_BAR: Record<string, string> = {
