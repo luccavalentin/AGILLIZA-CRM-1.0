@@ -510,10 +510,6 @@ function TabResumo({
     !["cancelada", "registrado", "credito_recusado", "contrato_emitido"].includes(status);
   const campos: [string, string][] = [
     ["Operação", proposta.produto ?? "—"],
-    ["Regional", proposta.regional_nome ?? "—"],
-    ["Parceiro", proposta.parceiro_nome ?? "—"],
-    ["Consultor", proposta.consultor_nome ?? "—"],
-    ["Analista", proposta.analista_nome ?? "—"],
     ["Nº da proposta", proposta.numero_proposta],
   ];
 
