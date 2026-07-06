@@ -4,7 +4,7 @@ import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/brand/Logo";
-import symbolLight from "@/assets/brand/agilliza-symbol-light.png";
+import symbolLight from "@/assets/brand/agilliza-symbol-oficial-light.png";
 import { SidebarNav, SidebarRail } from "./sidebar-nav";
 import { Topbar, type ShellUser } from "./topbar";
 import type { NavGroup } from "./nav-config";
