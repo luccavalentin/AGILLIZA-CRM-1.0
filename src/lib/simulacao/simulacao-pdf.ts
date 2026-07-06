@@ -458,11 +458,12 @@ export function baixarSimulacaoDetalhadaPDF({ simulacao: s, bancos }: SimulacaoP
   return salvar(doc, s, "detalhada");
 }
 
-function salvar(doc: jsPDF, s: any, tipo: string) {
+function salvar(doc: jsPDF, s: any, tipo: string): jsPDF {
   const nome = `simulacao-${s.numero_simulacao ?? ""}-${tipo}`
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-");
   doc.save(`agilliza-${nome}.pdf`);
+  return doc;
 }
 
 // ---------------------------------------------------------------------------
