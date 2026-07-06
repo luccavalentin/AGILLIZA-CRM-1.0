@@ -44,7 +44,7 @@ import {
 } from "@/components/ui/select";
 import { ConfirmDelete } from "@/components/shared/confirm-delete";
 import { InputAutocomplete } from "@/components/ui/input-autocomplete";
-import { formatBRL, maskBRLInput, parseBRL } from "@/lib/simulacao/format";
+import { formatBRL, maskBRLInput, maskBRLCents, parseBRL } from "@/lib/simulacao/format";
 import {
   obterControleMatriculas,
   criarCreditoMatricula,
@@ -391,7 +391,7 @@ function SolicitacaoDialog({
   const [corretor, setCorretor] = useState(inicial?.corretor ?? "");
   const [cliente, setCliente] = useState(inicial?.cliente ?? "");
   const [numero, setNumero] = useState(inicial?.numero_matricula ?? "");
-  const [valor, setValor] = useState(maskBRLInput(inicial?.valor ?? 0));
+  const [valor, setValor] = useState(inicial?.valor ? maskBRLInput(inicial.valor) : "");
   const [reembolsado, setReembolsado] = useState(inicial?.reembolsado ?? false);
   const [dataPagto, setDataPagto] = useState(inicial?.data_pagto_reembolso ?? "");
   const [obs, setObs] = useState(inicial?.observacao ?? "");
@@ -411,7 +411,7 @@ function SolicitacaoDialog({
     setCorretor(inicial?.corretor ?? "");
     setCliente(inicial?.cliente ?? "");
     setNumero(inicial?.numero_matricula ?? "");
-    setValor(maskBRLInput(inicial?.valor ?? 0));
+    setValor(inicial?.valor ? maskBRLInput(inicial.valor) : "");
     setReembolsado(inicial?.reembolsado ?? false);
     setDataPagto(inicial?.data_pagto_reembolso ?? "");
     setObs(inicial?.observacao ?? "");
@@ -481,7 +481,7 @@ function SolicitacaoDialog({
               <Input
                 inputMode="decimal"
                 value={valor}
-                onChange={(e) => setValor(e.target.value)}
+                onChange={(e) => setValor(maskBRLCents(e.target.value))}
                 placeholder="0,00"
               />
             </div>
@@ -616,7 +616,7 @@ function Creditos({
 function CreditoDialog({ onMudou }: { onMudou: () => void }) {
   const [open, setOpen] = useState(false);
   const [data, setData] = useState(hoje());
-  const [valor, setValor] = useState("0,00");
+  const [valor, setValor] = useState("");
   const [descricao, setDescricao] = useState("");
   const [salvando, setSalvando] = useState(false);
 
@@ -628,7 +628,7 @@ function CreditoDialog({ onMudou }: { onMudou: () => void }) {
       });
       toast.success("Crédito registrado.");
       setOpen(false);
-      setValor("0,00");
+      setValor("");
       setDescricao("");
       setData(hoje());
       onMudou();
@@ -661,7 +661,7 @@ function CreditoDialog({ onMudou }: { onMudou: () => void }) {
               <Input
                 inputMode="decimal"
                 value={valor}
-                onChange={(e) => setValor(e.target.value)}
+                onChange={(e) => setValor(maskBRLCents(e.target.value))}
                 placeholder="0,00"
               />
             </div>
