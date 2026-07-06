@@ -43,6 +43,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ConfirmDelete } from "@/components/shared/confirm-delete";
+import { InputAutocomplete } from "@/components/ui/input-autocomplete";
 import { formatBRL, maskBRLInput, parseBRL } from "@/lib/simulacao/format";
 import {
   obterControleMatriculas,
@@ -53,6 +54,7 @@ import {
   alternarReembolsoMatricula,
   excluirSolicitacaoMatricula,
   type MatriculaSolicitacao,
+  listarUsuariosCorrespondente,
 } from "@/lib/matriculas/matriculas.functions";
 
 export const Route = createFileRoute("/_authenticated/matriculas")({
@@ -395,6 +397,14 @@ function SolicitacaoDialog({
   const [obs, setObs] = useState(inicial?.observacao ?? "");
   const [salvando, setSalvando] = useState(false);
 
+  const { data: usuarios } = useQuery({
+    queryKey: ["matriculas-usuarios"],
+    queryFn: () => listarUsuariosCorrespondente(),
+    staleTime: 5 * 60 * 1000,
+  });
+  const nomesUsuarios = useMemo(() => (usuarios ?? []).map((u) => u.nome), [usuarios]);
+
+
   function reset() {
     setData(inicial?.data_solicitacao ?? hoje());
     setSolicitante(inicial?.solicitante ?? "");
@@ -478,21 +488,24 @@ function SolicitacaoDialog({
           </div>
           <div className="space-y-1">
             <Label>Solicitante</Label>
-            <Input
+            <InputAutocomplete
               value={solicitante}
-              onChange={(e) => setSolicitante(e.target.value)}
+              onValueChange={setSolicitante}
+              options={nomesUsuarios}
               placeholder="Quem pediu (equipe Agilliza)"
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <Label>Corretor</Label>
-              <Input
+              <InputAutocomplete
                 value={corretor}
-                onChange={(e) => setCorretor(e.target.value)}
+                onValueChange={setCorretor}
+                options={nomesUsuarios}
                 placeholder="Nome do corretor"
               />
             </div>
+
             <div className="space-y-1">
               <Label>Nº da matrícula</Label>
               <Input
