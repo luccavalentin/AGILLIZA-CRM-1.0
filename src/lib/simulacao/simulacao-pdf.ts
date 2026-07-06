@@ -455,7 +455,7 @@ export function baixarSimulacaoDetalhadaPDF({ simulacao: s, bancos }: SimulacaoP
     drawFooter(doc, pageW, pageH, p, total);
   }
 
-  salvar(doc, s, "detalhada");
+  return salvar(doc, s, "detalhada");
 }
 
 function salvar(doc: jsPDF, s: any, tipo: string) {
