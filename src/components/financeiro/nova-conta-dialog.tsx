@@ -85,7 +85,19 @@ export function NovaContaDialog({ tipo }: { tipo: ContaTipo }) {
         const sessao = await getMinhaSessao();
         const cid = sessao?.profile?.correspondente_id;
         if (!cid) throw new Error("Correspondente não identificado.");
-        const path = `${cid}/${crypto.randomUUID()}-${file.name}`;
+        // Sanitiza o nome do arquivo: o Storage rejeita chaves com espaços,
+        // vírgulas e acentos ("Invalid key"). Mantém só caracteres seguros.
+        const ponto = file.name.lastIndexOf(".");
+        const ext = ponto >= 0 ? file.name.slice(ponto + 1).toLowerCase() : "";
+        const nomeBase = (ponto >= 0 ? file.name.slice(0, ponto) : file.name)
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/[^a-zA-Z0-9._-]+/g, "-")
+          .replace(/-+/g, "-")
+          .replace(/^-|-$/g, "")
+          .slice(0, 80);
+        const nomeSeguro = `${nomeBase || "comprovante"}${ext ? `.${ext}` : ""}`;
+        const path = `${cid}/${crypto.randomUUID()}-${nomeSeguro}`;
         const { error } = await supabase.storage.from("financeiro-comprovantes").upload(path, file);
         if (error) throw error;
         comprovante_path = path;
