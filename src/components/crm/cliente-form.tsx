@@ -222,6 +222,8 @@ const emptyValues: ClienteFormValues = {
   telefone_celular: "",
   renda_total_declarada: "",
   uf_interesse: "",
+  utiliza_fgts: false,
+  fg_autorizacao_dados: false,
   origem: "direto",
 };
 
