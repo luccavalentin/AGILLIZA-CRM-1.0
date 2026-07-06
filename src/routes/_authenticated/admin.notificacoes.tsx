@@ -89,6 +89,16 @@ function Pagina() {
     },
   });
 
+  const limpar = useMutation({
+    mutationFn: () => limparNotificacoes(),
+    onSuccess: () => {
+      toast.success("Notificações limpas.");
+      queryClient.invalidateQueries({ queryKey: ["notificacoes"] });
+      queryClient.invalidateQueries({ queryKey: ["notificacoes", "todas"] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Falha ao limpar."),
+  });
+
   const naoLidas = itens.filter((n) => !n.lida);
   const lidas = itens.filter((n) => n.lida);
 
