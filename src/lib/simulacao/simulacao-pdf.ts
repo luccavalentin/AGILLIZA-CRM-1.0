@@ -1,10 +1,9 @@
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
-import { exportPDF } from "@/lib/relatorios/report-pdf";
+import { exportPDF, drawBrandHeader } from "@/lib/relatorios/report-pdf";
 import { formatBRL, formatPercent } from "@/lib/simulacao/format";
 import type { ReportColumn, ReportKpi, ReportRow } from "@/lib/relatorios/shared";
 import { extrairDetalheBanco } from "@/lib/simulacao/detalhe-banco";
-import { AGILLIZA_LOGO_LIGHT, AGILLIZA_LOGO_RATIO } from "@/lib/relatorios/brand-logo";
 
 interface SimulacaoPdfInput {
   simulacao: any;
@@ -82,7 +81,7 @@ const CORAL = "#F5333F";
 const GRAFITE = "#0B0B0F";
 const CINZA = "#6B7280";
 const ZEBRA = "#F7F8FA";
-const HEADER_H = 72;
+const HEADER_H = 84;
 
 function pctTxt(v: number | null, casas = 4): string {
   if (v == null || Number.isNaN(v)) return "—";
@@ -90,32 +89,7 @@ function pctTxt(v: number | null, casas = 4): string {
 }
 
 function drawHeaderBanco(doc: jsPDF, pageW: number, titulo: string, descricao: string) {
-  doc.setFillColor(AZUL);
-  doc.rect(0, 0, pageW, HEADER_H, "F");
-  doc.setFillColor(CORAL);
-  doc.rect(0, HEADER_H, pageW, 3, "F");
-  const logoH = 30;
-  const logoW = logoH * AGILLIZA_LOGO_RATIO;
-  try {
-    doc.addImage(
-      AGILLIZA_LOGO_LIGHT,
-      "PNG",
-      pageW - logoW - 32,
-      (HEADER_H - logoH) / 2,
-      logoW,
-      logoH,
-    );
-  } catch {
-    /* fallback silencioso */
-  }
-  doc.setTextColor("#FFFFFF");
-  doc.setFontSize(16);
-  doc.setFont("helvetica", "bold");
-  doc.text(titulo, 32, 34);
-  doc.setFontSize(9);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor("#C7CBF0");
-  doc.text(descricao, 32, 52);
+  drawBrandHeader(doc, pageW, HEADER_H, titulo, descricao);
 }
 
 function drawFooterBanco(doc: jsPDF, pageW: number, pageH: number, pageNum: number, total: number) {
