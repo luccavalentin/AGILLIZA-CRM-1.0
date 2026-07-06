@@ -405,6 +405,18 @@ function SolicitacaoDialog({
   });
   const nomesUsuarios = useMemo(() => (usuarios ?? []).map((u) => u.nome), [usuarios]);
 
+  const buscarClientes = useCallback(async (term: string) => {
+    const rows = await buscarClientesCRM({ data: { q: term } });
+    return (rows ?? []).map((c: any) => ({
+      value: c.id,
+      label: c.nome,
+      description:
+        [c.documento, c.email].filter(Boolean).join(" · ") || undefined,
+    }));
+  }, []);
+
+
+
 
   function reset() {
     setData(inicial?.data_solicitacao ?? hoje());
