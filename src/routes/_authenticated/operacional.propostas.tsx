@@ -147,7 +147,16 @@ function Pagina() {
                   router.navigate({ to: "/operacional/propostas/$id", params: { id: p.id } })
                 }
               >
-                <TableCell className="font-medium">{p.numero_proposta}</TableCell>
+                <TableCell>
+                  <div className="font-medium tabular-nums">
+                    {p.numero_proposta_banco ?? p.numero_proposta}
+                  </div>
+                  {p.numero_proposta_banco && (
+                    <div className="text-[11px] text-muted-foreground">
+                      Interno {p.numero_proposta}
+                    </div>
+                  )}
+                </TableCell>
                 <TableCell>{p.nome_cliente ?? "—"}</TableCell>
                 <TableCell><BancosProposta bancos={p.bancos} /></TableCell>
                 <TableCell className="text-right tabular-nums">

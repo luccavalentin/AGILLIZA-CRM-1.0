@@ -19,6 +19,7 @@ export interface PropostaBancoResumo {
 export interface PropostaListaItem {
   id: string;
   numero_proposta: string;
+  numero_proposta_banco: string | null;
   nome_cliente: string | null;
   nome_banco: string | null;
   produto: string | null;
@@ -76,7 +77,7 @@ export const listarPropostas = createServerFn({ method: "GET" })
     let query = supabase
       .from("propostas")
       .select(
-        "id, numero_proposta, nome_cliente, nome_banco, produto, valor_financiamento, status, created_at",
+        "id, numero_proposta, numero_proposta_banco, nome_cliente, nome_banco, produto, valor_financiamento, status, created_at",
         { count: "exact" },
       );
 
@@ -87,7 +88,7 @@ export const listarPropostas = createServerFn({ method: "GET" })
     if (data.q) {
       const q = data.q.trim();
       query = query.or(
-        `numero_proposta.ilike.%${q}%,nome_cliente.ilike.%${q}%,cpf_cnpj.ilike.%${q.replace(/\D/g, "")}%`,
+        `numero_proposta.ilike.%${q}%,numero_proposta_banco.ilike.%${q}%,nome_cliente.ilike.%${q}%,cpf_cnpj.ilike.%${q.replace(/\D/g, "")}%`,
       );
     }
 

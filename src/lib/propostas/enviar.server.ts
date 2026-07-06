@@ -392,7 +392,7 @@ export async function enviarPropostaImpl({
       // protocolo) em vez de apenas marcar "enviada". Assim o usuário vê o
       // desfecho imediato da comunicação com o banco.
       const situacaoTipo = String(resp?.tipoSituacao ?? "").trim();
-      const mapa = statusInternoBanco(situacaoTipo, false);
+      const mapa = statusInternoBanco(situacaoTipo, false, resp?.codigoSituacaoBanco);
       const patchOk: Record<string, unknown> = {
         status_banco: mapa.banco || "enviada",
         selecionado: true,
@@ -403,7 +403,11 @@ export async function enviarPropostaImpl({
       // aprovado/recusado/cancelado). O tipoSituacao do banco vem como código
       // cru (S/P/N/A/R) — precisa ser mapeado, senão o valor não bate com o
       // <Select> da tela e a linha continua exibindo "Não enviado".
-      patchOk.situacao_banco = situacaoBancoDeTipo(situacaoTipo);
+      patchOk.situacao_banco = situacaoBancoDeTipo(
+        situacaoTipo,
+        resp?.codigoSituacaoBanco,
+        false,
+      );
       const protocolo =
         resp?.codigoOportunidadeBanco ??
         resp?.codigoOportunidadeBancoInterno ??
@@ -496,15 +500,23 @@ export async function enviarPropostaImpl({
     payloadNovo: { status: novoStatus, bancos: resultados.length },
   });
 
-  // Logo após enviar, consulta a oportunidade (polling) para reconciliar o
-  // retorno do banco imediatamente — traz situação/etapa/taxas atualizadas sem
-  // o usuário precisar sincronizar manualmente.
+  // Logo após enviar, consulta a oportunidade algumas vezes em curto intervalo.
+  // Alguns bancos aceitam a inclusão primeiro e só gravam o número/status da
+  // proposta alguns segundos depois; essa reconciliação curta evita que a tela
+  // fique parada em "em análise" até o próximo agendamento.
   if (sucesso > 0) {
-    try {
-      const sinc = await sincronizarPropostaImpl({ propostaId, userId, supabase });
-      if (sinc?.status) novoStatus = sinc.status as PropostaStatus;
-    } catch (e) {
-      console.error("[proposta] sincronização pós-envio falhou", e);
+    for (let tentativa = 0; tentativa < 3; tentativa++) {
+      try {
+        if (tentativa > 0) await new Promise((resolve) => setTimeout(resolve, 2_500));
+        const sinc = await sincronizarPropostaImpl({ propostaId, userId, supabase });
+        if (sinc?.status) novoStatus = sinc.status as PropostaStatus;
+        if (!["enviada_banco", "em_analise_credito"].includes(String(sinc?.status ?? ""))) {
+          break;
+        }
+      } catch (e) {
+        console.error("[proposta] sincronização pós-envio falhou", e);
+        break;
+      }
     }
   }
 
@@ -609,16 +621,30 @@ function statusInternoBanco(
   banco: string;
   proposta: PropostaStatus | "credito_recusado" | null;
 } {
-  const codigo = String(codigoSituacaoBanco ?? "").toLowerCase();
-  if (codigo.includes("aprov")) return { banco: "aprovada", proposta: "credito_aprovado" };
-  if (codigo.includes("recus") || codigo.includes("reprov") || codigo.includes("negad")) {
+  if (temErro) return { banco: "erro", proposta: null };
+
+  const codigo = normalizarTexto(codigoSituacaoBanco);
+  const codigoNumerico = String(codigoSituacaoBanco ?? "").replace(/\D/g, "");
+  if (
+    codigo.includes("desfavoravel") ||
+    codigo.includes("nao favoravel") ||
+    codigo.includes("nao aprovado") ||
+    codigo.includes("recus") ||
+    codigo.includes("reprov") ||
+    codigo.includes("negad") ||
+    codigo.includes("indefer") ||
+    codigo.includes("rejeit") ||
+    codigoNumerico === "514"
+  ) {
     return { banco: "recusada", proposta: "credito_recusado" };
   }
   if (codigo.includes("cond")) return { banco: "condicionado", proposta: "credito_aprovado" };
+  if (codigo.includes("aprov") || codigo.includes("favoravel")) {
+    return { banco: "aprovada", proposta: "credito_aprovado" };
+  }
   const t = String(tipo ?? "")
     .toUpperCase()
     .charAt(0);
-  if (temErro) return { banco: "erro", proposta: null };
   switch (t) {
     case "A":
       return { banco: "aprovada", proposta: "credito_aprovado" };
@@ -638,27 +664,30 @@ function statusInternoBanco(
   }
 }
 
+function normalizarTexto(v: unknown): string {
+  return String(v ?? "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
+}
+
 /**
  * Traduz o `tipoSituacao` cru do banco (S/P/N/A/R) para o enum interno usado
  * na coluna `proposta_bancos.situacao_banco` e no <Select> "Situação de crédito"
  * (nao_enviado/em_analise/condicionado/aprovado/recusado/cancelado).
  */
-function situacaoBancoDeTipo(tipo: string): string {
-  const t = String(tipo ?? "")
-    .toUpperCase()
-    .charAt(0);
-  switch (t) {
-    case "A":
-      return "aprovado";
-    case "R":
-      return "recusado";
-    case "N":
-    case "E":
-    case "S":
-      return "em_analise";
-    default:
-      return "nao_enviado";
-  }
+function situacaoBancoDeTipo(
+  tipo: string,
+  codigoSituacaoBanco?: string | null,
+  temErro = false,
+): string {
+  const mapa = statusInternoBanco(tipo, temErro, codigoSituacaoBanco);
+  if (mapa.banco === "aprovada" || mapa.banco === "aprovado") return "aprovado";
+  if (mapa.banco === "recusada" || mapa.banco === "recusado") return "recusado";
+  if (mapa.banco === "condicionado") return "condicionado";
+  if (mapa.banco === "em_analise" || mapa.banco === "enviada") return "em_analise";
+  return "nao_enviado";
 }
 
 /**
@@ -716,6 +745,9 @@ function protocoloBanco(sim: any): string | null {
     sim?.codigoOportunidadeBanco ??
     sim?.codigoOportunidadeBancoInterno ??
     sim?.codigoSimulacaoBanco ??
+    sim?.numeroPropostaBanco ??
+    sim?.numeroProposta ??
+    sim?.proposalNumber ??
     null;
   return proto == null || proto === "" ? null : String(proto);
 }
@@ -870,7 +902,11 @@ export async function sincronizarPropostaImpl({
 
     const patchBanco: Record<string, unknown> = {
       status_banco: mapa.banco,
-      situacao_banco: erroMsg ? "nao_enviado" : situacaoBancoDeTipo(sim.tipoSituacao),
+      situacao_banco: situacaoBancoDeTipo(
+        sim.tipoSituacao,
+        sim.codigoSituacaoBanco,
+        Boolean(erroMsg),
+      ),
       mensagem_banco: erroMsg ? sanitizarMensagemErro(erroMsg) : null,
       raw_response: sim,
     };
