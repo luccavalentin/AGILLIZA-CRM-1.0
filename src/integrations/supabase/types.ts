@@ -812,14 +812,20 @@ export type Database = {
       }
       clientes: {
         Row: {
+          agencia: string | null
           ativo: boolean
+          banco_conta: string | null
+          conta_corrente: string | null
           correspondente_id: string
           created_at: string
           criador_id: string | null
+          data_expedicao: string | null
           data_nascimento: string | null
+          digito_conta: string | null
           documento: string
           documento_secundario: string | null
           email: string | null
+          empresa: string | null
           estado_civil:
             | Database["public"]["Enums"]["cliente_estado_civil"]
             | null
@@ -829,29 +835,44 @@ export type Database = {
           lgpd_aceite_ip: string | null
           lgpd_aceite_versao: string | null
           mae: string | null
+          nacionalidade: string | null
+          naturalidade: string | null
           nome: string
           numero_cliente: string
+          numero_documento: string | null
+          orgao_expedidor: string | null
           origem: Database["public"]["Enums"]["cliente_origem"]
+          pai: string | null
           portal_acesso_ativo: boolean
+          profissao: string | null
           regime_casamento:
             | Database["public"]["Enums"]["regime_casamento"]
             | null
           renda_total_declarada: number | null
           responsavel_id: string | null
+          sexo: string | null
           telefone_celular: string | null
+          tipo_documento_identidade: string | null
           tipo_pessoa: Database["public"]["Enums"]["tipo_pessoa"]
+          uf_expedicao: string | null
           uf_interesse: string | null
           updated_at: string
         }
         Insert: {
+          agencia?: string | null
           ativo?: boolean
+          banco_conta?: string | null
+          conta_corrente?: string | null
           correspondente_id: string
           created_at?: string
           criador_id?: string | null
+          data_expedicao?: string | null
           data_nascimento?: string | null
+          digito_conta?: string | null
           documento: string
           documento_secundario?: string | null
           email?: string | null
+          empresa?: string | null
           estado_civil?:
             | Database["public"]["Enums"]["cliente_estado_civil"]
             | null
@@ -861,29 +882,44 @@ export type Database = {
           lgpd_aceite_ip?: string | null
           lgpd_aceite_versao?: string | null
           mae?: string | null
+          nacionalidade?: string | null
+          naturalidade?: string | null
           nome: string
           numero_cliente: string
+          numero_documento?: string | null
+          orgao_expedidor?: string | null
           origem?: Database["public"]["Enums"]["cliente_origem"]
+          pai?: string | null
           portal_acesso_ativo?: boolean
+          profissao?: string | null
           regime_casamento?:
             | Database["public"]["Enums"]["regime_casamento"]
             | null
           renda_total_declarada?: number | null
           responsavel_id?: string | null
+          sexo?: string | null
           telefone_celular?: string | null
+          tipo_documento_identidade?: string | null
           tipo_pessoa?: Database["public"]["Enums"]["tipo_pessoa"]
+          uf_expedicao?: string | null
           uf_interesse?: string | null
           updated_at?: string
         }
         Update: {
+          agencia?: string | null
           ativo?: boolean
+          banco_conta?: string | null
+          conta_corrente?: string | null
           correspondente_id?: string
           created_at?: string
           criador_id?: string | null
+          data_expedicao?: string | null
           data_nascimento?: string | null
+          digito_conta?: string | null
           documento?: string
           documento_secundario?: string | null
           email?: string | null
+          empresa?: string | null
           estado_civil?:
             | Database["public"]["Enums"]["cliente_estado_civil"]
             | null
@@ -893,17 +929,26 @@ export type Database = {
           lgpd_aceite_ip?: string | null
           lgpd_aceite_versao?: string | null
           mae?: string | null
+          nacionalidade?: string | null
+          naturalidade?: string | null
           nome?: string
           numero_cliente?: string
+          numero_documento?: string | null
+          orgao_expedidor?: string | null
           origem?: Database["public"]["Enums"]["cliente_origem"]
+          pai?: string | null
           portal_acesso_ativo?: boolean
+          profissao?: string | null
           regime_casamento?:
             | Database["public"]["Enums"]["regime_casamento"]
             | null
           renda_total_declarada?: number | null
           responsavel_id?: string | null
+          sexo?: string | null
           telefone_celular?: string | null
+          tipo_documento_identidade?: string | null
           tipo_pessoa?: Database["public"]["Enums"]["tipo_pessoa"]
+          uf_expedicao?: string | null
           uf_interesse?: string | null
           updated_at?: string
         }
@@ -4370,6 +4415,10 @@ export type Database = {
           _codigo_destino: string
           _obs?: string
         }
+        Returns: undefined
+      }
+      cliente_pipeline_definir: {
+        Args: { _cliente_id: string; _codigo_destino: string; _obs?: string }
         Returns: undefined
       }
       correspondente_do_usuario: { Args: { _user_id: string }; Returns: string }
