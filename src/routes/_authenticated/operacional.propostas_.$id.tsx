@@ -668,6 +668,8 @@ function TabResumo({
         resultado={resultadoEnvio}
         onClose={() => setResultadoEnvio(null)}
       />
+
+      <DetalhamentoBancoDialog banco={detalheBanco} onClose={() => setDetalheBanco(null)} />
     </div>
   );
 }
