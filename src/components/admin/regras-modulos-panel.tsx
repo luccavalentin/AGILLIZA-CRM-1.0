@@ -235,13 +235,27 @@ export function RegrasModulosPanel() {
     setDirty(true);
   }
 
-  function abrirEditar() {
-    if (!selecionado) return;
-    setEditNome(selecionado.nome);
-    setEditDesc(selecionado.descricao ?? "");
-    setEditPortal(selecionado.acesso_tipo);
-    setEditPapel(selecionado.papel);
+  function abrirEditar(nivel?: NivelAcesso) {
+    const alvo = nivel ?? selecionado;
+    if (!alvo) return;
+    if (nivel) setSelecionadoId(nivel.id);
+    setEditNome(alvo.nome);
+    setEditDesc(alvo.descricao ?? "");
+    setEditPortal(alvo.acesso_tipo);
+    setEditPapel(alvo.papel);
     setEditarOpen(true);
+  }
+
+  // Abre a matriz de permissões de um papel específico.
+  function configurarPermissoes(id: string) {
+    setSelecionadoId(id);
+    setCarregadoPara("");
+    setSubaba("permissoes");
+  }
+
+  function pedirExcluir(id: string) {
+    setSelecionadoId(id);
+    setExcluirOpen(true);
   }
 
   // Garante papel válido ao trocar de portal.
