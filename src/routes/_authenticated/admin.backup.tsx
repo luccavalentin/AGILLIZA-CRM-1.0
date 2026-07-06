@@ -184,7 +184,36 @@ function Pagina() {
                     <TableCell className="text-muted-foreground">
                       {b.concluido_em ? new Date(b.concluido_em).toLocaleString("pt-BR") : "—"}
                     </TableCell>
+                    <TableCell>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-muted-foreground hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Excluir backup?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Este registro de backup será removido do histórico. Esta ação não
+                              pode ser desfeita.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => excluir.mutate(b.id)}>
+                              Excluir
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </TableCell>
                   </TableRow>
+
                 );
               })}
             </TableBody>
