@@ -1044,6 +1044,10 @@ function TabEnvolvidos({
       toast.success(editId ? "Participante atualizado." : "Participante incluído.");
       setOpen(false);
       qc.invalidateQueries({ queryKey: ["proposta", propostaId] });
+      // Fluxo "Criar proposta": ao fechar o cadastro complementar, dispara o
+      // envio automático da proposta ao(s) banco(s) selecionado(s).
+      onFechouAposSalvar?.();
+
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Falha ao salvar.");
     } finally {
