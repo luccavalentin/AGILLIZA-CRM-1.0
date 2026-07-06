@@ -31,6 +31,7 @@ import {
   Timer,
   Landmark,
   Sparkles,
+  ClipboardList,
 } from "lucide-react";
 
 /** Permissão exigida por um item (chave = `${modulo}:view`). */
