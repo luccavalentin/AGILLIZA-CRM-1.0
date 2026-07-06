@@ -54,6 +54,7 @@ import {
   alternarReembolsoMatricula,
   excluirSolicitacaoMatricula,
   type MatriculaSolicitacao,
+  listarUsuariosCorrespondente,
 } from "@/lib/matriculas/matriculas.functions";
 
 export const Route = createFileRoute("/_authenticated/matriculas")({
