@@ -385,6 +385,8 @@ export const criarProposta = createServerFn({ method: "POST" })
           bairro: e.bairro ?? null,
           municipio: e.cidade ?? null,
           uf: e.uf ?? c.uf_interesse ?? null,
+          utiliza_fgts: c.utiliza_fgts ?? false,
+          fg_autorizacao_dados: c.fg_autorizacao_dados ?? false,
           dados: { pai: c.pai ?? null, nacionalidade: c.nacionalidade ?? null, naturalidade: c.naturalidade ?? null, banco_conta: c.banco_conta ?? null },
         } as any);
       }
