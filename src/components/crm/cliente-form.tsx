@@ -119,24 +119,6 @@ const OPCOES_UF = [
   "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC",
   "SP", "SE", "TO",
 ];
-const OPCOES_PROFISSAO = [
-  "Advogado(a)",
-  "Administrador(a)",
-  "Analista",
-  "Arquiteto(a)",
-  "Autônomo(a)",
-  "Contador(a)",
-  "Comerciante",
-  "Empresário(a)",
-  "Enfermeiro(a)",
-  "Engenheiro(a)",
-  "Funcionário(a) público(a)",
-  "Médico(a)",
-  "Professor(a)",
-  "Vendedor(a)",
-  "Aposentado(a)",
-  "Estudante",
-];
 
 // Capitais e principais cidades (Cidade/UF) para sugerir na naturalidade.
 const OPCOES_NATURALIDADE = [
@@ -649,11 +631,10 @@ export function ClienteForm({
           </div>
           <div className="space-y-1.5">
             <Label>Profissão</Label>
-            <InputAutocomplete
+            <Input
               value={v.profissao}
-              onValueChange={(x) => set("profissao", x)}
-              options={OPCOES_PROFISSAO}
-              placeholder="Pesquisar ou digitar"
+              onChange={(e) => set("profissao", e.target.value)}
+              placeholder="Digite a profissão"
             />
           </div>
           <div className="space-y-1.5">
