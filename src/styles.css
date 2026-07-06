@@ -246,3 +246,271 @@ div[style*="Edit with Lovable"],
 @utility animate-carga {
   animation: carga 1.2s linear infinite;
 }
+
+/* ============================= DPS ============================= */
+/* Documento da Declaração Pessoal de Saúde (tela + impressão). */
+.dps-screen {
+  width: 100%;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+.dps-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  width: 100%;
+  max-width: 900px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--border);
+  background: var(--card);
+  padding: 0.75rem 1rem;
+}
+
+.dps-print {
+  width: 100%;
+  max-width: 900px;
+  background: #ffffff;
+  color: #1a1f2e;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  box-shadow: 0 10px 40px -12px rgb(0 0 0 / 0.25);
+  font-size: 12.5px;
+  line-height: 1.35;
+}
+
+.dps-header {
+  background: linear-gradient(115deg, #0b1b3a 0%, #16294f 45%, #1f4e8f 100%);
+  position: relative;
+  overflow: hidden;
+  padding: 22px 28px;
+}
+.dps-header::after {
+  content: "";
+  position: absolute;
+  right: -60px;
+  top: 0;
+  bottom: 0;
+  width: 220px;
+  background: linear-gradient(120deg, transparent 0%, rgb(59 130 246 / 0.35) 100%);
+  transform: skewX(-18deg);
+}
+.dps-header-inner {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 22px;
+}
+.dps-logo {
+  height: 52px;
+  width: auto;
+}
+.dps-title h1 {
+  color: #ffffff;
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  margin: 0;
+}
+.dps-title p {
+  color: #b9cdf0;
+  font-size: 11.5px;
+  margin: 3px 0 0;
+}
+
+.dps-ident {
+  padding: 16px 28px 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.dps-ident-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+.dps-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.dps-campo-label {
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #64748b;
+  font-weight: 700;
+}
+.dps-campo-valor {
+  border-bottom: 1px solid #cbd5e1;
+  padding: 2px 2px 3px;
+  font-size: 12.5px;
+  font-weight: 600;
+  min-height: 20px;
+  color: #0f172a;
+}
+
+.dps-perguntas {
+  padding: 8px 28px 20px;
+}
+.dps-q {
+  border-top: 1px solid #e2e8f0;
+  padding: 8px 0;
+  break-inside: avoid;
+}
+.dps-q-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+.dps-q-text {
+  margin: 0;
+  flex: 1;
+}
+.dps-q-text b {
+  color: #16294f;
+}
+.dps-simnao {
+  display: flex;
+  gap: 12px;
+  flex-shrink: 0;
+  padding-top: 1px;
+}
+.dps-opt {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+.dps-box {
+  width: 12px;
+  height: 12px;
+  border: 1.4px solid #16294f;
+  border-radius: 2px;
+  display: inline-block;
+}
+.dps-esclareca {
+  margin-top: 4px;
+  font-size: 11px;
+  color: #475569;
+  border-bottom: 1px solid #cbd5e1;
+  padding-bottom: 14px;
+}
+.dps-nota {
+  margin: 4px 0 0;
+  font-size: 10px;
+  font-style: italic;
+  color: #64748b;
+}
+.dps-sub {
+  margin-top: 6px;
+  padding-left: 12px;
+  border-left: 2px solid #dbeafe;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.dps-subitem {
+  padding-bottom: 4px;
+}
+.dps-inline {
+  display: flex;
+  gap: 28px;
+  margin-top: 6px;
+  align-items: center;
+}
+.dps-linha {
+  display: inline-block;
+  border-bottom: 1px solid #94a3b8;
+  min-width: 180px;
+  height: 14px;
+  vertical-align: bottom;
+}
+.dps-linha-sm {
+  min-width: 90px;
+}
+.dps-declaracao {
+  margin-top: 18px;
+  font-size: 10.5px;
+  color: #334155;
+  font-style: italic;
+  border-top: 1px solid #e2e8f0;
+  padding-top: 12px;
+}
+.dps-assinatura {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 32px;
+  margin-top: 34px;
+}
+.dps-assinatura .dps-linha {
+  display: block;
+  width: 100%;
+  min-width: 0;
+}
+.dps-assinatura p {
+  margin: 4px 0 0;
+  font-size: 10px;
+  color: #64748b;
+  text-align: center;
+}
+
+.dps-footer {
+  background: linear-gradient(115deg, #16294f 0%, #1f4e8f 100%);
+  color: #dbeafe;
+  padding: 10px 28px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 22px;
+  font-size: 11px;
+}
+
+@media (max-width: 640px) {
+  .dps-ident-row {
+    grid-template-columns: 1fr;
+  }
+  .dps-campo {
+    grid-column: span 1 !important;
+  }
+}
+
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+  .dps-print,
+  .dps-print * {
+    visibility: visible !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .dps-print {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    max-width: none;
+    box-shadow: none;
+    border-radius: 0;
+    font-size: 10.5px;
+  }
+  .dps-header,
+  .dps-footer {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .dps-q {
+    padding: 5px 0;
+  }
+}
