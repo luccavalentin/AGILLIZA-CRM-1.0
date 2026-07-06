@@ -26,7 +26,7 @@ import {
   Inbox,
   Gauge,
   
-  Settings2,
+  Building2,
   ShoppingCart,
   MessagesSquare,
   Timer,
