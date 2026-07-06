@@ -1,15 +1,22 @@
 import { createFileRoute, useRouter, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Search, Building2, User, RotateCcw } from "lucide-react";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { listarPropostas, moverStatusProposta } from "@/lib/propostas/propostas.functions";
 import { statusProposta } from "@/components/propostas/status";
-import { transicaoPermitida, type PropostaStatus } from "@/lib/propostas/state-machine";
+import {
+  transicaoPermitida,
+  STATUS_TERMINAIS,
+  type PropostaStatus,
+} from "@/lib/propostas/state-machine";
 import { Button } from "@/components/ui/button";
-import { formatBRL } from "@/lib/simulacao/format";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { formatBRL, maskCpfCnpj } from "@/lib/simulacao/format";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/operacional/propostas_/kanban")({
@@ -45,16 +52,59 @@ const TONE_BAR: Record<string, string> = {
   muted: "bg-muted-foreground",
 };
 
+const TONE_BADGE: Record<string, string> = {
+  success: "bg-success/10 text-success",
+  info: "bg-primary/10 text-primary",
+  warning: "bg-warning/10 text-warning",
+  danger: "bg-destructive/10 text-destructive",
+  muted: "bg-muted text-muted-foreground",
+};
+
+/** Primeiro e último dia do mês atual como intervalo ISO (para o filtro padrão). */
+function intervaloMesAtual(): { inicio: string; fim: string } {
+  const agora = new Date();
+  const primeiro = new Date(agora.getFullYear(), agora.getMonth(), 1);
+  const ultimo = new Date(agora.getFullYear(), agora.getMonth() + 1, 0);
+  const iso = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  return { inicio: iso(primeiro), fim: iso(ultimo) };
+}
+
 function Pagina() {
   const router = useRouter();
   const qc = useQueryClient();
   const moverFn = useServerFn(moverStatusProposta);
   const [arrastando, setArrastando] = useState<{ id: string; status: PropostaStatus } | null>(null);
 
+  const padrao = useMemo(() => intervaloMesAtual(), []);
+  const [escopo, setEscopo] = useState<"todas" | "minhas">("todas");
+  const [q, setQ] = useState("");
+  const [busca, setBusca] = useState("");
+  const [dataInicio, setDataInicio] = useState(padrao.inicio);
+  const [dataFim, setDataFim] = useState(padrao.fim);
+
   const { data } = useQuery({
-    queryKey: ["propostas", "kanban"],
-    queryFn: () => listarPropostas({ data: { escopo: "todas", pagina: 1, porPagina: 100 } }),
+    queryKey: ["propostas", "kanban", escopo, busca, dataInicio, dataFim],
+    queryFn: () =>
+      listarPropostas({
+        data: {
+          escopo,
+          q: busca || undefined,
+          data_inicio: dataInicio ? `${dataInicio}T00:00:00` : undefined,
+          data_fim: dataFim ? `${dataFim}T23:59:59` : undefined,
+          pagina: 1,
+          porPagina: 500,
+        },
+      }),
   });
+
+  function limparFiltros() {
+    setQ("");
+    setBusca("");
+    setDataInicio(padrao.inicio);
+    setDataFim(padrao.fim);
+    setEscopo("todas");
+  }
 
   async function soltar(coluna: PropostaStatus) {
     if (!arrastando) return;
@@ -69,7 +119,7 @@ function Pagina() {
     }
     try {
       await moverFn({ data: { proposta_id: id, novo_status: coluna } });
-      qc.invalidateQueries({ queryKey: ["propostas", "kanban"] });
+      qc.invalidateQueries({ queryKey: ["propostas"] });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Falha ao mover.");
     }
@@ -81,7 +131,9 @@ function Pagina() {
     <div className="min-h-[calc(100dvh-var(--app-header,4rem))] space-y-4 overflow-x-hidden p-3 sm:p-4 lg:p-6">
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
         <div className="min-w-0">
-          <h1 className="truncate text-lg font-semibold text-foreground sm:text-xl">Kanban de Propostas</h1>
+          <h1 className="truncate text-lg font-semibold text-foreground sm:text-xl">
+            Kanban de Propostas
+          </h1>
           <p className="text-sm text-muted-foreground">
             Arraste os cards entre etapas permitidas.
           </p>
@@ -90,6 +142,59 @@ function Pagina() {
           <Link to="/operacional/propostas">
             <ArrowLeft className="mr-1 h-4 w-4" /> Lista
           </Link>
+        </Button>
+      </div>
+
+      {/* Filtros */}
+      <div className="flex flex-wrap items-end gap-3 rounded-lg border border-border bg-card p-3 shadow-sm">
+        <Tabs value={escopo} onValueChange={(v) => setEscopo(v as "todas" | "minhas")}>
+          <TabsList>
+            <TabsTrigger value="todas">Todas</TabsTrigger>
+            <TabsTrigger value="minhas">Meu kanban</TabsTrigger>
+          </TabsList>
+        </Tabs>
+
+        <form
+          className="flex flex-1 items-center gap-2 min-w-[220px]"
+          onSubmit={(e) => {
+            e.preventDefault();
+            setBusca(q);
+          }}
+        >
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              className="pl-9"
+              placeholder="Cliente, CPF/CNPJ ou nº da proposta"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+            />
+          </div>
+          <Button type="submit" variant="secondary">
+            Buscar
+          </Button>
+        </form>
+
+        <div className="flex flex-col gap-1">
+          <Label className="text-xs text-muted-foreground">De</Label>
+          <Input
+            type="date"
+            value={dataInicio}
+            onChange={(e) => setDataInicio(e.target.value)}
+            className="w-[9.5rem]"
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <Label className="text-xs text-muted-foreground">Até</Label>
+          <Input
+            type="date"
+            value={dataFim}
+            onChange={(e) => setDataFim(e.target.value)}
+            className="w-[9.5rem]"
+          />
+        </div>
+        <Button variant="ghost" size="sm" onClick={limparFiltros}>
+          <RotateCcw className="mr-1 h-4 w-4" /> Limpar
         </Button>
       </div>
 
@@ -102,9 +207,9 @@ function Pagina() {
               key={col}
               onDragOver={(e) => e.preventDefault()}
               onDrop={() => soltar(col)}
-              className="flex min-h-48 min-w-0 flex-col overflow-hidden rounded-lg border border-border bg-muted/30 shadow-sm"
+              className="flex min-h-48 min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-muted/30 shadow-sm"
             >
-              <div className="shrink-0 overflow-hidden rounded-t-lg">
+              <div className="shrink-0 overflow-hidden rounded-t-xl">
                 <div className={cn("h-[3px]", TONE_BAR[cfg.tone])} />
                 <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2 px-3 py-2.5">
                   <span className="min-w-0 text-xs font-semibold uppercase leading-snug text-muted-foreground">
@@ -116,26 +221,68 @@ function Pagina() {
                 </div>
               </div>
               <div className="flex flex-1 flex-col gap-2 p-2">
-                {cards.map((c) => (
-                  <div
-                    key={c.id}
-                    draggable
-                    onDragStart={() =>
-                      setArrastando({ id: c.id, status: c.status as PropostaStatus })
-                    }
-                    onDragEnd={() => setArrastando(null)}
-                    onClick={() =>
-                      router.navigate({ to: "/operacional/propostas/$id", params: { id: c.id } })
-                    }
-                    className="min-w-0 cursor-grab rounded-md border border-border bg-card p-3 text-sm shadow-sm transition hover:-translate-y-0.5 hover:shadow-md active:cursor-grabbing"
-                  >
-                    <p className="truncate font-medium text-foreground">{c.numero_proposta}</p>
-                    <p className="truncate text-xs text-muted-foreground">{c.nome_cliente ?? "—"}</p>
-                    <p className="mt-1 truncate text-xs tabular-nums text-muted-foreground">
-                      {c.nome_banco ?? "—"} · {formatBRL(c.valor_financiamento)}
-                    </p>
-                  </div>
-                ))}
+                {cards.map((c) => {
+                  const terminal = STATUS_TERMINAIS.includes(c.status as PropostaStatus);
+                  const numeroBanco = c.numero_proposta_banco ?? c.numero_proposta;
+                  return (
+                    <div
+                      key={c.id}
+                      draggable={!terminal}
+                      onDragStart={() =>
+                        !terminal && setArrastando({ id: c.id, status: c.status as PropostaStatus })
+                      }
+                      onDragEnd={() => setArrastando(null)}
+                      onClick={() =>
+                        router.navigate({ to: "/operacional/propostas/$id", params: { id: c.id } })
+                      }
+                      className={cn(
+                        "group min-w-0 rounded-xl border border-border bg-card p-3 text-sm shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md",
+                        terminal ? "cursor-pointer" : "cursor-grab active:cursor-grabbing",
+                      )}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="truncate font-semibold tabular-nums text-foreground">
+                            {numeroBanco}
+                          </p>
+                          {c.numero_proposta_banco && (
+                            <p className="truncate text-[10px] text-muted-foreground">
+                              Interno {c.numero_proposta}
+                            </p>
+                          )}
+                        </div>
+                        <span
+                          className={cn(
+                            "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium",
+                            TONE_BADGE[cfg.tone],
+                          )}
+                        >
+                          {cfg.label}
+                        </span>
+                      </div>
+
+                      <div className="mt-2 flex items-center gap-1.5 text-xs font-medium text-foreground">
+                        <User className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                        <span className="truncate">{c.nome_cliente ?? "—"}</span>
+                      </div>
+                      {c.cpf_cnpj && (
+                        <p className="ml-5 truncate text-[11px] tabular-nums text-muted-foreground">
+                          {maskCpfCnpj(c.cpf_cnpj)}
+                        </p>
+                      )}
+
+                      <div className="mt-2 flex items-center justify-between gap-2 border-t border-border/60 pt-2">
+                        <span className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+                          <Building2 className="h-3.5 w-3.5 shrink-0" />
+                          <span className="truncate">{c.nome_banco ?? "—"}</span>
+                        </span>
+                        <span className="shrink-0 text-xs font-semibold tabular-nums text-foreground">
+                          {formatBRL(c.valor_financiamento)}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
                 {cards.length === 0 && (
                   <p className="px-1 py-6 text-center text-xs text-muted-foreground">Vazio</p>
                 )}
@@ -147,4 +294,3 @@ function Pagina() {
     </div>
   );
 }
-
