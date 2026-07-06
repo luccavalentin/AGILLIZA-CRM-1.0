@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -9,7 +9,7 @@ import {
   RotateCcw,
   FileText,
   Calculator,
-  Sparkles,
+  Plus,
   Send,
   Loader2,
 } from "lucide-react";
