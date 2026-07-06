@@ -1,7 +1,7 @@
 import { createFileRoute, useRouter, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { ArrowLeft, Search, Building2, User, RotateCcw } from "lucide-react";
 import { assertModuloPermitido } from "@/lib/route-guards";
@@ -25,23 +25,32 @@ export const Route = createFileRoute("/_authenticated/operacional/propostas_/kan
   component: Pagina,
 });
 
-const COLUNAS: PropostaStatus[] = [
-  "rascunho",
-  "enviada_banco",
-  "em_analise_credito",
-  "credito_aprovado",
-  "checklist_documentacao",
-  "cadastro_complementar",
-  "dossie_completo",
-  "formularios",
-  "envio_documentos_banco",
-  "vistoria_agendamento",
-  "vistoria_concluida",
-  "emissao_contrato",
-  "contrato_emitido",
-  "credito_recusado",
-  "erro_envio",
-  "cancelada",
+/**
+ * Colunas do kanban. Cada coluna tem um status "destino" (usado ao soltar um card)
+ * e a lista de status que ela agrega (para exibir os cards).
+ * "enviada_banco" e "em_analise_credito" compartilham a mesma etapa visual.
+ */
+type ColunaKanban = {
+  destino: PropostaStatus;
+  agrega: PropostaStatus[];
+};
+
+const COLUNAS: ColunaKanban[] = [
+  { destino: "rascunho", agrega: ["rascunho"] },
+  { destino: "enviada_banco", agrega: ["enviada_banco", "em_analise_credito"] },
+  { destino: "credito_aprovado", agrega: ["credito_aprovado"] },
+  { destino: "credito_recusado", agrega: ["credito_recusado"] },
+  { destino: "checklist_documentacao", agrega: ["checklist_documentacao"] },
+  { destino: "cadastro_complementar", agrega: ["cadastro_complementar"] },
+  { destino: "dossie_completo", agrega: ["dossie_completo"] },
+  { destino: "formularios", agrega: ["formularios"] },
+  { destino: "envio_documentos_banco", agrega: ["envio_documentos_banco"] },
+  { destino: "vistoria_agendamento", agrega: ["vistoria_agendamento"] },
+  { destino: "vistoria_concluida", agrega: ["vistoria_concluida"] },
+  { destino: "emissao_contrato", agrega: ["emissao_contrato"] },
+  { destino: "contrato_emitido", agrega: ["contrato_emitido"] },
+  { destino: "erro_envio", agrega: ["erro_envio"] },
+  { destino: "cancelada", agrega: ["cancelada"] },
 ];
 
 const TONE_BAR: Record<string, string> = {
@@ -82,6 +91,12 @@ function Pagina() {
   const [busca, setBusca] = useState("");
   const [dataInicio, setDataInicio] = useState(padrao.inicio);
   const [dataFim, setDataFim] = useState(padrao.fim);
+
+  // Busca ao vivo: filtra conforme o usuário digita (com debounce).
+  useEffect(() => {
+    const t = setTimeout(() => setBusca(q.trim()), 300);
+    return () => clearTimeout(t);
+  }, [q]);
 
   const { data } = useQuery({
     queryKey: ["propostas", "kanban", escopo, busca, dataInicio, dataFim],
@@ -154,13 +169,7 @@ function Pagina() {
           </TabsList>
         </Tabs>
 
-        <form
-          className="flex flex-1 items-center gap-2 min-w-[220px]"
-          onSubmit={(e) => {
-            e.preventDefault();
-            setBusca(q);
-          }}
-        >
+        <div className="flex flex-1 items-center gap-2 min-w-[220px]">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -170,10 +179,7 @@ function Pagina() {
               onChange={(e) => setQ(e.target.value)}
             />
           </div>
-          <Button type="submit" variant="secondary">
-            Buscar
-          </Button>
-        </form>
+        </div>
 
         <div className="flex flex-col gap-1">
           <Label className="text-xs text-muted-foreground">De</Label>
@@ -200,13 +206,13 @@ function Pagina() {
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 min-[1720px]:grid-cols-5">
         {COLUNAS.map((col) => {
-          const cfg = statusProposta(col);
-          const cards = itens.filter((i) => i.status === col);
+          const cfg = statusProposta(col.destino);
+          const cards = itens.filter((i) => col.agrega.includes(i.status as PropostaStatus));
           return (
             <div
-              key={col}
+              key={col.destino}
               onDragOver={(e) => e.preventDefault()}
-              onDrop={() => soltar(col)}
+              onDrop={() => soltar(col.destino)}
               className="flex min-h-48 min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-muted/30 shadow-sm"
             >
               <div className="shrink-0 overflow-hidden rounded-t-xl">
