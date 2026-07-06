@@ -361,6 +361,8 @@ export function ClienteForm({
         telefone_celular: soDigitos(v.telefone_celular),
         renda_total_declarada: renda,
         uf_interesse: v.uf_interesse || null,
+        utiliza_fgts: v.utiliza_fgts,
+        fg_autorizacao_dados: v.fg_autorizacao_dados,
         origem: v.origem as any,
       };
       let id = v.id;
