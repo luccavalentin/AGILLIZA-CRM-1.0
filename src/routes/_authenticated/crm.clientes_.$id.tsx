@@ -208,6 +208,14 @@ function Pagina() {
                 }
               />
               <Linha rotulo="UF de interesse" valor={c.uf_interesse ?? "—"} />
+              <Linha
+                rotulo="Conta bancária"
+                valor={
+                  (c as any).agencia || (c as any).conta_corrente
+                    ? `${(c as any).banco_conta ? (c as any).banco_conta + " · " : ""}Ag. ${(c as any).agencia ?? "—"} · CC ${(c as any).conta_corrente ?? "—"}${(c as any).digito_conta ? "-" + (c as any).digito_conta : ""}`
+                    : "—"
+                }
+              />
             </CardContent>
           </Card>
           <Card>
