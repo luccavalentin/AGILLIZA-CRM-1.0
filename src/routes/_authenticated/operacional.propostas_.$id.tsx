@@ -322,7 +322,9 @@ function Pagina() {
               replace: true,
             });
           }}
+          onFechouAposSalvar={enviarAposComplementar}
         />
+
 
       )}
       {tab === "VENDEDORES" && (
