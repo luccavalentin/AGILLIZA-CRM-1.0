@@ -237,7 +237,7 @@ function Pagina() {
                   <TableRow key={b.id}>
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-2">
-                        {b.nome_banco}
+                        <span style={{ color: corDoBanco(b.nome_banco) }}>{b.nome_banco}</span>
                         {b.id === melhorId && <ToneBadge tone="success">Melhor taxa</ToneBadge>}
                       </div>
                       {b.status_banco === "erro" && b.mensagem_banco && (
