@@ -2,7 +2,7 @@ import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ArrowLeft, RefreshCw, Copy, Download } from "lucide-react";
+import { ArrowLeft, RefreshCw, Copy, Download, ChevronDown } from "lucide-react";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { supabase } from "@/integrations/supabase/client";
 import { obterSimulacao, enviarSimulacaoBanco, duplicarSimulacao } from "@/lib/simulacao/simulacoes.functions";
@@ -11,13 +11,17 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
+  DropdownMenuSeparator, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { ToneBadge } from "@/components/crm/tone-badge";
 import { SimulacaoStatusBadge, BancoStatusBadge } from "@/components/simulacao/status-badge";
 import { DetalheBancoDialog } from "@/components/simulacao/detalhe-banco-dialog";
 import { formatBRL, formatPercent } from "@/lib/simulacao/format";
-import { baixarSimulacaoPDF } from "@/lib/simulacao/simulacao-pdf";
+import { baixarSimulacaoPDF, baixarBancoDetalhePDF } from "@/lib/simulacao/simulacao-pdf";
 
 export const Route = createFileRoute("/_authenticated/operacional/simulacoes_/$id")({
   head: () => ({ meta: [{ title: "Simulação — Agilliza" }] }),
@@ -119,9 +123,31 @@ function Pagina() {
         </div>
         <div className="flex gap-2">
           <Button variant="secondary" onClick={reenviar}><RefreshCw className="mr-1 h-4 w-4" /> Reenviar ao banco</Button>
-          <Button variant="secondary" onClick={() => baixarSimulacaoPDF({ simulacao: s, bancos })}>
-            <Download className="mr-1 h-4 w-4" /> Baixar PDF
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="secondary">
+                <Download className="mr-1 h-4 w-4" /> Baixar PDF <ChevronDown className="ml-1 h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-64">
+              <DropdownMenuItem onClick={() => baixarSimulacaoPDF({ simulacao: s, bancos })}>
+                Comparativo consolidado
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel>Detalhado por banco</DropdownMenuLabel>
+              {bancos.length === 0 && (
+                <DropdownMenuItem disabled>Nenhum banco</DropdownMenuItem>
+              )}
+              {bancos.map((b: any) => (
+                <DropdownMenuItem
+                  key={b.id}
+                  onClick={() => baixarBancoDetalhePDF({ simulacao: s, banco: b })}
+                >
+                  {b.nome_banco}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button variant="ghost" onClick={duplicar}><Copy className="mr-1 h-4 w-4" /> Duplicar</Button>
         </div>
       </div>
