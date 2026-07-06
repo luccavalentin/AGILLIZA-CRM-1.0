@@ -326,8 +326,13 @@ function Pagina() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[22rem_1fr]">
-        {/* Lista de conversas */}
-        <Card className="flex h-[38rem] flex-col overflow-hidden border-border/60 shadow-sm">
+        {/* Lista de conversas — no mobile some quando uma conversa é aberta */}
+        <Card
+          className={cn(
+            "h-[70vh] flex-col overflow-hidden border-border/60 shadow-sm lg:flex lg:h-[38rem]",
+            selecionado ? "hidden" : "flex",
+          )}
+        >
           <div className="space-y-2 border-b bg-muted/30 p-3">
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
