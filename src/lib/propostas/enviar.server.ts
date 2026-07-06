@@ -385,7 +385,20 @@ export async function enviarPropostaImpl({
     payloadNovo: { status: novoStatus, bancos: resultados.length },
   });
 
+  // Logo após enviar, consulta a oportunidade (polling) para reconciliar o
+  // retorno do banco imediatamente — traz situação/etapa/taxas atualizadas sem
+  // o usuário precisar sincronizar manualmente.
+  if (sucesso > 0) {
+    try {
+      const sinc = await sincronizarPropostaImpl({ propostaId, userId, supabase });
+      if (sinc?.status) novoStatus = sinc.status;
+    } catch (e) {
+      console.error("[proposta] sincronização pós-envio falhou", e);
+    }
+  }
+
   return { status: novoStatus, bancos: resultados };
+
 }
 
 export async function enviarFollowupHomefinImpl({
