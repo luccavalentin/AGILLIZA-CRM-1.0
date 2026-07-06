@@ -44,7 +44,7 @@ const OPCOES: { valor: Modo; icone: typeof Copy; titulo: string; descricao: stri
   },
   {
     valor: "nova_simulacao",
-    icone: Sparkles,
+    icone: Calculator,
     titulo: "Gerar uma nova simulação agora",
     descricao:
       "Faça uma simulação na hora com os bancos ativos e cadastre a proposta em seguida.",
