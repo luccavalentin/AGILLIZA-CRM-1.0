@@ -2,11 +2,57 @@ import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import type { ReportColumn, ReportRow, ReportKpi } from "@/lib/relatorios/shared";
 import { formatCell, footerValue } from "@/lib/relatorios/report-format";
+import { AGILLIZA_LOGO_LIGHT, AGILLIZA_LOGO_RATIO } from "@/lib/relatorios/brand-logo";
 
 /** Cores institucionais fixas do PDF (ignora o tema do usuário). */
 const AZUL = "#000F9F";
+const CORAL = "#F5333F";
 const GRAFITE = "#0B0B0F";
+const CINZA = "#6B7280";
 const ZEBRA = "#F7F8FA";
+
+const HEADER_H = 72;
+
+/** Desenha o cabeçalho institucional (faixa azul + logo + título) em cada página. */
+function drawHeader(doc: jsPDF, pageW: number, titulo: string, descricao: string) {
+  doc.setFillColor(AZUL);
+  doc.rect(0, 0, pageW, HEADER_H, "F");
+  // Detalhe coral inferior
+  doc.setFillColor(CORAL);
+  doc.rect(0, HEADER_H, pageW, 3, "F");
+
+  // Logo (canto direito)
+  const logoH = 30;
+  const logoW = logoH * AGILLIZA_LOGO_RATIO;
+  try {
+    doc.addImage(AGILLIZA_LOGO_LIGHT, "PNG", pageW - logoW - 32, (HEADER_H - logoH) / 2, logoW, logoH);
+  } catch {
+    /* fallback silencioso */
+  }
+
+  doc.setTextColor("#FFFFFF");
+  doc.setFontSize(16);
+  doc.setFont("helvetica", "bold");
+  doc.text(titulo, 32, 34);
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor("#C7CBF0");
+  doc.text(descricao, 32, 52);
+}
+
+/** Desenha o rodapé institucional com paginação. */
+function drawFooter(doc: jsPDF, pageW: number, pageH: number, pageNum: number, total: number) {
+  const y = pageH - 22;
+  doc.setDrawColor("#E4E6EF");
+  doc.setLineWidth(0.5);
+  doc.line(32, y, pageW - 32, y);
+  doc.setFontSize(7.5);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(CINZA);
+  const emitido = new Date().toLocaleString("pt-BR");
+  doc.text(`Agilliza · Crédito Imobiliário  —  Emitido em ${emitido}`, 32, y + 12);
+  doc.text(`Página ${pageNum} de ${total}`, pageW - 32, y + 12, { align: "right" });
+}
 
 /** Exporta o relatório em PDF com cabeçalho institucional, KPIs e tabela zebrada. */
 export function exportPDF(
@@ -19,39 +65,39 @@ export function exportPDF(
 ) {
   const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
   const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
 
-  // Cabeçalho institucional
-  doc.setFillColor(AZUL);
-  doc.rect(0, 0, pageW, 56, "F");
-  doc.setTextColor("#FFFFFF");
-  doc.setFontSize(15);
-  doc.setFont("helvetica", "bold");
-  doc.text(titulo, 32, 26);
-  doc.setFontSize(9);
-  doc.setFont("helvetica", "normal");
-  doc.text(descricao, 32, 42);
-
-  let y = 78;
+  let y = HEADER_H + 24;
   doc.setTextColor(GRAFITE);
   doc.setFontSize(8);
+  doc.setFont("helvetica", "normal");
   doc.text(meta.join("   ·   "), 32, y);
-  y += 16;
+  y += 20;
 
-  // KPIs em grade
-  doc.setFontSize(8);
-  const kpiW = (pageW - 64) / Math.min(kpis.length || 1, 6);
-  kpis.slice(0, 6).forEach((k, i) => {
-    const x = 32 + i * kpiW;
-    doc.setTextColor("#6B7280");
-    doc.setFont("helvetica", "normal");
-    doc.text(k.label.toUpperCase(), x, y);
-    doc.setTextColor(GRAFITE);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(11);
-    doc.text(k.valor, x, y + 14);
-    doc.setFontSize(8);
-  });
-  y += 30;
+  // KPIs em cartões
+  if (kpis.length) {
+    const gap = 10;
+    const cols = Math.min(kpis.length, 6);
+    const cardW = (pageW - 64 - gap * (cols - 1)) / cols;
+    const cardH = 44;
+    kpis.slice(0, 6).forEach((k, i) => {
+      const x = 32 + i * (cardW + gap);
+      doc.setFillColor(ZEBRA);
+      doc.setDrawColor("#E4E6EF");
+      doc.roundedRect(x, y, cardW, cardH, 4, 4, "FD");
+      doc.setFillColor(CORAL);
+      doc.rect(x, y + 8, 3, cardH - 16, "F");
+      doc.setTextColor(CINZA);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7);
+      doc.text(k.label.toUpperCase(), x + 12, y + 18, { maxWidth: cardW - 20 });
+      doc.setTextColor(AZUL);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(13);
+      doc.text(k.valor, x + 12, y + 36, { maxWidth: cardW - 20 });
+    });
+    y += cardH + 20;
+  }
 
   const head = [columns.map((c) => c.label)];
   const body = rows.map((r) => columns.map((c) => formatCell(r[c.key], c.format)));
@@ -62,17 +108,27 @@ export function exportPDF(
     head,
     body,
     foot,
-    margin: { left: 32, right: 32 },
-    styles: { fontSize: 7.5, cellPadding: 3, textColor: GRAFITE },
+    margin: { left: 32, right: 32, top: HEADER_H + 16, bottom: 40 },
+    styles: { fontSize: 7.5, cellPadding: 4, textColor: GRAFITE, lineColor: "#E4E6EF", lineWidth: 0.25 },
     headStyles: { fillColor: AZUL, textColor: "#FFFFFF", fontStyle: "bold" },
-    footStyles: { fillColor: "#E9EBF5", textColor: GRAFITE, fontStyle: "bold" },
+    footStyles: { fillColor: "#E9EBF5", textColor: AZUL, fontStyle: "bold" },
     alternateRowStyles: { fillColor: ZEBRA },
     columnStyles: columns.reduce((acc, c, i) => {
       if (c.align === "right" || c.format === "brl" || c.format === "int" || c.format === "pct") acc[i] = { halign: "right" };
       return acc;
     }, {} as Record<number, { halign: "right" }>),
+    didDrawPage: () => {
+      drawHeader(doc, pageW, titulo, descricao);
+    },
   });
 
+  // Rodapé com paginação (após conhecer o total de páginas)
+  const total = doc.getNumberOfPages();
+  for (let p = 1; p <= total; p++) {
+    doc.setPage(p);
+    drawFooter(doc, pageW, pageH, p, total);
+  }
+
   const nome = titulo.toLowerCase().replace(/[^a-z0-9]+/g, "-");
-  doc.save(`${nome}.pdf`);
+  doc.save(`agilliza-${nome}.pdf`);
 }
