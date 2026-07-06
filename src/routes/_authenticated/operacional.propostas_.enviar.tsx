@@ -96,9 +96,6 @@ function Pagina() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold text-foreground">Nova Proposta</h1>
-          <p className="text-sm text-muted-foreground">
-            Consulte suas propostas e simulações ou gere uma nova proposta do zero.
-          </p>
         </div>
         <Button
           size="lg"
@@ -109,25 +106,8 @@ function Pagina() {
             })
           }
         >
-          <Sparkles className="mr-2 h-4 w-4" /> Gerar Nova Proposta
+          <Plus className="mr-2 h-4 w-4" /> Gerar Nova Proposta
         </Button>
-      </div>
-
-      {/* Destaque do fluxo */}
-      <div className="rounded-lg border border-primary/30 bg-primary/5 p-4">
-        <div className="flex items-start gap-3">
-          <div className="rounded-md bg-primary/10 p-2 text-primary">
-            <Sparkles className="h-5 w-5" />
-          </div>
-          <div className="text-sm text-muted-foreground">
-            <p className="font-medium text-foreground">Como funciona</p>
-            <p>
-              Ao clicar em <strong>Gerar Nova Proposta</strong>, você preenche a simulação completa
-              e pode <strong>enviar direto ao banco</strong> — a proposta é criada automaticamente
-              com o banco vencedor.
-            </p>
-          </div>
-        </div>
       </div>
 
       {/* Abas Propostas / Simulações */}
