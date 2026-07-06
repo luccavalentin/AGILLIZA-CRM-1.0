@@ -477,11 +477,26 @@ function AcoesTopo({
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-      {proximos.map((s) => (
-        <Button key={s} size="sm" variant="secondary" onClick={() => mover(s)} disabled={busy}>
-          → {statusProposta(s).label}
-        </Button>
-      ))}
+      {proximos.map((s) => {
+        const tone = statusProposta(s).tone;
+        const isRecusa = s === "credito_recusado";
+        const isAprova = s === "credito_aprovado";
+        return (
+          <Button
+            key={s}
+            size="sm"
+            variant={isRecusa ? "destructive" : "secondary"}
+            onClick={() => mover(s)}
+            disabled={busy}
+            className={cn(
+              isAprova &&
+                "bg-success text-success-foreground hover:bg-success/90",
+            )}
+          >
+            {isRecusa ? "✕" : "→"} {statusProposta(s).label}
+          </Button>
+        );
+      })}
       {status !== "cancelada" && status !== "registrado" && (
         <Dialog open={cancelOpen} onOpenChange={setCancelOpen}>
           <DialogTrigger asChild>
