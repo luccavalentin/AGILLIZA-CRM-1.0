@@ -1,4 +1,5 @@
 import { createFileRoute, useRouter, Link } from "@tanstack/react-router";
+import { corDoBanco } from "@/lib/bancos/cores";
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -218,7 +219,7 @@ function Pagina() {
                   key={b.id}
                   className="flex items-center justify-between gap-2 rounded-md border border-border bg-card px-3 py-2"
                 >
-                  <span className="truncate text-sm font-medium text-foreground">
+                  <span className="truncate text-sm font-medium" style={{ color: corDoBanco(b.nome_banco) }}>
                     {b.nome_banco}
                   </span>
                   <ToneBadge
@@ -584,7 +585,7 @@ function TabResumo({
                     aria-label={`Selecionar ${b.nome_banco}`}
                   />
                 </TableCell>
-                <TableCell className="font-medium">{b.nome_banco}</TableCell>
+                <TableCell className="font-medium" style={{ color: corDoBanco(b.nome_banco) }}>{b.nome_banco}</TableCell>
                 <TableCell className="text-right tabular-nums">
                   {formatBRL(b.valor_financiamento_max)}
                 </TableCell>

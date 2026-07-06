@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { corDoBanco } from "@/lib/bancos/cores";
 import { FileText } from "lucide-react";
 import {
   Dialog,
@@ -49,7 +50,7 @@ export function DetalheBancoDialog({ banco }: { banco: any }) {
       <DialogContent className="max-h-[90vh] max-w-4xl overflow-hidden p-0">
         <DialogHeader className="border-b border-border p-4">
           <DialogTitle className="flex items-center gap-2">
-            {banco?.nome_banco ?? "Banco"}
+            <span style={{ color: corDoBanco(banco?.nome_banco) }}>{banco?.nome_banco ?? "Banco"}</span>
             <BancoStatusBadge status={banco?.status_banco} />
           </DialogTitle>
         </DialogHeader>
