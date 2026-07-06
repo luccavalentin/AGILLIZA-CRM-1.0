@@ -55,6 +55,17 @@ function BankYAxisTick(props: {
   );
 }
 
+/** Gera ticks inteiros únicos e "redondos" de 0 até um máximo confortável. */
+function niceIntTicks(max: number): number[] {
+  const topo = Math.max(1, Math.ceil(max));
+  // Passo inteiro que resulta em ~4 divisões, sempre >= 1.
+  const step = Math.max(1, Math.ceil(topo / 4));
+  const fim = Math.ceil(topo / step) * step;
+  const ticks: number[] = [];
+  for (let v = 0; v <= fim; v += step) ticks.push(v);
+  return ticks;
+}
+
 
 
 const tooltipStyle = {
@@ -125,6 +136,10 @@ export function ReportChartView({
   }
 
   if (chart.tipo === "barh" || chart.tipo === "funnel") {
+    // Para contagens (sem decimais), gera ticks inteiros únicos e evita que o
+    // recharts arredonde ticks fracionários em números repetidos (ex.: 1 1 2 2).
+    const maxValor = Math.max(0, ...chart.dados.map((d) => Number(d.valor) || 0));
+    const intTicks = !allowDecimals ? niceIntTicks(maxValor) : undefined;
     return (
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={chart.dados} layout="vertical">
@@ -135,6 +150,9 @@ export function ReportChartView({
             stroke="hsl(var(--muted-foreground))"
             tickFormatter={fmt}
             allowDecimals={allowDecimals}
+            {...(intTicks
+              ? { ticks: intTicks, domain: [0, intTicks[intTicks.length - 1]] }
+              : {})}
           />
           <YAxis
             type="category"
