@@ -631,22 +631,29 @@ const ROTULO_CAMPO: Record<string, string> = {
 function rotularCampo(nome: unknown): string | null {
   const bruto = String(nome ?? "").trim();
   if (!bruto) return null;
-  const chave = bruto
+  // Bancos enviam caminhos aninhados (ex.: "proponents[0].occupation.profession").
+  // Usamos o último segmento, sem índices de array, para achar o rótulo.
+  const folha = bruto.split(".").pop() ?? bruto;
+  const chave = folha
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-z0-9]/g, "");
-  return ROTULO_CAMPO[chave] ?? bruto;
+  return ROTULO_CAMPO[chave] ?? folha;
 }
 
-/** Formata "campo: mensagem" incluindo o nome do campo quando disponível. */
+/** Formata "campo: mensagem (valor)" incluindo campo e valor problemático. */
 function formatarErroCampo(f: any): string | null {
   const msg = f?.message ?? f?.mensagem ?? f?.descricao ?? null;
   const rotulo = rotularCampo(f?.field ?? f?.fieldName ?? f?.campo ?? f?.name ?? f?.propriedade);
+  const valor = f?.value ?? f?.valor ?? null;
+  const sufixoValor =
+    valor != null && String(valor).trim() ? ` (valor informado: "${String(valor).trim()}")` : "";
   if (msg && rotulo && !normalizarTexto(String(msg)).includes(normalizarTexto(rotulo))) {
-    return `${rotulo}: ${msg}`;
+    return `${rotulo}: ${msg}${sufixoValor}`;
   }
-  return msg ? String(msg) : rotulo;
+  if (msg) return `${msg}${sufixoValor}`;
+  return rotulo;
 }
 
 /** Extrai mensagem de erro legível do campo retornoIntegracao do banco. */
