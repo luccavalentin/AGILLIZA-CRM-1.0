@@ -138,7 +138,7 @@ export const buscarClientesApp = createServerFn({ method: "GET" })
     }));
   });
 
-
+export const listarChatCliente = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { cliente_id: string }) =>
     z.object({ cliente_id: z.string().uuid() }).parse(d),
