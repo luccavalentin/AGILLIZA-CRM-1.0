@@ -1,13 +1,14 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Plus, Search, FileText, KanbanSquare } from "lucide-react";
+import { Plus, Search, FileText, KanbanSquare, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { listarPropostas, excluirProposta } from "@/lib/propostas/propostas.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
@@ -22,6 +23,16 @@ import { BancosProposta } from "@/components/proposta/bancos-proposta";
 import { StatusBancosProposta } from "@/components/proposta/status-bancos-proposta";
 import { ConfirmDelete } from "@/components/shared/confirm-delete";
 import { formatBRL } from "@/lib/simulacao/format";
+
+/** Primeiro e último dia do mês atual como intervalo ISO (para o filtro padrão). */
+function intervaloMesAtual(): { inicio: string; fim: string } {
+  const agora = new Date();
+  const primeiro = new Date(agora.getFullYear(), agora.getMonth(), 1);
+  const ultimo = new Date(agora.getFullYear(), agora.getMonth() + 1, 0);
+  const iso = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  return { inicio: iso(primeiro), fim: iso(ultimo) };
+}
 
 export const Route = createFileRoute("/_authenticated/operacional/propostas")({
   head: () => ({ meta: [{ title: "Propostas — Agilliza" }] }),
