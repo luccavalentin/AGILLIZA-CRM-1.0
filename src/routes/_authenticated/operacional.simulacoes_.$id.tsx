@@ -36,7 +36,6 @@ import { DetalheBancoDialog } from "@/components/simulacao/detalhe-banco-dialog"
 import { SelecionarBancosPdfDialog } from "@/components/simulacao/selecionar-bancos-pdf-dialog";
 import { formatBRL, formatPercent } from "@/lib/simulacao/format";
 import {
-  baixarSimulacaoPDF,
   baixarSimulacaoDetalhadaPDF,
 } from "@/lib/simulacao/simulacao-pdf";
 
