@@ -14,6 +14,9 @@ import {
   Download,
   Upload,
   RefreshCw,
+  CheckCircle2,
+  XCircle,
+  Building2,
 } from "lucide-react";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import {
