@@ -65,7 +65,24 @@
   --chart-3: #10a37f;
   --chart-4: #eab308;
   --chart-5: #f5333f;
+
+  /* Paleta de progressão da esteira (14 etapas): jornada azul -> verde. */
+  --pipe-1: #4338ca;
+  --pipe-2: #4f46e5;
+  --pipe-3: #4361ee;
+  --pipe-4: #2563eb;
+  --pipe-5: #0284c7;
+  --pipe-6: #0891b2;
+  --pipe-7: #0d9488;
+  --pipe-8: #059669;
+  --pipe-9: #16a34a;
+  --pipe-10: #65a30d;
+  --pipe-11: #ca8a04;
+  --pipe-12: #ea580c;
+  --pipe-13: #7c3aed;
+  --pipe-14: #10a37f;
 }
+
 
 .dark {
   /* MODO ESCURO — conteúdo permanece BRANCO; apenas o menu é escuro. */
