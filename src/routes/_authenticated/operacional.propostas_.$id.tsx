@@ -875,10 +875,14 @@ function TabEnvolvidos({
   tipo,
   propostaId,
   envolvidos,
+  autoAbrir,
+  onAutoAbriu,
 }: {
   tipo: "CO" | "VD";
   propostaId: string;
   envolvidos: any[];
+  autoAbrir?: boolean;
+  onAutoAbriu?: () => void;
 }) {
   const qc = useQueryClient();
   const addFn = useServerFn(adicionarEnvolvido);
@@ -888,61 +892,80 @@ function TabEnvolvidos({
   const [salvando, setSalvando] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [inicial, setInicial] = useState<ParticipanteForm | undefined>(undefined);
+  const [conjugeInicial, setConjugeInicial] = useState<ParticipanteForm | undefined>(undefined);
+  const [conjugeId, setConjugeId] = useState<string | null>(null);
 
+  // Compradores: mostra CO e TI, mas oculta o cônjuge já vinculado a um titular
+  // (ele é editado dentro do formulário do titular).
   const lista = envolvidos.filter((e) =>
     tipo === "CO"
-      ? e.tipo_qualificacao === "CO" || e.tipo_qualificacao === "TI"
+      ? (e.tipo_qualificacao === "CO" || e.tipo_qualificacao === "TI") && !e.conjuge_de
       : e.tipo_qualificacao === tipo,
   );
 
-  function completo(e: any): boolean {
-    const base =
-      e.nome &&
-      e.cpf_cnpj &&
-      e.tipo_documento_identidade &&
-      e.numero_documento &&
-      e.orgao_expedidor &&
-      e.uf_expedicao &&
-      e.profissao &&
-      e.renda &&
-      e.email &&
-      e.celular &&
-      e.cep &&
-      e.logradouro &&
-      e.numero_logradouro &&
-      e.bairro &&
-      e.municipio &&
-      e.uf &&
-      e.fg_autorizacao_dados;
-    const pf = (e.tipo_pessoa ?? "F") === "F";
-    const pessoais = !pf || (e.data_nascimento && e.nome_mae && e.tipo_sexo && e.estado_civil);
-    return Boolean(base && pessoais);
-  }
+  const completo = participanteCompleto;
 
   function novo() {
     setEditId(null);
     setInicial(undefined);
+    setConjugeInicial(undefined);
+    setConjugeId(null);
     setOpen(true);
   }
 
   function editar(e: any) {
     setEditId(e.id);
     setInicial(envolvidoParaForm(e));
+    const conj = envolvidos.find((x) => x.conjuge_de === e.id);
+    setConjugeInicial(conj ? envolvidoParaForm(conj) : undefined);
+    setConjugeId(conj?.id ?? null);
     setOpen(true);
   }
 
-  async function salvar(dados: any) {
+  // Abre automaticamente o formulário do comprador principal ao criar a proposta.
+  useEffect(() => {
+    if (!autoAbrir || tipo !== "CO") return;
+    const principal =
+      lista.find((e) => e.tipo_qualificacao === "CO") ?? lista[0] ?? null;
+    if (principal) {
+      editar(principal);
+    } else {
+      novo();
+    }
+    onAutoAbriu?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoAbrir]);
+
+  async function salvar(principal: any, conjuge: any) {
     setSalvando(true);
     try {
+      let titularId = editId;
       if (editId) {
-        await updFn({ data: { id: editId, dados } });
-        toast.success("Participante atualizado.");
+        await updFn({ data: { id: editId, dados: principal } });
       } else {
-        await addFn({
-          data: { proposta_id: propostaId, dados: { ...dados, tipo_qualificacao: dados.tipo_qualificacao ?? tipo } },
+        const r = await addFn({
+          data: {
+            proposta_id: propostaId,
+            dados: { ...principal, tipo_qualificacao: principal.tipo_qualificacao ?? tipo },
+          },
         });
-        toast.success("Participante incluído.");
+        titularId = r.id;
       }
+
+      // Cônjuge (coproponente) — vinculado ao titular via conjuge_de.
+      if (conjuge && titularId) {
+        const dadosConj = { ...conjuge, tipo_qualificacao: "TI", conjuge_de: titularId };
+        if (conjugeId) {
+          await updFn({ data: { id: conjugeId, dados: dadosConj } });
+        } else {
+          await addFn({ data: { proposta_id: propostaId, dados: dadosConj } });
+        }
+      } else if (!conjuge && conjugeId) {
+        // Deixou de ser casado: remove o cônjuge previamente cadastrado.
+        await delFn({ data: { id: conjugeId } });
+      }
+
+      toast.success(editId ? "Participante atualizado." : "Participante incluído.");
       setOpen(false);
       qc.invalidateQueries({ queryKey: ["proposta", propostaId] });
     } catch (e) {
@@ -951,6 +974,7 @@ function TabEnvolvidos({
       setSalvando(false);
     }
   }
+
 
   async function remover(id: string) {
     await delFn({ data: { id } });
