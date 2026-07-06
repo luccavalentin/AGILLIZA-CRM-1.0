@@ -7,6 +7,7 @@ import {
   Search,
   Loader2,
   ArrowRight,
+  ArrowLeft,
   Tag,
   Plus,
   Trash2,
@@ -278,10 +279,16 @@ function Pagina() {
       : null;
 
   useEffect(() => {
-    if (!selecionado && (conversas?.length ?? 0) > 0) {
+    // Auto-seleciona a primeira conversa apenas no desktop; no mobile o usuário
+    // escolhe na lista (padrão master-detail) para a tela não pular direto ao chat.
+    const ehDesktop =
+      typeof window !== "undefined" &&
+      window.matchMedia("(min-width: 1024px)").matches;
+    if (ehDesktop && !selecionado && (conversas?.length ?? 0) > 0) {
       setSelecionado(conversas![0].cliente_id);
     }
   }, [conversas, selecionado]);
+
 
   const contadores = useMemo(() => {
     const lista = conversas ?? [];
@@ -320,8 +327,13 @@ function Pagina() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[22rem_1fr]">
-        {/* Lista de conversas */}
-        <Card className="flex h-[38rem] flex-col overflow-hidden border-border/60 shadow-sm">
+        {/* Lista de conversas — no mobile some quando uma conversa é aberta */}
+        <Card
+          className={cn(
+            "h-[70vh] flex-col overflow-hidden border-border/60 shadow-sm lg:flex lg:h-[38rem]",
+            selecionado ? "hidden" : "flex",
+          )}
+        >
           <div className="space-y-2 border-b bg-muted/30 p-3">
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -510,35 +522,46 @@ function Pagina() {
           </div>
         </Card>
 
-        {/* Chat + follow-up */}
-        {alvoAtual ? (
-          <div className="grid gap-4 xl:grid-cols-[1fr_19rem]">
-            <ChatClienteTab
-              key={alvoAtual.cliente_id}
-              clienteId={alvoAtual.cliente_id}
-              info={{
-                nome: alvoAtual.nome,
-                documento: alvoAtual.documento,
-                contexto: alvoAtual.etapa_nome ?? undefined,
-              }}
-            />
-            <PainelGestao
-              clienteId={alvoAtual.cliente_id}
-              nome={alvoAtual.nome}
-              etiquetas={etiquetas ?? []}
-            />
-          </div>
-        ) : (
-          <Card className="flex h-[38rem] flex-col items-center justify-center gap-3 border-border/60 border-dashed text-center shadow-sm">
-            <div className="flex size-14 items-center justify-center rounded-full bg-primary/10 text-primary">
-              <MessagesSquare className="h-6 w-6" />
+        {/* Chat + follow-up — no mobile ocupa a tela inteira quando aberto */}
+        <div className={cn(selecionado ? "block" : "hidden lg:block")}>
+          <button
+            type="button"
+            onClick={() => setSelecionado(null)}
+            className="mb-3 inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground lg:hidden"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Voltar às conversas
+          </button>
+          {alvoAtual ? (
+            <div className="grid gap-4 xl:grid-cols-[1fr_19rem]">
+              <ChatClienteTab
+                key={alvoAtual.cliente_id}
+                clienteId={alvoAtual.cliente_id}
+                info={{
+                  nome: alvoAtual.nome,
+                  documento: alvoAtual.documento,
+                  contexto: alvoAtual.etapa_nome ?? undefined,
+                }}
+              />
+              <PainelGestao
+                clienteId={alvoAtual.cliente_id}
+                nome={alvoAtual.nome}
+                etiquetas={etiquetas ?? []}
+              />
             </div>
-            <p className="max-w-[16rem] text-sm text-muted-foreground">
-              Selecione uma conversa ao lado ou busque um cliente para começar.
-            </p>
-          </Card>
-        )}
+          ) : (
+            <Card className="flex h-[38rem] flex-col items-center justify-center gap-3 border-border/60 border-dashed text-center shadow-sm">
+              <div className="flex size-14 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <MessagesSquare className="h-6 w-6" />
+              </div>
+              <p className="max-w-[16rem] text-sm text-muted-foreground">
+                Selecione uma conversa ao lado ou busque um cliente para começar.
+              </p>
+            </Card>
+          )}
+        </div>
       </div>
+
     </div>
   );
 }
