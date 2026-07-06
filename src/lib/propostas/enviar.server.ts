@@ -365,7 +365,15 @@ export async function enviarPropostaImpl({
         patchOk.sistema_amortizacao_banco = resp.codigoSistemaAmortizacaoBanco;
       if (resp?.codigoIndexadorBanco) patchOk.codigo_indexador = resp.codigoIndexadorBanco;
 
-      await supabase.from("proposta_bancos").update(patchOk as any).eq("id", b.id);
+      const { error: upErr } = await supabase
+        .from("proposta_bancos")
+        .update(patchOk as any)
+        .eq("id", b.id);
+      if (upErr) {
+        // O banco aceitou a proposta, mas não conseguimos registrar o retorno.
+        // Logamos para não perder o rastro — o polling reconcilia em seguida.
+        console.error("[proposta] falha ao gravar retorno do banco", upErr.message);
+      }
       sucesso++;
       resultados.push({
         banco_id: b.banco_id,
