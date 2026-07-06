@@ -44,6 +44,13 @@ const AlertDialogContent = React.forwardRef<
         aria-hidden="true"
         className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary via-primary/70 to-destructive"
       />
+      <img
+        src={brandSymbol}
+        alt=""
+        aria-hidden="true"
+        draggable={false}
+        className="pointer-events-none absolute -right-5 -top-6 h-28 w-auto rotate-12 select-none opacity-[0.06] dark:opacity-[0.10]"
+      />
       {children}
     </AlertDialogPrimitive.Content>
   </AlertDialogPortal>
