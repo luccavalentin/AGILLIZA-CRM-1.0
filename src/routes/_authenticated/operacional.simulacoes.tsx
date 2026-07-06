@@ -267,6 +267,9 @@ function Pagina() {
                       ? "Financiamento"
                       : "—"}
                 </TableCell>
+                <TableCell>
+                  <BancosSimulados bancos={s.bancos} />
+                </TableCell>
                 <TableCell className="text-right tabular-nums">
                   {formatBRL(s.valor_imovel)}
                 </TableCell>
