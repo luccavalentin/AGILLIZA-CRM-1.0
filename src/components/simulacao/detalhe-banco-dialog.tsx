@@ -117,9 +117,6 @@ export function DetalheBancoDialog({ banco }: { banco: any }) {
                         <TableHead>Data</TableHead>
                         <TableHead className="text-right">Amortização</TableHead>
                         <TableHead className="text-right">Juros</TableHead>
-                        <TableHead className="text-right">Seguro MIP</TableHead>
-                        <TableHead className="text-right">Seguro DFI</TableHead>
-                        <TableHead className="text-right">Tarifa</TableHead>
                         <TableHead className="text-right">Parcela</TableHead>
                         <TableHead className="text-right">Saldo devedor</TableHead>
                       </TableRow>
