@@ -157,13 +157,11 @@ function Pagina() {
                   <StatusBancosProposta bancos={p.bancos} fallbackStatus={p.status} />
                 </TableCell>
                 <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                  {["rascunho", "erro_envio"].includes(p.status) ? (
-                    <ConfirmDelete
-                      titulo="Excluir proposta"
-                      descricao={`A proposta ${p.numero_proposta} será removida permanentemente.`}
-                      onConfirm={() => handleExcluir(p.id)}
-                    />
-                  ) : null}
+                  <ConfirmDelete
+                    titulo="Excluir proposta"
+                    descricao={`A proposta ${p.numero_proposta} será removida permanentemente. Um registro completo será mantido nos Logs de auditoria.`}
+                    onConfirm={() => handleExcluir(p.id)}
+                  />
                 </TableCell>
               </TableRow>
             ))}
