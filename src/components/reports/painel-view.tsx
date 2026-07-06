@@ -208,7 +208,7 @@ export function PainelView({
               </PanelCard>
             </div>
             <PanelCard titulo={data.ranking.titulo}>
-              <MetricList items={data.ranking.itens} />
+              <MetricList items={data.ranking.itens} colorByBank={data.chart.porBanco} />
             </PanelCard>
           </div>
 
