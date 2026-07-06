@@ -58,6 +58,41 @@ export function normalizarSistemaAmortizacao(
   return "—";
 }
 
+/**
+ * Calcula o CET (Custo Efetivo Total) anual a partir do fluxo real de parcelas.
+ * O CET é a taxa interna de retorno (mensal) que iguala o valor líquido liberado
+ * ao valor presente de todas as parcelas (que já incluem juros, seguros e tarifas).
+ * Retorna a taxa anual em % ou null quando não há dados suficientes.
+ */
+export function calcularCET(
+  valorLiberado: number | null | undefined,
+  parcelas: { parcela: number }[] | null | undefined,
+): number | null {
+  const principal = valorLiberado ?? null;
+  const fluxo = (parcelas ?? []).map((p) => p.parcela).filter((v) => v > 0);
+  if (principal == null || principal <= 0 || fluxo.length === 0) return null;
+
+  // f(i) = -principal + Σ parcela_t / (1+i)^t  →  buscamos a raiz por bisseção.
+  const vpl = (i: number) =>
+    fluxo.reduce((acc, parc, idx) => acc + parc / Math.pow(1 + i, idx + 1), -principal);
+
+  let lo = 1e-9; // ~0% a.m.
+  let hi = 1; // 100% a.m. (limite superior generoso)
+  if (vpl(lo) < 0 || vpl(hi) > 0) return null; // sem raiz no intervalo
+
+  let mensal = 0;
+  for (let k = 0; k < 200; k++) {
+    mensal = (lo + hi) / 2;
+    const v = vpl(mensal);
+    if (Math.abs(v) < 1e-6) break;
+    if (v > 0) lo = mensal;
+    else hi = mensal;
+  }
+
+  const anual = (Math.pow(1 + mensal, 12) - 1) * 100;
+  return Number.isFinite(anual) ? anual : null;
+}
+
 /** Extrai o detalhamento (parcelas, CET, CESH...) do raw_response de um banco. */
 export function extrairDetalheBanco(raw: unknown): DetalheBanco | null {
   if (!raw || typeof raw !== "object") return null;

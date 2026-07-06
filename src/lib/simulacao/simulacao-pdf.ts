@@ -3,7 +3,7 @@ import autoTable from "jspdf-autotable";
 import { exportPDF } from "@/lib/relatorios/report-pdf";
 import { formatBRL, formatPercent } from "@/lib/simulacao/format";
 import type { ReportColumn, ReportKpi, ReportRow } from "@/lib/relatorios/shared";
-import { extrairDetalheBanco, normalizarSistemaAmortizacao, type DetalheBanco } from "@/lib/simulacao/detalhe-banco";
+import { extrairDetalheBanco, normalizarSistemaAmortizacao, calcularCET, type DetalheBanco } from "@/lib/simulacao/detalhe-banco";
 import { AGILLIZA_LOGO_LIGHT, AGILLIZA_LOGO_RATIO } from "@/lib/relatorios/brand-logo";
 
 interface SimulacaoPdfInput {
@@ -211,7 +211,12 @@ function drawInfoFinanciamento(
     { label: "Indexador", valor: d?.indexador ?? "—" },
     { label: "Taxa efetiva anual", valor: pctTxt(d?.taxaJurosAno ?? b?.taxa_juros_ano) },
     { label: "Taxa de juros mensal", valor: pctTxt(d?.taxaJurosMes, "a.m.") },
-    { label: "CET (Custo Efetivo Total)", valor: pctTxt(d?.cet) },
+    {
+      label: "CET (Custo Efetivo Total)",
+      valor: pctTxt(
+        d?.cet ?? calcularCET(d?.valorFinanciamento ?? s.valor_financiamento, d?.parcelas),
+      ),
+    },
     { label: "CESH (Custo Efetivo Seguro Habitacional)", valor: pctTxt(d?.cesh) },
     { label: "IOF", valor: brlOuTraco(d?.iof ?? b?.valor_iof) },
     { label: "Seguradora", valor: d?.seguradora ?? "—" },
