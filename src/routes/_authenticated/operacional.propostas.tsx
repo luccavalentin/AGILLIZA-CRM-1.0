@@ -108,7 +108,7 @@ function Pagina() {
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap items-end gap-3">
         <Tabs value={escopo} onValueChange={(v) => setEscopo(v as "todas" | "minhas")}>
           <TabsList>
             <TabsTrigger value="todas">Gerais</TabsTrigger>
@@ -116,7 +116,7 @@ function Pagina() {
           </TabsList>
         </Tabs>
         <form
-          className="flex w-full max-w-sm items-center gap-2"
+          className="flex flex-1 items-center gap-2 min-w-[220px]"
           onSubmit={(e) => {
             e.preventDefault();
             setBusca(q);
@@ -135,7 +135,29 @@ function Pagina() {
             Buscar
           </Button>
         </form>
+        <div className="flex flex-col gap-1">
+          <Label className="text-xs text-muted-foreground">De</Label>
+          <Input
+            type="date"
+            value={dataInicio}
+            onChange={(e) => setDataInicio(e.target.value)}
+            className="w-[9.5rem]"
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <Label className="text-xs text-muted-foreground">Até</Label>
+          <Input
+            type="date"
+            value={dataFim}
+            onChange={(e) => setDataFim(e.target.value)}
+            className="w-[9.5rem]"
+          />
+        </div>
+        <Button variant="ghost" size="sm" onClick={limparFiltros}>
+          <RotateCcw className="mr-1 h-4 w-4" /> Limpar
+        </Button>
       </div>
+
 
       <div className="rounded-lg border border-border">
         <Table>
