@@ -42,6 +42,22 @@ function num(v: unknown): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+/**
+ * Normaliza o sistema de amortização retornado pelo banco para os termos conhecidos
+ * (SAC / PRICE), removendo rótulos como "ATUALIZÁVEL TR/SAC".
+ */
+export function normalizarSistemaAmortizacao(
+  apiValor: string | null | undefined,
+  requisitado?: string | null,
+): string {
+  const up = (apiValor ?? "").toUpperCase();
+  if (up.includes("PRICE")) return "PRICE";
+  if (up.includes("SAC")) return "SAC";
+  if (requisitado === "P") return "PRICE";
+  if (requisitado === "S") return "SAC";
+  return "—";
+}
+
 /** Extrai o detalhamento (parcelas, CET, CESH...) do raw_response de um banco. */
 export function extrairDetalheBanco(raw: unknown): DetalheBanco | null {
   if (!raw || typeof raw !== "object") return null;
