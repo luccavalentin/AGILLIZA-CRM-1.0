@@ -193,36 +193,43 @@ function Pagina() {
                     key={c.cliente_id}
                     onClick={() => setSelecionado(c.cliente_id)}
                     className={cn(
-                      "flex w-full flex-col gap-0.5 border-b px-3 py-2.5 text-left transition-colors hover:bg-muted/60",
-                      selecionado === c.cliente_id && "bg-muted",
+                      "flex w-full items-start gap-3 border-b border-border/50 px-3 py-3 text-left transition-colors hover:bg-muted/50",
+                      selecionado === c.cliente_id &&
+                        "bg-primary/5 shadow-[inset_3px_0_0_0_hsl(var(--primary))]",
                     )}
                   >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="truncate text-sm font-medium text-foreground">
-                        {c.nome}
-                      </span>
-                      <span className="shrink-0 text-[10px] text-muted-foreground">
-                        {formatarHora(c.ultima_em)}
-                      </span>
+                    <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary/80 to-primary/50 text-xs font-semibold text-primary-foreground">
+                      {iniciais(c.nome)}
                     </div>
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="truncate text-xs text-muted-foreground">
-                        {c.ultimo_remetente === "time" ? "Você: " : ""}
-                        {c.ultima_mensagem}
-                      </span>
-                      {c.nao_lidas > 0 && (
-                        <Badge className="h-5 shrink-0 px-1.5 text-[10px]">
-                          {c.nao_lidas}
-                        </Badge>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="truncate text-sm font-medium text-foreground">
+                          {c.nome}
+                        </span>
+                        <span className="shrink-0 text-[10px] text-muted-foreground">
+                          {formatarHora(c.ultima_em)}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="truncate text-xs text-muted-foreground">
+                          {c.ultimo_remetente === "time" ? "Você: " : ""}
+                          {c.ultima_mensagem}
+                        </span>
+                        {c.nao_lidas > 0 && (
+                          <Badge className="h-5 shrink-0 px-1.5 text-[10px]">
+                            {c.nao_lidas}
+                          </Badge>
+                        )}
+                      </div>
+                      {c.etapa_nome && (
+                        <span className="mt-0.5 block truncate text-[10px] text-muted-foreground">
+                          {c.etapa_nome}
+                        </span>
                       )}
                     </div>
-                    {c.etapa_nome && (
-                      <span className="mt-0.5 truncate text-[10px] text-muted-foreground">
-                        Etapa: {c.etapa_nome}
-                      </span>
-                    )}
                   </button>
                 ))}
+
 
                 {novosClientes.length > 0 && (
                   <>
