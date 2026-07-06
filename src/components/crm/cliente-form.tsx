@@ -72,6 +72,68 @@ const REGIMES = [
   { v: "nao_aplicavel", l: "Não aplicável" },
 ];
 
+// Sugestões pré-cadastradas para os campos de autocomplete (texto livre + seleção).
+const OPCOES_SEXO = ["Masculino", "Feminino"];
+const OPCOES_NACIONALIDADE = [
+  "Brasileira",
+  "Portuguesa",
+  "Argentina",
+  "Boliviana",
+  "Paraguaia",
+  "Uruguaia",
+  "Chilena",
+  "Colombiana",
+  "Venezuelana",
+  "Peruana",
+  "Espanhola",
+  "Italiana",
+  "Alemã",
+  "Francesa",
+  "Japonesa",
+  "Chinesa",
+  "Norte-americana",
+];
+const OPCOES_TIPO_DOCUMENTO = ["RG", "CNH", "RNE", "Passaporte", "CTPS"];
+const OPCOES_ORGAO_EXPEDIDOR = [
+  "SSP",
+  "DETRAN",
+  "DIC",
+  "IFP",
+  "PC",
+  "PM",
+  "Marinha",
+  "Exército",
+  "Aeronáutica",
+  "OAB",
+  "CRM",
+  "CREA",
+  "MTE",
+  "DPF",
+];
+const OPCOES_UF = [
+  "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS",
+  "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC",
+  "SP", "SE", "TO",
+];
+const OPCOES_PROFISSAO = [
+  "Advogado(a)",
+  "Administrador(a)",
+  "Analista",
+  "Arquiteto(a)",
+  "Autônomo(a)",
+  "Contador(a)",
+  "Comerciante",
+  "Empresário(a)",
+  "Enfermeiro(a)",
+  "Engenheiro(a)",
+  "Funcionário(a) público(a)",
+  "Médico(a)",
+  "Professor(a)",
+  "Vendedor(a)",
+  "Aposentado(a)",
+  "Estudante",
+];
+
 // Exibe um número no formato R$ pt-BR (ex.: 20000 -> "20.000,00").
 function formatarMoedaBR(n: number): string {
   return n.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
