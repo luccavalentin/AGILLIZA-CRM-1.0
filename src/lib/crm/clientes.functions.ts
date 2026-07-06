@@ -213,6 +213,8 @@ export const criarCliente = createServerFn({ method: "POST" })
         telefone_celular: data.telefone_celular,
         renda_total_declarada: data.renda_total_declarada,
         uf_interesse: data.uf_interesse ?? null,
+        utiliza_fgts: data.utiliza_fgts ?? false,
+        fg_autorizacao_dados: data.fg_autorizacao_dados ?? false,
         origem: data.origem,
         responsavel_id: userId,
         criador_id: userId,
