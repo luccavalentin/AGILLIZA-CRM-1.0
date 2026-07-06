@@ -20,7 +20,10 @@ import { cn } from "@/lib/utils";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { supabase } from "@/integrations/supabase/client";
 import { ChatClienteTab } from "@/components/crm/chat-cliente-tab";
-import { listarConversasCliente } from "@/lib/crm/chat-cliente.functions";
+import {
+  listarConversasCliente,
+  buscarClientesApp,
+} from "@/lib/crm/chat-cliente.functions";
 import {
   getPipelineStages,
   getClientePipeline,
@@ -45,6 +48,7 @@ function formatarHora(iso: string): string {
 function Pagina() {
   const qc = useQueryClient();
   const listar = useServerFn(listarConversasCliente);
+  const buscarApp = useServerFn(buscarClientesApp);
   const [busca, setBusca] = useState("");
   const [selecionado, setSelecionado] = useState<string | null>(null);
 
@@ -52,6 +56,14 @@ function Pagina() {
   const { data: conversas, isLoading } = useQuery({
     queryKey,
     queryFn: () => listar(),
+  });
+
+  // Clientes com App habilitado (mesmo sem conversa ainda) para iniciar chat.
+  const termoBusca = busca.trim();
+  const { data: clientesApp, isFetching: buscandoApp } = useQuery({
+    queryKey: ["clientes-app", termoBusca],
+    queryFn: () => buscarApp({ data: { q: termoBusca || undefined } }),
+    enabled: termoBusca.length >= 2,
   });
 
   // Sincroniza a lista em tempo real quando qualquer mensagem chega/sai.
@@ -81,8 +93,34 @@ function Pagina() {
     );
   }, [conversas, busca]);
 
-  const conversaAtual = filtradas.find((c) => c.cliente_id === selecionado) ??
-    (conversas ?? []).find((c) => c.cliente_id === selecionado);
+  // Clientes App habilitados que ainda não têm conversa (para iniciar chat).
+  const novosClientes = useMemo(() => {
+    if (termoBusca.length < 2) return [];
+    const jaEmConversa = new Set((conversas ?? []).map((c) => c.cliente_id));
+    return (clientesApp ?? []).filter((c) => !jaEmConversa.has(c.cliente_id));
+  }, [clientesApp, conversas, termoBusca]);
+
+  const conversaAtual = (conversas ?? []).find(
+    (c) => c.cliente_id === selecionado,
+  );
+  const clienteAppAtual = (clientesApp ?? []).find(
+    (c) => c.cliente_id === selecionado,
+  );
+  const alvoAtual = conversaAtual
+    ? {
+        cliente_id: conversaAtual.cliente_id,
+        nome: conversaAtual.nome,
+        documento: conversaAtual.documento,
+        etapa_nome: conversaAtual.etapa_nome ?? null,
+      }
+    : clienteAppAtual
+      ? {
+          cliente_id: clienteAppAtual.cliente_id,
+          nome: clienteAppAtual.nome,
+          documento: clienteAppAtual.documento,
+          etapa_nome: clienteAppAtual.etapa_nome,
+        }
+      : null;
 
   // Seleção automática da primeira conversa.
   useEffect(() => {
@@ -90,6 +128,8 @@ function Pagina() {
       setSelecionado(conversas![0].cliente_id);
     }
   }, [conversas, selecionado]);
+
+
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-4 p-4 md:p-6">
@@ -127,65 +167,110 @@ function Pagina() {
                   <Skeleton key={i} className="h-14 w-full" />
                 ))}
               </div>
-            ) : filtradas.length === 0 ? (
+            ) : filtradas.length === 0 && novosClientes.length === 0 ? (
               <p className="p-6 text-center text-sm text-muted-foreground">
-                Nenhuma conversa ainda.
+                {termoBusca.length >= 2
+                  ? buscandoApp
+                    ? "Buscando clientes…"
+                    : "Nenhum cliente encontrado. Habilite o App do cliente no CRM para poder conversar."
+                  : "Nenhuma conversa ainda. Busque um cliente com App habilitado para iniciar."}
               </p>
             ) : (
-              filtradas.map((c) => (
-                <button
-                  key={c.cliente_id}
-                  onClick={() => setSelecionado(c.cliente_id)}
-                  className={cn(
-                    "flex w-full flex-col gap-0.5 border-b px-3 py-2.5 text-left transition-colors hover:bg-muted/60",
-                    selecionado === c.cliente_id && "bg-muted",
-                  )}
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="truncate text-sm font-medium text-foreground">
-                      {c.nome}
-                    </span>
-                    <span className="shrink-0 text-[10px] text-muted-foreground">
-                      {formatarHora(c.ultima_em)}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="truncate text-xs text-muted-foreground">
-                      {c.ultimo_remetente === "time" ? "Você: " : ""}
-                      {c.ultima_mensagem}
-                    </span>
-                    {c.nao_lidas > 0 && (
-                      <Badge className="h-5 shrink-0 px-1.5 text-[10px]">
-                        {c.nao_lidas}
-                      </Badge>
+              <>
+                {filtradas.map((c) => (
+                  <button
+                    key={c.cliente_id}
+                    onClick={() => setSelecionado(c.cliente_id)}
+                    className={cn(
+                      "flex w-full flex-col gap-0.5 border-b px-3 py-2.5 text-left transition-colors hover:bg-muted/60",
+                      selecionado === c.cliente_id && "bg-muted",
                     )}
-                  </div>
-                  {c.etapa_nome && (
-                    <span className="mt-0.5 truncate text-[10px] text-muted-foreground">
-                      Etapa: {c.etapa_nome}
-                    </span>
-                  )}
-                </button>
-              ))
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="truncate text-sm font-medium text-foreground">
+                        {c.nome}
+                      </span>
+                      <span className="shrink-0 text-[10px] text-muted-foreground">
+                        {formatarHora(c.ultima_em)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="truncate text-xs text-muted-foreground">
+                        {c.ultimo_remetente === "time" ? "Você: " : ""}
+                        {c.ultima_mensagem}
+                      </span>
+                      {c.nao_lidas > 0 && (
+                        <Badge className="h-5 shrink-0 px-1.5 text-[10px]">
+                          {c.nao_lidas}
+                        </Badge>
+                      )}
+                    </div>
+                    {c.etapa_nome && (
+                      <span className="mt-0.5 truncate text-[10px] text-muted-foreground">
+                        Etapa: {c.etapa_nome}
+                      </span>
+                    )}
+                  </button>
+                ))}
+
+                {novosClientes.length > 0 && (
+                  <>
+                    <p className="bg-muted/40 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      Clientes com App habilitado
+                    </p>
+                    {novosClientes.map((c) => (
+                      <button
+                        key={c.cliente_id}
+                        onClick={() => setSelecionado(c.cliente_id)}
+                        className={cn(
+                          "flex w-full flex-col gap-0.5 border-b px-3 py-2.5 text-left transition-colors hover:bg-muted/60",
+                          selecionado === c.cliente_id && "bg-muted",
+                        )}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="truncate text-sm font-medium text-foreground">
+                            {c.nome}
+                          </span>
+                          <Badge
+                            variant={c.logou ? "secondary" : "outline"}
+                            className="h-5 shrink-0 px-1.5 text-[10px]"
+                          >
+                            {c.logou ? "Ativo" : "Não logou"}
+                          </Badge>
+                        </div>
+                        <span className="truncate text-xs text-muted-foreground">
+                          {c.documento ?? "Iniciar conversa"}
+                        </span>
+                        {c.etapa_nome && (
+                          <span className="mt-0.5 truncate text-[10px] text-muted-foreground">
+                            Etapa: {c.etapa_nome}
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </>
+                )}
+              </>
             )}
           </div>
+
         </Card>
 
         {/* Chat + follow-up */}
-        {conversaAtual ? (
+        {alvoAtual ? (
           <div className="grid gap-4 xl:grid-cols-[1fr_18rem]">
             <ChatClienteTab
-              key={conversaAtual.cliente_id}
-              clienteId={conversaAtual.cliente_id}
+              key={alvoAtual.cliente_id}
+              clienteId={alvoAtual.cliente_id}
               info={{
-                nome: conversaAtual.nome,
-                documento: conversaAtual.documento,
-                contexto: conversaAtual.etapa_nome ?? undefined,
+                nome: alvoAtual.nome,
+                documento: alvoAtual.documento,
+                contexto: alvoAtual.etapa_nome ?? undefined,
               }}
             />
             <FollowUpPanel
-              clienteId={conversaAtual.cliente_id}
-              nome={conversaAtual.nome}
+              clienteId={alvoAtual.cliente_id}
+              nome={alvoAtual.nome}
             />
           </div>
         ) : (
