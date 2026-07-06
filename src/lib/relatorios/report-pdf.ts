@@ -11,40 +11,57 @@ const GRAFITE = "#0B0B0F";
 const CINZA = "#6B7280";
 const ZEBRA = "#F7F8FA";
 
-const HEADER_H = 72;
+const HEADER_H = 84;
 
-/** Desenha o cabeçalho institucional (faixa azul + logo + título) em cada página. */
+/** Desenha o cabeçalho institucional (faixa azul + logo à esquerda + título) em cada página. */
 function drawHeader(doc: jsPDF, pageW: number, titulo: string, descricao: string) {
+  drawBrandHeader(doc, pageW, HEADER_H, titulo, descricao);
+}
+
+/**
+ * Cabeçalho institucional compartilhado: faixa azul com a logo Agilliza em destaque
+ * à esquerda, separador coral e título/subtítulo. Usado em todos os PDFs enviados ao cliente.
+ */
+export function drawBrandHeader(
+  doc: jsPDF,
+  pageW: number,
+  headerH: number,
+  titulo: string,
+  descricao: string,
+) {
   doc.setFillColor(AZUL);
-  doc.rect(0, 0, pageW, HEADER_H, "F");
+  doc.rect(0, 0, pageW, headerH, "F");
   // Detalhe coral inferior
   doc.setFillColor(CORAL);
-  doc.rect(0, HEADER_H, pageW, 3, "F");
+  doc.rect(0, headerH, pageW, 3, "F");
 
-  // Logo (canto direito)
-  const logoH = 30;
+  // Logo em destaque (canto esquerdo)
+  const logoH = 34;
   const logoW = logoH * AGILLIZA_LOGO_RATIO;
+  const logoX = 32;
+  const logoY = (headerH - logoH) / 2;
+  let textoX = 32;
   try {
-    doc.addImage(
-      AGILLIZA_LOGO_LIGHT,
-      "PNG",
-      pageW - logoW - 32,
-      (HEADER_H - logoH) / 2,
-      logoW,
-      logoH,
-    );
+    doc.addImage(AGILLIZA_LOGO_LIGHT, "PNG", logoX, logoY, logoW, logoH);
+    // Separador vertical entre logo e título
+    const sepX = logoX + logoW + 18;
+    doc.setDrawColor("#4655C4");
+    doc.setLineWidth(1);
+    doc.line(sepX, headerH * 0.28, sepX, headerH * 0.72);
+    textoX = sepX + 18;
   } catch {
-    /* fallback silencioso */
+    /* fallback silencioso — mantém o título alinhado à esquerda */
   }
 
+  const centroY = headerH / 2;
   doc.setTextColor("#FFFFFF");
-  doc.setFontSize(16);
+  doc.setFontSize(15);
   doc.setFont("helvetica", "bold");
-  doc.text(titulo, 32, 34);
+  doc.text(titulo, textoX, centroY - 3);
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
   doc.setTextColor("#C7CBF0");
-  doc.text(descricao, 32, 52);
+  doc.text(descricao, textoX, centroY + 13);
 }
 
 /** Desenha o rodapé institucional com paginação. */
