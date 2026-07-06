@@ -260,12 +260,47 @@ export async function chamarIntegracao<T = unknown>(
   });
 
   if (!resp.ok) {
-    throw new IntegracaoBancariaError(
-      `A integração bancária retornou um erro (${resp.status}).`,
-      resp.status,
-    );
+    throw new IntegracaoBancariaError(extrairMensagemErroBanco(json, resp.status), resp.status);
   }
   return json;
+}
+
+/**
+ * Extrai a mensagem de erro mais útil retornada pela integração/banco.
+ * Muitos bancos retornam o motivo real (prazo inválido, renda insuficiente, etc.)
+ * no corpo da resposta; sem isso o usuário só via um "erro (404)" genérico e
+ * não sabia o que corrigir. Erros 5xx costumam ser falha interna do banco.
+ */
+function extrairMensagemErroBanco(json: unknown, status: number): string {
+  const generico =
+    status >= 500
+      ? `O banco está temporariamente indisponível (erro ${status}). Tente reenviar em instantes.`
+      : `A integração bancária retornou um erro (${status}).`;
+
+  const err = (json as any)?.error ?? json;
+  let bruta: string | undefined =
+    (typeof err === "object" && err
+      ? err.message ?? err.mensagem ?? err.msg ?? err.detail
+      : undefined) ?? (typeof json === "string" ? json : undefined);
+
+  if (!bruta) return generico;
+
+  // Alguns bancos aninham um JSON dentro da mensagem: {"codigo":"014","mensagem":"..."}
+  const jsonAninhado = bruta.match(/\{[\s\S]*\}/);
+  if (jsonAninhado) {
+    try {
+      const interno = JSON.parse(jsonAninhado[0]) as Record<string, unknown>;
+      const msgInterna = (interno.mensagem ?? interno.message ?? interno.msg) as string | undefined;
+      if (msgInterna && msgInterna.trim()) bruta = msgInterna.trim();
+    } catch {
+      /* mantém a mensagem original */
+    }
+  }
+
+  // Remove prefixos técnicos do tipo "Simulação Bradesco falhou:"
+  bruta = bruta.replace(/^Simula[cç][aã]o\s+\S+\s+falhou:\s*/i, "").trim();
+  const limpa = bruta.replace(/^["']|["']$/g, "").trim();
+  return limpa.length > 0 ? limpa : generico;
 }
 
 export function integracaoConfigurada(): boolean {
