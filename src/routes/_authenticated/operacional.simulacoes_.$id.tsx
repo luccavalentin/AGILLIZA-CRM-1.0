@@ -101,6 +101,20 @@ function Pagina() {
     }
   }
 
+  const [reenviandoBanco, setReenviandoBanco] = useState<string | null>(null);
+  async function reenviarBanco(bancoId: string) {
+    setReenviandoBanco(bancoId);
+    try {
+      await enviarSimulacaoBanco({ data: { simulacao_id: id, banco_ids: [bancoId] } });
+      toast.success("Banco reenviado.");
+      qc.invalidateQueries({ queryKey: ["simulacao", id] });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao reenviar.");
+    } finally {
+      setReenviandoBanco(null);
+    }
+  }
+
   function duplicar() {
     router.navigate({
       to: "/operacional/simulacoes/completa",
@@ -271,13 +285,25 @@ function Pagina() {
 
                     <div className="mt-3 flex items-center justify-end gap-2">
                       <DetalheBancoDialog banco={b} />
-                      <Button
-                        size="sm"
-                        disabled={b.status_banco !== "simulada" || criandoBanco !== null}
-                        onClick={() => criar(b.banco_id)}
-                      >
-                        {criandoBanco === b.banco_id ? "Criando…" : "Criar proposta"}
-                      </Button>
+                      {b.status_banco === "erro" ? (
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          disabled={reenviandoBanco !== null}
+                          onClick={() => reenviarBanco(b.banco_id)}
+                        >
+                          <RefreshCw className="mr-1 h-4 w-4" />
+                          {reenviandoBanco === b.banco_id ? "Reenviando…" : "Reenviar"}
+                        </Button>
+                      ) : (
+                        <Button
+                          size="sm"
+                          disabled={b.status_banco !== "simulada" || criandoBanco !== null}
+                          onClick={() => criar(b.banco_id)}
+                        >
+                          {criandoBanco === b.banco_id ? "Criando…" : "Criar proposta"}
+                        </Button>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -336,13 +362,25 @@ function Pagina() {
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-1">
                             <DetalheBancoDialog banco={b} />
-                            <Button
-                              size="sm"
-                              disabled={b.status_banco !== "simulada" || criandoBanco !== null}
-                              onClick={() => criar(b.banco_id)}
-                            >
-                              {criandoBanco === b.banco_id ? "Criando…" : "Criar proposta"}
-                            </Button>
+                            {b.status_banco === "erro" ? (
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                disabled={reenviandoBanco !== null}
+                                onClick={() => reenviarBanco(b.banco_id)}
+                              >
+                                <RefreshCw className="mr-1 h-4 w-4" />
+                                {reenviandoBanco === b.banco_id ? "Reenviando…" : "Reenviar"}
+                              </Button>
+                            ) : (
+                              <Button
+                                size="sm"
+                                disabled={b.status_banco !== "simulada" || criandoBanco !== null}
+                                onClick={() => criar(b.banco_id)}
+                              >
+                                {criandoBanco === b.banco_id ? "Criando…" : "Criar proposta"}
+                              </Button>
+                            )}
                           </div>
                         </TableCell>
                       </TableRow>

@@ -479,12 +479,25 @@ export const duplicarSimulacao = createServerFn({ method: "POST" })
 /** ===== Enviar à integração bancária ===== */
 export const enviarSimulacaoBanco = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ simulacao_id: z.string().uuid() }).parse(d))
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        simulacao_id: z.string().uuid(),
+        banco_ids: z.array(z.string().uuid()).optional(),
+      })
+      .parse(d),
+  )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const ip = getRequestHeader("x-forwarded-for") ?? null;
     const { enviarSimulacaoImpl } = await import("./enviar.server");
-    return enviarSimulacaoImpl({ simulacaoId: data.simulacao_id, userId, ip, supabase });
+    return enviarSimulacaoImpl({
+      simulacaoId: data.simulacao_id,
+      userId,
+      ip,
+      supabase,
+      bancoIds: data.banco_ids,
+    });
   });
 
 export const reenviarSimulacaoBanco = enviarSimulacaoBanco;
