@@ -286,10 +286,24 @@ export function NovaPessoaInline({
                     {CATALOGO_MODULOS.filter((m) => m.grupo === grupo).map((mod) => {
                       const escopoAtual =
                         estado[chave(mod.modulo, mod.acoes[0].acao)]?.escopo ?? "proprios";
+                      const todasMarcadas = mod.acoes.every(
+                        (a) => estado[chave(mod.modulo, a.acao)]?.permitido,
+                      );
                       return (
                         <div key={mod.modulo} className="rounded-md border p-3">
                           <div className="flex flex-wrap items-center justify-between gap-2">
-                            <span className="text-sm font-medium">{mod.label}</span>
+                            <div className="flex items-center gap-3">
+                              <span className="text-sm font-medium">{mod.label}</span>
+                              <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                <Checkbox
+                                  checked={todasMarcadas}
+                                  onCheckedChange={(c) =>
+                                    marcarTodoModulo(mod.modulo, c === true)
+                                  }
+                                />
+                                Marcar tudo
+                              </label>
+                            </div>
                             <Select
                               value={escopoAtual}
                               onValueChange={(v) => setEscopoModulo(mod.modulo, v as EscopoDados)}
