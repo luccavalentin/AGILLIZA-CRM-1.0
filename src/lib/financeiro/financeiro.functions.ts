@@ -669,13 +669,13 @@ export const obterKpisFinanceiros = createServerFn({ method: "GET" })
       .filter((r: any) => r.vencimento === hojeStr)
       .reduce((s: number, r: any) => s + saldoAberto(r), 0);
     const aReceber30d = recRows
-      .filter((r: any) => r.vencimento <= em30Str)
+      .filter((r: any) => r.vencimento >= hojeStr && r.vencimento <= em30Str)
       .reduce((s: number, r: any) => s + saldoAberto(r), 0);
     const aPagarHoje = payRows
       .filter((r: any) => r.vencimento === hojeStr)
       .reduce((s: number, r: any) => s + saldoAberto(r), 0);
     const aPagar30d = payRows
-      .filter((r: any) => r.vencimento <= em30Str)
+      .filter((r: any) => r.vencimento >= hojeStr && r.vencimento <= em30Str)
       .reduce((s: number, r: any) => s + saldoAberto(r), 0);
     const saldoProjetado = aReceber30d - aPagar30d;
     const inadimplencia = (inadim.data ?? []).reduce((s: number, r: any) => s + saldoAberto(r), 0);
@@ -788,14 +788,19 @@ export const obterFluxoCaixa = createServerFn({ method: "GET" })
       (mapa[k] ??= { entrada: 0, saida: 0 }).saida += saldoAberto(r);
     });
 
+    let saldoAcum = 0;
     return Object.entries(mapa)
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([periodo, v]) => ({
-        periodo,
-        entrada: v.entrada,
-        saida: v.saida,
-        saldo: v.entrada - v.saida,
-      }));
+      .map(([periodo, v]) => {
+        // Saldo projetado é acumulado: arrasta o resultado dos períodos anteriores.
+        saldoAcum += v.entrada - v.saida;
+        return {
+          periodo,
+          entrada: v.entrada,
+          saida: v.saida,
+          saldo: saldoAcum,
+        };
+      });
   });
 
 /** Exclui uma conta a pagar ou a receber. */
