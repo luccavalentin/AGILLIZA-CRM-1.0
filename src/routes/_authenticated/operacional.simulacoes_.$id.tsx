@@ -8,7 +8,6 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   obterSimulacao,
   enviarSimulacaoBanco,
-  duplicarSimulacao,
 } from "@/lib/simulacao/simulacoes.functions";
 import { criarProposta } from "@/lib/propostas/propostas.functions";
 import { Button } from "@/components/ui/button";
