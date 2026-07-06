@@ -72,11 +72,20 @@ export const excluirEtiquetaChat = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase } = context;
-    const { error } = await supabase
+    // Remove primeiro os vínculos com clientes (evita bloqueio por FK/RLS no cascade).
+    await supabase
+      .from("crm_chat_cliente_etiquetas")
+      .delete()
+      .eq("etiqueta_id", data.id);
+    const { data: removidas, error } = await supabase
       .from("crm_chat_etiquetas")
       .delete()
-      .eq("id", data.id);
+      .eq("id", data.id)
+      .select("id");
     if (error) throw new Error(error.message);
+    if (!removidas || removidas.length === 0) {
+      throw new Error("Etiqueta não encontrada ou sem permissão para excluir.");
+    }
     return { ok: true };
   });
 
