@@ -770,23 +770,67 @@ export const sincronizarProposta = createServerFn({ method: "POST" })
     return sincronizarPropostaImpl({ propostaId: data.proposta_id, userId, supabase });
   });
 
-/** Exclui uma proposta (e registros dependentes via cascata). */
+/** Exclui uma proposta (e registros dependentes via cascata). Registra um
+ * snapshot completo na auditoria antes de apagar — nada se perde nos Logs. */
 export const excluirProposta = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        id: z.string().uuid(),
+        motivo: z.string().trim().max(500).optional(),
+      })
+      .parse(d),
+  )
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
-    const { data: prop } = await context.supabase
-      .from("propostas")
-      .select("status")
-      .eq("id", data.id)
-      .maybeSingle();
+    const { supabase, userId } = context;
+
+    // Snapshot completo (proposta + registros dependentes) para os Logs.
+    const [
+      { data: prop },
+      { data: bancos },
+      { data: envolvidos },
+      { data: documentos },
+      { data: followups },
+      { data: historico },
+    ] = await Promise.all([
+      supabase.from("propostas").select("*").eq("id", data.id).maybeSingle(),
+      supabase.from("proposta_bancos").select("*").eq("proposta_id", data.id),
+      supabase.from("proposta_envolvidos").select("*").eq("proposta_id", data.id),
+      supabase.from("proposta_documentos").select("*").eq("proposta_id", data.id),
+      supabase.from("proposta_followups").select("*").eq("proposta_id", data.id),
+      supabase.from("proposta_historico").select("*").eq("proposta_id", data.id),
+    ]);
     if (!prop) throw new Error("Proposta não encontrada.");
-    if (!["rascunho", "erro_envio"].includes(prop.status)) {
-      throw new Error(
-        "Só é possível excluir propostas em rascunho ou com erro de envio. Cancele a proposta.",
-      );
+
+    let correspondente: string | null = null;
+    try {
+      correspondente = await correspondenteId(supabase, userId);
+    } catch {
+      /* ignora — auditoria via RPC não depende do correspondente */
     }
-    const { error } = await context.supabase.from("propostas").delete().eq("id", data.id);
+
+    const { registrarAuditoria } = await import("@/lib/admin/audit.server");
+    await registrarAuditoria({
+      supabase,
+      userId,
+      correspondenteId: correspondente,
+      acao: "proposta.excluir",
+      entidade: "propostas",
+      entidadeId: data.id,
+      payloadAnterior: {
+        proposta: prop,
+        bancos: bancos ?? [],
+        envolvidos: envolvidos ?? [],
+        documentos: documentos ?? [],
+        followups: followups ?? [],
+        historico: historico ?? [],
+        motivo: data.motivo ?? null,
+      },
+      payloadNovo: null,
+    });
+
+    const { error } = await supabase.from("propostas").delete().eq("id", data.id);
     if (error) throw error;
     return { ok: true };
   });
