@@ -392,14 +392,16 @@ function Pagina() {
 function AcoesSimulacao({
   onVisualizar,
   onEditar,
-  onBaixar,
+  onBaixarComparativo,
+  onBaixarDetalhada,
   onDuplicar,
   onExcluir,
   numero,
 }: {
   onVisualizar: () => void;
   onEditar: () => void;
-  onBaixar: () => void;
+  onBaixarComparativo: () => void;
+  onBaixarDetalhada: () => void;
   onDuplicar: () => void;
   onExcluir: () => Promise<void>;
   numero: string;
@@ -418,8 +420,11 @@ function AcoesSimulacao({
         <DropdownMenuItem onSelect={onEditar}>
           <Pencil className="mr-2 h-4 w-4" /> Editar
         </DropdownMenuItem>
-        <DropdownMenuItem onSelect={onBaixar}>
-          <Download className="mr-2 h-4 w-4" /> Baixar PDF
+        <DropdownMenuItem onSelect={onBaixarComparativo}>
+          <Download className="mr-2 h-4 w-4" /> Baixar PDF comparativo
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={onBaixarDetalhada}>
+          <Download className="mr-2 h-4 w-4" /> Baixar PDF detalhado
         </DropdownMenuItem>
         <DropdownMenuItem onSelect={onDuplicar}>
           <Copy className="mr-2 h-4 w-4" /> Duplicar
