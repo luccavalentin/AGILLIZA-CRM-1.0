@@ -100,6 +100,7 @@ export async function enviarSimulacaoImpl({
         valorFinanciamento: num(sim.valor_financiamento),
         prazo: num(sim.prazo),
         utilizaFgtsSimulacao: sim.utiliza_fgts ?? "N",
+        fgFinanciarDespesas: sim.fg_financiar_despesas ? "S" : "N",
         codigoSistemaAmortizacaoBanco: { id: sim.sistema_amortizacao ?? "S" },
         bancos: bancos.map((b: any) => ({
           idBanco: b.homefin_id_banco,

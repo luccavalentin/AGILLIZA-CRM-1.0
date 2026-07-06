@@ -41,6 +41,7 @@ export const completaSchema = z.object({
   prazo_anos: z.number().int().optional().nullable(),
   possui_imovel_escolhido: z.boolean().optional().nullable(),
   utiliza_fgts: z.enum(["S", "N"]),
+  fg_financiar_despesas: z.boolean().default(false),
   sistema_amortizacao: z.enum(["S", "P"]),
   // Titular
   nome_cliente: z.string().min(3, "Informe o nome"),
