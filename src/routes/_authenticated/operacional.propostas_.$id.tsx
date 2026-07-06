@@ -782,7 +782,9 @@ function TabEnvolvidos({
     celular: "",
     tipo_pessoa: "F",
   });
-  const lista = envolvidos.filter((e) => e.tipo_qualificacao === tipo);
+  const lista = envolvidos.filter((e) =>
+    tipo === "CO" ? e.tipo_qualificacao === "CO" || e.tipo_qualificacao === "TI" : e.tipo_qualificacao === tipo,
+  );
 
   async function adicionar() {
     if (!form.nome.trim()) {
