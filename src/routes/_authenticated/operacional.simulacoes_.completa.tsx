@@ -99,8 +99,16 @@ function Pagina() {
     queryFn: () => listarOperacoes(),
   });
 
+  // Carrega a simulação de origem quando estamos duplicando.
+  const { data: origem } = useQuery({
+    queryKey: ["simulacao-duplicar", duplicar],
+    queryFn: () => obterSimulacao({ data: { id: duplicar as string } }),
+    enabled: Boolean(duplicar),
+  });
+
   // pré-preenche do wizard
   useEffect(() => {
+    if (duplicar) return; // ao duplicar, os dados vêm da simulação de origem
     const raw = sessionStorage.getItem("simulacao_wizard");
     if (raw) {
       try {
@@ -110,7 +118,50 @@ function Pagina() {
         /* ignore */
       }
     }
-  }, []);
+  }, [duplicar]);
+
+  // pré-preenche a partir da simulação duplicada (novo nº é gerado ao salvar)
+  useEffect(() => {
+    if (!origem?.simulacao) return;
+    const s = origem.simulacao as any;
+    const valorImovel = Number(s.valor_imovel) || 0;
+    const valorFin = Number(s.valor_financiamento) || 0;
+    setEntradaTocada(true);
+    setF((prev) => ({
+      ...prev,
+      produto: s.produto ?? prev.produto,
+      tipo_imovel: s.tipo_imovel ?? "",
+      uso_imovel: s.uso_imovel ?? "",
+      situacao_imovel: s.situacao_imovel ?? "",
+      uf: s.uf ?? "",
+      cep_imovel: s.cep_imovel ?? prev.cep_imovel,
+      valor_imovel: valorImovel,
+      valor_entrada: Math.max(0, valorImovel - valorFin),
+      valor_financiamento: valorFin,
+      prazo: Number(s.prazo) || prev.prazo,
+      utiliza_fgts: s.utiliza_fgts ?? "N",
+      fg_financiar_despesas: Boolean(s.fg_financiar_despesas),
+      sistema_amortizacao: s.sistema_amortizacao ?? "S",
+      cliente_id: s.cliente_id ?? prev.cliente_id,
+      nome_cliente: s.nome_cliente ?? "",
+      cpf_cnpj: s.cpf_cnpj ?? "",
+      renda_total: Number(s.renda_total) || 0,
+      renda_conjuge: Number(s.renda_conjuge) || 0,
+      data_nascimento: s.data_nascimento ?? "",
+      estado_civil: s.estado_civil ?? "",
+      email: s.email ?? "",
+      celular: s.celular ?? "",
+      possui_conjuge: Boolean(s.possui_conjuge),
+      compoe_renda: Boolean(s.compoe_renda),
+      consentimento_lgpd: Boolean(s.consentimento_lgpd),
+      consentimento_scr: Boolean(s.consentimento_scr),
+      bancos_ids: (origem.bancos ?? [])
+        .map((b: any) => b.banco_id)
+        .filter(Boolean),
+      email_verificado_em: null,
+    }));
+  }, [origem]);
+
 
   // default bancos padrão
   useEffect(() => {
