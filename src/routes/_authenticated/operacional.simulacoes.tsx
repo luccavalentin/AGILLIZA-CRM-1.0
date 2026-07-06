@@ -424,45 +424,63 @@ function AcoesSimulacao({
   numero: string;
 }) {
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" aria-label="Ações">
-          <MoreHorizontal className="h-4 w-4" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem onSelect={onVisualizar}>
-          <Eye className="mr-2 h-4 w-4" /> Visualizar
-        </DropdownMenuItem>
-        <DropdownMenuItem onSelect={onEnviarProposta} className="text-primary focus:text-primary">
-          <Send className="mr-2 h-4 w-4" /> Enviar proposta
-        </DropdownMenuItem>
-        <DropdownMenuItem onSelect={onEditar}>
-          <Pencil className="mr-2 h-4 w-4" /> Editar
-        </DropdownMenuItem>
-        <DropdownMenuItem onSelect={onBaixarComparativo}>
-          <Download className="mr-2 h-4 w-4" /> Baixar PDF comparativo
-        </DropdownMenuItem>
-        <DropdownMenuItem onSelect={onBaixarDetalhada}>
-          <Download className="mr-2 h-4 w-4" /> Baixar PDF detalhado
-        </DropdownMenuItem>
-        <DropdownMenuItem onSelect={onDuplicar}>
-          <Copy className="mr-2 h-4 w-4" /> Duplicar
-        </DropdownMenuItem>
-        <ConfirmDelete
-          titulo="Excluir simulação"
-          descricao={`A simulação ${numero} será removida permanentemente.`}
-          onConfirm={onExcluir}
-          trigger={
-            <DropdownMenuItem
-              className="text-destructive focus:text-destructive"
-              onSelect={(e) => e.preventDefault()}
-            >
-              <Trash2 className="mr-2 h-4 w-4" /> Excluir
-            </DropdownMenuItem>
-          }
-        />
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <div className="flex items-center justify-end gap-1">
+      <ConfirmDelete
+        titulo="Excluir simulação"
+        descricao={`A simulação ${numero} será removida permanentemente.`}
+        onConfirm={onExcluir}
+        trigger={
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Excluir simulação"
+            className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        }
+      />
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon" aria-label="Mais ações">
+            <MoreHorizontal className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onSelect={onVisualizar}>
+            <Eye className="mr-2 h-4 w-4" /> Visualizar
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={onEnviarProposta} className="text-primary focus:text-primary">
+            <Send className="mr-2 h-4 w-4" /> Enviar proposta
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={onEditar}>
+            <Pencil className="mr-2 h-4 w-4" /> Editar
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={onBaixarComparativo}>
+            <Download className="mr-2 h-4 w-4" /> Baixar PDF comparativo
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={onBaixarDetalhada}>
+            <Download className="mr-2 h-4 w-4" /> Baixar PDF detalhado
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={onDuplicar}>
+            <Copy className="mr-2 h-4 w-4" /> Duplicar
+          </DropdownMenuItem>
+          <ConfirmDelete
+            titulo="Excluir simulação"
+            descricao={`A simulação ${numero} será removida permanentemente.`}
+            onConfirm={onExcluir}
+            trigger={
+              <DropdownMenuItem
+                className="text-destructive focus:text-destructive"
+                onSelect={(e) => e.preventDefault()}
+              >
+                <Trash2 className="mr-2 h-4 w-4" /> Excluir
+              </DropdownMenuItem>
+            }
+          />
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
   );
 }
+
