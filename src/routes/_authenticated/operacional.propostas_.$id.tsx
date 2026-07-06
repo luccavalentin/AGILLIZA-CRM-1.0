@@ -151,19 +151,42 @@ function Pagina() {
   const qc = useQueryClient();
   const [tab, setTab] = useState<Tab>("RESUMO");
   const [autoAbrir, setAutoAbrir] = useState(false);
+  const [autoEnviar, setAutoEnviar] = useState(false);
+  const [enviandoAuto, setEnviandoAuto] = useState(false);
+  const enviarAutoFn = useServerFn(enviarPropostaHomeFin);
 
   const { data, isLoading } = useQuery({
     queryKey: ["proposta", id],
     queryFn: () => obterProposta({ data: { id } }),
   });
 
-  // Ao chegar de "Criar proposta", abre o cadastro complementar automaticamente.
+  // Ao chegar de "Criar proposta", abre o cadastro complementar automaticamente
+  // e marca a proposta para envio automático assim que o formulário for fechado.
   useEffect(() => {
     if (complementar === 1) {
       setTab("COMPRADORES");
       setAutoAbrir(true);
+      setAutoEnviar(true);
     }
   }, [complementar]);
+
+  // Envia a proposta ao banco imediatamente após o fechamento do cadastro
+  // complementar (quando a proposta veio do fluxo "Criar proposta").
+  async function enviarAposComplementar() {
+    if (!autoEnviar) return;
+    setAutoEnviar(false);
+    setEnviandoAuto(true);
+    try {
+      const r = await enviarAutoFn({ data: { proposta_id: id } });
+      toast.success(`Proposta enviada ao banco (${r.status}).`);
+      qc.invalidateQueries({ queryKey: ["proposta", id] });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao enviar ao banco.");
+    } finally {
+      setEnviandoAuto(false);
+    }
+  }
+
 
 
   // realtime na proposta
