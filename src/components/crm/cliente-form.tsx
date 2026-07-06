@@ -649,11 +649,10 @@ export function ClienteForm({
           </div>
           <div className="space-y-1.5">
             <Label>Profissão</Label>
-            <InputAutocomplete
+            <Input
               value={v.profissao}
-              onValueChange={(x) => set("profissao", x)}
-              options={OPCOES_PROFISSAO}
-              placeholder="Pesquisar ou digitar"
+              onChange={(e) => set("profissao", e.target.value)}
+              placeholder="Digite a profissão"
             />
           </div>
           <div className="space-y-1.5">
