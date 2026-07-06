@@ -23,10 +23,19 @@ const tooltipStyle = {
 };
 
 /** Renderiza um gráfico de relatório/painel conforme o tipo. */
-export function ReportChartView({ chart }: { chart: ReportChart }) {
+export function ReportChartView({
+  chart,
+  colorByBank = false,
+}: {
+  chart: ReportChart;
+  /** Colore cada barra com a cor de marca do banco correspondente ao rótulo. */
+  colorByBank?: boolean;
+}) {
   const fmt = chart.moeda
     ? (v: number) => formatBRL(Number(v))
     : (v: number) => Number(v).toLocaleString("pt-BR");
+  // Contagens não têm casas decimais; valores monetários mantêm o formato BRL.
+  const allowDecimals = Boolean(chart.moeda);
 
   if (chart.dados.length === 0) {
     return (
