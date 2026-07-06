@@ -17,6 +17,7 @@ import {
   CheckCircle2,
   XCircle,
   Building2,
+  Info,
 } from "lucide-react";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import {
@@ -491,6 +492,7 @@ function TabResumo({
   const [resultadoEnvio, setResultadoEnvio] = useState<
     { nome_banco: string | null; status: string; mensagem?: string }[] | null
   >(null);
+  const [detalheBanco, setDetalheBanco] = useState<any | null>(null);
 
   async function mudarSituacao(pbId: string, situacao: SituacaoBanco) {
     try {
@@ -596,22 +598,33 @@ function TabResumo({
                   </ToneBadge>
                 </TableCell>
                 <TableCell>
-                  <Select
-                    value={(b.situacao_banco as SituacaoBanco) ?? "nao_enviado"}
-                    onValueChange={(v) => mudarSituacao(b.id, v as SituacaoBanco)}
-                  >
-                    <SelectTrigger className="h-8 w-48">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {SITUACOES_BANCO.map((s) => (
-                        <SelectItem key={s} value={s}>
-                          {SITUACAO_BANCO_LABEL[s]}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex items-center gap-2">
+                    <Select
+                      value={(b.situacao_banco as SituacaoBanco) ?? "nao_enviado"}
+                      onValueChange={(v) => mudarSituacao(b.id, v as SituacaoBanco)}
+                    >
+                      <SelectTrigger className="h-8 w-48">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {SITUACOES_BANCO.map((s) => (
+                          <SelectItem key={s} value={s}>
+                            {SITUACAO_BANCO_LABEL[s]}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 shrink-0"
+                      onClick={() => setDetalheBanco(b)}
+                    >
+                      <Info className="mr-1 h-4 w-4" /> Detalhamento
+                    </Button>
+                  </div>
                 </TableCell>
+
 
                 <TableCell className="text-right">
                   {b.status_banco === "enviada" ? (
@@ -655,7 +668,100 @@ function TabResumo({
         resultado={resultadoEnvio}
         onClose={() => setResultadoEnvio(null)}
       />
+
+      <DetalhamentoBancoDialog banco={detalheBanco} onClose={() => setDetalheBanco(null)} />
     </div>
+  );
+}
+
+/* ===== Detalhamento da situação de crédito por banco ===== */
+function DetalhamentoBancoDialog({
+  banco,
+  onClose,
+}: {
+  banco: any | null;
+  onClose: () => void;
+}) {
+  const situacao = (banco?.situacao_banco as SituacaoBanco) ?? "nao_enviado";
+
+  const conteudo: Record<
+    SituacaoBanco,
+    { icone: React.ReactNode; titulo: string; mensagem: string }
+  > = {
+    nao_enviado: {
+      icone: <Info className="h-6 w-6 text-muted-foreground" />,
+      titulo: "Proposta ainda não enviada",
+      mensagem:
+        "Esta proposta ainda não foi enviada ao banco. Envie-a para acompanhar a análise de crédito.",
+    },
+    em_analise: {
+      icone: <Loader2 className="h-6 w-6 text-info" />,
+      titulo: "Em análise de crédito",
+      mensagem:
+        "O banco está analisando a proposta. Assim que houver um retorno, o detalhamento será atualizado aqui.",
+    },
+    condicionado: {
+      icone: <CheckCircle2 className="h-6 w-6 text-warning" />,
+      titulo: "Aprovado com condições",
+      mensagem:
+        "O crédito foi aprovado, mas o banco estabeleceu condições. Confira abaixo as observações enviadas pelo banco.",
+    },
+    aprovado: {
+      icone: <CheckCircle2 className="h-6 w-6 text-success" />,
+      titulo: "Parabéns! Crédito aprovado 🎉",
+      mensagem:
+        "O banco aprovou o crédito desta proposta. Prossiga com as próximas etapas para dar sequência ao financiamento.",
+    },
+    recusado: {
+      icone: <XCircle className="h-6 w-6 text-destructive" />,
+      titulo: "Crédito recusado",
+      mensagem:
+        "Infelizmente o banco recusou o crédito. Veja abaixo o motivo informado pelo banco.",
+    },
+    cancelado: {
+      icone: <Ban className="h-6 w-6 text-muted-foreground" />,
+      titulo: "Proposta cancelada",
+      mensagem: "Esta proposta foi cancelada neste banco.",
+    },
+  };
+
+  const info = conteudo[situacao];
+
+  return (
+    <Dialog open={banco !== null} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            {info?.icone}
+            {info?.titulo}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3 text-sm">
+          {banco?.nome_banco && (
+            <p className="font-medium" style={{ color: corDoBanco(banco.nome_banco) }}>
+              {banco.nome_banco}
+            </p>
+          )}
+          <p className="text-muted-foreground">{info?.mensagem}</p>
+          {banco?.mensagem_banco && (
+            <div className="rounded-md border border-border bg-muted/40 p-3">
+              <p className="mb-1 text-xs font-medium text-muted-foreground">
+                Retorno do banco
+              </p>
+              <p className="whitespace-pre-wrap text-foreground">{banco.mensagem_banco}</p>
+            </div>
+          )}
+          {banco?.numero_proposta_banco && (
+            <p className="text-xs text-muted-foreground">
+              Nº da proposta no banco: {banco.numero_proposta_banco}
+            </p>
+          )}
+        </div>
+        <DialogFooter>
+          <Button onClick={onClose}>Fechar</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
