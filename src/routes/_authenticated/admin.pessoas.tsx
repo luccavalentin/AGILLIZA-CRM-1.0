@@ -205,48 +205,101 @@ function PessoasPage() {
                     <TableHead>Papel</TableHead>
                     <TableHead>Acesso</TableHead>
                     <TableHead>Status</TableHead>
+                    {podeGerenciar && <TableHead className="w-12 text-right">Ações</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {pessoasQuery.isLoading ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="py-10 text-center text-muted-foreground">
+                      <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
                         Carregando…
                       </TableCell>
                     </TableRow>
                   ) : pessoas.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="py-10 text-center text-muted-foreground">
+                      <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
                         Nenhuma pessoa cadastrada ainda. Use “Nova pessoa” para começar.
                       </TableCell>
                     </TableRow>
                   ) : (
-                    pessoas.map((p) => (
-                      <TableRow key={p.id}>
-                        <TableCell className="font-medium">{p.nome ?? "—"}</TableCell>
-                        <TableCell className="text-muted-foreground">{p.email ?? "—"}</TableCell>
-                        <TableCell>
-                          {p.nivel_acesso_nome ??
-                            (p.roles.map((r) => ROTULO_PAPEL[r] ?? r).join(", ") || "—")}
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant={p.acesso_tipo === "portal_parceiro" ? "secondary" : "outline"}
-                          >
-                            {p.acesso_tipo === "portal_parceiro"
-                              ? "Portal do Parceiro"
-                              : "Portal do Correspondente"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={p.ativo && !p.bloqueado_em ? "default" : "destructive"}>
-                            {p.ativo && !p.bloqueado_em ? "Ativo" : "Inativo"}
-                          </Badge>
-                        </TableCell>
-                      </TableRow>
-                    ))
+                    pessoas.map((p) => {
+                      const ativo = p.ativo && !p.bloqueado_em;
+                      const gerenciavel =
+                        !p.roles.includes("correspondente") && !p.roles.includes("admin");
+                      return (
+                        <TableRow key={p.id}>
+                          <TableCell className="font-medium">{p.nome ?? "—"}</TableCell>
+                          <TableCell className="text-muted-foreground">{p.email ?? "—"}</TableCell>
+                          <TableCell>
+                            {p.nivel_acesso_nome ??
+                              (p.roles.map((r) => ROTULO_PAPEL[r] ?? r).join(", ") || "—")}
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant={
+                                p.acesso_tipo === "portal_parceiro" ? "secondary" : "outline"
+                              }
+                            >
+                              {p.acesso_tipo === "portal_parceiro"
+                                ? "Portal do Parceiro"
+                                : "Portal do Correspondente"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={ativo ? "default" : "destructive"}>
+                              {ativo ? "Ativo" : "Inativo"}
+                            </Badge>
+                          </TableCell>
+                          {podeGerenciar && (
+                            <TableCell className="text-right">
+                              {gerenciavel && (
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                                      <MoreHorizontal className="h-4 w-4" />
+                                      <span className="sr-only">Ações</span>
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => setEditando(p)}>
+                                      <Pencil className="mr-2 h-4 w-4" /> Editar
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => resetMut.mutate(p.id)}>
+                                      <KeyRound className="mr-2 h-4 w-4" /> Redefinir senha
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      onClick={() =>
+                                        statusMut.mutate({ id: p.id, ativar: !ativo })
+                                      }
+                                    >
+                                      {ativo ? (
+                                        <>
+                                          <Ban className="mr-2 h-4 w-4" /> Desativar
+                                        </>
+                                      ) : (
+                                        <>
+                                          <CheckCircle2 className="mr-2 h-4 w-4" /> Ativar
+                                        </>
+                                      )}
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem
+                                      className="text-destructive focus:text-destructive"
+                                      onClick={() => setExcluindo(p)}
+                                    >
+                                      <Trash2 className="mr-2 h-4 w-4" /> Excluir
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              )}
+                            </TableCell>
+                          )}
+                        </TableRow>
+                      );
+                    })
                   )}
                 </TableBody>
+
               </Table>
             </div>
           </TabsContent>
