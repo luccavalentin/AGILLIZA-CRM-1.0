@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/app-shell/app-shell";
-import { navInterno } from "@/components/app-shell/nav-config";
+import { navInterno, navParceiro } from "@/components/app-shell/nav-config";
 import { filterNavByPermissions, permsToSet } from "@/components/app-shell/filter-nav";
 import { SidebarSkeleton } from "@/components/app-shell/sidebar-nav";
 import { getMinhaSessao } from "@/lib/session.functions";
