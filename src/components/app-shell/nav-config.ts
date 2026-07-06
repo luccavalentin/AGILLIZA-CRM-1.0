@@ -170,6 +170,7 @@ export const navInterno: NavGroup[] = [
     label: "Administração",
     items: [
       { label: "Pessoas", icon: UserCog, to: "/admin/pessoas", perm: { modulo: "admin.pessoas" } },
+      { label: "Regras & Módulos", icon: ShieldCheck, to: "/admin/regras-modulos", perm: { modulo: "admin.regras" } },
       { label: "Integrações", icon: Plug, to: "/admin/integracoes", perm: { modulo: "admin.integracoes" } },
       { label: "Bancos", icon: Landmark, to: "/admin/bancos", perm: { modulo: "admin.integracoes" } },
       { label: "APIs de IA", icon: Sparkles, to: "/admin/apis-ia", perm: { modulo: "admin.integracoes" } },
