@@ -20,6 +20,7 @@ export const Route = createFileRoute("/_authenticated/crm/painel")({
 });
 
 function Pagina() {
+  usePipelineRealtime();
   const navigate = useNavigate();
   const listar = useServerFn(listarPainel);
   const [desde, setDesde] = useState("");
