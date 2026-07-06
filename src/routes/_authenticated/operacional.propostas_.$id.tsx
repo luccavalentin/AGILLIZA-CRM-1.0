@@ -1001,6 +1001,7 @@ function TabEnvolvidos({
             : `Incluir ${tipo === "CO" ? "comprador" : "vendedor"}`
         }
         inicial={inicial}
+        conjugeInicial={conjugeInicial}
         tipoQualificacaoFixo={tipo === "VD" ? "VD" : undefined}
         salvando={salvando}
         onSalvar={salvar}
