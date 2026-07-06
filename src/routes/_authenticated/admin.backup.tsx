@@ -1,7 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { DatabaseBackup, Play, RefreshCw, HardDrive } from "lucide-react";
+import {
+  DatabaseBackup,
+  Play,
+  RefreshCw,
+  HardDrive,
+  FileSpreadsheet,
+  Trash2,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -13,8 +21,25 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { assertModuloPermitido } from "@/lib/route-guards";
-import { listarBackups, criarBackup } from "@/lib/admin/backup.functions";
+import {
+  listarBackups,
+  criarBackup,
+  excluirBackup,
+  exportarBackupCompleto,
+} from "@/lib/admin/backup.functions";
+import { exportarBackupXLSX } from "@/lib/admin/backup-xlsx";
 
 export const Route = createFileRoute("/_authenticated/admin/backup")({
   head: () => ({ meta: [{ title: "Backup — Agilliza" }] }),
