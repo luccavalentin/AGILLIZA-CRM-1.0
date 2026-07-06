@@ -129,13 +129,7 @@ function Pagina() {
               <TabsTrigger value="minhas">Minhas</TabsTrigger>
             </TabsList>
           </Tabs>
-          <form
-            className="flex flex-1 items-center gap-2 min-w-[220px]"
-            onSubmit={(e) => {
-              e.preventDefault();
-              setBusca(q);
-            }}
-          >
+          <div className="flex flex-1 items-center gap-2 min-w-[220px]">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -145,10 +139,7 @@ function Pagina() {
                 onChange={(e) => setQ(e.target.value)}
               />
             </div>
-            <Button type="submit" variant="secondary">
-              Buscar
-            </Button>
-          </form>
+          </div>
           <div className="flex flex-col gap-1">
             <Label className="text-xs text-muted-foreground">De</Label>
             <Input
