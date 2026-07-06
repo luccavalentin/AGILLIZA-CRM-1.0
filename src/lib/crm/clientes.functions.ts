@@ -646,6 +646,29 @@ export const moverEtapa = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+/** Define a etapa da esteira para qualquer posição (avança ou volta). */
+export const definirEtapa = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        cliente_id: z.string().uuid(),
+        codigo_destino: z.string(),
+        observacao: z.string().optional(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }): Promise<{ ok: true }> => {
+    const { error } = await context.supabase.rpc("cliente_pipeline_definir", {
+      _cliente_id: data.cliente_id,
+      _codigo_destino: data.codigo_destino,
+      _obs: data.observacao ?? undefined,
+    });
+    if (error) throw error;
+    return { ok: true };
+  });
+
+
 /** Busca de clientes para combobox (Etapa 04). */
 export const buscarClientesCRM = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
