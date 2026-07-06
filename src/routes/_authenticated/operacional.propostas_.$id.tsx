@@ -585,7 +585,7 @@ function TabResumo({
                     aria-label={`Selecionar ${b.nome_banco}`}
                   />
                 </TableCell>
-                <TableCell className="font-medium">{b.nome_banco}</TableCell>
+                <TableCell className="font-medium" style={{ color: corDoBanco(b.nome_banco) }}>{b.nome_banco}</TableCell>
                 <TableCell className="text-right tabular-nums">
                   {formatBRL(b.valor_financiamento_max)}
                 </TableCell>
