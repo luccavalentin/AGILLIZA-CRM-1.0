@@ -566,6 +566,7 @@ function Pagina() {
             <ClienteCRMPicker
               selecionado={f.cliente_id ? f.nome_cliente : null}
               onSelect={(c) => {
+                const ec = estadoCivilCrmParaCodigo(c.estado_civil);
                 setF((prev) => ({
                   ...prev,
                   cliente_id: c.id,
@@ -574,9 +575,9 @@ function Pagina() {
                   email: c.email ?? "",
                   celular: c.telefone_celular ? maskCelular(c.telefone_celular) : "",
                   data_nascimento: c.data_nascimento ?? "",
-                  estado_civil: c.estado_civil ?? prev.estado_civil,
+                  estado_civil: ec || prev.estado_civil,
                   renda_total: c.renda_total_declarada ?? prev.renda_total,
-                  possui_conjuge: c.estado_civil === "CA" || c.estado_civil === "UE",
+                  possui_conjuge: ec === "CA" || ec === "UE",
                 }));
                 toast.success("Dados do cliente preenchidos.");
               }}
