@@ -1,6 +1,7 @@
 import {
   BarChart,
   Bar,
+  Cell,
   LineChart,
   Line,
   XAxis,
@@ -12,6 +13,7 @@ import {
 } from "recharts";
 import type { ReportChart } from "@/lib/relatorios/shared";
 import { formatBRL } from "@/lib/simulacao/format";
+import { corDoBanco } from "@/lib/bancos/cores";
 
 const tooltipStyle = {
   background: "hsl(var(--card))",
@@ -21,10 +23,19 @@ const tooltipStyle = {
 };
 
 /** Renderiza um gráfico de relatório/painel conforme o tipo. */
-export function ReportChartView({ chart }: { chart: ReportChart }) {
+export function ReportChartView({
+  chart,
+  colorByBank = false,
+}: {
+  chart: ReportChart;
+  /** Colore cada barra com a cor de marca do banco correspondente ao rótulo. */
+  colorByBank?: boolean;
+}) {
   const fmt = chart.moeda
     ? (v: number) => formatBRL(Number(v))
     : (v: number) => Number(v).toLocaleString("pt-BR");
+  // Contagens não têm casas decimais; valores monetários mantêm o formato BRL.
+  const allowDecimals = Boolean(chart.moeda);
 
   if (chart.dados.length === 0) {
     return (
@@ -40,7 +51,12 @@ export function ReportChartView({ chart }: { chart: ReportChart }) {
         <LineChart data={chart.dados}>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
           <XAxis dataKey="label" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
-          <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" width={56} />
+          <YAxis
+            tick={{ fontSize: 11 }}
+            stroke="hsl(var(--muted-foreground))"
+            width={56}
+            allowDecimals={allowDecimals}
+          />
           <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => fmt(v)} />
           {chart.serie2 && <Legend wrapperStyle={{ fontSize: 12 }} />}
           <Line
@@ -76,6 +92,7 @@ export function ReportChartView({ chart }: { chart: ReportChart }) {
             tick={{ fontSize: 11 }}
             stroke="hsl(var(--muted-foreground))"
             tickFormatter={fmt}
+            allowDecimals={allowDecimals}
           />
           <YAxis
             type="category"
@@ -85,7 +102,14 @@ export function ReportChartView({ chart }: { chart: ReportChart }) {
             width={110}
           />
           <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => fmt(v)} />
-          <Bar dataKey="valor" fill="var(--chart-1)" radius={[0, 4, 4, 0]} />
+          <Bar dataKey="valor" radius={[0, 4, 4, 0]} fill="var(--chart-1)">
+            {chart.dados.map((d, i) => (
+              <Cell
+                key={i}
+                fill={colorByBank ? corDoBanco(d.label) : "var(--chart-1)"}
+              />
+            ))}
+          </Bar>
         </BarChart>
       </ResponsiveContainer>
     );
@@ -101,9 +125,17 @@ export function ReportChartView({ chart }: { chart: ReportChart }) {
           stroke="hsl(var(--muted-foreground))"
           width={56}
           tickFormatter={fmt}
+          allowDecimals={allowDecimals}
         />
         <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => fmt(v)} />
-        <Bar dataKey="valor" fill="var(--chart-1)" radius={[4, 4, 0, 0]} />
+        <Bar dataKey="valor" radius={[4, 4, 0, 0]} fill="var(--chart-1)">
+          {chart.dados.map((d, i) => (
+            <Cell
+              key={i}
+              fill={colorByBank ? corDoBanco(d.label) : "var(--chart-1)"}
+            />
+          ))}
+        </Bar>
       </BarChart>
     </ResponsiveContainer>
   );

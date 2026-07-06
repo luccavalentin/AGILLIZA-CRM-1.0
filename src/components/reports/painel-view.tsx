@@ -202,12 +202,13 @@ export function PainelView({
                 <div className="h-64 w-full">
                   <ReportChartView
                     chart={{ titulo: data.chart.titulo, tipo: "barh", dados: data.chart.dados }}
+                    colorByBank={data.chart.porBanco}
                   />
                 </div>
               </PanelCard>
             </div>
             <PanelCard titulo={data.ranking.titulo}>
-              <MetricList items={data.ranking.itens} />
+              <MetricList items={data.ranking.itens} colorByBank={data.chart.porBanco} />
             </PanelCard>
           </div>
 

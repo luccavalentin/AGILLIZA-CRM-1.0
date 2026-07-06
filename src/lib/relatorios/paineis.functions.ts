@@ -31,7 +31,7 @@ export interface PanelAlert {
 export interface PanelDados {
   heros: PanelMetric[];
   minis: PanelMetric[];
-  chart: { titulo: string; subtitulo?: string; dados: PanelSerie[] };
+  chart: { titulo: string; subtitulo?: string; dados: PanelSerie[]; porBanco?: boolean };
   ranking: { titulo: string; itens: { label: string; valor: number }[] };
   alertas: PanelAlert[];
 }
@@ -148,6 +148,7 @@ export const getPanelDados = createServerFn({ method: "POST" })
           titulo: chartPorBanco ? "Ranking de bancos" : "Simulações por status",
           subtitulo: chartPorBanco ? "Propostas enviadas" : "Movimento das simulações",
           dados: chartDados,
+          porBanco: chartPorBanco,
         },
         ranking: {
           titulo: chartPorBanco ? "Bancos" : "Status das simulações",
