@@ -44,6 +44,7 @@ export const Route = createFileRoute("/_authenticated/crm/clientes_/$id")({
 function Pagina() {
   usePipelineRealtime();
   const { id } = Route.useParams();
+  const navigate = useNavigate();
   const qc = useQueryClient();
   const getCli = useServerFn(getCliente);
   const getStages = useServerFn(getPipelineStages);
