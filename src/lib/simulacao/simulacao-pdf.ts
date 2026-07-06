@@ -191,24 +191,23 @@ function drawInfoFinanciamento(
 ): number {
   const w = pageW - MARGIN * 2;
   const itens: { label: string; valor: string }[] = [
-    { label: "Produto", valor: produtoLabel(s) },
+    { label: "Valor de compra e venda", valor: brlOuTraco(d?.valorImovel ?? s.valor_imovel) },
+    { label: "Despesas financiadas", valor: brlOuTraco(d?.despesasFinanciadas) },
+    { label: "Tarifa de av. de garantia", valor: brlOuTraco(d?.tarifaAvaliacao) },
+    {
+      label: "Valor de financiamento total",
+      valor: brlOuTraco(d?.financiamentoTotal ?? d?.valorFinanciamento ?? s.valor_financiamento),
+    },
+    { label: "Entrada", valor: brlOuTraco(d?.valorEntrada ?? s.valor_entrada) },
+    { label: "Tipo da parcela", valor: d?.tipoParcela ?? d?.indexador ?? "—" },
+    {
+      label: "Prazo total",
+      valor: (d?.prazoMeses ?? s.prazo) != null ? `${d?.prazoMeses ?? s.prazo} meses` : "—",
+    },
     {
       label: "Sistema de amortização",
       valor: sistemaAmortizacaoLabel(d?.sistemaAmortizacao, s.sistema_amortizacao),
     },
-    { label: "Valor de compra e venda", valor: brlOuTraco(d?.valorImovel ?? s.valor_imovel) },
-    { label: "Despesas financiadas", valor: brlOuTraco(d?.despesasFinanciadas) },
-    {
-      label: "Valor de financiamento total",
-      valor: brlOuTraco(d?.valorFinanciamento ?? s.valor_financiamento),
-    },
-    { label: "Entrada", valor: brlOuTraco(d?.valorEntrada ?? s.valor_entrada) },
-    {
-      label: "Prazo total",
-      valor:
-        (d?.prazoMeses ?? s.prazo) != null ? `${d?.prazoMeses ?? s.prazo} meses` : "—",
-    },
-    { label: "Indexador", valor: d?.indexador ?? "—" },
     { label: "Taxa efetiva anual", valor: pctTxt(d?.taxaJurosAno ?? b?.taxa_juros_ano) },
     { label: "Taxa de juros mensal", valor: pctTxt(d?.taxaJurosMes, "a.m.") },
     {
@@ -217,10 +216,11 @@ function drawInfoFinanciamento(
         d?.cet ?? calcularCET(d?.valorFinanciamento ?? s.valor_financiamento, d?.parcelas),
       ),
     },
-    { label: "CESH (Custo Efetivo Seguro Habitacional)", valor: pctTxt(d?.cesh) },
-    { label: "IOF", valor: brlOuTraco(d?.iof ?? b?.valor_iof) },
+    { label: "CESH (Custo Efetivo Seguro Habit.)", valor: pctTxt(d?.cesh) },
+    { label: "IOF crédito", valor: brlOuTraco(d?.iof ?? b?.valor_iof) },
     { label: "Seguradora", valor: d?.seguradora ?? "—" },
   ];
+
 
   doc.setTextColor(AZUL);
   doc.setFont("helvetica", "bold");
