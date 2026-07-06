@@ -22,12 +22,18 @@ function normalizar(nome: string): string {
 }
 
 /** Logotipos oficiais disponíveis no projeto. */
-function logoOficial(nome: string): string | null {
+export function logoUrlDoBanco(nome: string | null | undefined): string | null {
+  if (!nome) return null;
   const n = normalizar(nome);
   if (n.includes("santander")) return santanderLogo;
   if (n.includes("itau")) return itauLogo;
   if (n.includes("bradesco")) return bradescoLogo;
   return null;
+}
+
+/** Alias interno mantido por compatibilidade. */
+function logoOficial(nome: string): string | null {
+  return logoUrlDoBanco(nome);
 }
 
 /** Iniciais exibidas no badge por banco (fallback). */
