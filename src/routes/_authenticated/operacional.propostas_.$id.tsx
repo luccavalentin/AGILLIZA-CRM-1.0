@@ -234,6 +234,11 @@ function Pagina() {
         <AcoesTopo proposta={p} propostaId={id} bancos={data.bancos} />
       </div>
 
+      {(data.bancos ?? []).some((b: any) => isBradesco(b.nome_banco) && bancoJaEnviado(b)) && (
+        <BradescoRetornoTimer enviadoEm={p.enviada_em} />
+      )}
+
+
       {/* Header linha 1 */}
       <div className="rounded-lg border border-border bg-card p-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
