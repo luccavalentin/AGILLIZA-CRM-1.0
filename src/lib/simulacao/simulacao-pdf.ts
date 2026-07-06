@@ -434,7 +434,19 @@ export function baixarSimulacaoDetalhadaPDF({
     doc.setFont("helvetica", "bold");
     doc.setFontSize(10);
     doc.text(`Plano de Pagamento (${parcelas.length} parcelas)`, MARGIN, y);
+    if (d?.parcelasEstimadas) {
+      doc.setFont("helvetica", "italic");
+      doc.setFontSize(7);
+      doc.setTextColor(CINZA);
+      doc.text(
+        "Projeção calculada a partir da taxa e do sistema informados pelo banco (1ª/última parcela reais).",
+        pageW - MARGIN,
+        y,
+        { align: "right" },
+      );
+    }
     y += 8;
+
 
     if (parcelas.length === 0) {
       doc.setFont("helvetica", "normal");
