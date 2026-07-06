@@ -51,7 +51,12 @@ export function ReportChartView({
         <LineChart data={chart.dados}>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
           <XAxis dataKey="label" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
-          <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" width={56} />
+          <YAxis
+            tick={{ fontSize: 11 }}
+            stroke="hsl(var(--muted-foreground))"
+            width={56}
+            allowDecimals={allowDecimals}
+          />
           <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => fmt(v)} />
           {chart.serie2 && <Legend wrapperStyle={{ fontSize: 12 }} />}
           <Line
