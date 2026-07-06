@@ -34,7 +34,11 @@ import { ToneBadge } from "@/components/crm/tone-badge";
 import { SimulacaoStatusBadge, BancoStatusBadge } from "@/components/simulacao/status-badge";
 import { DetalheBancoDialog } from "@/components/simulacao/detalhe-banco-dialog";
 import { formatBRL, formatPercent } from "@/lib/simulacao/format";
-import { baixarSimulacaoPDF, baixarBancoDetalhePDF } from "@/lib/simulacao/simulacao-pdf";
+import {
+  baixarSimulacaoPDF,
+  baixarSimulacaoSimplificadaPDF,
+  baixarSimulacaoDetalhadaPDF,
+} from "@/lib/simulacao/simulacao-pdf";
 
 export const Route = createFileRoute("/_authenticated/operacional/simulacoes_/$id")({
   head: () => ({ meta: [{ title: "Simulação — Agilliza" }] }),
@@ -163,22 +167,26 @@ function Pagina() {
                 <ChevronDown className="ml-1 h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-64">
-              <DropdownMenuItem onClick={() => baixarSimulacaoPDF({ simulacao: s, bancos })}>
-                Comparativo consolidado
+            <DropdownMenuContent align="end" className="w-72">
+              <DropdownMenuLabel>Extrato para o cliente</DropdownMenuLabel>
+              <DropdownMenuItem
+                onClick={() => baixarSimulacaoSimplificadaPDF({ simulacao: s, bancos })}
+                disabled={bancos.length === 0}
+              >
+                Simulação simplificada
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => baixarSimulacaoDetalhadaPDF({ simulacao: s, bancos })}
+                disabled={bancos.length === 0}
+              >
+                Simulação detalhada (todas as parcelas)
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuLabel>Detalhado por banco</DropdownMenuLabel>
-              {bancos.length === 0 && <DropdownMenuItem disabled>Nenhum banco</DropdownMenuItem>}
-              {bancos.map((b: any) => (
-                <DropdownMenuItem
-                  key={b.id}
-                  onClick={() => baixarBancoDetalhePDF({ simulacao: s, banco: b })}
-                >
-                  {b.nome_banco}
-                </DropdownMenuItem>
-              ))}
+              <DropdownMenuItem onClick={() => baixarSimulacaoPDF({ simulacao: s, bancos })}>
+                Comparativo consolidado (interno)
+              </DropdownMenuItem>
             </DropdownMenuContent>
+
           </DropdownMenu>
           <Button variant="ghost" onClick={duplicar}>
             <Copy className="mr-1 h-4 w-4" /> Duplicar
