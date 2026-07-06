@@ -71,7 +71,7 @@ function Pagina() {
           </Button>
           <Button asChild>
             <Link to="/operacional/propostas/enviar">
-              <Plus className="mr-1 h-4 w-4" /> Nova oportunidade
+              <Plus className="mr-1 h-4 w-4" /> Nova proposta
             </Link>
           </Button>
         </div>
@@ -133,7 +133,7 @@ function Pagina() {
                     <FileText className="h-8 w-8 text-muted-foreground" />
                     <p className="text-sm text-muted-foreground">Nenhuma proposta encontrada.</p>
                     <Button asChild size="sm">
-                      <Link to="/operacional/propostas/enviar">Nova oportunidade</Link>
+                      <Link to="/operacional/propostas/enviar">Nova proposta</Link>
                     </Button>
                   </div>
                 </TableCell>
