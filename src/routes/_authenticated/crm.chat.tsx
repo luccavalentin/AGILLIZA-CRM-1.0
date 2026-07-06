@@ -257,20 +257,20 @@ function Pagina() {
         </Card>
 
         {/* Chat + follow-up */}
-        {conversaAtual ? (
+        {alvoAtual ? (
           <div className="grid gap-4 xl:grid-cols-[1fr_18rem]">
             <ChatClienteTab
-              key={conversaAtual.cliente_id}
-              clienteId={conversaAtual.cliente_id}
+              key={alvoAtual.cliente_id}
+              clienteId={alvoAtual.cliente_id}
               info={{
-                nome: conversaAtual.nome,
-                documento: conversaAtual.documento,
-                contexto: conversaAtual.etapa_nome ?? undefined,
+                nome: alvoAtual.nome,
+                documento: alvoAtual.documento,
+                contexto: alvoAtual.etapa_nome ?? undefined,
               }}
             />
             <FollowUpPanel
-              clienteId={conversaAtual.cliente_id}
-              nome={conversaAtual.nome}
+              clienteId={alvoAtual.cliente_id}
+              nome={alvoAtual.nome}
             />
           </div>
         ) : (
