@@ -172,7 +172,20 @@ function Pagina() {
     <div className="mx-auto w-full max-w-3xl p-6 md:p-10">
       {/* Wizard */}
       <div className="flex flex-col gap-5">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="-ml-2 w-fit text-muted-foreground"
+          onClick={() =>
+            router.history.canGoBack()
+              ? router.history.back()
+              : router.navigate({ to: "/operacional/simulacoes" })
+          }
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
+        </Button>
         <h1 className="text-lg font-semibold text-foreground">Simular financiamento</h1>
+
 
         <div className="space-y-1.5">
           <Label>Produto</Label>
