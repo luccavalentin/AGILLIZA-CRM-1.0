@@ -74,6 +74,20 @@ function soDigitos(v: unknown): string | undefined {
 }
 
 /**
+ * Normaliza textos livres antes de enviar ao banco. O usuário pode preencher
+ * livremente, mas alguns bancos recusam caracteres como parênteses em campos
+ * de ocupação (ex.: "Administrador(a)").
+ */
+function textoLivreParaBanco(v: unknown): string | undefined {
+  const s = String(v ?? "")
+    .replace(/\((?:a|o)\)/gi, "")
+    .replace(/[(){}[\]]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return s || undefined;
+}
+
+/**
  * Um envolvido tem o cadastro complementar completo (obrigatório para enviar
  * a proposta ao banco). Espelha a validação do formulário no front-end.
  */
@@ -166,13 +180,19 @@ async function garantirEnderecoParticipantes({
     const estadoCivil =
       part?.tipoEstadoCivil || env?.estado_civil || src?.estado_civil || prop.estado_civil || null;
     const uf = part?.uf || env?.uf || src?.uf || prop.uf || null;
-    // Profissão e empresa: o Itaú (entre outros) recusa a proposta quando
-    // `profession`/`company` do proponente chegam nulos. Completamos a partir do
-    // envolvido, do cadastro do cliente e, por fim, de um valor padrão seguro.
+    // Profissão e empresa: prioriza o cadastro atual do sistema sobre o que já
+    // está gravado na oportunidade bancária, pois a oportunidade pode conter um
+    // valor antigo inválido (ex.: "Administrador(a)").
     const profissao =
-      part?.nomeProfissao || env?.profissao || src?.profissao || "Não informado";
+      textoLivreParaBanco(env?.profissao) ||
+      textoLivreParaBanco(src?.profissao) ||
+      textoLivreParaBanco(part?.nomeProfissao) ||
+      "Não informado";
     const empresa =
-      part?.nomeEmpresaProfissao || env?.empresa || src?.empresa || "Não informado";
+      textoLivreParaBanco(env?.empresa) ||
+      textoLivreParaBanco(src?.empresa) ||
+      textoLivreParaBanco(part?.nomeEmpresaProfissao) ||
+      "Não informado";
 
     // Chamamos a API quando falta estado civil, UF, profissão ou empresa (os
     // campos que mais derrubam a validação dos bancos). Se todos já estão
