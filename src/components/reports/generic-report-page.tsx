@@ -57,12 +57,15 @@ export function GenericReportPage({
     ? (disp?.produtos ??
       [...new Set((data?.rows ?? []).map((r) => String(r.produto ?? "")).filter(Boolean))].sort())
     : undefined;
-  const statuses = comFiltroStatus
-    ? (disp?.statuses ??
-      [...new Set((data?.rows ?? []).map((r) => String(r.status ?? "")).filter(Boolean))]
-        .sort()
-        .map((v) => ({ value: v, label: v })))
-    : undefined;
+  // Status e responsáveis são filtros universais: aparecem em todos os relatórios.
+  const statuses =
+    disp?.statuses ??
+    (comFiltroStatus
+      ? [...new Set((data?.rows ?? []).map((r) => String(r.status ?? "")).filter(Boolean))]
+          .sort()
+          .map((v) => ({ value: v, label: v }))
+      : undefined);
+  const responsaveis = disp?.responsaveis;
 
   return (
     <ReportShell
