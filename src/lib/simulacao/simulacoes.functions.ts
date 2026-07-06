@@ -274,6 +274,7 @@ export const criarSimulacao = createServerFn({ method: "POST" })
       prazo_anos: dd.prazo_anos ?? null,
       possui_imovel_escolhido: dd.possui_imovel_escolhido ?? null,
       utiliza_fgts: dd.utiliza_fgts ?? null,
+      fg_financiar_despesas: dd.fg_financiar_despesas ?? false,
       sistema_amortizacao: dd.sistema_amortizacao ?? null,
       email_verificado_em: dd.email_verificado_em ?? null,
       email_verificado_por: dd.email_verificado_em ? "homefin_otp" : null,
