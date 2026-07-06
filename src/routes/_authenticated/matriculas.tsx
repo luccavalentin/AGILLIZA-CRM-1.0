@@ -628,7 +628,7 @@ function CreditoDialog({ onMudou }: { onMudou: () => void }) {
       });
       toast.success("Crédito registrado.");
       setOpen(false);
-      setValor("0,00");
+      setValor("");
       setDescricao("");
       setData(hoje());
       onMudou();
