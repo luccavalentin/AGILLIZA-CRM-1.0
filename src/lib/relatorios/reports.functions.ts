@@ -538,16 +538,13 @@ export const runReport = createServerFn({ method: "POST" })
         "usuario_responsavel_id",
       );
 
-      // Lista completa de bancos e produtos cadastrados (independe do resultado filtrado).
+      // Apenas bancos ATIVOS aparecem no filtro (produtos vêm das propostas existentes).
       const [{ data: bancosCad }, { data: prodProps }] = await Promise.all([
-        supabase.from("homefin_bancos").select("nome_banco").order("nome_banco", { ascending: true }),
+        supabase.from("homefin_bancos").select("nome_banco").eq("ativo", true).order("nome_banco", { ascending: true }),
         supabase.from("propostas").select("produto"),
       ]);
       const bancosDisponiveis = [
-        ...new Set([
-          ...((bancosCad ?? []) as any[]).map((b) => String(b.nome_banco ?? "")),
-          ...todas.map((p) => String(p.nome_banco ?? "")),
-        ].filter(Boolean)),
+        ...new Set(((bancosCad ?? []) as any[]).map((b) => String(b.nome_banco ?? "")).filter(Boolean)),
       ].sort((a, b) => a.localeCompare(b, "pt-BR"));
       const produtosDisponiveis = [
         ...new Set(((prodProps ?? []) as any[]).map((p) => String(p.produto ?? "")).filter(Boolean)),
