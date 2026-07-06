@@ -304,12 +304,42 @@ export async function enviarPropostaImpl({
         throw new IntegracaoBancariaError(erroBanco);
       }
 
-      await supabase
-        .from("proposta_bancos")
-        .update({ status_banco: "enviada", selecionado: true, mensagem_banco: null })
-        .eq("id", b.id);
+      // Grava o RETORNO real do banco (taxa, parcela, financiamento, situação e
+      // protocolo) em vez de apenas marcar "enviada". Assim o usuário vê o
+      // desfecho imediato da comunicação com o banco.
+      const situacaoTipo = String(resp?.tipoSituacao ?? "").trim();
+      const mapa = statusInternoBanco(situacaoTipo, false);
+      const patchOk: Record<string, unknown> = {
+        status_banco: mapa.banco || "enviada",
+        selecionado: true,
+        mensagem_banco: null,
+      };
+      if (situacaoTipo) patchOk.situacao_banco = situacaoTipo;
+      const protocolo =
+        resp?.codigoOportunidadeBanco ??
+        resp?.codigoOportunidadeBancoInterno ??
+        resp?.codigoSimulacaoBanco ??
+        null;
+      if (protocolo) patchOk.numero_proposta_banco = String(protocolo);
+      if (resp?.valorParcelaBanco != null) patchOk.valor_parcela = resp.valorParcelaBanco;
+      if (resp?.taxaJurosAnoBanco != null) patchOk.taxa_juros_ano = resp.taxaJurosAnoBanco;
+      if (resp?.prazoPagamentoBancoMax != null)
+        patchOk.prazo_pagamento_max = resp.prazoPagamentoBancoMax;
+      if (resp?.valorFinanciamentoBanco != null)
+        patchOk.valor_financiamento_max = resp.valorFinanciamentoBanco;
+      if (resp?.valorIofBanco != null) patchOk.valor_iof = resp.valorIofBanco;
+      if (resp?.codigoSistemaAmortizacaoBanco)
+        patchOk.sistema_amortizacao_banco = resp.codigoSistemaAmortizacaoBanco;
+      if (resp?.codigoIndexadorBanco) patchOk.codigo_indexador = resp.codigoIndexadorBanco;
+
+      await supabase.from("proposta_bancos").update(patchOk as any).eq("id", b.id);
       sucesso++;
-      resultados.push({ banco_id: b.banco_id, nome_banco: b.nome_banco, status: "enviada" });
+      resultados.push({
+        banco_id: b.banco_id,
+        nome_banco: b.nome_banco,
+        status: String(patchOk.status_banco),
+      });
+
     } catch (e) {
       const msg = sanitizarMensagemErro(
         e instanceof IntegracaoBancariaError ? e.message : "Falha ao enviar ao banco.",
@@ -355,7 +385,20 @@ export async function enviarPropostaImpl({
     payloadNovo: { status: novoStatus, bancos: resultados.length },
   });
 
+  // Logo após enviar, consulta a oportunidade (polling) para reconciliar o
+  // retorno do banco imediatamente — traz situação/etapa/taxas atualizadas sem
+  // o usuário precisar sincronizar manualmente.
+  if (sucesso > 0) {
+    try {
+      const sinc = await sincronizarPropostaImpl({ propostaId, userId, supabase });
+      if (sinc?.status) novoStatus = sinc.status as PropostaStatus;
+    } catch (e) {
+      console.error("[proposta] sincronização pós-envio falhou", e);
+    }
+  }
+
   return { status: novoStatus, bancos: resultados };
+
 }
 
 export async function enviarFollowupHomefinImpl({
