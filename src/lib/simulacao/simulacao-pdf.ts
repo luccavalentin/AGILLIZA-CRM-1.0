@@ -111,15 +111,22 @@ const DISCLAIMER =
 // Blocos reutilizáveis (título, dados do cliente, informações do financiamento)
 // ---------------------------------------------------------------------------
 
-function drawTituloExtrato(doc: jsPDF, pageW: number, s: any, y: number): number {
+function drawTituloExtrato(
+  doc: jsPDF,
+  pageW: number,
+  s: any,
+  y: number,
+  titulo = "Extrato da Simulação de Financiamento",
+  dataLabel = "Data da Simulação",
+): number {
   doc.setTextColor(AZUL);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(14);
-  doc.text("Extrato da Simulação de Financiamento", MARGIN, y);
+  doc.text(titulo, MARGIN, y);
   doc.setTextColor(GRAFITE);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(8);
-  doc.text(`Data da Simulação: ${dataTxt(s.created_at ?? new Date())}`, pageW - MARGIN, y, {
+  doc.text(`${dataLabel}: ${dataTxt(s.created_at ?? new Date())}`, pageW - MARGIN, y, {
     align: "right",
   });
   return y + 12;
