@@ -147,7 +147,7 @@ function Pagina() {
               >
                 <TableCell className="font-medium">{p.numero_proposta}</TableCell>
                 <TableCell>{p.nome_cliente ?? "—"}</TableCell>
-                <TableCell>{p.nome_banco ?? "—"}</TableCell>
+                <TableCell><BancosProposta bancos={p.bancos} /></TableCell>
                 <TableCell className="text-right tabular-nums">
                   {formatBRL(p.valor_financiamento)}
                 </TableCell>
