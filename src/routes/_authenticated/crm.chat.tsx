@@ -45,6 +45,14 @@ function formatarHora(iso: string): string {
   });
 }
 
+function iniciais(nome?: string | null): string {
+  if (!nome) return "?";
+  const partes = nome.trim().split(/\s+/);
+  const primeira = partes[0]?.[0] ?? "";
+  const ultima = partes.length > 1 ? partes[partes.length - 1][0] : "";
+  return (primeira + ultima).toUpperCase();
+}
+
 function Pagina() {
   const qc = useQueryClient();
   const listar = useServerFn(listarConversasCliente);
@@ -132,34 +140,37 @@ function Pagina() {
 
 
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-4 p-4 md:p-6">
-      <div className="flex items-center gap-2">
-        <MessagesSquare className="h-5 w-5 text-muted-foreground" />
+    <div className="mx-auto w-full max-w-7xl space-y-5 p-4 md:p-6">
+      <div className="flex items-center gap-3 rounded-2xl border border-border/60 bg-gradient-to-r from-primary/5 via-card to-card p-4 shadow-sm">
+        <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+          <MessagesSquare className="h-5 w-5" />
+        </div>
         <div>
-          <h1 className="text-xl font-semibold text-foreground">
+          <h1 className="text-xl font-semibold tracking-tight text-foreground">
             Chat e Follow-up Cliente
           </h1>
           <p className="text-sm text-muted-foreground">
-            Converse com os clientes pelo App e acompanhe/avançe as etapas do
-            processo. Tudo é sincronizado em tempo real.
+            Converse com os clientes pelo App e acompanhe as etapas do processo em
+            tempo real.
           </p>
         </div>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[20rem_1fr]">
         {/* Lista de conversas */}
-        <Card className="flex h-[36rem] flex-col overflow-hidden">
-          <div className="border-b p-3">
+        <Card className="flex h-[36rem] flex-col overflow-hidden border-border/60 shadow-sm">
+          <div className="border-b bg-muted/30 p-3">
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 value={busca}
                 onChange={(e) => setBusca(e.target.value)}
                 placeholder="Buscar cliente…"
-                className="pl-8"
+                className="rounded-lg bg-background pl-8"
               />
             </div>
           </div>
+
           <div className="flex-1 overflow-y-auto">
             {isLoading ? (
               <div className="space-y-2 p-3">
@@ -182,36 +193,43 @@ function Pagina() {
                     key={c.cliente_id}
                     onClick={() => setSelecionado(c.cliente_id)}
                     className={cn(
-                      "flex w-full flex-col gap-0.5 border-b px-3 py-2.5 text-left transition-colors hover:bg-muted/60",
-                      selecionado === c.cliente_id && "bg-muted",
+                      "flex w-full items-start gap-3 border-b border-border/50 px-3 py-3 text-left transition-colors hover:bg-muted/50",
+                      selecionado === c.cliente_id &&
+                        "bg-primary/5 shadow-[inset_3px_0_0_0_hsl(var(--primary))]",
                     )}
                   >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="truncate text-sm font-medium text-foreground">
-                        {c.nome}
-                      </span>
-                      <span className="shrink-0 text-[10px] text-muted-foreground">
-                        {formatarHora(c.ultima_em)}
-                      </span>
+                    <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary/80 to-primary/50 text-xs font-semibold text-primary-foreground">
+                      {iniciais(c.nome)}
                     </div>
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="truncate text-xs text-muted-foreground">
-                        {c.ultimo_remetente === "time" ? "Você: " : ""}
-                        {c.ultima_mensagem}
-                      </span>
-                      {c.nao_lidas > 0 && (
-                        <Badge className="h-5 shrink-0 px-1.5 text-[10px]">
-                          {c.nao_lidas}
-                        </Badge>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="truncate text-sm font-medium text-foreground">
+                          {c.nome}
+                        </span>
+                        <span className="shrink-0 text-[10px] text-muted-foreground">
+                          {formatarHora(c.ultima_em)}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="truncate text-xs text-muted-foreground">
+                          {c.ultimo_remetente === "time" ? "Você: " : ""}
+                          {c.ultima_mensagem}
+                        </span>
+                        {c.nao_lidas > 0 && (
+                          <Badge className="h-5 shrink-0 px-1.5 text-[10px]">
+                            {c.nao_lidas}
+                          </Badge>
+                        )}
+                      </div>
+                      {c.etapa_nome && (
+                        <span className="mt-0.5 block truncate text-[10px] text-muted-foreground">
+                          {c.etapa_nome}
+                        </span>
                       )}
                     </div>
-                    {c.etapa_nome && (
-                      <span className="mt-0.5 truncate text-[10px] text-muted-foreground">
-                        Etapa: {c.etapa_nome}
-                      </span>
-                    )}
                   </button>
                 ))}
+
 
                 {novosClientes.length > 0 && (
                   <>
@@ -223,32 +241,39 @@ function Pagina() {
                         key={c.cliente_id}
                         onClick={() => setSelecionado(c.cliente_id)}
                         className={cn(
-                          "flex w-full flex-col gap-0.5 border-b px-3 py-2.5 text-left transition-colors hover:bg-muted/60",
-                          selecionado === c.cliente_id && "bg-muted",
+                          "flex w-full items-start gap-3 border-b border-border/50 px-3 py-3 text-left transition-colors hover:bg-muted/50",
+                          selecionado === c.cliente_id &&
+                            "bg-primary/5 shadow-[inset_3px_0_0_0_hsl(var(--primary))]",
                         )}
                       >
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="truncate text-sm font-medium text-foreground">
-                            {c.nome}
-                          </span>
-                          <Badge
-                            variant={c.logou ? "secondary" : "outline"}
-                            className="h-5 shrink-0 px-1.5 text-[10px]"
-                          >
-                            {c.logou ? "Ativo" : "Não logou"}
-                          </Badge>
+                        <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold text-muted-foreground">
+                          {iniciais(c.nome)}
                         </div>
-                        <span className="truncate text-xs text-muted-foreground">
-                          {c.documento ?? "Iniciar conversa"}
-                        </span>
-                        {c.etapa_nome && (
-                          <span className="mt-0.5 truncate text-[10px] text-muted-foreground">
-                            Etapa: {c.etapa_nome}
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="truncate text-sm font-medium text-foreground">
+                              {c.nome}
+                            </span>
+                            <Badge
+                              variant={c.logou ? "secondary" : "outline"}
+                              className="h-5 shrink-0 px-1.5 text-[10px]"
+                            >
+                              {c.logou ? "Ativo" : "Não logou"}
+                            </Badge>
+                          </div>
+                          <span className="block truncate text-xs text-muted-foreground">
+                            {c.documento ?? "Iniciar conversa"}
                           </span>
-                        )}
+                          {c.etapa_nome && (
+                            <span className="mt-0.5 block truncate text-[10px] text-muted-foreground">
+                              {c.etapa_nome}
+                            </span>
+                          )}
+                        </div>
                       </button>
                     ))}
                   </>
+
                 )}
               </>
             )}
@@ -274,11 +299,15 @@ function Pagina() {
             />
           </div>
         ) : (
-          <Card className="flex h-[36rem] items-center justify-center">
-            <p className="text-sm text-muted-foreground">
-              Selecione uma conversa para começar.
+          <Card className="flex h-[36rem] flex-col items-center justify-center gap-3 border-border/60 border-dashed text-center shadow-sm">
+            <div className="flex size-14 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <MessagesSquare className="h-6 w-6" />
+            </div>
+            <p className="max-w-[16rem] text-sm text-muted-foreground">
+              Selecione uma conversa ao lado ou busque um cliente para começar.
             </p>
           </Card>
+
         )}
       </div>
     </div>
@@ -323,7 +352,7 @@ function FollowUpPanel({
   });
 
   return (
-    <Card className="h-[36rem] overflow-y-auto">
+    <Card className="h-[36rem] overflow-y-auto border-border/60 shadow-sm">
       <CardContent className="space-y-4 p-4">
         <div>
           <p className="text-sm font-semibold text-foreground">Follow-up</p>
