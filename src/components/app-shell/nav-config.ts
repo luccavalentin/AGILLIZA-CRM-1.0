@@ -320,18 +320,18 @@ export const navInterno: NavGroup[] = [
   },
 ];
 
-/** Navegação reduzida do Portal do Parceiro (imobiliárias/corretores). */
+/**
+ * Navegação do Portal do Parceiro.
+ * Reaproveita exatamente os mesmos módulos/telas do portal do correspondente
+ * (`navInterno`), apenas trocando a Visão Geral pela tela "Início" do parceiro.
+ * Cada item permanece guiado pela matriz de permissões (Regras & Módulos):
+ * o correspondente decide o que o parceiro vê e com qual escopo.
+ */
 export const navParceiro: NavGroup[] = [
   {
-    id: "parceiro",
+    id: "parceiro-inicio",
     label: "Portal do Parceiro",
-    items: [
-      { label: "Início", icon: Gauge, to: "/parceiro" },
-      { label: "Meus clientes", icon: Users, to: "/parceiro/clientes" },
-      { label: "Simulações", icon: Calculator, to: "/parceiro/simulacoes" },
-      { label: "Propostas", icon: FileText, to: "/parceiro/propostas" },
-      { label: "Comissões", icon: Percent, to: "/parceiro/comissoes" },
-      { label: "Documentos", icon: FolderOpen, to: "/parceiro/documentos" },
-    ],
+    items: [{ label: "Início", icon: Gauge, to: "/parceiro-inicio" }],
   },
+  ...navInterno.filter((grupo) => grupo.id !== "visao-geral"),
 ];
