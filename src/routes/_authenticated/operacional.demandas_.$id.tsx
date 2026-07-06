@@ -132,6 +132,12 @@ function Pagina() {
     qc.invalidateQueries({ queryKey: ["demandas"] });
   }
 
+  const { data: sessao } = useQuery({
+    queryKey: ["minha-sessao"],
+    queryFn: () => getMinhaSessao(),
+  });
+  const meuId = sessao?.profile?.id ?? null;
+
   const d = data?.demanda;
   if (!d) return <div className="p-6 text-sm text-muted-foreground">Carregando…</div>;
 
