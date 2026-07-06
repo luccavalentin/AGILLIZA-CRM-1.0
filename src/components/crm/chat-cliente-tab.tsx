@@ -116,10 +116,11 @@ export function ChatClienteTab({ clienteId, info }: { clienteId: string; info?: 
   }
 
   return (
-    <Card className="flex h-[32rem] flex-col">
-      <div className="flex items-center gap-3 border-b px-4 py-3">
-        <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-          <MessageCircle className="size-5" />
+    <Card className="flex h-[32rem] flex-col overflow-hidden border-border/60 shadow-sm">
+      <div className="flex items-center gap-3 border-b bg-muted/30 px-4 py-3">
+        <div className="relative flex size-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/70 text-sm font-semibold text-primary-foreground shadow-sm">
+          {iniciais(info?.nome)}
+          <span className="absolute -bottom-0.5 -right-0.5 size-3 rounded-full border-2 border-background bg-emerald-500" />
         </div>
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold text-foreground">
@@ -133,39 +134,65 @@ export function ChatClienteTab({ clienteId, info }: { clienteId: string; info?: 
         </div>
       </div>
 
-      <div className="flex-1 space-y-3 overflow-y-auto p-4">
+      <div className="flex-1 space-y-1 overflow-y-auto bg-gradient-to-b from-muted/20 to-transparent p-4">
         {isLoading ? (
           <div className="space-y-3">
             <Skeleton className="h-12 w-2/3" />
             <Skeleton className="ml-auto h-12 w-2/3" />
           </div>
         ) : (mensagens?.length ?? 0) === 0 ? (
-          <p className="py-12 text-center text-sm text-muted-foreground">
-            Nenhuma mensagem ainda. Envie a primeira mensagem ao cliente.
-          </p>
+          <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
+            <div className="flex size-14 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <MessageCircle className="size-7" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-foreground">
+                Nenhuma mensagem ainda
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Envie a primeira mensagem para iniciar a conversa.
+              </p>
+            </div>
+          </div>
         ) : (
-          mensagens!.map((m) => {
+          mensagens!.map((m, i) => {
             const doTime = m.remetente_tipo === "time";
+            const anterior = mensagens![i - 1];
+            const mostrarDia =
+              !anterior ||
+              formatarDia(anterior.criada_em) !== formatarDia(m.criada_em);
             return (
-              <div key={m.id} className={cn("flex", doTime ? "justify-end" : "justify-start")}>
-                <div
-                  className={cn(
-                    "max-w-[80%] rounded-2xl px-3 py-2 text-sm",
-                    doTime
-                      ? "rounded-br-sm bg-primary text-primary-foreground"
-                      : "rounded-bl-sm bg-muted text-foreground",
-                  )}
-                >
-                  <p className="whitespace-pre-wrap break-words">{m.mensagem}</p>
-                  <p
+              <div key={m.id}>
+                {mostrarDia && (
+                  <div className="my-3 flex items-center justify-center">
+                    <span className="rounded-full bg-muted px-3 py-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                      {formatarDia(m.criada_em)}
+                    </span>
+                  </div>
+                )}
+                <div className={cn("flex", doTime ? "justify-end" : "justify-start")}>
+                  <div
                     className={cn(
-                      "mt-1 text-[10px]",
-                      doTime ? "text-primary-foreground/70" : "text-muted-foreground",
+                      "max-w-[80%] rounded-2xl px-3.5 py-2 text-sm shadow-sm",
+                      doTime
+                        ? "rounded-br-md bg-primary text-primary-foreground"
+                        : "rounded-bl-md border border-border/60 bg-card text-foreground",
                     )}
                   >
-                    {doTime ? m.remetente_nome || "Equipe" : info?.nome || "Cliente"} ·{" "}
-                    {formatarHora(m.criada_em)}
-                  </p>
+                    <p className="whitespace-pre-wrap break-words leading-relaxed">
+                      {m.mensagem}
+                    </p>
+                    <p
+                      className={cn(
+                        "mt-1 text-right text-[10px]",
+                        doTime
+                          ? "text-primary-foreground/70"
+                          : "text-muted-foreground",
+                      )}
+                    >
+                      {formatarHora(m.criada_em)}
+                    </p>
+                  </div>
                 </div>
               </div>
             );
@@ -174,7 +201,7 @@ export function ChatClienteTab({ clienteId, info }: { clienteId: string; info?: 
         <div ref={fimRef} />
       </div>
 
-      <div className="flex items-end gap-2 border-t p-3">
+      <div className="flex items-end gap-2 border-t bg-muted/30 p-3">
         <Textarea
           value={texto}
           onChange={(e) => setTexto(e.target.value)}
@@ -185,13 +212,13 @@ export function ChatClienteTab({ clienteId, info }: { clienteId: string; info?: 
             }
           }}
           placeholder="Escreva uma mensagem para o cliente…"
-          className="min-h-[44px] max-h-32 resize-none"
+          className="min-h-[44px] max-h-32 resize-none rounded-xl bg-background"
         />
         <Button
           onClick={submeter}
           disabled={enviar.isPending || !texto.trim()}
           size="icon"
-          className="h-11 w-11 shrink-0"
+          className="h-11 w-11 shrink-0 rounded-xl shadow-sm"
         >
           {enviar.isPending ? (
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -201,5 +228,6 @@ export function ChatClienteTab({ clienteId, info }: { clienteId: string; info?: 
         </Button>
       </div>
     </Card>
+
   );
 }
