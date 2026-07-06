@@ -139,10 +139,11 @@ export function ReportChartView({
           <YAxis
             type="category"
             dataKey="label"
-            tick={{ fontSize: 11 }}
+            tick={colorByBank ? <BankYAxisTick /> : { fontSize: 11 }}
             stroke="hsl(var(--muted-foreground))"
-            width={110}
+            width={colorByBank ? 136 : 110}
           />
+
           <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => fmt(v)} />
           <Bar dataKey="valor" radius={[0, 4, 4, 0]} fill="var(--chart-1)">
             {chart.dados.map((d, i) => (
