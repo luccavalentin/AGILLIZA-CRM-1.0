@@ -27,6 +27,31 @@ export function statusBancoConfig(status: string | null | undefined): { label: s
   return STATUS_BANCO[status ?? ""] ?? { label: status ?? "—", tone: "muted" };
 }
 
+/** status_banco que indicam que a proposta já foi incluída no banco. */
+const STATUS_BANCO_JA_ENVIADO = new Set([
+  "enviada",
+  "em_analise",
+  "condicionado",
+  "aprovada",
+  "aprovado",
+  "recusada",
+  "recusado",
+]);
+
+/**
+ * Um banco já foi enviado (não deve exibir o botão "Enviar") quando já tem
+ * protocolo ou um status_banco de proposta ativa na integração.
+ */
+export function bancoJaEnviado(b: {
+  status_banco?: string | null;
+  numero_proposta_banco?: string | null;
+}): boolean {
+  return (
+    Boolean(b.numero_proposta_banco) ||
+    STATUS_BANCO_JA_ENVIADO.has(String(b.status_banco ?? ""))
+  );
+}
+
 const toneClasses: Record<Tone, string> = {
   success: "bg-success/10 text-success border-success/20",
   info: "bg-primary/10 text-primary border-primary/20",

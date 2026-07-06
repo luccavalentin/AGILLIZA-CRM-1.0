@@ -275,7 +275,7 @@ export async function enviarPropostaImpl({
     query = query.eq("selecionado", true);
   }
   const { data: bancosSel } = await query;
-  const bancos = (bancosSel ?? []).filter((b: any) => b.status_banco !== "enviada");
+  const bancos = (bancosSel ?? []).filter((b: any) => !bancoJaEnviado(b));
   if (bancos.length === 0) {
     throw new Error(
       bancoId
@@ -343,7 +343,11 @@ export async function enviarPropostaImpl({
         selecionado: true,
         mensagem_banco: null,
       };
-      if (situacaoTipo) patchOk.situacao_banco = situacaoTipo;
+      // situacao_banco é um enum interno (nao_enviado/em_analise/condicionado/
+      // aprovado/recusado/cancelado). O tipoSituacao do banco vem como código
+      // cru (S/P/N/A/R) — precisa ser mapeado, senão o valor não bate com o
+      // <Select> da tela e a linha continua exibindo "Não enviado".
+      patchOk.situacao_banco = situacaoBancoDeTipo(situacaoTipo);
       const protocolo =
         resp?.codigoOportunidadeBanco ??
         resp?.codigoOportunidadeBancoInterno ??
@@ -361,7 +365,15 @@ export async function enviarPropostaImpl({
         patchOk.sistema_amortizacao_banco = resp.codigoSistemaAmortizacaoBanco;
       if (resp?.codigoIndexadorBanco) patchOk.codigo_indexador = resp.codigoIndexadorBanco;
 
-      await supabase.from("proposta_bancos").update(patchOk as any).eq("id", b.id);
+      const { error: upErr } = await supabase
+        .from("proposta_bancos")
+        .update(patchOk as any)
+        .eq("id", b.id);
+      if (upErr) {
+        // O banco aceitou a proposta, mas não conseguimos registrar o retorno.
+        // Logamos para não perder o rastro — o polling reconcilia em seguida.
+        console.error("[proposta] falha ao gravar retorno do banco", upErr.message);
+      }
       sucesso++;
       resultados.push({
         banco_id: b.banco_id,
@@ -540,6 +552,54 @@ function statusInternoBanco(
 }
 
 /**
+ * Traduz o `tipoSituacao` cru do banco (S/P/N/A/R) para o enum interno usado
+ * na coluna `proposta_bancos.situacao_banco` e no <Select> "Situação de crédito"
+ * (nao_enviado/em_analise/condicionado/aprovado/recusado/cancelado).
+ */
+function situacaoBancoDeTipo(tipo: string): string {
+  const t = String(tipo ?? "")
+    .toUpperCase()
+    .charAt(0);
+  switch (t) {
+    case "A":
+      return "aprovado";
+    case "R":
+      return "recusado";
+    case "N":
+    case "E":
+    case "S":
+      return "em_analise";
+    default:
+      return "nao_enviado";
+  }
+}
+
+/**
+ * Um banco já foi incluído no banco (não deve ser reenviado) quando já tem
+ * protocolo (numero_proposta_banco) ou um status_banco que indica proposta
+ * ativa na integração. Só `nao_enviado`/`aguardando`/`erro`/vazio podem enviar.
+ */
+const STATUS_BANCO_JA_ENVIADO = new Set([
+  "enviada",
+  "em_analise",
+  "condicionado",
+  "aprovada",
+  "aprovado",
+  "recusada",
+  "recusado",
+]);
+
+export function bancoJaEnviado(b: {
+  status_banco?: string | null;
+  numero_proposta_banco?: string | null;
+}): boolean {
+  return (
+    Boolean(b.numero_proposta_banco) ||
+    STATUS_BANCO_JA_ENVIADO.has(String(b.status_banco ?? ""))
+  );
+}
+
+/**
  * Sincroniza o andamento da proposta consultando a integração bancária.
  * A API é baseada em consulta (polling): não há webhook/callback. Este handler
  * lê GET /oportunidade/{id} e reconcilia o status a partir de DUAS fontes:
@@ -626,8 +686,17 @@ export async function sincronizarPropostaImpl({
 
     const patchBanco: Record<string, unknown> = {
       status_banco: mapa.banco,
+      situacao_banco: erroMsg ? "nao_enviado" : situacaoBancoDeTipo(sim.tipoSituacao),
       mensagem_banco: erroMsg ? sanitizarMensagemErro(erroMsg) : null,
     };
+    // Mantém o protocolo do banco na linha (usado para saber que já foi enviada).
+    const protoSim =
+      sim.codigoOportunidadeBanco ??
+      sim.codigoOportunidadeBancoInterno ??
+      sim.codigoSimulacaoBanco ??
+      null;
+    if (protoSim && !pb.numero_proposta_banco)
+      patchBanco.numero_proposta_banco = String(protoSim);
     if (sim.valorParcelaBanco != null) patchBanco.valor_parcela = sim.valorParcelaBanco;
     if (sim.taxaJurosAnoBanco != null) patchBanco.taxa_juros_ano = sim.taxaJurosAnoBanco;
     if (sim.prazoPagamentoBancoMax != null)

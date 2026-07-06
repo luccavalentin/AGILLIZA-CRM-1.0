@@ -70,7 +70,7 @@ import {
 } from "@/components/ui/dialog";
 import { PipelineStepper } from "@/components/propostas/pipeline-stepper";
 import { PropostaStatusBadge } from "@/components/propostas/status-badge";
-import { statusBancoConfig } from "@/components/proposta/status-bancos-proposta";
+import { statusBancoConfig, bancoJaEnviado } from "@/components/proposta/status-bancos-proposta";
 import { ToneBadge } from "@/components/crm/tone-badge";
 import {
   DropdownMenu,
@@ -580,7 +580,7 @@ function TabResumo({
                 <TableCell>
                   <Checkbox
                     checked={b.selecionado}
-                    disabled={b.status_banco === "enviada"}
+                    disabled={bancoJaEnviado(b)}
                     onCheckedChange={() => selecionar(b.id)}
                     aria-label={`Selecionar ${b.nome_banco}`}
                   />
@@ -633,7 +633,7 @@ function TabResumo({
 
 
                 <TableCell className="text-right">
-                  {b.status_banco === "enviada" ? (
+                  {bancoJaEnviado(b) ? (
                     <span className="text-xs text-muted-foreground">Enviado</span>
                   ) : podeEnviarBanco ? (
                     <Button
