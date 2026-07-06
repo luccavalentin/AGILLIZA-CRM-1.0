@@ -648,7 +648,17 @@ function Pagina() {
             </label>
           </Campo>
         </div>
+        {f.valor_financiamento > 0 && f.prazo >= 60 && (
+          <DicaRendaMinima
+            valorFinanciamento={f.valor_financiamento}
+            prazoMeses={f.prazo}
+            taxaAno={melhorTaxaAno}
+            sistema={f.sistema_amortizacao === "P" ? "P" : "S"}
+            rendaInformada={rendaConsiderada}
+          />
+        )}
       </section>
+
 
       {/* Bloco 3 — Cônjuge */}
       {mostraConjuge && (
