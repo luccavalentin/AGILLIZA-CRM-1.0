@@ -206,13 +206,13 @@ function Pagina() {
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 min-[1720px]:grid-cols-5">
         {COLUNAS.map((col) => {
-          const cfg = statusProposta(col);
-          const cards = itens.filter((i) => i.status === col);
+          const cfg = statusProposta(col.destino);
+          const cards = itens.filter((i) => col.agrega.includes(i.status as PropostaStatus));
           return (
             <div
-              key={col}
+              key={col.destino}
               onDragOver={(e) => e.preventDefault()}
-              onDrop={() => soltar(col)}
+              onDrop={() => soltar(col.destino)}
               className="flex min-h-48 min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-muted/30 shadow-sm"
             >
               <div className="shrink-0 overflow-hidden rounded-t-xl">
