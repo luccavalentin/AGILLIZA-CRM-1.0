@@ -130,9 +130,11 @@ function Pagina() {
     return <div className="p-6 text-sm text-muted-foreground">Carregando…</div>;
   const s = data.simulacao;
   const bancos = data.bancos;
-  const melhorId = bancos
+  const bancosComTaxa = bancos
     .filter((b: any) => b.status_banco === "simulada" && b.valor_parcela != null)
-    .sort((a: any, b: any) => (a.valor_parcela ?? 0) - (b.valor_parcela ?? 0))[0]?.id;
+    .sort((a: any, b: any) => (a.valor_parcela ?? 0) - (b.valor_parcela ?? 0));
+  // Só destaca "Melhor taxa" quando há mais de um banco para comparar.
+  const melhorId = bancosComTaxa.length > 1 ? bancosComTaxa[0]?.id : undefined;
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-6 p-4 md:p-6">
