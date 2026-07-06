@@ -379,9 +379,13 @@ function Pagina() {
       </Button>
       <div>
 
-        <h1 className="text-xl font-semibold text-primary">Solicitar Simulação Completa</h1>
+        <h1 className="text-xl font-semibold text-primary">
+          {modoProposta ? "Nova Proposta" : "Solicitar Simulação Completa"}
+        </h1>
         <p className="text-sm text-muted-foreground">
-          Preencha os dados para enviar aos bancos parceiros.
+          {modoProposta
+            ? "Preencha a simulação completa e envie direto ao banco — a proposta é criada automaticamente."
+            : "Preencha os dados para enviar aos bancos parceiros."}
         </p>
       </div>
 
