@@ -479,11 +479,12 @@ export function baixarSimulacaoDetalhadaPDF({
     drawFooter(doc, pageW, pageH, p, total);
   }
 
-  return salvar(doc, s, "detalhada");
+  return salvar(doc, s, "detalhada", filePrefix);
 }
 
-function salvar(doc: jsPDF, s: any, tipo: string): jsPDF {
-  const nome = `simulacao-${s.numero_simulacao ?? ""}-${tipo}`
+function salvar(doc: jsPDF, s: any, tipo: string, filePrefix = "simulacao"): jsPDF {
+  const numero = s.numero_proposta ?? s.numero_simulacao ?? "";
+  const nome = `${filePrefix}-${numero}-${tipo}`
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-");
   doc.save(`agilliza-${nome}.pdf`);
