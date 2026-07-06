@@ -8,8 +8,9 @@ export interface StageItem {
 }
 
 /**
- * Timeline visual das etapas: concluída (verde), atual (destaque), próxima (accent), futura (cinza).
- * Quando `onSelecionar` é informado, cada etapa vira um botão clicável que move o cliente.
+ * Esteira visual em formato de stepper conectado: barra de progresso animada,
+ * nós com estados (concluída, atual, próxima, futura) e trilho rolável.
+ * Quando `onSelecionar` é informado, cada nó vira um botão que move o cliente.
  */
 export function PipelineTimeline({
   stages,
@@ -22,58 +23,129 @@ export function PipelineTimeline({
   onSelecionar?: (codigo: string) => void;
   disabled?: boolean;
 }) {
+  const ordenadas = [...stages].sort((a, b) => a.ordem - b.ordem);
+  const total = ordenadas.length;
+  const atualIdx = ordenadas.findIndex((s) => s.ordem === atualOrdem);
+  const posicao = atualIdx >= 0 ? atualIdx + 1 : 0;
+  const percent = total > 1 ? Math.round((Math.max(0, posicao - 1) / (total - 1)) * 100) : 0;
+  const nomeAtual = atualIdx >= 0 ? ordenadas[atualIdx].nome : "—";
+
   return (
-    <div className="flex flex-wrap gap-2">
-      {stages.map((s) => {
-        const concluida = s.ordem < atualOrdem;
-        const atual = s.ordem === atualOrdem;
-        const proxima = s.ordem === atualOrdem + 1;
-        const classes = cn(
-          "inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
-          concluida && "bg-success/10 text-success border border-success/20",
-          atual && "bg-primary text-primary-foreground",
-          proxima && "bg-accent text-accent-foreground",
-          !concluida &&
-            !atual &&
-            !proxima &&
-            "bg-muted text-muted-foreground border border-border",
-          onSelecionar && !atual && "cursor-pointer hover:ring-2 hover:ring-primary/40",
-          onSelecionar && "disabled:cursor-not-allowed disabled:opacity-60",
-        );
-        const conteudo = (
-          <>
-            {concluida && <Check className="size-3" aria-hidden />}
-            {atual && (
+    <div className="space-y-4">
+      {/* Cabeçalho com etapa atual e progresso */}
+      <div className="flex flex-wrap items-end justify-between gap-2">
+        <div className="min-w-0">
+          <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+            Etapa atual
+          </p>
+          <p className="truncate text-base font-semibold text-foreground">{nomeAtual}</p>
+        </div>
+        <div className="text-right">
+          <span className="text-2xl font-bold tabular-nums text-primary">{percent}%</span>
+          <p className="text-[11px] text-muted-foreground">
+            {posicao > 0 ? `${posicao} de ${total} etapas` : `${total} etapas`}
+          </p>
+        </div>
+      </div>
+
+      {/* Barra de progresso */}
+      <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+        <div
+          className="h-full rounded-full bg-gradient-to-r from-success via-primary to-primary shadow-[0_0_12px_-2px_var(--primary)] transition-[width] duration-700 ease-out"
+          style={{ width: `${percent}%` }}
+        />
+      </div>
+
+      {/* Trilho de nós */}
+      <div className="flex overflow-x-auto pb-1 [scrollbar-width:thin]">
+        {ordenadas.map((s, i) => {
+          const concluida = s.ordem < atualOrdem;
+          const atual = s.ordem === atualOrdem;
+          const alcancada = s.ordem <= atualOrdem;
+
+          const node = (
+            <span
+              className={cn(
+                "relative z-10 flex size-9 shrink-0 items-center justify-center rounded-full border-2 text-xs font-semibold transition-all duration-300",
+                concluida && "border-success bg-success text-success-foreground",
+                atual &&
+                  "border-primary bg-primary text-primary-foreground ring-4 ring-primary/20",
+                !concluida &&
+                  !atual &&
+                  "border-border bg-card text-muted-foreground",
+                onSelecionar &&
+                  !atual &&
+                  "group-hover:border-primary group-hover:text-primary group-hover:ring-4 group-hover:ring-primary/10",
+              )}
+            >
+              {concluida ? (
+                <Check className="size-4" aria-hidden />
+              ) : atual ? (
+                <span className="size-2 animate-pulse rounded-full bg-primary-foreground" aria-hidden />
+              ) : (
+                i + 1
+              )}
+            </span>
+          );
+
+          const label = (
+            <span
+              className={cn(
+                "mt-2 line-clamp-2 w-full text-center text-[11px] leading-tight transition-colors",
+                atual ? "font-semibold text-foreground" : "text-muted-foreground",
+              )}
+            >
+              {s.nome}
+            </span>
+          );
+
+          const conector =
+            i > 0 ? (
               <span
-                className="size-1.5 rounded-full bg-primary-foreground animate-pulse"
+                className={cn(
+                  "absolute right-1/2 top-[18px] h-0.5 w-full -translate-y-1/2 transition-colors duration-500",
+                  alcancada ? "bg-gradient-to-r from-success to-primary" : "bg-border",
+                )}
                 aria-hidden
               />
-            )}
-            {s.nome}
-          </>
-        );
+            ) : null;
 
-        if (onSelecionar) {
-          return (
-            <button
-              key={s.codigo}
-              type="button"
-              disabled={disabled || atual}
-              onClick={() => onSelecionar(s.codigo)}
-              className={classes}
-              title={atual ? "Etapa atual" : `Mover para "${s.nome}"`}
-            >
-              {conteudo}
-            </button>
+          const inner = (
+            <>
+              {conector}
+              {node}
+              {label}
+            </>
           );
-        }
 
-        return (
-          <span key={s.codigo} className={classes}>
-            {conteudo}
-          </span>
-        );
-      })}
+          const wrapperClasses =
+            "group relative flex min-w-[84px] flex-1 flex-col items-center px-1";
+
+          if (onSelecionar) {
+            return (
+              <button
+                key={s.codigo}
+                type="button"
+                disabled={disabled || atual}
+                onClick={() => onSelecionar(s.codigo)}
+                className={cn(
+                  wrapperClasses,
+                  "cursor-pointer disabled:cursor-default disabled:opacity-100",
+                )}
+                title={atual ? "Etapa atual" : `Mover para "${s.nome}"`}
+              >
+                {inner}
+              </button>
+            );
+          }
+
+          return (
+            <div key={s.codigo} className={wrapperClasses}>
+              {inner}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
