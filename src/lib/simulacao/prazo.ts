@@ -21,11 +21,12 @@ export const PRAZO_MIN = 60;
 export const PRAZO_MAX = 420;
 
 /**
- * Idade máxima permitida ao término do contrato. Usamos o teto mais restritivo
- * entre as IFs — o Itaú, com 80 anos exatos (960 meses) — para que o mesmo
- * prazo seja aceito por Bradesco, Santander e Itaú sem erro.
+ * Idade máxima permitida ao término do contrato. Usamos a lógica do Itaú (a IF
+ * mais restritiva), que sempre concede 3 parcelas a menos que Bradesco/Santander
+ * — equivalente a 963 meses (80 anos e 6 meses menos 3) — para que o mesmo prazo
+ * seja aceito por Bradesco, Santander e Itaú sem erro.
  */
-export const IDADE_MAX_TERMINO_MESES = 80 * 12; // 960
+export const IDADE_MAX_TERMINO_MESES = 966 - 3; // 963 (lógica Itaú)
 
 function parseData(dataNascimento: string): Date | null {
   if (!dataNascimento) return null;
