@@ -792,7 +792,7 @@ export const runReport = createServerFn({ method: "POST" })
     async function relPropostas(): Promise<ReportResult> {
       const todas = await fetchAll(
         "propostas",
-        "id,numero_proposta,nome_cliente,status,valor_financiamento,valor_financiamento_aprovado,nome_banco,produto,prazo,created_at",
+        "id,numero_proposta,numero_proposta_banco,nome_cliente,status,valor_financiamento,valor_financiamento_aprovado,nome_banco,produto,prazo,created_at",
         "created_at",
         "usuario_responsavel_id",
       );
@@ -828,7 +828,7 @@ export const runReport = createServerFn({ method: "POST" })
         if (filtros.valorMax != null && v > filtros.valorMax) return false;
         if (buscaLc) {
           const alvo =
-            `${p.numero_proposta ?? ""} ${p.nome_cliente ?? ""} ${p.nome_banco ?? ""}`.toLowerCase();
+            `${p.numero_proposta ?? ""} ${p.numero_proposta_banco ?? ""} ${p.nome_cliente ?? ""} ${p.nome_banco ?? ""}`.toLowerCase();
           if (!alvo.includes(buscaLc)) return false;
         }
         return true;
@@ -911,7 +911,8 @@ export const runReport = createServerFn({ method: "POST" })
           },
         ],
         columns: [
-          { key: "numero_proposta", label: "Número" },
+          { key: "numero_proposta", label: "Nº interno" },
+          { key: "numero_proposta_banco", label: "Nº banco" },
           { key: "nome_cliente", label: "Cliente" },
           { key: "nome_banco", label: "Banco" },
           { key: "produto", label: "Produto" },
@@ -922,6 +923,7 @@ export const runReport = createServerFn({ method: "POST" })
         ],
         rows: props.slice(0, 1000).map((p) => ({
           numero_proposta: p.numero_proposta,
+          numero_proposta_banco: p.numero_proposta_banco ?? "—",
           nome_cliente: p.nome_cliente ?? "—",
           nome_banco: p.nome_banco ?? "—",
           produto: p.produto ?? "—",
