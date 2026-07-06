@@ -552,6 +552,54 @@ function statusInternoBanco(
 }
 
 /**
+ * Traduz o `tipoSituacao` cru do banco (S/P/N/A/R) para o enum interno usado
+ * na coluna `proposta_bancos.situacao_banco` e no <Select> "Situação de crédito"
+ * (nao_enviado/em_analise/condicionado/aprovado/recusado/cancelado).
+ */
+function situacaoBancoDeTipo(tipo: string): string {
+  const t = String(tipo ?? "")
+    .toUpperCase()
+    .charAt(0);
+  switch (t) {
+    case "A":
+      return "aprovado";
+    case "R":
+      return "recusado";
+    case "N":
+    case "E":
+    case "S":
+      return "em_analise";
+    default:
+      return "nao_enviado";
+  }
+}
+
+/**
+ * Um banco já foi incluído no banco (não deve ser reenviado) quando já tem
+ * protocolo (numero_proposta_banco) ou um status_banco que indica proposta
+ * ativa na integração. Só `nao_enviado`/`aguardando`/`erro`/vazio podem enviar.
+ */
+const STATUS_BANCO_JA_ENVIADO = new Set([
+  "enviada",
+  "em_analise",
+  "condicionado",
+  "aprovada",
+  "aprovado",
+  "recusada",
+  "recusado",
+]);
+
+export function bancoJaEnviado(b: {
+  status_banco?: string | null;
+  numero_proposta_banco?: string | null;
+}): boolean {
+  return (
+    Boolean(b.numero_proposta_banco) ||
+    STATUS_BANCO_JA_ENVIADO.has(String(b.status_banco ?? ""))
+  );
+}
+
+/**
  * Sincroniza o andamento da proposta consultando a integração bancária.
  * A API é baseada em consulta (polling): não há webhook/callback. Este handler
  * lê GET /oportunidade/{id} e reconcilia o status a partir de DUAS fontes:
