@@ -27,7 +27,7 @@ const MAPA: Array<{ match: string[]; cor: string }> = [
   { match: ["itau", "itaú"], cor: "#EC7000" },
   { match: ["bradesco"], cor: "#CC092F" },
   { match: ["caixa", "cef"], cor: "#0070B8" },
-  { match: ["banco do brasil", "bb "], cor: "#F8C300" },
+  { match: ["banco do brasil", "bb", "bndes"], cor: "#F8C300" },
   { match: ["inter"], cor: "#FF7A00" },
   { match: ["sicredi"], cor: "#3FA110" },
   { match: ["sicoob"], cor: "#003641" },
