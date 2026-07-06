@@ -407,7 +407,7 @@ function Pagina() {
             <Button
               onClick={() => router.navigate({ to: "/operacional/simulacoes/nova" })}
             >
-              <Sparkles className="mr-2 h-4 w-4" /> Simulação rápida
+              <Calculator className="mr-2 h-4 w-4" /> Simulação rápida
             </Button>
             <Button
               variant="secondary"
