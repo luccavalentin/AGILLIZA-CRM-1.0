@@ -70,11 +70,12 @@ function soDigitos(v: unknown): string | undefined {
 }
 
 /**
- * Garante que o(s) participante(s) da oportunidade tenham endereço preenchido
- * (principalmente a UF), pois integrações como a do Itaú validam
- * `proponents[0].address.state` e recusam a proposta quando está em branco.
- * A oportunidade cria o proponente principal sem endereço; aqui completamos os
- * dados a partir dos envolvidos da proposta (ou, na falta, do endereço do imóvel).
+ * Garante que o(s) participante(s) da oportunidade tenham os dados obrigatórios
+ * exigidos pelos bancos (estado civil / maritalStatus, endereço com UF, data de
+ * nascimento e renda). Vários bancos (ex.: Itaú) recusam a proposta quando
+ * `maritalStatus` ou `address.state` chegam nulos. A oportunidade cria o
+ * proponente principal com dados mínimos; aqui completamos a partir dos
+ * envolvidos da proposta, do próprio cadastro do cliente e, por fim, do imóvel.
  */
 async function garantirEnderecoParticipantes({
   prop,
@@ -98,7 +99,7 @@ async function garantirEnderecoParticipantes({
     const op = resp?.oportunidade ?? resp ?? {};
     participantes = Array.isArray(op?.participantes) ? op.participantes : [];
   } catch {
-    // Sem a lista de participantes não há como completar o endereço; segue o envio.
+    // Sem a lista de participantes não há como completar os dados; segue o envio.
     return;
   }
   if (participantes.length === 0) return;
@@ -108,29 +109,52 @@ async function garantirEnderecoParticipantes({
     .select("*")
     .eq("proposta_id", prop.id);
 
+  // Cadastro do cliente principal (fallback quando a proposta não tem envolvidos).
+  let cliente: any = null;
+  if (prop.cliente_id) {
+    const { data } = await supabase
+      .from("clientes")
+      .select("*")
+      .eq("id", prop.cliente_id)
+      .maybeSingle();
+    cliente = data;
+  }
+
   for (const part of participantes) {
-    // Já possui UF cadastrada — nada a corrigir.
-    if (part?.uf && String(part.uf).trim()) continue;
-
     const cpf = soDigitos(part?.cpfCnpj);
-    const env = (envolvidos ?? []).find(
-      (e: any) => soDigitos(e.cpf_cnpj) === cpf,
-    );
+    const env = (envolvidos ?? []).find((e: any) => soDigitos(e.cpf_cnpj) === cpf);
 
-    const uf = env?.uf ?? prop.uf ?? null;
-    if (!uf) continue; // sem UF não é possível satisfazer a validação do banco
+    // Fontes de dados em ordem de prioridade: participante da API > envolvido >
+    // cadastro do cliente (só para o proponente principal) > proposta/imóvel.
+    const ehPrincipal = soDigitos(prop.cpf_cnpj) === cpf;
+    const src = ehPrincipal ? cliente : null;
+
+    const estadoCivil =
+      part?.tipoEstadoCivil || env?.estado_civil || src?.estado_civil || prop.estado_civil || null;
+    const uf = part?.uf || env?.uf || src?.uf || prop.uf || null;
+
+    // Só chamamos a API quando falta estado civil ou UF (os dois campos que mais
+    // derrubam a validação dos bancos). Se ambos já estão presentes, nada a fazer.
+    const faltaEstadoCivil = !(part?.tipoEstadoCivil && String(part.tipoEstadoCivil).trim());
+    const faltaUf = !(part?.uf && String(part.uf).trim());
+    if (!faltaEstadoCivil && !faltaUf) continue;
+    // Sem meios de preencher o que falta, não adianta chamar a API.
+    if (faltaEstadoCivil && !estadoCivil) continue;
+    if (faltaUf && !uf) continue;
 
     const payload: Record<string, unknown> = {
       tipoSituacao: part?.tipoSituacao ?? "A",
-      nomeParticipante: part?.nomeParticipante ?? prop.nome_cliente,
+      nomeParticipante: part?.nomeParticipante ?? env?.nome ?? prop.nome_cliente,
       tipoQualificacao: part?.tipoQualificacao ?? "CO",
       tipoPessoa: part?.tipoPessoa ?? ((cpf?.length ?? 0) > 11 ? "J" : "F"),
       cpfCnpj: cpf,
-      dataNascimento: part?.dataNascimento ?? undefined,
-      tipoEstadoCivil: part?.tipoEstadoCivil ?? env?.estado_civil ?? undefined,
-      renda: part?.renda ?? undefined,
-      email: part?.email ?? env?.email ?? prop.email ?? undefined,
-      celular: part?.celular ?? soDigitos(env?.celular) ?? undefined,
+      dataNascimento:
+        part?.dataNascimento ?? env?.data_nascimento ?? src?.data_nascimento ?? prop.data_nascimento ?? undefined,
+      tipoEstadoCivil: estadoCivil ?? undefined,
+      nomeMae: part?.nomeMae ?? env?.nome_mae ?? src?.mae ?? undefined,
+      renda: part?.renda ?? env?.renda ?? src?.renda_total_declarada ?? prop.renda_total ?? undefined,
+      email: part?.email ?? env?.email ?? src?.email ?? prop.email ?? undefined,
+      celular: part?.celular ?? soDigitos(env?.celular ?? src?.celular) ?? undefined,
       fgAutorizacaoDados: true,
       cep: soDigitos(env?.cep ?? prop.cep_imovel),
       logradouro: env?.logradouro ?? prop.endereco_imovel ?? undefined,
@@ -138,7 +162,7 @@ async function garantirEnderecoParticipantes({
       complementoLogradouro: env?.complemento ?? undefined,
       bairro: env?.bairro ?? prop.bairro_imovel ?? undefined,
       municipio: env?.municipio ?? prop.cidade_imovel ?? undefined,
-      uf,
+      uf: uf ?? undefined,
     };
 
     try {
@@ -149,10 +173,11 @@ async function garantirEnderecoParticipantes({
         ctx,
       );
     } catch {
-      // Falha ao completar o endereço não deve abortar o envio dos demais bancos.
+      // Falha ao completar os dados não deve abortar o envio dos demais bancos.
     }
   }
 }
+
 
 
 
