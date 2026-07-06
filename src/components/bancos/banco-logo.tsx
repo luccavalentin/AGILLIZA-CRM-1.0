@@ -1,15 +1,18 @@
 import { Landmark } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { corDoBanco } from "@/lib/bancos/cores";
+import bradescoLogo from "@/assets/brand/bradesco.svg";
+import itauLogo from "@/assets/brand/itau.svg";
+import santanderLogo from "@/assets/brand/santander.svg";
 
 /**
- * Marca visual (badge) do banco: quadrado arredondado na cor oficial da marca
- * com a inicial do banco. Escalável (SVG), responsivo e adaptável a qualquer
- * tamanho. Não reproduz o logotipo oficial — é uma marca-monograma derivada
- * da cor institucional de cada banco.
+ * Marca visual (badge) do banco.
+ * Para os bancos com logotipo oficial disponível no projeto (Itaú, Santander,
+ * Bradesco) exibe o logo real. Para os demais, gera um monograma na cor
+ * institucional. Escalável (SVG), responsivo e adaptável a qualquer tamanho.
  */
 
-/** Normaliza para casar a inicial correta. */
+/** Normaliza para casar o banco correto. */
 function normalizar(nome: string): string {
   return nome
     .normalize("NFD")
@@ -18,12 +21,18 @@ function normalizar(nome: string): string {
     .trim();
 }
 
-/** Iniciais exibidas no badge por banco. */
+/** Logotipos oficiais disponíveis no projeto. */
+function logoOficial(nome: string): string | null {
+  const n = normalizar(nome);
+  if (n.includes("santander")) return santanderLogo;
+  if (n.includes("itau")) return itauLogo;
+  if (n.includes("bradesco")) return bradescoLogo;
+  return null;
+}
+
+/** Iniciais exibidas no badge por banco (fallback). */
 function iniciaisDoBanco(nome: string): string {
   const n = normalizar(nome);
-  if (n.includes("santander")) return "S";
-  if (n.includes("itau")) return "I";
-  if (n.includes("bradesco")) return "B";
   if (n.includes("banco do brasil") || /\bbb\b/.test(n)) return "BB";
   if (n.includes("caixa") || n.includes("cef")) return "CX";
   if (n.includes("inter")) return "IN";
@@ -77,6 +86,32 @@ export function BancoLogo({
     );
   }
 
+  const logo = logoOficial(nome);
+
+  // Logo oficial: exibido dentro de um quadro claro arredondado (estilo "app
+  // icon"), preservando as cores da marca em tema claro e escuro.
+  if (logo) {
+    return (
+      <span
+        role="img"
+        aria-label={title ?? `Logo ${nome}`}
+        title={title ?? nome}
+        className={cn(
+          "inline-flex shrink-0 select-none items-center justify-center overflow-hidden rounded-md bg-white ring-1 ring-black/5",
+          className,
+        )}
+        style={{ width: px, height: px, padding: Math.max(1, px * 0.12) }}
+      >
+        <img
+          src={logo}
+          alt={title ?? `Logo ${nome}`}
+          className="h-full w-full object-contain"
+          draggable={false}
+        />
+      </span>
+    );
+  }
+
   const cor = corDoBanco(nome);
   const iniciais = iniciaisDoBanco(nome);
   const fontSize = iniciais.length > 1 ? px * 0.42 : px * 0.56;
@@ -89,12 +124,7 @@ export function BancoLogo({
       className={cn("inline-flex shrink-0 select-none", className)}
       style={{ width: px, height: px }}
     >
-      <svg
-        viewBox="0 0 40 40"
-        width={px}
-        height={px}
-        xmlns="http://www.w3.org/2000/svg"
-      >
+      <svg viewBox="0 0 40 40" width={px} height={px} xmlns="http://www.w3.org/2000/svg">
         <rect x="0" y="0" width="40" height="40" rx="10" fill={cor} />
         <text
           x="20"
