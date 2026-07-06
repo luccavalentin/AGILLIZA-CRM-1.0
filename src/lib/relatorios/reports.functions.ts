@@ -1087,14 +1087,14 @@ export const runReport = createServerFn({ method: "POST" })
       const [pag, rec] = await Promise.all([
         supabase
           .from("financial_payables")
-          .select("valor,valor_pago,status,vencimento,descricao,created_at")
+          .select("valor,valor_pago,status,vencimento,descricao,created_at,data_pagamento")
           .gte("created_at", de)
           .lte("created_at", ateFim)
           .limit(5000)
           .then((r: any) => r.data ?? []),
         supabase
           .from("financial_receivables")
-          .select("valor,valor_recebido,status,vencimento,descricao,created_at")
+          .select("valor,valor_recebido,status,vencimento,descricao,created_at,data_pagamento")
           .gte("created_at", de)
           .lte("created_at", ateFim)
           .limit(5000)
