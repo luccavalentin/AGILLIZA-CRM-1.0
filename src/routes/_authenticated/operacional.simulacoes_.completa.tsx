@@ -838,7 +838,7 @@ function Pagina() {
         </Button>
       </div>
 
-      <ConsultandoOverlay aberto={enviando} total={f.bancos_ids.length} concluidos={0} />
+      <ConsultandoOverlay aberto={enviando} total={f.bancos_ids.length} concluidos={concluidos} />
     </div>
   );
 }
