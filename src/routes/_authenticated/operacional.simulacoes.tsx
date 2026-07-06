@@ -93,14 +93,11 @@ function Pagina() {
     }
   }
 
-  async function handleDuplicar(id: string) {
-    try {
-      const { id: novo } = await duplicar({ data: { id } });
-      toast.success("Simulação duplicada.");
-      router.navigate({ to: "/operacional/simulacoes/$id", params: { id: novo } });
-    } catch {
-      toast.error("Não foi possível duplicar a simulação.");
-    }
+  function handleDuplicar(id: string) {
+    router.navigate({
+      to: "/operacional/simulacoes/completa",
+      search: { duplicar: id },
+    });
   }
 
   async function handleBaixarComparativo(id: string) {
