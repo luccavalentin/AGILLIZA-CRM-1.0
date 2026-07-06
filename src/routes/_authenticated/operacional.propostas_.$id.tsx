@@ -808,7 +808,7 @@ function DetalhamentoBancoDialog({
       icone: <XCircle className="h-6 w-6 text-destructive" />,
       titulo: "Crédito recusado",
       mensagem:
-        "Infelizmente o banco recusou o crédito. Veja abaixo o motivo informado pelo banco.",
+        "Infelizmente o banco recusou o crédito.",
     },
     cancelado: {
       icone: <Ban className="h-6 w-6 text-muted-foreground" />,
