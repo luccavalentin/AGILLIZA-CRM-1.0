@@ -285,12 +285,6 @@ export const navInterno: NavGroup[] = [
     items: [
       { label: "Pessoas", icon: UserCog, to: "/admin/pessoas", perm: { modulo: "admin.pessoas" } },
       {
-        label: "Regras & Módulos",
-        icon: ShieldCheck,
-        to: "/admin/regras-modulos",
-        perm: { modulo: "admin.regras" },
-      },
-      {
         label: "Integrações",
         icon: Plug,
         to: "/admin/integracoes",
