@@ -47,6 +47,7 @@ import {
   obterSimulacao,
 } from "@/lib/simulacao/simulacoes.functions";
 import { baixarSimulacaoPDF } from "@/lib/simulacao/simulacao-pdf";
+import { criarProposta } from "@/lib/propostas/propostas.functions";
 
 export const Route = createFileRoute("/_authenticated/operacional/simulacoes_/completa")({
   head: () => ({ meta: [{ title: "Simulação completa — Agilliza" }] }),
