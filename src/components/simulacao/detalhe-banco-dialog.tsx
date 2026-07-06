@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { BancoStatusBadge } from "@/components/simulacao/status-badge";
-import { extrairDetalheBanco } from "@/lib/simulacao/detalhe-banco";
+import { extrairDetalheBanco, normalizarSistemaAmortizacao } from "@/lib/simulacao/detalhe-banco";
 import { formatBRL } from "@/lib/simulacao/format";
 
 function pct(v: number | null | undefined): string {
