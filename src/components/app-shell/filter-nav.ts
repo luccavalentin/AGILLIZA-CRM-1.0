@@ -15,7 +15,10 @@ function itemVisivel(item: NavItem, perms: Set<string>, todas: boolean): boolean
 /**
  * Filtra a navegação pela matriz de permissões.
  * - Item sem `perm` é sempre exibido.
- * - Item com `children`: filtra filhos; se sobrar zero, remove o pai.
+ * - Item com `perm`: some se o usuário não tiver `${modulo}:view`.
+ * - Item com `children`: primeiro respeita a própria `perm` do pai; depois
+ *   filtra filhos (filho sem `perm` herda a `perm` do pai). Sobrando zero
+ *   filhos, o pai é removido.
  * - Grupo vazio após filtragem é omitido.
  */
 export function filterNavByPermissions(
@@ -30,7 +33,11 @@ export function filterNavByPermissions(
 
     for (const item of group.items) {
       if (item.children && item.children.length > 0) {
-        const children = item.children.filter((c) => itemVisivel(c, perms, todas));
+        // O pai só aparece se sua própria permissão for atendida.
+        if (!itemVisivel(item, perms, todas)) continue;
+        const children = item.children.filter((c) =>
+          itemVisivel({ ...c, perm: c.perm ?? item.perm }, perms, todas),
+        );
         if (children.length > 0) items.push({ ...item, children });
         continue;
       }

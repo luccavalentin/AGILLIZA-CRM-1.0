@@ -110,6 +110,25 @@ export const CATALOGO_MODULOS: ModuloCatalogo[] = [
     ],
   },
   {
+    grupo: "Documentos",
+    modulo: "documentos.formularios",
+    label: "Formulários",
+    acoes: [
+      { acao: "view", label: "Ver" },
+      { acao: "create", label: "Enviar" },
+    ],
+  },
+  {
+    grupo: "Documentos",
+    modulo: "documentos.matriculas",
+    label: "Controle de Matrículas",
+    acoes: [
+      { acao: "view", label: "Ver" },
+      { acao: "create", label: "Solicitar" },
+      { acao: "edit", label: "Editar" },
+    ],
+  },
+  {
     grupo: "Financeiro",
     modulo: "financeiro.painel",
     label: "Painel financeiro",
