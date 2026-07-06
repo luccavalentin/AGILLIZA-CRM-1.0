@@ -28,6 +28,7 @@ import {
   Plug,
   Settings2,
   ShoppingCart,
+  MessagesSquare,
   Timer,
   Landmark,
   Sparkles,
