@@ -54,6 +54,8 @@ export interface ClienteFormValues {
   telefone_celular: string;
   renda_total_declarada: string;
   uf_interesse: string;
+  utiliza_fgts: boolean;
+  fg_autorizacao_dados: boolean;
   origem: string;
 }
 
