@@ -60,7 +60,7 @@ export const obterControleMatriculas = createServerFn({ method: "GET" })
     const [cfgRes, credRes, solRes] = await Promise.all([
       supabase.from("matricula_config").select("correspondente_id,pix_chave,pix_titular").eq("correspondente_id", corr).maybeSingle(),
       supabase.from("matricula_creditos").select("id,data,valor,descricao,created_at").eq("correspondente_id", corr).order("data", { ascending: false }),
-      supabase.from("matricula_solicitacoes").select("id,data_solicitacao,solicitante,numero_matricula,valor,reembolsado,reembolsado_em,observacao,created_at").eq("correspondente_id", corr).order("data_solicitacao", { ascending: false }),
+      supabase.from("matricula_solicitacoes").select("id,data_solicitacao,solicitante,corretor,cliente,numero_matricula,valor,reembolsado,reembolsado_em,data_pagto_reembolso,observacao,created_at").eq("correspondente_id", corr).order("data_solicitacao", { ascending: false }),
     ]);
     if (cfgRes.error) throw new Error(cfgRes.error.message);
     if (credRes.error) throw new Error(credRes.error.message);
