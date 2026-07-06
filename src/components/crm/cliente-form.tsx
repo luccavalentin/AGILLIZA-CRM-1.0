@@ -536,30 +536,48 @@ export function ClienteForm({
         <CardContent className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
             <Label>Sexo</Label>
-            <InputAutocomplete
-              value={v.sexo}
-              onValueChange={(x) => set("sexo", x)}
-              options={OPCOES_SEXO}
-              placeholder="Pesquisar ou digitar"
-            />
+            <Select value={v.sexo || undefined} onValueChange={(x) => set("sexo", x)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione" />
+              </SelectTrigger>
+              <SelectContent>
+                {OPCOES_SEXO.map((o) => (
+                  <SelectItem key={o} value={o}>
+                    {o}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="space-y-1.5">
             <Label>Nacionalidade</Label>
-            <InputAutocomplete
-              value={v.nacionalidade}
-              onValueChange={(x) => set("nacionalidade", x)}
-              options={OPCOES_NACIONALIDADE}
-              placeholder="Ex.: Brasileira"
-            />
+            <Select value={v.nacionalidade || undefined} onValueChange={(x) => set("nacionalidade", x)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione" />
+              </SelectTrigger>
+              <SelectContent>
+                {OPCOES_NACIONALIDADE.map((o) => (
+                  <SelectItem key={o} value={o}>
+                    {o}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="space-y-1.5 sm:col-span-2">
             <Label>Naturalidade (cidade/UF de nascimento)</Label>
-            <InputAutocomplete
-              value={v.naturalidade}
-              onValueChange={(x) => set("naturalidade", x)}
-              options={OPCOES_NATURALIDADE}
-              placeholder="Pesquisar cidade/UF ou digitar"
-            />
+            <Select value={v.naturalidade || undefined} onValueChange={(x) => set("naturalidade", x)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione" />
+              </SelectTrigger>
+              <SelectContent>
+                {OPCOES_NATURALIDADE.map((o) => (
+                  <SelectItem key={o} value={o}>
+                    {o}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-1.5">
@@ -580,23 +598,33 @@ export function ClienteForm({
           </div>
           <div className="space-y-1.5">
             <Label>Órgão expedidor</Label>
-            <InputAutocomplete
-              value={v.orgao_expedidor}
-              onValueChange={(x) => set("orgao_expedidor", x)}
-              options={OPCOES_ORGAO_EXPEDIDOR}
-              placeholder="Ex.: SSP"
-            />
+            <Select value={v.orgao_expedidor || undefined} onValueChange={(x) => set("orgao_expedidor", x)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione" />
+              </SelectTrigger>
+              <SelectContent>
+                {OPCOES_ORGAO_EXPEDIDOR.map((o) => (
+                  <SelectItem key={o} value={o}>
+                    {o}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="space-y-1.5">
             <Label>UF de expedição</Label>
-            <InputAutocomplete
-              maxLength={2}
-              value={v.uf_expedicao}
-              onValueChange={(x) => set("uf_expedicao", x)}
-              transform={(raw) => raw.toUpperCase().slice(0, 2)}
-              options={OPCOES_UF}
-              placeholder="SP"
-            />
+            <Select value={v.uf_expedicao || undefined} onValueChange={(x) => set("uf_expedicao", x)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione" />
+              </SelectTrigger>
+              <SelectContent>
+                {OPCOES_UF.map((o) => (
+                  <SelectItem key={o} value={o}>
+                    {o}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="space-y-1.5">
             <Label>Data de expedição</Label>
