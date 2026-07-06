@@ -192,10 +192,13 @@ export const atualizarSolicitacaoMatricula = createServerFn({ method: "POST" })
     const { error } = await supabase.from("matricula_solicitacoes").update({
       data_solicitacao: data.data_solicitacao,
       solicitante: data.solicitante,
+      corretor: data.corretor ?? null,
+      cliente: data.cliente ?? null,
       numero_matricula: data.numero_matricula ?? null,
       valor: data.valor,
       reembolsado: novoReembolsado,
       reembolsado_em: reembolsadoEm,
+      data_pagto_reembolso: data.data_pagto_reembolso || null,
       observacao: data.observacao ?? null,
     }).eq("id", data.id);
     if (error) throw new Error(error.message);
