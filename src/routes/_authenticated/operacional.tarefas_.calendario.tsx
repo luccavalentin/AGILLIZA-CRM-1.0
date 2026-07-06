@@ -17,8 +17,18 @@ export const Route = createFileRoute("/_authenticated/operacional/tarefas_/calen
 
 const DIAS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 const MESES = [
-  "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
-  "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
+  "Janeiro",
+  "Fevereiro",
+  "Março",
+  "Abril",
+  "Maio",
+  "Junho",
+  "Julho",
+  "Agosto",
+  "Setembro",
+  "Outubro",
+  "Novembro",
+  "Dezembro",
 ];
 
 function chaveDia(d: Date): string {
@@ -63,7 +73,9 @@ function Pagina() {
           <p className="text-sm text-muted-foreground">Tarefas organizadas pela data de prazo.</p>
         </div>
         <Button asChild variant="ghost" size="sm">
-          <Link to="/operacional/tarefas"><ArrowLeft className="mr-1 h-4 w-4" /> Lista</Link>
+          <Link to="/operacional/tarefas">
+            <ArrowLeft className="mr-1 h-4 w-4" /> Lista
+          </Link>
         </Button>
       </div>
 
@@ -72,15 +84,27 @@ function Pagina() {
           {MESES[ref.getMonth()]} {ref.getFullYear()}
         </h2>
         <div className="flex items-center gap-1">
-          <Button variant="outline" size="icon" className="h-8 w-8"
-            onClick={() => setRef(new Date(ref.getFullYear(), ref.getMonth() - 1, 1))}>
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => setRef(new Date(ref.getFullYear(), ref.getMonth() - 1, 1))}
+          >
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <Button variant="outline" size="sm" onClick={() => setRef(new Date(hoje.getFullYear(), hoje.getMonth(), 1))}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setRef(new Date(hoje.getFullYear(), hoje.getMonth(), 1))}
+          >
             Hoje
           </Button>
-          <Button variant="outline" size="icon" className="h-8 w-8"
-            onClick={() => setRef(new Date(ref.getFullYear(), ref.getMonth() + 1, 1))}>
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => setRef(new Date(ref.getFullYear(), ref.getMonth() + 1, 1))}
+          >
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
@@ -88,7 +112,12 @@ function Pagina() {
 
       <div className="grid grid-cols-7 gap-px overflow-hidden rounded-lg border border-border bg-border">
         {DIAS.map((d) => (
-          <div key={d} className="bg-muted/50 px-2 py-1.5 text-center text-xs font-medium text-muted-foreground">{d}</div>
+          <div
+            key={d}
+            className="bg-muted/50 px-2 py-1.5 text-center text-xs font-medium text-muted-foreground"
+          >
+            {d}
+          </div>
         ))}
         {celulas.map((d) => {
           const k = chaveDia(d);
@@ -96,10 +125,16 @@ function Pagina() {
           const foraMes = d.getMonth() !== ref.getMonth();
           return (
             <div key={k} className={cn("min-h-[92px] bg-card p-1.5", foraMes && "bg-muted/30")}>
-              <div className={cn(
-                "mb-1 inline-flex h-5 w-5 items-center justify-center rounded-full text-xs tabular-nums",
-                k === hojeK ? "bg-primary text-primary-foreground" : foraMes ? "text-muted-foreground" : "text-foreground",
-              )}>
+              <div
+                className={cn(
+                  "mb-1 inline-flex h-5 w-5 items-center justify-center rounded-full text-xs tabular-nums",
+                  k === hojeK
+                    ? "bg-primary text-primary-foreground"
+                    : foraMes
+                      ? "text-muted-foreground"
+                      : "text-foreground",
+                )}
+              >
                 {d.getDate()}
               </div>
               <div className="space-y-1">
@@ -109,13 +144,25 @@ function Pagina() {
                     onClick={() => setSel(t.id)}
                     className="flex w-full items-center gap-1 overflow-hidden rounded bg-muted/60 px-1 py-0.5 text-left text-[11px] hover:bg-muted"
                   >
-                    <span className={cn("h-2.5 w-[3px] shrink-0 rounded-full", PRIORIDADE[t.prioridade as "p1"].bar)} />
-                    <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", TONE_BAR[statusTarefa(t.status).tone])} />
+                    <span
+                      className={cn(
+                        "h-2.5 w-[3px] shrink-0 rounded-full",
+                        PRIORIDADE[t.prioridade as "p1"].bar,
+                      )}
+                    />
+                    <span
+                      className={cn(
+                        "h-1.5 w-1.5 shrink-0 rounded-full",
+                        TONE_BAR[statusTarefa(t.status).tone],
+                      )}
+                    />
                     <span className="truncate text-foreground">{t.titulo}</span>
                   </button>
                 ))}
                 {doDia.length > 3 && (
-                  <span className="block px-1 text-[11px] text-muted-foreground">+{doDia.length - 3} mais</span>
+                  <span className="block px-1 text-[11px] text-muted-foreground">
+                    +{doDia.length - 3} mais
+                  </span>
                 )}
               </div>
             </div>

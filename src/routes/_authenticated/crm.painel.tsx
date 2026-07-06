@@ -13,7 +13,9 @@ export const Route = createFileRoute("/_authenticated/crm/painel")({
   head: () => ({ meta: [{ title: "Painel da esteira — Agilliza" }] }),
   beforeLoad: () => assertModuloPermitido("crm.clientes"),
   component: Pagina,
-  errorComponent: () => <div className="p-6 text-sm text-destructive">Erro ao carregar o painel.</div>,
+  errorComponent: () => (
+    <div className="p-6 text-sm text-destructive">Erro ao carregar o painel.</div>
+  ),
 });
 
 function Pagina() {
@@ -31,36 +33,61 @@ function Pagina() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold text-foreground">Painel da esteira</h1>
-          <p className="text-sm text-muted-foreground">Visão das 12 etapas. A esteira avança automaticamente.</p>
+          <p className="text-sm text-muted-foreground">
+            Visão das 12 etapas. A esteira avança automaticamente.
+          </p>
         </div>
         <div className="flex flex-wrap items-end gap-3">
           <div className="space-y-1">
             <label className="text-xs text-muted-foreground">De</label>
-            <Input type="date" value={desde} onChange={(e) => setDesde(e.target.value)} className="w-40" />
+            <Input
+              type="date"
+              value={desde}
+              onChange={(e) => setDesde(e.target.value)}
+              className="w-40"
+            />
           </div>
           <div className="space-y-1">
             <label className="text-xs text-muted-foreground">Até</label>
-            <Input type="date" value={ate} onChange={(e) => setAte(e.target.value)} className="w-40" />
+            <Input
+              type="date"
+              value={ate}
+              onChange={(e) => setAte(e.target.value)}
+              className="w-40"
+            />
           </div>
           {(desde || ate) && (
-            <Button variant="ghost" size="sm" onClick={() => { setDesde(""); setAte(""); }}>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setDesde("");
+                setAte("");
+              }}
+            >
               Limpar
             </Button>
           )}
         </div>
       </div>
 
-
       {isLoading ? (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-40 w-full" />)}
+          {Array.from({ length: 8 }).map((_, i) => (
+            <Skeleton key={i} className="h-40 w-full" />
+          ))}
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {data!.map((stage) => (
-            <div key={stage.codigo} className="flex min-w-0 flex-col rounded-lg border border-border bg-muted/40 p-3">
+            <div
+              key={stage.codigo}
+              className="flex min-w-0 flex-col rounded-lg border border-border bg-muted/40 p-3"
+            >
               <div className="mb-2 flex items-center justify-between gap-2">
-                <span className="min-w-0 truncate text-sm font-medium text-foreground">{stage.nome}</span>
+                <span className="min-w-0 truncate text-sm font-medium text-foreground">
+                  {stage.nome}
+                </span>
                 <span className="shrink-0 rounded-full bg-background px-2 py-0.5 text-xs font-medium text-muted-foreground">
                   {stage.clientes.length}
                 </span>
@@ -79,7 +106,9 @@ function Pagina() {
                     >
                       <CardContent className="p-3">
                         <p className="truncate text-sm font-medium text-foreground">{c.nome}</p>
-                        <p className="font-mono text-xs text-muted-foreground">{c.numero_cliente}</p>
+                        <p className="font-mono text-xs text-muted-foreground">
+                          {c.numero_cliente}
+                        </p>
                       </CardContent>
                     </Card>
                   ))
@@ -92,4 +121,3 @@ function Pagina() {
     </div>
   );
 }
-

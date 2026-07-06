@@ -51,7 +51,9 @@ export function ContaDrawer({
   const conta = data?.conta;
   const historico = data?.historico ?? [];
   const baixas = historico.filter((h: any) => h.evento?.startsWith("baixa"));
-  const estornos = historico.filter((h: any) => h.evento === "estornada" || h.evento === "cancelada");
+  const estornos = historico.filter(
+    (h: any) => h.evento === "estornada" || h.evento === "cancelada",
+  );
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -68,15 +70,26 @@ export function ContaDrawer({
         {conta && (
           <Tabs defaultValue="dados" className="mt-4">
             <TabsList className="w-full">
-              <TabsTrigger value="dados" className="flex-1">Dados</TabsTrigger>
-              <TabsTrigger value="anexos" className="flex-1">Anexos</TabsTrigger>
-              <TabsTrigger value="baixas" className="flex-1">Baixas</TabsTrigger>
-              <TabsTrigger value="estornos" className="flex-1">Estornos</TabsTrigger>
+              <TabsTrigger value="dados" className="flex-1">
+                Dados
+              </TabsTrigger>
+              <TabsTrigger value="anexos" className="flex-1">
+                Anexos
+              </TabsTrigger>
+              <TabsTrigger value="baixas" className="flex-1">
+                Baixas
+              </TabsTrigger>
+              <TabsTrigger value="estornos" className="flex-1">
+                Estornos
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="dados" className="space-y-3 pt-4">
               <Linha label="Descrição" valor={conta.descricao} />
-              <Linha label={tipo === "pagar" ? "Fornecedor" : "Pagador"} valor={conta.fornecedor ?? conta.pagador ?? "—"} />
+              <Linha
+                label={tipo === "pagar" ? "Fornecedor" : "Pagador"}
+                valor={conta.fornecedor ?? conta.pagador ?? "—"}
+              />
               <Linha label="Categoria" valor={conta.categoria?.nome ?? "—"} />
               <Linha label="Centro de custo" valor={conta.centro?.nome ?? "—"} />
               <Linha label="Vencimento" valor={formatData(conta.vencimento)} />
@@ -84,17 +97,30 @@ export function ContaDrawer({
               <Linha label="Pago" valor={formatBRL(Number(conta.valor_pago))} />
 
               <div className="border-t border-border pt-3">
-                <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Linha do tempo</p>
+                <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  Linha do tempo
+                </p>
                 <ul className="space-y-2">
                   {historico.map((h: any) => (
                     <li key={h.id} className="text-sm">
-                      <span className={`font-medium ${eventoTone(h.evento)}`}>{eventoLabel[h.evento] ?? h.evento}</span>
-                      {h.valor != null && <span className="tabular-nums text-muted-foreground"> · {formatBRL(Number(h.valor))}</span>}
+                      <span className={`font-medium ${eventoTone(h.evento)}`}>
+                        {eventoLabel[h.evento] ?? h.evento}
+                      </span>
+                      {h.valor != null && (
+                        <span className="tabular-nums text-muted-foreground">
+                          {" "}
+                          · {formatBRL(Number(h.valor))}
+                        </span>
+                      )}
                       <span className="text-muted-foreground"> · {formatData(h.created_at)}</span>
-                      {h.descricao && <p className="text-xs text-muted-foreground">{h.descricao}</p>}
+                      {h.descricao && (
+                        <p className="text-xs text-muted-foreground">{h.descricao}</p>
+                      )}
                     </li>
                   ))}
-                  {historico.length === 0 && <li className="text-sm text-muted-foreground">Sem eventos.</li>}
+                  {historico.length === 0 && (
+                    <li className="text-sm text-muted-foreground">Sem eventos.</li>
+                  )}
                 </ul>
               </div>
             </TabsContent>
@@ -111,20 +137,27 @@ export function ContaDrawer({
             </TabsContent>
 
             <TabsContent value="baixas" className="space-y-2 pt-4">
-              {baixas.length === 0 && <p className="text-sm text-muted-foreground">Nenhuma baixa registrada.</p>}
+              {baixas.length === 0 && (
+                <p className="text-sm text-muted-foreground">Nenhuma baixa registrada.</p>
+              )}
               {baixas.map((h: any) => (
                 <div key={h.id} className="flex justify-between text-sm">
                   <span className="text-success">{eventoLabel[h.evento]}</span>
-                  <span className="tabular-nums">{formatBRL(Number(h.valor ?? 0))} · {formatData(h.created_at)}</span>
+                  <span className="tabular-nums">
+                    {formatBRL(Number(h.valor ?? 0))} · {formatData(h.created_at)}
+                  </span>
                 </div>
               ))}
             </TabsContent>
 
             <TabsContent value="estornos" className="space-y-2 pt-4">
-              {estornos.length === 0 && <p className="text-sm text-muted-foreground">Nenhum estorno/cancelamento.</p>}
+              {estornos.length === 0 && (
+                <p className="text-sm text-muted-foreground">Nenhum estorno/cancelamento.</p>
+              )}
               {estornos.map((h: any) => (
                 <div key={h.id} className="text-sm">
-                  <span className="text-destructive">{eventoLabel[h.evento]}</span> · {formatData(h.created_at)}
+                  <span className="text-destructive">{eventoLabel[h.evento]}</span> ·{" "}
+                  {formatData(h.created_at)}
                   {h.descricao && <p className="text-xs text-muted-foreground">{h.descricao}</p>}
                 </div>
               ))}

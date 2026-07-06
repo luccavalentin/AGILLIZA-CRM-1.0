@@ -4,14 +4,23 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import { criarDemanda } from "@/lib/operacional/demandas.functions";
 import { listarColegas, buscarClientesOpcoes } from "@/lib/operacional/shared.functions";
@@ -35,7 +44,11 @@ export function NovaDemandaDialog({ onCriada }: { onCriada: () => void }) {
   const [salvando, setSalvando] = useState(false);
   const criarFn = useServerFn(criarDemanda);
 
-  const { data: colegas } = useQuery({ queryKey: ["colegas"], queryFn: () => listarColegas(), enabled: aberto });
+  const { data: colegas } = useQuery({
+    queryKey: ["colegas"],
+    queryFn: () => listarColegas(),
+    enabled: aberto,
+  });
   const { data: clientes } = useQuery({
     queryKey: ["clientes-opcoes"],
     queryFn: () => buscarClientesOpcoes({ data: {} }),
@@ -59,7 +72,10 @@ export function NovaDemandaDialog({ onCriada }: { onCriada: () => void }) {
       });
       toast.success("Demanda enviada.");
       setAberto(false);
-      setTitulo(""); setDescricao(""); setResponsavel(""); setCliente("");
+      setTitulo("");
+      setDescricao("");
+      setResponsavel("");
+      setCliente("");
       onCriada();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Falha ao criar.");
@@ -71,25 +87,37 @@ export function NovaDemandaDialog({ onCriada }: { onCriada: () => void }) {
   return (
     <Dialog open={aberto} onOpenChange={setAberto}>
       <DialogTrigger asChild>
-        <Button size="sm"><Plus className="mr-1 h-4 w-4" /> Nova demanda</Button>
+        <Button size="sm">
+          <Plus className="mr-1 h-4 w-4" /> Nova demanda
+        </Button>
       </DialogTrigger>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
-        <DialogHeader><DialogTitle>Enviar demanda</DialogTitle></DialogHeader>
+        <DialogHeader>
+          <DialogTitle>Enviar demanda</DialogTitle>
+        </DialogHeader>
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Tipo</Label>
               <Select value={tipo} onValueChange={setTipo}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
-                  {TIPOS.map((t) => <SelectItem key={t.v} value={t.v}>{t.l}</SelectItem>)}
+                  {TIPOS.map((t) => (
+                    <SelectItem key={t.v} value={t.v}>
+                      {t.l}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5">
               <Label>Prioridade</Label>
               <Select value={prioridade} onValueChange={(v) => setPrioridade(v as any)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="p1">P1 — Alta</SelectItem>
                   <SelectItem value="p2">P2 — Média</SelectItem>
@@ -100,7 +128,11 @@ export function NovaDemandaDialog({ onCriada }: { onCriada: () => void }) {
           </div>
           <div className="space-y-1.5">
             <Label>Título</Label>
-            <Input value={titulo} onChange={(e) => setTitulo(e.target.value)} placeholder="Ex.: Analisar documento X" />
+            <Input
+              value={titulo}
+              onChange={(e) => setTitulo(e.target.value)}
+              placeholder="Ex.: Analisar documento X"
+            />
           </div>
           <div className="space-y-1.5">
             <Label>Descrição</Label>
@@ -110,27 +142,45 @@ export function NovaDemandaDialog({ onCriada }: { onCriada: () => void }) {
             <div className="space-y-1.5">
               <Label>Responsável (destinatário)</Label>
               <Select value={responsavel} onValueChange={setResponsavel}>
-                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione" />
+                </SelectTrigger>
                 <SelectContent>
-                  {(colegas ?? []).map((c) => <SelectItem key={c.id} value={c.id}>{c.nome ?? c.email}</SelectItem>)}
+                  {(colegas ?? []).map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.nome ?? c.email}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5">
               <Label>Cliente-alvo (opcional)</Label>
               <Select value={cliente} onValueChange={setCliente}>
-                <SelectTrigger><SelectValue placeholder="Nenhum" /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue placeholder="Nenhum" />
+                </SelectTrigger>
                 <SelectContent>
-                  {(clientes ?? []).map((c) => <SelectItem key={c.id} value={c.id}>{c.nome ?? c.numero_cliente}</SelectItem>)}
+                  {(clientes ?? []).map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.nome ?? c.numero_cliente}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
           </div>
-          <p className="text-xs text-muted-foreground">O prazo (SLA) é calculado automaticamente em horas úteis conforme o tipo e a prioridade.</p>
+          <p className="text-xs text-muted-foreground">
+            O prazo (SLA) é calculado automaticamente em horas úteis conforme o tipo e a prioridade.
+          </p>
         </div>
         <DialogFooter>
-          <Button variant="ghost" onClick={() => setAberto(false)}>Cancelar</Button>
-          <Button onClick={salvar} disabled={salvando}>Enviar demanda</Button>
+          <Button variant="ghost" onClick={() => setAberto(false)}>
+            Cancelar
+          </Button>
+          <Button onClick={salvar} disabled={salvando}>
+            Enviar demanda
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

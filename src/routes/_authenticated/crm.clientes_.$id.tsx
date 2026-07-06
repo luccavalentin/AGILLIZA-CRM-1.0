@@ -28,8 +28,12 @@ export const Route = createFileRoute("/_authenticated/crm/clientes_/$id")({
   head: () => ({ meta: [{ title: "Cliente — Agilliza" }] }),
   beforeLoad: () => assertModuloPermitido("crm.clientes"),
   component: Pagina,
-  errorComponent: () => <div className="p-6 text-sm text-destructive">Erro ao carregar o cliente.</div>,
-  notFoundComponent: () => <div className="p-6 text-sm text-muted-foreground">Cliente não encontrado.</div>,
+  errorComponent: () => (
+    <div className="p-6 text-sm text-destructive">Erro ao carregar o cliente.</div>
+  ),
+  notFoundComponent: () => (
+    <div className="p-6 text-sm text-muted-foreground">Cliente não encontrado.</div>
+  ),
 });
 
 function Pagina() {
@@ -46,10 +50,22 @@ function Pagina() {
     queryFn: () => getCli({ data: { id } }),
   });
   const { data: stages } = useQuery({ queryKey: ["pipeline-stages"], queryFn: () => getStages() });
-  const { data: pipe } = useQuery({ queryKey: ["cliente-pipeline", id], queryFn: () => getPipe({ data: { cliente_id: id } }) });
-  const { data: endereco } = useQuery({ queryKey: ["cliente-end", id], queryFn: () => getEnd({ data: { cliente_id: id } }) });
-  const { data: historico } = useQuery({ queryKey: ["cliente-hist", id], queryFn: () => getHist({ data: { cliente_id: id } }) });
-  const { data: negocios } = useQuery({ queryKey: ["cliente-negocios", id], queryFn: () => getNeg({ data: { cliente_id: id } }) });
+  const { data: pipe } = useQuery({
+    queryKey: ["cliente-pipeline", id],
+    queryFn: () => getPipe({ data: { cliente_id: id } }),
+  });
+  const { data: endereco } = useQuery({
+    queryKey: ["cliente-end", id],
+    queryFn: () => getEnd({ data: { cliente_id: id } }),
+  });
+  const { data: historico } = useQuery({
+    queryKey: ["cliente-hist", id],
+    queryFn: () => getHist({ data: { cliente_id: id } }),
+  });
+  const { data: negocios } = useQuery({
+    queryKey: ["cliente-negocios", id],
+    queryFn: () => getNeg({ data: { cliente_id: id } }),
+  });
 
   if (isLoading || !det) {
     return (
@@ -68,11 +84,15 @@ function Pagina() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <Button asChild variant="ghost" size="icon">
-            <Link to="/crm/clientes"><ArrowLeft className="size-4" /></Link>
+            <Link to="/crm/clientes">
+              <ArrowLeft className="size-4" />
+            </Link>
           </Button>
           <div>
             <h1 className="text-xl font-semibold text-foreground">{c.nome}</h1>
-            <p className="font-mono text-xs text-muted-foreground">{c.numero_cliente} · {docExib}</p>
+            <p className="font-mono text-xs text-muted-foreground">
+              {c.numero_cliente} · {docExib}
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -86,7 +106,9 @@ function Pagina() {
       </div>
 
       <Card>
-        <CardHeader className="pb-2"><CardTitle className="text-sm">Esteira</CardTitle></CardHeader>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm">Esteira</CardTitle>
+        </CardHeader>
         <CardContent>
           {stages && pipe ? (
             <PipelineTimeline stages={stages} atualOrdem={pipe.ordem} />
@@ -112,33 +134,57 @@ function Pagina() {
 
         <TabsContent value="resumo" className="mt-4 grid gap-4 sm:grid-cols-2">
           <Card>
-            <CardHeader className="pb-2"><CardTitle className="text-sm">Dados pessoais</CardTitle></CardHeader>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm">Dados pessoais</CardTitle>
+            </CardHeader>
             <CardContent className="space-y-1 text-sm">
               <Linha rotulo="Documento" valor={docExib} />
               <Linha rotulo="E-mail" valor={c.email ?? "—"} />
-              <Linha rotulo="Celular" valor={c.telefone_celular ? formatarCelular(c.telefone_celular) : "—"} />
+              <Linha
+                rotulo="Celular"
+                valor={c.telefone_celular ? formatarCelular(c.telefone_celular) : "—"}
+              />
               <Linha rotulo="Nascimento" valor={formatarDataCivil(c.data_nascimento)} />
-              <Linha rotulo="Renda declarada" valor={c.renda_total_declarada != null ? `R$ ${Number(c.renda_total_declarada).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "—"} />
+              <Linha
+                rotulo="Renda declarada"
+                valor={
+                  c.renda_total_declarada != null
+                    ? `R$ ${Number(c.renda_total_declarada).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`
+                    : "—"
+                }
+              />
               <Linha rotulo="UF de interesse" valor={c.uf_interesse ?? "—"} />
             </CardContent>
           </Card>
           <Card>
-            <CardHeader className="pb-2"><CardTitle className="text-sm">Atendimento</CardTitle></CardHeader>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm">Atendimento</CardTitle>
+            </CardHeader>
             <CardContent className="space-y-1 text-sm">
               <Linha rotulo="Responsável" valor={det.responsavel_nome ?? "—"} />
-              <Linha rotulo="Etapa atual" valor={pipe ? stages?.find((s: any) => s.ordem === pipe.ordem)?.nome ?? "—" : "—"} />
+              <Linha
+                rotulo="Etapa atual"
+                valor={pipe ? (stages?.find((s: any) => s.ordem === pipe.ordem)?.nome ?? "—") : "—"}
+              />
               <Linha rotulo="Origem" valor={c.origem} />
-              <Linha rotulo="Cadastrado em" valor={new Date(c.created_at).toLocaleDateString("pt-BR")} />
+              <Linha
+                rotulo="Cadastrado em"
+                valor={new Date(c.created_at).toLocaleDateString("pt-BR")}
+              />
             </CardContent>
           </Card>
         </TabsContent>
 
         <TabsContent value="negocios" className="mt-4 space-y-4">
           <Card>
-            <CardHeader className="pb-2"><CardTitle className="text-sm">Simulações</CardTitle></CardHeader>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm">Simulações</CardTitle>
+            </CardHeader>
             <CardContent className="space-y-2">
               {(negocios?.simulacoes.length ?? 0) === 0 ? (
-                <p className="py-4 text-center text-sm text-muted-foreground">Nenhuma simulação para este cliente.</p>
+                <p className="py-4 text-center text-sm text-muted-foreground">
+                  Nenhuma simulação para este cliente.
+                </p>
               ) : (
                 negocios!.simulacoes.map((s) => (
                   <Link
@@ -148,21 +194,31 @@ function Pagina() {
                     className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-card p-3 text-sm transition-colors hover:bg-accent"
                   >
                     <div className="flex items-center gap-2">
-                      <span className="font-mono text-xs text-muted-foreground">{s.numero_simulacao ?? "—"}</span>
-                      <span className="text-foreground">{s.produto === "home_equity" ? "Home Equity" : "Financiamento"}</span>
+                      <span className="font-mono text-xs text-muted-foreground">
+                        {s.numero_simulacao ?? "—"}
+                      </span>
+                      <span className="text-foreground">
+                        {s.produto === "home_equity" ? "Home Equity" : "Financiamento"}
+                      </span>
                       <StatusBadge status={s.status ?? "—"} />
                     </div>
-                    <span className="tabular-nums text-muted-foreground">{fmtValor(s.valor_financiamento)}</span>
+                    <span className="tabular-nums text-muted-foreground">
+                      {fmtValor(s.valor_financiamento)}
+                    </span>
                   </Link>
                 ))
               )}
             </CardContent>
           </Card>
           <Card>
-            <CardHeader className="pb-2"><CardTitle className="text-sm">Propostas</CardTitle></CardHeader>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm">Propostas</CardTitle>
+            </CardHeader>
             <CardContent className="space-y-2">
               {(negocios?.propostas.length ?? 0) === 0 ? (
-                <p className="py-4 text-center text-sm text-muted-foreground">Nenhuma proposta para este cliente.</p>
+                <p className="py-4 text-center text-sm text-muted-foreground">
+                  Nenhuma proposta para este cliente.
+                </p>
               ) : (
                 negocios!.propostas.map((p) => (
                   <Link
@@ -172,11 +228,15 @@ function Pagina() {
                     className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-card p-3 text-sm transition-colors hover:bg-accent"
                   >
                     <div className="flex items-center gap-2">
-                      <span className="font-mono text-xs text-muted-foreground">{p.numero_proposta ?? "—"}</span>
+                      <span className="font-mono text-xs text-muted-foreground">
+                        {p.numero_proposta ?? "—"}
+                      </span>
                       <span className="text-foreground">{p.nome_banco ?? "—"}</span>
                       <StatusBadge status={p.status ?? "—"} />
                     </div>
-                    <span className="tabular-nums text-muted-foreground">{fmtValor(p.valor_financiamento)}</span>
+                    <span className="tabular-nums text-muted-foreground">
+                      {fmtValor(p.valor_financiamento)}
+                    </span>
                   </Link>
                 ))
               )}
@@ -200,7 +260,8 @@ function Pagina() {
               mae: c.mae ?? "",
               email: c.email ?? "",
               telefone_celular: c.telefone_celular ?? "",
-              renda_total_declarada: c.renda_total_declarada != null ? String(c.renda_total_declarada) : "",
+              renda_total_declarada:
+                c.renda_total_declarada != null ? String(c.renda_total_declarada) : "",
               uf_interesse: c.uf_interesse ?? "",
               origem: c.origem,
             }}
@@ -235,8 +296,6 @@ function Pagina() {
           />
         </TabsContent>
 
-
-
         <TabsContent value="interacoes" className="mt-4">
           <InteracoesTab clienteId={id} />
         </TabsContent>
@@ -247,9 +306,14 @@ function Pagina() {
           ) : (
             <div className="space-y-2">
               {historico!.map((h: any) => (
-                <div key={h.id} className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card p-3 text-sm">
+                <div
+                  key={h.id}
+                  className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card p-3 text-sm"
+                >
                   <span className="text-foreground">{h.descricao}</span>
-                  <span className="text-xs text-muted-foreground">{new Date(h.created_at).toLocaleString("pt-BR")}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {new Date(h.created_at).toLocaleString("pt-BR")}
+                  </span>
                 </div>
               ))}
             </div>

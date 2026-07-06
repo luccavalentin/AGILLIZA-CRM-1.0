@@ -97,7 +97,14 @@ function drawHeaderBanco(doc: jsPDF, pageW: number, titulo: string, descricao: s
   const logoH = 30;
   const logoW = logoH * AGILLIZA_LOGO_RATIO;
   try {
-    doc.addImage(AGILLIZA_LOGO_LIGHT, "PNG", pageW - logoW - 32, (HEADER_H - logoH) / 2, logoW, logoH);
+    doc.addImage(
+      AGILLIZA_LOGO_LIGHT,
+      "PNG",
+      pageW - logoW - 32,
+      (HEADER_H - logoH) / 2,
+      logoW,
+      logoH,
+    );
   } catch {
     /* fallback silencioso */
   }
@@ -146,7 +153,11 @@ export function baixarBancoDetalhePDF({ simulacao: s, banco: b }: { simulacao: a
   doc.setFontSize(8);
   doc.setFont("helvetica", "normal");
   doc.text(
-    [`Nº ${s.numero_simulacao ?? "—"}`, `Cliente: ${s.nome_cliente ?? "—"}`, `UF: ${s.uf ?? "—"}`].join("   ·   "),
+    [
+      `Nº ${s.numero_simulacao ?? "—"}`,
+      `Cliente: ${s.nome_cliente ?? "—"}`,
+      `UF: ${s.uf ?? "—"}`,
+    ].join("   ·   "),
     32,
     y,
   );
@@ -154,17 +165,35 @@ export function baixarBancoDetalhePDF({ simulacao: s, banco: b }: { simulacao: a
 
   // Grade de detalhes (cartões)
   const detalhes: { label: string; valor: string }[] = [
-    { label: "Situação", valor: LABEL_STATUS_BANCO[b?.status_banco ?? ""] ?? (b?.status_banco || "—") },
-    { label: "Taxa de juros a.a.", valor: pctTxt(detalhe?.taxaJurosAno ?? (b?.taxa_juros_ano ?? null)) },
+    {
+      label: "Situação",
+      valor: LABEL_STATUS_BANCO[b?.status_banco ?? ""] ?? (b?.status_banco || "—"),
+    },
+    {
+      label: "Taxa de juros a.a.",
+      valor: pctTxt(detalhe?.taxaJurosAno ?? b?.taxa_juros_ano ?? null),
+    },
     { label: "Taxa de juros a.m.", valor: pctTxt(detalhe?.taxaJurosMes ?? null) },
     { label: "CET", valor: pctTxt(detalhe?.cet ?? null) },
     { label: "CESH", valor: pctTxt(detalhe?.cesh ?? null) },
     { label: "Valor do imóvel", valor: formatBRL(detalhe?.valorImovel ?? s.valor_imovel) },
-    { label: "Financiamento", valor: formatBRL(detalhe?.valorFinanciamento ?? b?.valor_financiamento_max) },
+    {
+      label: "Financiamento",
+      valor: formatBRL(detalhe?.valorFinanciamento ?? b?.valor_financiamento_max),
+    },
     { label: "Entrada", valor: formatBRL(detalhe?.valorEntrada ?? s.valor_entrada) },
     { label: "IOF", valor: formatBRL(detalhe?.iof ?? b?.valor_iof) },
-    { label: "Prazo", valor: (detalhe?.prazoMeses ?? b?.prazo_pagamento_max) != null ? `${detalhe?.prazoMeses ?? b?.prazo_pagamento_max} meses` : "—" },
-    { label: "Sistema", valor: detalhe?.sistemaAmortizacao ?? (s.sistema_amortizacao === "P" ? "PRICE" : "SAC") },
+    {
+      label: "Prazo",
+      valor:
+        (detalhe?.prazoMeses ?? b?.prazo_pagamento_max) != null
+          ? `${detalhe?.prazoMeses ?? b?.prazo_pagamento_max} meses`
+          : "—",
+    },
+    {
+      label: "Sistema",
+      valor: detalhe?.sistemaAmortizacao ?? (s.sistema_amortizacao === "P" ? "PRICE" : "SAC"),
+    },
     { label: "1ª parcela", valor: formatBRL(detalhe?.primeiraParcela ?? b?.valor_parcela) },
     { label: "Última parcela", valor: formatBRL(detalhe?.ultimaParcela ?? null) },
     { label: "Somatório parcelas", valor: formatBRL(detalhe?.somatorioParcelas ?? null) },
@@ -213,7 +242,19 @@ export function baixarBancoDetalhePDF({ simulacao: s, banco: b }: { simulacao: a
   } else {
     autoTable(doc, {
       startY: y,
-      head: [["Parc.", "Data", "Amortização", "Juros", "Seguro MIP", "Seguro DFI", "Tarifa", "Parcela", "Saldo devedor"]],
+      head: [
+        [
+          "Parc.",
+          "Data",
+          "Amortização",
+          "Juros",
+          "Seguro MIP",
+          "Seguro DFI",
+          "Tarifa",
+          "Parcela",
+          "Saldo devedor",
+        ],
+      ],
       body: parcelas.map((p) => [
         String(p.numero),
         p.data ?? "—",
@@ -226,7 +267,13 @@ export function baixarBancoDetalhePDF({ simulacao: s, banco: b }: { simulacao: a
         formatBRL(p.saldoDevedor),
       ]),
       margin: { left: 32, right: 32, top: HEADER_H + 16, bottom: 40 },
-      styles: { fontSize: 6.5, cellPadding: 3, textColor: GRAFITE, lineColor: "#E4E6EF", lineWidth: 0.25 },
+      styles: {
+        fontSize: 6.5,
+        cellPadding: 3,
+        textColor: GRAFITE,
+        lineColor: "#E4E6EF",
+        lineWidth: 0.25,
+      },
       headStyles: { fillColor: AZUL, textColor: "#FFFFFF", fontStyle: "bold", fontSize: 6.5 },
       alternateRowStyles: { fillColor: ZEBRA },
       columnStyles: {

@@ -23,19 +23,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RegrasModulosPanel } from "@/components/admin/regras-modulos-panel";
 import { NovaPessoaInline } from "@/components/admin/nova-pessoa-inline";
 import { getMinhaSessao } from "@/lib/session.functions";
-import {
-  listarPessoas,
-  type ResultadoCriarPessoa,
-} from "@/lib/admin/pessoas.functions";
+import { listarPessoas, type ResultadoCriarPessoa } from "@/lib/admin/pessoas.functions";
 import { assertModuloPermitido } from "@/lib/route-guards";
 
 export const Route = createFileRoute("/_authenticated/admin/pessoas")({
@@ -61,14 +53,10 @@ const ROTULO_PAPEL: Record<string, string> = {
 function PessoasPage() {
   const { tab } = Route.useSearch();
   const [aba, setAba] = useState<"pessoas" | "regras">(tab ?? "pessoas");
-  const [filtro, setFiltro] = useState<"todos" | "sistema" | "portal_parceiro">(
-    "todos",
-  );
+  const [filtro, setFiltro] = useState<"todos" | "sistema" | "portal_parceiro">("todos");
   const [busca, setBusca] = useState("");
   const [criando, setCriando] = useState(false);
-  const [credenciais, setCredenciais] = useState<ResultadoCriarPessoa | null>(
-    null,
-  );
+  const [credenciais, setCredenciais] = useState<ResultadoCriarPessoa | null>(null);
 
   const sessaoQuery = useQuery({
     queryKey: ["minha-sessao"],
@@ -86,9 +74,7 @@ function PessoasPage() {
     .filter((p) => (filtro === "todos" ? true : p.acesso_tipo === filtro))
     .filter((p) =>
       busca
-        ? [p.nome, p.email].some((v) =>
-            (v ?? "").toLowerCase().includes(busca.toLowerCase()),
-          )
+        ? [p.nome, p.email].some((v) => (v ?? "").toLowerCase().includes(busca.toLowerCase()))
         : true,
     );
 
@@ -132,10 +118,7 @@ function PessoasPage() {
             )}
 
             <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <Tabs
-                value={filtro}
-                onValueChange={(v) => setFiltro(v as typeof filtro)}
-              >
+              <Tabs value={filtro} onValueChange={(v) => setFiltro(v as typeof filtro)}>
                 <TabsList>
                   <TabsTrigger value="todos">Todos</TabsTrigger>
                   <TabsTrigger value="sistema">Correspondente</TabsTrigger>
@@ -167,44 +150,28 @@ function PessoasPage() {
                 <TableBody>
                   {pessoasQuery.isLoading ? (
                     <TableRow>
-                      <TableCell
-                        colSpan={5}
-                        className="py-10 text-center text-muted-foreground"
-                      >
+                      <TableCell colSpan={5} className="py-10 text-center text-muted-foreground">
                         Carregando…
                       </TableCell>
                     </TableRow>
                   ) : pessoas.length === 0 ? (
                     <TableRow>
-                      <TableCell
-                        colSpan={5}
-                        className="py-10 text-center text-muted-foreground"
-                      >
-                        Nenhuma pessoa cadastrada ainda. Use “Nova pessoa” para
-                        começar.
+                      <TableCell colSpan={5} className="py-10 text-center text-muted-foreground">
+                        Nenhuma pessoa cadastrada ainda. Use “Nova pessoa” para começar.
                       </TableCell>
                     </TableRow>
                   ) : (
                     pessoas.map((p) => (
                       <TableRow key={p.id}>
-                        <TableCell className="font-medium">
-                          {p.nome ?? "—"}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {p.email ?? "—"}
-                        </TableCell>
+                        <TableCell className="font-medium">{p.nome ?? "—"}</TableCell>
+                        <TableCell className="text-muted-foreground">{p.email ?? "—"}</TableCell>
                         <TableCell>
                           {p.nivel_acesso_nome ??
-                            (p.roles.map((r) => ROTULO_PAPEL[r] ?? r).join(", ") ||
-                              "—")}
+                            (p.roles.map((r) => ROTULO_PAPEL[r] ?? r).join(", ") || "—")}
                         </TableCell>
                         <TableCell>
                           <Badge
-                            variant={
-                              p.acesso_tipo === "portal_parceiro"
-                                ? "secondary"
-                                : "outline"
-                            }
+                            variant={p.acesso_tipo === "portal_parceiro" ? "secondary" : "outline"}
                           >
                             {p.acesso_tipo === "portal_parceiro"
                               ? "Portal do Parceiro"
@@ -212,13 +179,7 @@ function PessoasPage() {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <Badge
-                            variant={
-                              p.ativo && !p.bloqueado_em
-                                ? "default"
-                                : "destructive"
-                            }
-                          >
+                          <Badge variant={p.ativo && !p.bloqueado_em ? "default" : "destructive"}>
                             {p.ativo && !p.bloqueado_em ? "Ativo" : "Inativo"}
                           </Badge>
                         </TableCell>
@@ -237,10 +198,7 @@ function PessoasPage() {
       </div>
 
       {/* Modal: senha temporária */}
-      <Dialog
-        open={!!credenciais}
-        onOpenChange={(o) => !o && setCredenciais(null)}
-      >
+      <Dialog open={!!credenciais} onOpenChange={(o) => !o && setCredenciais(null)}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Copiar senha temporária</DialogTitle>
@@ -257,19 +215,13 @@ function PessoasPage() {
               <div className="space-y-1">
                 <Label>Senha temporária</Label>
                 <div className="flex gap-2">
-                  <Input
-                    readOnly
-                    value={credenciais.senha_temporaria}
-                    className="font-mono"
-                  />
+                  <Input readOnly value={credenciais.senha_temporaria} className="font-mono" />
                   <Button
                     type="button"
                     variant="outline"
                     size="icon"
                     onClick={() => {
-                      navigator.clipboard.writeText(
-                        credenciais.senha_temporaria,
-                      );
+                      navigator.clipboard.writeText(credenciais.senha_temporaria);
                       toast.success("Senha copiada.");
                     }}
                   >

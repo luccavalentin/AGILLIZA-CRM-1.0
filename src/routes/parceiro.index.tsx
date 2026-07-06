@@ -30,9 +30,7 @@ function InicioParceiro() {
               <p className="text-sm text-muted-foreground">{c.label}</p>
               <c.icon className="h-4 w-4 text-primary" />
             </div>
-            <p className="mt-2 text-2xl font-semibold tabular-nums text-foreground">
-              {c.valor}
-            </p>
+            <p className="mt-2 text-2xl font-semibold tabular-nums text-foreground">{c.valor}</p>
           </div>
         ))}
         <div className="rounded-xl border bg-card p-4">
@@ -49,11 +47,9 @@ function InicioParceiro() {
       {resumo.data && (
         <div className="mt-6 rounded-xl border bg-card p-4 text-sm text-muted-foreground">
           Seu percentual de comissão padrão é{" "}
-          <span className="font-medium text-foreground">
-            {resumo.data.percentual_comissao}%
-          </span>
-          . As comissões são calculadas automaticamente quando um contrato é
-          emitido para um cliente vinculado a você.
+          <span className="font-medium text-foreground">{resumo.data.percentual_comissao}%</span>.
+          As comissões são calculadas automaticamente quando um contrato é emitido para um cliente
+          vinculado a você.
         </div>
       )}
     </ParceiroPage>

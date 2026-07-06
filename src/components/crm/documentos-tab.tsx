@@ -107,9 +107,15 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
           <div className="space-y-1.5">
             <label className="text-xs text-muted-foreground">Categoria</label>
             <Select value={categoria} onValueChange={setCategoria}>
-              <SelectTrigger className="w-52"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="w-52">
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
-                {CATEGORIAS.map((c) => <SelectItem key={c.v} value={c.v}>{c.l}</SelectItem>)}
+                {CATEGORIAS.map((c) => (
+                  <SelectItem key={c.v} value={c.v}>
+                    {c.l}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -119,9 +125,19 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
           </div>
           <Button asChild disabled={enviando} className="relative">
             <label>
-              {enviando ? <Loader2 className="size-4 animate-spin" /> : <Upload className="size-4" />}
+              {enviando ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <Upload className="size-4" />
+              )}
               Enviar arquivo
-              <input type="file" accept=".pdf,.jpg,.jpeg,.png" className="sr-only" onChange={onFile} disabled={enviando} />
+              <input
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png"
+                className="sr-only"
+                onChange={onFile}
+                disabled={enviando}
+              />
             </label>
           </Button>
         </CardContent>
@@ -134,22 +150,41 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
       ) : (
         <div className="space-y-2">
           {docs!.map((d: any) => (
-            <div key={d.id} className="flex items-center gap-3 rounded-lg border border-border bg-card p-3">
+            <div
+              key={d.id}
+              className="flex items-center gap-3 rounded-lg border border-border bg-card p-3"
+            >
               <FileText className="size-5 shrink-0 text-muted-foreground" />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium text-foreground">{d.nome_arquivo}</p>
                 <p className="text-xs text-muted-foreground">
-                  {CATEGORIAS.find((c) => c.v === d.categoria)?.l} · {d.tipo_documento} · v{d.versao}
+                  {CATEGORIAS.find((c) => c.v === d.categoria)?.l} · {d.tipo_documento} · v
+                  {d.versao}
                 </p>
               </div>
               <ToneBadge tone={statusTone[d.status] ?? "muted"}>{d.status}</ToneBadge>
-              <Button size="icon" variant="ghost" onClick={() => baixar(d.storage_path)} title="Baixar">
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={() => baixar(d.storage_path)}
+                title="Baixar"
+              >
                 <Download className="size-4" />
               </Button>
-              <Button size="icon" variant="ghost" onClick={() => marcar(d.id, "aprovado")} title="Aprovar">
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={() => marcar(d.id, "aprovado")}
+                title="Aprovar"
+              >
                 <Check className="size-4 text-success" />
               </Button>
-              <Button size="icon" variant="ghost" onClick={() => marcar(d.id, "reprovado")} title="Reprovar">
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={() => marcar(d.id, "reprovado")}
+                title="Reprovar"
+              >
                 <X className="size-4 text-destructive" />
               </Button>
             </div>

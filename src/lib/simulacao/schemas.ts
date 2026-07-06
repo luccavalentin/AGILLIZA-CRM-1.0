@@ -2,18 +2,24 @@ import { z } from "zod";
 import { validarCpfCnpj } from "./format";
 
 /** Schema do wizard inicial (paridade com o site público). */
-export const wizardSchema = z.object({
-  produto: z.enum(["financiamento_imobiliario", "home_equity"]),
-  valor_imovel: z.number().positive("Informe o valor do imóvel"),
-  valor_entrada: z.number().min(0),
-  valor_financiamento: z.number().positive("Informe o valor do crédito"),
-  possui_imovel_escolhido: z.boolean(),
-  data_nascimento: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data inválida"),
-  prazo_meses: z.number().int().min(60, "Prazo mínimo 60 meses").max(420, "Prazo máximo 420 meses"),
-}).refine((d) => d.valor_entrada < d.valor_imovel, {
-  message: "A entrada deve ser menor que o valor do imóvel",
-  path: ["valor_entrada"],
-});
+export const wizardSchema = z
+  .object({
+    produto: z.enum(["financiamento_imobiliario", "home_equity"]),
+    valor_imovel: z.number().positive("Informe o valor do imóvel"),
+    valor_entrada: z.number().min(0),
+    valor_financiamento: z.number().positive("Informe o valor do crédito"),
+    possui_imovel_escolhido: z.boolean(),
+    data_nascimento: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data inválida"),
+    prazo_meses: z
+      .number()
+      .int()
+      .min(60, "Prazo mínimo 60 meses")
+      .max(420, "Prazo máximo 420 meses"),
+  })
+  .refine((d) => d.valor_entrada < d.valor_imovel, {
+    message: "A entrada deve ser menor que o valor do imóvel",
+    path: ["valor_entrada"],
+  });
 
 export type WizardDados = z.infer<typeof wizardSchema>;
 
@@ -58,8 +64,12 @@ export const completaSchema = z.object({
   // Bancos
   bancos_ids: z.array(z.string().uuid()).min(1, "Selecione ao menos um banco"),
   // Consentimentos
-  consentimento_lgpd: z.literal(true, { errorMap: () => ({ message: "É necessário aceitar o consentimento LGPD" }) }),
-  consentimento_scr: z.literal(true, { errorMap: () => ({ message: "É necessário autorizar a consulta ao SCR/Bacen" }) }),
+  consentimento_lgpd: z.literal(true, {
+    errorMap: () => ({ message: "É necessário aceitar o consentimento LGPD" }),
+  }),
+  consentimento_scr: z.literal(true, {
+    errorMap: () => ({ message: "É necessário autorizar a consulta ao SCR/Bacen" }),
+  }),
 });
 
 export type CompletaDados = z.infer<typeof completaSchema>;

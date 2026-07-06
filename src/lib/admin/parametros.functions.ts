@@ -96,9 +96,7 @@ export const salvarParametros = createServerFn({ method: "POST" })
         .eq("id", existente.id);
       if (error) throw error;
     } else {
-      const { error } = await supabase
-        .from("parametros_globais")
-        .insert(payload);
+      const { error } = await supabase.from("parametros_globais").insert(payload);
       if (error) throw error;
     }
     return { ok: true };

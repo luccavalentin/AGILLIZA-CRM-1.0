@@ -26,7 +26,9 @@ export function ReportShell({
     <div className="mx-auto w-full max-w-7xl space-y-5 p-4 md:p-6">
       <header className="flex flex-col gap-3 border-b border-border pb-4 md:flex-row md:items-end md:justify-between">
         <div className="min-w-0">
-          <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">Relatórios · {modulo}</p>
+          <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
+            Relatórios · {modulo}
+          </p>
           <h1 className="mt-1 text-[26px] font-semibold leading-tight text-foreground">{titulo}</h1>
           <p className="mt-1 text-sm text-muted-foreground">{descricao}</p>
           <p className="mt-2 text-xs tabular-nums text-muted-foreground">{meta}</p>
@@ -49,7 +51,9 @@ export function ReportShell({
 export function ReportSection({ titulo, children }: { titulo: string; children: ReactNode }) {
   return (
     <section className="space-y-3">
-      <h2 className="border-b border-border pb-1.5 text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">{titulo}</h2>
+      <h2 className="border-b border-border pb-1.5 text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+        {titulo}
+      </h2>
       {children}
     </section>
   );

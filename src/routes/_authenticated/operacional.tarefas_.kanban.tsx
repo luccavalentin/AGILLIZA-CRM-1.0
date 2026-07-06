@@ -6,7 +6,10 @@ import { toast } from "sonner";
 import { ArrowLeft } from "lucide-react";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import {
-  listarTarefas, moverStatusTarefa, transicaoTarefaPermitida, type TarefaStatus,
+  listarTarefas,
+  moverStatusTarefa,
+  transicaoTarefaPermitida,
+  type TarefaStatus,
 } from "@/lib/operacional/tarefas.functions";
 import { PRIORIDADE, statusTarefa, TONE_BAR } from "@/components/operacional/status";
 import { Button } from "@/components/ui/button";
@@ -36,7 +39,9 @@ function Pagina() {
     setArrastando(null);
     if (status === coluna) return;
     if (!transicaoTarefaPermitida(status, coluna)) {
-      toast.error(`Transição inválida: ${statusTarefa(status).label} → ${statusTarefa(coluna).label}.`);
+      toast.error(
+        `Transição inválida: ${statusTarefa(status).label} → ${statusTarefa(coluna).label}.`,
+      );
       return;
     }
     try {
@@ -57,7 +62,9 @@ function Pagina() {
           <p className="text-sm text-muted-foreground">Arraste os cards entre etapas permitidas.</p>
         </div>
         <Button asChild variant="ghost" size="sm">
-          <Link to="/operacional/tarefas"><ArrowLeft className="mr-1 h-4 w-4" /> Lista</Link>
+          <Link to="/operacional/tarefas">
+            <ArrowLeft className="mr-1 h-4 w-4" /> Lista
+          </Link>
         </Button>
       </div>
 
@@ -75,7 +82,9 @@ function Pagina() {
               <div className={cn("h-[3px] rounded-t-lg", TONE_BAR[cfg.tone])} />
               <div className="flex items-center justify-between px-3 py-2">
                 <span className="text-sm font-medium text-foreground">{cfg.label}</span>
-                <span className="text-xs text-muted-foreground tabular-nums">{doStatus.length}</span>
+                <span className="text-xs text-muted-foreground tabular-nums">
+                  {doStatus.length}
+                </span>
               </div>
               <div className="space-y-2 p-2">
                 {doStatus.map((t) => (
@@ -89,8 +98,12 @@ function Pagina() {
                     <div className={cn("h-[2px]", PRIORIDADE[t.prioridade].bar)} />
                     <div className="p-3">
                       <p className="text-sm font-medium text-foreground">{t.titulo}</p>
-                      {t.nome_cliente && <p className="text-xs text-muted-foreground">{t.nome_cliente}</p>}
-                      <p className="mt-1 text-xs text-muted-foreground">{t.nome_responsavel ?? "—"}</p>
+                      {t.nome_cliente && (
+                        <p className="text-xs text-muted-foreground">{t.nome_cliente}</p>
+                      )}
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {t.nome_responsavel ?? "—"}
+                      </p>
                     </div>
                   </div>
                 ))}

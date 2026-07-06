@@ -18,11 +18,7 @@ export function ThemeToggle() {
       aria-label={theme === "dark" ? "Ativar tema claro" : "Ativar tema escuro"}
       onClick={() => setThemeState(toggleTheme())}
     >
-      {theme === "dark" ? (
-        <Sun className="h-5 w-5" />
-      ) : (
-        <Moon className="h-5 w-5" />
-      )}
+      {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
     </Button>
   );
 }

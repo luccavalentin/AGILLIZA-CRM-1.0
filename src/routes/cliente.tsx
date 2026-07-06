@@ -116,10 +116,7 @@ function ClienteLayout() {
                 (notificacoes ?? []).slice(0, 8).map((n) => (
                   <div
                     key={n.id}
-                    className={cn(
-                      "rounded-md px-2 py-2 text-sm",
-                      !n.lida && "bg-accent",
-                    )}
+                    className={cn("rounded-md px-2 py-2 text-sm", !n.lida && "bg-accent")}
                   >
                     <p className="font-medium text-foreground">{n.titulo}</p>
                     {n.corpo && <p className="text-muted-foreground">{n.corpo}</p>}

@@ -2,7 +2,17 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Plus, Copy, Pencil, CheckCircle2, Clock, Wallet, TrendingDown, Coins, Landmark } from "lucide-react";
+import {
+  Plus,
+  Copy,
+  Pencil,
+  CheckCircle2,
+  Clock,
+  Wallet,
+  TrendingDown,
+  Coins,
+  Landmark,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -10,19 +20,39 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import {
-  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import { ConfirmDelete } from "@/components/shared/confirm-delete";
 import { formatBRL, maskBRLInput, parseBRL } from "@/lib/simulacao/format";
 import {
-  obterControleMatriculas, salvarPixMatriculas, criarCreditoMatricula, excluirCreditoMatricula,
-  criarSolicitacaoMatricula, atualizarSolicitacaoMatricula, alternarReembolsoMatricula, excluirSolicitacaoMatricula,
+  obterControleMatriculas,
+  salvarPixMatriculas,
+  criarCreditoMatricula,
+  excluirCreditoMatricula,
+  criarSolicitacaoMatricula,
+  atualizarSolicitacaoMatricula,
+  alternarReembolsoMatricula,
+  excluirSolicitacaoMatricula,
   type MatriculaSolicitacao,
 } from "@/lib/matriculas/matriculas.functions";
 
@@ -42,14 +72,18 @@ function Pagina() {
 
   const invalidar = () => qc.invalidateQueries({ queryKey: ["matriculas"] });
 
-  if (isLoading || !data) return <div className="p-6 text-sm text-muted-foreground">Carregando…</div>;
+  if (isLoading || !data)
+    return <div className="p-6 text-sm text-muted-foreground">Carregando…</div>;
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-6 p-4 md:p-6">
       <div>
-        <h1 className="text-xl font-semibold text-foreground">Controle de Solicitação de Matrículas</h1>
+        <h1 className="text-xl font-semibold text-foreground">
+          Controle de Solicitação de Matrículas
+        </h1>
         <p className="text-sm text-muted-foreground">
-          Matrículas tiradas e pagas pela Agilliza a pedido dos corretores — para posterior reembolso.
+          Matrículas tiradas e pagas pela Agilliza a pedido dos corretores — para posterior
+          reembolso.
         </p>
       </div>
 
@@ -60,32 +94,75 @@ function Pagina() {
       />
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Kpi icon={<Coins className="h-4 w-4" />} rotulo="Créditos comprados" valor={formatBRL(data.total_creditos)} />
-        <Kpi icon={<TrendingDown className="h-4 w-4" />} rotulo="Total gasto" valor={formatBRL(data.total_gasto)} />
-        <Kpi icon={<Clock className="h-4 w-4" />} rotulo="A reembolsar" valor={formatBRL(data.total_a_reembolsar)} destaque />
-        <Kpi icon={<Wallet className="h-4 w-4" />} rotulo="Saldo de crédito" valor={formatBRL(data.saldo)} />
+        <Kpi
+          icon={<Coins className="h-4 w-4" />}
+          rotulo="Créditos comprados"
+          valor={formatBRL(data.total_creditos)}
+        />
+        <Kpi
+          icon={<TrendingDown className="h-4 w-4" />}
+          rotulo="Total gasto"
+          valor={formatBRL(data.total_gasto)}
+        />
+        <Kpi
+          icon={<Clock className="h-4 w-4" />}
+          rotulo="A reembolsar"
+          valor={formatBRL(data.total_a_reembolsar)}
+          destaque
+        />
+        <Kpi
+          icon={<Wallet className="h-4 w-4" />}
+          rotulo="Saldo de crédito"
+          valor={formatBRL(data.saldo)}
+        />
       </div>
 
-      <Solicitacoes lista={data.solicitacoes} totalCreditos={data.total_creditos} onMudou={invalidar} />
+      <Solicitacoes
+        lista={data.solicitacoes}
+        totalCreditos={data.total_creditos}
+        onMudou={invalidar}
+      />
       <Creditos lista={data.creditos} onMudou={invalidar} />
     </div>
   );
 }
 
-function Kpi({ icon, rotulo, valor, destaque }: { icon: React.ReactNode; rotulo: string; valor: string; destaque?: boolean }) {
+function Kpi({
+  icon,
+  rotulo,
+  valor,
+  destaque,
+}: {
+  icon: React.ReactNode;
+  rotulo: string;
+  valor: string;
+  destaque?: boolean;
+}) {
   return (
     <Card className="p-4">
       <div className="flex items-center gap-2 text-muted-foreground">
         {icon}
         <span className="text-xs uppercase tracking-wide">{rotulo}</span>
       </div>
-      <p className={`mt-1 text-lg font-semibold tabular-nums ${destaque ? "text-primary" : "text-foreground"}`}>{valor}</p>
+      <p
+        className={`mt-1 text-lg font-semibold tabular-nums ${destaque ? "text-primary" : "text-foreground"}`}
+      >
+        {valor}
+      </p>
     </Card>
   );
 }
 
 /** Faixa azul com o Pix da empresa, editável. */
-function PixBanner({ chave, titular, onSalvo }: { chave: string | null; titular: string | null; onSalvo: () => void }) {
+function PixBanner({
+  chave,
+  titular,
+  onSalvo,
+}: {
+  chave: string | null;
+  titular: string | null;
+  onSalvo: () => void;
+}) {
   const [open, setOpen] = useState(false);
   const [c, setC] = useState(chave ?? "");
   const [t, setT] = useState(titular ?? "");
@@ -94,7 +171,9 @@ function PixBanner({ chave, titular, onSalvo }: { chave: string | null; titular:
   async function salvar() {
     setSalvando(true);
     try {
-      await salvarPixMatriculas({ data: { pix_chave: c.trim() || null, pix_titular: t.trim() || null } });
+      await salvarPixMatriculas({
+        data: { pix_chave: c.trim() || null, pix_titular: t.trim() || null },
+      });
       toast.success("Pix atualizado.");
       setOpen(false);
       onSalvo();
@@ -132,23 +211,39 @@ function PixBanner({ chave, titular, onSalvo }: { chave: string | null; titular:
           )}
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button variant="secondary" size="sm"><Pencil className="mr-1 h-4 w-4" /> Editar</Button>
+              <Button variant="secondary" size="sm">
+                <Pencil className="mr-1 h-4 w-4" /> Editar
+              </Button>
             </DialogTrigger>
             <DialogContent>
-              <DialogHeader><DialogTitle>Pix da empresa</DialogTitle></DialogHeader>
+              <DialogHeader>
+                <DialogTitle>Pix da empresa</DialogTitle>
+              </DialogHeader>
               <div className="space-y-3">
                 <div className="space-y-1">
                   <Label>Chave Pix</Label>
-                  <Input value={c} onChange={(e) => setC(e.target.value)} placeholder="CNPJ, e-mail, telefone ou aleatória" />
+                  <Input
+                    value={c}
+                    onChange={(e) => setC(e.target.value)}
+                    placeholder="CNPJ, e-mail, telefone ou aleatória"
+                  />
                 </div>
                 <div className="space-y-1">
                   <Label>Titular</Label>
-                  <Input value={t} onChange={(e) => setT(e.target.value)} placeholder="Nome do titular da conta" />
+                  <Input
+                    value={t}
+                    onChange={(e) => setT(e.target.value)}
+                    placeholder="Nome do titular da conta"
+                  />
                 </div>
               </div>
               <DialogFooter>
-                <Button variant="ghost" onClick={() => setOpen(false)}>Cancelar</Button>
-                <Button onClick={salvar} disabled={salvando}>{salvando ? "Salvando…" : "Salvar"}</Button>
+                <Button variant="ghost" onClick={() => setOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button onClick={salvar} disabled={salvando}>
+                  {salvando ? "Salvando…" : "Salvar"}
+                </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -158,7 +253,15 @@ function PixBanner({ chave, titular, onSalvo }: { chave: string | null; titular:
   );
 }
 
-function Solicitacoes({ lista, totalCreditos, onMudou }: { lista: MatriculaSolicitacao[]; totalCreditos: number; onMudou: () => void }) {
+function Solicitacoes({
+  lista,
+  totalCreditos,
+  onMudou,
+}: {
+  lista: MatriculaSolicitacao[];
+  totalCreditos: number;
+  onMudou: () => void;
+}) {
   const [busca, setBusca] = useState("");
   const [de, setDe] = useState("");
   const [ate, setAte] = useState("");
@@ -175,7 +278,9 @@ function Solicitacoes({ lista, totalCreditos, onMudou }: { lista: MatriculaSolic
 
   // Saldo acumulado (crédito − gastos acumulados) calculado do mais antigo ao mais novo.
   const saldoPorId = useMemo(() => {
-    const cronologica = [...lista].sort((a, b) => a.data_solicitacao.localeCompare(b.data_solicitacao));
+    const cronologica = [...lista].sort((a, b) =>
+      a.data_solicitacao.localeCompare(b.data_solicitacao),
+    );
     const mapa = new Map<string, number>();
     let acumulado = 0;
     for (const s of cronologica) {
@@ -193,7 +298,8 @@ function Solicitacoes({ lista, totalCreditos, onMudou }: { lista: MatriculaSolic
       if (reembolso === "sim" && !s.reembolsado) return false;
       if (reembolso === "nao" && s.reembolsado) return false;
       if (q) {
-        const alvo = `${s.solicitante} ${s.corretor ?? ""} ${s.cliente ?? ""} ${s.numero_matricula ?? ""}`.toLowerCase();
+        const alvo =
+          `${s.solicitante} ${s.corretor ?? ""} ${s.cliente ?? ""} ${s.numero_matricula ?? ""}`.toLowerCase();
         if (!alvo.includes(q)) return false;
       }
       return true;
@@ -201,7 +307,10 @@ function Solicitacoes({ lista, totalCreditos, onMudou }: { lista: MatriculaSolic
   }, [lista, busca, de, ate, reembolso]);
 
   function limpar() {
-    setBusca(""); setDe(""); setAte(""); setReembolso("todos");
+    setBusca("");
+    setDe("");
+    setAte("");
+    setReembolso("todos");
   }
 
   const temFiltro = busca || de || ate || reembolso !== "todos";
@@ -216,7 +325,11 @@ function Solicitacoes({ lista, totalCreditos, onMudou }: { lista: MatriculaSolic
       <div className="grid grid-cols-1 gap-3 border-b border-border p-4 sm:grid-cols-2 lg:grid-cols-5">
         <div className="space-y-1 lg:col-span-2">
           <Label className="text-xs">Buscar (solicitante, corretor, cliente, matrícula)</Label>
-          <Input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Digite para filtrar…" />
+          <Input
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            placeholder="Digite para filtrar…"
+          />
         </div>
         <div className="space-y-1">
           <Label className="text-xs">De</Label>
@@ -229,7 +342,9 @@ function Solicitacoes({ lista, totalCreditos, onMudou }: { lista: MatriculaSolic
         <div className="space-y-1">
           <Label className="text-xs">Reembolso</Label>
           <Select value={reembolso} onValueChange={(v) => setReembolso(v as typeof reembolso)}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="todos">Todos</SelectItem>
               <SelectItem value="sim">Reembolsados</SelectItem>
@@ -239,7 +354,9 @@ function Solicitacoes({ lista, totalCreditos, onMudou }: { lista: MatriculaSolic
         </div>
         {temFiltro && (
           <div className="flex items-end lg:col-span-5">
-            <Button variant="ghost" size="sm" onClick={limpar}>Limpar filtros</Button>
+            <Button variant="ghost" size="sm" onClick={limpar}>
+              Limpar filtros
+            </Button>
           </div>
         )}
       </div>
@@ -262,30 +379,48 @@ function Solicitacoes({ lista, totalCreditos, onMudou }: { lista: MatriculaSolic
           </TableHeader>
           <TableBody>
             {filtrada.length === 0 && (
-              <TableRow><TableCell colSpan={10} className="py-8 text-center text-sm text-muted-foreground">Nenhuma solicitação encontrada.</TableCell></TableRow>
+              <TableRow>
+                <TableCell colSpan={10} className="py-8 text-center text-sm text-muted-foreground">
+                  Nenhuma solicitação encontrada.
+                </TableCell>
+              </TableRow>
             )}
             {filtrada.map((s) => (
               <TableRow key={s.id}>
-                <TableCell className="tabular-nums">{new Date(s.data_solicitacao + "T00:00:00").toLocaleDateString("pt-BR")}</TableCell>
+                <TableCell className="tabular-nums">
+                  {new Date(s.data_solicitacao + "T00:00:00").toLocaleDateString("pt-BR")}
+                </TableCell>
                 <TableCell className="font-medium">{s.solicitante}</TableCell>
                 <TableCell>{s.corretor ?? "—"}</TableCell>
-                <TableCell className="max-w-[220px] truncate" title={s.cliente ?? undefined}>{s.cliente ?? "—"}</TableCell>
-                <TableCell className="tabular-nums text-muted-foreground">{s.numero_matricula ?? "—"}</TableCell>
+                <TableCell className="max-w-[220px] truncate" title={s.cliente ?? undefined}>
+                  {s.cliente ?? "—"}
+                </TableCell>
+                <TableCell className="tabular-nums text-muted-foreground">
+                  {s.numero_matricula ?? "—"}
+                </TableCell>
                 <TableCell className="text-right tabular-nums">{formatBRL(s.valor)}</TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
                     <Switch checked={s.reembolsado} onCheckedChange={(v) => toggle(s.id, v)} />
                     {s.reembolsado ? (
-                      <Badge variant="secondary" className="gap-1"><CheckCircle2 className="h-3 w-3" /> Sim</Badge>
+                      <Badge variant="secondary" className="gap-1">
+                        <CheckCircle2 className="h-3 w-3" /> Sim
+                      </Badge>
                     ) : (
-                      <Badge variant="outline" className="gap-1"><Clock className="h-3 w-3" /> Não</Badge>
+                      <Badge variant="outline" className="gap-1">
+                        <Clock className="h-3 w-3" /> Não
+                      </Badge>
                     )}
                   </div>
                 </TableCell>
                 <TableCell className="tabular-nums text-muted-foreground">
-                  {s.data_pagto_reembolso ? new Date(s.data_pagto_reembolso + "T00:00:00").toLocaleDateString("pt-BR") : "—"}
+                  {s.data_pagto_reembolso
+                    ? new Date(s.data_pagto_reembolso + "T00:00:00").toLocaleDateString("pt-BR")
+                    : "—"}
                 </TableCell>
-                <TableCell className={`text-right tabular-nums ${(saldoPorId.get(s.id) ?? 0) < 0 ? "text-destructive" : ""}`}>
+                <TableCell
+                  className={`text-right tabular-nums ${(saldoPorId.get(s.id) ?? 0) < 0 ? "text-destructive" : ""}`}
+                >
                   {formatBRL(saldoPorId.get(s.id) ?? 0)}
                 </TableCell>
                 <TableCell className="text-right">
@@ -309,7 +444,13 @@ function Solicitacoes({ lista, totalCreditos, onMudou }: { lista: MatriculaSolic
   );
 }
 
-function SolicitacaoDialog({ onMudou, inicial }: { onMudou: () => void; inicial?: MatriculaSolicitacao }) {
+function SolicitacaoDialog({
+  onMudou,
+  inicial,
+}: {
+  onMudou: () => void;
+  inicial?: MatriculaSolicitacao;
+}) {
   const [open, setOpen] = useState(false);
   const [data, setData] = useState(inicial?.data_solicitacao ?? hoje());
   const [solicitante, setSolicitante] = useState(inicial?.solicitante ?? "");
@@ -335,7 +476,10 @@ function SolicitacaoDialog({ onMudou, inicial }: { onMudou: () => void; inicial?
   }
 
   async function salvar() {
-    if (!solicitante.trim()) { toast.error("Informe o solicitante."); return; }
+    if (!solicitante.trim()) {
+      toast.error("Informe o solicitante.");
+      return;
+    }
     setSalvando(true);
     try {
       const payload = {
@@ -346,7 +490,7 @@ function SolicitacaoDialog({ onMudou, inicial }: { onMudou: () => void; inicial?
         numero_matricula: numero.trim() || null,
         valor: parseBRL(valor),
         reembolsado,
-        data_pagto_reembolso: reembolsado ? (dataPagto || null) : null,
+        data_pagto_reembolso: reembolsado ? dataPagto || null : null,
         observacao: obs.trim() || null,
       };
       if (inicial) await atualizarSolicitacaoMatricula({ data: { ...payload, id: inicial.id } });
@@ -362,16 +506,28 @@ function SolicitacaoDialog({ onMudou, inicial }: { onMudou: () => void; inicial?
   }
 
   return (
-    <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (o) reset(); }}>
+    <Dialog
+      open={open}
+      onOpenChange={(o) => {
+        setOpen(o);
+        if (o) reset();
+      }}
+    >
       <DialogTrigger asChild>
         {inicial ? (
-          <Button variant="ghost" size="icon" aria-label="Editar"><Pencil className="h-4 w-4" /></Button>
+          <Button variant="ghost" size="icon" aria-label="Editar">
+            <Pencil className="h-4 w-4" />
+          </Button>
         ) : (
-          <Button size="sm"><Plus className="mr-1 h-4 w-4" /> Nova solicitação</Button>
+          <Button size="sm">
+            <Plus className="mr-1 h-4 w-4" /> Nova solicitação
+          </Button>
         )}
       </DialogTrigger>
       <DialogContent>
-        <DialogHeader><DialogTitle>{inicial ? "Editar solicitação" : "Nova solicitação"}</DialogTitle></DialogHeader>
+        <DialogHeader>
+          <DialogTitle>{inicial ? "Editar solicitação" : "Nova solicitação"}</DialogTitle>
+        </DialogHeader>
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
@@ -380,26 +536,47 @@ function SolicitacaoDialog({ onMudou, inicial }: { onMudou: () => void; inicial?
             </div>
             <div className="space-y-1">
               <Label>Valor pago</Label>
-              <Input inputMode="decimal" value={valor} onChange={(e) => setValor(e.target.value)} placeholder="0,00" />
+              <Input
+                inputMode="decimal"
+                value={valor}
+                onChange={(e) => setValor(e.target.value)}
+                placeholder="0,00"
+              />
             </div>
           </div>
           <div className="space-y-1">
             <Label>Solicitante</Label>
-            <Input value={solicitante} onChange={(e) => setSolicitante(e.target.value)} placeholder="Quem pediu (equipe Agilliza)" />
+            <Input
+              value={solicitante}
+              onChange={(e) => setSolicitante(e.target.value)}
+              placeholder="Quem pediu (equipe Agilliza)"
+            />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <Label>Corretor</Label>
-              <Input value={corretor} onChange={(e) => setCorretor(e.target.value)} placeholder="Nome do corretor" />
+              <Input
+                value={corretor}
+                onChange={(e) => setCorretor(e.target.value)}
+                placeholder="Nome do corretor"
+              />
             </div>
             <div className="space-y-1">
               <Label>Nº da matrícula</Label>
-              <Input value={numero} onChange={(e) => setNumero(e.target.value)} placeholder="Ex.: 52592" />
+              <Input
+                value={numero}
+                onChange={(e) => setNumero(e.target.value)}
+                placeholder="Ex.: 52592"
+              />
             </div>
           </div>
           <div className="space-y-1">
             <Label>Cliente</Label>
-            <Input value={cliente} onChange={(e) => setCliente(e.target.value)} placeholder="Nome do cliente" />
+            <Input
+              value={cliente}
+              onChange={(e) => setCliente(e.target.value)}
+              placeholder="Nome do cliente"
+            />
           </div>
           <div className="space-y-1">
             <Label>Observação</Label>
@@ -407,7 +584,9 @@ function SolicitacaoDialog({ onMudou, inicial }: { onMudou: () => void; inicial?
           </div>
           <div className="flex items-center gap-2">
             <Switch checked={reembolsado} onCheckedChange={setReembolsado} />
-            <Label className="cursor-pointer" onClick={() => setReembolsado((v) => !v)}>Reembolsado</Label>
+            <Label className="cursor-pointer" onClick={() => setReembolsado((v) => !v)}>
+              Reembolsado
+            </Label>
           </div>
           {reembolsado && (
             <div className="space-y-1">
@@ -417,15 +596,25 @@ function SolicitacaoDialog({ onMudou, inicial }: { onMudou: () => void; inicial?
           )}
         </div>
         <DialogFooter>
-          <Button variant="ghost" onClick={() => setOpen(false)}>Cancelar</Button>
-          <Button onClick={salvar} disabled={salvando}>{salvando ? "Salvando…" : "Salvar"}</Button>
+          <Button variant="ghost" onClick={() => setOpen(false)}>
+            Cancelar
+          </Button>
+          <Button onClick={salvar} disabled={salvando}>
+            {salvando ? "Salvando…" : "Salvar"}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
 
-function Creditos({ lista, onMudou }: { lista: { id: string; data: string; valor: number; descricao: string | null }[]; onMudou: () => void }) {
+function Creditos({
+  lista,
+  onMudou,
+}: {
+  lista: { id: string; data: string; valor: number; descricao: string | null }[];
+  onMudou: () => void;
+}) {
   const total = useMemo(() => lista.reduce((s, c) => s + Number(c.valor), 0), [lista]);
   return (
     <Card className="p-0">
@@ -448,11 +637,17 @@ function Creditos({ lista, onMudou }: { lista: { id: string; data: string; valor
           </TableHeader>
           <TableBody>
             {lista.length === 0 && (
-              <TableRow><TableCell colSpan={4} className="py-8 text-center text-sm text-muted-foreground">Nenhuma compra de crédito registrada.</TableCell></TableRow>
+              <TableRow>
+                <TableCell colSpan={4} className="py-8 text-center text-sm text-muted-foreground">
+                  Nenhuma compra de crédito registrada.
+                </TableCell>
+              </TableRow>
             )}
             {lista.map((c) => (
               <TableRow key={c.id}>
-                <TableCell className="tabular-nums">{new Date(c.data + "T00:00:00").toLocaleDateString("pt-BR")}</TableCell>
+                <TableCell className="tabular-nums">
+                  {new Date(c.data + "T00:00:00").toLocaleDateString("pt-BR")}
+                </TableCell>
                 <TableCell>{c.descricao ?? "Compra de crédito"}</TableCell>
                 <TableCell className="text-right tabular-nums">{formatBRL(c.valor)}</TableCell>
                 <TableCell className="text-right">
@@ -483,10 +678,14 @@ function CreditoDialog({ onMudou }: { onMudou: () => void }) {
   async function salvar() {
     setSalvando(true);
     try {
-      await criarCreditoMatricula({ data: { data, valor: parseBRL(valor), descricao: descricao.trim() || null } });
+      await criarCreditoMatricula({
+        data: { data, valor: parseBRL(valor), descricao: descricao.trim() || null },
+      });
       toast.success("Crédito registrado.");
       setOpen(false);
-      setValor("0,00"); setDescricao(""); setData(hoje());
+      setValor("0,00");
+      setDescricao("");
+      setData(hoje());
       onMudou();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Falha ao salvar.");
@@ -498,10 +697,14 @@ function CreditoDialog({ onMudou }: { onMudou: () => void }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="secondary" size="sm"><Plus className="mr-1 h-4 w-4" /> Adicionar crédito</Button>
+        <Button variant="secondary" size="sm">
+          <Plus className="mr-1 h-4 w-4" /> Adicionar crédito
+        </Button>
       </DialogTrigger>
       <DialogContent>
-        <DialogHeader><DialogTitle>Compra de crédito</DialogTitle></DialogHeader>
+        <DialogHeader>
+          <DialogTitle>Compra de crédito</DialogTitle>
+        </DialogHeader>
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
@@ -510,17 +713,30 @@ function CreditoDialog({ onMudou }: { onMudou: () => void }) {
             </div>
             <div className="space-y-1">
               <Label>Valor</Label>
-              <Input inputMode="decimal" value={valor} onChange={(e) => setValor(e.target.value)} placeholder="0,00" />
+              <Input
+                inputMode="decimal"
+                value={valor}
+                onChange={(e) => setValor(e.target.value)}
+                placeholder="0,00"
+              />
             </div>
           </div>
           <div className="space-y-1">
             <Label>Descrição</Label>
-            <Input value={descricao} onChange={(e) => setDescricao(e.target.value)} placeholder="Opcional" />
+            <Input
+              value={descricao}
+              onChange={(e) => setDescricao(e.target.value)}
+              placeholder="Opcional"
+            />
           </div>
         </div>
         <DialogFooter>
-          <Button variant="ghost" onClick={() => setOpen(false)}>Cancelar</Button>
-          <Button onClick={salvar} disabled={salvando}>{salvando ? "Salvando…" : "Salvar"}</Button>
+          <Button variant="ghost" onClick={() => setOpen(false)}>
+            Cancelar
+          </Button>
+          <Button onClick={salvar} disabled={salvando}>
+            {salvando ? "Salvando…" : "Salvar"}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

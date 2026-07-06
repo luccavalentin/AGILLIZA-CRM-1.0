@@ -24,7 +24,12 @@ export const Route = createFileRoute("/_authenticated/operacional/tarefas")({
 
 function fmtData(iso: string | null): string {
   if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+  return new Date(iso).toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 function Pagina() {
@@ -50,7 +55,6 @@ function Pagina() {
     }
   }
 
-
   return (
     <div className="space-y-4 p-4 md:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -60,13 +64,19 @@ function Pagina() {
         </div>
         <div className="flex items-center gap-2">
           <Button asChild variant="outline" size="sm">
-            <Link to="/operacional/tarefas/calendario"><CalendarDays className="mr-1 h-4 w-4" /> Calendário</Link>
+            <Link to="/operacional/tarefas/calendario">
+              <CalendarDays className="mr-1 h-4 w-4" /> Calendário
+            </Link>
           </Button>
           <Button asChild variant="outline" size="sm">
-            <Link to="/operacional/tarefas/equipe"><Users className="mr-1 h-4 w-4" /> Equipe</Link>
+            <Link to="/operacional/tarefas/equipe">
+              <Users className="mr-1 h-4 w-4" /> Equipe
+            </Link>
           </Button>
           <Button asChild variant="outline" size="sm">
-            <Link to="/operacional/tarefas/kanban"><KanbanSquare className="mr-1 h-4 w-4" /> Kanban</Link>
+            <Link to="/operacional/tarefas/kanban">
+              <KanbanSquare className="mr-1 h-4 w-4" /> Kanban
+            </Link>
           </Button>
           <NovaTarefaDialog onCriada={refetch} />
         </div>
@@ -79,12 +89,19 @@ function Pagina() {
             <TabsTrigger value="minhas">Minhas</TabsTrigger>
           </TabsList>
         </Tabs>
-        <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por título…" className="max-w-xs" />
+        <Input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Buscar por título…"
+          className="max-w-xs"
+        />
       </div>
 
       <div className="overflow-hidden rounded-lg border border-border">
         {itens.length === 0 ? (
-          <p className="p-8 text-center text-sm text-muted-foreground">Nenhuma tarefa encontrada.</p>
+          <p className="p-8 text-center text-sm text-muted-foreground">
+            Nenhuma tarefa encontrada.
+          </p>
         ) : (
           <table className="w-full text-sm">
             <thead className="bg-muted/50 text-left text-xs text-muted-foreground">
@@ -110,12 +127,25 @@ function Pagina() {
                   <td className="px-3 py-2 font-medium text-foreground">{t.titulo}</td>
                   <td className="px-3 py-2 text-muted-foreground">{t.nome_cliente ?? "—"}</td>
                   <td className="px-3 py-2 text-muted-foreground">{t.nome_responsavel ?? "—"}</td>
-                  <td className="px-3 py-2 tabular-nums text-muted-foreground">{fmtData(t.prazo)}</td>
-                  <td className="px-3 py-2">
-                    <span className={cn("inline-block h-1.5 w-8 rounded-full", PRIORIDADE[t.prioridade].bar)} />
-                    <span className="ml-2 text-xs text-muted-foreground">{PRIORIDADE[t.prioridade].label}</span>
+                  <td className="px-3 py-2 tabular-nums text-muted-foreground">
+                    {fmtData(t.prazo)}
                   </td>
-                  <td className="px-3 py-2"><ToneBadge tone={statusTarefa(t.status).tone}>{statusTarefa(t.status).label}</ToneBadge></td>
+                  <td className="px-3 py-2">
+                    <span
+                      className={cn(
+                        "inline-block h-1.5 w-8 rounded-full",
+                        PRIORIDADE[t.prioridade].bar,
+                      )}
+                    />
+                    <span className="ml-2 text-xs text-muted-foreground">
+                      {PRIORIDADE[t.prioridade].label}
+                    </span>
+                  </td>
+                  <td className="px-3 py-2">
+                    <ToneBadge tone={statusTarefa(t.status).tone}>
+                      {statusTarefa(t.status).label}
+                    </ToneBadge>
+                  </td>
                   <td className="px-3 py-2 text-right" onClick={(e) => e.stopPropagation()}>
                     <ConfirmDelete
                       titulo="Excluir tarefa"

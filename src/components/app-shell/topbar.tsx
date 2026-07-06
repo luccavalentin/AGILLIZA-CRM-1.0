@@ -83,7 +83,12 @@ export function Topbar({
         {showAccountMenu && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="rounded-full" aria-label="Menu da conta">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-full"
+                aria-label="Menu da conta"
+              >
                 <Avatar className="h-8 w-8">
                   <AvatarFallback className="bg-primary text-xs text-primary-foreground">
                     {iniciais(user.nome, user.email)}
@@ -113,7 +118,10 @@ export function Topbar({
                 <Bell className="mr-2 h-4 w-4" /> Notificações
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={onSignOut} className="text-destructive focus:text-destructive">
+              <DropdownMenuItem
+                onClick={onSignOut}
+                className="text-destructive focus:text-destructive"
+              >
                 <LogOut className="mr-2 h-4 w-4" /> Sair
               </DropdownMenuItem>
             </DropdownMenuContent>

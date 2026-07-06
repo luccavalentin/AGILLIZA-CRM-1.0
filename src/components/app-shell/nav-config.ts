@@ -60,10 +60,7 @@ export const navInterno: NavGroup[] = [
   {
     id: "visao-geral",
     label: "Visão Geral",
-    items: [
-      { label: "Painel", icon: Gauge, to: "/visao-geral/painel" },
-
-    ],
+    items: [{ label: "Painel", icon: Gauge, to: "/visao-geral/painel" }],
   },
   {
     id: "crm",
@@ -71,7 +68,12 @@ export const navInterno: NavGroup[] = [
     items: [
       { label: "Clientes", icon: Users, to: "/crm/clientes", perm: { modulo: "crm.clientes" } },
       { label: "Painel", icon: KanbanSquare, to: "/crm/painel", perm: { modulo: "crm.clientes" } },
-      { label: "Parceiros", icon: Handshake, to: "/crm/parceiros", perm: { modulo: "crm.parceiros" } },
+      {
+        label: "Parceiros",
+        icon: Handshake,
+        to: "/crm/parceiros",
+        perm: { modulo: "crm.parceiros" },
+      },
       { label: "Scan IA", icon: ScanLine, to: "/crm/scan-ia", perm: { modulo: "crm.scan_ia" } },
     ],
   },
@@ -79,16 +81,36 @@ export const navInterno: NavGroup[] = [
     id: "operacional",
     label: "Operacional",
     items: [
-      { label: "Painel", icon: Gauge, to: "/operacional/painel", perm: { modulo: "operacional.propostas" } },
+      {
+        label: "Painel",
+        icon: Gauge,
+        to: "/operacional/painel",
+        perm: { modulo: "operacional.propostas" },
+      },
       {
         label: "Simulações",
         icon: Calculator,
         to: "/operacional/simulacoes",
         perm: { modulo: "operacional.simulacoes" },
         children: [
-          { label: "Consultar simulações", icon: Calculator, to: "/operacional/simulacoes", perm: { modulo: "operacional.simulacoes" } },
-          { label: "Simulação rápida", icon: Gauge, to: "/operacional/simulacoes/nova", perm: { modulo: "operacional.simulacoes" } },
-          { label: "Simulação completa", icon: FileText, to: "/operacional/simulacoes/completa", perm: { modulo: "operacional.simulacoes" } },
+          {
+            label: "Consultar simulações",
+            icon: Calculator,
+            to: "/operacional/simulacoes",
+            perm: { modulo: "operacional.simulacoes" },
+          },
+          {
+            label: "Simulação rápida",
+            icon: Gauge,
+            to: "/operacional/simulacoes/nova",
+            perm: { modulo: "operacional.simulacoes" },
+          },
+          {
+            label: "Simulação completa",
+            icon: FileText,
+            to: "/operacional/simulacoes/completa",
+            perm: { modulo: "operacional.simulacoes" },
+          },
         ],
       },
       {
@@ -97,23 +119,57 @@ export const navInterno: NavGroup[] = [
         to: "/operacional/propostas",
         perm: { modulo: "operacional.propostas" },
         children: [
-          { label: "Consultar propostas", icon: FileText, to: "/operacional/propostas", perm: { modulo: "operacional.propostas" } },
-          { label: "Nova proposta", icon: FileSignature, to: "/operacional/propostas/enviar", perm: { modulo: "operacional.propostas" } },
-          { label: "Kanban", icon: KanbanSquare, to: "/operacional/propostas/kanban", perm: { modulo: "operacional.propostas" } },
-
+          {
+            label: "Consultar propostas",
+            icon: FileText,
+            to: "/operacional/propostas",
+            perm: { modulo: "operacional.propostas" },
+          },
+          {
+            label: "Nova proposta",
+            icon: FileSignature,
+            to: "/operacional/propostas/enviar",
+            perm: { modulo: "operacional.propostas" },
+          },
+          {
+            label: "Kanban",
+            icon: KanbanSquare,
+            to: "/operacional/propostas/kanban",
+            perm: { modulo: "operacional.propostas" },
+          },
         ],
       },
 
-      { label: "Contratos", icon: FileSignature, to: "/operacional/contratos", perm: { modulo: "operacional.contratos" } },
-      { label: "Tarefas", icon: ListChecks, to: "/operacional/tarefas", perm: { modulo: "operacional.tarefas" } },
-      { label: "Demandas", icon: Inbox, to: "/operacional/demandas", perm: { modulo: "operacional.demandas" } },
+      {
+        label: "Contratos",
+        icon: FileSignature,
+        to: "/operacional/contratos",
+        perm: { modulo: "operacional.contratos" },
+      },
+      {
+        label: "Tarefas",
+        icon: ListChecks,
+        to: "/operacional/tarefas",
+        perm: { modulo: "operacional.tarefas" },
+      },
+      {
+        label: "Demandas",
+        icon: Inbox,
+        to: "/operacional/demandas",
+        perm: { modulo: "operacional.demandas" },
+      },
     ],
   },
   {
     id: "documentos",
     label: "Documentos",
     items: [
-      { label: "Arquivos", icon: FolderOpen, to: "/documentos", perm: { modulo: "documentos.arquivos" } },
+      {
+        label: "Arquivos",
+        icon: FolderOpen,
+        to: "/documentos",
+        perm: { modulo: "documentos.arquivos" },
+      },
       {
         label: "Formulários",
         icon: FileText,
@@ -134,11 +190,36 @@ export const navInterno: NavGroup[] = [
     id: "financeiro",
     label: "Financeiro",
     items: [
-      { label: "Painel", icon: LineChart, to: "/financeiro/painel", perm: { modulo: "financeiro.painel" } },
-      { label: "Contas a pagar", icon: ArrowUpCircle, to: "/financeiro/contas-a-pagar", perm: { modulo: "financeiro.contas_pagar" } },
-      { label: "Contas a receber", icon: ArrowDownCircle, to: "/financeiro/contas-a-receber", perm: { modulo: "financeiro.contas_receber" } },
-      { label: "Comissões", icon: Percent, to: "/financeiro/comissoes", perm: { modulo: "financeiro.comissoes" } },
-      { label: "Fluxo de caixa", icon: Wallet, to: "/financeiro/fluxo-de-caixa", perm: { modulo: "financeiro.fluxo_caixa" } },
+      {
+        label: "Painel",
+        icon: LineChart,
+        to: "/financeiro/painel",
+        perm: { modulo: "financeiro.painel" },
+      },
+      {
+        label: "Contas a pagar",
+        icon: ArrowUpCircle,
+        to: "/financeiro/contas-a-pagar",
+        perm: { modulo: "financeiro.contas_pagar" },
+      },
+      {
+        label: "Contas a receber",
+        icon: ArrowDownCircle,
+        to: "/financeiro/contas-a-receber",
+        perm: { modulo: "financeiro.contas_receber" },
+      },
+      {
+        label: "Comissões",
+        icon: Percent,
+        to: "/financeiro/comissoes",
+        perm: { modulo: "financeiro.comissoes" },
+      },
+      {
+        label: "Fluxo de caixa",
+        icon: Wallet,
+        to: "/financeiro/fluxo-de-caixa",
+        perm: { modulo: "financeiro.fluxo_caixa" },
+      },
     ],
   },
   {
@@ -172,17 +253,67 @@ export const navInterno: NavGroup[] = [
     label: "Administração",
     items: [
       { label: "Pessoas", icon: UserCog, to: "/admin/pessoas", perm: { modulo: "admin.pessoas" } },
-      { label: "Regras & Módulos", icon: ShieldCheck, to: "/admin/regras-modulos", perm: { modulo: "admin.regras" } },
-      { label: "Integrações", icon: Plug, to: "/admin/integracoes", perm: { modulo: "admin.integracoes" } },
-      { label: "Bancos", icon: Landmark, to: "/admin/bancos", perm: { modulo: "admin.integracoes" } },
-      { label: "APIs de IA", icon: Sparkles, to: "/admin/apis-ia", perm: { modulo: "admin.integracoes" } },
-      { label: "Parâmetros", icon: Settings2, to: "/admin/parametros", perm: { modulo: "admin.parametros" } },
-      { label: "Compras", icon: ShoppingCart, to: "/admin/compras", perm: { modulo: "admin.compras" } },
+      {
+        label: "Regras & Módulos",
+        icon: ShieldCheck,
+        to: "/admin/regras-modulos",
+        perm: { modulo: "admin.regras" },
+      },
+      {
+        label: "Integrações",
+        icon: Plug,
+        to: "/admin/integracoes",
+        perm: { modulo: "admin.integracoes" },
+      },
+      {
+        label: "Bancos",
+        icon: Landmark,
+        to: "/admin/bancos",
+        perm: { modulo: "admin.integracoes" },
+      },
+      {
+        label: "APIs de IA",
+        icon: Sparkles,
+        to: "/admin/apis-ia",
+        perm: { modulo: "admin.integracoes" },
+      },
+      {
+        label: "Parâmetros",
+        icon: Settings2,
+        to: "/admin/parametros",
+        perm: { modulo: "admin.parametros" },
+      },
+      {
+        label: "Compras",
+        icon: ShoppingCart,
+        to: "/admin/compras",
+        perm: { modulo: "admin.compras" },
+      },
       { label: "SLA & Feriados", icon: Timer, to: "/admin/sla", perm: { modulo: "admin.sla" } },
-      { label: "Comissões", icon: Percent, to: "/admin/comissoes", perm: { modulo: "admin.comissoes" } },
-      { label: "Notificações", icon: Bell, to: "/admin/notificacoes", perm: { modulo: "admin.notificacoes" } },
-      { label: "Auditoria", icon: ShieldCheck, to: "/admin/auditoria", perm: { modulo: "admin.auditoria" } },
-      { label: "Backup", icon: DatabaseBackup, to: "/admin/backup", perm: { modulo: "admin.backup" } },
+      {
+        label: "Comissões",
+        icon: Percent,
+        to: "/admin/comissoes",
+        perm: { modulo: "admin.comissoes" },
+      },
+      {
+        label: "Notificações",
+        icon: Bell,
+        to: "/admin/notificacoes",
+        perm: { modulo: "admin.notificacoes" },
+      },
+      {
+        label: "Auditoria",
+        icon: ShieldCheck,
+        to: "/admin/auditoria",
+        perm: { modulo: "admin.auditoria" },
+      },
+      {
+        label: "Backup",
+        icon: DatabaseBackup,
+        to: "/admin/backup",
+        perm: { modulo: "admin.backup" },
+      },
     ],
   },
   {

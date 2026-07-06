@@ -41,11 +41,7 @@ function InternalLayout() {
 
   const navFiltrada = useMemo(() => {
     if (!permsQuery.data) return [];
-    return filterNavByPermissions(
-      navInterno,
-      permsToSet(permsQuery.data),
-      permsQuery.data.todas,
-    );
+    return filterNavByPermissions(navInterno, permsToSet(permsQuery.data), permsQuery.data.todas);
   }, [permsQuery.data]);
 
   useEffect(() => {
@@ -78,9 +74,7 @@ function InternalLayout() {
           <p className="text-base font-semibold text-foreground">
             Não foi possível carregar sua sessão.
           </p>
-          <p className="text-sm text-muted-foreground">
-            Verifique sua conexão e tente novamente.
-          </p>
+          <p className="text-sm text-muted-foreground">Verifique sua conexão e tente novamente.</p>
         </div>
         <div className="flex gap-3">
           <button

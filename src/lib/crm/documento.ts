@@ -26,7 +26,10 @@ export function validarCNPJ(cnpj: string): boolean {
   if (d.length !== 14 || /^(\d)\1{13}$/.test(d)) return false;
   const calc = (tamanho: number) => {
     const nums = d.substring(0, tamanho);
-    const pesos = tamanho === 12 ? [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2] : [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+    const pesos =
+      tamanho === 12
+        ? [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]
+        : [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
     let soma = 0;
     for (let i = 0; i < tamanho; i++) soma += parseInt(nums[i], 10) * pesos[i];
     const resto = soma % 11;

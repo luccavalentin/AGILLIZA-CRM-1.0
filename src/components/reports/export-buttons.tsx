@@ -25,7 +25,14 @@ export function ExportButtons({
 
   async function log(formato: string) {
     try {
-      await registrar({ data: { codigo, formato, registros: result.rows.length, filtros: filtros as unknown as Record<string, unknown> } });
+      await registrar({
+        data: {
+          codigo,
+          formato,
+          registros: result.rows.length,
+          filtros: filtros as unknown as Record<string, unknown>,
+        },
+      });
     } catch {
       /* auditoria best-effort */
     }

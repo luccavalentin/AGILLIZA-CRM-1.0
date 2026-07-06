@@ -58,7 +58,9 @@ function Pagina() {
     setArrastando(null);
     if (status === coluna) return;
     if (!transicaoPermitida(status, coluna)) {
-      toast.error(`Transição inválida: ${statusProposta(status).label} → ${statusProposta(coluna).label}.`);
+      toast.error(
+        `Transição inválida: ${statusProposta(status).label} → ${statusProposta(coluna).label}.`,
+      );
       return;
     }
     try {
@@ -79,7 +81,9 @@ function Pagina() {
           <p className="text-sm text-muted-foreground">Arraste os cards entre etapas permitidas.</p>
         </div>
         <Button asChild variant="ghost" size="sm">
-          <Link to="/operacional/propostas"><ArrowLeft className="mr-1 h-4 w-4" /> Lista</Link>
+          <Link to="/operacional/propostas">
+            <ArrowLeft className="mr-1 h-4 w-4" /> Lista
+          </Link>
         </Button>
       </div>
 
@@ -97,7 +101,9 @@ function Pagina() {
               <div className="overflow-hidden rounded-t-lg">
                 <div className={cn("h-[3px]", TONE_BAR[cfg.tone])} />
                 <div className="flex items-center justify-between px-3 py-2">
-                  <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{cfg.label}</span>
+                  <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    {cfg.label}
+                  </span>
                   <span className="text-xs text-muted-foreground">{cards.length}</span>
                 </div>
               </div>
@@ -106,9 +112,13 @@ function Pagina() {
                   <div
                     key={c.id}
                     draggable
-                    onDragStart={() => setArrastando({ id: c.id, status: c.status as PropostaStatus })}
+                    onDragStart={() =>
+                      setArrastando({ id: c.id, status: c.status as PropostaStatus })
+                    }
                     onDragEnd={() => setArrastando(null)}
-                    onClick={() => router.navigate({ to: "/operacional/propostas/$id", params: { id: c.id } })}
+                    onClick={() =>
+                      router.navigate({ to: "/operacional/propostas/$id", params: { id: c.id } })
+                    }
                     className="cursor-grab rounded-md border border-border bg-card p-3 text-sm shadow-sm active:cursor-grabbing"
                   >
                     <p className="font-medium text-foreground">{c.numero_proposta}</p>

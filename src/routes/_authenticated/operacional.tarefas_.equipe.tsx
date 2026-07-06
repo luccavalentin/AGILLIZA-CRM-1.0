@@ -6,7 +6,12 @@ import { listarEquipeTarefas } from "@/lib/operacional/tarefas.functions";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
 
 export const Route = createFileRoute("/_authenticated/operacional/tarefas_/equipe")({
@@ -34,14 +39,18 @@ function Pagina() {
           </div>
         </div>
         <Button asChild variant="ghost" size="sm">
-          <Link to="/operacional/tarefas"><ArrowLeft className="mr-1 h-4 w-4" /> Lista</Link>
+          <Link to="/operacional/tarefas">
+            <ArrowLeft className="mr-1 h-4 w-4" /> Lista
+          </Link>
         </Button>
       </div>
 
       <div className="overflow-hidden rounded-lg border border-border">
         {isLoading ? (
           <div className="space-y-2 p-3">
-            {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-10 w-full" />
+            ))}
           </div>
         ) : membros.length === 0 ? (
           <p className="p-8 text-center text-sm text-muted-foreground">Nenhum membro na equipe.</p>
@@ -62,8 +71,12 @@ function Pagina() {
                   <TableCell className="font-medium text-foreground">{m.nome}</TableCell>
                   <TableCell className="text-right tabular-nums">{m.abertas}</TableCell>
                   <TableCell className="text-right tabular-nums">{m.em_andamento}</TableCell>
-                  <TableCell className="text-right tabular-nums text-muted-foreground">{m.concluidas}</TableCell>
-                  <TableCell className="text-right tabular-nums font-semibold">{m.abertas + m.em_andamento}</TableCell>
+                  <TableCell className="text-right tabular-nums text-muted-foreground">
+                    {m.concluidas}
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums font-semibold">
+                    {m.abertas + m.em_andamento}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>

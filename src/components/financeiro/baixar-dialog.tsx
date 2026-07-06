@@ -42,11 +42,16 @@ export function BaixarDialog({ tipo, conta, open, onOpenChange }: Props) {
     }
   }, [open, conta?.id]);
 
-
   const mut = useMutation({
     mutationFn: (args: { comprovante_path?: string; valorFinal: number }) =>
       baixarConta({
-        data: { tipo, id: conta!.id, valor: args.valorFinal, data_pagamento: data, comprovante_path: args.comprovante_path },
+        data: {
+          tipo,
+          id: conta!.id,
+          valor: args.valorFinal,
+          data_pagamento: data,
+          comprovante_path: args.comprovante_path,
+        },
       }),
     onSuccess: () => {
       toast.success(tipo === "pagar" ? "Pagamento registrado." : "Recebimento confirmado.");
@@ -90,7 +95,10 @@ export function BaixarDialog({ tipo, conta, open, onOpenChange }: Props) {
         {conta && (
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              {conta.descricao} · Saldo devedor <span className="font-medium tabular-nums text-foreground">{formatBRL(restante)}</span>
+              {conta.descricao} · Saldo devedor{" "}
+              <span className="font-medium tabular-nums text-foreground">
+                {formatBRL(restante)}
+              </span>
             </p>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
@@ -107,13 +115,19 @@ export function BaixarDialog({ tipo, conta, open, onOpenChange }: Props) {
               <label className="flex cursor-pointer items-center gap-2 rounded-md border border-dashed border-border p-3 text-sm text-muted-foreground hover:bg-muted/50">
                 <Paperclip className="h-4 w-4" />
                 {file ? file.name : "Anexar comprovante"}
-                <input type="file" className="hidden" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+                <input
+                  type="file"
+                  className="hidden"
+                  onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                />
               </label>
             </div>
           </div>
         )}
         <DialogFooter>
-          <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancelar</Button>
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>
+            Cancelar
+          </Button>
           <Button onClick={submit} disabled={enviando || mut.isPending}>
             {enviando || mut.isPending ? "Registrando…" : "Confirmar"}
           </Button>

@@ -1,15 +1,7 @@
 /** Tipos e helpers client-safe do módulo de Relatórios (Etapa 08). */
 export { formatBRL, formatPercent } from "@/lib/simulacao/format";
 
-export type Periodo =
-  | "hoje"
-  | "7d"
-  | "15d"
-  | "30d"
-  | "mes"
-  | "mes_anterior"
-  | "ano"
-  | "custom";
+export type Periodo = "hoje" | "7d" | "15d" | "30d" | "mes" | "mes_anterior" | "ano" | "custom";
 
 export type Escopo = "minha" | "equipe" | "geral";
 
@@ -79,7 +71,10 @@ export function resolverIntervalo(f: ReportFiltros): { de: string; ate: string }
     case "ano":
       return { de: iso(new Date(hoje.getFullYear(), 0, 1)), ate: iso(hoje) };
     case "custom":
-      return { de: f.de || iso(new Date(hoje.getFullYear(), hoje.getMonth(), 1)), ate: f.ate || iso(hoje) };
+      return {
+        de: f.de || iso(new Date(hoje.getFullYear(), hoje.getMonth(), 1)),
+        ate: f.ate || iso(hoje),
+      };
   }
 }
 
@@ -157,7 +152,11 @@ export interface ReportResult {
   /** Comparativo mês a mês (últimos 6 meses) aplicado a todos os relatórios. */
   comparativoMensal?: ComparativoMensal;
   /** Opções completas para os filtros (independem do resultado filtrado). */
-  filtrosDisponiveis?: { bancos?: string[]; statuses?: { value: string; label: string }[]; produtos?: string[] };
+  filtrosDisponiveis?: {
+    bancos?: string[];
+    statuses?: { value: string; label: string }[];
+    produtos?: string[];
+  };
 }
 
 export type ReportCell = string | number | boolean | null;

@@ -57,12 +57,10 @@ function formatBytes(n: number | null): string {
 async function uploadPdf(banco: BancoFormulario, file: File): Promise<string> {
   const safe = file.name.replace(/[^\w.\-]/g, "_");
   const path = `${banco}/${crypto.randomUUID()}-${safe}`;
-  const { error } = await supabase.storage
-    .from("formularios-bancarios")
-    .upload(path, file, {
-      contentType: file.type || "application/pdf",
-      upsert: false,
-    });
+  const { error } = await supabase.storage.from("formularios-bancarios").upload(path, file, {
+    contentType: file.type || "application/pdf",
+    upsert: false,
+  });
   if (error) throw error;
   return path;
 }
@@ -285,7 +283,11 @@ function UploadDialog({
         <div className="space-y-4">
           <div className="space-y-1.5">
             <Label>Nome</Label>
-            <Input value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Ex.: Ficha cadastral PF" />
+            <Input
+              value={nome}
+              onChange={(e) => setNome(e.target.value)}
+              placeholder="Ex.: Ficha cadastral PF"
+            />
           </div>
           <div className="space-y-1.5">
             <Label>Descrição (opcional)</Label>
@@ -305,7 +307,12 @@ function UploadDialog({
               className="hidden"
               onChange={(e) => escolher(e.target.files?.[0] ?? null)}
             />
-            <Button type="button" variant="outline" className="w-full" onClick={() => inputRef.current?.click()}>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              onClick={() => inputRef.current?.click()}
+            >
               <Upload className="mr-2 h-4 w-4" />
               {file ? file.name : "Selecionar PDF"}
             </Button>
@@ -416,7 +423,12 @@ function EditarDialog({
               onChange={(e) => escolher(e.target.files?.[0] ?? null)}
             />
             <div className="flex gap-2">
-              <Button type="button" variant="outline" className="flex-1" onClick={() => inputRef.current?.click()}>
+              <Button
+                type="button"
+                variant="outline"
+                className="flex-1"
+                onClick={() => inputRef.current?.click()}
+              >
                 <Upload className="mr-2 h-4 w-4" />
                 {file ? file.name : "Escolher novo PDF"}
               </Button>

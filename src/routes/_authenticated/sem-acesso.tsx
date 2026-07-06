@@ -16,8 +16,8 @@ function SemAcessoPage() {
       <div>
         <h1 className="text-2xl font-semibold text-foreground">Acesso negado</h1>
         <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-          Você não tem permissão para acessar esta área. Fale com o administrador do
-          seu ecossistema se precisar de acesso.
+          Você não tem permissão para acessar esta área. Fale com o administrador do seu ecossistema
+          se precisar de acesso.
         </p>
       </div>
       <Button asChild>

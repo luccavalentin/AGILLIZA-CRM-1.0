@@ -18,7 +18,10 @@ export const Route = createFileRoute("/_authenticated/documentos")({
 
 function Pagina() {
   const listar = useServerFn(listarDocumentosCentral);
-  const { data, isLoading } = useQuery({ queryKey: ["documentos-central"], queryFn: () => listar() });
+  const { data, isLoading } = useQuery({
+    queryKey: ["documentos-central"],
+    queryFn: () => listar(),
+  });
   const [busca, setBusca] = useState("");
 
   const filtrados = useMemo(() => {
@@ -44,21 +47,37 @@ function Pagina() {
 
       <div className="relative">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar por cliente, arquivo ou tipo…" className="pl-9" />
+        <Input
+          value={busca}
+          onChange={(e) => setBusca(e.target.value)}
+          placeholder="Buscar por cliente, arquivo ou tipo…"
+          className="pl-9"
+        />
       </div>
 
       {isLoading ? (
-        <div className="space-y-2">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-14 w-full" />)}</div>
+        <div className="space-y-2">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Skeleton key={i} className="h-14 w-full" />
+          ))}
+        </div>
       ) : filtrados.length === 0 ? (
         <Card>
-          <CardContent className="py-12 text-center text-sm text-muted-foreground">Nenhum documento encontrado.</CardContent>
+          <CardContent className="py-12 text-center text-sm text-muted-foreground">
+            Nenhum documento encontrado.
+          </CardContent>
         </Card>
       ) : (
         <div className="space-y-2">
           {filtrados.map((d) => (
-            <div key={d.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-card p-4 text-sm">
+            <div
+              key={d.id}
+              className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-card p-4 text-sm"
+            >
               <div className="flex flex-col gap-0.5">
-                <span className="font-medium text-foreground">{d.nome_arquivo ?? d.tipo_documento ?? "Documento"}</span>
+                <span className="font-medium text-foreground">
+                  {d.nome_arquivo ?? d.tipo_documento ?? "Documento"}
+                </span>
                 <span className="text-xs text-muted-foreground">
                   {d.tipo_documento ?? "—"}
                   {d.cliente_nome ? ` · ${d.cliente_nome}` : ""}
@@ -67,7 +86,11 @@ function Pagina() {
               <div className="flex items-center gap-3">
                 {d.status && <StatusBadge status={d.status} />}
                 {d.cliente_id && (
-                  <Link to="/crm/clientes/$id" params={{ id: d.cliente_id }} className="text-xs font-medium text-primary hover:underline">
+                  <Link
+                    to="/crm/clientes/$id"
+                    params={{ id: d.cliente_id }}
+                    className="text-xs font-medium text-primary hover:underline"
+                  >
                     Ver cliente
                   </Link>
                 )}

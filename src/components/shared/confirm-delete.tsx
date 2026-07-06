@@ -59,7 +59,10 @@ export function ConfirmDelete({
             variant="ghost"
             size="icon"
             aria-label="Excluir"
-            className={cn("text-destructive hover:bg-destructive/10 hover:text-destructive", className)}
+            className={cn(
+              "text-destructive hover:bg-destructive/10 hover:text-destructive",
+              className,
+            )}
           >
             <Trash2 className="size-4" />
           </Button>

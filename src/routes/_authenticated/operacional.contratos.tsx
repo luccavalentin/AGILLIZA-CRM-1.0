@@ -29,13 +29,17 @@ function Pagina() {
         <FileSignature className="h-5 w-5 text-muted-foreground" />
         <div>
           <h1 className="text-xl font-semibold text-foreground">Contratos</h1>
-          <p className="text-sm text-muted-foreground">Propostas com contrato emitido ou registrado.</p>
+          <p className="text-sm text-muted-foreground">
+            Propostas com contrato emitido ou registrado.
+          </p>
         </div>
       </div>
 
       {isLoading ? (
         <div className="space-y-2">
-          {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-16 w-full" />)}
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-16 w-full" />
+          ))}
         </div>
       ) : (data?.length ?? 0) === 0 ? (
         <Card>
@@ -54,15 +58,21 @@ function Pagina() {
             >
               <div className="flex flex-col gap-0.5">
                 <div className="flex items-center gap-2">
-                  <span className="font-mono text-xs text-muted-foreground">{c.numero_proposta ?? "—"}</span>
+                  <span className="font-mono text-xs text-muted-foreground">
+                    {c.numero_proposta ?? "—"}
+                  </span>
                   <StatusBadge status={c.status} />
                 </div>
                 <span className="font-medium text-foreground">{c.nome_cliente ?? "—"}</span>
                 <span className="text-xs text-muted-foreground">{c.nome_banco ?? "—"}</span>
               </div>
               <div className="text-right">
-                <span className="block tabular-nums font-semibold text-foreground">{fmtValor(c.valor)}</span>
-                <span className="text-xs text-muted-foreground">{new Date(c.atualizado_em).toLocaleDateString("pt-BR")}</span>
+                <span className="block tabular-nums font-semibold text-foreground">
+                  {fmtValor(c.valor)}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {new Date(c.atualizado_em).toLocaleDateString("pt-BR")}
+                </span>
               </div>
             </Link>
           ))}

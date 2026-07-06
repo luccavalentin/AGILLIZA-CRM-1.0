@@ -13,14 +13,26 @@ import { ToneBadge } from "@/components/crm/tone-badge";
 import { PRIORIDADE, statusTarefa } from "@/components/operacional/status";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  obterTarefa, toggleChecklistItem, comentarTarefa, concluirTarefa,
-  listarTagsTarefa, criarTagTarefa, alternarTagTarefa,
-  registrarAnexoTarefa, removerAnexoTarefa, urlAnexoTarefa,
+  obterTarefa,
+  toggleChecklistItem,
+  comentarTarefa,
+  concluirTarefa,
+  listarTagsTarefa,
+  criarTagTarefa,
+  alternarTagTarefa,
+  registrarAnexoTarefa,
+  removerAnexoTarefa,
+  urlAnexoTarefa,
 } from "@/lib/operacional/tarefas.functions";
 
 function fmtData(iso: string | null): string {
   if (!iso) return "—";
-  return new Date(iso).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+  return new Date(iso).toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 function fmtTamanho(bytes: number | null): string {
@@ -96,7 +108,9 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
       const path = `${t.id}/${Date.now()}-${file.name.replace(/[^\w.\-]/g, "_")}`;
       const { error } = await supabase.storage.from("tarefa-anexos").upload(path, file);
       if (error) throw error;
-      await registrarAnexoFn({ data: { task_id: t.id, nome: file.name, storage_path: path, tamanho: file.size } });
+      await registrarAnexoFn({
+        data: { task_id: t.id, nome: file.name, storage_path: path, tamanho: file.size },
+      });
       invalidar();
       toast.success("Anexo enviado.");
     } catch (err) {
@@ -124,18 +138,29 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
             <SheetHeader>
               <div className="flex items-center gap-2">
                 <span className="text-xs text-muted-foreground tabular-nums">{t.numero}</span>
-                <ToneBadge tone={statusTarefa(t.status).tone}>{statusTarefa(t.status).label}</ToneBadge>
+                <ToneBadge tone={statusTarefa(t.status).tone}>
+                  {statusTarefa(t.status).label}
+                </ToneBadge>
                 <ToneBadge tone="muted">{PRIORIDADE[t.prioridade as "p1"].label}</ToneBadge>
               </div>
               <SheetTitle className="text-left">{t.titulo}</SheetTitle>
             </SheetHeader>
             <div className="mt-4 space-y-6">
-              {t.descricao && <p className="text-sm text-foreground whitespace-pre-wrap">{t.descricao}</p>}
+              {t.descricao && (
+                <p className="text-sm text-foreground whitespace-pre-wrap">{t.descricao}</p>
+              )}
               <div className="grid grid-cols-2 gap-3 text-sm">
-                <div><span className="text-muted-foreground">Responsável:</span> {data?.nome_responsavel ?? "—"}</div>
-                <div><span className="text-muted-foreground">Prazo:</span> {fmtData(t.prazo)}</div>
+                <div>
+                  <span className="text-muted-foreground">Responsável:</span>{" "}
+                  {data?.nome_responsavel ?? "—"}
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Prazo:</span> {fmtData(t.prazo)}
+                </div>
                 {t.clientes?.nome && (
-                  <div className="col-span-2"><span className="text-muted-foreground">Cliente:</span> {t.clientes.nome}</div>
+                  <div className="col-span-2">
+                    <span className="text-muted-foreground">Cliente:</span> {t.clientes.nome}
+                  </div>
                 )}
               </div>
 
@@ -157,7 +182,10 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
                               checked={tagIds.has(tg.id)}
                               onCheckedChange={(v) => toggleTag(tg.id, !!v)}
                             />
-                            <span className="inline-block h-3 w-3 rounded-full" style={{ backgroundColor: tg.cor }} />
+                            <span
+                              className="inline-block h-3 w-3 rounded-full"
+                              style={{ backgroundColor: tg.cor }}
+                            />
                             <span className="text-foreground">{tg.nome}</span>
                           </label>
                         ))}
@@ -184,7 +212,12 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
                             />
                           ))}
                         </div>
-                        <Button size="sm" className="w-full" onClick={handleCriarTag} disabled={!novaTag.trim()}>
+                        <Button
+                          size="sm"
+                          className="w-full"
+                          onClick={handleCriarTag}
+                          disabled={!novaTag.trim()}
+                        >
                           <Plus className="mr-1 h-4 w-4" /> Criar e aplicar
                         </Button>
                       </div>
@@ -202,7 +235,11 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
                         style={{ backgroundColor: tg.cor }}
                       >
                         {tg.nome}
-                        <button type="button" onClick={() => toggleTag(tg.id, false)} aria-label="Remover etiqueta">
+                        <button
+                          type="button"
+                          onClick={() => toggleTag(tg.id, false)}
+                          aria-label="Remover etiqueta"
+                        >
                           <X className="h-3 w-3" />
                         </button>
                       </span>
@@ -214,7 +251,11 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
               {t.status !== "concluida" && (
                 <Button
                   size="sm"
-                  onClick={async () => { await concluirFn({ data: { id: t.id } }); invalidar(); toast.success("Tarefa concluída."); }}
+                  onClick={async () => {
+                    await concluirFn({ data: { id: t.id } });
+                    invalidar();
+                    toast.success("Tarefa concluída.");
+                  }}
                 >
                   Concluir tarefa
                 </Button>
@@ -232,7 +273,13 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
                           invalidar();
                         }}
                       />
-                      <span className={it.concluido ? "text-muted-foreground line-through" : "text-foreground"}>{it.descricao}</span>
+                      <span
+                        className={
+                          it.concluido ? "text-muted-foreground line-through" : "text-foreground"
+                        }
+                      >
+                        {it.descricao}
+                      </span>
                     </label>
                   ))}
                 </div>
@@ -258,22 +305,34 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
                     <p className="text-xs text-muted-foreground">Nenhum anexo.</p>
                   ) : (
                     data!.anexos.map((a: any) => (
-                      <div key={a.id} className="flex items-center gap-2 rounded-md border border-border px-2 py-1.5 text-sm">
+                      <div
+                        key={a.id}
+                        className="flex items-center gap-2 rounded-md border border-border px-2 py-1.5 text-sm"
+                      >
                         <Paperclip className="h-4 w-4 shrink-0 text-muted-foreground" />
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-foreground">{a.nome}</p>
                           <p className="text-xs text-muted-foreground">
-                            {a.nome_autor ?? "—"} · {fmtTamanho(a.tamanho)} · {fmtData(a.created_at)}
+                            {a.nome_autor ?? "—"} · {fmtTamanho(a.tamanho)} ·{" "}
+                            {fmtData(a.created_at)}
                           </p>
                         </div>
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => baixarAnexo(a.storage_path)}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7"
+                          onClick={() => baixarAnexo(a.storage_path)}
+                        >
                           <Download className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="ghost"
                           size="icon"
                           className="h-7 w-7 text-destructive"
-                          onClick={async () => { await removerAnexoFn({ data: { id: a.id } }); invalidar(); }}
+                          onClick={async () => {
+                            await removerAnexoFn({ data: { id: a.id } });
+                            invalidar();
+                          }}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -296,7 +355,12 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
                     </div>
                   ))}
                 </div>
-                <Textarea value={comentario} onChange={(e) => setComentario(e.target.value)} rows={2} placeholder="Escreva um comentário…" />
+                <Textarea
+                  value={comentario}
+                  onChange={(e) => setComentario(e.target.value)}
+                  rows={2}
+                  placeholder="Escreva um comentário…"
+                />
                 <Button
                   size="sm"
                   variant="secondary"
@@ -314,8 +378,14 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
               <div className="space-y-1">
                 <h3 className="text-sm font-semibold text-foreground">Histórico</h3>
                 {(data?.historico ?? []).map((h: any) => (
-                  <div key={h.id} className="flex items-center justify-between text-xs text-muted-foreground">
-                    <span>{h.acao}{h.detalhe ? ` — ${h.detalhe}` : ""}</span>
+                  <div
+                    key={h.id}
+                    className="flex items-center justify-between text-xs text-muted-foreground"
+                  >
+                    <span>
+                      {h.acao}
+                      {h.detalhe ? ` — ${h.detalhe}` : ""}
+                    </span>
                     <span>{fmtData(h.created_at)}</span>
                   </div>
                 ))}

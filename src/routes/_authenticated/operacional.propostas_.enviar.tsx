@@ -4,10 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Check, Search, Loader2, Send } from "lucide-react";
 import { assertModuloPermitido } from "@/lib/route-guards";
-import {
-  listarSimulacoesElegiveis,
-  criarProposta,
-} from "@/lib/propostas/propostas.functions";
+import { listarSimulacoesElegiveis, criarProposta } from "@/lib/propostas/propostas.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -61,7 +58,11 @@ function Pagina() {
           return;
         }
         res = await criarProposta({
-          data: { simulacao_id: simSelecionada.id, banco_id: banco, cliente_id: simSelecionada.cliente_id ?? undefined },
+          data: {
+            simulacao_id: simSelecionada.id,
+            banco_id: banco,
+            cliente_id: simSelecionada.cliente_id ?? undefined,
+          },
         });
       } else {
         res = await criarProposta({ data: {} });
@@ -81,7 +82,11 @@ function Pagina() {
 
       {/* Modo de entrada */}
       <div className="rounded-lg border border-border bg-card p-6">
-        <RadioGroup value={modo} onValueChange={(v) => setModo(v as Modo)} className="grid gap-4 md:grid-cols-2">
+        <RadioGroup
+          value={modo}
+          onValueChange={(v) => setModo(v as Modo)}
+          className="grid gap-4 md:grid-cols-2"
+        >
           <label
             className={cn(
               "flex cursor-pointer flex-col gap-1 rounded-lg border p-4",
@@ -93,7 +98,8 @@ function Pagina() {
               <span className="font-medium text-foreground">Converter uma simulação existente</span>
             </div>
             <span className="pl-6 text-sm text-muted-foreground">
-              Escolha o banco vencedor e clique em Enviar Proposta — o sistema aproveita tudo o que já foi digitado.
+              Escolha o banco vencedor e clique em Enviar Proposta — o sistema aproveita tudo o que
+              já foi digitado.
             </span>
           </label>
           <label
@@ -134,7 +140,9 @@ function Pagina() {
                 onChange={(e) => setQ(e.target.value)}
               />
             </div>
-            <Button type="submit" variant="secondary">Buscar</Button>
+            <Button type="submit" variant="secondary">
+              Buscar
+            </Button>
           </form>
 
           <div className="space-y-2">
@@ -160,7 +168,9 @@ function Pagina() {
                   )}
                 >
                   <div>
-                    <p className="font-medium text-foreground">{s.numero_simulacao} · {s.nome_cliente ?? "—"}</p>
+                    <p className="font-medium text-foreground">
+                      {s.numero_simulacao} · {s.nome_cliente ?? "—"}
+                    </p>
                     <p className="text-xs text-muted-foreground">
                       {formatBRL(s.valor_imovel)} · {s.simulacao_bancos.length} banco(s) simulado(s)
                       {s.proposta_existente_id && " · já convertida em proposta"}
@@ -174,7 +184,8 @@ function Pagina() {
 
           {simSelecionada?.proposta_existente_id && (
             <div className="rounded-md border border-border bg-muted/40 p-3 text-sm text-muted-foreground">
-              Esta simulação já foi convertida em proposta. Clique em “Abrir proposta” para ir à ficha.
+              Esta simulação já foi convertida em proposta. Clique em “Abrir proposta” para ir à
+              ficha.
             </div>
           )}
 
@@ -183,7 +194,11 @@ function Pagina() {
               <Label className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                 Banco vencedor
               </Label>
-              <RadioGroup value={bancoSel ?? undefined} onValueChange={setBancoSel} className="grid gap-2">
+              <RadioGroup
+                value={bancoSel ?? undefined}
+                onValueChange={setBancoSel}
+                className="grid gap-2"
+              >
                 {simSelecionada.simulacao_bancos.map((b: any) => (
                   <label
                     key={b.id}
@@ -210,16 +225,22 @@ function Pagina() {
       {modo === "manual" && (
         <div className="rounded-lg border border-border bg-card p-6">
           <p className="text-sm text-muted-foreground">
-            A proposta em branco será criada como rascunho. Complete os dados do cliente, imóvel e bancos
-            na ficha da proposta, incluindo a opção “Puxar do CRM”.
+            A proposta em branco será criada como rascunho. Complete os dados do cliente, imóvel e
+            bancos na ficha da proposta, incluindo a opção “Puxar do CRM”.
           </p>
         </div>
       )}
 
       <div className="flex justify-end">
         <Button size="lg" onClick={criar} disabled={enviando}>
-          {enviando ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
-          {modo === "simulacao" && simSelecionada?.proposta_existente_id ? "ABRIR PROPOSTA" : "ENVIAR PROPOSTA"}
+          {enviando ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <Send className="mr-2 h-4 w-4" />
+          )}
+          {modo === "simulacao" && simSelecionada?.proposta_existente_id
+            ? "ABRIR PROPOSTA"
+            : "ENVIAR PROPOSTA"}
         </Button>
       </div>
     </div>

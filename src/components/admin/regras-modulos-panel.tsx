@@ -130,8 +130,13 @@ export function RegrasModulosPanel() {
   }
 
   const criarMut = useMutation({
-    mutationFn: (v: { nome: string; descricao?: string; copiar_de?: string; papel: PapelNivel; acesso_tipo: AcessoTipo }) =>
-      criar({ data: v }),
+    mutationFn: (v: {
+      nome: string;
+      descricao?: string;
+      copiar_de?: string;
+      papel: PapelNivel;
+      acesso_tipo: AcessoTipo;
+    }) => criar({ data: v }),
     onSuccess: async (r) => {
       toast.success("Nível de acesso criado com permissões iniciais.");
       setNovoOpen(false);
@@ -147,8 +152,13 @@ export function RegrasModulosPanel() {
   });
 
   const atualizarMut = useMutation({
-    mutationFn: (v: { id: string; nome: string; descricao?: string; papel: PapelNivel; acesso_tipo: AcessoTipo }) =>
-      atualizar({ data: v }),
+    mutationFn: (v: {
+      id: string;
+      nome: string;
+      descricao?: string;
+      papel: PapelNivel;
+      acesso_tipo: AcessoTipo;
+    }) => atualizar({ data: v }),
     onSuccess: async (r: any) => {
       toast.success(
         r?.clonado
@@ -205,7 +215,10 @@ export function RegrasModulosPanel() {
   const editavel = selecionado?.editavel ?? false;
 
   function toggle(modulo: string, acao: string, permitido: boolean) {
-    setEstado((prev) => ({ ...prev, [chave(modulo, acao)]: { ...prev[chave(modulo, acao)], permitido } }));
+    setEstado((prev) => ({
+      ...prev,
+      [chave(modulo, acao)]: { ...prev[chave(modulo, acao)], permitido },
+    }));
     setDirty(true);
   }
   function setEscopo(modulo: string, escopo: EscopoDados) {
@@ -339,8 +352,16 @@ export function RegrasModulosPanel() {
                         ) : null}
                       </>
                     ) : null}
-                    <Button onClick={() => salvarMut.mutate()} disabled={!editavel || !dirty || salvarMut.isPending}>
-                      {salvarMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Salvar
+                    <Button
+                      onClick={() => salvarMut.mutate()}
+                      disabled={!editavel || !dirty || salvarMut.isPending}
+                    >
+                      {salvarMut.isPending ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Save className="h-4 w-4" />
+                      )}{" "}
+                      Salvar
                     </Button>
                   </div>
                 </div>
@@ -351,7 +372,8 @@ export function RegrasModulosPanel() {
                 ) : selecionado.is_padrao ? (
                   <p className="text-sm text-muted-foreground">
                     Este é um nível padrão do sistema. Ao renomear ou salvar permissões, criaremos
-                    automaticamente uma cópia editável — que você poderá ajustar e excluir livremente.
+                    automaticamente uma cópia editável — que você poderá ajustar e excluir
+                    livremente.
                   </p>
                 ) : null}
 
@@ -362,9 +384,13 @@ export function RegrasModulosPanel() {
                     </div>
                     <div className="divide-y divide-border">
                       {mods.map((mod) => {
-                        const escopoAtual = estado[chave(mod.modulo, mod.acoes[0].acao)]?.escopo ?? "proprios";
+                        const escopoAtual =
+                          estado[chave(mod.modulo, mod.acoes[0].acao)]?.escopo ?? "proprios";
                         return (
-                          <div key={mod.modulo} className="flex flex-col gap-3 p-4 lg:flex-row lg:items-center lg:justify-between">
+                          <div
+                            key={mod.modulo}
+                            className="flex flex-col gap-3 p-4 lg:flex-row lg:items-center lg:justify-between"
+                          >
                             <div className="min-w-[140px]">
                               <p className="text-sm font-medium text-foreground">{mod.label}</p>
                               <p className="text-xs text-muted-foreground">{mod.modulo}</p>
@@ -373,11 +399,16 @@ export function RegrasModulosPanel() {
                               {mod.acoes.map((a) => {
                                 const st = estado[chave(mod.modulo, a.acao)];
                                 return (
-                                  <label key={a.acao} className="flex items-center gap-2 text-sm text-foreground">
+                                  <label
+                                    key={a.acao}
+                                    className="flex items-center gap-2 text-sm text-foreground"
+                                  >
                                     <Checkbox
                                       checked={st?.permitido ?? false}
                                       disabled={!editavel}
-                                      onCheckedChange={(v) => toggle(mod.modulo, a.acao, v === true)}
+                                      onCheckedChange={(v) =>
+                                        toggle(mod.modulo, a.acao, v === true)
+                                      }
                                     />
                                     {a.label}
                                   </label>
@@ -425,11 +456,21 @@ export function RegrasModulosPanel() {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="nome">Nome</Label>
-              <Input id="nome" value={novoNome} onChange={(e) => setNovoNome(e.target.value)} placeholder="Ex.: Supervisor" />
+              <Input
+                id="nome"
+                value={novoNome}
+                onChange={(e) => setNovoNome(e.target.value)}
+                placeholder="Ex.: Supervisor"
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="desc">Descrição</Label>
-              <Input id="desc" value={novaDesc} onChange={(e) => setNovaDesc(e.target.value)} placeholder="Opcional" />
+              <Input
+                id="desc"
+                value={novaDesc}
+                onChange={(e) => setNovaDesc(e.target.value)}
+                placeholder="Opcional"
+              />
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
@@ -518,11 +559,20 @@ export function RegrasModulosPanel() {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="edit-nome">Nome</Label>
-              <Input id="edit-nome" value={editNome} onChange={(e) => setEditNome(e.target.value)} />
+              <Input
+                id="edit-nome"
+                value={editNome}
+                onChange={(e) => setEditNome(e.target.value)}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit-desc">Descrição</Label>
-              <Input id="edit-desc" value={editDesc} onChange={(e) => setEditDesc(e.target.value)} placeholder="Opcional" />
+              <Input
+                id="edit-desc"
+                value={editDesc}
+                onChange={(e) => setEditDesc(e.target.value)}
+                placeholder="Opcional"
+              />
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
@@ -590,8 +640,8 @@ export function RegrasModulosPanel() {
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir nível de acesso?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta ação remove o nível “{selecionado?.nome}” e todas as suas permissões. Não é possível
-              excluir se houver pessoas usando este nível.
+              Esta ação remove o nível “{selecionado?.nome}” e todas as suas permissões. Não é
+              possível excluir se houver pessoas usando este nível.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

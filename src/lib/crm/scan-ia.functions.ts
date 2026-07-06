@@ -94,7 +94,7 @@ export const listarLeituras = createServerFn({ method: "GET" })
       created_at: r.created_at,
       total_campos: r.scan_ia_campos_extraidos?.[0]?.count ?? 0,
       criador_id: r.criador_id ?? null,
-      criador_nome: r.criador_id ? nomes.get(r.criador_id) ?? null : null,
+      criador_nome: r.criador_id ? (nomes.get(r.criador_id) ?? null) : null,
     }));
   });
 
@@ -108,7 +108,9 @@ export const obterLeitura = createServerFn({ method: "GET" })
 
     const { data: leitura, error } = await supabase
       .from("scan_ia_leituras")
-      .select("id, arquivo_url, tipo_documento, status, erro, created_at, correspondente_id, criador_id")
+      .select(
+        "id, arquivo_url, tipo_documento, status, erro, created_at, correspondente_id, criador_id",
+      )
       .eq("id", data.id)
       .maybeSingle();
     if (error) throw error;
@@ -213,11 +215,17 @@ export const processarLeitura = createServerFn({ method: "POST" })
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
       const msg = "Provedor de IA não configurado. Cadastre a chave do provedor nas configurações.";
-      await supabase.from("scan_ia_leituras").update({ status: "erro", erro: msg }).eq("id", data.id);
+      await supabase
+        .from("scan_ia_leituras")
+        .update({ status: "erro", erro: msg })
+        .eq("id", data.id);
       return { ok: false, erro: msg };
     }
 
-    await supabase.from("scan_ia_leituras").update({ status: "processando", erro: null }).eq("id", data.id);
+    await supabase
+      .from("scan_ia_leituras")
+      .update({ status: "processando", erro: null })
+      .eq("id", data.id);
 
     try {
       // Baixa o arquivo do armazenamento (server-side, respeitando RLS do usuário)
@@ -306,7 +314,10 @@ export const processarLeitura = createServerFn({ method: "POST" })
       return { ok: true };
     } catch (e: any) {
       const msg = e?.message ? String(e.message).slice(0, 500) : "Erro ao processar leitura.";
-      await supabase.from("scan_ia_leituras").update({ status: "erro", erro: msg }).eq("id", data.id);
+      await supabase
+        .from("scan_ia_leituras")
+        .update({ status: "erro", erro: msg })
+        .eq("id", data.id);
       return { ok: false, erro: msg };
     }
   });
@@ -314,14 +325,13 @@ export const processarLeitura = createServerFn({ method: "POST" })
 /** Salva as correções feitas pelo revisor. */
 export const salvarCampos = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(
-    (d: { leitura_id: string; campos: Array<{ id: string; valor: string }> }) =>
-      z
-        .object({
-          leitura_id: z.string().uuid(),
-          campos: z.array(z.object({ id: z.string().uuid(), valor: z.string().max(2000) })),
-        })
-        .parse(d),
+  .inputValidator((d: { leitura_id: string; campos: Array<{ id: string; valor: string }> }) =>
+    z
+      .object({
+        leitura_id: z.string().uuid(),
+        campos: z.array(z.object({ id: z.string().uuid(), valor: z.string().max(2000) })),
+      })
+      .parse(d),
   )
   .handler(async ({ data, context }): Promise<{ ok: boolean }> => {
     const { supabase, userId } = context;
@@ -343,7 +353,10 @@ export const salvarCampos = createServerFn({ method: "POST" })
         .eq("leitura_id", data.leitura_id);
     }
 
-    await supabase.from("scan_ia_leituras").update({ status: "revisada" }).eq("id", data.leitura_id);
+    await supabase
+      .from("scan_ia_leituras")
+      .update({ status: "revisada" })
+      .eq("id", data.leitura_id);
     await supabase.from("scan_ia_auditoria").insert({
       correspondente_id: corr,
       leitura_id: data.leitura_id,
@@ -366,7 +379,9 @@ export const excluirLeitura = createServerFn({ method: "POST" })
 
     const { data: leitura } = await supabase
       .from("scan_ia_leituras")
-      .select("id, tipo_documento, status, arquivo_url, cliente_id, proposta_id, criador_id, correspondente_id, created_at")
+      .select(
+        "id, tipo_documento, status, arquivo_url, cliente_id, proposta_id, criador_id, correspondente_id, created_at",
+      )
       .eq("id", data.id)
       .maybeSingle();
     if (!leitura || leitura.correspondente_id !== corr) throw new Error("Leitura não encontrada.");

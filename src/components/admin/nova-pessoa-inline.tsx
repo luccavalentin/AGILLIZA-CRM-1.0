@@ -43,9 +43,7 @@ function estadoInicial(nivel: NivelAcesso | undefined): MatrizEstado {
   const estado: MatrizEstado = {};
   for (const mod of CATALOGO_MODULOS) {
     for (const a of mod.acoes) {
-      const atual = nivel?.permissoes.find(
-        (p) => p.modulo === mod.modulo && p.acao === a.acao,
-      );
+      const atual = nivel?.permissoes.find((p) => p.modulo === mod.modulo && p.acao === a.acao);
       estado[chave(mod.modulo, a.acao)] = {
         permitido: atual?.permitido ?? false,
         escopo: atual?.escopo_dados ?? "proprios",
@@ -70,7 +68,7 @@ export function NovaPessoaInline({
 
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
-  
+
   const [comissao, setComissao] = useState("");
   const [nivelId, setNivelId] = useState<string>("");
 
@@ -88,10 +86,7 @@ export function NovaPessoaInline({
     setNivelId(niveis[0].id);
   }
 
-  const nivel = useMemo(
-    () => (niveis ?? []).find((n) => n.id === nivelId),
-    [niveis, nivelId],
-  );
+  const nivel = useMemo(() => (niveis ?? []).find((n) => n.id === nivelId), [niveis, nivelId]);
   const isParceiro = nivel?.acesso_tipo === "portal_parceiro";
 
   // Carrega a matriz sempre que o nível muda.
@@ -123,8 +118,7 @@ export function NovaPessoaInline({
   });
 
   const criar = useMutation({
-    mutationFn: (payload: CriarPessoaInput) =>
-      criarPessoaComAcesso({ data: payload }),
+    mutationFn: (payload: CriarPessoaInput) => criarPessoaComAcesso({ data: payload }),
     onSuccess: async (res) => {
       await qc.invalidateQueries({ queryKey: ["pessoas"] });
       onCreated(res);
@@ -143,8 +137,7 @@ export function NovaPessoaInline({
   function setEscopoModulo(modulo: string, escopo: EscopoDados) {
     setEstado((prev) => {
       const next = { ...prev };
-      for (const a of CATALOGO_MODULOS.find((m) => m.modulo === modulo)?.acoes ??
-        []) {
+      for (const a of CATALOGO_MODULOS.find((m) => m.modulo === modulo)?.acoes ?? []) {
         const k = chave(modulo, a.acao);
         next[k] = { ...next[k], escopo };
       }
@@ -225,7 +218,6 @@ export function NovaPessoaInline({
           </div>
         )}
 
-
         {/* Nível de acesso — define papel (Gestor, Corretor, etc.) e portal */}
         <div className="space-y-2">
           <Label>Nível de acesso</Label>
@@ -243,11 +235,8 @@ export function NovaPessoaInline({
               ))}
             </SelectContent>
           </Select>
-          {nivel?.descricao && (
-            <p className="text-xs text-muted-foreground">{nivel.descricao}</p>
-          )}
+          {nivel?.descricao && <p className="text-xs text-muted-foreground">{nivel.descricao}</p>}
         </div>
-
 
         {/* Permissões do nível */}
         {nivel && (
@@ -258,8 +247,8 @@ export function NovaPessoaInline({
                   Permissões de acesso — o que esta pessoa pode ver e editar
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  As permissões são vinculadas ao nível “{nivel.nome}”. Alterar
-                  aqui afeta todas as pessoas com esse nível.
+                  As permissões são vinculadas ao nível “{nivel.nome}”. Alterar aqui afeta todas as
+                  pessoas com esse nível.
                 </p>
               </div>
               <Button
@@ -283,61 +272,46 @@ export function NovaPessoaInline({
                 <div key={grupo} className="space-y-2">
                   <Badge variant="secondary">{grupo}</Badge>
                   <div className="space-y-2">
-                    {CATALOGO_MODULOS.filter((m) => m.grupo === grupo).map(
-                      (mod) => {
-                        const escopoAtual =
-                          estado[chave(mod.modulo, mod.acoes[0].acao)]?.escopo ??
-                          "proprios";
-                        return (
-                          <div
-                            key={mod.modulo}
-                            className="rounded-md border p-3"
-                          >
-                            <div className="flex flex-wrap items-center justify-between gap-2">
-                              <span className="text-sm font-medium">
-                                {mod.label}
-                              </span>
-                              <Select
-                                value={escopoAtual}
-                                onValueChange={(v) =>
-                                  setEscopoModulo(mod.modulo, v as EscopoDados)
-                                }
-                              >
-                                <SelectTrigger className="h-8 w-44">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {ESCOPOS.map((e) => (
-                                    <SelectItem key={e.value} value={e.value}>
-                                      {e.label}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <div className="mt-2 flex flex-wrap gap-4">
-                              {mod.acoes.map((a) => {
-                                const k = chave(mod.modulo, a.acao);
-                                return (
-                                  <label
-                                    key={a.acao}
-                                    className="flex items-center gap-2 text-sm"
-                                  >
-                                    <Checkbox
-                                      checked={estado[k]?.permitido ?? false}
-                                      onCheckedChange={(c) =>
-                                        toggle(mod.modulo, a.acao, c === true)
-                                      }
-                                    />
-                                    {a.label}
-                                  </label>
-                                );
-                              })}
-                            </div>
+                    {CATALOGO_MODULOS.filter((m) => m.grupo === grupo).map((mod) => {
+                      const escopoAtual =
+                        estado[chave(mod.modulo, mod.acoes[0].acao)]?.escopo ?? "proprios";
+                      return (
+                        <div key={mod.modulo} className="rounded-md border p-3">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <span className="text-sm font-medium">{mod.label}</span>
+                            <Select
+                              value={escopoAtual}
+                              onValueChange={(v) => setEscopoModulo(mod.modulo, v as EscopoDados)}
+                            >
+                              <SelectTrigger className="h-8 w-44">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {ESCOPOS.map((e) => (
+                                  <SelectItem key={e.value} value={e.value}>
+                                    {e.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                           </div>
-                        );
-                      },
-                    )}
+                          <div className="mt-2 flex flex-wrap gap-4">
+                            {mod.acoes.map((a) => {
+                              const k = chave(mod.modulo, a.acao);
+                              return (
+                                <label key={a.acao} className="flex items-center gap-2 text-sm">
+                                  <Checkbox
+                                    checked={estado[k]?.permitido ?? false}
+                                    onCheckedChange={(c) => toggle(mod.modulo, a.acao, c === true)}
+                                  />
+                                  {a.label}
+                                </label>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               ))}

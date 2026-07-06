@@ -30,9 +30,9 @@ function DocumentosParceiro() {
       descricao="Documentos enviados para os seus clientes vinculados."
     >
       <div className="mb-4 rounded-lg border border-dashed border-border bg-muted/40 p-4 text-sm text-muted-foreground">
-        <Paperclip className="mr-2 inline h-4 w-4 text-muted-foreground" />
-        O envio de documentos é feito dentro da ficha de cada cliente. Aqui você
-        acompanha o que já foi enviado e o status de aprovação.
+        <Paperclip className="mr-2 inline h-4 w-4 text-muted-foreground" />O envio de documentos é
+        feito dentro da ficha de cada cliente. Aqui você acompanha o que já foi enviado e o status
+        de aprovação.
       </div>
       <div className="rounded-lg border bg-background">
         <Table>

@@ -84,7 +84,8 @@ function Pagina() {
                   {leitura.data.tipo_documento ?? "Documento"}
                 </h2>
                 <p className="text-xs text-muted-foreground">
-                  Enviado por {leitura.data.criador_nome ?? "—"} · {new Date(leitura.data.created_at).toLocaleString("pt-BR")}
+                  Enviado por {leitura.data.criador_nome ?? "—"} ·{" "}
+                  {new Date(leitura.data.created_at).toLocaleString("pt-BR")}
                 </p>
               </div>
               <Badge variant="outline">{leitura.data.status}</Badge>
@@ -119,7 +120,7 @@ function Pagina() {
             {leitura.data.campos.length === 0 ? (
               <p className="text-sm text-muted-foreground">
                 {leitura.data.status === "erro"
-                  ? leitura.data.erro ?? "Erro no processamento."
+                  ? (leitura.data.erro ?? "Erro no processamento.")
                   : "Nenhum campo extraído. Reprocesse o documento na listagem."}
               </p>
             ) : (
@@ -139,9 +140,7 @@ function Pagina() {
                       <Input
                         id={campo.id}
                         value={valores[campo.id] ?? ""}
-                        onChange={(e) =>
-                          setValores((v) => ({ ...v, [campo.id]: e.target.value }))
-                        }
+                        onChange={(e) => setValores((v) => ({ ...v, [campo.id]: e.target.value }))}
                       />
                     </div>
                   );

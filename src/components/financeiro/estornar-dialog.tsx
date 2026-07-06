@@ -1,7 +1,11 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { estornarConta, cancelarConta, type ContaTipo } from "@/lib/financeiro/financeiro.functions";
+import {
+  estornarConta,
+  cancelarConta,
+  type ContaTipo,
+} from "@/lib/financeiro/financeiro.functions";
 import {
   Dialog,
   DialogContent,
@@ -48,10 +52,17 @@ export function EstornarDialog({ tipo, acao, contaId, open, onOpenChange }: Prop
         </DialogHeader>
         <div className="space-y-2">
           <Label>Motivo (obrigatório)</Label>
-          <Textarea value={motivo} onChange={(e) => setMotivo(e.target.value)} rows={3} placeholder="Descreva o motivo…" />
+          <Textarea
+            value={motivo}
+            onChange={(e) => setMotivo(e.target.value)}
+            rows={3}
+            placeholder="Descreva o motivo…"
+          />
         </div>
         <DialogFooter>
-          <Button variant="ghost" onClick={() => onOpenChange(false)}>Voltar</Button>
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>
+            Voltar
+          </Button>
           <Button
             variant="destructive"
             onClick={() => {

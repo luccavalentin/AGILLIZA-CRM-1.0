@@ -52,7 +52,9 @@ export function InteracoesTab({ clienteId }: { clienteId: string }) {
   async function salvar() {
     setSalvando(true);
     try {
-      await registrar({ data: { cliente_id: clienteId, canal: canal as any, resultado, observacao } });
+      await registrar({
+        data: { cliente_id: clienteId, canal: canal as any, resultado, observacao },
+      });
       toast.success("Contato registrado.");
       setAberto(false);
       setResultado("");
@@ -70,32 +72,54 @@ export function InteracoesTab({ clienteId }: { clienteId: string }) {
       <div className="flex justify-end">
         <Dialog open={aberto} onOpenChange={setAberto}>
           <DialogTrigger asChild>
-            <Button><Plus className="size-4" /> Registrar contato</Button>
+            <Button>
+              <Plus className="size-4" /> Registrar contato
+            </Button>
           </DialogTrigger>
           <DialogContent>
-            <DialogHeader><DialogTitle>Registrar contato</DialogTitle></DialogHeader>
+            <DialogHeader>
+              <DialogTitle>Registrar contato</DialogTitle>
+            </DialogHeader>
             <div className="space-y-3">
               <div className="space-y-1.5">
                 <label className="text-sm">Canal</label>
                 <Select value={canal} onValueChange={setCanal}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
-                    {CANAIS.map((c) => <SelectItem key={c.v} value={c.v}>{c.l}</SelectItem>)}
+                    {CANAIS.map((c) => (
+                      <SelectItem key={c.v} value={c.v}>
+                        {c.l}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-1.5">
                 <label className="text-sm">Resultado</label>
-                <Input value={resultado} onChange={(e) => setResultado(e.target.value)} placeholder="Ex.: cliente retornará amanhã" />
+                <Input
+                  value={resultado}
+                  onChange={(e) => setResultado(e.target.value)}
+                  placeholder="Ex.: cliente retornará amanhã"
+                />
               </div>
               <div className="space-y-1.5">
                 <label className="text-sm">Observação</label>
-                <Textarea value={observacao} onChange={(e) => setObservacao(e.target.value)} rows={4} />
+                <Textarea
+                  value={observacao}
+                  onChange={(e) => setObservacao(e.target.value)}
+                  rows={4}
+                />
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setAberto(false)}>Cancelar</Button>
-              <Button onClick={salvar} disabled={salvando}>{salvando ? "Salvando…" : "Salvar"}</Button>
+              <Button variant="outline" onClick={() => setAberto(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={salvar} disabled={salvando}>
+                {salvando ? "Salvando…" : "Salvar"}
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -122,7 +146,9 @@ export function InteracoesTab({ clienteId }: { clienteId: string }) {
                       </span>
                     </div>
                     {i.resultado && <p className="text-sm text-foreground">{i.resultado}</p>}
-                    {i.observacao && <p className="text-sm text-muted-foreground">{i.observacao}</p>}
+                    {i.observacao && (
+                      <p className="text-sm text-muted-foreground">{i.observacao}</p>
+                    )}
                     {i.responsavel?.nome && (
                       <p className="mt-1 text-xs text-muted-foreground">por {i.responsavel.nome}</p>
                     )}

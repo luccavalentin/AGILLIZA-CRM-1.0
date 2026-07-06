@@ -35,7 +35,10 @@ export interface DemandaItem {
   created_at: string;
 }
 
-async function nomesPorId(supabase: any, ids: (string | null | undefined)[]): Promise<Map<string, string>> {
+async function nomesPorId(
+  supabase: any,
+  ids: (string | null | undefined)[],
+): Promise<Map<string, string>> {
   const uniq = [...new Set(ids.filter(Boolean) as string[])];
   if (uniq.length === 0) return new Map();
   const { data } = await supabase.from("profiles").select("id, nome").in("id", uniq);
@@ -79,7 +82,10 @@ export const listarDemandas = createServerFn({ method: "GET" })
     const { data: itens, error } = await query;
     if (error) throw new Error(error.message);
     const rows = (itens ?? []) as any[];
-    const nomes = await nomesPorId(supabase, rows.map((r) => r.responsavel_id));
+    const nomes = await nomesPorId(
+      supabase,
+      rows.map((r) => r.responsavel_id),
+    );
     return rows.map((r) => ({
       id: r.id,
       numero: r.numero,
@@ -90,7 +96,7 @@ export const listarDemandas = createServerFn({ method: "GET" })
       cliente_id: r.cliente_id,
       nome_cliente: r.clientes?.nome ?? null,
       responsavel_id: r.responsavel_id,
-      nome_responsavel: r.responsavel_id ? nomes.get(r.responsavel_id) ?? null : null,
+      nome_responsavel: r.responsavel_id ? (nomes.get(r.responsavel_id) ?? null) : null,
       prazo_sla: r.prazo_sla,
       sla_inicio: r.sla_inicio,
       concluida_em: r.concluida_em ?? null,
@@ -105,23 +111,39 @@ export const obterDemanda = createServerFn({ method: "GET" })
   .handler(async ({ context, data }) => {
     const { supabase } = context;
     const [demanda, historico, mensagens, participantes, anexos] = await Promise.all([
-      supabase.from("demandas").select("*, clientes(nome, numero_cliente)").eq("id", data.id).maybeSingle(),
-      supabase.from("demanda_historico").select("*").eq("demanda_id", data.id).order("created_at", { ascending: false }),
+      supabase
+        .from("demandas")
+        .select("*, clientes(nome, numero_cliente)")
+        .eq("id", data.id)
+        .maybeSingle(),
+      supabase
+        .from("demanda_historico")
+        .select("*")
+        .eq("demanda_id", data.id)
+        .order("created_at", { ascending: false }),
       supabase.from("demanda_mensagens").select("*").eq("demanda_id", data.id).order("created_at"),
       supabase.from("demanda_participantes").select("*").eq("demanda_id", data.id),
-      supabase.from("demanda_anexos").select("*").eq("demanda_id", data.id).order("created_at", { ascending: false }),
+      supabase
+        .from("demanda_anexos")
+        .select("*")
+        .eq("demanda_id", data.id)
+        .order("created_at", { ascending: false }),
     ]);
     if (demanda.error) throw new Error(demanda.error.message);
     const uids = [
       demanda.data?.responsavel_id,
       demanda.data?.criador_id,
-      ...(historico.data ?? []).flatMap((h: any) => [h.ator_id, h.responsavel_anterior_id, h.responsavel_novo_id]),
+      ...(historico.data ?? []).flatMap((h: any) => [
+        h.ator_id,
+        h.responsavel_anterior_id,
+        h.responsavel_novo_id,
+      ]),
       ...(mensagens.data ?? []).map((m: any) => m.autor_id),
       ...(participantes.data ?? []).map((p: any) => p.user_id),
       ...(anexos.data ?? []).map((a: any) => a.autor_id),
     ];
     const nomes = await nomesPorId(supabase, uids);
-    const nm = (id: string | null | undefined) => (id ? nomes.get(id) ?? null : null);
+    const nm = (id: string | null | undefined) => (id ? (nomes.get(id) ?? null) : null);
     return {
       demanda: demanda.data,
       nome_responsavel: nm(demanda.data?.responsavel_id),
@@ -181,7 +203,13 @@ export const criarDemanda = createServerFn({ method: "POST" })
 export const transferirDemanda = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) =>
-    z.object({ id: z.string().uuid(), novo_responsavel_id: z.string().uuid(), motivo: z.string().min(3) }).parse(data),
+    z
+      .object({
+        id: z.string().uuid(),
+        novo_responsavel_id: z.string().uuid(),
+        motivo: z.string().min(3),
+      })
+      .parse(data),
   )
   .handler(async ({ context, data }) => {
     const { supabase, userId } = context;
@@ -228,14 +256,21 @@ export const moverStatusDemanda = createServerFn({ method: "POST" })
   )
   .handler(async ({ context, data }) => {
     const { supabase, userId } = context;
-    const { data: atual } = await supabase.from("demandas").select("status").eq("id", data.id).single();
+    const { data: atual } = await supabase
+      .from("demandas")
+      .select("status")
+      .eq("id", data.id)
+      .single();
     if (!atual) throw new Error("Demanda não encontrada.");
     if (!transicaoDemandaPermitida(atual.status as DemandaStatus, data.status)) {
       throw new Error(`Transição de status inválida: ${atual.status} → ${data.status}.`);
     }
     const patch: Record<string, unknown> = { status: data.status };
     if (data.status === "concluida") patch.concluida_em = new Date().toISOString();
-    const { error } = await supabase.from("demandas").update(patch as any).eq("id", data.id);
+    const { error } = await supabase
+      .from("demandas")
+      .update(patch as any)
+      .eq("id", data.id);
     if (error) throw new Error(error.message);
     await supabase
       .from("demanda_historico")
@@ -247,7 +282,11 @@ export const comentarDemanda = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) =>
     z
-      .object({ demanda_id: z.string().uuid(), corpo: z.string().min(1), visivel_cliente: z.boolean().default(false) })
+      .object({
+        demanda_id: z.string().uuid(),
+        corpo: z.string().min(1),
+        visivel_cliente: z.boolean().default(false),
+      })
       .parse(data),
   )
   .handler(async ({ context, data }) => {
@@ -268,7 +307,11 @@ export const comentarDemanda = createServerFn({ method: "POST" })
         .eq("id", data.demanda_id)
         .maybeSingle();
       if (dem?.cliente_id) {
-        await supabase.rpc("portal_time_responder", { _cid: dem.cliente_id, _msg: data.corpo, _anexo: null as unknown as string });
+        await supabase.rpc("portal_time_responder", {
+          _cid: dem.cliente_id,
+          _msg: data.corpo,
+          _anexo: null as unknown as string,
+        });
       }
     }
     return { ok: true };

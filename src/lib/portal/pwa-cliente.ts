@@ -21,7 +21,9 @@ export function registrarSwCliente() {
 
   if (bloqueado) {
     navigator.serviceWorker.getRegistrations?.().then((regs) => {
-      regs.filter((r) => r.active?.scriptURL.endsWith("/sw-cliente.js")).forEach((r) => r.unregister());
+      regs
+        .filter((r) => r.active?.scriptURL.endsWith("/sw-cliente.js"))
+        .forEach((r) => r.unregister());
     });
     return;
   }

@@ -4,11 +4,7 @@ import symbol from "@/assets/brand/agilliza-symbol-oficial.png";
 type ToasterProps = React.ComponentProps<typeof Sonner>;
 
 const BrandIcon = () => (
-  <img
-    src={symbol}
-    alt="Agilliza"
-    className="h-5 w-5 shrink-0 rounded-sm object-contain"
-  />
+  <img src={symbol} alt="Agilliza" className="h-5 w-5 shrink-0 rounded-sm object-contain" />
 );
 
 const Toaster = ({ ...props }: ToasterProps) => {

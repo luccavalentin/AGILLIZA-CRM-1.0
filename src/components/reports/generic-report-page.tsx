@@ -38,22 +38,30 @@ export function GenericReportPage({
   });
 
   const meta = `Período: ${PERIODO_LABEL[filtros.periodo]} · Escopo: ${ESCOPO_LABEL[filtros.escopo]} · Registros: ${data?.rows.length ?? 0}`;
-  const metaArr = [`Período: ${PERIODO_LABEL[filtros.periodo]}`, `Escopo: ${ESCOPO_LABEL[filtros.escopo]}`, `Registros: ${data?.rows.length ?? 0}`];
+  const metaArr = [
+    `Período: ${PERIODO_LABEL[filtros.periodo]}`,
+    `Escopo: ${ESCOPO_LABEL[filtros.escopo]}`,
+    `Registros: ${data?.rows.length ?? 0}`,
+  ];
 
   // Opções completas de filtro vindas do servidor (todos os bancos/produtos/status cadastrados);
   // fallback para os valores presentes no resultado quando o relatório não as fornece.
   const disp = data?.filtrosDisponiveis;
   const bancos = comFiltroBanco
-    ? disp?.bancos ?? [...new Set((data?.rows ?? []).map((r) => String(r.nome_banco ?? "")).filter(Boolean))].sort()
+    ? (disp?.bancos ??
+      [
+        ...new Set((data?.rows ?? []).map((r) => String(r.nome_banco ?? "")).filter(Boolean)),
+      ].sort())
     : undefined;
   const produtos = comFiltroBanco
-    ? disp?.produtos ?? [...new Set((data?.rows ?? []).map((r) => String(r.produto ?? "")).filter(Boolean))].sort()
+    ? (disp?.produtos ??
+      [...new Set((data?.rows ?? []).map((r) => String(r.produto ?? "")).filter(Boolean))].sort())
     : undefined;
   const statuses = comFiltroStatus
-    ? disp?.statuses ??
+    ? (disp?.statuses ??
       [...new Set((data?.rows ?? []).map((r) => String(r.status ?? "")).filter(Boolean))]
         .sort()
-        .map((v) => ({ value: v, label: v }))
+        .map((v) => ({ value: v, label: v })))
     : undefined;
 
   return (
@@ -62,26 +70,51 @@ export function GenericReportPage({
       titulo={data?.titulo ?? "Relatório"}
       descricao={data?.descricao ?? "Carregando…"}
       meta={meta}
-      scopeSelector={<VisionSelector escopo={filtros.escopo} onChange={(e) => onFiltros({ ...filtros, escopo: e })} podeEquipe={podeEquipe} podeGeral={podeGeral} />}
-      exportButtons={data ? <ExportButtons codigo={codigo} result={data} meta={metaArr} filtros={filtros} /> : null}
-      filtros={<ReportFiltersBar filtros={filtros} onChange={onFiltros} bancos={bancos} produtos={produtos} statuses={statuses} />}
+      scopeSelector={
+        <VisionSelector
+          escopo={filtros.escopo}
+          onChange={(e) => onFiltros({ ...filtros, escopo: e })}
+          podeEquipe={podeEquipe}
+          podeGeral={podeGeral}
+        />
+      }
+      exportButtons={
+        data ? (
+          <ExportButtons codigo={codigo} result={data} meta={metaArr} filtros={filtros} />
+        ) : null
+      }
+      filtros={
+        <ReportFiltersBar
+          filtros={filtros}
+          onChange={onFiltros}
+          bancos={bancos}
+          produtos={produtos}
+          statuses={statuses}
+        />
+      }
     >
       {isLoading ? (
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-            {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-20" />)}
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Skeleton key={i} className="h-20" />
+            ))}
           </div>
           <Skeleton className="h-64" />
           <Skeleton className="h-72" />
         </div>
       ) : isError ? (
-        <p className="py-12 text-center text-sm text-muted-foreground">Não foi possível carregar o relatório.</p>
+        <p className="py-12 text-center text-sm text-muted-foreground">
+          Não foi possível carregar o relatório.
+        </p>
       ) : !data || data.rows.length === 0 ? (
         <>
           {data && data.kpis.length > 0 && (
             <ReportSection titulo="Indicadores">
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-                {data.kpis.map((k) => <ReportKpiCard key={k.label} kpi={k} />)}
+                {data.kpis.map((k) => (
+                  <ReportKpiCard key={k.label} kpi={k} />
+                ))}
               </div>
             </ReportSection>
           )}
@@ -91,7 +124,9 @@ export function GenericReportPage({
         <>
           <ReportSection titulo="Indicadores">
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-              {data.kpis.map((k) => <ReportKpiCard key={k.label} kpi={k} />)}
+              {data.kpis.map((k) => (
+                <ReportKpiCard key={k.label} kpi={k} />
+              ))}
             </div>
           </ReportSection>
 
@@ -113,22 +148,28 @@ export function GenericReportPage({
             </ReportSection>
           )}
 
-          {data.tabelas && data.tabelas.length > 0 && data.tabelas.map((grupo) => (
-            <ReportSection key={grupo.titulo} titulo={grupo.titulo}>
-              <div className="space-y-6">
-                {grupo.descricao && <p className="text-xs text-muted-foreground">{grupo.descricao}</p>}
-                {grupo.tabelas.map((t) => (
-                  <div key={t.titulo} className="space-y-2">
-                    <div>
-                      <p className="text-sm font-medium text-foreground">{t.titulo}</p>
-                      {t.subtitulo && <p className="text-xs text-muted-foreground">{t.subtitulo}</p>}
+          {data.tabelas &&
+            data.tabelas.length > 0 &&
+            data.tabelas.map((grupo) => (
+              <ReportSection key={grupo.titulo} titulo={grupo.titulo}>
+                <div className="space-y-6">
+                  {grupo.descricao && (
+                    <p className="text-xs text-muted-foreground">{grupo.descricao}</p>
+                  )}
+                  {grupo.tabelas.map((t) => (
+                    <div key={t.titulo} className="space-y-2">
+                      <div>
+                        <p className="text-sm font-medium text-foreground">{t.titulo}</p>
+                        {t.subtitulo && (
+                          <p className="text-xs text-muted-foreground">{t.subtitulo}</p>
+                        )}
+                      </div>
+                      <DrilldownTable columns={t.columns} rows={t.rows} />
                     </div>
-                    <DrilldownTable columns={t.columns} rows={t.rows} />
-                  </div>
-                ))}
-              </div>
-            </ReportSection>
-          ))}
+                  ))}
+                </div>
+              </ReportSection>
+            ))}
 
           <ReportSection titulo={`Detalhamento — ${data.rows.length} registros`}>
             <DrilldownTable columns={data.columns} rows={data.rows} />

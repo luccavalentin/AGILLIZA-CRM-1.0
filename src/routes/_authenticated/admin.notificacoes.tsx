@@ -42,14 +42,10 @@ function Pagina() {
   useEffect(() => {
     const canal = supabase
       .channel("notif:central")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "notificacoes" },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ["notificacoes"] });
-          queryClient.invalidateQueries({ queryKey: ["notificacoes", "todas"] });
-        },
-      )
+      .on("postgres_changes", { event: "*", schema: "public", table: "notificacoes" }, () => {
+        queryClient.invalidateQueries({ queryKey: ["notificacoes"] });
+        queryClient.invalidateQueries({ queryKey: ["notificacoes", "todas"] });
+      })
       .subscribe();
     return () => {
       supabase.removeChannel(canal);

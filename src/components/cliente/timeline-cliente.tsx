@@ -22,8 +22,7 @@ export function TimelineCliente({ etapas }: { etapas: EtapaCliente[] }) {
                     "border-transparent bg-success text-success-foreground",
                   etapa.status === "atual" &&
                     "border-transparent bg-primary text-primary-foreground animate-pulse",
-                  etapa.status === "proxima" &&
-                    "border-border bg-muted text-muted-foreground",
+                  etapa.status === "proxima" && "border-border bg-muted text-muted-foreground",
                 )}
               >
                 {etapa.status === "concluida" ? <Check className="h-4 w-4" /> : etapa.ordem}

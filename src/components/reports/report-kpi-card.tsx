@@ -17,15 +17,29 @@ export function ReportKpiCard({ kpi }: { kpi: ReportKpi }) {
   return (
     <Card className="relative overflow-hidden p-3.5 pl-4">
       <span className={cn("absolute left-0 top-0 h-full w-[2px]", toneBar[tone])} />
-      <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground">{kpi.label}</p>
-      <p className="mt-1.5 font-mono text-2xl font-semibold leading-none tabular-nums text-foreground">{kpi.valor}</p>
+      <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
+        {kpi.label}
+      </p>
+      <p className="mt-1.5 font-mono text-2xl font-semibold leading-none tabular-nums text-foreground">
+        {kpi.valor}
+      </p>
       {kpi.hint && <p className="mt-1 truncate text-xs text-muted-foreground">{kpi.hint}</p>}
     </Card>
   );
 }
 
 /** Moldura padrão de gráfico. */
-export function ChartCard({ titulo, subtitulo, action, children }: { titulo: string; subtitulo?: string; action?: ReactNode; children: ReactNode }) {
+export function ChartCard({
+  titulo,
+  subtitulo,
+  action,
+  children,
+}: {
+  titulo: string;
+  subtitulo?: string;
+  action?: ReactNode;
+  children: ReactNode;
+}) {
   return (
     <Card className="flex flex-col p-4">
       <div className="mb-3 flex items-start justify-between gap-2">

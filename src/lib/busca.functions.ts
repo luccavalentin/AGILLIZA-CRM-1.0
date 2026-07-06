@@ -22,9 +22,7 @@ export interface RespostaBusca {
  */
 export const buscaGlobal = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) =>
-    z.object({ termo: z.string().trim().min(1).max(120) }).parse(data),
-  )
+  .inputValidator((data) => z.object({ termo: z.string().trim().min(1).max(120) }).parse(data))
   .handler(async ({ data }): Promise<RespostaBusca> => {
     // Placeholder de integração: cada etapa futura adiciona sua consulta
     // real com escopo por correspondente_id e RLS. Sem mocks.

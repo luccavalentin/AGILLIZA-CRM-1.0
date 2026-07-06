@@ -31,7 +31,10 @@ export interface TarefaItem {
   created_at: string;
 }
 
-async function nomesPorId(supabase: any, ids: (string | null | undefined)[]): Promise<Map<string, string>> {
+async function nomesPorId(
+  supabase: any,
+  ids: (string | null | undefined)[],
+): Promise<Map<string, string>> {
   const uniq = [...new Set(ids.filter(Boolean) as string[])];
   if (uniq.length === 0) return new Map();
   const { data } = await supabase.from("profiles").select("id, nome").in("id", uniq);
@@ -55,7 +58,9 @@ export const listarTarefas = createServerFn({ method: "GET" })
     const { supabase, userId } = context;
     let query = supabase
       .from("tasks")
-      .select("id, numero, titulo, status, prioridade, prazo, cliente_id, responsavel_id, created_at, clientes(nome)")
+      .select(
+        "id, numero, titulo, status, prioridade, prazo, cliente_id, responsavel_id, created_at, clientes(nome)",
+      )
       .order("created_at", { ascending: false })
       .limit(300);
     if (data.escopo === "minhas") {
@@ -66,7 +71,10 @@ export const listarTarefas = createServerFn({ method: "GET" })
     const { data: itens, error } = await query;
     if (error) throw new Error(error.message);
     const rows = (itens ?? []) as any[];
-    const nomes = await nomesPorId(supabase, rows.map((r) => r.responsavel_id));
+    const nomes = await nomesPorId(
+      supabase,
+      rows.map((r) => r.responsavel_id),
+    );
     return rows.map((r) => ({
       id: r.id,
       numero: r.numero,
@@ -77,7 +85,7 @@ export const listarTarefas = createServerFn({ method: "GET" })
       cliente_id: r.cliente_id,
       nome_cliente: r.clientes?.nome ?? null,
       responsavel_id: r.responsavel_id,
-      nome_responsavel: r.responsavel_id ? nomes.get(r.responsavel_id) ?? null : null,
+      nome_responsavel: r.responsavel_id ? (nomes.get(r.responsavel_id) ?? null) : null,
       created_at: r.created_at,
     }));
   });
@@ -87,15 +95,31 @@ export const obterTarefa = createServerFn({ method: "GET" })
   .inputValidator((data) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ context, data }) => {
     const { supabase } = context;
-    const [tarefa, checklist, participantes, comentarios, historico, tagLinks, anexos] = await Promise.all([
-      supabase.from("tasks").select("*, clientes(nome, numero_cliente)").eq("id", data.id).maybeSingle(),
-      supabase.from("task_checklist_items").select("*").eq("task_id", data.id).order("ordem"),
-      supabase.from("task_participants").select("*").eq("task_id", data.id),
-      supabase.from("task_comments").select("*").eq("task_id", data.id).order("created_at"),
-      supabase.from("task_history").select("*").eq("task_id", data.id).order("created_at", { ascending: false }),
-      supabase.from("task_tag_links").select("tag_id, task_tags(id, nome, cor)").eq("task_id", data.id),
-      supabase.from("task_attachments").select("*").eq("task_id", data.id).order("created_at", { ascending: false }),
-    ]);
+    const [tarefa, checklist, participantes, comentarios, historico, tagLinks, anexos] =
+      await Promise.all([
+        supabase
+          .from("tasks")
+          .select("*, clientes(nome, numero_cliente)")
+          .eq("id", data.id)
+          .maybeSingle(),
+        supabase.from("task_checklist_items").select("*").eq("task_id", data.id).order("ordem"),
+        supabase.from("task_participants").select("*").eq("task_id", data.id),
+        supabase.from("task_comments").select("*").eq("task_id", data.id).order("created_at"),
+        supabase
+          .from("task_history")
+          .select("*")
+          .eq("task_id", data.id)
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("task_tag_links")
+          .select("tag_id, task_tags(id, nome, cor)")
+          .eq("task_id", data.id),
+        supabase
+          .from("task_attachments")
+          .select("*")
+          .eq("task_id", data.id)
+          .order("created_at", { ascending: false }),
+      ]);
     if (tarefa.error) throw new Error(tarefa.error.message);
     const uids = [
       ...(participantes.data ?? []).map((p: any) => p.user_id),
@@ -107,16 +131,26 @@ export const obterTarefa = createServerFn({ method: "GET" })
     const nomes = await nomesPorId(supabase, uids);
     return {
       tarefa: tarefa.data,
-      nome_responsavel: tarefa.data?.responsavel_id ? nomes.get(tarefa.data.responsavel_id) ?? null : null,
+      nome_responsavel: tarefa.data?.responsavel_id
+        ? (nomes.get(tarefa.data.responsavel_id) ?? null)
+        : null,
       checklist: checklist.data ?? [],
-      participantes: (participantes.data ?? []).map((p: any) => ({ ...p, nome: nomes.get(p.user_id) ?? null })),
-      comentarios: (comentarios.data ?? []).map((c: any) => ({ ...c, nome_autor: nomes.get(c.autor_id) ?? null })),
+      participantes: (participantes.data ?? []).map((p: any) => ({
+        ...p,
+        nome: nomes.get(p.user_id) ?? null,
+      })),
+      comentarios: (comentarios.data ?? []).map((c: any) => ({
+        ...c,
+        nome_autor: nomes.get(c.autor_id) ?? null,
+      })),
       historico: historico.data ?? [],
       tags: (tagLinks.data ?? []).map((l: any) => l.task_tags).filter(Boolean),
-      anexos: (anexos.data ?? []).map((a: any) => ({ ...a, nome_autor: a.autor_id ? nomes.get(a.autor_id) ?? null : null })),
+      anexos: (anexos.data ?? []).map((a: any) => ({
+        ...a,
+        nome_autor: a.autor_id ? (nomes.get(a.autor_id) ?? null) : null,
+      })),
     };
   });
-
 
 async function correspondenteId(supabase: any, userId: string): Promise<string> {
   const { data, error } = await supabase.rpc("correspondente_do_usuario", { _user_id: userId });
@@ -161,16 +195,18 @@ export const criarTarefa = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     const id = nova.id as string;
     if (data.checklist?.length) {
-      await supabase.from("task_checklist_items").insert(
-        data.checklist.map((d, i) => ({ task_id: id, descricao: d, ordem: i })),
-      );
+      await supabase
+        .from("task_checklist_items")
+        .insert(data.checklist.map((d, i) => ({ task_id: id, descricao: d, ordem: i })));
     }
     if (data.participantes?.length) {
       await supabase
         .from("task_participants")
         .insert(data.participantes.map((u) => ({ task_id: id, user_id: u })));
     }
-    await supabase.from("task_history").insert({ task_id: id, ator_id: userId, acao: "criada", detalhe: data.titulo });
+    await supabase
+      .from("task_history")
+      .insert({ task_id: id, ator_id: userId, acao: "criada", detalhe: data.titulo });
     if (data.responsavel_id && data.responsavel_id !== userId) {
       await supabase.rpc("emitir_notificacao", {
         _user_id: data.responsavel_id,
@@ -187,18 +223,32 @@ export const criarTarefa = createServerFn({ method: "POST" })
 export const moverStatusTarefa = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) =>
-    z.object({ id: z.string().uuid(), status: z.enum(["aberta", "em_andamento", "concluida", "cancelada"]) }).parse(data),
+    z
+      .object({
+        id: z.string().uuid(),
+        status: z.enum(["aberta", "em_andamento", "concluida", "cancelada"]),
+      })
+      .parse(data),
   )
   .handler(async ({ context, data }) => {
     const { supabase, userId } = context;
-    const { data: atual } = await supabase.from("tasks").select("status").eq("id", data.id).single();
+    const { data: atual } = await supabase
+      .from("tasks")
+      .select("status")
+      .eq("id", data.id)
+      .single();
     if (!atual) throw new Error("Tarefa não encontrada.");
     if (!transicaoTarefaPermitida(atual.status as TarefaStatus, data.status)) {
       throw new Error(`Transição de status inválida: ${atual.status} → ${data.status}.`);
     }
-    const { error } = await supabase.from("tasks").update({ status: data.status }).eq("id", data.id);
+    const { error } = await supabase
+      .from("tasks")
+      .update({ status: data.status })
+      .eq("id", data.id);
     if (error) throw new Error(error.message);
-    await supabase.from("task_history").insert({ task_id: data.id, ator_id: userId, acao: "status", detalhe: data.status });
+    await supabase
+      .from("task_history")
+      .insert({ task_id: data.id, ator_id: userId, acao: "status", detalhe: data.status });
     return { ok: true };
   });
 
@@ -207,14 +257,23 @@ export const concluirTarefa = createServerFn({ method: "POST" })
   .inputValidator((data) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ context, data }) => {
     const { supabase, userId } = context;
-    const { data: atual } = await supabase.from("tasks").select("status").eq("id", data.id).single();
+    const { data: atual } = await supabase
+      .from("tasks")
+      .select("status")
+      .eq("id", data.id)
+      .single();
     if (!atual) throw new Error("Tarefa não encontrada.");
     if (!transicaoTarefaPermitida(atual.status as TarefaStatus, "concluida")) {
       throw new Error("Esta tarefa não pode ser concluída no estado atual.");
     }
-    const { error } = await supabase.from("tasks").update({ status: "concluida" }).eq("id", data.id);
+    const { error } = await supabase
+      .from("tasks")
+      .update({ status: "concluida" })
+      .eq("id", data.id);
     if (error) throw new Error(error.message);
-    await supabase.from("task_history").insert({ task_id: data.id, ator_id: userId, acao: "concluida" });
+    await supabase
+      .from("task_history")
+      .insert({ task_id: data.id, ator_id: userId, acao: "concluida" });
     return { ok: true };
   });
 
@@ -223,14 +282,19 @@ export const toggleChecklistItem = createServerFn({ method: "POST" })
   .inputValidator((data) => z.object({ id: z.string().uuid(), concluido: z.boolean() }).parse(data))
   .handler(async ({ context, data }) => {
     const { supabase } = context;
-    const { error } = await supabase.from("task_checklist_items").update({ concluido: data.concluido }).eq("id", data.id);
+    const { error } = await supabase
+      .from("task_checklist_items")
+      .update({ concluido: data.concluido })
+      .eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
 
 export const comentarTarefa = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) => z.object({ task_id: z.string().uuid(), corpo: z.string().min(1) }).parse(data))
+  .inputValidator((data) =>
+    z.object({ task_id: z.string().uuid(), corpo: z.string().min(1) }).parse(data),
+  )
   .handler(async ({ context, data }) => {
     const { supabase, userId } = context;
     const { error } = await supabase
@@ -263,10 +327,7 @@ export const listarTagsTarefa = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<TarefaTag[]> => {
     const { supabase } = context;
-    const { data, error } = await supabase
-      .from("task_tags")
-      .select("id, nome, cor")
-      .order("nome");
+    const { data, error } = await supabase.from("task_tags").select("id, nome, cor").order("nome");
     if (error) throw new Error(error.message);
     return (data ?? []) as TarefaTag[];
   });
@@ -275,7 +336,9 @@ export const listarTagsTarefa = createServerFn({ method: "GET" })
 export const criarTagTarefa = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) =>
-    z.object({ nome: z.string().trim().min(1), cor: z.string().trim().min(1).default("#64748b") }).parse(d),
+    z
+      .object({ nome: z.string().trim().min(1), cor: z.string().trim().min(1).default("#64748b") })
+      .parse(d),
   )
   .handler(async ({ context, data }): Promise<TarefaTag> => {
     const { supabase, userId } = context;
@@ -293,7 +356,9 @@ export const criarTagTarefa = createServerFn({ method: "POST" })
 export const alternarTagTarefa = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) =>
-    z.object({ task_id: z.string().uuid(), tag_id: z.string().uuid(), vincular: z.boolean() }).parse(d),
+    z
+      .object({ task_id: z.string().uuid(), tag_id: z.string().uuid(), vincular: z.boolean() })
+      .parse(d),
   )
   .handler(async ({ context, data }): Promise<{ ok: true }> => {
     const { supabase } = context;

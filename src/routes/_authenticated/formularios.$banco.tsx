@@ -12,4 +12,3 @@ function Pagina() {
   if (!BANCOS_FORMULARIO.includes(banco as BancoFormulario)) throw notFound();
   return <FormulariosView banco={banco as BancoFormulario} />;
 }
-

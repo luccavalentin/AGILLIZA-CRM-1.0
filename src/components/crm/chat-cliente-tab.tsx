@@ -56,7 +56,12 @@ export function ChatClienteTab({ clienteId, info }: { clienteId: string; info?: 
       .channel(`chat-cli:${clienteId}`)
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "cliente_app_mensagens", filter: `cliente_id=eq.${clienteId}` },
+        {
+          event: "*",
+          schema: "public",
+          table: "cliente_app_mensagens",
+          filter: `cliente_id=eq.${clienteId}`,
+        },
         () => qc.invalidateQueries({ queryKey }),
       )
       .subscribe();
@@ -96,12 +101,7 @@ export function ChatClienteTab({ clienteId, info }: { clienteId: string; info?: 
             {info?.nome ?? "Conversa com o cliente"}
           </p>
           <p className="truncate text-xs text-muted-foreground">
-            {[
-              info?.documento,
-              info?.celular,
-              info?.email,
-              info?.contexto,
-            ]
+            {[info?.documento, info?.celular, info?.email, info?.contexto]
               .filter(Boolean)
               .join(" · ") || "App do Cliente"}
           </p>
@@ -132,8 +132,14 @@ export function ChatClienteTab({ clienteId, info }: { clienteId: string; info?: 
                   )}
                 >
                   <p className="whitespace-pre-wrap break-words">{m.mensagem}</p>
-                  <p className={cn("mt-1 text-[10px]", doTime ? "text-primary-foreground/70" : "text-muted-foreground")}>
-                    {doTime ? (m.remetente_nome || "Equipe") : (info?.nome || "Cliente")} · {formatarHora(m.criada_em)}
+                  <p
+                    className={cn(
+                      "mt-1 text-[10px]",
+                      doTime ? "text-primary-foreground/70" : "text-muted-foreground",
+                    )}
+                  >
+                    {doTime ? m.remetente_nome || "Equipe" : info?.nome || "Cliente"} ·{" "}
+                    {formatarHora(m.criada_em)}
                   </p>
                 </div>
               </div>
@@ -156,8 +162,17 @@ export function ChatClienteTab({ clienteId, info }: { clienteId: string; info?: 
           placeholder="Escreva uma mensagem para o cliente…"
           className="min-h-[44px] max-h-32 resize-none"
         />
-        <Button onClick={submeter} disabled={enviar.isPending || !texto.trim()} size="icon" className="h-11 w-11 shrink-0">
-          {enviar.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+        <Button
+          onClick={submeter}
+          disabled={enviar.isPending || !texto.trim()}
+          size="icon"
+          className="h-11 w-11 shrink-0"
+        >
+          {enviar.isPending ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Send className="h-4 w-4" />
+          )}
         </Button>
       </div>
     </Card>

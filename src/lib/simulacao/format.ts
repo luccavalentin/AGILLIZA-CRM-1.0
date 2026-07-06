@@ -12,7 +12,10 @@ export function formatPercent(v: number | null | undefined, casas = 2): string {
 
 /** Converte texto com máscara BRL ("1.234,56" ou "R$ 1.234,56") em número. */
 export function parseBRL(texto: string): number {
-  const limpo = texto.replace(/[^\d,-]/g, "").replace(/\./g, "").replace(",", ".");
+  const limpo = texto
+    .replace(/[^\d,-]/g, "")
+    .replace(/\./g, "")
+    .replace(",", ".");
   const n = Number(limpo);
   return Number.isFinite(n) ? n : 0;
 }
@@ -86,6 +89,31 @@ function validarCnpj(cnpj: string): boolean {
 }
 
 export const UFS = [
-  "AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG","PA","PB","PR",
-  "PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO",
+  "AC",
+  "AL",
+  "AP",
+  "AM",
+  "BA",
+  "CE",
+  "DF",
+  "ES",
+  "GO",
+  "MA",
+  "MT",
+  "MS",
+  "MG",
+  "PA",
+  "PB",
+  "PR",
+  "PE",
+  "PI",
+  "RJ",
+  "RN",
+  "RS",
+  "RO",
+  "RR",
+  "SC",
+  "SP",
+  "SE",
+  "TO",
 ] as const;
