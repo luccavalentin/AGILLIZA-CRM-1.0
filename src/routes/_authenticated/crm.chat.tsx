@@ -647,10 +647,13 @@ function PainelGestao({
   const removerTag = useMutation({
     mutationFn: (id: string) => excluirTag({ data: { id } }),
     onSuccess: () => {
+      toast.success("Etiqueta excluída.");
       qc.invalidateQueries({ queryKey: ["chat-etiquetas"] });
       qc.invalidateQueries({ queryKey: ["chat-overview-cliente", clienteId] });
       qc.invalidateQueries({ queryKey: ["chat-overview"] });
     },
+    onError: (e) =>
+      toast.error(e instanceof Error ? e.message : "Não foi possível excluir a etiqueta."),
   });
 
   const gravarMeta = useMutation({
@@ -736,8 +739,17 @@ function PainelGestao({
                       </button>
                       <button
                         type="button"
-                        onClick={() => removerTag.mutate(e.id)}
-                        className="rounded-md p-1 text-muted-foreground hover:text-destructive"
+                        disabled={removerTag.isPending}
+                        onClick={() => {
+                          if (
+                            window.confirm(
+                              `Excluir a etiqueta "${e.nome}"? Ela será removida de todos os clientes.`,
+                            )
+                          ) {
+                            removerTag.mutate(e.id);
+                          }
+                        }}
+                        className="rounded-md p-1 text-muted-foreground transition-colors hover:text-destructive disabled:opacity-50"
                         aria-label={`Excluir ${e.nome}`}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
