@@ -131,6 +131,20 @@ function Pagina() {
     }
   }
 
+  async function handleEnviarProposta(id: string) {
+    try {
+      const res = await criar({ data: { simulacao_id: id } });
+      toast.success(`Proposta ${res.numero_proposta} criada.`);
+      router.navigate({
+        to: "/operacional/propostas/$id",
+        params: { id: res.proposta_id },
+        search: { complementar: 1 },
+      });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Não foi possível gerar a proposta.");
+    }
+  }
+
   return (
     <div className="mx-auto w-full max-w-6xl space-y-6 p-4 md:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
