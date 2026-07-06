@@ -181,9 +181,19 @@ export const exportarBackupCompleto = createServerFn({ method: "GET" })
           .eq("correspondente_id", corr)
           .limit(5000);
         if (error) continue;
-        const linhas = (data ?? []) as Record<string, unknown>[];
-        const colunas =
-          linhas.length > 0 ? Object.keys(linhas[0]) : [];
+        const brutas = (data ?? []) as Record<string, unknown>[];
+        const colunas = brutas.length > 0 ? Object.keys(brutas[0]) : [];
+        const linhas: Record<string, string | number | boolean | null>[] = brutas.map((r) => {
+          const o: Record<string, string | number | boolean | null> = {};
+          for (const k of Object.keys(r)) {
+            const v = r[k];
+            if (v === null || v === undefined) o[k] = null;
+            else if (typeof v === "object") o[k] = JSON.stringify(v);
+            else if (typeof v === "boolean" || typeof v === "number") o[k] = v;
+            else o[k] = String(v);
+          }
+          return o;
+        });
         tabelas.push({ label: g.label, tabela: g.tabela, colunas, linhas });
       } catch {
         // tabela sem correspondente_id ou inacessível — ignora
