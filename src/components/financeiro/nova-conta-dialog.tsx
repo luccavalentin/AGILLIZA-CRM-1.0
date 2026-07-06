@@ -63,7 +63,6 @@ export function NovaContaDialog({ tipo }: { tipo: ContaTipo }) {
       qc.invalidateQueries({ queryKey: ["fin-contas", tipo] });
       setOpen(false);
       setDescricao("");
-      setContraparte("");
       setValor(0);
       setFile(null);
       setCategoriaId("");
