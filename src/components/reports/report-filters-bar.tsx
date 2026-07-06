@@ -177,6 +177,24 @@ export function ReportFiltersBar({
             </SelectContent>
           </Select>
         )}
+        {!!responsaveis?.length && (
+          <Select
+            value={filtros.responsavel ?? "__all"}
+            onValueChange={(v) => set({ responsavel: v === "__all" ? undefined : v })}
+          >
+            <SelectTrigger className="h-9 w-52">
+              <SelectValue placeholder="Responsável" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__all">Todos os responsáveis</SelectItem>
+              {responsaveis.map((r) => (
+                <SelectItem key={r.value} value={r.value}>
+                  {r.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
 
         <Input
           value={filtros.busca ?? ""}
