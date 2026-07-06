@@ -58,6 +58,7 @@ type Form = Record<string, any>;
 
 function Pagina() {
   const router = useRouter();
+  const { duplicar } = Route.useSearch();
   const [f, setF] = useState<Form>({
     produto: "financiamento_imobiliario",
     tipo_imovel: "",
