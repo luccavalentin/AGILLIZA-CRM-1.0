@@ -402,3 +402,12 @@ function Item({ termo, desc }: { termo: string; desc: string }) {
     </div>
   );
 }
+
+function MobileStat({ rotulo, valor }: { rotulo: string; valor: string }) {
+  return (
+    <div className="min-w-0">
+      <dt className="text-xs text-muted-foreground">{rotulo}</dt>
+      <dd className="truncate font-medium tabular-nums">{valor}</dd>
+    </div>
+  );
+}
