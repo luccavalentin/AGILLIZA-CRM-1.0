@@ -73,6 +73,36 @@ function soDigitos(v: unknown): string | undefined {
 }
 
 /**
+ * Um envolvido tem o cadastro complementar completo (obrigatório para enviar
+ * a proposta ao banco). Espelha a validação do formulário no front-end.
+ */
+function envolvidoEnvioCompleto(e: any): boolean {
+  const base =
+    e.nome &&
+    e.cpf_cnpj &&
+    e.tipo_documento_identidade &&
+    e.numero_documento &&
+    e.orgao_expedidor &&
+    e.uf_expedicao &&
+    e.profissao &&
+    e.renda &&
+    e.email &&
+    e.celular &&
+    e.cep &&
+    e.logradouro &&
+    e.numero_logradouro &&
+    e.bairro &&
+    e.municipio &&
+    e.uf &&
+    e.fg_autorizacao_dados;
+  const pf = (e.tipo_pessoa ?? "F") === "F";
+  const pessoais = !pf || (e.data_nascimento && e.nome_mae && e.tipo_sexo && e.estado_civil);
+  return Boolean(base && pessoais);
+}
+
+
+
+/**
  * Garante que o(s) participante(s) da oportunidade tenham os dados obrigatórios
  * exigidos pelos bancos (estado civil / maritalStatus, endereço com UF, data de
  * nascimento e renda). Vários bancos (ex.: Itaú) recusam a proposta quando
