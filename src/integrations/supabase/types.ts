@@ -1247,6 +1247,89 @@ export type Database = {
           },
         ]
       }
+      crm_chat_cliente_etiquetas: {
+        Row: {
+          cliente_id: string
+          correspondente_id: string
+          created_at: string
+          etiqueta_id: string
+        }
+        Insert: {
+          cliente_id: string
+          correspondente_id: string
+          created_at?: string
+          etiqueta_id: string
+        }
+        Update: {
+          cliente_id?: string
+          correspondente_id?: string
+          created_at?: string
+          etiqueta_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_chat_cliente_etiquetas_etiqueta_id_fkey"
+            columns: ["etiqueta_id"]
+            isOneToOne: false
+            referencedRelation: "crm_chat_etiquetas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_chat_etiquetas: {
+        Row: {
+          cor: string
+          correspondente_id: string
+          created_at: string
+          id: string
+          nome: string
+        }
+        Insert: {
+          cor?: string
+          correspondente_id: string
+          created_at?: string
+          id?: string
+          nome: string
+        }
+        Update: {
+          cor?: string
+          correspondente_id?: string
+          created_at?: string
+          id?: string
+          nome?: string
+        }
+        Relationships: []
+      }
+      crm_chat_meta: {
+        Row: {
+          cliente_id: string
+          correspondente_id: string
+          created_at: string
+          lembrete_em: string | null
+          lembrete_nota: string | null
+          sla_atualizacao_horas: number
+          updated_at: string
+        }
+        Insert: {
+          cliente_id: string
+          correspondente_id: string
+          created_at?: string
+          lembrete_em?: string | null
+          lembrete_nota?: string | null
+          sla_atualizacao_horas?: number
+          updated_at?: string
+        }
+        Update: {
+          cliente_id?: string
+          correspondente_id?: string
+          created_at?: string
+          lembrete_em?: string | null
+          lembrete_nota?: string | null
+          sla_atualizacao_horas?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       demanda_anexos: {
         Row: {
           autor_id: string | null

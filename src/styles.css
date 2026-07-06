@@ -514,3 +514,25 @@ div[style*="Edit with Lovable"],
     padding: 5px 0;
   }
 }
+
+/* Cores de etiquetas do chat do CRM (evita cores cruas no TSX) */
+.chat-tag { display: inline-flex; align-items: center; gap: 0.25rem; border-radius: 9999px; padding: 0.05rem 0.45rem; font-size: 0.65rem; font-weight: 600; line-height: 1.1; }
+.chat-tag-dot { height: 0.5rem; width: 0.5rem; border-radius: 9999px; display: inline-block; }
+.chat-tag-blue   { background: hsl(214 95% 93%); color: hsl(214 80% 34%); }
+.chat-tag-green  { background: hsl(142 70% 90%); color: hsl(142 60% 26%); }
+.chat-tag-amber  { background: hsl(38 95% 90%);  color: hsl(30 80% 34%); }
+.chat-tag-red    { background: hsl(0 90% 93%);   color: hsl(0 70% 40%); }
+.chat-tag-purple { background: hsl(270 80% 93%); color: hsl(270 60% 42%); }
+.chat-tag-slate  { background: hsl(215 20% 90%); color: hsl(215 25% 32%); }
+.dark .chat-tag-blue   { background: hsl(214 60% 22%); color: hsl(214 90% 82%); }
+.dark .chat-tag-green  { background: hsl(142 45% 20%); color: hsl(142 70% 78%); }
+.dark .chat-tag-amber  { background: hsl(32 55% 22%);  color: hsl(38 90% 78%); }
+.dark .chat-tag-red    { background: hsl(0 45% 26%);   color: hsl(0 90% 84%); }
+.dark .chat-tag-purple { background: hsl(270 45% 28%); color: hsl(270 85% 85%); }
+.dark .chat-tag-slate  { background: hsl(215 20% 28%); color: hsl(215 30% 82%); }
+.chat-dot-blue { background: hsl(214 80% 50%); }
+.chat-dot-green { background: hsl(142 60% 42%); }
+.chat-dot-amber { background: hsl(35 90% 50%); }
+.chat-dot-red { background: hsl(0 75% 55%); }
+.chat-dot-purple { background: hsl(270 65% 58%); }
+.chat-dot-slate { background: hsl(215 20% 55%); }
