@@ -386,7 +386,9 @@ function Pagina() {
                     <p className="tabular-nums font-semibold text-card-foreground">
                       {formatBRL(c.resultado.primeira_parcela)}
                     </p>
-                    {i === 0 && <ToneBadge tone="success">Melhor taxa</ToneBadge>}
+                    {i === 0 && comparativo.length > 1 && (
+                      <ToneBadge tone="success">Melhor taxa</ToneBadge>
+                    )}
                   </div>
                 </div>
               ))}
