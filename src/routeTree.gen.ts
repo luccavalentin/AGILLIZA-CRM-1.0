@@ -68,6 +68,7 @@ import { Route as AuthenticatedCrmScanIaRouteImport } from './routes/_authentica
 import { Route as AuthenticatedCrmParceirosRouteImport } from './routes/_authenticated/crm.parceiros'
 import { Route as AuthenticatedCrmPainelRouteImport } from './routes/_authenticated/crm.painel'
 import { Route as AuthenticatedCrmClientesRouteImport } from './routes/_authenticated/crm.clientes'
+import { Route as AuthenticatedCrmChatRouteImport } from './routes/_authenticated/crm.chat'
 import { Route as AuthenticatedContaSegurancaRouteImport } from './routes/_authenticated/conta.seguranca'
 import { Route as AuthenticatedContaPerfilRouteImport } from './routes/_authenticated/conta.perfil'
 import { Route as AuthenticatedAdminSlaRouteImport } from './routes/_authenticated/admin.sla'
@@ -427,6 +428,11 @@ const AuthenticatedCrmClientesRoute =
     path: '/crm/clientes',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedCrmChatRoute = AuthenticatedCrmChatRouteImport.update({
+  id: '/crm/chat',
+  path: '/crm/chat',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedContaSegurancaRoute =
   AuthenticatedContaSegurancaRouteImport.update({
     id: '/conta/seguranca',
@@ -632,6 +638,7 @@ export interface FileRoutesByFullPath {
   '/admin/sla': typeof AuthenticatedAdminSlaRoute
   '/conta/perfil': typeof AuthenticatedContaPerfilRoute
   '/conta/seguranca': typeof AuthenticatedContaSegurancaRoute
+  '/crm/chat': typeof AuthenticatedCrmChatRoute
   '/crm/clientes': typeof AuthenticatedCrmClientesRoute
   '/crm/painel': typeof AuthenticatedCrmPainelRoute
   '/crm/parceiros': typeof AuthenticatedCrmParceirosRoute
@@ -718,6 +725,7 @@ export interface FileRoutesByTo {
   '/admin/sla': typeof AuthenticatedAdminSlaRoute
   '/conta/perfil': typeof AuthenticatedContaPerfilRoute
   '/conta/seguranca': typeof AuthenticatedContaSegurancaRoute
+  '/crm/chat': typeof AuthenticatedCrmChatRoute
   '/crm/clientes': typeof AuthenticatedCrmClientesRoute
   '/crm/painel': typeof AuthenticatedCrmPainelRoute
   '/crm/parceiros': typeof AuthenticatedCrmParceirosRoute
@@ -808,6 +816,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/sla': typeof AuthenticatedAdminSlaRoute
   '/_authenticated/conta/perfil': typeof AuthenticatedContaPerfilRoute
   '/_authenticated/conta/seguranca': typeof AuthenticatedContaSegurancaRoute
+  '/_authenticated/crm/chat': typeof AuthenticatedCrmChatRoute
   '/_authenticated/crm/clientes': typeof AuthenticatedCrmClientesRoute
   '/_authenticated/crm/painel': typeof AuthenticatedCrmPainelRoute
   '/_authenticated/crm/parceiros': typeof AuthenticatedCrmParceirosRoute
@@ -898,6 +907,7 @@ export interface FileRouteTypes {
     | '/admin/sla'
     | '/conta/perfil'
     | '/conta/seguranca'
+    | '/crm/chat'
     | '/crm/clientes'
     | '/crm/painel'
     | '/crm/parceiros'
@@ -984,6 +994,7 @@ export interface FileRouteTypes {
     | '/admin/sla'
     | '/conta/perfil'
     | '/conta/seguranca'
+    | '/crm/chat'
     | '/crm/clientes'
     | '/crm/painel'
     | '/crm/parceiros'
@@ -1073,6 +1084,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/sla'
     | '/_authenticated/conta/perfil'
     | '/_authenticated/conta/seguranca'
+    | '/_authenticated/crm/chat'
     | '/_authenticated/crm/clientes'
     | '/_authenticated/crm/painel'
     | '/_authenticated/crm/parceiros'
@@ -1551,6 +1563,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCrmClientesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/crm/chat': {
+      id: '/_authenticated/crm/chat'
+      path: '/crm/chat'
+      fullPath: '/crm/chat'
+      preLoaderRoute: typeof AuthenticatedCrmChatRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/conta/seguranca': {
       id: '/_authenticated/conta/seguranca'
       path: '/conta/seguranca'
@@ -1846,6 +1865,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminSlaRoute: typeof AuthenticatedAdminSlaRoute
   AuthenticatedContaPerfilRoute: typeof AuthenticatedContaPerfilRoute
   AuthenticatedContaSegurancaRoute: typeof AuthenticatedContaSegurancaRoute
+  AuthenticatedCrmChatRoute: typeof AuthenticatedCrmChatRoute
   AuthenticatedCrmClientesRoute: typeof AuthenticatedCrmClientesRoute
   AuthenticatedCrmPainelRoute: typeof AuthenticatedCrmPainelRoute
   AuthenticatedCrmParceirosRoute: typeof AuthenticatedCrmParceirosRoute
@@ -1900,6 +1920,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminSlaRoute: AuthenticatedAdminSlaRoute,
   AuthenticatedContaPerfilRoute: AuthenticatedContaPerfilRoute,
   AuthenticatedContaSegurancaRoute: AuthenticatedContaSegurancaRoute,
+  AuthenticatedCrmChatRoute: AuthenticatedCrmChatRoute,
   AuthenticatedCrmClientesRoute: AuthenticatedCrmClientesRoute,
   AuthenticatedCrmPainelRoute: AuthenticatedCrmPainelRoute,
   AuthenticatedCrmParceirosRoute: AuthenticatedCrmParceirosRoute,
