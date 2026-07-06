@@ -3,14 +3,13 @@
  *
  * Regra de idade (SFH/SBPE): a soma da idade do proponente mais o prazo do
  * financiamento não pode ultrapassar o teto de idade ao TÉRMINO do contrato.
- * O teto legal máximo é de 80 anos e 6 meses (966 meses), mas as instituições
- * divergem: Bradesco e Santander aceitam 80 anos e 6 meses, enquanto o Itaú
- * usa o teto de 80 anos exatos (960 meses). Como enviamos o MESMO prazo para
- * todos os bancos numa única simulação, adotamos o teto mais restritivo (80
- * anos = 960 meses); caso contrário o Itaú recusa o prazo e retorna um "Erro
- * interno do servidor" genérico. Todas as IFs contam a idade de forma
- * "corrida": o mês em curso do proponente já é considerado como iniciado
- * (idade arredondada para cima).
+ * Bradesco e Santander usam o teto de 80 anos e 6 meses (966 meses). O Itaú é
+ * sempre mais restritivo: aceita exatamente 3 parcelas a menos que os demais,
+ * ou seja, teto equivalente a 963 meses. Como enviamos o MESMO prazo para
+ * todos os bancos numa única simulação, adotamos a lógica do Itaú (963 meses);
+ * caso contrário o Itaú recusa o prazo e retorna um "Erro interno do servidor"
+ * genérico. Todas as IFs contam a idade de forma "corrida": o mês em curso do
+ * proponente já é considerado como iniciado (idade arredondada para cima).
  *
  * Para que a mesma simulação/proposta seja aceita por TODAS as IFs sem erro,
  * calculamos o prazo pela regra mais restritiva (idade corrida) e, quando há
