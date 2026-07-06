@@ -114,7 +114,7 @@ function Pagina() {
     w.valor_financiamento > 0 &&
     w.data_nascimento !== "" &&
     w.prazo_meses >= PRAZO_MIN &&
-    w.prazo_meses <= PRAZO_MAX;
+    w.prazo_meses <= (maxPrazoIdade ?? PRAZO_MAX);
 
   const comparativo = useMemo(() => {
     if (!bancos || !mostrarRapida) return [];

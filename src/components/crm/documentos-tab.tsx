@@ -96,8 +96,15 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
   }
 
   async function marcar(id: string, status: "aprovado" | "reprovado") {
-    await revisar({ data: { id, status } });
-    qc.invalidateQueries({ queryKey: ["cliente-docs", clienteId] });
+    try {
+      await revisar({ data: { id, status } });
+      toast.success(
+        status === "aprovado" ? "Documento aprovado." : "Documento reprovado.",
+      );
+      qc.invalidateQueries({ queryKey: ["cliente-docs", clienteId] });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao revisar documento.");
+    }
   }
 
   return (
