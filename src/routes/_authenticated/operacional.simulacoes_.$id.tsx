@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { corDoBanco } from "@/lib/bancos/cores";
+import { BancoLogo } from "@/components/bancos/banco-logo";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -213,77 +214,144 @@ function Pagina() {
         </TabsList>
 
         <TabsContent value="bancos" className="mt-4">
-          <div className="overflow-x-auto rounded-lg border border-border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Banco</TableHead>
-                  <TableHead>Situação</TableHead>
-                  <TableHead className="text-right">Parcela</TableHead>
-                  <TableHead className="text-right">Taxa a.a.</TableHead>
-                  <TableHead className="text-right">Prazo máx</TableHead>
-                  <TableHead className="text-right">Financ. máx</TableHead>
-                  <TableHead className="text-right">IOF</TableHead>
-                  <TableHead></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {bancos.length === 0 && (
-                  <TableRow>
-                    <TableCell
-                      colSpan={8}
-                      className="py-8 text-center text-sm text-muted-foreground"
-                    >
-                      Nenhum banco selecionado.
-                    </TableCell>
-                  </TableRow>
-                )}
+          {bancos.length === 0 ? (
+            <div className="rounded-lg border border-border py-8 text-center text-sm text-muted-foreground">
+              Nenhum banco selecionado.
+            </div>
+          ) : (
+            <>
+              {/* Mobile: cartões */}
+              <div className="grid gap-3 md:hidden">
                 {bancos.map((b: any) => (
-                  <TableRow key={b.id}>
-                    <TableCell className="font-medium">
-                      <div className="flex items-center gap-2">
-                        <span style={{ color: corDoBanco(b.nome_banco) }}>{b.nome_banco}</span>
-                        {b.id === melhorId && <ToneBadge tone="success">Melhor taxa</ToneBadge>}
+                  <div key={b.id} className="rounded-lg border border-border p-4">
+                    <div className="flex items-start gap-3">
+                      <BancoLogo nome={b.nome_banco} size="lg" className="mt-0.5" />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span
+                            className="truncate font-medium"
+                            style={{ color: corDoBanco(b.nome_banco) }}
+                          >
+                            {b.nome_banco}
+                          </span>
+                          {b.id === melhorId && (
+                            <ToneBadge tone="success">Melhor taxa</ToneBadge>
+                          )}
+                        </div>
+                        <div className="mt-1">
+                          <BancoStatusBadge status={b.status_banco} />
+                        </div>
                       </div>
-                      {b.status_banco === "erro" && b.mensagem_banco && (
-                        <p className="mt-1 text-xs text-destructive">{b.mensagem_banco}</p>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <BancoStatusBadge status={b.status_banco} />
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {formatBRL(b.valor_parcela)}
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {b.taxa_juros_ano != null ? formatPercent(b.taxa_juros_ano / 100) : "—"}
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {b.prazo_pagamento_max ? `${b.prazo_pagamento_max}m` : "—"}
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {formatBRL(b.valor_financiamento_max)}
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {formatBRL(b.valor_iof)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        <DetalheBancoDialog banco={b} />
-                        <Button
-                          size="sm"
-                          disabled={b.status_banco !== "simulada" || criandoBanco !== null}
-                          onClick={() => criar(b.banco_id)}
-                        >
-                          {criandoBanco === b.banco_id ? "Criando…" : "Criar proposta"}
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
+                    </div>
+
+                    {b.status_banco === "erro" && b.mensagem_banco && (
+                      <p className="mt-2 text-xs text-destructive">{b.mensagem_banco}</p>
+                    )}
+
+                    <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                      <MobileStat rotulo="Parcela" valor={formatBRL(b.valor_parcela)} />
+                      <MobileStat
+                        rotulo="Taxa a.a."
+                        valor={
+                          b.taxa_juros_ano != null
+                            ? formatPercent(b.taxa_juros_ano / 100)
+                            : "—"
+                        }
+                      />
+                      <MobileStat
+                        rotulo="Prazo máx"
+                        valor={b.prazo_pagamento_max ? `${b.prazo_pagamento_max}m` : "—"}
+                      />
+                      <MobileStat
+                        rotulo="Financ. máx"
+                        valor={formatBRL(b.valor_financiamento_max)}
+                      />
+                      <MobileStat rotulo="IOF" valor={formatBRL(b.valor_iof)} />
+                    </dl>
+
+                    <div className="mt-3 flex items-center justify-end gap-2">
+                      <DetalheBancoDialog banco={b} />
+                      <Button
+                        size="sm"
+                        disabled={b.status_banco !== "simulada" || criandoBanco !== null}
+                        onClick={() => criar(b.banco_id)}
+                      >
+                        {criandoBanco === b.banco_id ? "Criando…" : "Criar proposta"}
+                      </Button>
+                    </div>
+                  </div>
                 ))}
-              </TableBody>
-            </Table>
-          </div>
+              </div>
+
+              {/* Desktop: tabela */}
+              <div className="hidden overflow-x-auto rounded-lg border border-border md:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Banco</TableHead>
+                      <TableHead>Situação</TableHead>
+                      <TableHead className="text-right">Parcela</TableHead>
+                      <TableHead className="text-right">Taxa a.a.</TableHead>
+                      <TableHead className="text-right">Prazo máx</TableHead>
+                      <TableHead className="text-right">Financ. máx</TableHead>
+                      <TableHead className="text-right">IOF</TableHead>
+                      <TableHead></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {bancos.map((b: any) => (
+                      <TableRow key={b.id}>
+                        <TableCell className="font-medium">
+                          <div className="flex items-center gap-2">
+                            <BancoLogo nome={b.nome_banco} size="sm" />
+                            <span style={{ color: corDoBanco(b.nome_banco) }}>
+                              {b.nome_banco}
+                            </span>
+                            {b.id === melhorId && (
+                              <ToneBadge tone="success">Melhor taxa</ToneBadge>
+                            )}
+                          </div>
+                          {b.status_banco === "erro" && b.mensagem_banco && (
+                            <p className="mt-1 text-xs text-destructive">{b.mensagem_banco}</p>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <BancoStatusBadge status={b.status_banco} />
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          {formatBRL(b.valor_parcela)}
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          {b.taxa_juros_ano != null ? formatPercent(b.taxa_juros_ano / 100) : "—"}
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          {b.prazo_pagamento_max ? `${b.prazo_pagamento_max}m` : "—"}
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          {formatBRL(b.valor_financiamento_max)}
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          {formatBRL(b.valor_iof)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <DetalheBancoDialog banco={b} />
+                            <Button
+                              size="sm"
+                              disabled={b.status_banco !== "simulada" || criandoBanco !== null}
+                              onClick={() => criar(b.banco_id)}
+                            >
+                              {criandoBanco === b.banco_id ? "Criando…" : "Criar proposta"}
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
+          )}
         </TabsContent>
 
         <TabsContent value="dados" className="mt-4">
@@ -331,6 +399,15 @@ function Item({ termo, desc }: { termo: string; desc: string }) {
     <div className="flex justify-between border-b border-border/40 pb-2">
       <dt className="text-muted-foreground">{termo}</dt>
       <dd className="font-medium text-foreground tabular-nums">{desc}</dd>
+    </div>
+  );
+}
+
+function MobileStat({ rotulo, valor }: { rotulo: string; valor: string }) {
+  return (
+    <div className="min-w-0">
+      <dt className="text-xs text-muted-foreground">{rotulo}</dt>
+      <dd className="truncate font-medium tabular-nums">{valor}</dd>
     </div>
   );
 }
