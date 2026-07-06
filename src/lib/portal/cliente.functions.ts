@@ -39,6 +39,7 @@ export interface PropostaResumo {
   produto: string | null;
   valor: number | null;
   status_amigavel: string;
+  enviada_em: string | null;
 }
 
 export interface DocumentoCliente {
