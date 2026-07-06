@@ -1083,7 +1083,13 @@ export const cancelarProposta = createServerFn({ method: "POST" })
       .eq("id", data.proposta_id)
       .maybeSingle();
     if (!prop) throw new Error("Proposta não encontrada.");
-    if (prop.status === "cancelada") throw new Error("Proposta já está cancelada.");
+    const deStatus = prop.status as PropostaStatus;
+    if (deStatus === "cancelada") throw new Error("Proposta já está cancelada.");
+    if (!transicaoPermitida(deStatus, "cancelada")) {
+      throw new Error(
+        `Uma proposta no status "${deStatus}" não pode ser cancelada.`,
+      );
+    }
 
     const { error } = await supabase
       .from("propostas")
