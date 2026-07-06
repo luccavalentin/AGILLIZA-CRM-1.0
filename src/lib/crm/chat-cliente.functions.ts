@@ -13,7 +13,76 @@ export interface ChatMensagem {
   criada_em: string;
 }
 
-/** Lista as mensagens do chat do App do Cliente (time ↔ cliente), com o nome completo do remetente. */
+export interface ConversaCliente {
+  cliente_id: string;
+  nome: string;
+  documento: string | null;
+  etapa_codigo: string | null;
+  etapa_nome: string | null;
+  ultima_mensagem: string;
+  ultima_em: string;
+  ultimo_remetente: string;
+  nao_lidas: number;
+}
+
+/** Lista as conversas do App do Cliente (clientes com mensagens), ordenadas pela mais recente. */
+export const listarConversasCliente = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<ConversaCliente[]> => {
+    const { supabase } = context;
+    const { data: rows, error } = await supabase
+      .from("cliente_app_mensagens")
+      .select("cliente_id, mensagem, remetente_tipo, lida_em, criada_em")
+      .order("criada_em", { ascending: false })
+      .limit(2000);
+    if (error) throw new Error(error.message);
+
+    const agrupado = new Map<
+      string,
+      { ultima: (typeof rows)[number]; nao_lidas: number }
+    >();
+    for (const m of rows ?? []) {
+      const atual = agrupado.get(m.cliente_id);
+      if (!atual) {
+        agrupado.set(m.cliente_id, { ultima: m, nao_lidas: 0 });
+      }
+      const reg = agrupado.get(m.cliente_id)!;
+      if (m.remetente_tipo === "cliente" && !m.lida_em) reg.nao_lidas += 1;
+    }
+    const ids = Array.from(agrupado.keys());
+    if (ids.length === 0) return [];
+
+    const { data: clientes } = await supabase
+      .from("clientes")
+      .select(
+        "id, nome, documento, cliente_pipeline(pipeline_stages(codigo, nome))",
+      )
+      .in("id", ids);
+    const info = new Map<string, any>();
+    for (const c of clientes ?? []) info.set(c.id, c);
+
+    // Mantém apenas conversas de clientes visíveis pelo escopo (RLS).
+    return ids
+      .filter((id) => info.has(id))
+      .map((id) => {
+        const reg = agrupado.get(id)!;
+        const c = info.get(id);
+        return {
+          cliente_id: id,
+          nome: c?.nome ?? "Cliente",
+          documento: c?.documento ?? null,
+          etapa_codigo: c?.cliente_pipeline?.pipeline_stages?.codigo ?? null,
+          etapa_nome: c?.cliente_pipeline?.pipeline_stages?.nome ?? null,
+          ultima_mensagem: reg.ultima.mensagem,
+          ultima_em: reg.ultima.criada_em,
+          ultimo_remetente: reg.ultima.remetente_tipo,
+          nao_lidas: reg.nao_lidas,
+        };
+      })
+      .sort((a, b) => (a.ultima_em < b.ultima_em ? 1 : -1));
+  });
+
+
 export const listarChatCliente = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { cliente_id: string }) =>
