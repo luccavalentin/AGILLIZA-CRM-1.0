@@ -512,12 +512,57 @@ export function RegrasModulosPanel() {
               <Label htmlFor="edit-desc">Descrição</Label>
               <Input id="edit-desc" value={editDesc} onChange={(e) => setEditDesc(e.target.value)} placeholder="Opcional" />
             </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Portal</Label>
+                <Select
+                  value={editPortal}
+                  onValueChange={(v) => {
+                    const p = v as AcessoTipo;
+                    setEditPortal(p);
+                    setEditPapel(ajustarPapel(p, editPapel));
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PORTAIS.map((p) => (
+                      <SelectItem key={p.value} value={p.value}>
+                        {p.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Papel / função</Label>
+                <Select value={editPapel} onValueChange={(v) => setEditPapel(v as PapelNivel)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PAPEIS_POR_PORTAL[editPortal].map((p) => (
+                      <SelectItem key={p.value} value={p.value}>
+                        {p.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </div>
           <DialogFooter>
             <Button
               onClick={() =>
                 selecionado &&
-                atualizarMut.mutate({ id: selecionado.id, nome: editNome.trim(), descricao: editDesc.trim() || undefined })
+                atualizarMut.mutate({
+                  id: selecionado.id,
+                  nome: editNome.trim(),
+                  descricao: editDesc.trim() || undefined,
+                  papel: editPapel,
+                  acesso_tipo: editPortal,
+                })
               }
               disabled={editNome.trim().length < 2 || atualizarMut.isPending}
             >
