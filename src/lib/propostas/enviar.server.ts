@@ -64,6 +64,98 @@ interface EnviarResultado {
   }[];
 }
 
+function soDigitos(v: unknown): string | undefined {
+  const s = String(v ?? "").replace(/\D/g, "");
+  return s.length ? s : undefined;
+}
+
+/**
+ * Garante que o(s) participante(s) da oportunidade tenham endereço preenchido
+ * (principalmente a UF), pois integrações como a do Itaú validam
+ * `proponents[0].address.state` e recusam a proposta quando está em branco.
+ * A oportunidade cria o proponente principal sem endereço; aqui completamos os
+ * dados a partir dos envolvidos da proposta (ou, na falta, do endereço do imóvel).
+ */
+async function garantirEnderecoParticipantes({
+  prop,
+  idOportunidade,
+  ctx,
+  supabase,
+}: {
+  prop: any;
+  idOportunidade: string;
+  ctx: { simulacao_id: any; proposta_id: string; correspondente_id: any };
+  supabase: SupabaseClient<any, any, any>;
+}): Promise<void> {
+  let participantes: any[] = [];
+  try {
+    const resp = await chamarIntegracao<any>(
+      `/oportunidade/${idOportunidade}`,
+      "GET",
+      undefined,
+      ctx,
+    );
+    const op = resp?.oportunidade ?? resp ?? {};
+    participantes = Array.isArray(op?.participantes) ? op.participantes : [];
+  } catch {
+    // Sem a lista de participantes não há como completar o endereço; segue o envio.
+    return;
+  }
+  if (participantes.length === 0) return;
+
+  const { data: envolvidos } = await supabase
+    .from("proposta_envolvidos")
+    .select("*")
+    .eq("proposta_id", prop.id);
+
+  for (const part of participantes) {
+    // Já possui UF cadastrada — nada a corrigir.
+    if (part?.uf && String(part.uf).trim()) continue;
+
+    const cpf = soDigitos(part?.cpfCnpj);
+    const env = (envolvidos ?? []).find(
+      (e: any) => soDigitos(e.cpf_cnpj) === cpf,
+    );
+
+    const uf = env?.uf ?? prop.uf ?? null;
+    if (!uf) continue; // sem UF não é possível satisfazer a validação do banco
+
+    const payload: Record<string, unknown> = {
+      tipoSituacao: part?.tipoSituacao ?? "A",
+      nomeParticipante: part?.nomeParticipante ?? prop.nome_cliente,
+      tipoQualificacao: part?.tipoQualificacao ?? "CO",
+      tipoPessoa: part?.tipoPessoa ?? ((cpf?.length ?? 0) > 11 ? "J" : "F"),
+      cpfCnpj: cpf,
+      dataNascimento: part?.dataNascimento ?? undefined,
+      tipoEstadoCivil: part?.tipoEstadoCivil ?? env?.estado_civil ?? undefined,
+      renda: part?.renda ?? undefined,
+      email: part?.email ?? env?.email ?? prop.email ?? undefined,
+      celular: part?.celular ?? soDigitos(env?.celular) ?? undefined,
+      fgAutorizacaoDados: true,
+      cep: soDigitos(env?.cep ?? prop.cep_imovel),
+      logradouro: env?.logradouro ?? prop.endereco_imovel ?? undefined,
+      numeroLogradouro: env?.numero_logradouro ?? undefined,
+      complementoLogradouro: env?.complemento ?? undefined,
+      bairro: env?.bairro ?? prop.bairro_imovel ?? undefined,
+      municipio: env?.municipio ?? prop.cidade_imovel ?? undefined,
+      uf,
+    };
+
+    try {
+      await chamarIntegracao<any>(
+        `/oportunidade/${idOportunidade}/participante/${part.idParticipante}`,
+        "PUT",
+        payload,
+        ctx,
+      );
+    } catch {
+      // Falha ao completar o endereço não deve abortar o envio dos demais bancos.
+    }
+  }
+}
+
+
+
 export async function enviarPropostaImpl({
   propostaId,
   userId,
@@ -157,8 +249,15 @@ export async function enviarPropostaImpl({
     proposta_id: propostaId,
     correspondente_id: prop.correspondente_id,
   };
+
+  // Alguns bancos (ex.: Itaú) rejeitam a proposta quando o proponente está sem
+  // endereço (proponents[0].address.state). Garantimos o endereço do(s)
+  // participante(s) na oportunidade ANTES de incluir as propostas.
+  await garantirEnderecoParticipantes({ prop, idOportunidade: prop.homefin_id_oportunidade, ctx, supabase });
+
   const resultados: EnviarResultado["bancos"] = [];
   let sucesso = 0;
+
 
   for (const b of bancos as any[]) {
     try {
