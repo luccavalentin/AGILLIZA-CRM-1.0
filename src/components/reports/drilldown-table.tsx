@@ -126,19 +126,31 @@ export function DrilldownTable({ columns, rows }: { columns: ReportColumn[]; row
             ) : (
               visiveis.map((r, i) => (
                 <tr key={i} className={cn("border-t border-border", i % 2 === 1 && "bg-muted/25")}>
-                  {columns.map((c) => (
-                    <td
-                      key={c.key}
-                      className={cn(
-                        "whitespace-nowrap px-3 py-2 text-foreground",
-                        alinha(c),
-                        (c.format === "brl" || c.format === "int" || c.format === "pct") &&
-                          "font-mono tabular-nums",
-                      )}
-                    >
-                      {formatCell(r[c.key], c.format)}
-                    </td>
-                  ))}
+                  {columns.map((c) => {
+                    const banco = ehColunaBanco(c);
+                    const valor = r[c.key];
+                    return (
+                      <td
+                        key={c.key}
+                        className={cn(
+                          "whitespace-nowrap px-3 py-2 text-foreground",
+                          alinha(c),
+                          (c.format === "brl" || c.format === "int" || c.format === "pct") &&
+                            "font-mono tabular-nums",
+                        )}
+                      >
+                        {banco && valor ? (
+                          <span className="inline-flex items-center gap-2">
+                            <BancoLogo nome={String(valor)} size="xs" />
+                            {formatCell(valor, c.format)}
+                          </span>
+                        ) : (
+                          formatCell(valor, c.format)
+                        )}
+                      </td>
+                    );
+                  })}
+
                 </tr>
               ))
             )}
