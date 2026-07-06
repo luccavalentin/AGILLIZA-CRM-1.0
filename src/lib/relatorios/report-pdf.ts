@@ -158,6 +158,21 @@ export function exportPDF(
     },
   });
 
+  // Disclaimer opcional (ex.: simulações) logo abaixo da tabela.
+  if (nota && nota.trim()) {
+    const finalY = (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? y;
+    let ny = finalY + 18;
+    if (ny > pageH - 60) {
+      doc.addPage();
+      drawHeader(doc, pageW, titulo, descricao);
+      ny = HEADER_H + 30;
+    }
+    doc.setTextColor(CINZA);
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(7.5);
+    doc.text(nota.trim(), 32, ny, { maxWidth: pageW - 64, lineHeightFactor: 1.4 });
+  }
+
   // Rodapé com paginação (após conhecer o total de páginas)
   const total = doc.getNumberOfPages();
   for (let p = 1; p <= total; p++) {
