@@ -70,14 +70,15 @@ function PortalParceiro() {
     }
   }
 
-  async function sair() {
-    await queryClient.cancelQueries();
-    queryClient.clear();
-    await supabase.auth.signOut();
-    navigate({ to: "/parceiro", replace: true });
-  }
+  // Parceiro autenticado usa o mesmo shell/páginas do correspondente,
+  // com menu e escopo definidos pela matriz de permissões (Regras & Módulos).
+  useEffect(() => {
+    if (autorizado) {
+      navigate({ to: "/parceiro-inicio", replace: true });
+    }
+  }, [autorizado, navigate]);
 
-  if (sessaoQuery.isLoading) {
+  if (sessaoQuery.isLoading || autorizado) {
     return (
       <div className="flex min-h-[100dvh] items-center justify-center bg-muted/40">
         <div className="h-10 w-10 animate-spin rounded-full border-2 border-primary border-t-transparent" />
@@ -85,22 +86,6 @@ function PortalParceiro() {
     );
   }
 
-  if (autorizado && sessao?.profile) {
-    return (
-      <AppShell
-        nav={navParceiro}
-        user={{
-          id: sessao.profile.id,
-          nome: sessao.profile.nome,
-          email: sessao.profile.email,
-        }}
-        showSearch={false}
-        onSignOut={sair}
-      >
-        <Outlet />
-      </AppShell>
-    );
-  }
 
   return (
     <AuthSplitLayout
