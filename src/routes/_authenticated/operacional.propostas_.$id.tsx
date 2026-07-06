@@ -951,12 +951,14 @@ function TabEnvolvidos({
   envolvidos,
   autoAbrir,
   onAutoAbriu,
+  onFechouAposSalvar,
 }: {
   tipo: "CO" | "VD";
   propostaId: string;
   envolvidos: any[];
   autoAbrir?: boolean;
   onAutoAbriu?: () => void;
+  onFechouAposSalvar?: () => void;
 }) {
   const qc = useQueryClient();
   const addFn = useServerFn(adicionarEnvolvido);
