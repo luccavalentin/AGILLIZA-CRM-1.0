@@ -249,7 +249,20 @@ function Pagina() {
 
   return (
     <div className="mx-auto w-full max-w-4xl space-y-6 p-4 md:p-8">
+      <Button
+        variant="ghost"
+        size="sm"
+        className="-ml-2 w-fit text-muted-foreground"
+        onClick={() =>
+          router.history.canGoBack()
+            ? router.history.back()
+            : router.navigate({ to: "/operacional/simulacoes" })
+        }
+      >
+        <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
+      </Button>
       <div>
+
         <h1 className="text-xl font-semibold text-primary">Solicitar Simulação Completa</h1>
         <p className="text-sm text-muted-foreground">
           Preencha os dados para enviar aos bancos parceiros.
