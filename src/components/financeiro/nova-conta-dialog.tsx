@@ -120,8 +120,8 @@ export function NovaContaDialog({ tipo }: { tipo: ContaTipo }) {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label>{tipo === "pagar" ? "Fornecedor" : "Pagador"}</Label>
-              <Input value={contraparte} onChange={(e) => setContraparte(e.target.value)} />
+              <Label>Valor</Label>
+              <CurrencyInput value={valor} onChange={setValor} />
             </div>
             <div className="space-y-1.5">
               <Label>Vencimento</Label>
@@ -134,10 +134,6 @@ export function NovaContaDialog({ tipo }: { tipo: ContaTipo }) {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label>Valor</Label>
-              <CurrencyInput value={valor} onChange={setValor} />
-            </div>
-            <div className="space-y-1.5">
               <Label>Recorrência</Label>
               <Select value={recorrencia} onValueChange={(v) => setRecorrencia(v as any)}>
                 <SelectTrigger>
@@ -145,12 +141,26 @@ export function NovaContaDialog({ tipo }: { tipo: ContaTipo }) {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="nenhuma">Nenhuma</SelectItem>
-                  <SelectItem value="mensal">Mensal</SelectItem>
                   <SelectItem value="anual">Anual</SelectItem>
+                  <SelectItem value="mensal">Mensal</SelectItem>
+                  <SelectItem value="parcelado">Parcelado</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+            {recorrencia === "parcelado" && (
+              <div className="space-y-1.5">
+                <Label>Parcelas da duplicata</Label>
+                <Input
+                  type="number"
+                  min={2}
+                  max={360}
+                  value={parcelas}
+                  onChange={(e) => setParcelas(Math.max(2, Number(e.target.value) || 2))}
+                />
+              </div>
+            )}
           </div>
+
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Categoria</Label>
