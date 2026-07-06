@@ -65,6 +65,37 @@ export async function enviarSimulacaoImpl({
 
   const correspondente_id = sim.correspondente_id;
 
+  // Rede de segurança do PRAZO por idade: mesmo que a simulação tenha sido
+  // criada por outra origem (API, importação), ajustamos o prazo pela regra
+  // mais restritiva (idade "corrida" do proponente mais velho) para que TODAS
+  // as IFs aceitem o envio sem recusar por idade ao término do contrato.
+  const { data: parts } = await supabase
+    .from("simulacao_participantes")
+    .select("data_nascimento")
+    .eq("simulacao_id", simulacaoId);
+  const datasProponentes = [
+    sim.data_nascimento,
+    sim.data_nascimento_conjuge,
+    ...((parts ?? []) as any[]).map((p) => p.data_nascimento),
+  ];
+  const prazoMaxIdade = prazoMaximoParaProponentes(datasProponentes);
+  const prazoOriginal = num(sim.prazo);
+  const prazoSeguro =
+    prazoMaxIdade != null && prazoOriginal > prazoMaxIdade
+      ? Math.max(PRAZO_MIN, prazoMaxIdade)
+      : prazoOriginal;
+  if (prazoSeguro !== prazoOriginal) {
+    await supabase.from("simulacoes").update({ prazo: prazoSeguro }).eq("id", simulacaoId);
+    await supabase.from("simulacao_historico").insert({
+      simulacao_id: simulacaoId,
+      tipo: "ajuste",
+      descricao: `Prazo ajustado de ${prazoOriginal} para ${prazoSeguro} meses conforme a idade do proponente (aceito por todas as instituições).`,
+      ator_id: userId,
+    });
+    sim.prazo = prazoSeguro;
+  }
+
+
   // grava consentimento_ip e status enviando
   await supabase
     .from("simulacoes")
