@@ -74,12 +74,18 @@ export function DetalheBancoDialog({ banco }: { banco: any }) {
                       : "—"
                   }
                 />
-                <InfoCard rotulo="Valor do imóvel" valor={formatBRL(detalhe!.valorImovel)} />
-                <InfoCard rotulo="Financiamento" valor={formatBRL(detalhe!.valorFinanciamento)} />
-                <InfoCard rotulo="Entrada" valor={formatBRL(detalhe!.valorEntrada)} />
-                <InfoCard rotulo="IOF" valor={formatBRL(detalhe!.iof)} />
+                <InfoCard rotulo="Valor de compra e venda" valor={formatBRL(detalhe!.valorImovel)} />
+                <InfoCard rotulo="Despesas financiadas" valor={formatBRL(detalhe!.despesasFinanciadas)} />
+                <InfoCard rotulo="Tarifa de av. de garantia" valor={formatBRL(detalhe!.tarifaAvaliacao)} />
                 <InfoCard
-                  rotulo="Prazo"
+                  rotulo="Financiamento total"
+                  valor={formatBRL(detalhe!.financiamentoTotal ?? detalhe!.valorFinanciamento)}
+                />
+                <InfoCard rotulo="Entrada" valor={formatBRL(detalhe!.valorEntrada)} />
+                <InfoCard rotulo="IOF crédito" valor={formatBRL(detalhe!.iof)} />
+                <InfoCard rotulo="Tipo da parcela" valor={detalhe!.tipoParcela ?? detalhe!.indexador ?? "—"} />
+                <InfoCard
+                  rotulo="Prazo total"
                   valor={detalhe!.prazoMeses != null ? `${detalhe!.prazoMeses} meses` : "—"}
                 />
                 <InfoCard rotulo="Sistema" valor={normalizarSistemaAmortizacao(detalhe!.sistemaAmortizacao)} />
@@ -92,10 +98,18 @@ export function DetalheBancoDialog({ banco }: { banco: any }) {
                 <InfoCard rotulo="Seguradora" valor={detalhe!.seguradora ?? "—"} />
               </div>
 
+
               <div>
-                <h3 className="mb-2 text-sm font-semibold text-foreground">
+                <h3 className="mb-1 text-sm font-semibold text-foreground">
                   Plano de pagamento ({detalhe!.parcelas.length} parcelas)
                 </h3>
+                {detalhe!.parcelasEstimadas && (
+                  <p className="mb-2 text-xs text-muted-foreground">
+                    Projeção calculada a partir da taxa e do sistema informados pelo banco (1ª e
+                    última parcela reais).
+                  </p>
+                )}
+
                 <div className="overflow-x-auto rounded-lg border border-border">
                   <Table>
                     <TableHeader>
