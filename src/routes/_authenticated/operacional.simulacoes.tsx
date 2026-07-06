@@ -379,7 +379,7 @@ function AcoesSimulacao({
   onEditar: () => void;
   onBaixar: () => void;
   onDuplicar: () => void;
-  onExcluir: () => void | Promise<void>;
+  onExcluir: () => Promise<void>;
   numero: string;
 }) {
   return (
