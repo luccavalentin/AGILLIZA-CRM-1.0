@@ -29,6 +29,7 @@ import {
   moverStatusProposta,
   adicionarFollowup,
   adicionarEnvolvido,
+  atualizarEnvolvido,
   removerEnvolvido,
   registrarDocumento,
   removerDocumento,
