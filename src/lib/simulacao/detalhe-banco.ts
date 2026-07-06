@@ -202,18 +202,29 @@ export function extrairDetalheBanco(raw: unknown): DetalheBanco | null {
   const cet =
     num(desc.cetAnnual) ?? num(r.taxaCetAnoBanco) ?? calcularCET(valorFin, parcelas);
 
-  // Despesas financiadas: valor incorporado ao financiamento além do saldo puro
-  // do imóvel (imóvel − entrada). Quando o banco não devolve o valor explícito
-  // (ou devolve 0), derivamos a partir dos números reais retornados.
-  const valorImovelDet = num(desc.propertyPrice) ?? num(r.valorImovel);
-  const entradaDet = num(desc.downPayment) ?? num(r.valorEntrada);
+  // Despesas financiadas = valor incorporado ao financiamento além do valor-base
+  // (custos como ITBI, registro e tarifas embutidos na operação). O cálculo
+  // correto é: financiamento TOTAL − financiamento BASE. Só quando nenhum desses
+  // valores está disponível recorremos ao valor explícito da API.
+  const financiamentoBase =
+    num(desc.valorFinanciamento) ??
+    num(desc.loanAmount) ??
+    num(r.valorFinanciamentoBanco) ??
+    num(r.valorFinanciamentoSimulacao);
+  const financiamentoTotalRaw =
+    num(desc.valorTotalFinanciamento) ??
+    num(r.valorTotalFinanciamento) ??
+    valorFin;
   const despesasApi = num(r.valorDespesasFinanciadas) ?? num(desc.expensesFinancedValue);
   const despesasDerivada =
-    valorFin != null && valorImovelDet != null && entradaDet != null
-      ? Math.max(0, Math.round((valorFin - (valorImovelDet - entradaDet)) * 100) / 100)
+    financiamentoTotalRaw != null && financiamentoBase != null
+      ? Math.max(0, Math.round((financiamentoTotalRaw - financiamentoBase) * 100) / 100)
       : null;
   const despesasFinanciadas =
-    despesasApi != null && despesasApi > 0 ? despesasApi : (despesasDerivada ?? despesasApi);
+    despesasDerivada != null && despesasDerivada > 0
+      ? despesasDerivada
+      : (despesasApi ?? despesasDerivada);
+
 
   return {
     taxaJurosAno: taxaAno,
@@ -222,7 +233,7 @@ export function extrairDetalheBanco(raw: unknown): DetalheBanco | null {
     valorImovel: num(desc.propertyPrice) ?? num(r.valorImovel),
     valorFinanciamento: valorFin,
     financiamentoTotal: num(r.valorTotalFinanciamento) ?? valorFin,
-    valorEntrada: entradaDet,
+    valorEntrada: num(desc.downPayment) ?? num(r.valorEntrada),
     despesasFinanciadas,
     tarifaAvaliacao: num(desc.propertyEvaluation),
     iof: num(desc.iof?.totalValue ?? desc.iof?.value) ?? num(r.valorIofBanco),
