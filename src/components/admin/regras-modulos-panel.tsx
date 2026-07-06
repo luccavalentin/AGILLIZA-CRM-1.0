@@ -5,13 +5,16 @@ import { Plus, Save, Loader2, ShieldCheck, Lock, Pencil, Trash2 } from "lucide-r
 import { toast } from "sonner";
 import {
   CATALOGO_MODULOS,
+  PAPEIS_POR_PORTAL,
   listarNiveisAcesso,
   criarNivelAcesso,
   atualizarNivelAcesso,
   excluirNivelAcesso,
   salvarPermissoes,
+  type AcessoTipo,
   type EscopoDados,
   type NivelAcesso,
+  type PapelNivel,
 } from "@/lib/admin/regras-modulos.functions";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
