@@ -214,14 +214,6 @@ export function NovaPessoaInline({
         {isParceiro && (
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="np-creci">CRECI</Label>
-              <Input
-                id="np-creci"
-                value={creci}
-                onChange={(e) => setCreci(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
               <Label htmlFor="np-com">% comissão</Label>
               <Input
                 id="np-com"
