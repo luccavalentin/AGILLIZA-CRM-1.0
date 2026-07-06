@@ -33,7 +33,6 @@ type MatrizEstado = Record<string, { permitido: boolean; escopo: EscopoDados }>;
 
 const ESCOPOS: { value: EscopoDados; label: string }[] = [
   { value: "todos", label: "Todos os dados" },
-  { value: "equipe", label: "Dados da equipe" },
   { value: "proprios", label: "Apenas os próprios" },
 ];
 
