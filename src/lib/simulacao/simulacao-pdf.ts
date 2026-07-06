@@ -322,6 +322,7 @@ export function baixarSimulacaoPDF({ simulacao: s, bancos }: SimulacaoPdfInput) 
     kpis,
     columns,
     rows,
+    sanitizarNomeArquivo(nomeDescritivo(s, bancos ?? [])),
   );
 
 }

@@ -86,6 +86,7 @@ export function exportPDF(
   kpis: ReportKpi[],
   columns: ReportColumn[],
   rows: ReportRow[],
+  filename?: string,
 ) {
   const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
   const pageW = doc.internal.pageSize.getWidth();
@@ -163,6 +164,11 @@ export function exportPDF(
     drawFooter(doc, pageW, pageH, p, total);
   }
 
-  const nome = titulo.toLowerCase().replace(/[^a-z0-9]+/g, "-");
-  doc.save(`agilliza-${nome}.pdf`);
+  if (filename && filename.trim()) {
+    const limpo = filename.replace(/[\\/:*?"<>|]+/g, "").replace(/\s+/g, " ").trim();
+    doc.save(`${limpo}.pdf`);
+  } else {
+    const nome = titulo.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+    doc.save(`agilliza-${nome}.pdf`);
+  }
 }
