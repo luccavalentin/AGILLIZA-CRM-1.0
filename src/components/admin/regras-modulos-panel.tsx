@@ -130,13 +130,16 @@ export function RegrasModulosPanel() {
   }
 
   const criarMut = useMutation({
-    mutationFn: (v: { nome: string; descricao?: string; copiar_de?: string }) => criar({ data: v }),
+    mutationFn: (v: { nome: string; descricao?: string; copiar_de?: string; papel: PapelNivel; acesso_tipo: AcessoTipo }) =>
+      criar({ data: v }),
     onSuccess: async (r) => {
       toast.success("Nível de acesso criado com permissões iniciais.");
       setNovoOpen(false);
       setNovoNome("");
       setNovaDesc("");
       setCopiarDe("baseline");
+      setNovoPortal("sistema");
+      setNovoPapel("comercial");
       await qc.invalidateQueries({ queryKey: ["niveis-acesso"] });
       setSelecionadoId(r.id);
     },
@@ -144,7 +147,8 @@ export function RegrasModulosPanel() {
   });
 
   const atualizarMut = useMutation({
-    mutationFn: (v: { id: string; nome: string; descricao?: string }) => atualizar({ data: v }),
+    mutationFn: (v: { id: string; nome: string; descricao?: string; papel: PapelNivel; acesso_tipo: AcessoTipo }) =>
+      atualizar({ data: v }),
     onSuccess: async (r: any) => {
       toast.success(
         r?.clonado
