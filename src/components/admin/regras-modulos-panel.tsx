@@ -544,7 +544,7 @@ export function RegrasModulosPanel() {
       <Dialog open={novoOpen} onOpenChange={setNovoOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Novo nível de acesso</DialogTitle>
+            <DialogTitle>Novo papel / função</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
@@ -647,7 +647,7 @@ export function RegrasModulosPanel() {
       <Dialog open={editarOpen} onOpenChange={setEditarOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Editar nível de acesso</DialogTitle>
+            <DialogTitle>Editar papel / função</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
