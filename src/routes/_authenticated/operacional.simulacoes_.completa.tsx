@@ -88,6 +88,7 @@ function Pagina() {
     email_verificado_em: null,
   });
   const [enviando, setEnviando] = useState(false);
+  const [concluidos, setConcluidos] = useState(0);
   const [erros, setErros] = useState<Record<string, string>>({});
   const [entradaTocada, setEntradaTocada] = useState(false);
 
@@ -272,6 +273,7 @@ function Pagina() {
       return;
     }
     setErros({});
+    setConcluidos(0);
     setEnviando(true);
     try {
       const { id } = await criarSimulacao({
@@ -294,10 +296,15 @@ function Pagina() {
             : "Falha ao enviar ao banco. Você pode reenviar na tela da simulação.",
         );
       }
+      // Marca todos os bancos como concluídos para a barra chegar a 100%
+      // e dá um breve instante para o usuário ver a conclusão.
+      setConcluidos(f.bancos_ids.length || 1);
+      await new Promise((r) => setTimeout(r, 900));
       router.navigate({ to: "/operacional/simulacoes/$id", params: { id } });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Não foi possível criar a simulação.");
       setEnviando(false);
+      setConcluidos(0);
     }
   }
 
@@ -831,7 +838,7 @@ function Pagina() {
         </Button>
       </div>
 
-      <ConsultandoOverlay aberto={enviando} total={f.bancos_ids.length} concluidos={0} />
+      <ConsultandoOverlay aberto={enviando} total={f.bancos_ids.length} concluidos={concluidos} />
     </div>
   );
 }
