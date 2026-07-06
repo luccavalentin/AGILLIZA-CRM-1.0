@@ -32,6 +32,7 @@ export interface PessoaLista {
   bloqueado_em: string | null;
   roles: AppRole[];
   nivel_acesso_id: string | null;
+  nivel_acesso_nome: string | null;
 }
 
 function gerarSenhaTemporaria(): string {
