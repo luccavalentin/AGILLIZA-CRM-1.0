@@ -28,6 +28,7 @@ import { Route as ClienteLogoutRouteImport } from './routes/cliente.logout'
 import { Route as ClienteAcompanharMinhaPropostaRouteImport } from './routes/cliente.acompanhar-minha-proposta'
 import { Route as AuthenticatedSemAcessoRouteImport } from './routes/_authenticated/sem-acesso'
 import { Route as AuthenticatedRelatoriosRouteImport } from './routes/_authenticated/relatorios'
+import { Route as AuthenticatedMatriculasRouteImport } from './routes/_authenticated/matriculas'
 import { Route as AuthenticatedFormulariosRouteImport } from './routes/_authenticated/formularios'
 import { Route as AuthenticatedDocumentosRouteImport } from './routes/_authenticated/documentos'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
@@ -189,6 +190,11 @@ const AuthenticatedSemAcessoRoute = AuthenticatedSemAcessoRouteImport.update({
 const AuthenticatedRelatoriosRoute = AuthenticatedRelatoriosRouteImport.update({
   id: '/relatorios',
   path: '/relatorios',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedMatriculasRoute = AuthenticatedMatriculasRouteImport.update({
+  id: '/matriculas',
+  path: '/matriculas',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedFormulariosRoute =
@@ -598,6 +604,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/documentos': typeof AuthenticatedDocumentosRoute
   '/formularios': typeof AuthenticatedFormulariosRouteWithChildren
+  '/matriculas': typeof AuthenticatedMatriculasRoute
   '/relatorios': typeof AuthenticatedRelatoriosRouteWithChildren
   '/sem-acesso': typeof AuthenticatedSemAcessoRoute
   '/cliente/acompanhar-minha-proposta': typeof ClienteAcompanharMinhaPropostaRoute
@@ -683,6 +690,7 @@ export interface FileRoutesByTo {
   '/portal': typeof PortalRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/documentos': typeof AuthenticatedDocumentosRoute
+  '/matriculas': typeof AuthenticatedMatriculasRoute
   '/sem-acesso': typeof AuthenticatedSemAcessoRoute
   '/cliente/acompanhar-minha-proposta': typeof ClienteAcompanharMinhaPropostaRoute
   '/cliente/logout': typeof ClienteLogoutRoute
@@ -771,6 +779,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/documentos': typeof AuthenticatedDocumentosRoute
   '/_authenticated/formularios': typeof AuthenticatedFormulariosRouteWithChildren
+  '/_authenticated/matriculas': typeof AuthenticatedMatriculasRoute
   '/_authenticated/relatorios': typeof AuthenticatedRelatoriosRouteWithChildren
   '/_authenticated/sem-acesso': typeof AuthenticatedSemAcessoRoute
   '/cliente/acompanhar-minha-proposta': typeof ClienteAcompanharMinhaPropostaRoute
@@ -860,6 +869,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/documentos'
     | '/formularios'
+    | '/matriculas'
     | '/relatorios'
     | '/sem-acesso'
     | '/cliente/acompanhar-minha-proposta'
@@ -945,6 +955,7 @@ export interface FileRouteTypes {
     | '/portal'
     | '/dashboard'
     | '/documentos'
+    | '/matriculas'
     | '/sem-acesso'
     | '/cliente/acompanhar-minha-proposta'
     | '/cliente/logout'
@@ -1032,6 +1043,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/documentos'
     | '/_authenticated/formularios'
+    | '/_authenticated/matriculas'
     | '/_authenticated/relatorios'
     | '/_authenticated/sem-acesso'
     | '/cliente/acompanhar-minha-proposta'
@@ -1254,6 +1266,13 @@ declare module '@tanstack/react-router' {
       path: '/relatorios'
       fullPath: '/relatorios'
       preLoaderRoute: typeof AuthenticatedRelatoriosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/matriculas': {
+      id: '/_authenticated/matriculas'
+      path: '/matriculas'
+      fullPath: '/matriculas'
+      preLoaderRoute: typeof AuthenticatedMatriculasRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/formularios': {
@@ -1806,6 +1825,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedDocumentosRoute: typeof AuthenticatedDocumentosRoute
   AuthenticatedFormulariosRoute: typeof AuthenticatedFormulariosRouteWithChildren
+  AuthenticatedMatriculasRoute: typeof AuthenticatedMatriculasRoute
   AuthenticatedRelatoriosRoute: typeof AuthenticatedRelatoriosRouteWithChildren
   AuthenticatedSemAcessoRoute: typeof AuthenticatedSemAcessoRoute
   AuthenticatedAdminApisIaRoute: typeof AuthenticatedAdminApisIaRoute
@@ -1858,6 +1878,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedDocumentosRoute: AuthenticatedDocumentosRoute,
   AuthenticatedFormulariosRoute: AuthenticatedFormulariosRouteWithChildren,
+  AuthenticatedMatriculasRoute: AuthenticatedMatriculasRoute,
   AuthenticatedRelatoriosRoute: AuthenticatedRelatoriosRouteWithChildren,
   AuthenticatedSemAcessoRoute: AuthenticatedSemAcessoRoute,
   AuthenticatedAdminApisIaRoute: AuthenticatedAdminApisIaRoute,
