@@ -21,6 +21,7 @@ import { ConfirmDelete } from "@/components/shared/confirm-delete";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { listarClientes, excluirCliente } from "@/lib/crm/clientes.functions";
 import { formatarDocumento, mascararDocumento, formatarCelular } from "@/lib/crm/documento";
+import { usePipelineRealtime } from "@/hooks/use-pipeline-realtime";
 
 export const Route = createFileRoute("/_authenticated/crm/clientes")({
   head: () => ({ meta: [{ title: "Clientes — Agilliza" }] }),
@@ -32,6 +33,7 @@ export const Route = createFileRoute("/_authenticated/crm/clientes")({
 });
 
 function Pagina() {
+  usePipelineRealtime();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const listar = useServerFn(listarClientes);

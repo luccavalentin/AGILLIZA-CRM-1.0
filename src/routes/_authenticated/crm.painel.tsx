@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { listarPainel } from "@/lib/crm/clientes.functions";
+import { usePipelineRealtime } from "@/hooks/use-pipeline-realtime";
 
 export const Route = createFileRoute("/_authenticated/crm/painel")({
   head: () => ({ meta: [{ title: "Painel da esteira — Agilliza" }] }),
@@ -19,6 +20,7 @@ export const Route = createFileRoute("/_authenticated/crm/painel")({
 });
 
 function Pagina() {
+  usePipelineRealtime();
   const navigate = useNavigate();
   const listar = useServerFn(listarPainel);
   const [desde, setDesde] = useState("");
