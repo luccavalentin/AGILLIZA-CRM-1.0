@@ -43,6 +43,38 @@ function mascarar(valor: unknown): unknown {
   return valor;
 }
 
+const CAMPOS_TEXTO_LIVRE_BANCO = new Set([
+  "nomeProfissao",
+  "nomeProfissaoConjuge",
+  "nomeEmpresaProfissao",
+  "nomeEmpresaProfissaoConjuge",
+  "profession",
+  "company",
+]);
+
+function limparTextoLivreBanco(valor: unknown): unknown {
+  if (typeof valor !== "string") return valor;
+  return valor
+    .replace(/\((?:a|o)\)/gi, "")
+    .replace(/[(){}[\]]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function normalizarPayloadBanco(valor: unknown): unknown {
+  if (Array.isArray(valor)) return valor.map(normalizarPayloadBanco);
+  if (valor && typeof valor === "object") {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(valor as Record<string, unknown>)) {
+      out[k] = CAMPOS_TEXTO_LIVRE_BANCO.has(k)
+        ? limparTextoLivreBanco(v)
+        : normalizarPayloadBanco(v);
+    }
+    return out;
+  }
+  return valor;
+}
+
 export class IntegracaoBancariaError extends Error {
   constructor(
     message: string,
@@ -198,6 +230,7 @@ export async function chamarIntegracao<T = unknown>(
   const { base } = config();
   const { token } = await obterToken();
   const url = `${base}${endpoint}`;
+  const bodyNormalizado = body ? normalizarPayloadBanco(body) : undefined;
 
   let resp: Response;
   try {
@@ -207,11 +240,11 @@ export async function chamarIntegracao<T = unknown>(
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: body ? JSON.stringify(body) : undefined,
+      body: bodyNormalizado ? JSON.stringify(bodyNormalizado) : undefined,
       signal: AbortSignal.timeout(30_000),
     });
   } catch (e) {
-    await registrarLog({ ...ctx, endpoint, metodo: method, request: body, erro: String(e) });
+    await registrarLog({ ...ctx, endpoint, metodo: method, request: bodyNormalizado, erro: String(e) });
     throw new IntegracaoBancariaError("O banco não respondeu no tempo esperado. Tente reenviar.");
   }
 
@@ -221,7 +254,7 @@ export async function chamarIntegracao<T = unknown>(
     endpoint,
     metodo: method,
     status_http: resp.status,
-    request: body,
+    request: bodyNormalizado,
     response: json as any,
     erro: resp.ok ? undefined : `HTTP ${resp.status}`,
   });
