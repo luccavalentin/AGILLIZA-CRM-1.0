@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -9,7 +9,7 @@ import {
   RotateCcw,
   FileText,
   Calculator,
-  Sparkles,
+  Plus,
   Send,
   Loader2,
 } from "lucide-react";
@@ -63,6 +63,12 @@ function Pagina() {
   const [dataInicio, setDataInicio] = useState(padrao.inicio);
   const [dataFim, setDataFim] = useState(padrao.fim);
 
+  // Busca ao vivo: filtra conforme o usuário digita (com debounce).
+  useEffect(() => {
+    const t = setTimeout(() => setBusca(q.trim()), 300);
+    return () => clearTimeout(t);
+  }, [q]);
+
   function limparFiltros() {
     setQ("");
     setBusca("");
@@ -90,9 +96,6 @@ function Pagina() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold text-foreground">Nova Proposta</h1>
-          <p className="text-sm text-muted-foreground">
-            Consulte suas propostas e simulações ou gere uma nova proposta do zero.
-          </p>
         </div>
         <Button
           size="lg"
@@ -103,25 +106,8 @@ function Pagina() {
             })
           }
         >
-          <Sparkles className="mr-2 h-4 w-4" /> Gerar Nova Proposta
+          <Plus className="mr-2 h-4 w-4" /> Gerar Nova Proposta
         </Button>
-      </div>
-
-      {/* Destaque do fluxo */}
-      <div className="rounded-lg border border-primary/30 bg-primary/5 p-4">
-        <div className="flex items-start gap-3">
-          <div className="rounded-md bg-primary/10 p-2 text-primary">
-            <Sparkles className="h-5 w-5" />
-          </div>
-          <div className="text-sm text-muted-foreground">
-            <p className="font-medium text-foreground">Como funciona</p>
-            <p>
-              Ao clicar em <strong>Gerar Nova Proposta</strong>, você preenche a simulação completa
-              e pode <strong>enviar direto ao banco</strong> — a proposta é criada automaticamente
-              com o banco vencedor.
-            </p>
-          </div>
-        </div>
       </div>
 
       {/* Abas Propostas / Simulações */}
@@ -143,13 +129,7 @@ function Pagina() {
               <TabsTrigger value="minhas">Minhas</TabsTrigger>
             </TabsList>
           </Tabs>
-          <form
-            className="flex flex-1 items-center gap-2 min-w-[220px]"
-            onSubmit={(e) => {
-              e.preventDefault();
-              setBusca(q);
-            }}
-          >
+          <div className="flex flex-1 items-center gap-2 min-w-[220px]">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -159,10 +139,7 @@ function Pagina() {
                 onChange={(e) => setQ(e.target.value)}
               />
             </div>
-            <Button type="submit" variant="secondary">
-              Buscar
-            </Button>
-          </form>
+          </div>
           <div className="flex flex-col gap-1">
             <Label className="text-xs text-muted-foreground">De</Label>
             <Input
