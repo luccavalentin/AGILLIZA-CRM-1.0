@@ -459,15 +459,17 @@ export const criarNivelAcesso = createServerFn({ method: "POST" })
     return { id: novo.id };
   });
 
-/** Atualiza nome/descrição de um nível de acesso customizado. */
+/** Atualiza nome/descrição/papel/portal de um nível de acesso customizado. */
 export const atualizarNivelAcesso = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { id: string; nome: string; descricao?: string }) =>
+  .inputValidator((d: { id: string; nome: string; descricao?: string; papel?: PapelNivel; acesso_tipo?: AcessoTipo }) =>
     z
       .object({
         id: z.string().uuid(),
         nome: z.string().trim().min(2).max(60),
         descricao: z.string().trim().max(200).optional(),
+        papel: z.enum(["gestor", "comercial", "analista", "imobiliaria", "corretor"]).optional(),
+        acesso_tipo: z.enum(["sistema", "portal_parceiro"]).optional(),
       })
       .parse(d),
   )
@@ -475,7 +477,7 @@ export const atualizarNivelAcesso = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const { data: nivel } = await supabase
       .from("access_levels")
-      .select("id, is_padrao, nome, descricao")
+      .select("id, is_padrao, nome, descricao, papel, acesso_tipo")
       .eq("id", data.id)
       .maybeSingle();
     if (!nivel) throw new Error("Nível de acesso não encontrado.");
@@ -488,6 +490,8 @@ export const atualizarNivelAcesso = createServerFn({ method: "POST" })
       const novoId = await forkNivelPadrao(supabase, corresp, data.id, {
         nome: data.nome,
         descricao: data.descricao ?? null,
+        papel: data.papel ?? nivel.papel,
+        acesso_tipo: data.acesso_tipo ?? nivel.acesso_tipo,
       });
       const { registrarAuditoria } = await import("@/lib/admin/audit.server");
       await registrarAuditoria({
@@ -504,7 +508,12 @@ export const atualizarNivelAcesso = createServerFn({ method: "POST" })
 
     const { error } = await supabase
       .from("access_levels")
-      .update({ nome: data.nome, descricao: data.descricao ?? null })
+      .update({
+        nome: data.nome,
+        descricao: data.descricao ?? null,
+        ...(data.papel ? { papel: data.papel } : {}),
+        ...(data.acesso_tipo ? { acesso_tipo: data.acesso_tipo } : {}),
+      })
       .eq("id", data.id);
     if (error) throw new Error(error.message);
 
