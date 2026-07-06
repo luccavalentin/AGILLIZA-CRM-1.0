@@ -318,13 +318,14 @@ export function baixarSimulacaoPDF({ simulacao: s, bancos }: SimulacaoPdfInput) 
   }));
 
   exportPDF(
-    `Simulação ${s.numero_simulacao ?? ""}`.trim(),
+    "Comparativo de Financiamento",
     `${produto} · ${s.nome_cliente ?? "Cliente não informado"}`,
     meta,
     kpis,
     columns,
     rows,
   );
+
 }
 
 // ---------------------------------------------------------------------------
