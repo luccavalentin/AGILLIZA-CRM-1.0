@@ -28,6 +28,11 @@ import {
 } from "@/lib/simulacao/schemas";
 import { UFS, maskCpfCnpj, maskCelular, formatBRL } from "@/lib/simulacao/format";
 import {
+  ajustarPrazoPorIdade,
+  prazoMaximoPorIdade,
+  formatarMeses,
+} from "@/lib/simulacao/prazo";
+import {
   listarBancosAtivos,
   listarOperacoes,
   criarSimulacao,
@@ -124,6 +129,34 @@ function Pagina() {
       return next;
     });
   }
+
+  const maxPrazoIdade = useMemo(
+    () => prazoMaximoPorIdade(f.data_nascimento),
+    [f.data_nascimento],
+  );
+
+  /** Aplica o prazo digitado, ajustando automaticamente pela regra de idade. */
+  function definirPrazo(valor: number) {
+    if (!Number.isFinite(valor) || valor <= 0) {
+      set("prazo", 0);
+      return;
+    }
+    const { prazo, ajustado, mensagem } = ajustarPrazoPorIdade(valor, f.data_nascimento);
+    if (ajustado && mensagem) toast.warning(mensagem);
+    set("prazo", prazo);
+  }
+
+  // Reajusta o prazo se a data de nascimento reduzir o máximo permitido.
+  useEffect(() => {
+    if (maxPrazoIdade != null && f.prazo > maxPrazoIdade) {
+      const { mensagem } = ajustarPrazoPorIdade(f.prazo, f.data_nascimento);
+      if (mensagem) toast.warning(mensagem);
+      set("prazo", maxPrazoIdade);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [maxPrazoIdade]);
+
+
 
   function aplicarEntradaSugerida() {
     setEntradaTocada(true);
@@ -368,12 +401,21 @@ function Pagina() {
             <Input
               type="number"
               min={60}
-              max={420}
+              max={maxPrazoIdade ?? 420}
+              step={12}
               value={f.prazo || ""}
               onChange={(e) => set("prazo", Number(e.target.value))}
+              onBlur={(e) => definirPrazo(Number(e.target.value))}
+              onWheel={(e) => (e.target as HTMLInputElement).blur()}
               aria-invalid={!!erros.prazo}
             />
+            {maxPrazoIdade != null && (
+              <p className="mt-1 text-xs text-muted-foreground">
+                Máximo para a idade: {maxPrazoIdade} meses ({formatarMeses(maxPrazoIdade)})
+              </p>
+            )}
             {err("prazo")}
+
           </Campo>
           <Campo
             label={

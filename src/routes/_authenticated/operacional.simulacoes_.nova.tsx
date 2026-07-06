@@ -1,5 +1,5 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { assertModuloPermitido } from "@/lib/route-guards";
 
@@ -20,6 +20,12 @@ import { PRODUTOS } from "@/lib/simulacao/schemas";
 import { formatBRL, formatPercent } from "@/lib/simulacao/format";
 import { listarBancosAtivos } from "@/lib/simulacao/simulacoes.functions";
 import { compararBancosRapido, taxaAnoDeBanco } from "@/lib/simulacao/simulacao-rapida";
+import { toast } from "sonner";
+import {
+  ajustarPrazoPorIdade,
+  prazoMaximoPorIdade,
+  formatarMeses,
+} from "@/lib/simulacao/prazo";
 
 export const Route = createFileRoute("/_authenticated/operacional/simulacoes_/nova")({
   head: () => ({ meta: [{ title: "Nova simulação — Agilliza" }] }),
@@ -116,6 +122,33 @@ function Pagina() {
       { valor_financiamento: w.valor_financiamento, prazo_meses: w.prazo_meses, sistema: "S" },
     );
   }, [bancos, mostrarRapida, w.valor_financiamento, w.prazo_meses]);
+
+  const maxPrazoIdade = useMemo(
+    () => prazoMaximoPorIdade(w.data_nascimento),
+    [w.data_nascimento],
+  );
+
+  /** Aplica o prazo digitado, ajustando automaticamente pela regra de idade. */
+  function definirPrazo(valor: number) {
+    if (!Number.isFinite(valor) || valor <= 0) {
+      set("prazo_meses", 0);
+      return;
+    }
+    const { prazo, ajustado, mensagem } = ajustarPrazoPorIdade(valor, w.data_nascimento);
+    if (ajustado && mensagem) toast.warning(mensagem);
+    set("prazo_meses", prazo);
+  }
+
+  // Reajusta o prazo se a data de nascimento reduzir o máximo permitido.
+  useEffect(() => {
+    if (maxPrazoIdade != null && w.prazo_meses > maxPrazoIdade) {
+      const { mensagem } = ajustarPrazoPorIdade(w.prazo_meses, w.data_nascimento);
+      if (mensagem) toast.warning(mensagem);
+      set("prazo_meses", maxPrazoIdade);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [maxPrazoIdade]);
+
 
   function irParaCompleta() {
     sessionStorage.setItem("simulacao_wizard", JSON.stringify({ ...w, prazo: w.prazo_meses }));
@@ -237,17 +270,22 @@ function Pagina() {
             <Input
               type="number"
               min={PRAZO_MIN}
-              max={PRAZO_MAX}
+              max={maxPrazoIdade ?? PRAZO_MAX}
               step={12}
               placeholder="360 meses"
               value={w.prazo_meses || ""}
               onChange={(e) => set("prazo_meses", Number(e.target.value))}
+              onBlur={(e) => definirPrazo(Number(e.target.value))}
+              onWheel={(e) => (e.target as HTMLInputElement).blur()}
             />
             <p className="text-xs text-muted-foreground">
               {w.prazo_meses > 0
-                ? `Equivale a ${(w.prazo_meses / 12).toFixed(1).replace(".0", "")} anos · mín. ${PRAZO_MIN} / máx. ${PRAZO_MAX} meses`
-                : `Entre ${PRAZO_MIN} e ${PRAZO_MAX} meses`}
+                ? `Equivale a ${(w.prazo_meses / 12).toFixed(1).replace(".0", "")} anos · mín. ${PRAZO_MIN} / máx. ${maxPrazoIdade ?? PRAZO_MAX} meses`
+                : `Entre ${PRAZO_MIN} e ${maxPrazoIdade ?? PRAZO_MAX} meses`}
+              {maxPrazoIdade != null &&
+                ` · limite para a idade: ${formatarMeses(maxPrazoIdade)}`}
             </p>
+
           </div>
         </div>
 
