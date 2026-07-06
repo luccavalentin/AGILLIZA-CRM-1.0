@@ -647,10 +647,13 @@ function PainelGestao({
   const removerTag = useMutation({
     mutationFn: (id: string) => excluirTag({ data: { id } }),
     onSuccess: () => {
+      toast.success("Etiqueta excluída.");
       qc.invalidateQueries({ queryKey: ["chat-etiquetas"] });
       qc.invalidateQueries({ queryKey: ["chat-overview-cliente", clienteId] });
       qc.invalidateQueries({ queryKey: ["chat-overview"] });
     },
+    onError: (e) =>
+      toast.error(e instanceof Error ? e.message : "Não foi possível excluir a etiqueta."),
   });
 
   const gravarMeta = useMutation({
