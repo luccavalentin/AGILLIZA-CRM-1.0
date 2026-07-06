@@ -28,6 +28,11 @@ import {
 } from "@/lib/simulacao/schemas";
 import { UFS, maskCpfCnpj, maskCelular, formatBRL } from "@/lib/simulacao/format";
 import {
+  ajustarPrazoPorIdade,
+  prazoMaximoPorIdade,
+  formatarMeses,
+} from "@/lib/simulacao/prazo";
+import {
   listarBancosAtivos,
   listarOperacoes,
   criarSimulacao,
