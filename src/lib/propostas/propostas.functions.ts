@@ -695,6 +695,31 @@ export const adicionarEnvolvido = createServerFn({ method: "POST" })
     return { id: row.id };
   });
 
+/** Atualiza os dados complementares de um envolvido/participante. */
+export const atualizarEnvolvido = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z
+      .object({ id: z.string().uuid(), dados: z.record(z.string(), z.unknown()) })
+      .parse(data),
+  )
+  .handler(async ({ context, data }) => {
+    const { supabase } = context;
+    const { data: env } = await supabase
+      .from("proposta_envolvidos")
+      .select("proposta_id")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (!env) throw new Error("Registro não encontrado.");
+    await assertPropostaEditavel(supabase, env.proposta_id);
+    const { error } = await supabase
+      .from("proposta_envolvidos")
+      .update({ ...data.dados } as any)
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
 /** ===== Documentos ===== */
 export const registrarDocumento = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
