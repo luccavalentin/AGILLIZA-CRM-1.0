@@ -176,16 +176,18 @@ function Pagina() {
     if (!autoEnviar) return;
     setAutoEnviar(false);
     setEnviandoAuto(true);
+    const tid = toast.loading("Enviando proposta ao banco…");
     try {
       const r = await enviarAutoFn({ data: { proposta_id: id } });
-      toast.success(`Proposta enviada ao banco (${r.status}).`);
+      toast.success(`Proposta enviada ao banco (${r.status}).`, { id: tid });
       qc.invalidateQueries({ queryKey: ["proposta", id] });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Falha ao enviar ao banco.");
+      toast.error(e instanceof Error ? e.message : "Falha ao enviar ao banco.", { id: tid });
     } finally {
       setEnviandoAuto(false);
     }
   }
+
 
 
 
