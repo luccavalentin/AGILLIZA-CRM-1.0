@@ -145,6 +145,18 @@ export function NovaPessoaInline({
     setPermDirty(true);
   }
 
+  function marcarTodoModulo(modulo: string, permitido: boolean) {
+    setEstado((prev) => {
+      const next = { ...prev };
+      for (const a of CATALOGO_MODULOS.find((m) => m.modulo === modulo)?.acoes ?? []) {
+        const k = chave(modulo, a.acao);
+        next[k] = { ...next[k], permitido };
+      }
+      return next;
+    });
+    setPermDirty(true);
+  }
+
   function submeter(e: React.FormEvent) {
     e.preventDefault();
     if (nome.trim().length < 2) return toast.error("Informe o nome completo.");
