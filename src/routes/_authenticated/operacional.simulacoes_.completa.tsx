@@ -20,6 +20,7 @@ import {
 import { CurrencyInput } from "@/components/simulacao/currency-input";
 import { ConsultandoOverlay } from "@/components/simulacao/consultando-overlay";
 import { ClienteCRMPicker } from "@/components/simulacao/cliente-crm-picker";
+import { estadoCivilCrmParaCodigo } from "@/lib/propostas/dominios";
 import { DicaRendaMinima } from "@/components/simulacao/dica-renda-minima";
 import { taxaAnoDeBanco } from "@/lib/simulacao/simulacao-rapida";
 
