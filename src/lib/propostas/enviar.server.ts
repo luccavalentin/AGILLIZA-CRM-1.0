@@ -391,7 +391,7 @@ export async function enviarPropostaImpl({
   if (sucesso > 0) {
     try {
       const sinc = await sincronizarPropostaImpl({ propostaId, userId, supabase });
-      if (sinc?.status) novoStatus = sinc.status;
+      if (sinc?.status) novoStatus = sinc.status as PropostaStatus;
     } catch (e) {
       console.error("[proposta] sincronização pós-envio falhou", e);
     }
