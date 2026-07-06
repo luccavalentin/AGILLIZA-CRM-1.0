@@ -47,6 +47,9 @@ import {
 export const Route = createFileRoute("/_authenticated/operacional/simulacoes_/completa")({
   head: () => ({ meta: [{ title: "Simulação completa — Agilliza" }] }),
   beforeLoad: () => assertModuloPermitido("operacional.simulacoes"),
+  validateSearch: (search: Record<string, unknown>): { duplicar?: string } => ({
+    duplicar: typeof search.duplicar === "string" ? search.duplicar : undefined,
+  }),
   component: Pagina,
 });
 
