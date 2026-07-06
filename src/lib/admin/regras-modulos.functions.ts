@@ -310,6 +310,8 @@ export const listarNiveisAcesso = createServerFn({ method: "GET" })
       descricao: n.descricao,
       ativo: n.ativo,
       is_padrao: n.is_padrao,
+      papel: (n.papel ?? "comercial") as PapelNivel,
+      acesso_tipo: (n.acesso_tipo ?? "sistema") as AcessoTipo,
       // Qualquer usuário que pode gerenciar pessoas edita todos os níveis.
       // Níveis padrão (globais) são clonados automaticamente em uma cópia
       // editável do correspondente na primeira alteração.
