@@ -365,9 +365,13 @@ export async function enviarPropostaImpl({
   const resultados: EnviarResultado["bancos"] = [];
   let sucesso = 0;
 
-  // Envia a proposta para TODOS os bancos selecionados de forma SIMULTÂNEA.
-  // Cada banco tem seu próprio try/catch: a falha de um (ex.: Itaú recusando
-  // por validação) não impede nem atrasa o envio dos demais (ex.: Bradesco).
+  // Envia a proposta para os bancos selecionados de forma SEQUENCIAL.
+  // A API bancária inclui as propostas na MESMA oportunidade; disparar as
+  // inclusões em paralelo gera condição de corrida e faz alguns bancos
+  // falharem ("erro no envio") enquanto outros passam. Enviando um de cada
+  // vez cada banco é processado isoladamente e todos os selecionados chegam
+  // ao banco. Cada envio mantém seu próprio try/catch: a falha de um (ex.:
+  // Itaú recusando por validação) não impede o envio dos demais.
   const enviarBancoIntegracao = async (b: any): Promise<EnviarResultado["bancos"][number]> => {
     try {
       const resp = await chamarIntegracao<any>(
@@ -464,7 +468,13 @@ export async function enviarPropostaImpl({
     }
   };
 
-  const enviados = await Promise.all((bancos as any[]).map(enviarBancoIntegracao));
+  const enviados: EnviarResultado["bancos"] = [];
+  for (const b of bancos as any[]) {
+    // Sequencial de propósito (ver comentário acima): evita a condição de
+    // corrida na inclusão de múltiplas propostas na mesma oportunidade.
+    const r = await enviarBancoIntegracao(b);
+    enviados.push(r);
+  }
   for (const r of enviados) {
     resultados.push(r);
     if (r.status !== "erro") sucesso++;
