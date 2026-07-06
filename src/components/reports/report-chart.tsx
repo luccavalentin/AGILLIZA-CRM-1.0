@@ -1,6 +1,7 @@
 import {
   BarChart,
   Bar,
+  Cell,
   LineChart,
   Line,
   XAxis,
@@ -12,6 +13,7 @@ import {
 } from "recharts";
 import type { ReportChart } from "@/lib/relatorios/shared";
 import { formatBRL } from "@/lib/simulacao/format";
+import { corDoBanco } from "@/lib/bancos/cores";
 
 const tooltipStyle = {
   background: "hsl(var(--card))",
