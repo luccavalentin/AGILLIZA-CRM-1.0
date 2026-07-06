@@ -1068,8 +1068,14 @@ function TabEnvolvidos({
 
 
   async function remover(id: string) {
-    await delFn({ data: { id } });
-    qc.invalidateQueries({ queryKey: ["proposta", propostaId] });
+    try {
+      await delFn({ data: { id } });
+      qc.invalidateQueries({ queryKey: ["proposta", propostaId] });
+    } catch (e) {
+      toast.error(
+        e instanceof Error ? e.message : "Falha ao remover participante.",
+      );
+    }
   }
 
   return (
