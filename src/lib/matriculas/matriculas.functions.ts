@@ -50,7 +50,8 @@ async function correspondenteDoUsuario(supabase: any, userId: string): Promise<s
 export const obterControleMatriculas = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<MatriculasResumo> => {
-    const { supabase, userId } = context;
+    const supabase = context.supabase as any;
+    const { userId } = context;
     const corr = await correspondenteDoUsuario(supabase, userId);
 
     const [cfgRes, credRes, solRes] = await Promise.all([
@@ -91,7 +92,8 @@ export const salvarPixMatriculas = createServerFn({ method: "POST" })
     }).parse(d),
   )
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
-    const { supabase, userId } = context;
+    const supabase = context.supabase as any;
+    const { userId } = context;
     const corr = await correspondenteDoUsuario(supabase, userId);
     const { error } = await supabase.from("matricula_config").upsert(
       { correspondente_id: corr, pix_chave: data.pix_chave ?? null, pix_titular: data.pix_titular ?? null },
@@ -112,7 +114,8 @@ export const criarCreditoMatricula = createServerFn({ method: "POST" })
     }).parse(d),
   )
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
-    const { supabase, userId } = context;
+    const supabase = context.supabase as any;
+    const { userId } = context;
     const corr = await correspondenteDoUsuario(supabase, userId);
     const { error } = await supabase.from("matricula_creditos").insert({
       correspondente_id: corr, data: data.data, valor: data.valor, descricao: data.descricao ?? null, criado_por: userId,
@@ -126,7 +129,7 @@ export const excluirCreditoMatricula = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
-    const { supabase } = context;
+    const supabase = context.supabase as any;
     const { error } = await supabase.from("matricula_creditos").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
@@ -146,7 +149,8 @@ export const criarSolicitacaoMatricula = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => solicitacaoSchema.parse(d))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
-    const { supabase, userId } = context;
+    const supabase = context.supabase as any;
+    const { userId } = context;
     const corr = await correspondenteDoUsuario(supabase, userId);
     const { error } = await supabase.from("matricula_solicitacoes").insert({
       correspondente_id: corr,
@@ -168,7 +172,7 @@ export const atualizarSolicitacaoMatricula = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => solicitacaoSchema.extend({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
-    const { supabase } = context;
+    const supabase = context.supabase as any;
     const { data: atual, error: erroBusca } = await supabase
       .from("matricula_solicitacoes").select("reembolsado,reembolsado_em").eq("id", data.id).single();
     if (erroBusca) throw new Error(erroBusca.message);
@@ -194,7 +198,7 @@ export const alternarReembolsoMatricula = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid(), reembolsado: z.boolean() }).parse(d))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
-    const { supabase } = context;
+    const supabase = context.supabase as any;
     const { error } = await supabase.from("matricula_solicitacoes").update({
       reembolsado: data.reembolsado,
       reembolsado_em: data.reembolsado ? new Date().toISOString() : null,
@@ -208,7 +212,7 @@ export const excluirSolicitacaoMatricula = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
-    const { supabase } = context;
+    const supabase = context.supabase as any;
     const { error } = await supabase.from("matricula_solicitacoes").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
