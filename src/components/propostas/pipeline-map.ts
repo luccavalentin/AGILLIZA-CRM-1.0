@@ -31,7 +31,7 @@ const MAPA: Record<PropostaStatus, StepperCodigo> = {
   enviada_banco: "credito_enviado",
   em_analise_credito: "credito_enviado",
   credito_aprovado: "credito_aprovado",
-  credito_recusado: "credito_aprovado",
+  credito_recusado: "credito_enviado",
   checklist_documentacao: "checklist",
   cadastro_complementar: "cadastro_complementar",
   dossie_completo: "dossie",
