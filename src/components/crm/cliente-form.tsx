@@ -554,12 +554,14 @@ export function ClienteForm({
           </div>
           <div className="space-y-1.5 sm:col-span-2">
             <Label>Naturalidade (cidade/UF de nascimento)</Label>
-            <Input
+            <InputAutocomplete
               value={v.naturalidade}
-              onChange={(e) => set("naturalidade", e.target.value)}
-              placeholder="Ex.: São Paulo/SP"
+              onValueChange={(x) => set("naturalidade", x)}
+              options={OPCOES_NATURALIDADE}
+              placeholder="Pesquisar cidade/UF ou digitar"
             />
           </div>
+
           <div className="space-y-1.5">
             <Label>Tipo de documento</Label>
             <InputAutocomplete
