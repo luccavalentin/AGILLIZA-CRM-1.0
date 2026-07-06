@@ -103,10 +103,19 @@ function Pagina() {
     }
   }
 
-  async function handleBaixar(id: string) {
+  async function handleBaixarComparativo(id: string) {
     try {
       const dados = await obter({ data: { id } });
       baixarSimulacaoPDF({ simulacao: dados.simulacao, bancos: dados.bancos });
+    } catch {
+      toast.error("Não foi possível gerar o PDF da simulação.");
+    }
+  }
+
+  async function handleBaixarDetalhada(id: string) {
+    try {
+      const dados = await obter({ data: { id } });
+      baixarSimulacaoDetalhadaPDF({ simulacao: dados.simulacao, bancos: dados.bancos });
     } catch {
       toast.error("Não foi possível gerar o PDF da simulação.");
     }
