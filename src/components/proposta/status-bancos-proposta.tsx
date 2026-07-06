@@ -88,10 +88,10 @@ export function StatusBancosProposta({
             className="inline-flex items-center gap-1.5 whitespace-nowrap"
           >
             <span
-              className="inline-flex items-center gap-1 text-xs font-medium"
+              className="inline-flex items-center gap-1.5 text-xs font-medium"
               style={{ color: cor }}
             >
-              <Landmark className="h-3 w-3" />
+              <BancoLogo nome={b.nome_banco} size="xs" />
               {b.nome_banco ?? "—"}
             </span>
             <span
