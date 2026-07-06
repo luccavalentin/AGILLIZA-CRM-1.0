@@ -92,6 +92,7 @@ export function ReportChartView({
             tick={{ fontSize: 11 }}
             stroke="hsl(var(--muted-foreground))"
             tickFormatter={fmt}
+            allowDecimals={allowDecimals}
           />
           <YAxis
             type="category"
@@ -101,7 +102,14 @@ export function ReportChartView({
             width={110}
           />
           <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => fmt(v)} />
-          <Bar dataKey="valor" fill="var(--chart-1)" radius={[0, 4, 4, 0]} />
+          <Bar dataKey="valor" radius={[0, 4, 4, 0]} fill="var(--chart-1)">
+            {chart.dados.map((d, i) => (
+              <Cell
+                key={i}
+                fill={colorByBank ? corDoBanco(d.label) : "var(--chart-1)"}
+              />
+            ))}
+          </Bar>
         </BarChart>
       </ResponsiveContainer>
     );
