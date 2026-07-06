@@ -770,9 +770,12 @@ export const adicionarEnvolvido = createServerFn({ method: "POST" })
     const { data: row, error } = await supabase
       .from("proposta_envolvidos")
       .insert({ proposta_id: data.proposta_id, ...data.dados } as any)
-      .select("id")
+      .select("id, cliente_id")
       .single();
     if (error) throw new Error(error.message);
+    if (row.cliente_id) {
+      await sincronizarEnvolvidoParaCliente(supabase, row.cliente_id as string, data.dados);
+    }
     return { id: row.id };
   });
 
