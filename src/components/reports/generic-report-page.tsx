@@ -93,6 +93,7 @@ export function GenericReportPage({
           bancos={bancos}
           produtos={produtos}
           statuses={statuses}
+          responsaveis={responsaveis}
         />
       }
     >
