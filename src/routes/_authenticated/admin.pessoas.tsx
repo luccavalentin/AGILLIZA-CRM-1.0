@@ -194,8 +194,9 @@ function PessoasPage() {
                           {p.email ?? "—"}
                         </TableCell>
                         <TableCell>
-                          {p.roles.map((r) => ROTULO_PAPEL[r] ?? r).join(", ") ||
-                            "—"}
+                          {p.nivel_acesso_nome ??
+                            (p.roles.map((r) => ROTULO_PAPEL[r] ?? r).join(", ") ||
+                              "—")}
                         </TableCell>
                         <TableCell>
                           <Badge
