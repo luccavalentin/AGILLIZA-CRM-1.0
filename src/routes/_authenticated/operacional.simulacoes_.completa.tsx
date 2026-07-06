@@ -50,8 +50,11 @@ import { baixarSimulacaoPDF } from "@/lib/simulacao/simulacao-pdf";
 export const Route = createFileRoute("/_authenticated/operacional/simulacoes_/completa")({
   head: () => ({ meta: [{ title: "Simulação completa — Agilliza" }] }),
   beforeLoad: () => assertModuloPermitido("operacional.simulacoes"),
-  validateSearch: (search: Record<string, unknown>): { duplicar?: string } => ({
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { duplicar?: string; origem?: "proposta" } => ({
     duplicar: typeof search.duplicar === "string" ? search.duplicar : undefined,
+    origem: search.origem === "proposta" ? "proposta" : undefined,
   }),
   component: Pagina,
 });
