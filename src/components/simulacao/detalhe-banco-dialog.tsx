@@ -35,7 +35,7 @@ function InfoCard({ rotulo, valor }: { rotulo: string; valor: string }) {
   );
 }
 
-/** Botão + diálogo com o detalhamento completo (parcelas, CET, CESH...) de um banco. */
+/** Botão + diálogo com o detalhamento completo (parcelas, CET, taxas...) de um banco. */
 export function DetalheBancoDialog({ banco }: { banco: any }) {
   const detalhe = useMemo(() => extrairDetalheBanco(banco?.raw_response), [banco]);
   const temDetalhe = !!detalhe && detalhe.parcelas.length > 0;
