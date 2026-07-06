@@ -468,7 +468,13 @@ export async function enviarPropostaImpl({
     }
   };
 
-  const enviados = await Promise.all((bancos as any[]).map(enviarBancoIntegracao));
+  const enviados: EnviarResultado["bancos"] = [];
+  for (const b of bancos as any[]) {
+    // Sequencial de propósito (ver comentário acima): evita a condição de
+    // corrida na inclusão de múltiplas propostas na mesma oportunidade.
+    const r = await enviarBancoIntegracao(b);
+    enviados.push(r);
+  }
   for (const r of enviados) {
     resultados.push(r);
     if (r.status !== "erro") sucesso++;
