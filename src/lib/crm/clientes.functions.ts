@@ -160,6 +160,8 @@ const clienteInputSchema = z.object({
   telefone_celular: z.string().min(10, "Celular inválido."),
   renda_total_declarada: z.number().nonnegative(),
   uf_interesse: z.string().length(2).optional().nullable(),
+  utiliza_fgts: z.boolean().optional().default(false),
+  fg_autorizacao_dados: z.boolean().optional().default(false),
   origem: z.enum(["direto", "parceiro", "indicacao", "importacao"]).default("direto"),
 });
 
@@ -211,6 +213,8 @@ export const criarCliente = createServerFn({ method: "POST" })
         telefone_celular: data.telefone_celular,
         renda_total_declarada: data.renda_total_declarada,
         uf_interesse: data.uf_interesse ?? null,
+        utiliza_fgts: data.utiliza_fgts ?? false,
+        fg_autorizacao_dados: data.fg_autorizacao_dados ?? false,
         origem: data.origem,
         responsavel_id: userId,
         criador_id: userId,
@@ -268,6 +272,8 @@ export const atualizarCliente = createServerFn({ method: "POST" })
         telefone_celular: campos.telefone_celular,
         renda_total_declarada: campos.renda_total_declarada,
         uf_interesse: campos.uf_interesse ?? null,
+        utiliza_fgts: campos.utiliza_fgts ?? false,
+        fg_autorizacao_dados: campos.fg_autorizacao_dados ?? false,
         origem: campos.origem,
       })
       .eq("id", id);

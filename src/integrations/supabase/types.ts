@@ -829,6 +829,7 @@ export type Database = {
           estado_civil:
             | Database["public"]["Enums"]["cliente_estado_civil"]
             | null
+          fg_autorizacao_dados: boolean
           foto_url: string | null
           id: string
           lgpd_aceite_em: string | null
@@ -857,6 +858,7 @@ export type Database = {
           uf_expedicao: string | null
           uf_interesse: string | null
           updated_at: string
+          utiliza_fgts: boolean
         }
         Insert: {
           agencia?: string | null
@@ -876,6 +878,7 @@ export type Database = {
           estado_civil?:
             | Database["public"]["Enums"]["cliente_estado_civil"]
             | null
+          fg_autorizacao_dados?: boolean
           foto_url?: string | null
           id?: string
           lgpd_aceite_em?: string | null
@@ -904,6 +907,7 @@ export type Database = {
           uf_expedicao?: string | null
           uf_interesse?: string | null
           updated_at?: string
+          utiliza_fgts?: boolean
         }
         Update: {
           agencia?: string | null
@@ -923,6 +927,7 @@ export type Database = {
           estado_civil?:
             | Database["public"]["Enums"]["cliente_estado_civil"]
             | null
+          fg_autorizacao_dados?: boolean
           foto_url?: string | null
           id?: string
           lgpd_aceite_em?: string | null
@@ -951,6 +956,7 @@ export type Database = {
           uf_expedicao?: string | null
           uf_interesse?: string | null
           updated_at?: string
+          utiliza_fgts?: boolean
         }
         Relationships: [
           {

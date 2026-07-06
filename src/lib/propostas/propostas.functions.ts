@@ -385,6 +385,8 @@ export const criarProposta = createServerFn({ method: "POST" })
           bairro: e.bairro ?? null,
           municipio: e.cidade ?? null,
           uf: e.uf ?? c.uf_interesse ?? null,
+          utiliza_fgts: c.utiliza_fgts ?? false,
+          fg_autorizacao_dados: c.fg_autorizacao_dados ?? false,
           dados: { pai: c.pai ?? null, nacionalidade: c.nacionalidade ?? null, naturalidade: c.naturalidade ?? null, banco_conta: c.banco_conta ?? null },
         } as any);
       }
@@ -675,6 +677,85 @@ export const definirSituacaoBanco = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+/**
+ * Espelha os dados de um participante (envolvido) vinculado a um cliente de volta
+ * para o cadastro do cliente, garantindo que proposta e CRM fiquem sincronizados.
+ * Só escreve valores presentes, para nunca apagar dados já existentes no cliente.
+ */
+async function sincronizarEnvolvidoParaCliente(
+  supabase: any,
+  clienteId: string,
+  dados: Record<string, unknown>,
+) {
+  const ESTADO_CIVIL_MAP: Record<string, string> = {
+    S: "solteiro",
+    CA: "casado",
+    VI: "viuvo",
+    DI: "divorciado",
+    SL: "divorciado",
+    UE: "uniao_estavel",
+  };
+  const REGIME_MAP: Record<string, string> = {
+    CP: "comunhao_parcial",
+    CU: "comunhao_universal",
+    PA: "participacao_final",
+    SC: "separacao_total",
+    SO: "separacao_total",
+  };
+  const has = (k: string) => dados[k] !== undefined && dados[k] !== null && dados[k] !== "";
+  const patch: Record<string, unknown> = {};
+  if (has("nome")) patch.nome = dados.nome;
+  if (has("cpf_cnpj")) patch.documento = String(dados.cpf_cnpj).replace(/\D/g, "");
+  if (has("data_nascimento")) patch.data_nascimento = dados.data_nascimento;
+  if (has("nome_mae")) patch.mae = dados.nome_mae;
+  if (has("tipo_sexo")) patch.sexo = dados.tipo_sexo;
+  if (has("estado_civil")) patch.estado_civil = ESTADO_CIVIL_MAP[String(dados.estado_civil)] ?? undefined;
+  if (has("regime_casamento")) patch.regime_casamento = REGIME_MAP[String(dados.regime_casamento)] ?? undefined;
+  if (has("tipo_documento_identidade")) patch.tipo_documento_identidade = dados.tipo_documento_identidade;
+  if (has("numero_documento")) patch.numero_documento = dados.numero_documento;
+  if (has("orgao_expedidor")) patch.orgao_expedidor = dados.orgao_expedidor;
+  if (has("uf_expedicao")) patch.uf_expedicao = dados.uf_expedicao;
+  if (has("data_expedicao")) patch.data_expedicao = dados.data_expedicao;
+  if (has("profissao")) patch.profissao = dados.profissao;
+  if (has("empresa")) patch.empresa = dados.empresa;
+  if (has("renda")) patch.renda_total_declarada = dados.renda;
+  if (has("email")) patch.email = String(dados.email).toLowerCase();
+  if (has("celular")) patch.telefone_celular = String(dados.celular).replace(/\D/g, "");
+  if (dados.utiliza_fgts !== undefined) patch.utiliza_fgts = Boolean(dados.utiliza_fgts);
+  if (dados.fg_autorizacao_dados !== undefined)
+    patch.fg_autorizacao_dados = Boolean(dados.fg_autorizacao_dados);
+  // Remove chaves que ficaram undefined após o mapeamento de enum.
+  for (const k of Object.keys(patch)) if (patch[k] === undefined) delete patch[k];
+  if (Object.keys(patch).length > 0) {
+    await supabase.from("clientes").update(patch as any).eq("id", clienteId);
+  }
+
+  // Endereço: grava no endereço principal do cliente.
+  const enderecoPatch: Record<string, unknown> = {};
+  if (has("cep")) enderecoPatch.cep = String(dados.cep).replace(/\D/g, "");
+  if (has("logradouro")) enderecoPatch.logradouro = dados.logradouro;
+  if (has("numero_logradouro")) enderecoPatch.numero = dados.numero_logradouro;
+  if (has("complemento")) enderecoPatch.complemento = dados.complemento;
+  if (has("bairro")) enderecoPatch.bairro = dados.bairro;
+  if (has("municipio")) enderecoPatch.cidade = dados.municipio;
+  if (has("uf")) enderecoPatch.uf = dados.uf;
+  if (Object.keys(enderecoPatch).length > 0) {
+    const { data: end } = await supabase
+      .from("cliente_enderecos")
+      .select("id")
+      .eq("cliente_id", clienteId)
+      .limit(1)
+      .maybeSingle();
+    if (end?.id) {
+      await supabase.from("cliente_enderecos").update(enderecoPatch as any).eq("id", end.id);
+    } else {
+      await supabase
+        .from("cliente_enderecos")
+        .insert({ cliente_id: clienteId, principal: true, ...enderecoPatch } as any);
+    }
+  }
+}
+
 /** ===== Envolvidos (compradores/vendedores) ===== */
 export const adicionarEnvolvido = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -689,9 +770,12 @@ export const adicionarEnvolvido = createServerFn({ method: "POST" })
     const { data: row, error } = await supabase
       .from("proposta_envolvidos")
       .insert({ proposta_id: data.proposta_id, ...data.dados } as any)
-      .select("id")
+      .select("id, cliente_id")
       .single();
     if (error) throw new Error(error.message);
+    if (row.cliente_id) {
+      await sincronizarEnvolvidoParaCliente(supabase, row.cliente_id as string, data.dados);
+    }
     return { id: row.id };
   });
 
@@ -707,7 +791,7 @@ export const atualizarEnvolvido = createServerFn({ method: "POST" })
     const { supabase } = context;
     const { data: env } = await supabase
       .from("proposta_envolvidos")
-      .select("proposta_id")
+      .select("proposta_id, cliente_id")
       .eq("id", data.id)
       .maybeSingle();
     if (!env) throw new Error("Registro não encontrado.");
@@ -717,6 +801,9 @@ export const atualizarEnvolvido = createServerFn({ method: "POST" })
       .update({ ...data.dados } as any)
       .eq("id", data.id);
     if (error) throw new Error(error.message);
+    if (env.cliente_id) {
+      await sincronizarEnvolvidoParaCliente(supabase, env.cliente_id as string, data.dados);
+    }
     return { ok: true };
   });
 

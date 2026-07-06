@@ -10,6 +10,7 @@ import { InputAutocomplete } from "@/components/ui/input-autocomplete";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -54,6 +55,8 @@ export interface ClienteFormValues {
   telefone_celular: string;
   renda_total_declarada: string;
   uf_interesse: string;
+  utiliza_fgts: boolean;
+  fg_autorizacao_dados: boolean;
   origem: string;
 }
 
@@ -220,6 +223,8 @@ const emptyValues: ClienteFormValues = {
   telefone_celular: "",
   renda_total_declarada: "",
   uf_interesse: "",
+  utiliza_fgts: false,
+  fg_autorizacao_dados: false,
   origem: "direto",
 };
 
@@ -357,6 +362,8 @@ export function ClienteForm({
         telefone_celular: soDigitos(v.telefone_celular),
         renda_total_declarada: renda,
         uf_interesse: v.uf_interesse || null,
+        utiliza_fgts: v.utiliza_fgts,
+        fg_autorizacao_dados: v.fg_autorizacao_dados,
         origem: v.origem as any,
       };
       let id = v.id;
@@ -756,6 +763,46 @@ export function ClienteForm({
           </div>
         </CardContent>
       </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">FGTS e autorização de dados</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Informações exigidas no envio da proposta ao banco — preenchidas aqui já seguem para a
+            proposta automaticamente.
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between gap-4 rounded-lg border border-border p-3">
+            <div className="space-y-0.5">
+              <Label htmlFor="utiliza_fgts">Utiliza FGTS na operação</Label>
+              <p className="text-xs text-muted-foreground">
+                Indique se o cliente pretende usar o saldo do FGTS.
+              </p>
+            </div>
+            <Switch
+              id="utiliza_fgts"
+              checked={v.utiliza_fgts}
+              onCheckedChange={(x) => set("utiliza_fgts", x)}
+            />
+          </div>
+          <div className="flex items-start gap-3 rounded-lg border border-border p-3">
+            <Checkbox
+              id="fg_autorizacao_dados"
+              checked={v.fg_autorizacao_dados}
+              onCheckedChange={(x: boolean | "indeterminate") =>
+                set("fg_autorizacao_dados", x === true)
+              }
+              className="mt-0.5"
+            />
+            <Label htmlFor="fg_autorizacao_dados" className="text-sm font-normal leading-snug">
+              O cliente autoriza a consulta e o uso dos seus dados junto aos bancos e instituições
+              financeiras para análise de crédito.
+            </Label>
+          </div>
+        </CardContent>
+      </Card>
+
 
       <div className="flex justify-end gap-2">
         <Button type="button" variant="outline" onClick={() => navigate({ to: "/crm/clientes" })}>
