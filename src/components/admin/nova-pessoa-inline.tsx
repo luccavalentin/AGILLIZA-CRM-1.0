@@ -93,6 +93,7 @@ export function NovaPessoaInline({
     () => (niveis ?? []).find((n) => n.id === nivelId),
     [niveis, nivelId],
   );
+  const isParceiro = nivel?.acesso_tipo === "portal_parceiro";
 
   // Carrega a matriz sempre que o nível muda.
   if (nivel && carregadoPara !== nivel.id) {
