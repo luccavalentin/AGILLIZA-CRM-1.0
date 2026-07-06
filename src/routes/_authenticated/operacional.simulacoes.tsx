@@ -230,6 +230,12 @@ function Pagina() {
                       >
                         <Eye className="mr-2 h-4 w-4" /> Visualizar
                       </DropdownMenuItem>
+                      <DropdownMenuItem onSelect={() => handleEditar(s.id)}>
+                        <Pencil className="mr-2 h-4 w-4" /> Editar
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onSelect={() => handleBaixar(s.id)}>
+                        <Download className="mr-2 h-4 w-4" /> Baixar PDF
+                      </DropdownMenuItem>
                       <DropdownMenuItem onSelect={() => handleDuplicar(s.id)}>
                         <Copy className="mr-2 h-4 w-4" /> Duplicar
                       </DropdownMenuItem>
