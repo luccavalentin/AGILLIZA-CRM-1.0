@@ -90,6 +90,11 @@ import { TRANSICOES, STATUS_EDITAVEIS, type PropostaStatus } from "@/lib/propost
 import { statusProposta } from "@/components/propostas/status";
 import { formatBRL } from "@/lib/simulacao/format";
 import { cn } from "@/lib/utils";
+import {
+  ParticipanteDialog,
+  envolvidoParaForm,
+  type ParticipanteForm,
+} from "@/components/proposta/participante-form";
 
 type SituacaoBanco = (typeof SITUACOES_BANCO)[number];
 
