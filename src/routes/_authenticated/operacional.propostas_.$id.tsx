@@ -71,6 +71,7 @@ import {
 import { PipelineStepper } from "@/components/propostas/pipeline-stepper";
 import { PropostaStatusBadge } from "@/components/propostas/status-badge";
 import { statusBancoConfig, bancoJaEnviado } from "@/components/proposta/status-bancos-proposta";
+import { BradescoRetornoTimer, isBradesco } from "@/components/proposta/bradesco-timer";
 import { ToneBadge } from "@/components/crm/tone-badge";
 import {
   DropdownMenu,
