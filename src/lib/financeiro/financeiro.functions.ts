@@ -474,7 +474,7 @@ export const listarComissoes = createServerFn({ method: "GET" })
     let query = supabase
       .from("comissoes")
       .select(
-        "id, banco_nome, valor_bruto, split_parceiro, split_interno, status, proposta_id, proposta:propostas(numero_proposta)",
+        "id, banco_nome, valor_bruto, split_parceiro, split_interno, status, proposta_id, proposta:propostas(numero_proposta,numero_proposta_banco)",
       )
       .order("created_at", { ascending: false });
     if (data.status) query = query.eq("status", data.status as any);
@@ -482,7 +482,7 @@ export const listarComissoes = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
     return (rows ?? []).map((r: any) => ({
       id: r.id,
-      numero_proposta: r.proposta?.numero_proposta ?? null,
+      numero_proposta: r.proposta?.numero_proposta_banco ?? r.proposta?.numero_proposta ?? null,
       banco_nome: r.banco_nome,
       valor_bruto: Number(r.valor_bruto),
       split_parceiro: Number(r.split_parceiro),
