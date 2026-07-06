@@ -261,12 +261,24 @@ export async function enviarPropostaImpl({
 
   for (const b of bancos as any[]) {
     try {
-      await chamarIntegracao<any>(
+      const resp = await chamarIntegracao<any>(
         `/oportunidade/${prop.homefin_id_oportunidade}/incluir-proposta-integracao`,
         "POST",
         { idSimulacao: b.homefin_id_simulacao_banco ?? prop.homefin_id_simulacao },
         ctx,
       );
+
+      // A integração devolve HTTP 200 mesmo quando o banco RECUSA a proposta na
+      // validação (ex.: Itaú com "maritalStatus cannot be null"). O erro real
+      // vem no campo retornoIntegracao (nível superior ou dentro de
+      // descricaoRespostaBanco). Se houver erro, a proposta NÃO foi aceita.
+      const erroBanco =
+        extrairErroRetorno(resp?.retornoIntegracao) ??
+        extrairErroRetorno(resp?.descricaoRespostaBanco?.retornoIntegracao);
+      if (erroBanco) {
+        throw new IntegracaoBancariaError(erroBanco);
+      }
+
       await supabase
         .from("proposta_bancos")
         .update({ status_banco: "enviada", selecionado: true, mensagem_banco: null })
@@ -289,6 +301,7 @@ export async function enviarPropostaImpl({
       });
     }
   }
+
 
   // No primeiro envio o status avança; em envios adicionais o status já reflete
   // a análise em andamento e não deve retroceder.
