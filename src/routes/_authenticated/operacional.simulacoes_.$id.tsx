@@ -180,12 +180,20 @@ function Pagina() {
                 Simulação detalhada (todas as parcelas)
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => baixarSimulacaoPDF({ simulacao: s, bancos })}>
+              <DropdownMenuItem
+                onClick={() => setPdfDialogAberto(true)}
+                disabled={bancos.length === 0}
+              >
                 Comparativo consolidado (interno)
               </DropdownMenuItem>
             </DropdownMenuContent>
-
           </DropdownMenu>
+          <SelecionarBancosPdfDialog
+            open={pdfDialogAberto}
+            onOpenChange={setPdfDialogAberto}
+            simulacao={s}
+            bancos={bancos}
+          />
           <Button variant="ghost" onClick={duplicar}>
             <Copy className="mr-1 h-4 w-4" /> Duplicar
           </Button>
