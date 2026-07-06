@@ -790,7 +790,9 @@ export function ClienteForm({
             <Checkbox
               id="fg_autorizacao_dados"
               checked={v.fg_autorizacao_dados}
-              onCheckedChange={(x) => set("fg_autorizacao_dados", Boolean(x))}
+              onCheckedChange={(x: boolean | "indeterminate") =>
+                set("fg_autorizacao_dados", x === true)
+              }
               className="mt-0.5"
             />
             <Label htmlFor="fg_autorizacao_dados" className="text-sm font-normal leading-snug">
