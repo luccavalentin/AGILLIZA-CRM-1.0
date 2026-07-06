@@ -156,6 +156,7 @@ export interface ReportResult {
     bancos?: string[];
     statuses?: { value: string; label: string }[];
     produtos?: string[];
+    responsaveis?: { value: string; label: string }[];
   };
 }
 

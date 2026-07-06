@@ -260,10 +260,9 @@ export const navInterno: NavGroup[] = [
       {
         label: "Relatórios",
         icon: BarChart3,
-        to: "/relatorios",
+        to: "/relatorios/painel-geral",
         perm: { modulo: "relatorios.geral" },
         children: [
-          { label: "Central", icon: BarChart3, to: "/relatorios" },
           { label: "Painel geral", icon: LayoutDashboard, to: "/relatorios/painel-geral" },
           { label: "Comercial", icon: LineChart, to: "/relatorios/comerciais" },
           { label: "Simulações", icon: Calculator, to: "/relatorios/simulacoes" },

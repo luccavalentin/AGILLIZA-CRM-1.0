@@ -49,6 +49,76 @@ const STATUS_PROPOSTA_LABEL: Record<string, string> = {
 };
 const rotuloStatus = (s: string) => STATUS_PROPOSTA_LABEL[s] ?? s;
 
+/** Rótulos de status por módulo (para o filtro "Status" de cada relatório). */
+const STATUS_SIMULACAO_LABEL: Record<string, string> = {
+  rascunho: "Rascunho",
+  enviando: "Enviando",
+  simulada: "Simulada",
+  parcialmente_simulada: "Parcialmente simulada",
+  erro_banco: "Erro no banco",
+  expirada: "Expirada",
+  cancelada: "Cancelada",
+  promovida: "Promovida",
+};
+const STATUS_DEMANDA_LABEL: Record<string, string> = {
+  aberta: "Aberta",
+  em_andamento: "Em andamento",
+  aguardando: "Aguardando",
+  concluida: "Concluída",
+  cancelada: "Cancelada",
+};
+const STATUS_TAREFA_LABEL: Record<string, string> = {
+  aberta: "Aberta",
+  em_andamento: "Em andamento",
+  concluida: "Concluída",
+  cancelada: "Cancelada",
+};
+const STATUS_COMISSAO_LABEL: Record<string, string> = {
+  a_receber: "A receber",
+  recebida: "Recebida",
+  paga_parceiro: "Paga ao parceiro",
+  encerrada: "Encerrada",
+};
+const STATUS_FINANCEIRO_LABEL: Record<string, string> = {
+  aberta: "Aberta",
+  parcial: "Parcial",
+  paga: "Paga / recebida",
+  atrasada: "Atrasada",
+  cancelada: "Cancelada",
+  estornada: "Estornada",
+};
+
+/** Converte um mapa rótulo em lista de opções {value,label}. */
+const opcoes = (m: Record<string, string>) =>
+  Object.entries(m).map(([value, label]) => ({ value, label }));
+
+/** Opções de status do filtro por código de relatório. */
+function statusOpcoesPorCodigo(codigo: string): { value: string; label: string }[] | undefined {
+  switch (codigo) {
+    case "consolidado":
+    case "painel-geral":
+    case "comerciais":
+    case "gerencial":
+    case "propostas":
+    case "operacionais":
+      return opcoes(STATUS_PROPOSTA_LABEL);
+    case "simulacoes":
+      return opcoes(STATUS_SIMULACAO_LABEL);
+    case "demandas":
+      return opcoes(STATUS_DEMANDA_LABEL);
+    case "tarefas":
+      return opcoes(STATUS_TAREFA_LABEL);
+    case "comissoes":
+      return opcoes(STATUS_COMISSAO_LABEL);
+    case "financeiros":
+      return opcoes(STATUS_FINANCEIRO_LABEL);
+    default:
+      return undefined;
+  }
+}
+
+
+
 async function temPii(supabase: any, userId: string): Promise<boolean> {
   const { data: tudo } = await supabase.rpc("has_any_role", {
     _user_id: userId,
@@ -148,7 +218,31 @@ export const runReport = createServerFn({ method: "POST" })
 
     // Comparativo mês a mês (últimos 6 meses) — anexado a todos os relatórios.
     resultado.comparativoMensal = await comparativoMensalPropostas();
+
+    // Opções de filtro comuns a TODOS os relatórios: status do módulo + lista de
+    // responsáveis (usuários) do correspondente. Assim qualquer relatório pode
+    // ser filtrado por status e por usuário.
+    const responsaveis = await listarResponsaveis();
+    resultado.filtrosDisponiveis = {
+      ...resultado.filtrosDisponiveis,
+      statuses: resultado.filtrosDisponiveis?.statuses ?? statusOpcoesPorCodigo(codigo),
+      responsaveis,
+    };
     return resultado;
+
+    async function listarResponsaveis(): Promise<{ value: string; label: string }[]> {
+      let q = (supabase as any)
+        .from("profiles")
+        .select("id,nome,ativo")
+        .order("nome", { ascending: true })
+        .limit(1000);
+      if (corr) q = q.eq("correspondente_id", corr);
+      const { data } = await q;
+      return ((data ?? []) as any[])
+        .filter((p) => p.ativo !== false && p.nome)
+        .map((p) => ({ value: p.id as string, label: p.nome as string }));
+    }
+
 
     async function comparativoMensalPropostas(): Promise<ComparativoMensal | undefined> {
       const hojeStr = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
@@ -219,7 +313,13 @@ export const runReport = createServerFn({ method: "POST" })
       return { meses, quantidade, taxaAprovacao, bancos };
     }
 
-    async function fetchAll(table: string, cols: string, dateCol: string, colResp: string) {
+    async function fetchAll(
+      table: string,
+      cols: string,
+      dateCol: string,
+      colResp: string,
+      opts?: { statusCol?: string | false },
+    ) {
       let q = (supabase as any)
         .from(table)
         .select(cols)
@@ -229,6 +329,13 @@ export const runReport = createServerFn({ method: "POST" })
         .limit(5000);
       q = aplicarEscopo(q, filtros, userId, colResp);
       if (filtros.responsavel && colResp) q = q.eq(colResp, filtros.responsavel);
+      // Filtro por status: usa a coluna informada ou "status" quando presente no select.
+      const statusCol =
+        opts?.statusCol === false
+          ? undefined
+          : (opts?.statusCol ??
+            (`,${cols.replace(/\s/g, "")},`.includes(",status,") ? "status" : undefined));
+      if (filtros.status && statusCol) q = q.eq(statusCol, filtros.status);
       const { data: rows, error } = await q;
       if (error) throw new Error(error.message);
       return (rows ?? []) as any[];
@@ -236,7 +343,9 @@ export const runReport = createServerFn({ method: "POST" })
 
     async function relConsolidado(): Promise<ReportResult> {
       const [sims, props, cls, coms] = await Promise.all([
-        fetchAll("simulacoes", "id,status,created_at", "created_at", "usuario_responsavel_id"),
+        fetchAll("simulacoes", "id,status,created_at", "created_at", "usuario_responsavel_id", {
+          statusCol: false,
+        }),
         fetchAll(
           "propostas",
           "id,status,valor_financiamento,valor_financiamento_aprovado,nome_banco,created_at",
@@ -425,6 +534,7 @@ export const runReport = createServerFn({ method: "POST" })
       if (filtros.responsavel) q = q.eq("usuario_responsavel_id", filtros.responsavel);
       if (filtros.banco) q = q.eq("nome_banco", filtros.banco);
       if (filtros.produto) q = q.eq("produto", filtros.produto);
+      if (filtros.status) q = q.eq("status", filtros.status);
       const { data: rowsRaw, error } = await q;
       if (error) throw new Error(error.message);
       const props = (rowsRaw ?? []) as any[];
@@ -1084,21 +1194,24 @@ export const runReport = createServerFn({ method: "POST" })
     }
 
     async function relFinanceiro(): Promise<ReportResult> {
+      const filtrarStatus = (q: any) => (filtros.status ? q.eq("status", filtros.status) : q);
       const [pag, rec] = await Promise.all([
-        supabase
-          .from("financial_payables")
-          .select("valor,valor_pago,status,vencimento,descricao,created_at,data_pagamento")
-          .gte("created_at", de)
-          .lte("created_at", ateFim)
-          .limit(5000)
-          .then((r: any) => r.data ?? []),
-        supabase
-          .from("financial_receivables")
-          .select("valor,valor_recebido,status,vencimento,descricao,created_at,data_pagamento")
-          .gte("created_at", de)
-          .lte("created_at", ateFim)
-          .limit(5000)
-          .then((r: any) => r.data ?? []),
+        filtrarStatus(
+          supabase
+            .from("financial_payables")
+            .select("valor,valor_pago,status,vencimento,descricao,created_at,data_pagamento")
+            .gte("created_at", de)
+            .lte("created_at", ateFim)
+            .limit(5000),
+        ).then((r: any) => r.data ?? []),
+        filtrarStatus(
+          supabase
+            .from("financial_receivables")
+            .select("valor,valor_recebido,status,vencimento,descricao,created_at,data_pagamento")
+            .gte("created_at", de)
+            .lte("created_at", ateFim)
+            .limit(5000),
+        ).then((r: any) => r.data ?? []),
       ]);
       const hojeStr = new Date().toISOString().slice(0, 10);
       const aReceber = rec
@@ -1165,13 +1278,16 @@ export const runReport = createServerFn({ method: "POST" })
     }
 
     async function relComissoes(): Promise<ReportResult> {
-      const coms = await supabase
+      let cq = (supabase as any)
         .from("comissoes")
         .select("valor_bruto,split_parceiro,split_interno,status,usuario_responsavel_id,created_at")
         .gte("created_at", de)
         .lte("created_at", ateFim)
-        .limit(5000)
-        .then((r: any) => r.data ?? []);
+        .limit(5000);
+      cq = aplicarEscopo(cq, filtros, userId, "usuario_responsavel_id");
+      if (filtros.responsavel) cq = cq.eq("usuario_responsavel_id", filtros.responsavel);
+      if (filtros.status) cq = cq.eq("status", filtros.status);
+      const coms = await cq.then((r: any) => r.data ?? []);
       const prevista = coms.reduce((s: number, c: any) => s + (c.valor_bruto ?? 0), 0);
       const paga = coms
         .filter((c: any) => c.status === "paga_parceiro" || c.status === "encerrada")

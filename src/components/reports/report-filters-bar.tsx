@@ -59,28 +59,34 @@ export function ReportFiltersBar({
   bancos,
   produtos,
   statuses,
+  responsaveis,
 }: {
   filtros: ReportFiltros;
   onChange: (f: ReportFiltros) => void;
   bancos?: string[];
   produtos?: string[];
   statuses?: { value: string; label: string }[];
+  responsaveis?: { value: string; label: string }[];
 }) {
   const set = (patch: Partial<ReportFiltros>) => onChange({ ...filtros, ...patch });
   const statusLabel = (v: string) => statuses?.find((s) => s.value === v)?.label ?? v;
+  const respLabel = (v: string) => responsaveis?.find((r) => r.value === v)?.label ?? v;
 
   const chips: { key: keyof ReportFiltros; label: string }[] = [];
   if (filtros.banco) chips.push({ key: "banco", label: `Banco: ${filtros.banco}` });
   if (filtros.produto) chips.push({ key: "produto", label: `Produto: ${filtros.produto}` });
   if (filtros.status)
     chips.push({ key: "status", label: `Status: ${statusLabel(filtros.status)}` });
+  if (filtros.responsavel)
+    chips.push({ key: "responsavel", label: `Responsável: ${respLabel(filtros.responsavel)}` });
   if (filtros.valorMin != null)
     chips.push({ key: "valorMin", label: `Mín: ${filtros.valorMin.toLocaleString("pt-BR")}` });
   if (filtros.valorMax != null)
     chips.push({ key: "valorMax", label: `Máx: ${filtros.valorMax.toLocaleString("pt-BR")}` });
   if (filtros.busca) chips.push({ key: "busca", label: `Busca: ${filtros.busca}` });
 
-  const temExtra = (bancos?.length || produtos?.length || statuses?.length) ?? 0;
+  const temExtra =
+    (bancos?.length || produtos?.length || statuses?.length || responsaveis?.length) ?? 0;
 
   return (
     <div className="space-y-2 rounded-lg border border-border bg-card p-3">
@@ -166,6 +172,24 @@ export function ReportFiltersBar({
               {statuses.map((s) => (
                 <SelectItem key={s.value} value={s.value}>
                   {s.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+        {!!responsaveis?.length && (
+          <Select
+            value={filtros.responsavel ?? "__all"}
+            onValueChange={(v) => set({ responsavel: v === "__all" ? undefined : v })}
+          >
+            <SelectTrigger className="h-9 w-52">
+              <SelectValue placeholder="Responsável" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__all">Todos os responsáveis</SelectItem>
+              {responsaveis.map((r) => (
+                <SelectItem key={r.value} value={r.value}>
+                  {r.label}
                 </SelectItem>
               ))}
             </SelectContent>
