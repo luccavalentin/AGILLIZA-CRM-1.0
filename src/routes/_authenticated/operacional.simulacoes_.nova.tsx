@@ -1,6 +1,7 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { ArrowLeft } from "lucide-react";
 import { assertModuloPermitido } from "@/lib/route-guards";
 
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { CurrencyInput } from "@/components/simulacao/currency-input";
+import { DicaRendaMinima } from "@/components/simulacao/dica-renda-minima";
 import { ToneBadge } from "@/components/crm/tone-badge";
 import { PRODUTOS } from "@/lib/simulacao/schemas";
 import { formatBRL, formatPercent } from "@/lib/simulacao/format";
@@ -26,6 +28,7 @@ import {
   prazoMaximoPorIdade,
   formatarMeses,
 } from "@/lib/simulacao/prazo";
+
 
 export const Route = createFileRoute("/_authenticated/operacional/simulacoes_/nova")({
   head: () => ({ meta: [{ title: "Nova simulação — Agilliza" }] }),
