@@ -170,9 +170,10 @@ export const criarPessoaComAcesso = createServerFn({ method: "POST" })
       entidadeId: created.user.id,
       payloadNovo: {
         nome: data.nome,
-        acesso_tipo: data.acesso_tipo,
-        papel: data.papel,
+        acesso_tipo: acessoTipo,
+        papel,
       },
+
     });
 
     return { email: data.email, senha_temporaria: senha };
