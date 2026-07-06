@@ -20,10 +20,13 @@ export interface MatriculaSolicitacao {
   id: string;
   data_solicitacao: string;
   solicitante: string;
+  corretor: string | null;
+  cliente: string | null;
   numero_matricula: string | null;
   valor: number;
   reembolsado: boolean;
   reembolsado_em: string | null;
+  data_pagto_reembolso: string | null;
   observacao: string | null;
   created_at: string;
 }
