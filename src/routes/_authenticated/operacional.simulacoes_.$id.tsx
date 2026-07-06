@@ -8,7 +8,6 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   obterSimulacao,
   enviarSimulacaoBanco,
-  duplicarSimulacao,
 } from "@/lib/simulacao/simulacoes.functions";
 import { criarProposta } from "@/lib/propostas/propostas.functions";
 import { Button } from "@/components/ui/button";
@@ -100,14 +99,11 @@ function Pagina() {
     }
   }
 
-  async function duplicar() {
-    try {
-      const { id: novo } = await duplicarSimulacao({ data: { id } });
-      toast.success("Simulação duplicada.");
-      router.navigate({ to: "/operacional/simulacoes/$id", params: { id: novo } });
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Falha ao duplicar.");
-    }
+  function duplicar() {
+    router.navigate({
+      to: "/operacional/simulacoes/completa",
+      search: { duplicar: id },
+    });
   }
 
   const [criandoBanco, setCriandoBanco] = useState<string | null>(null);

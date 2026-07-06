@@ -19,7 +19,6 @@ import { assertModuloPermitido } from "@/lib/route-guards";
 import {
   listarSimulacoes,
   excluirSimulacao,
-  duplicarSimulacao,
   obterSimulacao,
 } from "@/lib/simulacao/simulacoes.functions";
 import { baixarSimulacaoPDF, baixarSimulacaoDetalhadaPDF } from "@/lib/simulacao/simulacao-pdf";
@@ -60,7 +59,7 @@ function Pagina() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const excluir = useServerFn(excluirSimulacao);
-  const duplicar = useServerFn(duplicarSimulacao);
+  
   const obter = useServerFn(obterSimulacao);
   const [escopo, setEscopo] = useState<"todas" | "minhas">("todas");
   const [q, setQ] = useState("");
@@ -93,14 +92,11 @@ function Pagina() {
     }
   }
 
-  async function handleDuplicar(id: string) {
-    try {
-      const { id: novo } = await duplicar({ data: { id } });
-      toast.success("Simulação duplicada.");
-      router.navigate({ to: "/operacional/simulacoes/$id", params: { id: novo } });
-    } catch {
-      toast.error("Não foi possível duplicar a simulação.");
-    }
+  function handleDuplicar(id: string) {
+    router.navigate({
+      to: "/operacional/simulacoes/completa",
+      search: { duplicar: id },
+    });
   }
 
   async function handleBaixarComparativo(id: string) {
