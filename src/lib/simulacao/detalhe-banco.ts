@@ -6,9 +6,6 @@ export interface ParcelaDetalhe {
   data: string | null;
   amortizacao: number;
   juros: number;
-  seguroMip: number;
-  seguroDfi: number;
-  tarifa: number;
   parcela: number;
   saldoDevedor: number;
 }
@@ -18,7 +15,6 @@ export interface DetalheBanco {
   taxaJurosAno: number | null;
   taxaJurosMes: number | null;
   cet: number | null;
-  cesh: number | null;
   valorImovel: number | null;
   valorFinanciamento: number | null;
   financiamentoTotal: number | null;
@@ -31,11 +27,10 @@ export interface DetalheBanco {
   sistemaAmortizacao: string | null;
   indexador: string | null;
   tipoParcela: string | null;
-  seguradora: string | null;
   primeiraParcela: number | null;
   ultimaParcela: number | null;
   somatorioParcelas: number | null;
-  /** true quando o plano de parcelas foi projetado (o banco só devolveu 1ª/última). */
+  /** true quando o plano de parcelas foi calculado localmente pelo sistema de amortização. */
   parcelasEstimadas: boolean;
   parcelas: ParcelaDetalhe[];
 }
@@ -65,10 +60,17 @@ export function normalizarSistemaAmortizacao(
   return "—";
 }
 
+/** Converte uma taxa anual (%) na taxa mensal equivalente (%) em juros compostos. */
+function taxaMensalEquivalente(taxaAnoPct: number | null): number | null {
+  if (taxaAnoPct == null || !(taxaAnoPct > 0)) return null;
+  const mensal = (Math.pow(1 + taxaAnoPct / 100, 1 / 12) - 1) * 100;
+  return Number.isFinite(mensal) ? mensal : null;
+}
+
 /**
  * Calcula o CET (Custo Efetivo Total) anual a partir do fluxo real de parcelas.
  * O CET é a taxa interna de retorno (mensal) que iguala o valor líquido liberado
- * ao valor presente de todas as parcelas (que já incluem juros, seguros e tarifas).
+ * ao valor presente de todas as parcelas.
  * Retorna a taxa anual em % ou null quando não há dados suficientes.
  */
 export function calcularCET(
@@ -110,32 +112,30 @@ function addMeses(dataIso: string | null, n: number): string | null {
 
 /** Converte uma parcela crua do banco (campos em inglês) em ParcelaDetalhe. */
 function mapParcela(p: Record<string, any>): ParcelaDetalhe {
+  const amort = num(p.amortization ?? p.amortizationValue) ?? 0;
+  const juros = num(p.interest ?? p.interestAmount) ?? 0;
   return {
     numero: Number(p.number ?? p.numberInstallment ?? 0),
     data: p.dueDate ?? p.amortizationDate ?? null,
-    amortizacao: num(p.amortization ?? p.amortizationValue) ?? 0,
-    juros: num(p.interest ?? p.interestAmount) ?? 0,
-    seguroMip: num(p.insurerMip ?? p.insuranceValueMip) ?? 0,
-    seguroDfi: num(p.insurerDfi ?? p.insuranceValueDfi) ?? 0,
-    tarifa: num(p.tac ?? p.tariffValue) ?? 0,
-    parcela: num(p.totalValue ?? p.installmentValue) ?? 0,
+    amortizacao: amort,
+    juros,
+    // Parcela pura do sistema de amortização (amortização + juros), sem seguros/tarifas.
+    parcela: amort + juros,
     saldoDevedor: num(p.endingBalance ?? p.debitBalanceAmount) ?? 0,
   };
 }
 
 /**
- * Projeta o plano de pagamento quando o banco só devolve a 1ª e a última parcela.
- * Amortização, juros e saldo são calculados de forma exata a partir da taxa e do
- * sistema (SAC/PRICE); os seguros são interpolados linearmente entre os valores
- * âncora fornecidos pelo banco (1ª e última parcela).
+ * Calcula o plano de pagamento completo e exato a partir do sistema de amortização
+ * (SAC ou PRICE), do valor financiado, do prazo e da taxa mensal. Cada parcela é
+ * composta apenas por amortização + juros (sem seguros ou tarifas).
  */
-function projetarPlano(
+function calcularPlano(
   principal: number,
   n: number,
   taxaMesPct: number,
   sistema: string,
-  first: Record<string, any> | null,
-  last: Record<string, any> | null,
+  dataInicial: string | null,
 ): ParcelaDetalhe[] {
   if (!(principal > 0) || !(n > 0) || !(taxaMesPct > 0)) return [];
   const i = taxaMesPct / 100;
@@ -143,31 +143,20 @@ function projetarPlano(
   const parcelaFixa = price ? (principal * i) / (1 - Math.pow(1 + i, -n)) : 0;
   const amortSac = principal / n;
 
-  const mip0 = num(first?.insurerMip) ?? 0;
-  const mipN = num(last?.insurerMip) ?? 0;
-  const dfi0 = num(first?.insurerDfi) ?? 0;
-  const dfiN = num(last?.insurerDfi) ?? 0;
-  const tac = num(first?.tac) ?? 0;
-  const dataInicial = (first?.dueDate as string) ?? null;
-
   const parcelas: ParcelaDetalhe[] = [];
   let saldo = principal;
   for (let k = 1; k <= n; k++) {
-    const frac = n > 1 ? (k - 1) / (n - 1) : 0;
     const juros = saldo * i;
-    const amort = price ? parcelaFixa - juros : amortSac;
-    const mip = mip0 + (mipN - mip0) * frac;
-    const dfi = dfi0 + (dfiN - dfi0) * frac;
-    const total = amort + juros + mip + dfi + tac;
+    let amort = price ? parcelaFixa - juros : amortSac;
+    // Ajuste da última parcela para zerar o saldo devedor exatamente.
+    if (k === n) amort = saldo;
+    const total = amort + juros;
     saldo = Math.max(0, saldo - amort);
     parcelas.push({
       numero: k,
       data: addMeses(dataInicial, k - 1),
       amortizacao: amort,
       juros,
-      seguroMip: mip,
-      seguroDfi: dfi,
-      tarifa: tac,
       parcela: total,
       saldoDevedor: saldo,
     });
@@ -175,7 +164,7 @@ function projetarPlano(
   return parcelas;
 }
 
-/** Extrai o detalhamento (parcelas, CET, CESH...) do raw_response de um banco. */
+/** Extrai o detalhamento (parcelas, CET, taxas...) do raw_response de um banco. */
 export function extrairDetalheBanco(raw: unknown): DetalheBanco | null {
   if (!raw || typeof raw !== "object") return null;
   const r = raw as Record<string, any>;
@@ -183,12 +172,12 @@ export function extrairDetalheBanco(raw: unknown): DetalheBanco | null {
   if ((!desc || typeof desc !== "object") && typeof r !== "object") return null;
 
   const sistema = normalizarSistemaAmortizacao(
-    desc.amortizationType ?? r.codigoSistemaAmortizacaoBanco,
-    null,
+    desc.amortizationType ?? r.codigoSistemaAmortizacaoBanco ?? r.codigoSistemaAmortizacaoSimulacao,
+    r.codigoSistemaAmortizacaoSimulacao,
   );
 
-  const taxaAno = num(desc.annualRate) ?? num(r.taxaJurosAnoBanco);
-  const taxaMes = num(desc.monthlyRate);
+  const taxaAno = num(desc.annualRate) ?? num(r.taxaJurosAnoBanco) ?? num(r.taxaJurosAnoSimulacao);
+  const taxaMes = num(desc.monthlyRate) ?? taxaMensalEquivalente(taxaAno);
   const prazo =
     num(desc.period) ?? num(r.prazoPagamentoBanco) ?? num(r.prazoPagamentoSimulacao);
   const valorFin =
@@ -198,30 +187,25 @@ export function extrairDetalheBanco(raw: unknown): DetalheBanco | null {
     num(r.valorFinanciamentoSimulacao);
 
   const brutas: any[] = Array.isArray(desc.installments) ? desc.installments : [];
-  let parcelas: ParcelaDetalhe[] = brutas.map(mapParcela);
+  let parcelas: ParcelaDetalhe[] = brutas.map(mapParcela).filter((p) => p.parcela > 0);
   let estimadas = false;
 
-  if (parcelas.length === 0 && valorFin && prazo && taxaMes) {
-    parcelas = projetarPlano(
-      valorFin,
-      prazo,
-      taxaMes,
-      sistema,
-      desc.firstInstallment ?? null,
-      desc.lastInstallment ?? null,
-    );
+  // Se o banco não devolveu o plano completo, calculamos localmente pelo sistema de amortização.
+  if (parcelas.length <= 2 && valorFin && prazo && taxaMes) {
+    const dataInicial =
+      (desc.firstInstallment?.dueDate as string) ?? (brutas[0]?.dueDate as string) ?? null;
+    parcelas = calcularPlano(valorFin, prazo, taxaMes, sistema, dataInicial);
     estimadas = parcelas.length > 0;
   }
 
-  const somatorio =
-    num(desc.installmentsTotalValue) ??
-    (parcelas.length ? parcelas.reduce((s, p) => s + p.parcela, 0) : null);
+  const somatorio = parcelas.length ? parcelas.reduce((s, p) => s + p.parcela, 0) : null;
+  const cet =
+    num(desc.cetAnnual) ?? num(r.taxaCetAnoBanco) ?? calcularCET(valorFin, parcelas);
 
   return {
     taxaJurosAno: taxaAno,
     taxaJurosMes: taxaMes,
-    cet: num(desc.cetAnnual) ?? num(r.taxaCetAnoBanco),
-    cesh: num(desc.ceshAnnual) ?? num(r.taxaCeshAnoBanco),
+    cet,
     valorImovel: num(desc.propertyPrice) ?? num(r.valorImovel),
     valorFinanciamento: valorFin,
     financiamentoTotal: num(r.valorTotalFinanciamento) ?? valorFin,
@@ -231,15 +215,15 @@ export function extrairDetalheBanco(raw: unknown): DetalheBanco | null {
     iof: num(desc.iof?.totalValue ?? desc.iof?.value) ?? num(r.valorIofBanco),
     fgts: num(desc.fgtsAmount) ?? num(r.valorFgts),
     prazoMeses: prazo,
-    sistemaAmortizacao: desc.amortizationType ?? r.codigoSistemaAmortizacaoBanco ?? null,
+    sistemaAmortizacao:
+      desc.amortizationType ?? r.codigoSistemaAmortizacaoBanco ?? r.codigoSistemaAmortizacaoSimulacao ?? null,
     indexador: r.codigoIndexadorBanco ?? desc.indexer ?? null,
     tipoParcela:
       r.codigoIndexadorBanco || desc.indexer
         ? `Atualizável ${(r.codigoIndexadorBanco ?? desc.indexer).toString().toUpperCase()}`
         : null,
-    seguradora: desc.insuranceType ?? desc.insurer ?? null,
-    primeiraParcela: num(desc.firstInstallment?.totalValue) ?? num(r.valorParcelaBanco),
-    ultimaParcela: num(desc.lastInstallment?.totalValue),
+    primeiraParcela: parcelas.length ? parcelas[0].parcela : num(r.valorParcelaBanco),
+    ultimaParcela: parcelas.length ? parcelas[parcelas.length - 1].parcela : null,
     somatorioParcelas: somatorio,
     parcelasEstimadas: estimadas,
     parcelas,

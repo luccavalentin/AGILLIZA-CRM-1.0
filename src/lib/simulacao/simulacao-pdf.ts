@@ -216,9 +216,7 @@ function drawInfoFinanciamento(
         d?.cet ?? calcularCET(d?.valorFinanciamento ?? s.valor_financiamento, d?.parcelas),
       ),
     },
-    { label: "CESH (Custo Efetivo Seguro Habit.)", valor: pctTxt(d?.cesh) },
     { label: "IOF crédito", valor: brlOuTraco(d?.iof ?? b?.valor_iof) },
-    { label: "Seguradora", valor: d?.seguradora ?? "—" },
   ];
 
 
@@ -462,9 +460,6 @@ export function baixarSimulacaoDetalhadaPDF({
             "Data",
             "Amortização",
             "Juros",
-            "Seguro MIP",
-            "Seguro DFI",
-            "Tarifa",
             "Parcela",
             "Saldo devedor",
           ],
@@ -474,9 +469,6 @@ export function baixarSimulacaoDetalhadaPDF({
           p.data ? dataTxt(p.data) : "—",
           formatBRL(p.amortizacao),
           formatBRL(p.juros),
-          formatBRL(p.seguroMip),
-          formatBRL(p.seguroDfi),
-          formatBRL(p.tarifa),
           formatBRL(p.parcela),
           formatBRL(p.saldoDevedor),
         ]),
@@ -496,9 +488,6 @@ export function baixarSimulacaoDetalhadaPDF({
           3: { halign: "right" },
           4: { halign: "right" },
           5: { halign: "right" },
-          6: { halign: "right" },
-          7: { halign: "right" },
-          8: { halign: "right" },
         },
         // Redesenha o cabeçalho institucional quando o plano quebra em novas páginas
         didDrawPage: (hook) => {

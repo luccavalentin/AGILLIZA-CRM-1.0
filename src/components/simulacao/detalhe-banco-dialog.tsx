@@ -35,7 +35,7 @@ function InfoCard({ rotulo, valor }: { rotulo: string; valor: string }) {
   );
 }
 
-/** Botão + diálogo com o detalhamento completo (parcelas, CET, CESH...) de um banco. */
+/** Botão + diálogo com o detalhamento completo (parcelas, CET, taxas...) de um banco. */
 export function DetalheBancoDialog({ banco }: { banco: any }) {
   const detalhe = useMemo(() => extrairDetalheBanco(banco?.raw_response), [banco]);
   const temDetalhe = !!detalhe && detalhe.parcelas.length > 0;
@@ -65,7 +65,6 @@ export function DetalheBancoDialog({ banco }: { banco: any }) {
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 <InfoCard rotulo="Taxa de juros" valor={pct(detalhe!.taxaJurosAno)} />
                 <InfoCard rotulo="CET" valor={pct(detalhe!.cet)} />
-                <InfoCard rotulo="CESH" valor={pct(detalhe!.cesh)} />
                 <InfoCard
                   rotulo="Taxa mensal"
                   valor={
@@ -95,7 +94,7 @@ export function DetalheBancoDialog({ banco }: { banco: any }) {
                   rotulo="Somatório das parcelas"
                   valor={formatBRL(detalhe!.somatorioParcelas)}
                 />
-                <InfoCard rotulo="Seguradora" valor={detalhe!.seguradora ?? "—"} />
+                
               </div>
 
 
@@ -118,9 +117,6 @@ export function DetalheBancoDialog({ banco }: { banco: any }) {
                         <TableHead>Data</TableHead>
                         <TableHead className="text-right">Amortização</TableHead>
                         <TableHead className="text-right">Juros</TableHead>
-                        <TableHead className="text-right">Seguro MIP</TableHead>
-                        <TableHead className="text-right">Seguro DFI</TableHead>
-                        <TableHead className="text-right">Tarifa</TableHead>
                         <TableHead className="text-right">Parcela</TableHead>
                         <TableHead className="text-right">Saldo devedor</TableHead>
                       </TableRow>
@@ -137,15 +133,6 @@ export function DetalheBancoDialog({ banco }: { banco: any }) {
                           </TableCell>
                           <TableCell className="text-right tabular-nums">
                             {formatBRL(p.juros)}
-                          </TableCell>
-                          <TableCell className="text-right tabular-nums">
-                            {formatBRL(p.seguroMip)}
-                          </TableCell>
-                          <TableCell className="text-right tabular-nums">
-                            {formatBRL(p.seguroDfi)}
-                          </TableCell>
-                          <TableCell className="text-right tabular-nums">
-                            {formatBRL(p.tarifa)}
                           </TableCell>
                           <TableCell className="text-right font-medium tabular-nums">
                             {formatBRL(p.parcela)}
