@@ -70,7 +70,7 @@ export function NovaPessoaInline({
 
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
-  const [creci, setCreci] = useState("");
+  
   const [comissao, setComissao] = useState("");
   const [nivelId, setNivelId] = useState<string>("");
 
@@ -165,7 +165,6 @@ export function NovaPessoaInline({
       nivel_acesso_id: nivelId,
       dados_parceiro: isParceiro
         ? {
-            creci: creci.trim() || undefined,
             comissao_padrao: comissao ? Number(comissao) : undefined,
           }
         : undefined,
@@ -213,14 +212,6 @@ export function NovaPessoaInline({
         {/* Campos de parceiro — exibidos quando o nível é do Portal do Parceiro */}
         {isParceiro && (
           <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="np-creci">CRECI</Label>
-              <Input
-                id="np-creci"
-                value={creci}
-                onChange={(e) => setCreci(e.target.value)}
-              />
-            </div>
             <div className="space-y-2">
               <Label htmlFor="np-com">% comissão</Label>
               <Input
