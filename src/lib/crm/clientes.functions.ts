@@ -82,11 +82,20 @@ export const listarClientes = createServerFn({ method: "GET" })
       let query = supabase
         .from("clientes")
         .select(
-          "id, numero_cliente, nome, documento, telefone_celular, email, ativo, portal_acesso_ativo, responsavel:profiles!clientes_responsavel_id_fkey(nome), cliente_pipeline(ultima_atualizacao_em, pipeline_stages(codigo, nome))",
+          data.etapa
+            ? "id, numero_cliente, nome, documento, telefone_celular, email, ativo, portal_acesso_ativo, responsavel:profiles!clientes_responsavel_id_fkey(nome), cliente_pipeline!inner(ultima_atualizacao_em, pipeline_stages!inner(codigo, nome))"
+            : "id, numero_cliente, nome, documento, telefone_celular, email, ativo, portal_acesso_ativo, responsavel:profiles!clientes_responsavel_id_fkey(nome), cliente_pipeline(ultima_atualizacao_em, pipeline_stages(codigo, nome))",
           { count: "exact" },
         )
-        .order("created_at", { ascending: false })
-        .range(from, to);
+        .order("created_at", { ascending: false });
+
+      // Filtro de etapa aplicado na própria query (antes da paginação),
+      // para que a contagem e a paginação fiquem corretas.
+      if (data.etapa) {
+        query = query.eq("cliente_pipeline.pipeline_stages.codigo", data.etapa);
+      }
+
+      query = query.range(from, to);
 
       if (data.q && data.q.trim()) {
         const term = data.q.trim();
@@ -117,7 +126,7 @@ export const listarClientes = createServerFn({ method: "GET" })
         }),
       );
 
-      if (data.etapa) itens = itens.filter((i) => i.etapa_codigo === data.etapa);
+      
 
       return { itens, total: count ?? itens.length, podePii };
     },
