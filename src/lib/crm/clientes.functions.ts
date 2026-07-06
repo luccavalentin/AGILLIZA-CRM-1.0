@@ -272,6 +272,8 @@ export const atualizarCliente = createServerFn({ method: "POST" })
         telefone_celular: campos.telefone_celular,
         renda_total_declarada: campos.renda_total_declarada,
         uf_interesse: campos.uf_interesse ?? null,
+        utiliza_fgts: campos.utiliza_fgts ?? false,
+        fg_autorizacao_dados: campos.fg_autorizacao_dados ?? false,
         origem: campos.origem,
       })
       .eq("id", id);
