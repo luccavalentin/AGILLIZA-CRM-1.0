@@ -382,14 +382,17 @@ async function forkNivelPadrao(
  *  ou um baseline "somente leitura" (view = próprios) em todos os módulos. */
 export const criarNivelAcesso = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { nome: string; descricao?: string; copiar_de?: string }) =>
-    z
-      .object({
-        nome: z.string().trim().min(2).max(60),
-        descricao: z.string().trim().max(200).optional(),
-        copiar_de: z.string().uuid().optional(),
-      })
-      .parse(d),
+  .inputValidator(
+    (d: { nome: string; descricao?: string; copiar_de?: string; papel?: PapelNivel; acesso_tipo?: AcessoTipo }) =>
+      z
+        .object({
+          nome: z.string().trim().min(2).max(60),
+          descricao: z.string().trim().max(200).optional(),
+          copiar_de: z.string().uuid().optional(),
+          papel: z.enum(["gestor", "comercial", "analista", "imobiliaria", "corretor"]).default("comercial"),
+          acesso_tipo: z.enum(["sistema", "portal_parceiro"]).default("sistema"),
+        })
+        .parse(d),
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
@@ -397,7 +400,7 @@ export const criarNivelAcesso = createServerFn({ method: "POST" })
     if (!corresp) throw new Error("Correspondente não encontrado para o usuário.");
     const { data: novo, error } = await supabase
       .from("access_levels")
-      .insert({ nome: data.nome, descricao: data.descricao ?? null, correspondente_id: corresp, ativo: true, is_padrao: false })
+      .insert({ nome: data.nome, descricao: data.descricao ?? null, papel: data.papel, acesso_tipo: data.acesso_tipo, correspondente_id: corresp, ativo: true, is_padrao: false })
       .select("id")
       .single();
     if (error) throw new Error(error.message);
