@@ -211,7 +211,11 @@ function Pagina() {
         )}
       </div>
 
-      <div className="rounded-lg border border-border">
+      {/* Ações reutilizáveis por item */}
+      {(() => null)()}
+
+      {/* Tabela (telas médias e maiores) */}
+      <div className="hidden rounded-lg border border-border md:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -272,53 +276,146 @@ function Pagina() {
                   <SimulacaoStatusBadge status={s.status} />
                 </TableCell>
                 <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" aria-label="Ações">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem
-                        onSelect={() =>
-                          router.navigate({
-                            to: "/operacional/simulacoes/$id",
-                            params: { id: s.id },
-                          })
-                        }
-                      >
-                        <Eye className="mr-2 h-4 w-4" /> Visualizar
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onSelect={() => handleEditar(s.id)}>
-                        <Pencil className="mr-2 h-4 w-4" /> Editar
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onSelect={() => handleBaixar(s.id)}>
-                        <Download className="mr-2 h-4 w-4" /> Baixar PDF
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onSelect={() => handleDuplicar(s.id)}>
-                        <Copy className="mr-2 h-4 w-4" /> Duplicar
-                      </DropdownMenuItem>
-                      <ConfirmDelete
-                        titulo="Excluir simulação"
-                        descricao={`A simulação ${s.numero_simulacao} será removida permanentemente.`}
-                        onConfirm={() => handleExcluir(s.id)}
-                        trigger={
-                          <DropdownMenuItem
-                            className="text-destructive focus:text-destructive"
-                            onSelect={(e) => e.preventDefault()}
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" /> Excluir
-                          </DropdownMenuItem>
-                        }
-                      />
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <AcoesSimulacao
+                    onVisualizar={() =>
+                      router.navigate({
+                        to: "/operacional/simulacoes/$id",
+                        params: { id: s.id },
+                      })
+                    }
+                    onEditar={() => handleEditar(s.id)}
+                    onBaixar={() => handleBaixar(s.id)}
+                    onDuplicar={() => handleDuplicar(s.id)}
+                    onExcluir={() => handleExcluir(s.id)}
+                    numero={s.numero_simulacao}
+                  />
                 </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </div>
+
+      {/* Cartões (telas pequenas) */}
+      <div className="space-y-3 md:hidden">
+        {isLoading && (
+          <p className="py-10 text-center text-sm text-muted-foreground">Carregando…</p>
+        )}
+        {!isLoading && (data?.itens.length ?? 0) === 0 && (
+          <div className="flex flex-col items-center gap-3 rounded-lg border border-border py-12 text-center">
+            <Calculator className="h-8 w-8 text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">Nenhuma simulação encontrada.</p>
+            <Button asChild size="sm">
+              <Link to="/operacional/simulacoes/nova">Criar primeira simulação</Link>
+            </Button>
+          </div>
+        )}
+        {data?.itens.map((s) => (
+          <div
+            key={s.id}
+            className="cursor-pointer rounded-lg border border-border p-4"
+            onClick={() =>
+              router.navigate({ to: "/operacional/simulacoes/$id", params: { id: s.id } })
+            }
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="font-medium text-foreground">{s.numero_simulacao}</p>
+                <p className="truncate text-sm text-muted-foreground">{s.nome_cliente ?? "—"}</p>
+              </div>
+              <div className="flex shrink-0 items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                <SimulacaoStatusBadge status={s.status} />
+                <AcoesSimulacao
+                  onVisualizar={() =>
+                    router.navigate({
+                      to: "/operacional/simulacoes/$id",
+                      params: { id: s.id },
+                    })
+                  }
+                  onEditar={() => handleEditar(s.id)}
+                  onBaixar={() => handleBaixar(s.id)}
+                  onDuplicar={() => handleDuplicar(s.id)}
+                  onExcluir={() => handleExcluir(s.id)}
+                  numero={s.numero_simulacao}
+                />
+              </div>
+            </div>
+            <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+              <div>
+                <dt className="text-xs text-muted-foreground">Produto</dt>
+                <dd className="text-foreground">
+                  {s.produto === "home_equity"
+                    ? "Home Equity"
+                    : s.produto === "financiamento_imobiliario"
+                      ? "Financiamento"
+                      : "—"}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs text-muted-foreground">Prazo</dt>
+                <dd className="tabular-nums text-foreground">{s.prazo ? `${s.prazo}m` : "—"}</dd>
+              </div>
+              <div className="col-span-2">
+                <dt className="text-xs text-muted-foreground">Valor do imóvel</dt>
+                <dd className="tabular-nums text-foreground">{formatBRL(s.valor_imovel)}</dd>
+              </div>
+            </dl>
+          </div>
+        ))}
+      </div>
     </div>
+  );
+}
+
+function AcoesSimulacao({
+  onVisualizar,
+  onEditar,
+  onBaixar,
+  onDuplicar,
+  onExcluir,
+  numero,
+}: {
+  onVisualizar: () => void;
+  onEditar: () => void;
+  onBaixar: () => void;
+  onDuplicar: () => void;
+  onExcluir: () => Promise<void>;
+  numero: string;
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" aria-label="Ações">
+          <MoreHorizontal className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onSelect={onVisualizar}>
+          <Eye className="mr-2 h-4 w-4" /> Visualizar
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={onEditar}>
+          <Pencil className="mr-2 h-4 w-4" /> Editar
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={onBaixar}>
+          <Download className="mr-2 h-4 w-4" /> Baixar PDF
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={onDuplicar}>
+          <Copy className="mr-2 h-4 w-4" /> Duplicar
+        </DropdownMenuItem>
+        <ConfirmDelete
+          titulo="Excluir simulação"
+          descricao={`A simulação ${numero} será removida permanentemente.`}
+          onConfirm={onExcluir}
+          trigger={
+            <DropdownMenuItem
+              className="text-destructive focus:text-destructive"
+              onSelect={(e) => e.preventDefault()}
+            >
+              <Trash2 className="mr-2 h-4 w-4" /> Excluir
+            </DropdownMenuItem>
+          }
+        />
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
