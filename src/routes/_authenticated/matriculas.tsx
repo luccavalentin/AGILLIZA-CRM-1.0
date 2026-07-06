@@ -149,40 +149,13 @@ function Kpi({
   );
 }
 
-/** Faixa azul com o Pix da empresa, editável. */
-function PixBanner({
-  chave,
-  titular,
-  onSalvo,
-}: {
-  chave: string | null;
-  titular: string | null;
-  onSalvo: () => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const [c, setC] = useState(chave ?? "");
-  const [t, setT] = useState(titular ?? "");
-  const [salvando, setSalvando] = useState(false);
+/** Chave Pix fixa da Agilliza (CNPJ), exposta para copiar e colar. */
+const PIX_AGILLIZA = "51.306.419/0001-07";
 
-  async function salvar() {
-    setSalvando(true);
-    try {
-      await salvarPixMatriculas({
-        data: { pix_chave: c.trim() || null, pix_titular: t.trim() || null },
-      });
-      toast.success("Pix atualizado.");
-      setOpen(false);
-      onSalvo();
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Falha ao salvar.");
-    } finally {
-      setSalvando(false);
-    }
-  }
-
+/** Faixa azul com o Pix da Agilliza, apenas para copiar. */
+function PixBanner() {
   function copiar() {
-    if (!chave) return;
-    navigator.clipboard.writeText(chave);
+    navigator.clipboard.writeText(PIX_AGILLIZA);
     toast.success("Chave Pix copiada.");
   }
 
@@ -194,55 +167,19 @@ function PixBanner({
             <Landmark className="h-5 w-5" />
           </div>
           <div>
-            <p className="text-xs uppercase tracking-wide opacity-80">Pix da empresa</p>
-            <p className="text-lg font-semibold tabular-nums">{chave ?? "Configure a chave Pix"}</p>
-            {titular && <p className="text-xs opacity-80">{titular}</p>}
+            <p className="text-xs uppercase tracking-wide opacity-80">
+              Segue o Pix da Agilliza
+            </p>
+            <p className="text-lg font-semibold tabular-nums">{PIX_AGILLIZA}</p>
+            <p className="text-xs opacity-80">
+              Chave CNPJ — use para reembolsar as matrículas.
+            </p>
           </div>
         </div>
         <div className="flex gap-2">
-          {chave && (
-            <Button variant="secondary" size="sm" onClick={copiar}>
-              <Copy className="mr-1 h-4 w-4" /> Copiar
-            </Button>
-          )}
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-              <Button variant="secondary" size="sm">
-                <Pencil className="mr-1 h-4 w-4" /> Editar
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Pix da empresa</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-3">
-                <div className="space-y-1">
-                  <Label>Chave Pix</Label>
-                  <Input
-                    value={c}
-                    onChange={(e) => setC(e.target.value)}
-                    placeholder="CNPJ, e-mail, telefone ou aleatória"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label>Titular</Label>
-                  <Input
-                    value={t}
-                    onChange={(e) => setT(e.target.value)}
-                    placeholder="Nome do titular da conta"
-                  />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button variant="ghost" onClick={() => setOpen(false)}>
-                  Cancelar
-                </Button>
-                <Button onClick={salvar} disabled={salvando}>
-                  {salvando ? "Salvando…" : "Salvar"}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          <Button variant="secondary" size="sm" onClick={copiar}>
+            <Copy className="mr-1 h-4 w-4" /> Copiar chave
+          </Button>
         </div>
       </div>
     </Card>
