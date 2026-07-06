@@ -10,15 +10,7 @@ export const criarSchema = z.object({
   nome: z.string().min(2, "Informe o nome completo."),
   email: z.string().email("E-mail inválido."),
   telefone: z.string().optional(),
-  acesso_tipo: z.enum(["sistema", "portal_parceiro"]),
-  papel: z.enum([
-    "gestor",
-    "comercial",
-    "analista",
-    "imobiliaria",
-    "corretor",
-  ]),
-  nivel_acesso_id: z.string().uuid().optional().nullable(),
+  nivel_acesso_id: z.string().uuid("Selecione um nível de acesso."),
   dados_parceiro: z
     .object({
       creci: z.string().optional(),
