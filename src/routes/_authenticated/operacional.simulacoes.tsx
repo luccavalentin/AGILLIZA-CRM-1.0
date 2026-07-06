@@ -22,7 +22,7 @@ import {
   duplicarSimulacao,
   obterSimulacao,
 } from "@/lib/simulacao/simulacoes.functions";
-import { baixarSimulacaoPDF } from "@/lib/simulacao/simulacao-pdf";
+import { baixarSimulacaoPDF, baixarSimulacaoDetalhadaPDF } from "@/lib/simulacao/simulacao-pdf";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
