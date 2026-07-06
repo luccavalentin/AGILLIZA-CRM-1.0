@@ -3,7 +3,7 @@ import autoTable from "jspdf-autotable";
 import { exportPDF } from "@/lib/relatorios/report-pdf";
 import { formatBRL, formatPercent } from "@/lib/simulacao/format";
 import type { ReportColumn, ReportKpi, ReportRow } from "@/lib/relatorios/shared";
-import { extrairDetalheBanco, type DetalheBanco } from "@/lib/simulacao/detalhe-banco";
+import { extrairDetalheBanco, normalizarSistemaAmortizacao, type DetalheBanco } from "@/lib/simulacao/detalhe-banco";
 import { AGILLIZA_LOGO_LIGHT, AGILLIZA_LOGO_RATIO } from "@/lib/relatorios/brand-logo";
 
 interface SimulacaoPdfInput {
@@ -163,7 +163,24 @@ function drawDadosCliente(doc: jsPDF, pageW: number, s: any, y: number): number 
   return y + boxH + 12;
 }
 
-/** Grade de "Informações do Financiamento" incluindo CET, CESH e taxas no cabeçalho do extrato. */
+/** Formata em BRL, mas devolve "—" quando o valor não veio da API (evita inventar R$ 0,00). */
+function brlOuTraco(v: number | null | undefined): string {
+  return v == null ? "—" : formatBRL(v);
+}
+
+/** Normaliza o sistema de amortização para os termos conhecidos (SAC / PRICE). */
+function sistemaAmortizacaoLabel(
+  apiValor: string | null | undefined,
+  requisitado: string | null | undefined,
+): string {
+  return normalizarSistemaAmortizacao(apiValor, requisitado);
+}
+
+/**
+ * Grade de "Informações do Financiamento".
+ * Só exibe o que vem diretamente do retorno do banco (ou o que o próprio usuário
+ * informou na operação); campos ausentes aparecem como "—", nunca com valores inventados.
+ */
 function drawInfoFinanciamento(
   doc: jsPDF,
   pageW: number,
@@ -177,26 +194,26 @@ function drawInfoFinanciamento(
     { label: "Produto", valor: produtoLabel(s) },
     {
       label: "Sistema de amortização",
-      valor: d?.sistemaAmortizacao ?? (s.sistema_amortizacao === "P" ? "PRICE" : "SAC"),
+      valor: sistemaAmortizacaoLabel(d?.sistemaAmortizacao, s.sistema_amortizacao),
     },
-    { label: "Valor de compra e venda", valor: formatBRL(d?.valorImovel ?? s.valor_imovel) },
-    { label: "Despesas financiadas", valor: formatBRL(d?.despesasFinanciadas ?? 0) },
+    { label: "Valor de compra e venda", valor: brlOuTraco(d?.valorImovel ?? s.valor_imovel) },
+    { label: "Despesas financiadas", valor: brlOuTraco(d?.despesasFinanciadas) },
     {
       label: "Valor de financiamento total",
-      valor: formatBRL(d?.valorFinanciamento ?? s.valor_financiamento),
+      valor: brlOuTraco(d?.valorFinanciamento ?? s.valor_financiamento),
     },
-    { label: "Entrada", valor: formatBRL(d?.valorEntrada ?? s.valor_entrada) },
+    { label: "Entrada", valor: brlOuTraco(d?.valorEntrada ?? s.valor_entrada) },
     {
       label: "Prazo total",
       valor:
         (d?.prazoMeses ?? s.prazo) != null ? `${d?.prazoMeses ?? s.prazo} meses` : "—",
     },
-    { label: "Tipo da parcela", valor: d?.indexador ? `Atualizável ${d.indexador}` : "—" },
+    { label: "Indexador", valor: d?.indexador ?? "—" },
     { label: "Taxa efetiva anual", valor: pctTxt(d?.taxaJurosAno ?? b?.taxa_juros_ano) },
     { label: "Taxa de juros mensal", valor: pctTxt(d?.taxaJurosMes, "a.m.") },
     { label: "CET (Custo Efetivo Total)", valor: pctTxt(d?.cet) },
     { label: "CESH (Custo Efetivo Seguro Habitacional)", valor: pctTxt(d?.cesh) },
-    { label: "IOF", valor: formatBRL(d?.iof ?? b?.valor_iof ?? 0) },
+    { label: "IOF", valor: brlOuTraco(d?.iof ?? b?.valor_iof) },
     { label: "Seguradora", valor: d?.seguradora ?? "—" },
   ];
 
@@ -339,9 +356,9 @@ export function baixarSimulacaoSimplificadaPDF({
 
     // Resumo das parcelas (valores fornecidos pela instituição — sem recálculo)
     const resumo: { label: string; valor: string }[] = [
-      { label: "1ª parcela", valor: formatBRL(d?.primeiraParcela ?? b?.valor_parcela) },
-      { label: "Última parcela", valor: formatBRL(d?.ultimaParcela ?? null) },
-      { label: "Somatório das parcelas", valor: formatBRL(d?.somatorioParcelas ?? null) },
+      { label: "1ª parcela", valor: brlOuTraco(d?.primeiraParcela ?? b?.valor_parcela) },
+      { label: "Última parcela", valor: brlOuTraco(d?.ultimaParcela) },
+      { label: "Somatório das parcelas", valor: brlOuTraco(d?.somatorioParcelas) },
     ];
     doc.setTextColor(AZUL);
     doc.setFont("helvetica", "bold");
