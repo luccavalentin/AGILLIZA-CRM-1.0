@@ -343,7 +343,9 @@ export const runReport = createServerFn({ method: "POST" })
 
     async function relConsolidado(): Promise<ReportResult> {
       const [sims, props, cls, coms] = await Promise.all([
-        fetchAll("simulacoes", "id,status,created_at", "created_at", "usuario_responsavel_id"),
+        fetchAll("simulacoes", "id,status,created_at", "created_at", "usuario_responsavel_id", {
+          statusCol: false,
+        }),
         fetchAll(
           "propostas",
           "id,status,valor_financiamento,valor_financiamento_aprovado,nome_banco,created_at",
