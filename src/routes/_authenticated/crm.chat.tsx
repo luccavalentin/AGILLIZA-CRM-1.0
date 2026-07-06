@@ -167,48 +167,93 @@ function Pagina() {
                   <Skeleton key={i} className="h-14 w-full" />
                 ))}
               </div>
-            ) : filtradas.length === 0 ? (
+            ) : filtradas.length === 0 && novosClientes.length === 0 ? (
               <p className="p-6 text-center text-sm text-muted-foreground">
-                Nenhuma conversa ainda.
+                {termoBusca.length >= 2
+                  ? buscandoApp
+                    ? "Buscando clientes…"
+                    : "Nenhum cliente encontrado. Habilite o App do cliente no CRM para poder conversar."
+                  : "Nenhuma conversa ainda. Busque um cliente com App habilitado para iniciar."}
               </p>
             ) : (
-              filtradas.map((c) => (
-                <button
-                  key={c.cliente_id}
-                  onClick={() => setSelecionado(c.cliente_id)}
-                  className={cn(
-                    "flex w-full flex-col gap-0.5 border-b px-3 py-2.5 text-left transition-colors hover:bg-muted/60",
-                    selecionado === c.cliente_id && "bg-muted",
-                  )}
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="truncate text-sm font-medium text-foreground">
-                      {c.nome}
-                    </span>
-                    <span className="shrink-0 text-[10px] text-muted-foreground">
-                      {formatarHora(c.ultima_em)}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="truncate text-xs text-muted-foreground">
-                      {c.ultimo_remetente === "time" ? "Você: " : ""}
-                      {c.ultima_mensagem}
-                    </span>
-                    {c.nao_lidas > 0 && (
-                      <Badge className="h-5 shrink-0 px-1.5 text-[10px]">
-                        {c.nao_lidas}
-                      </Badge>
+              <>
+                {filtradas.map((c) => (
+                  <button
+                    key={c.cliente_id}
+                    onClick={() => setSelecionado(c.cliente_id)}
+                    className={cn(
+                      "flex w-full flex-col gap-0.5 border-b px-3 py-2.5 text-left transition-colors hover:bg-muted/60",
+                      selecionado === c.cliente_id && "bg-muted",
                     )}
-                  </div>
-                  {c.etapa_nome && (
-                    <span className="mt-0.5 truncate text-[10px] text-muted-foreground">
-                      Etapa: {c.etapa_nome}
-                    </span>
-                  )}
-                </button>
-              ))
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="truncate text-sm font-medium text-foreground">
+                        {c.nome}
+                      </span>
+                      <span className="shrink-0 text-[10px] text-muted-foreground">
+                        {formatarHora(c.ultima_em)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="truncate text-xs text-muted-foreground">
+                        {c.ultimo_remetente === "time" ? "Você: " : ""}
+                        {c.ultima_mensagem}
+                      </span>
+                      {c.nao_lidas > 0 && (
+                        <Badge className="h-5 shrink-0 px-1.5 text-[10px]">
+                          {c.nao_lidas}
+                        </Badge>
+                      )}
+                    </div>
+                    {c.etapa_nome && (
+                      <span className="mt-0.5 truncate text-[10px] text-muted-foreground">
+                        Etapa: {c.etapa_nome}
+                      </span>
+                    )}
+                  </button>
+                ))}
+
+                {novosClientes.length > 0 && (
+                  <>
+                    <p className="bg-muted/40 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      Clientes com App habilitado
+                    </p>
+                    {novosClientes.map((c) => (
+                      <button
+                        key={c.cliente_id}
+                        onClick={() => setSelecionado(c.cliente_id)}
+                        className={cn(
+                          "flex w-full flex-col gap-0.5 border-b px-3 py-2.5 text-left transition-colors hover:bg-muted/60",
+                          selecionado === c.cliente_id && "bg-muted",
+                        )}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="truncate text-sm font-medium text-foreground">
+                            {c.nome}
+                          </span>
+                          <Badge
+                            variant={c.logou ? "secondary" : "outline"}
+                            className="h-5 shrink-0 px-1.5 text-[10px]"
+                          >
+                            {c.logou ? "Ativo" : "Não logou"}
+                          </Badge>
+                        </div>
+                        <span className="truncate text-xs text-muted-foreground">
+                          {c.documento ?? "Iniciar conversa"}
+                        </span>
+                        {c.etapa_nome && (
+                          <span className="mt-0.5 truncate text-[10px] text-muted-foreground">
+                            Etapa: {c.etapa_nome}
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </>
+                )}
+              </>
             )}
           </div>
+
         </Card>
 
         {/* Chat + follow-up */}
