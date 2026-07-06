@@ -37,6 +37,7 @@ export async function enviarSimulacaoImpl({
   userId,
   ip,
   supabase,
+  bancoIds,
 }: EnviarArgs): Promise<EnviarResultado> {
   const { data: sim, error } = await supabase
     .from("simulacoes")
