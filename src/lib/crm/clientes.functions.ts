@@ -141,12 +141,28 @@ const clienteInputSchema = z.object({
     .optional()
     .nullable(),
   mae: z.string().optional().nullable(),
+  pai: z.string().optional().nullable(),
+  sexo: z.string().optional().nullable(),
+  nacionalidade: z.string().optional().nullable(),
+  naturalidade: z.string().optional().nullable(),
+  tipo_documento_identidade: z.string().optional().nullable(),
+  numero_documento: z.string().optional().nullable(),
+  orgao_expedidor: z.string().optional().nullable(),
+  uf_expedicao: z.string().optional().nullable(),
+  data_expedicao: z.string().optional().nullable(),
+  profissao: z.string().optional().nullable(),
+  empresa: z.string().optional().nullable(),
+  banco_conta: z.string().optional().nullable(),
+  agencia: z.string().optional().nullable(),
+  conta_corrente: z.string().optional().nullable(),
+  digito_conta: z.string().optional().nullable(),
   email: z.string().email("E-mail inválido."),
   telefone_celular: z.string().min(10, "Celular inválido."),
   renda_total_declarada: z.number().nonnegative(),
   uf_interesse: z.string().length(2).optional().nullable(),
   origem: z.enum(["direto", "parceiro", "indicacao", "importacao"]).default("direto"),
 });
+
 
 export type ClienteInput = z.infer<typeof clienteInputSchema>;
 
