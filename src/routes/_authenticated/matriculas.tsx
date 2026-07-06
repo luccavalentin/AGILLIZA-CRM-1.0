@@ -391,7 +391,7 @@ function SolicitacaoDialog({
   const [corretor, setCorretor] = useState(inicial?.corretor ?? "");
   const [cliente, setCliente] = useState(inicial?.cliente ?? "");
   const [numero, setNumero] = useState(inicial?.numero_matricula ?? "");
-  const [valor, setValor] = useState(maskBRLInput(inicial?.valor ?? 0));
+  const [valor, setValor] = useState(inicial?.valor ? maskBRLInput(inicial.valor) : "");
   const [reembolsado, setReembolsado] = useState(inicial?.reembolsado ?? false);
   const [dataPagto, setDataPagto] = useState(inicial?.data_pagto_reembolso ?? "");
   const [obs, setObs] = useState(inicial?.observacao ?? "");
