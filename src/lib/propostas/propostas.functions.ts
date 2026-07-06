@@ -356,7 +356,7 @@ export const criarProposta = createServerFn({ method: "POST" })
         await supabase.from("proposta_envolvidos").insert({
           proposta_id: inserted.id,
           cliente_id: clienteId,
-          tipo_qualificacao: "TI",
+          tipo_qualificacao: "CO",
           tipo_pessoa: c.tipo_pessoa === "PJ" ? "J" : "F",
           nome: c.nome,
           cpf_cnpj: c.documento,
