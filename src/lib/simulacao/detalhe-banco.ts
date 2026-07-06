@@ -233,7 +233,7 @@ export function extrairDetalheBanco(raw: unknown): DetalheBanco | null {
     valorImovel: num(desc.propertyPrice) ?? num(r.valorImovel),
     valorFinanciamento: valorFin,
     financiamentoTotal: num(r.valorTotalFinanciamento) ?? valorFin,
-    valorEntrada: entradaDet,
+    valorEntrada: num(desc.downPayment) ?? num(r.valorEntrada),
     despesasFinanciadas,
     tarifaAvaliacao: num(desc.propertyEvaluation),
     iof: num(desc.iof?.totalValue ?? desc.iof?.value) ?? num(r.valorIofBanco),
