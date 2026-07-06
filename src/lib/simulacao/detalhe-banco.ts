@@ -202,6 +202,19 @@ export function extrairDetalheBanco(raw: unknown): DetalheBanco | null {
   const cet =
     num(desc.cetAnnual) ?? num(r.taxaCetAnoBanco) ?? calcularCET(valorFin, parcelas);
 
+  // Despesas financiadas: valor incorporado ao financiamento além do saldo puro
+  // do imóvel (imóvel − entrada). Quando o banco não devolve o valor explícito
+  // (ou devolve 0), derivamos a partir dos números reais retornados.
+  const valorImovelDet = num(desc.propertyPrice) ?? num(r.valorImovel);
+  const entradaDet = num(desc.downPayment) ?? num(r.valorEntrada);
+  const despesasApi = num(r.valorDespesasFinanciadas) ?? num(desc.expensesFinancedValue);
+  const despesasDerivada =
+    valorFin != null && valorImovelDet != null && entradaDet != null
+      ? Math.max(0, Math.round((valorFin - (valorImovelDet - entradaDet)) * 100) / 100)
+      : null;
+  const despesasFinanciadas =
+    despesasApi != null && despesasApi > 0 ? despesasApi : (despesasDerivada ?? despesasApi);
+
   return {
     taxaJurosAno: taxaAno,
     taxaJurosMes: taxaMes,
@@ -209,8 +222,8 @@ export function extrairDetalheBanco(raw: unknown): DetalheBanco | null {
     valorImovel: num(desc.propertyPrice) ?? num(r.valorImovel),
     valorFinanciamento: valorFin,
     financiamentoTotal: num(r.valorTotalFinanciamento) ?? valorFin,
-    valorEntrada: num(desc.downPayment),
-    despesasFinanciadas: num(r.valorDespesasFinanciadas) ?? num(desc.expensesFinancedValue),
+    valorEntrada: entradaDet,
+    despesasFinanciadas,
     tarifaAvaliacao: num(desc.propertyEvaluation),
     iof: num(desc.iof?.totalValue ?? desc.iof?.value) ?? num(r.valorIofBanco),
     fgts: num(desc.fgtsAmount) ?? num(r.valorFgts),
