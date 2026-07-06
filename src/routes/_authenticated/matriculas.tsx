@@ -63,7 +63,7 @@ function Pagina() {
         <Kpi icon={<Wallet className="h-4 w-4" />} rotulo="Saldo de crédito" valor={formatBRL(data.saldo)} />
       </div>
 
-      <Solicitacoes lista={data.solicitacoes} onMudou={invalidar} />
+      <Solicitacoes lista={data.solicitacoes} totalCreditos={data.total_creditos} onMudou={invalidar} />
       <Creditos lista={data.creditos} onMudou={invalidar} />
     </div>
   );
