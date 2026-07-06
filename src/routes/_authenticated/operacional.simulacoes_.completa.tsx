@@ -2,12 +2,14 @@ import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { ArrowLeft } from "lucide-react";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
+
 import {
   Select,
   SelectContent,
@@ -18,6 +20,9 @@ import {
 import { CurrencyInput } from "@/components/simulacao/currency-input";
 import { ConsultandoOverlay } from "@/components/simulacao/consultando-overlay";
 import { ClienteCRMPicker } from "@/components/simulacao/cliente-crm-picker";
+import { DicaRendaMinima } from "@/components/simulacao/dica-renda-minima";
+import { taxaAnoDeBanco } from "@/lib/simulacao/simulacao-rapida";
+
 import {
   completaSchema,
   ESTADOS_CIVIS,
@@ -135,6 +140,22 @@ function Pagina() {
     [f.data_nascimento],
   );
 
+  // Melhor taxa (menor) entre os bancos selecionados — estima a renda mínima.
+  const melhorTaxaAno = useMemo(() => {
+    const selecionados = (bancos ?? []).filter((b) => f.bancos_ids.includes(b.id));
+    const base = selecionados.length > 0 ? selecionados : (bancos ?? []);
+    if (base.length === 0) return 0.1199;
+    return Math.min(...base.map((b) => taxaAnoDeBanco(b.codigo_banco)));
+  }, [bancos, f.bancos_ids]);
+
+  // Renda total considerando composição de renda do cônjuge/coobrigado.
+  const rendaConsiderada = useMemo(
+    () => (Number(f.renda_total) || 0) + (f.compoe_renda ? Number(f.renda_conjuge) || 0 : 0),
+    [f.renda_total, f.compoe_renda, f.renda_conjuge],
+  );
+
+
+
   /** Aplica o prazo digitado, ajustando automaticamente pela regra de idade. */
   function definirPrazo(valor: number) {
     if (!Number.isFinite(valor) || valor <= 0) {
@@ -228,7 +249,20 @@ function Pagina() {
 
   return (
     <div className="mx-auto w-full max-w-4xl space-y-6 p-4 md:p-8">
+      <Button
+        variant="ghost"
+        size="sm"
+        className="-ml-2 w-fit text-muted-foreground"
+        onClick={() =>
+          router.history.canGoBack()
+            ? router.history.back()
+            : router.navigate({ to: "/operacional/simulacoes" })
+        }
+      >
+        <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
+      </Button>
       <div>
+
         <h1 className="text-xl font-semibold text-primary">Solicitar Simulação Completa</h1>
         <p className="text-sm text-muted-foreground">
           Preencha os dados para enviar aos bancos parceiros.
@@ -614,7 +648,17 @@ function Pagina() {
             </label>
           </Campo>
         </div>
+        {f.valor_financiamento > 0 && f.prazo >= 60 && (
+          <DicaRendaMinima
+            valorFinanciamento={f.valor_financiamento}
+            prazoMeses={f.prazo}
+            taxaAno={melhorTaxaAno}
+            sistema={f.sistema_amortizacao === "P" ? "P" : "S"}
+            rendaInformada={rendaConsiderada}
+          />
+        )}
       </section>
+
 
       {/* Bloco 3 — Cônjuge */}
       {mostraConjuge && (

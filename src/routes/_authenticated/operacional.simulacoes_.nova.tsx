@@ -1,6 +1,7 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { ArrowLeft } from "lucide-react";
 import { assertModuloPermitido } from "@/lib/route-guards";
 
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { CurrencyInput } from "@/components/simulacao/currency-input";
+import { DicaRendaMinima } from "@/components/simulacao/dica-renda-minima";
 import { ToneBadge } from "@/components/crm/tone-badge";
 import { PRODUTOS } from "@/lib/simulacao/schemas";
 import { formatBRL, formatPercent } from "@/lib/simulacao/format";
@@ -26,6 +28,7 @@ import {
   prazoMaximoPorIdade,
   formatarMeses,
 } from "@/lib/simulacao/prazo";
+
 
 export const Route = createFileRoute("/_authenticated/operacional/simulacoes_/nova")({
   head: () => ({ meta: [{ title: "Nova simulação — Agilliza" }] }),
@@ -47,6 +50,7 @@ interface WizardState {
   possui_imovel_escolhido: boolean | null;
   data_nascimento: string;
   prazo_meses: number;
+  renda_familiar: number;
 }
 
 function Pagina() {
@@ -60,9 +64,11 @@ function Pagina() {
     possui_imovel_escolhido: null,
     data_nascimento: "",
     prazo_meses: 360,
+    renda_familiar: 0,
   });
   const [mostrarRapida, setMostrarRapida] = useState(false);
   const [entradaTocada, setEntradaTocada] = useState(false);
+
 
   const { data: bancos } = useQuery({
     queryKey: ["bancos-ativos"],
@@ -123,6 +129,13 @@ function Pagina() {
     );
   }, [bancos, mostrarRapida, w.valor_financiamento, w.prazo_meses]);
 
+  // Melhor taxa (menor) entre os bancos ativos, usada para estimar a renda mínima.
+  const melhorTaxaAno = useMemo(() => {
+    if (!bancos || bancos.length === 0) return 0.1199;
+    return Math.min(...bancos.map((b) => taxaAnoDeBanco(b.codigo_banco)));
+  }, [bancos]);
+
+
   const maxPrazoIdade = useMemo(
     () => prazoMaximoPorIdade(w.data_nascimento),
     [w.data_nascimento],
@@ -159,7 +172,20 @@ function Pagina() {
     <div className="mx-auto w-full max-w-3xl p-6 md:p-10">
       {/* Wizard */}
       <div className="flex flex-col gap-5">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="-ml-2 w-fit text-muted-foreground"
+          onClick={() =>
+            router.history.canGoBack()
+              ? router.history.back()
+              : router.navigate({ to: "/operacional/simulacoes" })
+          }
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
+        </Button>
         <h1 className="text-lg font-semibold text-foreground">Simular financiamento</h1>
+
 
         <div className="space-y-1.5">
           <Label>Produto</Label>
@@ -288,6 +314,29 @@ function Pagina() {
 
           </div>
         </div>
+
+        <div className="space-y-1.5">
+          <Label>Renda familiar mensal (opcional)</Label>
+          <CurrencyInput
+            value={w.renda_familiar}
+            onChange={(v) => set("renda_familiar", v)}
+            placeholder="0,00"
+          />
+          <p className="text-xs text-muted-foreground">
+            Informe para verificarmos se atende à renda mínima exigida.
+          </p>
+        </div>
+
+        {w.valor_financiamento > 0 && w.prazo_meses >= PRAZO_MIN && (
+          <DicaRendaMinima
+            valorFinanciamento={w.valor_financiamento}
+            prazoMeses={w.prazo_meses}
+            taxaAno={melhorTaxaAno}
+            sistema="S"
+            rendaInformada={w.renda_familiar}
+          />
+        )}
+
 
         <div className="grid grid-cols-1 gap-3 pt-2 sm:grid-cols-2">
           <Button
