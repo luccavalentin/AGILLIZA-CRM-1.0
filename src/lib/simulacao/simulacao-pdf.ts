@@ -211,7 +211,12 @@ function drawInfoFinanciamento(
     { label: "Indexador", valor: d?.indexador ?? "—" },
     { label: "Taxa efetiva anual", valor: pctTxt(d?.taxaJurosAno ?? b?.taxa_juros_ano) },
     { label: "Taxa de juros mensal", valor: pctTxt(d?.taxaJurosMes, "a.m.") },
-    { label: "CET (Custo Efetivo Total)", valor: pctTxt(d?.cet) },
+    {
+      label: "CET (Custo Efetivo Total)",
+      valor: pctTxt(
+        d?.cet ?? calcularCET(d?.valorFinanciamento ?? s.valor_financiamento, d?.parcelas),
+      ),
+    },
     { label: "CESH (Custo Efetivo Seguro Habitacional)", valor: pctTxt(d?.cesh) },
     { label: "IOF", valor: brlOuTraco(d?.iof ?? b?.valor_iof) },
     { label: "Seguradora", valor: d?.seguradora ?? "—" },
