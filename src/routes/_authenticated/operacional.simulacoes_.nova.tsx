@@ -109,6 +109,11 @@ function Pagina() {
     });
   }
 
+  const maxPrazoIdade = useMemo(
+    () => prazoMaximoPorIdade(w.data_nascimento),
+    [w.data_nascimento],
+  );
+
   const valido =
     w.valor_imovel > 0 &&
     w.valor_financiamento > 0 &&
