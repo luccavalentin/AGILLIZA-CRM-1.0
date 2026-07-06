@@ -17,6 +17,7 @@ import {
   CheckCircle2,
   XCircle,
   Building2,
+  Info,
 } from "lucide-react";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import {
