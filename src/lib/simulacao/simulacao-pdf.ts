@@ -333,6 +333,7 @@ export function baixarSimulacaoPDF(input: SimulacaoPdfInput) {
     columns,
     rows,
     sanitizarNomeArquivo(nomeDescritivo(s, bancos ?? [])),
+    DISCLAIMER,
   );
 
 }
