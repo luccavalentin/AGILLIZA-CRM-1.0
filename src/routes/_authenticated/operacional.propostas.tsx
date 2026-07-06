@@ -153,7 +153,7 @@ function Pagina() {
                   {formatBRL(p.valor_financiamento)}
                 </TableCell>
                 <TableCell>
-                  <PropostaStatusBadge status={p.status} banco={p.nome_banco} />
+                  <StatusBancosProposta bancos={p.bancos} fallbackStatus={p.status} />
                 </TableCell>
                 <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                   {["rascunho", "erro_envio"].includes(p.status) ? (
