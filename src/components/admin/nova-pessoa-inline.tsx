@@ -211,69 +211,9 @@ export function NovaPessoaInline({
           </div>
         </div>
 
-        {/* Portal de acesso */}
-        <div className="space-y-2">
-          <Label>Portal de acesso</Label>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {(
-              [
-                {
-                  value: "correspondente" as Portal,
-                  titulo: "Portal do Correspondente",
-                  desc: "Equipe interna. Acessa o sistema em /dashboard.",
-                },
-                {
-                  value: "parceiro" as Portal,
-                  titulo: "Portal do Parceiro",
-                  desc: "Imobiliária ou corretor. Acessa apenas /parceiro.",
-                },
-              ]
-            ).map((opt) => {
-              const ativo = portal === opt.value;
-              return (
-                <button
-                  type="button"
-                  key={opt.value}
-                  onClick={() => setPortal(opt.value)}
-                  className={`flex items-start gap-3 rounded-lg border p-3 text-left transition-colors ${
-                    ativo
-                      ? "border-primary bg-primary/5 ring-1 ring-primary"
-                      : "border-border hover:bg-muted/50"
-                  }`}
-                >
-                  <Building2
-                    className={`mt-0.5 h-5 w-5 ${ativo ? "text-primary" : "text-muted-foreground"}`}
-                  />
-                  <div>
-                    <p className="text-sm font-medium">{opt.titulo}</p>
-                    <p className="text-xs text-muted-foreground">{opt.desc}</p>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Campos de parceiro */}
-        {portal === "parceiro" && (
-          <div className="grid gap-4 sm:grid-cols-3">
-            <div className="space-y-2">
-              <Label>Tipo de parceiro</Label>
-              <Select
-                value={tipoParceiro}
-                onValueChange={(v) =>
-                  setTipoParceiro(v as "imobiliaria" | "corretor")
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="corretor">Corretor</SelectItem>
-                  <SelectItem value="imobiliaria">Imobiliária</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+        {/* Campos de parceiro — exibidos quando o nível é do Portal do Parceiro */}
+        {isParceiro && (
+          <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="np-creci">CRECI</Label>
               <Input
@@ -294,6 +234,7 @@ export function NovaPessoaInline({
             </div>
           </div>
         )}
+
 
         {/* Nível de acesso */}
         <div className="space-y-2">
