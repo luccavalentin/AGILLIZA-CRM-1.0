@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 export interface BackupLista {
@@ -110,4 +111,94 @@ export const criarBackup = createServerFn({ method: "POST" })
         .eq("id", job.id);
       return { id: job.id, status: "erro" };
     }
+  });
+
+/** Exclui um registro de backup do histórico. */
+export const excluirBackup = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => z.object({ id: z.string().uuid() }).parse(data))
+  .handler(async ({ context, data }) => {
+    const { supabase, userId } = context;
+    const corr = await correspondenteDoUsuario(supabase, userId);
+    if (!corr) throw new Error("Sem correspondente.");
+    const { error } = await supabase
+      .from("backup_jobs")
+      .delete()
+      .eq("id", data.id)
+      .eq("correspondente_id", corr);
+    if (error) throw new Error("Não foi possível excluir o backup.");
+    return { ok: true };
+  });
+
+// Grupos de tabelas exportadas no backup completo (planilha por tabela).
+export const GRUPOS_EXPORT: { label: string; tabela: string }[] = [
+  { label: "Clientes", tabela: "clientes" },
+  { label: "Endereços de Clientes", tabela: "cliente_enderecos" },
+  { label: "Imóveis de Clientes", tabela: "cliente_imoveis" },
+  { label: "Documentos de Clientes", tabela: "cliente_documentos" },
+  { label: "Interações de Clientes", tabela: "cliente_interacoes" },
+  { label: "Simulações", tabela: "simulacoes" },
+  { label: "Propostas", tabela: "propostas" },
+  { label: "Documentos de Propostas", tabela: "proposta_documentos" },
+  { label: "Comissões", tabela: "comissoes" },
+  { label: "Contas a Receber", tabela: "financial_receivables" },
+  { label: "Contas a Pagar", tabela: "financial_payables" },
+  { label: "Categorias Financeiras", tabela: "financial_categories" },
+  { label: "Centros de Custo", tabela: "financial_cost_centers" },
+  { label: "Fluxo de Caixa", tabela: "fluxo_caixa" },
+  { label: "Tarefas", tabela: "tasks" },
+  { label: "Demandas", tabela: "demandas" },
+  { label: "Matrículas", tabela: "matricula_solicitacoes" },
+  { label: "Leituras Scan IA", tabela: "scan_ia_leituras" },
+  { label: "Usuários (Perfis)", tabela: "profiles" },
+];
+
+export interface TabelaExportada {
+  label: string;
+  tabela: string;
+  colunas: string[];
+  linhas: Record<string, string | number | boolean | null>[];
+}
+
+export interface BackupCompleto {
+  geradoEm: string;
+  tabelas: TabelaExportada[];
+}
+
+/** Retorna TODOS os dados do sistema (escopo do correspondente) para exportação em Excel. */
+export const exportarBackupCompleto = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<BackupCompleto> => {
+    const { supabase, userId } = context;
+    const corr = await correspondenteDoUsuario(supabase, userId);
+    if (!corr) throw new Error("Sem correspondente.");
+
+    const tabelas: TabelaExportada[] = [];
+    for (const g of GRUPOS_EXPORT) {
+      try {
+        const { data, error } = await (supabase.from(g.tabela as never) as any)
+          .select("*")
+          .eq("correspondente_id", corr)
+          .limit(5000);
+        if (error) continue;
+        const brutas = (data ?? []) as Record<string, unknown>[];
+        const colunas = brutas.length > 0 ? Object.keys(brutas[0]) : [];
+        const linhas: Record<string, string | number | boolean | null>[] = brutas.map((r) => {
+          const o: Record<string, string | number | boolean | null> = {};
+          for (const k of Object.keys(r)) {
+            const v = r[k];
+            if (v === null || v === undefined) o[k] = null;
+            else if (typeof v === "object") o[k] = JSON.stringify(v);
+            else if (typeof v === "boolean" || typeof v === "number") o[k] = v;
+            else o[k] = String(v);
+          }
+          return o;
+        });
+        tabelas.push({ label: g.label, tabela: g.tabela, colunas, linhas });
+      } catch {
+        // tabela sem correspondente_id ou inacessível — ignora
+      }
+    }
+
+    return { geradoEm: new Date().toISOString(), tabelas };
   });

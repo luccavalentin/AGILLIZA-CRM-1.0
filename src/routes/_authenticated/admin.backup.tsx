@@ -1,7 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { DatabaseBackup, Play, RefreshCw, HardDrive } from "lucide-react";
+import {
+  DatabaseBackup,
+  Play,
+  RefreshCw,
+  HardDrive,
+  FileSpreadsheet,
+  Trash2,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -13,8 +21,25 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { assertModuloPermitido } from "@/lib/route-guards";
-import { listarBackups, criarBackup } from "@/lib/admin/backup.functions";
+import {
+  listarBackups,
+  criarBackup,
+  excluirBackup,
+  exportarBackupCompleto,
+} from "@/lib/admin/backup.functions";
+import { exportarBackupXLSX } from "@/lib/admin/backup-xlsx";
 
 export const Route = createFileRoute("/_authenticated/admin/backup")({
   head: () => ({ meta: [{ title: "Backup — Agilliza" }] }),
@@ -43,6 +68,7 @@ function formatBytes(n: number | null): string {
 function Pagina() {
   const qc = useQueryClient();
   const backups = useQuery({ queryKey: ["admin-backups"], queryFn: () => listarBackups() });
+  const [baixando, setBaixando] = useState(false);
 
   const criar = useMutation({
     mutationFn: () => criarBackup(),
@@ -54,6 +80,28 @@ function Pagina() {
     onError: (e: any) => toast.error(e?.message ?? "Falha ao gerar backup."),
   });
 
+  const excluir = useMutation({
+    mutationFn: (id: string) => excluirBackup({ data: { id } }),
+    onSuccess: () => {
+      toast.success("Backup excluído.");
+      qc.invalidateQueries({ queryKey: ["admin-backups"] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Falha ao excluir."),
+  });
+
+  async function baixarExcel() {
+    setBaixando(true);
+    try {
+      const dados = await exportarBackupCompleto();
+      exportarBackupXLSX(dados);
+      toast.success("Backup completo exportado em Excel.");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha ao exportar backup.");
+    } finally {
+      setBaixando(false);
+    }
+  }
+
   return (
     <div className="space-y-6 p-4 md:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -62,15 +110,22 @@ function Pagina() {
           <div>
             <h1 className="text-xl font-semibold">Backup</h1>
             <p className="text-sm text-muted-foreground">
-              Snapshots lógicos com contagem de registros por tabela.
+              Baixe todos os dados do sistema em Excel ou registre snapshots lógicos.
             </p>
           </div>
         </div>
-        <Button disabled={criar.isPending} onClick={() => criar.mutate()}>
-          <Play className="mr-2 h-4 w-4" />
-          {criar.isPending ? "Gerando…" : "Gerar backup"}
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button disabled={baixando} onClick={baixarExcel}>
+            <FileSpreadsheet className="mr-2 h-4 w-4" />
+            {baixando ? "Gerando Excel…" : "Baixar backup completo (Excel)"}
+          </Button>
+          <Button variant="outline" disabled={criar.isPending} onClick={() => criar.mutate()}>
+            <Play className="mr-2 h-4 w-4" />
+            {criar.isPending ? "Gerando…" : "Gerar snapshot"}
+          </Button>
+        </div>
       </div>
+
 
       <div className="rounded-lg border border-border bg-card">
         <div className="flex items-center justify-between border-b border-border p-4">
@@ -103,7 +158,9 @@ function Pagina() {
                 <TableHead>Tabelas</TableHead>
                 <TableHead>Tamanho</TableHead>
                 <TableHead>Concluído em</TableHead>
+                <TableHead className="w-12"></TableHead>
               </TableRow>
+
             </TableHeader>
             <TableBody>
               {backups.data!.map((b) => {
@@ -127,7 +184,36 @@ function Pagina() {
                     <TableCell className="text-muted-foreground">
                       {b.concluido_em ? new Date(b.concluido_em).toLocaleString("pt-BR") : "—"}
                     </TableCell>
+                    <TableCell>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-muted-foreground hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Excluir backup?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Este registro de backup será removido do histórico. Esta ação não
+                              pode ser desfeita.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => excluir.mutate(b.id)}>
+                              Excluir
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </TableCell>
                   </TableRow>
+
                 );
               })}
             </TableBody>

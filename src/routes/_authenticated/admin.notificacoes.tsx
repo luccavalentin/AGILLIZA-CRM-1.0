@@ -1,9 +1,21 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Bell, CheckCheck } from "lucide-react";
+import { toast } from "sonner";
+import { Bell, CheckCheck, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { SwipeToDelete } from "@/components/app-shell/swipe-to-delete";
@@ -12,6 +24,7 @@ import {
   marcarNotificacaoLida,
   marcarTodasLidas,
   excluirNotificacao,
+  limparNotificacoes,
   type Notificacao,
 } from "@/lib/notificacoes.functions";
 
@@ -76,6 +89,16 @@ function Pagina() {
     },
   });
 
+  const limpar = useMutation({
+    mutationFn: () => limparNotificacoes(),
+    onSuccess: () => {
+      toast.success("Notificações limpas.");
+      queryClient.invalidateQueries({ queryKey: ["notificacoes"] });
+      queryClient.invalidateQueries({ queryKey: ["notificacoes", "todas"] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Falha ao limpar."),
+  });
+
   const naoLidas = itens.filter((n) => !n.lida);
   const lidas = itens.filter((n) => n.lida);
 
@@ -113,12 +136,39 @@ function Pagina() {
           <Bell className="h-5 w-5 text-muted-foreground" />
           <h1 className="text-xl font-semibold text-foreground">Notificações</h1>
         </div>
-        {naoLidas.length > 0 && (
-          <Button variant="outline" size="sm" onClick={() => marcarTodas.mutate()}>
-            <CheckCheck className="mr-1 h-4 w-4" /> Marcar todas como lidas
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {naoLidas.length > 0 && (
+            <Button variant="outline" size="sm" onClick={() => marcarTodas.mutate()}>
+              <CheckCheck className="mr-1 h-4 w-4" /> Marcar todas como lidas
+            </Button>
+          )}
+          {itens.length > 0 && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" size="sm" disabled={limpar.isPending}>
+                  <Trash2 className="mr-1 h-4 w-4" /> Limpar
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Limpar notificações?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Todas as suas notificações serão excluídas permanentemente. Esta ação não pode
+                    ser desfeita.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction onClick={() => limpar.mutate()}>
+                    Limpar tudo
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+        </div>
       </div>
+
 
       {isLoading ? (
         <p className="py-12 text-center text-sm text-muted-foreground">Carregando…</p>
