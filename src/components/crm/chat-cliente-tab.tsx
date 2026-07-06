@@ -106,12 +106,15 @@ export function ChatClienteTab({ clienteId, info }: { clienteId: string; info?: 
       setTexto("");
       qc.invalidateQueries({ queryKey });
     },
-    onError: () => toast.error("Não foi possível enviar a mensagem."),
+    onError: (err) => {
+      const motivo = err instanceof Error ? err.message : String(err);
+      toast.error(`Não foi possível enviar a mensagem: ${motivo}`);
+    },
   });
 
   function submeter() {
     const t = texto.trim();
-    if (!t) return;
+    if (!t || enviar.isPending) return;
     enviar.mutate(t);
   }
 
