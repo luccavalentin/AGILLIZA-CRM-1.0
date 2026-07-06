@@ -158,7 +158,9 @@ function Pagina() {
                 <TableHead>Tabelas</TableHead>
                 <TableHead>Tamanho</TableHead>
                 <TableHead>Concluído em</TableHead>
+                <TableHead className="w-12"></TableHead>
               </TableRow>
+
             </TableHeader>
             <TableBody>
               {backups.data!.map((b) => {
