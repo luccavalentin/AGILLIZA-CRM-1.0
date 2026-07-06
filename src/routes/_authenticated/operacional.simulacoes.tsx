@@ -19,7 +19,6 @@ import { assertModuloPermitido } from "@/lib/route-guards";
 import {
   listarSimulacoes,
   excluirSimulacao,
-  duplicarSimulacao,
   obterSimulacao,
 } from "@/lib/simulacao/simulacoes.functions";
 import { baixarSimulacaoPDF, baixarSimulacaoDetalhadaPDF } from "@/lib/simulacao/simulacao-pdf";
