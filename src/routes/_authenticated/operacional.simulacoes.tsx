@@ -298,7 +298,8 @@ function Pagina() {
                       })
                     }
                     onEditar={() => handleEditar(s.id)}
-                    onBaixar={() => handleBaixar(s.id)}
+                    onBaixarComparativo={() => handleBaixarComparativo(s.id)}
+                    onBaixarDetalhada={() => handleBaixarDetalhada(s.id)}
                     onDuplicar={() => handleDuplicar(s.id)}
                     onExcluir={() => handleExcluir(s.id)}
                     numero={s.numero_simulacao}
