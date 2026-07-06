@@ -218,7 +218,7 @@ function Pagina() {
                   key={b.id}
                   className="flex items-center justify-between gap-2 rounded-md border border-border bg-card px-3 py-2"
                 >
-                  <span className="truncate text-sm font-medium text-foreground">
+                  <span className="truncate text-sm font-medium" style={{ color: corDoBanco(b.nome_banco) }}>
                     {b.nome_banco}
                   </span>
                   <ToneBadge
