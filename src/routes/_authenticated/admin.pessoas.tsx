@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Plus, Copy, Search } from "lucide-react";
+import { Plus, Copy, Search, MoreHorizontal, Pencil, KeyRound, Ban, CheckCircle2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,6 +17,23 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Table,
   TableBody,
   TableCell,
@@ -26,9 +44,18 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RegrasModulosPanel } from "@/components/admin/regras-modulos-panel";
 import { NovaPessoaInline } from "@/components/admin/nova-pessoa-inline";
+import { EditarPessoaDialog } from "@/components/admin/editar-pessoa-dialog";
 import { getMinhaSessao } from "@/lib/session.functions";
-import { listarPessoas, type ResultadoCriarPessoa } from "@/lib/admin/pessoas.functions";
+import {
+  listarPessoas,
+  alternarStatusPessoa,
+  resetarSenhaPessoa,
+  excluirPessoa,
+  type PessoaLista,
+  type ResultadoCriarPessoa,
+} from "@/lib/admin/pessoas.functions";
 import { assertModuloPermitido } from "@/lib/route-guards";
+
 
 export const Route = createFileRoute("/_authenticated/admin/pessoas")({
   head: () => ({ meta: [{ title: "Pessoas do meu ecossistema — Agilliza" }] }),
