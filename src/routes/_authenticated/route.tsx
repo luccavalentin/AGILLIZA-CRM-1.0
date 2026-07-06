@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/app-shell/app-shell";
+import { Logo } from "@/components/brand/Logo";
 import { navInterno, navParceiro } from "@/components/app-shell/nav-config";
 import { filterNavByPermissions, permsToSet } from "@/components/app-shell/filter-nav";
 import { SidebarSkeleton } from "@/components/app-shell/sidebar-nav";
@@ -105,12 +106,23 @@ function InternalLayout() {
     return (
       <div className="flex min-h-[100dvh] w-full bg-muted/40">
         <aside className="hidden w-64 shrink-0 border-r border-sidebar-border bg-sidebar lg:block">
-          <div className="h-16 border-b border-sidebar-border" />
+          <div className="flex h-16 items-center border-b border-sidebar-border px-4">
+            <Logo variant="light" className="h-7" />
+          </div>
           <SidebarSkeleton />
         </aside>
-        <div className="flex-1">
-          <div className="h-16 border-b border-border bg-background" />
-          <div className="p-6">
+        <div className="flex flex-1 flex-col">
+          <div className="flex h-16 items-center gap-3 border-b border-border bg-background px-6">
+            <div className="h-8 w-8 animate-pulse rounded-md bg-muted" />
+            <div className="ml-auto h-8 w-8 animate-pulse rounded-full bg-muted" />
+          </div>
+          <div className="space-y-4 p-6">
+            <div className="h-8 w-56 animate-pulse rounded-md bg-muted" />
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="h-24 animate-pulse rounded-xl bg-muted" />
+              ))}
+            </div>
             <div className="h-64 animate-pulse rounded-xl bg-muted" />
           </div>
         </div>

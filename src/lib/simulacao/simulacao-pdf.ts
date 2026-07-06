@@ -276,8 +276,18 @@ function drawDisclaimer(doc: jsPDF, pageW: number, y: number) {
 // ---------------------------------------------------------------------------
 
 /** Gera e baixa um PDF institucional consolidado (dados + comparativo de bancos). */
-export function baixarSimulacaoPDF({ simulacao: s, bancos }: SimulacaoPdfInput) {
+export function baixarSimulacaoPDF(input: SimulacaoPdfInput) {
+  const { simulacao: s, bancos } = input;
+
+  // Com um único banco não há o que comparar: emitir o extrato detalhado com o
+  // plano completo de parcelas em vez de uma tabela comparativa de uma linha.
+  if ((bancos ?? []).length === 1) {
+    baixarSimulacaoDetalhadaPDF(input);
+    return;
+  }
+
   const produto = produtoLabel(s);
+
 
   const meta = [
     `Nº ${s.numero_simulacao ?? "—"}`,
