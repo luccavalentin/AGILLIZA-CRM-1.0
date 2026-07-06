@@ -562,7 +562,7 @@ function TabResumo({
               <TableHead className="text-right">Parcela</TableHead>
               <TableHead className="text-right">Prazo</TableHead>
               <TableHead className="text-right">Taxa/ano</TableHead>
-              <TableHead>Envio</TableHead>
+              <TableHead>Status</TableHead>
               <TableHead>Situação de crédito</TableHead>
               <TableHead className="text-right">Ação</TableHead>
             </TableRow>
