@@ -63,6 +63,7 @@ interface EnviarResultado {
     banco_id: string | null;
     nome_banco: string | null;
     status: string;
+    numero_proposta_banco?: string | null;
     mensagem?: string;
   }[];
 }
@@ -394,6 +395,7 @@ export async function enviarPropostaImpl({
         status_banco: mapa.banco || "enviada",
         selecionado: true,
         mensagem_banco: null,
+        raw_response: resp,
       };
       // situacao_banco é um enum interno (nao_enviado/em_analise/condicionado/
       // aprovado/recusado/cancelado). O tipoSituacao do banco vem como código
@@ -410,8 +412,9 @@ export async function enviarPropostaImpl({
       if (resp?.taxaJurosAnoBanco != null) patchOk.taxa_juros_ano = resp.taxaJurosAnoBanco;
       if (resp?.prazoPagamentoBancoMax != null)
         patchOk.prazo_pagamento_max = resp.prazoPagamentoBancoMax;
-      if (resp?.valorFinanciamentoBanco != null)
-        patchOk.valor_financiamento_max = resp.valorFinanciamentoBanco;
+      if (resp?.valorFinanciamentoBanco != null || resp?.valorFinanciamentoBancoMax != null)
+        patchOk.valor_financiamento_max =
+          resp.valorFinanciamentoBanco ?? resp.valorFinanciamentoBancoMax;
       if (resp?.valorIofBanco != null) patchOk.valor_iof = resp.valorIofBanco;
       if (resp?.codigoSistemaAmortizacaoBanco)
         patchOk.sistema_amortizacao_banco = resp.codigoSistemaAmortizacaoBanco;
@@ -426,11 +429,18 @@ export async function enviarPropostaImpl({
         // Logamos para não perder o rastro — o polling reconcilia em seguida.
         console.error("[proposta] falha ao gravar retorno do banco", upErr.message);
       }
+      if (protocolo) {
+        await supabase
+          .from("propostas")
+          .update({ numero_proposta_banco: String(protocolo) } as any)
+          .eq("id", propostaId);
+      }
       sucesso++;
       resultados.push({
         banco_id: b.banco_id,
         nome_banco: b.nome_banco,
         status: String(patchOk.status_banco),
+        numero_proposta_banco: protocolo ? String(protocolo) : null,
       });
 
     } catch (e) {
@@ -569,17 +579,34 @@ function extrairErroRetorno(retorno: unknown): string | null {
       null
     );
   }
-  return obj?.message ?? null;
+  const direto = obj?.message ?? obj?.erro ?? obj?.error_description ?? null;
+  if (direto) return String(direto);
+  const error = obj?.error;
+  if (typeof error === "string") return error;
+  if (error && typeof error === "object") {
+    if (error.message) return String(error.message);
+    if (Array.isArray(error.fields) && error.fields.length > 0) {
+      return error.fields.map((f: any) => f?.message).filter(Boolean).join("; ") || null;
+    }
+  }
+  return null;
 }
 
 /** Traduz o tipoSituacao da proposta (por banco) para status interno do banco. */
 function statusInternoBanco(
   tipo: string,
   temErro: boolean,
+  codigoSituacaoBanco?: string | null,
 ): {
   banco: string;
   proposta: PropostaStatus | "credito_recusado" | null;
 } {
+  const codigo = String(codigoSituacaoBanco ?? "").toLowerCase();
+  if (codigo.includes("aprov")) return { banco: "aprovada", proposta: "credito_aprovado" };
+  if (codigo.includes("recus") || codigo.includes("reprov") || codigo.includes("negad")) {
+    return { banco: "recusada", proposta: "credito_recusado" };
+  }
+  if (codigo.includes("cond")) return { banco: "condicionado", proposta: "credito_aprovado" };
   const t = String(tipo ?? "")
     .toUpperCase()
     .charAt(0);
@@ -651,6 +678,99 @@ export function bancoJaEnviado(b: {
   );
 }
 
+function codigoBancoDe(v: any): string | null {
+  const raw = v?.codigo_banco ?? v?.codigoBanco ?? v?.banco?.codigoBanco ?? null;
+  if (raw == null || raw === "") return null;
+  return String(raw);
+}
+
+function nomeBancoNormalizado(v: unknown): string {
+  return String(v ?? "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\bbanco\b/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function mesmoBanco(pb: any, sim: any): boolean {
+  const codigoPb = codigoBancoDe(pb);
+  const codigoSim = codigoBancoDe(sim);
+  if (codigoPb && codigoSim && codigoPb === codigoSim) return true;
+  const nomePb = nomeBancoNormalizado(pb?.nome_banco);
+  const nomeSim = nomeBancoNormalizado(sim?.nome_banco ?? sim?.nomeBanco ?? sim?.banco?.nomeBanco);
+  return Boolean(nomePb && nomeSim && (nomePb.includes(nomeSim) || nomeSim.includes(nomePb)));
+}
+
+function protocoloBanco(sim: any): string | null {
+  const proto =
+    sim?.codigoOportunidadeBanco ??
+    sim?.codigoOportunidadeBancoInterno ??
+    sim?.codigoSimulacaoBanco ??
+    null;
+  return proto == null || proto === "" ? null : String(proto);
+}
+
+function prioridadeSimulacao(sim: any, exata: boolean): number {
+  const erroMsg = extrairErroRetorno(sim?.retornoIntegracao ?? sim?.descricaoRespostaBanco?.retornoIntegracao);
+  const mapa = statusInternoBanco(sim?.tipoSituacao, Boolean(erroMsg), sim?.codigoSituacaoBanco);
+  const statusScore =
+    mapa.proposta === "credito_aprovado"
+      ? 80
+      : mapa.proposta === "credito_recusado"
+        ? 75
+        : mapa.proposta === "em_analise_credito"
+          ? 60
+          : mapa.banco === "erro"
+            ? 10
+            : 30;
+  const protocoloScore = protocoloBanco(sim) ? 12 : 0;
+  const retornoScore = sim?.dataHoraRetornoIntegracao ? 4 : 0;
+  return (exata ? 100 : 0) + statusScore + protocoloScore + retornoScore;
+}
+
+function escolherSimulacaoBanco(pb: any, simulacoes: any[]): any | null {
+  const idPb = String(pb?.homefin_id_simulacao_banco ?? "");
+  const candidatas = simulacoes
+    .map((sim) => ({
+      sim,
+      exata: idPb.length > 0 && String(sim?.idSimulacao) === idPb,
+    }))
+    .filter(({ sim, exata }) => exata || mesmoBanco(pb, sim));
+  if (!candidatas.length) return null;
+  return candidatas
+    .sort((a, b) => prioridadeSimulacao(b.sim, b.exata) - prioridadeSimulacao(a.sim, a.exata))[0]
+    .sim;
+}
+
+function statusDaAtividade(atividades: any[]): { status: PropostaStatus | null; detalhe: string | null } {
+  const ativas = atividades
+    .filter((a) => String(a?.tipoSituacao ?? "").toUpperCase() !== "N")
+    .sort((a, b) => {
+      const etapaA = Number(a?.etapa?.ordemEtapa ?? a?.idEtapa ?? 0);
+      const etapaB = Number(b?.etapa?.ordemEtapa ?? b?.idEtapa ?? 0);
+      const ordemA = Number(a?.atividade?.ordemAtividade ?? a?.idAtividade ?? 0);
+      const ordemB = Number(b?.atividade?.ordemAtividade ?? b?.idAtividade ?? 0);
+      return etapaB - etapaA || ordemB - ordemA;
+    });
+  for (const a of ativas) {
+    const nome = String(a?.atividade?.nomeAtividade ?? a?.nomeAtividade ?? "");
+    const n = nomeBancoNormalizado(nome);
+    if (n.includes("credito nao aprovado") || n.includes("credito reprov") || n.includes("recus")) {
+      return { status: "credito_recusado", detalhe: nome || null };
+    }
+    if (n.includes("credito aprovado") || n.includes("aprovado")) {
+      return { status: "credito_aprovado", detalhe: nome || null };
+    }
+    if (n.includes("condicionado")) return { status: "credito_aprovado", detalhe: nome || null };
+    if (n.includes("analise de credito") || n.includes("credito")) {
+      return { status: "em_analise_credito", detalhe: nome || null };
+    }
+  }
+  return { status: null, detalhe: null };
+}
+
 /**
  * Sincroniza o andamento da proposta consultando a integração bancária.
  * A API é baseada em consulta (polling): não há webhook/callback. Este handler
@@ -694,6 +814,9 @@ export async function sincronizarPropostaImpl({
   const op = resp?.oportunidade ?? resp ?? {};
   const etapas: any[] = Array.isArray(resp?.etapa) ? resp.etapa : [];
   const simulacoes: any[] = Array.isArray(op?.simulacoes) ? op.simulacoes : [];
+  const atividades: any[] = Array.isArray(op?.atividadesOportunidade)
+    ? op.atividadesOportunidade
+    : [];
 
   // etapa ativa (não concluída) de maior ordem, senão a última concluída
   const ativa = etapas
@@ -716,15 +839,16 @@ export async function sincronizarPropostaImpl({
   let algumErro = false;
   const errosBanco: string[] = [];
   let simEscolhida: any = null;
+  let numeroPropostaBanco: string | null = null;
 
   for (const pb of (bancosProp ?? []) as any[]) {
-    const sim = simulacoes.find(
-      (s) => String(s?.idSimulacao) === String(pb.homefin_id_simulacao_banco),
-    );
+    const sim = escolherSimulacaoBanco(pb, simulacoes);
     if (!sim) continue;
 
-    const erroMsg = extrairErroRetorno(sim.retornoIntegracao);
-    const mapa = statusInternoBanco(sim.tipoSituacao, Boolean(erroMsg));
+    const erroMsg = extrairErroRetorno(
+      sim.retornoIntegracao ?? sim.descricaoRespostaBanco?.retornoIntegracao,
+    );
+    const mapa = statusInternoBanco(sim.tipoSituacao, Boolean(erroMsg), sim.codigoSituacaoBanco);
 
     if (mapa.proposta === "credito_aprovado") algumAprovado = true;
     else if (mapa.proposta === "em_analise_credito") algumEmAnalise = true;
@@ -740,21 +864,23 @@ export async function sincronizarPropostaImpl({
       status_banco: mapa.banco,
       situacao_banco: erroMsg ? "nao_enviado" : situacaoBancoDeTipo(sim.tipoSituacao),
       mensagem_banco: erroMsg ? sanitizarMensagemErro(erroMsg) : null,
+      raw_response: sim,
     };
     // Mantém o protocolo do banco na linha (usado para saber que já foi enviada).
-    const protoSim =
-      sim.codigoOportunidadeBanco ??
-      sim.codigoOportunidadeBancoInterno ??
-      sim.codigoSimulacaoBanco ??
-      null;
-    if (protoSim && !pb.numero_proposta_banco)
-      patchBanco.numero_proposta_banco = String(protoSim);
+    const protoSim = protocoloBanco(sim);
+    if (protoSim) {
+      patchBanco.numero_proposta_banco = protoSim;
+      if (!numeroPropostaBanco || sim.bancoEscolhido === "S" || mapa.proposta === "credito_aprovado") {
+        numeroPropostaBanco = protoSim;
+      }
+    }
     if (sim.valorParcelaBanco != null) patchBanco.valor_parcela = sim.valorParcelaBanco;
     if (sim.taxaJurosAnoBanco != null) patchBanco.taxa_juros_ano = sim.taxaJurosAnoBanco;
-    if (sim.prazoPagamentoBancoMax != null)
-      patchBanco.prazo_pagamento_max = sim.prazoPagamentoBancoMax;
-    if (sim.valorFinanciamentoBancoMax != null)
-      patchBanco.valor_financiamento_max = sim.valorFinanciamentoBancoMax;
+    if (sim.prazoPagamentoBanco != null || sim.prazoPagamentoBancoMax != null)
+      patchBanco.prazo_pagamento_max = sim.prazoPagamentoBanco ?? sim.prazoPagamentoBancoMax;
+    if (sim.valorFinanciamentoBanco != null || sim.valorFinanciamentoBancoMax != null)
+      patchBanco.valor_financiamento_max =
+        sim.valorFinanciamentoBanco ?? sim.valorFinanciamentoBancoMax;
     if (sim.valorIofBanco != null) patchBanco.valor_iof = sim.valorIofBanco;
     if (sim.codigoSistemaAmortizacaoBanco)
       patchBanco.sistema_amortizacao_banco = sim.codigoSistemaAmortizacaoBanco;
@@ -777,6 +903,7 @@ export async function sincronizarPropostaImpl({
     .toUpperCase()
     .charAt(0);
   const statusEtapa = statusDaEtapa(nomeEtapa);
+  const statusAtividade = statusDaAtividade(atividades);
 
   // ---- Decisão final ----
   let novoStatus: string | null = null;
@@ -787,7 +914,9 @@ export async function sincronizarPropostaImpl({
   } else {
     // Avança apenas para frente no funil (nunca regride).
     const atual = ORDEM_STATUS.indexOf(prop.status as PropostaStatus);
-    const candidatos = [statusBancos, statusEtapa].filter(Boolean) as PropostaStatus[];
+    const candidatos = [statusBancos, statusAtividade.status, statusEtapa].filter(
+      Boolean,
+    ) as PropostaStatus[];
     for (const c of candidatos) {
       const idx = ORDEM_STATUS.indexOf(c);
       if (idx > atual) novoStatus = c;
@@ -798,11 +927,12 @@ export async function sincronizarPropostaImpl({
     }
   }
 
-  const patch: Record<string, unknown> = { detalhe_status_atual: nomeEtapa };
+  const patch: Record<string, unknown> = { detalhe_status_atual: statusAtividade.detalhe ?? nomeEtapa };
   const escolhida = simEscolhida ?? {};
-  if (op?.codigoOportunidadeBanco || escolhida.codigoOportunidadeBanco)
+  if (numeroPropostaBanco) patch.numero_proposta_banco = numeroPropostaBanco;
+  if (op?.codigoOportunidadeBanco || escolhida.codigoOportunidadeBanco || numeroPropostaBanco)
     patch.codigo_oportunidade_homefin =
-      op?.codigoOportunidadeBanco ?? escolhida.codigoOportunidadeBanco;
+      op?.codigoOportunidadeBanco ?? escolhida.codigoOportunidadeBanco ?? numeroPropostaBanco;
   const vFin = op?.valorFinanciamentoBanco ?? escolhida.valorFinanciamentoBanco;
   const vParc = op?.valorParcelaBanco ?? escolhida.valorParcelaBanco;
   const vPrazo = op?.prazoPagamentoBanco ?? escolhida.prazoPagamentoBanco;
