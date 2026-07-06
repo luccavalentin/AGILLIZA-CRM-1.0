@@ -212,6 +212,33 @@ export const CATALOGO_MODULOS: ModuloCatalogo[] = [
   },
   {
     grupo: "Administração",
+    modulo: "admin.comissoes",
+    label: "Comissões (regras)",
+    acoes: [
+      { acao: "view", label: "Ver" },
+      { acao: "edit", label: "Editar" },
+    ],
+  },
+  {
+    grupo: "Administração",
+    modulo: "admin.sla",
+    label: "SLA & Feriados",
+    acoes: [
+      { acao: "view", label: "Ver" },
+      { acao: "edit", label: "Editar" },
+    ],
+  },
+  {
+    grupo: "Administração",
+    modulo: "admin.notificacoes",
+    label: "Notificações",
+    acoes: [
+      { acao: "view", label: "Ver" },
+      { acao: "edit", label: "Editar" },
+    ],
+  },
+  {
+    grupo: "Administração",
     modulo: "admin.auditoria",
     label: "Auditoria",
     acoes: [{ acao: "view", label: "Ver" }],
