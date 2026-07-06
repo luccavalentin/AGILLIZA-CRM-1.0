@@ -226,7 +226,7 @@ function Pagina() {
               <Linha rotulo="Responsável" valor={det.responsavel_nome ?? "—"} />
               <Linha
                 rotulo="Etapa atual"
-                valor={pipe ? (stages?.find((s: any) => s.ordem === pipe.ordem)?.nome ?? "—") : "—"}
+                valor={pipe ? (stages?.find((s: any) => s.codigo === pipe.codigo)?.nome ?? "—") : "—"}
               />
               <Linha rotulo="Origem" valor={c.origem} />
               <Linha

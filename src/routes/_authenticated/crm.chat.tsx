@@ -725,6 +725,7 @@ function PainelGestao({
                     <div key={e.id} className="flex items-center gap-1.5">
                       <button
                         type="button"
+                        disabled={toggleTag.isPending}
                         onClick={() => toggleTag.mutate(e.id)}
                         className={cn(
                           "flex flex-1 items-center gap-2 rounded-md border px-2 py-1 text-left text-xs transition-colors",

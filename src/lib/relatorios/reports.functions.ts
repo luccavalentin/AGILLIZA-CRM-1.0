@@ -1087,14 +1087,14 @@ export const runReport = createServerFn({ method: "POST" })
       const [pag, rec] = await Promise.all([
         supabase
           .from("financial_payables")
-          .select("valor,valor_pago,status,vencimento,descricao,created_at")
+          .select("valor,valor_pago,status,vencimento,descricao,created_at,data_pagamento")
           .gte("created_at", de)
           .lte("created_at", ateFim)
           .limit(5000)
           .then((r: any) => r.data ?? []),
         supabase
           .from("financial_receivables")
-          .select("valor,valor_recebido,status,vencimento,descricao,created_at")
+          .select("valor,valor_recebido,status,vencimento,descricao,created_at,data_pagamento")
           .gte("created_at", de)
           .lte("created_at", ateFim)
           .limit(5000)
@@ -1262,13 +1262,15 @@ export const runReport = createServerFn({ method: "POST" })
     function fluxoMensal(rec: any[], pag: any[]): ChartSerie[] {
       const map = new Map<string, { r: number; p: number }>();
       rec.forEach((x) => {
-        const m = (x.created_at ?? "").slice(0, 7);
+        // Valores realizados devem ser agrupados pela data de pagamento/recebimento,
+        // não pela data de criação do lançamento.
+        const m = (x.data_pagamento ?? x.created_at ?? "").slice(0, 7);
         const c = map.get(m) ?? { r: 0, p: 0 };
         c.r += x.valor_recebido ?? 0;
         map.set(m, c);
       });
       pag.forEach((x) => {
-        const m = (x.created_at ?? "").slice(0, 7);
+        const m = (x.data_pagamento ?? x.created_at ?? "").slice(0, 7);
         const c = map.get(m) ?? { r: 0, p: 0 };
         c.p += x.valor_pago ?? 0;
         map.set(m, c);

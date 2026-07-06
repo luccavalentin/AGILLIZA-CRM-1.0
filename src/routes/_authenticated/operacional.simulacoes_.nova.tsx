@@ -109,12 +109,17 @@ function Pagina() {
     });
   }
 
+  const maxPrazoIdade = useMemo(
+    () => prazoMaximoPorIdade(w.data_nascimento),
+    [w.data_nascimento],
+  );
+
   const valido =
     w.valor_imovel > 0 &&
     w.valor_financiamento > 0 &&
     w.data_nascimento !== "" &&
     w.prazo_meses >= PRAZO_MIN &&
-    w.prazo_meses <= PRAZO_MAX;
+    w.prazo_meses <= (maxPrazoIdade ?? PRAZO_MAX);
 
   const comparativo = useMemo(() => {
     if (!bancos || !mostrarRapida) return [];
@@ -134,12 +139,6 @@ function Pagina() {
     if (!bancos || bancos.length === 0) return 0.1199;
     return Math.min(...bancos.map((b) => taxaAnoDeBanco(b.codigo_banco)));
   }, [bancos]);
-
-
-  const maxPrazoIdade = useMemo(
-    () => prazoMaximoPorIdade(w.data_nascimento),
-    [w.data_nascimento],
-  );
 
   /** Aplica o prazo digitado, ajustando automaticamente pela regra de idade. */
   function definirPrazo(valor: number) {
