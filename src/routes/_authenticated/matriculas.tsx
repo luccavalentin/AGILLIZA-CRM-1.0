@@ -46,7 +46,6 @@ import { ConfirmDelete } from "@/components/shared/confirm-delete";
 import { formatBRL, maskBRLInput, parseBRL } from "@/lib/simulacao/format";
 import {
   obterControleMatriculas,
-  salvarPixMatriculas,
   criarCreditoMatricula,
   excluirCreditoMatricula,
   criarSolicitacaoMatricula,
