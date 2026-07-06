@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
+import { toast } from "sonner";
 import { ArrowLeft, Calculator, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,6 +23,7 @@ import {
   getEndereco,
   listarHistorico,
   getClienteNegocios,
+  definirEtapa,
 } from "@/lib/crm/clientes.functions";
 import { formatarDocumento, mascararDocumento, formatarCelular } from "@/lib/crm/documento";
 
@@ -38,12 +41,29 @@ export const Route = createFileRoute("/_authenticated/crm/clientes_/$id")({
 
 function Pagina() {
   const { id } = Route.useParams();
+  const qc = useQueryClient();
   const getCli = useServerFn(getCliente);
   const getStages = useServerFn(getPipelineStages);
   const getPipe = useServerFn(getClientePipeline);
   const getEnd = useServerFn(getEndereco);
   const getHist = useServerFn(listarHistorico);
   const getNeg = useServerFn(getClienteNegocios);
+  const setEtapa = useServerFn(definirEtapa);
+  const [movendoEtapa, setMovendoEtapa] = useState(false);
+
+  async function moverParaEtapa(codigo: string) {
+    setMovendoEtapa(true);
+    try {
+      await setEtapa({ data: { cliente_id: id, codigo_destino: codigo } });
+      await qc.invalidateQueries({ queryKey: ["cliente-pipeline", id] });
+      await qc.invalidateQueries({ queryKey: ["cliente-hist", id] });
+      toast.success("Etapa atualizada.");
+    } catch (err: any) {
+      toast.error(err?.message ?? "Não foi possível mover a etapa.");
+    } finally {
+      setMovendoEtapa(false);
+    }
+  }
 
   const { data: det, isLoading } = useQuery({
     queryKey: ["cliente", id],
@@ -109,14 +129,25 @@ function Pagina() {
         <CardHeader className="pb-2">
           <CardTitle className="text-sm">Esteira</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-2">
           {stages && pipe ? (
-            <PipelineTimeline stages={stages} atualOrdem={pipe.ordem} />
+            <>
+              <PipelineTimeline
+                stages={stages}
+                atualOrdem={pipe.ordem}
+                onSelecionar={moverParaEtapa}
+                disabled={movendoEtapa}
+              />
+              <p className="text-xs text-muted-foreground">
+                Clique em qualquer etapa para mover o cliente na esteira.
+              </p>
+            </>
           ) : (
             <Skeleton className="h-8 w-full" />
           )}
         </CardContent>
       </Card>
+
 
       <Tabs defaultValue="resumo">
         <TabsList className="flex-wrap">
@@ -258,6 +289,21 @@ function Pagina() {
               estado_civil: c.estado_civil ?? "solteiro",
               regime_casamento: c.regime_casamento ?? "",
               mae: c.mae ?? "",
+              pai: (c as any).pai ?? "",
+              sexo: (c as any).sexo ?? "",
+              nacionalidade: (c as any).nacionalidade ?? "",
+              naturalidade: (c as any).naturalidade ?? "",
+              tipo_documento_identidade: (c as any).tipo_documento_identidade ?? "",
+              numero_documento: (c as any).numero_documento ?? "",
+              orgao_expedidor: (c as any).orgao_expedidor ?? "",
+              uf_expedicao: (c as any).uf_expedicao ?? "",
+              data_expedicao: (c as any).data_expedicao ?? "",
+              profissao: (c as any).profissao ?? "",
+              empresa: (c as any).empresa ?? "",
+              banco_conta: (c as any).banco_conta ?? "",
+              agencia: (c as any).agencia ?? "",
+              conta_corrente: (c as any).conta_corrente ?? "",
+              digito_conta: (c as any).digito_conta ?? "",
               email: c.email ?? "",
               telefone_celular: c.telefone_celular ?? "",
               renda_total_declarada:

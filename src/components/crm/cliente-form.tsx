@@ -34,6 +34,21 @@ export interface ClienteFormValues {
   estado_civil: string;
   regime_casamento: string;
   mae: string;
+  pai: string;
+  sexo: string;
+  nacionalidade: string;
+  naturalidade: string;
+  tipo_documento_identidade: string;
+  numero_documento: string;
+  orgao_expedidor: string;
+  uf_expedicao: string;
+  data_expedicao: string;
+  profissao: string;
+  empresa: string;
+  banco_conta: string;
+  agencia: string;
+  conta_corrente: string;
+  digito_conta: string;
   email: string;
   telefone_celular: string;
   renda_total_declarada: string;
@@ -78,6 +93,21 @@ const emptyValues: ClienteFormValues = {
   estado_civil: "solteiro",
   regime_casamento: "",
   mae: "",
+  pai: "",
+  sexo: "",
+  nacionalidade: "Brasileira",
+  naturalidade: "",
+  tipo_documento_identidade: "",
+  numero_documento: "",
+  orgao_expedidor: "",
+  uf_expedicao: "",
+  data_expedicao: "",
+  profissao: "",
+  empresa: "",
+  banco_conta: "",
+  agencia: "",
+  conta_corrente: "",
+  digito_conta: "",
   email: "",
   telefone_celular: "",
   renda_total_declarada: "",
@@ -199,7 +229,22 @@ export function ClienteForm({
         data_nascimento: v.data_nascimento,
         estado_civil: v.estado_civil as any,
         regime_casamento: (v.regime_casamento || null) as any,
-        mae: v.mae || null,
+        mae: v.mae.trim() || null,
+        pai: v.pai.trim() || null,
+        sexo: v.sexo || null,
+        nacionalidade: v.nacionalidade.trim() || null,
+        naturalidade: v.naturalidade.trim() || null,
+        tipo_documento_identidade: v.tipo_documento_identidade || null,
+        numero_documento: v.numero_documento.trim() || null,
+        orgao_expedidor: v.orgao_expedidor.trim() || null,
+        uf_expedicao: v.uf_expedicao || null,
+        data_expedicao: v.data_expedicao || null,
+        profissao: v.profissao.trim() || null,
+        empresa: v.empresa.trim() || null,
+        banco_conta: v.banco_conta.trim() || null,
+        agencia: v.agencia.trim() || null,
+        conta_corrente: v.conta_corrente.trim() || null,
+        digito_conta: v.digito_conta.trim() || null,
         email: v.email.trim(),
         telefone_celular: soDigitos(v.telefone_celular),
         renda_total_declarada: renda,
@@ -331,6 +376,10 @@ export function ClienteForm({
             <Input value={v.mae} onChange={(e) => set("mae", e.target.value)} />
           </div>
           <div className="space-y-1.5">
+            <Label>Nome do pai</Label>
+            <Input value={v.pai} onChange={(e) => set("pai", e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
             <Label>E-mail *</Label>
             <Input type="email" value={v.email} onChange={(e) => set("email", e.target.value)} />
           </div>
@@ -368,6 +417,143 @@ export function ClienteForm({
           </div>
         </CardContent>
       </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Documento de identidade e qualificação</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Dados exigidos pelos bancos para análise e aprovação do financiamento.
+          </p>
+        </CardHeader>
+        <CardContent className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <Label>Sexo</Label>
+            <Select value={v.sexo} onValueChange={(x) => set("sexo", x)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="M">Masculino</SelectItem>
+                <SelectItem value="F">Feminino</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Nacionalidade</Label>
+            <Input
+              value={v.nacionalidade}
+              onChange={(e) => set("nacionalidade", e.target.value)}
+              placeholder="Brasileira"
+            />
+          </div>
+          <div className="space-y-1.5 sm:col-span-2">
+            <Label>Naturalidade (cidade/UF de nascimento)</Label>
+            <Input
+              value={v.naturalidade}
+              onChange={(e) => set("naturalidade", e.target.value)}
+              placeholder="Ex.: São Paulo/SP"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Tipo de documento</Label>
+            <Select
+              value={v.tipo_documento_identidade}
+              onValueChange={(x) => set("tipo_documento_identidade", x)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="RG">RG</SelectItem>
+                <SelectItem value="CNH">CNH</SelectItem>
+                <SelectItem value="RNE">RNE</SelectItem>
+                <SelectItem value="Passaporte">Passaporte</SelectItem>
+                <SelectItem value="CTPS">CTPS</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Número do documento</Label>
+            <Input
+              value={v.numero_documento}
+              onChange={(e) => set("numero_documento", e.target.value)}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Órgão expedidor</Label>
+            <Input
+              value={v.orgao_expedidor}
+              onChange={(e) => set("orgao_expedidor", e.target.value)}
+              placeholder="Ex.: SSP"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label>UF de expedição</Label>
+            <Input
+              maxLength={2}
+              value={v.uf_expedicao}
+              onChange={(e) => set("uf_expedicao", e.target.value.toUpperCase())}
+              placeholder="SP"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Data de expedição</Label>
+            <Input
+              type="date"
+              value={v.data_expedicao}
+              onChange={(e) => set("data_expedicao", e.target.value)}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Profissão</Label>
+            <Input value={v.profissao} onChange={(e) => set("profissao", e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Empresa onde trabalha</Label>
+            <Input value={v.empresa} onChange={(e) => set("empresa", e.target.value)} />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Dados bancários</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Conta usada para crédito e débito das parcelas do financiamento.
+          </p>
+        </CardHeader>
+        <CardContent className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-1.5 sm:col-span-2">
+            <Label>Banco</Label>
+            <Input
+              value={v.banco_conta}
+              onChange={(e) => set("banco_conta", e.target.value)}
+              placeholder="Ex.: Itaú, Bradesco, Santander"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Agência</Label>
+            <Input value={v.agencia} onChange={(e) => set("agencia", e.target.value)} />
+          </div>
+          <div className="grid grid-cols-[1fr_auto] gap-2">
+            <div className="space-y-1.5">
+              <Label>Conta corrente</Label>
+              <Input
+                value={v.conta_corrente}
+                onChange={(e) => set("conta_corrente", e.target.value)}
+              />
+            </div>
+            <div className="w-20 space-y-1.5">
+              <Label>Dígito</Label>
+              <Input
+                value={v.digito_conta}
+                onChange={(e) => set("digito_conta", e.target.value)}
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
 
       <Card>
         <CardHeader>

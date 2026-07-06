@@ -141,12 +141,28 @@ const clienteInputSchema = z.object({
     .optional()
     .nullable(),
   mae: z.string().optional().nullable(),
+  pai: z.string().optional().nullable(),
+  sexo: z.string().optional().nullable(),
+  nacionalidade: z.string().optional().nullable(),
+  naturalidade: z.string().optional().nullable(),
+  tipo_documento_identidade: z.string().optional().nullable(),
+  numero_documento: z.string().optional().nullable(),
+  orgao_expedidor: z.string().optional().nullable(),
+  uf_expedicao: z.string().optional().nullable(),
+  data_expedicao: z.string().optional().nullable(),
+  profissao: z.string().optional().nullable(),
+  empresa: z.string().optional().nullable(),
+  banco_conta: z.string().optional().nullable(),
+  agencia: z.string().optional().nullable(),
+  conta_corrente: z.string().optional().nullable(),
+  digito_conta: z.string().optional().nullable(),
   email: z.string().email("E-mail inválido."),
   telefone_celular: z.string().min(10, "Celular inválido."),
   renda_total_declarada: z.number().nonnegative(),
   uf_interesse: z.string().length(2).optional().nullable(),
   origem: z.enum(["direto", "parceiro", "indicacao", "importacao"]).default("direto"),
 });
+
 
 export type ClienteInput = z.infer<typeof clienteInputSchema>;
 
@@ -176,6 +192,21 @@ export const criarCliente = createServerFn({ method: "POST" })
         estado_civil: data.estado_civil,
         regime_casamento: data.regime_casamento ?? null,
         mae: data.mae ?? null,
+        pai: data.pai ?? null,
+        sexo: data.sexo ?? null,
+        nacionalidade: data.nacionalidade ?? null,
+        naturalidade: data.naturalidade ?? null,
+        tipo_documento_identidade: data.tipo_documento_identidade ?? null,
+        numero_documento: data.numero_documento ?? null,
+        orgao_expedidor: data.orgao_expedidor ?? null,
+        uf_expedicao: data.uf_expedicao ?? null,
+        data_expedicao: data.data_expedicao || null,
+        profissao: data.profissao ?? null,
+        empresa: data.empresa ?? null,
+        banco_conta: data.banco_conta ?? null,
+        agencia: data.agencia ?? null,
+        conta_corrente: data.conta_corrente ?? null,
+        digito_conta: data.digito_conta ?? null,
         email: data.email.toLowerCase(),
         telefone_celular: data.telefone_celular,
         renda_total_declarada: data.renda_total_declarada,
@@ -218,6 +249,21 @@ export const atualizarCliente = createServerFn({ method: "POST" })
         estado_civil: campos.estado_civil,
         regime_casamento: campos.regime_casamento ?? null,
         mae: campos.mae ?? null,
+        pai: campos.pai ?? null,
+        sexo: campos.sexo ?? null,
+        nacionalidade: campos.nacionalidade ?? null,
+        naturalidade: campos.naturalidade ?? null,
+        tipo_documento_identidade: campos.tipo_documento_identidade ?? null,
+        numero_documento: campos.numero_documento ?? null,
+        orgao_expedidor: campos.orgao_expedidor ?? null,
+        uf_expedicao: campos.uf_expedicao ?? null,
+        data_expedicao: campos.data_expedicao || null,
+        profissao: campos.profissao ?? null,
+        empresa: campos.empresa ?? null,
+        banco_conta: campos.banco_conta ?? null,
+        agencia: campos.agencia ?? null,
+        conta_corrente: campos.conta_corrente ?? null,
+        digito_conta: campos.digito_conta ?? null,
         email: campos.email.toLowerCase(),
         telefone_celular: campos.telefone_celular,
         renda_total_declarada: campos.renda_total_declarada,
@@ -599,6 +645,29 @@ export const moverEtapa = createServerFn({ method: "POST" })
     if (error) throw error;
     return { ok: true };
   });
+
+/** Define a etapa da esteira para qualquer posição (avança ou volta). */
+export const definirEtapa = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        cliente_id: z.string().uuid(),
+        codigo_destino: z.string(),
+        observacao: z.string().optional(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }): Promise<{ ok: true }> => {
+    const { error } = await context.supabase.rpc("cliente_pipeline_definir", {
+      _cliente_id: data.cliente_id,
+      _codigo_destino: data.codigo_destino,
+      _obs: data.observacao ?? undefined,
+    });
+    if (error) throw error;
+    return { ok: true };
+  });
+
 
 /** Busca de clientes para combobox (Etapa 04). */
 export const buscarClientesCRM = createServerFn({ method: "GET" })
