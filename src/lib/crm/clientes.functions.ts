@@ -545,7 +545,7 @@ export const salvarVendedor = createServerFn({ method: "POST" })
       payload[k] = norm(v as string | null | undefined);
     }
     if (id) {
-      const { error } = await supabase.from("cliente_vendedores").update(payload).eq("id", id);
+      const { error } = await supabase.from("cliente_vendedores").update(payload as any).eq("id", id);
       if (error) throw error;
       return { ok: true, id };
     }
