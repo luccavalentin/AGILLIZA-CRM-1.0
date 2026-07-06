@@ -135,7 +135,7 @@ export function ajustarPrazoPorIdade(
               maximoPermitido === 1 ? "mês" : "meses"
             } (${formatarMeses(
               maximoPermitido,
-            )}), pois a soma da idade com o prazo não pode ultrapassar 80 anos e 6 meses ao fim do contrato — regra que todas as instituições financeiras validam. Ajustamos o campo automaticamente.`,
+            )}), pois a soma da idade com o prazo não pode ultrapassar 80 anos ao fim do contrato — regra da instituição mais restritiva. Ajustamos o campo automaticamente.`,
     };
   }
 
