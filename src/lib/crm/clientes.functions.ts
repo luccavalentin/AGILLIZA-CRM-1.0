@@ -465,6 +465,111 @@ export const getEndereco = createServerFn({ method: "GET" })
     return row ?? null;
   });
 
+// ----------------------------------------------------------------------------
+// Vendedores do imóvel (um cliente/imóvel pode ter vários)
+// ----------------------------------------------------------------------------
+const vendedorSchema = z.object({
+  id: z.string().uuid().optional(),
+  cliente_id: z.string().uuid(),
+  tipo_pessoa: z.enum(["PF", "PJ"]).default("PF"),
+  nome: z.string().trim().min(1, "Informe o nome do vendedor."),
+  documento: z.string().optional().nullable(),
+  documento_secundario: z.string().optional().nullable(),
+  data_nascimento: z.string().optional().nullable(),
+  estado_civil: z.string().optional().nullable(),
+  regime_casamento: z.string().optional().nullable(),
+  mae: z.string().optional().nullable(),
+  pai: z.string().optional().nullable(),
+  sexo: z.string().optional().nullable(),
+  nacionalidade: z.string().optional().nullable(),
+  naturalidade: z.string().optional().nullable(),
+  tipo_documento_identidade: z.string().optional().nullable(),
+  numero_documento: z.string().optional().nullable(),
+  orgao_expedidor: z.string().optional().nullable(),
+  uf_expedicao: z.string().optional().nullable(),
+  data_expedicao: z.string().optional().nullable(),
+  profissao: z.string().optional().nullable(),
+  empresa: z.string().optional().nullable(),
+  banco_conta: z.string().optional().nullable(),
+  agencia: z.string().optional().nullable(),
+  conta_corrente: z.string().optional().nullable(),
+  digito_conta: z.string().optional().nullable(),
+  email: z.string().optional().nullable(),
+  telefone_celular: z.string().optional().nullable(),
+  renda_total_declarada: z.string().optional().nullable(),
+  cep: z.string().optional().nullable(),
+  logradouro: z.string().optional().nullable(),
+  numero: z.string().optional().nullable(),
+  complemento: z.string().optional().nullable(),
+  bairro: z.string().optional().nullable(),
+  cidade: z.string().optional().nullable(),
+  uf: z.string().max(2).optional().nullable(),
+  utiliza_fgts: z.boolean().default(false),
+  fg_autorizacao_dados: z.boolean().default(false),
+});
+
+export const listarVendedores = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ cliente_id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { data: rows, error } = await context.supabase
+      .from("cliente_vendedores")
+      .select("*")
+      .eq("cliente_id", data.cliente_id)
+      .order("created_at", { ascending: true });
+    if (error) throw error;
+    return rows ?? [];
+  });
+
+export const salvarVendedor = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => vendedorSchema.parse(d))
+  .handler(async ({ data, context }): Promise<{ ok: true; id: string }> => {
+    const { supabase } = context;
+    const norm = (v: string | null | undefined) =>
+      v != null && String(v).trim() !== "" ? String(v).trim() : null;
+    const { id, cliente_id, renda_total_declarada, ...rest } = data;
+    const payload: Record<string, unknown> = {
+      cliente_id,
+      tipo_pessoa: data.tipo_pessoa,
+      nome: data.nome.trim(),
+      renda_total_declarada:
+        renda_total_declarada != null && String(renda_total_declarada).trim() !== ""
+          ? Number(String(renda_total_declarada).replace(/\./g, "").replace(",", "."))
+          : null,
+      utiliza_fgts: data.utiliza_fgts,
+      fg_autorizacao_dados: data.fg_autorizacao_dados,
+    };
+    for (const [k, v] of Object.entries(rest)) {
+      if (["tipo_pessoa", "nome", "utiliza_fgts", "fg_autorizacao_dados"].includes(k)) continue;
+      payload[k] = norm(v as string | null | undefined);
+    }
+    if (id) {
+      const { error } = await supabase.from("cliente_vendedores").update(payload).eq("id", id);
+      if (error) throw error;
+      return { ok: true, id };
+    }
+    const { data: inserted, error } = await supabase
+      .from("cliente_vendedores")
+      .insert(payload as any)
+      .select("id")
+      .single();
+    if (error) throw error;
+    return { ok: true, id: inserted.id };
+  });
+
+export const removerVendedor = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }): Promise<{ ok: true }> => {
+    const { error } = await context.supabase
+      .from("cliente_vendedores")
+      .delete()
+      .eq("id", data.id);
+    if (error) throw error;
+    return { ok: true };
+  });
+
 /** Registra interação manual (nenhum disparo automático). */
 export const registrarInteracao = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
