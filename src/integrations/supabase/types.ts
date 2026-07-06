@@ -1247,6 +1247,36 @@ export type Database = {
           },
         ]
       }
+      configuracoes_modulos: {
+        Row: {
+          config: Json
+          correspondente_id: string
+          created_at: string
+          id: string
+          modulo: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          config?: Json
+          correspondente_id: string
+          created_at?: string
+          id?: string
+          modulo: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          config?: Json
+          correspondente_id?: string
+          created_at?: string
+          id?: string
+          modulo?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       crm_chat_cliente_etiquetas: {
         Row: {
           cliente_id: string
