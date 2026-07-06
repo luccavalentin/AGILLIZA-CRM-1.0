@@ -2466,6 +2466,7 @@ export type Database = {
           numero_proposta_banco: string | null
           prazo_pagamento_max: number | null
           proposta_id: string
+          raw_response: Json | null
           selecionado: boolean | null
           simulacao_banco_id: string | null
           sistema_amortizacao_banco: string | null
@@ -2493,6 +2494,7 @@ export type Database = {
           numero_proposta_banco?: string | null
           prazo_pagamento_max?: number | null
           proposta_id: string
+          raw_response?: Json | null
           selecionado?: boolean | null
           simulacao_banco_id?: string | null
           sistema_amortizacao_banco?: string | null
@@ -2520,6 +2522,7 @@ export type Database = {
           numero_proposta_banco?: string | null
           prazo_pagamento_max?: number | null
           proposta_id?: string
+          raw_response?: Json | null
           selecionado?: boolean | null
           simulacao_banco_id?: string | null
           sistema_amortizacao_banco?: string | null
