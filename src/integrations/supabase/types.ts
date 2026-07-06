@@ -2659,6 +2659,7 @@ export type Database = {
           email: string | null
           empresa: string | null
           estado_civil: string | null
+          fg_autorizacao_dados: boolean
           homefin_id_participante: string | null
           id: string
           logradouro: string | null
@@ -2676,9 +2677,11 @@ export type Database = {
           tipo_pessoa: string | null
           tipo_qualificacao: string
           tipo_sexo: string | null
+          tipo_situacao: string
           uf: string | null
           uf_expedicao: string | null
           updated_at: string
+          utiliza_fgts: boolean
         }
         Insert: {
           agencia?: string | null
@@ -2698,6 +2701,7 @@ export type Database = {
           email?: string | null
           empresa?: string | null
           estado_civil?: string | null
+          fg_autorizacao_dados?: boolean
           homefin_id_participante?: string | null
           id?: string
           logradouro?: string | null
@@ -2715,9 +2719,11 @@ export type Database = {
           tipo_pessoa?: string | null
           tipo_qualificacao?: string
           tipo_sexo?: string | null
+          tipo_situacao?: string
           uf?: string | null
           uf_expedicao?: string | null
           updated_at?: string
+          utiliza_fgts?: boolean
         }
         Update: {
           agencia?: string | null
@@ -2737,6 +2743,7 @@ export type Database = {
           email?: string | null
           empresa?: string | null
           estado_civil?: string | null
+          fg_autorizacao_dados?: boolean
           homefin_id_participante?: string | null
           id?: string
           logradouro?: string | null
@@ -2754,9 +2761,11 @@ export type Database = {
           tipo_pessoa?: string | null
           tipo_qualificacao?: string
           tipo_sexo?: string | null
+          tipo_situacao?: string
           uf?: string | null
           uf_expedicao?: string | null
           updated_at?: string
+          utiliza_fgts?: boolean
         }
         Relationships: [
           {
