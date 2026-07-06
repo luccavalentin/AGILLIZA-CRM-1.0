@@ -4,21 +4,16 @@ import { ArrowLeft } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
 
 interface AuthSplitLayoutProps {
-  /** Título exibido no banner lateral. */
-  bannerTitulo: string;
-  bannerSubtitulo: string;
+  /** Mantidos por compatibilidade; não exibidos após remoção do banner. */
+  bannerTitulo?: string;
+  bannerSubtitulo?: string;
   children: ReactNode;
 }
 
 /**
- * Layout split reutilizável para telas de login (banner à esquerda,
- * formulário à direita). Responsivo: em telas pequenas o banner some.
+ * Layout de autenticação: apenas o formulário de login centralizado.
  */
-export function AuthSplitLayout({
-  bannerTitulo,
-  bannerSubtitulo,
-  children,
-}: AuthSplitLayoutProps) {
+export function AuthSplitLayout({ children }: AuthSplitLayoutProps) {
   return (
     <div className="flex min-h-[100dvh] flex-col bg-muted">
       <main className="flex flex-1 flex-col px-4 py-8 sm:px-8">
