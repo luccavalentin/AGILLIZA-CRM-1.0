@@ -364,6 +364,12 @@ function Pagina() {
                 <dt className="text-xs text-muted-foreground">Valor do imóvel</dt>
                 <dd className="tabular-nums text-foreground">{formatBRL(s.valor_imovel)}</dd>
               </div>
+              <div className="col-span-2">
+                <dt className="mb-1 text-xs text-muted-foreground">Bancos simulados</dt>
+                <dd>
+                  <BancosSimulados bancos={s.bancos} />
+                </dd>
+              </div>
             </dl>
           </div>
         ))}
