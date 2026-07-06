@@ -5,26 +5,60 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 export interface ParametrosGlobais {
   id: string | null;
   nome_empresa: string | null;
+  razao_social: string | null;
+  nome_fantasia: string | null;
   cnpj: string | null;
+  inscricao_estadual: string | null;
+  inscricao_municipal: string | null;
   logo_url: string | null;
   cor_primaria: string | null;
+  cep: string | null;
+  logradouro: string | null;
+  numero: string | null;
+  complemento: string | null;
+  bairro: string | null;
+  cidade: string | null;
+  uf: string | null;
   endereco: string | null;
+  email_empresa: string | null;
+  telefone_empresa: string | null;
   telefone_sac: string | null;
+  site: string | null;
+  responsavel_nome: string | null;
   politica_lgpd: string | null;
   politica_privacidade: string | null;
   email_dpo: string | null;
 }
 
+const CAMPOS =
+  "id, nome_empresa, razao_social, nome_fantasia, cnpj, inscricao_estadual, inscricao_municipal, logo_url, cor_primaria, cep, logradouro, numero, complemento, bairro, cidade, uf, endereco, email_empresa, telefone_empresa, telefone_sac, site, responsavel_nome, politica_lgpd, politica_privacidade, email_dpo";
+
 const salvarSchema = z.object({
   nome_empresa: z.string().max(160).optional().nullable(),
+  razao_social: z.string().max(200).optional().nullable(),
+  nome_fantasia: z.string().max(200).optional().nullable(),
   cnpj: z.string().max(20).optional().nullable(),
+  inscricao_estadual: z.string().max(40).optional().nullable(),
+  inscricao_municipal: z.string().max(40).optional().nullable(),
   cor_primaria: z.string().max(30).optional().nullable(),
+  cep: z.string().max(12).optional().nullable(),
+  logradouro: z.string().max(200).optional().nullable(),
+  numero: z.string().max(20).optional().nullable(),
+  complemento: z.string().max(120).optional().nullable(),
+  bairro: z.string().max(120).optional().nullable(),
+  cidade: z.string().max(120).optional().nullable(),
+  uf: z.string().max(2).optional().nullable(),
   endereco: z.string().max(300).optional().nullable(),
+  email_empresa: z.string().email().optional().nullable().or(z.literal("")),
+  telefone_empresa: z.string().max(40).optional().nullable(),
   telefone_sac: z.string().max(40).optional().nullable(),
+  site: z.string().max(200).optional().nullable(),
+  responsavel_nome: z.string().max(160).optional().nullable(),
   email_dpo: z.string().email().optional().nullable().or(z.literal("")),
   politica_lgpd: z.string().max(20000).optional().nullable(),
   politica_privacidade: z.string().max(20000).optional().nullable(),
 });
+
 
 async function corr(supabase: any, userId: string): Promise<string | null> {
   const { data } = await supabase
