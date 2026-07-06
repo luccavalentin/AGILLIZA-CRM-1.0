@@ -361,9 +361,9 @@ export function baixarSimulacaoSimplificadaPDF({
 
     // Resumo das parcelas (valores fornecidos pela instituição — sem recálculo)
     const resumo: { label: string; valor: string }[] = [
-      { label: "1ª parcela", valor: formatBRL(d?.primeiraParcela ?? b?.valor_parcela) },
-      { label: "Última parcela", valor: formatBRL(d?.ultimaParcela ?? null) },
-      { label: "Somatório das parcelas", valor: formatBRL(d?.somatorioParcelas ?? null) },
+      { label: "1ª parcela", valor: brlOuTraco(d?.primeiraParcela ?? b?.valor_parcela) },
+      { label: "Última parcela", valor: brlOuTraco(d?.ultimaParcela) },
+      { label: "Somatório das parcelas", valor: brlOuTraco(d?.somatorioParcelas) },
     ];
     doc.setTextColor(AZUL);
     doc.setFont("helvetica", "bold");
