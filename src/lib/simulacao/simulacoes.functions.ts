@@ -31,6 +31,11 @@ export interface SimulacaoBancoView {
   mensagem_banco: string | null;
 }
 
+export interface SimulacaoBancoResumo {
+  nome_banco: string | null;
+  status_banco: string | null;
+}
+
 export interface SimulacaoListaItem {
   id: string;
   numero_simulacao: string;
@@ -41,6 +46,7 @@ export interface SimulacaoListaItem {
   prazo: number | null;
   status: string;
   created_at: string;
+  bancos: SimulacaoBancoResumo[];
 }
 
 /** ===== Bancos e operações (cache) ===== */
