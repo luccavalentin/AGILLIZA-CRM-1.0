@@ -51,7 +51,7 @@ export function PipelineTimeline({
       {/* Barra de progresso */}
       <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
         <div
-          className="h-full rounded-full bg-gradient-to-r from-success via-primary to-primary shadow-[0_0_12px_-2px_hsl(var(--primary))] transition-[width] duration-700 ease-out"
+          className="h-full rounded-full bg-gradient-to-r from-success via-primary to-primary shadow-[0_0_12px_-2px_var(--primary)] transition-[width] duration-700 ease-out"
           style={{ width: `${percent}%` }}
         />
       </div>
