@@ -17,8 +17,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { PropostaStatusBadge } from "@/components/propostas/status-badge";
+
 import { BancosProposta } from "@/components/proposta/bancos-proposta";
+import { StatusBancosProposta } from "@/components/proposta/status-bancos-proposta";
 import { ConfirmDelete } from "@/components/shared/confirm-delete";
 import { formatBRL } from "@/lib/simulacao/format";
 
@@ -153,7 +154,7 @@ function Pagina() {
                   {formatBRL(p.valor_financiamento)}
                 </TableCell>
                 <TableCell>
-                  <PropostaStatusBadge status={p.status} banco={p.nome_banco} />
+                  <StatusBancosProposta bancos={p.bancos} fallbackStatus={p.status} />
                 </TableCell>
                 <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                   {["rascunho", "erro_envio"].includes(p.status) ? (
