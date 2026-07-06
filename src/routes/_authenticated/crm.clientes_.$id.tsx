@@ -40,12 +40,29 @@ export const Route = createFileRoute("/_authenticated/crm/clientes_/$id")({
 
 function Pagina() {
   const { id } = Route.useParams();
+  const qc = useQueryClient();
   const getCli = useServerFn(getCliente);
   const getStages = useServerFn(getPipelineStages);
   const getPipe = useServerFn(getClientePipeline);
   const getEnd = useServerFn(getEndereco);
   const getHist = useServerFn(listarHistorico);
   const getNeg = useServerFn(getClienteNegocios);
+  const setEtapa = useServerFn(definirEtapa);
+  const [movendoEtapa, setMovendoEtapa] = useState(false);
+
+  async function moverParaEtapa(codigo: string) {
+    setMovendoEtapa(true);
+    try {
+      await setEtapa({ data: { cliente_id: id, codigo_destino: codigo } });
+      await qc.invalidateQueries({ queryKey: ["cliente-pipeline", id] });
+      await qc.invalidateQueries({ queryKey: ["cliente-hist", id] });
+      toast.success("Etapa atualizada.");
+    } catch (err: any) {
+      toast.error(err?.message ?? "Não foi possível mover a etapa.");
+    } finally {
+      setMovendoEtapa(false);
+    }
+  }
 
   const { data: det, isLoading } = useQuery({
     queryKey: ["cliente", id],
