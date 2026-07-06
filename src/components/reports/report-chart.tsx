@@ -125,6 +125,10 @@ export function ReportChartView({
   }
 
   if (chart.tipo === "barh" || chart.tipo === "funnel") {
+    // Para contagens (sem decimais), gera ticks inteiros únicos e evita que o
+    // recharts arredonde ticks fracionários em números repetidos (ex.: 1 1 2 2).
+    const maxValor = Math.max(0, ...chart.dados.map((d) => Number(d.valor) || 0));
+    const intTicks = !allowDecimals ? niceIntTicks(maxValor) : undefined;
     return (
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={chart.dados} layout="vertical">
@@ -135,6 +139,9 @@ export function ReportChartView({
             stroke="hsl(var(--muted-foreground))"
             tickFormatter={fmt}
             allowDecimals={allowDecimals}
+            {...(intTicks
+              ? { ticks: intTicks, domain: [0, intTicks[intTicks.length - 1]] }
+              : {})}
           />
           <YAxis
             type="category"
