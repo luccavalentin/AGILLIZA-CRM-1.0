@@ -392,6 +392,56 @@ export const criarProposta = createServerFn({ method: "POST" })
           dados: { pai: c.pai ?? null, nacionalidade: c.nacionalidade ?? null, naturalidade: c.naturalidade ?? null, banco_conta: c.banco_conta ?? null },
         } as any);
       }
+
+      // Vendedores do imóvel cadastrados no cliente entram como envolvidos (VD).
+      const { data: vendedores } = await supabase
+        .from("cliente_vendedores")
+        .select("*")
+        .eq("cliente_id", clienteId);
+      if ((vendedores ?? []).length > 0) {
+        const linhasVend = (vendedores ?? []).map((v: any) => ({
+          proposta_id: inserted.id,
+          cliente_id: null,
+          tipo_qualificacao: "VD",
+          tipo_pessoa: v.tipo_pessoa === "PJ" ? "J" : "F",
+          nome: v.nome,
+          cpf_cnpj: v.documento,
+          data_nascimento: v.data_nascimento,
+          nome_mae: v.mae,
+          tipo_sexo: v.sexo ? String(v.sexo).trim().charAt(0).toUpperCase() : v.sexo,
+          estado_civil: estadoCivilCrmParaCodigo(v.estado_civil) || null,
+          regime_casamento: regimeCasamentoCrmParaCodigo(v.regime_casamento) || null,
+          tipo_documento_identidade: v.tipo_documento_identidade,
+          numero_documento: v.numero_documento,
+          data_expedicao: v.data_expedicao,
+          orgao_expedidor: v.orgao_expedidor,
+          uf_expedicao: v.uf_expedicao,
+          profissao: v.profissao,
+          empresa: v.empresa,
+          renda: v.renda_total_declarada,
+          agencia: v.agencia,
+          conta_corrente: v.conta_corrente,
+          digito_conta: v.digito_conta,
+          email: v.email,
+          celular: v.telefone_celular,
+          cep: v.cep,
+          logradouro: v.logradouro,
+          numero_logradouro: v.numero,
+          complemento: v.complemento,
+          bairro: v.bairro,
+          municipio: v.cidade,
+          uf: v.uf,
+          utiliza_fgts: v.utiliza_fgts ?? false,
+          fg_autorizacao_dados: v.fg_autorizacao_dados ?? false,
+          dados: {
+            pai: v.pai ?? null,
+            nacionalidade: v.nacionalidade ?? null,
+            naturalidade: v.naturalidade ?? null,
+            banco_conta: v.banco_conta ?? null,
+          },
+        }));
+        await supabase.from("proposta_envolvidos").insert(linhasVend as any);
+      }
     }
 
 
