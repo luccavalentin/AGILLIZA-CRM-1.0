@@ -10,9 +10,25 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 const SENSIVEIS = new Set([
-  "secretId", "secretKey", "cpfCnpj", "cpf", "cnpj", "cpfConjuge", "rendaTotal",
-  "renda", "rendaConjuge", "dataNascimento", "dataNascimentoConjuge", "email",
-  "emailConjuge", "celular", "celularConjuge", "senha", "password", "token", "jwt",
+  "secretId",
+  "secretKey",
+  "cpfCnpj",
+  "cpf",
+  "cnpj",
+  "cpfConjuge",
+  "rendaTotal",
+  "renda",
+  "rendaConjuge",
+  "dataNascimento",
+  "dataNascimentoConjuge",
+  "email",
+  "emailConjuge",
+  "celular",
+  "celularConjuge",
+  "senha",
+  "password",
+  "token",
+  "jwt",
 ]);
 
 function mascarar(valor: unknown): unknown {
@@ -28,7 +44,10 @@ function mascarar(valor: unknown): unknown {
 }
 
 export class IntegracaoBancariaError extends Error {
-  constructor(message: string, public statusHttp?: number) {
+  constructor(
+    message: string,
+    public statusHttp?: number,
+  ) {
     super(message);
     this.name = "IntegracaoBancariaError";
   }
@@ -144,7 +163,10 @@ export async function obterToken(): Promise<TokenInfo> {
     response: { ok: resp.ok },
   });
   if (!resp.ok) {
-    throw new IntegracaoBancariaError("Não foi possível autenticar na integração bancária.", resp.status);
+    throw new IntegracaoBancariaError(
+      "Não foi possível autenticar na integração bancária.",
+      resp.status,
+    );
   }
 
   const token: string = json.jwt ?? json.token ?? "";
@@ -159,7 +181,6 @@ export async function obterToken(): Promise<TokenInfo> {
   _tokenCache = { info, expiresAt: Date.now() + 55 * 60 * 1000 };
   return info;
 }
-
 
 export interface HomefinRequestCtx {
   simulacao_id?: string | null;

@@ -26,9 +26,7 @@ export function ParceiroPage({ titulo, descricao, acoes, children }: Props) {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-foreground">{titulo}</h1>
-          {descricao && (
-            <p className="text-sm text-muted-foreground">{descricao}</p>
-          )}
+          {descricao && <p className="text-sm text-muted-foreground">{descricao}</p>}
         </div>
         <div className="flex items-center gap-2">
           {resumo.data && (

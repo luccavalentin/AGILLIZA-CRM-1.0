@@ -50,9 +50,16 @@ const STATUS_PROPOSTA_LABEL: Record<string, string> = {
 const rotuloStatus = (s: string) => STATUS_PROPOSTA_LABEL[s] ?? s;
 
 async function temPii(supabase: any, userId: string): Promise<boolean> {
-  const { data: tudo } = await supabase.rpc("has_any_role", { _user_id: userId, _roles: ["admin", "correspondente"] });
+  const { data: tudo } = await supabase.rpc("has_any_role", {
+    _user_id: userId,
+    _roles: ["admin", "correspondente"],
+  });
   if (tudo) return true;
-  const { data } = await supabase.rpc("usuario_tem_permissao", { _user_id: userId, _modulo: "crm.clientes", _acao: "pii:view" });
+  const { data } = await supabase.rpc("usuario_tem_permissao", {
+    _user_id: userId,
+    _modulo: "crm.clientes",
+    _acao: "pii:view",
+  });
   return Boolean(data);
 }
 
@@ -81,7 +88,10 @@ function serieMensal(rows: { data: string; valor?: number }[]): ChartSerie[] {
 }
 
 function topN(map: Map<string, number>, n: number): ChartSerie[] {
-  return [...map.entries()].sort((a, b) => b[1] - a[1]).slice(0, n).map(([label, valor]) => ({ label: label || "—", valor }));
+  return [...map.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, n)
+    .map(([label, valor]) => ({ label: label || "—", valor }));
 }
 
 export const runReport = createServerFn({ method: "POST" })
@@ -97,7 +107,11 @@ export const runReport = createServerFn({ method: "POST" })
     // registra auditoria de acesso ao relatório
     const { data: corr } = await supabase.rpc("correspondente_do_usuario", { _user_id: userId });
     await supabase.from("report_audit_logs").insert({
-      correspondente_id: corr as string, user_id: userId, report_codigo: codigo, acao: "visualizou", filtros: filtros as any,
+      correspondente_id: corr as string,
+      user_id: userId,
+      report_codigo: codigo,
+      acao: "visualizou",
+      filtros: filtros as any,
     } as any);
 
     const resultado = await (async (): Promise<ReportResult> => {
@@ -155,7 +169,20 @@ export const runReport = createServerFn({ method: "POST" })
       const props = ((rows ?? []) as any[]).filter((p) => p.status !== "rascunho");
       if (!props.length) return undefined;
 
-      const MESES_PT = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+      const MESES_PT = [
+        "Jan",
+        "Fev",
+        "Mar",
+        "Abr",
+        "Mai",
+        "Jun",
+        "Jul",
+        "Ago",
+        "Set",
+        "Out",
+        "Nov",
+        "Dez",
+      ];
       const meses: string[] = [];
       const idx = new Map<string, number>();
       for (let i = 5; i >= 0; i--) {
@@ -193,7 +220,13 @@ export const runReport = createServerFn({ method: "POST" })
     }
 
     async function fetchAll(table: string, cols: string, dateCol: string, colResp: string) {
-      let q = (supabase as any).from(table).select(cols).gte(dateCol, de).lte(dateCol, ateFim).order(dateCol, { ascending: false }).limit(5000);
+      let q = (supabase as any)
+        .from(table)
+        .select(cols)
+        .gte(dateCol, de)
+        .lte(dateCol, ateFim)
+        .order(dateCol, { ascending: false })
+        .limit(5000);
       q = aplicarEscopo(q, filtros, userId, colResp);
       if (filtros.responsavel && colResp) q = q.eq(colResp, filtros.responsavel);
       const { data: rows, error } = await q;
@@ -204,16 +237,28 @@ export const runReport = createServerFn({ method: "POST" })
     async function relConsolidado(): Promise<ReportResult> {
       const [sims, props, cls, coms] = await Promise.all([
         fetchAll("simulacoes", "id,status,created_at", "created_at", "usuario_responsavel_id"),
-        fetchAll("propostas", "id,status,valor_financiamento,valor_financiamento_aprovado,nome_banco,created_at", "created_at", "usuario_responsavel_id"),
+        fetchAll(
+          "propostas",
+          "id,status,valor_financiamento,valor_financiamento_aprovado,nome_banco,created_at",
+          "created_at",
+          "usuario_responsavel_id",
+        ),
         fetchAll("clientes", "id,created_at", "created_at", "responsavel_id"),
         fetchAll("comissoes", "valor_bruto,created_at", "created_at", "usuario_responsavel_id"),
       ]);
       const enviadas = props.filter((p) => p.status !== "rascunho");
-      const aprovadas = props.filter((p) => ["credito_aprovado", "contrato_emitido", "registrado"].includes(p.status));
+      const aprovadas = props.filter((p) =>
+        ["credito_aprovado", "contrato_emitido", "registrado"].includes(p.status),
+      );
       const contratos = props.filter((p) => ["contrato_emitido", "registrado"].includes(p.status));
-      const volume = contratos.reduce((s, p) => s + (p.valor_financiamento_aprovado ?? p.valor_financiamento ?? 0), 0);
+      const volume = contratos.reduce(
+        (s, p) => s + (p.valor_financiamento_aprovado ?? p.valor_financiamento ?? 0),
+        0,
+      );
       const bancoMap = new Map<string, number>();
-      enviadas.forEach((p) => bancoMap.set(p.nome_banco ?? "—", (bancoMap.get(p.nome_banco ?? "—") ?? 0) + 1));
+      enviadas.forEach((p) =>
+        bancoMap.set(p.nome_banco ?? "—", (bancoMap.get(p.nome_banco ?? "—") ?? 0) + 1),
+      );
       const funil: ChartSerie[] = [
         { label: "Simulações", valor: sims.length },
         { label: "Propostas", valor: enviadas.length },
@@ -234,8 +279,18 @@ export const runReport = createServerFn({ method: "POST" })
         ],
         charts: [
           { titulo: "Funil de conversão", tipo: "funnel", dados: funil },
-          { titulo: "Ranking de bancos", subtitulo: "Propostas enviadas", tipo: "barh", dados: topN(bancoMap, 8) },
-          { titulo: "Evolução mensal", subtitulo: "Propostas por mês", tipo: "line", dados: serieMensal(enviadas.map((p) => ({ data: p.created_at }))) },
+          {
+            titulo: "Ranking de bancos",
+            subtitulo: "Propostas enviadas",
+            tipo: "barh",
+            dados: topN(bancoMap, 8),
+          },
+          {
+            titulo: "Evolução mensal",
+            subtitulo: "Propostas por mês",
+            tipo: "line",
+            dados: serieMensal(enviadas.map((p) => ({ data: p.created_at }))),
+          },
         ],
         columns: [
           { key: "nome_banco", label: "Banco" },
@@ -243,20 +298,37 @@ export const runReport = createServerFn({ method: "POST" })
           { key: "valor", label: "Financiamento", align: "right", footer: "sum", format: "brl" },
           { key: "created_at", label: "Criada em", format: "date" },
         ],
-        rows: enviadas.slice(0, 500).map((p) => ({ nome_banco: p.nome_banco ?? "—", status: p.status, valor: p.valor_financiamento_aprovado ?? p.valor_financiamento ?? 0, created_at: p.created_at })),
+        rows: enviadas.slice(0, 500).map((p) => ({
+          nome_banco: p.nome_banco ?? "—",
+          status: p.status,
+          valor: p.valor_financiamento_aprovado ?? p.valor_financiamento ?? 0,
+          created_at: p.created_at,
+        })),
       };
     }
 
     async function relComerciais(): Promise<ReportResult> {
-      const props = await fetchAll("propostas", "id,status,valor_financiamento,valor_financiamento_aprovado,nome_banco,usuario_responsavel_id,created_at", "created_at", "usuario_responsavel_id");
+      const props = await fetchAll(
+        "propostas",
+        "id,status,valor_financiamento,valor_financiamento_aprovado,nome_banco,usuario_responsavel_id,created_at",
+        "created_at",
+        "usuario_responsavel_id",
+      );
       const enviadas = props.filter((p) => p.status !== "rascunho");
-      const aprovadas = props.filter((p) => ["credito_aprovado", "contrato_emitido", "registrado"].includes(p.status));
+      const aprovadas = props.filter((p) =>
+        ["credito_aprovado", "contrato_emitido", "registrado"].includes(p.status),
+      );
       const contratos = props.filter((p) => ["contrato_emitido", "registrado"].includes(p.status));
-      const valor = contratos.reduce((s, p) => s + (p.valor_financiamento_aprovado ?? p.valor_financiamento ?? 0), 0);
+      const valor = contratos.reduce(
+        (s, p) => s + (p.valor_financiamento_aprovado ?? p.valor_financiamento ?? 0),
+        0,
+      );
       const ticket = contratos.length ? valor / contratos.length : 0;
       const taxa = enviadas.length ? (aprovadas.length / enviadas.length) * 100 : 0;
       const bancoMap = new Map<string, number>();
-      enviadas.forEach((p) => bancoMap.set(p.nome_banco ?? "—", (bancoMap.get(p.nome_banco ?? "—") ?? 0) + 1));
+      enviadas.forEach((p) =>
+        bancoMap.set(p.nome_banco ?? "—", (bancoMap.get(p.nome_banco ?? "—") ?? 0) + 1),
+      );
       const bancoLider = topN(bancoMap, 1)[0]?.label ?? "—";
       // ranking por usuário
       const respIds = [...new Set(enviadas.map((p) => p.usuario_responsavel_id).filter(Boolean))];
@@ -266,7 +338,10 @@ export const runReport = createServerFn({ method: "POST" })
         const k = p.usuario_responsavel_id ?? "—";
         const cur = userMap.get(k) ?? { props: 0, contratos: 0, valor: 0 };
         cur.props += 1;
-        if (["contrato_emitido", "registrado"].includes(p.status)) { cur.contratos += 1; cur.valor += p.valor_financiamento_aprovado ?? p.valor_financiamento ?? 0; }
+        if (["contrato_emitido", "registrado"].includes(p.status)) {
+          cur.contratos += 1;
+          cur.valor += p.valor_financiamento_aprovado ?? p.valor_financiamento ?? 0;
+        }
         userMap.set(k, cur);
       });
       return {
@@ -282,7 +357,14 @@ export const runReport = createServerFn({ method: "POST" })
           { label: "Banco líder", valor: bancoLider, tone: "neutral" },
         ],
         charts: [
-          { titulo: "Série mensal", subtitulo: "Propostas x valor", tipo: "line", dados: serieMensal(enviadas.map((p) => ({ data: p.created_at, valor: p.valor_financiamento ?? 0 }))) },
+          {
+            titulo: "Série mensal",
+            subtitulo: "Propostas x valor",
+            tipo: "line",
+            dados: serieMensal(
+              enviadas.map((p) => ({ data: p.created_at, valor: p.valor_financiamento ?? 0 })),
+            ),
+          },
           { titulo: "Ranking de bancos", tipo: "barh", dados: topN(bancoMap, 8) },
         ],
         columns: [
@@ -294,24 +376,49 @@ export const runReport = createServerFn({ method: "POST" })
         rows: [...userMap.entries()]
           .sort((a, b) => b[1].valor - a[1].valor)
           .slice(0, 50)
-          .map(([k, v]) => ({ resp: nomes.get(k) ?? "—", props: v.props, contratos: v.contratos, valor: v.valor })),
+          .map(([k, v]) => ({
+            resp: nomes.get(k) ?? "—",
+            props: v.props,
+            contratos: v.contratos,
+            valor: v.valor,
+          })),
       };
     }
 
     async function relGerencial(): Promise<ReportResult> {
       const PRODUTO_LABEL = (p?: string) =>
-        p === "home_equity" ? "Home Equity" : p === "financiamento_imobiliario" ? "Financiamento" : p ? p : "—";
+        p === "home_equity"
+          ? "Home Equity"
+          : p === "financiamento_imobiliario"
+            ? "Financiamento"
+            : p
+              ? p
+              : "—";
       const cols = [
-        "id", "status", "produto", "nome_banco", "valor_financiamento", "valor_financiamento_aprovado",
-        "analista_id", "analista_nome", "comercial_id", "consultor_nome", "parceiro_id", "parceiro_nome",
-        "usuario_responsavel_id", "created_at", "contrato_emitido_em",
+        "id",
+        "status",
+        "produto",
+        "nome_banco",
+        "valor_financiamento",
+        "valor_financiamento_aprovado",
+        "analista_id",
+        "analista_nome",
+        "comercial_id",
+        "consultor_nome",
+        "parceiro_id",
+        "parceiro_nome",
+        "usuario_responsavel_id",
+        "created_at",
+        "contrato_emitido_em",
       ].join(",");
 
       // Busca por período em created_at OU em contrato_emitido_em (para contratos emitidos no período).
       let q = (supabase as any)
         .from("propostas")
         .select(cols)
-        .or(`and(created_at.gte.${de},created_at.lte.${ateFim}),and(contrato_emitido_em.gte.${de},contrato_emitido_em.lte.${ateFim})`)
+        .or(
+          `and(created_at.gte.${de},created_at.lte.${ateFim}),and(contrato_emitido_em.gte.${de},contrato_emitido_em.lte.${ateFim})`,
+        )
         .order("created_at", { ascending: false })
         .limit(10000);
       q = aplicarEscopo(q, filtros, userId, "usuario_responsavel_id");
@@ -329,25 +436,48 @@ export const runReport = createServerFn({ method: "POST" })
         if (!p.consultor_nome && p.comercial_id) idsFaltando.add(p.comercial_id);
       }
       const nomes = await nomesUsuarios([...idsFaltando]);
-      const nomeAnalista = (p: any) => p.analista_nome || nomes.get(p.analista_id) || "Não atribuído";
-      const nomeComercial = (p: any) => p.consultor_nome || nomes.get(p.comercial_id) || "Não atribuído";
+      const nomeAnalista = (p: any) =>
+        p.analista_nome || nomes.get(p.analista_id) || "Não atribuído";
+      const nomeComercial = (p: any) =>
+        p.consultor_nome || nomes.get(p.comercial_id) || "Não atribuído";
       const nomeParceiro = (p: any) => p.parceiro_nome || "Não atribuído";
       const valorProc = (p: any) => p.valor_financiamento_aprovado ?? p.valor_financiamento ?? 0;
 
-      const emAndamento = ["enviada_banco", "em_analise_credito", "aguardando_documentos", "credito_aprovado", "engenharia_vistoria", "analise_juridica"];
+      const emAndamento = [
+        "enviada_banco",
+        "em_analise_credito",
+        "aguardando_documentos",
+        "credito_aprovado",
+        "engenharia_vistoria",
+        "analise_juridica",
+      ];
       const aprovado = ["credito_aprovado", "contrato_emitido", "registrado"];
       const contrato = ["contrato_emitido", "registrado"];
 
       const dentro = (iso?: string) => !!iso && iso.slice(0, 10) >= de && iso.slice(0, 10) <= ate;
       const andamento = props.filter((p) => emAndamento.includes(p.status) && dentro(p.created_at));
       const aprovadas = props.filter((p) => aprovado.includes(p.status) && dentro(p.created_at));
-      const contratos = props.filter((p) => contrato.includes(p.status) && dentro(p.contrato_emitido_em));
+      const contratos = props.filter(
+        (p) => contrato.includes(p.status) && dentro(p.contrato_emitido_em),
+      );
 
       // Helper: agrupamento simples por 1 dimensão -> {chave, qtd, valor}
       const colsBreak = (label: string) => [
         { key: "k", label },
-        { key: "qtd", label: "Qtd", align: "right" as const, footer: "sum" as const, format: "int" as const },
-        { key: "valor", label: "Valor", align: "right" as const, footer: "sum" as const, format: "brl" as const },
+        {
+          key: "qtd",
+          label: "Qtd",
+          align: "right" as const,
+          footer: "sum" as const,
+          format: "int" as const,
+        },
+        {
+          key: "valor",
+          label: "Valor",
+          align: "right" as const,
+          footer: "sum" as const,
+          format: "brl" as const,
+        },
       ];
       const breakdown = (rows: any[], keyFn: (p: any) => string, valFn: (p: any) => number) => {
         const m = new Map<string, { qtd: number; valor: number }>();
@@ -367,10 +497,27 @@ export const runReport = createServerFn({ method: "POST" })
       const colsBreak2 = (l1: string, l2: string) => [
         { key: "k1", label: l1 },
         { key: "k2", label: l2 },
-        { key: "qtd", label: "Qtd", align: "right" as const, footer: "sum" as const, format: "int" as const },
-        { key: "valor", label: "Valor", align: "right" as const, footer: "sum" as const, format: "brl" as const },
+        {
+          key: "qtd",
+          label: "Qtd",
+          align: "right" as const,
+          footer: "sum" as const,
+          format: "int" as const,
+        },
+        {
+          key: "valor",
+          label: "Valor",
+          align: "right" as const,
+          footer: "sum" as const,
+          format: "brl" as const,
+        },
       ];
-      const breakdown2 = (rows: any[], k1Fn: (p: any) => string, k2Fn: (p: any) => string, valFn: (p: any) => number) => {
+      const breakdown2 = (
+        rows: any[],
+        k1Fn: (p: any) => string,
+        k2Fn: (p: any) => string,
+        valFn: (p: any) => number,
+      ) => {
         const m = new Map<string, { k1: string; k2: string; qtd: number; valor: number }>();
         for (const p of rows) {
           const a = k1Fn(p) || "—";
@@ -381,10 +528,17 @@ export const runReport = createServerFn({ method: "POST" })
           cur.valor += valFn(p) || 0;
           m.set(key, cur);
         }
-        return [...m.values()].sort((x, y) => (x.k1 === y.k1 ? y.valor - x.valor : x.k1.localeCompare(y.k1)));
+        return [...m.values()].sort((x, y) =>
+          x.k1 === y.k1 ? y.valor - x.valor : x.k1.localeCompare(y.k1),
+        );
       };
 
-      const secaoTabelas = (rows: any[], dataLabel: string, dataFn: (p: any) => string, valFn: (p: any) => number): { titulo: string; subtitulo?: string; columns: any[]; rows: any[] }[] => {
+      const secaoTabelas = (
+        rows: any[],
+        dataLabel: string,
+        dataFn: (p: any) => string,
+        valFn: (p: any) => number,
+      ): { titulo: string; subtitulo?: string; columns: any[]; rows: any[] }[] => {
         const porData = new Map<string, { qtd: number; valor: number }>();
         for (const p of rows) {
           const d = (dataFn(p) || "").slice(0, 10);
@@ -399,16 +553,50 @@ export const runReport = createServerFn({ method: "POST" })
             titulo: dataLabel,
             columns: [
               { key: "k", label: "Data", format: "date" as const },
-              { key: "qtd", label: "Qtd", align: "right" as const, footer: "sum" as const, format: "int" as const },
-              { key: "valor", label: "Valor", align: "right" as const, footer: "sum" as const, format: "brl" as const },
+              {
+                key: "qtd",
+                label: "Qtd",
+                align: "right" as const,
+                footer: "sum" as const,
+                format: "int" as const,
+              },
+              {
+                key: "valor",
+                label: "Valor",
+                align: "right" as const,
+                footer: "sum" as const,
+                format: "brl" as const,
+              },
             ],
-            rows: [...porData.entries()].sort((a, b) => b[0].localeCompare(a[0])).map(([k, v]) => ({ k, qtd: v.qtd, valor: v.valor })),
+            rows: [...porData.entries()]
+              .sort((a, b) => b[0].localeCompare(a[0]))
+              .map(([k, v]) => ({ k, qtd: v.qtd, valor: v.valor })),
           },
-          { titulo: "Por banco", columns: colsBreak("Banco"), rows: breakdown(rows, (p) => p.nome_banco, valFn) },
-          { titulo: "Por tipo (Financiamento / Home Equity)", columns: colsBreak("Tipo"), rows: breakdown(rows, (p) => PRODUTO_LABEL(p.produto), valFn) },
-          { titulo: "Por analista Adm", columns: colsBreak("Analista Adm"), rows: breakdown(rows, nomeAnalista, valFn) },
-          { titulo: "Por analista Comercial · separado por banco", columns: colsBreak2("Analista Comercial", "Banco"), rows: breakdown2(rows, nomeComercial, (p) => p.nome_banco, valFn) },
-          { titulo: "Por Imobiliária / Corretor", columns: colsBreak("Imobiliária / Corretor"), rows: breakdown(rows, nomeParceiro, valFn) },
+          {
+            titulo: "Por banco",
+            columns: colsBreak("Banco"),
+            rows: breakdown(rows, (p) => p.nome_banco, valFn),
+          },
+          {
+            titulo: "Por tipo (Financiamento / Home Equity)",
+            columns: colsBreak("Tipo"),
+            rows: breakdown(rows, (p) => PRODUTO_LABEL(p.produto), valFn),
+          },
+          {
+            titulo: "Por analista Adm",
+            columns: colsBreak("Analista Adm"),
+            rows: breakdown(rows, nomeAnalista, valFn),
+          },
+          {
+            titulo: "Por analista Comercial · separado por banco",
+            columns: colsBreak2("Analista Comercial", "Banco"),
+            rows: breakdown2(rows, nomeComercial, (p) => p.nome_banco, valFn),
+          },
+          {
+            titulo: "Por Imobiliária / Corretor",
+            columns: colsBreak("Imobiliária / Corretor"),
+            rows: breakdown(rows, nomeParceiro, valFn),
+          },
         ];
       };
 
@@ -421,12 +609,36 @@ export const runReport = createServerFn({ method: "POST" })
           titulo: "Processos em andamento",
           descricao: "Propostas ativas na esteira dentro do período.",
           tabelas: [
-            { titulo: "Por valor · separado por banco", columns: colsBreak("Banco"), rows: breakdown(andamento, (p) => p.nome_banco, valorProc) },
-            { titulo: "Por tipo (Financiamento / Home Equity)", columns: colsBreak("Tipo"), rows: breakdown(andamento, (p) => PRODUTO_LABEL(p.produto), valorProc) },
-            { titulo: "Por analista Adm", columns: colsBreak("Analista Adm"), rows: breakdown(andamento, nomeAnalista, valorProc) },
-            { titulo: "Por analista Comercial · separado por banco", columns: colsBreak2("Analista Comercial", "Banco"), rows: breakdown2(andamento, nomeComercial, (p) => p.nome_banco, valorProc) },
-            { titulo: "Por Imobiliária / Corretor", columns: colsBreak("Imobiliária / Corretor"), rows: breakdown(andamento, nomeParceiro, valorProc) },
-            { titulo: "Por fase (status atual)", columns: colsBreak("Fase"), rows: breakdown(andamento, (p) => rotuloStatus(p.status), valorProc) },
+            {
+              titulo: "Por valor · separado por banco",
+              columns: colsBreak("Banco"),
+              rows: breakdown(andamento, (p) => p.nome_banco, valorProc),
+            },
+            {
+              titulo: "Por tipo (Financiamento / Home Equity)",
+              columns: colsBreak("Tipo"),
+              rows: breakdown(andamento, (p) => PRODUTO_LABEL(p.produto), valorProc),
+            },
+            {
+              titulo: "Por analista Adm",
+              columns: colsBreak("Analista Adm"),
+              rows: breakdown(andamento, nomeAnalista, valorProc),
+            },
+            {
+              titulo: "Por analista Comercial · separado por banco",
+              columns: colsBreak2("Analista Comercial", "Banco"),
+              rows: breakdown2(andamento, nomeComercial, (p) => p.nome_banco, valorProc),
+            },
+            {
+              titulo: "Por Imobiliária / Corretor",
+              columns: colsBreak("Imobiliária / Corretor"),
+              rows: breakdown(andamento, nomeParceiro, valorProc),
+            },
+            {
+              titulo: "Por fase (status atual)",
+              columns: colsBreak("Fase"),
+              rows: breakdown(andamento, (p) => rotuloStatus(p.status), valorProc),
+            },
           ],
         },
         {
@@ -438,15 +650,25 @@ export const runReport = createServerFn({ method: "POST" })
           titulo: "Contratos emitidos",
           descricao: "Contratos emitidos por data de emissão no período.",
           tabelas: [
-            ...secaoTabelas(contratos, "Por data de emissão", (p) => p.contrato_emitido_em, valorProc),
-            { titulo: "Por valor · separado por banco", columns: colsBreak("Banco"), rows: breakdown(contratos, (p) => p.nome_banco, valorProc) },
+            ...secaoTabelas(
+              contratos,
+              "Por data de emissão",
+              (p) => p.contrato_emitido_em,
+              valorProc,
+            ),
+            {
+              titulo: "Por valor · separado por banco",
+              columns: colsBreak("Banco"),
+              rows: breakdown(contratos, (p) => p.nome_banco, valorProc),
+            },
           ],
         },
       ];
 
       return {
         titulo: "Relatório gerencial",
-        descricao: "Processos em andamento, propostas aprovadas e contratos emitidos com quebras por banco, tipo, analistas, imobiliária/corretor e fase.",
+        descricao:
+          "Processos em andamento, propostas aprovadas e contratos emitidos com quebras por banco, tipo, analistas, imobiliária/corretor e fase.",
         modulo: "Gerencial",
         kpis: [
           { label: "Em andamento", valor: int(andamento.length), tone: "neutral" },
@@ -457,12 +679,24 @@ export const runReport = createServerFn({ method: "POST" })
           { label: "Valor contratado", valor: brl(totalContr), tone: "brand" },
         ],
         charts: [
-          { titulo: "Funil", subtitulo: "Andamento → Aprovadas → Contratos", tipo: "funnel", dados: [
-            { label: "Em andamento", valor: andamento.length },
-            { label: "Aprovadas", valor: aprovadas.length },
-            { label: "Contratos", valor: contratos.length },
-          ] },
-          { titulo: "Contratos por banco", subtitulo: "Valor contratado", tipo: "barh", dados: breakdown(contratos, (p) => p.nome_banco, valorProc).map((r) => ({ label: r.k, valor: r.valor })).slice(0, 8) },
+          {
+            titulo: "Funil",
+            subtitulo: "Andamento → Aprovadas → Contratos",
+            tipo: "funnel",
+            dados: [
+              { label: "Em andamento", valor: andamento.length },
+              { label: "Aprovadas", valor: aprovadas.length },
+              { label: "Contratos", valor: contratos.length },
+            ],
+          },
+          {
+            titulo: "Contratos por banco",
+            subtitulo: "Valor contratado",
+            tipo: "barh",
+            dados: breakdown(contratos, (p) => p.nome_banco, valorProc)
+              .map((r) => ({ label: r.k, valor: r.valor }))
+              .slice(0, 8),
+          },
         ],
         columns: [
           { key: "nome_banco", label: "Banco" },
@@ -474,7 +708,11 @@ export const runReport = createServerFn({ method: "POST" })
           { key: "valor", label: "Valor", align: "right", footer: "sum", format: "brl" },
           { key: "created_at", label: "Criada em", format: "date" },
         ],
-        rows: [...andamento, ...aprovadas.filter((p) => !emAndamento.includes(p.status)), ...contratos.filter((p) => !aprovado.includes(p.status) || contrato.includes(p.status))]
+        rows: [
+          ...andamento,
+          ...aprovadas.filter((p) => !emAndamento.includes(p.status)),
+          ...contratos.filter((p) => !aprovado.includes(p.status) || contrato.includes(p.status)),
+        ]
           .slice(0, 1000)
           .map((p) => ({
             nome_banco: p.nome_banco ?? "—",
@@ -489,17 +727,27 @@ export const runReport = createServerFn({ method: "POST" })
       };
     }
 
-
-
     async function relSimulacoes(): Promise<ReportResult> {
-      const sims = await fetchAll("simulacoes", "id,tipo_simulacao,status,valor_financiamento,nome_cliente,numero_simulacao,created_at", "created_at", "usuario_responsavel_id");
-      const props = await fetchAll("propostas", "id,created_at", "created_at", "usuario_responsavel_id");
+      const sims = await fetchAll(
+        "simulacoes",
+        "id,tipo_simulacao,status,valor_financiamento,nome_cliente,numero_simulacao,created_at",
+        "created_at",
+        "usuario_responsavel_id",
+      );
+      const props = await fetchAll(
+        "propostas",
+        "id,created_at",
+        "created_at",
+        "usuario_responsavel_id",
+      );
       const rapidas = sims.filter((s) => s.tipo_simulacao === "simplificada").length;
       const completas = sims.filter((s) => s.tipo_simulacao === "completa").length;
       const erro = sims.filter((s) => s.status === "erro_banco").length;
       const promovidas = sims.filter((s) => s.status === "promovida").length;
       const conv = sims.length ? (promovidas / sims.length) * 100 : 0;
-      const ticket = sims.length ? sims.reduce((s, x) => s + (x.valor_financiamento ?? 0), 0) / sims.length : 0;
+      const ticket = sims.length
+        ? sims.reduce((s, x) => s + (x.valor_financiamento ?? 0), 0) / sims.length
+        : 0;
       const statusMap = new Map<string, number>();
       sims.forEach((s) => statusMap.set(s.status, (statusMap.get(s.status) ?? 0) + 1));
       return {
@@ -516,7 +764,11 @@ export const runReport = createServerFn({ method: "POST" })
         ],
         charts: [
           { titulo: "Distribuição por status", tipo: "barh", dados: topN(statusMap, 8) },
-          { titulo: "Evolução mensal", tipo: "line", dados: serieMensal(sims.map((s) => ({ data: s.created_at }))) },
+          {
+            titulo: "Evolução mensal",
+            tipo: "line",
+            dados: serieMensal(sims.map((s) => ({ data: s.created_at }))),
+          },
         ],
         columns: [
           { key: "numero_simulacao", label: "Número" },
@@ -526,7 +778,14 @@ export const runReport = createServerFn({ method: "POST" })
           { key: "valor", label: "Financiamento", align: "right", footer: "sum", format: "brl" },
           { key: "created_at", label: "Criada em", format: "date" },
         ],
-        rows: sims.slice(0, 500).map((s) => ({ numero_simulacao: s.numero_simulacao, nome_cliente: s.nome_cliente ?? "—", tipo: s.tipo_simulacao, status: s.status, valor: s.valor_financiamento ?? 0, created_at: s.created_at })),
+        rows: sims.slice(0, 500).map((s) => ({
+          numero_simulacao: s.numero_simulacao,
+          nome_cliente: s.nome_cliente ?? "—",
+          tipo: s.tipo_simulacao,
+          status: s.status,
+          valor: s.valor_financiamento ?? 0,
+          created_at: s.created_at,
+        })),
       };
     }
 
@@ -540,14 +799,22 @@ export const runReport = createServerFn({ method: "POST" })
 
       // Apenas bancos ATIVOS aparecem no filtro (produtos vêm das propostas existentes).
       const [{ data: bancosCad }, { data: prodProps }] = await Promise.all([
-        supabase.from("homefin_bancos").select("nome_banco").eq("ativo", true).order("nome_banco", { ascending: true }),
+        supabase
+          .from("homefin_bancos")
+          .select("nome_banco")
+          .eq("ativo", true)
+          .order("nome_banco", { ascending: true }),
         supabase.from("propostas").select("produto"),
       ]);
       const bancosDisponiveis = [
-        ...new Set(((bancosCad ?? []) as any[]).map((b) => String(b.nome_banco ?? "")).filter(Boolean)),
+        ...new Set(
+          ((bancosCad ?? []) as any[]).map((b) => String(b.nome_banco ?? "")).filter(Boolean),
+        ),
       ].sort((a, b) => a.localeCompare(b, "pt-BR"));
       const produtosDisponiveis = [
-        ...new Set(((prodProps ?? []) as any[]).map((p) => String(p.produto ?? "")).filter(Boolean)),
+        ...new Set(
+          ((prodProps ?? []) as any[]).map((p) => String(p.produto ?? "")).filter(Boolean),
+        ),
       ].sort((a, b) => a.localeCompare(b, "pt-BR"));
 
       // Filtros server-side (banco, produto, status, faixa de valor, busca textual).
@@ -560,29 +827,47 @@ export const runReport = createServerFn({ method: "POST" })
         if (filtros.valorMin != null && v < filtros.valorMin) return false;
         if (filtros.valorMax != null && v > filtros.valorMax) return false;
         if (buscaLc) {
-          const alvo = `${p.numero_proposta ?? ""} ${p.nome_cliente ?? ""} ${p.nome_banco ?? ""}`.toLowerCase();
+          const alvo =
+            `${p.numero_proposta ?? ""} ${p.nome_cliente ?? ""} ${p.nome_banco ?? ""}`.toLowerCase();
           if (!alvo.includes(buscaLc)) return false;
         }
         return true;
       });
 
       const enviadas = props.filter((p) => p.status !== "rascunho");
-      const emAnalise = props.filter((p) => ["enviada_banco", "em_analise_credito", "aguardando_documentos", "engenharia_vistoria", "analise_juridica"].includes(p.status));
+      const emAnalise = props.filter((p) =>
+        [
+          "enviada_banco",
+          "em_analise_credito",
+          "aguardando_documentos",
+          "engenharia_vistoria",
+          "analise_juridica",
+        ].includes(p.status),
+      );
       const aprovadas = props.filter((p) => p.status === "credito_aprovado");
       const recusadas = props.filter((p) => p.status === "credito_recusado");
       const contratos = props.filter((p) => ["contrato_emitido", "registrado"].includes(p.status));
       const volumeEnviado = enviadas.reduce((s, p) => s + (p.valor_financiamento ?? 0), 0);
-      const volumeContratado = contratos.reduce((s, p) => s + (p.valor_financiamento_aprovado ?? p.valor_financiamento ?? 0), 0);
+      const volumeContratado = contratos.reduce(
+        (s, p) => s + (p.valor_financiamento_aprovado ?? p.valor_financiamento ?? 0),
+        0,
+      );
       const ticket = contratos.length ? volumeContratado / contratos.length : 0;
       const decididas = aprovadas.length + recusadas.length + contratos.length;
       const taxaAprov = decididas ? ((aprovadas.length + contratos.length) / decididas) * 100 : 0;
 
       const bancoMap = new Map<string, number>();
-      enviadas.forEach((p) => bancoMap.set(p.nome_banco ?? "—", (bancoMap.get(p.nome_banco ?? "—") ?? 0) + 1));
+      enviadas.forEach((p) =>
+        bancoMap.set(p.nome_banco ?? "—", (bancoMap.get(p.nome_banco ?? "—") ?? 0) + 1),
+      );
       const statusMap = new Map<string, number>();
-      props.forEach((p) => statusMap.set(rotuloStatus(p.status), (statusMap.get(rotuloStatus(p.status)) ?? 0) + 1));
+      props.forEach((p) =>
+        statusMap.set(rotuloStatus(p.status), (statusMap.get(rotuloStatus(p.status)) ?? 0) + 1),
+      );
       const produtoMap = new Map<string, number>();
-      enviadas.forEach((p) => produtoMap.set(p.produto ?? "—", (produtoMap.get(p.produto ?? "—") ?? 0) + 1));
+      enviadas.forEach((p) =>
+        produtoMap.set(p.produto ?? "—", (produtoMap.get(p.produto ?? "—") ?? 0) + 1),
+      );
 
       return {
         titulo: "Relatório de propostas",
@@ -594,13 +879,36 @@ export const runReport = createServerFn({ method: "POST" })
           { label: "Contratos", valor: int(contratos.length), tone: "success" },
           { label: "Taxa de aprovação", valor: pct(taxaAprov), tone: "success" },
           { label: "Ticket médio", valor: brl(ticket), tone: "brand" },
-          { label: "Volume contratado", valor: brl(volumeContratado), hint: `Enviado ${brl(volumeEnviado)}`, tone: "brand" },
+          {
+            label: "Volume contratado",
+            valor: brl(volumeContratado),
+            hint: `Enviado ${brl(volumeEnviado)}`,
+            tone: "brand",
+          },
         ],
         charts: [
-          { titulo: "Distribuição por banco", subtitulo: "Propostas enviadas", tipo: "barh", dados: topN(bancoMap, 10) },
+          {
+            titulo: "Distribuição por banco",
+            subtitulo: "Propostas enviadas",
+            tipo: "barh",
+            dados: topN(bancoMap, 10),
+          },
           { titulo: "Distribuição por status", tipo: "bar", dados: topN(statusMap, 12) },
-          { titulo: "Distribuição por produto", subtitulo: "Propostas enviadas", tipo: "barh", dados: topN(produtoMap, 8) },
-          { titulo: "Evolução mensal", subtitulo: "Propostas x volume enviado", tipo: "line", moeda: true, dados: serieMensal(enviadas.map((p) => ({ data: p.created_at, valor: p.valor_financiamento ?? 0 }))) },
+          {
+            titulo: "Distribuição por produto",
+            subtitulo: "Propostas enviadas",
+            tipo: "barh",
+            dados: topN(produtoMap, 8),
+          },
+          {
+            titulo: "Evolução mensal",
+            subtitulo: "Propostas x volume enviado",
+            tipo: "line",
+            moeda: true,
+            dados: serieMensal(
+              enviadas.map((p) => ({ data: p.created_at, valor: p.valor_financiamento ?? 0 })),
+            ),
+          },
         ],
         columns: [
           { key: "numero_proposta", label: "Número" },
@@ -625,13 +933,21 @@ export const runReport = createServerFn({ method: "POST" })
         filtrosDisponiveis: {
           bancos: bancosDisponiveis,
           produtos: produtosDisponiveis,
-          statuses: Object.entries(STATUS_PROPOSTA_LABEL).map(([value, label]) => ({ value, label })),
+          statuses: Object.entries(STATUS_PROPOSTA_LABEL).map(([value, label]) => ({
+            value,
+            label,
+          })),
         },
       };
     }
 
     async function relClientes(): Promise<ReportResult> {
-      const cls = await fetchAll("clientes", "id,numero_cliente,nome,documento,tipo_pessoa,ativo,portal_acesso_ativo,responsavel_id,created_at", "created_at", "responsavel_id");
+      const cls = await fetchAll(
+        "clientes",
+        "id,numero_cliente,nome,documento,tipo_pessoa,ativo,portal_acesso_ativo,responsavel_id,created_at",
+        "created_at",
+        "responsavel_id",
+      );
       const novos = cls.length;
       const ativos = cls.filter((c) => c.ativo).length;
       const semResp = cls.filter((c) => !c.responsavel_id).length;
@@ -650,7 +966,11 @@ export const runReport = createServerFn({ method: "POST" })
         ],
         charts: [
           { titulo: "Tipo de pessoa", tipo: "barh", dados: topN(pfPj, 4) },
-          { titulo: "Evolução mensal", tipo: "line", dados: serieMensal(cls.map((c) => ({ data: c.created_at }))) },
+          {
+            titulo: "Evolução mensal",
+            tipo: "line",
+            dados: serieMensal(cls.map((c) => ({ data: c.created_at }))),
+          },
         ],
         columns: [
           { key: "numero_cliente", label: "Número" },
@@ -672,11 +992,21 @@ export const runReport = createServerFn({ method: "POST" })
     }
 
     async function relDemandas(_kind: string): Promise<ReportResult> {
-      const dem = await fetchAll("demandas", "id,numero,titulo,status,prioridade,prazo_sla,concluida_em,responsavel_id,created_at", "created_at", "responsavel_id");
+      const dem = await fetchAll(
+        "demandas",
+        "id,numero,titulo,status,prioridade,prazo_sla,concluida_em,responsavel_id,created_at",
+        "created_at",
+        "responsavel_id",
+      );
       const agora = new Date();
       const abertas = dem.filter((d) => !["concluida", "cancelada"].includes(d.status)).length;
       const concluidas = dem.filter((d) => d.status === "concluida").length;
-      const slaVencido = dem.filter((d) => !["concluida", "cancelada"].includes(d.status) && d.prazo_sla && new Date(d.prazo_sla) < agora).length;
+      const slaVencido = dem.filter(
+        (d) =>
+          !["concluida", "cancelada"].includes(d.status) &&
+          d.prazo_sla &&
+          new Date(d.prazo_sla) < agora,
+      ).length;
       const statusMap = new Map<string, number>();
       dem.forEach((d) => statusMap.set(d.status, (statusMap.get(d.status) ?? 0) + 1));
       return {
@@ -697,16 +1027,30 @@ export const runReport = createServerFn({ method: "POST" })
           { key: "status", label: "Status" },
           { key: "created_at", label: "Criada", format: "date" },
         ],
-        rows: dem.slice(0, 500).map((d) => ({ numero: d.numero, titulo: d.titulo, prioridade: d.prioridade, status: d.status, created_at: d.created_at })),
+        rows: dem.slice(0, 500).map((d) => ({
+          numero: d.numero,
+          titulo: d.titulo,
+          prioridade: d.prioridade,
+          status: d.status,
+          created_at: d.created_at,
+        })),
       };
     }
 
     async function relTarefas(): Promise<ReportResult> {
-      const tk = await fetchAll("tasks", "id,numero,titulo,status,prioridade,prazo,concluida_em,responsavel_id,created_at", "created_at", "responsavel_id");
+      const tk = await fetchAll(
+        "tasks",
+        "id,numero,titulo,status,prioridade,prazo,concluida_em,responsavel_id,created_at",
+        "created_at",
+        "responsavel_id",
+      );
       const agora = new Date();
       const abertas = tk.filter((t) => !["concluida", "cancelada"].includes(t.status)).length;
       const concluidas = tk.filter((t) => t.status === "concluida").length;
-      const atrasadas = tk.filter((t) => !["concluida", "cancelada"].includes(t.status) && t.prazo && new Date(t.prazo) < agora).length;
+      const atrasadas = tk.filter(
+        (t) =>
+          !["concluida", "cancelada"].includes(t.status) && t.prazo && new Date(t.prazo) < agora,
+      ).length;
       const statusMap = new Map<string, number>();
       tk.forEach((t) => statusMap.set(t.status, (statusMap.get(t.status) ?? 0) + 1));
       return {
@@ -727,21 +1071,48 @@ export const runReport = createServerFn({ method: "POST" })
           { key: "status", label: "Status" },
           { key: "created_at", label: "Criada", format: "date" },
         ],
-        rows: tk.slice(0, 500).map((t) => ({ numero: t.numero, titulo: t.titulo, prioridade: t.prioridade, status: t.status, created_at: t.created_at })),
+        rows: tk.slice(0, 500).map((t) => ({
+          numero: t.numero,
+          titulo: t.titulo,
+          prioridade: t.prioridade,
+          status: t.status,
+          created_at: t.created_at,
+        })),
       };
     }
 
     async function relFinanceiro(): Promise<ReportResult> {
       const [pag, rec] = await Promise.all([
-        supabase.from("financial_payables").select("valor,valor_pago,status,vencimento,descricao,created_at").gte("created_at", de).lte("created_at", ateFim).limit(5000).then((r: any) => r.data ?? []),
-        supabase.from("financial_receivables").select("valor,valor_recebido,status,vencimento,descricao,created_at").gte("created_at", de).lte("created_at", ateFim).limit(5000).then((r: any) => r.data ?? []),
+        supabase
+          .from("financial_payables")
+          .select("valor,valor_pago,status,vencimento,descricao,created_at")
+          .gte("created_at", de)
+          .lte("created_at", ateFim)
+          .limit(5000)
+          .then((r: any) => r.data ?? []),
+        supabase
+          .from("financial_receivables")
+          .select("valor,valor_recebido,status,vencimento,descricao,created_at")
+          .gte("created_at", de)
+          .lte("created_at", ateFim)
+          .limit(5000)
+          .then((r: any) => r.data ?? []),
       ]);
       const hojeStr = new Date().toISOString().slice(0, 10);
-      const aReceber = rec.filter((r: any) => ["aberta", "parcial"].includes(r.status)).reduce((s: number, r: any) => s + (r.valor ?? 0), 0);
-      const aPagar = pag.filter((r: any) => ["aberta", "parcial"].includes(r.status)).reduce((s: number, r: any) => s + (r.valor ?? 0), 0);
+      const aReceber = rec
+        .filter((r: any) => ["aberta", "parcial"].includes(r.status))
+        .reduce((s: number, r: any) => s + (r.valor ?? 0), 0);
+      const aPagar = pag
+        .filter((r: any) => ["aberta", "parcial"].includes(r.status))
+        .reduce((s: number, r: any) => s + (r.valor ?? 0), 0);
       const pago = pag.reduce((s: number, r: any) => s + (r.valor_pago ?? 0), 0);
       const recebido = rec.reduce((s: number, r: any) => s + (r.valor_recebido ?? 0), 0);
-      const vencido = [...pag, ...rec].filter((r: any) => ["aberta", "parcial"].includes(r.status) && r.vencimento && r.vencimento < hojeStr).reduce((s: number, r: any) => s + (r.valor ?? 0), 0);
+      const vencido = [...pag, ...rec]
+        .filter(
+          (r: any) =>
+            ["aberta", "parcial"].includes(r.status) && r.vencimento && r.vencimento < hojeStr,
+        )
+        .reduce((s: number, r: any) => s + (r.valor ?? 0), 0);
       return {
         titulo: "Relatório financeiro",
         descricao: "Fluxo de recebimentos, pagamentos e saldo.",
@@ -755,7 +1126,15 @@ export const runReport = createServerFn({ method: "POST" })
           { label: "Vencido", valor: brl(vencido), tone: "danger" },
         ],
         charts: [
-          { titulo: "Fluxo mensal", subtitulo: "Recebido x pago", tipo: "line", moeda: true, serie1: "Recebido", serie2: "Pago", dados: fluxoMensal(rec, pag) },
+          {
+            titulo: "Fluxo mensal",
+            subtitulo: "Recebido x pago",
+            tipo: "line",
+            moeda: true,
+            serie1: "Recebido",
+            serie2: "Pago",
+            dados: fluxoMensal(rec, pag),
+          },
         ],
         columns: [
           { key: "tipo", label: "Tipo" },
@@ -765,21 +1144,48 @@ export const runReport = createServerFn({ method: "POST" })
           { key: "valor", label: "Valor", align: "right", footer: "sum", format: "brl" },
         ],
         rows: [
-          ...rec.map((r: any) => ({ tipo: "Receber", descricao: r.descricao ?? "—", status: r.status, vencimento: r.vencimento, valor: r.valor ?? 0 })),
-          ...pag.map((r: any) => ({ tipo: "Pagar", descricao: r.descricao ?? "—", status: r.status, vencimento: r.vencimento, valor: r.valor ?? 0 })),
+          ...rec.map((r: any) => ({
+            tipo: "Receber",
+            descricao: r.descricao ?? "—",
+            status: r.status,
+            vencimento: r.vencimento,
+            valor: r.valor ?? 0,
+          })),
+          ...pag.map((r: any) => ({
+            tipo: "Pagar",
+            descricao: r.descricao ?? "—",
+            status: r.status,
+            vencimento: r.vencimento,
+            valor: r.valor ?? 0,
+          })),
         ].slice(0, 800),
       };
     }
 
     async function relComissoes(): Promise<ReportResult> {
-      const coms = await supabase.from("comissoes").select("valor_bruto,split_parceiro,split_interno,status,usuario_responsavel_id,created_at").gte("created_at", de).lte("created_at", ateFim).limit(5000).then((r: any) => r.data ?? []);
+      const coms = await supabase
+        .from("comissoes")
+        .select("valor_bruto,split_parceiro,split_interno,status,usuario_responsavel_id,created_at")
+        .gte("created_at", de)
+        .lte("created_at", ateFim)
+        .limit(5000)
+        .then((r: any) => r.data ?? []);
       const prevista = coms.reduce((s: number, c: any) => s + (c.valor_bruto ?? 0), 0);
-      const paga = coms.filter((c: any) => c.status === "paga_parceiro" || c.status === "encerrada").reduce((s: number, c: any) => s + (c.valor_bruto ?? 0), 0);
+      const paga = coms
+        .filter((c: any) => c.status === "paga_parceiro" || c.status === "encerrada")
+        .reduce((s: number, c: any) => s + (c.valor_bruto ?? 0), 0);
       const ticket = coms.length ? prevista / coms.length : 0;
-      const respIds = [...new Set(coms.map((c: any) => c.usuario_responsavel_id).filter(Boolean))] as string[];
+      const respIds = [
+        ...new Set(coms.map((c: any) => c.usuario_responsavel_id).filter(Boolean)),
+      ] as string[];
       const nomes = await nomesUsuarios(respIds);
       const userMap = new Map<string, number>();
-      coms.forEach((c: any) => userMap.set(c.usuario_responsavel_id ?? "—", (userMap.get(c.usuario_responsavel_id ?? "—") ?? 0) + (c.valor_bruto ?? 0)));
+      coms.forEach((c: any) =>
+        userMap.set(
+          c.usuario_responsavel_id ?? "—",
+          (userMap.get(c.usuario_responsavel_id ?? "—") ?? 0) + (c.valor_bruto ?? 0),
+        ),
+      );
       return {
         titulo: "Relatório de comissões",
         descricao: "Comissões previstas e pagas no período.",
@@ -790,17 +1196,34 @@ export const runReport = createServerFn({ method: "POST" })
           { label: "Ticket médio", valor: brl(ticket), tone: "neutral" },
           { label: "Registros", valor: int(coms.length), tone: "neutral" },
         ],
-        charts: [{ titulo: "Ranking por responsável", tipo: "barh", moeda: true, dados: [...userMap.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8).map(([k, v]) => ({ label: nomes.get(k) ?? "—", valor: v })) }],
+        charts: [
+          {
+            titulo: "Ranking por responsável",
+            tipo: "barh",
+            moeda: true,
+            dados: [...userMap.entries()]
+              .sort((a, b) => b[1] - a[1])
+              .slice(0, 8)
+              .map(([k, v]) => ({ label: nomes.get(k) ?? "—", valor: v })),
+          },
+        ],
         columns: [
           { key: "resp", label: "Responsável" },
           { key: "valor", label: "Comissão", align: "right", footer: "sum", format: "brl" },
         ],
-        rows: [...userMap.entries()].sort((a, b) => b[1] - a[1]).map(([k, v]) => ({ resp: nomes.get(k) ?? "—", valor: v })),
+        rows: [...userMap.entries()]
+          .sort((a, b) => b[1] - a[1])
+          .map(([k, v]) => ({ resp: nomes.get(k) ?? "—", valor: v })),
       };
     }
 
     async function relAppCliente(): Promise<ReportResult> {
-      const cls = await fetchAll("clientes", "id,numero_cliente,nome,portal_acesso_ativo,created_at", "created_at", "responsavel_id");
+      const cls = await fetchAll(
+        "clientes",
+        "id,numero_cliente,nome,portal_acesso_ativo,created_at",
+        "created_at",
+        "responsavel_id",
+      );
       const habilitados = cls.filter((c) => c.portal_acesso_ativo).length;
       return {
         titulo: "Relatório do App do Cliente",
@@ -810,22 +1233,50 @@ export const runReport = createServerFn({ method: "POST" })
           { label: "Habilitados", valor: int(habilitados), tone: "success" },
           { label: "Base no período", valor: int(cls.length), tone: "neutral" },
         ],
-        charts: [{ titulo: "Adesão mensal", tipo: "line", dados: serieMensal(cls.filter((c) => c.portal_acesso_ativo).map((c) => ({ data: c.created_at }))) }],
+        charts: [
+          {
+            titulo: "Adesão mensal",
+            tipo: "line",
+            dados: serieMensal(
+              cls.filter((c) => c.portal_acesso_ativo).map((c) => ({ data: c.created_at })),
+            ),
+          },
+        ],
         columns: [
           { key: "numero_cliente", label: "Número" },
           { key: "nome", label: "Cliente" },
           { key: "app", label: "App" },
           { key: "created_at", label: "Cadastro", format: "date" },
         ],
-        rows: cls.slice(0, 500).map((c) => ({ numero_cliente: c.numero_cliente, nome: c.nome, app: c.portal_acesso_ativo ? "Habilitado" : "—", created_at: c.created_at })),
+        rows: cls.slice(0, 500).map((c) => ({
+          numero_cliente: c.numero_cliente,
+          nome: c.nome,
+          app: c.portal_acesso_ativo ? "Habilitado" : "—",
+          created_at: c.created_at,
+        })),
       };
     }
 
     function fluxoMensal(rec: any[], pag: any[]): ChartSerie[] {
       const map = new Map<string, { r: number; p: number }>();
-      rec.forEach((x) => { const m = (x.created_at ?? "").slice(0, 7); const c = map.get(m) ?? { r: 0, p: 0 }; c.r += x.valor_recebido ?? 0; map.set(m, c); });
-      pag.forEach((x) => { const m = (x.created_at ?? "").slice(0, 7); const c = map.get(m) ?? { r: 0, p: 0 }; c.p += x.valor_pago ?? 0; map.set(m, c); });
-      return [...map.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([m, v]) => { const [y, mm] = m.split("-"); return { label: `${mm}/${y.slice(2)}`, valor: v.r, valor2: v.p }; });
+      rec.forEach((x) => {
+        const m = (x.created_at ?? "").slice(0, 7);
+        const c = map.get(m) ?? { r: 0, p: 0 };
+        c.r += x.valor_recebido ?? 0;
+        map.set(m, c);
+      });
+      pag.forEach((x) => {
+        const m = (x.created_at ?? "").slice(0, 7);
+        const c = map.get(m) ?? { r: 0, p: 0 };
+        c.p += x.valor_pago ?? 0;
+        map.set(m, c);
+      });
+      return [...map.entries()]
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([m, v]) => {
+          const [y, mm] = m.split("-");
+          return { label: `${mm}/${y.slice(2)}`, valor: v.r, valor2: v.p };
+        });
     }
 
     async function nomesUsuarios(ids: string[]): Promise<Map<string, string>> {
@@ -840,15 +1291,30 @@ export const runReport = createServerFn({ method: "POST" })
 /** Registra uma exportação (PDF/XLSX) no histórico e auditoria. */
 export const registrarExport = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { codigo: string; formato: string; registros: number; filtros: Record<string, unknown> }) => d)
+  .inputValidator(
+    (d: { codigo: string; formato: string; registros: number; filtros: Record<string, unknown> }) =>
+      d,
+  )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const { data: corr } = await supabase.rpc("correspondente_do_usuario", { _user_id: userId });
     await supabase.from("report_exports").insert({
-      correspondente_id: corr as string, user_id: userId, report_codigo: data.codigo, formato: data.formato, registros: data.registros, filtros: data.filtros as any, status: "concluido",
+      correspondente_id: corr as string,
+      user_id: userId,
+      report_codigo: data.codigo,
+      formato: data.formato,
+      registros: data.registros,
+      filtros: data.filtros as any,
+      status: "concluido",
     } as any);
     await supabase.from("report_audit_logs").insert({
-      correspondente_id: corr as string, user_id: userId, report_codigo: data.codigo, acao: "exportou", formato: data.formato, registros: data.registros, filtros: data.filtros as any,
+      correspondente_id: corr as string,
+      user_id: userId,
+      report_codigo: data.codigo,
+      acao: "exportou",
+      formato: data.formato,
+      registros: data.registros,
+      filtros: data.filtros as any,
     } as any);
     return { ok: true };
   });
@@ -880,8 +1346,18 @@ export const getEscopoRelatorios = createServerFn({ method: "GET" })
   });
 
 const REPORTS_DISPONIVEIS = [
-  "consolidado", "comerciais", "simulacoes", "propostas", "crm", "clientes",
-  "demandas", "tarefas", "financeiros", "comissoes", "app-cliente", "operacionais",
+  "consolidado",
+  "comerciais",
+  "simulacoes",
+  "propostas",
+  "crm",
+  "clientes",
+  "demandas",
+  "tarefas",
+  "financeiros",
+  "comissoes",
+  "app-cliente",
+  "operacionais",
 ] as const;
 
 /** Lista relatórios base disponíveis para o construtor de personalizados. */
@@ -894,7 +1370,11 @@ export const listarFiltrosSalvos = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase } = context;
-    const { data } = await supabase.from("report_saved_filters").select("*").order("created_at", { ascending: false }).limit(100);
+    const { data } = await supabase
+      .from("report_saved_filters")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(100);
     return (data ?? []) as any[];
   });
 
@@ -913,8 +1393,12 @@ export const salvarFiltro = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const { data: corr } = await supabase.rpc("correspondente_do_usuario", { _user_id: userId });
     const { error } = await supabase.from("report_saved_filters").insert({
-      correspondente_id: corr as string, user_id: userId, report_codigo: data.report_codigo,
-      nome: data.nome, filtros: data.filtros as any, visibilidade: data.visibilidade,
+      correspondente_id: corr as string,
+      user_id: userId,
+      report_codigo: data.report_codigo,
+      nome: data.nome,
+      filtros: data.filtros as any,
+      visibilidade: data.visibilidade,
     } as any);
     if (error) throw new Error(error.message);
     return { ok: true };

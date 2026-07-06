@@ -50,11 +50,22 @@ function Pagina() {
         <CardContent className="space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="nova">Nova senha</Label>
-            <Input id="nova" type="password" value={nova} onChange={(e) => setNova(e.target.value)} placeholder="Mínimo de 8 caracteres" />
+            <Input
+              id="nova"
+              type="password"
+              value={nova}
+              onChange={(e) => setNova(e.target.value)}
+              placeholder="Mínimo de 8 caracteres"
+            />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="confirma">Confirmar nova senha</Label>
-            <Input id="confirma" type="password" value={confirma} onChange={(e) => setConfirma(e.target.value)} />
+            <Input
+              id="confirma"
+              type="password"
+              value={confirma}
+              onChange={(e) => setConfirma(e.target.value)}
+            />
             {confirma.length > 0 && nova !== confirma && (
               <p className="text-xs text-destructive">As senhas não coincidem.</p>
             )}

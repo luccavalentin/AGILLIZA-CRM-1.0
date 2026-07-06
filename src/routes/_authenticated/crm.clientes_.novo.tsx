@@ -35,10 +35,14 @@ function Pagina() {
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 sm:flex sm:justify-between">
         <div className="flex min-w-0 items-center gap-3">
           <Button asChild variant="ghost" size="icon" className="shrink-0">
-            <Link to="/crm/clientes"><ArrowLeft className="size-4" /></Link>
+            <Link to="/crm/clientes">
+              <ArrowLeft className="size-4" />
+            </Link>
           </Button>
           <div className="min-w-0">
-            <h1 className="truncate text-xl font-semibold text-foreground sm:text-2xl">Novo cliente</h1>
+            <h1 className="truncate text-xl font-semibold text-foreground sm:text-2xl">
+              Novo cliente
+            </h1>
             <p className="truncate text-sm text-muted-foreground">
               Cadastre um novo cliente no CRM
             </p>
@@ -55,9 +59,7 @@ function Pagina() {
             <CardContent className="space-y-5 p-5">
               <div className="space-y-1">
                 <p className="text-sm font-semibold text-foreground">Como preencher</p>
-                <p className="text-xs text-muted-foreground">
-                  Campos com * são obrigatórios.
-                </p>
+                <p className="text-xs text-muted-foreground">Campos com * são obrigatórios.</p>
               </div>
               <ul className="space-y-4">
                 {DICAS.map((d) => (

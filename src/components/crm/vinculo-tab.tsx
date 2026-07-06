@@ -73,7 +73,9 @@ export function VinculoTab({
         </CardHeader>
         <CardContent className="text-sm">
           <p className="font-medium text-foreground">{responsavelNome ?? "—"}</p>
-          <p className="mt-1 text-xs text-muted-foreground">Usuário que criou o cadastro do cliente.</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Usuário que criou o cadastro do cliente.
+          </p>
         </CardContent>
       </Card>
 
@@ -92,7 +94,9 @@ export function VinculoTab({
                 </SelectTrigger>
                 <SelectContent>
                   {opcoes.length === 0 ? (
-                    <div className="px-2 py-1.5 text-sm text-muted-foreground">Nenhum usuário disponível</div>
+                    <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                      Nenhum usuário disponível
+                    </div>
                   ) : (
                     opcoes.map((p) => (
                       <SelectItem key={p.id} value={p.id}>
@@ -108,7 +112,11 @@ export function VinculoTab({
               disabled={!selecionado || adicionar.isPending}
               onClick={() => adicionar.mutate(selecionado)}
             >
-              {adicionar.isPending ? <Loader2 className="size-4 animate-spin" /> : <UserPlus className="size-4" />}
+              {adicionar.isPending ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <UserPlus className="size-4" />
+              )}
               Vincular
             </Button>
           </div>
@@ -127,8 +135,12 @@ export function VinculoTab({
                   className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card p-3 text-sm"
                 >
                   <div className="min-w-0">
-                    <p className="truncate font-medium text-foreground">{v.nome ?? v.email ?? v.parceiro_id}</p>
-                    {v.email && v.nome && <p className="truncate text-xs text-muted-foreground">{v.email}</p>}
+                    <p className="truncate font-medium text-foreground">
+                      {v.nome ?? v.email ?? v.parceiro_id}
+                    </p>
+                    {v.email && v.nome && (
+                      <p className="truncate text-xs text-muted-foreground">{v.email}</p>
+                    )}
                   </div>
                   <ConfirmDelete
                     titulo="Remover vínculo"

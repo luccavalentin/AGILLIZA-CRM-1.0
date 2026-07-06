@@ -183,7 +183,8 @@ export const simularComissao = createServerFn({ method: "POST" })
       return Number(b.faixa_min ?? 0) - Number(a.faixa_min ?? 0);
     });
     const r = candidatas[0];
-    const bruto = r.tipo === "percentual" ? (data.valor_operacao * Number(r.valor)) / 100 : Number(r.valor);
+    const bruto =
+      r.tipo === "percentual" ? (data.valor_operacao * Number(r.valor)) / 100 : Number(r.valor);
     const parceiro = (bruto * Number(r.percentual_parceiro ?? 0)) / 100;
     const interno = (bruto * Number(r.percentual_interno ?? 100)) / 100;
     return {

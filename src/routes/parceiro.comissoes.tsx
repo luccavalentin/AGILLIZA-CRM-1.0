@@ -30,16 +30,10 @@ function MinhasComissoes() {
     queryFn: () => listarMinhasComissoes(),
   });
 
-  const total = (q.data ?? []).reduce(
-    (acc, c) => acc + Number(c.split_parceiro ?? 0),
-    0,
-  );
+  const total = (q.data ?? []).reduce((acc, c) => acc + Number(c.split_parceiro ?? 0), 0);
 
   return (
-    <ParceiroPage
-      titulo="Comissões"
-      descricao="Sua parte (split) nas operações fechadas."
-    >
+    <ParceiroPage titulo="Comissões" descricao="Sua parte (split) nas operações fechadas.">
       <div className="rounded-lg border bg-background">
         <Table>
           <TableHeader>

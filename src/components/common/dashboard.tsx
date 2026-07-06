@@ -43,7 +43,9 @@ export function PanelHeader({
   return (
     <div className="flex flex-col gap-3 border-b border-border pb-4 md:flex-row md:items-end md:justify-between">
       <div className="min-w-0">
-        <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">{eyebrow}</p>
+        <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
+          {eyebrow}
+        </p>
         <h1 className="mt-1 text-[26px] font-semibold leading-tight text-foreground">{titulo}</h1>
         <p className="mt-1 text-sm text-muted-foreground">{descricao}</p>
       </div>
@@ -98,24 +100,32 @@ export function HeroMetric({
     <Card
       className={cn(
         "group relative h-full overflow-hidden p-4 pl-5 transition-all duration-200",
-        to && "cursor-pointer hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5",
+        to &&
+          "cursor-pointer hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5",
       )}
     >
       <span className={cn("absolute left-0 top-0 h-full w-[3px]", toneBar[tone])} />
       <div className="flex items-center justify-between">
-        <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">{label}</p>
+        <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
+          {label}
+        </p>
         {Icon ? (
           <Icon className="h-3.5 w-3.5 opacity-70" />
         ) : to ? (
           <ArrowUpRight className="h-3.5 w-3.5 text-muted-foreground/50 transition-colors group-hover:text-primary" />
         ) : null}
       </div>
-      <p className="mt-2 font-mono text-[30px] font-semibold leading-none tabular-nums text-foreground">{valor}</p>
+      <p className="mt-2 font-mono text-[30px] font-semibold leading-none tabular-nums text-foreground">
+        {valor}
+      </p>
       {hint && <p className="mt-1.5 truncate text-xs text-muted-foreground">{hint}</p>}
     </Card>
   );
   return to ? (
-    <Link to={to} className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-xl">
+    <Link
+      to={to}
+      className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-xl"
+    >
       {conteudo}
     </Link>
   ) : (
@@ -139,23 +149,28 @@ export function MiniMetric({
     <Card
       className={cn(
         "group relative h-full overflow-hidden p-3 pl-4 transition-all duration-200",
-        to && "cursor-pointer hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md hover:shadow-primary/5",
+        to &&
+          "cursor-pointer hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md hover:shadow-primary/5",
       )}
     >
       <span className={cn("absolute left-0 top-0 h-full w-[2px]", toneBar[tone])} />
-      <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-muted-foreground">{label}</p>
+      <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
+        {label}
+      </p>
       <p className="mt-1 font-mono text-lg font-semibold tabular-nums text-foreground">{valor}</p>
     </Card>
   );
   return to ? (
-    <Link to={to} className="block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+    <Link
+      to={to}
+      className="block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
       {conteudo}
     </Link>
   ) : (
     conteudo
   );
 }
-
 
 /** Moldura padrão de gráfico/lista com título, subtítulo e link "Abrir". */
 export function PanelCard({
@@ -188,19 +203,29 @@ export function PanelCard({
 }
 
 /** Lista chave-valor com barra proporcional discreta (ranking). */
-export function MetricList({ items }: { items: { label: string; valor: number; display?: string }[] }) {
+export function MetricList({
+  items,
+}: {
+  items: { label: string; valor: number; display?: string }[];
+}) {
   const max = Math.max(1, ...items.map((i) => i.valor));
-  if (!items.length) return <p className="py-6 text-center text-sm text-muted-foreground">Sem dados no período.</p>;
+  if (!items.length)
+    return <p className="py-6 text-center text-sm text-muted-foreground">Sem dados no período.</p>;
   return (
     <ul className="space-y-2.5">
       {items.map((i) => (
         <li key={i.label}>
           <div className="flex items-center justify-between text-sm">
             <span className="truncate text-foreground">{i.label}</span>
-            <span className="ml-2 font-mono tabular-nums text-muted-foreground">{i.display ?? i.valor.toLocaleString("pt-BR")}</span>
+            <span className="ml-2 font-mono tabular-nums text-muted-foreground">
+              {i.display ?? i.valor.toLocaleString("pt-BR")}
+            </span>
           </div>
           <div className="mt-1 h-1 w-full overflow-hidden rounded-full bg-muted">
-            <div className="h-full rounded-full bg-primary/70" style={{ width: `${(i.valor / max) * 100}%` }} />
+            <div
+              className="h-full rounded-full bg-primary/70"
+              style={{ width: `${(i.valor / max) * 100}%` }}
+            />
           </div>
         </li>
       ))}
@@ -229,7 +254,9 @@ export function AlertRow({
         <p className="truncate text-sm font-medium text-foreground">{titulo}</p>
         {descricao && <p className="truncate text-xs text-muted-foreground">{descricao}</p>}
       </div>
-      {contador != null && <span className="font-mono text-sm tabular-nums text-muted-foreground">{contador}</span>}
+      {contador != null && (
+        <span className="font-mono text-sm tabular-nums text-muted-foreground">{contador}</span>
+      )}
     </div>
   );
   return to ? (

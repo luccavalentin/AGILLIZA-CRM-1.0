@@ -29,11 +29,19 @@ export function PipelineTimeline({
               concluida && "bg-success/10 text-success border border-success/20",
               atual && "bg-primary text-primary-foreground",
               proxima && "bg-accent text-accent-foreground",
-              !concluida && !atual && !proxima && "bg-muted text-muted-foreground border border-border",
+              !concluida &&
+                !atual &&
+                !proxima &&
+                "bg-muted text-muted-foreground border border-border",
             )}
           >
             {concluida && <Check className="size-3" aria-hidden />}
-            {atual && <span className="size-1.5 rounded-full bg-primary-foreground animate-pulse" aria-hidden />}
+            {atual && (
+              <span
+                className="size-1.5 rounded-full bg-primary-foreground animate-pulse"
+                aria-hidden
+              />
+            )}
             {s.nome}
           </span>
         );

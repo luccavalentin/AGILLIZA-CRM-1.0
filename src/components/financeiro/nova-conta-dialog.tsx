@@ -110,7 +110,11 @@ export function NovaContaDialog({ tipo }: { tipo: ContaTipo }) {
         <div className="space-y-4">
           <div className="space-y-1.5">
             <Label>Descrição</Label>
-            <Input value={descricao} onChange={(e) => setDescricao(e.target.value)} placeholder="Ex.: Cartório, marketing…" />
+            <Input
+              value={descricao}
+              onChange={(e) => setDescricao(e.target.value)}
+              placeholder="Ex.: Cartório, marketing…"
+            />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
@@ -119,7 +123,11 @@ export function NovaContaDialog({ tipo }: { tipo: ContaTipo }) {
             </div>
             <div className="space-y-1.5">
               <Label>Vencimento</Label>
-              <Input type="date" value={vencimento} onChange={(e) => setVencimento(e.target.value)} />
+              <Input
+                type="date"
+                value={vencimento}
+                onChange={(e) => setVencimento(e.target.value)}
+              />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -130,7 +138,9 @@ export function NovaContaDialog({ tipo }: { tipo: ContaTipo }) {
             <div className="space-y-1.5">
               <Label>Recorrência</Label>
               <Select value={recorrencia} onValueChange={(v) => setRecorrencia(v as any)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="nenhuma">Nenhuma</SelectItem>
                   <SelectItem value="mensal">Mensal</SelectItem>
@@ -143,10 +153,14 @@ export function NovaContaDialog({ tipo }: { tipo: ContaTipo }) {
             <div className="space-y-1.5">
               <Label>Categoria</Label>
               <Select value={categoriaId} onValueChange={setCategoriaId}>
-                <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue placeholder="—" />
+                </SelectTrigger>
                 <SelectContent>
                   {(cfg?.categorias ?? []).map((c: any) => (
-                    <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.nome}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -154,10 +168,14 @@ export function NovaContaDialog({ tipo }: { tipo: ContaTipo }) {
             <div className="space-y-1.5">
               <Label>Centro de custo</Label>
               <Select value={ccId} onValueChange={setCcId}>
-                <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue placeholder="—" />
+                </SelectTrigger>
                 <SelectContent>
                   {(cfg?.centrosCusto ?? []).map((c: any) => (
-                    <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.nome}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -168,12 +186,18 @@ export function NovaContaDialog({ tipo }: { tipo: ContaTipo }) {
             <label className="flex cursor-pointer items-center gap-2 rounded-md border border-dashed border-border p-3 text-sm text-muted-foreground hover:bg-muted/50">
               <Paperclip className="h-4 w-4" />
               {file ? file.name : "Selecionar comprovante"}
-              <input type="file" className="hidden" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+              <input
+                type="file"
+                className="hidden"
+                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+              />
             </label>
           </div>
         </div>
         <DialogFooter>
-          <Button variant="ghost" onClick={() => setOpen(false)}>Cancelar</Button>
+          <Button variant="ghost" onClick={() => setOpen(false)}>
+            Cancelar
+          </Button>
           <Button onClick={submit} disabled={enviando || criar.isPending}>
             {enviando || criar.isPending ? "Salvando…" : "Salvar"}
           </Button>

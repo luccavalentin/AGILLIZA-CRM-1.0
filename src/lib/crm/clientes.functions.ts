@@ -12,15 +12,24 @@ async function temPii(supabase: any, userId: string): Promise<boolean> {
     _roles: ["admin", "correspondente"],
   });
   if (tudo) return true;
-  return Boolean(await supabase.rpc("usuario_tem_permissao", {
-    _user_id: userId,
-    _modulo: "crm.clientes",
-    _acao: "pii:view",
-  }).then((r: any) => r.data));
+  return Boolean(
+    await supabase
+      .rpc("usuario_tem_permissao", {
+        _user_id: userId,
+        _modulo: "crm.clientes",
+        _acao: "pii:view",
+      })
+      .then((r: any) => r.data),
+  );
 }
 
 /** Verifica papel amplo (admin/correspondente) ou permissão específica do módulo. */
-async function podeAcao(supabase: any, userId: string, modulo: string, acao: string): Promise<boolean> {
+async function podeAcao(
+  supabase: any,
+  userId: string,
+  modulo: string,
+  acao: string,
+): Promise<boolean> {
   const { data: tudo } = await supabase.rpc("has_any_role", {
     _user_id: userId,
     _roles: ["admin", "correspondente"],
@@ -60,52 +69,59 @@ const listarSchema = z.object({
 export const listarClientes = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => listarSchema.parse(d))
-  .handler(async ({ data, context }): Promise<{ itens: ClienteListaItem[]; total: number; podePii: boolean }> => {
-    const { supabase, userId } = context;
-    const podePii = await temPii(supabase, userId);
-    const from = (data.pagina - 1) * data.porPagina;
-    const to = from + data.porPagina - 1;
+  .handler(
+    async ({
+      data,
+      context,
+    }): Promise<{ itens: ClienteListaItem[]; total: number; podePii: boolean }> => {
+      const { supabase, userId } = context;
+      const podePii = await temPii(supabase, userId);
+      const from = (data.pagina - 1) * data.porPagina;
+      const to = from + data.porPagina - 1;
 
-    let query = supabase
-      .from("clientes")
-      .select(
-        "id, numero_cliente, nome, documento, telefone_celular, email, ativo, portal_acesso_ativo, responsavel:profiles!clientes_responsavel_id_fkey(nome), cliente_pipeline(ultima_atualizacao_em, pipeline_stages(codigo, nome))",
-        { count: "exact" },
-      )
-      .order("created_at", { ascending: false })
-      .range(from, to);
+      let query = supabase
+        .from("clientes")
+        .select(
+          "id, numero_cliente, nome, documento, telefone_celular, email, ativo, portal_acesso_ativo, responsavel:profiles!clientes_responsavel_id_fkey(nome), cliente_pipeline(ultima_atualizacao_em, pipeline_stages(codigo, nome))",
+          { count: "exact" },
+        )
+        .order("created_at", { ascending: false })
+        .range(from, to);
 
-    if (data.q && data.q.trim()) {
-      const term = data.q.trim();
-      const dig = term.replace(/\D/g, "");
-      const ors = [`nome.ilike.%${term}%`, `email.ilike.%${term}%`];
-      if (dig) ors.push(`documento.ilike.%${dig}%`);
-      query = query.or(ors.join(","));
-    }
+      if (data.q && data.q.trim()) {
+        const term = data.q.trim();
+        const dig = term.replace(/\D/g, "");
+        const ors = [`nome.ilike.%${term}%`, `email.ilike.%${term}%`];
+        if (dig) ors.push(`documento.ilike.%${dig}%`);
+        query = query.or(ors.join(","));
+      }
 
-    const { data: rows, count, error } = await query;
-    if (error) throw error;
+      const { data: rows, count, error } = await query;
+      if (error) throw error;
 
-    let itens = (rows ?? []).map((r: any): ClienteListaItem => ({
-      id: r.id,
-      numero_cliente: r.numero_cliente,
-      nome: r.nome,
-      documento: r.documento,
-      documento_masc: !podePii,
-      telefone_celular: r.telefone_celular,
-      email: r.email,
-      etapa_codigo: r.cliente_pipeline?.pipeline_stages?.codigo ?? null,
-      etapa_nome: r.cliente_pipeline?.pipeline_stages?.nome ?? null,
-      ultima_atualizacao: r.cliente_pipeline?.ultima_atualizacao_em ?? null,
-      responsavel_nome: r.responsavel?.nome ?? null,
-      ativo: r.ativo,
-      portal_acesso_ativo: r.portal_acesso_ativo,
-    }));
+      let itens = (rows ?? []).map(
+        (r: any): ClienteListaItem => ({
+          id: r.id,
+          numero_cliente: r.numero_cliente,
+          nome: r.nome,
+          documento: r.documento,
+          documento_masc: !podePii,
+          telefone_celular: r.telefone_celular,
+          email: r.email,
+          etapa_codigo: r.cliente_pipeline?.pipeline_stages?.codigo ?? null,
+          etapa_nome: r.cliente_pipeline?.pipeline_stages?.nome ?? null,
+          ultima_atualizacao: r.cliente_pipeline?.ultima_atualizacao_em ?? null,
+          responsavel_nome: r.responsavel?.nome ?? null,
+          ativo: r.ativo,
+          portal_acesso_ativo: r.portal_acesso_ativo,
+        }),
+      );
 
-    if (data.etapa) itens = itens.filter((i) => i.etapa_codigo === data.etapa);
+      if (data.etapa) itens = itens.filter((i) => i.etapa_codigo === data.etapa);
 
-    return { itens, total: count ?? itens.length, podePii };
-  });
+      return { itens, total: count ?? itens.length, podePii };
+    },
+  );
 
 const clienteInputSchema = z.object({
   tipo_pessoa: z.enum(["PF", "PJ"]),
@@ -115,7 +131,13 @@ const clienteInputSchema = z.object({
   data_nascimento: z.string().min(1, "Informe a data."),
   estado_civil: z.enum(["solteiro", "casado", "uniao_estavel", "divorciado", "viuvo"]),
   regime_casamento: z
-    .enum(["comunhao_parcial", "comunhao_universal", "separacao_total", "participacao_final", "nao_aplicavel"])
+    .enum([
+      "comunhao_parcial",
+      "comunhao_universal",
+      "separacao_total",
+      "participacao_final",
+      "nao_aplicavel",
+    ])
     .optional()
     .nullable(),
   mae: z.string().optional().nullable(),
@@ -234,7 +256,9 @@ export const getCliente = createServerFn({ method: "GET" })
     const podePii = await temPii(supabase, userId);
     const { data: cliente, error } = await supabase
       .from("clientes")
-      .select("*, responsavel:profiles!clientes_responsavel_id_fkey(nome), cliente_pipeline(pipeline_stages(codigo))")
+      .select(
+        "*, responsavel:profiles!clientes_responsavel_id_fkey(nome), cliente_pipeline(pipeline_stages(codigo))",
+      )
       .eq("id", data.id)
       .maybeSingle();
     if (error) throw error;
@@ -257,8 +281,10 @@ export interface PainelStage {
 /** Kanban da esteira: etapas com clientes posicionados (RLS aplica escopo). */
 export const listarPainel = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
-    z.object({ desde: z.string().optional(), ate: z.string().optional() }).optional().parse(d) ?? {},
+  .inputValidator(
+    (d: unknown) =>
+      z.object({ desde: z.string().optional(), ate: z.string().optional() }).optional().parse(d) ??
+      {},
   )
   .handler(async ({ data, context }): Promise<PainelStage[]> => {
     const { supabase } = context;
@@ -271,7 +297,9 @@ export const listarPainel = createServerFn({ method: "GET" })
     if (e1) throw e1;
     const { data: rows, error: e2 } = await supabase
       .from("clientes")
-      .select("id, nome, numero_cliente, cliente_pipeline(ultima_atualizacao_em, pipeline_stages(codigo))")
+      .select(
+        "id, nome, numero_cliente, cliente_pipeline(ultima_atualizacao_em, pipeline_stages(codigo))",
+      )
       .eq("ativo", true)
       .order("nome");
     if (e2) throw e2;
@@ -358,7 +386,10 @@ export const salvarEndereco = createServerFn({ method: "POST" })
       uf: data.uf ?? null,
     };
     if (existente) {
-      const { error } = await supabase.from("cliente_enderecos").update(payload).eq("id", existente.id);
+      const { error } = await supabase
+        .from("cliente_enderecos")
+        .update(payload)
+        .eq("id", existente.id);
       if (error) throw error;
     } else {
       const { error } = await supabase
@@ -389,7 +420,15 @@ export const registrarInteracao = createServerFn({ method: "POST" })
     z
       .object({
         cliente_id: z.string().uuid(),
-        canal: z.enum(["ligacao", "whatsapp", "email", "reuniao", "presencial", "followup", "outro"]),
+        canal: z.enum([
+          "ligacao",
+          "whatsapp",
+          "email",
+          "reuniao",
+          "presencial",
+          "followup",
+          "outro",
+        ]),
         resultado: z.string().optional().nullable(),
         observacao: z.string().optional().nullable(),
       })
@@ -542,7 +581,13 @@ export const urlDocumento = createServerFn({ method: "POST" })
 export const moverEtapa = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
-    z.object({ cliente_id: z.string().uuid(), codigo_destino: z.string(), observacao: z.string().optional() }).parse(d),
+    z
+      .object({
+        cliente_id: z.string().uuid(),
+        codigo_destino: z.string(),
+        observacao: z.string().optional(),
+      })
+      .parse(d),
   )
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const { error } = await context.supabase.rpc("cliente_pipeline_avancar_para", {
@@ -657,15 +702,17 @@ export const listarVinculosCliente = createServerFn({ method: "GET" })
 /** Lista usuários do sistema disponíveis para vincular (mesmo correspondente). */
 export const listarParceirosDisponiveis = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }): Promise<{ id: string; nome: string | null; email: string | null }[]> => {
-    const { supabase, userId } = context;
-    const { data: corr } = await supabase.rpc("correspondente_do_usuario", { _user_id: userId });
-    let query = supabase.from("profiles").select("id, nome, email").order("nome");
-    if (corr) query = query.eq("correspondente_id", corr);
-    const { data, error } = await query.limit(500);
-    if (error) throw error;
-    return (data ?? []) as any;
-  });
+  .handler(
+    async ({ context }): Promise<{ id: string; nome: string | null; email: string | null }[]> => {
+      const { supabase, userId } = context;
+      const { data: corr } = await supabase.rpc("correspondente_do_usuario", { _user_id: userId });
+      let query = supabase.from("profiles").select("id, nome, email").order("nome");
+      if (corr) query = query.eq("correspondente_id", corr);
+      const { data, error } = await query.limit(500);
+      if (error) throw error;
+      return (data ?? []) as any;
+    },
+  );
 
 /** Cria um vínculo de atendimento entre o cliente e um usuário/parceiro. */
 export const vincularParceiro = createServerFn({ method: "POST" })
@@ -677,9 +724,11 @@ export const vincularParceiro = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const { data: corr } = await supabase.rpc("correspondente_do_usuario", { _user_id: userId });
     if (!corr) throw new Error("Sem correspondente.");
-    const { error } = await supabase
-      .from("cliente_parceiros")
-      .insert({ cliente_id: data.cliente_id, parceiro_id: data.parceiro_id, correspondente_id: corr });
+    const { error } = await supabase.from("cliente_parceiros").insert({
+      cliente_id: data.cliente_id,
+      parceiro_id: data.parceiro_id,
+      correspondente_id: corr,
+    });
     if (error) {
       if ((error as any).code === "23505") throw new Error("Este usuário já está vinculado.");
       throw error;

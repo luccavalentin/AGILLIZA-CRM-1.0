@@ -9,13 +9,7 @@ import type { AppRole } from "@/lib/session.functions";
 export type PortaEntrada = "sistema" | "parceiro" | "cliente";
 
 const PAPEIS_PARCEIRO: AppRole[] = ["imobiliaria", "corretor"];
-const PAPEIS_INTERNOS: AppRole[] = [
-  "admin",
-  "correspondente",
-  "gestor",
-  "comercial",
-  "analista",
-];
+const PAPEIS_INTERNOS: AppRole[] = ["admin", "correspondente", "gestor", "comercial", "analista"];
 
 /** Determina por qual porta o usuário deve entrar, com base nos papéis. */
 export function portaEntradaDeRoles(roles: AppRole[]): PortaEntrada {

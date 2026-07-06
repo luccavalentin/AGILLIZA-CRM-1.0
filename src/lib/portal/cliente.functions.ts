@@ -400,7 +400,8 @@ export const clienteEnviarDocumentoPendente = createServerFn({ method: "POST" })
       _mime: data.mime_type,
       _tamanho: bin.length,
     });
-    if (insErr) throw new Error("Arquivo enviado, mas não foi possível registrar. Tente novamente.");
+    if (insErr)
+      throw new Error("Arquivo enviado, mas não foi possível registrar. Tente novamente.");
 
     return { ok: true };
   });
@@ -413,7 +414,11 @@ export const clienteBaixarMeusDados = createServerFn({ method: "GET" }).handler(
   const { portalDb } = await import("./portal-db.server");
   const { data } = await portalDb().rpc("portal_baixar_dados", { _cid: sess.cid });
   const v = (data as any) ?? {};
-  return { cliente: v.cliente ?? null, documentos: v.documentos ?? [], mensagens: v.mensagens ?? [] };
+  return {
+    cliente: v.cliente ?? null,
+    documentos: v.documentos ?? [],
+    mensagens: v.mensagens ?? [],
+  };
 });
 
 const lgpdSchema = z.object({ acao: z.enum(["exclusao", "portabilidade"]) });

@@ -21,14 +21,21 @@ function fmt(ms: number): string {
 }
 
 /** Countdown de SLA em horas úteis — tons conforme % consumido (00b-tons-cores). */
-export function SlaCountdown({ inicio, prazo, concluida, concluidaEm, className }: SlaCountdownProps) {
+export function SlaCountdown({
+  inicio,
+  prazo,
+  concluida,
+  concluidaEm,
+  className,
+}: SlaCountdownProps) {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 30_000);
     return () => clearInterval(t);
   }, []);
 
-  if (!prazo) return <span className={cn("text-xs text-muted-foreground", className)}>Sem SLA</span>;
+  if (!prazo)
+    return <span className={cn("text-xs text-muted-foreground", className)}>Sem SLA</span>;
 
   const ini = new Date(inicio).getTime();
   const fim = new Date(prazo).getTime();
@@ -67,7 +74,14 @@ export function SlaCountdown({ inicio, prazo, concluida, concluidaEm, className 
   }
 
   return (
-    <span className={cn("inline-flex items-center gap-1 text-xs tabular-nums", cls, pulse && "animate-pulse", className)}>
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 text-xs tabular-nums",
+        cls,
+        pulse && "animate-pulse",
+        className,
+      )}
+    >
       <Icon className="h-3.5 w-3.5" />
       {consumido >= 1 ? `SLA estourado ${fmt(restante)}` : `${fmt(restante)} restantes`}
     </span>

@@ -4,7 +4,11 @@
  * cita o fornecedor.
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { chamarIntegracao, IntegracaoBancariaError, sanitizarMensagemErro } from "@/lib/simulacao/homefin.server";
+import {
+  chamarIntegracao,
+  IntegracaoBancariaError,
+  sanitizarMensagemErro,
+} from "@/lib/simulacao/homefin.server";
 import { transicaoPermitida, type PropostaStatus } from "./state-machine";
 
 /** Ordem de progressão do funil (para sincronização vinda do banco). */
@@ -27,10 +31,17 @@ function statusDaEtapa(nomeEtapa: string | null): PropostaStatus | null {
   if (n.includes("registr")) return "registrado";
   if (n.includes("contrato")) return "contrato_emitido";
   if (n.includes("jurídic") || n.includes("juridic")) return "analise_juridica";
-  if (n.includes("engenharia") || n.includes("vistoria") || n.includes("avaliaç")) return "engenharia_vistoria";
+  if (n.includes("engenharia") || n.includes("vistoria") || n.includes("avaliaç"))
+    return "engenharia_vistoria";
   if (n.includes("document")) return "aguardando_documentos";
   if (n.includes("aprov")) return "credito_aprovado";
-  if (n.includes("análise") || n.includes("analise") || n.includes("crédito") || n.includes("credito")) return "em_analise_credito";
+  if (
+    n.includes("análise") ||
+    n.includes("analise") ||
+    n.includes("crédito") ||
+    n.includes("credito")
+  )
+    return "em_analise_credito";
   return null;
 }
 
@@ -45,7 +56,12 @@ interface EnviarArgs {
 
 interface EnviarResultado {
   status: string;
-  bancos: { banco_id: string | null; nome_banco: string | null; status: string; mensagem?: string }[];
+  bancos: {
+    banco_id: string | null;
+    nome_banco: string | null;
+    status: string;
+    mensagem?: string;
+  }[];
 }
 
 export async function enviarPropostaImpl({
@@ -55,12 +71,18 @@ export async function enviarPropostaImpl({
   supabase,
   bancoId,
 }: EnviarArgs): Promise<EnviarResultado> {
-  const { data: prop, error } = await supabase.from("propostas").select("*").eq("id", propostaId).maybeSingle();
+  const { data: prop, error } = await supabase
+    .from("propostas")
+    .select("*")
+    .eq("id", propostaId)
+    .maybeSingle();
   if (error) throw new Error(error.message);
   if (!prop) throw new Error("Proposta não encontrada.");
 
   if (!prop.homefin_id_oportunidade) {
-    throw new Error("Proposta sem oportunidade vinculada. Origine a partir de uma simulação enviada ao banco.");
+    throw new Error(
+      "Proposta sem oportunidade vinculada. Origine a partir de uma simulação enviada ao banco.",
+    );
   }
 
   const statusAtual = prop.status as PropostaStatus;
@@ -94,7 +116,9 @@ export async function enviarPropostaImpl({
     (d: any) => d.status === "pendente" || d.status === "reprovado",
   );
   if (bloqueantes.length > 0) {
-    throw new Error(`Existem ${bloqueantes.length} documento(s) obrigatório(s) pendente(s) ou reprovado(s).`);
+    throw new Error(
+      `Existem ${bloqueantes.length} documento(s) obrigatório(s) pendente(s) ou reprovado(s).`,
+    );
   }
 
   // Bancos a enviar: por linha (bancoId) ou todos os selecionados ainda não enviados.
@@ -119,11 +143,20 @@ export async function enviarPropostaImpl({
   if (primeiroEnvio) {
     await supabase
       .from("propostas")
-      .update({ status: "enviada_banco", enviada_em: new Date().toISOString(), ip_consentimento: ip, ultimo_erro: null })
+      .update({
+        status: "enviada_banco",
+        enviada_em: new Date().toISOString(),
+        ip_consentimento: ip,
+        ultimo_erro: null,
+      })
       .eq("id", propostaId);
   }
 
-  const ctx = { simulacao_id: prop.simulacao_id, proposta_id: propostaId, correspondente_id: prop.correspondente_id };
+  const ctx = {
+    simulacao_id: prop.simulacao_id,
+    proposta_id: propostaId,
+    correspondente_id: prop.correspondente_id,
+  };
   const resultados: EnviarResultado["bancos"] = [];
   let sucesso = 0;
 
@@ -135,13 +168,26 @@ export async function enviarPropostaImpl({
         { idSimulacao: b.homefin_id_simulacao_banco ?? prop.homefin_id_simulacao },
         ctx,
       );
-      await supabase.from("proposta_bancos").update({ status_banco: "enviada", selecionado: true, mensagem_banco: null }).eq("id", b.id);
+      await supabase
+        .from("proposta_bancos")
+        .update({ status_banco: "enviada", selecionado: true, mensagem_banco: null })
+        .eq("id", b.id);
       sucesso++;
       resultados.push({ banco_id: b.banco_id, nome_banco: b.nome_banco, status: "enviada" });
     } catch (e) {
-      const msg = sanitizarMensagemErro(e instanceof IntegracaoBancariaError ? e.message : "Falha ao enviar ao banco.");
-      await supabase.from("proposta_bancos").update({ status_banco: "erro", mensagem_banco: msg }).eq("id", b.id);
-      resultados.push({ banco_id: b.banco_id, nome_banco: b.nome_banco, status: "erro", mensagem: msg });
+      const msg = sanitizarMensagemErro(
+        e instanceof IntegracaoBancariaError ? e.message : "Falha ao enviar ao banco.",
+      );
+      await supabase
+        .from("proposta_bancos")
+        .update({ status_banco: "erro", mensagem_banco: msg })
+        .eq("id", b.id);
+      resultados.push({
+        banco_id: b.banco_id,
+        nome_banco: b.nome_banco,
+        status: "erro",
+        mensagem: msg,
+      });
     }
   }
 
@@ -196,7 +242,11 @@ export async function enviarFollowupHomefinImpl({
     `/oportunidade/${prop.homefin_id_oportunidade}/follow-up`,
     "POST",
     { idOportunidade: prop.homefin_id_oportunidade, tipoFup: "E", titulo, comentario },
-    { simulacao_id: prop.simulacao_id, proposta_id: propostaId, correspondente_id: prop.correspondente_id },
+    {
+      simulacao_id: prop.simulacao_id,
+      proposta_id: propostaId,
+      correspondente_id: prop.correspondente_id,
+    },
   );
 }
 
@@ -217,7 +267,11 @@ export async function cancelarPropostaHomefinImpl({
     `/oportunidade/${prop.homefin_id_oportunidade}`,
     "PUT",
     { tipoSituacao: "C" },
-    { simulacao_id: prop.simulacao_id, proposta_id: propostaId, correspondente_id: prop.correspondente_id },
+    {
+      simulacao_id: prop.simulacao_id,
+      proposta_id: propostaId,
+      correspondente_id: prop.correspondente_id,
+    },
   );
 }
 
@@ -233,17 +287,29 @@ function extrairErroRetorno(retorno: unknown): string | null {
     }
   }
   if (obj && Array.isArray(obj.fields) && obj.fields.length > 0) {
-    return obj.fields.map((f: any) => f?.message).filter(Boolean).join("; ") || obj.message || null;
+    return (
+      obj.fields
+        .map((f: any) => f?.message)
+        .filter(Boolean)
+        .join("; ") ||
+      obj.message ||
+      null
+    );
   }
   return obj?.message ?? null;
 }
 
 /** Traduz o tipoSituacao da proposta (por banco) para status interno do banco. */
-function statusInternoBanco(tipo: string, temErro: boolean): {
+function statusInternoBanco(
+  tipo: string,
+  temErro: boolean,
+): {
   banco: string;
   proposta: PropostaStatus | "credito_recusado" | null;
 } {
-  const t = String(tipo ?? "").toUpperCase().charAt(0);
+  const t = String(tipo ?? "")
+    .toUpperCase()
+    .charAt(0);
   if (temErro) return { banco: "erro", proposta: null };
   switch (t) {
     case "A":
@@ -282,14 +348,22 @@ export async function sincronizarPropostaImpl({
   userId: string;
   supabase: SupabaseClient<any, any, any>;
 }): Promise<{ status: string; etapa: string | null; atualizado: boolean }> {
-  const { data: prop, error } = await supabase.from("propostas").select("*").eq("id", propostaId).maybeSingle();
+  const { data: prop, error } = await supabase
+    .from("propostas")
+    .select("*")
+    .eq("id", propostaId)
+    .maybeSingle();
   if (error) throw new Error(error.message);
   if (!prop) throw new Error("Proposta não encontrada.");
   if (!prop.homefin_id_oportunidade) {
     throw new Error("Proposta ainda não foi enviada ao banco.");
   }
 
-  const ctx = { simulacao_id: prop.simulacao_id, proposta_id: propostaId, correspondente_id: prop.correspondente_id };
+  const ctx = {
+    simulacao_id: prop.simulacao_id,
+    proposta_id: propostaId,
+    correspondente_id: prop.correspondente_id,
+  };
   const resp = await chamarIntegracao<any>(
     `/oportunidade/${prop.homefin_id_oportunidade}`,
     "GET",
@@ -336,7 +410,8 @@ export async function sincronizarPropostaImpl({
     else if (mapa.proposta === "credito_recusado") algumRecusado = true;
     if (mapa.banco === "erro") {
       algumErro = true;
-      if (erroMsg) errosBanco.push(`${pb.nome_banco ?? "Banco"}: ${sanitizarMensagemErro(erroMsg)}`);
+      if (erroMsg)
+        errosBanco.push(`${pb.nome_banco ?? "Banco"}: ${sanitizarMensagemErro(erroMsg)}`);
     }
     if (sim.bancoEscolhido === "S" || mapa.proposta === "credito_aprovado") simEscolhida = sim;
 
@@ -346,12 +421,18 @@ export async function sincronizarPropostaImpl({
     };
     if (sim.valorParcelaBanco != null) patchBanco.valor_parcela = sim.valorParcelaBanco;
     if (sim.taxaJurosAnoBanco != null) patchBanco.taxa_juros_ano = sim.taxaJurosAnoBanco;
-    if (sim.prazoPagamentoBancoMax != null) patchBanco.prazo_pagamento_max = sim.prazoPagamentoBancoMax;
-    if (sim.valorFinanciamentoBancoMax != null) patchBanco.valor_financiamento_max = sim.valorFinanciamentoBancoMax;
+    if (sim.prazoPagamentoBancoMax != null)
+      patchBanco.prazo_pagamento_max = sim.prazoPagamentoBancoMax;
+    if (sim.valorFinanciamentoBancoMax != null)
+      patchBanco.valor_financiamento_max = sim.valorFinanciamentoBancoMax;
     if (sim.valorIofBanco != null) patchBanco.valor_iof = sim.valorIofBanco;
-    if (sim.codigoSistemaAmortizacaoBanco) patchBanco.sistema_amortizacao_banco = sim.codigoSistemaAmortizacaoBanco;
+    if (sim.codigoSistemaAmortizacaoBanco)
+      patchBanco.sistema_amortizacao_banco = sim.codigoSistemaAmortizacaoBanco;
     if (sim.codigoIndexadorBanco) patchBanco.codigo_indexador = sim.codigoIndexadorBanco;
-    await supabase.from("proposta_bancos").update(patchBanco as any).eq("id", pb.id);
+    await supabase
+      .from("proposta_bancos")
+      .update(patchBanco as any)
+      .eq("id", pb.id);
   }
 
   // Status candidato a partir dos bancos (melhor desfecho prevalece).
@@ -362,7 +443,9 @@ export async function sincronizarPropostaImpl({
   else if (algumErro) statusBancos = "erro_envio";
 
   // ---- 2) Situação da oportunidade / etapa do funil ----
-  const situacao = String(op?.tipoSituacao ?? "").toUpperCase().charAt(0);
+  const situacao = String(op?.tipoSituacao ?? "")
+    .toUpperCase()
+    .charAt(0);
   const statusEtapa = statusDaEtapa(nomeEtapa);
 
   // ---- Decisão final ----
@@ -388,7 +471,8 @@ export async function sincronizarPropostaImpl({
   const patch: Record<string, unknown> = { detalhe_status_atual: nomeEtapa };
   const escolhida = simEscolhida ?? {};
   if (op?.codigoOportunidadeBanco || escolhida.codigoOportunidadeBanco)
-    patch.codigo_oportunidade_homefin = op?.codigoOportunidadeBanco ?? escolhida.codigoOportunidadeBanco;
+    patch.codigo_oportunidade_homefin =
+      op?.codigoOportunidadeBanco ?? escolhida.codigoOportunidadeBanco;
   const vFin = op?.valorFinanciamentoBanco ?? escolhida.valorFinanciamentoBanco;
   const vParc = op?.valorParcelaBanco ?? escolhida.valorParcelaBanco;
   const vPrazo = op?.prazoPagamentoBanco ?? escolhida.prazoPagamentoBanco;
@@ -402,18 +486,26 @@ export async function sincronizarPropostaImpl({
   if (mudouStatus) {
     patch.status = novoStatus;
     if (novoStatus === "contrato_emitido") patch.contrato_emitido_em = new Date().toISOString();
-    if (errosBanco.length > 0 && (novoStatus === "erro_envio" || novoStatus === "credito_recusado")) {
+    if (
+      errosBanco.length > 0 &&
+      (novoStatus === "erro_envio" || novoStatus === "credito_recusado")
+    ) {
       patch.ultimo_erro = errosBanco.join(" | ");
     }
   }
 
-  await supabase.from("propostas").update(patch as any).eq("id", propostaId);
+  await supabase
+    .from("propostas")
+    .update(patch as any)
+    .eq("id", propostaId);
 
   if (mudouStatus) {
     await supabase.from("proposta_historico").insert({
       proposta_id: propostaId,
       tipo_evento: "sincronizacao",
-      descricao: nomeEtapa ? `Atualização do banco: ${nomeEtapa}` : "Situação atualizada pelo banco",
+      descricao: nomeEtapa
+        ? `Atualização do banco: ${nomeEtapa}`
+        : "Situação atualizada pelo banco",
       status_anterior: prop.status as any,
       status_novo: novoStatus as any,
       ator_id: userId,

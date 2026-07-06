@@ -2,22 +2,46 @@ import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Plus, Search, Calculator, ChevronDown, MoreHorizontal, Eye, Copy, Trash2, Download, Pencil } from "lucide-react";
+import {
+  Plus,
+  Search,
+  Calculator,
+  ChevronDown,
+  MoreHorizontal,
+  Eye,
+  Copy,
+  Trash2,
+  Download,
+  Pencil,
+} from "lucide-react";
 import { toast } from "sonner";
 import { assertModuloPermitido } from "@/lib/route-guards";
-import { listarSimulacoes, excluirSimulacao, duplicarSimulacao, obterSimulacao } from "@/lib/simulacao/simulacoes.functions";
+import {
+  listarSimulacoes,
+  excluirSimulacao,
+  duplicarSimulacao,
+  obterSimulacao,
+} from "@/lib/simulacao/simulacoes.functions";
 import { baixarSimulacaoPDF } from "@/lib/simulacao/simulacao-pdf";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
 import { SimulacaoStatusBadge } from "@/components/simulacao/status-badge";
 import { ConfirmDelete } from "@/components/shared/confirm-delete";
 import { formatBRL } from "@/lib/simulacao/format";
 import {
-  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 
 export const Route = createFileRoute("/_authenticated/operacional/simulacoes")({
@@ -25,7 +49,9 @@ export const Route = createFileRoute("/_authenticated/operacional/simulacoes")({
   beforeLoad: () => assertModuloPermitido("operacional.simulacoes"),
   component: Pagina,
   errorComponent: () => (
-    <div className="p-6 text-sm text-muted-foreground">Não foi possível carregar as simulações.</div>
+    <div className="p-6 text-sm text-muted-foreground">
+      Não foi possível carregar as simulações.
+    </div>
   ),
 });
 
@@ -117,11 +143,8 @@ function Pagina() {
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
-              <Link to="/operacional/simulacoes/completa">
-                Simulação completa
-              </Link>
+              <Link to="/operacional/simulacoes/completa">Simulação completa</Link>
             </DropdownMenuItem>
-
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
@@ -149,21 +172,40 @@ function Pagina() {
               onChange={(e) => setQ(e.target.value)}
             />
           </div>
-          <Button type="submit" variant="secondary">Buscar</Button>
+          <Button type="submit" variant="secondary">
+            Buscar
+          </Button>
         </form>
       </div>
 
       <div className="flex flex-wrap items-end gap-3">
         <div className="space-y-1">
           <label className="text-xs text-muted-foreground">De</label>
-          <Input type="date" value={desde} onChange={(e) => setDesde(e.target.value)} className="w-40" />
+          <Input
+            type="date"
+            value={desde}
+            onChange={(e) => setDesde(e.target.value)}
+            className="w-40"
+          />
         </div>
         <div className="space-y-1">
           <label className="text-xs text-muted-foreground">Até</label>
-          <Input type="date" value={ate} onChange={(e) => setAte(e.target.value)} className="w-40" />
+          <Input
+            type="date"
+            value={ate}
+            onChange={(e) => setAte(e.target.value)}
+            className="w-40"
+          />
         </div>
         {(desde || ate) && (
-          <Button variant="ghost" size="sm" onClick={() => { setDesde(""); setAte(""); }}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setDesde("");
+              setAte("");
+            }}
+          >
             Limpar datas
           </Button>
         )}
@@ -207,16 +249,28 @@ function Pagina() {
               <TableRow
                 key={s.id}
                 className="cursor-pointer"
-                onClick={() => router.navigate({ to: "/operacional/simulacoes/$id", params: { id: s.id } })}
+                onClick={() =>
+                  router.navigate({ to: "/operacional/simulacoes/$id", params: { id: s.id } })
+                }
               >
                 <TableCell className="font-medium">{s.numero_simulacao}</TableCell>
                 <TableCell>{s.nome_cliente ?? "—"}</TableCell>
                 <TableCell>
-                  {s.produto === "home_equity" ? "Home Equity" : s.produto === "financiamento_imobiliario" ? "Financiamento" : "—"}
+                  {s.produto === "home_equity"
+                    ? "Home Equity"
+                    : s.produto === "financiamento_imobiliario"
+                      ? "Financiamento"
+                      : "—"}
                 </TableCell>
-                <TableCell className="text-right tabular-nums">{formatBRL(s.valor_imovel)}</TableCell>
-                <TableCell className="text-right tabular-nums">{s.prazo ? `${s.prazo}m` : "—"}</TableCell>
-                <TableCell><SimulacaoStatusBadge status={s.status} /></TableCell>
+                <TableCell className="text-right tabular-nums">
+                  {formatBRL(s.valor_imovel)}
+                </TableCell>
+                <TableCell className="text-right tabular-nums">
+                  {s.prazo ? `${s.prazo}m` : "—"}
+                </TableCell>
+                <TableCell>
+                  <SimulacaoStatusBadge status={s.status} />
+                </TableCell>
                 <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -226,7 +280,12 @@ function Pagina() {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem
-                        onSelect={() => router.navigate({ to: "/operacional/simulacoes/$id", params: { id: s.id } })}
+                        onSelect={() =>
+                          router.navigate({
+                            to: "/operacional/simulacoes/$id",
+                            params: { id: s.id },
+                          })
+                        }
                       >
                         <Eye className="mr-2 h-4 w-4" /> Visualizar
                       </DropdownMenuItem>

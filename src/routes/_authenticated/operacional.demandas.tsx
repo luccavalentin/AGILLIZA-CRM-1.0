@@ -5,7 +5,11 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { AlertTriangle, KanbanSquare } from "lucide-react";
 import { assertModuloPermitido } from "@/lib/route-guards";
-import { listarDemandas, escalarDemanda, excluirDemanda } from "@/lib/operacional/demandas.functions";
+import {
+  listarDemandas,
+  escalarDemanda,
+  excluirDemanda,
+} from "@/lib/operacional/demandas.functions";
 import { NovaDemandaDialog } from "@/components/operacional/nova-demanda-dialog";
 import { SlaCountdown } from "@/components/operacional/sla-countdown";
 import { ToneBadge } from "@/components/crm/tone-badge";
@@ -38,7 +42,11 @@ function Pagina() {
   async function verificarSla() {
     try {
       const r = await escalarFn({});
-      toast.success(r.escalonadas > 0 ? `${r.escalonadas} demanda(s) escalonada(s).` : "Nenhuma demanda vencida.");
+      toast.success(
+        r.escalonadas > 0
+          ? `${r.escalonadas} demanda(s) escalonada(s).`
+          : "Nenhuma demanda vencida.",
+      );
       refetch();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Falha ao verificar SLA.");
@@ -60,14 +68,18 @@ function Pagina() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold text-foreground">Demandas</h1>
-          <p className="text-sm text-muted-foreground">Solicitações formais entre equipes, com SLA e escalonamento.</p>
+          <p className="text-sm text-muted-foreground">
+            Solicitações formais entre equipes, com SLA e escalonamento.
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={verificarSla}>
             <AlertTriangle className="mr-1 h-4 w-4" /> Verificar SLA
           </Button>
           <Button asChild variant="outline" size="sm">
-            <Link to="/operacional/demandas/kanban"><KanbanSquare className="mr-1 h-4 w-4" /> Kanban</Link>
+            <Link to="/operacional/demandas/kanban">
+              <KanbanSquare className="mr-1 h-4 w-4" /> Kanban
+            </Link>
           </Button>
           <NovaDemandaDialog onCriada={refetch} />
         </div>
@@ -80,12 +92,19 @@ function Pagina() {
             <TabsTrigger value="equipe">Equipe</TabsTrigger>
           </TabsList>
         </Tabs>
-        <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por título…" className="max-w-xs" />
+        <Input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Buscar por título…"
+          className="max-w-xs"
+        />
       </div>
 
       <div className="overflow-hidden rounded-lg border border-border">
         {itens.length === 0 ? (
-          <p className="p-8 text-center text-sm text-muted-foreground">Nenhuma demanda encontrada.</p>
+          <p className="p-8 text-center text-sm text-muted-foreground">
+            Nenhuma demanda encontrada.
+          </p>
         ) : (
           <table className="w-full text-sm">
             <thead className="bg-muted/50 text-left text-xs text-muted-foreground">
@@ -104,21 +123,49 @@ function Pagina() {
               {itens.map((d) => (
                 <tr key={d.id} className="transition-colors hover:bg-accent/50">
                   <td className="px-3 py-2 tabular-nums text-muted-foreground">
-                    <Link to="/operacional/demandas/$id" params={{ id: d.id }} className="hover:underline">{d.numero}</Link>
+                    <Link
+                      to="/operacional/demandas/$id"
+                      params={{ id: d.id }}
+                      className="hover:underline"
+                    >
+                      {d.numero}
+                    </Link>
                   </td>
                   <td className="px-3 py-2 font-medium text-foreground">
-                    <Link to="/operacional/demandas/$id" params={{ id: d.id }} className="hover:underline">{d.titulo}</Link>
+                    <Link
+                      to="/operacional/demandas/$id"
+                      params={{ id: d.id }}
+                      className="hover:underline"
+                    >
+                      {d.titulo}
+                    </Link>
                   </td>
                   <td className="px-3 py-2 text-muted-foreground">{d.nome_cliente ?? "—"}</td>
                   <td className="px-3 py-2 text-muted-foreground">{d.nome_responsavel ?? "—"}</td>
                   <td className="px-3 py-2">
-                    <SlaCountdown inicio={d.sla_inicio} prazo={d.prazo_sla} concluida={d.status === "concluida"} concluidaEm={d.concluida_em} />
+                    <SlaCountdown
+                      inicio={d.sla_inicio}
+                      prazo={d.prazo_sla}
+                      concluida={d.status === "concluida"}
+                      concluidaEm={d.concluida_em}
+                    />
                   </td>
                   <td className="px-3 py-2">
-                    <span className={cn("inline-block h-1.5 w-8 rounded-full", PRIORIDADE[d.prioridade].bar)} />
-                    <span className="ml-2 text-xs text-muted-foreground">{PRIORIDADE[d.prioridade].label}</span>
+                    <span
+                      className={cn(
+                        "inline-block h-1.5 w-8 rounded-full",
+                        PRIORIDADE[d.prioridade].bar,
+                      )}
+                    />
+                    <span className="ml-2 text-xs text-muted-foreground">
+                      {PRIORIDADE[d.prioridade].label}
+                    </span>
                   </td>
-                  <td className="px-3 py-2"><ToneBadge tone={statusDemanda(d.status).tone}>{statusDemanda(d.status).label}</ToneBadge></td>
+                  <td className="px-3 py-2">
+                    <ToneBadge tone={statusDemanda(d.status).tone}>
+                      {statusDemanda(d.status).label}
+                    </ToneBadge>
+                  </td>
                   <td className="px-3 py-2 text-right">
                     <ConfirmDelete
                       titulo="Excluir demanda"

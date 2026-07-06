@@ -22,7 +22,10 @@ function Pagina() {
   const sessaoFn = useServerFn(getMinhaSessao);
   const salvarFn = useServerFn(atualizarMeuPerfil);
 
-  const { data: sessao, isLoading } = useQuery({ queryKey: ["minha-sessao"], queryFn: () => sessaoFn() });
+  const { data: sessao, isLoading } = useQuery({
+    queryKey: ["minha-sessao"],
+    queryFn: () => sessaoFn(),
+  });
 
   const [nome, setNome] = useState("");
   const [telefone, setTelefone] = useState("");
@@ -73,7 +76,12 @@ function Pagina() {
                 </Avatar>
                 <div className="flex-1 space-y-1.5">
                   <Label htmlFor="foto">URL da foto</Label>
-                  <Input id="foto" value={fotoUrl} onChange={(e) => setFotoUrl(e.target.value)} placeholder="https://…" />
+                  <Input
+                    id="foto"
+                    value={fotoUrl}
+                    onChange={(e) => setFotoUrl(e.target.value)}
+                    placeholder="https://…"
+                  />
                 </div>
               </div>
 
@@ -85,16 +93,26 @@ function Pagina() {
               <div className="space-y-1.5">
                 <Label htmlFor="email">E-mail</Label>
                 <Input id="email" value={sessao?.profile?.email ?? ""} disabled />
-                <p className="text-xs text-muted-foreground">O e-mail de acesso não pode ser alterado por aqui.</p>
+                <p className="text-xs text-muted-foreground">
+                  O e-mail de acesso não pode ser alterado por aqui.
+                </p>
               </div>
 
               <div className="space-y-1.5">
                 <Label htmlFor="telefone">Telefone</Label>
-                <Input id="telefone" value={telefone} onChange={(e) => setTelefone(e.target.value)} placeholder="(00) 00000-0000" />
+                <Input
+                  id="telefone"
+                  value={telefone}
+                  onChange={(e) => setTelefone(e.target.value)}
+                  placeholder="(00) 00000-0000"
+                />
               </div>
 
               <div className="flex justify-end">
-                <Button onClick={() => salvar.mutate()} disabled={salvar.isPending || nome.trim().length < 2}>
+                <Button
+                  onClick={() => salvar.mutate()}
+                  disabled={salvar.isPending || nome.trim().length < 2}
+                >
                   {salvar.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Salvar alterações
                 </Button>

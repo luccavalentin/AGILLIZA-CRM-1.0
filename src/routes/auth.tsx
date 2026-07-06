@@ -9,18 +9,11 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { getMinhaSessao } from "@/lib/session.functions";
-import {
-  ERRO_CREDENCIAIS,
-  portaEntradaDeRoles,
-  destinoPosLogin,
-} from "@/lib/auth-routing";
+import { ERRO_CREDENCIAIS, portaEntradaDeRoles, destinoPosLogin } from "@/lib/auth-routing";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
-    meta: [
-      { title: "Entrar — Agilliza" },
-      { name: "robots", content: "noindex" },
-    ],
+    meta: [{ title: "Entrar — Agilliza" }, { name: "robots", content: "noindex" }],
   }),
   component: AuthPage,
 });

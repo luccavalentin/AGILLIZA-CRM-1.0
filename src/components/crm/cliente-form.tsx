@@ -16,7 +16,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { criarCliente, atualizarCliente, salvarEndereco, definirAcessoPortal } from "@/lib/crm/clientes.functions";
+import {
+  criarCliente,
+  atualizarCliente,
+  salvarEndereco,
+  definirAcessoPortal,
+} from "@/lib/crm/clientes.functions";
 import { validarDocumento, soDigitos } from "@/lib/crm/documento";
 
 export interface ClienteFormValues {
@@ -87,7 +92,14 @@ export function ClienteForm({
 }: {
   inicial?: Partial<ClienteFormValues>;
   portalAtivo?: boolean;
-  enderecoInicial?: { cep?: string; logradouro?: string; numero?: string; bairro?: string; cidade?: string; uf?: string } | null;
+  enderecoInicial?: {
+    cep?: string;
+    logradouro?: string;
+    numero?: string;
+    bairro?: string;
+    cidade?: string;
+    uf?: string;
+  } | null;
 }) {
   const navigate = useNavigate();
   const qc = useQueryClient();
@@ -221,12 +233,22 @@ export function ClienteForm({
         </CardHeader>
         <CardContent className="flex items-center justify-between gap-4">
           <div className="text-sm text-muted-foreground">
-            O login do cliente em /portal é por documento + data de nascimento. Nenhuma senha é criada.
-            {!v.id && <span className="mt-1 block text-xs">Salve o cadastro primeiro para habilitar o acesso.</span>}
+            O login do cliente em /portal é por documento + data de nascimento. Nenhuma senha é
+            criada.
+            {!v.id && (
+              <span className="mt-1 block text-xs">
+                Salve o cadastro primeiro para habilitar o acesso.
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-2">
             {portalSalvando && <Loader2 className="size-4 animate-spin text-muted-foreground" />}
-            <Switch id="portal" checked={portal} onCheckedChange={alternarPortal} disabled={!v.id || portalSalvando} />
+            <Switch
+              id="portal"
+              checked={portal}
+              onCheckedChange={alternarPortal}
+              disabled={!v.id || portalSalvando}
+            />
             <Label htmlFor="portal">Habilitar acesso</Label>
           </div>
         </CardContent>
@@ -239,8 +261,13 @@ export function ClienteForm({
         <CardContent className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
             <Label>Tipo de pessoa</Label>
-            <Select value={v.tipo_pessoa} onValueChange={(x) => set("tipo_pessoa", x as "PF" | "PJ")}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+            <Select
+              value={v.tipo_pessoa}
+              onValueChange={(x) => set("tipo_pessoa", x as "PF" | "PJ")}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="PF">Pessoa Física</SelectItem>
                 <SelectItem value="PJ">Pessoa Jurídica</SelectItem>
@@ -249,7 +276,11 @@ export function ClienteForm({
           </div>
           <div className="space-y-1.5">
             <Label>{v.tipo_pessoa === "PF" ? "CPF *" : "CNPJ *"}</Label>
-            <Input value={v.documento} onChange={(e) => set("documento", e.target.value)} placeholder="Somente números" />
+            <Input
+              value={v.documento}
+              onChange={(e) => set("documento", e.target.value)}
+              placeholder="Somente números"
+            />
           </div>
           <div className="space-y-1.5 sm:col-span-2">
             <Label>{v.tipo_pessoa === "PF" ? "Nome completo *" : "Razão social *"}</Label>
@@ -257,14 +288,24 @@ export function ClienteForm({
           </div>
           <div className="space-y-1.5">
             <Label>{v.tipo_pessoa === "PF" ? "Data de nascimento *" : "Data de abertura *"}</Label>
-            <Input type="date" value={v.data_nascimento} onChange={(e) => set("data_nascimento", e.target.value)} />
+            <Input
+              type="date"
+              value={v.data_nascimento}
+              onChange={(e) => set("data_nascimento", e.target.value)}
+            />
           </div>
           <div className="space-y-1.5">
             <Label>Estado civil *</Label>
             <Select value={v.estado_civil} onValueChange={(x) => set("estado_civil", x)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
-                {ESTADOS_CIVIS.map((o) => <SelectItem key={o.v} value={o.v}>{o.l}</SelectItem>)}
+                {ESTADOS_CIVIS.map((o) => (
+                  <SelectItem key={o.v} value={o.v}>
+                    {o.l}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -272,9 +313,15 @@ export function ClienteForm({
             <div className="space-y-1.5">
               <Label>Regime de casamento</Label>
               <Select value={v.regime_casamento} onValueChange={(x) => set("regime_casamento", x)}>
-                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione" />
+                </SelectTrigger>
                 <SelectContent>
-                  {REGIMES.map((o) => <SelectItem key={o.v} value={o.v}>{o.l}</SelectItem>)}
+                  {REGIMES.map((o) => (
+                    <SelectItem key={o.v} value={o.v}>
+                      {o.l}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -289,12 +336,18 @@ export function ClienteForm({
           </div>
           <div className="space-y-1.5">
             <Label>Celular *</Label>
-            <Input value={v.telefone_celular} onChange={(e) => set("telefone_celular", e.target.value)} placeholder="(11) 99999-9999" />
+            <Input
+              value={v.telefone_celular}
+              onChange={(e) => set("telefone_celular", e.target.value)}
+              placeholder="(11) 99999-9999"
+            />
           </div>
           <div className="space-y-1.5">
             <Label>Renda total declarada (R$) *</Label>
             <div className="relative">
-              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">R$</span>
+              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                R$
+              </span>
               <Input
                 inputMode="numeric"
                 className="pl-9"
@@ -306,7 +359,12 @@ export function ClienteForm({
           </div>
           <div className="space-y-1.5">
             <Label>UF de interesse</Label>
-            <Input maxLength={2} value={v.uf_interesse} onChange={(e) => set("uf_interesse", e.target.value.toUpperCase())} placeholder="SP" />
+            <Input
+              maxLength={2}
+              value={v.uf_interesse}
+              onChange={(e) => set("uf_interesse", e.target.value.toUpperCase())}
+              placeholder="SP"
+            />
           </div>
         </CardContent>
       </Card>
@@ -338,23 +396,39 @@ export function ClienteForm({
           </div>
           <div className="space-y-1.5">
             <Label>Logradouro</Label>
-            <Input value={end.logradouro} onChange={(e) => setEnd((p) => ({ ...p, logradouro: e.target.value }))} />
+            <Input
+              value={end.logradouro}
+              onChange={(e) => setEnd((p) => ({ ...p, logradouro: e.target.value }))}
+            />
           </div>
           <div className="space-y-1.5">
             <Label>Número</Label>
-            <Input value={end.numero} onChange={(e) => setEnd((p) => ({ ...p, numero: e.target.value }))} />
+            <Input
+              value={end.numero}
+              onChange={(e) => setEnd((p) => ({ ...p, numero: e.target.value }))}
+            />
           </div>
           <div className="space-y-1.5">
             <Label>Bairro</Label>
-            <Input value={end.bairro} onChange={(e) => setEnd((p) => ({ ...p, bairro: e.target.value }))} />
+            <Input
+              value={end.bairro}
+              onChange={(e) => setEnd((p) => ({ ...p, bairro: e.target.value }))}
+            />
           </div>
           <div className="space-y-1.5">
             <Label>Cidade</Label>
-            <Input value={end.cidade} onChange={(e) => setEnd((p) => ({ ...p, cidade: e.target.value }))} />
+            <Input
+              value={end.cidade}
+              onChange={(e) => setEnd((p) => ({ ...p, cidade: e.target.value }))}
+            />
           </div>
           <div className="space-y-1.5">
             <Label>UF</Label>
-            <Input maxLength={2} value={end.uf} onChange={(e) => setEnd((p) => ({ ...p, uf: e.target.value.toUpperCase() }))} />
+            <Input
+              maxLength={2}
+              value={end.uf}
+              onChange={(e) => setEnd((p) => ({ ...p, uf: e.target.value.toUpperCase() }))}
+            />
           </div>
         </CardContent>
       </Card>

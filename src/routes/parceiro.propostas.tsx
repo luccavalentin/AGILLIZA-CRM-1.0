@@ -24,10 +24,7 @@ function MinhasPropostas() {
   });
 
   return (
-    <ParceiroPage
-      titulo="Propostas"
-      descricao="Acompanhe as propostas dos seus clientes."
-    >
+    <ParceiroPage titulo="Propostas" descricao="Acompanhe as propostas dos seus clientes.">
       <div className="rounded-lg border bg-background">
         <Table>
           <TableHeader>

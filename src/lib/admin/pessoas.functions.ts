@@ -62,9 +62,7 @@ export const listarPessoas = createServerFn({ method: "GET" })
 
     const { data: pessoas, error } = await supabase
       .from("profiles")
-      .select(
-        "id, nome, email, telefone, acesso_tipo, ativo, bloqueado_em, nivel_acesso_id",
-      )
+      .select("id, nome, email, telefone, acesso_tipo, ativo, bloqueado_em, nivel_acesso_id")
       .eq("correspondente_id", correspondenteId)
       .order("created_at", { ascending: true });
 
@@ -147,27 +145,24 @@ export const criarPessoaComAcesso = createServerFn({ method: "POST" })
       throw new Error("Papel não permitido.");
     }
 
-
     const senha = gerarSenhaTemporaria();
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const { data: created, error: createErr } =
-      await supabaseAdmin.auth.admin.createUser({
-        email: data.email,
-        password: senha,
-        email_confirm: true,
-        user_metadata: {
-          full_name: data.nome,
-          nome: data.nome,
-          telefone: data.telefone ?? null,
-          correspondente_id: correspondenteId,
-          papel,
-          acesso_tipo: acessoTipo,
-          nivel_acesso_id: data.nivel_acesso_id,
-
-        },
-      });
+    const { data: created, error: createErr } = await supabaseAdmin.auth.admin.createUser({
+      email: data.email,
+      password: senha,
+      email_confirm: true,
+      user_metadata: {
+        full_name: data.nome,
+        nome: data.nome,
+        telefone: data.telefone ?? null,
+        correspondente_id: correspondenteId,
+        papel,
+        acesso_tipo: acessoTipo,
+        nivel_acesso_id: data.nivel_acesso_id,
+      },
+    });
 
     if (createErr || !created?.user) {
       // Mensagem genérica; não vaza se o e-mail já existe.
@@ -188,7 +183,6 @@ export const criarPessoaComAcesso = createServerFn({ method: "POST" })
         acesso_tipo: acessoTipo,
         papel,
       },
-
     });
 
     return { email: data.email, senha_temporaria: senha };

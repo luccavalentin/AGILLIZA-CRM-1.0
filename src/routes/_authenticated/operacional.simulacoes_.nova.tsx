@@ -7,7 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { CurrencyInput } from "@/components/simulacao/currency-input";
 import { ToneBadge } from "@/components/crm/tone-badge";
 import { PRODUTOS } from "@/lib/simulacao/schemas";
@@ -39,7 +45,7 @@ interface WizardState {
 
 function Pagina() {
   const router = useRouter();
-  
+
   const [w, setW] = useState<WizardState>({
     produto: "financiamento_imobiliario",
     valor_imovel: 0,
@@ -83,10 +89,13 @@ function Pagina() {
     setEntradaTocada(true);
     setW((prev) => {
       const entrada = Math.round((prev.valor_imovel || 0) * 0.2);
-      return { ...prev, valor_entrada: entrada, valor_financiamento: Math.max(0, prev.valor_imovel - entrada) };
+      return {
+        ...prev,
+        valor_entrada: entrada,
+        valor_financiamento: Math.max(0, prev.valor_imovel - entrada),
+      };
     });
   }
-
 
   const valido =
     w.valor_imovel > 0 &&
@@ -109,10 +118,7 @@ function Pagina() {
   }, [bancos, mostrarRapida, w.valor_financiamento, w.prazo_meses]);
 
   function irParaCompleta() {
-    sessionStorage.setItem(
-      "simulacao_wizard",
-      JSON.stringify({ ...w, prazo: w.prazo_meses }),
-    );
+    sessionStorage.setItem("simulacao_wizard", JSON.stringify({ ...w, prazo: w.prazo_meses }));
     router.navigate({ to: "/operacional/simulacoes/completa" });
   }
 
@@ -122,28 +128,49 @@ function Pagina() {
       <div className="flex flex-col gap-5">
         <h1 className="text-lg font-semibold text-foreground">Simular financiamento</h1>
 
-
         <div className="space-y-1.5">
           <Label>Produto</Label>
-          <Select value={w.produto} onValueChange={(v) => set("produto", v as WizardState["produto"])}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
+          <Select
+            value={w.produto}
+            onValueChange={(v) => set("produto", v as WizardState["produto"])}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
-              {PRODUTOS.map((p) => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
+              {PRODUTOS.map((p) => (
+                <SelectItem key={p.value} value={p.value}>
+                  {p.label}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
 
         <div className="space-y-1.5">
-          <Label>Valor do imóvel que deseja financiar <span className="text-destructive">*</span></Label>
-          <CurrencyInput value={w.valor_imovel} onChange={(v) => set("valor_imovel", v)} placeholder="0,00" />
+          <Label>
+            Valor do imóvel que deseja financiar <span className="text-destructive">*</span>
+          </Label>
+          <CurrencyInput
+            value={w.valor_imovel}
+            onChange={(v) => set("valor_imovel", v)}
+            placeholder="0,00"
+          />
         </div>
 
         <div className="space-y-1.5">
-          <Label>Valor da entrada <span className="text-destructive">*</span></Label>
-          <CurrencyInput value={w.valor_entrada} onChange={(v) => set("valor_entrada", v)} placeholder="0,00" />
+          <Label>
+            Valor da entrada <span className="text-destructive">*</span>
+          </Label>
+          <CurrencyInput
+            value={w.valor_entrada}
+            onChange={(v) => set("valor_entrada", v)}
+            placeholder="0,00"
+          />
           {w.valor_imovel > 0 && (
             <p className="text-xs text-muted-foreground">
-              Entrada sugerida (20%): <span className="font-medium text-foreground">{formatBRL(entradaSugerida)}</span>
+              Entrada sugerida (20%):{" "}
+              <span className="font-medium text-foreground">{formatBRL(entradaSugerida)}</span>
               {w.valor_entrada !== entradaSugerida && (
                 <button
                   type="button"
@@ -157,37 +184,56 @@ function Pagina() {
           )}
         </div>
 
-
         <div className="space-y-1.5">
-          <Label>Valor do crédito que precisa <span className="text-destructive">*</span></Label>
-          <CurrencyInput value={w.valor_financiamento} onChange={(v) => set("valor_financiamento", v)} placeholder="0,00" />
+          <Label>
+            Valor do crédito que precisa <span className="text-destructive">*</span>
+          </Label>
+          <CurrencyInput
+            value={w.valor_financiamento}
+            onChange={(v) => set("valor_financiamento", v)}
+            placeholder="0,00"
+          />
         </div>
 
         <div className="space-y-2">
           <Label>Você já possui o imóvel escolhido?</Label>
           <RadioGroup
             className="flex flex-col gap-2 sm:flex-row sm:gap-6"
-            value={w.possui_imovel_escolhido == null ? "" : w.possui_imovel_escolhido ? "sim" : "nao"}
+            value={
+              w.possui_imovel_escolhido == null ? "" : w.possui_imovel_escolhido ? "sim" : "nao"
+            }
             onValueChange={(v) => set("possui_imovel_escolhido", v === "sim")}
           >
             <div className="flex items-center gap-2">
               <RadioGroupItem value="sim" id="pie-sim" />
-              <Label htmlFor="pie-sim" className="font-normal">Sim, já tenho um imóvel escolhido</Label>
+              <Label htmlFor="pie-sim" className="font-normal">
+                Sim, já tenho um imóvel escolhido
+              </Label>
             </div>
             <div className="flex items-center gap-2">
               <RadioGroupItem value="nao" id="pie-nao" />
-              <Label htmlFor="pie-nao" className="font-normal">Não, ainda estou pesquisando</Label>
+              <Label htmlFor="pie-nao" className="font-normal">
+                Não, ainda estou pesquisando
+              </Label>
             </div>
           </RadioGroup>
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
-            <Label>Informe sua data de nascimento <span className="text-destructive">*</span></Label>
-            <Input type="date" value={w.data_nascimento} onChange={(e) => set("data_nascimento", e.target.value)} />
+            <Label>
+              Informe sua data de nascimento <span className="text-destructive">*</span>
+            </Label>
+            <Input
+              type="date"
+              value={w.data_nascimento}
+              onChange={(e) => set("data_nascimento", e.target.value)}
+            />
           </div>
           <div className="space-y-1.5">
-            <Label>Em quantos meses irá financiar <span className="text-destructive">*</span></Label>
+            <Label>
+              Em quantos meses irá financiar <span className="text-destructive">*</span>
+            </Label>
             <Input
               type="number"
               min={PRAZO_MIN}
@@ -224,12 +270,13 @@ function Pagina() {
           </Button>
         </div>
 
-
         {mostrarRapida && (
           <div className="space-y-3 rounded-lg border border-border p-4">
             <div className="flex items-center justify-between">
               <h3 className="font-semibold text-foreground">Comparativo estimado</h3>
-              <span className="text-xs text-muted-foreground">Sistema SAC · {w.prazo_meses} meses</span>
+              <span className="text-xs text-muted-foreground">
+                Sistema SAC · {w.prazo_meses} meses
+              </span>
             </div>
             {comparativo.length === 0 && (
               <p className="text-sm text-muted-foreground">
@@ -244,7 +291,9 @@ function Pagina() {
                 >
                   <div>
                     <p className="font-medium text-card-foreground">{c.nome_banco}</p>
-                    <p className="text-xs text-muted-foreground">Taxa {formatPercent(c.taxa_ano)} a.a.</p>
+                    <p className="text-xs text-muted-foreground">
+                      Taxa {formatPercent(c.taxa_ano)} a.a.
+                    </p>
                   </div>
                   <div className="text-right">
                     <p className="tabular-nums font-semibold text-card-foreground">

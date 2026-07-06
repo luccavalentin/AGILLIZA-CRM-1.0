@@ -43,7 +43,11 @@ export interface MatriculasResumo {
 }
 
 async function correspondenteDoUsuario(supabase: any, userId: string): Promise<string> {
-  const { data, error } = await supabase.from("profiles").select("correspondente_id").eq("id", userId).single();
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("correspondente_id")
+    .eq("id", userId)
+    .single();
   if (error) throw new Error(error.message);
   if (!data?.correspondente_id) throw new Error("Usuário sem correspondente vinculado.");
   return data.correspondente_id as string;
@@ -58,9 +62,23 @@ export const obterControleMatriculas = createServerFn({ method: "GET" })
     const corr = await correspondenteDoUsuario(supabase, userId);
 
     const [cfgRes, credRes, solRes] = await Promise.all([
-      supabase.from("matricula_config").select("correspondente_id,pix_chave,pix_titular").eq("correspondente_id", corr).maybeSingle(),
-      supabase.from("matricula_creditos").select("id,data,valor,descricao,created_at").eq("correspondente_id", corr).order("data", { ascending: false }),
-      supabase.from("matricula_solicitacoes").select("id,data_solicitacao,solicitante,corretor,cliente,numero_matricula,valor,reembolsado,reembolsado_em,data_pagto_reembolso,observacao,created_at").eq("correspondente_id", corr).order("data_solicitacao", { ascending: false }),
+      supabase
+        .from("matricula_config")
+        .select("correspondente_id,pix_chave,pix_titular")
+        .eq("correspondente_id", corr)
+        .maybeSingle(),
+      supabase
+        .from("matricula_creditos")
+        .select("id,data,valor,descricao,created_at")
+        .eq("correspondente_id", corr)
+        .order("data", { ascending: false }),
+      supabase
+        .from("matricula_solicitacoes")
+        .select(
+          "id,data_solicitacao,solicitante,corretor,cliente,numero_matricula,valor,reembolsado,reembolsado_em,data_pagto_reembolso,observacao,created_at",
+        )
+        .eq("correspondente_id", corr)
+        .order("data_solicitacao", { ascending: false }),
     ]);
     if (cfgRes.error) throw new Error(cfgRes.error.message);
     if (credRes.error) throw new Error(credRes.error.message);
@@ -70,7 +88,9 @@ export const obterControleMatriculas = createServerFn({ method: "GET" })
     const solicitacoes = (solRes.data ?? []) as MatriculaSolicitacao[];
     const total_creditos = creditos.reduce((s, c) => s + Number(c.valor), 0);
     const total_gasto = solicitacoes.reduce((s, r) => s + Number(r.valor), 0);
-    const total_reembolsado = solicitacoes.filter((r) => r.reembolsado).reduce((s, r) => s + Number(r.valor), 0);
+    const total_reembolsado = solicitacoes
+      .filter((r) => r.reembolsado)
+      .reduce((s, r) => s + Number(r.valor), 0);
     const total_a_reembolsar = total_gasto - total_reembolsado;
 
     return {
@@ -89,17 +109,23 @@ export const obterControleMatriculas = createServerFn({ method: "GET" })
 export const salvarPixMatriculas = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
-    z.object({
-      pix_chave: z.string().trim().max(200).optional().nullable(),
-      pix_titular: z.string().trim().max(200).optional().nullable(),
-    }).parse(d),
+    z
+      .object({
+        pix_chave: z.string().trim().max(200).optional().nullable(),
+        pix_titular: z.string().trim().max(200).optional().nullable(),
+      })
+      .parse(d),
   )
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const supabase = context.supabase as any;
     const { userId } = context;
     const corr = await correspondenteDoUsuario(supabase, userId);
     const { error } = await supabase.from("matricula_config").upsert(
-      { correspondente_id: corr, pix_chave: data.pix_chave ?? null, pix_titular: data.pix_titular ?? null },
+      {
+        correspondente_id: corr,
+        pix_chave: data.pix_chave ?? null,
+        pix_titular: data.pix_titular ?? null,
+      },
       { onConflict: "correspondente_id" },
     );
     if (error) throw new Error(error.message);
@@ -110,18 +136,24 @@ export const salvarPixMatriculas = createServerFn({ method: "POST" })
 export const criarCreditoMatricula = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
-    z.object({
-      data: z.string().min(1),
-      valor: z.number().nonnegative(),
-      descricao: z.string().trim().max(500).optional().nullable(),
-    }).parse(d),
+    z
+      .object({
+        data: z.string().min(1),
+        valor: z.number().nonnegative(),
+        descricao: z.string().trim().max(500).optional().nullable(),
+      })
+      .parse(d),
   )
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const supabase = context.supabase as any;
     const { userId } = context;
     const corr = await correspondenteDoUsuario(supabase, userId);
     const { error } = await supabase.from("matricula_creditos").insert({
-      correspondente_id: corr, data: data.data, valor: data.valor, descricao: data.descricao ?? null, criado_por: userId,
+      correspondente_id: corr,
+      data: data.data,
+      valor: data.valor,
+      descricao: data.descricao ?? null,
+      criado_por: userId,
     });
     if (error) throw new Error(error.message);
     return { ok: true };
@@ -183,24 +215,30 @@ export const atualizarSolicitacaoMatricula = createServerFn({ method: "POST" })
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const supabase = context.supabase as any;
     const { data: atual, error: erroBusca } = await supabase
-      .from("matricula_solicitacoes").select("reembolsado,reembolsado_em").eq("id", data.id).single();
+      .from("matricula_solicitacoes")
+      .select("reembolsado,reembolsado_em")
+      .eq("id", data.id)
+      .single();
     if (erroBusca) throw new Error(erroBusca.message);
     const novoReembolsado = data.reembolsado ?? false;
     const reembolsadoEm = novoReembolsado
       ? (atual?.reembolsado_em ?? new Date().toISOString())
       : null;
-    const { error } = await supabase.from("matricula_solicitacoes").update({
-      data_solicitacao: data.data_solicitacao,
-      solicitante: data.solicitante,
-      corretor: data.corretor ?? null,
-      cliente: data.cliente ?? null,
-      numero_matricula: data.numero_matricula ?? null,
-      valor: data.valor,
-      reembolsado: novoReembolsado,
-      reembolsado_em: reembolsadoEm,
-      data_pagto_reembolso: data.data_pagto_reembolso || null,
-      observacao: data.observacao ?? null,
-    }).eq("id", data.id);
+    const { error } = await supabase
+      .from("matricula_solicitacoes")
+      .update({
+        data_solicitacao: data.data_solicitacao,
+        solicitante: data.solicitante,
+        corretor: data.corretor ?? null,
+        cliente: data.cliente ?? null,
+        numero_matricula: data.numero_matricula ?? null,
+        valor: data.valor,
+        reembolsado: novoReembolsado,
+        reembolsado_em: reembolsadoEm,
+        data_pagto_reembolso: data.data_pagto_reembolso || null,
+        observacao: data.observacao ?? null,
+      })
+      .eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -208,13 +246,18 @@ export const atualizarSolicitacaoMatricula = createServerFn({ method: "POST" })
 /** Alterna rapidamente o status de reembolso. */
 export const alternarReembolsoMatricula = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ id: z.string().uuid(), reembolsado: z.boolean() }).parse(d))
+  .inputValidator((d: unknown) =>
+    z.object({ id: z.string().uuid(), reembolsado: z.boolean() }).parse(d),
+  )
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const supabase = context.supabase as any;
-    const { error } = await supabase.from("matricula_solicitacoes").update({
-      reembolsado: data.reembolsado,
-      reembolsado_em: data.reembolsado ? new Date().toISOString() : null,
-    }).eq("id", data.id);
+    const { error } = await supabase
+      .from("matricula_solicitacoes")
+      .update({
+        reembolsado: data.reembolsado,
+        reembolsado_em: data.reembolsado ? new Date().toISOString() : null,
+      })
+      .eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });

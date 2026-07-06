@@ -29,10 +29,16 @@ function Pagina() {
       </div>
 
       {isLoading ? (
-        <div className="space-y-2">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-16 w-full" />)}</div>
+        <div className="space-y-2">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-16 w-full" />
+          ))}
+        </div>
       ) : (data?.length ?? 0) === 0 ? (
         <Card>
-          <CardContent className="py-12 text-center text-sm text-muted-foreground">Nenhum parceiro cadastrado ainda.</CardContent>
+          <CardContent className="py-12 text-center text-sm text-muted-foreground">
+            Nenhum parceiro cadastrado ainda.
+          </CardContent>
         </Card>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
@@ -40,10 +46,16 @@ function Pagina() {
             <Card key={p.id}>
               <CardContent className="space-y-1.5 p-4 text-sm">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="font-medium text-foreground">{p.razao_social || p.nome || "Parceiro"}</span>
-                  <Badge variant="secondary">{p.tipo_pessoa === "juridica" ? "Imobiliária" : "Corretor"}</Badge>
+                  <span className="font-medium text-foreground">
+                    {p.razao_social || p.nome || "Parceiro"}
+                  </span>
+                  <Badge variant="secondary">
+                    {p.tipo_pessoa === "juridica" ? "Imobiliária" : "Corretor"}
+                  </Badge>
                 </div>
-                {p.nome && p.razao_social && <p className="text-xs text-muted-foreground">Contato: {p.nome}</p>}
+                {p.nome && p.razao_social && (
+                  <p className="text-xs text-muted-foreground">Contato: {p.nome}</p>
+                )}
                 {p.email && <p className="text-xs text-muted-foreground">{p.email}</p>}
                 {p.telefone && <p className="text-xs text-muted-foreground">{p.telefone}</p>}
                 <div className="flex flex-wrap gap-3 pt-1 text-xs text-muted-foreground">

@@ -55,7 +55,9 @@ export function PipelineStepper({
         })}
       </ol>
       {detalheStatus && (
-        <p className="mt-2 text-center text-xs text-muted-foreground">Detalhe Status: {detalheStatus}</p>
+        <p className="mt-2 text-center text-xs text-muted-foreground">
+          Detalhe Status: {detalheStatus}
+        </p>
       )}
     </div>
   );

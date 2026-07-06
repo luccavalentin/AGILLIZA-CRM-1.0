@@ -9,7 +9,14 @@ import { listarPropostas, excluirProposta } from "@/lib/propostas/propostas.func
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { PropostaStatusBadge } from "@/components/propostas/status-badge";
 import { ConfirmDelete } from "@/components/shared/confirm-delete";
 import { formatBRL } from "@/lib/simulacao/format";
@@ -33,7 +40,8 @@ function Pagina() {
 
   const { data, isLoading } = useQuery({
     queryKey: ["propostas", escopo, busca],
-    queryFn: () => listarPropostas({ data: { escopo, q: busca || undefined, pagina: 1, porPagina: 30 } }),
+    queryFn: () =>
+      listarPropostas({ data: { escopo, q: busca || undefined, pagina: 1, porPagina: 30 } }),
   });
 
   async function handleExcluir(id: string) {
@@ -45,7 +53,6 @@ function Pagina() {
       toast.error("Não foi possível excluir a proposta.");
     }
   }
-
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-6 p-4 md:p-6">
@@ -91,7 +98,9 @@ function Pagina() {
               onChange={(e) => setQ(e.target.value)}
             />
           </div>
-          <Button type="submit" variant="secondary">Buscar</Button>
+          <Button type="submit" variant="secondary">
+            Buscar
+          </Button>
         </form>
       </div>
 
@@ -132,13 +141,19 @@ function Pagina() {
               <TableRow
                 key={p.id}
                 className="cursor-pointer"
-                onClick={() => router.navigate({ to: "/operacional/propostas/$id", params: { id: p.id } })}
+                onClick={() =>
+                  router.navigate({ to: "/operacional/propostas/$id", params: { id: p.id } })
+                }
               >
                 <TableCell className="font-medium">{p.numero_proposta}</TableCell>
                 <TableCell>{p.nome_cliente ?? "—"}</TableCell>
                 <TableCell>{p.nome_banco ?? "—"}</TableCell>
-                <TableCell className="text-right tabular-nums">{formatBRL(p.valor_financiamento)}</TableCell>
-                <TableCell><PropostaStatusBadge status={p.status} banco={p.nome_banco} /></TableCell>
+                <TableCell className="text-right tabular-nums">
+                  {formatBRL(p.valor_financiamento)}
+                </TableCell>
+                <TableCell>
+                  <PropostaStatusBadge status={p.status} banco={p.nome_banco} />
+                </TableCell>
                 <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                   {["rascunho", "erro_envio"].includes(p.status) ? (
                     <ConfirmDelete

@@ -44,10 +44,7 @@ export const listarAuditoria = createServerFn({ method: "GET" })
     const ids = [...new Set(rows.map((r) => r.user_id).filter(Boolean))] as string[];
     const nomes = new Map<string, string>();
     if (ids.length > 0) {
-      const { data: profs } = await supabase
-        .from("profiles")
-        .select("id, nome")
-        .in("id", ids);
+      const { data: profs } = await supabase.from("profiles").select("id, nome").in("id", ids);
       (profs ?? []).forEach((p) => nomes.set(p.id, p.nome ?? ""));
     }
 

@@ -11,20 +11,39 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { ConfirmDelete } from "@/components/shared/confirm-delete";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import {
-  listarSlaConfiguracoes, salvarSlaConfiguracao, excluirSlaConfiguracao,
-  listarFeriados, criarFeriado, excluirFeriado,
-  TIPOS_SLA, type SlaConfig, type Prioridade,
+  listarSlaConfiguracoes,
+  salvarSlaConfiguracao,
+  excluirSlaConfiguracao,
+  listarFeriados,
+  criarFeriado,
+  excluirFeriado,
+  TIPOS_SLA,
+  type SlaConfig,
+  type Prioridade,
 } from "@/lib/admin/sla.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/sla")({
@@ -32,11 +51,17 @@ export const Route = createFileRoute("/_authenticated/admin/sla")({
   beforeLoad: () => assertModuloPermitido("admin.sla"),
   component: Pagina,
   errorComponent: ({ error }) => (
-    <div role="alert" className="p-6 text-sm text-destructive">{error.message}</div>
+    <div role="alert" className="p-6 text-sm text-destructive">
+      {error.message}
+    </div>
   ),
 });
 
-const PRIO_LABEL: Record<Prioridade, string> = { p1: "P1 — Alta", p2: "P2 — Média", p3: "P3 — Baixa" };
+const PRIO_LABEL: Record<Prioridade, string> = {
+  p1: "P1 — Alta",
+  p2: "P2 — Média",
+  p3: "P3 — Baixa",
+};
 const CANAIS = [
   { v: "gestor", l: "Gestor" },
   { v: "correspondente", l: "Correspondente" },
@@ -76,7 +101,11 @@ interface SlaForm {
 }
 
 const SLA_VAZIO: SlaForm = {
-  tipo: "geral", prioridade: "p2", horas_uteis: 8, canal_escalonamento: "gestor", ativo: true,
+  tipo: "geral",
+  prioridade: "p2",
+  horas_uteis: 8,
+  canal_escalonamento: "gestor",
+  ativo: true,
 };
 
 function SecaoSla() {
@@ -121,11 +150,17 @@ function SecaoSla() {
     <Card>
       <CardHeader className="flex-row items-center justify-between space-y-0">
         <CardTitle className="text-base">Configurações de SLA</CardTitle>
-        <Button size="sm" onClick={novo}><Plus className="mr-1 h-4 w-4" /> Nova regra</Button>
+        <Button size="sm" onClick={novo}>
+          <Plus className="mr-1 h-4 w-4" /> Nova regra
+        </Button>
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <div className="space-y-2">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}</div>
+          <div className="space-y-2">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Skeleton key={i} className="h-10 w-full" />
+            ))}
+          </div>
         ) : (data?.length ?? 0) === 0 ? (
           <p className="py-8 text-center text-sm text-muted-foreground">
             Nenhuma regra de SLA. Sem regra, o padrão é P1=4h, P2=8h, P3=24h úteis.
@@ -152,7 +187,12 @@ function SecaoSla() {
                   <TableCell>{s.ativo ? "Sim" : "Não"}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => editar(s)}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => editar(s)}
+                      >
                         <Pencil className="h-4 w-4" />
                       </Button>
                       <ConfirmDelete
@@ -176,22 +216,38 @@ function SecaoSla() {
 
       <Dialog open={aberto} onOpenChange={setAberto}>
         <DialogContent className="sm:max-w-md">
-          <DialogHeader><DialogTitle>{form.id ? "Editar" : "Nova"} regra de SLA</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>{form.id ? "Editar" : "Nova"} regra de SLA</DialogTitle>
+          </DialogHeader>
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label>Tipo de demanda</Label>
-                <Select value={form.tipo} onValueChange={(v) => setForm((f) => ({ ...f, tipo: v }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                <Select
+                  value={form.tipo}
+                  onValueChange={(v) => setForm((f) => ({ ...f, tipo: v }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
-                    {TIPOS_SLA.map((t) => <SelectItem key={t.v} value={t.v}>{t.l}</SelectItem>)}
+                    {TIPOS_SLA.map((t) => (
+                      <SelectItem key={t.v} value={t.v}>
+                        {t.l}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-1.5">
                 <Label>Prioridade</Label>
-                <Select value={form.prioridade} onValueChange={(v) => setForm((f) => ({ ...f, prioridade: v as Prioridade }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                <Select
+                  value={form.prioridade}
+                  onValueChange={(v) => setForm((f) => ({ ...f, prioridade: v as Prioridade }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="p1">P1 — Alta</SelectItem>
                     <SelectItem value="p2">P2 — Média</SelectItem>
@@ -204,28 +260,48 @@ function SecaoSla() {
               <div className="space-y-1.5">
                 <Label>Horas úteis</Label>
                 <Input
-                  type="number" min={1} step={1} value={form.horas_uteis}
+                  type="number"
+                  min={1}
+                  step={1}
+                  value={form.horas_uteis}
                   onChange={(e) => setForm((f) => ({ ...f, horas_uteis: Number(e.target.value) }))}
                 />
               </div>
               <div className="space-y-1.5">
                 <Label>Escalonar para</Label>
-                <Select value={form.canal_escalonamento} onValueChange={(v) => setForm((f) => ({ ...f, canal_escalonamento: v }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                <Select
+                  value={form.canal_escalonamento}
+                  onValueChange={(v) => setForm((f) => ({ ...f, canal_escalonamento: v }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
-                    {CANAIS.map((c) => <SelectItem key={c.v} value={c.v}>{c.l}</SelectItem>)}
+                    {CANAIS.map((c) => (
+                      <SelectItem key={c.v} value={c.v}>
+                        {c.l}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
             </div>
             <div className="flex items-center justify-between rounded-md border border-border p-3">
               <Label htmlFor="sla-ativo">Regra ativa</Label>
-              <Switch id="sla-ativo" checked={form.ativo} onCheckedChange={(v) => setForm((f) => ({ ...f, ativo: v }))} />
+              <Switch
+                id="sla-ativo"
+                checked={form.ativo}
+                onCheckedChange={(v) => setForm((f) => ({ ...f, ativo: v }))}
+              />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setAberto(false)}>Cancelar</Button>
-            <Button onClick={() => salvarM.mutate(form)} disabled={salvarM.isPending}>Salvar</Button>
+            <Button variant="ghost" onClick={() => setAberto(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={() => salvarM.mutate(form)} disabled={salvarM.isPending}>
+              Salvar
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -243,13 +319,17 @@ function SecaoFeriados() {
   const [data, setData] = useState("");
   const [descricao, setDescricao] = useState("");
 
-  const { data: feriados, isLoading } = useQuery({ queryKey: ["admin-feriados"], queryFn: () => listar() });
+  const { data: feriados, isLoading } = useQuery({
+    queryKey: ["admin-feriados"],
+    queryFn: () => listar(),
+  });
 
   const criarM = useMutation({
     mutationFn: () => criar({ data: { data, descricao } }),
     onSuccess: () => {
       toast.success("Feriado cadastrado.");
-      setData(""); setDescricao("");
+      setData("");
+      setDescricao("");
       qc.invalidateQueries({ queryKey: ["admin-feriados"] });
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Falha ao cadastrar."),
@@ -261,7 +341,8 @@ function SecaoFeriados() {
       toast.success("Feriado removido.");
       qc.invalidateQueries({ queryKey: ["admin-feriados"] });
     },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Não é possível remover feriados globais."),
+    onError: (e) =>
+      toast.error(e instanceof Error ? e.message : "Não é possível remover feriados globais."),
   });
 
   function adicionar() {
@@ -281,19 +362,36 @@ function SecaoFeriados() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
           <div className="space-y-1.5">
             <Label>Data</Label>
-            <Input type="date" value={data} onChange={(e) => setData(e.target.value)} className="w-full sm:w-44" />
+            <Input
+              type="date"
+              value={data}
+              onChange={(e) => setData(e.target.value)}
+              className="w-full sm:w-44"
+            />
           </div>
           <div className="flex-1 space-y-1.5">
             <Label>Descrição</Label>
-            <Input value={descricao} onChange={(e) => setDescricao(e.target.value)} placeholder="Ex.: Feriado municipal" />
+            <Input
+              value={descricao}
+              onChange={(e) => setDescricao(e.target.value)}
+              placeholder="Ex.: Feriado municipal"
+            />
           </div>
-          <Button onClick={adicionar} disabled={criarM.isPending}><Plus className="mr-1 h-4 w-4" /> Adicionar</Button>
+          <Button onClick={adicionar} disabled={criarM.isPending}>
+            <Plus className="mr-1 h-4 w-4" /> Adicionar
+          </Button>
         </div>
 
         {isLoading ? (
-          <div className="space-y-2">{Array.from({ length: 2 }).map((_, i) => <Skeleton key={i} className="h-9 w-full" />)}</div>
+          <div className="space-y-2">
+            {Array.from({ length: 2 }).map((_, i) => (
+              <Skeleton key={i} className="h-9 w-full" />
+            ))}
+          </div>
         ) : (feriados?.length ?? 0) === 0 ? (
-          <p className="py-6 text-center text-sm text-muted-foreground">Nenhum feriado cadastrado.</p>
+          <p className="py-6 text-center text-sm text-muted-foreground">
+            Nenhum feriado cadastrado.
+          </p>
         ) : (
           <Table>
             <TableHeader>
@@ -311,7 +409,9 @@ function SecaoFeriados() {
                     {new Date(f.data + "T00:00:00").toLocaleDateString("pt-BR")}
                   </TableCell>
                   <TableCell className="text-foreground">{f.descricao}</TableCell>
-                  <TableCell className="text-muted-foreground">{f.correspondente_id ? "Meu" : "Nacional"}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {f.correspondente_id ? "Meu" : "Nacional"}
+                  </TableCell>
                   <TableCell className="text-right">
                     {f.correspondente_id ? (
                       <ConfirmDelete

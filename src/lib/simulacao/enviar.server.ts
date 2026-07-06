@@ -3,7 +3,12 @@
  * Segue o fluxo Oportunidade → Simulação → Integração do contrato oficial.
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { chamarIntegracao, obterToken, IntegracaoBancariaError, sanitizarMensagemErro } from "./homefin.server";
+import {
+  chamarIntegracao,
+  obterToken,
+  IntegracaoBancariaError,
+  sanitizarMensagemErro,
+} from "./homefin.server";
 import { humanizarErroBanco } from "./bank-error-humanizer";
 
 interface EnviarArgs {
@@ -30,13 +35,19 @@ export async function enviarSimulacaoImpl({
   ip,
   supabase,
 }: EnviarArgs): Promise<EnviarResultado> {
-  const { data: sim, error } = await supabase.from("simulacoes").select("*").eq("id", simulacaoId).maybeSingle();
+  const { data: sim, error } = await supabase
+    .from("simulacoes")
+    .select("*")
+    .eq("id", simulacaoId)
+    .maybeSingle();
   if (error) throw new Error(error.message);
   if (!sim) throw new Error("Simulação não encontrada.");
 
   // Regras de negócio
   if (!sim.consentimento_lgpd || !sim.consentimento_scr) {
-    throw new Error("É necessário registrar os consentimentos LGPD e SCR antes de enviar ao banco.");
+    throw new Error(
+      "É necessário registrar os consentimentos LGPD e SCR antes de enviar ao banco.",
+    );
   }
   if (!sim.id_operacao_homefin) {
     throw new Error("Selecione a operação antes de enviar ao banco.");
@@ -56,7 +67,13 @@ export async function enviarSimulacaoImpl({
   // grava consentimento_ip e status enviando
   await supabase
     .from("simulacoes")
-    .update({ status: "enviando", consentimento_ip: ip, consentimento_em: new Date().toISOString(), ultimo_envio_em: new Date().toISOString(), ultimo_erro: null })
+    .update({
+      status: "enviando",
+      consentimento_ip: ip,
+      consentimento_em: new Date().toISOString(),
+      ultimo_envio_em: new Date().toISOString(),
+      ultimo_erro: null,
+    })
     .eq("id", simulacaoId);
 
   const ctx = { simulacao_id: simulacaoId, correspondente_id };
@@ -185,7 +202,8 @@ export async function enviarSimulacaoImpl({
         sucesso++;
         resultados.push({ banco_id: b.banco_id, status: "simulada" });
       } catch (e) {
-        const msg = e instanceof IntegracaoBancariaError ? e.message : humanizarErroBanco(null, String(e));
+        const msg =
+          e instanceof IntegracaoBancariaError ? e.message : humanizarErroBanco(null, String(e));
         await supabase
           .from("simulacao_bancos")
           .update({ status_banco: "erro", mensagem_banco: msg })
@@ -229,7 +247,10 @@ export async function enviarSimulacaoImpl({
           ? e.message
           : "Falha ao enviar ao banco.";
     const msg = sanitizarMensagemErro(bruto);
-    await supabase.from("simulacoes").update({ status: "erro_banco", ultimo_erro: msg }).eq("id", simulacaoId);
+    await supabase
+      .from("simulacoes")
+      .update({ status: "erro_banco", ultimo_erro: msg })
+      .eq("id", simulacaoId);
     throw new Error(msg);
   }
 }

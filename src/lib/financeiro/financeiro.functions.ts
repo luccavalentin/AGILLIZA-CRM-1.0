@@ -97,13 +97,11 @@ export const listarContas = createServerFn({ method: "GET" })
   .handler(async ({ context, data }): Promise<{ itens: ContaListaItem[]; total: number }> => {
     const { supabase } = context;
     const contraCol = data.tipo === "pagar" ? "fornecedor" : "pagador";
-    let query = supabase
-      .from(TABELA[data.tipo])
-      .select(
-        `id, numero, descricao, ${contraCol}, vencimento, valor, valor_pago, status,
+    let query = supabase.from(TABELA[data.tipo]).select(
+      `id, numero, descricao, ${contraCol}, vencimento, valor, valor_pago, status,
          categoria:financial_categories(nome), centro:financial_cost_centers(nome)`,
-        { count: "exact" },
-      );
+      { count: "exact" },
+    );
 
     if (data.status === "atrasada") {
       // "atrasada" é um status derivado (não existe na coluna): abertas/parciais vencidas.
@@ -187,11 +185,26 @@ export const criarConta = createServerFn({ method: "POST" })
       .single();
     if (error) throw new Error(error.message);
 
-    await registrarHistorico(supabase, correspondente_id, data.tipo, inserted.id, "criada", data.descricao, data.valor);
-    await registrarAuditoria(supabase, correspondente_id, `conta_${data.tipo}`, inserted.id, "criada", {
-      valor: data.valor,
-      vencimento: data.vencimento,
-    });
+    await registrarHistorico(
+      supabase,
+      correspondente_id,
+      data.tipo,
+      inserted.id,
+      "criada",
+      data.descricao,
+      data.valor,
+    );
+    await registrarAuditoria(
+      supabase,
+      correspondente_id,
+      `conta_${data.tipo}`,
+      inserted.id,
+      "criada",
+      {
+        valor: data.valor,
+        vencimento: data.vencimento,
+      },
+    );
     return { id: inserted.id };
   });
 
@@ -262,10 +275,17 @@ export const baixarConta = createServerFn({ method: "POST" })
       quitada ? "Quitação total" : "Baixa parcial",
       data.valor,
     );
-    await registrarAuditoria(supabase, correspondente_id, `conta_${data.tipo}`, data.id, "baixada", {
-      valor: data.valor,
-      quitada,
-    });
+    await registrarAuditoria(
+      supabase,
+      correspondente_id,
+      `conta_${data.tipo}`,
+      data.id,
+      "baixada",
+      {
+        valor: data.valor,
+        quitada,
+      },
+    );
     return { status: novoStatus };
   });
 
@@ -334,11 +354,26 @@ export const estornarConta = createServerFn({ method: "POST" })
       .single();
     if (e3) throw new Error(e3.message);
 
-    await registrarHistorico(supabase, correspondente_id, data.tipo, data.id, "estornada", data.motivo, null);
-    await registrarAuditoria(supabase, correspondente_id, `conta_${data.tipo}`, data.id, "estornada", {
-      motivo: data.motivo,
-      estorno_linha: nova.id,
-    });
+    await registrarHistorico(
+      supabase,
+      correspondente_id,
+      data.tipo,
+      data.id,
+      "estornada",
+      data.motivo,
+      null,
+    );
+    await registrarAuditoria(
+      supabase,
+      correspondente_id,
+      `conta_${data.tipo}`,
+      data.id,
+      "estornada",
+      {
+        motivo: data.motivo,
+        estorno_linha: nova.id,
+      },
+    );
     return { ok: true };
   });
 
@@ -370,10 +405,25 @@ export const cancelarConta = createServerFn({ method: "POST" })
       .update({ status: "cancelada", estorno_motivo: data.motivo })
       .eq("id", data.id);
     if (error) throw new Error(error.message);
-    await registrarHistorico(supabase, correspondente_id, data.tipo, data.id, "cancelada", data.motivo, null);
-    await registrarAuditoria(supabase, correspondente_id, `conta_${data.tipo}`, data.id, "cancelada", {
-      motivo: data.motivo,
-    });
+    await registrarHistorico(
+      supabase,
+      correspondente_id,
+      data.tipo,
+      data.id,
+      "cancelada",
+      data.motivo,
+      null,
+    );
+    await registrarAuditoria(
+      supabase,
+      correspondente_id,
+      `conta_${data.tipo}`,
+      data.id,
+      "cancelada",
+      {
+        motivo: data.motivo,
+      },
+    );
     return { ok: true };
   });
 
@@ -418,14 +468,14 @@ export interface ComissaoItem {
 
 export const listarComissoes = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) =>
-    z.object({ status: z.string().optional() }).parse(data ?? {}),
-  )
+  .inputValidator((data) => z.object({ status: z.string().optional() }).parse(data ?? {}))
   .handler(async ({ context, data }): Promise<ComissaoItem[]> => {
     const { supabase } = context;
     let query = supabase
       .from("comissoes")
-      .select("id, banco_nome, valor_bruto, split_parceiro, split_interno, status, proposta_id, proposta:propostas(numero_proposta)")
+      .select(
+        "id, banco_nome, valor_bruto, split_parceiro, split_interno, status, proposta_id, proposta:propostas(numero_proposta)",
+      )
       .order("created_at", { ascending: false });
     if (data.status) query = query.eq("status", data.status as any);
     const { data: rows, error } = await query;
@@ -460,10 +510,18 @@ export const recalcularComissao = createServerFn({ method: "POST" })
 
     // Remove recebíveis/pagáveis ainda em aberto vinculados à comissão
     if (com.receivable_id) {
-      await supabase.from("financial_receivables").delete().eq("id", com.receivable_id).eq("status", "aberta");
+      await supabase
+        .from("financial_receivables")
+        .delete()
+        .eq("id", com.receivable_id)
+        .eq("status", "aberta");
     }
     if (com.payable_id) {
-      await supabase.from("financial_payables").delete().eq("id", com.payable_id).eq("status", "aberta");
+      await supabase
+        .from("financial_payables")
+        .delete()
+        .eq("id", com.payable_id)
+        .eq("status", "aberta");
     }
     await supabase.from("comissoes").delete().eq("id", com.id);
 
@@ -483,7 +541,11 @@ export const listarConfigs = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { supabase } = context;
     const [cats, ccs, pms] = await Promise.all([
-      supabase.from("financial_categories").select("id, nome, tipo").eq("ativo", true).order("nome"),
+      supabase
+        .from("financial_categories")
+        .select("id, nome, tipo")
+        .eq("ativo", true)
+        .order("nome"),
       supabase.from("financial_cost_centers").select("id, nome").eq("ativo", true).order("nome"),
       supabase.from("financial_payment_methods").select("id, nome").eq("ativo", true).order("nome"),
     ]);
@@ -516,7 +578,11 @@ export const criarConfig = createServerFn({ method: "POST" })
           : "financial_payment_methods";
     const registro: Record<string, unknown> = { correspondente_id, nome: data.nome };
     if (data.entidade === "categoria") registro.tipo = data.tipo ?? "despesa";
-    const { data: ins, error } = await supabase.from(tabela).insert(registro as any).select("id").single();
+    const { data: ins, error } = await supabase
+      .from(tabela)
+      .insert(registro as any)
+      .select("id")
+      .single();
     if (error) throw new Error(error.message);
     return { id: ins.id };
   });
@@ -599,10 +665,18 @@ export const obterKpisFinanceiros = createServerFn({ method: "GET" })
     const recRows = recAll.data ?? [];
     const payRows = payAll.data ?? [];
 
-    const aReceberHoje = recRows.filter((r: any) => r.vencimento === hojeStr).reduce((s: number, r: any) => s + saldoAberto(r), 0);
-    const aReceber30d = recRows.filter((r: any) => r.vencimento <= em30Str).reduce((s: number, r: any) => s + saldoAberto(r), 0);
-    const aPagarHoje = payRows.filter((r: any) => r.vencimento === hojeStr).reduce((s: number, r: any) => s + saldoAberto(r), 0);
-    const aPagar30d = payRows.filter((r: any) => r.vencimento <= em30Str).reduce((s: number, r: any) => s + saldoAberto(r), 0);
+    const aReceberHoje = recRows
+      .filter((r: any) => r.vencimento === hojeStr)
+      .reduce((s: number, r: any) => s + saldoAberto(r), 0);
+    const aReceber30d = recRows
+      .filter((r: any) => r.vencimento <= em30Str)
+      .reduce((s: number, r: any) => s + saldoAberto(r), 0);
+    const aPagarHoje = payRows
+      .filter((r: any) => r.vencimento === hojeStr)
+      .reduce((s: number, r: any) => s + saldoAberto(r), 0);
+    const aPagar30d = payRows
+      .filter((r: any) => r.vencimento <= em30Str)
+      .reduce((s: number, r: any) => s + saldoAberto(r), 0);
     const saldoProjetado = aReceber30d - aPagar30d;
     const inadimplencia = (inadim.data ?? []).reduce((s: number, r: any) => s + saldoAberto(r), 0);
 
@@ -623,7 +697,11 @@ export const obterKpisFinanceiros = createServerFn({ method: "GET" })
       const m = (r.data_pagamento ?? "").slice(0, 7);
       if (mapMes[m]) mapMes[m].despesa += Number(r.valor_pago ?? 0);
     });
-    const receitaDespesaMensal = meses.map((m) => ({ mes: m, receita: mapMes[m].receita, despesa: mapMes[m].despesa }));
+    const receitaDespesaMensal = meses.map((m) => ({
+      mes: m,
+      receita: mapMes[m].receita,
+      despesa: mapMes[m].despesa,
+    }));
 
     // Receita por banco (a receber em aberto)
     const bancoMap: Record<string, number> = {};
@@ -675,16 +753,25 @@ export const obterFluxoCaixa = createServerFn({ method: "GET" })
     const { supabase } = context;
     const abertos = ["aberta", "parcial"] as any;
     const [rec, pay] = await Promise.all([
-      supabase.from("financial_receivables").select("valor, valor_pago, vencimento").in("status", abertos),
-      supabase.from("financial_payables").select("valor, valor_pago, vencimento").in("status", abertos),
+      supabase
+        .from("financial_receivables")
+        .select("valor, valor_pago, vencimento")
+        .in("status", abertos),
+      supabase
+        .from("financial_payables")
+        .select("valor, valor_pago, vencimento")
+        .in("status", abertos),
     ]);
 
     const chave = (iso: string): string => {
       const d = new Date(iso + "T00:00:00");
-      if (data.granularidade === "mes") return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      if (data.granularidade === "mes")
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
       if (data.granularidade === "semana") {
         const onejan = new Date(d.getFullYear(), 0, 1);
-        const week = Math.ceil(((d.getTime() - onejan.getTime()) / 86400000 + onejan.getDay() + 1) / 7);
+        const week = Math.ceil(
+          ((d.getTime() - onejan.getTime()) / 86400000 + onejan.getDay() + 1) / 7,
+        );
         return `${d.getFullYear()}-S${String(week).padStart(2, "0")}`;
       }
       return iso;
@@ -703,7 +790,12 @@ export const obterFluxoCaixa = createServerFn({ method: "GET" })
 
     return Object.entries(mapa)
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([periodo, v]) => ({ periodo, entrada: v.entrada, saida: v.saida, saldo: v.entrada - v.saida }));
+      .map(([periodo, v]) => ({
+        periodo,
+        entrada: v.entrada,
+        saida: v.saida,
+        saldo: v.entrada - v.saida,
+      }));
   });
 
 /** Exclui uma conta a pagar ou a receber. */

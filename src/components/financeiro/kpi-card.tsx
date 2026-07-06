@@ -31,7 +31,9 @@ export function ReportKpiCard({
         <Icon className={cn("h-5 w-5", c.icon)} />
       </div>
       <div className="min-w-0">
-        <p className="truncate text-xs font-medium uppercase tracking-wide text-muted-foreground">{titulo}</p>
+        <p className="truncate text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          {titulo}
+        </p>
         <p className="truncate text-lg font-semibold tabular-nums text-foreground">{valor}</p>
         {sub && <p className="truncate text-xs text-muted-foreground">{sub}</p>}
       </div>

@@ -11,10 +11,7 @@ import { validarAcessoCliente } from "@/lib/portal/cliente.functions";
 
 export const Route = createFileRoute("/portal")({
   head: () => ({
-    meta: [
-      { title: "Portal do Cliente — Agilliza" },
-      { name: "robots", content: "noindex" },
-    ],
+    meta: [{ title: "Portal do Cliente — Agilliza" }, { name: "robots", content: "noindex" }],
   }),
   component: PortalCliente,
 });
@@ -43,10 +40,7 @@ function PortalCliente() {
   const [carregando, setCarregando] = useState(false);
   const navigate = useNavigate();
 
-  async function acessar(
-    e: React.FormEvent<HTMLFormElement>,
-    tipo: "PF" | "PJ",
-  ) {
+  async function acessar(e: React.FormEvent<HTMLFormElement>, tipo: "PF" | "PJ") {
     e.preventDefault();
     const form = new FormData(e.currentTarget);
     const data = String(form.get("data"));
@@ -79,11 +73,7 @@ function PortalCliente() {
         </p>
       </div>
 
-      <Tabs
-        defaultValue="pf"
-        className="mt-6 w-full"
-        onValueChange={() => setDocumento("")}
-      >
+      <Tabs defaultValue="pf" className="mt-6 w-full" onValueChange={() => setDocumento("")}>
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="pf">Pessoa Física</TabsTrigger>
           <TabsTrigger value="pj">Pessoa Jurídica</TabsTrigger>
@@ -137,8 +127,7 @@ function PortalCliente() {
       </Tabs>
 
       <p className="mt-6 text-center text-xs text-muted-foreground">
-        Ainda não tem acesso? Peça ao seu correspondente para habilitar seu
-        Portal do Cliente.
+        Ainda não tem acesso? Peça ao seu correspondente para habilitar seu Portal do Cliente.
       </p>
     </AuthSplitLayout>
   );

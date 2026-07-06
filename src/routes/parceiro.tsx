@@ -14,10 +14,7 @@ import { ERRO_CREDENCIAIS, ehPapelParceiro } from "@/lib/auth-routing";
 
 export const Route = createFileRoute("/parceiro")({
   head: () => ({
-    meta: [
-      { title: "Portal do Parceiro — Agilliza" },
-      { name: "robots", content: "noindex" },
-    ],
+    meta: [{ title: "Portal do Parceiro — Agilliza" }, { name: "robots", content: "noindex" }],
   }),
   component: PortalParceiro,
 });
@@ -38,8 +35,7 @@ function PortalParceiro() {
     !!sessao?.profile?.ativo &&
     !sessao.profile.bloqueado_em &&
     sessao.profile.acesso_tipo === "portal_parceiro" &&
-    (ehPapelParceiro(sessao.roles) ||
-      sessao.profile.acesso_tipo === "portal_parceiro");
+    (ehPapelParceiro(sessao.roles) || sessao.profile.acesso_tipo === "portal_parceiro");
 
   async function entrar(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -141,8 +137,8 @@ function PortalParceiro() {
       </form>
 
       <p className="mt-6 text-center text-xs text-muted-foreground">
-        Ainda não é parceiro cadastrado? Fale com o correspondente que trabalha
-        com você para cadastrá-lo.
+        Ainda não é parceiro cadastrado? Fale com o correspondente que trabalha com você para
+        cadastrá-lo.
       </p>
     </AuthSplitLayout>
   );

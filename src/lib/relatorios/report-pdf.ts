@@ -25,7 +25,14 @@ function drawHeader(doc: jsPDF, pageW: number, titulo: string, descricao: string
   const logoH = 30;
   const logoW = logoH * AGILLIZA_LOGO_RATIO;
   try {
-    doc.addImage(AGILLIZA_LOGO_LIGHT, "PNG", pageW - logoW - 32, (HEADER_H - logoH) / 2, logoW, logoH);
+    doc.addImage(
+      AGILLIZA_LOGO_LIGHT,
+      "PNG",
+      pageW - logoW - 32,
+      (HEADER_H - logoH) / 2,
+      logoW,
+      logoH,
+    );
   } catch {
     /* fallback silencioso */
   }
@@ -109,14 +116,24 @@ export function exportPDF(
     body,
     foot,
     margin: { left: 32, right: 32, top: HEADER_H + 16, bottom: 40 },
-    styles: { fontSize: 7.5, cellPadding: 4, textColor: GRAFITE, lineColor: "#E4E6EF", lineWidth: 0.25 },
+    styles: {
+      fontSize: 7.5,
+      cellPadding: 4,
+      textColor: GRAFITE,
+      lineColor: "#E4E6EF",
+      lineWidth: 0.25,
+    },
     headStyles: { fillColor: AZUL, textColor: "#FFFFFF", fontStyle: "bold" },
     footStyles: { fillColor: "#E9EBF5", textColor: AZUL, fontStyle: "bold" },
     alternateRowStyles: { fillColor: ZEBRA },
-    columnStyles: columns.reduce((acc, c, i) => {
-      if (c.align === "right" || c.format === "brl" || c.format === "int" || c.format === "pct") acc[i] = { halign: "right" };
-      return acc;
-    }, {} as Record<number, { halign: "right" }>),
+    columnStyles: columns.reduce(
+      (acc, c, i) => {
+        if (c.align === "right" || c.format === "brl" || c.format === "int" || c.format === "pct")
+          acc[i] = { halign: "right" };
+        return acc;
+      },
+      {} as Record<number, { halign: "right" }>,
+    ),
     didDrawPage: () => {
       drawHeader(doc, pageW, titulo, descricao);
     },

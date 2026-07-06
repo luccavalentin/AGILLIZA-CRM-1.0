@@ -11,20 +11,39 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { ConfirmDelete } from "@/components/shared/confirm-delete";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import {
-  listarRegrasComissaoAdmin, salvarRegraComissao, excluirRegraComissao,
-  listarBancosParaComissao, simularComissao,
-  PRODUTOS_COMISSAO, type RegraComissao, type ComissaoTipo, type SimulacaoComissaoResultado,
+  listarRegrasComissaoAdmin,
+  salvarRegraComissao,
+  excluirRegraComissao,
+  listarBancosParaComissao,
+  simularComissao,
+  PRODUTOS_COMISSAO,
+  type RegraComissao,
+  type ComissaoTipo,
+  type SimulacaoComissaoResultado,
 } from "@/lib/admin/comissoes.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/comissoes")({
@@ -32,7 +51,9 @@ export const Route = createFileRoute("/_authenticated/admin/comissoes")({
   beforeLoad: () => assertModuloPermitido("admin.comissoes"),
   component: Pagina,
   errorComponent: ({ error }) => (
-    <div role="alert" className="p-6 text-sm text-destructive">{error.message}</div>
+    <div role="alert" className="p-6 text-sm text-destructive">
+      {error.message}
+    </div>
   ),
 });
 
@@ -80,9 +101,18 @@ interface RegraForm {
 }
 
 const REGRA_VAZIA: RegraForm = {
-  banco_codigo: "", banco_nome: "", produto: "todos", faixa_min: 0, faixa_max: null,
-  tipo: "percentual", valor: 1, percentual_parceiro: 0, percentual_interno: 100,
-  vigencia_inicio: "", vigencia_fim: "", ativo: true,
+  banco_codigo: "",
+  banco_nome: "",
+  produto: "todos",
+  faixa_min: 0,
+  faixa_max: null,
+  tipo: "percentual",
+  valor: 1,
+  percentual_parceiro: 0,
+  percentual_interno: 100,
+  vigencia_inicio: "",
+  vigencia_fim: "",
+  ativo: true,
 };
 
 const TODOS_BANCOS = "__todos__";
@@ -97,7 +127,10 @@ function SecaoRegras() {
   const [form, setForm] = useState<RegraForm>(REGRA_VAZIA);
 
   const { data, isLoading } = useQuery({ queryKey: ["admin-comissoes"], queryFn: () => listar() });
-  const { data: bancos } = useQuery({ queryKey: ["admin-comissoes-bancos"], queryFn: () => listarBancos() });
+  const { data: bancos } = useQuery({
+    queryKey: ["admin-comissoes-bancos"],
+    queryFn: () => listarBancos(),
+  });
 
   const salvarM = useMutation({
     mutationFn: (f: RegraForm) =>
@@ -171,11 +204,17 @@ function SecaoRegras() {
     <Card>
       <CardHeader className="flex-row items-center justify-between space-y-0">
         <CardTitle className="text-base">Regras de comissão</CardTitle>
-        <Button size="sm" onClick={novo}><Plus className="mr-1 h-4 w-4" /> Nova regra</Button>
+        <Button size="sm" onClick={novo}>
+          <Plus className="mr-1 h-4 w-4" /> Nova regra
+        </Button>
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <div className="space-y-2">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}</div>
+          <div className="space-y-2">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Skeleton key={i} className="h-10 w-full" />
+            ))}
+          </div>
         ) : (data?.length ?? 0) === 0 ? (
           <p className="py-8 text-center text-sm text-muted-foreground">
             Nenhuma regra de comissão cadastrada.
@@ -197,10 +236,13 @@ function SecaoRegras() {
               <TableBody>
                 {data!.map((r) => (
                   <TableRow key={r.id}>
-                    <TableCell className="font-medium text-foreground">{r.banco_nome ?? "Todos os bancos"}</TableCell>
+                    <TableCell className="font-medium text-foreground">
+                      {r.banco_nome ?? "Todos os bancos"}
+                    </TableCell>
                     <TableCell>{produtoLabel(r.produto)}</TableCell>
                     <TableCell className="text-right tabular-nums">
-                      {brl(Number(r.faixa_min))}{r.faixa_max != null ? ` – ${brl(Number(r.faixa_max))}` : "+"}
+                      {brl(Number(r.faixa_min))}
+                      {r.faixa_max != null ? ` – ${brl(Number(r.faixa_max))}` : "+"}
                     </TableCell>
                     <TableCell className="text-right tabular-nums">
                       {r.tipo === "percentual" ? `${r.valor}%` : brl(Number(r.valor))}
@@ -211,7 +253,12 @@ function SecaoRegras() {
                     <TableCell>{r.ativo ? "Sim" : "Não"}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => editar(r)}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => editar(r)}
+                        >
                           <Pencil className="h-4 w-4" />
                         </Button>
                         <ConfirmDelete
@@ -219,7 +266,11 @@ function SecaoRegras() {
                           descricao="Operações futuras deixarão de aplicar esta regra."
                           onConfirm={() => excluirM.mutateAsync(r.id).then(() => {})}
                           trigger={
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-destructive"
+                            >
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           }
@@ -236,25 +287,42 @@ function SecaoRegras() {
 
       <Dialog open={aberto} onOpenChange={setAberto}>
         <DialogContent className="sm:max-w-lg">
-          <DialogHeader><DialogTitle>{form.id ? "Editar" : "Nova"} regra de comissão</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>{form.id ? "Editar" : "Nova"} regra de comissão</DialogTitle>
+          </DialogHeader>
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label>Banco</Label>
                 <Select value={form.banco_codigo || TODOS_BANCOS} onValueChange={selecionarBanco}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value={TODOS_BANCOS}>Todos os bancos</SelectItem>
-                    {(bancos ?? []).map((b) => <SelectItem key={b.codigo} value={b.codigo}>{b.nome}</SelectItem>)}
+                    {(bancos ?? []).map((b) => (
+                      <SelectItem key={b.codigo} value={b.codigo}>
+                        {b.nome}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-1.5">
                 <Label>Produto</Label>
-                <Select value={form.produto} onValueChange={(v) => setForm((f) => ({ ...f, produto: v }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                <Select
+                  value={form.produto}
+                  onValueChange={(v) => setForm((f) => ({ ...f, produto: v }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
-                    {PRODUTOS_COMISSAO.map((p) => <SelectItem key={p.v} value={p.v}>{p.l}</SelectItem>)}
+                    {PRODUTOS_COMISSAO.map((p) => (
+                      <SelectItem key={p.v} value={p.v}>
+                        {p.l}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -262,21 +330,41 @@ function SecaoRegras() {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label>Faixa mínima (R$)</Label>
-                <Input type="number" min={0} step={1000} value={form.faixa_min}
-                  onChange={(e) => setForm((f) => ({ ...f, faixa_min: Number(e.target.value) }))} />
+                <Input
+                  type="number"
+                  min={0}
+                  step={1000}
+                  value={form.faixa_min}
+                  onChange={(e) => setForm((f) => ({ ...f, faixa_min: Number(e.target.value) }))}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>Faixa máxima (R$)</Label>
-                <Input type="number" min={0} step={1000} placeholder="Sem limite"
+                <Input
+                  type="number"
+                  min={0}
+                  step={1000}
+                  placeholder="Sem limite"
                   value={form.faixa_max ?? ""}
-                  onChange={(e) => setForm((f) => ({ ...f, faixa_max: e.target.value === "" ? null : Number(e.target.value) }))} />
+                  onChange={(e) =>
+                    setForm((f) => ({
+                      ...f,
+                      faixa_max: e.target.value === "" ? null : Number(e.target.value),
+                    }))
+                  }
+                />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label>Tipo</Label>
-                <Select value={form.tipo} onValueChange={(v) => setForm((f) => ({ ...f, tipo: v as ComissaoTipo }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                <Select
+                  value={form.tipo}
+                  onValueChange={(v) => setForm((f) => ({ ...f, tipo: v as ComissaoTipo }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="percentual">Percentual (%)</SelectItem>
                     <SelectItem value="fixo">Valor fixo (R$)</SelectItem>
@@ -285,44 +373,79 @@ function SecaoRegras() {
               </div>
               <div className="space-y-1.5">
                 <Label>{form.tipo === "percentual" ? "Percentual (%)" : "Valor (R$)"}</Label>
-                <Input type="number" min={0} step={form.tipo === "percentual" ? 0.1 : 100} value={form.valor}
-                  onChange={(e) => setForm((f) => ({ ...f, valor: Number(e.target.value) }))} />
+                <Input
+                  type="number"
+                  min={0}
+                  step={form.tipo === "percentual" ? 0.1 : 100}
+                  value={form.valor}
+                  onChange={(e) => setForm((f) => ({ ...f, valor: Number(e.target.value) }))}
+                />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label>% Parceiro</Label>
-                <Input type="number" min={0} max={100} value={form.percentual_parceiro}
+                <Input
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={form.percentual_parceiro}
                   onChange={(e) => {
                     const p = Number(e.target.value);
-                    setForm((f) => ({ ...f, percentual_parceiro: p, percentual_interno: Math.max(0, 100 - p) }));
-                  }} />
+                    setForm((f) => ({
+                      ...f,
+                      percentual_parceiro: p,
+                      percentual_interno: Math.max(0, 100 - p),
+                    }));
+                  }}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>% Interno</Label>
-                <Input type="number" min={0} max={100} value={form.percentual_interno} readOnly disabled />
+                <Input
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={form.percentual_interno}
+                  readOnly
+                  disabled
+                />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label>Vigência início</Label>
-                <Input type="date" value={form.vigencia_inicio}
-                  onChange={(e) => setForm((f) => ({ ...f, vigencia_inicio: e.target.value }))} />
+                <Input
+                  type="date"
+                  value={form.vigencia_inicio}
+                  onChange={(e) => setForm((f) => ({ ...f, vigencia_inicio: e.target.value }))}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>Vigência fim</Label>
-                <Input type="date" value={form.vigencia_fim}
-                  onChange={(e) => setForm((f) => ({ ...f, vigencia_fim: e.target.value }))} />
+                <Input
+                  type="date"
+                  value={form.vigencia_fim}
+                  onChange={(e) => setForm((f) => ({ ...f, vigencia_fim: e.target.value }))}
+                />
               </div>
             </div>
             <div className="flex items-center justify-between rounded-md border border-border p-3">
               <Label htmlFor="regra-ativa">Regra ativa</Label>
-              <Switch id="regra-ativa" checked={form.ativo} onCheckedChange={(v) => setForm((f) => ({ ...f, ativo: v }))} />
+              <Switch
+                id="regra-ativa"
+                checked={form.ativo}
+                onCheckedChange={(v) => setForm((f) => ({ ...f, ativo: v }))}
+              />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setAberto(false)}>Cancelar</Button>
-            <Button onClick={() => salvarM.mutate(form)} disabled={salvarM.isPending}>Salvar</Button>
+            <Button variant="ghost" onClick={() => setAberto(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={() => salvarM.mutate(form)} disabled={salvarM.isPending}>
+              Salvar
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -340,7 +463,10 @@ function SecaoSimulador() {
   const [valor, setValor] = useState<number>(300000);
   const [resultado, setResultado] = useState<SimulacaoComissaoResultado | null>(null);
 
-  const { data: bancos } = useQuery({ queryKey: ["admin-comissoes-bancos"], queryFn: () => listarBancos() });
+  const { data: bancos } = useQuery({
+    queryKey: ["admin-comissoes-bancos"],
+    queryFn: () => listarBancos(),
+  });
 
   const simularM = useMutation({
     mutationFn: () =>
@@ -367,26 +493,43 @@ function SecaoSimulador() {
           <div className="space-y-1.5">
             <Label>Banco</Label>
             <Select value={banco} onValueChange={setBanco}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value={TODOS_BANCOS}>Todos os bancos</SelectItem>
-                {(bancos ?? []).map((b) => <SelectItem key={b.codigo} value={b.codigo}>{b.nome}</SelectItem>)}
+                {(bancos ?? []).map((b) => (
+                  <SelectItem key={b.codigo} value={b.codigo}>
+                    {b.nome}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-1.5">
             <Label>Produto</Label>
             <Select value={produto} onValueChange={setProduto}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
-                {PRODUTOS_COMISSAO.map((p) => <SelectItem key={p.v} value={p.v}>{p.l}</SelectItem>)}
+                {PRODUTOS_COMISSAO.map((p) => (
+                  <SelectItem key={p.v} value={p.v}>
+                    {p.l}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-1.5">
             <Label>Valor da operação (R$)</Label>
-            <Input type="number" min={0} step={1000} value={valor}
-              onChange={(e) => setValor(Number(e.target.value))} />
+            <Input
+              type="number"
+              min={0}
+              step={1000}
+              value={valor}
+              onChange={(e) => setValor(Number(e.target.value))}
+            />
           </div>
         </div>
         <Button onClick={() => simularM.mutate()} disabled={simularM.isPending || valor <= 0}>
@@ -399,15 +542,21 @@ function SecaoSimulador() {
             <div className="grid gap-3 sm:grid-cols-3">
               <div>
                 <p className="text-xs text-muted-foreground">Comissão bruta</p>
-                <p className="text-lg font-semibold tabular-nums text-foreground">{brl(resultado.bruto)}</p>
+                <p className="text-lg font-semibold tabular-nums text-foreground">
+                  {brl(resultado.bruto)}
+                </p>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Parceiro</p>
-                <p className="text-lg font-semibold tabular-nums text-foreground">{brl(resultado.parceiro)}</p>
+                <p className="text-lg font-semibold tabular-nums text-foreground">
+                  {brl(resultado.parceiro)}
+                </p>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Interno</p>
-                <p className="text-lg font-semibold tabular-nums text-foreground">{brl(resultado.interno)}</p>
+                <p className="text-lg font-semibold tabular-nums text-foreground">
+                  {brl(resultado.interno)}
+                </p>
               </div>
             </div>
           </div>

@@ -19,7 +19,9 @@ export const listarContratos = createServerFn({ method: "GET" })
     const { supabase } = context;
     const { data, error } = await supabase
       .from("propostas")
-      .select("id, numero_proposta, nome_banco, nome_cliente, cliente_id, valor_financiamento, valor_financiamento_aprovado, status, updated_at")
+      .select(
+        "id, numero_proposta, nome_banco, nome_cliente, cliente_id, valor_financiamento, valor_financiamento_aprovado, status, updated_at",
+      )
       .in("status", ["contrato_emitido", "registrado"])
       .order("updated_at", { ascending: false })
       .limit(500);

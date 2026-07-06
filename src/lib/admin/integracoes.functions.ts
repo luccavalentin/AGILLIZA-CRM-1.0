@@ -55,9 +55,7 @@ export const listarBancosCredenciais = createServerFn({ method: "GET" })
 
     const { data, error } = await supabase
       .from("banco_credenciais")
-      .select(
-        "id, banco_id, ambiente, base_url, client_id_secret_name, client_secret_name, ativo",
-      )
+      .select("id, banco_id, ambiente, base_url, client_id_secret_name, client_secret_name, ativo")
       .eq("correspondente_id", corr)
       .order("created_at", { ascending: true });
     if (error) throw error;
@@ -89,17 +87,13 @@ export const listarApiIntegracoes = createServerFn({ method: "GET" })
 
     const { data, error } = await supabase
       .from("admin_api_integrations")
-      .select(
-        "id, chave, nome, base_url, secret_names, ativo, status, ultimo_ping_em",
-      )
+      .select("id, chave, nome, base_url, secret_names, ativo, status, ultimo_ping_em")
       .eq("correspondente_id", corr)
       .order("nome", { ascending: true });
     if (error) throw error;
     return (data ?? []).map((i) => ({
       ...i,
-      secret_names: Array.isArray(i.secret_names)
-        ? (i.secret_names as string[])
-        : [],
+      secret_names: Array.isArray(i.secret_names) ? (i.secret_names as string[]) : [],
     }));
   });
 
@@ -125,9 +119,7 @@ export const listarHealthChecks = createServerFn({ method: "GET" })
 export const testarConectividade = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) =>
-    z
-      .object({ integracao: z.string().min(1), base_url: z.string().url() })
-      .parse(data),
+    z.object({ integracao: z.string().min(1), base_url: z.string().url() }).parse(data),
   )
   .handler(async ({ data, context }): Promise<HealthCheckLista> => {
     const { supabase, userId } = context;

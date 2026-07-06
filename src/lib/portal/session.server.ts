@@ -72,10 +72,7 @@ export function gravarCookieSessao(cid: string, corr: string | null): void {
 }
 
 export function limparCookieSessao(): void {
-  setResponseHeader(
-    "Set-Cookie",
-    `${COOKIE_NAME}=; ${COOKIE_SCOPE}; Max-Age=0`,
-  );
+  setResponseHeader("Set-Cookie", `${COOKIE_NAME}=; ${COOKIE_SCOPE}; Max-Age=0`);
 }
 
 /** Retorna a sessao do cookie ou null. Nunca aceita cliente_id do body. */

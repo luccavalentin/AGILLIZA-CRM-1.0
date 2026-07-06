@@ -31,10 +31,7 @@ async function resolverContexto(supabase: any, userId: string): Promise<Contexto
     throw new Error("Acesso restrito ao Portal do Parceiro.");
   }
 
-  const { data: roleRows } = await supabase
-    .from("user_roles")
-    .select("role")
-    .eq("user_id", userId);
+  const { data: roleRows } = await supabase.from("user_roles").select("role").eq("user_id", userId);
   const roles = (roleRows ?? []).map((r: { role: AppRole }) => r.role);
   if (!roles.some((r: AppRole) => PAPEIS_PARCEIRO.includes(r))) {
     throw new Error("Acesso restrito ao Portal do Parceiro.");
@@ -192,8 +189,7 @@ export const listarMinhasSimulacoes = createServerFn({ method: "GET" })
     return (data ?? []).map((s) => ({
       id: s.id,
       numero_simulacao: s.numero_simulacao,
-      cliente_nome:
-        (s.clientes as { nome: string } | null)?.nome ?? null,
+      cliente_nome: (s.clientes as { nome: string } | null)?.nome ?? null,
       status: s.status,
       created_at: s.created_at,
     }));

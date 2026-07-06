@@ -2,7 +2,14 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-export const BANCOS_FORMULARIO = ["itau", "bradesco", "santander", "inter", "diversos", "dps"] as const;
+export const BANCOS_FORMULARIO = [
+  "itau",
+  "bradesco",
+  "santander",
+  "inter",
+  "diversos",
+  "dps",
+] as const;
 export type BancoFormulario = (typeof BANCOS_FORMULARIO)[number];
 
 export interface FormularioBancario {
@@ -120,7 +127,11 @@ export const atualizarFormulario = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
 
     // Remove o arquivo antigo depois de trocar
-    if (data.novo_storage_path && atual?.storage_path && atual.storage_path !== data.novo_storage_path) {
+    if (
+      data.novo_storage_path &&
+      atual?.storage_path &&
+      atual.storage_path !== data.novo_storage_path
+    ) {
       await supabase.storage.from("formularios-bancarios").remove([atual.storage_path]);
     }
 

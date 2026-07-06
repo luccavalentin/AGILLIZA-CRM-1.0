@@ -26,7 +26,9 @@ export const Route = createFileRoute("/_authenticated/crm/clientes")({
   head: () => ({ meta: [{ title: "Clientes — Agilliza" }] }),
   beforeLoad: () => assertModuloPermitido("crm.clientes"),
   component: Pagina,
-  errorComponent: () => <div className="p-6 text-sm text-destructive">Erro ao carregar clientes.</div>,
+  errorComponent: () => (
+    <div className="p-6 text-sm text-destructive">Erro ao carregar clientes.</div>
+  ),
 });
 
 function Pagina() {
@@ -62,7 +64,9 @@ function Pagina() {
           <p className="text-sm text-muted-foreground">Gestão de clientes do seu ecossistema.</p>
         </div>
         <Button asChild>
-          <Link to="/crm/clientes/novo"><Plus className="size-4" /> Novo cliente</Link>
+          <Link to="/crm/clientes/novo">
+            <Plus className="size-4" /> Novo cliente
+          </Link>
         </Button>
       </div>
 
@@ -76,9 +80,16 @@ function Pagina() {
       >
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input className="pl-9" placeholder="Nome, documento ou e-mail" value={q} onChange={(e) => setQ(e.target.value)} />
+          <Input
+            className="pl-9"
+            placeholder="Nome, documento ou e-mail"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+          />
         </div>
-        <Button type="submit" variant="outline">Buscar</Button>
+        <Button type="submit" variant="outline">
+          Buscar
+        </Button>
       </form>
 
       <Card className="overflow-hidden">
@@ -100,7 +111,9 @@ function Pagina() {
               Array.from({ length: 6 }).map((_, i) => (
                 <TableRow key={i}>
                   {Array.from({ length: 8 }).map((__, j) => (
-                    <TableCell key={j}><Skeleton className="h-4 w-24" /></TableCell>
+                    <TableCell key={j}>
+                      <Skeleton className="h-4 w-24" />
+                    </TableCell>
                   ))}
                 </TableRow>
               ))
@@ -108,7 +121,9 @@ function Pagina() {
               <TableRow>
                 <TableCell colSpan={8} className="py-12 text-center">
                   <Users className="mx-auto mb-2 size-8 text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground">Nenhum cliente encontrado. Cadastre o primeiro.</p>
+                  <p className="text-sm text-muted-foreground">
+                    Nenhum cliente encontrado. Cadastre o primeiro.
+                  </p>
                 </TableCell>
               </TableRow>
             ) : (
@@ -118,19 +133,27 @@ function Pagina() {
                   className="cursor-pointer"
                   onClick={() => navigate({ to: "/crm/clientes/$id", params: { id: c.id } })}
                 >
-                  <TableCell className="font-mono text-xs text-muted-foreground">{c.numero_cliente}</TableCell>
+                  <TableCell className="font-mono text-xs text-muted-foreground">
+                    {c.numero_cliente}
+                  </TableCell>
                   <TableCell className="font-medium text-foreground">{c.nome}</TableCell>
                   <TableCell className="text-sm text-muted-foreground">
-                    {c.documento_masc ? mascararDocumento(c.documento) : formatarDocumento(c.documento)}
+                    {c.documento_masc
+                      ? mascararDocumento(c.documento)
+                      : formatarDocumento(c.documento)}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
-                    {c.telefone_celular ? formatarCelular(c.telefone_celular) : c.email ?? "—"}
+                    {c.telefone_celular ? formatarCelular(c.telefone_celular) : (c.email ?? "—")}
                   </TableCell>
                   <TableCell>
                     {c.etapa_nome ? <ToneBadge tone="info">{c.etapa_nome}</ToneBadge> : "—"}
                   </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{c.responsavel_nome ?? "—"}</TableCell>
-                  <TableCell><StatusBadge status={c.portal_acesso_ativo ? "ativo" : "inativo"} /></TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {c.responsavel_nome ?? "—"}
+                  </TableCell>
+                  <TableCell>
+                    <StatusBadge status={c.portal_acesso_ativo ? "ativo" : "inativo"} />
+                  </TableCell>
                   <TableCell className="text-right">
                     <ConfirmDelete
                       titulo="Excluir cliente"
@@ -147,7 +170,12 @@ function Pagina() {
 
       {(data?.total ?? 0) > 20 && (
         <div className="flex items-center justify-end gap-2 text-sm">
-          <Button variant="outline" size="sm" disabled={pagina === 1 || isFetching} onClick={() => setPagina((p) => p - 1)}>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={pagina === 1 || isFetching}
+            onClick={() => setPagina((p) => p - 1)}
+          >
             Anterior
           </Button>
           <span className="text-muted-foreground">Página {pagina}</span>

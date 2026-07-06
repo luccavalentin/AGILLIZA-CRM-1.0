@@ -5,12 +5,7 @@ import { Plug, Landmark, Activity, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
   TableBody,
@@ -34,11 +29,7 @@ export const Route = createFileRoute("/_authenticated/admin/integracoes")({
 });
 
 function StatusBadge({ ativo }: { ativo: boolean }) {
-  return (
-    <Badge variant={ativo ? "default" : "secondary"}>
-      {ativo ? "Ativo" : "Inativo"}
-    </Badge>
-  );
+  return <Badge variant={ativo ? "default" : "secondary"}>{ativo ? "Ativo" : "Inativo"}</Badge>;
 }
 
 function Pagina() {
@@ -57,8 +48,7 @@ function Pagina() {
   });
 
   const testar = useMutation({
-    mutationFn: (v: { integracao: string; base_url: string }) =>
-      testarConectividade({ data: v }),
+    mutationFn: (v: { integracao: string; base_url: string }) => testarConectividade({ data: v }),
     onSuccess: (r) => {
       toast[r.sucesso ? "success" : "error"](
         `${r.integracao}: ${r.detalhe ?? ""} (${r.latencia_ms ?? "?"}ms)`,
@@ -259,9 +249,7 @@ function Pagina() {
                       <TableCell className="whitespace-nowrap tabular-nums text-muted-foreground">
                         {new Date(h.created_at).toLocaleString("pt-BR")}
                       </TableCell>
-                      <TableCell className="font-medium text-foreground">
-                        {h.integracao}
-                      </TableCell>
+                      <TableCell className="font-medium text-foreground">{h.integracao}</TableCell>
                       <TableCell>
                         <Badge variant={h.sucesso ? "default" : "destructive"}>
                           {h.sucesso ? "OK" : "Falha"}

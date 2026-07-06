@@ -43,7 +43,8 @@ function VisaoGeral() {
 
   const { processo, etapas, contato, propostas, documentos_pendentes } = data;
   const dias = diasNaEtapa(processo.ultima_atualizacao);
-  const progresso = processo.total > 0 ? Math.round((processo.ordem_atual / processo.total) * 100) : 0;
+  const progresso =
+    processo.total > 0 ? Math.round((processo.ordem_atual / processo.total) * 100) : 0;
 
   return (
     <div className="space-y-4">
@@ -90,7 +91,9 @@ function VisaoGeral() {
         </CardHeader>
         <CardContent>
           {documentos_pendentes.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Nenhum documento pendente. Tudo em dia! 🎉</p>
+            <p className="text-sm text-muted-foreground">
+              Nenhum documento pendente. Tudo em dia! 🎉
+            </p>
           ) : (
             <ul className="space-y-2">
               {documentos_pendentes.map((d) => (
@@ -142,7 +145,9 @@ function VisaoGeral() {
           {contato?.nome ? (
             <div className="flex items-center gap-3">
               <Avatar className="h-10 w-10">
-                {contato.foto_url ? <AvatarImage src={contato.foto_url} alt={contato.nome} /> : null}
+                {contato.foto_url ? (
+                  <AvatarImage src={contato.foto_url} alt={contato.nome} />
+                ) : null}
                 <AvatarFallback>{contato.nome.slice(0, 2).toUpperCase()}</AvatarFallback>
               </Avatar>
               <div>

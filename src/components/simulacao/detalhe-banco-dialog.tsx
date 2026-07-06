@@ -1,10 +1,19 @@
 import { useMemo } from "react";
 import { FileText } from "lucide-react";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { BancoStatusBadge } from "@/components/simulacao/status-badge";
@@ -56,16 +65,29 @@ export function DetalheBancoDialog({ banco }: { banco: any }) {
                 <InfoCard rotulo="Taxa de juros" valor={pct(detalhe!.taxaJurosAno)} />
                 <InfoCard rotulo="CET" valor={pct(detalhe!.cet)} />
                 <InfoCard rotulo="CESH" valor={pct(detalhe!.cesh)} />
-                <InfoCard rotulo="Taxa mensal" valor={detalhe!.taxaJurosMes != null ? `${detalhe!.taxaJurosMes.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 4 })}% a.m.` : "—"} />
+                <InfoCard
+                  rotulo="Taxa mensal"
+                  valor={
+                    detalhe!.taxaJurosMes != null
+                      ? `${detalhe!.taxaJurosMes.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 4 })}% a.m.`
+                      : "—"
+                  }
+                />
                 <InfoCard rotulo="Valor do imóvel" valor={formatBRL(detalhe!.valorImovel)} />
                 <InfoCard rotulo="Financiamento" valor={formatBRL(detalhe!.valorFinanciamento)} />
                 <InfoCard rotulo="Entrada" valor={formatBRL(detalhe!.valorEntrada)} />
                 <InfoCard rotulo="IOF" valor={formatBRL(detalhe!.iof)} />
-                <InfoCard rotulo="Prazo" valor={detalhe!.prazoMeses != null ? `${detalhe!.prazoMeses} meses` : "—"} />
+                <InfoCard
+                  rotulo="Prazo"
+                  valor={detalhe!.prazoMeses != null ? `${detalhe!.prazoMeses} meses` : "—"}
+                />
                 <InfoCard rotulo="Sistema" valor={detalhe!.sistemaAmortizacao ?? "—"} />
                 <InfoCard rotulo="1ª parcela" valor={formatBRL(detalhe!.primeiraParcela)} />
                 <InfoCard rotulo="Última parcela" valor={formatBRL(detalhe!.ultimaParcela)} />
-                <InfoCard rotulo="Somatório das parcelas" valor={formatBRL(detalhe!.somatorioParcelas)} />
+                <InfoCard
+                  rotulo="Somatório das parcelas"
+                  valor={formatBRL(detalhe!.somatorioParcelas)}
+                />
                 <InfoCard rotulo="Seguradora" valor={detalhe!.seguradora ?? "—"} />
               </div>
 
@@ -92,14 +114,30 @@ export function DetalheBancoDialog({ banco }: { banco: any }) {
                       {detalhe!.parcelas.map((p) => (
                         <TableRow key={p.numero}>
                           <TableCell className="tabular-nums">{p.numero}</TableCell>
-                          <TableCell className="tabular-nums text-muted-foreground">{p.data ?? "—"}</TableCell>
-                          <TableCell className="text-right tabular-nums">{formatBRL(p.amortizacao)}</TableCell>
-                          <TableCell className="text-right tabular-nums">{formatBRL(p.juros)}</TableCell>
-                          <TableCell className="text-right tabular-nums">{formatBRL(p.seguroMip)}</TableCell>
-                          <TableCell className="text-right tabular-nums">{formatBRL(p.seguroDfi)}</TableCell>
-                          <TableCell className="text-right tabular-nums">{formatBRL(p.tarifa)}</TableCell>
-                          <TableCell className="text-right font-medium tabular-nums">{formatBRL(p.parcela)}</TableCell>
-                          <TableCell className="text-right tabular-nums">{formatBRL(p.saldoDevedor)}</TableCell>
+                          <TableCell className="tabular-nums text-muted-foreground">
+                            {p.data ?? "—"}
+                          </TableCell>
+                          <TableCell className="text-right tabular-nums">
+                            {formatBRL(p.amortizacao)}
+                          </TableCell>
+                          <TableCell className="text-right tabular-nums">
+                            {formatBRL(p.juros)}
+                          </TableCell>
+                          <TableCell className="text-right tabular-nums">
+                            {formatBRL(p.seguroMip)}
+                          </TableCell>
+                          <TableCell className="text-right tabular-nums">
+                            {formatBRL(p.seguroDfi)}
+                          </TableCell>
+                          <TableCell className="text-right tabular-nums">
+                            {formatBRL(p.tarifa)}
+                          </TableCell>
+                          <TableCell className="text-right font-medium tabular-nums">
+                            {formatBRL(p.parcela)}
+                          </TableCell>
+                          <TableCell className="text-right tabular-nums">
+                            {formatBRL(p.saldoDevedor)}
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>

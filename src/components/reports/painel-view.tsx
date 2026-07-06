@@ -73,7 +73,11 @@ export function PainelView({
   const [escopo, setEscopo] = useState<Escopo>("minha");
   const escopoTocado = useRef(false);
 
-  const { data: perms } = useQuery({ queryKey: ["report-escopo"], queryFn: () => escopoFn(), staleTime: 5 * 60_000 });
+  const { data: perms } = useQuery({
+    queryKey: ["report-escopo"],
+    queryFn: () => escopoFn(),
+    staleTime: 5 * 60_000,
+  });
 
   // Amplia o escopo automaticamente para quem pode ver equipe/geral (até o usuário mudar manualmente).
   useEffect(() => {
@@ -107,7 +111,9 @@ export function PainelView({
     };
   }, [modulo, qc, realtimeTabelas]);
 
-  const atualizado = dataUpdatedAt ? new Date(dataUpdatedAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : undefined;
+  const atualizado = dataUpdatedAt
+    ? new Date(dataUpdatedAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+    : undefined;
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-6 p-4 md:p-6">
@@ -119,11 +125,22 @@ export function PainelView({
         onRefresh={() => qc.invalidateQueries({ queryKey })}
         actions={
           <>
-            <VisionSelector escopo={escopo} onChange={mudarEscopo} podeEquipe={perms?.podeEquipe ?? false} podeGeral={perms?.podeGeral ?? false} />
+            <VisionSelector
+              escopo={escopo}
+              onChange={mudarEscopo}
+              podeEquipe={perms?.podeEquipe ?? false}
+              podeGeral={perms?.podeGeral ?? false}
+            />
             <Select value={periodo} onValueChange={(v) => setPeriodo(v as Periodo)}>
-              <SelectTrigger className="h-9 w-40"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-9 w-40">
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
-                {PERIODOS.map((p) => <SelectItem key={p} value={p}>{PERIODO_LABEL[p]}</SelectItem>)}
+                {PERIODOS.map((p) => (
+                  <SelectItem key={p} value={p}>
+                    {PERIODO_LABEL[p]}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </>
@@ -132,32 +149,60 @@ export function PainelView({
 
       {error ? (
         <Card className="flex items-center gap-3 p-4">
-          <p className="text-sm text-muted-foreground">Não foi possível carregar os indicadores. Tente atualizar.</p>
+          <p className="text-sm text-muted-foreground">
+            Não foi possível carregar os indicadores. Tente atualizar.
+          </p>
         </Card>
       ) : isLoading || !data ? (
         <div className="space-y-6">
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-24" />)}</div>
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-24" />
+            ))}
+          </div>
           <Skeleton className="h-64" />
         </div>
       ) : (
         <>
           <SectionTitle>Indicadores executivos</SectionTitle>
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            {data.heros.map((h) => <HeroMetric key={h.label} label={h.label} valor={h.valor} hint={h.hint} tone={h.tone} to={linkParaMetrica(h.label)} />)}
+            {data.heros.map((h) => (
+              <HeroMetric
+                key={h.label}
+                label={h.label}
+                valor={h.valor}
+                hint={h.hint}
+                tone={h.tone}
+                to={linkParaMetrica(h.label)}
+              />
+            ))}
           </div>
 
           <SectionTitle>Volumes</SectionTitle>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-            {data.minis.map((m) => <MiniMetric key={m.label} label={m.label} valor={m.valor} tone={m.tone} to={linkParaMetrica(m.label)} />)}
+            {data.minis.map((m) => (
+              <MiniMetric
+                key={m.label}
+                label={m.label}
+                valor={m.valor}
+                tone={m.tone}
+                to={linkParaMetrica(m.label)}
+              />
+            ))}
           </div>
-
 
           <SectionTitle>Operação</SectionTitle>
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
             <div className="lg:col-span-2">
-              <PanelCard titulo={data.chart.titulo} subtitulo={data.chart.subtitulo} abrirTo={abrirTo}>
+              <PanelCard
+                titulo={data.chart.titulo}
+                subtitulo={data.chart.subtitulo}
+                abrirTo={abrirTo}
+              >
                 <div className="h-64 w-full">
-                  <ReportChartView chart={{ titulo: data.chart.titulo, tipo: "barh", dados: data.chart.dados }} />
+                  <ReportChartView
+                    chart={{ titulo: data.chart.titulo, tipo: "barh", dados: data.chart.dados }}
+                  />
                 </div>
               </PanelCard>
             </div>
@@ -174,7 +219,15 @@ export function PainelView({
             </Card>
           ) : (
             <div className="space-y-2">
-              {data.alertas.map((a) => <AlertRow key={a.titulo} tone={a.tone} titulo={a.titulo} descricao={a.descricao} contador={a.contador} />)}
+              {data.alertas.map((a) => (
+                <AlertRow
+                  key={a.titulo}
+                  tone={a.tone}
+                  titulo={a.titulo}
+                  descricao={a.descricao}
+                  contador={a.contador}
+                />
+              ))}
             </div>
           )}
         </>

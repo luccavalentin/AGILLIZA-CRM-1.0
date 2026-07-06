@@ -28,7 +28,11 @@ export function Logo({ variant = "auto", className }: LogoProps) {
   return (
     <>
       <img src={logoDark} alt="Agilliza" className={cn("h-9 w-auto dark:hidden", className)} />
-      <img src={logoLight} alt="Agilliza" className={cn("hidden h-9 w-auto dark:block", className)} />
+      <img
+        src={logoLight}
+        alt="Agilliza"
+        className={cn("hidden h-9 w-auto dark:block", className)}
+      />
     </>
   );
 }

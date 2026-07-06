@@ -5,7 +5,14 @@ import { toast } from "sonner";
 import { Percent, RefreshCw } from "lucide-react";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { listarComissoes, recalcularComissao } from "@/lib/financeiro/financeiro.functions";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ComissaoStatusBadge } from "@/components/financeiro/status-badge";
@@ -50,13 +57,17 @@ function Pagina() {
     <div className="mx-auto w-full max-w-6xl space-y-6 p-4 md:p-6">
       <div>
         <h1 className="text-xl font-semibold text-foreground">Comissões</h1>
-        <p className="text-sm text-muted-foreground">Comissões calculadas a partir de contratos emitidos.</p>
+        <p className="text-sm text-muted-foreground">
+          Comissões calculadas a partir de contratos emitidos.
+        </p>
       </div>
 
       <Tabs value={status} onValueChange={setStatus}>
         <TabsList>
           {STATUS.map((s) => (
-            <TabsTrigger key={s || "all"} value={s}>{STATUS_LABEL[s]}</TabsTrigger>
+            <TabsTrigger key={s || "all"} value={s}>
+              {STATUS_LABEL[s]}
+            </TabsTrigger>
           ))}
         </TabsList>
       </Tabs>
@@ -65,19 +76,33 @@ function Pagina() {
         <Table>
           <TableHeader>
             <TableRow className="bg-muted">
-              <TableHead className="text-xs uppercase tracking-wide text-muted-foreground">Proposta</TableHead>
-              <TableHead className="text-xs uppercase tracking-wide text-muted-foreground">Banco</TableHead>
-              <TableHead className="text-right text-xs uppercase tracking-wide text-muted-foreground">Valor bruto</TableHead>
-              <TableHead className="text-right text-xs uppercase tracking-wide text-muted-foreground">Split parceiro</TableHead>
-              <TableHead className="text-right text-xs uppercase tracking-wide text-muted-foreground">Split interno</TableHead>
-              <TableHead className="text-xs uppercase tracking-wide text-muted-foreground">Status</TableHead>
+              <TableHead className="text-xs uppercase tracking-wide text-muted-foreground">
+                Proposta
+              </TableHead>
+              <TableHead className="text-xs uppercase tracking-wide text-muted-foreground">
+                Banco
+              </TableHead>
+              <TableHead className="text-right text-xs uppercase tracking-wide text-muted-foreground">
+                Valor bruto
+              </TableHead>
+              <TableHead className="text-right text-xs uppercase tracking-wide text-muted-foreground">
+                Split parceiro
+              </TableHead>
+              <TableHead className="text-right text-xs uppercase tracking-wide text-muted-foreground">
+                Split interno
+              </TableHead>
+              <TableHead className="text-xs uppercase tracking-wide text-muted-foreground">
+                Status
+              </TableHead>
               <TableHead className="w-10" />
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading && (
               <TableRow>
-                <TableCell colSpan={7} className="py-10 text-center text-sm text-muted-foreground">Carregando…</TableCell>
+                <TableCell colSpan={7} className="py-10 text-center text-sm text-muted-foreground">
+                  Carregando…
+                </TableCell>
               </TableRow>
             )}
             {!isLoading && (data?.length ?? 0) === 0 && (
@@ -85,7 +110,9 @@ function Pagina() {
                 <TableCell colSpan={7}>
                   <div className="flex flex-col items-center gap-3 py-12 text-center">
                     <Percent className="h-8 w-8 text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground">Nenhuma comissão calculada ainda.</p>
+                    <p className="text-sm text-muted-foreground">
+                      Nenhuma comissão calculada ainda.
+                    </p>
                   </div>
                 </TableCell>
               </TableRow>
@@ -94,10 +121,18 @@ function Pagina() {
               <TableRow key={c.id} className="even:bg-muted/40 dark:even:bg-muted/60">
                 <TableCell className="font-medium">{c.numero_proposta ?? "—"}</TableCell>
                 <TableCell>{c.banco_nome ?? "—"}</TableCell>
-                <TableCell className="text-right tabular-nums">{formatBRL(c.valor_bruto)}</TableCell>
-                <TableCell className="text-right tabular-nums">{formatBRL(c.split_parceiro)}</TableCell>
-                <TableCell className="text-right tabular-nums">{formatBRL(c.split_interno)}</TableCell>
-                <TableCell><ComissaoStatusBadge status={c.status} /></TableCell>
+                <TableCell className="text-right tabular-nums">
+                  {formatBRL(c.valor_bruto)}
+                </TableCell>
+                <TableCell className="text-right tabular-nums">
+                  {formatBRL(c.split_parceiro)}
+                </TableCell>
+                <TableCell className="text-right tabular-nums">
+                  {formatBRL(c.split_interno)}
+                </TableCell>
+                <TableCell>
+                  <ComissaoStatusBadge status={c.status} />
+                </TableCell>
                 <TableCell>
                   <Button
                     variant="ghost"

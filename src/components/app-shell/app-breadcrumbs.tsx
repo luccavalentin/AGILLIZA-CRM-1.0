@@ -15,7 +15,11 @@ function derivarCrumbs(nav: NavGroup[], pathname: string): Crumb[] {
       const filhos = item.children ?? [];
       for (const child of filhos) {
         if (child.to && (pathname === child.to || pathname.startsWith(child.to + "/"))) {
-          return [{ label: group.label }, { label: item.label }, { label: child.label, to: child.to }];
+          return [
+            { label: group.label },
+            { label: item.label },
+            { label: child.label, to: child.to },
+          ];
         }
       }
       if (item.to && (pathname === item.to || pathname.startsWith(item.to + "/"))) {

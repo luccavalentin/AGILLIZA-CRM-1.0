@@ -6,7 +6,10 @@ import { toast } from "sonner";
 import { ArrowLeft } from "lucide-react";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import {
-  listarDemandas, moverStatusDemanda, transicaoDemandaPermitida, type DemandaStatus,
+  listarDemandas,
+  moverStatusDemanda,
+  transicaoDemandaPermitida,
+  type DemandaStatus,
 } from "@/lib/operacional/demandas.functions";
 import { PRIORIDADE, statusDemanda, TONE_BAR } from "@/components/operacional/status";
 import { SlaCountdown } from "@/components/operacional/sla-countdown";
@@ -37,7 +40,9 @@ function Pagina() {
     setArrastando(null);
     if (status === coluna) return;
     if (!transicaoDemandaPermitida(status, coluna)) {
-      toast.error(`Transição inválida: ${statusDemanda(status).label} → ${statusDemanda(coluna).label}.`);
+      toast.error(
+        `Transição inválida: ${statusDemanda(status).label} → ${statusDemanda(coluna).label}.`,
+      );
       return;
     }
     try {
@@ -58,7 +63,9 @@ function Pagina() {
           <p className="text-sm text-muted-foreground">Arraste os cards entre etapas permitidas.</p>
         </div>
         <Button asChild variant="ghost" size="sm">
-          <Link to="/operacional/demandas"><ArrowLeft className="mr-1 h-4 w-4" /> Lista</Link>
+          <Link to="/operacional/demandas">
+            <ArrowLeft className="mr-1 h-4 w-4" /> Lista
+          </Link>
         </Button>
       </div>
 
@@ -76,7 +83,9 @@ function Pagina() {
               <div className={cn("h-[3px] rounded-t-lg", TONE_BAR[cfg.tone])} />
               <div className="flex items-center justify-between px-3 py-2">
                 <span className="text-sm font-medium text-foreground">{cfg.label}</span>
-                <span className="text-xs text-muted-foreground tabular-nums">{doStatus.length}</span>
+                <span className="text-xs text-muted-foreground tabular-nums">
+                  {doStatus.length}
+                </span>
               </div>
               <div className="space-y-2 p-2">
                 {doStatus.map((d) => (
@@ -96,8 +105,12 @@ function Pagina() {
                       >
                         {d.titulo}
                       </Link>
-                      {d.nome_cliente && <p className="text-xs text-muted-foreground">{d.nome_cliente}</p>}
-                      <p className="mt-1 text-xs text-muted-foreground">{d.nome_responsavel ?? "—"}</p>
+                      {d.nome_cliente && (
+                        <p className="text-xs text-muted-foreground">{d.nome_cliente}</p>
+                      )}
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {d.nome_responsavel ?? "—"}
+                      </p>
                       <div className="mt-2">
                         <SlaCountdown
                           inicio={d.sla_inicio}

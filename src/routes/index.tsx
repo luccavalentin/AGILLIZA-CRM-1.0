@@ -5,10 +5,7 @@ import { Card } from "@/components/ui/card";
 
 export const Route = createFileRoute("/")({
   head: () => ({
-    meta: [
-      { title: "Agilliza — Escolha seu acesso" },
-      { name: "robots", content: "noindex" },
-    ],
+    meta: [{ title: "Agilliza — Escolha seu acesso" }, { name: "robots", content: "noindex" }],
   }),
   component: Landing,
 });

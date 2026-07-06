@@ -75,9 +75,7 @@ function Pagina() {
                   </TableCell>
                   <TableCell>{r.ator_nome ?? "—"}</TableCell>
                   <TableCell className="font-medium text-foreground">{r.acao}</TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {r.entidade ?? "—"}
-                  </TableCell>
+                  <TableCell className="text-muted-foreground">{r.entidade ?? "—"}</TableCell>
                   <TableCell className="text-muted-foreground">{r.ip ?? "—"}</TableCell>
                 </TableRow>
               ))

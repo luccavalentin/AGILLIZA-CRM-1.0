@@ -26,11 +26,7 @@ import {
 } from "@/components/ui/table";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { getMinhaSessao } from "@/lib/session.functions";
-import {
-  listarCompras,
-  criarCompra,
-  decidirCompra,
-} from "@/lib/admin/compras.functions";
+import { listarCompras, criarCompra, decidirCompra } from "@/lib/admin/compras.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/compras")({
   head: () => ({ meta: [{ title: "Compras — Agilliza" }] }),
@@ -38,8 +34,7 @@ export const Route = createFileRoute("/_authenticated/admin/compras")({
   component: Pagina,
 });
 
-const brl = (n: number) =>
-  n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const brl = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 function statusVariant(s: string): "default" | "secondary" | "destructive" | "outline" {
   if (s === "aprovada") return "default";
@@ -97,9 +92,7 @@ function Pagina() {
           <ShoppingCart className="size-6 text-primary" />
           <div>
             <h1 className="text-xl font-semibold text-foreground">Compras</h1>
-            <p className="text-sm text-muted-foreground">
-              Solicitações e aprovações de compra.
-            </p>
+            <p className="text-sm text-muted-foreground">Solicitações e aprovações de compra.</p>
           </div>
         </div>
         <Dialog open={aberto} onOpenChange={setAberto}>

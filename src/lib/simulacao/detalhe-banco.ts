@@ -72,9 +72,7 @@ export function extrairDetalheBanco(raw: unknown): DetalheBanco | null {
     saldoDevedor: num(p.debitBalanceAmount) ?? 0,
   }));
 
-  const somatorio = parcelas.length
-    ? parcelas.reduce((s, p) => s + p.parcela, 0)
-    : null;
+  const somatorio = parcelas.length ? parcelas.reduce((s, p) => s + p.parcela, 0) : null;
 
   return {
     taxaJurosAno: num(flow.annualInterestRate),

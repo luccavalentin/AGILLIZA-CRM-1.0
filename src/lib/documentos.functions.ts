@@ -19,7 +19,9 @@ export const listarDocumentosCentral = createServerFn({ method: "GET" })
     const { supabase } = context;
     const { data, error } = await supabase
       .from("cliente_documentos")
-      .select("id, cliente_id, tipo_documento, nome_arquivo, categoria, status, created_at, clientes(nome)")
+      .select(
+        "id, cliente_id, tipo_documento, nome_arquivo, categoria, status, created_at, clientes(nome)",
+      )
       .order("created_at", { ascending: false })
       .limit(300);
     if (error) throw new Error(error.message);

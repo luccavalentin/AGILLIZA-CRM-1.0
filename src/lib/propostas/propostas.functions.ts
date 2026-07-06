@@ -2,7 +2,12 @@ import { createServerFn } from "@tanstack/react-start";
 import { getRequestHeader } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { transicaoPermitida, STATUS_EDITAVEIS, STATUS_TERMINAIS, type PropostaStatus } from "./state-machine";
+import {
+  transicaoPermitida,
+  STATUS_EDITAVEIS,
+  STATUS_TERMINAIS,
+  type PropostaStatus,
+} from "./state-machine";
 
 /** ===== Tipos de saída ===== */
 export interface PropostaListaItem {
@@ -103,10 +108,26 @@ export const obterProposta = createServerFn({ method: "GET" })
 
     const [bancos, envolvidos, documentos, followups, historico] = await Promise.all([
       supabase.from("proposta_bancos").select("*").eq("proposta_id", data.id).order("created_at"),
-      supabase.from("proposta_envolvidos").select("*").eq("proposta_id", data.id).order("created_at"),
-      supabase.from("proposta_documentos").select("*").eq("proposta_id", data.id).order("created_at"),
-      supabase.from("proposta_followups").select("*").eq("proposta_id", data.id).order("created_at", { ascending: false }),
-      supabase.from("proposta_historico").select("*").eq("proposta_id", data.id).order("created_at", { ascending: false }),
+      supabase
+        .from("proposta_envolvidos")
+        .select("*")
+        .eq("proposta_id", data.id)
+        .order("created_at"),
+      supabase
+        .from("proposta_documentos")
+        .select("*")
+        .eq("proposta_id", data.id)
+        .order("created_at"),
+      supabase
+        .from("proposta_followups")
+        .select("*")
+        .eq("proposta_id", data.id)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("proposta_historico")
+        .select("*")
+        .eq("proposta_id", data.id)
+        .order("created_at", { ascending: false }),
     ]);
 
     return {
@@ -152,7 +173,9 @@ export const listarSimulacoesElegiveis = createServerFn({ method: "GET" })
       .map((r: any) => ({
         ...r,
         proposta_existente_id: propostaPorSim.get(r.id) ?? null,
-        simulacao_bancos: (r.simulacao_bancos ?? []).filter((b: any) => b.status_banco === "simulada"),
+        simulacao_bancos: (r.simulacao_bancos ?? []).filter(
+          (b: any) => b.status_banco === "simulada",
+        ),
       }))
       .filter((r: any) => r.simulacao_bancos.length > 0);
   });
@@ -192,7 +215,9 @@ export const criarProposta = createServerFn({ method: "POST" })
       if (error) throw new Error(error.message);
       if (!sim) throw new Error("Simulação não encontrada.");
 
-      bancosSimulados = (sim.simulacao_bancos ?? []).filter((b: any) => b.status_banco === "simulada");
+      bancosSimulados = (sim.simulacao_bancos ?? []).filter(
+        (b: any) => b.status_banco === "simulada",
+      );
       const bancoEscolhido = data.banco_id
         ? bancosSimulados.find((b: any) => b.banco_id === data.banco_id)
         : bancosSimulados[0];
@@ -284,7 +309,11 @@ export const atualizarDadosProposta = createServerFn({ method: "POST" })
   )
   .handler(async ({ context, data }) => {
     const { supabase } = context;
-    const { data: prop } = await supabase.from("propostas").select("status").eq("id", data.id).maybeSingle();
+    const { data: prop } = await supabase
+      .from("propostas")
+      .select("status")
+      .eq("id", data.id)
+      .maybeSingle();
     if (!prop) throw new Error("Proposta não encontrada.");
     if (!STATUS_EDITAVEIS.includes(prop.status as PropostaStatus)) {
       throw new Error("A proposta não pode ser editada neste status.");
@@ -293,7 +322,10 @@ export const atualizarDadosProposta = createServerFn({ method: "POST" })
     delete (patch as any).id;
     delete (patch as any).status;
     delete (patch as any).correspondente_id;
-    const { error } = await supabase.from("propostas").update(patch as any).eq("id", data.id);
+    const { error } = await supabase
+      .from("propostas")
+      .update(patch as any)
+      .eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -390,14 +422,13 @@ export const definirSituacaoBanco = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-
-
-
 /** ===== Envolvidos (compradores/vendedores) ===== */
 export const adicionarEnvolvido = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) =>
-    z.object({ proposta_id: z.string().uuid(), dados: z.record(z.string(), z.unknown()) }).parse(data),
+    z
+      .object({ proposta_id: z.string().uuid(), dados: z.record(z.string(), z.unknown()) })
+      .parse(data),
   )
   .handler(async ({ context, data }) => {
     const { supabase } = context;
@@ -594,7 +625,10 @@ export const moverStatusProposta = createServerFn({ method: "POST" })
     }
     const patch: Record<string, unknown> = { status: para };
     if (para === "contrato_emitido") patch.contrato_emitido_em = new Date().toISOString();
-    const { error } = await supabase.from("propostas").update(patch as any).eq("id", data.proposta_id);
+    const { error } = await supabase
+      .from("propostas")
+      .update(patch as any)
+      .eq("id", data.proposta_id);
     if (error) throw new Error(error.message);
 
     await supabase.from("proposta_historico").insert({
@@ -659,7 +693,9 @@ export const cancelarProposta = createServerFn({ method: "POST" })
 export const enviarPropostaHomeFin = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) =>
-    z.object({ proposta_id: z.string().uuid(), banco_id: z.string().uuid().optional() }).parse(data),
+    z
+      .object({ proposta_id: z.string().uuid(), banco_id: z.string().uuid().optional() })
+      .parse(data),
   )
   .handler(async ({ context, data }) => {
     const { supabase, userId } = context;
@@ -668,7 +704,13 @@ export const enviarPropostaHomeFin = createServerFn({ method: "POST" })
       getRequestHeader("cf-connecting-ip") ??
       null;
     const { enviarPropostaImpl } = await import("./enviar.server");
-    return enviarPropostaImpl({ propostaId: data.proposta_id, userId, ip, supabase, bancoId: data.banco_id });
+    return enviarPropostaImpl({
+      propostaId: data.proposta_id,
+      userId,
+      ip,
+      supabase,
+      bancoId: data.banco_id,
+    });
   });
 
 export const reenviarHomeFin = enviarPropostaHomeFin;
@@ -695,7 +737,9 @@ export const excluirProposta = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!prop) throw new Error("Proposta não encontrada.");
     if (!["rascunho", "erro_envio"].includes(prop.status)) {
-      throw new Error("Só é possível excluir propostas em rascunho ou com erro de envio. Cancele a proposta.");
+      throw new Error(
+        "Só é possível excluir propostas em rascunho ou com erro de envio. Cancele a proposta.",
+      );
     }
     const { error } = await context.supabase.from("propostas").delete().eq("id", data.id);
     if (error) throw error;

@@ -12,7 +12,5 @@ function Logout() {
   useEffect(() => {
     logoutCliente().finally(() => navigate({ to: "/portal", replace: true }));
   }, [navigate]);
-  return (
-    <p className="py-20 text-center text-sm text-muted-foreground">Saindo…</p>
-  );
+  return <p className="py-20 text-center text-sm text-muted-foreground">Saindo…</p>;
 }

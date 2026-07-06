@@ -24,10 +24,7 @@ function MinhasSimulacoes() {
   });
 
   return (
-    <ParceiroPage
-      titulo="Simulações"
-      descricao="Simulações dos seus clientes vinculados."
-    >
+    <ParceiroPage titulo="Simulações" descricao="Simulações dos seus clientes vinculados.">
       <div className="rounded-lg border bg-background">
         <Table>
           <TableHeader>

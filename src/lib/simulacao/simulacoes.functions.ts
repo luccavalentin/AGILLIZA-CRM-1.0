@@ -76,7 +76,9 @@ export const buscarClientesCRM = createServerFn({ method: "GET" })
     const digitos = termo.replace(/\D/g, "");
     let query = supabase
       .from("clientes")
-      .select("id, nome, documento, email, telefone_celular, data_nascimento, estado_civil, renda_total_declarada, tipo_pessoa")
+      .select(
+        "id, nome, documento, email, telefone_celular, data_nascimento, estado_civil, renda_total_declarada, tipo_pessoa",
+      )
       .limit(8);
     if (digitos.length >= 3) {
       query = query.or(`nome.ilike.%${termo}%,documento.ilike.%${digitos}%`);
@@ -162,7 +164,10 @@ export const validarOtpEmail = createServerFn({ method: "POST" })
     }
 
     const verificado_em = new Date().toISOString();
-    await supabaseAdmin.from("homefin_email_otp").update({ used_at: verificado_em }).eq("id", otp.id);
+    await supabaseAdmin
+      .from("homefin_email_otp")
+      .update({ used_at: verificado_em })
+      .eq("id", otp.id);
     return { ok: true, verificado_em };
   });
 
@@ -341,10 +346,7 @@ export const obterSimulacao = createServerFn({ method: "GET" })
     ) as string[];
     let nomesAtores: Record<string, string> = {};
     if (atorIds.length > 0) {
-      const { data: perfis } = await supabase
-        .from("profiles")
-        .select("id, nome")
-        .in("id", atorIds);
+      const { data: perfis } = await supabase.from("profiles").select("id, nome").in("id", atorIds);
       nomesAtores = Object.fromEntries((perfis ?? []).map((p: any) => [p.id, p.nome]));
     }
     const historicoComAutor = (historico ?? []).map((h: any) => ({
@@ -405,12 +407,26 @@ export const duplicarSimulacao = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<{ id: string; numero_simulacao: string }> => {
     const { supabase, userId } = context;
-    const { data: orig, error } = await supabase.from("simulacoes").select("*").eq("id", data.id).maybeSingle();
+    const { data: orig, error } = await supabase
+      .from("simulacoes")
+      .select("*")
+      .eq("id", data.id)
+      .maybeSingle();
     if (error) throw new Error(error.message);
     if (!orig) throw new Error("Simulação não encontrada.");
 
-    const { id, numero_simulacao, created_at, updated_at, status, homefin_id_oportunidade,
-      codigo_oportunidade_homefin, ultimo_envio_em, ultimo_erro, ...resto } = orig as any;
+    const {
+      id,
+      numero_simulacao,
+      created_at,
+      updated_at,
+      status,
+      homefin_id_oportunidade,
+      codigo_oportunidade_homefin,
+      ultimo_envio_em,
+      ultimo_erro,
+      ...resto
+    } = orig as any;
 
     const { data: nova, error: errNova } = await supabase
       .from("simulacoes")
@@ -424,9 +440,11 @@ export const duplicarSimulacao = createServerFn({ method: "POST" })
       .select("banco_id, codigo_banco, nome_banco, homefin_id_banco, selecionado")
       .eq("simulacao_id", data.id);
     if (bancos && bancos.length > 0) {
-      await supabase.from("simulacao_bancos").insert(
-        bancos.map((b) => ({ ...b, simulacao_id: nova.id, status_banco: "aguardando" as const })),
-      );
+      await supabase
+        .from("simulacao_bancos")
+        .insert(
+          bancos.map((b) => ({ ...b, simulacao_id: nova.id, status_banco: "aguardando" as const })),
+        );
     }
     return { id: nova.id, numero_simulacao: nova.numero_simulacao };
   });

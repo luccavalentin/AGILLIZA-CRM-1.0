@@ -3,7 +3,17 @@ import { useState, useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { ArrowLeft, Send, Ban, Loader2, Plus, Trash2, Download, Upload, RefreshCw } from "lucide-react";
+import {
+  ArrowLeft,
+  Send,
+  Ban,
+  Loader2,
+  Plus,
+  Trash2,
+  Download,
+  Upload,
+  RefreshCw,
+} from "lucide-react";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import {
   obterProposta,
@@ -29,11 +39,27 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import { PipelineStepper } from "@/components/propostas/pipeline-stepper";
 import { PropostaStatusBadge } from "@/components/propostas/status-badge";
@@ -54,7 +80,10 @@ const SITUACAO_BANCO_LABEL: Record<SituacaoBanco, string> = {
   cancelado: "Cancelado",
 };
 
-const SITUACAO_BANCO_TONE: Record<SituacaoBanco, "success" | "danger" | "warning" | "info" | "muted"> = {
+const SITUACAO_BANCO_TONE: Record<
+  SituacaoBanco,
+  "success" | "danger" | "warning" | "info" | "muted"
+> = {
   nao_enviado: "muted",
   em_analise: "info",
   condicionado: "warning",
@@ -62,8 +91,6 @@ const SITUACAO_BANCO_TONE: Record<SituacaoBanco, "success" | "danger" | "warning
   recusado: "danger",
   cancelado: "muted",
 };
-
-
 
 export const Route = createFileRoute("/_authenticated/operacional/propostas_/$id")({
   head: () => ({ meta: [{ title: "Proposta — Agilliza" }] }),
@@ -74,7 +101,16 @@ export const Route = createFileRoute("/_authenticated/operacional/propostas_/$id
   ),
 });
 
-const TABS = ["RESUMO", "COMPRADORES", "VENDEDORES", "IQ", "IMÓVEL", "DOCUMENTOS", "ATIVIDADES", "FUP"] as const;
+const TABS = [
+  "RESUMO",
+  "COMPRADORES",
+  "VENDEDORES",
+  "IQ",
+  "IMÓVEL",
+  "DOCUMENTOS",
+  "ATIVIDADES",
+  "FUP",
+] as const;
 type Tab = (typeof TABS)[number];
 
 function Pagina() {
@@ -92,9 +128,13 @@ function Pagina() {
   useEffect(() => {
     const channel = supabase
       .channel(`proposta-${id}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "propostas", filter: `id=eq.${id}` }, () => {
-        qc.invalidateQueries({ queryKey: ["proposta", id] });
-      })
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "propostas", filter: `id=eq.${id}` },
+        () => {
+          qc.invalidateQueries({ queryKey: ["proposta", id] });
+        },
+      )
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
@@ -107,15 +147,22 @@ function Pagina() {
 
   const p = data.proposta as any;
   const status = p.status as PropostaStatus;
-  const diasDesde = Math.max(0, Math.round((Date.now() - new Date(p.created_at).getTime()) / 86400000));
-  const bancosEnviados = (data.bancos ?? []).filter((b: any) => b.selecionado || b.status_banco === "enviada");
+  const diasDesde = Math.max(
+    0,
+    Math.round((Date.now() - new Date(p.created_at).getTime()) / 86400000),
+  );
+  const bancosEnviados = (data.bancos ?? []).filter(
+    (b: any) => b.selecionado || b.status_banco === "enviada",
+  );
   const multiBanco = bancosEnviados.length > 1;
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-5 p-4 md:p-6">
       <div className="flex items-center justify-between gap-3">
         <Button asChild variant="ghost" size="sm">
-          <Link to="/operacional/propostas"><ArrowLeft className="mr-1 h-4 w-4" /> Voltar</Link>
+          <Link to="/operacional/propostas">
+            <ArrowLeft className="mr-1 h-4 w-4" /> Voltar
+          </Link>
         </Button>
         <AcoesTopo proposta={p} propostaId={id} bancos={data.bancos} />
       </div>
@@ -132,9 +179,17 @@ function Pagina() {
             </p>
           </div>
           <div className="flex flex-wrap gap-6 text-sm">
-            <Kpi label={multiBanco ? "Bancos enviados" : "Banco escolhido"} valor={multiBanco ? `${bancosEnviados.length} bancos` : (p.nome_banco ?? "—")} />
+            <Kpi
+              label={multiBanco ? "Bancos enviados" : "Banco escolhido"}
+              valor={multiBanco ? `${bancosEnviados.length} bancos` : (p.nome_banco ?? "—")}
+            />
             <Kpi label="R$ Financiado" valor={formatBRL(p.valor_financiamento)} />
-            {!multiBanco && <Kpi label="Situação" valor={<PropostaStatusBadge status={status} banco={p.nome_banco} />} />}
+            {!multiBanco && (
+              <Kpi
+                label="Situação"
+                valor={<PropostaStatusBadge status={status} banco={p.nome_banco} />}
+              />
+            )}
           </div>
         </div>
 
@@ -149,8 +204,12 @@ function Pagina() {
                   key={b.id}
                   className="flex items-center justify-between gap-2 rounded-md border border-border bg-card px-3 py-2"
                 >
-                  <span className="truncate text-sm font-medium text-foreground">{b.nome_banco}</span>
-                  <ToneBadge tone={SITUACAO_BANCO_TONE[(b.situacao_banco as SituacaoBanco) ?? "nao_enviado"]}>
+                  <span className="truncate text-sm font-medium text-foreground">
+                    {b.nome_banco}
+                  </span>
+                  <ToneBadge
+                    tone={SITUACAO_BANCO_TONE[(b.situacao_banco as SituacaoBanco) ?? "nao_enviado"]}
+                  >
                     {SITUACAO_BANCO_LABEL[(b.situacao_banco as SituacaoBanco) ?? "nao_enviado"]}
                   </ToneBadge>
                 </div>
@@ -172,7 +231,9 @@ function Pagina() {
             onClick={() => setTab(t)}
             className={cn(
               "whitespace-nowrap border-b-2 px-3 py-2 text-xs font-semibold uppercase tracking-wide transition-colors",
-              tab === t ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground",
+              tab === t
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground",
             )}
           >
             {t}
@@ -181,8 +242,12 @@ function Pagina() {
       </div>
 
       {tab === "RESUMO" && <TabResumo proposta={p} bancos={data.bancos} propostaId={id} />}
-      {tab === "COMPRADORES" && <TabEnvolvidos tipo="CO" propostaId={id} envolvidos={data.envolvidos} />}
-      {tab === "VENDEDORES" && <TabEnvolvidos tipo="VD" propostaId={id} envolvidos={data.envolvidos} />}
+      {tab === "COMPRADORES" && (
+        <TabEnvolvidos tipo="CO" propostaId={id} envolvidos={data.envolvidos} />
+      )}
+      {tab === "VENDEDORES" && (
+        <TabEnvolvidos tipo="VD" propostaId={id} envolvidos={data.envolvidos} />
+      )}
       {tab === "IQ" && <TabIq proposta={p} propostaId={id} />}
       {tab === "IMÓVEL" && <TabImovel proposta={p} propostaId={id} />}
       {tab === "DOCUMENTOS" && <TabDocumentos propostaId={id} documentos={data.documentos} />}
@@ -202,7 +267,15 @@ function Kpi({ label, valor }: { label: string; valor: React.ReactNode }) {
 }
 
 /* ===== Ações do topo ===== */
-function AcoesTopo({ proposta, propostaId, bancos }: { proposta: any; propostaId: string; bancos: any[] }) {
+function AcoesTopo({
+  proposta,
+  propostaId,
+  bancos,
+}: {
+  proposta: any;
+  propostaId: string;
+  bancos: any[];
+}) {
   const qc = useQueryClient();
   const [busy, setBusy] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
@@ -288,19 +361,32 @@ function AcoesTopo({ proposta, propostaId, bancos }: { proposta: any; propostaId
     <div className="flex flex-wrap items-center gap-2">
       {(status === "rascunho" || status === "erro_envio") && (
         <Button size="sm" onClick={enviar} disabled={busy}>
-          {busy ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Send className="mr-1 h-4 w-4" />}
+          {busy ? (
+            <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+          ) : (
+            <Send className="mr-1 h-4 w-4" />
+          )}
           {proposta.enviada_em ? "Reenviar" : "Enviar ao banco"}
         </Button>
       )}
       {podeEnviarNovos && (
         <Button size="sm" onClick={enviar} disabled={busy}>
-          {busy ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Send className="mr-1 h-4 w-4" />}
-          Enviar a {bancosPendentes.length > 1 ? `${bancosPendentes.length} novos bancos` : "novo banco"}
+          {busy ? (
+            <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+          ) : (
+            <Send className="mr-1 h-4 w-4" />
+          )}
+          Enviar a{" "}
+          {bancosPendentes.length > 1 ? `${bancosPendentes.length} novos bancos` : "novo banco"}
         </Button>
       )}
       {proposta.homefin_id_oportunidade && status !== "cancelada" && (
         <Button size="sm" variant="outline" onClick={sincronizar} disabled={busy}>
-          {busy ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-1 h-4 w-4" />}
+          {busy ? (
+            <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+          ) : (
+            <RefreshCw className="mr-1 h-4 w-4" />
+          )}
           Atualizar status
         </Button>
       )}
@@ -312,15 +398,23 @@ function AcoesTopo({ proposta, propostaId, bancos }: { proposta: any; propostaId
       {status !== "cancelada" && status !== "registrado" && (
         <Dialog open={cancelOpen} onOpenChange={setCancelOpen}>
           <DialogTrigger asChild>
-            <Button size="sm" variant="destructive"><Ban className="mr-1 h-4 w-4" /> Cancelar</Button>
+            <Button size="sm" variant="destructive">
+              <Ban className="mr-1 h-4 w-4" /> Cancelar
+            </Button>
           </DialogTrigger>
           <DialogContent>
-            <DialogHeader><DialogTitle>Cancelar proposta</DialogTitle></DialogHeader>
+            <DialogHeader>
+              <DialogTitle>Cancelar proposta</DialogTitle>
+            </DialogHeader>
             <Label>Motivo do cancelamento</Label>
             <Textarea value={motivo} onChange={(e) => setMotivo(e.target.value)} rows={3} />
             <DialogFooter>
-              <Button variant="outline" onClick={() => setCancelOpen(false)}>Voltar</Button>
-              <Button variant="destructive" onClick={cancelar} disabled={busy}>Confirmar cancelamento</Button>
+              <Button variant="outline" onClick={() => setCancelOpen(false)}>
+                Voltar
+              </Button>
+              <Button variant="destructive" onClick={cancelar} disabled={busy}>
+                Confirmar cancelamento
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -330,7 +424,15 @@ function AcoesTopo({ proposta, propostaId, bancos }: { proposta: any; propostaId
 }
 
 /* ===== RESUMO ===== */
-function TabResumo({ proposta, bancos, propostaId }: { proposta: any; bancos: any[]; propostaId: string }) {
+function TabResumo({
+  proposta,
+  bancos,
+  propostaId,
+}: {
+  proposta: any;
+  bancos: any[];
+  propostaId: string;
+}) {
   const qc = useQueryClient();
   const selecionarFn = useServerFn(selecionarBancoProposta);
   const enviarFn = useServerFn(enviarPropostaHomeFin);
@@ -339,7 +441,9 @@ function TabResumo({ proposta, bancos, propostaId }: { proposta: any; bancos: an
 
   async function mudarSituacao(pbId: string, situacao: SituacaoBanco) {
     try {
-      await situacaoFn({ data: { proposta_id: propostaId, proposta_banco_id: pbId, situacao_banco: situacao } });
+      await situacaoFn({
+        data: { proposta_id: propostaId, proposta_banco_id: pbId, situacao_banco: situacao },
+      });
       qc.invalidateQueries({ queryKey: ["proposta", propostaId] });
       toast.success("Situação do banco atualizada.");
     } catch (e) {
@@ -416,7 +520,6 @@ function TabResumo({ proposta, bancos, propostaId }: { proposta: any; bancos: an
               <TableHead>Envio</TableHead>
               <TableHead>Situação de crédito</TableHead>
               <TableHead className="text-right">Ação</TableHead>
-
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -438,14 +541,28 @@ function TabResumo({ proposta, bancos, propostaId }: { proposta: any; bancos: an
                   />
                 </TableCell>
                 <TableCell className="font-medium">{b.nome_banco}</TableCell>
-                <TableCell className="text-right tabular-nums">{formatBRL(b.valor_financiamento_max)}</TableCell>
-                <TableCell className="text-right tabular-nums">{formatBRL(b.valor_parcela)}</TableCell>
-                <TableCell className="text-right tabular-nums">{b.prazo_pagamento_max ?? "—"}</TableCell>
+                <TableCell className="text-right tabular-nums">
+                  {formatBRL(b.valor_financiamento_max)}
+                </TableCell>
+                <TableCell className="text-right tabular-nums">
+                  {formatBRL(b.valor_parcela)}
+                </TableCell>
+                <TableCell className="text-right tabular-nums">
+                  {b.prazo_pagamento_max ?? "—"}
+                </TableCell>
                 <TableCell className="text-right tabular-nums">
                   {b.taxa_juros_ano != null ? `${b.taxa_juros_ano}%` : "—"}
                 </TableCell>
                 <TableCell>
-                  <ToneBadge tone={b.status_banco === "erro" ? "danger" : b.status_banco === "enviada" ? "success" : "info"}>
+                  <ToneBadge
+                    tone={
+                      b.status_banco === "erro"
+                        ? "danger"
+                        : b.status_banco === "enviada"
+                          ? "success"
+                          : "info"
+                    }
+                  >
                     {b.status_banco}
                   </ToneBadge>
                 </TableCell>
@@ -498,12 +615,26 @@ function TabResumo({ proposta, bancos, propostaId }: { proposta: any; bancos: an
 }
 
 /* ===== Compradores / Vendedores ===== */
-function TabEnvolvidos({ tipo, propostaId, envolvidos }: { tipo: "CO" | "VD"; propostaId: string; envolvidos: any[] }) {
+function TabEnvolvidos({
+  tipo,
+  propostaId,
+  envolvidos,
+}: {
+  tipo: "CO" | "VD";
+  propostaId: string;
+  envolvidos: any[];
+}) {
   const qc = useQueryClient();
   const addFn = useServerFn(adicionarEnvolvido);
   const delFn = useServerFn(removerEnvolvido);
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ nome: "", cpf_cnpj: "", email: "", celular: "", tipo_pessoa: "F" });
+  const [form, setForm] = useState({
+    nome: "",
+    cpf_cnpj: "",
+    email: "",
+    celular: "",
+    tipo_pessoa: "F",
+  });
   const lista = envolvidos.filter((e) => e.tipo_qualificacao === tipo);
 
   async function adicionar() {
@@ -512,7 +643,9 @@ function TabEnvolvidos({ tipo, propostaId, envolvidos }: { tipo: "CO" | "VD"; pr
       return;
     }
     try {
-      await addFn({ data: { proposta_id: propostaId, dados: { ...form, tipo_qualificacao: tipo } } });
+      await addFn({
+        data: { proposta_id: propostaId, dados: { ...form, tipo_qualificacao: tipo } },
+      });
       setOpen(false);
       setForm({ nome: "", cpf_cnpj: "", email: "", celular: "", tipo_pessoa: "F" });
       qc.invalidateQueries({ queryKey: ["proposta", propostaId] });
@@ -534,20 +667,50 @@ function TabEnvolvidos({ tipo, propostaId, envolvidos }: { tipo: "CO" | "VD"; pr
         </span>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button size="sm"><Plus className="mr-1 h-4 w-4" /> Incluir pessoa</Button>
+            <Button size="sm">
+              <Plus className="mr-1 h-4 w-4" /> Incluir pessoa
+            </Button>
           </DialogTrigger>
           <DialogContent>
-            <DialogHeader><DialogTitle>Incluir {tipo === "CO" ? "comprador" : "vendedor"}</DialogTitle></DialogHeader>
+            <DialogHeader>
+              <DialogTitle>Incluir {tipo === "CO" ? "comprador" : "vendedor"}</DialogTitle>
+            </DialogHeader>
             <div className="grid gap-3">
-              <div><Label>Nome</Label><Input value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} /></div>
-              <div><Label>CPF/CNPJ</Label><Input value={form.cpf_cnpj} onChange={(e) => setForm({ ...form, cpf_cnpj: e.target.value })} /></div>
+              <div>
+                <Label>Nome</Label>
+                <Input
+                  value={form.nome}
+                  onChange={(e) => setForm({ ...form, nome: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label>CPF/CNPJ</Label>
+                <Input
+                  value={form.cpf_cnpj}
+                  onChange={(e) => setForm({ ...form, cpf_cnpj: e.target.value })}
+                />
+              </div>
               <div className="grid grid-cols-2 gap-3">
-                <div><Label>E-mail</Label><Input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
-                <div><Label>Celular</Label><Input value={form.celular} onChange={(e) => setForm({ ...form, celular: e.target.value })} /></div>
+                <div>
+                  <Label>E-mail</Label>
+                  <Input
+                    value={form.email}
+                    onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label>Celular</Label>
+                  <Input
+                    value={form.celular}
+                    onChange={(e) => setForm({ ...form, celular: e.target.value })}
+                  />
+                </div>
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
+              <Button variant="outline" onClick={() => setOpen(false)}>
+                Cancelar
+              </Button>
               <Button onClick={adicionar}>Salvar</Button>
             </DialogFooter>
           </DialogContent>
@@ -599,7 +762,9 @@ function TabIq({ proposta, propostaId }: { proposta: any; propostaId: string }) 
 
   async function salvar() {
     try {
-      await salvarFn({ data: { proposta_id: propostaId, iq_nome: nome, iq_comentario: comentario } });
+      await salvarFn({
+        data: { proposta_id: propostaId, iq_nome: nome, iq_comentario: comentario },
+      });
       toast.success("Dados do interveniente salvos.");
       qc.invalidateQueries({ queryKey: ["proposta", propostaId] });
     } catch (e) {
@@ -609,14 +774,26 @@ function TabIq({ proposta, propostaId }: { proposta: any; propostaId: string }) 
 
   return (
     <div className="rounded-lg border border-border bg-card p-5 space-y-4">
-      <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Dados do interveniente quitante</p>
-      <div><Label>Nome</Label><Input value={nome} onChange={(e) => setNome(e.target.value)} /></div>
+      <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+        Dados do interveniente quitante
+      </p>
+      <div>
+        <Label>Nome</Label>
+        <Input value={nome} onChange={(e) => setNome(e.target.value)} />
+      </div>
       <div>
         <Label>Comentário sobre o processo</Label>
-        <Textarea value={comentario} maxLength={2000} rows={5} onChange={(e) => setComentario(e.target.value)} />
+        <Textarea
+          value={comentario}
+          maxLength={2000}
+          rows={5}
+          onChange={(e) => setComentario(e.target.value)}
+        />
         <p className="mt-1 text-right text-xs text-muted-foreground">{comentario.length}/2000</p>
       </div>
-      <div className="flex justify-end"><Button onClick={salvar}>Salvar</Button></div>
+      <div className="flex justify-end">
+        <Button onClick={salvar}>Salvar</Button>
+      </div>
     </div>
   );
 }
@@ -635,22 +812,38 @@ function TabImovel({ proposta, propostaId }: { proposta: any; propostaId: string
   ];
   return (
     <div className="rounded-lg border border-border bg-card p-5">
-      <p className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Dados do imóvel</p>
+      <p className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+        Dados do imóvel
+      </p>
       <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
         {campos.map(([l, v]) => (
           <div key={l}>
             <Label className="text-xs text-muted-foreground">{l}</Label>
-            <div className="mt-1 rounded-md border border-border bg-muted/40 px-3 py-2 text-sm">{v}</div>
+            <div className="mt-1 rounded-md border border-border bg-muted/40 px-3 py-2 text-sm">
+              {v}
+            </div>
           </div>
         ))}
       </div>
-      {!editavel && <p className="mt-4 text-xs text-muted-foreground">Dados congelados no status atual.</p>}
+      {!editavel && (
+        <p className="mt-4 text-xs text-muted-foreground">Dados congelados no status atual.</p>
+      )}
     </div>
   );
 }
 
 /* ===== Documentos ===== */
-const TIPOS_DOC = ["RG", "CPF", "COMP_RENDA", "IR", "EXT_BANC", "MATRICULA", "IPTU", "CERT_NASC", "CERT_CAS"];
+const TIPOS_DOC = [
+  "RG",
+  "CPF",
+  "COMP_RENDA",
+  "IR",
+  "EXT_BANC",
+  "MATRICULA",
+  "IPTU",
+  "CERT_NASC",
+  "CERT_CAS",
+];
 
 function TabDocumentos({ propostaId, documentos }: { propostaId: string; documentos: any[] }) {
   const qc = useQueryClient();
@@ -707,14 +900,24 @@ function TabDocumentos({ propostaId, documentos }: { propostaId: string; documen
         <div>
           <Label>Tipo</Label>
           <Select value={tipo} onValueChange={setTipo}>
-            <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
-            <SelectContent>{TIPOS_DOC.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+            <SelectTrigger className="w-40">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {TIPOS_DOC.map((t) => (
+                <SelectItem key={t} value={t}>
+                  {t}
+                </SelectItem>
+              ))}
+            </SelectContent>
           </Select>
         </div>
         <div>
           <Label>Participante</Label>
           <Select value={parte} onValueChange={setParte}>
-            <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-40">
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="comprador1">Comprador 1</SelectItem>
               <SelectItem value="comprador2">Comprador 2</SelectItem>
@@ -731,7 +934,11 @@ function TabDocumentos({ propostaId, documentos }: { propostaId: string; documen
           onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])}
         />
         <Button onClick={() => inputRef.current?.click()} disabled={uploading}>
-          {uploading ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Upload className="mr-1 h-4 w-4" />}
+          {uploading ? (
+            <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+          ) : (
+            <Upload className="mr-1 h-4 w-4" />
+          )}
           Adicionar documento
         </Button>
       </div>
@@ -761,7 +968,15 @@ function TabDocumentos({ propostaId, documentos }: { propostaId: string; documen
                 <TableCell>{d.tipo_documento ?? "—"}</TableCell>
                 <TableCell className="font-medium">{d.nome_documento}</TableCell>
                 <TableCell>
-                  <ToneBadge tone={d.status === "aprovado" ? "success" : d.status === "reprovado" ? "danger" : "info"}>
+                  <ToneBadge
+                    tone={
+                      d.status === "aprovado"
+                        ? "success"
+                        : d.status === "reprovado"
+                          ? "danger"
+                          : "info"
+                    }
+                  >
                     {d.status}
                   </ToneBadge>
                 </TableCell>
@@ -769,7 +984,14 @@ function TabDocumentos({ propostaId, documentos }: { propostaId: string; documen
                   <Button size="icon" variant="ghost" onClick={() => baixar(d.storage_path)}>
                     <Download className="h-4 w-4" />
                   </Button>
-                  <Button size="icon" variant="ghost" onClick={async () => { await removerFn({ data: { id: d.id } }); qc.invalidateQueries({ queryKey: ["proposta", propostaId] }); }}>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={async () => {
+                      await removerFn({ data: { id: d.id } });
+                      qc.invalidateQueries({ queryKey: ["proposta", propostaId] });
+                    }}
+                  >
                     <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>
                 </TableCell>
@@ -796,13 +1018,21 @@ function TabAtividades({ historico }: { historico: any[] }) {
         </TableHeader>
         <TableBody>
           {historico.length === 0 && (
-            <TableRow><TableCell colSpan={3} className="py-8 text-center text-sm text-muted-foreground">Sem atividades.</TableCell></TableRow>
+            <TableRow>
+              <TableCell colSpan={3} className="py-8 text-center text-sm text-muted-foreground">
+                Sem atividades.
+              </TableCell>
+            </TableRow>
           )}
           {historico.map((h) => (
             <TableRow key={h.id}>
               <TableCell className="font-medium">{h.tipo_evento}</TableCell>
-              <TableCell className="text-muted-foreground">{h.descricao ?? (h.status_novo ? statusProposta(h.status_novo).label : "—")}</TableCell>
-              <TableCell className="text-muted-foreground">{new Date(h.created_at).toLocaleString("pt-BR")}</TableCell>
+              <TableCell className="text-muted-foreground">
+                {h.descricao ?? (h.status_novo ? statusProposta(h.status_novo).label : "—")}
+              </TableCell>
+              <TableCell className="text-muted-foreground">
+                {new Date(h.created_at).toLocaleString("pt-BR")}
+              </TableCell>
             </TableRow>
           ))}
         </TableBody>
@@ -827,7 +1057,9 @@ function TabFup({ propostaId, followups }: { propostaId: string; followups: any[
     }
     setBusy(true);
     try {
-      await addFn({ data: { proposta_id: propostaId, tipo, titulo: titulo || undefined, comentario } });
+      await addFn({
+        data: { proposta_id: propostaId, tipo, titulo: titulo || undefined, comentario },
+      });
       setTitulo("");
       setComentario("");
       qc.invalidateQueries({ queryKey: ["proposta", propostaId] });
@@ -841,35 +1073,57 @@ function TabFup({ propostaId, followups }: { propostaId: string; followups: any[
   return (
     <div className="grid gap-4 md:grid-cols-2">
       <div className="rounded-lg border border-border bg-card p-5 space-y-3">
-        <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Incluir comentário</p>
+        <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          Incluir comentário
+        </p>
         <div>
           <Label>Tipo</Label>
           <Select value={tipo} onValueChange={(v) => setTipo(v as any)}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="interno">Interno</SelectItem>
               <SelectItem value="externo">Externo</SelectItem>
             </SelectContent>
           </Select>
         </div>
-        <div><Label>Título</Label><Input value={titulo} onChange={(e) => setTitulo(e.target.value)} /></div>
+        <div>
+          <Label>Título</Label>
+          <Input value={titulo} onChange={(e) => setTitulo(e.target.value)} />
+        </div>
         <div>
           <Label>Comentário</Label>
-          <Textarea value={comentario} maxLength={4000} rows={4} onChange={(e) => setComentario(e.target.value)} />
+          <Textarea
+            value={comentario}
+            maxLength={4000}
+            rows={4}
+            onChange={(e) => setComentario(e.target.value)}
+          />
           <p className="mt-1 text-right text-xs text-muted-foreground">{comentario.length}/4000</p>
         </div>
-        <div className="flex justify-end"><Button onClick={incluir} disabled={busy}>Incluir comentário</Button></div>
+        <div className="flex justify-end">
+          <Button onClick={incluir} disabled={busy}>
+            Incluir comentário
+          </Button>
+        </div>
       </div>
 
       <div className="rounded-lg border border-border bg-card p-5">
-        <p className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Histórico de comentários</p>
+        <p className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          Histórico de comentários
+        </p>
         <div className="space-y-3">
-          {followups.length === 0 && <p className="text-sm text-muted-foreground">Nenhum comentário.</p>}
+          {followups.length === 0 && (
+            <p className="text-sm text-muted-foreground">Nenhum comentário.</p>
+          )}
           {followups.map((f) => (
             <div key={f.id} className="rounded-md border border-border p-3">
               <div className="flex items-center justify-between">
                 <ToneBadge tone={f.tipo === "externo" ? "info" : "muted"}>{f.tipo}</ToneBadge>
-                <span className="text-xs text-muted-foreground">{new Date(f.created_at).toLocaleString("pt-BR")}</span>
+                <span className="text-xs text-muted-foreground">
+                  {new Date(f.created_at).toLocaleString("pt-BR")}
+                </span>
               </div>
               {f.titulo && <p className="mt-2 font-medium text-foreground">{f.titulo}</p>}
               <p className="text-sm text-muted-foreground">{f.comentario}</p>

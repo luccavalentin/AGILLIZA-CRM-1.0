@@ -88,11 +88,7 @@ export function AppShell({
             </Link>
           </div>
           <div className="sidebar-scroll flex-1 overflow-y-auto">
-            {hydrated && collapsed ? (
-              <SidebarRail nav={nav} />
-            ) : (
-              <SidebarNav nav={nav} />
-            )}
+            {hydrated && collapsed ? <SidebarRail nav={nav} /> : <SidebarNav nav={nav} />}
           </div>
         </aside>
 
@@ -107,7 +103,6 @@ export function AppShell({
               <Logo variant="light" className="h-7" />
             </div>
             <div className="sidebar-scroll h-[calc(100dvh-4rem)] overflow-y-auto">
-
               <SidebarNav nav={nav} onNavigate={() => setMobileOpen(false)} />
             </div>
           </SheetContent>

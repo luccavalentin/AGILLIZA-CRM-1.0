@@ -3,7 +3,12 @@ import { useServerFn } from "@tanstack/react-start";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { GenericReportPage } from "@/components/reports/generic-report-page";
 import { getEscopoRelatorios } from "@/lib/relatorios/reports.functions";
-import { filtrosPadrao, type ReportFiltros, type Periodo, type Escopo } from "@/lib/relatorios/shared";
+import {
+  filtrosPadrao,
+  type ReportFiltros,
+  type Periodo,
+  type Escopo,
+} from "@/lib/relatorios/shared";
 
 const PERIODOS: Periodo[] = ["hoje", "7d", "15d", "30d", "mes", "mes_anterior", "ano", "custom"];
 const ESCOPOS: Escopo[] = ["minha", "equipe", "geral"];
@@ -11,9 +16,14 @@ const ESCOPOS: Escopo[] = ["minha", "equipe", "geral"];
 /** Valida/normaliza os filtros vindos da query string (link compartilhável). */
 export function parseReportSearch(search: Record<string, unknown>): ReportFiltros {
   const base = filtrosPadrao();
-  const periodo = PERIODOS.includes(search.periodo as Periodo) ? (search.periodo as Periodo) : base.periodo;
-  const escopo = ESCOPOS.includes(search.escopo as Escopo) ? (search.escopo as Escopo) : base.escopo;
-  const num = (v: unknown) => (v != null && v !== "" && Number.isFinite(Number(v)) ? Number(v) : undefined);
+  const periodo = PERIODOS.includes(search.periodo as Periodo)
+    ? (search.periodo as Periodo)
+    : base.periodo;
+  const escopo = ESCOPOS.includes(search.escopo as Escopo)
+    ? (search.escopo as Escopo)
+    : base.escopo;
+  const num = (v: unknown) =>
+    v != null && v !== "" && Number.isFinite(Number(v)) ? Number(v) : undefined;
   const str = (v: unknown) => (typeof v === "string" && v ? v : undefined);
   return {
     periodo,
@@ -32,13 +42,25 @@ export function parseReportSearch(search: Record<string, unknown>): ReportFiltro
 }
 
 /** Wrapper de rota: liga filtros à URL e escopo do usuário ao GenericReportPage. */
-export function ReportView({ codigo, comFiltroBanco, comFiltroStatus }: { codigo: string; comFiltroBanco?: boolean; comFiltroStatus?: boolean }) {
+export function ReportView({
+  codigo,
+  comFiltroBanco,
+  comFiltroStatus,
+}: {
+  codigo: string;
+  comFiltroBanco?: boolean;
+  comFiltroStatus?: boolean;
+}) {
   const search = useSearch({ strict: false }) as Record<string, unknown>;
   const navigate = useNavigate();
   const filtros = parseReportSearch(search);
 
   const escopoFn = useServerFn(getEscopoRelatorios);
-  const { data: escopo } = useQuery({ queryKey: ["report-escopo"], queryFn: () => escopoFn(), staleTime: 5 * 60_000 });
+  const { data: escopo } = useQuery({
+    queryKey: ["report-escopo"],
+    queryFn: () => escopoFn(),
+    staleTime: 5 * 60_000,
+  });
 
   // "Painel geral" deve mostrar toda a operação: se o usuário pode ver geral/equipe
   // e não escolheu um escopo na URL, amplia o escopo automaticamente.
@@ -50,7 +72,8 @@ export function ReportView({ codigo, comFiltroBanco, comFiltroStatus }: { codigo
 
   const onFiltros = (f: ReportFiltros) => {
     const s: Record<string, string> = {};
-    for (const [k, v] of Object.entries(f)) if (v !== undefined && v !== "" && v !== null) s[k] = String(v);
+    for (const [k, v] of Object.entries(f))
+      if (v !== undefined && v !== "" && v !== null) s[k] = String(v);
     navigate({ to: ".", search: s, replace: true });
   };
 
@@ -66,4 +89,3 @@ export function ReportView({ codigo, comFiltroBanco, comFiltroStatus }: { codigo
     />
   );
 }
-

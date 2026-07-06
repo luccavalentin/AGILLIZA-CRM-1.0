@@ -20,7 +20,9 @@ export const listarParceiros = createServerFn({ method: "GET" })
     const { supabase } = context;
     const { data, error } = await supabase
       .from("parceiro_detalhes")
-      .select("id, profile_id, razao_social, creci, tipo_pessoa, percentual_comissao, profiles(nome, email, telefone)")
+      .select(
+        "id, profile_id, razao_social, creci, tipo_pessoa, percentual_comissao, profiles(nome, email, telefone)",
+      )
       .order("created_at", { ascending: false })
       .limit(300);
     if (error) throw new Error(error.message);

@@ -40,16 +40,14 @@ export const listarChatCliente = createServerFn({ method: "GET" })
     );
     const nomes = new Map<string, string>();
     if (idsTime.length > 0) {
-      const { data: perfis } = await supabase
-        .from("profiles")
-        .select("id, nome")
-        .in("id", idsTime);
+      const { data: perfis } = await supabase.from("profiles").select("id, nome").in("id", idsTime);
       for (const p of perfis ?? []) nomes.set(p.id, p.nome ?? "");
     }
 
     return lista.map((m) => ({
       ...m,
-      remetente_nome: m.remetente_tipo === "time" ? nomes.get(m.remetente_id ?? "") ?? null : null,
+      remetente_nome:
+        m.remetente_tipo === "time" ? (nomes.get(m.remetente_id ?? "") ?? null) : null,
     }));
   });
 
