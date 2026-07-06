@@ -20,6 +20,12 @@ import { PRODUTOS } from "@/lib/simulacao/schemas";
 import { formatBRL, formatPercent } from "@/lib/simulacao/format";
 import { listarBancosAtivos } from "@/lib/simulacao/simulacoes.functions";
 import { compararBancosRapido, taxaAnoDeBanco } from "@/lib/simulacao/simulacao-rapida";
+import { toast } from "sonner";
+import {
+  ajustarPrazoPorIdade,
+  prazoMaximoPorIdade,
+  formatarMeses,
+} from "@/lib/simulacao/prazo";
 
 export const Route = createFileRoute("/_authenticated/operacional/simulacoes_/nova")({
   head: () => ({ meta: [{ title: "Nova simulação — Agilliza" }] }),
