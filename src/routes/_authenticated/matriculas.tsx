@@ -87,11 +87,7 @@ function Pagina() {
         </p>
       </div>
 
-      <PixBanner
-        chave={data.config?.pix_chave ?? null}
-        titular={data.config?.pix_titular ?? null}
-        onSalvo={invalidar}
-      />
+      <PixBanner />
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Kpi
