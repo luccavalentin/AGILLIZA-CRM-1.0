@@ -1,7 +1,6 @@
-import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
-import { toast } from "sonner";
+import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+
 import {
   FileSignature,
   Printer,
@@ -116,10 +115,18 @@ export function DpsView() {
 function ClientePicker({ onSelecionar }: { onSelecionar: (p: Proponente) => void }) {
   const [aberto, setAberto] = useState(false);
   const [q, setQ] = useState("");
-  const buscar = useServerFn(buscarClientesCRM);
-  const busca = useMutation({
-    mutationFn: (term: string) => buscar({ data: { q: term } }),
-    onError: (e: any) => toast.error(e?.message ?? "Falha na busca."),
+  const [termo, setTermo] = useState("");
+
+  // Busca "ao digitar" com debounce, sem precisar clicar no botão.
+  useEffect(() => {
+    const t = setTimeout(() => setTermo(q.trim()), 300);
+    return () => clearTimeout(t);
+  }, [q]);
+
+  const busca = useQuery({
+    queryKey: ["dps-buscar-clientes", termo],
+    queryFn: () => buscarClientesCRM({ data: { q: termo } }),
+    enabled: aberto && termo.length >= 2,
   });
 
   if (!aberto) {
@@ -149,30 +156,36 @@ function ClientePicker({ onSelecionar }: { onSelecionar: (p: Proponente) => void
           <Database className="h-4 w-4 text-primary" />
           <span className="text-sm font-medium text-foreground">Selecione o cliente no CRM</span>
         </div>
-        <form
-          className="flex gap-2"
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (q.trim()) busca.mutate(q.trim());
-          }}
-        >
-          <Input
-            autoFocus
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Nome, CPF/CNPJ ou e-mail…"
-          />
-          <Button type="submit" disabled={busca.isPending}>
-            {busca.isPending ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Search className="h-4 w-4" />
-            )}
-          </Button>
+        <form className="flex gap-2" onSubmit={(e) => e.preventDefault()}>
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              autoFocus
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Nome, CPF/CNPJ ou e-mail…"
+              className="pl-9"
+            />
+          </div>
+          {busca.isFetching && (
+            <div className="flex items-center px-2">
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            </div>
+          )}
         </form>
 
         <div className="space-y-1">
-          {busca.isSuccess && resultados.length === 0 && (
+          {termo.length < 2 && (
+            <p className="py-4 text-center text-sm text-muted-foreground">
+              Digite ao menos 2 caracteres para buscar.
+            </p>
+          )}
+          {busca.isError && (
+            <p className="py-4 text-center text-sm text-destructive">
+              {busca.error instanceof Error ? busca.error.message : "Falha na busca."}
+            </p>
+          )}
+          {termo.length >= 2 && busca.isSuccess && resultados.length === 0 && (
             <p className="py-4 text-center text-sm text-muted-foreground">
               Nenhum cliente encontrado.
             </p>
