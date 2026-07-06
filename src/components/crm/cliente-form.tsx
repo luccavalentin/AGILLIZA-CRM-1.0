@@ -376,6 +376,10 @@ export function ClienteForm({
             <Input value={v.mae} onChange={(e) => set("mae", e.target.value)} />
           </div>
           <div className="space-y-1.5">
+            <Label>Nome do pai</Label>
+            <Input value={v.pai} onChange={(e) => set("pai", e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
             <Label>E-mail *</Label>
             <Input type="email" value={v.email} onChange={(e) => set("email", e.target.value)} />
           </div>
