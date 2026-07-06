@@ -76,6 +76,26 @@ function Pagina() {
     }
   }
 
+  async function handleBaixar(id: string) {
+    try {
+      const dados = await obter({ data: { id } });
+      baixarSimulacaoPDF({ simulacao: dados.simulacao, bancos: dados.bancos });
+    } catch {
+      toast.error("Não foi possível gerar o PDF da simulação.");
+    }
+  }
+
+  async function handleEditar(id: string) {
+    try {
+      const { simulacao } = await obter({ data: { id } });
+      sessionStorage.setItem("simulacao_wizard", JSON.stringify(simulacao));
+      toast.info("Dados carregados no formulário para edição.");
+      router.navigate({ to: "/operacional/simulacoes/completa" });
+    } catch {
+      toast.error("Não foi possível abrir a simulação para edição.");
+    }
+  }
+
   return (
     <div className="mx-auto w-full max-w-6xl space-y-6 p-4 md:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
