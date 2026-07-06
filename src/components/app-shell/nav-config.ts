@@ -141,12 +141,6 @@ export const navInterno: NavGroup[] = [
       },
 
       {
-        label: "Contratos",
-        icon: FileSignature,
-        to: "/operacional/contratos",
-        perm: { modulo: "operacional.contratos" },
-      },
-      {
         label: "Tarefas",
         icon: ListChecks,
         to: "/operacional/tarefas",
