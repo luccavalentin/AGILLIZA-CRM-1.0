@@ -18,6 +18,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { PropostaStatusBadge } from "@/components/propostas/status-badge";
+import { BancosProposta } from "@/components/proposta/bancos-proposta";
 import { ConfirmDelete } from "@/components/shared/confirm-delete";
 import { formatBRL } from "@/lib/simulacao/format";
 
@@ -110,7 +111,7 @@ function Pagina() {
             <TableRow>
               <TableHead>Número</TableHead>
               <TableHead>Cliente</TableHead>
-              <TableHead>Banco</TableHead>
+              <TableHead>Bancos</TableHead>
               <TableHead className="text-right">R$ Financiamento</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="w-12 text-right">Ações</TableHead>
@@ -147,7 +148,7 @@ function Pagina() {
               >
                 <TableCell className="font-medium">{p.numero_proposta}</TableCell>
                 <TableCell>{p.nome_cliente ?? "—"}</TableCell>
-                <TableCell>{p.nome_banco ?? "—"}</TableCell>
+                <TableCell><BancosProposta bancos={p.bancos} /></TableCell>
                 <TableCell className="text-right tabular-nums">
                   {formatBRL(p.valor_financiamento)}
                 </TableCell>

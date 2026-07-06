@@ -10,6 +10,11 @@ import {
 } from "./state-machine";
 
 /** ===== Tipos de saída ===== */
+export interface PropostaBancoResumo {
+  nome_banco: string | null;
+  status_banco: string | null;
+}
+
 export interface PropostaListaItem {
   id: string;
   numero_proposta: string;
@@ -19,6 +24,7 @@ export interface PropostaListaItem {
   valor_financiamento: number | null;
   status: string;
   created_at: string;
+  bancos: PropostaBancoResumo[];
 }
 
 export interface PropostaCompleta {
@@ -89,7 +95,25 @@ export const listarPropostas = createServerFn({ method: "GET" })
 
     const { data: itens, count, error } = await query;
     if (error) throw new Error(error.message);
-    return { itens: (itens ?? []) as PropostaListaItem[], total: count ?? 0 };
+
+    const rows = (itens ?? []) as any[];
+    const ids = rows.map((r) => r.id);
+    const bancosPorProp = new Map<string, PropostaBancoResumo[]>();
+    if (ids.length) {
+      const { data: bancos } = await supabase
+        .from("proposta_bancos")
+        .select("proposta_id, nome_banco, status_banco")
+        .in("proposta_id", ids)
+        .order("nome_banco", { ascending: true });
+      for (const b of bancos ?? []) {
+        const lista = bancosPorProp.get((b as any).proposta_id) ?? [];
+        lista.push({ nome_banco: (b as any).nome_banco, status_banco: (b as any).status_banco });
+        bancosPorProp.set((b as any).proposta_id, lista);
+      }
+    }
+
+    const lista = rows.map((r) => ({ ...r, bancos: bancosPorProp.get(r.id) ?? [] }));
+    return { itens: lista as PropostaListaItem[], total: count ?? 0 };
   });
 
 /** ===== Detalhe ===== */
