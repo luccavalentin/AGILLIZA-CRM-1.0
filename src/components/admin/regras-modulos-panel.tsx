@@ -535,6 +535,10 @@ export function RegrasModulosPanel() {
           </div>
         </div>
       )}
+        </TabsContent>
+      </Tabs>
+
+
 
       {/* Dialog: novo nível */}
       <Dialog open={novoOpen} onOpenChange={setNovoOpen}>
