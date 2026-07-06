@@ -488,6 +488,9 @@ function TabResumo({
   const enviarFn = useServerFn(enviarPropostaHomeFin);
   const situacaoFn = useServerFn(definirSituacaoBanco);
   const [enviandoId, setEnviandoId] = useState<string | null>(null);
+  const [resultadoEnvio, setResultadoEnvio] = useState<
+    { nome_banco: string | null; status: string; mensagem?: string }[] | null
+  >(null);
 
   async function mudarSituacao(pbId: string, situacao: SituacaoBanco) {
     try {
