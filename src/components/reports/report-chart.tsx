@@ -55,6 +55,17 @@ function BankYAxisTick(props: {
   );
 }
 
+/** Gera ticks inteiros únicos e "redondos" de 0 até um máximo confortável. */
+function niceIntTicks(max: number): number[] {
+  const topo = Math.max(1, Math.ceil(max));
+  // Passo inteiro que resulta em ~4 divisões, sempre >= 1.
+  const step = Math.max(1, Math.ceil(topo / 4));
+  const fim = Math.ceil(topo / step) * step;
+  const ticks: number[] = [];
+  for (let v = 0; v <= fim; v += step) ticks.push(v);
+  return ticks;
+}
+
 
 
 const tooltipStyle = {
