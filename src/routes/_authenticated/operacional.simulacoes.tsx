@@ -434,6 +434,9 @@ function AcoesSimulacao({
         <DropdownMenuItem onSelect={onVisualizar}>
           <Eye className="mr-2 h-4 w-4" /> Visualizar
         </DropdownMenuItem>
+        <DropdownMenuItem onSelect={onEnviarProposta} className="text-primary focus:text-primary">
+          <Send className="mr-2 h-4 w-4" /> Enviar proposta
+        </DropdownMenuItem>
         <DropdownMenuItem onSelect={onEditar}>
           <Pencil className="mr-2 h-4 w-4" /> Editar
         </DropdownMenuItem>
