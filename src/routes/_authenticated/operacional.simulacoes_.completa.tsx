@@ -55,6 +55,7 @@ function Pagina() {
     valor_financiamento: 0,
     prazo: 360,
     utiliza_fgts: "N",
+    fg_financiar_despesas: false,
     sistema_amortizacao: "S",
     nome_cliente: "",
     cpf_cnpj: "",
