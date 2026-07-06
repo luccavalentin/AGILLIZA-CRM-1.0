@@ -506,12 +506,60 @@ export function baixarSimulacaoDetalhadaPDF({
   return salvar(doc, s, "detalhada", filePrefix);
 }
 
-function salvar(doc: jsPDF, s: any, tipo: string, filePrefix = "simulacao"): jsPDF {
-  const numero = s.numero_proposta ?? s.numero_simulacao ?? "";
-  const nome = `${filePrefix}-${numero}-${tipo}`
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-");
-  doc.save(`agilliza-${nome}.pdf`);
+/** Abrevia um valor monetário em "k"/"mi" para uso no nome do arquivo. */
+function abreviarValor(v: number | null | undefined): string {
+  if (v == null || !Number.isFinite(v) || v <= 0) return "-";
+  if (v >= 1_000_000) {
+    const mi = v / 1_000_000;
+    return `${Number.isInteger(mi) ? mi : mi.toFixed(1).replace(/\.0$/, "")}mi`;
+  }
+  const k = v / 1_000;
+  return `${Math.round(k)}k`;
+}
+
+/** Sistema de amortização em rótulo curto (SAC/PRICE) para o nome do arquivo. */
+function tabelaLabel(s: any, bancos: any[]): string {
+  const d = bancos.map((b) => extrairDetalheBanco(b?.raw_response)).find(Boolean);
+  return normalizarSistemaAmortizacao(d?.sistemaAmortizacao, s.sistema_amortizacao) || "-";
+}
+
+/** Renda necessária: maior renda mínima entre os bancos (1ª parcela / 30%). */
+function rendaNecessaria(s: any, bancos: any[]): number | null {
+  let renda: number | null = null;
+  for (const b of bancos) {
+    const d = extrairDetalheBanco(b?.raw_response);
+    const parcela = d?.primeiraParcela ?? b?.valor_parcela ?? null;
+    if (parcela != null && parcela > 0) {
+      const r = parcela / 0.3;
+      if (renda == null || r > renda) renda = r;
+    }
+  }
+  return renda;
+}
+
+/**
+ * Nome de arquivo descritivo pedido pela operação, ex.:
+ * "Bradesco,Caixa-SAC-C e V 420k - Finan 350k - 420 meses - renda 28k".
+ */
+function nomeDescritivo(s: any, bancos: any[]): string {
+  const nomes = bancos.map((b) => b?.nome_banco).filter(Boolean);
+  const bancoTxt = nomes.length ? Array.from(new Set(nomes)).join(",") : "Simulacao";
+  const tabela = tabelaLabel(s, bancos);
+  const cev = abreviarValor(s.valor_imovel);
+  const finan = abreviarValor(s.valor_financiamento);
+  const prazo = s.prazo ? `${s.prazo} meses` : "-";
+  const renda = abreviarValor(rendaNecessaria(s, bancos));
+  return `${bancoTxt}-${tabela}-C e V ${cev} - Finan ${finan} - ${prazo} - renda ${renda}`;
+}
+
+/** Remove caracteres inválidos de nome de arquivo, preservando espaços e vírgulas. */
+function sanitizarNomeArquivo(nome: string): string {
+  return nome.replace(/[\\/:*?"<>|]+/g, "").replace(/\s+/g, " ").trim();
+}
+
+function salvar(doc: jsPDF, s: any, _tipo: string, bancos: any[] = []): jsPDF {
+  const nome = sanitizarNomeArquivo(nomeDescritivo(s, bancos));
+  doc.save(`${nome}.pdf`);
   return doc;
 }
 
