@@ -202,6 +202,7 @@ export function PainelView({
                 <div className="h-64 w-full">
                   <ReportChartView
                     chart={{ titulo: data.chart.titulo, tipo: "barh", dados: data.chart.dados }}
+                    colorByBank={data.chart.porBanco}
                   />
                 </div>
               </PanelCard>
