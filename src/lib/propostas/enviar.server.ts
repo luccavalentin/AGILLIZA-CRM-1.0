@@ -17,23 +17,26 @@ const ORDEM_STATUS: PropostaStatus[] = [
   "enviada_banco",
   "em_analise_credito",
   "credito_aprovado",
-  "aguardando_documentos",
-  "engenharia_vistoria",
-  "analise_juridica",
+  "checklist_documentacao",
+  "cadastro_complementar",
+  "dossie_completo",
+  "formularios",
+  "envio_documentos_banco",
+  "vistoria_agendamento",
+  "vistoria_concluida",
+  "emissao_contrato",
   "contrato_emitido",
-  "registrado",
 ];
 
 /** Deriva o status interno a partir do nome da etapa ativa retornada pelo banco. */
 function statusDaEtapa(nomeEtapa: string | null): PropostaStatus | null {
   if (!nomeEtapa) return null;
   const n = nomeEtapa.toLowerCase();
-  if (n.includes("registr")) return "registrado";
-  if (n.includes("contrato")) return "contrato_emitido";
-  if (n.includes("jurídic") || n.includes("juridic")) return "analise_juridica";
-  if (n.includes("engenharia") || n.includes("vistoria") || n.includes("avaliaç"))
-    return "engenharia_vistoria";
-  if (n.includes("document")) return "aguardando_documentos";
+  if (n.includes("contrato") || n.includes("registr")) return "contrato_emitido";
+  if (n.includes("emiss")) return "emissao_contrato";
+  if (n.includes("vistoria") || n.includes("engenharia") || n.includes("avaliaç"))
+    return "vistoria_agendamento";
+  if (n.includes("document")) return "envio_documentos_banco";
   if (n.includes("aprov")) return "credito_aprovado";
   if (
     n.includes("análise") ||
