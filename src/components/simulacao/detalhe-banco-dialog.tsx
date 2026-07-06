@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { corDoBanco } from "@/lib/bancos/cores";
+import { BancoLogo } from "@/components/bancos/banco-logo";
 import { FileText } from "lucide-react";
 import {
   Dialog,
