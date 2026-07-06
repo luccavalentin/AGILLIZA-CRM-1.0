@@ -224,7 +224,15 @@ export function RegrasModulosPanel() {
     if (!selecionado) return;
     setEditNome(selecionado.nome);
     setEditDesc(selecionado.descricao ?? "");
+    setEditPortal(selecionado.acesso_tipo);
+    setEditPapel(selecionado.papel);
     setEditarOpen(true);
+  }
+
+  // Garante papel válido ao trocar de portal.
+  function ajustarPapel(portal: AcessoTipo, papel: PapelNivel): PapelNivel {
+    const opcoes = PAPEIS_POR_PORTAL[portal].map((p) => p.value);
+    return opcoes.includes(papel) ? papel : opcoes[0];
   }
 
   const grupos = useMemo(() => {
