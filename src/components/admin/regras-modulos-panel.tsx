@@ -287,6 +287,10 @@ export function RegrasModulosPanel() {
                         </Badge>
                       ) : null}
                     </div>
+                    <p className="truncate text-xs text-muted-foreground">
+                      {PAPEL_LABEL[n.papel] ?? n.papel} ·{" "}
+                      {n.acesso_tipo === "portal_parceiro" ? "Parceiro" : "Correspondente"}
+                    </p>
                     {n.descricao ? (
                       <p className="truncate text-xs text-muted-foreground">{n.descricao}</p>
                     ) : null}
