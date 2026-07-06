@@ -140,12 +140,6 @@ function Pagina() {
     return Math.min(...bancos.map((b) => taxaAnoDeBanco(b.codigo_banco)));
   }, [bancos]);
 
-
-  const maxPrazoIdade = useMemo(
-    () => prazoMaximoPorIdade(w.data_nascimento),
-    [w.data_nascimento],
-  );
-
   /** Aplica o prazo digitado, ajustando automaticamente pela regra de idade. */
   function definirPrazo(valor: number) {
     if (!Number.isFinite(valor) || valor <= 0) {
