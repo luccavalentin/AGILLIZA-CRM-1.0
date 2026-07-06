@@ -70,7 +70,7 @@ import {
 } from "@/components/ui/dialog";
 import { PipelineStepper } from "@/components/propostas/pipeline-stepper";
 import { PropostaStatusBadge } from "@/components/propostas/status-badge";
-import { statusBancoConfig } from "@/components/proposta/status-bancos-proposta";
+import { statusBancoConfig, bancoJaEnviado } from "@/components/proposta/status-bancos-proposta";
 import { ToneBadge } from "@/components/crm/tone-badge";
 import {
   DropdownMenu,
