@@ -26,7 +26,7 @@ import {
   Inbox,
   Gauge,
   
-  Settings2,
+  Building2,
   ShoppingCart,
   MessagesSquare,
   Timer,
@@ -320,13 +320,8 @@ export const navInterno: NavGroup[] = [
         to: "/admin/apis-ia",
         perm: { modulo: "admin.integracoes" },
       },
-      {
-        label: "Parâmetros",
-        icon: Settings2,
-        to: "/admin/parametros",
-        perm: { modulo: "admin.parametros" },
-      },
       { label: "SLA & Feriados", icon: Timer, to: "/admin/sla", perm: { modulo: "admin.sla" } },
+
       {
         label: "Comissões",
         icon: Percent,
@@ -351,8 +346,15 @@ export const navInterno: NavGroup[] = [
         to: "/admin/backup",
         perm: { modulo: "admin.backup" },
       },
+      {
+        label: "Parâmetros",
+        icon: Building2,
+        to: "/admin/parametros",
+        perm: { modulo: "admin.parametros" },
+      },
     ],
   },
+
   {
     id: "conta",
     label: "Conta",
