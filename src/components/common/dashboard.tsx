@@ -205,30 +205,47 @@ export function PanelCard({
 /** Lista chave-valor com barra proporcional discreta (ranking). */
 export function MetricList({
   items,
+  colorByBank = false,
 }: {
   items: { label: string; valor: number; display?: string }[];
+  /** Usa a cor de marca do banco em cada barra/indicador. */
+  colorByBank?: boolean;
 }) {
   const max = Math.max(1, ...items.map((i) => i.valor));
   if (!items.length)
     return <p className="py-6 text-center text-sm text-muted-foreground">Sem dados no período.</p>;
   return (
     <ul className="space-y-2.5">
-      {items.map((i) => (
-        <li key={i.label}>
-          <div className="flex items-center justify-between text-sm">
-            <span className="truncate text-foreground">{i.label}</span>
-            <span className="ml-2 font-mono tabular-nums text-muted-foreground">
-              {i.display ?? i.valor.toLocaleString("pt-BR")}
-            </span>
-          </div>
-          <div className="mt-1 h-1 w-full overflow-hidden rounded-full bg-muted">
-            <div
-              className="h-full rounded-full bg-primary/70"
-              style={{ width: `${(i.valor / max) * 100}%` }}
-            />
-          </div>
-        </li>
-      ))}
+      {items.map((i) => {
+        const cor = colorByBank ? corDoBanco(i.label) : undefined;
+        return (
+          <li key={i.label}>
+            <div className="flex items-center justify-between text-sm">
+              <span className="flex min-w-0 items-center gap-2 text-foreground">
+                {cor && (
+                  <span
+                    className="h-2 w-2 shrink-0 rounded-full"
+                    style={{ backgroundColor: cor }}
+                  />
+                )}
+                <span className="truncate">{i.label}</span>
+              </span>
+              <span className="ml-2 font-mono tabular-nums text-muted-foreground">
+                {i.display ?? i.valor.toLocaleString("pt-BR")}
+              </span>
+            </div>
+            <div className="mt-1 h-1 w-full overflow-hidden rounded-full bg-muted">
+              <div
+                className="h-full rounded-full"
+                style={{
+                  width: `${(i.valor / max) * 100}%`,
+                  backgroundColor: cor ?? "hsl(var(--primary) / 0.7)",
+                }}
+              />
+            </div>
+          </li>
+        );
+      })}
     </ul>
   );
 }
