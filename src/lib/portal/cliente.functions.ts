@@ -307,6 +307,7 @@ export const clienteMinhasPropostas = createServerFn({ method: "GET" }).handler(
       produto: p.produto,
       valor: p.valor,
       status_amigavel: statusPropostaAmigavel(p.status),
+      enviada_em: p.enviada_em ?? null,
     }));
   },
 );
