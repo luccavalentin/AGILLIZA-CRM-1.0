@@ -37,6 +37,7 @@ import {
   excluirFormulario,
   urlFormulario,
 } from "@/lib/formularios/formularios.functions";
+import { DpsView } from "@/components/formularios/dps-view";
 
 export const CATEGORIA_LABEL: Record<BancoFormulario, string> = {
   itau: "Itaú",
