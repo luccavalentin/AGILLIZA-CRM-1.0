@@ -84,9 +84,23 @@ export const listarPessoas = createServerFn({ method: "GET" })
       rolesByUser.set(r.user_id, arr);
     });
 
+    // Nome do nível de acesso (papel/função = nível de acesso).
+    const nivelIds = Array.from(
+      new Set(pessoas.map((p) => p.nivel_acesso_id).filter(Boolean)),
+    ) as string[];
+    const nomeByNivel = new Map<string, string>();
+    if (nivelIds.length > 0) {
+      const { data: niveis } = await supabase
+        .from("access_levels")
+        .select("id, nome")
+        .in("id", nivelIds);
+      (niveis ?? []).forEach((n) => nomeByNivel.set(n.id, n.nome));
+    }
+
     return pessoas.map((p) => ({
       ...p,
       roles: rolesByUser.get(p.id) ?? [],
+      nivel_acesso_nome: p.nivel_acesso_id ? (nomeByNivel.get(p.nivel_acesso_id) ?? null) : null,
     }));
   });
 
