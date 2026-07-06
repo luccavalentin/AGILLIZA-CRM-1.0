@@ -530,13 +530,12 @@ function TabResumo({
     setEnviandoId(pbId);
     try {
       const r = await enviarFn({ data: { proposta_id: propostaId, banco_id: pbId } });
-      const res = r.bancos[0];
-      if (res?.status === "erro") {
-        toast.error(res.mensagem ?? "Falha ao enviar ao banco.");
-      } else {
-        toast.success("Banco enviado.");
-      }
       qc.invalidateQueries({ queryKey: ["proposta", propostaId] });
+      if (r.bancos.length > 0) {
+        setResultadoEnvio(r.bancos);
+      } else {
+        toast.error("Nenhum banco foi enviado.");
+      }
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Falha ao enviar ao banco.");
     } finally {
