@@ -100,3 +100,13 @@ export const excluirNotificacao = createServerFn({ method: "POST" })
     if (error) throw new Error("Não foi possível excluir a notificação.");
     return { ok: true };
   });
+
+/** Limpa (exclui) todas as notificações do usuário. */
+export const limparNotificacoes = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase, userId } = context;
+    const { error } = await supabase.from("notificacoes").delete().eq("user_id", userId);
+    if (error) throw new Error("Não foi possível limpar as notificações.");
+    return { ok: true };
+  });
