@@ -314,7 +314,14 @@ function AbaPropostas() {
             </p>
             <p className="text-sm font-medium text-primary">{p.status_amigavel}</p>
             {isBradesco(p.banco) && p.enviada_em && (
-              <BradescoRetornoTimer enviadoEm={p.enviada_em} />
+              <BradescoRetornoTimer
+                enviadoEm={p.enviada_em}
+                retornado={
+                  !["Enviada para aprovação de crédito", "Em aprovação de crédito"].includes(
+                    p.status_amigavel,
+                  )
+                }
+              />
             )}
           </CardContent>
         </Card>

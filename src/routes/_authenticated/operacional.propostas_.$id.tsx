@@ -236,7 +236,10 @@ function Pagina() {
       </div>
 
       {(data.bancos ?? []).some((b: any) => isBradesco(b.nome_banco) && bancoJaEnviado(b)) && (
-        <BradescoRetornoTimer enviadoEm={p.enviada_em} />
+        <BradescoRetornoTimer
+          enviadoEm={p.enviada_em}
+          retornado={!["enviada_banco", "em_analise_credito"].includes(p.status)}
+        />
       )}
 
 

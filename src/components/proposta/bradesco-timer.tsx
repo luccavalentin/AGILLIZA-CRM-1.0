@@ -27,9 +27,12 @@ function fmt(ms: number): string {
  */
 export function BradescoRetornoTimer({
   enviadoEm,
+  retornado,
   className,
 }: {
   enviadoEm: string | null | undefined;
+  /** Já houve retorno do banco (crédito aprovado/recusado). Some com a faixa. */
+  retornado?: boolean;
   className?: string;
 }) {
   const [now, setNow] = useState(() => Date.now());
@@ -38,6 +41,7 @@ export function BradescoRetornoTimer({
     return () => clearInterval(t);
   }, []);
 
+  if (retornado) return null;
   if (!enviadoEm) return null;
   const inicio = new Date(enviadoEm).getTime();
   if (Number.isNaN(inicio)) return null;
