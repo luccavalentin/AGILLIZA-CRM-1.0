@@ -30,12 +30,14 @@ export function NovaContaDialog({ tipo }: { tipo: ContaTipo }) {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [descricao, setDescricao] = useState("");
-  const [contraparte, setContraparte] = useState("");
   const [valor, setValor] = useState(0);
   const [vencimento, setVencimento] = useState(hojeISO());
   const [categoriaId, setCategoriaId] = useState<string>("");
   const [ccId, setCcId] = useState<string>("");
-  const [recorrencia, setRecorrencia] = useState<"nenhuma" | "mensal" | "anual">("nenhuma");
+  const [recorrencia, setRecorrencia] = useState<
+    "nenhuma" | "mensal" | "anual" | "parcelado"
+  >("nenhuma");
+  const [parcelas, setParcelas] = useState(2);
   const [file, setFile] = useState<File | null>(null);
   const [enviando, setEnviando] = useState(false);
 
@@ -47,13 +49,13 @@ export function NovaContaDialog({ tipo }: { tipo: ContaTipo }) {
         data: {
           tipo,
           descricao: descricao.trim(),
-          contraparte: contraparte.trim() || undefined,
           valor,
           vencimento,
           categoria_id: categoriaId || undefined,
           cost_center_id: ccId || undefined,
           comprovante_path,
           recorrencia,
+          parcelas: recorrencia === "parcelado" ? parcelas : undefined,
         },
       }),
     onSuccess: () => {
@@ -61,12 +63,12 @@ export function NovaContaDialog({ tipo }: { tipo: ContaTipo }) {
       qc.invalidateQueries({ queryKey: ["fin-contas", tipo] });
       setOpen(false);
       setDescricao("");
-      setContraparte("");
       setValor(0);
       setFile(null);
       setCategoriaId("");
       setCcId("");
       setRecorrencia("nenhuma");
+      setParcelas(2);
       setVencimento(hojeISO());
     },
     onError: (e: any) => toast.error(e?.message ?? "Falha ao criar conta."),
@@ -83,7 +85,19 @@ export function NovaContaDialog({ tipo }: { tipo: ContaTipo }) {
         const sessao = await getMinhaSessao();
         const cid = sessao?.profile?.correspondente_id;
         if (!cid) throw new Error("Correspondente não identificado.");
-        const path = `${cid}/${crypto.randomUUID()}-${file.name}`;
+        // Sanitiza o nome do arquivo: o Storage rejeita chaves com espaços,
+        // vírgulas e acentos ("Invalid key"). Mantém só caracteres seguros.
+        const ponto = file.name.lastIndexOf(".");
+        const ext = ponto >= 0 ? file.name.slice(ponto + 1).toLowerCase() : "";
+        const nomeBase = (ponto >= 0 ? file.name.slice(0, ponto) : file.name)
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/[^a-zA-Z0-9._-]+/g, "-")
+          .replace(/-+/g, "-")
+          .replace(/^-|-$/g, "")
+          .slice(0, 80);
+        const nomeSeguro = `${nomeBase || "comprovante"}${ext ? `.${ext}` : ""}`;
+        const path = `${cid}/${crypto.randomUUID()}-${nomeSeguro}`;
         const { error } = await supabase.storage.from("financeiro-comprovantes").upload(path, file);
         if (error) throw error;
         comprovante_path = path;
@@ -118,8 +132,8 @@ export function NovaContaDialog({ tipo }: { tipo: ContaTipo }) {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label>{tipo === "pagar" ? "Fornecedor" : "Pagador"}</Label>
-              <Input value={contraparte} onChange={(e) => setContraparte(e.target.value)} />
+              <Label>Valor</Label>
+              <CurrencyInput value={valor} onChange={setValor} />
             </div>
             <div className="space-y-1.5">
               <Label>Vencimento</Label>
@@ -132,10 +146,6 @@ export function NovaContaDialog({ tipo }: { tipo: ContaTipo }) {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label>Valor</Label>
-              <CurrencyInput value={valor} onChange={setValor} />
-            </div>
-            <div className="space-y-1.5">
               <Label>Recorrência</Label>
               <Select value={recorrencia} onValueChange={(v) => setRecorrencia(v as any)}>
                 <SelectTrigger>
@@ -143,12 +153,26 @@ export function NovaContaDialog({ tipo }: { tipo: ContaTipo }) {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="nenhuma">Nenhuma</SelectItem>
-                  <SelectItem value="mensal">Mensal</SelectItem>
                   <SelectItem value="anual">Anual</SelectItem>
+                  <SelectItem value="mensal">Mensal</SelectItem>
+                  <SelectItem value="parcelado">Parcelado</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+            {recorrencia === "parcelado" && (
+              <div className="space-y-1.5">
+                <Label>Parcelas da duplicata</Label>
+                <Input
+                  type="number"
+                  min={2}
+                  max={360}
+                  value={parcelas}
+                  onChange={(e) => setParcelas(Math.max(2, Number(e.target.value) || 2))}
+                />
+              </div>
+            )}
           </div>
+
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Categoria</Label>

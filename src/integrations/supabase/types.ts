@@ -1749,6 +1749,8 @@ export type Database = {
           id: string
           numero: string | null
           parceiro_id: string | null
+          parcela_numero: number | null
+          parcelas: number | null
           payment_method_id: string | null
           recorrencia: Database["public"]["Enums"]["financial_recorrencia"]
           recorrencia_ate: string | null
@@ -1778,6 +1780,8 @@ export type Database = {
           id?: string
           numero?: string | null
           parceiro_id?: string | null
+          parcela_numero?: number | null
+          parcelas?: number | null
           payment_method_id?: string | null
           recorrencia?: Database["public"]["Enums"]["financial_recorrencia"]
           recorrencia_ate?: string | null
@@ -1807,6 +1811,8 @@ export type Database = {
           id?: string
           numero?: string | null
           parceiro_id?: string | null
+          parcela_numero?: number | null
+          parcelas?: number | null
           payment_method_id?: string | null
           recorrencia?: Database["public"]["Enums"]["financial_recorrencia"]
           recorrencia_ate?: string | null
@@ -1889,6 +1895,8 @@ export type Database = {
           id: string
           numero: string | null
           pagador: string | null
+          parcela_numero: number | null
+          parcelas: number | null
           payment_method_id: string | null
           proposta_id: string | null
           recorrencia: Database["public"]["Enums"]["financial_recorrencia"]
@@ -1920,6 +1928,8 @@ export type Database = {
           id?: string
           numero?: string | null
           pagador?: string | null
+          parcela_numero?: number | null
+          parcelas?: number | null
           payment_method_id?: string | null
           proposta_id?: string | null
           recorrencia?: Database["public"]["Enums"]["financial_recorrencia"]
@@ -1951,6 +1961,8 @@ export type Database = {
           id?: string
           numero?: string | null
           pagador?: string | null
+          parcela_numero?: number | null
+          parcelas?: number | null
           payment_method_id?: string | null
           proposta_id?: string | null
           recorrencia?: Database["public"]["Enums"]["financial_recorrencia"]
@@ -4847,7 +4859,7 @@ export type Database = {
         | "expirado"
       escopo_dados: "todos" | "equipe" | "proprios"
       financial_categoria_tipo: "despesa" | "receita"
-      financial_recorrencia: "nenhuma" | "mensal" | "anual"
+      financial_recorrencia: "nenhuma" | "mensal" | "anual" | "parcelado"
       financial_status:
         | "aberta"
         | "parcial"
@@ -5071,7 +5083,7 @@ export const Constants = {
       doc_status: ["pendente", "recebido", "aprovado", "reprovado", "expirado"],
       escopo_dados: ["todos", "equipe", "proprios"],
       financial_categoria_tipo: ["despesa", "receita"],
-      financial_recorrencia: ["nenhuma", "mensal", "anual"],
+      financial_recorrencia: ["nenhuma", "mensal", "anual", "parcelado"],
       financial_status: [
         "aberta",
         "parcial",

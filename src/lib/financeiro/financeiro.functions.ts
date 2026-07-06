@@ -153,8 +153,9 @@ export const criarConta = createServerFn({ method: "POST" })
         cost_center_id: z.string().uuid().optional(),
         payment_method_id: z.string().uuid().optional(),
         comprovante_path: z.string().optional(),
-        recorrencia: z.enum(["nenhuma", "mensal", "anual"]).default("nenhuma"),
+        recorrencia: z.enum(["nenhuma", "mensal", "anual", "parcelado"]).default("nenhuma"),
         recorrencia_ate: z.string().optional(),
+        parcelas: z.number().int().min(2).max(360).optional(),
       })
       .parse(data),
   )
@@ -162,6 +163,64 @@ export const criarConta = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const correspondente_id = await correspondenteId(supabase, userId);
     const contraCol = data.tipo === "pagar" ? "fornecedor" : "pagador";
+
+    // ===== Parcelado: gera N duplicatas mensais dividindo o valor total =====
+    if (data.recorrencia === "parcelado") {
+      const n = data.parcelas ?? 0;
+      if (n < 2) throw new Error("Informe a quantidade de parcelas (mínimo 2).");
+      const totalCentavos = Math.round(data.valor * 100);
+      const baseCentavos = Math.floor(totalCentavos / n);
+      const resto = totalCentavos - baseCentavos * n;
+
+      const base = new Date(`${data.vencimento}T00:00:00`);
+      const linhas = Array.from({ length: n }, (_, i) => {
+        const venc = new Date(base);
+        venc.setMonth(venc.getMonth() + i);
+        // última parcela absorve o arredondamento
+        const centavos = baseCentavos + (i === n - 1 ? resto : 0);
+        return {
+          correspondente_id,
+          descricao: `${data.descricao} (${i + 1}/${n})`,
+          [contraCol]: data.contraparte ?? null,
+          valor: centavos / 100,
+          vencimento: venc.toISOString().slice(0, 10),
+          categoria_id: data.categoria_id ?? null,
+          cost_center_id: data.cost_center_id ?? null,
+          payment_method_id: data.payment_method_id ?? null,
+          comprovante_path: data.comprovante_path ?? null,
+          recorrencia: "parcelado",
+          parcelas: n,
+          parcela_numero: i + 1,
+          criador_id: userId,
+        } as Record<string, unknown>;
+      });
+
+      const { data: inseridas, error } = await supabase
+        .from(TABELA[data.tipo])
+        .insert(linhas as any)
+        .select("id");
+      if (error) throw new Error(error.message);
+      const primeiraId = inseridas?.[0]?.id as string;
+
+      await registrarHistorico(
+        supabase,
+        correspondente_id,
+        data.tipo,
+        primeiraId,
+        "criada",
+        `${data.descricao} — ${n} parcelas`,
+        data.valor,
+      );
+      await registrarAuditoria(
+        supabase,
+        correspondente_id,
+        `conta_${data.tipo}`,
+        primeiraId,
+        "criada",
+        { valor: data.valor, vencimento: data.vencimento, parcelas: n },
+      );
+      return { id: primeiraId };
+    }
 
     const registro: Record<string, unknown> = {
       correspondente_id,
@@ -207,6 +266,7 @@ export const criarConta = createServerFn({ method: "POST" })
     );
     return { id: inserted.id };
   });
+
 
 /** ===== Baixar conta (pagamento/recebimento total ou parcial) ===== */
 export const baixarConta = createServerFn({ method: "POST" })
