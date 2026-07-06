@@ -22,6 +22,7 @@ import {
   excluirSimulacao,
   obterSimulacao,
 } from "@/lib/simulacao/simulacoes.functions";
+import { criarProposta } from "@/lib/propostas/propostas.functions";
 import { baixarSimulacaoPDF, baixarSimulacaoDetalhadaPDF } from "@/lib/simulacao/simulacao-pdf";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
