@@ -346,8 +346,15 @@ export const navInterno: NavGroup[] = [
         to: "/admin/backup",
         perm: { modulo: "admin.backup" },
       },
+      {
+        label: "Parâmetros",
+        icon: Building2,
+        to: "/admin/parametros",
+        perm: { modulo: "admin.parametros" },
+      },
     ],
   },
+
   {
     id: "conta",
     label: "Conta",
