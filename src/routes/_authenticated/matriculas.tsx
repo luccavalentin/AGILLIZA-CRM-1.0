@@ -43,6 +43,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ConfirmDelete } from "@/components/shared/confirm-delete";
+import { InputAutocomplete } from "@/components/ui/input-autocomplete";
 import { formatBRL, maskBRLInput, parseBRL } from "@/lib/simulacao/format";
 import {
   obterControleMatriculas,
