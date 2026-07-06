@@ -2,7 +2,7 @@ import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Check, Search, Loader2, Send, Copy, FileText, Sparkles, Building2 } from "lucide-react";
+import { Check, Search, Loader2, Send, Copy, FileText, Calculator, Building2 } from "lucide-react";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import {
   listarSimulacoesElegiveis,
