@@ -633,12 +633,14 @@ export function ClienteForm({
         <CardContent className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5 sm:col-span-2">
             <Label>Banco</Label>
-            <Input
+            <InputAutocomplete
               value={v.banco_conta}
-              onChange={(e) => set("banco_conta", e.target.value)}
-              placeholder="Ex.: Itaú, Bradesco, Santander"
+              onValueChange={(x) => set("banco_conta", x)}
+              options={OPCOES_BANCO}
+              placeholder="Pesquisar banco ou digitar"
             />
           </div>
+
           <div className="space-y-1.5">
             <Label>Agência</Label>
             <Input value={v.agencia} onChange={(e) => set("agencia", e.target.value)} />
