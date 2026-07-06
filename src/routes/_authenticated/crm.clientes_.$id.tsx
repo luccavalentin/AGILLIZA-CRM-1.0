@@ -151,32 +151,32 @@ function Pagina() {
 
 
       <Tabs defaultValue="resumo">
-        <TabsList className="flex w-full flex-wrap gap-1 rounded-xl bg-muted/60 p-1">
-          <TabsTrigger value="vinculo" className="rounded-lg data-[state=active]:shadow-sm">
+        <TabsList className="flex w-full flex-nowrap justify-start gap-1 overflow-x-auto rounded-xl bg-muted/60 p-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <TabsTrigger value="vinculo" className="shrink-0 whitespace-nowrap rounded-lg data-[state=active]:shadow-sm">
             Vínculo de atendimento
           </TabsTrigger>
-          <TabsTrigger value="resumo" className="rounded-lg data-[state=active]:shadow-sm">
+          <TabsTrigger value="resumo" className="shrink-0 whitespace-nowrap rounded-lg data-[state=active]:shadow-sm">
             Resumo
           </TabsTrigger>
-          <TabsTrigger value="dados" className="rounded-lg data-[state=active]:shadow-sm">
+          <TabsTrigger value="dados" className="shrink-0 whitespace-nowrap rounded-lg data-[state=active]:shadow-sm">
             Dados do comprador
           </TabsTrigger>
-          <TabsTrigger value="vendedores" className="gap-1.5 rounded-lg data-[state=active]:shadow-sm">
+          <TabsTrigger value="vendedores" className="shrink-0 gap-1.5 whitespace-nowrap rounded-lg data-[state=active]:shadow-sm">
             <Users className="size-4" /> Vendedores
           </TabsTrigger>
-          <TabsTrigger value="negocios" className="rounded-lg data-[state=active]:shadow-sm">
+          <TabsTrigger value="negocios" className="shrink-0 whitespace-nowrap rounded-lg data-[state=active]:shadow-sm">
             Negócios
           </TabsTrigger>
-          <TabsTrigger value="documentos" className="rounded-lg data-[state=active]:shadow-sm">
+          <TabsTrigger value="documentos" className="shrink-0 whitespace-nowrap rounded-lg data-[state=active]:shadow-sm">
             Documentos
           </TabsTrigger>
-          <TabsTrigger value="mensagens" className="gap-1.5 rounded-lg data-[state=active]:shadow-sm">
+          <TabsTrigger value="mensagens" className="shrink-0 gap-1.5 whitespace-nowrap rounded-lg data-[state=active]:shadow-sm">
             <MessageCircle className="size-4" /> App cliente
           </TabsTrigger>
-          <TabsTrigger value="interacoes" className="rounded-lg data-[state=active]:shadow-sm">
+          <TabsTrigger value="interacoes" className="shrink-0 whitespace-nowrap rounded-lg data-[state=active]:shadow-sm">
             Registro de interações
           </TabsTrigger>
-          <TabsTrigger value="historico" className="rounded-lg data-[state=active]:shadow-sm">
+          <TabsTrigger value="historico" className="shrink-0 whitespace-nowrap rounded-lg data-[state=active]:shadow-sm">
             Histórico
           </TabsTrigger>
         </TabsList>
