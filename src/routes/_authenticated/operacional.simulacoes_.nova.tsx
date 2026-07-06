@@ -139,6 +139,17 @@ function Pagina() {
     set("prazo_meses", prazo);
   }
 
+  // Reajusta o prazo se a data de nascimento reduzir o máximo permitido.
+  useEffect(() => {
+    if (maxPrazoIdade != null && w.prazo_meses > maxPrazoIdade) {
+      const { mensagem } = ajustarPrazoPorIdade(w.prazo_meses, w.data_nascimento);
+      if (mensagem) toast.warning(mensagem);
+      set("prazo_meses", maxPrazoIdade);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [maxPrazoIdade]);
+
+
   function irParaCompleta() {
     sessionStorage.setItem("simulacao_wizard", JSON.stringify({ ...w, prazo: w.prazo_meses }));
     router.navigate({ to: "/operacional/simulacoes/completa" });
