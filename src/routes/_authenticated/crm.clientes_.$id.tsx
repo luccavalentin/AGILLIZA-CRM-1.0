@@ -129,14 +129,25 @@ function Pagina() {
         <CardHeader className="pb-2">
           <CardTitle className="text-sm">Esteira</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-2">
           {stages && pipe ? (
-            <PipelineTimeline stages={stages} atualOrdem={pipe.ordem} />
+            <>
+              <PipelineTimeline
+                stages={stages}
+                atualOrdem={pipe.ordem}
+                onSelecionar={moverParaEtapa}
+                disabled={movendoEtapa}
+              />
+              <p className="text-xs text-muted-foreground">
+                Clique em qualquer etapa para mover o cliente na esteira.
+              </p>
+            </>
           ) : (
             <Skeleton className="h-8 w-full" />
           )}
         </CardContent>
       </Card>
+
 
       <Tabs defaultValue="resumo">
         <TabsList className="flex-wrap">
