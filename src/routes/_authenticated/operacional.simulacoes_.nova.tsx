@@ -259,17 +259,22 @@ function Pagina() {
             <Input
               type="number"
               min={PRAZO_MIN}
-              max={PRAZO_MAX}
+              max={maxPrazoIdade ?? PRAZO_MAX}
               step={12}
               placeholder="360 meses"
               value={w.prazo_meses || ""}
               onChange={(e) => set("prazo_meses", Number(e.target.value))}
+              onBlur={(e) => definirPrazo(Number(e.target.value))}
+              onWheel={(e) => (e.target as HTMLInputElement).blur()}
             />
             <p className="text-xs text-muted-foreground">
               {w.prazo_meses > 0
-                ? `Equivale a ${(w.prazo_meses / 12).toFixed(1).replace(".0", "")} anos · mín. ${PRAZO_MIN} / máx. ${PRAZO_MAX} meses`
-                : `Entre ${PRAZO_MIN} e ${PRAZO_MAX} meses`}
+                ? `Equivale a ${(w.prazo_meses / 12).toFixed(1).replace(".0", "")} anos · mín. ${PRAZO_MIN} / máx. ${maxPrazoIdade ?? PRAZO_MAX} meses`
+                : `Entre ${PRAZO_MIN} e ${maxPrazoIdade ?? PRAZO_MAX} meses`}
+              {maxPrazoIdade != null &&
+                ` · limite para a idade: ${formatarMeses(maxPrazoIdade)}`}
             </p>
+
           </div>
         </div>
 
