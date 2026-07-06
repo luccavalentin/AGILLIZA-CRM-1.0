@@ -360,7 +360,7 @@ export function baixarSimulacaoSimplificadaPDF({ simulacao: s, bancos }: Simulac
     drawFooter(doc, pageW, pageH, p, total);
   }
 
-  salvar(doc, s, "simplificada");
+  return salvar(doc, s, "simplificada");
 }
 
 /** Baixa o extrato detalhado: cabeçalho + TODAS as parcelas, um banco por folha. */
