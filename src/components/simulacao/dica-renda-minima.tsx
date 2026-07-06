@@ -37,37 +37,90 @@ export function DicaRendaMinima({
   const Icon =
     tone === "success" ? CheckCircle2 : tone === "warning" ? AlertTriangle : Info;
 
+  const toneStyles = {
+    success: {
+      wrap: "border-emerald-500/30 bg-emerald-500/5",
+      badge: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
+      pill: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
+    },
+    warning: {
+      wrap: "border-amber-500/30 bg-amber-500/5",
+      badge: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
+      pill: "bg-amber-500/15 text-amber-700 dark:text-amber-300",
+    },
+    info: {
+      wrap: "border-border bg-muted/40",
+      badge: "bg-muted text-muted-foreground",
+      pill: "bg-muted text-muted-foreground",
+    },
+  }[tone];
+
   return (
     <div
       className={cn(
-        "flex items-start gap-2 rounded-lg border p-3 text-sm",
-        tone === "success" && "border-green-500/30 bg-green-500/10 text-green-700 dark:text-green-400",
-        tone === "warning" && "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400",
-        tone === "info" && "border-border bg-muted text-muted-foreground",
+        "flex items-start gap-3 rounded-xl border p-4",
+        toneStyles.wrap,
       )}
     >
-      <Icon className="mt-0.5 h-4 w-4 shrink-0" />
-      <div className="space-y-0.5">
-        <p>
-          A renda familiar mensal mínima para esse valor é aproximadamente{" "}
-          <span className="font-semibold">{formatBRL(av.rendaMinima)}</span>.
-        </p>
-        <p className="text-xs opacity-90">
-          Estimativa considerando parcela inicial de {formatBRL(av.primeiraParcela)} e o teto de 30%
-          de comprometimento de renda.
-        </p>
-        {av.suficiente === true && (
-          <p className="text-xs font-medium">
-            A renda informada ({formatBRL(rendaInformada ?? 0)}) está dentro do exigido
-            {av.comprometimento != null &&
-              ` — comprometimento de ${(av.comprometimento * 100).toFixed(0)}%.`}
-          </p>
+      <div
+        className={cn(
+          "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg",
+          toneStyles.badge,
         )}
+      >
+        <Icon className="h-5 w-5" />
+      </div>
+
+      <div className="min-w-0 flex-1 space-y-2">
+        <div className="flex flex-wrap items-baseline gap-x-2">
+          <span className="text-sm font-medium text-foreground">
+            Renda familiar mínima estimada
+          </span>
+          <span className="text-base font-bold text-foreground">
+            {formatBRL(av.rendaMinima)}
+          </span>
+        </div>
+
+        <p className="text-xs leading-relaxed text-muted-foreground">
+          Baseado na parcela inicial de{" "}
+          <span className="font-medium text-foreground/80">
+            {formatBRL(av.primeiraParcela)}
+          </span>{" "}
+          e no teto de 30% de comprometimento de renda.
+        </p>
+
+        {av.suficiente === true && (
+          <div
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium",
+              toneStyles.pill,
+            )}
+          >
+            <CheckCircle2 className="h-3.5 w-3.5" />
+            Renda informada aprovada
+            {av.comprometimento != null &&
+              ` · comprometimento de ${(av.comprometimento * 100).toFixed(0)}%`}
+          </div>
+        )}
+
         {av.suficiente === false && (
-          <p className="text-xs font-medium">
-            A renda informada ({formatBRL(rendaInformada ?? 0)}) está abaixo do mínimo exigido. É
-            preciso reduzir o valor do crédito, aumentar o prazo ou compor renda.
-          </p>
+          <div className="space-y-1">
+            <div
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium",
+                toneStyles.pill,
+              )}
+            >
+              <AlertTriangle className="h-3.5 w-3.5" />
+              Abaixo do mínimo exigido
+              {av.comprometimento != null &&
+                ` · comprometimento de ${(av.comprometimento * 100).toFixed(0)}%`}
+            </div>
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              Reduza o valor do crédito, aumente o prazo ou componha renda com um
+              cônjuge/coobrigado.
+            </p>
+          </div>
         )}
       </div>
     </div>
