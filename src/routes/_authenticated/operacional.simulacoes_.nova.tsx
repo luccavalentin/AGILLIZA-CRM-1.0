@@ -315,6 +315,29 @@ function Pagina() {
           </div>
         </div>
 
+        <div className="space-y-1.5">
+          <Label>Renda familiar mensal (opcional)</Label>
+          <CurrencyInput
+            value={w.renda_familiar}
+            onChange={(v) => set("renda_familiar", v)}
+            placeholder="0,00"
+          />
+          <p className="text-xs text-muted-foreground">
+            Informe para verificarmos se atende à renda mínima exigida.
+          </p>
+        </div>
+
+        {w.valor_financiamento > 0 && w.prazo_meses >= PRAZO_MIN && (
+          <DicaRendaMinima
+            valorFinanciamento={w.valor_financiamento}
+            prazoMeses={w.prazo_meses}
+            taxaAno={melhorTaxaAno}
+            sistema="S"
+            rendaInformada={w.renda_familiar}
+          />
+        )}
+
+
         <div className="grid grid-cols-1 gap-3 pt-2 sm:grid-cols-2">
           <Button
             variant="default"
