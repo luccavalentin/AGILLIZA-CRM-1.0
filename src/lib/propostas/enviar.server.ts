@@ -365,8 +365,10 @@ export async function enviarPropostaImpl({
   const resultados: EnviarResultado["bancos"] = [];
   let sucesso = 0;
 
-
-  for (const b of bancos as any[]) {
+  // Envia a proposta para TODOS os bancos selecionados de forma SIMULTÂNEA.
+  // Cada banco tem seu próprio try/catch: a falha de um (ex.: Itaú recusando
+  // por validação) não impede nem atrasa o envio dos demais (ex.: Bradesco).
+  const enviarBancoIntegracao = async (b: any): Promise<EnviarResultado["bancos"][number]> => {
     try {
       const resp = await chamarIntegracao<any>(
         `/oportunidade/${prop.homefin_id_oportunidade}/incluir-proposta-integracao`,
@@ -435,14 +437,12 @@ export async function enviarPropostaImpl({
           .update({ numero_proposta_banco: String(protocolo) } as any)
           .eq("id", propostaId);
       }
-      sucesso++;
-      resultados.push({
+      return {
         banco_id: b.banco_id,
         nome_banco: b.nome_banco,
         status: String(patchOk.status_banco),
         numero_proposta_banco: protocolo ? String(protocolo) : null,
-      });
-
+      };
     } catch (e) {
       const msg = sanitizarMensagemErro(
         e instanceof IntegracaoBancariaError ? e.message : "Falha ao enviar ao banco.",
@@ -451,14 +451,22 @@ export async function enviarPropostaImpl({
         .from("proposta_bancos")
         .update({ status_banco: "erro", mensagem_banco: msg })
         .eq("id", b.id);
-      resultados.push({
+      return {
         banco_id: b.banco_id,
         nome_banco: b.nome_banco,
         status: "erro",
         mensagem: msg,
-      });
+      };
     }
+  };
+
+  const enviados = await Promise.all((bancos as any[]).map(enviarBancoIntegracao));
+  for (const r of enviados) {
+    resultados.push(r);
+    if (r.status !== "erro") sucesso++;
   }
+
+
 
 
   // No primeiro envio o status avança; em envios adicionais o status já reflete
