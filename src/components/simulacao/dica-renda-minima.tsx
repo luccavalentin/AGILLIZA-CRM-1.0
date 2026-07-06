@@ -92,7 +92,7 @@ export function DicaRendaMinima({
         {av.suficiente === true && (
           <div
             className={cn(
-              "inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium",
+              "inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold",
               toneStyles.pill,
             )}
           >
@@ -107,7 +107,7 @@ export function DicaRendaMinima({
           <div className="space-y-1">
             <div
               className={cn(
-                "inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium",
+                "inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold",
                 toneStyles.pill,
               )}
             >
