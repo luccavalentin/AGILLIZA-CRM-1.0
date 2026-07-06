@@ -401,12 +401,21 @@ function Pagina() {
             <Input
               type="number"
               min={60}
-              max={420}
+              max={maxPrazoIdade ?? 420}
+              step={12}
               value={f.prazo || ""}
               onChange={(e) => set("prazo", Number(e.target.value))}
+              onBlur={(e) => definirPrazo(Number(e.target.value))}
+              onWheel={(e) => (e.target as HTMLInputElement).blur()}
               aria-invalid={!!erros.prazo}
             />
+            {maxPrazoIdade != null && (
+              <p className="mt-1 text-xs text-muted-foreground">
+                Máximo para a idade: {maxPrazoIdade} meses ({formatarMeses(maxPrazoIdade)})
+              </p>
+            )}
             {err("prazo")}
+
           </Campo>
           <Campo
             label={
