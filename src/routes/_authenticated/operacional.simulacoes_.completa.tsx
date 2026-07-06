@@ -45,6 +45,7 @@ import {
   enviarSimulacaoBanco,
   obterSimulacao,
 } from "@/lib/simulacao/simulacoes.functions";
+import { baixarSimulacaoPDF } from "@/lib/simulacao/simulacao-pdf";
 
 export const Route = createFileRoute("/_authenticated/operacional/simulacoes_/completa")({
   head: () => ({ meta: [{ title: "Simulação completa — Agilliza" }] }),
@@ -300,6 +301,13 @@ function Pagina() {
       // e dá um breve instante para o usuário ver a conclusão.
       setConcluidos(f.bancos_ids.length || 1);
       await new Promise((r) => setTimeout(r, 900));
+      // Baixa o extrato imediatamente: detalhado (1 banco) ou comparativo (2+).
+      try {
+        const dados = await obterSimulacao({ data: { id } });
+        baixarSimulacaoPDF({ simulacao: dados.simulacao, bancos: dados.bancos });
+      } catch {
+        /* download opcional — a simulação já foi criada */
+      }
       router.navigate({ to: "/operacional/simulacoes/$id", params: { id } });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Não foi possível criar a simulação.");
