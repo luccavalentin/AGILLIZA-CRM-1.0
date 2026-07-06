@@ -33,9 +33,9 @@ import {
 import { ToneBadge } from "@/components/crm/tone-badge";
 import { SimulacaoStatusBadge, BancoStatusBadge } from "@/components/simulacao/status-badge";
 import { DetalheBancoDialog } from "@/components/simulacao/detalhe-banco-dialog";
+import { SelecionarBancosPdfDialog } from "@/components/simulacao/selecionar-bancos-pdf-dialog";
 import { formatBRL, formatPercent } from "@/lib/simulacao/format";
 import {
-  baixarSimulacaoPDF,
   baixarSimulacaoDetalhadaPDF,
 } from "@/lib/simulacao/simulacao-pdf";
 
@@ -52,6 +52,7 @@ function Pagina() {
   const { id } = Route.useParams();
   const router = useRouter();
   const qc = useQueryClient();
+  const [pdfDialogAberto, setPdfDialogAberto] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ["simulacao", id],
@@ -178,12 +179,20 @@ function Pagina() {
                 Simulação detalhada (todas as parcelas)
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => baixarSimulacaoPDF({ simulacao: s, bancos })}>
+              <DropdownMenuItem
+                onClick={() => setPdfDialogAberto(true)}
+                disabled={bancos.length === 0}
+              >
                 Comparativo consolidado (interno)
               </DropdownMenuItem>
             </DropdownMenuContent>
-
           </DropdownMenu>
+          <SelecionarBancosPdfDialog
+            open={pdfDialogAberto}
+            onOpenChange={setPdfDialogAberto}
+            simulacao={s}
+            bancos={bancos}
+          />
           <Button variant="ghost" onClick={duplicar}>
             <Copy className="mr-1 h-4 w-4" /> Duplicar
           </Button>
