@@ -267,6 +267,28 @@ export async function enviarPropostaImpl({
     );
   }
 
+  // Cadastro complementar obrigatório: todos os compradores/coproponentes
+  // (CO/TI) precisam estar com os dados completos antes de enviar ao banco.
+  const { data: compradores } = await supabase
+    .from("proposta_envolvidos")
+    .select("*")
+    .eq("proposta_id", propostaId)
+    .in("tipo_qualificacao", ["CO", "TI"]);
+  if (!compradores || compradores.length === 0) {
+    throw new Error(
+      "Preencha o cadastro complementar do comprador antes de enviar a proposta ao banco.",
+    );
+  }
+  const incompletos = compradores.filter((e: any) => !envolvidoEnvioCompleto(e));
+  if (incompletos.length > 0) {
+    const nomes = incompletos.map((e: any) => e.nome || "sem nome").join(", ");
+    throw new Error(
+      `Cadastro complementar incompleto para: ${nomes}. Preencha todos os dados obrigatórios antes de enviar.`,
+    );
+  }
+
+
+
   // Bancos a enviar: por linha (bancoId) ou todos os selecionados ainda não enviados.
   let query = supabase.from("proposta_bancos").select("*").eq("proposta_id", propostaId);
   if (bancoId) {
