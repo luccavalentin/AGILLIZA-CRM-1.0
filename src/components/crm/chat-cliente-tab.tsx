@@ -182,6 +182,18 @@ export function ChatClienteTab({ clienteId, info }: { clienteId: string; info?: 
                         : "rounded-bl-md border border-border/60 bg-card text-foreground",
                     )}
                   >
+                    <p
+                      className={cn(
+                        "mb-0.5 text-[11px] font-semibold",
+                        doTime
+                          ? "text-primary-foreground/90"
+                          : "text-primary",
+                      )}
+                    >
+                      {doTime
+                        ? (m.remetente_nome?.trim() || "Equipe")
+                        : (info?.nome?.trim() || "Cliente")}
+                    </p>
                     <p className="whitespace-pre-wrap break-words leading-relaxed">
                       {m.mensagem}
                     </p>
