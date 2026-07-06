@@ -63,8 +63,8 @@ type Form = Record<string, any>;
 
 function Pagina() {
   const router = useRouter();
-  const { duplicar, origem } = Route.useSearch();
-  const modoProposta = origem === "proposta";
+  const { duplicar, origem: origemFluxo } = Route.useSearch();
+  const modoProposta = origemFluxo === "proposta";
   const criarPropostaFn = useServerFn(criarProposta);
   const [gerarProposta, setGerarProposta] = useState(modoProposta);
   const [f, setF] = useState<Form>({
