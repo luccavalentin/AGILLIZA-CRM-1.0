@@ -71,6 +71,7 @@ import {
 import { PipelineStepper } from "@/components/propostas/pipeline-stepper";
 import { PropostaStatusBadge } from "@/components/propostas/status-badge";
 import { statusBancoConfig, bancoJaEnviado } from "@/components/proposta/status-bancos-proposta";
+import { BradescoRetornoTimer, isBradesco } from "@/components/proposta/bradesco-timer";
 import { ToneBadge } from "@/components/crm/tone-badge";
 import {
   DropdownMenu,
@@ -233,6 +234,11 @@ function Pagina() {
         </Button>
         <AcoesTopo proposta={p} propostaId={id} bancos={data.bancos} />
       </div>
+
+      {(data.bancos ?? []).some((b: any) => isBradesco(b.nome_banco) && bancoJaEnviado(b)) && (
+        <BradescoRetornoTimer enviadoEm={p.enviada_em} />
+      )}
+
 
       {/* Header linha 1 */}
       <div className="rounded-lg border border-border bg-card p-5">

@@ -39,6 +39,7 @@ export interface PropostaResumo {
   produto: string | null;
   valor: number | null;
   status_amigavel: string;
+  enviada_em: string | null;
 }
 
 export interface DocumentoCliente {
@@ -269,6 +270,7 @@ export const clienteObterVisaoGeral = createServerFn({ method: "GET" }).handler(
         produto: p.produto,
         valor: p.valor,
         status_amigavel: statusPropostaAmigavel(p.status),
+        enviada_em: p.enviada_em ?? null,
       })),
       documentos_pendentes: ((v.documentos_pendentes ?? []) as any[]).map((d) => ({
         id: d.id,
@@ -305,6 +307,7 @@ export const clienteMinhasPropostas = createServerFn({ method: "GET" }).handler(
       produto: p.produto,
       valor: p.valor,
       status_amigavel: statusPropostaAmigavel(p.status),
+      enviada_em: p.enviada_em ?? null,
     }));
   },
 );

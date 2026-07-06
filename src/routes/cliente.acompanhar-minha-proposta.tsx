@@ -15,6 +15,7 @@ import {
 } from "@/lib/portal/cliente.functions";
 import { TimelineCliente } from "@/components/cliente/timeline-cliente";
 import { ChipDocumento } from "@/components/cliente/chip-documento";
+import { BradescoRetornoTimer, isBradesco } from "@/components/proposta/bradesco-timer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -306,14 +307,18 @@ function AbaPropostas() {
     <div className="space-y-3">
       {data.map((p) => (
         <Card key={p.id} className="border-border">
-          <CardContent className="space-y-1 pt-4">
+          <CardContent className="space-y-2 pt-4">
             <p className="font-semibold">{p.banco ?? "Banco"}</p>
             <p className="text-sm text-muted-foreground">
               {p.produto ?? "Financiamento"} · {moeda(p.valor)}
             </p>
             <p className="text-sm font-medium text-primary">{p.status_amigavel}</p>
+            {isBradesco(p.banco) && p.enviada_em && (
+              <BradescoRetornoTimer enviadoEm={p.enviada_em} />
+            )}
           </CardContent>
         </Card>
+
       ))}
     </div>
   );
