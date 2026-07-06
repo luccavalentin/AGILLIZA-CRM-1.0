@@ -31,7 +31,7 @@ export interface PanelAlert {
 export interface PanelDados {
   heros: PanelMetric[];
   minis: PanelMetric[];
-  chart: { titulo: string; subtitulo?: string; dados: PanelSerie[] };
+  chart: { titulo: string; subtitulo?: string; dados: PanelSerie[]; porBanco?: boolean };
   ranking: { titulo: string; itens: { label: string; valor: number }[] };
   alertas: PanelAlert[];
 }
