@@ -365,6 +365,7 @@ function Pagina() {
                   onBaixarComparativo={() => handleBaixarComparativo(s.id)}
                   onBaixarDetalhada={() => handleBaixarDetalhada(s.id)}
                   onDuplicar={() => handleDuplicar(s.id)}
+                  onEnviarProposta={() => handleEnviarProposta(s.id)}
                   onExcluir={() => handleExcluir(s.id)}
                   numero={s.numero_simulacao}
                 />
