@@ -68,6 +68,7 @@ export function NovaContaDialog({ tipo }: { tipo: ContaTipo }) {
       setCategoriaId("");
       setCcId("");
       setRecorrencia("nenhuma");
+      setParcelas(2);
       setVencimento(hojeISO());
     },
     onError: (e: any) => toast.error(e?.message ?? "Falha ao criar conta."),
