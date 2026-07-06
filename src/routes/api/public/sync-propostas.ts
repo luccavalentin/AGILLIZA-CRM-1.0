@@ -28,10 +28,14 @@ export const Route = createFileRoute("/api/public/sync-propostas")({
           "enviada_banco",
           "em_analise_credito",
           "credito_aprovado",
-          "aguardando_documentos",
-          "engenharia_vistoria",
-          "analise_juridica",
-          "contrato_emitido",
+          "checklist_documentacao",
+          "cadastro_complementar",
+          "dossie_completo",
+          "formularios",
+          "envio_documentos_banco",
+          "vistoria_agendamento",
+          "vistoria_concluida",
+          "emissao_contrato",
         ];
 
         const { data: propostas, error } = await supabaseAdmin
