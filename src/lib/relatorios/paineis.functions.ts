@@ -148,6 +148,7 @@ export const getPanelDados = createServerFn({ method: "POST" })
           titulo: chartPorBanco ? "Ranking de bancos" : "Simulações por status",
           subtitulo: chartPorBanco ? "Propostas enviadas" : "Movimento das simulações",
           dados: chartDados,
+          porBanco: chartPorBanco,
         },
         ranking: {
           titulo: chartPorBanco ? "Bancos" : "Status das simulações",
