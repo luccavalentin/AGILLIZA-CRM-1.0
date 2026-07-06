@@ -173,12 +173,7 @@ function sistemaAmortizacaoLabel(
   apiValor: string | null | undefined,
   requisitado: string | null | undefined,
 ): string {
-  const up = (apiValor ?? "").toUpperCase();
-  if (up.includes("PRICE")) return "PRICE";
-  if (up.includes("SAC")) return "SAC";
-  if (requisitado === "P") return "PRICE";
-  if (requisitado === "S") return "SAC";
-  return "—";
+  return normalizarSistemaAmortizacao(apiValor, requisitado);
 }
 
 /**
