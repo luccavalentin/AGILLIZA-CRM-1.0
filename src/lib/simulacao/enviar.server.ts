@@ -57,11 +57,15 @@ export async function enviarSimulacaoImpl({
     throw new Error("Selecione a operação antes de enviar ao banco.");
   }
 
-  const { data: bancos } = await supabase
+  let bancosQuery = supabase
     .from("simulacao_bancos")
     .select("*")
     .eq("simulacao_id", simulacaoId)
     .eq("selecionado", true);
+  if (bancoIds && bancoIds.length > 0) {
+    bancosQuery = bancosQuery.in("banco_id", bancoIds);
+  }
+  const { data: bancos } = await bancosQuery;
   if (!bancos || bancos.length === 0) {
     throw new Error("Selecione ao menos um banco antes de enviar.");
   }
