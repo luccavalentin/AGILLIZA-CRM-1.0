@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -43,7 +43,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ConfirmDelete } from "@/components/shared/confirm-delete";
-import { InputAutocomplete } from "@/components/ui/input-autocomplete";
+import { Combobox, AsyncCombobox } from "@/components/ui/combobox";
+import { buscarClientesCRM } from "@/lib/crm/clientes.functions";
 import { formatBRL, maskBRLInput, maskBRLCents, parseBRL } from "@/lib/simulacao/format";
 import {
   obterControleMatriculas,
@@ -404,6 +405,18 @@ function SolicitacaoDialog({
   });
   const nomesUsuarios = useMemo(() => (usuarios ?? []).map((u) => u.nome), [usuarios]);
 
+  const buscarClientes = useCallback(async (term: string) => {
+    const rows = await buscarClientesCRM({ data: { q: term } });
+    return (rows ?? []).map((c: any) => ({
+      value: c.id,
+      label: c.nome,
+      description:
+        [c.documento, c.email].filter(Boolean).join(" · ") || undefined,
+    }));
+  }, []);
+
+
+
 
   function reset() {
     setData(inicial?.data_solicitacao ?? hoje());
@@ -488,21 +501,23 @@ function SolicitacaoDialog({
           </div>
           <div className="space-y-1">
             <Label>Solicitante</Label>
-            <InputAutocomplete
+            <Combobox
               value={solicitante}
               onValueChange={setSolicitante}
               options={nomesUsuarios}
               placeholder="Quem pediu (equipe Agilliza)"
+              searchPlaceholder="Buscar solicitante…"
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <Label>Corretor</Label>
-              <InputAutocomplete
+              <Combobox
                 value={corretor}
                 onValueChange={setCorretor}
                 options={nomesUsuarios}
                 placeholder="Nome do corretor"
+                searchPlaceholder="Buscar corretor…"
               />
             </div>
 
@@ -517,10 +532,13 @@ function SolicitacaoDialog({
           </div>
           <div className="space-y-1">
             <Label>Cliente</Label>
-            <Input
+            <AsyncCombobox
               value={cliente}
-              onChange={(e) => setCliente(e.target.value)}
-              placeholder="Nome do cliente"
+              onValueChange={(v) => setCliente(v)}
+              onSearch={buscarClientes}
+              placeholder="Selecione o cliente do CRM"
+              searchPlaceholder="Nome, CPF/CNPJ ou e-mail…"
+              emptyText="Nenhum cliente encontrado."
             />
           </div>
           <div className="space-y-1">
