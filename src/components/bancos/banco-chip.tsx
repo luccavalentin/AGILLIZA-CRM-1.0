@@ -26,7 +26,7 @@ export function BancoChip({
         backgroundColor: `${cor}14`,
       }}
     >
-      <Landmark className="h-3 w-3" />
+      <BancoLogo nome={nome} size="xs" />
       {nome ?? "—"}
     </span>
   );
