@@ -305,10 +305,9 @@ function Pagina() {
             : "Falha ao enviar ao banco. Você pode reenviar na tela da simulação.",
         );
       }
-      // Marca todos os bancos como concluídos para a barra chegar a 100%
-      // e dá um breve instante para o usuário ver a conclusão.
+      // Marca todos os bancos como concluídos para a barra chegar a 100%.
       setConcluidos(f.bancos_ids.length || 1);
-      await new Promise((r) => setTimeout(r, 900));
+
       // Baixa o extrato imediatamente: detalhado (1 banco) ou comparativo (2+).
       let dadosSim: any = null;
       try {
