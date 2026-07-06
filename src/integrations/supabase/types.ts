@@ -2039,9 +2039,12 @@ export type Database = {
       }
       matricula_solicitacoes: {
         Row: {
+          cliente: string | null
           correspondente_id: string
+          corretor: string | null
           created_at: string
           criado_por: string | null
+          data_pagto_reembolso: string | null
           data_solicitacao: string
           id: string
           numero_matricula: string | null
@@ -2053,9 +2056,12 @@ export type Database = {
           valor: number
         }
         Insert: {
+          cliente?: string | null
           correspondente_id: string
+          corretor?: string | null
           created_at?: string
           criado_por?: string | null
+          data_pagto_reembolso?: string | null
           data_solicitacao?: string
           id?: string
           numero_matricula?: string | null
@@ -2067,9 +2073,12 @@ export type Database = {
           valor?: number
         }
         Update: {
+          cliente?: string | null
           correspondente_id?: string
+          corretor?: string | null
           created_at?: string
           criado_por?: string | null
+          data_pagto_reembolso?: string | null
           data_solicitacao?: string
           id?: string
           numero_matricula?: string | null

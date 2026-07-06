@@ -20,10 +20,13 @@ export interface MatriculaSolicitacao {
   id: string;
   data_solicitacao: string;
   solicitante: string;
+  corretor: string | null;
+  cliente: string | null;
   numero_matricula: string | null;
   valor: number;
   reembolsado: boolean;
   reembolsado_em: string | null;
+  data_pagto_reembolso: string | null;
   observacao: string | null;
   created_at: string;
 }
@@ -57,7 +60,7 @@ export const obterControleMatriculas = createServerFn({ method: "GET" })
     const [cfgRes, credRes, solRes] = await Promise.all([
       supabase.from("matricula_config").select("correspondente_id,pix_chave,pix_titular").eq("correspondente_id", corr).maybeSingle(),
       supabase.from("matricula_creditos").select("id,data,valor,descricao,created_at").eq("correspondente_id", corr).order("data", { ascending: false }),
-      supabase.from("matricula_solicitacoes").select("id,data_solicitacao,solicitante,numero_matricula,valor,reembolsado,reembolsado_em,observacao,created_at").eq("correspondente_id", corr).order("data_solicitacao", { ascending: false }),
+      supabase.from("matricula_solicitacoes").select("id,data_solicitacao,solicitante,corretor,cliente,numero_matricula,valor,reembolsado,reembolsado_em,data_pagto_reembolso,observacao,created_at").eq("correspondente_id", corr).order("data_solicitacao", { ascending: false }),
     ]);
     if (cfgRes.error) throw new Error(cfgRes.error.message);
     if (credRes.error) throw new Error(credRes.error.message);
@@ -138,9 +141,12 @@ export const excluirCreditoMatricula = createServerFn({ method: "POST" })
 const solicitacaoSchema = z.object({
   data_solicitacao: z.string().min(1),
   solicitante: z.string().trim().min(1, "Informe o solicitante").max(200),
+  corretor: z.string().trim().max(200).optional().nullable(),
+  cliente: z.string().trim().max(200).optional().nullable(),
   numero_matricula: z.string().trim().max(100).optional().nullable(),
   valor: z.number().nonnegative(),
   reembolsado: z.boolean().optional(),
+  data_pagto_reembolso: z.string().optional().nullable(),
   observacao: z.string().trim().max(500).optional().nullable(),
 });
 
@@ -156,10 +162,13 @@ export const criarSolicitacaoMatricula = createServerFn({ method: "POST" })
       correspondente_id: corr,
       data_solicitacao: data.data_solicitacao,
       solicitante: data.solicitante,
+      corretor: data.corretor ?? null,
+      cliente: data.cliente ?? null,
       numero_matricula: data.numero_matricula ?? null,
       valor: data.valor,
       reembolsado: data.reembolsado ?? false,
       reembolsado_em: data.reembolsado ? new Date().toISOString() : null,
+      data_pagto_reembolso: data.data_pagto_reembolso || null,
       observacao: data.observacao ?? null,
       criado_por: userId,
     });
@@ -183,10 +192,13 @@ export const atualizarSolicitacaoMatricula = createServerFn({ method: "POST" })
     const { error } = await supabase.from("matricula_solicitacoes").update({
       data_solicitacao: data.data_solicitacao,
       solicitante: data.solicitante,
+      corretor: data.corretor ?? null,
+      cliente: data.cliente ?? null,
       numero_matricula: data.numero_matricula ?? null,
       valor: data.valor,
       reembolsado: novoReembolsado,
       reembolsado_em: reembolsadoEm,
+      data_pagto_reembolso: data.data_pagto_reembolso || null,
       observacao: data.observacao ?? null,
     }).eq("id", data.id);
     if (error) throw new Error(error.message);

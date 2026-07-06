@@ -15,6 +15,9 @@ import {
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 import { ConfirmDelete } from "@/components/shared/confirm-delete";
 import { formatBRL, maskBRLInput, parseBRL } from "@/lib/simulacao/format";
 import {
@@ -63,7 +66,7 @@ function Pagina() {
         <Kpi icon={<Wallet className="h-4 w-4" />} rotulo="Saldo de crédito" valor={formatBRL(data.saldo)} />
       </div>
 
-      <Solicitacoes lista={data.solicitacoes} onMudou={invalidar} />
+      <Solicitacoes lista={data.solicitacoes} totalCreditos={data.total_creditos} onMudou={invalidar} />
       <Creditos lista={data.creditos} onMudou={invalidar} />
     </div>
   );
@@ -155,7 +158,12 @@ function PixBanner({ chave, titular, onSalvo }: { chave: string | null; titular:
   );
 }
 
-function Solicitacoes({ lista, onMudou }: { lista: MatriculaSolicitacao[]; onMudou: () => void }) {
+function Solicitacoes({ lista, totalCreditos, onMudou }: { lista: MatriculaSolicitacao[]; totalCreditos: number; onMudou: () => void }) {
+  const [busca, setBusca] = useState("");
+  const [de, setDe] = useState("");
+  const [ate, setAte] = useState("");
+  const [reembolso, setReembolso] = useState<"todos" | "sim" | "nao">("todos");
+
   async function toggle(id: string, reembolsado: boolean) {
     try {
       await alternarReembolsoMatricula({ data: { id, reembolsado } });
@@ -165,43 +173,120 @@ function Solicitacoes({ lista, onMudou }: { lista: MatriculaSolicitacao[]; onMud
     }
   }
 
+  // Saldo acumulado (crédito − gastos acumulados) calculado do mais antigo ao mais novo.
+  const saldoPorId = useMemo(() => {
+    const cronologica = [...lista].sort((a, b) => a.data_solicitacao.localeCompare(b.data_solicitacao));
+    const mapa = new Map<string, number>();
+    let acumulado = 0;
+    for (const s of cronologica) {
+      acumulado += Number(s.valor);
+      mapa.set(s.id, totalCreditos - acumulado);
+    }
+    return mapa;
+  }, [lista, totalCreditos]);
+
+  const filtrada = useMemo(() => {
+    const q = busca.trim().toLowerCase();
+    return lista.filter((s) => {
+      if (de && s.data_solicitacao < de) return false;
+      if (ate && s.data_solicitacao > ate) return false;
+      if (reembolso === "sim" && !s.reembolsado) return false;
+      if (reembolso === "nao" && s.reembolsado) return false;
+      if (q) {
+        const alvo = `${s.solicitante} ${s.corretor ?? ""} ${s.cliente ?? ""} ${s.numero_matricula ?? ""}`.toLowerCase();
+        if (!alvo.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [lista, busca, de, ate, reembolso]);
+
+  function limpar() {
+    setBusca(""); setDe(""); setAte(""); setReembolso("todos");
+  }
+
+  const temFiltro = busca || de || ate || reembolso !== "todos";
+
   return (
     <Card className="p-0">
       <div className="flex items-center justify-between gap-3 border-b border-border p-4">
-        <h2 className="text-sm font-semibold text-foreground">Solicitações ({lista.length})</h2>
+        <h2 className="text-sm font-semibold text-foreground">Solicitações ({filtrada.length})</h2>
         <SolicitacaoDialog onMudou={onMudou} />
       </div>
+
+      <div className="grid grid-cols-1 gap-3 border-b border-border p-4 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="space-y-1 lg:col-span-2">
+          <Label className="text-xs">Buscar (solicitante, corretor, cliente, matrícula)</Label>
+          <Input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Digite para filtrar…" />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs">De</Label>
+          <Input type="date" value={de} onChange={(e) => setDe(e.target.value)} />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs">Até</Label>
+          <Input type="date" value={ate} onChange={(e) => setAte(e.target.value)} />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs">Reembolso</Label>
+          <Select value={reembolso} onValueChange={(v) => setReembolso(v as typeof reembolso)}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos</SelectItem>
+              <SelectItem value="sim">Reembolsados</SelectItem>
+              <SelectItem value="nao">Pendentes</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        {temFiltro && (
+          <div className="flex items-end lg:col-span-5">
+            <Button variant="ghost" size="sm" onClick={limpar}>Limpar filtros</Button>
+          </div>
+        )}
+      </div>
+
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Data</TableHead>
               <TableHead>Solicitante</TableHead>
+              <TableHead>Corretor</TableHead>
+              <TableHead>Cliente</TableHead>
               <TableHead>Nº da matrícula</TableHead>
               <TableHead className="text-right">Valor</TableHead>
               <TableHead>Reembolso</TableHead>
+              <TableHead>Data pagto reembolso</TableHead>
+              <TableHead className="text-right">Saldo</TableHead>
               <TableHead></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {lista.length === 0 && (
-              <TableRow><TableCell colSpan={6} className="py-8 text-center text-sm text-muted-foreground">Nenhuma solicitação registrada.</TableCell></TableRow>
+            {filtrada.length === 0 && (
+              <TableRow><TableCell colSpan={10} className="py-8 text-center text-sm text-muted-foreground">Nenhuma solicitação encontrada.</TableCell></TableRow>
             )}
-            {lista.map((s) => (
+            {filtrada.map((s) => (
               <TableRow key={s.id}>
                 <TableCell className="tabular-nums">{new Date(s.data_solicitacao + "T00:00:00").toLocaleDateString("pt-BR")}</TableCell>
                 <TableCell className="font-medium">{s.solicitante}</TableCell>
+                <TableCell>{s.corretor ?? "—"}</TableCell>
+                <TableCell className="max-w-[220px] truncate" title={s.cliente ?? undefined}>{s.cliente ?? "—"}</TableCell>
                 <TableCell className="tabular-nums text-muted-foreground">{s.numero_matricula ?? "—"}</TableCell>
                 <TableCell className="text-right tabular-nums">{formatBRL(s.valor)}</TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
                     <Switch checked={s.reembolsado} onCheckedChange={(v) => toggle(s.id, v)} />
                     {s.reembolsado ? (
-                      <Badge variant="secondary" className="gap-1"><CheckCircle2 className="h-3 w-3" /> Reembolsado</Badge>
+                      <Badge variant="secondary" className="gap-1"><CheckCircle2 className="h-3 w-3" /> Sim</Badge>
                     ) : (
-                      <Badge variant="outline" className="gap-1"><Clock className="h-3 w-3" /> Pendente</Badge>
+                      <Badge variant="outline" className="gap-1"><Clock className="h-3 w-3" /> Não</Badge>
                     )}
                   </div>
+                </TableCell>
+                <TableCell className="tabular-nums text-muted-foreground">
+                  {s.data_pagto_reembolso ? new Date(s.data_pagto_reembolso + "T00:00:00").toLocaleDateString("pt-BR") : "—"}
+                </TableCell>
+                <TableCell className={`text-right tabular-nums ${(saldoPorId.get(s.id) ?? 0) < 0 ? "text-destructive" : ""}`}>
+                  {formatBRL(saldoPorId.get(s.id) ?? 0)}
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex items-center justify-end gap-1">
@@ -228,18 +313,24 @@ function SolicitacaoDialog({ onMudou, inicial }: { onMudou: () => void; inicial?
   const [open, setOpen] = useState(false);
   const [data, setData] = useState(inicial?.data_solicitacao ?? hoje());
   const [solicitante, setSolicitante] = useState(inicial?.solicitante ?? "");
+  const [corretor, setCorretor] = useState(inicial?.corretor ?? "");
+  const [cliente, setCliente] = useState(inicial?.cliente ?? "");
   const [numero, setNumero] = useState(inicial?.numero_matricula ?? "");
   const [valor, setValor] = useState(maskBRLInput(inicial?.valor ?? 0));
   const [reembolsado, setReembolsado] = useState(inicial?.reembolsado ?? false);
+  const [dataPagto, setDataPagto] = useState(inicial?.data_pagto_reembolso ?? "");
   const [obs, setObs] = useState(inicial?.observacao ?? "");
   const [salvando, setSalvando] = useState(false);
 
   function reset() {
     setData(inicial?.data_solicitacao ?? hoje());
     setSolicitante(inicial?.solicitante ?? "");
+    setCorretor(inicial?.corretor ?? "");
+    setCliente(inicial?.cliente ?? "");
     setNumero(inicial?.numero_matricula ?? "");
     setValor(maskBRLInput(inicial?.valor ?? 0));
     setReembolsado(inicial?.reembolsado ?? false);
+    setDataPagto(inicial?.data_pagto_reembolso ?? "");
     setObs(inicial?.observacao ?? "");
   }
 
@@ -250,9 +341,12 @@ function SolicitacaoDialog({ onMudou, inicial }: { onMudou: () => void; inicial?
       const payload = {
         data_solicitacao: data,
         solicitante: solicitante.trim(),
+        corretor: corretor.trim() || null,
+        cliente: cliente.trim() || null,
         numero_matricula: numero.trim() || null,
         valor: parseBRL(valor),
         reembolsado,
+        data_pagto_reembolso: reembolsado ? (dataPagto || null) : null,
         observacao: obs.trim() || null,
       };
       if (inicial) await atualizarSolicitacaoMatricula({ data: { ...payload, id: inicial.id } });
@@ -281,7 +375,7 @@ function SolicitacaoDialog({ onMudou, inicial }: { onMudou: () => void; inicial?
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <Label>Data</Label>
+              <Label>Data da solicitação</Label>
               <Input type="date" value={data} onChange={(e) => setData(e.target.value)} />
             </div>
             <div className="space-y-1">
@@ -291,11 +385,21 @@ function SolicitacaoDialog({ onMudou, inicial }: { onMudou: () => void; inicial?
           </div>
           <div className="space-y-1">
             <Label>Solicitante</Label>
-            <Input value={solicitante} onChange={(e) => setSolicitante(e.target.value)} placeholder="Nome do corretor" />
+            <Input value={solicitante} onChange={(e) => setSolicitante(e.target.value)} placeholder="Quem pediu (equipe Agilliza)" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label>Corretor</Label>
+              <Input value={corretor} onChange={(e) => setCorretor(e.target.value)} placeholder="Nome do corretor" />
+            </div>
+            <div className="space-y-1">
+              <Label>Nº da matrícula</Label>
+              <Input value={numero} onChange={(e) => setNumero(e.target.value)} placeholder="Ex.: 52592" />
+            </div>
           </div>
           <div className="space-y-1">
-            <Label>Nº da matrícula</Label>
-            <Input value={numero} onChange={(e) => setNumero(e.target.value)} placeholder="Ex.: 52592" />
+            <Label>Cliente</Label>
+            <Input value={cliente} onChange={(e) => setCliente(e.target.value)} placeholder="Nome do cliente" />
           </div>
           <div className="space-y-1">
             <Label>Observação</Label>
@@ -303,8 +407,14 @@ function SolicitacaoDialog({ onMudou, inicial }: { onMudou: () => void; inicial?
           </div>
           <div className="flex items-center gap-2">
             <Switch checked={reembolsado} onCheckedChange={setReembolsado} />
-            <Label className="cursor-pointer" onClick={() => setReembolsado((v) => !v)}>Já reembolsado</Label>
+            <Label className="cursor-pointer" onClick={() => setReembolsado((v) => !v)}>Reembolsado</Label>
           </div>
+          {reembolsado && (
+            <div className="space-y-1">
+              <Label>Data pagto reembolso</Label>
+              <Input type="date" value={dataPagto} onChange={(e) => setDataPagto(e.target.value)} />
+            </div>
+          )}
         </div>
         <DialogFooter>
           <Button variant="ghost" onClick={() => setOpen(false)}>Cancelar</Button>
