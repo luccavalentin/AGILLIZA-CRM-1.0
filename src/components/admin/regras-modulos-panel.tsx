@@ -419,6 +419,45 @@ export function RegrasModulosPanel() {
               <Label htmlFor="desc">Descrição</Label>
               <Input id="desc" value={novaDesc} onChange={(e) => setNovaDesc(e.target.value)} placeholder="Opcional" />
             </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Portal</Label>
+                <Select
+                  value={novoPortal}
+                  onValueChange={(v) => {
+                    const p = v as AcessoTipo;
+                    setNovoPortal(p);
+                    setNovoPapel(ajustarPapel(p, novoPapel));
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PORTAIS.map((p) => (
+                      <SelectItem key={p.value} value={p.value}>
+                        {p.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Papel / função</Label>
+                <Select value={novoPapel} onValueChange={(v) => setNovoPapel(v as PapelNivel)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PAPEIS_POR_PORTAL[novoPortal].map((p) => (
+                      <SelectItem key={p.value} value={p.value}>
+                        {p.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
             <div className="space-y-2">
               <Label>Começar as permissões a partir de</Label>
               <Select value={copiarDe} onValueChange={setCopiarDe}>
@@ -446,6 +485,8 @@ export function RegrasModulosPanel() {
                   nome: novoNome.trim(),
                   descricao: novaDesc.trim() || undefined,
                   copiar_de: copiarDe === "baseline" ? undefined : copiarDe,
+                  papel: novoPapel,
+                  acesso_tipo: novoPortal,
                 })
               }
               disabled={novoNome.trim().length < 2 || criarMut.isPending}
