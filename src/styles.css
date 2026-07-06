@@ -215,3 +215,17 @@ div[style*="Edit with Lovable"],
   z-index: -9999 !important;
 }
 
+
+/* Efeito de barra "pilha recarregando" no overlay de consulta */
+@keyframes carga {
+  0% {
+    background-position: -40% 0;
+  }
+  100% {
+    background-position: 140% 0;
+  }
+}
+
+@utility animate-carga {
+  animation: carga 1.2s linear infinite;
+}
