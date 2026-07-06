@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { PopOutPanel } from "@/components/shared/pop-out-panel";
 import { supabase } from "@/integrations/supabase/client";
 import {
   listarChatCliente,
