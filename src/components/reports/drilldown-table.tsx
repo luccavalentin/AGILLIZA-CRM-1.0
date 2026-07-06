@@ -5,8 +5,21 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { ReportColumn, ReportRow } from "@/lib/relatorios/shared";
 import { formatCell, footerValue } from "@/lib/relatorios/report-format";
+import { BancoLogo } from "@/components/bancos/banco-logo";
 
 const PAGE = 25;
+
+/** Indica se a coluna representa um banco (para exibir o logo ao lado do nome). */
+function ehColunaBanco(c: ReportColumn): boolean {
+  const key = c.key.toLowerCase();
+  return (
+    key === "nome_banco" ||
+    key === "banco" ||
+    key.endsWith("_banco") ||
+    c.label.trim().toLowerCase() === "banco"
+  );
+}
+
 
 /** Tabela detalhada com busca, ordenação, paginação e rodapé de totais. */
 export function DrilldownTable({ columns, rows }: { columns: ReportColumn[]; rows: ReportRow[] }) {
