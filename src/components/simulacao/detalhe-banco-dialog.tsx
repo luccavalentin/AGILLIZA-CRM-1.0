@@ -94,7 +94,7 @@ export function DetalheBancoDialog({ banco }: { banco: any }) {
                   rotulo="Somatório das parcelas"
                   valor={formatBRL(detalhe!.somatorioParcelas)}
                 />
-                <InfoCard rotulo="Seguradora" valor={detalhe!.seguradora ?? "—"} />
+                
               </div>
 
 
