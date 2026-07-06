@@ -349,6 +349,32 @@ function PessoasPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Editar pessoa */}
+      <EditarPessoaDialog pessoa={editando} onClose={() => setEditando(null)} />
+
+      {/* Confirmação de exclusão */}
+      <AlertDialog open={!!excluindo} onOpenChange={(o) => !o && setExcluindo(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir pessoa?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {excluindo?.nome ?? "Esta pessoa"} perderá o acesso ao sistema definitivamente. Esta
+              ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => excluindo && excluirMut.mutate(excluindo.id)}
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
+
   );
 }
