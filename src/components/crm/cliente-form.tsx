@@ -598,23 +598,33 @@ export function ClienteForm({
           </div>
           <div className="space-y-1.5">
             <Label>Órgão expedidor</Label>
-            <InputAutocomplete
-              value={v.orgao_expedidor}
-              onValueChange={(x) => set("orgao_expedidor", x)}
-              options={OPCOES_ORGAO_EXPEDIDOR}
-              placeholder="Ex.: SSP"
-            />
+            <Select value={v.orgao_expedidor || undefined} onValueChange={(x) => set("orgao_expedidor", x)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione" />
+              </SelectTrigger>
+              <SelectContent>
+                {OPCOES_ORGAO_EXPEDIDOR.map((o) => (
+                  <SelectItem key={o} value={o}>
+                    {o}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="space-y-1.5">
             <Label>UF de expedição</Label>
-            <InputAutocomplete
-              maxLength={2}
-              value={v.uf_expedicao}
-              onValueChange={(x) => set("uf_expedicao", x)}
-              transform={(raw) => raw.toUpperCase().slice(0, 2)}
-              options={OPCOES_UF}
-              placeholder="SP"
-            />
+            <Select value={v.uf_expedicao || undefined} onValueChange={(x) => set("uf_expedicao", x)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione" />
+              </SelectTrigger>
+              <SelectContent>
+                {OPCOES_UF.map((o) => (
+                  <SelectItem key={o} value={o}>
+                    {o}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="space-y-1.5">
             <Label>Data de expedição</Label>
