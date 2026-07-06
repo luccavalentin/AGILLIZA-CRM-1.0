@@ -810,6 +810,140 @@ export type Database = {
           },
         ]
       }
+      cliente_vendedores: {
+        Row: {
+          agencia: string | null
+          bairro: string | null
+          banco_conta: string | null
+          cep: string | null
+          cidade: string | null
+          cliente_id: string
+          complemento: string | null
+          conta_corrente: string | null
+          created_at: string
+          data_expedicao: string | null
+          data_nascimento: string | null
+          digito_conta: string | null
+          documento: string | null
+          documento_secundario: string | null
+          email: string | null
+          empresa: string | null
+          estado_civil: string | null
+          fg_autorizacao_dados: boolean
+          id: string
+          logradouro: string | null
+          mae: string | null
+          nacionalidade: string | null
+          naturalidade: string | null
+          nome: string
+          numero: string | null
+          numero_documento: string | null
+          orgao_expedidor: string | null
+          pai: string | null
+          profissao: string | null
+          regime_casamento: string | null
+          renda_total_declarada: number | null
+          sexo: string | null
+          telefone_celular: string | null
+          tipo_documento_identidade: string | null
+          tipo_pessoa: Database["public"]["Enums"]["tipo_pessoa"]
+          uf: string | null
+          uf_expedicao: string | null
+          updated_at: string
+          utiliza_fgts: boolean
+        }
+        Insert: {
+          agencia?: string | null
+          bairro?: string | null
+          banco_conta?: string | null
+          cep?: string | null
+          cidade?: string | null
+          cliente_id: string
+          complemento?: string | null
+          conta_corrente?: string | null
+          created_at?: string
+          data_expedicao?: string | null
+          data_nascimento?: string | null
+          digito_conta?: string | null
+          documento?: string | null
+          documento_secundario?: string | null
+          email?: string | null
+          empresa?: string | null
+          estado_civil?: string | null
+          fg_autorizacao_dados?: boolean
+          id?: string
+          logradouro?: string | null
+          mae?: string | null
+          nacionalidade?: string | null
+          naturalidade?: string | null
+          nome: string
+          numero?: string | null
+          numero_documento?: string | null
+          orgao_expedidor?: string | null
+          pai?: string | null
+          profissao?: string | null
+          regime_casamento?: string | null
+          renda_total_declarada?: number | null
+          sexo?: string | null
+          telefone_celular?: string | null
+          tipo_documento_identidade?: string | null
+          tipo_pessoa?: Database["public"]["Enums"]["tipo_pessoa"]
+          uf?: string | null
+          uf_expedicao?: string | null
+          updated_at?: string
+          utiliza_fgts?: boolean
+        }
+        Update: {
+          agencia?: string | null
+          bairro?: string | null
+          banco_conta?: string | null
+          cep?: string | null
+          cidade?: string | null
+          cliente_id?: string
+          complemento?: string | null
+          conta_corrente?: string | null
+          created_at?: string
+          data_expedicao?: string | null
+          data_nascimento?: string | null
+          digito_conta?: string | null
+          documento?: string | null
+          documento_secundario?: string | null
+          email?: string | null
+          empresa?: string | null
+          estado_civil?: string | null
+          fg_autorizacao_dados?: boolean
+          id?: string
+          logradouro?: string | null
+          mae?: string | null
+          nacionalidade?: string | null
+          naturalidade?: string | null
+          nome?: string
+          numero?: string | null
+          numero_documento?: string | null
+          orgao_expedidor?: string | null
+          pai?: string | null
+          profissao?: string | null
+          regime_casamento?: string | null
+          renda_total_declarada?: number | null
+          sexo?: string | null
+          telefone_celular?: string | null
+          tipo_documento_identidade?: string | null
+          tipo_pessoa?: Database["public"]["Enums"]["tipo_pessoa"]
+          uf?: string | null
+          uf_expedicao?: string | null
+          updated_at?: string
+          utiliza_fgts?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cliente_vendedores_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clientes: {
         Row: {
           agencia: string | null

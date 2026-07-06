@@ -3,7 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { ArrowLeft, Calculator, MessageCircle } from "lucide-react";
+import { ArrowLeft, Calculator, MessageCircle, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -14,6 +14,7 @@ import { DocumentosTab } from "@/components/crm/documentos-tab";
 import { InteracoesTab } from "@/components/crm/interacoes-tab";
 import { VinculoTab } from "@/components/crm/vinculo-tab";
 import { ChatClienteTab } from "@/components/crm/chat-cliente-tab";
+import { VendedoresTab } from "@/components/crm/vendedores-tab";
 import { StatusBadge } from "@/components/crm/tone-badge";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import {
@@ -150,18 +151,40 @@ function Pagina() {
 
 
       <Tabs defaultValue="resumo">
-        <TabsList className="flex-wrap">
-          <TabsTrigger value="resumo">Resumo</TabsTrigger>
-          <TabsTrigger value="negocios">Negócios</TabsTrigger>
-          <TabsTrigger value="dados">Dados</TabsTrigger>
-          <TabsTrigger value="documentos">Documentos</TabsTrigger>
-          <TabsTrigger value="vinculo">Vínculo de atendimento</TabsTrigger>
-          <TabsTrigger value="mensagens" className="gap-1.5">
-            <MessageCircle className="size-4" /> APP cliente
+        <TabsList className="flex w-full flex-wrap gap-1 rounded-xl bg-muted/60 p-1">
+          <TabsTrigger value="vinculo" className="rounded-lg data-[state=active]:shadow-sm">
+            Vínculo de atendimento
           </TabsTrigger>
-          <TabsTrigger value="interacoes">Interações</TabsTrigger>
-          <TabsTrigger value="historico">Histórico</TabsTrigger>
+          <TabsTrigger value="resumo" className="rounded-lg data-[state=active]:shadow-sm">
+            Resumo
+          </TabsTrigger>
+          <TabsTrigger value="dados" className="rounded-lg data-[state=active]:shadow-sm">
+            Dados do comprador
+          </TabsTrigger>
+          <TabsTrigger value="vendedores" className="gap-1.5 rounded-lg data-[state=active]:shadow-sm">
+            <Users className="size-4" /> Vendedores
+          </TabsTrigger>
+          <TabsTrigger value="negocios" className="rounded-lg data-[state=active]:shadow-sm">
+            Negócios
+          </TabsTrigger>
+          <TabsTrigger value="documentos" className="rounded-lg data-[state=active]:shadow-sm">
+            Documentos
+          </TabsTrigger>
+          <TabsTrigger value="mensagens" className="gap-1.5 rounded-lg data-[state=active]:shadow-sm">
+            <MessageCircle className="size-4" /> App cliente
+          </TabsTrigger>
+          <TabsTrigger value="interacoes" className="rounded-lg data-[state=active]:shadow-sm">
+            Registro de interações
+          </TabsTrigger>
+          <TabsTrigger value="historico" className="rounded-lg data-[state=active]:shadow-sm">
+            Histórico
+          </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="vendedores" className="mt-4">
+          <VendedoresTab clienteId={id} />
+        </TabsContent>
+
 
         <TabsContent value="resumo" className="mt-4 grid gap-4 sm:grid-cols-2">
           <Card>
@@ -185,6 +208,14 @@ function Pagina() {
                 }
               />
               <Linha rotulo="UF de interesse" valor={c.uf_interesse ?? "—"} />
+              <Linha
+                rotulo="Conta bancária"
+                valor={
+                  (c as any).agencia || (c as any).conta_corrente
+                    ? `${(c as any).banco_conta ? (c as any).banco_conta + " · " : ""}Ag. ${(c as any).agencia ?? "—"} · CC ${(c as any).conta_corrente ?? "—"}${(c as any).digito_conta ? "-" + (c as any).digito_conta : ""}`
+                    : "—"
+                }
+              />
             </CardContent>
           </Card>
           <Card>
