@@ -378,11 +378,17 @@ export function baixarSimulacaoSimplificadaPDF({
     drawFooter(doc, pageW, pageH, p, total);
   }
 
-  return salvar(doc, s, "simplificada");
+  return salvar(doc, s, "simplificada", filePrefix);
 }
 
 /** Baixa o extrato detalhado: cabeçalho + TODAS as parcelas, um banco por folha. */
-export function baixarSimulacaoDetalhadaPDF({ simulacao: s, bancos }: SimulacaoPdfInput) {
+export function baixarSimulacaoDetalhadaPDF({
+  simulacao: s,
+  bancos,
+  docLabel,
+  filePrefix,
+  dataLabel,
+}: SimulacaoPdfInput) {
   const lista = bancosParaExtrato(bancos);
   const doc = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
   const pageW = doc.internal.pageSize.getWidth();
@@ -395,7 +401,7 @@ export function baixarSimulacaoDetalhadaPDF({ simulacao: s, bancos }: SimulacaoP
 
     drawClienteHeader(doc, pageW);
     let y = HEADER_H + 26;
-    y = drawTituloExtrato(doc, pageW, s, y);
+    y = drawTituloExtrato(doc, pageW, s, y, docLabel, dataLabel);
     y = drawFaixaBanco(doc, pageW, nomeBanco, y);
     y = drawDadosCliente(doc, pageW, s, y);
     y = drawInfoFinanciamento(doc, pageW, s, b, d, y);
