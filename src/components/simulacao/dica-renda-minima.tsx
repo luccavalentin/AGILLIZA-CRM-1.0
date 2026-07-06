@@ -41,17 +41,17 @@ export function DicaRendaMinima({
     success: {
       wrap: "border-emerald-500/30 bg-emerald-500/5",
       badge: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
-      pill: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
+      pill: "bg-emerald-600 text-white dark:bg-emerald-500 dark:text-emerald-950",
     },
     warning: {
       wrap: "border-amber-500/30 bg-amber-500/5",
       badge: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
-      pill: "bg-amber-500/15 text-amber-700 dark:text-amber-300",
+      pill: "bg-amber-600 text-white dark:bg-amber-500 dark:text-amber-950",
     },
     info: {
       wrap: "border-border bg-muted/40",
       badge: "bg-muted text-muted-foreground",
-      pill: "bg-muted text-muted-foreground",
+      pill: "bg-foreground/80 text-background",
     },
   }[tone];
 
@@ -92,7 +92,7 @@ export function DicaRendaMinima({
         {av.suficiente === true && (
           <div
             className={cn(
-              "inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium",
+              "inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold",
               toneStyles.pill,
             )}
           >
@@ -107,7 +107,7 @@ export function DicaRendaMinima({
           <div className="space-y-1">
             <div
               className={cn(
-                "inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium",
+                "inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold",
                 toneStyles.pill,
               )}
             >
