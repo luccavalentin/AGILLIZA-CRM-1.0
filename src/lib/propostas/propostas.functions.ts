@@ -10,6 +10,11 @@ import {
 } from "./state-machine";
 
 /** ===== Tipos de saída ===== */
+export interface PropostaBancoResumo {
+  nome_banco: string | null;
+  status_banco: string | null;
+}
+
 export interface PropostaListaItem {
   id: string;
   numero_proposta: string;
@@ -19,6 +24,7 @@ export interface PropostaListaItem {
   valor_financiamento: number | null;
   status: string;
   created_at: string;
+  bancos: PropostaBancoResumo[];
 }
 
 export interface PropostaCompleta {
