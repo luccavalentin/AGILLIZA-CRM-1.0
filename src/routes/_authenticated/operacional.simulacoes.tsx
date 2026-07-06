@@ -13,6 +13,7 @@ import {
   Trash2,
   Download,
   Pencil,
+  Send,
 } from "lucide-react";
 import { toast } from "sonner";
 import { assertModuloPermitido } from "@/lib/route-guards";
