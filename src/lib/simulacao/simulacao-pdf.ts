@@ -216,9 +216,7 @@ function drawInfoFinanciamento(
         d?.cet ?? calcularCET(d?.valorFinanciamento ?? s.valor_financiamento, d?.parcelas),
       ),
     },
-    { label: "CESH (Custo Efetivo Seguro Habit.)", valor: pctTxt(d?.cesh) },
     { label: "IOF crédito", valor: brlOuTraco(d?.iof ?? b?.valor_iof) },
-    { label: "Seguradora", valor: d?.seguradora ?? "—" },
   ];
 
 
