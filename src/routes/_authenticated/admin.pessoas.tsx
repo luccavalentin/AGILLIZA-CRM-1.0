@@ -59,7 +59,8 @@ const ROTULO_PAPEL: Record<string, string> = {
 };
 
 function PessoasPage() {
-  const [aba, setAba] = useState<"pessoas" | "regras">("pessoas");
+  const { tab } = Route.useSearch();
+  const [aba, setAba] = useState<"pessoas" | "regras">(tab ?? "pessoas");
   const [filtro, setFiltro] = useState<"todos" | "sistema" | "portal_parceiro">(
     "todos",
   );
