@@ -4421,6 +4421,10 @@ export type Database = {
         Args: { _cliente_id: string; _codigo_destino: string; _obs?: string }
         Returns: undefined
       }
+      cliente_vinculado_ao_parceiro: {
+        Args: { _cliente_id: string; _user_id: string }
+        Returns: boolean
+      }
       correspondente_do_usuario: { Args: { _user_id: string }; Returns: string }
       demanda_escalar_vencidas: { Args: { _corr: string }; Returns: number }
       emitir_notificacao: {
