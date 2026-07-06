@@ -412,6 +412,15 @@ function Pagina() {
               </SelectContent>
             </Select>
           </Campo>
+          <Campo label="Financiar despesas?">
+            <label className="flex items-center gap-2 py-2 text-sm text-foreground">
+              <Checkbox
+                checked={!!f.fg_financiar_despesas}
+                onCheckedChange={(v) => set("fg_financiar_despesas", v === true)}
+              />
+              Incluir as despesas no valor financiado
+            </label>
+          </Campo>
         </div>
       </section>
 
