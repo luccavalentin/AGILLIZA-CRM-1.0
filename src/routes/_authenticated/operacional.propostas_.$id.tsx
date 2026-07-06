@@ -64,6 +64,7 @@ import {
 } from "@/components/ui/dialog";
 import { PipelineStepper } from "@/components/propostas/pipeline-stepper";
 import { PropostaStatusBadge } from "@/components/propostas/status-badge";
+import { statusBancoConfig } from "@/components/proposta/status-bancos-proposta";
 import { ToneBadge } from "@/components/crm/tone-badge";
 import {
   DropdownMenu,
@@ -562,7 +563,7 @@ function TabResumo({
               <TableHead className="text-right">Parcela</TableHead>
               <TableHead className="text-right">Prazo</TableHead>
               <TableHead className="text-right">Taxa/ano</TableHead>
-              <TableHead>Envio</TableHead>
+              <TableHead>Status</TableHead>
               <TableHead>Situação de crédito</TableHead>
               <TableHead className="text-right">Ação</TableHead>
             </TableRow>
@@ -599,16 +600,8 @@ function TabResumo({
                   {b.taxa_juros_ano != null ? `${b.taxa_juros_ano}%` : "—"}
                 </TableCell>
                 <TableCell>
-                  <ToneBadge
-                    tone={
-                      b.status_banco === "erro"
-                        ? "danger"
-                        : b.status_banco === "enviada"
-                          ? "success"
-                          : "info"
-                    }
-                  >
-                    {b.status_banco}
+                  <ToneBadge tone={statusBancoConfig(b.status_banco).tone}>
+                    {statusBancoConfig(b.status_banco).label}
                   </ToneBadge>
                 </TableCell>
                 <TableCell>

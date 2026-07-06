@@ -8,7 +8,7 @@ export interface BancoStatusItem {
 }
 
 /** Mapa dos status por banco (proposta_bancos.status_banco). */
-const STATUS_BANCO: Record<string, { label: string; tone: Tone }> = {
+export const STATUS_BANCO: Record<string, { label: string; tone: Tone }> = {
   aguardando: { label: "Aguardando envio", tone: "muted" },
   nao_enviado: { label: "Não enviado", tone: "muted" },
   enviada: { label: "Enviada ao banco", tone: "info" },
@@ -21,6 +21,11 @@ const STATUS_BANCO: Record<string, { label: string; tone: Tone }> = {
   erro: { label: "Erro no envio", tone: "danger" },
   cancelada: { label: "Cancelada", tone: "muted" },
 };
+
+/** Rótulo + tom para um status_banco cru. */
+export function statusBancoConfig(status: string | null | undefined): { label: string; tone: Tone } {
+  return STATUS_BANCO[status ?? ""] ?? { label: status ?? "—", tone: "muted" };
+}
 
 const toneClasses: Record<Tone, string> = {
   success: "bg-success/10 text-success border-success/20",
