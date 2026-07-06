@@ -1,6 +1,7 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { ArrowLeft } from "lucide-react";
 import { assertModuloPermitido } from "@/lib/route-guards";
@@ -46,12 +47,16 @@ import {
   obterSimulacao,
 } from "@/lib/simulacao/simulacoes.functions";
 import { baixarSimulacaoPDF } from "@/lib/simulacao/simulacao-pdf";
+import { criarProposta } from "@/lib/propostas/propostas.functions";
 
 export const Route = createFileRoute("/_authenticated/operacional/simulacoes_/completa")({
   head: () => ({ meta: [{ title: "Simulação completa — Agilliza" }] }),
   beforeLoad: () => assertModuloPermitido("operacional.simulacoes"),
-  validateSearch: (search: Record<string, unknown>): { duplicar?: string } => ({
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { duplicar?: string; origem?: "proposta" } => ({
     duplicar: typeof search.duplicar === "string" ? search.duplicar : undefined,
+    origem: search.origem === "proposta" ? "proposta" : undefined,
   }),
   component: Pagina,
 });
@@ -60,7 +65,10 @@ type Form = Record<string, any>;
 
 function Pagina() {
   const router = useRouter();
-  const { duplicar } = Route.useSearch();
+  const { duplicar, origem: origemFluxo } = Route.useSearch();
+  const modoProposta = origemFluxo === "proposta";
+  const criarPropostaFn = useServerFn(criarProposta);
+  const [gerarProposta, setGerarProposta] = useState(modoProposta);
   const [f, setF] = useState<Form>({
     produto: "financiamento_imobiliario",
     tipo_imovel: "",
@@ -302,11 +310,47 @@ function Pagina() {
       setConcluidos(f.bancos_ids.length || 1);
       await new Promise((r) => setTimeout(r, 900));
       // Baixa o extrato imediatamente: detalhado (1 banco) ou comparativo (2+).
+      let dadosSim: any = null;
       try {
-        const dados = await obterSimulacao({ data: { id } });
-        baixarSimulacaoPDF({ simulacao: dados.simulacao, bancos: dados.bancos });
+        dadosSim = await obterSimulacao({ data: { id } });
+        baixarSimulacaoPDF({ simulacao: dadosSim.simulacao, bancos: dadosSim.bancos });
       } catch {
         /* download opcional — a simulação já foi criada */
+      }
+
+      // Fluxo "Nova Proposta": cria a proposta e envia direto ao banco vencedor.
+      if (gerarProposta) {
+        try {
+          const bancos = (dadosSim?.bancos ?? []).filter(
+            (b: any) => b.status_banco === "simulada",
+          );
+          // Escolhe o banco vencedor pela menor parcela quando houver simulação retornada.
+          const vencedor = bancos
+            .slice()
+            .sort(
+              (a: any, b: any) =>
+                (Number(a.valor_parcela) || Infinity) - (Number(b.valor_parcela) || Infinity),
+            )[0];
+          const proposta = await criarPropostaFn({
+            data: {
+              simulacao_id: id,
+              banco_id: vencedor?.banco_id ?? undefined,
+            },
+          });
+          toast.success(`Proposta ${proposta.numero_proposta} criada e enviada ao banco.`);
+          router.navigate({
+            to: "/operacional/propostas/$id",
+            params: { id: proposta.proposta_id },
+            search: { complementar: 1 },
+          });
+          return;
+        } catch (e) {
+          toast.error(
+            e instanceof Error
+              ? `Simulação criada, mas a proposta falhou: ${e.message}`
+              : "Simulação criada, mas não foi possível gerar a proposta.",
+          );
+        }
       }
       router.navigate({ to: "/operacional/simulacoes/$id", params: { id } });
     } catch (e) {
@@ -335,9 +379,13 @@ function Pagina() {
       </Button>
       <div>
 
-        <h1 className="text-xl font-semibold text-primary">Solicitar Simulação Completa</h1>
+        <h1 className="text-xl font-semibold text-primary">
+          {modoProposta ? "Nova Proposta" : "Solicitar Simulação Completa"}
+        </h1>
         <p className="text-sm text-muted-foreground">
-          Preencha os dados para enviar aos bancos parceiros.
+          {modoProposta
+            ? "Preencha a simulação completa e envie direto ao banco — a proposta é criada automaticamente."
+            : "Preencha os dados para enviar aos bancos parceiros."}
         </p>
       </div>
 
@@ -840,11 +888,29 @@ function Pagina() {
         {err("consentimento_scr")}
       </section>
 
+      <Separator className="border-border/60" />
+
+      {/* Envio ao banco como proposta */}
+      <label className="flex items-start gap-2 rounded-lg border border-primary/30 bg-primary/5 p-4 text-sm">
+        <Checkbox
+          checked={gerarProposta}
+          onCheckedChange={(c) => setGerarProposta(Boolean(c))}
+        />
+        <span>
+          <span className="font-medium text-foreground">Enviar direto ao banco como proposta</span>
+          <span className="block text-muted-foreground">
+            Ao concluir, a proposta é criada automaticamente com o banco vencedor (menor parcela) e
+            enviada ao banco. Desmarque para gerar apenas a simulação.
+          </span>
+        </span>
+      </label>
+
       <div className="flex justify-end pt-2">
         <Button className="h-11 px-8" onClick={enviar} disabled={enviando}>
-          Enviar solicitação
+          {gerarProposta ? "Enviar proposta ao banco" : "Enviar solicitação"}
         </Button>
       </div>
+
 
       <ConsultandoOverlay aberto={enviando} total={f.bancos_ids.length} concluidos={concluidos} />
     </div>
