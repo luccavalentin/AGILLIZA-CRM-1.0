@@ -12,10 +12,7 @@ export function ConsultandoOverlay({
 }) {
   const temProgresso = total > 0;
 
-  // Progresso "real" baseado nos bancos já concluídos.
-  const pctReal = temProgresso
-    ? Math.min(100, Math.round((concluidos / total) * 100))
-    : 0;
+  // Sinaliza conclusão de todos os bancos.
   const finalizado = temProgresso && concluidos >= total;
 
   // Progresso animado exibido: sobe suavemente para dar sensação de carregamento,
