@@ -61,7 +61,8 @@ function Pagina() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const excluir = useServerFn(excluirSimulacao);
-  
+  const criar = useServerFn(criarProposta);
+
   const obter = useServerFn(obterSimulacao);
   const [escopo, setEscopo] = useState<"todas" | "minhas">("todas");
   const [q, setQ] = useState("");
