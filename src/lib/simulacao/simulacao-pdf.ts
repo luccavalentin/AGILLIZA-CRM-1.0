@@ -3,7 +3,7 @@ import autoTable from "jspdf-autotable";
 import { exportPDF } from "@/lib/relatorios/report-pdf";
 import { formatBRL, formatPercent } from "@/lib/simulacao/format";
 import type { ReportColumn, ReportKpi, ReportRow } from "@/lib/relatorios/shared";
-import { extrairDetalheBanco, type DetalheBanco } from "@/lib/simulacao/detalhe-banco";
+import { extrairDetalheBanco, normalizarSistemaAmortizacao, type DetalheBanco } from "@/lib/simulacao/detalhe-banco";
 import { AGILLIZA_LOGO_LIGHT, AGILLIZA_LOGO_RATIO } from "@/lib/relatorios/brand-logo";
 
 interface SimulacaoPdfInput {
