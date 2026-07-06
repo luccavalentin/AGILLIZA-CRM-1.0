@@ -77,11 +77,26 @@ export const obterParametros = createServerFn({ method: "GET" })
     const vazio: ParametrosGlobais = {
       id: null,
       nome_empresa: null,
+      razao_social: null,
+      nome_fantasia: null,
       cnpj: null,
+      inscricao_estadual: null,
+      inscricao_municipal: null,
       logo_url: null,
       cor_primaria: null,
+      cep: null,
+      logradouro: null,
+      numero: null,
+      complemento: null,
+      bairro: null,
+      cidade: null,
+      uf: null,
       endereco: null,
+      email_empresa: null,
+      telefone_empresa: null,
       telefone_sac: null,
+      site: null,
+      responsavel_nome: null,
       politica_lgpd: null,
       politica_privacidade: null,
       email_dpo: null,
@@ -89,14 +104,13 @@ export const obterParametros = createServerFn({ method: "GET" })
     if (!c) return vazio;
     const { data, error } = await supabase
       .from("parametros_globais")
-      .select(
-        "id, nome_empresa, cnpj, logo_url, cor_primaria, endereco, telefone_sac, politica_lgpd, politica_privacidade, email_dpo",
-      )
+      .select(CAMPOS)
       .eq("correspondente_id", c)
       .maybeSingle();
     if (error) throw error;
-    return data ?? vazio;
+    return (data as ParametrosGlobais | null) ?? vazio;
   });
+
 
 export const salvarParametros = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
