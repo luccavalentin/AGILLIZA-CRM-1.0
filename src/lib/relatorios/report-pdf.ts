@@ -87,6 +87,7 @@ export function exportPDF(
   columns: ReportColumn[],
   rows: ReportRow[],
   filename?: string,
+  nota?: string,
 ) {
   const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
   const pageW = doc.internal.pageSize.getWidth();
