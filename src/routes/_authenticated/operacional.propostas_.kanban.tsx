@@ -78,10 +78,10 @@ function Pagina() {
   const itens = data?.itens ?? [];
 
   return (
-    <div className="flex h-[calc(100dvh-var(--app-header,4rem))] flex-col gap-4 p-4 md:p-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
+    <div className="min-h-[calc(100dvh-var(--app-header,4rem))] space-y-4 overflow-x-hidden p-3 sm:p-4 lg:p-6">
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
         <div className="min-w-0">
-          <h1 className="text-xl font-semibold text-foreground">Kanban de Propostas</h1>
+          <h1 className="truncate text-lg font-semibold text-foreground sm:text-xl">Kanban de Propostas</h1>
           <p className="text-sm text-muted-foreground">
             Arraste os cards entre etapas permitidas.
           </p>
@@ -93,7 +93,7 @@ function Pagina() {
         </Button>
       </div>
 
-      <div className="-mx-4 flex flex-1 snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain px-4 pb-4 md:mx-0 md:px-0">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 min-[1720px]:grid-cols-5">
         {COLUNAS.map((col) => {
           const cfg = statusProposta(col);
           const cards = itens.filter((i) => i.status === col);
@@ -102,12 +102,12 @@ function Pagina() {
               key={col}
               onDragOver={(e) => e.preventDefault()}
               onDrop={() => soltar(col)}
-              className="flex w-[78vw] max-w-72 flex-shrink-0 snap-start flex-col overflow-hidden rounded-lg border border-border bg-muted/30 sm:w-64"
+              className="flex min-h-48 min-w-0 flex-col overflow-hidden rounded-lg border border-border bg-muted/30 shadow-sm"
             >
               <div className="shrink-0 overflow-hidden rounded-t-lg">
                 <div className={cn("h-[3px]", TONE_BAR[cfg.tone])} />
-                <div className="flex items-center justify-between gap-2 px-3 py-2">
-                  <span className="min-w-0 truncate text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2 px-3 py-2.5">
+                  <span className="min-w-0 text-xs font-semibold uppercase leading-snug text-muted-foreground">
                     {cfg.label}
                   </span>
                   <span className="shrink-0 rounded-full bg-background px-1.5 text-xs text-muted-foreground">
@@ -115,7 +115,7 @@ function Pagina() {
                   </span>
                 </div>
               </div>
-              <div className="flex flex-1 flex-col gap-2 overflow-y-auto p-2">
+              <div className="flex flex-1 flex-col gap-2 p-2">
                 {cards.map((c) => (
                   <div
                     key={c.id}
@@ -127,9 +127,9 @@ function Pagina() {
                     onClick={() =>
                       router.navigate({ to: "/operacional/propostas/$id", params: { id: c.id } })
                     }
-                    className="cursor-grab rounded-md border border-border bg-card p-3 text-sm shadow-sm transition-shadow hover:shadow-md active:cursor-grabbing"
+                    className="min-w-0 cursor-grab rounded-md border border-border bg-card p-3 text-sm shadow-sm transition hover:-translate-y-0.5 hover:shadow-md active:cursor-grabbing"
                   >
-                    <p className="font-medium text-foreground">{c.numero_proposta}</p>
+                    <p className="truncate font-medium text-foreground">{c.numero_proposta}</p>
                     <p className="truncate text-xs text-muted-foreground">{c.nome_cliente ?? "—"}</p>
                     <p className="mt-1 truncate text-xs tabular-nums text-muted-foreground">
                       {c.nome_banco ?? "—"} · {formatBRL(c.valor_financiamento)}
