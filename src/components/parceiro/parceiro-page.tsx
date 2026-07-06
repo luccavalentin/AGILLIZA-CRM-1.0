@@ -22,15 +22,15 @@ export function ParceiroPage({ titulo, descricao, acoes, children }: Props) {
     (resumo.data?.papel === "imobiliaria" ? "Imobiliária" : "Corretor");
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div className="mx-auto w-full max-w-5xl">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-foreground">{titulo}</h1>
+        <div className="min-w-0">
+          <h1 className="text-xl font-semibold text-foreground sm:text-2xl">{titulo}</h1>
           {descricao && <p className="text-sm text-muted-foreground">{descricao}</p>}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {resumo.data && (
-            <span className="rounded-full bg-accent px-3 py-1 text-xs font-medium text-accent-foreground">
+            <span className="max-w-full truncate rounded-full bg-accent px-3 py-1 text-xs font-medium text-accent-foreground">
               {selo}
             </span>
           )}
