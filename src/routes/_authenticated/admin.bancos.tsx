@@ -65,9 +65,9 @@ function Pagina() {
 
   return (
     <div className="space-y-6 p-4 md:p-6">
-      <header className="flex items-center gap-3">
-        <Landmark className="size-6 text-primary" />
-        <div>
+      <header className="flex items-start gap-3">
+        <Landmark className="size-6 shrink-0 text-primary" />
+        <div className="min-w-0">
           <h1 className="text-xl font-semibold text-foreground">Bancos parceiros</h1>
           <p className="text-sm text-muted-foreground">
             Ative bancos, defina o padrão e configure as credenciais de integração.
@@ -75,7 +75,66 @@ function Pagina() {
         </div>
       </header>
 
-      <div className="rounded-lg border border-border">
+      {/* Mobile: cartões */}
+      <div className="grid gap-3 md:hidden">
+        {q.isLoading ? (
+          Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-36 w-full rounded-lg" />
+          ))
+        ) : (q.data ?? []).length === 0 ? (
+          <p className="rounded-lg border border-border py-10 text-center text-sm text-muted-foreground">
+            Nenhum banco cadastrado.
+          </p>
+        ) : (
+          (q.data ?? []).map((b) => (
+            <div
+              key={b.id}
+              className={`rounded-lg border border-border p-4 ${b.ativo ? "" : "opacity-60"}`}
+            >
+              <div className="flex items-start gap-3">
+                <BancoLogo nome={b.nome_banco} size="lg" className="shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-medium text-foreground">{b.nome_banco}</p>
+                  <p className="text-xs tabular-nums text-muted-foreground">
+                    Código {b.codigo_banco}
+                  </p>
+                </div>
+                <Switch
+                  checked={b.ativo}
+                  disabled={toggle.isPending}
+                  onCheckedChange={(v) => toggle.mutate({ id: b.id, ativo: v })}
+                />
+              </div>
+
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                {!b.ativo && <Badge variant="secondary">Aguardando homologação</Badge>}
+                {b.flag_padrao && <Badge variant="outline">Padrão</Badge>}
+                {b.credencial ? (
+                  <Badge variant="default">{b.credencial.ambiente}</Badge>
+                ) : (
+                  <Badge variant="secondary">Credencial não configurada</Badge>
+                )}
+              </div>
+
+              {b.produtos.length > 0 && (
+                <p className="mt-2 text-xs text-muted-foreground">{b.produtos.join(", ")}</p>
+              )}
+
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-3 w-full"
+                onClick={() => setEdit(b)}
+              >
+                <Settings2 className="mr-1 size-4" /> Configurar
+              </Button>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Desktop: tabela */}
+      <div className="hidden overflow-x-auto rounded-lg border border-border md:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -105,12 +164,15 @@ function Pagina() {
               (q.data ?? []).map((b) => (
                 <TableRow key={b.id} className={b.ativo ? "" : "opacity-60"}>
                   <TableCell className="font-medium text-foreground">
-                    {b.nome_banco}
-                    {!b.ativo && (
-                      <Badge variant="secondary" className="ml-2">
-                        Aguardando homologação
-                      </Badge>
-                    )}
+                    <div className="flex items-center gap-2.5">
+                      <BancoLogo nome={b.nome_banco} size="md" className="shrink-0" />
+                      <span>{b.nome_banco}</span>
+                      {!b.ativo && (
+                        <Badge variant="secondary" className="ml-1">
+                          Aguardando homologação
+                        </Badge>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell className="tabular-nums text-muted-foreground">
                     {b.codigo_banco}
