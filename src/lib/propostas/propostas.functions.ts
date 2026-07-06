@@ -8,6 +8,7 @@ import {
   STATUS_TERMINAIS,
   type PropostaStatus,
 } from "./state-machine";
+import { estadoCivilCrmParaCodigo, regimeCasamentoCrmParaCodigo } from "./dominios";
 
 /** ===== Tipos de saída ===== */
 export interface PropostaBancoResumo {
