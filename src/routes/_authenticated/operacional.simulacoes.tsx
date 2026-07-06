@@ -2,10 +2,11 @@ import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Plus, Search, Calculator, ChevronDown, MoreHorizontal, Eye, Copy, Trash2 } from "lucide-react";
+import { Plus, Search, Calculator, ChevronDown, MoreHorizontal, Eye, Copy, Trash2, Download, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { assertModuloPermitido } from "@/lib/route-guards";
-import { listarSimulacoes, excluirSimulacao, duplicarSimulacao } from "@/lib/simulacao/simulacoes.functions";
+import { listarSimulacoes, excluirSimulacao, duplicarSimulacao, obterSimulacao } from "@/lib/simulacao/simulacoes.functions";
+import { baixarSimulacaoPDF } from "@/lib/simulacao/simulacao-pdf";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -33,6 +34,7 @@ function Pagina() {
   const queryClient = useQueryClient();
   const excluir = useServerFn(excluirSimulacao);
   const duplicar = useServerFn(duplicarSimulacao);
+  const obter = useServerFn(obterSimulacao);
   const [escopo, setEscopo] = useState<"todas" | "minhas">("todas");
   const [q, setQ] = useState("");
   const [busca, setBusca] = useState("");
@@ -71,6 +73,26 @@ function Pagina() {
       router.navigate({ to: "/operacional/simulacoes/$id", params: { id: novo } });
     } catch {
       toast.error("Não foi possível duplicar a simulação.");
+    }
+  }
+
+  async function handleBaixar(id: string) {
+    try {
+      const dados = await obter({ data: { id } });
+      baixarSimulacaoPDF({ simulacao: dados.simulacao, bancos: dados.bancos });
+    } catch {
+      toast.error("Não foi possível gerar o PDF da simulação.");
+    }
+  }
+
+  async function handleEditar(id: string) {
+    try {
+      const { simulacao } = await obter({ data: { id } });
+      sessionStorage.setItem("simulacao_wizard", JSON.stringify(simulacao));
+      toast.info("Dados carregados no formulário para edição.");
+      router.navigate({ to: "/operacional/simulacoes/completa" });
+    } catch {
+      toast.error("Não foi possível abrir a simulação para edição.");
     }
   }
 
@@ -207,6 +229,12 @@ function Pagina() {
                         onSelect={() => router.navigate({ to: "/operacional/simulacoes/$id", params: { id: s.id } })}
                       >
                         <Eye className="mr-2 h-4 w-4" /> Visualizar
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onSelect={() => handleEditar(s.id)}>
+                        <Pencil className="mr-2 h-4 w-4" /> Editar
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onSelect={() => handleBaixar(s.id)}>
+                        <Download className="mr-2 h-4 w-4" /> Baixar PDF
                       </DropdownMenuItem>
                       <DropdownMenuItem onSelect={() => handleDuplicar(s.id)}>
                         <Copy className="mr-2 h-4 w-4" /> Duplicar

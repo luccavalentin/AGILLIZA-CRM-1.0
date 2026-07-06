@@ -2,7 +2,7 @@ import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ArrowLeft, RefreshCw, Copy } from "lucide-react";
+import { ArrowLeft, RefreshCw, Copy, Download } from "lucide-react";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { supabase } from "@/integrations/supabase/client";
 import { obterSimulacao, enviarSimulacaoBanco, duplicarSimulacao } from "@/lib/simulacao/simulacoes.functions";
@@ -16,6 +16,7 @@ import {
 import { ToneBadge } from "@/components/crm/tone-badge";
 import { SimulacaoStatusBadge, BancoStatusBadge } from "@/components/simulacao/status-badge";
 import { formatBRL, formatPercent } from "@/lib/simulacao/format";
+import { baixarSimulacaoPDF } from "@/lib/simulacao/simulacao-pdf";
 
 export const Route = createFileRoute("/_authenticated/operacional/simulacoes_/$id")({
   head: () => ({ meta: [{ title: "Simulação — Agilliza" }] }),
@@ -117,6 +118,9 @@ function Pagina() {
         </div>
         <div className="flex gap-2">
           <Button variant="secondary" onClick={reenviar}><RefreshCw className="mr-1 h-4 w-4" /> Reenviar ao banco</Button>
+          <Button variant="secondary" onClick={() => baixarSimulacaoPDF({ simulacao: s, bancos })}>
+            <Download className="mr-1 h-4 w-4" /> Baixar PDF
+          </Button>
           <Button variant="ghost" onClick={duplicar}><Copy className="mr-1 h-4 w-4" /> Duplicar</Button>
         </div>
       </div>
