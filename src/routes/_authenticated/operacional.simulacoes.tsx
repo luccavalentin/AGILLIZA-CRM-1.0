@@ -410,6 +410,7 @@ function AcoesSimulacao({
   onBaixarComparativo,
   onBaixarDetalhada,
   onDuplicar,
+  onEnviarProposta,
   onExcluir,
   numero,
 }: {
@@ -418,6 +419,7 @@ function AcoesSimulacao({
   onBaixarComparativo: () => void;
   onBaixarDetalhada: () => void;
   onDuplicar: () => void;
+  onEnviarProposta: () => void;
   onExcluir: () => Promise<void>;
   numero: string;
 }) {
