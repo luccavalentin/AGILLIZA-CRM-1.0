@@ -275,7 +275,7 @@ export async function enviarPropostaImpl({
     query = query.eq("selecionado", true);
   }
   const { data: bancosSel } = await query;
-  const bancos = (bancosSel ?? []).filter((b: any) => b.status_banco !== "enviada");
+  const bancos = (bancosSel ?? []).filter((b: any) => !bancoJaEnviado(b));
   if (bancos.length === 0) {
     throw new Error(
       bancoId
