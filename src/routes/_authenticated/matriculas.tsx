@@ -313,18 +313,24 @@ function SolicitacaoDialog({ onMudou, inicial }: { onMudou: () => void; inicial?
   const [open, setOpen] = useState(false);
   const [data, setData] = useState(inicial?.data_solicitacao ?? hoje());
   const [solicitante, setSolicitante] = useState(inicial?.solicitante ?? "");
+  const [corretor, setCorretor] = useState(inicial?.corretor ?? "");
+  const [cliente, setCliente] = useState(inicial?.cliente ?? "");
   const [numero, setNumero] = useState(inicial?.numero_matricula ?? "");
   const [valor, setValor] = useState(maskBRLInput(inicial?.valor ?? 0));
   const [reembolsado, setReembolsado] = useState(inicial?.reembolsado ?? false);
+  const [dataPagto, setDataPagto] = useState(inicial?.data_pagto_reembolso ?? "");
   const [obs, setObs] = useState(inicial?.observacao ?? "");
   const [salvando, setSalvando] = useState(false);
 
   function reset() {
     setData(inicial?.data_solicitacao ?? hoje());
     setSolicitante(inicial?.solicitante ?? "");
+    setCorretor(inicial?.corretor ?? "");
+    setCliente(inicial?.cliente ?? "");
     setNumero(inicial?.numero_matricula ?? "");
     setValor(maskBRLInput(inicial?.valor ?? 0));
     setReembolsado(inicial?.reembolsado ?? false);
+    setDataPagto(inicial?.data_pagto_reembolso ?? "");
     setObs(inicial?.observacao ?? "");
   }
 
@@ -335,9 +341,12 @@ function SolicitacaoDialog({ onMudou, inicial }: { onMudou: () => void; inicial?
       const payload = {
         data_solicitacao: data,
         solicitante: solicitante.trim(),
+        corretor: corretor.trim() || null,
+        cliente: cliente.trim() || null,
         numero_matricula: numero.trim() || null,
         valor: parseBRL(valor),
         reembolsado,
+        data_pagto_reembolso: reembolsado ? (dataPagto || null) : null,
         observacao: obs.trim() || null,
       };
       if (inicial) await atualizarSolicitacaoMatricula({ data: { ...payload, id: inicial.id } });
@@ -366,7 +375,7 @@ function SolicitacaoDialog({ onMudou, inicial }: { onMudou: () => void; inicial?
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <Label>Data</Label>
+              <Label>Data da solicitação</Label>
               <Input type="date" value={data} onChange={(e) => setData(e.target.value)} />
             </div>
             <div className="space-y-1">
@@ -376,11 +385,21 @@ function SolicitacaoDialog({ onMudou, inicial }: { onMudou: () => void; inicial?
           </div>
           <div className="space-y-1">
             <Label>Solicitante</Label>
-            <Input value={solicitante} onChange={(e) => setSolicitante(e.target.value)} placeholder="Nome do corretor" />
+            <Input value={solicitante} onChange={(e) => setSolicitante(e.target.value)} placeholder="Quem pediu (equipe Agilliza)" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label>Corretor</Label>
+              <Input value={corretor} onChange={(e) => setCorretor(e.target.value)} placeholder="Nome do corretor" />
+            </div>
+            <div className="space-y-1">
+              <Label>Nº da matrícula</Label>
+              <Input value={numero} onChange={(e) => setNumero(e.target.value)} placeholder="Ex.: 52592" />
+            </div>
           </div>
           <div className="space-y-1">
-            <Label>Nº da matrícula</Label>
-            <Input value={numero} onChange={(e) => setNumero(e.target.value)} placeholder="Ex.: 52592" />
+            <Label>Cliente</Label>
+            <Input value={cliente} onChange={(e) => setCliente(e.target.value)} placeholder="Nome do cliente" />
           </div>
           <div className="space-y-1">
             <Label>Observação</Label>
@@ -388,8 +407,14 @@ function SolicitacaoDialog({ onMudou, inicial }: { onMudou: () => void; inicial?
           </div>
           <div className="flex items-center gap-2">
             <Switch checked={reembolsado} onCheckedChange={setReembolsado} />
-            <Label className="cursor-pointer" onClick={() => setReembolsado((v) => !v)}>Já reembolsado</Label>
+            <Label className="cursor-pointer" onClick={() => setReembolsado((v) => !v)}>Reembolsado</Label>
           </div>
+          {reembolsado && (
+            <div className="space-y-1">
+              <Label>Data pagto reembolso</Label>
+              <Input type="date" value={dataPagto} onChange={(e) => setDataPagto(e.target.value)} />
+            </div>
+          )}
         </div>
         <DialogFooter>
           <Button variant="ghost" onClick={() => setOpen(false)}>Cancelar</Button>
