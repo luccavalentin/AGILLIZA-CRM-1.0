@@ -134,7 +134,7 @@ function Pagina() {
           <div className="flex flex-wrap gap-6 text-sm">
             <Kpi label={multiBanco ? "Bancos enviados" : "Banco escolhido"} valor={multiBanco ? `${bancosEnviados.length} bancos` : (p.nome_banco ?? "—")} />
             <Kpi label="R$ Financiado" valor={formatBRL(p.valor_financiamento)} />
-            {!multiBanco && <Kpi label="Situação" valor={<PropostaStatusBadge status={status} />} />}
+            {!multiBanco && <Kpi label="Situação" valor={<PropostaStatusBadge status={status} banco={p.nome_banco} />} />}
           </div>
         </div>
 
