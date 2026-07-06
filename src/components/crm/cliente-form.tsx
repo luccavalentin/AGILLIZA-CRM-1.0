@@ -135,6 +135,51 @@ const OPCOES_PROFISSAO = [
   "Estudante",
 ];
 
+// Capitais e principais cidades (Cidade/UF) para sugerir na naturalidade.
+const OPCOES_NATURALIDADE = [
+  "Aracaju/SE", "Belém/PA", "Belo Horizonte/MG", "Boa Vista/RR", "Brasília/DF",
+  "Campo Grande/MS", "Cuiabá/MT", "Curitiba/PR", "Florianópolis/SC", "Fortaleza/CE",
+  "Goiânia/GO", "João Pessoa/PB", "Macapá/AP", "Maceió/AL", "Manaus/AM",
+  "Natal/RN", "Palmas/TO", "Porto Alegre/RS", "Porto Velho/RO", "Recife/PE",
+  "Rio Branco/AC", "Rio de Janeiro/RJ", "Salvador/BA", "São Luís/MA", "São Paulo/SP",
+  "Teresina/PI", "Vitória/ES",
+  "Campinas/SP", "Guarulhos/SP", "Santo André/SP", "São Bernardo do Campo/SP",
+  "Osasco/SP", "Sorocaba/SP", "Ribeirão Preto/SP", "Santos/SP",
+  "Niterói/RJ", "Duque de Caxias/RJ", "São Gonçalo/RJ", "Campos dos Goytacazes/RJ",
+  "Contagem/MG", "Uberlândia/MG", "Juiz de Fora/MG", "Betim/MG",
+  "Londrina/PR", "Maringá/PR", "Foz do Iguaçu/PR",
+  "Joinville/SC", "Blumenau/SC", "Caxias do Sul/RS", "Pelotas/RS", "Canoas/RS",
+  "Feira de Santana/BA", "Jaboatão dos Guararapes/PE", "Caruaru/PE",
+];
+
+// Bancos previamente cadastrados para pesquisa/sugestão (conta do cliente).
+const OPCOES_BANCO = [
+  "001 - Banco do Brasil",
+  "033 - Santander",
+  "070 - BRB - Banco de Brasília",
+  "077 - Banco Inter",
+  "104 - Caixa Econômica Federal",
+  "208 - Banco BTG Pactual",
+  "212 - Banco Original",
+  "237 - Bradesco",
+  "260 - Nubank (Nu Pagamentos)",
+  "290 - PagBank (PagSeguro)",
+  "323 - Mercado Pago",
+  "336 - Banco C6",
+  "341 - Itaú Unibanco",
+  "356 - Banco Real",
+  "380 - PicPay",
+  "422 - Banco Safra",
+  "623 - Banco PAN",
+  "633 - Banco Rendimento",
+  "655 - Banco Votorantim / BV",
+  "745 - Citibank",
+  "746 - Banco Modal",
+  "748 - Sicredi",
+  "756 - Sicoob",
+];
+
+
 // Exibe um número no formato R$ pt-BR (ex.: 20000 -> "20.000,00").
 function formatarMoedaBR(n: number): string {
   return n.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
