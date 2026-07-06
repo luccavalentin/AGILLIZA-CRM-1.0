@@ -5,6 +5,7 @@ import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import brandSymbol from "@/assets/brand/agilliza-symbol-oficial.png";
 
 const Dialog = DialogPrimitive.Root;
 
@@ -46,6 +47,13 @@ const DialogContent = React.forwardRef<
       <span
         aria-hidden="true"
         className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary via-primary/70 to-destructive"
+      />
+      <img
+        src={brandSymbol}
+        alt=""
+        aria-hidden="true"
+        draggable={false}
+        className="pointer-events-none absolute -right-5 -top-6 h-28 w-auto rotate-12 select-none opacity-[0.06] dark:opacity-[0.10]"
       />
       {children}
       <DialogPrimitive.Close className="absolute right-4 top-4 rounded-md p-1 opacity-70 ring-offset-background cursor-pointer transition-opacity hover:bg-accent hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
