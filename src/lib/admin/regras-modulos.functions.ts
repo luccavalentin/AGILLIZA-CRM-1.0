@@ -79,15 +79,6 @@ export const CATALOGO_MODULOS: ModuloCatalogo[] = [
   },
   {
     grupo: "Operacional",
-    modulo: "operacional.contratos",
-    label: "Contratos",
-    acoes: [
-      { acao: "view", label: "Ver" },
-      { acao: "edit", label: "Editar" },
-    ],
-  },
-  {
-    grupo: "Operacional",
     modulo: "operacional.tarefas",
     label: "Tarefas",
     acoes: [
