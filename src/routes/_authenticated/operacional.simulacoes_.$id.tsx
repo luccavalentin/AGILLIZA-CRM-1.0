@@ -101,6 +101,20 @@ function Pagina() {
     }
   }
 
+  const [reenviandoBanco, setReenviandoBanco] = useState<string | null>(null);
+  async function reenviarBanco(bancoId: string) {
+    setReenviandoBanco(bancoId);
+    try {
+      await enviarSimulacaoBanco({ data: { simulacao_id: id, banco_ids: [bancoId] } });
+      toast.success("Banco reenviado.");
+      qc.invalidateQueries({ queryKey: ["simulacao", id] });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao reenviar.");
+    } finally {
+      setReenviandoBanco(null);
+    }
+  }
+
   function duplicar() {
     router.navigate({
       to: "/operacional/simulacoes/completa",
