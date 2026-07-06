@@ -640,6 +640,17 @@ function TabResumo({
         </Table>
       </div>
 
+      <div className="grid gap-3 rounded-lg border border-border bg-card p-5 sm:grid-cols-2 md:grid-cols-3">
+        {campos.map(([label, valor]) => (
+          <div key={label}>
+            <Label className="text-xs text-muted-foreground">{label}</Label>
+            <div className="mt-1 rounded-md border border-border bg-muted/40 px-3 py-2 text-sm text-foreground">
+              {valor}
+            </div>
+          </div>
+        ))}
+      </div>
+
       <EnvioResultadoDialog
         resultado={resultadoEnvio}
         onClose={() => setResultadoEnvio(null)}
