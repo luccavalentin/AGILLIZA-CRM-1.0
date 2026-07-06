@@ -888,11 +888,29 @@ function Pagina() {
         {err("consentimento_scr")}
       </section>
 
+      <Separator className="border-border/60" />
+
+      {/* Envio ao banco como proposta */}
+      <label className="flex items-start gap-2 rounded-lg border border-primary/30 bg-primary/5 p-4 text-sm">
+        <Checkbox
+          checked={gerarProposta}
+          onCheckedChange={(c) => setGerarProposta(Boolean(c))}
+        />
+        <span>
+          <span className="font-medium text-foreground">Enviar direto ao banco como proposta</span>
+          <span className="block text-muted-foreground">
+            Ao concluir, a proposta é criada automaticamente com o banco vencedor (menor parcela) e
+            enviada ao banco. Desmarque para gerar apenas a simulação.
+          </span>
+        </span>
+      </label>
+
       <div className="flex justify-end pt-2">
         <Button className="h-11 px-8" onClick={enviar} disabled={enviando}>
-          Enviar solicitação
+          {gerarProposta ? "Enviar proposta ao banco" : "Enviar solicitação"}
         </Button>
       </div>
+
 
       <ConsultandoOverlay aberto={enviando} total={f.bancos_ids.length} concluidos={concluidos} />
     </div>
