@@ -157,7 +157,7 @@ export interface TabelaExportada {
   label: string;
   tabela: string;
   colunas: string[];
-  linhas: Record<string, unknown>[];
+  linhas: Record<string, string | number | boolean | null>[];
 }
 
 export interface BackupCompleto {
