@@ -9,6 +9,11 @@ import { AGILLIZA_LOGO_LIGHT, AGILLIZA_LOGO_RATIO } from "@/lib/relatorios/brand
 interface SimulacaoPdfInput {
   simulacao: any;
   bancos: any[];
+  /** Rótulos opcionais para reutilizar o layout em outros documentos (ex.: Propostas). */
+  docLabel?: string;
+  numeroDoc?: string;
+  filePrefix?: string;
+  dataLabel?: string;
 }
 
 const LABEL_STATUS_BANCO: Record<string, string> = {
@@ -106,15 +111,22 @@ const DISCLAIMER =
 // Blocos reutilizáveis (título, dados do cliente, informações do financiamento)
 // ---------------------------------------------------------------------------
 
-function drawTituloExtrato(doc: jsPDF, pageW: number, s: any, y: number): number {
+function drawTituloExtrato(
+  doc: jsPDF,
+  pageW: number,
+  s: any,
+  y: number,
+  titulo = "Extrato da Simulação de Financiamento",
+  dataLabel = "Data da Simulação",
+): number {
   doc.setTextColor(AZUL);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(14);
-  doc.text("Extrato da Simulação de Financiamento", MARGIN, y);
+  doc.text(titulo, MARGIN, y);
   doc.setTextColor(GRAFITE);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(8);
-  doc.text(`Data da Simulação: ${dataTxt(s.created_at ?? new Date())}`, pageW - MARGIN, y, {
+  doc.text(`${dataLabel}: ${dataTxt(s.created_at ?? new Date())}`, pageW - MARGIN, y, {
     align: "right",
   });
   return y + 12;
@@ -303,7 +315,13 @@ function bancosParaExtrato(bancos: any[]): any[] {
 }
 
 /** Baixa o extrato simplificado: cabeçalho com CET/CESH/taxas + resumo, um banco por folha. */
-export function baixarSimulacaoSimplificadaPDF({ simulacao: s, bancos }: SimulacaoPdfInput) {
+export function baixarSimulacaoSimplificadaPDF({
+  simulacao: s,
+  bancos,
+  docLabel,
+  filePrefix,
+  dataLabel,
+}: SimulacaoPdfInput) {
   const lista = bancosParaExtrato(bancos);
   const doc = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
   const pageW = doc.internal.pageSize.getWidth();
@@ -314,7 +332,7 @@ export function baixarSimulacaoSimplificadaPDF({ simulacao: s, bancos }: Simulac
     const d = extrairDetalheBanco(b?.raw_response);
     drawClienteHeader(doc, pageW);
     let y = HEADER_H + 26;
-    y = drawTituloExtrato(doc, pageW, s, y);
+    y = drawTituloExtrato(doc, pageW, s, y, docLabel, dataLabel);
     y = drawFaixaBanco(doc, pageW, b?.nome_banco ?? "Banco", y);
     y = drawDadosCliente(doc, pageW, s, y);
     y = drawInfoFinanciamento(doc, pageW, s, b, d, y);
@@ -360,11 +378,17 @@ export function baixarSimulacaoSimplificadaPDF({ simulacao: s, bancos }: Simulac
     drawFooter(doc, pageW, pageH, p, total);
   }
 
-  return salvar(doc, s, "simplificada");
+  return salvar(doc, s, "simplificada", filePrefix);
 }
 
 /** Baixa o extrato detalhado: cabeçalho + TODAS as parcelas, um banco por folha. */
-export function baixarSimulacaoDetalhadaPDF({ simulacao: s, bancos }: SimulacaoPdfInput) {
+export function baixarSimulacaoDetalhadaPDF({
+  simulacao: s,
+  bancos,
+  docLabel,
+  filePrefix,
+  dataLabel,
+}: SimulacaoPdfInput) {
   const lista = bancosParaExtrato(bancos);
   const doc = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
   const pageW = doc.internal.pageSize.getWidth();
@@ -377,7 +401,7 @@ export function baixarSimulacaoDetalhadaPDF({ simulacao: s, bancos }: SimulacaoP
 
     drawClienteHeader(doc, pageW);
     let y = HEADER_H + 26;
-    y = drawTituloExtrato(doc, pageW, s, y);
+    y = drawTituloExtrato(doc, pageW, s, y, docLabel, dataLabel);
     y = drawFaixaBanco(doc, pageW, nomeBanco, y);
     y = drawDadosCliente(doc, pageW, s, y);
     y = drawInfoFinanciamento(doc, pageW, s, b, d, y);
@@ -455,11 +479,12 @@ export function baixarSimulacaoDetalhadaPDF({ simulacao: s, bancos }: SimulacaoP
     drawFooter(doc, pageW, pageH, p, total);
   }
 
-  return salvar(doc, s, "detalhada");
+  return salvar(doc, s, "detalhada", filePrefix);
 }
 
-function salvar(doc: jsPDF, s: any, tipo: string): jsPDF {
-  const nome = `simulacao-${s.numero_simulacao ?? ""}-${tipo}`
+function salvar(doc: jsPDF, s: any, tipo: string, filePrefix = "simulacao"): jsPDF {
+  const numero = s.numero_proposta ?? s.numero_simulacao ?? "";
+  const nome = `${filePrefix}-${numero}-${tipo}`
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-");
   doc.save(`agilliza-${nome}.pdf`);

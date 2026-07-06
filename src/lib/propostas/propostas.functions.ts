@@ -154,9 +154,30 @@ export const obterProposta = createServerFn({ method: "GET" })
         .order("created_at", { ascending: false }),
     ]);
 
+    // Anexa o detalhamento (raw_response) da simulação de origem a cada banco,
+    // permitindo gerar o extrato detalhado (parcelas, CET, CESH) na proposta.
+    const bancosProp = (bancos.data ?? []) as any[];
+    const simBancoIds = bancosProp
+      .map((b) => b.simulacao_banco_id)
+      .filter((v): v is string => Boolean(v));
+    if (simBancoIds.length) {
+      const { data: simBancos } = await supabase
+        .from("simulacao_bancos")
+        .select("id, raw_response")
+        .in("id", simBancoIds);
+      const rawPorId = new Map<string, any>(
+        (simBancos ?? []).map((s: any) => [s.id, s.raw_response]),
+      );
+      for (const b of bancosProp) {
+        if (b.simulacao_banco_id && b.raw_response == null) {
+          b.raw_response = rawPorId.get(b.simulacao_banco_id) ?? null;
+        }
+      }
+    }
+
     return {
       proposta,
-      bancos: bancos.data ?? [],
+      bancos: bancosProp,
       envolvidos: envolvidos.data ?? [],
       documentos: documentos.data ?? [],
       followups: followups.data ?? [],

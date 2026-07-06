@@ -64,6 +64,20 @@ import {
 import { PipelineStepper } from "@/components/propostas/pipeline-stepper";
 import { PropostaStatusBadge } from "@/components/propostas/status-badge";
 import { ToneBadge } from "@/components/crm/tone-badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ChevronDown } from "lucide-react";
+import {
+  baixarPropostaSimplificadaPDF,
+  baixarPropostaDetalhadaPDF,
+  baixarPropostaConsolidadoPDF,
+} from "@/lib/propostas/proposta-pdf";
 import { TRANSICOES, STATUS_EDITAVEIS, type PropostaStatus } from "@/lib/propostas/state-machine";
 import { statusProposta } from "@/components/propostas/status";
 import { formatBRL } from "@/lib/simulacao/format";
@@ -390,6 +404,36 @@ function AcoesTopo({
           Atualizar status
         </Button>
       )}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button size="sm" variant="secondary">
+            <Download className="mr-1 h-4 w-4" /> Baixar PDF
+            <ChevronDown className="ml-1 h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-72">
+          <DropdownMenuLabel>Extrato para o cliente</DropdownMenuLabel>
+          <DropdownMenuItem
+            onClick={() => baixarPropostaSimplificadaPDF({ proposta, bancos })}
+            disabled={(bancos ?? []).length === 0}
+          >
+            Proposta simplificada
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => baixarPropostaDetalhadaPDF({ proposta, bancos })}
+            disabled={(bancos ?? []).length === 0}
+          >
+            Proposta detalhada (todas as parcelas)
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            onClick={() => baixarPropostaConsolidadoPDF({ proposta, bancos })}
+            disabled={(bancos ?? []).length === 0}
+          >
+            Comparativo consolidado (interno)
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
       {proximos.map((s) => (
         <Button key={s} size="sm" variant="secondary" onClick={() => mover(s)} disabled={busy}>
           → {statusProposta(s).label}
