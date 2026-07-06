@@ -309,6 +309,8 @@ function Pagina() {
               renda_total_declarada:
                 c.renda_total_declarada != null ? String(c.renda_total_declarada) : "",
               uf_interesse: c.uf_interesse ?? "",
+              utiliza_fgts: (c as any).utiliza_fgts ?? false,
+              fg_autorizacao_dados: (c as any).fg_autorizacao_dados ?? false,
               origem: c.origem,
             }}
           />
