@@ -53,6 +53,7 @@ function Pagina() {
   const { id } = Route.useParams();
   const router = useRouter();
   const qc = useQueryClient();
+  const [pdfDialogAberto, setPdfDialogAberto] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ["simulacao", id],
