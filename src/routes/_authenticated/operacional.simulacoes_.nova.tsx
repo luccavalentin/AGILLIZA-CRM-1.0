@@ -129,6 +129,13 @@ function Pagina() {
     );
   }, [bancos, mostrarRapida, w.valor_financiamento, w.prazo_meses]);
 
+  // Melhor taxa (menor) entre os bancos ativos, usada para estimar a renda mínima.
+  const melhorTaxaAno = useMemo(() => {
+    if (!bancos || bancos.length === 0) return 0.1199;
+    return Math.min(...bancos.map((b) => taxaAnoDeBanco(b.codigo_banco)));
+  }, [bancos]);
+
+
   const maxPrazoIdade = useMemo(
     () => prazoMaximoPorIdade(w.data_nascimento),
     [w.data_nascimento],
