@@ -616,7 +616,7 @@ function Creditos({
 function CreditoDialog({ onMudou }: { onMudou: () => void }) {
   const [open, setOpen] = useState(false);
   const [data, setData] = useState(hoje());
-  const [valor, setValor] = useState("0,00");
+  const [valor, setValor] = useState("");
   const [descricao, setDescricao] = useState("");
   const [salvando, setSalvando] = useState(false);
 
