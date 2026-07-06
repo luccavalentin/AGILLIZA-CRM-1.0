@@ -50,6 +50,7 @@ interface WizardState {
   possui_imovel_escolhido: boolean | null;
   data_nascimento: string;
   prazo_meses: number;
+  renda_familiar: number;
 }
 
 function Pagina() {
@@ -63,9 +64,11 @@ function Pagina() {
     possui_imovel_escolhido: null,
     data_nascimento: "",
     prazo_meses: 360,
+    renda_familiar: 0,
   });
   const [mostrarRapida, setMostrarRapida] = useState(false);
   const [entradaTocada, setEntradaTocada] = useState(false);
+
 
   const { data: bancos } = useQuery({
     queryKey: ["bancos-ativos"],
