@@ -40,6 +40,9 @@ import { assertModuloPermitido } from "@/lib/route-guards";
 
 export const Route = createFileRoute("/_authenticated/admin/pessoas")({
   head: () => ({ meta: [{ title: "Pessoas do meu ecossistema — Agilliza" }] }),
+  validateSearch: (search: Record<string, unknown>): { tab?: "pessoas" | "regras" } => ({
+    tab: search.tab === "regras" ? "regras" : undefined,
+  }),
   beforeLoad: () => assertModuloPermitido("admin.pessoas"),
   component: PessoasPage,
 });
