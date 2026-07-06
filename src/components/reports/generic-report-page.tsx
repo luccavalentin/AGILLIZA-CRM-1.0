@@ -139,7 +139,11 @@ export function GenericReportPage({
               <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                 {data.charts.map((c) => (
                   <ChartCard key={c.titulo} titulo={c.titulo} subtitulo={c.subtitulo}>
-                    <ReportChartView chart={c} />
+                    <ReportChartView
+                      chart={c}
+                      colorByBank={/banco/i.test(c.titulo)}
+                    />
+
                   </ChartCard>
                 ))}
               </div>
