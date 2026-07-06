@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/table";
 import { ToneBadge } from "@/components/crm/tone-badge";
 import { SimulacaoStatusBadge, BancoStatusBadge } from "@/components/simulacao/status-badge";
+import { DetalheBancoDialog } from "@/components/simulacao/detalhe-banco-dialog";
 import { formatBRL, formatPercent } from "@/lib/simulacao/format";
 import { baixarSimulacaoPDF } from "@/lib/simulacao/simulacao-pdf";
 
@@ -175,13 +176,16 @@ function Pagina() {
                     <TableCell className="text-right tabular-nums">{formatBRL(b.valor_financiamento_max)}</TableCell>
                     <TableCell className="text-right tabular-nums">{formatBRL(b.valor_iof)}</TableCell>
                     <TableCell className="text-right">
-                      <Button
-                        size="sm"
-                        disabled={b.status_banco !== "simulada" || criandoBanco !== null}
-                        onClick={() => criar(b.banco_id)}
-                      >
-                        {criandoBanco === b.banco_id ? "Criando…" : "Criar proposta"}
-                      </Button>
+                      <div className="flex items-center justify-end gap-1">
+                        <DetalheBancoDialog banco={b} />
+                        <Button
+                          size="sm"
+                          disabled={b.status_banco !== "simulada" || criandoBanco !== null}
+                          onClick={() => criar(b.banco_id)}
+                        >
+                          {criandoBanco === b.banco_id ? "Criando…" : "Criar proposta"}
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
