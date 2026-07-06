@@ -580,7 +580,7 @@ function TabResumo({
                 <TableCell>
                   <Checkbox
                     checked={b.selecionado}
-                    disabled={b.status_banco === "enviada"}
+                    disabled={bancoJaEnviado(b)}
                     onCheckedChange={() => selecionar(b.id)}
                     aria-label={`Selecionar ${b.nome_banco}`}
                   />
