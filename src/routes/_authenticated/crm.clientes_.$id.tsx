@@ -27,6 +27,7 @@ import {
   definirEtapa,
 } from "@/lib/crm/clientes.functions";
 import { formatarDocumento, mascararDocumento, formatarCelular } from "@/lib/crm/documento";
+import { usePipelineRealtime } from "@/hooks/use-pipeline-realtime";
 
 export const Route = createFileRoute("/_authenticated/crm/clientes_/$id")({
   head: () => ({ meta: [{ title: "Cliente — Agilliza" }] }),
