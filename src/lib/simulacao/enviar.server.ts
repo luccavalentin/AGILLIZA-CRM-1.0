@@ -10,6 +10,7 @@ import {
   sanitizarMensagemErro,
 } from "./homefin.server";
 import { humanizarErroBanco } from "./bank-error-humanizer";
+import { prazoMaximoParaProponentes, PRAZO_MIN } from "./prazo";
 
 interface EnviarArgs {
   simulacaoId: string;
