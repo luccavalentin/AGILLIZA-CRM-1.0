@@ -3,11 +3,14 @@
  *
  * Regra de idade (SFH/SBPE): a soma da idade do proponente mais o prazo do
  * financiamento não pode ultrapassar o teto de idade ao TÉRMINO do contrato.
- * O teto legal é de 80 anos e 6 meses (966 meses). Cada instituição financeira
- * (IF) valida essa regra, mas todas contam a idade de forma "corrida": o mês em
- * curso do proponente já é considerado como iniciado (idade arredondada para
- * cima). Por isso o Bradesco, o Santander e o Itaú recusam um prazo que a conta
- * "por meses cheios" ainda consideraria válido (ex.: 285 quando o máximo é 284).
+ * O teto legal máximo é de 80 anos e 6 meses (966 meses), mas as instituições
+ * divergem: Bradesco e Santander aceitam 80 anos e 6 meses, enquanto o Itaú
+ * usa o teto de 80 anos exatos (960 meses). Como enviamos o MESMO prazo para
+ * todos os bancos numa única simulação, adotamos o teto mais restritivo (80
+ * anos = 960 meses); caso contrário o Itaú recusa o prazo e retorna um "Erro
+ * interno do servidor" genérico. Todas as IFs contam a idade de forma
+ * "corrida": o mês em curso do proponente já é considerado como iniciado
+ * (idade arredondada para cima).
  *
  * Para que a mesma simulação/proposta seja aceita por TODAS as IFs sem erro,
  * calculamos o prazo pela regra mais restritiva (idade corrida) e, quando há
@@ -18,8 +21,12 @@
 export const PRAZO_MIN = 60;
 export const PRAZO_MAX = 420;
 
-/** Idade máxima permitida ao término do contrato: 80 anos e 6 meses. */
-export const IDADE_MAX_TERMINO_MESES = 80 * 12 + 6; // 966
+/**
+ * Idade máxima permitida ao término do contrato. Usamos o teto mais restritivo
+ * entre as IFs — o Itaú, com 80 anos exatos (960 meses) — para que o mesmo
+ * prazo seja aceito por Bradesco, Santander e Itaú sem erro.
+ */
+export const IDADE_MAX_TERMINO_MESES = 80 * 12; // 960
 
 function parseData(dataNascimento: string): Date | null {
   if (!dataNascimento) return null;
@@ -128,7 +135,7 @@ export function ajustarPrazoPorIdade(
               maximoPermitido === 1 ? "mês" : "meses"
             } (${formatarMeses(
               maximoPermitido,
-            )}), pois a soma da idade com o prazo não pode ultrapassar 80 anos e 6 meses ao fim do contrato — regra que todas as instituições financeiras validam. Ajustamos o campo automaticamente.`,
+            )}), pois a soma da idade com o prazo não pode ultrapassar 80 anos ao fim do contrato — regra da instituição mais restritiva. Ajustamos o campo automaticamente.`,
     };
   }
 
