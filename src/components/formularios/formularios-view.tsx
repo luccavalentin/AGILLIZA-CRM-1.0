@@ -37,6 +37,7 @@ import {
   excluirFormulario,
   urlFormulario,
 } from "@/lib/formularios/formularios.functions";
+import { DpsView } from "@/components/formularios/dps-view";
 
 export const CATEGORIA_LABEL: Record<BancoFormulario, string> = {
   itau: "Itaú",
@@ -66,6 +67,11 @@ async function uploadPdf(banco: BancoFormulario, file: File): Promise<string> {
 }
 
 export function FormulariosView({ banco }: { banco: BancoFormulario }) {
+  if (banco === "dps") return <DpsView />;
+  return <FormulariosLista banco={banco} />;
+}
+
+function FormulariosLista({ banco }: { banco: BancoFormulario }) {
   const listar = useServerFn(listarFormularios);
   const qc = useQueryClient();
   const { data, isLoading } = useQuery({
