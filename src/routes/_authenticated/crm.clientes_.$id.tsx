@@ -22,6 +22,7 @@ import {
   getEndereco,
   listarHistorico,
   getClienteNegocios,
+  definirEtapa,
 } from "@/lib/crm/clientes.functions";
 import { formatarDocumento, mascararDocumento, formatarCelular } from "@/lib/crm/documento";
 
