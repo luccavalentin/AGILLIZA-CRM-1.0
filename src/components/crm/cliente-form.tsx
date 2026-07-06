@@ -523,12 +523,18 @@ export function ClienteForm({
           </div>
           <div className="space-y-1.5">
             <Label>UF de interesse</Label>
-            <Input
-              maxLength={2}
-              value={v.uf_interesse}
-              onChange={(e) => set("uf_interesse", e.target.value.toUpperCase())}
-              placeholder="SP"
-            />
+            <Select value={v.uf_interesse || undefined} onValueChange={(x) => set("uf_interesse", x)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione" />
+              </SelectTrigger>
+              <SelectContent>
+                {OPCOES_UF.map((o) => (
+                  <SelectItem key={o} value={o}>
+                    {o}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </CardContent>
       </Card>
@@ -755,11 +761,18 @@ export function ClienteForm({
           </div>
           <div className="space-y-1.5">
             <Label>UF</Label>
-            <Input
-              maxLength={2}
-              value={end.uf}
-              onChange={(e) => setEnd((p) => ({ ...p, uf: e.target.value.toUpperCase() }))}
-            />
+            <Select value={end.uf || undefined} onValueChange={(x) => setEnd((p) => ({ ...p, uf: x }))}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione" />
+              </SelectTrigger>
+              <SelectContent>
+                {OPCOES_UF.map((o) => (
+                  <SelectItem key={o} value={o}>
+                    {o}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </CardContent>
       </Card>
