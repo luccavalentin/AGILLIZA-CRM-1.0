@@ -127,6 +127,7 @@ export const navInterno: NavGroup[] = [
           { label: "DPS", icon: FileSignature, to: "/formularios/dps" },
         ],
       },
+      { label: "Controle de Matrículas", icon: ClipboardList, to: "/matriculas" },
     ],
   },
   {
