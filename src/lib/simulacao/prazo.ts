@@ -135,7 +135,7 @@ export function ajustarPrazoPorIdade(
               maximoPermitido === 1 ? "mês" : "meses"
             } (${formatarMeses(
               maximoPermitido,
-            )}), pois a soma da idade com o prazo não pode ultrapassar 80 anos ao fim do contrato — regra da instituição mais restritiva. Ajustamos o campo automaticamente.`,
+            )}), respeitando o limite de idade ao fim do contrato da instituição mais restritiva (Itaú). Ajustamos o campo automaticamente.`,
     };
   }
 
