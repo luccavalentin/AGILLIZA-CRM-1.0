@@ -9,6 +9,11 @@ import { AGILLIZA_LOGO_LIGHT, AGILLIZA_LOGO_RATIO } from "@/lib/relatorios/brand
 interface SimulacaoPdfInput {
   simulacao: any;
   bancos: any[];
+  /** Rótulos opcionais para reutilizar o layout em outros documentos (ex.: Propostas). */
+  docLabel?: string;
+  numeroDoc?: string;
+  filePrefix?: string;
+  dataLabel?: string;
 }
 
 const LABEL_STATUS_BANCO: Record<string, string> = {
