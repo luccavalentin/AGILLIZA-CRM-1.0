@@ -588,6 +588,67 @@ export async function cancelarPropostaHomefinImpl({
   );
 }
 
+/** Rótulos amigáveis (pt-BR) para os campos que os bancos costumam recusar. */
+const ROTULO_CAMPO: Record<string, string> = {
+  maritalstatus: "Estado civil",
+  tipoestadocivil: "Estado civil",
+  name: "Nome",
+  nome: "Nome",
+  nomeparticipante: "Nome do participante",
+  cpf: "CPF",
+  cnpj: "CNPJ",
+  cpfcnpj: "CPF/CNPJ",
+  document: "Documento",
+  numerodocumento: "Número do documento",
+  orgaoexpedidor: "Órgão expedidor",
+  ufexpedicao: "UF de expedição",
+  dataexpedicao: "Data de expedição",
+  birthdate: "Data de nascimento",
+  datanascimento: "Data de nascimento",
+  profession: "Profissão",
+  nomeprofissao: "Profissão",
+  company: "Empresa",
+  nomeempresaprofissao: "Empresa",
+  nomemae: "Nome da mãe",
+  income: "Renda",
+  renda: "Renda",
+  email: "E-mail",
+  phone: "Celular",
+  celular: "Celular",
+  cep: "CEP",
+  logradouro: "Logradouro",
+  numerologradouro: "Número",
+  complemento: "Complemento",
+  complementologradouro: "Complemento",
+  bairro: "Bairro",
+  municipio: "Município",
+  cidade: "Cidade",
+  uf: "UF",
+  gender: "Sexo",
+  tiposexo: "Sexo",
+};
+
+function rotularCampo(nome: unknown): string | null {
+  const bruto = String(nome ?? "").trim();
+  if (!bruto) return null;
+  const chave = bruto
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]/g, "");
+  return ROTULO_CAMPO[chave] ?? bruto;
+}
+
+/** Formata "campo: mensagem" incluindo o nome do campo quando disponível. */
+function formatarErroCampo(f: any): string | null {
+  const msg = f?.message ?? f?.mensagem ?? f?.descricao ?? null;
+  const rotulo = rotularCampo(f?.field ?? f?.fieldName ?? f?.campo ?? f?.name ?? f?.propriedade);
+  if (msg && rotulo && !normalizarTexto(String(msg)).includes(normalizarTexto(rotulo))) {
+    return `${rotulo}: ${msg}`;
+  }
+  return msg ? String(msg) : rotulo;
+}
+
 /** Extrai mensagem de erro legível do campo retornoIntegracao do banco. */
 function extrairErroRetorno(retorno: unknown): string | null {
   if (!retorno) return null;
@@ -602,7 +663,7 @@ function extrairErroRetorno(retorno: unknown): string | null {
   if (obj && Array.isArray(obj.fields) && obj.fields.length > 0) {
     return (
       obj.fields
-        .map((f: any) => f?.message)
+        .map((f: any) => formatarErroCampo(f))
         .filter(Boolean)
         .join("; ") ||
       obj.message ||
@@ -614,10 +675,10 @@ function extrairErroRetorno(retorno: unknown): string | null {
   const error = obj?.error;
   if (typeof error === "string") return error;
   if (error && typeof error === "object") {
-    if (error.message) return String(error.message);
     if (Array.isArray(error.fields) && error.fields.length > 0) {
-      return error.fields.map((f: any) => f?.message).filter(Boolean).join("; ") || null;
+      return error.fields.map((f: any) => formatarErroCampo(f)).filter(Boolean).join("; ") || null;
     }
+    if (error.message) return String(error.message);
   }
   return null;
 }
