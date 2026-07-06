@@ -3,7 +3,7 @@ import { ToneBadge, type Tone } from "@/components/crm/tone-badge";
 const MAPA: Record<string, { tone: Tone; label: string }> = {
   rascunho: { tone: "muted", label: "Rascunho" },
   enviando: { tone: "info", label: "Enviando…" },
-  simulada: { tone: "success", label: "Simulada" },
+  simulada: { tone: "success", label: "Simulação" },
   parcialmente_simulada: { tone: "warning", label: "Parcial" },
   erro_banco: { tone: "danger", label: "Erro no banco" },
   expirada: { tone: "muted", label: "Expirada" },
