@@ -5,6 +5,7 @@ import { RefreshCw, ArrowUpRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { corDoBanco } from "@/lib/bancos/cores";
 
 type Tone = "brand" | "success" | "warning" | "danger" | "neutral";
 
