@@ -140,6 +140,22 @@ function Pagina() {
     [f.data_nascimento],
   );
 
+  // Melhor taxa (menor) entre os bancos selecionados — estima a renda mínima.
+  const melhorTaxaAno = useMemo(() => {
+    const selecionados = (bancos ?? []).filter((b) => f.bancos_ids.includes(b.id));
+    const base = selecionados.length > 0 ? selecionados : (bancos ?? []);
+    if (base.length === 0) return 0.1199;
+    return Math.min(...base.map((b) => taxaAnoDeBanco(b.codigo_banco)));
+  }, [bancos, f.bancos_ids]);
+
+  // Renda total considerando composição de renda do cônjuge/coobrigado.
+  const rendaConsiderada = useMemo(
+    () => (Number(f.renda_total) || 0) + (f.compoe_renda ? Number(f.renda_conjuge) || 0 : 0),
+    [f.renda_total, f.compoe_renda, f.renda_conjuge],
+  );
+
+
+
   /** Aplica o prazo digitado, ajustando automaticamente pela regra de idade. */
   function definirPrazo(valor: number) {
     if (!Number.isFinite(valor) || valor <= 0) {
