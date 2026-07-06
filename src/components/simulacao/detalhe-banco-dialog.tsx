@@ -65,7 +65,6 @@ export function DetalheBancoDialog({ banco }: { banco: any }) {
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 <InfoCard rotulo="Taxa de juros" valor={pct(detalhe!.taxaJurosAno)} />
                 <InfoCard rotulo="CET" valor={pct(detalhe!.cet)} />
-                <InfoCard rotulo="CESH" valor={pct(detalhe!.cesh)} />
                 <InfoCard
                   rotulo="Taxa mensal"
                   valor={
