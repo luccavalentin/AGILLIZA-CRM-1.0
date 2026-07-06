@@ -661,7 +661,7 @@ function CreditoDialog({ onMudou }: { onMudou: () => void }) {
               <Input
                 inputMode="decimal"
                 value={valor}
-                onChange={(e) => setValor(e.target.value)}
+                onChange={(e) => setValor(maskBRLCents(e.target.value))}
                 placeholder="0,00"
               />
             </div>
