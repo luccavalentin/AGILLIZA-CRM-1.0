@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       access_levels: {
         Row: {
+          acesso_tipo: Database["public"]["Enums"]["acesso_tipo"]
           ativo: boolean
           correspondente_id: string | null
           created_at: string
@@ -23,9 +24,11 @@ export type Database = {
           id: string
           is_padrao: boolean
           nome: string
+          papel: Database["public"]["Enums"]["app_role"]
           updated_at: string
         }
         Insert: {
+          acesso_tipo?: Database["public"]["Enums"]["acesso_tipo"]
           ativo?: boolean
           correspondente_id?: string | null
           created_at?: string
@@ -33,9 +36,11 @@ export type Database = {
           id?: string
           is_padrao?: boolean
           nome: string
+          papel?: Database["public"]["Enums"]["app_role"]
           updated_at?: string
         }
         Update: {
+          acesso_tipo?: Database["public"]["Enums"]["acesso_tipo"]
           ativo?: boolean
           correspondente_id?: string | null
           created_at?: string
@@ -43,6 +48,7 @@ export type Database = {
           id?: string
           is_padrao?: boolean
           nome?: string
+          papel?: Database["public"]["Enums"]["app_role"]
           updated_at?: string
         }
         Relationships: []

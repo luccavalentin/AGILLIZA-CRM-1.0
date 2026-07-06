@@ -10,15 +10,7 @@ export const criarSchema = z.object({
   nome: z.string().min(2, "Informe o nome completo."),
   email: z.string().email("E-mail inválido."),
   telefone: z.string().optional(),
-  acesso_tipo: z.enum(["sistema", "portal_parceiro"]),
-  papel: z.enum([
-    "gestor",
-    "comercial",
-    "analista",
-    "imobiliaria",
-    "corretor",
-  ]),
-  nivel_acesso_id: z.string().uuid().optional().nullable(),
+  nivel_acesso_id: z.string().uuid("Selecione um nível de acesso."),
   dados_parceiro: z
     .object({
       creci: z.string().optional(),
@@ -113,10 +105,6 @@ export const criarPessoaComAcesso = createServerFn({ method: "POST" })
   .handler(async ({ data, context }): Promise<ResultadoCriarPessoa> => {
     const { supabase, userId } = context;
 
-    if (PAPEIS_PROIBIDOS.includes(data.papel as AppRole)) {
-      throw new Error("Papel não permitido.");
-    }
-
     const { data: pode } = await supabase.rpc("pode_gerenciar_pessoas", {
       _user_id: userId,
     });
@@ -129,6 +117,21 @@ export const criarPessoaComAcesso = createServerFn({ method: "POST" })
       .maybeSingle();
     const correspondenteId = me?.correspondente_id;
     if (!correspondenteId) throw new Error("Ecossistema não identificado.");
+
+    // Papel e portal são derivados do nível de acesso selecionado.
+    const { data: nivel } = await supabase
+      .from("access_levels")
+      .select("id, papel, acesso_tipo")
+      .eq("id", data.nivel_acesso_id)
+      .maybeSingle();
+    if (!nivel) throw new Error("Nível de acesso inválido.");
+
+    const papel = (nivel.papel ?? "comercial") as AppRole;
+    const acessoTipo = (nivel.acesso_tipo ?? "sistema") as "sistema" | "portal_parceiro";
+    if (PAPEIS_PROIBIDOS.includes(papel)) {
+      throw new Error("Papel não permitido.");
+    }
+
 
     const senha = gerarSenhaTemporaria();
 
@@ -144,9 +147,10 @@ export const criarPessoaComAcesso = createServerFn({ method: "POST" })
           nome: data.nome,
           telefone: data.telefone ?? null,
           correspondente_id: correspondenteId,
-          papel: data.papel,
-          acesso_tipo: data.acesso_tipo,
-          nivel_acesso_id: data.nivel_acesso_id ?? null,
+          papel,
+          acesso_tipo: acessoTipo,
+          nivel_acesso_id: data.nivel_acesso_id,
+
         },
       });
 
@@ -166,9 +170,10 @@ export const criarPessoaComAcesso = createServerFn({ method: "POST" })
       entidadeId: created.user.id,
       payloadNovo: {
         nome: data.nome,
-        acesso_tipo: data.acesso_tipo,
-        papel: data.papel,
+        acesso_tipo: acessoTipo,
+        papel,
       },
+
     });
 
     return { email: data.email, senha_temporaria: senha };

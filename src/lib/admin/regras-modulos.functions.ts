@@ -243,6 +243,27 @@ export interface PermissaoAtual {
   escopo_dados: EscopoDados;
 }
 
+export type PapelNivel =
+  | "gestor"
+  | "comercial"
+  | "analista"
+  | "imobiliaria"
+  | "corretor";
+export type AcessoTipo = "sistema" | "portal_parceiro";
+
+/** Papéis disponíveis por portal. */
+export const PAPEIS_POR_PORTAL: Record<AcessoTipo, { value: PapelNivel; label: string }[]> = {
+  sistema: [
+    { value: "gestor", label: "Gestor" },
+    { value: "comercial", label: "Comercial" },
+    { value: "analista", label: "Analista" },
+  ],
+  portal_parceiro: [
+    { value: "corretor", label: "Corretor" },
+    { value: "imobiliaria", label: "Imobiliária" },
+  ],
+};
+
 export interface NivelAcesso {
   id: string;
   nome: string;
@@ -250,6 +271,8 @@ export interface NivelAcesso {
   ativo: boolean;
   is_padrao: boolean;
   editavel: boolean;
+  papel: PapelNivel;
+  acesso_tipo: AcessoTipo;
   permissoes: PermissaoAtual[];
 }
 
@@ -268,7 +291,7 @@ export const listarNiveisAcesso = createServerFn({ method: "GET" })
 
     const { data: niveis, error } = await supabase
       .from("access_levels")
-      .select("id, nome, descricao, ativo, is_padrao, correspondente_id")
+      .select("id, nome, descricao, ativo, is_padrao, correspondente_id, papel, acesso_tipo")
       .order("is_padrao", { ascending: false })
       .order("nome", { ascending: true });
     if (error) throw new Error(error.message);
@@ -287,6 +310,8 @@ export const listarNiveisAcesso = createServerFn({ method: "GET" })
       descricao: n.descricao,
       ativo: n.ativo,
       is_padrao: n.is_padrao,
+      papel: (n.papel ?? "comercial") as PapelNivel,
+      acesso_tipo: (n.acesso_tipo ?? "sistema") as AcessoTipo,
       // Qualquer usuário que pode gerenciar pessoas edita todos os níveis.
       // Níveis padrão (globais) são clonados automaticamente em uma cópia
       // editável do correspondente na primeira alteração.
@@ -308,11 +333,11 @@ async function forkNivelPadrao(
   supabase: any,
   corresp: string,
   origemId: string,
-  overrides?: { nome?: string; descricao?: string | null },
+  overrides?: { nome?: string; descricao?: string | null; papel?: PapelNivel; acesso_tipo?: AcessoTipo },
 ): Promise<string> {
   const { data: origem, error: erroOrigem } = await supabase
     .from("access_levels")
-    .select("id, nome, descricao")
+    .select("id, nome, descricao, papel, acesso_tipo")
     .eq("id", origemId)
     .maybeSingle();
   if (erroOrigem) throw new Error(erroOrigem.message);
@@ -323,6 +348,8 @@ async function forkNivelPadrao(
     .insert({
       nome: overrides?.nome ?? origem.nome,
       descricao: overrides?.descricao ?? origem.descricao ?? null,
+      papel: overrides?.papel ?? origem.papel ?? "comercial",
+      acesso_tipo: overrides?.acesso_tipo ?? origem.acesso_tipo ?? "sistema",
       correspondente_id: corresp,
       ativo: true,
       is_padrao: false,
@@ -355,14 +382,17 @@ async function forkNivelPadrao(
  *  ou um baseline "somente leitura" (view = próprios) em todos os módulos. */
 export const criarNivelAcesso = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { nome: string; descricao?: string; copiar_de?: string }) =>
-    z
-      .object({
-        nome: z.string().trim().min(2).max(60),
-        descricao: z.string().trim().max(200).optional(),
-        copiar_de: z.string().uuid().optional(),
-      })
-      .parse(d),
+  .inputValidator(
+    (d: { nome: string; descricao?: string; copiar_de?: string; papel?: PapelNivel; acesso_tipo?: AcessoTipo }) =>
+      z
+        .object({
+          nome: z.string().trim().min(2).max(60),
+          descricao: z.string().trim().max(200).optional(),
+          copiar_de: z.string().uuid().optional(),
+          papel: z.enum(["gestor", "comercial", "analista", "imobiliaria", "corretor"]).default("comercial"),
+          acesso_tipo: z.enum(["sistema", "portal_parceiro"]).default("sistema"),
+        })
+        .parse(d),
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
@@ -370,7 +400,7 @@ export const criarNivelAcesso = createServerFn({ method: "POST" })
     if (!corresp) throw new Error("Correspondente não encontrado para o usuário.");
     const { data: novo, error } = await supabase
       .from("access_levels")
-      .insert({ nome: data.nome, descricao: data.descricao ?? null, correspondente_id: corresp, ativo: true, is_padrao: false })
+      .insert({ nome: data.nome, descricao: data.descricao ?? null, papel: data.papel, acesso_tipo: data.acesso_tipo, correspondente_id: corresp, ativo: true, is_padrao: false })
       .select("id")
       .single();
     if (error) throw new Error(error.message);
@@ -429,15 +459,17 @@ export const criarNivelAcesso = createServerFn({ method: "POST" })
     return { id: novo.id };
   });
 
-/** Atualiza nome/descrição de um nível de acesso customizado. */
+/** Atualiza nome/descrição/papel/portal de um nível de acesso customizado. */
 export const atualizarNivelAcesso = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { id: string; nome: string; descricao?: string }) =>
+  .inputValidator((d: { id: string; nome: string; descricao?: string; papel?: PapelNivel; acesso_tipo?: AcessoTipo }) =>
     z
       .object({
         id: z.string().uuid(),
         nome: z.string().trim().min(2).max(60),
         descricao: z.string().trim().max(200).optional(),
+        papel: z.enum(["gestor", "comercial", "analista", "imobiliaria", "corretor"]).optional(),
+        acesso_tipo: z.enum(["sistema", "portal_parceiro"]).optional(),
       })
       .parse(d),
   )
@@ -445,7 +477,7 @@ export const atualizarNivelAcesso = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const { data: nivel } = await supabase
       .from("access_levels")
-      .select("id, is_padrao, nome, descricao")
+      .select("id, is_padrao, nome, descricao, papel, acesso_tipo")
       .eq("id", data.id)
       .maybeSingle();
     if (!nivel) throw new Error("Nível de acesso não encontrado.");
@@ -458,6 +490,8 @@ export const atualizarNivelAcesso = createServerFn({ method: "POST" })
       const novoId = await forkNivelPadrao(supabase, corresp, data.id, {
         nome: data.nome,
         descricao: data.descricao ?? null,
+        papel: (data.papel ?? nivel.papel) as PapelNivel,
+        acesso_tipo: (data.acesso_tipo ?? nivel.acesso_tipo) as AcessoTipo,
       });
       const { registrarAuditoria } = await import("@/lib/admin/audit.server");
       await registrarAuditoria({
@@ -474,7 +508,12 @@ export const atualizarNivelAcesso = createServerFn({ method: "POST" })
 
     const { error } = await supabase
       .from("access_levels")
-      .update({ nome: data.nome, descricao: data.descricao ?? null })
+      .update({
+        nome: data.nome,
+        descricao: data.descricao ?? null,
+        ...(data.papel ? { papel: data.papel } : {}),
+        ...(data.acesso_tipo ? { acesso_tipo: data.acesso_tipo } : {}),
+      })
       .eq("id", data.id);
     if (error) throw new Error(error.message);
 

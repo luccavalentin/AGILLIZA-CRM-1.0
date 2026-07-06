@@ -5,13 +5,16 @@ import { Plus, Save, Loader2, ShieldCheck, Lock, Pencil, Trash2 } from "lucide-r
 import { toast } from "sonner";
 import {
   CATALOGO_MODULOS,
+  PAPEIS_POR_PORTAL,
   listarNiveisAcesso,
   criarNivelAcesso,
   atualizarNivelAcesso,
   excluirNivelAcesso,
   salvarPermissoes,
+  type AcessoTipo,
   type EscopoDados,
   type NivelAcesso,
+  type PapelNivel,
 } from "@/lib/admin/regras-modulos.functions";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -52,6 +55,19 @@ const ESCOPOS: { value: EscopoDados; label: string }[] = [
   { value: "proprios", label: "Próprios" },
 ];
 
+const PORTAIS: { value: AcessoTipo; label: string }[] = [
+  { value: "sistema", label: "Portal do Correspondente" },
+  { value: "portal_parceiro", label: "Portal do Parceiro" },
+];
+
+const PAPEL_LABEL: Record<string, string> = {
+  gestor: "Gestor",
+  comercial: "Comercial",
+  analista: "Analista",
+  corretor: "Corretor",
+  imobiliaria: "Imobiliária",
+};
+
 const chave = (modulo: string, acao: string) => `${modulo}:${acao}`;
 
 function estadoInicial(nivel: NivelAcesso): MatrizEstado {
@@ -89,10 +105,14 @@ export function RegrasModulosPanel() {
   const [novoNome, setNovoNome] = useState("");
   const [novaDesc, setNovaDesc] = useState("");
   const [copiarDe, setCopiarDe] = useState<string>("baseline");
+  const [novoPortal, setNovoPortal] = useState<AcessoTipo>("sistema");
+  const [novoPapel, setNovoPapel] = useState<PapelNivel>("comercial");
 
   const [editarOpen, setEditarOpen] = useState(false);
   const [editNome, setEditNome] = useState("");
   const [editDesc, setEditDesc] = useState("");
+  const [editPortal, setEditPortal] = useState<AcessoTipo>("sistema");
+  const [editPapel, setEditPapel] = useState<PapelNivel>("comercial");
 
   const [excluirOpen, setExcluirOpen] = useState(false);
 
@@ -110,13 +130,16 @@ export function RegrasModulosPanel() {
   }
 
   const criarMut = useMutation({
-    mutationFn: (v: { nome: string; descricao?: string; copiar_de?: string }) => criar({ data: v }),
+    mutationFn: (v: { nome: string; descricao?: string; copiar_de?: string; papel: PapelNivel; acesso_tipo: AcessoTipo }) =>
+      criar({ data: v }),
     onSuccess: async (r) => {
       toast.success("Nível de acesso criado com permissões iniciais.");
       setNovoOpen(false);
       setNovoNome("");
       setNovaDesc("");
       setCopiarDe("baseline");
+      setNovoPortal("sistema");
+      setNovoPapel("comercial");
       await qc.invalidateQueries({ queryKey: ["niveis-acesso"] });
       setSelecionadoId(r.id);
     },
@@ -124,7 +147,8 @@ export function RegrasModulosPanel() {
   });
 
   const atualizarMut = useMutation({
-    mutationFn: (v: { id: string; nome: string; descricao?: string }) => atualizar({ data: v }),
+    mutationFn: (v: { id: string; nome: string; descricao?: string; papel: PapelNivel; acesso_tipo: AcessoTipo }) =>
+      atualizar({ data: v }),
     onSuccess: async (r: any) => {
       toast.success(
         r?.clonado
@@ -200,7 +224,15 @@ export function RegrasModulosPanel() {
     if (!selecionado) return;
     setEditNome(selecionado.nome);
     setEditDesc(selecionado.descricao ?? "");
+    setEditPortal(selecionado.acesso_tipo);
+    setEditPapel(selecionado.papel);
     setEditarOpen(true);
+  }
+
+  // Garante papel válido ao trocar de portal.
+  function ajustarPapel(portal: AcessoTipo, papel: PapelNivel): PapelNivel {
+    const opcoes = PAPEIS_POR_PORTAL[portal].map((p) => p.value);
+    return opcoes.includes(papel) ? papel : opcoes[0];
   }
 
   const grupos = useMemo(() => {
@@ -255,6 +287,10 @@ export function RegrasModulosPanel() {
                         </Badge>
                       ) : null}
                     </div>
+                    <p className="truncate text-xs text-muted-foreground">
+                      {PAPEL_LABEL[n.papel] ?? n.papel} ·{" "}
+                      {n.acesso_tipo === "portal_parceiro" ? "Parceiro" : "Correspondente"}
+                    </p>
                     {n.descricao ? (
                       <p className="truncate text-xs text-muted-foreground">{n.descricao}</p>
                     ) : null}
@@ -269,8 +305,16 @@ export function RegrasModulosPanel() {
             {selecionado ? (
               <>
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <h2 className="text-lg font-medium text-foreground">{selecionado.nome}</h2>
+                    <Badge variant="outline">
+                      {PAPEL_LABEL[selecionado.papel] ?? selecionado.papel}
+                    </Badge>
+                    <Badge variant="outline">
+                      {selecionado.acesso_tipo === "portal_parceiro"
+                        ? "Portal do Parceiro"
+                        : "Portal do Correspondente"}
+                    </Badge>
                     {selecionado.is_padrao ? (
                       <Badge variant="secondary" className="gap-1">
                         <Lock className="h-3 w-3" /> Padrão
@@ -281,7 +325,7 @@ export function RegrasModulosPanel() {
                     {editavel ? (
                       <>
                         <Button variant="outline" size="sm" onClick={abrirEditar}>
-                          <Pencil className="h-4 w-4" /> Renomear
+                          <Pencil className="h-4 w-4" /> Editar
                         </Button>
                         {!selecionado.is_padrao ? (
                           <Button
@@ -387,6 +431,45 @@ export function RegrasModulosPanel() {
               <Label htmlFor="desc">Descrição</Label>
               <Input id="desc" value={novaDesc} onChange={(e) => setNovaDesc(e.target.value)} placeholder="Opcional" />
             </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Portal</Label>
+                <Select
+                  value={novoPortal}
+                  onValueChange={(v) => {
+                    const p = v as AcessoTipo;
+                    setNovoPortal(p);
+                    setNovoPapel(ajustarPapel(p, novoPapel));
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PORTAIS.map((p) => (
+                      <SelectItem key={p.value} value={p.value}>
+                        {p.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Papel / função</Label>
+                <Select value={novoPapel} onValueChange={(v) => setNovoPapel(v as PapelNivel)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PAPEIS_POR_PORTAL[novoPortal].map((p) => (
+                      <SelectItem key={p.value} value={p.value}>
+                        {p.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
             <div className="space-y-2">
               <Label>Começar as permissões a partir de</Label>
               <Select value={copiarDe} onValueChange={setCopiarDe}>
@@ -414,6 +497,8 @@ export function RegrasModulosPanel() {
                   nome: novoNome.trim(),
                   descricao: novaDesc.trim() || undefined,
                   copiar_de: copiarDe === "baseline" ? undefined : copiarDe,
+                  papel: novoPapel,
+                  acesso_tipo: novoPortal,
                 })
               }
               disabled={novoNome.trim().length < 2 || criarMut.isPending}
@@ -439,12 +524,57 @@ export function RegrasModulosPanel() {
               <Label htmlFor="edit-desc">Descrição</Label>
               <Input id="edit-desc" value={editDesc} onChange={(e) => setEditDesc(e.target.value)} placeholder="Opcional" />
             </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Portal</Label>
+                <Select
+                  value={editPortal}
+                  onValueChange={(v) => {
+                    const p = v as AcessoTipo;
+                    setEditPortal(p);
+                    setEditPapel(ajustarPapel(p, editPapel));
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PORTAIS.map((p) => (
+                      <SelectItem key={p.value} value={p.value}>
+                        {p.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Papel / função</Label>
+                <Select value={editPapel} onValueChange={(v) => setEditPapel(v as PapelNivel)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PAPEIS_POR_PORTAL[editPortal].map((p) => (
+                      <SelectItem key={p.value} value={p.value}>
+                        {p.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </div>
           <DialogFooter>
             <Button
               onClick={() =>
                 selecionado &&
-                atualizarMut.mutate({ id: selecionado.id, nome: editNome.trim(), descricao: editDesc.trim() || undefined })
+                atualizarMut.mutate({
+                  id: selecionado.id,
+                  nome: editNome.trim(),
+                  descricao: editDesc.trim() || undefined,
+                  papel: editPapel,
+                  acesso_tipo: editPortal,
+                })
               }
               disabled={editNome.trim().length < 2 || atualizarMut.isPending}
             >

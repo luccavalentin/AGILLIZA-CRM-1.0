@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Building2, Loader2, Save, UserPlus, X } from "lucide-react";
+import { Loader2, Save, UserPlus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -29,7 +29,6 @@ import {
   type ResultadoCriarPessoa,
 } from "@/lib/admin/pessoas.functions";
 
-type Portal = "correspondente" | "parceiro";
 type MatrizEstado = Record<string, { permitido: boolean; escopo: EscopoDados }>;
 
 const ESCOPOS: { value: EscopoDados; label: string }[] = [
@@ -71,10 +70,6 @@ export function NovaPessoaInline({
 
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
-  const [portal, setPortal] = useState<Portal>("correspondente");
-  const [tipoParceiro, setTipoParceiro] = useState<"imobiliaria" | "corretor">(
-    "corretor",
-  );
   const [creci, setCreci] = useState("");
   const [comissao, setComissao] = useState("");
   const [nivelId, setNivelId] = useState<string>("");
@@ -97,6 +92,7 @@ export function NovaPessoaInline({
     () => (niveis ?? []).find((n) => n.id === nivelId),
     [niveis, nivelId],
   );
+  const isParceiro = nivel?.acesso_tipo === "portal_parceiro";
 
   // Carrega a matriz sempre que o nível muda.
   if (nivel && carregadoPara !== nivel.id) {
@@ -166,16 +162,13 @@ export function NovaPessoaInline({
     criar.mutate({
       nome: nome.trim(),
       email: email.trim(),
-      acesso_tipo: portal === "parceiro" ? "portal_parceiro" : "sistema",
-      papel: portal === "parceiro" ? tipoParceiro : "comercial",
       nivel_acesso_id: nivelId,
-      dados_parceiro:
-        portal === "parceiro"
-          ? {
-              creci: creci.trim() || undefined,
-              comissao_padrao: comissao ? Number(comissao) : undefined,
-            }
-          : undefined,
+      dados_parceiro: isParceiro
+        ? {
+            creci: creci.trim() || undefined,
+            comissao_padrao: comissao ? Number(comissao) : undefined,
+          }
+        : undefined,
     });
   }
 
@@ -217,69 +210,9 @@ export function NovaPessoaInline({
           </div>
         </div>
 
-        {/* Portal de acesso */}
-        <div className="space-y-2">
-          <Label>Portal de acesso</Label>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {(
-              [
-                {
-                  value: "correspondente" as Portal,
-                  titulo: "Portal do Correspondente",
-                  desc: "Equipe interna. Acessa o sistema em /dashboard.",
-                },
-                {
-                  value: "parceiro" as Portal,
-                  titulo: "Portal do Parceiro",
-                  desc: "Imobiliária ou corretor. Acessa apenas /parceiro.",
-                },
-              ]
-            ).map((opt) => {
-              const ativo = portal === opt.value;
-              return (
-                <button
-                  type="button"
-                  key={opt.value}
-                  onClick={() => setPortal(opt.value)}
-                  className={`flex items-start gap-3 rounded-lg border p-3 text-left transition-colors ${
-                    ativo
-                      ? "border-primary bg-primary/5 ring-1 ring-primary"
-                      : "border-border hover:bg-muted/50"
-                  }`}
-                >
-                  <Building2
-                    className={`mt-0.5 h-5 w-5 ${ativo ? "text-primary" : "text-muted-foreground"}`}
-                  />
-                  <div>
-                    <p className="text-sm font-medium">{opt.titulo}</p>
-                    <p className="text-xs text-muted-foreground">{opt.desc}</p>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Campos de parceiro */}
-        {portal === "parceiro" && (
-          <div className="grid gap-4 sm:grid-cols-3">
-            <div className="space-y-2">
-              <Label>Tipo de parceiro</Label>
-              <Select
-                value={tipoParceiro}
-                onValueChange={(v) =>
-                  setTipoParceiro(v as "imobiliaria" | "corretor")
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="corretor">Corretor</SelectItem>
-                  <SelectItem value="imobiliaria">Imobiliária</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+        {/* Campos de parceiro — exibidos quando o nível é do Portal do Parceiro */}
+        {isParceiro && (
+          <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="np-creci">CRECI</Label>
               <Input
@@ -301,9 +234,10 @@ export function NovaPessoaInline({
           </div>
         )}
 
-        {/* Nível de acesso */}
+
+        {/* Nível de acesso — define papel (Gestor, Corretor, etc.) e portal */}
         <div className="space-y-2">
-          <Label>Tipo de acesso (nível)</Label>
+          <Label>Nível de acesso</Label>
           <Select value={nivelId} onValueChange={setNivelId}>
             <SelectTrigger>
               <SelectValue placeholder="Selecione o nível de acesso" />
@@ -312,6 +246,7 @@ export function NovaPessoaInline({
               {(niveis ?? []).map((n) => (
                 <SelectItem key={n.id} value={n.id}>
                   {n.nome}
+                  {n.acesso_tipo === "portal_parceiro" ? " · Parceiro" : " · Correspondente"}
                   {n.is_padrao ? " (padrão)" : ""}
                 </SelectItem>
               ))}
@@ -321,6 +256,7 @@ export function NovaPessoaInline({
             <p className="text-xs text-muted-foreground">{nivel.descricao}</p>
           )}
         </div>
+
 
         {/* Permissões do nível */}
         {nivel && (
