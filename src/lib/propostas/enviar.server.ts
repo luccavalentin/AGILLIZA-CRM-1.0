@@ -157,8 +157,15 @@ export async function enviarPropostaImpl({
     proposta_id: propostaId,
     correspondente_id: prop.correspondente_id,
   };
+
+  // Alguns bancos (ex.: Itaú) rejeitam a proposta quando o proponente está sem
+  // endereço (proponents[0].address.state). Garantimos o endereço do(s)
+  // participante(s) na oportunidade ANTES de incluir as propostas.
+  await garantirEnderecoParticipantes({ prop, idOportunidade: prop.homefin_id_oportunidade, ctx, supabase });
+
   const resultados: EnviarResultado["bancos"] = [];
   let sucesso = 0;
+
 
   for (const b of bancos as any[]) {
     try {
