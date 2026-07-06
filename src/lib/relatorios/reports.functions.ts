@@ -49,6 +49,76 @@ const STATUS_PROPOSTA_LABEL: Record<string, string> = {
 };
 const rotuloStatus = (s: string) => STATUS_PROPOSTA_LABEL[s] ?? s;
 
+/** Rótulos de status por módulo (para o filtro "Status" de cada relatório). */
+const STATUS_SIMULACAO_LABEL: Record<string, string> = {
+  rascunho: "Rascunho",
+  enviando: "Enviando",
+  simulada: "Simulada",
+  parcialmente_simulada: "Parcialmente simulada",
+  erro_banco: "Erro no banco",
+  expirada: "Expirada",
+  cancelada: "Cancelada",
+  promovida: "Promovida",
+};
+const STATUS_DEMANDA_LABEL: Record<string, string> = {
+  aberta: "Aberta",
+  em_andamento: "Em andamento",
+  aguardando: "Aguardando",
+  concluida: "Concluída",
+  cancelada: "Cancelada",
+};
+const STATUS_TAREFA_LABEL: Record<string, string> = {
+  aberta: "Aberta",
+  em_andamento: "Em andamento",
+  concluida: "Concluída",
+  cancelada: "Cancelada",
+};
+const STATUS_COMISSAO_LABEL: Record<string, string> = {
+  a_receber: "A receber",
+  recebida: "Recebida",
+  paga_parceiro: "Paga ao parceiro",
+  encerrada: "Encerrada",
+};
+const STATUS_FINANCEIRO_LABEL: Record<string, string> = {
+  aberta: "Aberta",
+  parcial: "Parcial",
+  paga: "Paga / recebida",
+  atrasada: "Atrasada",
+  cancelada: "Cancelada",
+  estornada: "Estornada",
+};
+
+/** Converte um mapa rótulo em lista de opções {value,label}. */
+const opcoes = (m: Record<string, string>) =>
+  Object.entries(m).map(([value, label]) => ({ value, label }));
+
+/** Opções de status do filtro por código de relatório. */
+function statusOpcoesPorCodigo(codigo: string): { value: string; label: string }[] | undefined {
+  switch (codigo) {
+    case "consolidado":
+    case "painel-geral":
+    case "comerciais":
+    case "gerencial":
+    case "propostas":
+    case "operacionais":
+      return opcoes(STATUS_PROPOSTA_LABEL);
+    case "simulacoes":
+      return opcoes(STATUS_SIMULACAO_LABEL);
+    case "demandas":
+      return opcoes(STATUS_DEMANDA_LABEL);
+    case "tarefas":
+      return opcoes(STATUS_TAREFA_LABEL);
+    case "comissoes":
+      return opcoes(STATUS_COMISSAO_LABEL);
+    case "financeiros":
+      return opcoes(STATUS_FINANCEIRO_LABEL);
+    default:
+      return undefined;
+  }
+}
+
+
+
 async function temPii(supabase: any, userId: string): Promise<boolean> {
   const { data: tudo } = await supabase.rpc("has_any_role", {
     _user_id: userId,
@@ -148,7 +218,31 @@ export const runReport = createServerFn({ method: "POST" })
 
     // Comparativo mês a mês (últimos 6 meses) — anexado a todos os relatórios.
     resultado.comparativoMensal = await comparativoMensalPropostas();
+
+    // Opções de filtro comuns a TODOS os relatórios: status do módulo + lista de
+    // responsáveis (usuários) do correspondente. Assim qualquer relatório pode
+    // ser filtrado por status e por usuário.
+    const responsaveis = await listarResponsaveis();
+    resultado.filtrosDisponiveis = {
+      ...resultado.filtrosDisponiveis,
+      statuses: resultado.filtrosDisponiveis?.statuses ?? statusOpcoesPorCodigo(codigo),
+      responsaveis,
+    };
     return resultado;
+
+    async function listarResponsaveis(): Promise<{ value: string; label: string }[]> {
+      let q = (supabase as any)
+        .from("profiles")
+        .select("id,nome,ativo")
+        .order("nome", { ascending: true })
+        .limit(1000);
+      if (corr) q = q.eq("correspondente_id", corr);
+      const { data } = await q;
+      return ((data ?? []) as any[])
+        .filter((p) => p.ativo !== false && p.nome)
+        .map((p) => ({ value: p.id as string, label: p.nome as string }));
+    }
+
 
     async function comparativoMensalPropostas(): Promise<ComparativoMensal | undefined> {
       const hojeStr = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
