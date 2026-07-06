@@ -68,6 +68,7 @@ function formatBytes(n: number | null): string {
 function Pagina() {
   const qc = useQueryClient();
   const backups = useQuery({ queryKey: ["admin-backups"], queryFn: () => listarBackups() });
+  const [baixando, setBaixando] = useState(false);
 
   const criar = useMutation({
     mutationFn: () => criarBackup(),
@@ -79,6 +80,28 @@ function Pagina() {
     onError: (e: any) => toast.error(e?.message ?? "Falha ao gerar backup."),
   });
 
+  const excluir = useMutation({
+    mutationFn: (id: string) => excluirBackup({ data: { id } }),
+    onSuccess: () => {
+      toast.success("Backup excluído.");
+      qc.invalidateQueries({ queryKey: ["admin-backups"] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Falha ao excluir."),
+  });
+
+  async function baixarExcel() {
+    setBaixando(true);
+    try {
+      const dados = await exportarBackupCompleto();
+      exportarBackupXLSX(dados);
+      toast.success("Backup completo exportado em Excel.");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha ao exportar backup.");
+    } finally {
+      setBaixando(false);
+    }
+  }
+
   return (
     <div className="space-y-6 p-4 md:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -87,15 +110,22 @@ function Pagina() {
           <div>
             <h1 className="text-xl font-semibold">Backup</h1>
             <p className="text-sm text-muted-foreground">
-              Snapshots lógicos com contagem de registros por tabela.
+              Baixe todos os dados do sistema em Excel ou registre snapshots lógicos.
             </p>
           </div>
         </div>
-        <Button disabled={criar.isPending} onClick={() => criar.mutate()}>
-          <Play className="mr-2 h-4 w-4" />
-          {criar.isPending ? "Gerando…" : "Gerar backup"}
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button disabled={baixando} onClick={baixarExcel}>
+            <FileSpreadsheet className="mr-2 h-4 w-4" />
+            {baixando ? "Gerando Excel…" : "Baixar backup completo (Excel)"}
+          </Button>
+          <Button variant="outline" disabled={criar.isPending} onClick={() => criar.mutate()}>
+            <Play className="mr-2 h-4 w-4" />
+            {criar.isPending ? "Gerando…" : "Gerar snapshot"}
+          </Button>
+        </div>
       </div>
+
 
       <div className="rounded-lg border border-border bg-card">
         <div className="flex items-center justify-between border-b border-border p-4">
