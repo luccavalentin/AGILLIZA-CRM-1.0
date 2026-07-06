@@ -13,6 +13,7 @@ import {
   Trash2,
   Download,
   Pencil,
+  Send,
 } from "lucide-react";
 import { toast } from "sonner";
 import { assertModuloPermitido } from "@/lib/route-guards";
@@ -21,6 +22,7 @@ import {
   excluirSimulacao,
   obterSimulacao,
 } from "@/lib/simulacao/simulacoes.functions";
+import { criarProposta } from "@/lib/propostas/propostas.functions";
 import { baixarSimulacaoPDF, baixarSimulacaoDetalhadaPDF } from "@/lib/simulacao/simulacao-pdf";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -59,7 +61,8 @@ function Pagina() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const excluir = useServerFn(excluirSimulacao);
-  
+  const criar = useServerFn(criarProposta);
+
   const obter = useServerFn(obterSimulacao);
   const [escopo, setEscopo] = useState<"todas" | "minhas">("todas");
   const [q, setQ] = useState("");
@@ -125,6 +128,20 @@ function Pagina() {
       router.navigate({ to: "/operacional/simulacoes/completa" });
     } catch {
       toast.error("Não foi possível abrir a simulação para edição.");
+    }
+  }
+
+  async function handleEnviarProposta(id: string) {
+    try {
+      const res = await criar({ data: { simulacao_id: id } });
+      toast.success(`Proposta ${res.numero_proposta} criada.`);
+      router.navigate({
+        to: "/operacional/propostas/$id",
+        params: { id: res.proposta_id },
+        search: { complementar: 1 },
+      });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Não foi possível gerar a proposta.");
     }
   }
 
@@ -297,6 +314,7 @@ function Pagina() {
                     onBaixarComparativo={() => handleBaixarComparativo(s.id)}
                     onBaixarDetalhada={() => handleBaixarDetalhada(s.id)}
                     onDuplicar={() => handleDuplicar(s.id)}
+                    onEnviarProposta={() => handleEnviarProposta(s.id)}
                     onExcluir={() => handleExcluir(s.id)}
                     numero={s.numero_simulacao}
                   />
@@ -347,6 +365,7 @@ function Pagina() {
                   onBaixarComparativo={() => handleBaixarComparativo(s.id)}
                   onBaixarDetalhada={() => handleBaixarDetalhada(s.id)}
                   onDuplicar={() => handleDuplicar(s.id)}
+                  onEnviarProposta={() => handleEnviarProposta(s.id)}
                   onExcluir={() => handleExcluir(s.id)}
                   numero={s.numero_simulacao}
                 />
@@ -391,6 +410,7 @@ function AcoesSimulacao({
   onBaixarComparativo,
   onBaixarDetalhada,
   onDuplicar,
+  onEnviarProposta,
   onExcluir,
   numero,
 }: {
@@ -399,6 +419,7 @@ function AcoesSimulacao({
   onBaixarComparativo: () => void;
   onBaixarDetalhada: () => void;
   onDuplicar: () => void;
+  onEnviarProposta: () => void;
   onExcluir: () => Promise<void>;
   numero: string;
 }) {
@@ -412,6 +433,9 @@ function AcoesSimulacao({
       <DropdownMenuContent align="end">
         <DropdownMenuItem onSelect={onVisualizar}>
           <Eye className="mr-2 h-4 w-4" /> Visualizar
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={onEnviarProposta} className="text-primary focus:text-primary">
+          <Send className="mr-2 h-4 w-4" /> Enviar proposta
         </DropdownMenuItem>
         <DropdownMenuItem onSelect={onEditar}>
           <Pencil className="mr-2 h-4 w-4" /> Editar
