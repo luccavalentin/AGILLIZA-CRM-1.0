@@ -315,7 +315,13 @@ function bancosParaExtrato(bancos: any[]): any[] {
 }
 
 /** Baixa o extrato simplificado: cabeçalho com CET/CESH/taxas + resumo, um banco por folha. */
-export function baixarSimulacaoSimplificadaPDF({ simulacao: s, bancos }: SimulacaoPdfInput) {
+export function baixarSimulacaoSimplificadaPDF({
+  simulacao: s,
+  bancos,
+  docLabel,
+  filePrefix,
+  dataLabel,
+}: SimulacaoPdfInput) {
   const lista = bancosParaExtrato(bancos);
   const doc = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
   const pageW = doc.internal.pageSize.getWidth();
@@ -326,7 +332,7 @@ export function baixarSimulacaoSimplificadaPDF({ simulacao: s, bancos }: Simulac
     const d = extrairDetalheBanco(b?.raw_response);
     drawClienteHeader(doc, pageW);
     let y = HEADER_H + 26;
-    y = drawTituloExtrato(doc, pageW, s, y);
+    y = drawTituloExtrato(doc, pageW, s, y, docLabel, dataLabel);
     y = drawFaixaBanco(doc, pageW, b?.nome_banco ?? "Banco", y);
     y = drawDadosCliente(doc, pageW, s, y);
     y = drawInfoFinanciamento(doc, pageW, s, b, d, y);
