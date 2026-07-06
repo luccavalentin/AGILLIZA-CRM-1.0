@@ -165,7 +165,6 @@ export function NovaPessoaInline({
       nivel_acesso_id: nivelId,
       dados_parceiro: isParceiro
         ? {
-            creci: creci.trim() || undefined,
             comissao_padrao: comissao ? Number(comissao) : undefined,
           }
         : undefined,
