@@ -123,9 +123,31 @@ function Pagina() {
         </div>
         <div className="flex gap-2">
           <Button variant="secondary" onClick={reenviar}><RefreshCw className="mr-1 h-4 w-4" /> Reenviar ao banco</Button>
-          <Button variant="secondary" onClick={() => baixarSimulacaoPDF({ simulacao: s, bancos })}>
-            <Download className="mr-1 h-4 w-4" /> Baixar PDF
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="secondary">
+                <Download className="mr-1 h-4 w-4" /> Baixar PDF <ChevronDown className="ml-1 h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-64">
+              <DropdownMenuItem onClick={() => baixarSimulacaoPDF({ simulacao: s, bancos })}>
+                Comparativo consolidado
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel>Detalhado por banco</DropdownMenuLabel>
+              {bancos.length === 0 && (
+                <DropdownMenuItem disabled>Nenhum banco</DropdownMenuItem>
+              )}
+              {bancos.map((b: any) => (
+                <DropdownMenuItem
+                  key={b.id}
+                  onClick={() => baixarBancoDetalhePDF({ simulacao: s, banco: b })}
+                >
+                  {b.nome_banco}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button variant="ghost" onClick={duplicar}><Copy className="mr-1 h-4 w-4" /> Duplicar</Button>
         </div>
       </div>
