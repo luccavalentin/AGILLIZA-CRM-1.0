@@ -521,35 +521,46 @@ function Pagina() {
           </div>
         </Card>
 
-        {/* Chat + follow-up */}
-        {alvoAtual ? (
-          <div className="grid gap-4 xl:grid-cols-[1fr_19rem]">
-            <ChatClienteTab
-              key={alvoAtual.cliente_id}
-              clienteId={alvoAtual.cliente_id}
-              info={{
-                nome: alvoAtual.nome,
-                documento: alvoAtual.documento,
-                contexto: alvoAtual.etapa_nome ?? undefined,
-              }}
-            />
-            <PainelGestao
-              clienteId={alvoAtual.cliente_id}
-              nome={alvoAtual.nome}
-              etiquetas={etiquetas ?? []}
-            />
-          </div>
-        ) : (
-          <Card className="flex h-[38rem] flex-col items-center justify-center gap-3 border-border/60 border-dashed text-center shadow-sm">
-            <div className="flex size-14 items-center justify-center rounded-full bg-primary/10 text-primary">
-              <MessagesSquare className="h-6 w-6" />
+        {/* Chat + follow-up — no mobile ocupa a tela inteira quando aberto */}
+        <div className={cn(selecionado ? "block" : "hidden lg:block")}>
+          <button
+            type="button"
+            onClick={() => setSelecionado(null)}
+            className="mb-3 inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground lg:hidden"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Voltar às conversas
+          </button>
+          {alvoAtual ? (
+            <div className="grid gap-4 xl:grid-cols-[1fr_19rem]">
+              <ChatClienteTab
+                key={alvoAtual.cliente_id}
+                clienteId={alvoAtual.cliente_id}
+                info={{
+                  nome: alvoAtual.nome,
+                  documento: alvoAtual.documento,
+                  contexto: alvoAtual.etapa_nome ?? undefined,
+                }}
+              />
+              <PainelGestao
+                clienteId={alvoAtual.cliente_id}
+                nome={alvoAtual.nome}
+                etiquetas={etiquetas ?? []}
+              />
             </div>
-            <p className="max-w-[16rem] text-sm text-muted-foreground">
-              Selecione uma conversa ao lado ou busque um cliente para começar.
-            </p>
-          </Card>
-        )}
+          ) : (
+            <Card className="flex h-[38rem] flex-col items-center justify-center gap-3 border-border/60 border-dashed text-center shadow-sm">
+              <div className="flex size-14 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <MessagesSquare className="h-6 w-6" />
+              </div>
+              <p className="max-w-[16rem] text-sm text-muted-foreground">
+                Selecione uma conversa ao lado ou busque um cliente para começar.
+              </p>
+            </Card>
+          )}
+        </div>
       </div>
+
     </div>
   );
 }
