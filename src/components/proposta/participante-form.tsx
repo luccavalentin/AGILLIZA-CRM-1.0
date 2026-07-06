@@ -268,7 +268,7 @@ export function ParticipanteDialog({
   }, [open, inicial, conjugeInicial, tipoQualificacaoFixo]);
 
   const pf = f.tipo_pessoa === "F";
-  const permiteConjuge = tipoQualificacaoFixo !== "VD";
+  const permiteConjuge = true;
   const precisaConjuge = permiteConjuge && pf && ESTADO_CIVIL_COM_REGIME.has(f.estado_civil);
 
   const set = (patch: Partial<ParticipanteForm>) => setF((p) => ({ ...p, ...patch }));
