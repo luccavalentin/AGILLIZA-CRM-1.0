@@ -70,7 +70,7 @@ export function NovaPessoaInline({
 
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
-  const [creci, setCreci] = useState("");
+  
   const [comissao, setComissao] = useState("");
   const [nivelId, setNivelId] = useState<string>("");
 
