@@ -222,6 +222,7 @@ function Pagina() {
               <TableHead>Número</TableHead>
               <TableHead>Cliente</TableHead>
               <TableHead>Produto</TableHead>
+              <TableHead>Bancos simulados</TableHead>
               <TableHead className="text-right">Valor imóvel</TableHead>
               <TableHead className="text-right">Prazo</TableHead>
               <TableHead>Status</TableHead>
