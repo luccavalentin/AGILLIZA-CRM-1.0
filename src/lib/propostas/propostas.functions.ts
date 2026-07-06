@@ -346,7 +346,158 @@ export const criarProposta = createServerFn({ method: "POST" })
     return { proposta_id: inserted.id, numero_proposta: inserted.numero_proposta };
   });
 
-/** ===== Atualizar dados (apenas rascunho/aguardando_documentos) ===== */
+/** ===== Bancos de uma proposta (para replicar) ===== */
+export const listarBancosDaProposta = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => z.object({ proposta_id: z.string().uuid() }).parse(data))
+  .handler(async ({ context, data }) => {
+    const { supabase } = context;
+    const { data: prop } = await supabase
+      .from("propostas")
+      .select("id, numero_proposta, nome_cliente, produto, valor_financiamento")
+      .eq("id", data.proposta_id)
+      .maybeSingle();
+    if (!prop) throw new Error("Proposta não encontrada.");
+    const { data: bancos } = await supabase
+      .from("proposta_bancos")
+      .select("id, banco_id, nome_banco, valor_parcela, taxa_juros_ano, selecionado")
+      .eq("proposta_id", data.proposta_id)
+      .order("nome_banco");
+    return { proposta: prop, bancos: bancos ?? [] };
+  });
+
+/** ===== Replicar uma proposta existente ===== */
+export const replicarProposta = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z
+      .object({
+        proposta_id: z.string().uuid(),
+        banco_ids: z.array(z.string().uuid()).default([]),
+      })
+      .parse(data),
+  )
+  .handler(async ({ context, data }): Promise<{ proposta_id: string; numero_proposta: string }> => {
+    const { supabase, userId } = context;
+    const corr = await correspondenteId(supabase, userId);
+
+    const { data: origem, error: origErr } = await supabase
+      .from("propostas")
+      .select("*")
+      .eq("id", data.proposta_id)
+      .maybeSingle();
+    if (origErr) throw new Error(origErr.message);
+    if (!origem) throw new Error("Proposta de origem não encontrada.");
+
+    // Campos que não devem ser copiados (identidade / estado / vínculos externos).
+    const naoCopiar = new Set([
+      "id",
+      "numero_proposta",
+      "created_at",
+      "updated_at",
+      "status",
+      "enviada_em",
+      "motivo_cancelamento",
+      "simulacao_id",
+      "homefin_id_oportunidade",
+      "homefin_id_simulacao",
+      "codigo_oportunidade_homefin",
+    ]);
+    const snapshot: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(origem)) {
+      if (!naoCopiar.has(k)) snapshot[k] = v;
+    }
+    snapshot.correspondente_id = corr;
+    snapshot.status = "rascunho";
+    snapshot.usuario_criador_id = userId;
+    snapshot.usuario_responsavel_id = userId;
+
+    const { data: inserted, error: insErr } = await supabase
+      .from("propostas")
+      .insert(snapshot as any)
+      .select("id, numero_proposta")
+      .single();
+    if (insErr) throw new Error(insErr.message);
+
+    // Bancos selecionados (default: todos os da origem).
+    const { data: bancosOrigem } = await supabase
+      .from("proposta_bancos")
+      .select("*")
+      .eq("proposta_id", data.proposta_id);
+    const filtrados = (bancosOrigem ?? []).filter((b: any) =>
+      data.banco_ids.length ? data.banco_ids.includes(b.banco_id) : true,
+    );
+    if (filtrados.length > 0) {
+      const linhas = filtrados.map((b: any) => ({
+        proposta_id: inserted.id,
+        banco_id: b.banco_id,
+        homefin_id_banco: b.homefin_id_banco,
+        codigo_banco: b.codigo_banco,
+        nome_banco: b.nome_banco,
+        simulacao_banco_id: b.simulacao_banco_id,
+        homefin_id_simulacao_banco: b.homefin_id_simulacao_banco,
+        selecionado: b.banco_id === snapshot.banco_id,
+        status_banco: "aguardando",
+        valor_parcela: b.valor_parcela,
+        taxa_juros_ano: b.taxa_juros_ano,
+        prazo_pagamento_max: b.prazo_pagamento_max,
+        valor_financiamento_max: b.valor_financiamento_max,
+        codigo_indexador: b.codigo_indexador,
+        valor_iof: b.valor_iof,
+        sistema_amortizacao_banco: b.sistema_amortizacao_banco,
+      }));
+      await supabase.from("proposta_bancos").insert(linhas);
+    }
+
+    // Envolvidos (sem ids externos/homefin).
+    const { data: envolvidosOrigem } = await supabase
+      .from("proposta_envolvidos")
+      .select("*")
+      .eq("proposta_id", data.proposta_id);
+    if ((envolvidosOrigem ?? []).length > 0) {
+      const naoCopiarEnv = new Set([
+        "id",
+        "proposta_id",
+        "created_at",
+        "updated_at",
+        "homefin_id_participante",
+      ]);
+      const linhasEnv = (envolvidosOrigem ?? []).map((e: any) => {
+        const linha: Record<string, unknown> = { proposta_id: inserted.id };
+        for (const [k, v] of Object.entries(e)) {
+          if (!naoCopiarEnv.has(k)) linha[k] = v;
+        }
+        return linha;
+      });
+      await supabase.from("proposta_envolvidos").insert(linhasEnv as any);
+    }
+
+    await supabase.from("proposta_historico").insert({
+      proposta_id: inserted.id,
+      tipo_evento: "criada",
+      descricao: `Proposta replicada de ${origem.numero_proposta}`,
+      status_novo: "rascunho",
+      ator_id: userId,
+    });
+
+    try {
+      const { registrarAuditoria } = await import("@/lib/admin/audit.server");
+      await registrarAuditoria({
+        supabase,
+        userId,
+        correspondenteId: corr,
+        acao: "proposta.replicar",
+        entidade: "propostas",
+        entidadeId: inserted.id,
+        payloadNovo: { origem_id: data.proposta_id, origem_numero: origem.numero_proposta },
+      });
+    } catch {
+      /* auditoria best-effort */
+    }
+
+    return { proposta_id: inserted.id, numero_proposta: inserted.numero_proposta };
+  });
+
 export const atualizarDadosProposta = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) =>
