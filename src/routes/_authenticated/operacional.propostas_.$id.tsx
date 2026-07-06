@@ -597,22 +597,33 @@ function TabResumo({
                   </ToneBadge>
                 </TableCell>
                 <TableCell>
-                  <Select
-                    value={(b.situacao_banco as SituacaoBanco) ?? "nao_enviado"}
-                    onValueChange={(v) => mudarSituacao(b.id, v as SituacaoBanco)}
-                  >
-                    <SelectTrigger className="h-8 w-48">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {SITUACOES_BANCO.map((s) => (
-                        <SelectItem key={s} value={s}>
-                          {SITUACAO_BANCO_LABEL[s]}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex items-center gap-2">
+                    <Select
+                      value={(b.situacao_banco as SituacaoBanco) ?? "nao_enviado"}
+                      onValueChange={(v) => mudarSituacao(b.id, v as SituacaoBanco)}
+                    >
+                      <SelectTrigger className="h-8 w-48">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {SITUACOES_BANCO.map((s) => (
+                          <SelectItem key={s} value={s}>
+                            {SITUACAO_BANCO_LABEL[s]}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 shrink-0"
+                      onClick={() => setDetalheBanco(b)}
+                    >
+                      <Info className="mr-1 h-4 w-4" /> Detalhamento
+                    </Button>
+                  </div>
                 </TableCell>
+
 
                 <TableCell className="text-right">
                   {b.status_banco === "enviada" ? (
