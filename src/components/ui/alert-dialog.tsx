@@ -138,6 +138,7 @@ export {
   AlertDialogTrigger,
   AlertDialogContent,
   AlertDialogHeader,
+  AlertDialogIcon,
   AlertDialogFooter,
   AlertDialogTitle,
   AlertDialogDescription,
