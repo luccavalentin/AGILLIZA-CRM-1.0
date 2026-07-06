@@ -235,12 +235,12 @@ function Pagina() {
         <AcoesTopo proposta={p} propostaId={id} bancos={data.bancos} />
       </div>
 
-      {(data.bancos ?? []).some((b: any) => isBradesco(b.nome_banco) && bancoJaEnviado(b)) && (
-        <BradescoRetornoTimer
-          enviadoEm={p.enviada_em}
-          retornado={!["enviada_banco", "em_analise_credito"].includes(p.status)}
-        />
-      )}
+      {(data.bancos ?? []).some(
+        (b: any) =>
+          isBradesco(b.nome_banco) &&
+          bancoJaEnviado(b) &&
+          ["enviada", "em_analise", "", null, undefined].includes(b.status_banco),
+      ) && <BradescoRetornoTimer enviadoEm={p.enviada_em} />}
 
 
       {/* Header linha 1 */}
