@@ -44,7 +44,7 @@ export function baixarSimulacaoPDF({ simulacao: s, bancos }: SimulacaoPdfInput) 
 
   const rows: ReportRow[] = (bancos ?? []).map((b) => ({
     banco: b.nome_banco ?? "—",
-    situacao: b.status_banco ?? "—",
+    situacao: LABEL_STATUS_BANCO[b.status_banco ?? ""] ?? (b.status_banco || "—"),
     parcela: b.valor_parcela != null ? formatBRL(b.valor_parcela) : "—",
     taxa: b.taxa_juros_ano != null ? formatPercent(b.taxa_juros_ano / 100) : "—",
     prazo: b.prazo_pagamento_max ? `${b.prazo_pagamento_max}m` : "—",
