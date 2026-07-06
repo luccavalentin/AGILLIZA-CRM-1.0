@@ -343,7 +343,11 @@ export async function enviarPropostaImpl({
         selecionado: true,
         mensagem_banco: null,
       };
-      if (situacaoTipo) patchOk.situacao_banco = situacaoTipo;
+      // situacao_banco é um enum interno (nao_enviado/em_analise/condicionado/
+      // aprovado/recusado/cancelado). O tipoSituacao do banco vem como código
+      // cru (S/P/N/A/R) — precisa ser mapeado, senão o valor não bate com o
+      // <Select> da tela e a linha continua exibindo "Não enviado".
+      patchOk.situacao_banco = situacaoBancoDeTipo(situacaoTipo);
       const protocolo =
         resp?.codigoOportunidadeBanco ??
         resp?.codigoOportunidadeBancoInterno ??
