@@ -55,6 +55,19 @@ const ESCOPOS: { value: EscopoDados; label: string }[] = [
   { value: "proprios", label: "Próprios" },
 ];
 
+const PORTAIS: { value: AcessoTipo; label: string }[] = [
+  { value: "sistema", label: "Portal do Correspondente" },
+  { value: "portal_parceiro", label: "Portal do Parceiro" },
+];
+
+const PAPEL_LABEL: Record<string, string> = {
+  gestor: "Gestor",
+  comercial: "Comercial",
+  analista: "Analista",
+  corretor: "Corretor",
+  imobiliaria: "Imobiliária",
+};
+
 const chave = (modulo: string, acao: string) => `${modulo}:${acao}`;
 
 function estadoInicial(nivel: NivelAcesso): MatrizEstado {
