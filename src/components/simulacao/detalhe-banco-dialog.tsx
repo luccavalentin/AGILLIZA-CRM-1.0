@@ -100,9 +100,16 @@ export function DetalheBancoDialog({ banco }: { banco: any }) {
 
 
               <div>
-                <h3 className="mb-2 text-sm font-semibold text-foreground">
+                <h3 className="mb-1 text-sm font-semibold text-foreground">
                   Plano de pagamento ({detalhe!.parcelas.length} parcelas)
                 </h3>
+                {detalhe!.parcelasEstimadas && (
+                  <p className="mb-2 text-xs text-muted-foreground">
+                    Projeção calculada a partir da taxa e do sistema informados pelo banco (1ª e
+                    última parcela reais).
+                  </p>
+                )}
+
                 <div className="overflow-x-auto rounded-lg border border-border">
                   <Table>
                     <TableHeader>
