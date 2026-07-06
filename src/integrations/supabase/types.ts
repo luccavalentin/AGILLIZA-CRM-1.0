@@ -1983,6 +1983,105 @@ export type Database = {
         }
         Relationships: []
       }
+      matricula_config: {
+        Row: {
+          correspondente_id: string
+          pix_chave: string | null
+          pix_titular: string | null
+          updated_at: string
+        }
+        Insert: {
+          correspondente_id: string
+          pix_chave?: string | null
+          pix_titular?: string | null
+          updated_at?: string
+        }
+        Update: {
+          correspondente_id?: string
+          pix_chave?: string | null
+          pix_titular?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      matricula_creditos: {
+        Row: {
+          correspondente_id: string
+          created_at: string
+          criado_por: string | null
+          data: string
+          descricao: string | null
+          id: string
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          correspondente_id: string
+          created_at?: string
+          criado_por?: string | null
+          data?: string
+          descricao?: string | null
+          id?: string
+          updated_at?: string
+          valor?: number
+        }
+        Update: {
+          correspondente_id?: string
+          created_at?: string
+          criado_por?: string | null
+          data?: string
+          descricao?: string | null
+          id?: string
+          updated_at?: string
+          valor?: number
+        }
+        Relationships: []
+      }
+      matricula_solicitacoes: {
+        Row: {
+          correspondente_id: string
+          created_at: string
+          criado_por: string | null
+          data_solicitacao: string
+          id: string
+          numero_matricula: string | null
+          observacao: string | null
+          reembolsado: boolean
+          reembolsado_em: string | null
+          solicitante: string
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          correspondente_id: string
+          created_at?: string
+          criado_por?: string | null
+          data_solicitacao?: string
+          id?: string
+          numero_matricula?: string | null
+          observacao?: string | null
+          reembolsado?: boolean
+          reembolsado_em?: string | null
+          solicitante: string
+          updated_at?: string
+          valor?: number
+        }
+        Update: {
+          correspondente_id?: string
+          created_at?: string
+          criado_por?: string | null
+          data_solicitacao?: string
+          id?: string
+          numero_matricula?: string | null
+          observacao?: string | null
+          reembolsado?: boolean
+          reembolsado_em?: string | null
+          solicitante?: string
+          updated_at?: string
+          valor?: number
+        }
+        Relationships: []
+      }
       notificacao_regras: {
         Row: {
           ativo: boolean
