@@ -25,7 +25,7 @@ import {
   ArrowDownCircle,
   Inbox,
   Gauge,
-  Plug,
+  
   Settings2,
   ShoppingCart,
   MessagesSquare,
