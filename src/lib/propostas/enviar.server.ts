@@ -132,15 +132,26 @@ async function garantirEnderecoParticipantes({
     const estadoCivil =
       part?.tipoEstadoCivil || env?.estado_civil || src?.estado_civil || prop.estado_civil || null;
     const uf = part?.uf || env?.uf || src?.uf || prop.uf || null;
+    // Profissão e empresa: o Itaú (entre outros) recusa a proposta quando
+    // `profession`/`company` do proponente chegam nulos. Completamos a partir do
+    // envolvido, do cadastro do cliente e, por fim, de um valor padrão seguro.
+    const profissao =
+      part?.nomeProfissao || env?.profissao || src?.profissao || "Não informado";
+    const empresa =
+      part?.nomeEmpresaProfissao || env?.empresa || src?.empresa || "Não informado";
 
-    // Só chamamos a API quando falta estado civil ou UF (os dois campos que mais
-    // derrubam a validação dos bancos). Se ambos já estão presentes, nada a fazer.
+    // Chamamos a API quando falta estado civil, UF, profissão ou empresa (os
+    // campos que mais derrubam a validação dos bancos). Se todos já estão
+    // presentes no participante, nada a fazer.
     const faltaEstadoCivil = !(part?.tipoEstadoCivil && String(part.tipoEstadoCivil).trim());
     const faltaUf = !(part?.uf && String(part.uf).trim());
-    if (!faltaEstadoCivil && !faltaUf) continue;
-    // Sem meios de preencher o que falta, não adianta chamar a API.
-    if (faltaEstadoCivil && !estadoCivil) continue;
-    if (faltaUf && !uf) continue;
+    const faltaProfissao = !(part?.nomeProfissao && String(part.nomeProfissao).trim());
+    const faltaEmpresa = !(part?.nomeEmpresaProfissao && String(part.nomeEmpresaProfissao).trim());
+    if (!faltaEstadoCivil && !faltaUf && !faltaProfissao && !faltaEmpresa) continue;
+    // Sem meios de preencher estado civil ou UF, não adianta chamar a API —
+    // profissão/empresa sempre têm fallback, então não bloqueiam.
+    if (faltaEstadoCivil && !estadoCivil && faltaUf && !uf && !faltaProfissao && !faltaEmpresa)
+      continue;
 
     const payload: Record<string, unknown> = {
       tipoSituacao: part?.tipoSituacao ?? "A",
@@ -151,6 +162,8 @@ async function garantirEnderecoParticipantes({
       dataNascimento:
         part?.dataNascimento ?? env?.data_nascimento ?? src?.data_nascimento ?? prop.data_nascimento ?? undefined,
       tipoEstadoCivil: estadoCivil ?? undefined,
+      nomeProfissao: profissao,
+      nomeEmpresaProfissao: empresa,
       nomeMae: part?.nomeMae ?? env?.nome_mae ?? src?.mae ?? undefined,
       renda: part?.renda ?? env?.renda ?? src?.renda_total_declarada ?? prop.renda_total ?? undefined,
       email: part?.email ?? env?.email ?? src?.email ?? prop.email ?? undefined,
@@ -164,6 +177,7 @@ async function garantirEnderecoParticipantes({
       municipio: env?.municipio ?? prop.cidade_imovel ?? undefined,
       uf: uf ?? undefined,
     };
+
 
     try {
       await chamarIntegracao<any>(
