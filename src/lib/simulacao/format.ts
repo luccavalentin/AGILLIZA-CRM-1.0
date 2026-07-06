@@ -25,6 +25,19 @@ export function maskBRLInput(valor: number): string {
   return valor.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+/**
+ * Máscara de digitação de moeda tratando os dígitos como centavos.
+ * Ex.: "" -> "", "4" -> "0,04", "47" -> "0,47", "4700" -> "47,00".
+ * Evita o "0,00" fixo que fazia o valor digitado grudar no zero inicial.
+ */
+export function maskBRLCents(texto: string): string {
+  const digits = texto.replace(/\D/g, "");
+  if (!digits) return "";
+  const n = Number(digits) / 100;
+  return n.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+
 export function maskCpfCnpj(v: string): string {
   const d = v.replace(/\D/g, "").slice(0, 14);
   if (d.length <= 11) {
