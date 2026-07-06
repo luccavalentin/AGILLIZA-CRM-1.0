@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Plus, Search, FileText, KanbanSquare, RotateCcw } from "lucide-react";
@@ -53,6 +53,12 @@ function Pagina() {
   const [busca, setBusca] = useState("");
   const [dataInicio, setDataInicio] = useState(padrao.inicio);
   const [dataFim, setDataFim] = useState(padrao.fim);
+
+  // Busca ao vivo: filtra conforme o usuário digita (com debounce).
+  useEffect(() => {
+    const t = setTimeout(() => setBusca(q.trim()), 300);
+    return () => clearTimeout(t);
+  }, [q]);
 
   const { data, isLoading } = useQuery({
     queryKey: ["propostas", escopo, busca, dataInicio, dataFim],
@@ -115,13 +121,7 @@ function Pagina() {
             <TabsTrigger value="minhas">Minhas</TabsTrigger>
           </TabsList>
         </Tabs>
-        <form
-          className="flex flex-1 items-center gap-2 min-w-[220px]"
-          onSubmit={(e) => {
-            e.preventDefault();
-            setBusca(q);
-          }}
-        >
+        <div className="flex flex-1 items-center gap-2 min-w-[220px]">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -131,10 +131,7 @@ function Pagina() {
               onChange={(e) => setQ(e.target.value)}
             />
           </div>
-          <Button type="submit" variant="secondary">
-            Buscar
-          </Button>
-        </form>
+        </div>
         <div className="flex flex-col gap-1">
           <Label className="text-xs text-muted-foreground">De</Label>
           <Input
