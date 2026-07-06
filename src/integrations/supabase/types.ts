@@ -4648,6 +4648,14 @@ export type Database = {
         | "registrado"
         | "erro_envio"
         | "cancelada"
+        | "checklist_documentacao"
+        | "cadastro_complementar"
+        | "dossie_completo"
+        | "formularios"
+        | "envio_documentos_banco"
+        | "vistoria_agendamento"
+        | "vistoria_concluida"
+        | "emissao_contrato"
       regime_casamento:
         | "comunhao_parcial"
         | "comunhao_universal"
@@ -4867,6 +4875,14 @@ export const Constants = {
         "registrado",
         "erro_envio",
         "cancelada",
+        "checklist_documentacao",
+        "cadastro_complementar",
+        "dossie_completo",
+        "formularios",
+        "envio_documentos_banco",
+        "vistoria_agendamento",
+        "vistoria_concluida",
+        "emissao_contrato",
       ],
       regime_casamento: [
         "comunhao_parcial",
