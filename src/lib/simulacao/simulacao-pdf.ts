@@ -503,7 +503,7 @@ export function baixarSimulacaoDetalhadaPDF({
     drawFooter(doc, pageW, pageH, p, total);
   }
 
-  return salvar(doc, s, "detalhada", filePrefix);
+  return salvar(doc, s, "detalhada", lista);
 }
 
 /** Abrevia um valor monetário em "k"/"mi" para uso no nome do arquivo. */
