@@ -352,7 +352,7 @@ function FollowUpPanel({
   });
 
   return (
-    <Card className="h-[36rem] overflow-y-auto">
+    <Card className="h-[36rem] overflow-y-auto border-border/60 shadow-sm">
       <CardContent className="space-y-4 p-4">
         <div>
           <p className="text-sm font-semibold text-foreground">Follow-up</p>
