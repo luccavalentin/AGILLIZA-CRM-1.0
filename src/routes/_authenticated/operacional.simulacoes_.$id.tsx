@@ -118,6 +118,9 @@ function Pagina() {
         </div>
         <div className="flex gap-2">
           <Button variant="secondary" onClick={reenviar}><RefreshCw className="mr-1 h-4 w-4" /> Reenviar ao banco</Button>
+          <Button variant="secondary" onClick={() => baixarSimulacaoPDF({ simulacao: s, bancos })}>
+            <Download className="mr-1 h-4 w-4" /> Baixar PDF
+          </Button>
           <Button variant="ghost" onClick={duplicar}><Copy className="mr-1 h-4 w-4" /> Duplicar</Button>
         </div>
       </div>
