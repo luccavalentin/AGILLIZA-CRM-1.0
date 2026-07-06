@@ -123,6 +123,22 @@ function Pagina() {
     );
   }, [bancos, mostrarRapida, w.valor_financiamento, w.prazo_meses]);
 
+  const maxPrazoIdade = useMemo(
+    () => prazoMaximoPorIdade(w.data_nascimento),
+    [w.data_nascimento],
+  );
+
+  /** Aplica o prazo digitado, ajustando automaticamente pela regra de idade. */
+  function definirPrazo(valor: number) {
+    if (!Number.isFinite(valor) || valor <= 0) {
+      set("prazo_meses", 0);
+      return;
+    }
+    const { prazo, ajustado, mensagem } = ajustarPrazoPorIdade(valor, w.data_nascimento);
+    if (ajustado && mensagem) toast.warning(mensagem);
+    set("prazo_meses", prazo);
+  }
+
   function irParaCompleta() {
     sessionStorage.setItem("simulacao_wizard", JSON.stringify({ ...w, prazo: w.prazo_meses }));
     router.navigate({ to: "/operacional/simulacoes/completa" });
