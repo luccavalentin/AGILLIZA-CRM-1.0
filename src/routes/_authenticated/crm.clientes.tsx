@@ -33,6 +33,7 @@ export const Route = createFileRoute("/_authenticated/crm/clientes")({
 });
 
 function Pagina() {
+  usePipelineRealtime();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const listar = useServerFn(listarClientes);
