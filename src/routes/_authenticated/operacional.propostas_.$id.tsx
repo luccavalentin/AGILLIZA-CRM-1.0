@@ -599,16 +599,8 @@ function TabResumo({
                   {b.taxa_juros_ano != null ? `${b.taxa_juros_ano}%` : "—"}
                 </TableCell>
                 <TableCell>
-                  <ToneBadge
-                    tone={
-                      b.status_banco === "erro"
-                        ? "danger"
-                        : b.status_banco === "enviada"
-                          ? "success"
-                          : "info"
-                    }
-                  >
-                    {b.status_banco}
+                  <ToneBadge tone={statusBancoConfig(b.status_banco).tone}>
+                    {statusBancoConfig(b.status_banco).label}
                   </ToneBadge>
                 </TableCell>
                 <TableCell>
