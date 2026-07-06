@@ -187,3 +187,196 @@ export const criarPessoaComAcesso = createServerFn({ method: "POST" })
 
     return { email: data.email, senha_temporaria: senha };
   });
+
+/** Carrega o perfil alvo garantindo que pertence ao mesmo ecossistema do solicitante. */
+async function carregarAlvo(supabase: any, userId: string, alvoId: string) {
+  const { data: pode } = await supabase.rpc("pode_gerenciar_pessoas", { _user_id: userId });
+  if (!pode) throw new Error("Você não tem permissão para gerenciar pessoas.");
+  if (alvoId === userId) throw new Error("Você não pode alterar o seu próprio cadastro por aqui.");
+
+  const { data: me } = await supabase
+    .from("profiles")
+    .select("correspondente_id")
+    .eq("id", userId)
+    .maybeSingle();
+  const correspondenteId = me?.correspondente_id;
+  if (!correspondenteId) throw new Error("Ecossistema não identificado.");
+
+  const { data: alvo } = await supabase
+    .from("profiles")
+    .select("id, nome, email, telefone, acesso_tipo, ativo, bloqueado_em, nivel_acesso_id, correspondente_id")
+    .eq("id", alvoId)
+    .maybeSingle();
+  if (!alvo || alvo.correspondente_id !== correspondenteId) {
+    throw new Error("Pessoa não encontrada no seu ecossistema.");
+  }
+
+  const { data: roles } = await supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", alvoId);
+  const papeis = (roles ?? []).map((r: { role: AppRole }) => r.role) as AppRole[];
+  if (papeis.some((p) => PAPEIS_PROIBIDOS.includes(p))) {
+    throw new Error("Este cadastro não pode ser gerenciado.");
+  }
+
+  return { correspondenteId, alvo };
+}
+
+export const atualizarSchema = z.object({
+  id: z.string().uuid(),
+  nome: z.string().min(2, "Informe o nome completo."),
+  telefone: z.string().optional().nullable(),
+  nivel_acesso_id: z.string().uuid("Selecione um nível de acesso."),
+});
+
+/** Atualiza dados básicos e o nível de acesso (papel/portal) de uma pessoa. */
+export const atualizarPessoa = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => atualizarSchema.parse(data))
+  .handler(async ({ data, context }): Promise<{ ok: true }> => {
+    const { supabase, userId } = context;
+    const { correspondenteId, alvo } = await carregarAlvo(supabase, userId, data.id);
+
+    const { data: nivel } = await supabase
+      .from("access_levels")
+      .select("id, papel, acesso_tipo")
+      .eq("id", data.nivel_acesso_id)
+      .maybeSingle();
+    if (!nivel) throw new Error("Nível de acesso inválido.");
+
+    const papel = (nivel.papel ?? "comercial") as AppRole;
+    const acessoTipo = (nivel.acesso_tipo ?? "sistema") as "sistema" | "portal_parceiro";
+    if (PAPEIS_PROIBIDOS.includes(papel)) throw new Error("Papel não permitido.");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { error: upErr } = await supabaseAdmin
+      .from("profiles")
+      .update({
+        nome: data.nome,
+        telefone: data.telefone ?? null,
+        nivel_acesso_id: data.nivel_acesso_id,
+        acesso_tipo: acessoTipo,
+      })
+      .eq("id", data.id);
+    if (upErr) throw new Error("Não foi possível atualizar a pessoa.");
+
+    // Sincroniza o papel (mantém os papéis protegidos intocados).
+    await supabaseAdmin
+      .from("user_roles")
+      .delete()
+      .eq("user_id", data.id)
+      .not("role", "in", `(${PAPEIS_PROIBIDOS.join(",")})`);
+    await supabaseAdmin
+      .from("user_roles")
+      .upsert({ user_id: data.id, role: papel }, { onConflict: "user_id,role" });
+
+    const { registrarAuditoria } = await import("@/lib/admin/audit.server");
+    await registrarAuditoria({
+      supabase,
+      userId,
+      correspondenteId,
+      acao: "pessoa.atualizar",
+      entidade: "profiles",
+      entidadeId: data.id,
+      payloadAnterior: { nome: alvo.nome, nivel_acesso_id: alvo.nivel_acesso_id },
+      payloadNovo: { nome: data.nome, nivel_acesso_id: data.nivel_acesso_id, papel },
+    });
+
+    return { ok: true };
+  });
+
+/** Ativa ou desativa (bloqueia) o acesso de uma pessoa. */
+export const alternarStatusPessoa = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) =>
+    z.object({ id: z.string().uuid(), ativar: z.boolean() }).parse(data),
+  )
+  .handler(async ({ data, context }): Promise<{ ok: true }> => {
+    const { supabase, userId } = context;
+    const { correspondenteId } = await carregarAlvo(supabase, userId, data.id);
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin
+      .from("profiles")
+      .update({
+        ativo: data.ativar,
+        bloqueado_em: data.ativar ? null : new Date().toISOString(),
+      })
+      .eq("id", data.id);
+    if (error) throw new Error("Não foi possível alterar o status da pessoa.");
+
+    // Bloqueia/desbloqueia o login também no Auth.
+    try {
+      await supabaseAdmin.auth.admin.updateUserById(data.id, {
+        ban_duration: data.ativar ? "none" : "876000h",
+      });
+    } catch {
+      /* best-effort */
+    }
+
+    const { registrarAuditoria } = await import("@/lib/admin/audit.server");
+    await registrarAuditoria({
+      supabase,
+      userId,
+      correspondenteId,
+      acao: data.ativar ? "pessoa.ativar" : "pessoa.desativar",
+      entidade: "profiles",
+      entidadeId: data.id,
+    });
+
+    return { ok: true };
+  });
+
+/** Gera uma nova senha temporária para a pessoa (exibida uma única vez). */
+export const resetarSenhaPessoa = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
+  .handler(async ({ data, context }): Promise<ResultadoCriarPessoa> => {
+    const { supabase, userId } = context;
+    const { correspondenteId, alvo } = await carregarAlvo(supabase, userId, data.id);
+
+    const senha = gerarSenhaTemporaria();
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.auth.admin.updateUserById(data.id, { password: senha });
+    if (error) throw new Error("Não foi possível redefinir a senha.");
+
+    const { registrarAuditoria } = await import("@/lib/admin/audit.server");
+    await registrarAuditoria({
+      supabase,
+      userId,
+      correspondenteId,
+      acao: "pessoa.resetar_senha",
+      entidade: "profiles",
+      entidadeId: data.id,
+    });
+
+    return { email: alvo.email ?? "", senha_temporaria: senha };
+  });
+
+/** Exclui definitivamente uma pessoa (remove o acesso ao sistema). */
+export const excluirPessoa = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
+  .handler(async ({ data, context }): Promise<{ ok: true }> => {
+    const { supabase, userId } = context;
+    const { correspondenteId, alvo } = await carregarAlvo(supabase, userId, data.id);
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.auth.admin.deleteUser(data.id);
+    if (error) throw new Error("Não foi possível excluir a pessoa.");
+
+    const { registrarAuditoria } = await import("@/lib/admin/audit.server");
+    await registrarAuditoria({
+      supabase,
+      userId,
+      correspondenteId,
+      acao: "pessoa.excluir",
+      entidade: "profiles",
+      entidadeId: data.id,
+      payloadAnterior: { nome: alvo.nome },
+    });
+
+    return { ok: true };
+  });
