@@ -16,7 +16,6 @@ import { Route as ClienteRouteImport } from './routes/cliente'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as ParceiroIndexRouteImport } from './routes/parceiro.index'
 import { Route as ParceiroSimulacoesRouteImport } from './routes/parceiro.simulacoes'
 import { Route as ParceiroPropostasRouteImport } from './routes/parceiro.propostas'
 import { Route as ParceiroDocumentosRouteImport } from './routes/parceiro.documentos'
@@ -28,6 +27,7 @@ import { Route as ClienteLogoutRouteImport } from './routes/cliente.logout'
 import { Route as ClienteAcompanharMinhaPropostaRouteImport } from './routes/cliente.acompanhar-minha-proposta'
 import { Route as AuthenticatedSemAcessoRouteImport } from './routes/_authenticated/sem-acesso'
 import { Route as AuthenticatedRelatoriosRouteImport } from './routes/_authenticated/relatorios'
+import { Route as AuthenticatedParceiroInicioRouteImport } from './routes/_authenticated/parceiro-inicio'
 import { Route as AuthenticatedMatriculasRouteImport } from './routes/_authenticated/matriculas'
 import { Route as AuthenticatedFormulariosRouteImport } from './routes/_authenticated/formularios'
 import { Route as AuthenticatedDocumentosRouteImport } from './routes/_authenticated/documentos'
@@ -131,11 +131,6 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ParceiroIndexRoute = ParceiroIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => ParceiroRoute,
-} as any)
 const ParceiroSimulacoesRoute = ParceiroSimulacoesRouteImport.update({
   id: '/simulacoes',
   path: '/simulacoes',
@@ -192,6 +187,12 @@ const AuthenticatedRelatoriosRoute = AuthenticatedRelatoriosRouteImport.update({
   path: '/relatorios',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedParceiroInicioRoute =
+  AuthenticatedParceiroInicioRouteImport.update({
+    id: '/parceiro-inicio',
+    path: '/parceiro-inicio',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedMatriculasRoute = AuthenticatedMatriculasRouteImport.update({
   id: '/matriculas',
   path: '/matriculas',
@@ -605,6 +606,7 @@ export interface FileRoutesByFullPath {
   '/documentos': typeof AuthenticatedDocumentosRoute
   '/formularios': typeof AuthenticatedFormulariosRouteWithChildren
   '/matriculas': typeof AuthenticatedMatriculasRoute
+  '/parceiro-inicio': typeof AuthenticatedParceiroInicioRoute
   '/relatorios': typeof AuthenticatedRelatoriosRouteWithChildren
   '/sem-acesso': typeof AuthenticatedSemAcessoRoute
   '/cliente/acompanhar-minha-proposta': typeof ClienteAcompanharMinhaPropostaRoute
@@ -616,7 +618,6 @@ export interface FileRoutesByFullPath {
   '/parceiro/documentos': typeof ParceiroDocumentosRoute
   '/parceiro/propostas': typeof ParceiroPropostasRoute
   '/parceiro/simulacoes': typeof ParceiroSimulacoesRoute
-  '/parceiro/': typeof ParceiroIndexRoute
   '/admin/apis-ia': typeof AuthenticatedAdminApisIaRoute
   '/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
   '/admin/backup': typeof AuthenticatedAdminBackupRoute
@@ -687,10 +688,12 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/cliente': typeof ClienteRouteWithChildren
   '/cliente-consentimento': typeof ClienteConsentimentoRoute
+  '/parceiro': typeof ParceiroRouteWithChildren
   '/portal': typeof PortalRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/documentos': typeof AuthenticatedDocumentosRoute
   '/matriculas': typeof AuthenticatedMatriculasRoute
+  '/parceiro-inicio': typeof AuthenticatedParceiroInicioRoute
   '/sem-acesso': typeof AuthenticatedSemAcessoRoute
   '/cliente/acompanhar-minha-proposta': typeof ClienteAcompanharMinhaPropostaRoute
   '/cliente/logout': typeof ClienteLogoutRoute
@@ -701,7 +704,6 @@ export interface FileRoutesByTo {
   '/parceiro/documentos': typeof ParceiroDocumentosRoute
   '/parceiro/propostas': typeof ParceiroPropostasRoute
   '/parceiro/simulacoes': typeof ParceiroSimulacoesRoute
-  '/parceiro': typeof ParceiroIndexRoute
   '/admin/apis-ia': typeof AuthenticatedAdminApisIaRoute
   '/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
   '/admin/backup': typeof AuthenticatedAdminBackupRoute
@@ -780,6 +782,7 @@ export interface FileRoutesById {
   '/_authenticated/documentos': typeof AuthenticatedDocumentosRoute
   '/_authenticated/formularios': typeof AuthenticatedFormulariosRouteWithChildren
   '/_authenticated/matriculas': typeof AuthenticatedMatriculasRoute
+  '/_authenticated/parceiro-inicio': typeof AuthenticatedParceiroInicioRoute
   '/_authenticated/relatorios': typeof AuthenticatedRelatoriosRouteWithChildren
   '/_authenticated/sem-acesso': typeof AuthenticatedSemAcessoRoute
   '/cliente/acompanhar-minha-proposta': typeof ClienteAcompanharMinhaPropostaRoute
@@ -791,7 +794,6 @@ export interface FileRoutesById {
   '/parceiro/documentos': typeof ParceiroDocumentosRoute
   '/parceiro/propostas': typeof ParceiroPropostasRoute
   '/parceiro/simulacoes': typeof ParceiroSimulacoesRoute
-  '/parceiro/': typeof ParceiroIndexRoute
   '/_authenticated/admin/apis-ia': typeof AuthenticatedAdminApisIaRoute
   '/_authenticated/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
   '/_authenticated/admin/backup': typeof AuthenticatedAdminBackupRoute
@@ -870,6 +872,7 @@ export interface FileRouteTypes {
     | '/documentos'
     | '/formularios'
     | '/matriculas'
+    | '/parceiro-inicio'
     | '/relatorios'
     | '/sem-acesso'
     | '/cliente/acompanhar-minha-proposta'
@@ -881,7 +884,6 @@ export interface FileRouteTypes {
     | '/parceiro/documentos'
     | '/parceiro/propostas'
     | '/parceiro/simulacoes'
-    | '/parceiro/'
     | '/admin/apis-ia'
     | '/admin/auditoria'
     | '/admin/backup'
@@ -952,10 +954,12 @@ export interface FileRouteTypes {
     | '/auth'
     | '/cliente'
     | '/cliente-consentimento'
+    | '/parceiro'
     | '/portal'
     | '/dashboard'
     | '/documentos'
     | '/matriculas'
+    | '/parceiro-inicio'
     | '/sem-acesso'
     | '/cliente/acompanhar-minha-proposta'
     | '/cliente/logout'
@@ -966,7 +970,6 @@ export interface FileRouteTypes {
     | '/parceiro/documentos'
     | '/parceiro/propostas'
     | '/parceiro/simulacoes'
-    | '/parceiro'
     | '/admin/apis-ia'
     | '/admin/auditoria'
     | '/admin/backup'
@@ -1044,6 +1047,7 @@ export interface FileRouteTypes {
     | '/_authenticated/documentos'
     | '/_authenticated/formularios'
     | '/_authenticated/matriculas'
+    | '/_authenticated/parceiro-inicio'
     | '/_authenticated/relatorios'
     | '/_authenticated/sem-acesso'
     | '/cliente/acompanhar-minha-proposta'
@@ -1055,7 +1059,6 @@ export interface FileRouteTypes {
     | '/parceiro/documentos'
     | '/parceiro/propostas'
     | '/parceiro/simulacoes'
-    | '/parceiro/'
     | '/_authenticated/admin/apis-ia'
     | '/_authenticated/admin/auditoria'
     | '/_authenticated/admin/backup'
@@ -1184,13 +1187,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/parceiro/': {
-      id: '/parceiro/'
-      path: '/'
-      fullPath: '/parceiro/'
-      preLoaderRoute: typeof ParceiroIndexRouteImport
-      parentRoute: typeof ParceiroRoute
-    }
     '/parceiro/simulacoes': {
       id: '/parceiro/simulacoes'
       path: '/simulacoes'
@@ -1266,6 +1262,13 @@ declare module '@tanstack/react-router' {
       path: '/relatorios'
       fullPath: '/relatorios'
       preLoaderRoute: typeof AuthenticatedRelatoriosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/parceiro-inicio': {
+      id: '/_authenticated/parceiro-inicio'
+      path: '/parceiro-inicio'
+      fullPath: '/parceiro-inicio'
+      preLoaderRoute: typeof AuthenticatedParceiroInicioRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/matriculas': {
@@ -1826,6 +1829,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDocumentosRoute: typeof AuthenticatedDocumentosRoute
   AuthenticatedFormulariosRoute: typeof AuthenticatedFormulariosRouteWithChildren
   AuthenticatedMatriculasRoute: typeof AuthenticatedMatriculasRoute
+  AuthenticatedParceiroInicioRoute: typeof AuthenticatedParceiroInicioRoute
   AuthenticatedRelatoriosRoute: typeof AuthenticatedRelatoriosRouteWithChildren
   AuthenticatedSemAcessoRoute: typeof AuthenticatedSemAcessoRoute
   AuthenticatedAdminApisIaRoute: typeof AuthenticatedAdminApisIaRoute
@@ -1879,6 +1883,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDocumentosRoute: AuthenticatedDocumentosRoute,
   AuthenticatedFormulariosRoute: AuthenticatedFormulariosRouteWithChildren,
   AuthenticatedMatriculasRoute: AuthenticatedMatriculasRoute,
+  AuthenticatedParceiroInicioRoute: AuthenticatedParceiroInicioRoute,
   AuthenticatedRelatoriosRoute: AuthenticatedRelatoriosRouteWithChildren,
   AuthenticatedSemAcessoRoute: AuthenticatedSemAcessoRoute,
   AuthenticatedAdminApisIaRoute: AuthenticatedAdminApisIaRoute,
@@ -1970,7 +1975,6 @@ interface ParceiroRouteChildren {
   ParceiroDocumentosRoute: typeof ParceiroDocumentosRoute
   ParceiroPropostasRoute: typeof ParceiroPropostasRoute
   ParceiroSimulacoesRoute: typeof ParceiroSimulacoesRoute
-  ParceiroIndexRoute: typeof ParceiroIndexRoute
 }
 
 const ParceiroRouteChildren: ParceiroRouteChildren = {
@@ -1979,7 +1983,6 @@ const ParceiroRouteChildren: ParceiroRouteChildren = {
   ParceiroDocumentosRoute: ParceiroDocumentosRoute,
   ParceiroPropostasRoute: ParceiroPropostasRoute,
   ParceiroSimulacoesRoute: ParceiroSimulacoesRoute,
-  ParceiroIndexRoute: ParceiroIndexRoute,
 }
 
 const ParceiroRouteWithChildren = ParceiroRoute._addFileChildren(

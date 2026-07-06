@@ -1,56 +1,68 @@
+# Portal do Parceiro guiado por permissões
+
+## Problema atual
+
+Hoje o Portal do Parceiro (`/parceiro/*`) é um app paralelo, separado do portal do correspondente:
+
+- Menu fixo de 6 itens (`navParceiro`), independente da matriz de permissões.
+- Páginas próprias, somente-leitura, com escopo fixo "clientes vinculados".
+- Não respeita o nível de acesso (Regras & Módulos) que o correspondente configura para o parceiro.
+
+Resultado: o correspondente não consegue definir "o que o parceiro vê ou não", nem "próprios x todos". É exatamente o "código remendado" a ser eliminado.
+
+O portal do correspondente, por outro lado, já é 100% guiado por permissões:
+- `navInterno` é filtrado por `getMinhasPermissoes` (matriz `permissions` do `nivel_acesso`).
+- RLS + `usuario_escopo_dados` / `usuario_tem_acesso_*` aplicam o escopo próprios/equipe/todos.
+- A tela Regras & Módulos já cria níveis de acesso com `acesso_tipo = 'portal_parceiro'`.
+
 ## Objetivo
 
-Resolver os problemas relatados na ficha do cliente, nas listagens e no Scan IA.
+O parceiro passa a usar **as mesmas opções e páginas** do correspondente, porém:
+- Cada item de menu/módulo aparece **somente** se o nível de acesso do parceiro tiver a permissão `:view`.
+- Cada listagem respeita o **escopo** (próprios/equipe/todos) definido pelo correspondente.
+- Para o parceiro, **"próprios"** significa os registros dos **clientes vinculados a ele** (`cliente_parceiros`), além dos que ele mesmo criou/é responsável.
 
-> Importante: a sessão do Supabase expirou. As partes de banco (migração + reordenar esteira) só rodam após reconectar o Supabase no painel. As partes de frontend não dependem disso.
+## Mudanças
 
----
+### 1. Banco de dados (escopo do parceiro) — migração
 
-## 1. "Habilitar acesso" ao portal não salva → cliente sempre "Inativo"
+Ajustar as funções SECURITY DEFINER para que, quando o usuário for parceiro (`acesso_tipo='portal_parceiro'`), o escopo "próprios" também inclua os registros ligados via `cliente_parceiros`:
 
-Hoje o interruptor no formulário só muda estado local e nunca grava; e ficava desabilitado. O badge "Inativo/Ativo" lê `portal_acesso_ativo`, que nunca muda.
+- Nova função `public.cliente_vinculado_ao_parceiro(_user_id uuid, _cliente_id uuid)` → `true` se existir vínculo em `cliente_parceiros`.
+- Atualizar `usuario_tem_acesso_cliente`, `usuario_tem_acesso_simulacao`, `usuario_tem_acesso_proposta` para incluir `OR cliente_vinculado_ao_parceiro(...)`.
+- Atualizar as policies `SELECT` de `clientes`, `simulacoes`, `propostas` (hoje comparam só `responsavel_id`/`criador_id`) para também aceitar o vínculo de parceiro no caso escopo "próprios".
+- `comissoes`: manter parceiro restrito ao seu `parceiro_id` (já é o caso); permitir `SELECT` quando `parceiro_id = auth.uid()`.
 
-- Criar server function `definirAcessoPortal({ cliente_id, ativo })` que atualiza `clientes.portal_acesso_ativo` (com `requireSupabaseAuth` + escopo).
-- No `ClienteForm`, ligar o `Switch` a essa função (salvar ao alternar, com toast). Em cadastro novo, manter desabilitado até existir id.
-- Invalidar `["cliente", id]` para o badge atualizar na hora.
+Sem novas tabelas. Apenas `CREATE OR REPLACE FUNCTION` + `CREATE/ALTER POLICY`. RLS continua ativa e mais segura (o parceiro nunca enxerga fora do seu correspondente).
 
-## 2. "Nova simulação personalizada" desabilitada
+### 2. Navegação unificada
 
-Botão está fixo como `disabled`. A Etapa 04 já existe.
+- Remover `navParceiro` fixo e passar a filtrar `navInterno` também para o parceiro, usando `getMinhasPermissoes`.
+- Adicionar suporte a "portal alvo" nos itens de nav: cada item declara os módulos que exige; o parceiro vê o mesmo item, apenas se tiver `:view`.
+- Ocultar do parceiro os grupos que não fazem sentido para ele quando sem permissão (Administração etc. já somem por falta de permissão).
 
-- Trocar por `Link` para a tela de nova simulação com o cliente pré-selecionado (`?cliente=<id>`).
-- A tela de nova simulação lê esse parâmetro e pré-preenche o cliente.
+### 3. Shell/rotas do parceiro
 
-## 3. Ordem da esteira (bug já identificado antes)
+- O parceiro continua entrando por `/parceiro` (login com marca própria), mas após autenticado passa a usar o **mesmo AppShell e as mesmas páginas** do portal interno, com o menu filtrado por permissão.
+- Consolidar: as telas hoje duplicadas em `/parceiro/clientes`, `/parceiro/simulacoes`, etc. passam a redirecionar para as páginas internas equivalentes (`/crm/clientes`, `/operacional/simulacoes`, …), que já respeitam escopo. Assim não há duas implementações da mesma tela.
+- Manter a tela "Início" do parceiro (resumo da carteira) como página inicial dele.
 
-Reaplicar o reordenamento interrompido: `cadastro_completo`→2, `simulacao`→3, `aprovacao`→4, para um cliente recém-cadastrado não mostrar Simulação/Aprovação como concluídas. (migração de dados)
+### 4. Sessão/roteamento
 
-## 4. Filtro por data na Esteira e nas Simulações
+- `getMinhasPermissoes` já funciona para o parceiro (lê `nivel_acesso_id`), sem mudança.
+- Ajustar o guard para permitir que o parceiro acesse as rotas internas permitidas, mantendo bloqueio das não permitidas.
 
-- Esteira (`crm.painel.tsx`): filtro De/Até pela data de atualização/entrada na etapa, em search params.
-- Simulações (`operacional.simulacoes.tsx`): mesmo filtro por `created_at`, em search params, aplicado na server function de listagem.
+## Técnico
 
-## 5. Nova aba "Vínculo de atendimento" na ficha do cliente
+- Arquivos principais: `supabase` (migração de funções + policies), `src/components/app-shell/nav-config.ts`, `src/components/app-shell/filter-nav.ts`, `src/routes/parceiro.tsx`, `src/routes/_authenticated/route.tsx`, rotas `src/routes/parceiro.*.tsx` (viram redirects/consolidam), `src/lib/parceiro/portal.functions.ts` (mantém só o resumo).
+- Segurança: escopo do parceiro nunca ultrapassa o `correspondente_id`; "próprios" = vínculo em `cliente_parceiros` + autoria. `supabaseAdmin` deixa de ser necessário nas listas (passam a usar RLS do próprio parceiro), reduzindo superfície.
 
-- **Responsável**: quem criou/está responsável (`clientes.responsavel_id`/criador) — leitura.
-- **Parceiros vinculados**: usa a tabela existente `cliente_parceiros`. Adicionar/remover vínculos escolhendo entre usuários/parceiros cadastrados (lista com escopo do correspondente).
-- Server functions: `listarVinculosCliente`, `vincularParceiro`, `desvincularParceiro`, `listarParceirosDisponiveis`.
-- Componente `src/components/crm/vinculo-tab.tsx`.
+## Fora de escopo
 
-## 6. Scan IA — autor, exclusão e auditoria
+- Não altera o enum `app_role` nem cria papéis novos.
+- Não muda a marca/telas do App do Cliente.
 
-- Nas telas `crm.scan-ia.tsx` (lista) e `crm.scan-ia_.$id.tsx` (detalhe): exibir o **usuário que criou** cada leitura (join com `profiles` pelo criador/`ator_id`) e a data.
-- Adicionar ação **Excluir** (com confirmação, reusando `confirm-delete`).
-- Toda exclusão (e criação) grava em `scan_ia_auditoria` (`acao`, `ator_id`, `leitura_id`, `dados`) — nenhum registro some sem trilha.
-- Server functions: `excluirLeituraScan` (soft/hard delete + insert em auditoria) e ajuste das listagens para trazer o autor.
+## Pontos a confirmar
 
-### Detalhes técnicos
-
-- Server functions novas em `src/lib/crm/*.functions.ts` (padrão `createServerFn` + `requireSupabaseAuth`).
-- Filtros por data via `validateSearch` (zod + `fallback`) e queryKey/loaderDeps.
-- RLS de `cliente_parceiros` e `scan_ia_auditoria` validadas; ajuste por migração se faltar insert/delete pelo correspondente.
-- Sem alterações no back-end de comunicação com a API bancária.
-
-### Pergunta em aberto
-
-Em "vincular parceiros ... simulação ou aprovação": confirmo que o vínculo é só associar usuários/parceiros ao cliente (visibilidade/atendimento), sem alterar regras de comissão. Se a intenção for definir quem recebe comissão, trato como bloco adicional depois.
+1. Ao unificar, o parceiro passa a navegar pelas rotas internas (ex.: `/crm/clientes`) com a marca do portal — OK manter uma única implementação de cada tela (recomendado, evita remendo)?
+2. "Próprios" do parceiro = clientes vinculados em `cliente_parceiros` + os que ele criou. Confirma essa definição?

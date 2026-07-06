@@ -4,7 +4,7 @@ import { Users, Calculator, FileText, Percent } from "lucide-react";
 import { ParceiroPage, formatBRL } from "@/components/parceiro/parceiro-page";
 import { getResumoParceiro } from "@/lib/parceiro/portal.functions";
 
-export const Route = createFileRoute("/parceiro/")({
+export const Route = createFileRoute("/_authenticated/parceiro-inicio")({
   head: () => ({ meta: [{ title: "Início — Portal do Parceiro" }] }),
   component: InicioParceiro,
 });
@@ -47,8 +47,8 @@ function InicioParceiro() {
       {resumo.data && (
         <div className="mt-6 rounded-xl border bg-card p-4 text-sm text-muted-foreground">
           Seu percentual de comissão padrão é{" "}
-          <span className="font-medium text-foreground">{resumo.data.percentual_comissao}%</span>.
-          As comissões são calculadas automaticamente quando um contrato é emitido para um cliente
+          <span className="font-medium text-foreground">{resumo.data.percentual_comissao}%</span>. As
+          comissões são calculadas automaticamente quando um contrato é emitido para um cliente
           vinculado a você.
         </div>
       )}

@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/app-shell/app-shell";
-import { navInterno } from "@/components/app-shell/nav-config";
+import { navInterno, navParceiro } from "@/components/app-shell/nav-config";
 import { filterNavByPermissions, permsToSet } from "@/components/app-shell/filter-nav";
 import { SidebarSkeleton } from "@/components/app-shell/sidebar-nav";
 import { getMinhaSessao } from "@/lib/session.functions";
@@ -39,10 +39,13 @@ function InternalLayout() {
     staleTime: 60_000,
   });
 
+  const ehParceiro = sessaoQuery.data?.profile?.acesso_tipo === "portal_parceiro";
+
   const navFiltrada = useMemo(() => {
     if (!permsQuery.data) return [];
-    return filterNavByPermissions(navInterno, permsToSet(permsQuery.data), permsQuery.data.todas);
-  }, [permsQuery.data]);
+    const base = ehParceiro ? navParceiro : navInterno;
+    return filterNavByPermissions(base, permsToSet(permsQuery.data), permsQuery.data.todas);
+  }, [permsQuery.data, ehParceiro]);
 
   useEffect(() => {
     if (!sessaoQuery.isLoading && !permsQuery.isLoading) {
