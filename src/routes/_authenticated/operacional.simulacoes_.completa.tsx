@@ -63,7 +63,10 @@ type Form = Record<string, any>;
 
 function Pagina() {
   const router = useRouter();
-  const { duplicar } = Route.useSearch();
+  const { duplicar, origem } = Route.useSearch();
+  const modoProposta = origem === "proposta";
+  const criarPropostaFn = useServerFn(criarProposta);
+  const [gerarProposta, setGerarProposta] = useState(modoProposta);
   const [f, setF] = useState<Form>({
     produto: "financiamento_imobiliario",
     tipo_imovel: "",
