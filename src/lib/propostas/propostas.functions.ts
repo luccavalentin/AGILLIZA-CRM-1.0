@@ -791,7 +791,7 @@ export const atualizarEnvolvido = createServerFn({ method: "POST" })
     const { supabase } = context;
     const { data: env } = await supabase
       .from("proposta_envolvidos")
-      .select("proposta_id")
+      .select("proposta_id, cliente_id")
       .eq("id", data.id)
       .maybeSingle();
     if (!env) throw new Error("Registro não encontrado.");
@@ -801,6 +801,9 @@ export const atualizarEnvolvido = createServerFn({ method: "POST" })
       .update({ ...data.dados } as any)
       .eq("id", data.id);
     if (error) throw new Error(error.message);
+    if (env.cliente_id) {
+      await sincronizarEnvolvidoParaCliente(supabase, env.cliente_id as string, data.dados);
+    }
     return { ok: true };
   });
 
