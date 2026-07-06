@@ -136,12 +136,39 @@ function Pagina() {
           <Bell className="h-5 w-5 text-muted-foreground" />
           <h1 className="text-xl font-semibold text-foreground">Notificações</h1>
         </div>
-        {naoLidas.length > 0 && (
-          <Button variant="outline" size="sm" onClick={() => marcarTodas.mutate()}>
-            <CheckCheck className="mr-1 h-4 w-4" /> Marcar todas como lidas
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {naoLidas.length > 0 && (
+            <Button variant="outline" size="sm" onClick={() => marcarTodas.mutate()}>
+              <CheckCheck className="mr-1 h-4 w-4" /> Marcar todas como lidas
+            </Button>
+          )}
+          {itens.length > 0 && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" size="sm" disabled={limpar.isPending}>
+                  <Trash2 className="mr-1 h-4 w-4" /> Limpar
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Limpar notificações?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Todas as suas notificações serão excluídas permanentemente. Esta ação não pode
+                    ser desfeita.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction onClick={() => limpar.mutate()}>
+                    Limpar tudo
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+        </div>
       </div>
+
 
       {isLoading ? (
         <p className="py-12 text-center text-sm text-muted-foreground">Carregando…</p>
