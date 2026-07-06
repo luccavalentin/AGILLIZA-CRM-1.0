@@ -291,7 +291,7 @@ export const listarNiveisAcesso = createServerFn({ method: "GET" })
 
     const { data: niveis, error } = await supabase
       .from("access_levels")
-      .select("id, nome, descricao, ativo, is_padrao, correspondente_id")
+      .select("id, nome, descricao, ativo, is_padrao, correspondente_id, papel, acesso_tipo")
       .order("is_padrao", { ascending: false })
       .order("nome", { ascending: true });
     if (error) throw new Error(error.message);
