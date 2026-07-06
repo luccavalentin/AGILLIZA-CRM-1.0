@@ -285,7 +285,22 @@ function Pagina() {
 
       {tab === "RESUMO" && <TabResumo proposta={p} bancos={data.bancos} propostaId={id} />}
       {tab === "COMPRADORES" && (
-        <TabEnvolvidos tipo="CO" propostaId={id} envolvidos={data.envolvidos} />
+        <TabEnvolvidos
+          tipo="CO"
+          propostaId={id}
+          envolvidos={data.envolvidos}
+          autoAbrir={autoAbrir}
+          onAutoAbriu={() => {
+            setAutoAbrir(false);
+            router.navigate({
+              to: "/operacional/propostas/$id",
+              params: { id },
+              search: {},
+              replace: true,
+            });
+          }}
+        />
+
       )}
       {tab === "VENDEDORES" && (
         <TabEnvolvidos tipo="VD" propostaId={id} envolvidos={data.envolvidos} />
