@@ -2472,48 +2472,93 @@ export type Database = {
       }
       parametros_globais: {
         Row: {
+          bairro: string | null
+          cep: string | null
+          cidade: string | null
           cnpj: string | null
+          complemento: string | null
           cor_primaria: string | null
           correspondente_id: string
           created_at: string
           email_dpo: string | null
+          email_empresa: string | null
           endereco: string | null
           id: string
+          inscricao_estadual: string | null
+          inscricao_municipal: string | null
           logo_url: string | null
+          logradouro: string | null
           nome_empresa: string | null
+          nome_fantasia: string | null
+          numero: string | null
           politica_lgpd: string | null
           politica_privacidade: string | null
+          razao_social: string | null
+          responsavel_nome: string | null
+          site: string | null
+          telefone_empresa: string | null
           telefone_sac: string | null
+          uf: string | null
           updated_at: string
         }
         Insert: {
+          bairro?: string | null
+          cep?: string | null
+          cidade?: string | null
           cnpj?: string | null
+          complemento?: string | null
           cor_primaria?: string | null
           correspondente_id: string
           created_at?: string
           email_dpo?: string | null
+          email_empresa?: string | null
           endereco?: string | null
           id?: string
+          inscricao_estadual?: string | null
+          inscricao_municipal?: string | null
           logo_url?: string | null
+          logradouro?: string | null
           nome_empresa?: string | null
+          nome_fantasia?: string | null
+          numero?: string | null
           politica_lgpd?: string | null
           politica_privacidade?: string | null
+          razao_social?: string | null
+          responsavel_nome?: string | null
+          site?: string | null
+          telefone_empresa?: string | null
           telefone_sac?: string | null
+          uf?: string | null
           updated_at?: string
         }
         Update: {
+          bairro?: string | null
+          cep?: string | null
+          cidade?: string | null
           cnpj?: string | null
+          complemento?: string | null
           cor_primaria?: string | null
           correspondente_id?: string
           created_at?: string
           email_dpo?: string | null
+          email_empresa?: string | null
           endereco?: string | null
           id?: string
+          inscricao_estadual?: string | null
+          inscricao_municipal?: string | null
           logo_url?: string | null
+          logradouro?: string | null
           nome_empresa?: string | null
+          nome_fantasia?: string | null
+          numero?: string | null
           politica_lgpd?: string | null
           politica_privacidade?: string | null
+          razao_social?: string | null
+          responsavel_nome?: string | null
+          site?: string | null
+          telefone_empresa?: string | null
           telefone_sac?: string | null
+          uf?: string | null
           updated_at?: string
         }
         Relationships: []
