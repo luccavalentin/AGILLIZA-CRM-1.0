@@ -1,3 +1,5 @@
+import { useEffect, useRef, useState } from "react";
+
 /** Overlay exibido enquanto a simulação consulta os bancos. */
 export function ConsultandoOverlay({
   aberto,
@@ -8,15 +10,59 @@ export function ConsultandoOverlay({
   total: number;
   concluidos: number;
 }) {
+  const temProgresso = total > 0;
+
+  // Progresso "real" baseado nos bancos já concluídos.
+  const pctReal = temProgresso
+    ? Math.min(100, Math.round((concluidos / total) * 100))
+    : 0;
+  const finalizado = temProgresso && concluidos >= total;
+
+  // Progresso animado exibido: sobe suavemente para dar sensação de carregamento,
+  // sem "travar" em 0% enquanto um banco é processado.
+  const [pctExibido, setPctExibido] = useState(0);
+  const rafRef = useRef<number | null>(null);
+
+  // Reinicia ao abrir o overlay.
+  useEffect(() => {
+    if (aberto) setPctExibido(0);
+  }, [aberto]);
+
+  useEffect(() => {
+    if (!aberto) return;
+
+    const tick = () => {
+      setPctExibido((atual) => {
+        // Teto: quando finalizado vai a 100; senão, sobe até ~90% da fatia do
+        // banco atual para indicar atividade sem ultrapassar o progresso real.
+        const teto = finalizado
+          ? 100
+          : temProgresso
+            ? Math.min(99, ((concluidos + 0.9) / total) * 100)
+            : 96;
+
+        if (atual >= teto) return atual;
+        // Aproxima do teto de forma suave (mais rápido no começo).
+        const passo = Math.max(0.4, (teto - atual) * 0.06);
+        return Math.min(teto, atual + passo);
+      });
+      rafRef.current = window.setTimeout(tick, 40) as unknown as number;
+    };
+
+    tick();
+    return () => {
+      if (rafRef.current != null) clearTimeout(rafRef.current);
+    };
+  }, [aberto, temProgresso, finalizado, concluidos, total]);
+
   if (!aberto) return null;
 
-  const temProgresso = total > 0;
-  const pct = temProgresso ? Math.min(100, Math.round((concluidos / total) * 100)) : 0;
+  const pct = Math.round(pctExibido);
 
   // Anel de progresso (SVG)
   const raio = 52;
   const circunferencia = 2 * Math.PI * raio;
-  const offset = circunferencia * (1 - (temProgresso ? pct : 0) / 100);
+  const offset = circunferencia * (1 - pctExibido / 100);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/70 backdrop-blur-md">
@@ -49,14 +95,9 @@ export function ConsultandoOverlay({
                 fill="none"
                 strokeWidth="8"
                 strokeLinecap="round"
-                className="stroke-primary transition-[stroke-dashoffset] duration-700 ease-out"
+                className="stroke-primary transition-[stroke-dashoffset] duration-200 ease-out"
                 strokeDasharray={circunferencia}
-                strokeDashoffset={temProgresso ? offset : circunferencia * 0.75}
-                style={
-                  temProgresso
-                    ? undefined
-                    : { animation: "spin 1.1s linear infinite", transformOrigin: "center" }
-                }
+                strokeDashoffset={offset}
               />
             </svg>
 
@@ -68,11 +109,9 @@ export function ConsultandoOverlay({
                 className="h-10 w-10 rounded-lg"
                 draggable={false}
               />
-              {temProgresso && (
-                <span className="mt-1 text-lg font-bold tabular-nums text-card-foreground">
-                  {pct}%
-                </span>
-              )}
+              <span className="mt-1 text-lg font-bold tabular-nums text-card-foreground">
+                {pct}%
+              </span>
             </div>
           </div>
 
