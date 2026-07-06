@@ -488,21 +488,24 @@ function SolicitacaoDialog({
           </div>
           <div className="space-y-1">
             <Label>Solicitante</Label>
-            <Input
+            <InputAutocomplete
               value={solicitante}
-              onChange={(e) => setSolicitante(e.target.value)}
+              onValueChange={setSolicitante}
+              options={nomesUsuarios}
               placeholder="Quem pediu (equipe Agilliza)"
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <Label>Corretor</Label>
-              <Input
+              <InputAutocomplete
                 value={corretor}
-                onChange={(e) => setCorretor(e.target.value)}
+                onValueChange={setCorretor}
+                options={nomesUsuarios}
                 placeholder="Nome do corretor"
               />
             </div>
+
             <div className="space-y-1">
               <Label>Nº da matrícula</Label>
               <Input
