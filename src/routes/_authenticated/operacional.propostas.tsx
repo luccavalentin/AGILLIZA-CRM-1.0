@@ -110,7 +110,7 @@ function Pagina() {
             <TableRow>
               <TableHead>Número</TableHead>
               <TableHead>Cliente</TableHead>
-              <TableHead>Banco</TableHead>
+              <TableHead>Bancos</TableHead>
               <TableHead className="text-right">R$ Financiamento</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="w-12 text-right">Ações</TableHead>
