@@ -244,6 +244,6 @@ export function ChatClienteTab({ clienteId, info }: { clienteId: string; info?: 
         </Button>
       </div>
     </Card>
-
+    </PopOutPanel>
   );
 }
