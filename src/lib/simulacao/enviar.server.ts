@@ -17,6 +17,8 @@ interface EnviarArgs {
   userId: string;
   ip: string | null;
   supabase: SupabaseClient<any, any, any>;
+  /** Quando informado, reenvia apenas estes bancos (ex.: só os que deram erro). */
+  bancoIds?: string[];
 }
 
 interface EnviarResultado {
