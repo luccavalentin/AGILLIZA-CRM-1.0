@@ -305,8 +305,16 @@ export function RegrasModulosPanel() {
             {selecionado ? (
               <>
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <h2 className="text-lg font-medium text-foreground">{selecionado.nome}</h2>
+                    <Badge variant="outline">
+                      {PAPEL_LABEL[selecionado.papel] ?? selecionado.papel}
+                    </Badge>
+                    <Badge variant="outline">
+                      {selecionado.acesso_tipo === "portal_parceiro"
+                        ? "Portal do Parceiro"
+                        : "Portal do Correspondente"}
+                    </Badge>
                     {selecionado.is_padrao ? (
                       <Badge variant="secondary" className="gap-1">
                         <Lock className="h-3 w-3" /> Padrão
@@ -317,7 +325,7 @@ export function RegrasModulosPanel() {
                     {editavel ? (
                       <>
                         <Button variant="outline" size="sm" onClick={abrirEditar}>
-                          <Pencil className="h-4 w-4" /> Renomear
+                          <Pencil className="h-4 w-4" /> Editar
                         </Button>
                         {!selecionado.is_padrao ? (
                           <Button
