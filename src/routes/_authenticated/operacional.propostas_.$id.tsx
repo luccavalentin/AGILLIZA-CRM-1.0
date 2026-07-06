@@ -29,6 +29,7 @@ import {
   moverStatusProposta,
   adicionarFollowup,
   adicionarEnvolvido,
+  atualizarEnvolvido,
   removerEnvolvido,
   registrarDocumento,
   removerDocumento,
@@ -89,6 +90,11 @@ import { TRANSICOES, STATUS_EDITAVEIS, type PropostaStatus } from "@/lib/propost
 import { statusProposta } from "@/components/propostas/status";
 import { formatBRL } from "@/lib/simulacao/format";
 import { cn } from "@/lib/utils";
+import {
+  ParticipanteDialog,
+  envolvidoParaForm,
+  type ParticipanteForm,
+} from "@/components/proposta/participante-form";
 
 type SituacaoBanco = (typeof SITUACOES_BANCO)[number];
 
@@ -875,33 +881,73 @@ function TabEnvolvidos({
 }) {
   const qc = useQueryClient();
   const addFn = useServerFn(adicionarEnvolvido);
+  const updFn = useServerFn(atualizarEnvolvido);
   const delFn = useServerFn(removerEnvolvido);
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({
-    nome: "",
-    cpf_cnpj: "",
-    email: "",
-    celular: "",
-    tipo_pessoa: "F",
-  });
+  const [salvando, setSalvando] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [inicial, setInicial] = useState<ParticipanteForm | undefined>(undefined);
+
   const lista = envolvidos.filter((e) =>
-    tipo === "CO" ? e.tipo_qualificacao === "CO" || e.tipo_qualificacao === "TI" : e.tipo_qualificacao === tipo,
+    tipo === "CO"
+      ? e.tipo_qualificacao === "CO" || e.tipo_qualificacao === "TI"
+      : e.tipo_qualificacao === tipo,
   );
 
-  async function adicionar() {
-    if (!form.nome.trim()) {
-      toast.error("Informe o nome.");
-      return;
-    }
+  function completo(e: any): boolean {
+    const base =
+      e.nome &&
+      e.cpf_cnpj &&
+      e.tipo_documento_identidade &&
+      e.numero_documento &&
+      e.orgao_expedidor &&
+      e.uf_expedicao &&
+      e.profissao &&
+      e.renda &&
+      e.email &&
+      e.celular &&
+      e.cep &&
+      e.logradouro &&
+      e.numero_logradouro &&
+      e.bairro &&
+      e.municipio &&
+      e.uf &&
+      e.fg_autorizacao_dados;
+    const pf = (e.tipo_pessoa ?? "F") === "F";
+    const pessoais = !pf || (e.data_nascimento && e.nome_mae && e.tipo_sexo && e.estado_civil);
+    return Boolean(base && pessoais);
+  }
+
+  function novo() {
+    setEditId(null);
+    setInicial(undefined);
+    setOpen(true);
+  }
+
+  function editar(e: any) {
+    setEditId(e.id);
+    setInicial(envolvidoParaForm(e));
+    setOpen(true);
+  }
+
+  async function salvar(dados: any) {
+    setSalvando(true);
     try {
-      await addFn({
-        data: { proposta_id: propostaId, dados: { ...form, tipo_qualificacao: tipo } },
-      });
+      if (editId) {
+        await updFn({ data: { id: editId, dados } });
+        toast.success("Participante atualizado.");
+      } else {
+        await addFn({
+          data: { proposta_id: propostaId, dados: { ...dados, tipo_qualificacao: dados.tipo_qualificacao ?? tipo } },
+        });
+        toast.success("Participante incluído.");
+      }
       setOpen(false);
-      setForm({ nome: "", cpf_cnpj: "", email: "", celular: "", tipo_pessoa: "F" });
       qc.invalidateQueries({ queryKey: ["proposta", propostaId] });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Falha ao adicionar.");
+      toast.error(e instanceof Error ? e.message : "Falha ao salvar.");
+    } finally {
+      setSalvando(false);
     }
   }
 
@@ -916,57 +962,25 @@ function TabEnvolvidos({
         <span className="text-sm font-medium text-muted-foreground">
           {tipo === "CO" ? "Compradores" : "Vendedores"}
         </span>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button size="sm">
-              <Plus className="mr-1 h-4 w-4" /> Incluir pessoa
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Incluir {tipo === "CO" ? "comprador" : "vendedor"}</DialogTitle>
-            </DialogHeader>
-            <div className="grid gap-3">
-              <div>
-                <Label>Nome</Label>
-                <Input
-                  value={form.nome}
-                  onChange={(e) => setForm({ ...form, nome: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label>CPF/CNPJ</Label>
-                <Input
-                  value={form.cpf_cnpj}
-                  onChange={(e) => setForm({ ...form, cpf_cnpj: e.target.value })}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label>E-mail</Label>
-                  <Input
-                    value={form.email}
-                    onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <Label>Celular</Label>
-                  <Input
-                    value={form.celular}
-                    onChange={(e) => setForm({ ...form, celular: e.target.value })}
-                  />
-                </div>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setOpen(false)}>
-                Cancelar
-              </Button>
-              <Button onClick={adicionar}>Salvar</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <Button size="sm" onClick={novo}>
+          <Plus className="mr-1 h-4 w-4" /> Incluir pessoa
+        </Button>
       </div>
+
+      <ParticipanteDialog
+        open={open}
+        onOpenChange={setOpen}
+        titulo={
+          editId
+            ? "Editar participante"
+            : `Incluir ${tipo === "CO" ? "comprador" : "vendedor"}`
+        }
+        inicial={inicial}
+        tipoQualificacaoFixo={tipo === "VD" ? "VD" : undefined}
+        salvando={salvando}
+        onSalvar={salvar}
+      />
+
       <Table>
         <TableHeader>
           <TableRow>
@@ -974,25 +988,42 @@ function TabEnvolvidos({
             <TableHead>Nome</TableHead>
             <TableHead>E-mail</TableHead>
             <TableHead>Celular</TableHead>
+            <TableHead>Dados</TableHead>
             <TableHead></TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {lista.length === 0 && (
             <TableRow>
-              <TableCell colSpan={5} className="py-8 text-center text-sm text-muted-foreground">
+              <TableCell colSpan={6} className="py-8 text-center text-sm text-muted-foreground">
                 Nenhum {tipo === "CO" ? "comprador" : "vendedor"} cadastrado
               </TableCell>
             </TableRow>
           )}
           {lista.map((e) => (
-            <TableRow key={e.id}>
+            <TableRow
+              key={e.id}
+              className="cursor-pointer"
+              onClick={() => editar(e)}
+            >
               <TableCell>{e.cpf_cnpj ?? "—"}</TableCell>
               <TableCell className="font-medium">{e.nome}</TableCell>
               <TableCell>{e.email ?? "—"}</TableCell>
               <TableCell>{e.celular ?? "—"}</TableCell>
+              <TableCell>
+                <ToneBadge tone={completo(e) ? "success" : "warning"}>
+                  {completo(e) ? "Completo" : "Incompleto"}
+                </ToneBadge>
+              </TableCell>
               <TableCell className="text-right">
-                <Button size="icon" variant="ghost" onClick={() => remover(e.id)}>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={(ev) => {
+                    ev.stopPropagation();
+                    remover(e.id);
+                  }}
+                >
                   <Trash2 className="h-4 w-4 text-destructive" />
                 </Button>
               </TableCell>
@@ -1003,6 +1034,7 @@ function TabEnvolvidos({
     </div>
   );
 }
+
 
 /* ===== IQ ===== */
 function TabIq({ proposta, propostaId }: { proposta: any; propostaId: string }) {

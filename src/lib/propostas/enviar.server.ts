@@ -147,7 +147,10 @@ async function garantirEnderecoParticipantes({
     const faltaUf = !(part?.uf && String(part.uf).trim());
     const faltaProfissao = !(part?.nomeProfissao && String(part.nomeProfissao).trim());
     const faltaEmpresa = !(part?.nomeEmpresaProfissao && String(part.nomeEmpresaProfissao).trim());
-    if (!faltaEstadoCivil && !faltaUf && !faltaProfissao && !faltaEmpresa) continue;
+    // Quando temos um envolvido cadastrado no sistema, sempre sincronizamos os
+    // dados complementares (documento, sexo, FGTS, endereço) com o banco.
+    const temEnvolvido = Boolean(env);
+    if (!temEnvolvido && !faltaEstadoCivil && !faltaUf && !faltaProfissao && !faltaEmpresa) continue;
     // Sem meios de preencher estado civil ou UF, não adianta chamar a API —
     // profissão/empresa sempre têm fallback, então não bloqueiam.
     if (faltaEstadoCivil && !estadoCivil && faltaUf && !uf && !faltaProfissao && !faltaEmpresa)
@@ -162,13 +165,22 @@ async function garantirEnderecoParticipantes({
       dataNascimento:
         part?.dataNascimento ?? env?.data_nascimento ?? src?.data_nascimento ?? prop.data_nascimento ?? undefined,
       tipoEstadoCivil: estadoCivil ?? undefined,
+      tipoRegimeCasamento: part?.tipoRegimeCasamento ?? env?.regime_casamento ?? undefined,
+      tipoSexo: part?.tipoSexo ?? env?.tipo_sexo ?? undefined,
+      tipoDocumentoIdentidade:
+        part?.tipoDocumentoIdentidade ?? env?.tipo_documento_identidade ?? undefined,
+      numeroDocumento: part?.numeroDocumento ?? env?.numero_documento ?? undefined,
+      orgaoExpedidor: part?.orgaoExpedidor ?? env?.orgao_expedidor ?? undefined,
+      ufExpedicao: part?.ufExpedicao ?? env?.uf_expedicao ?? undefined,
+      dataExpedicao: part?.dataExpedicao ?? env?.data_expedicao ?? undefined,
       nomeProfissao: profissao,
       nomeEmpresaProfissao: empresa,
       nomeMae: part?.nomeMae ?? env?.nome_mae ?? src?.mae ?? undefined,
       renda: part?.renda ?? env?.renda ?? src?.renda_total_declarada ?? prop.renda_total ?? undefined,
       email: part?.email ?? env?.email ?? src?.email ?? prop.email ?? undefined,
       celular: part?.celular ?? soDigitos(env?.celular ?? src?.celular) ?? undefined,
-      fgAutorizacaoDados: true,
+      utilizaFgts: part?.utilizaFgts ?? Boolean(env?.utiliza_fgts) ?? undefined,
+      fgAutorizacaoDados: env?.fg_autorizacao_dados ?? true,
       cep: soDigitos(env?.cep ?? prop.cep_imovel),
       logradouro: env?.logradouro ?? prop.endereco_imovel ?? undefined,
       numeroLogradouro: env?.numero_logradouro ?? undefined,
