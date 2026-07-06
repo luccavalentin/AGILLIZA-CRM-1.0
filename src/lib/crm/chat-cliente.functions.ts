@@ -82,8 +82,63 @@ export const listarConversasCliente = createServerFn({ method: "GET" })
       .sort((a, b) => (a.ultima_em < b.ultima_em ? 1 : -1));
   });
 
+export interface ClienteApp {
+  cliente_id: string;
+  nome: string;
+  documento: string | null;
+  etapa_nome: string | null;
+  logou: boolean;
+}
 
-export const listarChatCliente = createServerFn({ method: "GET" })
+/**
+ * Busca clientes com o App habilitado (portal_acesso_ativo) para iniciar uma
+ * conversa, mesmo que ainda não tenham logado ou trocado mensagens.
+ */
+export const buscarClientesApp = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { q?: string }) =>
+    z.object({ q: z.string().trim().max(120).optional() }).parse(d ?? {}),
+  )
+  .handler(async ({ data, context }): Promise<ClienteApp[]> => {
+    const { supabase } = context;
+    let query = supabase
+      .from("clientes")
+      .select(
+        "id, nome, documento, cliente_pipeline(pipeline_stages(nome))",
+      )
+      .eq("portal_acesso_ativo", true)
+      .order("nome", { ascending: true })
+      .limit(50);
+
+    const termo = data.q?.trim();
+    if (termo) {
+      query = query.or(`nome.ilike.%${termo}%,documento.ilike.%${termo}%`);
+    }
+
+    const { data: rows, error } = await query;
+    if (error) throw new Error(error.message);
+
+    const clientes = rows ?? [];
+    const ids = clientes.map((c: any) => c.id);
+    const logados = new Set<string>();
+    if (ids.length > 0) {
+      const { data: acessos } = await supabase
+        .from("cliente_app_acessos")
+        .select("cliente_id")
+        .in("cliente_id", ids);
+      for (const a of acessos ?? []) logados.add((a as any).cliente_id);
+    }
+
+    return clientes.map((c: any) => ({
+      cliente_id: c.id,
+      nome: c.nome ?? "Cliente",
+      documento: c.documento ?? null,
+      etapa_nome: c.cliente_pipeline?.pipeline_stages?.nome ?? null,
+      logou: logados.has(c.id),
+    }));
+  });
+
+
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { cliente_id: string }) =>
     z.object({ cliente_id: z.string().uuid() }).parse(d),
