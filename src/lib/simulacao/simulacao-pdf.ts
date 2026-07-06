@@ -7,6 +7,13 @@ interface SimulacaoPdfInput {
   bancos: any[];
 }
 
+const LABEL_STATUS_BANCO: Record<string, string> = {
+  aguardando: "Aguardando",
+  simulada: "Simulação",
+  erro: "Erro",
+  expirada: "Expirada",
+};
+
 /** Gera e baixa um PDF institucional de uma simulação (dados + comparativo de bancos). */
 export function baixarSimulacaoPDF({ simulacao: s, bancos }: SimulacaoPdfInput) {
   const produto =
