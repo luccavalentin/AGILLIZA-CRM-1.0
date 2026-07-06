@@ -411,7 +411,7 @@ function SolicitacaoDialog({
     setCorretor(inicial?.corretor ?? "");
     setCliente(inicial?.cliente ?? "");
     setNumero(inicial?.numero_matricula ?? "");
-    setValor(maskBRLInput(inicial?.valor ?? 0));
+    setValor(inicial?.valor ? maskBRLInput(inicial.valor) : "");
     setReembolsado(inicial?.reembolsado ?? false);
     setDataPagto(inicial?.data_pagto_reembolso ?? "");
     setObs(inicial?.observacao ?? "");
