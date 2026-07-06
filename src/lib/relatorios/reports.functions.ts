@@ -313,7 +313,13 @@ export const runReport = createServerFn({ method: "POST" })
       return { meses, quantidade, taxaAprovacao, bancos };
     }
 
-    async function fetchAll(table: string, cols: string, dateCol: string, colResp: string) {
+    async function fetchAll(
+      table: string,
+      cols: string,
+      dateCol: string,
+      colResp: string,
+      opts?: { statusCol?: string | false },
+    ) {
       let q = (supabase as any)
         .from(table)
         .select(cols)
@@ -323,6 +329,13 @@ export const runReport = createServerFn({ method: "POST" })
         .limit(5000);
       q = aplicarEscopo(q, filtros, userId, colResp);
       if (filtros.responsavel && colResp) q = q.eq(colResp, filtros.responsavel);
+      // Filtro por status: usa a coluna informada ou "status" quando presente no select.
+      const statusCol =
+        opts?.statusCol === false
+          ? undefined
+          : (opts?.statusCol ??
+            (`,${cols.replace(/\s/g, "")},`.includes(",status,") ? "status" : undefined));
+      if (filtros.status && statusCol) q = q.eq(statusCol, filtros.status);
       const { data: rows, error } = await q;
       if (error) throw new Error(error.message);
       return (rows ?? []) as any[];
