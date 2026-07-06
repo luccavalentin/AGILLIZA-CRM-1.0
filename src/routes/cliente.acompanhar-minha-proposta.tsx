@@ -15,6 +15,7 @@ import {
 } from "@/lib/portal/cliente.functions";
 import { TimelineCliente } from "@/components/cliente/timeline-cliente";
 import { ChipDocumento } from "@/components/cliente/chip-documento";
+import { BradescoRetornoTimer, isBradesco } from "@/components/proposta/bradesco-timer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
