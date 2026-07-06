@@ -13,11 +13,14 @@ import { getMinhasPermissoes } from "@/lib/permissions.functions";
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
   beforeLoad: async () => {
-    const { data, error } = await supabase.auth.getUser();
-    if (error || !data.user) {
+    // getSession() lê a sessão localmente (sem round-trip de rede a cada
+    // navegação), evitando lag ao trocar de tela. getUser() só valida no
+    // servidor e era chamado em toda navegação — causa da lentidão.
+    const { data, error } = await supabase.auth.getSession();
+    if (error || !data.session?.user) {
       throw redirect({ to: "/auth" });
     }
-    return { user: data.user };
+    return { user: data.session.user };
   },
   component: InternalLayout,
 });
