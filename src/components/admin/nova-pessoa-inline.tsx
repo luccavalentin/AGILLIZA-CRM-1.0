@@ -236,9 +236,9 @@ export function NovaPessoaInline({
         )}
 
 
-        {/* Nível de acesso */}
+        {/* Nível de acesso — define papel (Gestor, Corretor, etc.) e portal */}
         <div className="space-y-2">
-          <Label>Tipo de acesso (nível)</Label>
+          <Label>Nível de acesso</Label>
           <Select value={nivelId} onValueChange={setNivelId}>
             <SelectTrigger>
               <SelectValue placeholder="Selecione o nível de acesso" />
@@ -247,6 +247,7 @@ export function NovaPessoaInline({
               {(niveis ?? []).map((n) => (
                 <SelectItem key={n.id} value={n.id}>
                   {n.nome}
+                  {n.acesso_tipo === "portal_parceiro" ? " · Parceiro" : " · Correspondente"}
                   {n.is_padrao ? " (padrão)" : ""}
                 </SelectItem>
               ))}
@@ -256,6 +257,7 @@ export function NovaPessoaInline({
             <p className="text-xs text-muted-foreground">{nivel.descricao}</p>
           )}
         </div>
+
 
         {/* Permissões do nível */}
         {nivel && (
