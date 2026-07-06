@@ -397,6 +397,14 @@ function SolicitacaoDialog({
   const [obs, setObs] = useState(inicial?.observacao ?? "");
   const [salvando, setSalvando] = useState(false);
 
+  const { data: usuarios } = useQuery({
+    queryKey: ["matriculas-usuarios"],
+    queryFn: () => listarUsuariosCorrespondente(),
+    staleTime: 5 * 60 * 1000,
+  });
+  const nomesUsuarios = useMemo(() => (usuarios ?? []).map((u) => u.nome), [usuarios]);
+
+
   function reset() {
     setData(inicial?.data_solicitacao ?? hoje());
     setSolicitante(inicial?.solicitante ?? "");
