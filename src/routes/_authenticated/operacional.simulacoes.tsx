@@ -35,6 +35,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { SimulacaoStatusBadge } from "@/components/simulacao/status-badge";
+import { BancosSimulados } from "@/components/simulacao/bancos-simulados";
 import { ConfirmDelete } from "@/components/shared/confirm-delete";
 import { formatBRL } from "@/lib/simulacao/format";
 import {
