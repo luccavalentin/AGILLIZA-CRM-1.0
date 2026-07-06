@@ -333,11 +333,11 @@ async function forkNivelPadrao(
   supabase: any,
   corresp: string,
   origemId: string,
-  overrides?: { nome?: string; descricao?: string | null },
+  overrides?: { nome?: string; descricao?: string | null; papel?: PapelNivel; acesso_tipo?: AcessoTipo },
 ): Promise<string> {
   const { data: origem, error: erroOrigem } = await supabase
     .from("access_levels")
-    .select("id, nome, descricao")
+    .select("id, nome, descricao, papel, acesso_tipo")
     .eq("id", origemId)
     .maybeSingle();
   if (erroOrigem) throw new Error(erroOrigem.message);
@@ -348,6 +348,8 @@ async function forkNivelPadrao(
     .insert({
       nome: overrides?.nome ?? origem.nome,
       descricao: overrides?.descricao ?? origem.descricao ?? null,
+      papel: overrides?.papel ?? origem.papel ?? "comercial",
+      acesso_tipo: overrides?.acesso_tipo ?? origem.acesso_tipo ?? "sistema",
       correspondente_id: corresp,
       ativo: true,
       is_padrao: false,
