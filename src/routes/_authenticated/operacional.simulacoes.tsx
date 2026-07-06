@@ -35,6 +35,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { SimulacaoStatusBadge } from "@/components/simulacao/status-badge";
+import { BancosSimulados } from "@/components/simulacao/bancos-simulados";
 import { ConfirmDelete } from "@/components/shared/confirm-delete";
 import { formatBRL } from "@/lib/simulacao/format";
 import {
@@ -222,6 +223,7 @@ function Pagina() {
               <TableHead>Número</TableHead>
               <TableHead>Cliente</TableHead>
               <TableHead>Produto</TableHead>
+              <TableHead>Bancos simulados</TableHead>
               <TableHead className="text-right">Valor imóvel</TableHead>
               <TableHead className="text-right">Prazo</TableHead>
               <TableHead>Status</TableHead>
@@ -231,14 +233,14 @@ function Pagina() {
           <TableBody>
             {isLoading && (
               <TableRow>
-                <TableCell colSpan={7} className="py-10 text-center text-sm text-muted-foreground">
+                <TableCell colSpan={8} className="py-10 text-center text-sm text-muted-foreground">
                   Carregando…
                 </TableCell>
               </TableRow>
             )}
             {!isLoading && (data?.itens.length ?? 0) === 0 && (
               <TableRow>
-                <TableCell colSpan={7}>
+                <TableCell colSpan={8}>
                   <div className="flex flex-col items-center gap-3 py-12 text-center">
                     <Calculator className="h-8 w-8 text-muted-foreground" />
                     <p className="text-sm text-muted-foreground">Nenhuma simulação encontrada.</p>
@@ -265,6 +267,9 @@ function Pagina() {
                     : s.produto === "financiamento_imobiliario"
                       ? "Financiamento"
                       : "—"}
+                </TableCell>
+                <TableCell>
+                  <BancosSimulados bancos={s.bancos} />
                 </TableCell>
                 <TableCell className="text-right tabular-nums">
                   {formatBRL(s.valor_imovel)}
@@ -358,6 +363,12 @@ function Pagina() {
               <div className="col-span-2">
                 <dt className="text-xs text-muted-foreground">Valor do imóvel</dt>
                 <dd className="tabular-nums text-foreground">{formatBRL(s.valor_imovel)}</dd>
+              </div>
+              <div className="col-span-2">
+                <dt className="mb-1 text-xs text-muted-foreground">Bancos simulados</dt>
+                <dd>
+                  <BancosSimulados bancos={s.bancos} />
+                </dd>
               </div>
             </dl>
           </div>

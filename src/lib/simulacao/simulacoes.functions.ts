@@ -31,6 +31,11 @@ export interface SimulacaoBancoView {
   mensagem_banco: string | null;
 }
 
+export interface SimulacaoBancoResumo {
+  nome_banco: string | null;
+  status_banco: string | null;
+}
+
 export interface SimulacaoListaItem {
   id: string;
   numero_simulacao: string;
@@ -41,6 +46,7 @@ export interface SimulacaoListaItem {
   prazo: number | null;
   status: string;
   created_at: string;
+  bancos: SimulacaoBancoResumo[];
 }
 
 /** ===== Bancos e operações (cache) ===== */
@@ -398,7 +404,27 @@ export const listarSimulacoes = createServerFn({ method: "GET" })
 
     const { data: rows, error, count } = await query;
     if (error) throw new Error(error.message);
-    return { itens: (rows ?? []) as SimulacaoListaItem[], total: count ?? 0 };
+
+    const ids = (rows ?? []).map((r: any) => r.id);
+    const bancosPorSim = new Map<string, SimulacaoBancoResumo[]>();
+    if (ids.length) {
+      const { data: bancos } = await supabase
+        .from("simulacao_bancos")
+        .select("simulacao_id, nome_banco, status_banco")
+        .in("simulacao_id", ids)
+        .order("nome_banco", { ascending: true });
+      for (const b of bancos ?? []) {
+        const lista = bancosPorSim.get((b as any).simulacao_id) ?? [];
+        lista.push({ nome_banco: (b as any).nome_banco, status_banco: (b as any).status_banco });
+        bancosPorSim.set((b as any).simulacao_id, lista);
+      }
+    }
+
+    const itens = (rows ?? []).map((r: any) => ({
+      ...r,
+      bancos: bancosPorSim.get(r.id) ?? [],
+    })) as SimulacaoListaItem[];
+    return { itens, total: count ?? 0 };
   });
 
 /** ===== Duplicar simulação ===== */
