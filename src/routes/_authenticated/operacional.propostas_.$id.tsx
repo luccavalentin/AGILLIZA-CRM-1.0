@@ -214,7 +214,7 @@ function Pagina() {
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <h1 className="text-2xl font-semibold text-foreground">
-              Oportunidade {p.codigo_oportunidade_homefin || p.numero_proposta}
+              Proposta {p.numero_proposta_banco || p.codigo_oportunidade_homefin || p.numero_proposta}
             </h1>
             <p className="text-sm text-muted-foreground">
               {p.produto ?? "Operação"} · Ativa há {diasDesde} dia(s)
@@ -406,7 +406,7 @@ function AcoesTopo({
 
   // Bancos selecionados que ainda não foram ao banco (para envio adicional).
   const bancosPendentes = (bancos ?? []).filter(
-    (b: any) => b.selecionado && b.status_banco !== "enviada",
+    (b: any) => b.selecionado && !bancoJaEnviado(b),
   );
   const jaEnviou = Boolean(proposta.enviada_em);
   const podeEnviarNovos =
@@ -548,7 +548,8 @@ function TabResumo({
     !["cancelada", "registrado", "credito_recusado", "contrato_emitido"].includes(status);
   const campos: [string, string][] = [
     ["Operação", proposta.produto ?? "—"],
-    ["Nº da proposta", proposta.numero_proposta],
+    ["Nº interno", proposta.numero_proposta],
+    ["Nº da proposta no banco", proposta.numero_proposta_banco ?? "—"],
   ];
 
   async function selecionar(pbId: string) {
@@ -588,6 +589,7 @@ function TabResumo({
             <TableRow>
               <TableHead className="w-10"></TableHead>
               <TableHead>Banco</TableHead>
+              <TableHead>Nº banco</TableHead>
               <TableHead className="text-right">R$ Financiamento</TableHead>
               <TableHead className="text-right">Parcela</TableHead>
               <TableHead className="text-right">Prazo</TableHead>
@@ -600,7 +602,7 @@ function TabResumo({
           <TableBody>
             {bancos.length === 0 && (
               <TableRow>
-                <TableCell colSpan={9} className="py-8 text-center text-sm text-muted-foreground">
+                <TableCell colSpan={10} className="py-8 text-center text-sm text-muted-foreground">
                   Nenhum banco vinculado.
                 </TableCell>
               </TableRow>
@@ -616,6 +618,9 @@ function TabResumo({
                   />
                 </TableCell>
                 <TableCell className="font-medium" style={{ color: corDoBanco(b.nome_banco) }}>{b.nome_banco}</TableCell>
+                <TableCell className="max-w-44 truncate text-xs tabular-nums text-muted-foreground">
+                  {b.numero_proposta_banco ?? "—"}
+                </TableCell>
                 <TableCell className="text-right tabular-nums">
                   {formatBRL(b.valor_financiamento_max)}
                 </TableCell>
