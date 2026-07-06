@@ -353,7 +353,7 @@ export function RegrasModulosPanel() {
                   <div className="flex items-center gap-2">
                     {editavel ? (
                       <>
-                        <Button variant="outline" size="sm" onClick={abrirEditar}>
+                        <Button variant="outline" size="sm" onClick={() => abrirEditar()}>
                           <Pencil className="h-4 w-4" /> Editar
                         </Button>
                         {!selecionado.is_padrao ? (
