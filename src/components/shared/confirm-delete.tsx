@@ -8,6 +8,7 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
+  AlertDialogIcon,
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
@@ -69,11 +70,15 @@ export function ConfirmDelete({
         )}
       </AlertDialogTrigger>
       <AlertDialogContent onClick={(e) => e.stopPropagation()}>
-        <AlertDialogHeader>
-          <AlertDialogTitle>{titulo}</AlertDialogTitle>
-          <AlertDialogDescription>{descricao}</AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
+      <AlertDialogHeader className="items-center sm:items-start">
+        <AlertDialogIcon className="bg-destructive/10 text-destructive ring-destructive/15">
+          <Trash2 className="size-6" />
+        </AlertDialogIcon>
+        <AlertDialogTitle>{titulo}</AlertDialogTitle>
+        <AlertDialogDescription>{descricao}</AlertDialogDescription>
+      </AlertDialogHeader>
+      <AlertDialogFooter>
+
           <AlertDialogCancel disabled={loading}>Cancelar</AlertDialogCancel>
           <AlertDialogAction
             disabled={loading}
