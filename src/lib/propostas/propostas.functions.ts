@@ -335,6 +335,63 @@ export const criarProposta = createServerFn({ method: "POST" })
       await supabase.from("proposta_bancos").insert(linhas);
     }
 
+    // Preenche o participante titular a partir do cadastro completo do cliente,
+    // trazendo os campos exigidos pelos bancos (documento, filiação, profissão, banco).
+    const clienteId = snapshot.cliente_id as string | null;
+    if (clienteId) {
+      const { data: cli } = await supabase
+        .from("clientes")
+        .select("*")
+        .eq("id", clienteId)
+        .maybeSingle();
+      if (cli) {
+        const { data: end } = await supabase
+          .from("cliente_enderecos")
+          .select("*")
+          .eq("cliente_id", clienteId)
+          .limit(1)
+          .maybeSingle();
+        const c = cli as any;
+        const e = (end ?? {}) as any;
+        await supabase.from("proposta_envolvidos").insert({
+          proposta_id: inserted.id,
+          cliente_id: clienteId,
+          tipo_qualificacao: "TI",
+          tipo_pessoa: c.tipo_pessoa === "PJ" ? "J" : "F",
+          nome: c.nome,
+          cpf_cnpj: c.documento,
+          data_nascimento: c.data_nascimento,
+          nome_mae: c.mae,
+          tipo_sexo: c.sexo,
+          estado_civil: c.estado_civil,
+          regime_casamento: c.regime_casamento,
+          tipo_documento_identidade: c.tipo_documento_identidade,
+          numero_documento: c.numero_documento,
+          data_expedicao: c.data_expedicao,
+          orgao_expedidor: c.orgao_expedidor,
+          uf_expedicao: c.uf_expedicao,
+          profissao: c.profissao,
+          empresa: c.empresa,
+          renda: c.renda_total_declarada,
+          agencia: c.agencia,
+          conta_corrente: c.conta_corrente,
+          digito_conta: c.digito_conta,
+          email: c.email,
+          celular: c.telefone_celular,
+          cep: e.cep ?? null,
+          logradouro: e.logradouro ?? null,
+          numero_logradouro: e.numero ?? null,
+          complemento: e.complemento ?? null,
+          bairro: e.bairro ?? null,
+          municipio: e.cidade ?? null,
+          uf: e.uf ?? c.uf_interesse ?? null,
+          dados: { pai: c.pai ?? null, nacionalidade: c.nacionalidade ?? null, naturalidade: c.naturalidade ?? null, banco_conta: c.banco_conta ?? null },
+        } as any);
+      }
+    }
+
+
+
     await supabase.from("proposta_historico").insert({
       proposta_id: inserted.id,
       tipo_evento: "criada",
