@@ -42,6 +42,7 @@ import {
   listarOperacoes,
   criarSimulacao,
   enviarSimulacaoBanco,
+  obterSimulacao,
 } from "@/lib/simulacao/simulacoes.functions";
 
 export const Route = createFileRoute("/_authenticated/operacional/simulacoes_/completa")({
