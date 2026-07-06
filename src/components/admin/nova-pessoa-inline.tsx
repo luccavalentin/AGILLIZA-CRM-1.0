@@ -29,7 +29,6 @@ import {
   type ResultadoCriarPessoa,
 } from "@/lib/admin/pessoas.functions";
 
-type Portal = "correspondente" | "parceiro";
 type MatrizEstado = Record<string, { permitido: boolean; escopo: EscopoDados }>;
 
 const ESCOPOS: { value: EscopoDados; label: string }[] = [
