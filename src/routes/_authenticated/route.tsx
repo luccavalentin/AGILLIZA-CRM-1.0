@@ -39,10 +39,13 @@ function InternalLayout() {
     staleTime: 60_000,
   });
 
+  const ehParceiro = sessaoQuery.data?.profile?.acesso_tipo === "portal_parceiro";
+
   const navFiltrada = useMemo(() => {
     if (!permsQuery.data) return [];
-    return filterNavByPermissions(navInterno, permsToSet(permsQuery.data), permsQuery.data.todas);
-  }, [permsQuery.data]);
+    const base = ehParceiro ? navParceiro : navInterno;
+    return filterNavByPermissions(base, permsToSet(permsQuery.data), permsQuery.data.todas);
+  }, [permsQuery.data, ehParceiro]);
 
   useEffect(() => {
     if (!sessaoQuery.isLoading && !permsQuery.isLoading) {
