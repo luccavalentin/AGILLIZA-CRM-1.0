@@ -162,10 +162,13 @@ export const criarSolicitacaoMatricula = createServerFn({ method: "POST" })
       correspondente_id: corr,
       data_solicitacao: data.data_solicitacao,
       solicitante: data.solicitante,
+      corretor: data.corretor ?? null,
+      cliente: data.cliente ?? null,
       numero_matricula: data.numero_matricula ?? null,
       valor: data.valor,
       reembolsado: data.reembolsado ?? false,
       reembolsado_em: data.reembolsado ? new Date().toISOString() : null,
+      data_pagto_reembolso: data.data_pagto_reembolso || null,
       observacao: data.observacao ?? null,
       criado_por: userId,
     });
