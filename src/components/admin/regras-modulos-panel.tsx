@@ -98,6 +98,7 @@ export function RegrasModulosPanel() {
     queryFn: () => listar(),
   });
 
+  const [subaba, setSubaba] = useState<"papeis" | "permissoes">("papeis");
   const [selecionadoId, setSelecionadoId] = useState<string | null>(null);
   const [estado, setEstado] = useState<MatrizEstado>({});
   const [dirty, setDirty] = useState(false);
