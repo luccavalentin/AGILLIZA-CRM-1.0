@@ -686,8 +686,17 @@ export async function sincronizarPropostaImpl({
 
     const patchBanco: Record<string, unknown> = {
       status_banco: mapa.banco,
+      situacao_banco: erroMsg ? "nao_enviado" : situacaoBancoDeTipo(sim.tipoSituacao),
       mensagem_banco: erroMsg ? sanitizarMensagemErro(erroMsg) : null,
     };
+    // Mantém o protocolo do banco na linha (usado para saber que já foi enviada).
+    const protoSim =
+      sim.codigoOportunidadeBanco ??
+      sim.codigoOportunidadeBancoInterno ??
+      sim.codigoSimulacaoBanco ??
+      null;
+    if (protoSim && !pb.numero_proposta_banco)
+      patchBanco.numero_proposta_banco = String(protoSim);
     if (sim.valorParcelaBanco != null) patchBanco.valor_parcela = sim.valorParcelaBanco;
     if (sim.taxaJurosAnoBanco != null) patchBanco.taxa_juros_ano = sim.taxaJurosAnoBanco;
     if (sim.prazoPagamentoBancoMax != null)
