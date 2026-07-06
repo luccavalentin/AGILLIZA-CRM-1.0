@@ -160,6 +160,8 @@ const clienteInputSchema = z.object({
   telefone_celular: z.string().min(10, "Celular inválido."),
   renda_total_declarada: z.number().nonnegative(),
   uf_interesse: z.string().length(2).optional().nullable(),
+  utiliza_fgts: z.boolean().optional().default(false),
+  fg_autorizacao_dados: z.boolean().optional().default(false),
   origem: z.enum(["direto", "parceiro", "indicacao", "importacao"]).default("direto"),
 });
 
