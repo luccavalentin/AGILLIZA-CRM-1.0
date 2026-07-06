@@ -1,5 +1,5 @@
-import { Landmark } from "lucide-react";
 import { corDoBanco } from "@/lib/bancos/cores";
+import { BancoLogo } from "@/components/bancos/banco-logo";
 import type { Tone } from "@/components/crm/tone-badge";
 
 export interface BancoStatusItem {
