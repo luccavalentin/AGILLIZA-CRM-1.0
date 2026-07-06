@@ -93,6 +93,7 @@ import { cn } from "@/lib/utils";
 import {
   ParticipanteDialog,
   envolvidoParaForm,
+  participanteCompleto,
   type ParticipanteForm,
 } from "@/components/proposta/participante-form";
 
