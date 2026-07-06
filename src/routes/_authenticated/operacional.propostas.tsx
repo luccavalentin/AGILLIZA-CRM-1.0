@@ -47,15 +47,35 @@ function Pagina() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const excluir = useServerFn(excluirProposta);
+  const padrao = useMemo(() => intervaloMesAtual(), []);
   const [escopo, setEscopo] = useState<"todas" | "minhas">("todas");
   const [q, setQ] = useState("");
   const [busca, setBusca] = useState("");
+  const [dataInicio, setDataInicio] = useState(padrao.inicio);
+  const [dataFim, setDataFim] = useState(padrao.fim);
 
   const { data, isLoading } = useQuery({
-    queryKey: ["propostas", escopo, busca],
+    queryKey: ["propostas", escopo, busca, dataInicio, dataFim],
     queryFn: () =>
-      listarPropostas({ data: { escopo, q: busca || undefined, pagina: 1, porPagina: 30 } }),
+      listarPropostas({
+        data: {
+          escopo,
+          q: busca || undefined,
+          data_inicio: dataInicio ? `${dataInicio}T00:00:00` : undefined,
+          data_fim: dataFim ? `${dataFim}T23:59:59` : undefined,
+          pagina: 1,
+          porPagina: 100,
+        },
+      }),
   });
+
+  function limparFiltros() {
+    setQ("");
+    setBusca("");
+    setDataInicio(padrao.inicio);
+    setDataFim(padrao.fim);
+    setEscopo("todas");
+  }
 
   async function handleExcluir(id: string) {
     try {
