@@ -491,6 +491,7 @@ function TabResumo({
   const [resultadoEnvio, setResultadoEnvio] = useState<
     { nome_banco: string | null; status: string; mensagem?: string }[] | null
   >(null);
+  const [detalheBanco, setDetalheBanco] = useState<any | null>(null);
 
   async function mudarSituacao(pbId: string, situacao: SituacaoBanco) {
     try {
