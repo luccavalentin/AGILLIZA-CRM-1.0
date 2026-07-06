@@ -1,13 +1,14 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Plus, Search, FileText, KanbanSquare } from "lucide-react";
+import { Plus, Search, FileText, KanbanSquare, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { listarPropostas, excluirProposta } from "@/lib/propostas/propostas.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
@@ -23,6 +24,16 @@ import { StatusBancosProposta } from "@/components/proposta/status-bancos-propos
 import { ConfirmDelete } from "@/components/shared/confirm-delete";
 import { formatBRL } from "@/lib/simulacao/format";
 
+/** Primeiro e último dia do mês atual como intervalo ISO (para o filtro padrão). */
+function intervaloMesAtual(): { inicio: string; fim: string } {
+  const agora = new Date();
+  const primeiro = new Date(agora.getFullYear(), agora.getMonth(), 1);
+  const ultimo = new Date(agora.getFullYear(), agora.getMonth() + 1, 0);
+  const iso = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  return { inicio: iso(primeiro), fim: iso(ultimo) };
+}
+
 export const Route = createFileRoute("/_authenticated/operacional/propostas")({
   head: () => ({ meta: [{ title: "Propostas — Agilliza" }] }),
   beforeLoad: () => assertModuloPermitido("operacional.propostas"),
@@ -36,15 +47,35 @@ function Pagina() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const excluir = useServerFn(excluirProposta);
+  const padrao = useMemo(() => intervaloMesAtual(), []);
   const [escopo, setEscopo] = useState<"todas" | "minhas">("todas");
   const [q, setQ] = useState("");
   const [busca, setBusca] = useState("");
+  const [dataInicio, setDataInicio] = useState(padrao.inicio);
+  const [dataFim, setDataFim] = useState(padrao.fim);
 
   const { data, isLoading } = useQuery({
-    queryKey: ["propostas", escopo, busca],
+    queryKey: ["propostas", escopo, busca, dataInicio, dataFim],
     queryFn: () =>
-      listarPropostas({ data: { escopo, q: busca || undefined, pagina: 1, porPagina: 30 } }),
+      listarPropostas({
+        data: {
+          escopo,
+          q: busca || undefined,
+          data_inicio: dataInicio ? `${dataInicio}T00:00:00` : undefined,
+          data_fim: dataFim ? `${dataFim}T23:59:59` : undefined,
+          pagina: 1,
+          porPagina: 100,
+        },
+      }),
   });
+
+  function limparFiltros() {
+    setQ("");
+    setBusca("");
+    setDataInicio(padrao.inicio);
+    setDataFim(padrao.fim);
+    setEscopo("todas");
+  }
 
   async function handleExcluir(id: string) {
     try {
@@ -77,7 +108,7 @@ function Pagina() {
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap items-end gap-3">
         <Tabs value={escopo} onValueChange={(v) => setEscopo(v as "todas" | "minhas")}>
           <TabsList>
             <TabsTrigger value="todas">Gerais</TabsTrigger>
@@ -85,7 +116,7 @@ function Pagina() {
           </TabsList>
         </Tabs>
         <form
-          className="flex w-full max-w-sm items-center gap-2"
+          className="flex flex-1 items-center gap-2 min-w-[220px]"
           onSubmit={(e) => {
             e.preventDefault();
             setBusca(q);
@@ -104,7 +135,29 @@ function Pagina() {
             Buscar
           </Button>
         </form>
+        <div className="flex flex-col gap-1">
+          <Label className="text-xs text-muted-foreground">De</Label>
+          <Input
+            type="date"
+            value={dataInicio}
+            onChange={(e) => setDataInicio(e.target.value)}
+            className="w-[9.5rem]"
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <Label className="text-xs text-muted-foreground">Até</Label>
+          <Input
+            type="date"
+            value={dataFim}
+            onChange={(e) => setDataFim(e.target.value)}
+            className="w-[9.5rem]"
+          />
+        </div>
+        <Button variant="ghost" size="sm" onClick={limparFiltros}>
+          <RotateCcw className="mr-1 h-4 w-4" /> Limpar
+        </Button>
       </div>
+
 
       <div className="rounded-lg border border-border">
         <Table>

@@ -21,6 +21,7 @@ export interface PropostaListaItem {
   numero_proposta: string;
   numero_proposta_banco: string | null;
   nome_cliente: string | null;
+  cpf_cnpj: string | null;
   nome_banco: string | null;
   produto: string | null;
   valor_financiamento: number | null;
@@ -67,8 +68,10 @@ export const listarPropostas = createServerFn({ method: "GET" })
         escopo: z.enum(["todas", "minhas"]).default("todas"),
         status: z.string().optional(),
         q: z.string().optional(),
+        data_inicio: z.string().optional(),
+        data_fim: z.string().optional(),
         pagina: z.number().int().min(1).default(1),
-        porPagina: z.number().int().min(1).max(100).default(30),
+        porPagina: z.number().int().min(1).max(500).default(30),
       })
       .parse(data),
   )
@@ -77,7 +80,7 @@ export const listarPropostas = createServerFn({ method: "GET" })
     let query = supabase
       .from("propostas")
       .select(
-        "id, numero_proposta, numero_proposta_banco, nome_cliente, nome_banco, produto, valor_financiamento, status, created_at",
+        "id, numero_proposta, numero_proposta_banco, nome_cliente, cpf_cnpj, nome_banco, produto, valor_financiamento, status, created_at",
         { count: "exact" },
       );
 
@@ -85,6 +88,8 @@ export const listarPropostas = createServerFn({ method: "GET" })
       query = query.or(`usuario_responsavel_id.eq.${userId},usuario_criador_id.eq.${userId}`);
     }
     if (data.status) query = query.eq("status", data.status as any);
+    if (data.data_inicio) query = query.gte("created_at", data.data_inicio);
+    if (data.data_fim) query = query.lte("created_at", data.data_fim);
     if (data.q) {
       const q = data.q.trim();
       query = query.or(
