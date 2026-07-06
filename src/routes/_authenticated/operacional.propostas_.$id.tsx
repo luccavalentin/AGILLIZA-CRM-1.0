@@ -633,7 +633,7 @@ function TabResumo({
 
 
                 <TableCell className="text-right">
-                  {b.status_banco === "enviada" ? (
+                  {bancoJaEnviado(b) ? (
                     <span className="text-xs text-muted-foreground">Enviado</span>
                   ) : podeEnviarBanco ? (
                     <Button
