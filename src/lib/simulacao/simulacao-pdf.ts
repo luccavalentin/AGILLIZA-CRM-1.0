@@ -1,10 +1,9 @@
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
-import { exportPDF } from "@/lib/relatorios/report-pdf";
+import { exportPDF, drawBrandHeader } from "@/lib/relatorios/report-pdf";
 import { formatBRL, formatPercent } from "@/lib/simulacao/format";
 import type { ReportColumn, ReportKpi, ReportRow } from "@/lib/relatorios/shared";
 import { extrairDetalheBanco } from "@/lib/simulacao/detalhe-banco";
-import { AGILLIZA_LOGO_LIGHT, AGILLIZA_LOGO_RATIO } from "@/lib/relatorios/brand-logo";
 
 interface SimulacaoPdfInput {
   simulacao: any;
