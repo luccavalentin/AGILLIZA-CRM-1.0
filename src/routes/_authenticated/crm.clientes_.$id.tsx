@@ -120,10 +120,24 @@ function Pagina() {
         </div>
         <div className="flex items-center gap-2">
           <StatusBadge status={c.portal_acesso_ativo ? "ativo" : "inativo"} />
-          <Button asChild variant="default">
-            <Link to="/operacional/simulacoes/nova">
-              <Calculator className="size-4" /> Nova simulação personalizada
-            </Link>
+          <Button
+            variant="default"
+            onClick={() => {
+              sessionStorage.setItem(
+                "simulacao_wizard",
+                JSON.stringify({
+                  cliente_id: c.id,
+                  nome_cliente: c.nome ?? "",
+                  cpf_cnpj: c.documento ?? "",
+                  data_nascimento: c.data_nascimento ?? "",
+                  renda_total: Number(c.renda_total_declarada) || 0,
+                  uf: c.uf_interesse ?? "",
+                }),
+              );
+              navigate({ to: "/operacional/simulacoes/completa" });
+            }}
+          >
+            <Calculator className="size-4" /> Nova simulação personalizada
           </Button>
         </div>
       </div>
