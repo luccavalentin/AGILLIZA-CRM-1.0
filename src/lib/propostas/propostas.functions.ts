@@ -362,7 +362,7 @@ export const criarProposta = createServerFn({ method: "POST" })
           cpf_cnpj: c.documento,
           data_nascimento: c.data_nascimento,
           nome_mae: c.mae,
-          tipo_sexo: c.sexo,
+          tipo_sexo: c.sexo ? String(c.sexo).trim().charAt(0).toUpperCase() : c.sexo,
           estado_civil: c.estado_civil,
           regime_casamento: c.regime_casamento,
           tipo_documento_identidade: c.tipo_documento_identidade,

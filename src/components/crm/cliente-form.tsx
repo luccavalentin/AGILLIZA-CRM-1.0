@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { InputAutocomplete } from "@/components/ui/input-autocomplete";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
@@ -70,6 +71,68 @@ const REGIMES = [
   { v: "separacao_total", l: "Separação total" },
   { v: "participacao_final", l: "Participação final" },
   { v: "nao_aplicavel", l: "Não aplicável" },
+];
+
+// Sugestões pré-cadastradas para os campos de autocomplete (texto livre + seleção).
+const OPCOES_SEXO = ["Masculino", "Feminino"];
+const OPCOES_NACIONALIDADE = [
+  "Brasileira",
+  "Portuguesa",
+  "Argentina",
+  "Boliviana",
+  "Paraguaia",
+  "Uruguaia",
+  "Chilena",
+  "Colombiana",
+  "Venezuelana",
+  "Peruana",
+  "Espanhola",
+  "Italiana",
+  "Alemã",
+  "Francesa",
+  "Japonesa",
+  "Chinesa",
+  "Norte-americana",
+];
+const OPCOES_TIPO_DOCUMENTO = ["RG", "CNH", "RNE", "Passaporte", "CTPS"];
+const OPCOES_ORGAO_EXPEDIDOR = [
+  "SSP",
+  "DETRAN",
+  "DIC",
+  "IFP",
+  "PC",
+  "PM",
+  "Marinha",
+  "Exército",
+  "Aeronáutica",
+  "OAB",
+  "CRM",
+  "CREA",
+  "MTE",
+  "DPF",
+];
+const OPCOES_UF = [
+  "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS",
+  "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC",
+  "SP", "SE", "TO",
+];
+const OPCOES_PROFISSAO = [
+  "Advogado(a)",
+  "Administrador(a)",
+  "Analista",
+  "Arquiteto(a)",
+  "Autônomo(a)",
+  "Contador(a)",
+  "Comerciante",
+  "Empresário(a)",
+  "Enfermeiro(a)",
+  "Engenheiro(a)",
+  "Funcionário(a) público(a)",
+  "Médico(a)",
+  "Professor(a)",
+  "Vendedor(a)",
+  "Aposentado(a)",
+  "Estudante",
 ];
 
 // Exibe um número no formato R$ pt-BR (ex.: 20000 -> "20.000,00").
@@ -428,22 +491,20 @@ export function ClienteForm({
         <CardContent className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
             <Label>Sexo</Label>
-            <Select value={v.sexo} onValueChange={(x) => set("sexo", x)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="M">Masculino</SelectItem>
-                <SelectItem value="F">Feminino</SelectItem>
-              </SelectContent>
-            </Select>
+            <InputAutocomplete
+              value={v.sexo}
+              onValueChange={(x) => set("sexo", x)}
+              options={OPCOES_SEXO}
+              placeholder="Pesquisar ou digitar"
+            />
           </div>
           <div className="space-y-1.5">
             <Label>Nacionalidade</Label>
-            <Input
+            <InputAutocomplete
               value={v.nacionalidade}
-              onChange={(e) => set("nacionalidade", e.target.value)}
-              placeholder="Brasileira"
+              onValueChange={(x) => set("nacionalidade", x)}
+              options={OPCOES_NACIONALIDADE}
+              placeholder="Ex.: Brasileira"
             />
           </div>
           <div className="space-y-1.5 sm:col-span-2">
@@ -456,21 +517,12 @@ export function ClienteForm({
           </div>
           <div className="space-y-1.5">
             <Label>Tipo de documento</Label>
-            <Select
+            <InputAutocomplete
               value={v.tipo_documento_identidade}
               onValueChange={(x) => set("tipo_documento_identidade", x)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="RG">RG</SelectItem>
-                <SelectItem value="CNH">CNH</SelectItem>
-                <SelectItem value="RNE">RNE</SelectItem>
-                <SelectItem value="Passaporte">Passaporte</SelectItem>
-                <SelectItem value="CTPS">CTPS</SelectItem>
-              </SelectContent>
-            </Select>
+              options={OPCOES_TIPO_DOCUMENTO}
+              placeholder="Pesquisar ou digitar"
+            />
           </div>
           <div className="space-y-1.5">
             <Label>Número do documento</Label>
@@ -481,18 +533,21 @@ export function ClienteForm({
           </div>
           <div className="space-y-1.5">
             <Label>Órgão expedidor</Label>
-            <Input
+            <InputAutocomplete
               value={v.orgao_expedidor}
-              onChange={(e) => set("orgao_expedidor", e.target.value)}
+              onValueChange={(x) => set("orgao_expedidor", x)}
+              options={OPCOES_ORGAO_EXPEDIDOR}
               placeholder="Ex.: SSP"
             />
           </div>
           <div className="space-y-1.5">
             <Label>UF de expedição</Label>
-            <Input
+            <InputAutocomplete
               maxLength={2}
               value={v.uf_expedicao}
-              onChange={(e) => set("uf_expedicao", e.target.value.toUpperCase())}
+              onValueChange={(x) => set("uf_expedicao", x)}
+              transform={(raw) => raw.toUpperCase().slice(0, 2)}
+              options={OPCOES_UF}
               placeholder="SP"
             />
           </div>
@@ -506,7 +561,12 @@ export function ClienteForm({
           </div>
           <div className="space-y-1.5">
             <Label>Profissão</Label>
-            <Input value={v.profissao} onChange={(e) => set("profissao", e.target.value)} />
+            <InputAutocomplete
+              value={v.profissao}
+              onValueChange={(x) => set("profissao", x)}
+              options={OPCOES_PROFISSAO}
+              placeholder="Pesquisar ou digitar"
+            />
           </div>
           <div className="space-y-1.5">
             <Label>Empresa onde trabalha</Label>
@@ -514,6 +574,7 @@ export function ClienteForm({
           </div>
         </CardContent>
       </Card>
+
 
       <Card>
         <CardHeader>
