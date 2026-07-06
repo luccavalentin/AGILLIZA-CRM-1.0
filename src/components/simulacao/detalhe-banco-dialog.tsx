@@ -134,15 +134,6 @@ export function DetalheBancoDialog({ banco }: { banco: any }) {
                           <TableCell className="text-right tabular-nums">
                             {formatBRL(p.juros)}
                           </TableCell>
-                          <TableCell className="text-right tabular-nums">
-                            {formatBRL(p.seguroMip)}
-                          </TableCell>
-                          <TableCell className="text-right tabular-nums">
-                            {formatBRL(p.seguroDfi)}
-                          </TableCell>
-                          <TableCell className="text-right tabular-nums">
-                            {formatBRL(p.tarifa)}
-                          </TableCell>
                           <TableCell className="text-right font-medium tabular-nums">
                             {formatBRL(p.parcela)}
                           </TableCell>
