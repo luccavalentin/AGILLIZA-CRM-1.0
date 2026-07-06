@@ -14,6 +14,45 @@ import {
 import type { ReportChart } from "@/lib/relatorios/shared";
 import { formatBRL } from "@/lib/simulacao/format";
 import { corDoBanco } from "@/lib/bancos/cores";
+import { logoUrlDoBanco } from "@/components/bancos/banco-logo";
+
+/** Tick do eixo Y que exibe o logo do banco ao lado do nome. */
+function BankYAxisTick(props: {
+  x?: number;
+  y?: number;
+  payload?: { value?: string };
+}) {
+  const { x = 0, y = 0, payload } = props;
+  const label = String(payload?.value ?? "");
+  const logo = logoUrlDoBanco(label);
+  const size = 16;
+  const textX = logo ? -size - 24 : -8;
+  return (
+    <g transform={`translate(${x},${y})`}>
+      {logo && (
+        <image
+          href={logo}
+          x={-size - 18}
+          y={-size / 2}
+          width={size}
+          height={size}
+          preserveAspectRatio="xMidYMid meet"
+        />
+      )}
+      <text
+        x={textX}
+        y={0}
+        dy={4}
+        textAnchor="end"
+        fontSize={11}
+        fill="hsl(var(--muted-foreground))"
+      >
+        {label}
+      </text>
+    </g>
+  );
+}
+
 
 const tooltipStyle = {
   background: "hsl(var(--card))",
