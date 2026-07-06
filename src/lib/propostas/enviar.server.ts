@@ -147,7 +147,10 @@ async function garantirEnderecoParticipantes({
     const faltaUf = !(part?.uf && String(part.uf).trim());
     const faltaProfissao = !(part?.nomeProfissao && String(part.nomeProfissao).trim());
     const faltaEmpresa = !(part?.nomeEmpresaProfissao && String(part.nomeEmpresaProfissao).trim());
-    if (!faltaEstadoCivil && !faltaUf && !faltaProfissao && !faltaEmpresa) continue;
+    // Quando temos um envolvido cadastrado no sistema, sempre sincronizamos os
+    // dados complementares (documento, sexo, FGTS, endereço) com o banco.
+    const temEnvolvido = Boolean(env);
+    if (!temEnvolvido && !faltaEstadoCivil && !faltaUf && !faltaProfissao && !faltaEmpresa) continue;
     // Sem meios de preencher estado civil ou UF, não adianta chamar a API —
     // profissão/empresa sempre têm fallback, então não bloqueiam.
     if (faltaEstadoCivil && !estadoCivil && faltaUf && !uf && !faltaProfissao && !faltaEmpresa)
