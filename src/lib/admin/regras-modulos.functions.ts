@@ -79,15 +79,6 @@ export const CATALOGO_MODULOS: ModuloCatalogo[] = [
   },
   {
     grupo: "Operacional",
-    modulo: "operacional.contratos",
-    label: "Contratos",
-    acoes: [
-      { acao: "view", label: "Ver" },
-      { acao: "edit", label: "Editar" },
-    ],
-  },
-  {
-    grupo: "Operacional",
     modulo: "operacional.tarefas",
     label: "Tarefas",
     acoes: [
@@ -217,6 +208,33 @@ export const CATALOGO_MODULOS: ModuloCatalogo[] = [
     acoes: [
       { acao: "view", label: "Ver" },
       { acao: "create", label: "Criar" },
+    ],
+  },
+  {
+    grupo: "Administração",
+    modulo: "admin.comissoes",
+    label: "Comissões (regras)",
+    acoes: [
+      { acao: "view", label: "Ver" },
+      { acao: "edit", label: "Editar" },
+    ],
+  },
+  {
+    grupo: "Administração",
+    modulo: "admin.sla",
+    label: "SLA & Feriados",
+    acoes: [
+      { acao: "view", label: "Ver" },
+      { acao: "edit", label: "Editar" },
+    ],
+  },
+  {
+    grupo: "Administração",
+    modulo: "admin.notificacoes",
+    label: "Notificações",
+    acoes: [
+      { acao: "view", label: "Ver" },
+      { acao: "edit", label: "Editar" },
     ],
   },
   {
