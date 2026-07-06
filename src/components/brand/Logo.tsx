@@ -1,5 +1,5 @@
-import logoDark from "@/assets/brand/agilliza-logo.png";
-import logoLight from "@/assets/brand/agilliza-logo-light.png";
+import logoDark from "@/assets/brand/agilliza-logo-oficial.png";
+import logoLight from "@/assets/brand/agilliza-logo-oficial-light.png";
 import { cn } from "@/lib/utils";
 
 type LogoVariant = "auto" | "light" | "dark";

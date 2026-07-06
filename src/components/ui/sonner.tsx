@@ -1,5 +1,5 @@
 import { Toaster as Sonner } from "sonner";
-import symbol from "@/assets/brand/agilliza-symbol.png";
+import symbol from "@/assets/brand/agilliza-symbol-oficial.png";
 
 type ToasterProps = React.ComponentProps<typeof Sonner>;
 
