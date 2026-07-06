@@ -278,10 +278,16 @@ function Pagina() {
       : null;
 
   useEffect(() => {
-    if (!selecionado && (conversas?.length ?? 0) > 0) {
+    // Auto-seleciona a primeira conversa apenas no desktop; no mobile o usuário
+    // escolhe na lista (padrão master-detail) para a tela não pular direto ao chat.
+    const ehDesktop =
+      typeof window !== "undefined" &&
+      window.matchMedia("(min-width: 1024px)").matches;
+    if (ehDesktop && !selecionado && (conversas?.length ?? 0) > 0) {
       setSelecionado(conversas![0].cliente_id);
     }
   }, [conversas, selecionado]);
+
 
   const contadores = useMemo(() => {
     const lista = conversas ?? [];
