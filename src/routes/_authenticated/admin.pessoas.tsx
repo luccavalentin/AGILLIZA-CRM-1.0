@@ -84,6 +84,13 @@ function PessoasPage() {
   const [busca, setBusca] = useState("");
   const [criando, setCriando] = useState(false);
   const [credenciais, setCredenciais] = useState<ResultadoCriarPessoa | null>(null);
+  const [editando, setEditando] = useState<PessoaLista | null>(null);
+  const [excluindo, setExcluindo] = useState<PessoaLista | null>(null);
+
+  const qc = useQueryClient();
+  const alternarStatusFn = useServerFn(alternarStatusPessoa);
+  const resetarSenhaFn = useServerFn(resetarSenhaPessoa);
+  const excluirFn = useServerFn(excluirPessoa);
 
   const sessaoQuery = useQuery({
     queryKey: ["minha-sessao"],
@@ -95,7 +102,33 @@ function PessoasPage() {
     queryFn: () => listarPessoas(),
   });
 
+  const statusMut = useMutation({
+    mutationFn: (v: { id: string; ativar: boolean }) => alternarStatusFn({ data: v }),
+    onSuccess: async (_r, v) => {
+      await qc.invalidateQueries({ queryKey: ["pessoas"] });
+      toast.success(v.ativar ? "Pessoa ativada." : "Pessoa desativada.");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const resetMut = useMutation({
+    mutationFn: (id: string) => resetarSenhaFn({ data: { id } }),
+    onSuccess: (res) => setCredenciais(res),
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const excluirMut = useMutation({
+    mutationFn: (id: string) => excluirFn({ data: { id } }),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ["pessoas"] });
+      toast.success("Pessoa excluída.");
+      setExcluindo(null);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const podeGerenciar = sessaoQuery.data?.podeGerenciarPessoas ?? false;
+
 
   const pessoas = (pessoasQuery.data ?? [])
     .filter((p) => (filtro === "todos" ? true : p.acesso_tipo === filtro))
