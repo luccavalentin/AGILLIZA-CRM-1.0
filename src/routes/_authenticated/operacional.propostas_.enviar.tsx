@@ -146,7 +146,11 @@ function Pagina() {
         res = await criarProposta({ data: {} });
       }
       toast.success(`Proposta ${res.numero_proposta} criada.`);
-      router.navigate({ to: "/operacional/propostas/$id", params: { id: res.proposta_id } });
+      router.navigate({
+        to: "/operacional/propostas/$id",
+        params: { id: res.proposta_id },
+        search: { complementar: 1 },
+      });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Falha ao criar proposta.");
     } finally {

@@ -114,7 +114,11 @@ function Pagina() {
         data: { simulacao_id: id, banco_id: bancoId },
       });
       toast.success("Proposta criada.");
-      router.navigate({ to: "/operacional/propostas/$id", params: { id: proposta_id } });
+      router.navigate({
+        to: "/operacional/propostas/$id",
+        params: { id: proposta_id },
+        search: { complementar: 1 },
+      });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Falha ao criar proposta.");
     } finally {

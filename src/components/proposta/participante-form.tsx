@@ -171,6 +171,31 @@ export function formParaEnvolvido(f: ParticipanteForm) {
   };
 }
 
+/** Verifica se um envolvido (linha do banco) tem todos os dados obrigatórios. */
+export function participanteCompleto(e: any): boolean {
+  const base =
+    e.nome &&
+    e.cpf_cnpj &&
+    e.tipo_documento_identidade &&
+    e.numero_documento &&
+    e.orgao_expedidor &&
+    e.uf_expedicao &&
+    e.profissao &&
+    e.renda &&
+    e.email &&
+    e.celular &&
+    e.cep &&
+    e.logradouro &&
+    e.numero_logradouro &&
+    e.bairro &&
+    e.municipio &&
+    e.uf &&
+    e.fg_autorizacao_dados;
+  const pf = (e.tipo_pessoa ?? "F") === "F";
+  const pessoais = !pf || (e.data_nascimento && e.nome_mae && e.tipo_sexo && e.estado_civil);
+  return Boolean(base && pessoais);
+}
+
 function validar(f: ParticipanteForm): string | null {
   const pf = f.tipo_pessoa === "F";
   if (!f.nome.trim()) return "Informe o nome / razão social.";
@@ -211,6 +236,7 @@ export function ParticipanteDialog({
   onOpenChange,
   titulo,
   inicial,
+  conjugeInicial,
   tipoQualificacaoFixo,
   salvando,
   onSalvar,
@@ -219,26 +245,44 @@ export function ParticipanteDialog({
   onOpenChange: (v: boolean) => void;
   titulo: string;
   inicial?: ParticipanteForm;
+  conjugeInicial?: ParticipanteForm;
   tipoQualificacaoFixo?: string;
   salvando?: boolean;
-  onSalvar: (dados: ReturnType<typeof formParaEnvolvido>) => Promise<void> | void;
+  onSalvar: (
+    principal: ReturnType<typeof formParaEnvolvido>,
+    conjuge: ReturnType<typeof formParaEnvolvido> | null,
+  ) => Promise<void> | void;
 }) {
   const [f, setF] = useState<ParticipanteForm>(inicial ?? VAZIO);
+  const [conjuge, setConjuge] = useState<ParticipanteForm>(
+    conjugeInicial ?? { ...VAZIO, tipo_qualificacao: "TI" },
+  );
   const [buscandoCep, setBuscandoCep] = useState(false);
+  const [buscandoCepC, setBuscandoCepC] = useState(false);
 
   useEffect(() => {
     if (open) {
       setF(inicial ?? { ...VAZIO, tipo_qualificacao: tipoQualificacaoFixo ?? "CO" });
+      setConjuge(conjugeInicial ?? { ...VAZIO, tipo_qualificacao: "TI" });
     }
-  }, [open, inicial, tipoQualificacaoFixo]);
+  }, [open, inicial, conjugeInicial, tipoQualificacaoFixo]);
 
   const pf = f.tipo_pessoa === "F";
-  const set = (patch: Partial<ParticipanteForm>) => setF((p) => ({ ...p, ...patch }));
+  const permiteConjuge = tipoQualificacaoFixo !== "VD";
+  const precisaConjuge = permiteConjuge && pf && ESTADO_CIVIL_COM_REGIME.has(f.estado_civil);
 
-  async function buscarCep(cepRaw: string) {
+  const set = (patch: Partial<ParticipanteForm>) => setF((p) => ({ ...p, ...patch }));
+  const setC = (patch: Partial<ParticipanteForm>) => setConjuge((p) => ({ ...p, ...patch }));
+
+  async function buscarCep(
+    cepRaw: string,
+    aplicar: (patch: Partial<ParticipanteForm>) => void,
+    atual: ParticipanteForm,
+    setLoading: (v: boolean) => void,
+  ) {
     const cep = cepRaw.replace(/\D/g, "");
     if (cep.length !== 8) return;
-    setBuscandoCep(true);
+    setLoading(true);
     try {
       const resp = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
       const dados = await resp.json();
@@ -246,16 +290,16 @@ export function ParticipanteDialog({
         toast.error("CEP não encontrado.");
         return;
       }
-      set({
-        logradouro: dados.logradouro || f.logradouro,
-        bairro: dados.bairro || f.bairro,
-        municipio: dados.localidade || f.municipio,
-        uf: dados.uf || f.uf,
+      aplicar({
+        logradouro: dados.logradouro || atual.logradouro,
+        bairro: dados.bairro || atual.bairro,
+        municipio: dados.localidade || atual.municipio,
+        uf: dados.uf || atual.uf,
       });
     } catch {
       toast.error("Não foi possível consultar o CEP.");
     } finally {
-      setBuscandoCep(false);
+      setLoading(false);
     }
   }
 
@@ -265,12 +309,29 @@ export function ParticipanteDialog({
       toast.error(erro);
       return;
     }
-    await onSalvar(formParaEnvolvido(f));
+    let conjugePayload: ReturnType<typeof formParaEnvolvido> | null = null;
+    if (precisaConjuge) {
+      // O cônjuge herda estado civil e regime do titular.
+      const c: ParticipanteForm = {
+        ...conjuge,
+        tipo_qualificacao: "TI",
+        tipo_pessoa: "F",
+        estado_civil: f.estado_civil,
+        regime_casamento: f.regime_casamento,
+      };
+      const erroC = validar(c);
+      if (erroC) {
+        toast.error(`Cônjuge: ${erroC}`);
+        return;
+      }
+      conjugePayload = formParaEnvolvido(c);
+    }
+    await onSalvar(formParaEnvolvido(f), conjugePayload);
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
+      <DialogContent className="max-h-[90vh] w-[95vw] max-w-2xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{titulo}</DialogTitle>
           <DialogDescription>
@@ -279,144 +340,34 @@ export function ParticipanteDialog({
         </DialogHeader>
 
         <div className="space-y-5">
-          {/* Identificação */}
-          <Secao titulo="Identificação">
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <SelSelect label="Situação" value={f.tipo_situacao} options={TIPO_SITUACAO} onChange={(v) => set({ tipo_situacao: v })} />
-              {!tipoQualificacaoFixo && (
-                <SelSelect label="Qualificação" value={f.tipo_qualificacao} options={TIPO_QUALIFICACAO} onChange={(v) => set({ tipo_qualificacao: v })} />
-              )}
-              <SelSelect label="Tipo de pessoa" value={f.tipo_pessoa} options={TIPO_PESSOA} onChange={(v) => set({ tipo_pessoa: v })} />
-              <Campo label={pf ? "Nome completo" : "Razão social"} className="sm:col-span-2">
-                <Input value={f.nome} onChange={(e) => set({ nome: e.target.value })} />
-              </Campo>
-              <Campo label="CPF/CNPJ">
-                <Input value={f.cpf_cnpj} onChange={(e) => set({ cpf_cnpj: maskCpfCnpj(e.target.value) })} />
-              </Campo>
-            </div>
-          </Secao>
+          <CamposParticipante
+            f={f}
+            set={set}
+            buscandoCep={buscandoCep}
+            onBuscarCep={(m) => buscarCep(m, set, f, setBuscandoCep)}
+            mostrarQualificacao={!tipoQualificacaoFixo}
+            mostrarEstadoCivil
+            mostrarIdentificacaoExtra
+          />
 
-          {/* Dados pessoais (PF) */}
-          {pf && (
-            <Secao titulo="Dados pessoais">
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <Campo label="Data de nascimento">
-                  <Input type="date" value={f.data_nascimento} onChange={(e) => set({ data_nascimento: e.target.value })} />
-                </Campo>
-                <Campo label="Nome da mãe">
-                  <Input value={f.nome_mae} onChange={(e) => set({ nome_mae: e.target.value })} />
-                </Campo>
-                <SelSelect label="Sexo" value={f.tipo_sexo} options={TIPO_SEXO} onChange={(v) => set({ tipo_sexo: v })} />
-                <SelSelect label="Estado civil" value={f.estado_civil} options={TIPO_ESTADO_CIVIL} onChange={(v) => set({ estado_civil: v })} />
-                {ESTADO_CIVIL_COM_REGIME.has(f.estado_civil) && (
-                  <SelSelect label="Regime de casamento" value={f.regime_casamento} options={TIPO_REGIME_CASAMENTO} onChange={(v) => set({ regime_casamento: v })} className="sm:col-span-2" />
-                )}
-              </div>
-            </Secao>
-          )}
-
-          {/* Documento */}
-          <Secao titulo="Documento de identidade">
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <SelSelect label="Tipo de documento" value={f.tipo_documento_identidade} options={TIPO_DOCUMENTO_IDENTIDADE} onChange={(v) => set({ tipo_documento_identidade: v })} />
-              <Campo label="Número do documento">
-                <Input value={f.numero_documento} onChange={(e) => set({ numero_documento: e.target.value })} />
-              </Campo>
-              <Campo label="Órgão expedidor">
-                <Input value={f.orgao_expedidor} onChange={(e) => set({ orgao_expedidor: e.target.value })} />
-              </Campo>
-              <SelUf label="UF de expedição" value={f.uf_expedicao} onChange={(v) => set({ uf_expedicao: v })} />
-              <Campo label="Data de expedição">
-                <Input type="date" value={f.data_expedicao} onChange={(e) => set({ data_expedicao: e.target.value })} />
-              </Campo>
-            </div>
-          </Secao>
-
-          {/* Profissional / renda */}
-          <Secao titulo="Profissional e renda">
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <Campo label="Profissão">
-                <Input value={f.profissao} onChange={(e) => set({ profissao: e.target.value })} />
-              </Campo>
-              <Campo label="Empresa">
-                <Input value={f.empresa} onChange={(e) => set({ empresa: e.target.value })} />
-              </Campo>
-              <Campo label="Renda">
-                <CurrencyInput value={f.renda} onChange={(v) => set({ renda: v })} />
-              </Campo>
-            </div>
-          </Secao>
-
-          {/* Contato */}
-          <Secao titulo="Contato">
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <Campo label="E-mail">
-                <Input type="email" value={f.email} onChange={(e) => set({ email: e.target.value })} />
-              </Campo>
-              <Campo label="Celular">
-                <Input value={f.celular} onChange={(e) => set({ celular: maskCelular(e.target.value) })} placeholder="(00) 00000-0000" />
-              </Campo>
-            </div>
-          </Secao>
-
-          {/* Endereço */}
-          <Secao titulo="Endereço">
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <Campo label="CEP">
-                <div className="relative">
-                  <Input
-                    value={f.cep}
-                    onChange={(e) => {
-                      const m = mascararCep(e.target.value);
-                      set({ cep: m });
-                      if (m.replace(/\D/g, "").length === 8) buscarCep(m);
-                    }}
-                    onBlur={(e) => buscarCep(e.target.value)}
-                  />
-                  {buscandoCep && (
-                    <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
-                  )}
-                </div>
-              </Campo>
-              <Campo label="Logradouro">
-                <Input value={f.logradouro} onChange={(e) => set({ logradouro: e.target.value })} />
-              </Campo>
-              <Campo label="Número">
-                <Input value={f.numero_logradouro} onChange={(e) => set({ numero_logradouro: e.target.value })} />
-              </Campo>
-              <Campo label="Complemento">
-                <Input value={f.complemento} onChange={(e) => set({ complemento: e.target.value })} />
-              </Campo>
-              <Campo label="Bairro">
-                <Input value={f.bairro} onChange={(e) => set({ bairro: e.target.value })} />
-              </Campo>
-              <Campo label="Município">
-                <Input value={f.municipio} onChange={(e) => set({ municipio: e.target.value })} />
-              </Campo>
-              <SelUf label="UF" value={f.uf} onChange={(v) => set({ uf: v })} />
-            </div>
-          </Secao>
-
-          {/* FGTS / autorizações */}
-          <Secao titulo="FGTS e autorizações">
-            <div className="space-y-3">
-              <div className="flex items-center justify-between rounded-md border border-border px-3 py-2">
-                <Label className="cursor-pointer">Utiliza FGTS?</Label>
-                <Switch checked={f.utiliza_fgts} onCheckedChange={(v) => set({ utiliza_fgts: v })} />
-              </div>
-              <label className="flex items-start gap-2 rounded-md border border-border px-3 py-2">
-                <Checkbox
-                  checked={f.fg_autorizacao_dados}
-                  onCheckedChange={(v) => set({ fg_autorizacao_dados: Boolean(v) })}
-                  className="mt-0.5"
+          {precisaConjuge && (
+            <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 sm:p-4">
+              <p className="mb-3 text-sm font-semibold text-primary">
+                Dados do cônjuge / coproponente
+              </p>
+              <div className="space-y-5">
+                <CamposParticipante
+                  f={conjuge}
+                  set={setC}
+                  buscandoCep={buscandoCepC}
+                  onBuscarCep={(m) => buscarCep(m, setC, conjuge, setBuscandoCepC)}
+                  mostrarQualificacao={false}
+                  mostrarEstadoCivil={false}
+                  mostrarIdentificacaoExtra={false}
                 />
-                <span className="text-sm text-muted-foreground">
-                  Autorizo a consulta e o tratamento dos meus dados para análise de crédito
-                  (obrigatório).
-                </span>
-              </label>
+              </div>
             </div>
-          </Secao>
+          )}
         </div>
 
         <DialogFooter>
@@ -430,6 +381,175 @@ export function ParticipanteDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+/** Conjunto de campos de um participante — reutilizado para titular e cônjuge. */
+function CamposParticipante({
+  f,
+  set,
+  buscandoCep,
+  onBuscarCep,
+  mostrarQualificacao,
+  mostrarEstadoCivil,
+  mostrarIdentificacaoExtra,
+}: {
+  f: ParticipanteForm;
+  set: (patch: Partial<ParticipanteForm>) => void;
+  buscandoCep: boolean;
+  onBuscarCep: (cepMascarado: string) => void;
+  mostrarQualificacao: boolean;
+  mostrarEstadoCivil: boolean;
+  mostrarIdentificacaoExtra: boolean;
+}) {
+  const pf = f.tipo_pessoa === "F";
+  return (
+    <>
+      {/* Identificação */}
+      <Secao titulo="Identificação">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {mostrarIdentificacaoExtra && (
+            <SelSelect label="Situação" value={f.tipo_situacao} options={TIPO_SITUACAO} onChange={(v) => set({ tipo_situacao: v })} />
+          )}
+          {mostrarQualificacao && (
+            <SelSelect label="Qualificação" value={f.tipo_qualificacao} options={TIPO_QUALIFICACAO} onChange={(v) => set({ tipo_qualificacao: v })} />
+          )}
+          {mostrarIdentificacaoExtra && (
+            <SelSelect label="Tipo de pessoa" value={f.tipo_pessoa} options={TIPO_PESSOA} onChange={(v) => set({ tipo_pessoa: v })} />
+          )}
+          <Campo label={pf ? "Nome completo" : "Razão social"} className="sm:col-span-2">
+            <Input value={f.nome} onChange={(e) => set({ nome: e.target.value })} />
+          </Campo>
+          <Campo label="CPF/CNPJ">
+            <Input value={f.cpf_cnpj} onChange={(e) => set({ cpf_cnpj: maskCpfCnpj(e.target.value) })} />
+          </Campo>
+        </div>
+      </Secao>
+
+      {/* Dados pessoais (PF) */}
+      {pf && (
+        <Secao titulo="Dados pessoais">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <Campo label="Data de nascimento">
+              <Input type="date" value={f.data_nascimento} onChange={(e) => set({ data_nascimento: e.target.value })} />
+            </Campo>
+            <Campo label="Nome da mãe">
+              <Input value={f.nome_mae} onChange={(e) => set({ nome_mae: e.target.value })} />
+            </Campo>
+            <SelSelect label="Sexo" value={f.tipo_sexo} options={TIPO_SEXO} onChange={(v) => set({ tipo_sexo: v })} />
+            {mostrarEstadoCivil && (
+              <SelSelect label="Estado civil" value={f.estado_civil} options={TIPO_ESTADO_CIVIL} onChange={(v) => set({ estado_civil: v })} />
+            )}
+            {mostrarEstadoCivil && ESTADO_CIVIL_COM_REGIME.has(f.estado_civil) && (
+              <SelSelect label="Regime de casamento" value={f.regime_casamento} options={TIPO_REGIME_CASAMENTO} onChange={(v) => set({ regime_casamento: v })} className="sm:col-span-2" />
+            )}
+          </div>
+        </Secao>
+      )}
+
+      {/* Documento */}
+      <Secao titulo="Documento de identidade">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <SelSelect label="Tipo de documento" value={f.tipo_documento_identidade} options={TIPO_DOCUMENTO_IDENTIDADE} onChange={(v) => set({ tipo_documento_identidade: v })} />
+          <Campo label="Número do documento">
+            <Input value={f.numero_documento} onChange={(e) => set({ numero_documento: e.target.value })} />
+          </Campo>
+          <Campo label="Órgão expedidor">
+            <Input value={f.orgao_expedidor} onChange={(e) => set({ orgao_expedidor: e.target.value })} />
+          </Campo>
+          <SelUf label="UF de expedição" value={f.uf_expedicao} onChange={(v) => set({ uf_expedicao: v })} />
+          <Campo label="Data de expedição">
+            <Input type="date" value={f.data_expedicao} onChange={(e) => set({ data_expedicao: e.target.value })} />
+          </Campo>
+        </div>
+      </Secao>
+
+      {/* Profissional / renda */}
+      <Secao titulo="Profissional e renda">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <Campo label="Profissão">
+            <Input value={f.profissao} onChange={(e) => set({ profissao: e.target.value })} />
+          </Campo>
+          <Campo label="Empresa">
+            <Input value={f.empresa} onChange={(e) => set({ empresa: e.target.value })} />
+          </Campo>
+          <Campo label="Renda">
+            <CurrencyInput value={f.renda} onChange={(v) => set({ renda: v })} />
+          </Campo>
+        </div>
+      </Secao>
+
+      {/* Contato */}
+      <Secao titulo="Contato">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <Campo label="E-mail">
+            <Input type="email" value={f.email} onChange={(e) => set({ email: e.target.value })} />
+          </Campo>
+          <Campo label="Celular">
+            <Input value={f.celular} onChange={(e) => set({ celular: maskCelular(e.target.value) })} placeholder="(00) 00000-0000" />
+          </Campo>
+        </div>
+      </Secao>
+
+      {/* Endereço */}
+      <Secao titulo="Endereço">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <Campo label="CEP">
+            <div className="relative">
+              <Input
+                value={f.cep}
+                onChange={(e) => {
+                  const m = mascararCep(e.target.value);
+                  set({ cep: m });
+                  if (m.replace(/\D/g, "").length === 8) onBuscarCep(m);
+                }}
+                onBlur={(e) => onBuscarCep(e.target.value)}
+              />
+              {buscandoCep && (
+                <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+              )}
+            </div>
+          </Campo>
+          <Campo label="Logradouro">
+            <Input value={f.logradouro} onChange={(e) => set({ logradouro: e.target.value })} />
+          </Campo>
+          <Campo label="Número">
+            <Input value={f.numero_logradouro} onChange={(e) => set({ numero_logradouro: e.target.value })} />
+          </Campo>
+          <Campo label="Complemento">
+            <Input value={f.complemento} onChange={(e) => set({ complemento: e.target.value })} />
+          </Campo>
+          <Campo label="Bairro">
+            <Input value={f.bairro} onChange={(e) => set({ bairro: e.target.value })} />
+          </Campo>
+          <Campo label="Município">
+            <Input value={f.municipio} onChange={(e) => set({ municipio: e.target.value })} />
+          </Campo>
+          <SelUf label="UF" value={f.uf} onChange={(v) => set({ uf: v })} />
+        </div>
+      </Secao>
+
+      {/* FGTS / autorizações */}
+      <Secao titulo="FGTS e autorizações">
+        <div className="space-y-3">
+          <div className="flex items-center justify-between rounded-md border border-border px-3 py-2">
+            <Label className="cursor-pointer">Utiliza FGTS?</Label>
+            <Switch checked={f.utiliza_fgts} onCheckedChange={(v) => set({ utiliza_fgts: v })} />
+          </div>
+          <label className="flex items-start gap-2 rounded-md border border-border px-3 py-2">
+            <Checkbox
+              checked={f.fg_autorizacao_dados}
+              onCheckedChange={(v) => set({ fg_autorizacao_dados: Boolean(v) })}
+              className="mt-0.5"
+            />
+            <span className="text-sm text-muted-foreground">
+              Autorizo a consulta e o tratamento dos meus dados para análise de crédito
+              (obrigatório).
+            </span>
+          </label>
+        </div>
+      </Secao>
+    </>
   );
 }
 

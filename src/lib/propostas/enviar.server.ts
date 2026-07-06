@@ -73,6 +73,36 @@ function soDigitos(v: unknown): string | undefined {
 }
 
 /**
+ * Um envolvido tem o cadastro complementar completo (obrigatório para enviar
+ * a proposta ao banco). Espelha a validação do formulário no front-end.
+ */
+function envolvidoEnvioCompleto(e: any): boolean {
+  const base =
+    e.nome &&
+    e.cpf_cnpj &&
+    e.tipo_documento_identidade &&
+    e.numero_documento &&
+    e.orgao_expedidor &&
+    e.uf_expedicao &&
+    e.profissao &&
+    e.renda &&
+    e.email &&
+    e.celular &&
+    e.cep &&
+    e.logradouro &&
+    e.numero_logradouro &&
+    e.bairro &&
+    e.municipio &&
+    e.uf &&
+    e.fg_autorizacao_dados;
+  const pf = (e.tipo_pessoa ?? "F") === "F";
+  const pessoais = !pf || (e.data_nascimento && e.nome_mae && e.tipo_sexo && e.estado_civil);
+  return Boolean(base && pessoais);
+}
+
+
+
+/**
  * Garante que o(s) participante(s) da oportunidade tenham os dados obrigatórios
  * exigidos pelos bancos (estado civil / maritalStatus, endereço com UF, data de
  * nascimento e renda). Vários bancos (ex.: Itaú) recusam a proposta quando
@@ -266,6 +296,28 @@ export async function enviarPropostaImpl({
       `Existem ${bloqueantes.length} documento(s) obrigatório(s) pendente(s) ou reprovado(s).`,
     );
   }
+
+  // Cadastro complementar obrigatório: todos os compradores/coproponentes
+  // (CO/TI) precisam estar com os dados completos antes de enviar ao banco.
+  const { data: compradores } = await supabase
+    .from("proposta_envolvidos")
+    .select("*")
+    .eq("proposta_id", propostaId)
+    .in("tipo_qualificacao", ["CO", "TI"]);
+  if (!compradores || compradores.length === 0) {
+    throw new Error(
+      "Preencha o cadastro complementar do comprador antes de enviar a proposta ao banco.",
+    );
+  }
+  const incompletos = compradores.filter((e: any) => !envolvidoEnvioCompleto(e));
+  if (incompletos.length > 0) {
+    const nomes = incompletos.map((e: any) => e.nome || "sem nome").join(", ");
+    throw new Error(
+      `Cadastro complementar incompleto para: ${nomes}. Preencha todos os dados obrigatórios antes de enviar.`,
+    );
+  }
+
+
 
   // Bancos a enviar: por linha (bancoId) ou todos os selecionados ainda não enviados.
   let query = supabase.from("proposta_bancos").select("*").eq("proposta_id", propostaId);

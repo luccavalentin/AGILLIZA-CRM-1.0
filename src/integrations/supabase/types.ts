@@ -2649,6 +2649,7 @@ export type Database = {
           cep: string | null
           cliente_id: string | null
           complemento: string | null
+          conjuge_de: string | null
           conta_corrente: string | null
           cpf_cnpj: string | null
           created_at: string
@@ -2691,6 +2692,7 @@ export type Database = {
           cep?: string | null
           cliente_id?: string | null
           complemento?: string | null
+          conjuge_de?: string | null
           conta_corrente?: string | null
           cpf_cnpj?: string | null
           created_at?: string
@@ -2733,6 +2735,7 @@ export type Database = {
           cep?: string | null
           cliente_id?: string | null
           complemento?: string | null
+          conjuge_de?: string | null
           conta_corrente?: string | null
           cpf_cnpj?: string | null
           created_at?: string
@@ -2768,6 +2771,13 @@ export type Database = {
           utiliza_fgts?: boolean
         }
         Relationships: [
+          {
+            foreignKeyName: "proposta_envolvidos_conjuge_de_fkey"
+            columns: ["conjuge_de"]
+            isOneToOne: false
+            referencedRelation: "proposta_envolvidos"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "proposta_envolvidos_proposta_id_fkey"
             columns: ["proposta_id"]
