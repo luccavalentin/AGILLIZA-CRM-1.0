@@ -88,6 +88,7 @@ function Pagina() {
     email_verificado_em: null,
   });
   const [enviando, setEnviando] = useState(false);
+  const [concluidos, setConcluidos] = useState(0);
   const [erros, setErros] = useState<Record<string, string>>({});
   const [entradaTocada, setEntradaTocada] = useState(false);
 
