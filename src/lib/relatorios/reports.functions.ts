@@ -534,6 +534,7 @@ export const runReport = createServerFn({ method: "POST" })
       if (filtros.responsavel) q = q.eq("usuario_responsavel_id", filtros.responsavel);
       if (filtros.banco) q = q.eq("nome_banco", filtros.banco);
       if (filtros.produto) q = q.eq("produto", filtros.produto);
+      if (filtros.status) q = q.eq("status", filtros.status);
       const { data: rowsRaw, error } = await q;
       if (error) throw new Error(error.message);
       const props = (rowsRaw ?? []) as any[];
