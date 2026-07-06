@@ -48,6 +48,7 @@ function formatarHora(iso: string): string {
 function Pagina() {
   const qc = useQueryClient();
   const listar = useServerFn(listarConversasCliente);
+  const buscarApp = useServerFn(buscarClientesApp);
   const [busca, setBusca] = useState("");
   const [selecionado, setSelecionado] = useState<string | null>(null);
 
@@ -55,6 +56,14 @@ function Pagina() {
   const { data: conversas, isLoading } = useQuery({
     queryKey,
     queryFn: () => listar(),
+  });
+
+  // Clientes com App habilitado (mesmo sem conversa ainda) para iniciar chat.
+  const termoBusca = busca.trim();
+  const { data: clientesApp, isFetching: buscandoApp } = useQuery({
+    queryKey: ["clientes-app", termoBusca],
+    queryFn: () => buscarApp({ data: { q: termoBusca || undefined } }),
+    enabled: termoBusca.length >= 2,
   });
 
   // Sincroniza a lista em tempo real quando qualquer mensagem chega/sai.
@@ -84,8 +93,34 @@ function Pagina() {
     );
   }, [conversas, busca]);
 
-  const conversaAtual = filtradas.find((c) => c.cliente_id === selecionado) ??
-    (conversas ?? []).find((c) => c.cliente_id === selecionado);
+  // Clientes App habilitados que ainda não têm conversa (para iniciar chat).
+  const novosClientes = useMemo(() => {
+    if (termoBusca.length < 2) return [];
+    const jaEmConversa = new Set((conversas ?? []).map((c) => c.cliente_id));
+    return (clientesApp ?? []).filter((c) => !jaEmConversa.has(c.cliente_id));
+  }, [clientesApp, conversas, termoBusca]);
+
+  const conversaAtual = (conversas ?? []).find(
+    (c) => c.cliente_id === selecionado,
+  );
+  const clienteAppAtual = (clientesApp ?? []).find(
+    (c) => c.cliente_id === selecionado,
+  );
+  const alvoAtual = conversaAtual
+    ? {
+        cliente_id: conversaAtual.cliente_id,
+        nome: conversaAtual.nome,
+        documento: conversaAtual.documento,
+        etapa_nome: conversaAtual.etapa_nome ?? null,
+      }
+    : clienteAppAtual
+      ? {
+          cliente_id: clienteAppAtual.cliente_id,
+          nome: clienteAppAtual.nome,
+          documento: clienteAppAtual.documento,
+          etapa_nome: clienteAppAtual.etapa_nome,
+        }
+      : null;
 
   // Seleção automática da primeira conversa.
   useEffect(() => {
@@ -93,6 +128,8 @@ function Pagina() {
       setSelecionado(conversas![0].cliente_id);
     }
   }, [conversas, selecionado]);
+
+
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-4 p-4 md:p-6">
