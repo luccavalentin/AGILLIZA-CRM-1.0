@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { corDoBanco } from "@/lib/bancos/cores";
+import { BancoLogo } from "@/components/bancos/banco-logo";
 
 type Tone = "brand" | "success" | "warning" | "danger" | "neutral";
 
@@ -223,11 +224,15 @@ export function MetricList({
           <li key={i.label}>
             <div className="flex items-center justify-between text-sm">
               <span className="flex min-w-0 items-center gap-2 text-foreground">
-                {cor && (
-                  <span
-                    className="h-2 w-2 shrink-0 rounded-full"
-                    style={{ backgroundColor: cor }}
-                  />
+                {colorByBank ? (
+                  <BancoLogo nome={i.label} size="xs" />
+                ) : (
+                  cor && (
+                    <span
+                      className="h-2 w-2 shrink-0 rounded-full"
+                      style={{ backgroundColor: cor }}
+                    />
+                  )
                 )}
                 <span className="truncate">{i.label}</span>
               </span>

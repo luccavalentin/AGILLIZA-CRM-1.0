@@ -1,6 +1,6 @@
-import { Landmark } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { corDoBanco } from "@/lib/bancos/cores";
+import { BancoLogo } from "@/components/bancos/banco-logo";
 
 /**
  * Chip que exibe o nome do banco na cor da sua marca.
@@ -26,7 +26,7 @@ export function BancoChip({
         backgroundColor: `${cor}14`,
       }}
     >
-      <Landmark className="h-3 w-3" />
+      <BancoLogo nome={nome} size="xs" />
       {nome ?? "—"}
     </span>
   );

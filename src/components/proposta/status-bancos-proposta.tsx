@@ -1,5 +1,5 @@
-import { Landmark } from "lucide-react";
 import { corDoBanco } from "@/lib/bancos/cores";
+import { BancoLogo } from "@/components/bancos/banco-logo";
 import type { Tone } from "@/components/crm/tone-badge";
 
 export interface BancoStatusItem {
@@ -88,10 +88,10 @@ export function StatusBancosProposta({
             className="inline-flex items-center gap-1.5 whitespace-nowrap"
           >
             <span
-              className="inline-flex items-center gap-1 text-xs font-medium"
+              className="inline-flex items-center gap-1.5 text-xs font-medium"
               style={{ color: cor }}
             >
-              <Landmark className="h-3 w-3" />
+              <BancoLogo nome={b.nome_banco} size="xs" />
               {b.nome_banco ?? "—"}
             </span>
             <span
