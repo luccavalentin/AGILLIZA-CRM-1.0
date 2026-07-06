@@ -125,9 +125,17 @@ export function ReportChartView({
           stroke="hsl(var(--muted-foreground))"
           width={56}
           tickFormatter={fmt}
+          allowDecimals={allowDecimals}
         />
         <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => fmt(v)} />
-        <Bar dataKey="valor" fill="var(--chart-1)" radius={[4, 4, 0, 0]} />
+        <Bar dataKey="valor" radius={[4, 4, 0, 0]} fill="var(--chart-1)">
+          {chart.dados.map((d, i) => (
+            <Cell
+              key={i}
+              fill={colorByBank ? corDoBanco(d.label) : "var(--chart-1)"}
+            />
+          ))}
+        </Bar>
       </BarChart>
     </ResponsiveContainer>
   );
