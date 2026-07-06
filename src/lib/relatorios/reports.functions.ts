@@ -1278,13 +1278,16 @@ export const runReport = createServerFn({ method: "POST" })
     }
 
     async function relComissoes(): Promise<ReportResult> {
-      const coms = await supabase
+      let cq = (supabase as any)
         .from("comissoes")
         .select("valor_bruto,split_parceiro,split_interno,status,usuario_responsavel_id,created_at")
         .gte("created_at", de)
         .lte("created_at", ateFim)
-        .limit(5000)
-        .then((r: any) => r.data ?? []);
+        .limit(5000);
+      cq = aplicarEscopo(cq, filtros, userId, "usuario_responsavel_id");
+      if (filtros.responsavel) cq = cq.eq("usuario_responsavel_id", filtros.responsavel);
+      if (filtros.status) cq = cq.eq("status", filtros.status);
+      const coms = await cq.then((r: any) => r.data ?? []);
       const prevista = coms.reduce((s: number, c: any) => s + (c.valor_bruto ?? 0), 0);
       const paga = coms
         .filter((c: any) => c.status === "paga_parceiro" || c.status === "encerrada")
