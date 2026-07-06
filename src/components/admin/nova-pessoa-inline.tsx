@@ -163,16 +163,13 @@ export function NovaPessoaInline({
     criar.mutate({
       nome: nome.trim(),
       email: email.trim(),
-      acesso_tipo: portal === "parceiro" ? "portal_parceiro" : "sistema",
-      papel: portal === "parceiro" ? tipoParceiro : "comercial",
       nivel_acesso_id: nivelId,
-      dados_parceiro:
-        portal === "parceiro"
-          ? {
-              creci: creci.trim() || undefined,
-              comissao_padrao: comissao ? Number(comissao) : undefined,
-            }
-          : undefined,
+      dados_parceiro: isParceiro
+        ? {
+            creci: creci.trim() || undefined,
+            comissao_padrao: comissao ? Number(comissao) : undefined,
+          }
+        : undefined,
     });
   }
 
