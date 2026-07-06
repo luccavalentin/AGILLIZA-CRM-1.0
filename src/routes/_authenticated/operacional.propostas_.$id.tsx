@@ -146,14 +146,25 @@ type Tab = (typeof TABS)[number];
 
 function Pagina() {
   const { id } = Route.useParams();
+  const { complementar } = Route.useSearch();
   const router = useRouter();
   const qc = useQueryClient();
   const [tab, setTab] = useState<Tab>("RESUMO");
+  const [autoAbrir, setAutoAbrir] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ["proposta", id],
     queryFn: () => obterProposta({ data: { id } }),
   });
+
+  // Ao chegar de "Criar proposta", abre o cadastro complementar automaticamente.
+  useEffect(() => {
+    if (complementar === 1) {
+      setTab("COMPRADORES");
+      setAutoAbrir(true);
+    }
+  }, [complementar]);
+
 
   // realtime na proposta
   useEffect(() => {
