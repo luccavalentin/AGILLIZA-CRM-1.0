@@ -163,7 +163,29 @@ function drawDadosCliente(doc: jsPDF, pageW: number, s: any, y: number): number 
   return y + boxH + 12;
 }
 
-/** Grade de "Informações do Financiamento" incluindo CET, CESH e taxas no cabeçalho do extrato. */
+/** Formata em BRL, mas devolve "—" quando o valor não veio da API (evita inventar R$ 0,00). */
+function brlOuTraco(v: number | null | undefined): string {
+  return v == null ? "—" : formatBRL(v);
+}
+
+/** Normaliza o sistema de amortização para os termos conhecidos (SAC / PRICE). */
+function sistemaAmortizacaoLabel(
+  apiValor: string | null | undefined,
+  requisitado: string | null | undefined,
+): string {
+  const up = (apiValor ?? "").toUpperCase();
+  if (up.includes("PRICE")) return "PRICE";
+  if (up.includes("SAC")) return "SAC";
+  if (requisitado === "P") return "PRICE";
+  if (requisitado === "S") return "SAC";
+  return "—";
+}
+
+/**
+ * Grade de "Informações do Financiamento".
+ * Só exibe o que vem diretamente do retorno do banco (ou o que o próprio usuário
+ * informou na operação); campos ausentes aparecem como "—", nunca com valores inventados.
+ */
 function drawInfoFinanciamento(
   doc: jsPDF,
   pageW: number,
@@ -177,26 +199,26 @@ function drawInfoFinanciamento(
     { label: "Produto", valor: produtoLabel(s) },
     {
       label: "Sistema de amortização",
-      valor: d?.sistemaAmortizacao ?? (s.sistema_amortizacao === "P" ? "PRICE" : "SAC"),
+      valor: sistemaAmortizacaoLabel(d?.sistemaAmortizacao, s.sistema_amortizacao),
     },
-    { label: "Valor de compra e venda", valor: formatBRL(d?.valorImovel ?? s.valor_imovel) },
-    { label: "Despesas financiadas", valor: formatBRL(d?.despesasFinanciadas ?? 0) },
+    { label: "Valor de compra e venda", valor: brlOuTraco(d?.valorImovel ?? s.valor_imovel) },
+    { label: "Despesas financiadas", valor: brlOuTraco(d?.despesasFinanciadas) },
     {
       label: "Valor de financiamento total",
-      valor: formatBRL(d?.valorFinanciamento ?? s.valor_financiamento),
+      valor: brlOuTraco(d?.valorFinanciamento ?? s.valor_financiamento),
     },
-    { label: "Entrada", valor: formatBRL(d?.valorEntrada ?? s.valor_entrada) },
+    { label: "Entrada", valor: brlOuTraco(d?.valorEntrada ?? s.valor_entrada) },
     {
       label: "Prazo total",
       valor:
         (d?.prazoMeses ?? s.prazo) != null ? `${d?.prazoMeses ?? s.prazo} meses` : "—",
     },
-    { label: "Tipo da parcela", valor: d?.indexador ? `Atualizável ${d.indexador}` : "—" },
+    { label: "Indexador", valor: d?.indexador ?? "—" },
     { label: "Taxa efetiva anual", valor: pctTxt(d?.taxaJurosAno ?? b?.taxa_juros_ano) },
     { label: "Taxa de juros mensal", valor: pctTxt(d?.taxaJurosMes, "a.m.") },
     { label: "CET (Custo Efetivo Total)", valor: pctTxt(d?.cet) },
     { label: "CESH (Custo Efetivo Seguro Habitacional)", valor: pctTxt(d?.cesh) },
-    { label: "IOF", valor: formatBRL(d?.iof ?? b?.valor_iof ?? 0) },
+    { label: "IOF", valor: brlOuTraco(d?.iof ?? b?.valor_iof) },
     { label: "Seguradora", valor: d?.seguradora ?? "—" },
   ];
 
