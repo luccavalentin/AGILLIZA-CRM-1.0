@@ -3,7 +3,10 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { ArrowLeft, Paperclip, Download, Trash2 } from "lucide-react";
+import { ArrowLeft, Paperclip, Download, Trash2, Send, MessageCircle } from "lucide-react";
+import { getMinhaSessao } from "@/lib/session.functions";
+import { PopOutPanel } from "@/components/shared/pop-out-panel";
+import { Card } from "@/components/ui/card";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import {
   obterDemanda,
@@ -129,6 +132,12 @@ function Pagina() {
     qc.invalidateQueries({ queryKey: ["demandas"] });
   }
 
+  const { data: sessao } = useQuery({
+    queryKey: ["minha-sessao"],
+    queryFn: () => getMinhaSessao(),
+  });
+  const meuId = sessao?.profile?.id ?? null;
+
   const d = data?.demanda;
   if (!d) return <div className="p-6 text-sm text-muted-foreground">Carregando…</div>;
 
@@ -206,63 +215,115 @@ function Pagina() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Mensagens */}
-        <div className="space-y-3">
-          <h2 className="text-sm font-semibold text-foreground">Mensagens</h2>
-          <div className="space-y-2">
-            {(data?.mensagens ?? []).map((m: any) => (
-              <div
-                key={m.id}
-                className={cn(
-                  "rounded-md border-l-2 p-3 text-sm",
-                  m.visivel_cliente
-                    ? "border-primary bg-accent text-accent-foreground"
-                    : "border-muted-foreground bg-muted text-foreground",
-                )}
-              >
-                <div className="mb-1 flex items-center justify-between text-xs">
-                  <span className="font-medium">{m.nome_autor ?? "—"}</span>
-                  <ToneBadge tone={m.visivel_cliente ? "info" : "muted"}>
-                    {m.visivel_cliente ? "Cliente" : "Interno"}
-                  </ToneBadge>
-                </div>
-                <p className="whitespace-pre-wrap">{m.corpo}</p>
-                <span className="mt-1 block text-[11px] text-muted-foreground">
-                  {fmtData(m.created_at)}
-                </span>
+        <PopOutPanel title={`Mensagens · ${d.numero}`} className="h-[32rem]">
+          <Card className="flex h-full flex-col overflow-hidden border-border/60 shadow-sm">
+            <div className="flex items-center gap-2 border-b bg-muted/30 px-4 py-3">
+              <div className="flex size-8 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <MessageCircle className="size-4" />
               </div>
-            ))}
-            {(data?.mensagens ?? []).length === 0 && (
-              <p className="text-sm text-muted-foreground">Sem mensagens ainda.</p>
-            )}
-          </div>
-          <Textarea
-            value={corpo}
-            onChange={(e) => setCorpo(e.target.value)}
-            rows={3}
-            placeholder="Escreva uma mensagem…"
-          />
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Switch id="vis" checked={visivelCliente} onCheckedChange={setVisivelCliente} />
-              <Label htmlFor="vis" className="text-xs text-muted-foreground">
-                Visível ao cliente
-              </Label>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-foreground">Mensagens</p>
+                <p className="truncate text-xs text-muted-foreground">
+                  Conversa da demanda {d.numero}
+                </p>
+              </div>
             </div>
-            <Button
-              size="sm"
-              disabled={!corpo.trim()}
-              onClick={async () => {
-                await comentarFn({
-                  data: { demanda_id: id, corpo, visivel_cliente: visivelCliente },
-                });
-                setCorpo("");
-                invalidar();
-              }}
-            >
-              Enviar
-            </Button>
-          </div>
-        </div>
+
+            <div className="flex-1 space-y-1 overflow-y-auto bg-gradient-to-b from-muted/20 to-transparent p-4">
+              {(data?.mensagens ?? []).length === 0 ? (
+                <div className="flex h-full flex-col items-center justify-center gap-2 text-center">
+                  <div className="flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+                    <MessageCircle className="size-6" />
+                  </div>
+                  <p className="text-sm text-muted-foreground">Sem mensagens ainda.</p>
+                </div>
+              ) : (
+                (data?.mensagens ?? []).map((m: any) => {
+                  const meu = meuId != null && m.autor_id === meuId;
+                  return (
+                    <div key={m.id} className={cn("flex", meu ? "justify-end" : "justify-start")}>
+                      <div
+                        className={cn(
+                          "max-w-[80%] rounded-2xl px-3.5 py-2 text-sm shadow-sm",
+                          meu
+                            ? "rounded-br-md bg-primary text-primary-foreground"
+                            : "rounded-bl-md border border-border/60 bg-card text-foreground",
+                        )}
+                      >
+                        <div className="mb-0.5 flex items-center gap-2">
+                          <span
+                            className={cn(
+                              "text-[11px] font-semibold",
+                              meu ? "text-primary-foreground/90" : "text-primary",
+                            )}
+                          >
+                            {meu ? "Você" : (m.nome_autor ?? "—")}
+                          </span>
+                          <ToneBadge tone={m.visivel_cliente ? "info" : "muted"}>
+                            {m.visivel_cliente ? "Cliente" : "Interno"}
+                          </ToneBadge>
+                        </div>
+                        <p className="whitespace-pre-wrap break-words leading-relaxed">{m.corpo}</p>
+                        <p
+                          className={cn(
+                            "mt-1 text-right text-[10px]",
+                            meu ? "text-primary-foreground/70" : "text-muted-foreground",
+                          )}
+                        >
+                          {fmtData(m.created_at)}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            <div className="space-y-2 border-t bg-muted/30 p-3">
+              <div className="flex items-end gap-2">
+                <Textarea
+                  value={corpo}
+                  onChange={(e) => setCorpo(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      if (!corpo.trim()) return;
+                      comentarFn({
+                        data: { demanda_id: id, corpo, visivel_cliente: visivelCliente },
+                      }).then(() => {
+                        setCorpo("");
+                        invalidar();
+                      });
+                    }
+                  }}
+                  placeholder="Escreva uma mensagem…"
+                  className="min-h-[44px] max-h-32 resize-none rounded-xl bg-background"
+                />
+                <Button
+                  size="icon"
+                  className="h-11 w-11 shrink-0 rounded-xl shadow-sm"
+                  disabled={!corpo.trim()}
+                  onClick={async () => {
+                    await comentarFn({
+                      data: { demanda_id: id, corpo, visivel_cliente: visivelCliente },
+                    });
+                    setCorpo("");
+                    invalidar();
+                  }}
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="flex items-center gap-2">
+                <Switch id="vis" checked={visivelCliente} onCheckedChange={setVisivelCliente} />
+                <Label htmlFor="vis" className="text-xs text-muted-foreground">
+                  Visível ao cliente
+                </Label>
+              </div>
+            </div>
+          </Card>
+        </PopOutPanel>
+
 
         {/* Timeline */}
         <div className="space-y-3">

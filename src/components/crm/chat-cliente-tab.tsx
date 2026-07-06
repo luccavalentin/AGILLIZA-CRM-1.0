@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { PopOutPanel } from "@/components/shared/pop-out-panel";
 import { supabase } from "@/integrations/supabase/client";
 import {
   listarChatCliente,
@@ -119,7 +120,8 @@ export function ChatClienteTab({ clienteId, info }: { clienteId: string; info?: 
   }
 
   return (
-    <Card className="flex h-[32rem] flex-col overflow-hidden border-border/60 shadow-sm">
+    <PopOutPanel title={`Conversa · ${info?.nome ?? "Cliente"}`} className="h-[32rem]">
+    <Card className="flex h-full flex-col overflow-hidden border-border/60 shadow-sm">
       <div className="flex items-center gap-3 border-b bg-muted/30 px-4 py-3">
         <div className="relative flex size-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/70 text-sm font-semibold text-primary-foreground shadow-sm">
           {iniciais(info?.nome)}
@@ -243,6 +245,6 @@ export function ChatClienteTab({ clienteId, info }: { clienteId: string; info?: 
         </Button>
       </div>
     </Card>
-
+    </PopOutPanel>
   );
 }
