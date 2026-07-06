@@ -54,6 +54,12 @@ function Pagina() {
   const [dataInicio, setDataInicio] = useState(padrao.inicio);
   const [dataFim, setDataFim] = useState(padrao.fim);
 
+  // Busca ao vivo: filtra conforme o usuário digita (com debounce).
+  useEffect(() => {
+    const t = setTimeout(() => setBusca(q.trim()), 300);
+    return () => clearTimeout(t);
+  }, [q]);
+
   const { data, isLoading } = useQuery({
     queryKey: ["propostas", escopo, busca, dataInicio, dataFim],
     queryFn: () =>
