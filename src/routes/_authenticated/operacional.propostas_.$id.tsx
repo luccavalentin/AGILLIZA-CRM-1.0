@@ -1,4 +1,5 @@
 import { createFileRoute, useRouter, Link } from "@tanstack/react-router";
+import { corDoBanco } from "@/lib/bancos/cores";
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
