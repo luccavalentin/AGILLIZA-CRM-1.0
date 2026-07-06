@@ -105,10 +105,14 @@ export function RegrasModulosPanel() {
   const [novoNome, setNovoNome] = useState("");
   const [novaDesc, setNovaDesc] = useState("");
   const [copiarDe, setCopiarDe] = useState<string>("baseline");
+  const [novoPortal, setNovoPortal] = useState<AcessoTipo>("sistema");
+  const [novoPapel, setNovoPapel] = useState<PapelNivel>("comercial");
 
   const [editarOpen, setEditarOpen] = useState(false);
   const [editNome, setEditNome] = useState("");
   const [editDesc, setEditDesc] = useState("");
+  const [editPortal, setEditPortal] = useState<AcessoTipo>("sistema");
+  const [editPapel, setEditPapel] = useState<PapelNivel>("comercial");
 
   const [excluirOpen, setExcluirOpen] = useState(false);
 
