@@ -490,8 +490,8 @@ export const atualizarNivelAcesso = createServerFn({ method: "POST" })
       const novoId = await forkNivelPadrao(supabase, corresp, data.id, {
         nome: data.nome,
         descricao: data.descricao ?? null,
-        papel: data.papel ?? nivel.papel,
-        acesso_tipo: data.acesso_tipo ?? nivel.acesso_tipo,
+        papel: (data.papel ?? nivel.papel) as PapelNivel,
+        acesso_tipo: (data.acesso_tipo ?? nivel.acesso_tipo) as AcessoTipo,
       });
       const { registrarAuditoria } = await import("@/lib/admin/audit.server");
       await registrarAuditoria({
