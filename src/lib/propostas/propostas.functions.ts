@@ -21,6 +21,7 @@ export interface PropostaListaItem {
   numero_proposta: string;
   numero_proposta_banco: string | null;
   nome_cliente: string | null;
+  cpf_cnpj: string | null;
   nome_banco: string | null;
   produto: string | null;
   valor_financiamento: number | null;
