@@ -283,17 +283,30 @@ export const navInterno: NavGroup[] = [
     label: "Administração",
     items: [
       {
+        label: "Compras",
+        icon: ShoppingCart,
+        to: "/admin/compras",
+        perm: { modulo: "admin.compras" },
+      },
+      {
         label: "Configurações gerais",
         icon: SlidersHorizontal,
         to: "/admin/configuracoes",
         perm: { modulo: "admin.parametros" },
-      },
-      { label: "Pessoas", icon: UserCog, to: "/admin/pessoas", perm: { modulo: "admin.pessoas" } },
-      {
-        label: "Integrações",
-        icon: Plug,
-        to: "/admin/integracoes",
-        perm: { modulo: "admin.integracoes" },
+        children: [
+          {
+            label: "Configurações gerais",
+            icon: SlidersHorizontal,
+            to: "/admin/configuracoes",
+            perm: { modulo: "admin.parametros" },
+          },
+          {
+            label: "Pessoas",
+            icon: UserCog,
+            to: "/admin/pessoas",
+            perm: { modulo: "admin.pessoas" },
+          },
+        ],
       },
       {
         label: "Bancos",
@@ -312,12 +325,6 @@ export const navInterno: NavGroup[] = [
         icon: Settings2,
         to: "/admin/parametros",
         perm: { modulo: "admin.parametros" },
-      },
-      {
-        label: "Compras",
-        icon: ShoppingCart,
-        to: "/admin/compras",
-        perm: { modulo: "admin.compras" },
       },
       { label: "SLA & Feriados", icon: Timer, to: "/admin/sla", perm: { modulo: "admin.sla" } },
       {
