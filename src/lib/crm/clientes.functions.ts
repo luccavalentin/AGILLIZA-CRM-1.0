@@ -1234,3 +1234,40 @@ export const salvarChecklist = createServerFn({ method: "POST" })
     if (error) throw error;
     return { ok: true };
   });
+
+/** Salva os dados do imóvel (exigidos pela integração bancária) e do interveniente quitante (IQ) no cadastro do cliente. */
+export const salvarImovelIq = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        cliente_id: z.string().uuid(),
+        imovel_tipo: z.string().max(10).optional().nullable(),
+        imovel_uso: z.string().max(10).optional().nullable(),
+        imovel_situacao: z.string().max(10).optional().nullable(),
+        imovel_valor: z.number().nonnegative().optional().nullable(),
+        imovel_cep: z.string().max(20).optional().nullable(),
+        imovel_logradouro: z.string().max(200).optional().nullable(),
+        imovel_numero: z.string().max(20).optional().nullable(),
+        imovel_complemento: z.string().max(120).optional().nullable(),
+        imovel_bairro: z.string().max(120).optional().nullable(),
+        imovel_cidade: z.string().max(120).optional().nullable(),
+        imovel_uf: z.string().max(2).optional().nullable(),
+        iq_nome: z.string().max(200).optional().nullable(),
+        iq_comentario: z.string().max(2000).optional().nullable(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }): Promise<{ ok: true }> => {
+    const { supabase, userId } = context;
+    if (!(await podeAcao(supabase, userId, "crm.clientes", "edit"))) {
+      throw new Error("Você não tem permissão para editar o cliente.");
+    }
+    const { cliente_id, ...patch } = data;
+    const { error } = await supabase
+      .from("clientes")
+      .update(patch as never)
+      .eq("id", cliente_id);
+    if (error) throw error;
+    return { ok: true };
+  });
