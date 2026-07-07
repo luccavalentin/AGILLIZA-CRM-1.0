@@ -16,6 +16,8 @@ export interface AuditoriaEntrada {
   correspondenteId: string | null;
   /** Identificador curto da ação, ex.: "cliente.criar", "proposta.enviar". */
   acao: string;
+  /** Frase legível da ação, ex.: "excluiu o documento RG.pdf". */
+  descricao?: string | null;
   /** Nome lógico da entidade afetada, ex.: "clientes". */
   entidade?: string | null;
   /** ID da entidade afetada, quando aplicável. */
