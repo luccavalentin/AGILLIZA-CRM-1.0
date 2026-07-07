@@ -779,6 +779,8 @@ function Pagina() {
                     email_conjuge: "",
                     celular_conjuge: "",
                   }));
+                  setCadastroNome(null);
+                  setInvertido(false);
                   toast.info("Titular removido. Pesquise outro cliente ou preencha manualmente.");
                 }}
               >
