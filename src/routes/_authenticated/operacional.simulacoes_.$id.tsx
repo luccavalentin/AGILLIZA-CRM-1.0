@@ -2,12 +2,14 @@ import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ArrowLeft, RefreshCw, Copy, Download, ChevronDown } from "lucide-react";
+import { ArrowLeft, RefreshCw, Copy, Download, ChevronDown, Pencil, Trash2 } from "lucide-react";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { supabase } from "@/integrations/supabase/client";
+import { ConfirmDelete } from "@/components/shared/confirm-delete";
 import {
   obterSimulacao,
   enviarSimulacaoBanco,
+  excluirSimulacao,
 } from "@/lib/simulacao/simulacoes.functions";
 import { criarProposta } from "@/lib/propostas/propostas.functions";
 import { Button } from "@/components/ui/button";
