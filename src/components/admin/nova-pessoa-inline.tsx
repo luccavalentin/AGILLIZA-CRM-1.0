@@ -89,6 +89,23 @@ export function NovaPessoaInline({
     setNivelId(niveis[0].id);
   }
 
+  const listarTipos = useServerFn(listarTiposPessoa);
+  const { data: tipos } = useQuery({
+    queryKey: ["tipos-pessoa"],
+    queryFn: () => listarTipos(),
+  });
+  const tiposAtivos = useMemo(() => (tipos ?? []).filter((t) => t.ativo), [tipos]);
+  const tipoSel = useMemo(
+    () => tiposAtivos.find((t) => t.slug === tipoPessoa),
+    [tiposAtivos, tipoPessoa],
+  );
+
+  // Seleciona o primeiro tipo automaticamente (e aplica o login padrão dele).
+  if (tiposAtivos.length > 0 && !tipoPessoa) {
+    setTipoPessoa(tiposAtivos[0].slug);
+    setComLogin(tiposAtivos[0].login_padrao);
+  }
+
   const nivel = useMemo(() => (niveis ?? []).find((n) => n.id === nivelId), [niveis, nivelId]);
   const isParceiro = nivel?.acesso_tipo === "portal_parceiro";
 
