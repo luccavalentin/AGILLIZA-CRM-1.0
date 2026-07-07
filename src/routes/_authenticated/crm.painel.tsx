@@ -89,20 +89,33 @@ function Pagina() {
                 key={stage.codigo}
                 className="group relative flex min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-card shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-lg"
               >
+                <span
+                  className={`absolute inset-x-0 top-0 h-1 origin-left transition-transform duration-300 ${
+                    temClientes
+                      ? "bg-gradient-to-r from-primary to-primary/40"
+                      : "bg-gradient-to-r from-border to-transparent scale-x-100 group-hover:from-primary/40"
+                  }`}
+                />
                 <div className="flex min-w-0 flex-col p-3.5">
-                  <div className="mb-3 flex items-center justify-between gap-2 border-b border-border pb-3">
-                    <div className="flex min-w-0 items-center gap-2">
-                      <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-muted text-[11px] font-semibold text-muted-foreground">
+                  <div className="mb-3 flex items-center justify-between gap-2.5 border-b border-border/70 pb-3">
+                    <div className="flex min-w-0 items-center gap-2.5">
+                      <span
+                        className={`flex size-7 shrink-0 items-center justify-center rounded-lg text-[11px] font-bold tabular-nums shadow-sm ring-1 transition-colors duration-300 ${
+                          temClientes
+                            ? "bg-primary/10 text-primary ring-primary/20 group-hover:bg-primary group-hover:text-primary-foreground group-hover:ring-primary"
+                            : "bg-muted text-muted-foreground ring-border"
+                        }`}
+                      >
                         {idx + 1}
                       </span>
-                      <span className="min-w-0 truncate text-sm font-semibold text-foreground">
+                      <span className="min-w-0 truncate text-sm font-semibold tracking-tight text-foreground">
                         {stage.nome}
                       </span>
                     </div>
                     <span
-                      className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${
+                      className={`flex h-6 min-w-6 shrink-0 items-center justify-center rounded-full px-2 text-xs font-bold tabular-nums transition-colors duration-300 ${
                         temClientes
-                          ? "bg-primary text-primary-foreground"
+                          ? "bg-primary text-primary-foreground shadow-sm"
                           : "bg-muted text-muted-foreground"
                       }`}
                     >
