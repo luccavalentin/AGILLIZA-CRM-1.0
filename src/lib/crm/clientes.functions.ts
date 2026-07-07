@@ -981,10 +981,20 @@ export const definirAcessoPortal = createServerFn({ method: "POST" })
 export interface VinculoParceiro {
   id: string;
   parceiro_id: string;
+  tipo_vinculo: string;
   nome: string | null;
   email: string | null;
   created_at: string;
 }
+
+/** Tipos de vínculo de atendimento disponíveis. */
+export const TIPOS_VINCULO = [
+  { valor: "imobiliaria", rotulo: "Imobiliária" },
+  { valor: "corretor", rotulo: "Corretor" },
+  { valor: "comercial_agilliza", rotulo: "Comercial Agilliza" },
+] as const;
+
+export type TipoVinculo = (typeof TIPOS_VINCULO)[number]["valor"];
 
 /** Lista os parceiros/usuários vinculados a um cliente. */
 export const listarVinculosCliente = createServerFn({ method: "GET" })
@@ -994,7 +1004,7 @@ export const listarVinculosCliente = createServerFn({ method: "GET" })
     const { supabase } = context;
     const { data: rows, error } = await supabase
       .from("cliente_parceiros")
-      .select("id, parceiro_id, created_at")
+      .select("id, parceiro_id, tipo_vinculo, created_at")
       .eq("cliente_id", data.cliente_id)
       .order("created_at", { ascending: false });
     if (error) throw error;
@@ -1009,6 +1019,7 @@ export const listarVinculosCliente = createServerFn({ method: "GET" })
     return lista.map((r: any) => ({
       id: r.id,
       parceiro_id: r.parceiro_id,
+      tipo_vinculo: r.tipo_vinculo ?? "corretor",
       nome: mapa.get(r.parceiro_id)?.nome ?? null,
       email: mapa.get(r.parceiro_id)?.email ?? null,
       created_at: r.created_at,
@@ -1034,7 +1045,15 @@ export const listarParceirosDisponiveis = createServerFn({ method: "GET" })
 export const vincularParceiro = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
-    z.object({ cliente_id: z.string().uuid(), parceiro_id: z.string().uuid() }).parse(d),
+    z
+      .object({
+        cliente_id: z.string().uuid(),
+        parceiro_id: z.string().uuid(),
+        tipo_vinculo: z
+          .enum(["imobiliaria", "corretor", "comercial_agilliza"])
+          .default("corretor"),
+      })
+      .parse(d),
   )
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const { supabase, userId } = context;
@@ -1043,10 +1062,11 @@ export const vincularParceiro = createServerFn({ method: "POST" })
     const { error } = await supabase.from("cliente_parceiros").insert({
       cliente_id: data.cliente_id,
       parceiro_id: data.parceiro_id,
+      tipo_vinculo: data.tipo_vinculo,
       correspondente_id: corr,
     });
     if (error) {
-      if ((error as any).code === "23505") throw new Error("Este usuário já está vinculado.");
+      if ((error as any).code === "23505") throw new Error("Este usuário já está vinculado neste tipo.");
       throw error;
     }
     return { ok: true };

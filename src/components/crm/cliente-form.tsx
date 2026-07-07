@@ -25,6 +25,8 @@ import {
   definirAcessoPortal,
   listarParceirosDisponiveis,
   vincularParceiro,
+  TIPOS_VINCULO,
+  type TipoVinculo,
 } from "@/lib/crm/clientes.functions";
 import { validarDocumento, soDigitos } from "@/lib/crm/documento";
 
@@ -321,26 +323,31 @@ export function ClienteForm({
   const [salvando, setSalvando] = useState(false);
   const [buscandoCep, setBuscandoCep] = useState(false);
 
-  // Vínculos de atendimento: parceiros a vincular ao criar um novo cliente.
+  // Vínculos de atendimento: usuários a vincular ao criar um novo cliente, por tipo.
   const novoCadastro = !v.id;
-  const [vinculos, setVinculos] = useState<string[]>([]);
-  const [vinculoSel, setVinculoSel] = useState("");
+  const [vinculos, setVinculos] = useState<Array<{ parceiro_id: string; tipo_vinculo: TipoVinculo }>>(
+    [],
+  );
+  const [vinculoSel, setVinculoSel] = useState<Record<string, string>>({});
   const parceiros = useQuery({
     queryKey: ["parceiros-disponiveis"],
     queryFn: () => listarParceiros(),
     enabled: novoCadastro,
   });
-  const opcoesParceiros = (parceiros.data ?? []).filter((p) => !vinculos.includes(p.id));
   const nomeParceiro = (id: string) => {
     const p = (parceiros.data ?? []).find((x) => x.id === id);
     return p?.nome ?? p?.email ?? id;
   };
-  const adicionarVinculo = () => {
-    if (!vinculoSel) return;
-    setVinculos((prev) => [...prev, vinculoSel]);
-    setVinculoSel("");
+  const adicionarVinculo = (tipo: TipoVinculo) => {
+    const id = vinculoSel[tipo];
+    if (!id) return;
+    setVinculos((prev) => [...prev, { parceiro_id: id, tipo_vinculo: tipo }]);
+    setVinculoSel((prev) => ({ ...prev, [tipo]: "" }));
   };
-  const removerVinculo = (id: string) => setVinculos((prev) => prev.filter((x) => x !== id));
+  const removerVinculo = (parceiro_id: string, tipo: TipoVinculo) =>
+    setVinculos((prev) =>
+      prev.filter((x) => !(x.parceiro_id === parceiro_id && x.tipo_vinculo === tipo)),
+    );
 
   async function alternarPortal(ativo: boolean) {
     if (!v.id) return;
@@ -469,9 +476,11 @@ export function ClienteForm({
         const r = await criar({ data: payload });
         id = r.id;
         // Cria os vínculos de atendimento selecionados no novo cadastro.
-        for (const parceiroId of vinculos) {
+        for (const vinc of vinculos) {
           try {
-            await vincular({ data: { cliente_id: id, parceiro_id: parceiroId } });
+            await vincular({
+              data: { cliente_id: id, parceiro_id: vinc.parceiro_id, tipo_vinculo: vinc.tipo_vinculo },
+            });
           } catch {
             /* segue mesmo se um vínculo falhar */
           }
@@ -498,63 +507,78 @@ export function ClienteForm({
               <Users className="size-4" /> Vínculos de atendimento
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-5">
             <p className="text-sm text-muted-foreground">
-              Escolha os parceiros/usuários responsáveis pelo atendimento deste cliente. Você
-              poderá ajustá-los depois na ficha do cliente.
+              Escolha os usuários responsáveis pelo atendimento deste cliente por tipo. Cada tipo
+              aceita mais de um usuário e nenhum é obrigatório. Você poderá ajustar depois na ficha
+              do cliente.
             </p>
-            <div className="flex items-end gap-2">
-              <div className="flex-1">
-                <Label className="mb-1.5 block">Adicionar parceiro</Label>
-                <Select value={vinculoSel} onValueChange={setVinculoSel}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione um usuário" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {opcoesParceiros.length === 0 ? (
-                      <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                        Nenhum usuário disponível
-                      </div>
-                    ) : (
-                      opcoesParceiros.map((p) => (
-                        <SelectItem key={p.id} value={p.id}>
-                          {p.nome ?? p.email ?? p.id}
-                        </SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button type="button" disabled={!vinculoSel} onClick={adicionarVinculo}>
-                <UserPlus className="size-4" />
-                Vincular
-              </Button>
-            </div>
-
-            {vinculos.length === 0 ? (
-              <p className="rounded-md border border-dashed border-border px-3 py-6 text-center text-sm text-muted-foreground">
-                Nenhum vínculo adicionado. O responsável padrão será quem criar o cadastro.
-              </p>
-            ) : (
-              <div className="flex flex-wrap gap-2">
-                {vinculos.map((id) => (
-                  <span
-                    key={id}
-                    className="inline-flex items-center gap-2 rounded-full border border-border bg-accent px-3 py-1 text-sm text-accent-foreground"
-                  >
-                    {nomeParceiro(id)}
-                    <button
+            {TIPOS_VINCULO.map((tipo) => {
+              const desteTipo = vinculos.filter((x) => x.tipo_vinculo === tipo.valor);
+              const idsTipo = new Set(desteTipo.map((x) => x.parceiro_id));
+              const opcoesParceiros = (parceiros.data ?? []).filter((p) => !idsTipo.has(p.id));
+              const sel = vinculoSel[tipo.valor] ?? "";
+              return (
+                <div key={tipo.valor} className="space-y-2">
+                  <Label className="block">{tipo.rotulo}</Label>
+                  <div className="flex items-end gap-2">
+                    <div className="flex-1">
+                      <Select
+                        value={sel}
+                        onValueChange={(val) =>
+                          setVinculoSel((prev) => ({ ...prev, [tipo.valor]: val }))
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione um usuário" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {opcoesParceiros.length === 0 ? (
+                            <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                              Nenhum usuário disponível
+                            </div>
+                          ) : (
+                            opcoesParceiros.map((p) => (
+                              <SelectItem key={p.id} value={p.id}>
+                                {p.nome ?? p.email ?? p.id}
+                              </SelectItem>
+                            ))
+                          )}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Button
                       type="button"
-                      onClick={() => removerVinculo(id)}
-                      className="text-muted-foreground hover:text-foreground"
-                      aria-label="Remover vínculo"
+                      size="icon"
+                      disabled={!sel}
+                      onClick={() => adicionarVinculo(tipo.valor)}
                     >
-                      <X className="size-3.5" />
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
+                      <UserPlus className="size-4" />
+                    </Button>
+                  </div>
+                  {desteTipo.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {desteTipo.map((vinc) => (
+                        <span
+                          key={vinc.parceiro_id}
+                          className="inline-flex items-center gap-2 rounded-full border border-border bg-accent px-3 py-1 text-sm text-accent-foreground"
+                        >
+                          {nomeParceiro(vinc.parceiro_id)}
+                          <button
+                            type="button"
+                            onClick={() => removerVinculo(vinc.parceiro_id, tipo.valor)}
+                            className="text-muted-foreground hover:text-foreground"
+                            aria-label="Remover vínculo"
+                          >
+                            <X className="size-3.5" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </CardContent>
         </Card>
       )}
