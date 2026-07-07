@@ -596,14 +596,14 @@ export const atualizarNivelAcesso = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const { data: nivel } = await supabase
       .from("access_levels")
-      .select("id, is_padrao, nome, descricao, papel, acesso_tipo")
+      .select("id, is_padrao, correspondente_id, nome, descricao, papel, acesso_tipo")
       .eq("id", data.id)
       .maybeSingle();
     if (!nivel) throw new Error("Nível de acesso não encontrado.");
 
-    // Níveis padrão são globais: cria uma cópia editável do correspondente
-    // já com o novo nome/descrição e retorna o id dela.
-    if (nivel.is_padrao) {
+    // Só o template global (sem correspondente) é clonado uma única vez.
+    // O nível padrão já pertencente ao correspondente é editado no lugar.
+    if (nivel.is_padrao && !nivel.correspondente_id) {
       const { data: corresp } = await supabase.rpc("correspondente_do_usuario", {
         _user_id: userId,
       });
