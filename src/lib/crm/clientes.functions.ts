@@ -189,6 +189,11 @@ const clienteInputSchema = z.object({
   conjuge_renda: z.number().nonnegative().optional().nullable(),
   conjuge_email: z.string().optional().nullable(),
   conjuge_celular: z.string().optional().nullable(),
+  // Dados bancários do cônjuge (opcionais).
+  conjuge_banco_conta: z.string().optional().nullable(),
+  conjuge_agencia: z.string().optional().nullable(),
+  conjuge_conta_corrente: z.string().optional().nullable(),
+  conjuge_digito_conta: z.string().optional().nullable(),
 });
 
 
