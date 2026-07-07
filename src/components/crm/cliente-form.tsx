@@ -401,16 +401,45 @@ export function ClienteForm({
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!v.nome.trim()) return toast.error("Informe o nome.");
-    if (!validarDocumento(v.documento, v.tipo_pessoa)) return toast.error("Documento inválido.");
-    if (!v.data_nascimento) return toast.error("Informe a data.");
+    const ehPF = v.tipo_pessoa === "PF";
+
+    // Nome / razão social
+    if (!v.nome.trim()) {
+      return toast.error(ehPF ? "Informe o nome completo." : "Informe a razão social.");
+    }
+
+    // Documento: CPF (11 dígitos) para PF, CNPJ (14 dígitos) para PJ
+    const docDigitos = soDigitos(v.documento);
+    if (!docDigitos) {
+      return toast.error(ehPF ? "Informe o CPF." : "Informe o CNPJ.");
+    }
+    if (ehPF && docDigitos.length !== 11) {
+      return toast.error("O CPF deve conter 11 dígitos.");
+    }
+    if (!ehPF && docDigitos.length !== 14) {
+      return toast.error("O CNPJ deve conter 14 dígitos.");
+    }
+    if (!validarDocumento(docDigitos, v.tipo_pessoa)) {
+      return toast.error(ehPF ? "CPF inválido." : "CNPJ inválido.");
+    }
+
+    // Data de nascimento (PF) / abertura (PJ)
+    if (!v.data_nascimento) {
+      return toast.error(ehPF ? "Informe a data de nascimento." : "Informe a data de abertura.");
+    }
+
     if (!v.email.includes("@")) return toast.error("E-mail inválido.");
     if (soDigitos(v.telefone_celular).length < 10) return toast.error("Celular inválido.");
     const renda = Number(v.renda_total_declarada.replace(/\./g, "").replace(",", "."));
     if (isNaN(renda) || renda < 0) return toast.error("Renda inválida.");
 
-    const casado = v.estado_civil === "casado" || v.estado_civil === "uniao_estavel";
+    // Estado civil e cônjuge só se aplicam a Pessoa Física.
+    const casado =
+      ehPF && (v.estado_civil === "casado" || v.estado_civil === "uniao_estavel");
     if (casado && !v.conjuge_nome.trim()) return toast.error("Informe o nome do cônjuge.");
+    if (casado && v.conjuge_cpf && !validarCPF(v.conjuge_cpf)) {
+      return toast.error("CPF do cônjuge inválido.");
+    }
     const rendaConjuge = v.conjuge_renda
       ? Number(v.conjuge_renda.replace(/\./g, "").replace(",", "."))
       : null;
