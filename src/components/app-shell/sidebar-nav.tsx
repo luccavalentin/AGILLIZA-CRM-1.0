@@ -9,6 +9,13 @@ function useActivePath() {
   return useRouterState({ select: (s) => s.location.pathname });
 }
 
+/** Pasta atualmente selecionada (query `?pasta=`), quando houver. */
+function useActivePasta() {
+  return useRouterState({
+    select: (s) => (s.location.search as { pasta?: string })?.pasta,
+  });
+}
+
 /** Coleta todos os destinos (`to`) de folhas da navegação. */
 function coletarDestinos(nav: NavGroup[]): string[] {
   const out: string[] = [];
@@ -36,11 +43,22 @@ function melhorDestino(nav: NavGroup[], pathname: string): string | null {
   return melhor;
 }
 
-function itemAtivo(item: NavItem, melhor: string | null): boolean {
-  if (item.to) return item.to === melhor;
-  if (item.children) return item.children.some((c) => itemAtivo(c, melhor));
+function itemAtivo(item: NavItem, melhor: string | null, pasta?: string): boolean {
+  if (item.to) {
+    if (item.to !== melhor) return false;
+    // Itens irmãos que compartilham o mesmo `to` mas apontam para pastas
+    // diferentes (ex.: subpastas de Documentos) são desambiguados pelo
+    // parâmetro `?pasta=`: cada um só fica ativo quando sua pasta é a atual.
+    const pastaItem = item.search?.pasta;
+    if (pastaItem !== undefined) return pastaItem === pasta;
+    // Item sem pasta (ex.: "Todos os arquivos") só é ativo sem pasta selecionada.
+    if (pasta !== undefined) return false;
+    return true;
+  }
+  if (item.children) return item.children.some((c) => itemAtivo(c, melhor, pasta));
   return false;
 }
+
 
 interface SidebarProps {
   nav: NavGroup[];
