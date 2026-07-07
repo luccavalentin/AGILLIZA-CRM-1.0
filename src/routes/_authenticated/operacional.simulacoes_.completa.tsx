@@ -451,8 +451,15 @@ function Pagina() {
       return;
     }
     setErros({});
+    if (financiamentoExcedido) {
+      toast.error(
+        `O banco financia no máximo ${Math.round(ltvMax * 100)}% do imóvel (${formatBRL(financiamentoMaximo)}). Aumente a entrada para pelo menos ${formatBRL(entradaMinima)}.`,
+      );
+      return;
+    }
     if (!rendaSuficiente()) return;
     await executarEnvio();
+
   }
 
   async function executarEnvio() {
