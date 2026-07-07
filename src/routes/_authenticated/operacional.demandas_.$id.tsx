@@ -389,7 +389,7 @@ function Pagina() {
                   variant="ghost"
                   size="icon"
                   className="h-7 w-7"
-                  onClick={() => baixarAnexo(a.storage_path)}
+                  onClick={() => baixarAnexo(a.storage_path, a.nome)}
                 >
                   <Download className="h-4 w-4" />
                 </Button>
