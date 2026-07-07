@@ -10,8 +10,21 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { assertModuloPermitido } from "@/lib/route-guards";
-import { getConfigIA, salvarConfigIA } from "@/lib/admin/apis-ia.functions";
+import {
+  getConfigIA,
+  salvarConfigIA,
+  PRESETS_IA,
+  type ProvedorIA,
+} from "@/lib/admin/apis-ia.functions";
+
 
 export const Route = createFileRoute("/_authenticated/admin/apis-ia")({
   head: () => ({ meta: [{ title: "APIs de IA — Agilliza" }] }),
