@@ -26,6 +26,7 @@ export interface ShellUser {
 interface TopbarProps {
   nav: NavGroup[];
   user: ShellUser;
+  collapsed: boolean;
   showAccountMenu: boolean;
   showSearch: boolean;
   onToggleMobile: () => void;
