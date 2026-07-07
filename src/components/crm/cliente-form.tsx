@@ -1082,6 +1082,46 @@ export function ClienteForm({
               />
             </div>
           </div>
+
+          {(v.estado_civil === "casado" || v.estado_civil === "uniao_estavel") && (
+            <div className="space-y-4 border-t pt-4 sm:col-span-2">
+              <p className="text-sm font-medium">Dados bancários do cônjuge (opcional)</p>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-1.5 sm:col-span-2">
+                  <Label>Banco</Label>
+                  <InputAutocomplete
+                    value={v.conjuge_banco_conta}
+                    onValueChange={(x) => set("conjuge_banco_conta", x)}
+                    options={OPCOES_BANCO}
+                    placeholder="Pesquisar banco ou digitar"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Agência</Label>
+                  <Input
+                    value={v.conjuge_agencia}
+                    onChange={(e) => set("conjuge_agencia", e.target.value)}
+                  />
+                </div>
+                <div className="grid grid-cols-[1fr_auto] gap-2">
+                  <div className="space-y-1.5">
+                    <Label>Conta corrente</Label>
+                    <Input
+                      value={v.conjuge_conta_corrente}
+                      onChange={(e) => set("conjuge_conta_corrente", e.target.value)}
+                    />
+                  </div>
+                  <div className="w-20 space-y-1.5">
+                    <Label>Dígito</Label>
+                    <Input
+                      value={v.conjuge_digito_conta}
+                      onChange={(e) => set("conjuge_digito_conta", e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
