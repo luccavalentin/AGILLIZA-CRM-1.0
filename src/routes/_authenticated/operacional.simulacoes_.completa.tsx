@@ -352,9 +352,9 @@ function Pagina() {
       estado_civil_conjuge: prev.estado_civil || prev.estado_civil_conjuge,
       email_conjuge: prev.email ?? "",
       celular_conjuge: prev.celular ?? "",
-      // O vínculo veio de um cliente do CRM que agora é o cônjuge — solta o vínculo.
-      cliente_id: null,
+      // Mantém o vínculo com o cadastro do CRM, apenas marcando a inversão.
     }));
+    setInvertido((v) => !v);
     setErros({});
     toast.success("Titular e cônjuge invertidos. Confira os dados obrigatórios.");
   }
