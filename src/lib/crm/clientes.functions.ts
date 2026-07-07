@@ -852,7 +852,7 @@ export const editarDocumento = createServerFn({ method: "POST" })
       tipo_documento: data.tipo_documento,
     };
     if (data.pasta_id !== undefined) patch.pasta_id = data.pasta_id;
-    const { error } = await supabase.from("cliente_documentos").update(patch).eq("id", data.id);
+    const { error } = await supabase.from("cliente_documentos").update(patch as any).eq("id", data.id);
     if (error) throw error;
     const { registrarAuditoria } = await import("@/lib/admin/audit.server");
     await registrarAuditoria({
