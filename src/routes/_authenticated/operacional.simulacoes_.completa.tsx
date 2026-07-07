@@ -789,6 +789,22 @@ function Pagina() {
             )}
           </div>
         </div>
+        {(cadastroNome || invertido) && (
+          <div className="flex flex-wrap items-center gap-2">
+            {cadastroNome && (
+              <Badge variant="secondary" className="gap-1 font-normal">
+                <Link2 className="h-3 w-3" />
+                Vinculado ao cadastro: {cadastroNome}
+              </Badge>
+            )}
+            {invertido && (
+              <Badge variant="outline" className="gap-1 border-primary/40 text-primary">
+                <Repeat className="h-3 w-3" />
+                Titular e cônjuge invertidos
+              </Badge>
+            )}
+          </div>
+        )}
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <Campo
             label={
