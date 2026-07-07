@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { ArrowLeft, Search, Building2, User, RotateCcw } from "lucide-react";
+import { ArrowLeft, Search, Building2, RotateCcw } from "lucide-react";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { listarPropostas, moverStatusProposta } from "@/lib/propostas/propostas.functions";
 import { statusProposta } from "@/components/propostas/status";
@@ -246,20 +246,24 @@ function Pagina() {
                         terminal ? "cursor-pointer" : "cursor-grab active:cursor-grabbing",
                       )}
                     >
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <p className="truncate font-semibold tabular-nums text-foreground">
-                            {numeroBanco}
+                      {/* Cliente em destaque */}
+                      <div className="flex items-center gap-2.5">
+                        <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/10 text-xs font-bold uppercase text-primary">
+                          {(c.nome_cliente ?? "?").trim().charAt(0) || "?"}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-semibold leading-tight text-foreground">
+                            {c.nome_cliente ?? "—"}
                           </p>
-                          {c.numero_proposta_banco && (
-                            <p className="truncate text-[10px] text-muted-foreground">
-                              Interno {c.numero_proposta}
+                          {c.cpf_cnpj && (
+                            <p className="truncate text-[11px] tabular-nums text-muted-foreground">
+                              {maskCpfCnpj(c.cpf_cnpj)}
                             </p>
                           )}
                         </div>
                         <span
                           className={cn(
-                            "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium",
+                            "shrink-0 self-start rounded-full px-2 py-0.5 text-[10px] font-medium",
                             TONE_BADGE[cfg.tone],
                           )}
                         >
@@ -267,22 +271,23 @@ function Pagina() {
                         </span>
                       </div>
 
-                      <div className="mt-2 flex items-center gap-1.5 text-xs font-medium text-foreground">
-                        <User className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                        <span className="truncate">{c.nome_cliente ?? "—"}</span>
+                      {/* Nº da proposta */}
+                      <div className="mt-2.5 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                        <span className="rounded bg-muted px-1.5 py-0.5 font-medium tabular-nums text-foreground">
+                          #{numeroBanco}
+                        </span>
+                        {c.numero_proposta_banco && (
+                          <span className="truncate tabular-nums">Interno {c.numero_proposta}</span>
+                        )}
                       </div>
-                      {c.cpf_cnpj && (
-                        <p className="ml-5 truncate text-[11px] tabular-nums text-muted-foreground">
-                          {maskCpfCnpj(c.cpf_cnpj)}
-                        </p>
-                      )}
 
-                      <div className="mt-2 flex items-center justify-between gap-2 border-t border-border/60 pt-2">
+                      {/* Banco + valor */}
+                      <div className="mt-2.5 flex items-center justify-between gap-2 border-t border-border/60 pt-2.5">
                         <span className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
                           <Building2 className="h-3.5 w-3.5 shrink-0" />
                           <span className="truncate">{c.nome_banco ?? "—"}</span>
                         </span>
-                        <span className="shrink-0 text-xs font-semibold tabular-nums text-foreground">
+                        <span className="shrink-0 text-sm font-bold tabular-nums text-foreground">
                           {formatBRL(c.valor_financiamento)}
                         </span>
                       </div>
