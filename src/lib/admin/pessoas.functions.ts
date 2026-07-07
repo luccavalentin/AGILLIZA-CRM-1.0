@@ -110,13 +110,18 @@ export const listarPessoas = createServerFn({ method: "GET" })
       (niveis ?? []).forEach((n) => nomeByNivel.set(n.id, n.nome));
     }
 
-    return pessoas.map((p) => ({
-      ...p,
-      tipo_pessoa: (p.tipo_pessoa ?? "usuario") as TipoPessoa,
-      login_habilitado: p.login_habilitado ?? true,
-      roles: rolesByUser.get(p.id) ?? [],
-      nivel_acesso_nome: p.nivel_acesso_id ? (nomeByNivel.get(p.nivel_acesso_id) ?? null) : null,
-    }));
+    return pessoas.map((p) => {
+      const tps = ((p as { tipos_pessoa?: string[] | null }).tipos_pessoa ?? []).filter(Boolean);
+      const primario = (p.tipo_pessoa ?? "usuario") as TipoPessoa;
+      return {
+        ...p,
+        tipo_pessoa: primario,
+        tipos_pessoa: (tps.length > 0 ? tps : [primario]) as TipoPessoa[],
+        login_habilitado: p.login_habilitado ?? true,
+        roles: rolesByUser.get(p.id) ?? [],
+        nivel_acesso_nome: p.nivel_acesso_id ? (nomeByNivel.get(p.nivel_acesso_id) ?? null) : null,
+      };
+    });
   });
 
 export interface ResultadoCriarPessoa {
