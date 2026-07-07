@@ -491,6 +491,74 @@ export function ClienteForm({
 
   return (
     <form onSubmit={submit} className="space-y-6">
+      {novoCadastro && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Users className="size-4" /> Vínculos de atendimento
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Escolha os parceiros/usuários responsáveis pelo atendimento deste cliente. Você
+              poderá ajustá-los depois na ficha do cliente.
+            </p>
+            <div className="flex items-end gap-2">
+              <div className="flex-1">
+                <Label className="mb-1.5 block">Adicionar parceiro</Label>
+                <Select value={vinculoSel} onValueChange={setVinculoSel}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um usuário" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {opcoesParceiros.length === 0 ? (
+                      <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                        Nenhum usuário disponível
+                      </div>
+                    ) : (
+                      opcoesParceiros.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>
+                          {p.nome ?? p.email ?? p.id}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button type="button" disabled={!vinculoSel} onClick={adicionarVinculo}>
+                <UserPlus className="size-4" />
+                Vincular
+              </Button>
+            </div>
+
+            {vinculos.length === 0 ? (
+              <p className="rounded-md border border-dashed border-border px-3 py-6 text-center text-sm text-muted-foreground">
+                Nenhum vínculo adicionado. O responsável padrão será quem criar o cadastro.
+              </p>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {vinculos.map((id) => (
+                  <span
+                    key={id}
+                    className="inline-flex items-center gap-2 rounded-full border border-border bg-accent px-3 py-1 text-sm text-accent-foreground"
+                  >
+                    {nomeParceiro(id)}
+                    <button
+                      type="button"
+                      onClick={() => removerVinculo(id)}
+                      className="text-muted-foreground hover:text-foreground"
+                      aria-label="Remover vínculo"
+                    >
+                      <X className="size-3.5" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Acesso ao Portal do Cliente</CardTitle>
