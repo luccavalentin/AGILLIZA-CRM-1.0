@@ -417,6 +417,10 @@ function Pagina() {
                         <TableCell className="py-4 text-right text-base tabular-nums">
                           {formatBRL(b.valor_financiamento_max)}
                         </TableCell>
+                        <TableCell className="py-4 text-right text-base font-semibold tabular-nums">
+                          {formatBRL(totalFinanciado(b))}
+                        </TableCell>
+
                         <TableCell className="py-4 text-right text-base tabular-nums">
                           {formatBRL(b.valor_iof)}
                         </TableCell>
