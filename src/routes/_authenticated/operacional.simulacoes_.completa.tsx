@@ -743,6 +743,10 @@ function Pagina() {
                 selecionado={f.cliente_id ? f.nome_cliente : null}
                 onSelect={(c) => {
                   const ec = estadoCivilCrmParaCodigo(c.estado_civil);
+                  const temConjuge = ec === "CA" || ec === "UE";
+                  const conjugePreenchido = Boolean(
+                    c.conjuge_nome || c.conjuge_cpf || c.conjuge_renda,
+                  );
                   setF((prev) => ({
                     ...prev,
                     cliente_id: c.id,
@@ -753,9 +757,20 @@ function Pagina() {
                     data_nascimento: c.data_nascimento ?? "",
                     estado_civil: ec || prev.estado_civil,
                     renda_total: c.renda_total_declarada ?? prev.renda_total,
-                    possui_conjuge: ec === "CA" || ec === "UE",
+                    possui_conjuge: temConjuge,
+                    compoe_renda: prev.compoe_renda || (temConjuge && Number(c.conjuge_renda) > 0),
+                    nome_conjuge: c.conjuge_nome ?? "",
+                    cpf_conjuge: c.conjuge_cpf ? maskCpfCnpj(c.conjuge_cpf) : "",
+                    renda_conjuge: c.conjuge_renda ?? 0,
+                    data_nascimento_conjuge: c.conjuge_data_nascimento ?? "",
+                    email_conjuge: c.conjuge_email ?? "",
+                    celular_conjuge: c.conjuge_celular ? maskCelular(c.conjuge_celular) : "",
                   }));
-                  toast.success("Dados do cliente preenchidos.");
+                  toast.success(
+                    conjugePreenchido
+                      ? "Dados do cliente e do cônjuge preenchidos."
+                      : "Dados do cliente preenchidos.",
+                  );
                 }}
               />
             </div>
