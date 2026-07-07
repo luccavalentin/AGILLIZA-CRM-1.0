@@ -1433,6 +1433,11 @@ function TabDocumentos({ propostaId, documentos }: { propostaId: string; documen
           </TableBody>
         </Table>
       </div>
+      <VisualizadorArquivo
+        arquivo={visualizando}
+        open={!!visualizando}
+        onOpenChange={(o) => !o && setVisualizando(null)}
+      />
     </div>
   );
 }
