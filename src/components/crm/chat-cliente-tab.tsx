@@ -65,6 +65,8 @@ export function ChatClienteTab({ clienteId, info }: { clienteId: string; info?: 
   const responder = useServerFn(responderChatCliente);
   const marcarLido = useServerFn(marcarChatClienteLido);
   const [texto, setTexto] = useState("");
+  const [enviandoAnexo, setEnviandoAnexo] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
   const fimRef = useRef<HTMLDivElement>(null);
 
   const queryKey = ["chat-cliente", clienteId];
