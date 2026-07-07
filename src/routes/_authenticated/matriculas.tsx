@@ -511,13 +511,13 @@ function SolicitacaoDialog({
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <Label>Corretor</Label>
+              <Label>Comercial</Label>
               <Combobox
                 value={corretor}
                 onValueChange={setCorretor}
                 options={nomesUsuarios}
-                placeholder="Nome do corretor"
-                searchPlaceholder="Buscar corretor…"
+                placeholder="Nome do comercial"
+                searchPlaceholder="Buscar comercial…"
               />
             </div>
 
