@@ -972,6 +972,25 @@ function Pagina() {
             </label>
           </Campo>
         </div>
+        {podePuxarConjugeCrm && (
+          <div className="flex flex-col gap-2 rounded-lg border border-primary/30 bg-primary/5 p-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-xs text-muted-foreground">
+              O cadastro do CRM
+              {crmVinculado?.conjuge_nome ? ` de ${crmVinculado.conjuge_nome}` : ""} tem
+              um cônjuge registrado. Deseja puxar esses dados para esta simulação?
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="shrink-0 gap-2"
+              onClick={puxarConjugeDoCRM}
+            >
+              <Link2 className="h-4 w-4" />
+              Puxar cônjuge do CRM
+            </Button>
+          </div>
+        )}
         {f.valor_financiamento > 0 && f.prazo >= 60 && (
           <DicaRendaMinima
             valorFinanciamento={f.valor_financiamento}
