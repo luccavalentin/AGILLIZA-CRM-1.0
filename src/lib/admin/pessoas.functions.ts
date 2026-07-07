@@ -333,6 +333,9 @@ export const atualizarPessoa = createServerFn({ method: "POST" })
       entidadeId: data.id,
       payloadAnterior: { nome: alvo.nome, nivel_acesso_id: alvo.nivel_acesso_id },
       payloadNovo: { nome: data.nome, nivel_acesso_id: data.nivel_acesso_id, papel },
+    });
+
+    return { ok: true };
   });
 
 /**
@@ -382,9 +385,6 @@ export const habilitarLoginPessoa = createServerFn({ method: "POST" })
     });
 
     return { email, senha_temporaria: senha };
-  });
-
-    return { ok: true };
   });
 
 /** Ativa ou desativa (bloqueia) o acesso de uma pessoa. */
