@@ -204,7 +204,7 @@ function Pagina() {
         </Button>
       </div>
 
-      <div className="flex gap-3 overflow-x-auto pb-4 [scrollbar-width:thin]">
+      <div className="flex h-[calc(100dvh-var(--app-header,4rem)-13rem)] min-h-[24rem] gap-3 overflow-x-auto pb-4 [scrollbar-width:thin]">
         {COLUNAS.map((col) => {
           const cfg = statusProposta(col.destino);
           const cards = itens.filter((i) => col.agrega.includes(i.status as PropostaStatus));
@@ -213,7 +213,7 @@ function Pagina() {
               key={col.destino}
               onDragOver={(e) => e.preventDefault()}
               onDrop={() => soltar(col.destino)}
-              className="flex min-h-48 w-[19rem] shrink-0 flex-col overflow-hidden rounded-xl border border-border bg-muted/30 shadow-sm"
+              className="flex h-full w-[19rem] shrink-0 flex-col overflow-hidden rounded-xl border border-border bg-muted/30 shadow-sm"
             >
               <div className="shrink-0 overflow-hidden rounded-t-xl">
                 <div className={cn("h-[3px]", TONE_BAR[cfg.tone])} />
