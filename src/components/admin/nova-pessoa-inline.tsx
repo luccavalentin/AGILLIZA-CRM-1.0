@@ -161,7 +161,23 @@ export function NovaPessoaInline({
     setPermDirty(true);
   }
 
-  // Usuário interno sempre tem login; imobiliária/corretor podem ficar sem login.
+  function marcarTudoGlobal(permitido: boolean) {
+    setEstado((prev) => {
+      const next = { ...prev };
+      for (const mod of CATALOGO_MODULOS) {
+        for (const a of mod.acoes) {
+          const k = chave(mod.modulo, a.acao);
+          next[k] = { ...next[k], permitido };
+        }
+      }
+      return next;
+    });
+    setPermDirty(true);
+  }
+
+  const todasGlobalMarcadas = CATALOGO_MODULOS.every((mod) =>
+    mod.acoes.every((a) => estado[chave(mod.modulo, a.acao)]?.permitido),
+  );
   const permiteSemLogin = tipoPessoa !== "usuario";
   const efetivoComLogin = permiteSemLogin ? comLogin : true;
 
