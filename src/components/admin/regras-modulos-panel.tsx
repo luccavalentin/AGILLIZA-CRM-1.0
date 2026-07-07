@@ -541,39 +541,72 @@ export function RegrasModulosPanel() {
                       {mods.map((mod) => {
                         const escopoAtual =
                           estado[chave(mod.modulo, mod.acoes[0].acao)]?.escopo ?? "proprios";
+                        const ativos = mod.acoes.filter(
+                          (a) => estado[chave(mod.modulo, a.acao)]?.permitido,
+                        ).length;
+                        const todos = ativos === mod.acoes.length && ativos > 0;
+                        const nenhum = ativos === 0;
                         return (
                           <div
                             key={mod.modulo}
                             className="flex flex-col gap-3 p-4 lg:flex-row lg:items-center lg:justify-between"
                           >
-                            <div className="min-w-[140px]">
-                              <p className="text-sm font-medium text-foreground">{mod.label}</p>
-                              <p className="text-xs text-muted-foreground">{mod.modulo}</p>
+                            <div className="flex min-w-[160px] items-center justify-between gap-2 lg:justify-start">
+                              <div className="min-w-0">
+                                <p className="text-sm font-medium text-foreground">{mod.label}</p>
+                                <p className="text-xs text-muted-foreground">{mod.modulo}</p>
+                              </div>
+                              <button
+                                type="button"
+                                disabled={!editavel}
+                                onClick={() => toggleModulo(mod.modulo, !todos)}
+                                className="shrink-0 rounded-full border border-border px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-50 lg:hidden"
+                              >
+                                {todos ? "Limpar" : "Tudo"}
+                              </button>
                             </div>
-                            <div className="flex flex-1 flex-wrap gap-x-5 gap-y-2">
+                            <div className="flex flex-1 flex-wrap items-center gap-2">
+                              <button
+                                type="button"
+                                disabled={!editavel}
+                                onClick={() => toggleModulo(mod.modulo, !todos)}
+                                className={`hidden shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-50 lg:inline-flex ${
+                                  todos
+                                    ? "border-primary bg-primary/10 text-primary"
+                                    : "border-border text-muted-foreground hover:bg-accent hover:text-foreground"
+                                }`}
+                              >
+                                {todos ? "Limpar" : "Tudo"}
+                              </button>
                               {mod.acoes.map((a) => {
-                                const st = estado[chave(mod.modulo, a.acao)];
+                                const ativo = estado[chave(mod.modulo, a.acao)]?.permitido ?? false;
                                 return (
-                                  <label
+                                  <button
                                     key={a.acao}
-                                    className="flex items-center gap-2 text-sm text-foreground"
+                                    type="button"
+                                    disabled={!editavel}
+                                    aria-pressed={ativo}
+                                    onClick={() => toggle(mod.modulo, a.acao, !ativo)}
+                                    className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all disabled:cursor-not-allowed disabled:opacity-50 ${
+                                      ativo
+                                        ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                                        : "border-border bg-background text-muted-foreground hover:border-primary/40 hover:text-foreground"
+                                    }`}
                                   >
-                                    <Checkbox
-                                      checked={st?.permitido ?? false}
-                                      disabled={!editavel}
-                                      onCheckedChange={(v) =>
-                                        toggle(mod.modulo, a.acao, v === true)
-                                      }
+                                    <Check
+                                      className={`h-3.5 w-3.5 transition-all ${
+                                        ativo ? "scale-100 opacity-100" : "scale-0 opacity-0"
+                                      } ${ativo ? "-ml-0.5" : "-ml-2"}`}
                                     />
                                     {a.label}
-                                  </label>
+                                  </button>
                                 );
                               })}
                             </div>
                             <div className="w-full lg:w-52">
                               <Select
                                 value={escopoAtual}
-                                disabled={!editavel}
+                                disabled={!editavel || nenhum}
                                 onValueChange={(v) => setEscopo(mod.modulo, v as EscopoDados)}
                               >
                                 <SelectTrigger className="h-9">
