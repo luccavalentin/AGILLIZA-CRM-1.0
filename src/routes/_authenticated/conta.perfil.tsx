@@ -136,16 +136,36 @@ function Pagina() {
                   <AvatarImage src={fotoUrl || undefined} alt={nome} />
                   <AvatarFallback>{iniciais}</AvatarFallback>
                 </Avatar>
-                <div className="flex-1 space-y-1.5">
-                  <Label htmlFor="foto">URL da foto</Label>
-                  <Input
-                    id="foto"
-                    value={fotoUrl}
-                    onChange={(e) => setFotoUrl(e.target.value)}
-                    placeholder="https://…"
+                <div className="flex-1 space-y-2">
+                  <Label>Foto de perfil</Label>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) enviarFoto(f);
+                    }}
                   />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={enviandoFoto}
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    {enviandoFoto ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Upload className="mr-2 h-4 w-4" />
+                    )}
+                    Enviar foto
+                  </Button>
+                  <p className="text-xs text-muted-foreground">JPG ou PNG, até 5 MB.</p>
                 </div>
               </div>
+
 
               <div className="space-y-1.5">
                 <Label htmlFor="nome">Nome completo</Label>
