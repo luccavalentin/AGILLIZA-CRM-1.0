@@ -225,11 +225,7 @@ export function RegrasModulosPanel() {
       });
     },
     onSuccess: async (r: any) => {
-      toast.success(
-        r?.clonado
-          ? "Criamos uma cópia editável do nível padrão com essas permissões."
-          : "Permissões salvas.",
-      );
+      toast.success("Permissões salvas.");
       setDirty(false);
       await qc.invalidateQueries({ queryKey: ["niveis-acesso"] });
       if (r?.nivel_acesso_id) {
