@@ -56,7 +56,8 @@ export function EditarPessoaDialog({
       setNome(pessoa.nome ?? "");
       setTelefone(pessoa.telefone ?? "");
       setNivelId(pessoa.nivel_acesso_id ?? "");
-      setTipoPessoa(pessoa.tipo_pessoa ?? "usuario");
+      const tps = (pessoa.tipos_pessoa ?? []).filter(Boolean);
+      setTiposPessoa(tps.length > 0 ? tps : [pessoa.tipo_pessoa ?? "usuario"]);
     }
   }, [pessoa]);
 
