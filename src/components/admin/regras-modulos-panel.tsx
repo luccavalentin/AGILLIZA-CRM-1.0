@@ -819,6 +819,109 @@ export function RegrasModulosPanel() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Dialog: escolher alvos do escopo personalizado */}
+      <Dialog open={alvosModulo !== null} onOpenChange={(o) => !o && setAlvosModulo(null)}>
+        <DialogContent className="max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              Quem este papel pode ver
+              {alvosModulo
+                ? ` — ${CATALOGO_MODULOS.find((m) => m.modulo === alvosModulo)?.label ?? ""}`
+                : ""}
+            </DialogTitle>
+          </DialogHeader>
+          {alvosModulo ? (
+            <div className="space-y-5">
+              <div className="space-y-2">
+                <p className="text-sm font-semibold text-foreground">Por papel</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {PAPEIS_ALVO.map((p) => (
+                    <label key={p.value} className="flex items-center gap-2 text-sm">
+                      <Checkbox
+                        checked={alvoAtivo(alvosModulo, {
+                          alvo_tipo: "papel",
+                          alvo_valor: p.value,
+                        })}
+                        onCheckedChange={(v) =>
+                          toggleAlvo(
+                            alvosModulo,
+                            { alvo_tipo: "papel", alvo_valor: p.value },
+                            v === true,
+                          )
+                        }
+                      />
+                      {p.label}
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-sm font-semibold text-foreground">Por tipo de pessoa</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {(tiposQuery.data ?? []).map((t) => (
+                    <label key={t.id} className="flex items-center gap-2 text-sm">
+                      <Checkbox
+                        checked={alvoAtivo(alvosModulo, {
+                          alvo_tipo: "tipo_pessoa",
+                          alvo_valor: t.slug,
+                        })}
+                        onCheckedChange={(v) =>
+                          toggleAlvo(
+                            alvosModulo,
+                            { alvo_tipo: "tipo_pessoa", alvo_valor: t.slug },
+                            v === true,
+                          )
+                        }
+                      />
+                      {t.nome}
+                    </label>
+                  ))}
+                  {(tiposQuery.data ?? []).length === 0 ? (
+                    <p className="text-xs text-muted-foreground">Nenhum tipo cadastrado.</p>
+                  ) : null}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-sm font-semibold text-foreground">Por usuário específico</p>
+                <div className="max-h-56 space-y-1 overflow-y-auto rounded-md border p-2">
+                  {(pessoasQuery.data ?? []).map((u) => (
+                    <label key={u.id} className="flex items-center gap-2 text-sm">
+                      <Checkbox
+                        checked={alvoAtivo(alvosModulo, {
+                          alvo_tipo: "usuario",
+                          alvo_id: u.id,
+                        })}
+                        onCheckedChange={(v) =>
+                          toggleAlvo(
+                            alvosModulo,
+                            { alvo_tipo: "usuario", alvo_id: u.id },
+                            v === true,
+                          )
+                        }
+                      />
+                      <span className="truncate">
+                        {u.nome ?? "—"}
+                        {u.email ? (
+                          <span className="text-muted-foreground"> · {u.email}</span>
+                        ) : null}
+                      </span>
+                    </label>
+                  ))}
+                  {(pessoasQuery.data ?? []).length === 0 ? (
+                    <p className="text-xs text-muted-foreground">Nenhuma pessoa cadastrada.</p>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+          ) : null}
+          <DialogFooter>
+            <Button onClick={() => setAlvosModulo(null)}>Concluir</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
