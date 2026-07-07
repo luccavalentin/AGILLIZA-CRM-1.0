@@ -269,6 +269,10 @@ function AbaMensagens() {
     }
   }, [mensagens, qc]);
 
+  useIncomingChatSound(
+    mensagens?.map((m) => ({ id: m.id, mine: m.remetente_tipo === "cliente" })),
+  );
+
   useEffect(() => {
     fimRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [mensagens]);
