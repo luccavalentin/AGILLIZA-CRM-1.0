@@ -512,7 +512,14 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
           {categoriasPasta.length > 1 && (
             <div className="space-y-1.5">
               <label className="text-xs text-muted-foreground">Titular do documento</label>
-              <Select value={categoria} onValueChange={(v) => setCategoria(v as Categoria)}>
+              <Select
+                value={categoria}
+                onValueChange={(v) => {
+                  setCategoria(v as Categoria);
+                  setTipo("");
+                  setTipoOutro(false);
+                }}
+              >
                 <SelectTrigger className="w-52">
                   <SelectValue />
                 </SelectTrigger>
