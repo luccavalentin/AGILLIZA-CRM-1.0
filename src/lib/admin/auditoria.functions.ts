@@ -164,7 +164,9 @@ export const opcoesAuditoria = createServerFn({ method: "GET" })
 
     return {
       atores,
-      acoes: [...acoes].sort(),
+      acoes: [...acoes]
+        .sort()
+        .map((valor) => ({ valor, rotulo: rotuloAcao(valor) })),
       entidades: [...entidades].sort(),
     };
   });
