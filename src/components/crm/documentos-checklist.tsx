@@ -22,6 +22,9 @@ import {
   listarDocumentos,
   anexarDocumento,
 } from "@/lib/crm/clientes.functions";
+import { TIPOS_DOCUMENTO_POR_CATEGORIA } from "@/lib/crm/documento-tipos";
+
+const T = TIPOS_DOCUMENTO_POR_CATEGORIA;
 
 type Categoria = "comprador" | "conjuge" | "vendedor" | "vendedor_conjuge" | "imovel" | "outros";
 
