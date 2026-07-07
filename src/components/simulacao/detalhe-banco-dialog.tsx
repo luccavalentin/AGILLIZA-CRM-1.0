@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { corDoBanco } from "@/lib/bancos/cores";
 import { BancoLogo } from "@/components/bancos/banco-logo";
-import { FileText } from "lucide-react";
+import { FileText, Download } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -21,6 +21,8 @@ import { Button } from "@/components/ui/button";
 import { BancoStatusBadge } from "@/components/simulacao/status-badge";
 import { extrairDetalheBanco, normalizarSistemaAmortizacao } from "@/lib/simulacao/detalhe-banco";
 import { formatBRL } from "@/lib/simulacao/format";
+import { baixarSimulacaoDetalhadaPDF } from "@/lib/simulacao/simulacao-pdf";
+import { baixarPropostaDetalhadaPDF } from "@/lib/propostas/proposta-pdf";
 
 function pct(v: number | null | undefined): string {
   if (v == null || Number.isNaN(v)) return "—";
@@ -37,11 +39,28 @@ function InfoCard({ rotulo, valor }: { rotulo: string; valor: string }) {
 }
 
 /** Botão + diálogo com o detalhamento completo (parcelas, CET, taxas...) de um banco. */
-export function DetalheBancoDialog({ banco }: { banco: any }) {
+export function DetalheBancoDialog({
+  banco,
+  simulacao,
+  proposta,
+}: {
+  banco: any;
+  simulacao?: any;
+  proposta?: any;
+}) {
   const detalhe = useMemo(() => extrairDetalheBanco(banco?.raw_response), [banco]);
   const temDetalhe = !!detalhe && detalhe.parcelas.length > 0;
 
+  function baixar() {
+    if (proposta) {
+      baixarPropostaDetalhadaPDF({ proposta, bancos: [banco] });
+    } else {
+      baixarSimulacaoDetalhadaPDF({ simulacao: simulacao ?? {}, bancos: [banco] });
+    }
+  }
+
   return (
+
     <Dialog>
       <DialogTrigger asChild>
         <Button variant="ghost" size="sm">
@@ -50,12 +69,20 @@ export function DetalheBancoDialog({ banco }: { banco: any }) {
       </DialogTrigger>
       <DialogContent className="max-h-[90vh] max-w-4xl overflow-hidden p-0">
         <DialogHeader className="border-b border-border p-4">
-          <DialogTitle className="flex items-center gap-2">
-            <BancoLogo nome={banco?.nome_banco} size="lg" />
-            <span style={{ color: corDoBanco(banco?.nome_banco) }}>{banco?.nome_banco ?? "Banco"}</span>
-            <BancoStatusBadge status={banco?.status_banco} />
-          </DialogTitle>
+          <div className="flex items-center justify-between gap-2 pr-8">
+            <DialogTitle className="flex items-center gap-2">
+              <BancoLogo nome={banco?.nome_banco} size="lg" />
+              <span style={{ color: corDoBanco(banco?.nome_banco) }}>{banco?.nome_banco ?? "Banco"}</span>
+              <BancoStatusBadge status={banco?.status_banco} />
+            </DialogTitle>
+            {temDetalhe && (
+              <Button variant="outline" size="sm" onClick={baixar}>
+                <Download className="mr-1 h-4 w-4" /> Baixar detalhamento
+              </Button>
+            )}
+          </div>
         </DialogHeader>
+
 
         <div className="max-h-[calc(90vh-4rem)] space-y-6 overflow-y-auto p-4">
           {!temDetalhe ? (
