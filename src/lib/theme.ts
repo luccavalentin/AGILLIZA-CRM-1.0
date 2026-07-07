@@ -9,7 +9,7 @@ const STORAGE_KEY = "agilliza-theme";
 
 /** Lê o tema efetivo atual do DOM (fonte da verdade após hidratação). */
 export function getTheme(): Theme {
-  if (typeof document === "undefined") return "light";
+  if (typeof document === "undefined") return "dark";
   return document.documentElement.classList.contains("dark") ? "dark" : "light";
 }
 
