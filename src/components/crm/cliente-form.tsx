@@ -920,46 +920,6 @@ export function ClienteForm({
       </Card>
 
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Dados bancários</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Conta usada para crédito e débito das parcelas do financiamento.
-          </p>
-        </CardHeader>
-        <CardContent className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-1.5 sm:col-span-2">
-            <Label>Banco</Label>
-            <InputAutocomplete
-              value={v.banco_conta}
-              onValueChange={(x) => set("banco_conta", x)}
-              options={OPCOES_BANCO}
-              placeholder="Pesquisar banco ou digitar"
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label>Agência</Label>
-            <Input value={v.agencia} onChange={(e) => set("agencia", e.target.value)} />
-          </div>
-          <div className="grid grid-cols-[1fr_auto] gap-2">
-            <div className="space-y-1.5">
-              <Label>Conta corrente</Label>
-              <Input
-                value={v.conta_corrente}
-                onChange={(e) => set("conta_corrente", e.target.value)}
-              />
-            </div>
-            <div className="w-20 space-y-1.5">
-              <Label>Dígito</Label>
-              <Input
-                value={v.digito_conta}
-                onChange={(e) => set("digito_conta", e.target.value)}
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
 
       <Card>
