@@ -87,7 +87,7 @@ const ROTULO_TIPO: Record<string, string> = {
 
 function PessoasPage() {
   const { tab } = Route.useSearch();
-  const [aba, setAba] = useState<"pessoas" | "regras">(tab ?? "pessoas");
+  const [aba, setAba] = useState<"pessoas" | "regras" | "tipos">(tab ?? "pessoas");
   const [filtro, setFiltro] = useState<"todos" | "sistema" | "portal_parceiro">("todos");
   const [busca, setBusca] = useState("");
   const [criando, setCriando] = useState(false);
