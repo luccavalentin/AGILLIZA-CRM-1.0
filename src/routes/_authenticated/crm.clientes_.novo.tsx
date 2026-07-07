@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, IdCard, MapPin, ShieldCheck, UserPlus } from "lucide-react";
+import { ArrowLeft, IdCard, MapPin, ShieldCheck, UserPlus, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ClienteForm } from "@/components/crm/cliente-form";
@@ -12,6 +12,11 @@ export const Route = createFileRoute("/_authenticated/crm/clientes_/novo")({
 });
 
 const DICAS = [
+  {
+    icon: Users,
+    titulo: "Vínculos de atendimento",
+    texto: "Comece definindo os parceiros/usuários responsáveis pelo atendimento do cliente.",
+  },
   {
     icon: IdCard,
     titulo: "Dados básicos",
