@@ -10,7 +10,7 @@ import {
   ListChecks,
   FolderOpen,
   Wallet,
-  Percent,
+  
   BarChart3,
   UserCog,
   SlidersHorizontal,
