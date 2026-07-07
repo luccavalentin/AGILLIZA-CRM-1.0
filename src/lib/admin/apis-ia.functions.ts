@@ -4,8 +4,11 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const CHAVE_IA = "ia";
 
+export type ProvedorIA = "gemini" | "openai";
+
 export interface ConfigIA {
   id: string | null;
+  provedor: ProvedorIA;
   nome: string;
   base_url: string | null;
   modelo: string;
@@ -17,9 +20,29 @@ export interface ConfigIA {
   ultimo_ping_em: string | null;
 }
 
+/** Presets por provedor de IA (modelo, endpoint e nome do secret sugeridos). */
+export const PRESETS_IA: Record<
+  ProvedorIA,
+  { nome: string; modelo: string; base_url: string; secret_name: string }
+> = {
+  gemini: {
+    nome: "Google Gemini",
+    modelo: "gemini-2.5-flash",
+    base_url: "https://generativelanguage.googleapis.com",
+    secret_name: "GEMINI_API_KEY",
+  },
+  openai: {
+    nome: "OpenAI",
+    modelo: "gpt-4o-mini",
+    base_url: "https://api.openai.com/v1",
+    secret_name: "OPENAI_API_KEY",
+  },
+};
+
 const PROMPT_PADRAO =
   "Você é um assistente de extração de dados de documentos brasileiros (RG, CPF, CNH, comprovantes de renda e residência). " +
   "Extraia os campos solicitados em JSON, sem inventar valores. Deixe vazio o que não estiver legível.";
+
 
 async function correspondenteDoUsuario(
   supabase: { from: (t: string) => any },
