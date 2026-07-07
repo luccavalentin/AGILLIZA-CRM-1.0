@@ -311,6 +311,18 @@ export const navInterno: NavGroup[] = [
             to: "/admin/sla",
             perm: { modulo: "admin.sla" },
           },
+          {
+            label: "Auditoria",
+            icon: ShieldCheck,
+            to: "/admin/auditoria",
+            perm: { modulo: "admin.auditoria" },
+          },
+          {
+            label: "Backup",
+            icon: DatabaseBackup,
+            to: "/admin/backup",
+            perm: { modulo: "admin.backup" },
+          },
         ],
       },
       {
