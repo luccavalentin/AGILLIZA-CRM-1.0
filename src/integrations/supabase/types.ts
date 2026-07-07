@@ -5191,6 +5191,7 @@ export type Database = {
         Args: { _anexo: string; _cid: string; _corr: string; _msg: string }
         Returns: Json
       }
+      portal_excluir_app_cliente: { Args: { _cid: string }; Returns: Json }
       portal_listar_mensagens: { Args: { _cid: string }; Returns: Json }
       portal_listar_notificacoes: { Args: { _cid: string }; Returns: Json }
       portal_marcar_lida: {
