@@ -534,6 +534,12 @@ function Pagina() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <VisualizadorArquivo
+        arquivo={visualizando}
+        open={!!visualizando}
+        onOpenChange={(o) => !o && setVisualizando(null)}
+      />
     </div>
   );
 }
