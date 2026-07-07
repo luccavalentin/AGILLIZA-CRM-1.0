@@ -6,6 +6,7 @@ import { Plus, Paperclip, Download, Trash2, Tag as TagIcon, X } from "lucide-rea
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
+import { VisualizadorArquivo } from "@/components/comum/visualizador-arquivo";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
