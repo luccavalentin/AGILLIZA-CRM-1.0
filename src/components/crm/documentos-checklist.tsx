@@ -236,32 +236,16 @@ export function DocumentosChecklist({ clienteId }: { clienteId: string }) {
         <CardContent className="space-y-1">
           {vendPJ ? (
             <>
-              <DocItem
-                itemKey="v_contrato_social"
-                cat="vendedor"
-                label="Contrato social / última alteração"
-              />
-              <DocItem itemKey="v_cnpj" cat="vendedor" label="Cartão CNPJ" />
-              <DocItem itemKey="v_doc_socios" cat="vendedor" label="Documento dos sócios" />
-              <DocItem
-                itemKey="v_comp_end_pj"
-                cat="vendedor"
-                label="Comprovante de endereço da empresa"
-              />
+              <DocItem itemKey="v_contrato_social" cat="vendedor" label={T.vendedor[3]} />
+              <DocItem itemKey="v_cnpj" cat="vendedor" label={T.vendedor[4]} />
+              <DocItem itemKey="v_doc_socios" cat="vendedor" label={T.vendedor[5]} />
+              <DocItem itemKey="v_comp_end_pj" cat="vendedor" label={T.vendedor[6]} />
             </>
           ) : (
             <>
-              <DocItem
-                itemKey="v_doc_id"
-                cat="vendedor"
-                label="Documento de identidade (RG ou CNH)"
-              />
-              <DocItem
-                itemKey="v_comp_end"
-                cat="vendedor"
-                label="Comprovante de endereço atualizado"
-              />
-              <DocItem itemKey="v_cert_ec" cat="vendedor" label="Certidão de estado civil" />
+              <DocItem itemKey="v_doc_id" cat="vendedor" label={T.vendedor[0]} />
+              <DocItem itemKey="v_comp_end" cat="vendedor" label={T.vendedor[1]} />
+              <DocItem itemKey="v_cert_ec" cat="vendedor" label={T.vendedor[2]} />
               <div className="my-2 border-t border-border" />
               <AutoItem label="Profissão" ok={filled(vend?.profissao)} />
               <AutoItem label="Telefone" ok={filled(vend?.telefone_celular)} />
