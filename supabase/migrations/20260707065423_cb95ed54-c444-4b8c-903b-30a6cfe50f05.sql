@@ -1,0 +1,2 @@
+CREATE INDEX IF NOT EXISTS proposta_historico_proposta_idx ON public.proposta_historico USING btree (proposta_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS proposta_bancos_proposta_idx ON public.proposta_bancos USING btree (proposta_id);
