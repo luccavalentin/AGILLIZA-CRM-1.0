@@ -85,7 +85,7 @@ export function ContasPage({ tipo }: { tipo: ContaTipo }) {
 
   const { data: cfg } = useQuery({ queryKey: ["fin-configs"], queryFn: () => listarConfigs() });
   const { data, isLoading } = useQuery({
-    queryKey: ["fin-contas", tipo, status, categoriaId, busca],
+    queryKey: ["fin-contas", tipo, status, categoriaId, busca, de, ate],
     queryFn: () =>
       listarContas({
         data: {
@@ -93,6 +93,8 @@ export function ContasPage({ tipo }: { tipo: ContaTipo }) {
           status: status || undefined,
           categoria_id: categoriaId || undefined,
           contraparte: busca || undefined,
+          de: de || undefined,
+          ate: ate || undefined,
           pagina: 1,
           porPagina: 50,
         },
