@@ -139,7 +139,7 @@ export function ChatClienteTab({ clienteId, info }: { clienteId: string; info?: 
         </div>
       </div>
 
-      <div className="flex-1 space-y-1 overflow-y-auto bg-gradient-to-b from-muted/20 to-transparent p-4">
+      <div className="chat-surface flex-1 space-y-1 overflow-y-auto p-4">
         {isLoading ? (
           <div className="space-y-3">
             <Skeleton className="h-12 w-2/3" />
@@ -163,39 +163,60 @@ export function ChatClienteTab({ clienteId, info }: { clienteId: string; info?: 
           mensagens!.map((m, i) => {
             const doTime = m.remetente_tipo === "time";
             const anterior = mensagens![i - 1];
+            const proxima = mensagens![i + 1];
             const mostrarDia =
               !anterior ||
               formatarDia(anterior.criada_em) !== formatarDia(m.criada_em);
+            const mesmoAutorAntes =
+              !mostrarDia && anterior?.remetente_tipo === m.remetente_tipo;
+            const mesmoAutorDepois =
+              proxima?.remetente_tipo === m.remetente_tipo &&
+              formatarDia(proxima?.criada_em ?? "") === formatarDia(m.criada_em);
             return (
               <div key={m.id}>
                 {mostrarDia && (
                   <div className="my-3 flex items-center justify-center">
-                    <span className="rounded-full bg-muted px-3 py-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                    <span className="rounded-full bg-background/80 px-3 py-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground shadow-sm ring-1 ring-border/50 backdrop-blur">
                       {formatarDia(m.criada_em)}
                     </span>
                   </div>
                 )}
-                <div className={cn("flex", doTime ? "justify-end" : "justify-start")}>
+                <div
+                  className={cn(
+                    "flex items-end gap-2",
+                    doTime ? "justify-end" : "justify-start",
+                    mesmoAutorAntes ? "mt-0.5" : "mt-2",
+                  )}
+                >
+                  {!doTime &&
+                    (mesmoAutorDepois ? (
+                      <span className="size-7 shrink-0" />
+                    ) : (
+                      <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary/80 to-primary/50 text-[10px] font-semibold text-primary-foreground shadow-sm">
+                        {iniciais(info?.nome)}
+                      </span>
+                    ))}
                   <div
                     className={cn(
-                      "max-w-[80%] rounded-2xl px-3.5 py-2 text-sm shadow-sm",
+                      "max-w-[78%] px-3.5 py-2 text-sm shadow-sm",
                       doTime
-                        ? "rounded-br-md bg-primary text-primary-foreground"
-                        : "rounded-bl-md border border-border/60 bg-card text-foreground",
+                        ? "rounded-2xl rounded-br-md bg-primary text-primary-foreground"
+                        : "rounded-2xl rounded-bl-md border border-border/60 bg-card text-foreground",
+                      mesmoAutorAntes && (doTime ? "rounded-tr-md" : "rounded-tl-md"),
                     )}
                   >
-                    <p
-                      className={cn(
-                        "mb-0.5 text-[11px] font-semibold",
-                        doTime
-                          ? "text-primary-foreground/90"
-                          : "text-primary",
-                      )}
-                    >
-                      {doTime
-                        ? (m.remetente_nome?.trim() || "Equipe")
-                        : (info?.nome?.trim() || "Cliente")}
-                    </p>
+                    {!mesmoAutorAntes && (
+                      <p
+                        className={cn(
+                          "mb-0.5 text-[11px] font-semibold",
+                          doTime ? "text-primary-foreground/90" : "text-primary",
+                        )}
+                      >
+                        {doTime
+                          ? (m.remetente_nome?.trim() || "Equipe")
+                          : (info?.nome?.trim() || "Cliente")}
+                      </p>
+                    )}
                     <p className="whitespace-pre-wrap break-words leading-relaxed">
                       {m.mensagem}
                     </p>
