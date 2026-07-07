@@ -86,7 +86,10 @@ export function VinculoTab({
             (v) => v.tipo_vinculo === tipo.valor,
           );
           const jaVinculados = new Set(desteTipo.map((v) => v.parceiro_id));
-          const opcoes = (disponiveis.data ?? []).filter((p) => !jaVinculados.has(p.id));
+          const tipoPessoa = TIPO_VINCULO_PESSOA[tipo.valor];
+          const opcoes = (disponiveis.data ?? []).filter(
+            (p) => !jaVinculados.has(p.id) && p.tipo_pessoa === tipoPessoa,
+          );
           const sel = selecao[tipo.valor] ?? "";
           return (
             <Card key={tipo.valor}>
