@@ -172,6 +172,23 @@ const clienteInputSchema = z.object({
   utiliza_fgts: z.boolean().optional().default(false),
   fg_autorizacao_dados: z.boolean().optional().default(false),
   origem: z.enum(["direto", "parceiro", "indicacao", "importacao"]).default("direto"),
+  // Dados do cônjuge (exigidos pela API quando o estado civil é casado/união estável).
+  conjuge_nome: z.string().optional().nullable(),
+  conjuge_cpf: z.string().optional().nullable(),
+  conjuge_data_nascimento: z.string().optional().nullable(),
+  conjuge_nome_mae: z.string().optional().nullable(),
+  conjuge_sexo: z.string().optional().nullable(),
+  conjuge_nacionalidade: z.string().optional().nullable(),
+  conjuge_tipo_documento_identidade: z.string().optional().nullable(),
+  conjuge_numero_documento: z.string().optional().nullable(),
+  conjuge_orgao_expedidor: z.string().optional().nullable(),
+  conjuge_uf_expedicao: z.string().optional().nullable(),
+  conjuge_data_expedicao: z.string().optional().nullable(),
+  conjuge_profissao: z.string().optional().nullable(),
+  conjuge_empresa: z.string().optional().nullable(),
+  conjuge_renda: z.number().nonnegative().optional().nullable(),
+  conjuge_email: z.string().optional().nullable(),
+  conjuge_celular: z.string().optional().nullable(),
 });
 
 
