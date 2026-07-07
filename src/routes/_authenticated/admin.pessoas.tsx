@@ -93,11 +93,14 @@ function PessoasPage() {
   const [credenciais, setCredenciais] = useState<ResultadoCriarPessoa | null>(null);
   const [editando, setEditando] = useState<PessoaLista | null>(null);
   const [excluindo, setExcluindo] = useState<PessoaLista | null>(null);
+  const [habilitando, setHabilitando] = useState<PessoaLista | null>(null);
+  const [habilitarEmail, setHabilitarEmail] = useState("");
 
   const qc = useQueryClient();
   const alternarStatusFn = useServerFn(alternarStatusPessoa);
   const resetarSenhaFn = useServerFn(resetarSenhaPessoa);
   const excluirFn = useServerFn(excluirPessoa);
+  const habilitarLoginFn = useServerFn(habilitarLoginPessoa);
 
   const sessaoQuery = useQuery({
     queryKey: ["minha-sessao"],
