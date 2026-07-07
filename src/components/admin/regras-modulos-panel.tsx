@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Plus, Save, Loader2, ShieldCheck, Lock, Pencil, Trash2 } from "lucide-react";
+import { Plus, Save, Loader2, ShieldCheck, Lock, Pencil, Trash2, Check } from "lucide-react";
 import { toast } from "sonner";
 import {
   CATALOGO_MODULOS,
