@@ -72,8 +72,8 @@ function SidebarLink({
       className={cn(
         "group relative flex min-h-10 items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
         active
-          ? "bg-sidebar-accent text-sidebar-accent-foreground"
-          : "text-sidebar-foreground/80 hover:bg-white/10 hover:text-sidebar-foreground",
+          ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
+          : "text-sidebar-foreground hover:bg-white/15 hover:text-sidebar-foreground",
       )}
     >
       {active && (
@@ -82,7 +82,7 @@ function SidebarLink({
       <Icon
         className={cn(
           "h-[18px] w-[18px] shrink-0",
-          active ? "text-sidebar-accent-foreground" : "text-sidebar-foreground/70",
+          active ? "text-sidebar-accent-foreground" : "text-sidebar-primary",
         )}
       />
       <span className="truncate">{item.label}</span>
