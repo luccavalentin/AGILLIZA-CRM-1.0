@@ -9,7 +9,7 @@ const STORAGE_KEY = "agilliza-theme";
 
 /** Lê o tema efetivo atual do DOM (fonte da verdade após hidratação). */
 export function getTheme(): Theme {
-  if (typeof document === "undefined") return "light";
+  if (typeof document === "undefined") return "dark";
   return document.documentElement.classList.contains("dark") ? "dark" : "light";
 }
 
@@ -34,7 +34,7 @@ export function toggleTheme(): Theme {
 
 /**
  * Snippet executado no <head> antes da hidratação para evitar flash.
- * Padrão sempre CLARO (cores da marca Agilliza). Só aplica escuro quando o
- * usuário escolhe explicitamente pelo botão de tema.
+ * Padrão ESCURO. Só aplica claro quando o usuário escolhe explicitamente
+ * pelo botão de tema (valor 'light' salvo no localStorage).
  */
-export const THEME_INIT_SCRIPT = `(function(){try{var t=localStorage.getItem('${STORAGE_KEY}');if(t==='dark'){document.documentElement.classList.add('dark');}else{document.documentElement.classList.remove('dark');}}catch(e){}})();`;
+export const THEME_INIT_SCRIPT = `(function(){try{var t=localStorage.getItem('${STORAGE_KEY}');if(t==='light'){document.documentElement.classList.remove('dark');}else{document.documentElement.classList.add('dark');}}catch(e){}})();`;
