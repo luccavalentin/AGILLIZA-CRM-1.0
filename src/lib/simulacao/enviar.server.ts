@@ -57,15 +57,21 @@ export async function enviarSimulacaoImpl({
     throw new Error("Selecione a operação antes de enviar ao banco.");
   }
 
-  let bancosQuery = supabase
+  // Todos os bancos selecionados (usados para registrar a oportunidade completa).
+  const { data: bancosSelecionados } = await supabase
     .from("simulacao_bancos")
     .select("*")
     .eq("simulacao_id", simulacaoId)
     .eq("selecionado", true);
-  if (bancoIds && bancoIds.length > 0) {
-    bancosQuery = bancosQuery.in("banco_id", bancoIds);
+  if (!bancosSelecionados || bancosSelecionados.length === 0) {
+    throw new Error("Selecione ao menos um banco antes de enviar.");
   }
-  const { data: bancos } = await bancosQuery;
+
+  // Subconjunto que será processado nesta chamada (permite progresso por banco).
+  const bancos =
+    bancoIds && bancoIds.length > 0
+      ? bancosSelecionados.filter((b: any) => bancoIds.includes(b.banco_id))
+      : bancosSelecionados;
   if (!bancos || bancos.length === 0) {
     throw new Error("Selecione ao menos um banco antes de enviar.");
   }
