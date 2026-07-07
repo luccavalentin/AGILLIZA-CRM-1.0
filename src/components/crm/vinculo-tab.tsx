@@ -19,6 +19,7 @@ import {
   vincularParceiro,
   desvincularParceiro,
   TIPOS_VINCULO,
+  TIPO_VINCULO_PESSOA,
   type TipoVinculo,
 } from "@/lib/crm/clientes.functions";
 
