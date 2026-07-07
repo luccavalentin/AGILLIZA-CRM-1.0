@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -27,6 +28,7 @@ import {
   criarPessoaComAcesso,
   type CriarPessoaInput,
   type ResultadoCriarPessoa,
+  type TipoPessoa,
 } from "@/lib/admin/pessoas.functions";
 
 type MatrizEstado = Record<string, { permitido: boolean; escopo: EscopoDados }>;
@@ -67,6 +69,8 @@ export function NovaPessoaInline({
 
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
+  const [tipoPessoa, setTipoPessoa] = useState<TipoPessoa>("usuario");
+  const [comLogin, setComLogin] = useState(true);
 
   const [comissao, setComissao] = useState("");
   const [nivelId, setNivelId] = useState<string>("");
@@ -157,16 +161,39 @@ export function NovaPessoaInline({
     setPermDirty(true);
   }
 
+  function marcarTudoGlobal(permitido: boolean) {
+    setEstado((prev) => {
+      const next = { ...prev };
+      for (const mod of CATALOGO_MODULOS) {
+        for (const a of mod.acoes) {
+          const k = chave(mod.modulo, a.acao);
+          next[k] = { ...next[k], permitido };
+        }
+      }
+      return next;
+    });
+    setPermDirty(true);
+  }
+
+  const todasGlobalMarcadas = CATALOGO_MODULOS.every((mod) =>
+    mod.acoes.every((a) => estado[chave(mod.modulo, a.acao)]?.permitido),
+  );
+  const permiteSemLogin = tipoPessoa !== "usuario";
+  const efetivoComLogin = permiteSemLogin ? comLogin : true;
+
   function submeter(e: React.FormEvent) {
     e.preventDefault();
     if (nome.trim().length < 2) return toast.error("Informe o nome completo.");
-    if (!email.trim()) return toast.error("Informe o e-mail.");
+    if (efetivoComLogin && !email.trim())
+      return toast.error("Informe o e-mail para pessoas com acesso ao sistema.");
     if (!nivelId) return toast.error("Selecione um nível de acesso.");
 
     criar.mutate({
       nome: nome.trim(),
-      email: email.trim(),
+      email: efetivoComLogin ? email.trim() : "",
       nivel_acesso_id: nivelId,
+      tipo_pessoa: tipoPessoa,
+      com_login: efetivoComLogin,
       dados_parceiro: isParceiro
         ? {
             comissao_padrao: comissao ? Number(comissao) : undefined,
@@ -188,6 +215,43 @@ export function NovaPessoaInline({
           </Button>
         </div>
 
+        {/* Tipo de pessoa */}
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label>Tipo de pessoa</Label>
+            <Select
+              value={tipoPessoa}
+              onValueChange={(v) => setTipoPessoa(v as TipoPessoa)}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="usuario">Usuário (equipe interna)</SelectItem>
+                <SelectItem value="imobiliaria">Imobiliária</SelectItem>
+                <SelectItem value="corretor">Corretor</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          {permiteSemLogin && (
+            <div className="space-y-2">
+              <Label>Acesso ao sistema</Label>
+              <div className="flex items-center gap-3 rounded-md border px-3 py-2">
+                <Switch
+                  id="np-login"
+                  checked={comLogin}
+                  onCheckedChange={setComLogin}
+                />
+                <Label htmlFor="np-login" className="cursor-pointer text-sm font-normal">
+                  {comLogin
+                    ? "Com login (acessa o Portal do Parceiro)"
+                    : "Sem login (aparece nas buscas; habilite depois)"}
+                </Label>
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Dados básicos */}
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
@@ -201,15 +265,23 @@ export function NovaPessoaInline({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="np-email">E-mail</Label>
+            <Label htmlFor="np-email">
+              {efetivoComLogin ? "E-mail" : "E-mail (opcional)"}
+            </Label>
             <Input
               id="np-email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="nome@empresa.com"
-              required
+              required={efetivoComLogin}
+              disabled={!efetivoComLogin}
             />
+            {!efetivoComLogin && (
+              <p className="text-xs text-muted-foreground">
+                Sem login, o e-mail não é necessário agora. Você pode habilitar o acesso depois na lista de pessoas.
+              </p>
+            )}
           </div>
         </div>
 
@@ -262,20 +334,30 @@ export function NovaPessoaInline({
                   pessoas com esse nível.
                 </p>
               </div>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                disabled={!permDirty || salvarPermMut.isPending}
-                onClick={() => salvarPermMut.mutate()}
-              >
-                {salvarPermMut.isPending ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Save className="mr-2 h-4 w-4" />
-                )}
-                Salvar permissões
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => marcarTudoGlobal(!todasGlobalMarcadas)}
+                >
+                  {todasGlobalMarcadas ? "Limpar todos" : "Selecionar todos"}
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={!permDirty || salvarPermMut.isPending}
+                  onClick={() => salvarPermMut.mutate()}
+                >
+                  {salvarPermMut.isPending ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Save className="mr-2 h-4 w-4" />
+                  )}
+                  Salvar permissões
+                </Button>
+              </div>
             </div>
 
             <div className="max-h-80 space-y-4 overflow-y-auto pr-1">

@@ -2859,9 +2859,11 @@ export type Database = {
           email: string | null
           foto_url: string | null
           id: string
+          login_habilitado: boolean
           nivel_acesso_id: string | null
           nome: string | null
           telefone: string | null
+          tipo_pessoa: string
           ultima_atividade: string | null
           updated_at: string
         }
@@ -2877,9 +2879,11 @@ export type Database = {
           email?: string | null
           foto_url?: string | null
           id: string
+          login_habilitado?: boolean
           nivel_acesso_id?: string | null
           nome?: string | null
           telefone?: string | null
+          tipo_pessoa?: string
           ultima_atividade?: string | null
           updated_at?: string
         }
@@ -2895,9 +2899,11 @@ export type Database = {
           email?: string | null
           foto_url?: string | null
           id?: string
+          login_habilitado?: boolean
           nivel_acesso_id?: string | null
           nome?: string | null
           telefone?: string | null
+          tipo_pessoa?: string
           ultima_atividade?: string | null
           updated_at?: string
         }

@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Plus, Copy, Search, MoreHorizontal, Pencil, KeyRound, Ban, CheckCircle2, Trash2 } from "lucide-react";
+import { Plus, Copy, Search, MoreHorizontal, Pencil, KeyRound, Ban, CheckCircle2, Trash2, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -51,6 +51,7 @@ import {
   alternarStatusPessoa,
   resetarSenhaPessoa,
   excluirPessoa,
+  habilitarLoginPessoa,
   type PessoaLista,
   type ResultadoCriarPessoa,
 } from "@/lib/admin/pessoas.functions";
@@ -77,6 +78,12 @@ const ROTULO_PAPEL: Record<string, string> = {
   cliente: "Cliente",
 };
 
+const ROTULO_TIPO: Record<string, string> = {
+  usuario: "Usuário",
+  imobiliaria: "Imobiliária",
+  corretor: "Corretor",
+};
+
 function PessoasPage() {
   const { tab } = Route.useSearch();
   const [aba, setAba] = useState<"pessoas" | "regras">(tab ?? "pessoas");
@@ -86,11 +93,14 @@ function PessoasPage() {
   const [credenciais, setCredenciais] = useState<ResultadoCriarPessoa | null>(null);
   const [editando, setEditando] = useState<PessoaLista | null>(null);
   const [excluindo, setExcluindo] = useState<PessoaLista | null>(null);
+  const [habilitando, setHabilitando] = useState<PessoaLista | null>(null);
+  const [habilitarEmail, setHabilitarEmail] = useState("");
 
   const qc = useQueryClient();
   const alternarStatusFn = useServerFn(alternarStatusPessoa);
   const resetarSenhaFn = useServerFn(resetarSenhaPessoa);
   const excluirFn = useServerFn(excluirPessoa);
+  const habilitarLoginFn = useServerFn(habilitarLoginPessoa);
 
   const sessaoQuery = useQuery({
     queryKey: ["minha-sessao"],
@@ -127,7 +137,21 @@ function PessoasPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const habilitarMut = useMutation({
+    mutationFn: (v: { id: string; email: string }) => habilitarLoginFn({ data: v }),
+    onSuccess: async (res) => {
+      await qc.invalidateQueries({ queryKey: ["pessoas"] });
+      setHabilitando(null);
+      setHabilitarEmail("");
+      setCredenciais(res);
+      toast.success("Login habilitado.");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const podeGerenciar = sessaoQuery.data?.podeGerenciarPessoas ?? false;
+
+
 
 
   const pessoas = (pessoasQuery.data ?? [])
@@ -228,7 +252,14 @@ function PessoasPage() {
                         !p.roles.includes("correspondente") && !p.roles.includes("admin");
                       return (
                         <TableRow key={p.id}>
-                          <TableCell className="font-medium">{p.nome ?? "—"}</TableCell>
+                          <TableCell className="font-medium">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span>{p.nome ?? "—"}</span>
+                              <Badge variant="outline" className="font-normal">
+                                {ROTULO_TIPO[p.tipo_pessoa] ?? "Usuário"}
+                              </Badge>
+                            </div>
+                          </TableCell>
                           <TableCell className="text-muted-foreground">{p.email ?? "—"}</TableCell>
                           <TableCell>
                             {p.nivel_acesso_nome ??
@@ -246,9 +277,13 @@ function PessoasPage() {
                             </Badge>
                           </TableCell>
                           <TableCell>
-                            <Badge variant={ativo ? "default" : "destructive"}>
-                              {ativo ? "Ativo" : "Inativo"}
-                            </Badge>
+                            {!p.login_habilitado ? (
+                              <Badge variant="secondary">Sem login</Badge>
+                            ) : (
+                              <Badge variant={ativo ? "default" : "destructive"}>
+                                {ativo ? "Ativo" : "Inativo"}
+                              </Badge>
+                            )}
                           </TableCell>
                           {podeGerenciar && (
                             <TableCell className="text-right">
@@ -264,24 +299,37 @@ function PessoasPage() {
                                     <DropdownMenuItem onClick={() => setEditando(p)}>
                                       <Pencil className="mr-2 h-4 w-4" /> Editar
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => resetMut.mutate(p.id)}>
-                                      <KeyRound className="mr-2 h-4 w-4" /> Redefinir senha
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                      onClick={() =>
-                                        statusMut.mutate({ id: p.id, ativar: !ativo })
-                                      }
-                                    >
-                                      {ativo ? (
-                                        <>
-                                          <Ban className="mr-2 h-4 w-4" /> Desativar
-                                        </>
-                                      ) : (
-                                        <>
-                                          <CheckCircle2 className="mr-2 h-4 w-4" /> Ativar
-                                        </>
-                                      )}
-                                    </DropdownMenuItem>
+                                    {p.login_habilitado ? (
+                                      <>
+                                        <DropdownMenuItem onClick={() => resetMut.mutate(p.id)}>
+                                          <KeyRound className="mr-2 h-4 w-4" /> Redefinir senha
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                          onClick={() =>
+                                            statusMut.mutate({ id: p.id, ativar: !ativo })
+                                          }
+                                        >
+                                          {ativo ? (
+                                            <>
+                                              <Ban className="mr-2 h-4 w-4" /> Desativar
+                                            </>
+                                          ) : (
+                                            <>
+                                              <CheckCircle2 className="mr-2 h-4 w-4" /> Ativar
+                                            </>
+                                          )}
+                                        </DropdownMenuItem>
+                                      </>
+                                    ) : (
+                                      <DropdownMenuItem
+                                        onClick={() => {
+                                          setHabilitando(p);
+                                          setHabilitarEmail(p.email ?? "");
+                                        }}
+                                      >
+                                        <LogIn className="mr-2 h-4 w-4" /> Habilitar login
+                                      </DropdownMenuItem>
+                                    )}
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem
                                       className="text-destructive focus:text-destructive"
@@ -349,6 +397,59 @@ function PessoasPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Modal: habilitar login */}
+      <Dialog
+        open={!!habilitando}
+        onOpenChange={(o) => {
+          if (!o) {
+            setHabilitando(null);
+            setHabilitarEmail("");
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Habilitar login</DialogTitle>
+            <DialogDescription>
+              Informe o e-mail de acesso de {habilitando?.nome ?? "esta pessoa"}. Uma senha
+              provisória será gerada para o primeiro acesso.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="hab-email">E-mail</Label>
+            <Input
+              id="hab-email"
+              type="email"
+              value={habilitarEmail}
+              onChange={(e) => setHabilitarEmail(e.target.value)}
+              placeholder="nome@empresa.com"
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setHabilitando(null);
+                setHabilitarEmail("");
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button
+              disabled={habilitarMut.isPending || !habilitarEmail.trim()}
+              onClick={() =>
+                habilitando &&
+                habilitarMut.mutate({ id: habilitando.id, email: habilitarEmail.trim() })
+              }
+            >
+              Habilitar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+
 
       {/* Editar pessoa */}
       <EditarPessoaDialog pessoa={editando} onClose={() => setEditando(null)} />

@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { listarNiveisAcesso } from "@/lib/admin/regras-modulos.functions";
-import { atualizarPessoa, type PessoaLista } from "@/lib/admin/pessoas.functions";
+import { atualizarPessoa, type PessoaLista, type TipoPessoa } from "@/lib/admin/pessoas.functions";
 
 export function EditarPessoaDialog({
   pessoa,
@@ -37,6 +37,7 @@ export function EditarPessoaDialog({
   const [nome, setNome] = useState("");
   const [telefone, setTelefone] = useState("");
   const [nivelId, setNivelId] = useState("");
+  const [tipoPessoa, setTipoPessoa] = useState<TipoPessoa>("usuario");
 
   const { data: niveis } = useQuery({
     queryKey: ["niveis-acesso"],
@@ -48,6 +49,7 @@ export function EditarPessoaDialog({
       setNome(pessoa.nome ?? "");
       setTelefone(pessoa.telefone ?? "");
       setNivelId(pessoa.nivel_acesso_id ?? "");
+      setTipoPessoa(pessoa.tipo_pessoa ?? "usuario");
     }
   }, [pessoa]);
 
@@ -59,6 +61,7 @@ export function EditarPessoaDialog({
           nome: nome.trim(),
           telefone: telefone.trim() || null,
           nivel_acesso_id: nivelId,
+          tipo_pessoa: tipoPessoa,
         },
       }),
     onSuccess: async () => {
@@ -86,6 +89,19 @@ export function EditarPessoaDialog({
           <div className="space-y-2">
             <Label htmlFor="ep-nome">Nome completo</Label>
             <Input id="ep-nome" value={nome} onChange={(e) => setNome(e.target.value)} required />
+          </div>
+          <div className="space-y-2">
+            <Label>Tipo de pessoa</Label>
+            <Select value={tipoPessoa} onValueChange={(v) => setTipoPessoa(v as TipoPessoa)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="usuario">Usuário (equipe interna)</SelectItem>
+                <SelectItem value="imobiliaria">Imobiliária</SelectItem>
+                <SelectItem value="corretor">Corretor</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           <div className="space-y-2">
             <Label htmlFor="ep-email">E-mail</Label>

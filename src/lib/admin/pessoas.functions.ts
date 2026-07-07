@@ -6,21 +6,33 @@ import type { AppRole } from "@/lib/session.functions";
 /** Papéis que NUNCA podem ser atribuídos por outro usuário do ecossistema. */
 const PAPEIS_PROIBIDOS: AppRole[] = ["correspondente", "admin"];
 
-export const criarSchema = z.object({
-  nome: z.string().min(2, "Informe o nome completo."),
-  email: z.string().email("E-mail inválido."),
-  telefone: z.string().optional(),
-  nivel_acesso_id: z.string().uuid("Selecione um nível de acesso."),
-  dados_parceiro: z
-    .object({
-      creci: z.string().optional(),
-      comissao_padrao: z.number().optional(),
-      imobiliaria_id: z.string().uuid().optional().nullable(),
-    })
-    .optional(),
-});
+export const criarSchema = z
+  .object({
+    nome: z.string().min(2, "Informe o nome completo."),
+    email: z.string().email("E-mail inválido.").optional().or(z.literal("")),
+    telefone: z.string().optional(),
+    nivel_acesso_id: z.string().uuid("Selecione um nível de acesso."),
+    tipo_pessoa: z.enum(["usuario", "imobiliaria", "corretor"]).default("usuario"),
+    com_login: z.boolean().default(true),
+    dados_parceiro: z
+      .object({
+        creci: z.string().optional(),
+        comissao_padrao: z.number().optional(),
+        imobiliaria_id: z.string().uuid().optional().nullable(),
+      })
+      .optional(),
+  })
+  .refine((d) => !d.com_login || (d.email && d.email.trim().length > 0), {
+    message: "Informe um e-mail para pessoas com acesso ao sistema.",
+    path: ["email"],
+  })
+  .refine((d) => d.tipo_pessoa !== "usuario" || d.com_login, {
+    message: "Usuário interno precisa ter acesso ao sistema.",
+    path: ["com_login"],
+  });
 
 export type CriarPessoaInput = z.infer<typeof criarSchema>;
+export type TipoPessoa = "usuario" | "imobiliaria" | "corretor";
 
 export interface PessoaLista {
   id: string;
@@ -28,6 +40,8 @@ export interface PessoaLista {
   email: string | null;
   telefone: string | null;
   acesso_tipo: "sistema" | "portal_parceiro";
+  tipo_pessoa: TipoPessoa;
+  login_habilitado: boolean;
   ativo: boolean;
   bloqueado_em: string | null;
   roles: AppRole[];
@@ -62,7 +76,7 @@ export const listarPessoas = createServerFn({ method: "GET" })
 
     const { data: pessoas, error } = await supabase
       .from("profiles")
-      .select("id, nome, email, telefone, acesso_tipo, ativo, bloqueado_em, nivel_acesso_id")
+      .select("id, nome, email, telefone, acesso_tipo, tipo_pessoa, login_habilitado, ativo, bloqueado_em, nivel_acesso_id")
       .eq("correspondente_id", correspondenteId)
       .order("created_at", { ascending: true });
 
@@ -97,6 +111,8 @@ export const listarPessoas = createServerFn({ method: "GET" })
 
     return pessoas.map((p) => ({
       ...p,
+      tipo_pessoa: (p.tipo_pessoa ?? "usuario") as TipoPessoa,
+      login_habilitado: p.login_habilitado ?? true,
       roles: rolesByUser.get(p.id) ?? [],
       nivel_acesso_nome: p.nivel_acesso_id ? (nomeByNivel.get(p.nivel_acesso_id) ?? null) : null,
     }));
@@ -145,13 +161,19 @@ export const criarPessoaComAcesso = createServerFn({ method: "POST" })
       throw new Error("Papel não permitido.");
     }
 
-    // Senha provisória = o próprio e-mail do usuário (repassada e trocada no 1º acesso).
-    const senha = data.email;
+    const comLogin = data.com_login;
+    // Com login: senha provisória = o próprio e-mail (trocada no 1º acesso).
+    // Sem login: e-mail sintético + senha aleatória; a conta fica banida no Auth.
+    const emailReal = comLogin ? (data.email ?? "").trim() : "";
+    const emailAuth = comLogin
+      ? emailReal
+      : `semlogin+${crypto.randomUUID()}@parceiro.local`;
+    const senha = comLogin ? emailReal : gerarSenhaTemporaria();
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data: created, error: createErr } = await supabaseAdmin.auth.admin.createUser({
-      email: data.email,
+      email: emailAuth,
       password: senha,
       email_confirm: true,
       user_metadata: {
@@ -162,6 +184,8 @@ export const criarPessoaComAcesso = createServerFn({ method: "POST" })
         papel,
         acesso_tipo: acessoTipo,
         nivel_acesso_id: data.nivel_acesso_id,
+        tipo_pessoa: data.tipo_pessoa,
+        login_habilitado: comLogin,
       },
     });
 
@@ -169,6 +193,28 @@ export const criarPessoaComAcesso = createServerFn({ method: "POST" })
       // Mensagem genérica; não vaza se o e-mail já existe.
       throw new Error("Não foi possível criar a pessoa. Verifique os dados e tente novamente.");
     }
+
+    // Sem login: bane a conta no Auth (aparece nas buscas, mas não entra).
+    if (!comLogin) {
+      try {
+        await supabaseAdmin.auth.admin.updateUserById(created.user.id, {
+          ban_duration: "876000h",
+        });
+      } catch {
+        /* best-effort */
+      }
+    }
+
+    // Garante tipo_pessoa/login_habilitado no profile (a trigger já lê o metadata,
+    // mas reforçamos aqui para robustez).
+    await supabaseAdmin
+      .from("profiles")
+      .update({
+        tipo_pessoa: data.tipo_pessoa,
+        login_habilitado: comLogin,
+        email: comLogin ? emailReal : null,
+      })
+      .eq("id", created.user.id);
 
     // Auditoria (o trigger já criou profiles + user_roles).
     const { registrarAuditoria } = await import("@/lib/admin/audit.server");
@@ -183,10 +229,12 @@ export const criarPessoaComAcesso = createServerFn({ method: "POST" })
         nome: data.nome,
         acesso_tipo: acessoTipo,
         papel,
+        tipo_pessoa: data.tipo_pessoa,
+        com_login: comLogin,
       },
     });
 
-    return { email: data.email, senha_temporaria: senha };
+    return { email: comLogin ? emailReal : "", senha_temporaria: comLogin ? senha : "" };
   });
 
 /** Carrega o perfil alvo garantindo que pertence ao mesmo ecossistema do solicitante. */
@@ -229,6 +277,7 @@ export const atualizarSchema = z.object({
   nome: z.string().min(2, "Informe o nome completo."),
   telefone: z.string().optional().nullable(),
   nivel_acesso_id: z.string().uuid("Selecione um nível de acesso."),
+  tipo_pessoa: z.enum(["usuario", "imobiliaria", "corretor"]).optional(),
 });
 
 /** Atualiza dados básicos e o nível de acesso (papel/portal) de uma pessoa. */
@@ -259,6 +308,7 @@ export const atualizarPessoa = createServerFn({ method: "POST" })
         telefone: data.telefone ?? null,
         nivel_acesso_id: data.nivel_acesso_id,
         acesso_tipo: acessoTipo,
+        ...(data.tipo_pessoa ? { tipo_pessoa: data.tipo_pessoa } : {}),
       })
       .eq("id", data.id);
     if (upErr) throw new Error("Não foi possível atualizar a pessoa.");
@@ -286,6 +336,55 @@ export const atualizarPessoa = createServerFn({ method: "POST" })
     });
 
     return { ok: true };
+  });
+
+/**
+ * Habilita o login de uma pessoa que foi cadastrada sem acesso (imobiliária/corretor).
+ * Define o e-mail real, gera senha provisória, desbane no Auth e marca login_habilitado.
+ */
+export const habilitarLoginPessoa = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) =>
+    z
+      .object({ id: z.string().uuid(), email: z.string().email("E-mail inválido.") })
+      .parse(data),
+  )
+  .handler(async ({ data, context }): Promise<ResultadoCriarPessoa> => {
+    const { supabase, userId } = context;
+    const { correspondenteId } = await carregarAlvo(supabase, userId, data.id);
+
+    const email = data.email.trim();
+    const senha = email;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { error: authErr } = await supabaseAdmin.auth.admin.updateUserById(data.id, {
+      email,
+      email_confirm: true,
+      password: senha,
+      ban_duration: "none",
+    });
+    if (authErr) {
+      throw new Error("Não foi possível habilitar o login. Verifique o e-mail e tente novamente.");
+    }
+
+    const { error: upErr } = await supabaseAdmin
+      .from("profiles")
+      .update({ email, login_habilitado: true, ativo: true, bloqueado_em: null })
+      .eq("id", data.id);
+    if (upErr) throw new Error("Não foi possível habilitar o login.");
+
+    const { registrarAuditoria } = await import("@/lib/admin/audit.server");
+    await registrarAuditoria({
+      supabase,
+      userId,
+      correspondenteId,
+      acao: "pessoa.habilitar_login",
+      entidade: "profiles",
+      entidadeId: data.id,
+      payloadNovo: { email },
+    });
+
+    return { email, senha_temporaria: senha };
   });
 
 /** Ativa ou desativa (bloqueia) o acesso de uma pessoa. */
