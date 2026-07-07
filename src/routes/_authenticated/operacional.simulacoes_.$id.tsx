@@ -369,7 +369,7 @@ function Pagina() {
               </div>
 
               {/* Desktop: tabela */}
-              <div className="hidden overflow-x-auto rounded-lg border border-border md:block">
+              <div className="hidden overflow-x-auto rounded-lg border border-border lg:block">
                 <Table>
                   <TableHeader>
                     <TableRow>
