@@ -510,7 +510,7 @@ export const criarProposta = createServerFn({ method: "POST" })
 export const obterConjugeCliente = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ cliente_id: z.string().uuid() }).parse(d))
-  .handler(async ({ context, data }): Promise<Record<string, unknown> | null> => {
+  .handler(async ({ context, data }): Promise<Record<string, string | number | null> | null> => {
     const { supabase } = context;
     const { data: cli } = await supabase
       .from("clientes")
