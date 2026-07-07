@@ -86,8 +86,13 @@ export function DicaRendaMinima({
           <span className="font-medium text-foreground/80">
             {formatBRL(av.primeiraParcela)}
           </span>{" "}
+          pelo sistema{" "}
+          <span className="font-medium text-foreground/80">
+            {sistema === "P" ? "PRICE" : "SAC"}
+          </span>{" "}
           e no teto de 30% de comprometimento de renda.
         </p>
+
 
         {av.suficiente === true && (
           <div
