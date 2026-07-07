@@ -64,16 +64,18 @@ export const getConfigIA = createServerFn({ method: "GET" })
     const corr = await correspondenteDoUsuario(supabase, userId);
     const vazio: ConfigIA = {
       id: null,
-      nome: "Provedor de IA",
-      base_url: null,
-      modelo: "gemini-2.5-flash",
+      provedor: "gemini",
+      nome: PRESETS_IA.gemini.nome,
+      base_url: PRESETS_IA.gemini.base_url,
+      modelo: PRESETS_IA.gemini.modelo,
       temperatura: 0.2,
       prompt_scan: PROMPT_PADRAO,
-      secret_names: ["GEMINI_API_KEY"],
+      secret_names: [PRESETS_IA.gemini.secret_name],
       ativo: true,
       status: null,
       ultimo_ping_em: null,
     };
+
     if (!corr) return vazio;
 
     const { data, error } = await supabase
