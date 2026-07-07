@@ -68,8 +68,9 @@ function SidebarLink({
     <Link
       to={item.to as string}
       onClick={onNavigate}
+      aria-current={active ? "page" : undefined}
       className={cn(
-        "group relative flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
+        "group relative flex min-h-10 items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
         active
           ? "bg-sidebar-accent text-sidebar-accent-foreground"
           : "text-sidebar-foreground/80 hover:bg-white/10 hover:text-sidebar-foreground",
@@ -148,6 +149,8 @@ export function SidebarRail({ nav, onNavigate }: SidebarProps) {
               <Link
                 to={to as string}
                 onClick={onNavigate}
+                aria-current={active ? "page" : undefined}
+                aria-label={item.label}
                 className={cn(
                   "relative flex h-10 w-10 items-center justify-center rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
                   active

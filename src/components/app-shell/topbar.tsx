@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Menu, PanelLeftClose, PanelLeft, LogOut, UserRound, Lock, Bell } from "lucide-react";
+import { Logo } from "@/components/brand/Logo";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -25,6 +26,7 @@ export interface ShellUser {
 interface TopbarProps {
   nav: NavGroup[];
   user: ShellUser;
+  collapsed: boolean;
   showAccountMenu: boolean;
   showSearch: boolean;
   onToggleMobile: () => void;
@@ -42,6 +44,7 @@ function iniciais(nome: string | null, email: string | null): string {
 export function Topbar({
   nav,
   user,
+  collapsed,
   showAccountMenu,
   showSearch,
   onToggleMobile,
@@ -51,12 +54,12 @@ export function Topbar({
   const navigate = useNavigate();
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center gap-2 border-b border-border bg-background px-3 sm:px-4">
+    <header className="sticky top-0 z-30 flex h-16 items-center gap-2 border-b border-border bg-background/85 px-3 backdrop-blur supports-[backdrop-filter]:bg-background/70 sm:px-4">
       <Button
         variant="ghost"
         size="icon"
-        className="lg:hidden"
-        aria-label="Abrir menu"
+        className="min-h-11 min-w-11 lg:hidden"
+        aria-label="Abrir menu de navegação"
         onClick={onToggleMobile}
       >
         <Menu className="h-5 w-5" />
@@ -65,15 +68,26 @@ export function Topbar({
         variant="ghost"
         size="icon"
         className="hidden lg:inline-flex"
-        aria-label="Recolher menu"
+        aria-label={collapsed ? "Expandir menu" : "Recolher menu"}
+        aria-pressed={collapsed}
         onClick={onToggleCollapse}
       >
-        <PanelLeft className="h-5 w-5" />
+        {collapsed ? <PanelLeft className="h-5 w-5" /> : <PanelLeftClose className="h-5 w-5" />}
       </Button>
+
+      {/* Marca no mobile (drawer some da view) */}
+      <Link
+        to={"/dashboard" as string}
+        aria-label="Ir para o início"
+        className="lg:hidden"
+      >
+        <Logo variant="dark" className="h-6" />
+      </Link>
 
       <div className="mx-1 hidden lg:block">
         <AppBreadcrumbs nav={nav} />
       </div>
+
 
       <div className="ml-auto flex items-center gap-1 sm:gap-2">
         {showSearch && <GlobalSearch />}

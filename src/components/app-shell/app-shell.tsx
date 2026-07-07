@@ -113,6 +113,7 @@ export function AppShell({
           <Topbar
             nav={nav}
             user={user}
+            collapsed={hydrated && collapsed}
             showAccountMenu={showAccountMenu}
             showSearch={showSearch}
             onToggleMobile={() => setMobileOpen(true)}
