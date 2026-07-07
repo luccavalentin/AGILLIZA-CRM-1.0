@@ -92,6 +92,7 @@ function Pagina() {
     prazo: 360,
     utiliza_fgts: "N",
     fg_financiar_despesas: false,
+    valor_despesas_financiadas: 0,
     sistema_amortizacao: "S",
     nome_cliente: "",
     cpf_cnpj: "",
