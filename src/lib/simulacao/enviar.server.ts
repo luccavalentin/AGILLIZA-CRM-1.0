@@ -180,78 +180,83 @@ export async function enviarSimulacaoImpl({
         .eq("id", simulacaoId);
     }
 
-    // 2 + 3) Simulação + integração por banco — os bancos são independentes
-    // entre si, então processamos todos em paralelo (cada banco ainda faz suas
-    // duas chamadas em sequência, pois a integração depende do idSimulacao).
-    const resultados: EnviarResultado["bancos"] = await Promise.all(
-      (bancos as any[]).map(async (b) => {
-        try {
-          const simPayload = {
-            valorImovel: num(sim.valor_imovel),
-            valorFinanciamento: num(sim.valor_financiamento),
-            prazo: num(sim.prazo),
-            codigoSistemaAmortizacaoBanco: { id: sim.sistema_amortizacao ?? "S" },
-            banco: { idBanco: b.homefin_id_banco },
-            fgAutorizacaoDados: true,
-          };
-          const simResp = await chamarIntegracao<any>(
-            `/oportunidade/${idOportunidade}/simulacao`,
-            "POST",
-            simPayload,
-            ctx,
-          );
-          const idSimulacao = String(simResp?.idSimulacao ?? "");
+    // 2 + 3) Simulação + integração por banco.
+    // Enviamos um banco de cada vez (SEQUENCIAL): disparar as chamadas em
+    // paralelo na mesma oportunidade gera condição de corrida e faz alguns
+    // bancos falharem ("erro no envio") enquanto outros passam. Cada banco
+    // mantém seu próprio try/catch — a falha de um não impede os demais.
+    const enviarBanco = async (b: any): Promise<EnviarResultado["bancos"][number]> => {
+      try {
+        const simPayload = {
+          valorImovel: num(sim.valor_imovel),
+          valorFinanciamento: num(sim.valor_financiamento),
+          prazo: num(sim.prazo),
+          codigoSistemaAmortizacaoBanco: { id: sim.sistema_amortizacao ?? "S" },
+          banco: { idBanco: b.homefin_id_banco },
+          fgAutorizacaoDados: true,
+        };
+        const simResp = await chamarIntegracao<any>(
+          `/oportunidade/${idOportunidade}/simulacao`,
+          "POST",
+          simPayload,
+          ctx,
+        );
+        const idSimulacao = String(simResp?.idSimulacao ?? "");
 
-          // A resposta da integração traz os valores retornados pelo banco
-          const integ = await chamarIntegracao<any>(
-            `/oportunidade/${idOportunidade}/simulacao/${idSimulacao}/integracao`,
-            "POST",
-            {},
-            ctx,
-          );
+        // A resposta da integração traz os valores retornados pelo banco
+        const integ = await chamarIntegracao<any>(
+          `/oportunidade/${idOportunidade}/simulacao/${idSimulacao}/integracao`,
+          "POST",
+          {},
+          ctx,
+        );
 
-          const dados = integ ?? simResp;
+        const dados = integ ?? simResp;
 
-          await supabase
-            .from("simulacao_bancos")
-            .update({
-              homefin_id_simulacao_banco: idSimulacao,
-              status_banco: "simulada",
-              raw_response: dados,
-              simulado_em: new Date().toISOString(),
-              valor_parcela: dados?.valorParcelaBanco ?? dados?.valorParcelaSimulacao ?? null,
-              taxa_juros_ano: dados?.taxaJurosAnoBanco ?? null,
-              prazo_pagamento_max:
-                dados?.prazoPagamentoBancoMax ??
-                dados?.prazoPagamentoBanco ??
-                dados?.prazoPagamentoSimulacao ??
-                num(sim.prazo) ??
-                null,
-              valor_financiamento_max:
-                dados?.valorFinanciamentoBancoMax ??
-                dados?.valorFinanciamentoBanco ??
-                dados?.valorTotalFinanciamento ??
-                dados?.valorFinanciamentoSimulacao ??
-                num(sim.valor_financiamento) ??
-                null,
-              valor_parcela_max: dados?.valorParcelaBancoMax ?? null,
-              codigo_indexador: dados?.codigoIndexadorBanco ?? null,
-              valor_iof: dados?.valorIofBanco ?? null,
-              sistema_amortizacao_banco: dados?.codigoSistemaAmortizacaoBanco ?? null,
-            })
-            .eq("id", b.id);
-          return { banco_id: b.banco_id, status: "simulada" as const };
-        } catch (e) {
-          const msg =
-            e instanceof IntegracaoBancariaError ? e.message : humanizarErroBanco(null, String(e));
-          await supabase
-            .from("simulacao_bancos")
-            .update({ status_banco: "erro", mensagem_banco: msg })
-            .eq("id", b.id);
-          return { banco_id: b.banco_id, status: "erro" as const, mensagem: msg };
-        }
-      }),
-    );
+        await supabase
+          .from("simulacao_bancos")
+          .update({
+            homefin_id_simulacao_banco: idSimulacao,
+            status_banco: "simulada",
+            raw_response: dados,
+            simulado_em: new Date().toISOString(),
+            valor_parcela: dados?.valorParcelaBanco ?? dados?.valorParcelaSimulacao ?? null,
+            taxa_juros_ano: dados?.taxaJurosAnoBanco ?? null,
+            prazo_pagamento_max:
+              dados?.prazoPagamentoBancoMax ??
+              dados?.prazoPagamentoBanco ??
+              dados?.prazoPagamentoSimulacao ??
+              num(sim.prazo) ??
+              null,
+            valor_financiamento_max:
+              dados?.valorFinanciamentoBancoMax ??
+              dados?.valorFinanciamentoBanco ??
+              dados?.valorTotalFinanciamento ??
+              dados?.valorFinanciamentoSimulacao ??
+              num(sim.valor_financiamento) ??
+              null,
+            valor_parcela_max: dados?.valorParcelaBancoMax ?? null,
+            codigo_indexador: dados?.codigoIndexadorBanco ?? null,
+            valor_iof: dados?.valorIofBanco ?? null,
+            sistema_amortizacao_banco: dados?.codigoSistemaAmortizacaoBanco ?? null,
+          })
+          .eq("id", b.id);
+        return { banco_id: b.banco_id, status: "simulada" as const };
+      } catch (e) {
+        const msg =
+          e instanceof IntegracaoBancariaError ? e.message : humanizarErroBanco(null, String(e));
+        await supabase
+          .from("simulacao_bancos")
+          .update({ status_banco: "erro", mensagem_banco: msg })
+          .eq("id", b.id);
+        return { banco_id: b.banco_id, status: "erro" as const, mensagem: msg };
+      }
+    };
+
+    const resultados: EnviarResultado["bancos"] = [];
+    for (const b of bancos as any[]) {
+      resultados.push(await enviarBanco(b));
+    }
 
     const sucesso = resultados.filter((r) => r.status === "simulada").length;
 
