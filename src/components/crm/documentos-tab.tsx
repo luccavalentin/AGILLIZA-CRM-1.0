@@ -515,8 +515,39 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
             </div>
           )}
           <div className="space-y-1.5">
-            <label className="text-xs text-muted-foreground">Tipo (ex.: RG, IR, Matrícula)</label>
-            <Input className="w-52" value={tipo} onChange={(e) => setTipo(e.target.value)} />
+            <label className="text-xs text-muted-foreground">Tipo de documento</label>
+            <Select
+              value={tiposCategoria.includes(tipo) || tipo === "" ? tipo : TIPO_OUTRO}
+              onValueChange={(v) => {
+                if (v === TIPO_OUTRO) {
+                  setTipoOutro(true);
+                  setTipo("");
+                } else {
+                  setTipoOutro(false);
+                  setTipo(v);
+                }
+              }}
+            >
+              <SelectTrigger className="w-64">
+                <SelectValue placeholder="Selecione o tipo" />
+              </SelectTrigger>
+              <SelectContent>
+                {tiposCategoria.map((t) => (
+                  <SelectItem key={t} value={t}>
+                    {t}
+                  </SelectItem>
+                ))}
+                <SelectItem value={TIPO_OUTRO}>Outro (especificar)…</SelectItem>
+              </SelectContent>
+            </Select>
+            {(tipoOutro || tiposCategoria.length === 0) && (
+              <Input
+                className="mt-1.5 w-64"
+                placeholder="Descreva o tipo do documento"
+                value={tipo}
+                onChange={(e) => setTipo(e.target.value)}
+              />
+            )}
           </div>
           <Button asChild disabled={enviando} className="relative">
             <label>
