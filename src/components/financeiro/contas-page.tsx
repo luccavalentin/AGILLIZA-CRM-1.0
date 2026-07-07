@@ -57,6 +57,8 @@ export function ContasPage({ tipo }: { tipo: ContaTipo }) {
   const [categoriaId, setCategoriaId] = useState<string>("");
   const [contraparte, setContraparte] = useState("");
   const [busca, setBusca] = useState("");
+  const [de, setDe] = useState("");
+  const [ate, setAte] = useState("");
 
   const [baixarConta, setBaixarConta] = useState<any>(null);
   const [estorno, setEstorno] = useState<{ id: string; acao: "estornar" | "cancelar" } | null>(
@@ -83,7 +85,7 @@ export function ContasPage({ tipo }: { tipo: ContaTipo }) {
 
   const { data: cfg } = useQuery({ queryKey: ["fin-configs"], queryFn: () => listarConfigs() });
   const { data, isLoading } = useQuery({
-    queryKey: ["fin-contas", tipo, status, categoriaId, busca],
+    queryKey: ["fin-contas", tipo, status, categoriaId, busca, de, ate],
     queryFn: () =>
       listarContas({
         data: {
@@ -91,6 +93,8 @@ export function ContasPage({ tipo }: { tipo: ContaTipo }) {
           status: status || undefined,
           categoria_id: categoriaId || undefined,
           contraparte: busca || undefined,
+          de: de || undefined,
+          ate: ate || undefined,
           pagina: 1,
           porPagina: 50,
         },
@@ -141,6 +145,26 @@ export function ContasPage({ tipo }: { tipo: ContaTipo }) {
             ))}
           </SelectContent>
         </Select>
+        <div className="flex items-center gap-2">
+          <label className="flex items-center gap-1 text-xs text-muted-foreground">
+            Venc. de
+            <Input
+              type="date"
+              className="w-40"
+              value={de}
+              onChange={(e) => setDe(e.target.value)}
+            />
+          </label>
+          <label className="flex items-center gap-1 text-xs text-muted-foreground">
+            até
+            <Input
+              type="date"
+              className="w-40"
+              value={ate}
+              onChange={(e) => setAte(e.target.value)}
+            />
+          </label>
+        </div>
         <form
           className="flex items-center gap-2"
           onSubmit={(e) => {
@@ -158,6 +182,21 @@ export function ContasPage({ tipo }: { tipo: ContaTipo }) {
             Filtrar
           </Button>
         </form>
+        {(de || ate || status || categoriaId || busca) && (
+          <Button
+            variant="ghost"
+            onClick={() => {
+              setDe("");
+              setAte("");
+              setStatus("");
+              setCategoriaId("");
+              setContraparte("");
+              setBusca("");
+            }}
+          >
+            Limpar
+          </Button>
+        )}
       </div>
 
       <div className="overflow-x-auto rounded-lg border border-border">

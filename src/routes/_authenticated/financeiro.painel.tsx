@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { TrendingUp, Wallet, LineChart as LineChartIcon, AlertTriangle } from "lucide-react";
 import {
@@ -15,6 +16,8 @@ import { assertModuloPermitido } from "@/lib/route-guards";
 import { obterKpisFinanceiros } from "@/lib/financeiro/financeiro.functions";
 import { ReportKpiCard } from "@/components/financeiro/kpi-card";
 import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { formatBRL } from "@/lib/financeiro/format";
 
 export const Route = createFileRoute("/_authenticated/financeiro/painel")({
@@ -32,32 +35,64 @@ function mesLabel(iso: string) {
 }
 
 function Pagina() {
+  const [de, setDe] = useState("");
+  const [ate, setAte] = useState("");
   const { data, isLoading } = useQuery({
-    queryKey: ["fin-kpis"],
-    queryFn: () => obterKpisFinanceiros(),
+    queryKey: ["fin-kpis", de, ate],
+    queryFn: () => obterKpisFinanceiros({ data: { de: de || undefined, ate: ate || undefined } }),
   });
 
   const mensal = (data?.receitaDespesaMensal ?? []).map((r) => ({ ...r, label: mesLabel(r.mes) }));
+  const periodoLabel = de || ate ? "no período" : "30d";
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-6 p-4 md:p-6">
-      <div>
-        <h1 className="text-xl font-semibold text-foreground">Painel financeiro</h1>
-        <p className="text-sm text-muted-foreground">
-          Visão geral de recebimentos, pagamentos e caixa projetado.
-        </p>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-semibold text-foreground">Painel financeiro</h1>
+          <p className="text-sm text-muted-foreground">
+            Visão geral de recebimentos, pagamentos e caixa projetado.
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <label className="flex items-center gap-1 text-xs text-muted-foreground">
+            De
+            <Input type="date" className="w-40" value={de} onChange={(e) => setDe(e.target.value)} />
+          </label>
+          <label className="flex items-center gap-1 text-xs text-muted-foreground">
+            até
+            <Input
+              type="date"
+              className="w-40"
+              value={ate}
+              onChange={(e) => setAte(e.target.value)}
+            />
+          </label>
+          {(de || ate) && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setDe("");
+                setAte("");
+              }}
+            >
+              Limpar
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <ReportKpiCard
-          titulo="A receber (30d)"
+          titulo={`A receber (${periodoLabel})`}
           valor={formatBRL(data?.aReceber30d ?? 0)}
           icon={TrendingUp}
           tone="success"
           sub={`Hoje: ${formatBRL(data?.aReceberHoje ?? 0)}`}
         />
         <ReportKpiCard
-          titulo="A pagar (30d)"
+          titulo={`A pagar (${periodoLabel})`}
           valor={formatBRL(data?.aPagar30d ?? 0)}
           icon={Wallet}
           tone="warning"

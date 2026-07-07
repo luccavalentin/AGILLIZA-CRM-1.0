@@ -528,7 +528,15 @@ export interface ComissaoItem {
 
 export const listarComissoes = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) => z.object({ status: z.string().optional() }).parse(data ?? {}))
+  .inputValidator((data) =>
+    z
+      .object({
+        status: z.string().optional(),
+        de: z.string().optional(),
+        ate: z.string().optional(),
+      })
+      .parse(data ?? {}),
+  )
   .handler(async ({ context, data }): Promise<ComissaoItem[]> => {
     const { supabase } = context;
     let query = supabase
@@ -538,6 +546,8 @@ export const listarComissoes = createServerFn({ method: "GET" })
       )
       .order("created_at", { ascending: false });
     if (data.status) query = query.eq("status", data.status as any);
+    if (data.de) query = query.gte("created_at", data.de);
+    if (data.ate) query = query.lte("created_at", `${data.ate}T23:59:59`);
     const { data: rows, error } = await query;
     if (error) throw new Error(error.message);
     return (rows ?? []).map((r: any) => ({
@@ -675,7 +685,12 @@ export interface FinanceiroKpis {
 
 export const obterKpisFinanceiros = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }): Promise<FinanceiroKpis> => {
+  .inputValidator((data) =>
+    z
+      .object({ de: z.string().optional(), ate: z.string().optional() })
+      .parse(data ?? {}),
+  )
+  .handler(async ({ context, data }): Promise<FinanceiroKpis> => {
     const { supabase } = context;
     const hoje = new Date();
     hoje.setHours(0, 0, 0, 0);
@@ -683,7 +698,10 @@ export const obterKpisFinanceiros = createServerFn({ method: "GET" })
     const hojeStr = iso(hoje);
     const em30 = new Date(hoje);
     em30.setDate(em30.getDate() + 30);
-    const em30Str = iso(em30);
+    // Janela do período: usa de/ate quando informados, senão hoje..+30d.
+    const inicioStr = data.de || hojeStr;
+    const fimStr = data.ate || iso(em30);
+    const em30Str = fimStr;
     const limiteInadimplencia = new Date(hoje);
     limiteInadimplencia.setDate(limiteInadimplencia.getDate() - 10);
     const inadimStr = iso(limiteInadimplencia);
@@ -729,13 +747,13 @@ export const obterKpisFinanceiros = createServerFn({ method: "GET" })
       .filter((r: any) => r.vencimento === hojeStr)
       .reduce((s: number, r: any) => s + saldoAberto(r), 0);
     const aReceber30d = recRows
-      .filter((r: any) => r.vencimento >= hojeStr && r.vencimento <= em30Str)
+      .filter((r: any) => r.vencimento >= inicioStr && r.vencimento <= em30Str)
       .reduce((s: number, r: any) => s + saldoAberto(r), 0);
     const aPagarHoje = payRows
       .filter((r: any) => r.vencimento === hojeStr)
       .reduce((s: number, r: any) => s + saldoAberto(r), 0);
     const aPagar30d = payRows
-      .filter((r: any) => r.vencimento >= hojeStr && r.vencimento <= em30Str)
+      .filter((r: any) => r.vencimento >= inicioStr && r.vencimento <= em30Str)
       .reduce((s: number, r: any) => s + saldoAberto(r), 0);
     const saldoProjetado = aReceber30d - aPagar30d;
     const inadimplencia = (inadim.data ?? []).reduce((s: number, r: any) => s + saldoAberto(r), 0);
