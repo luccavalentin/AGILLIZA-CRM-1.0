@@ -32,6 +32,8 @@ export interface SimulacaoBancoView {
 }
 
 export interface SimulacaoBancoResumo {
+  id: string;
+  banco_id: string | null;
   nome_banco: string | null;
   status_banco: string | null;
 }
@@ -411,12 +413,17 @@ export const listarSimulacoes = createServerFn({ method: "GET" })
     if (ids.length) {
       const { data: bancos } = await supabase
         .from("simulacao_bancos")
-        .select("simulacao_id, nome_banco, status_banco")
+        .select("id, simulacao_id, banco_id, nome_banco, status_banco")
         .in("simulacao_id", ids)
         .order("nome_banco", { ascending: true });
       for (const b of bancos ?? []) {
         const lista = bancosPorSim.get((b as any).simulacao_id) ?? [];
-        lista.push({ nome_banco: (b as any).nome_banco, status_banco: (b as any).status_banco });
+        lista.push({
+          id: (b as any).id,
+          banco_id: (b as any).banco_id,
+          nome_banco: (b as any).nome_banco,
+          status_banco: (b as any).status_banco,
+        });
         bancosPorSim.set((b as any).simulacao_id, lista);
       }
     }

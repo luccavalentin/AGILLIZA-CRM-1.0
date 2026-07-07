@@ -349,6 +349,9 @@ export async function enviarPropostaImpl({
   }
   const { data: bancosSel } = await query;
   const bancos = (bancosSel ?? []).filter((b: any) => !bancoJaEnviado(b));
+  if (!bancoId && bancos.length > 1) {
+    throw new Error("Clique no botão Enviar da linha do banco que deseja enviar.");
+  }
   if (bancos.length === 0) {
     throw new Error(
       bancoId

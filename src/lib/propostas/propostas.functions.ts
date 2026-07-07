@@ -257,6 +257,7 @@ export const criarProposta = createServerFn({ method: "POST" })
       usuario_responsavel_id: userId,
     };
     let bancosSimulados: any[] = [];
+    let bancosParaVincular: any[] = [];
 
     if (data.simulacao_id) {
       const { data: sim, error } = await supabase
@@ -273,6 +274,14 @@ export const criarProposta = createServerFn({ method: "POST" })
       const bancoEscolhido = data.banco_id
         ? bancosSimulados.find((b: any) => b.banco_id === data.banco_id)
         : bancosSimulados[0];
+
+      if (data.banco_id && !bancoEscolhido) {
+        throw new Error("Banco da simulação não encontrado ou ainda não simulado.");
+      }
+      if (!data.banco_id && bancosSimulados.length > 1) {
+        throw new Error("Escolha um banco específico para enviar a aprovação.");
+      }
+      bancosParaVincular = bancoEscolhido ? [bancoEscolhido] : bancosSimulados;
 
       snapshot = {
         ...snapshot,
@@ -320,8 +329,8 @@ export const criarProposta = createServerFn({ method: "POST" })
     if (insErr) throw new Error(insErr.message);
 
     // vincula bancos
-    if (bancosSimulados.length > 0) {
-      const linhas = bancosSimulados.map((b: any) => ({
+    if (bancosParaVincular.length > 0) {
+      const linhas = bancosParaVincular.map((b: any) => ({
         proposta_id: inserted.id,
         banco_id: b.banco_id,
         homefin_id_banco: b.homefin_id_banco,
@@ -329,7 +338,7 @@ export const criarProposta = createServerFn({ method: "POST" })
         nome_banco: b.nome_banco,
         simulacao_banco_id: b.id,
         homefin_id_simulacao_banco: b.homefin_id_simulacao_banco,
-        selecionado: b.banco_id === snapshot.banco_id,
+        selecionado: true,
         status_banco: "aguardando",
         valor_parcela: b.valor_parcela,
         taxa_juros_ano: b.taxa_juros_ano,
@@ -733,8 +742,8 @@ export const selecionarBancoProposta = createServerFn({ method: "POST" })
   )
   .handler(async ({ context, data }) => {
     const { supabase } = context;
-    // Seleção múltipla: a mesma proposta pode ser enviada a vários bancos.
-    // Bloqueia apenas propostas em estado terminal.
+    // Seleção única: marca apenas o banco principal desta proposta.
+    // O envio é feito pelo botão da linha, não por múltipla seleção.
     const { data: prop } = await supabase
       .from("propostas")
       .select("status")
@@ -752,37 +761,27 @@ export const selecionarBancoProposta = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!banco) throw new Error("Banco não encontrado.");
 
-    // Um banco já enviado não pode ser desmarcado.
-    const novoSelecionado = !banco.selecionado;
-    if (!novoSelecionado && banco.status_banco === "enviada") {
-      throw new Error("Este banco já foi enviado e não pode ser removido.");
-    }
-
     await supabase
       .from("proposta_bancos")
-      .update({ selecionado: novoSelecionado })
+      .update({ selecionado: false })
+      .eq("proposta_id", data.proposta_id)
+      .neq("id", data.proposta_banco_id);
+    await supabase
+      .from("proposta_bancos")
+      .update({ selecionado: true })
       .eq("id", data.proposta_banco_id);
 
     // Mantém o "banco principal" da proposta apontando para um banco selecionado
     // (usado em telas de resumo/PDF). Prioriza um já enviado, senão qualquer selecionado.
-    const { data: selecionados } = await supabase
-      .from("proposta_bancos")
-      .select("banco_id, nome_banco, homefin_id_simulacao_banco, status_banco")
-      .eq("proposta_id", data.proposta_id)
-      .eq("selecionado", true);
-    const principal =
-      (selecionados ?? []).find((b: any) => b.status_banco === "enviada") ??
-      (selecionados ?? [])[0] ??
-      null;
     await supabase
       .from("propostas")
       .update({
-        banco_id: principal?.banco_id ?? null,
-        nome_banco: principal?.nome_banco ?? null,
-        homefin_id_simulacao: principal?.homefin_id_simulacao_banco ?? null,
+        banco_id: banco.banco_id ?? null,
+        nome_banco: banco.nome_banco ?? null,
+        homefin_id_simulacao: banco.homefin_id_simulacao_banco ?? null,
       })
       .eq("id", data.proposta_id);
-    return { ok: true, selecionado: novoSelecionado };
+    return { ok: true, selecionado: true };
   });
 
 export const SITUACOES_BANCO = [
