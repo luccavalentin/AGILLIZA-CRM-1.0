@@ -136,16 +136,29 @@ export function NotificationsBell({ userId }: NotificationsBellProps) {
       <PopoverContent align="end" className="w-80 p-0">
         <div className="flex items-center justify-between border-b px-4 py-3">
           <span className="text-sm font-semibold text-foreground">Notificações</span>
-          {naoLidas > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-auto px-2 py-1 text-xs"
-              onClick={() => marcarTodas.mutate()}
-            >
-              <CheckCheck className="mr-1 h-3.5 w-3.5" /> Marcar todas
-            </Button>
-          )}
+          <div className="flex items-center gap-1">
+            {naoLidas > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-auto px-2 py-1 text-xs"
+                onClick={() => marcarTodas.mutate()}
+              >
+                <CheckCheck className="mr-1 h-3.5 w-3.5" /> Marcar todas
+              </Button>
+            )}
+            {itens.length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-auto px-2 py-1 text-xs text-muted-foreground hover:text-destructive"
+                onClick={() => limpar.mutate()}
+                disabled={limpar.isPending}
+              >
+                <Trash2 className="mr-1 h-3.5 w-3.5" /> Limpar
+              </Button>
+            )}
+          </div>
         </div>
         <ScrollArea className="max-h-80">
           {itens.length === 0 ? (
