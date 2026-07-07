@@ -295,6 +295,7 @@ export const atualizarSchema = z.object({
   telefone: z.string().optional().nullable(),
   nivel_acesso_id: z.string().uuid("Selecione um nível de acesso."),
   tipo_pessoa: z.string().min(1).optional(),
+  tipos_pessoa: z.array(z.string().min(1)).optional(),
 });
 
 /** Atualiza dados básicos e o nível de acesso (papel/portal) de uma pessoa. */
