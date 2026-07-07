@@ -398,6 +398,59 @@ function PessoasPage() {
         </DialogContent>
       </Dialog>
 
+      {/* Modal: habilitar login */}
+      <Dialog
+        open={!!habilitando}
+        onOpenChange={(o) => {
+          if (!o) {
+            setHabilitando(null);
+            setHabilitarEmail("");
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Habilitar login</DialogTitle>
+            <DialogDescription>
+              Informe o e-mail de acesso de {habilitando?.nome ?? "esta pessoa"}. Uma senha
+              provisória será gerada para o primeiro acesso.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="hab-email">E-mail</Label>
+            <Input
+              id="hab-email"
+              type="email"
+              value={habilitarEmail}
+              onChange={(e) => setHabilitarEmail(e.target.value)}
+              placeholder="nome@empresa.com"
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setHabilitando(null);
+                setHabilitarEmail("");
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button
+              disabled={habilitarMut.isPending || !habilitarEmail.trim()}
+              onClick={() =>
+                habilitando &&
+                habilitarMut.mutate({ id: habilitando.id, email: habilitarEmail.trim() })
+              }
+            >
+              Habilitar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+
+
       {/* Editar pessoa */}
       <EditarPessoaDialog pessoa={editando} onClose={() => setEditando(null)} />
 
