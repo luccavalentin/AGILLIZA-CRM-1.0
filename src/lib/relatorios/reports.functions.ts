@@ -139,6 +139,41 @@ function aplicarEscopo(query: any, filtros: ReportFiltros, userId: string, colRe
   return query;
 }
 
+/**
+ * Aplica os filtros de pessoa (analista, comercial, corretor, imobiliária) e banco.
+ * Cada grupo é multi-seleção (OR interno) e os grupos se combinam (AND entre grupos).
+ * As colunas específicas (analista_id, comercial_id, parceiro_id, nome_banco) só são
+ * usadas quando presentes no `select`; caso contrário cai no responsável genérico.
+ */
+function aplicarFiltrosPessoa(query: any, filtros: ReportFiltros, cols: string, colResp: string) {
+  const temCol = (c: string) => `,${cols.replace(/\s/g, "")},`.includes(`,${c},`);
+  const naoVazio = (a?: string[]) => Array.isArray(a) && a.length > 0;
+
+  if (temCol("analista_id") && naoVazio(filtros.analistas))
+    query = query.in("analista_id", filtros.analistas);
+  if (temCol("comercial_id") && naoVazio(filtros.comerciais))
+    query = query.in("comercial_id", filtros.comerciais);
+
+  const parceiros = [...(filtros.corretores ?? []), ...(filtros.imobiliarias ?? [])];
+  if (temCol("parceiro_id") && parceiros.length > 0)
+    query = query.in("parceiro_id", parceiros);
+
+  if (temCol("nome_banco") && naoVazio(filtros.bancos))
+    query = query.in("nome_banco", filtros.bancos);
+
+  // Fallback: relatórios que só têm a coluna de responsável recebem a união dos ids.
+  if (colResp && !temCol("analista_id") && !temCol("comercial_id") && !temCol("parceiro_id")) {
+    const uniao = [
+      ...(filtros.analistas ?? []),
+      ...(filtros.comerciais ?? []),
+      ...(filtros.corretores ?? []),
+      ...(filtros.imobiliarias ?? []),
+    ];
+    if (uniao.length > 0) query = query.in(colResp, uniao);
+  }
+  return query;
+}
+
 function serieMensal(rows: { data: string; valor?: number }[]): ChartSerie[] {
   const map = new Map<string, { valor: number; count: number }>();
   for (const r of rows) {
