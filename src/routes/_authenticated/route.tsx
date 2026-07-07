@@ -1,14 +1,18 @@
 import { createFileRoute, Outlet, redirect, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { Folder } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/app-shell/app-shell";
 import { Logo } from "@/components/brand/Logo";
 import { navInterno, navParceiro } from "@/components/app-shell/nav-config";
+import type { NavGroup } from "@/components/app-shell/nav-config";
 import { filterNavByPermissions, permsToSet } from "@/components/app-shell/filter-nav";
 import { SidebarSkeleton } from "@/components/app-shell/sidebar-nav";
 import { getMinhaSessao } from "@/lib/session.functions";
 import { getMinhasPermissoes } from "@/lib/permissions.functions";
+import { listarPastasRaiz } from "@/lib/documentos/arquivos.functions";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
