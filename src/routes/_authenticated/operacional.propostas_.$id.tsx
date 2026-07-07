@@ -251,7 +251,10 @@ function Pagina() {
               Proposta {p.numero_proposta_banco || p.codigo_oportunidade_homefin || p.numero_proposta}
             </h1>
             <p className="text-sm text-muted-foreground">
-              {p.produto ?? "Operação"} · Ativa há {diasDesde} dia(s)
+              {p.produto ?? "Operação"} ·{" "}
+              {status === "cancelada"
+                ? "Proposta cancelada"
+                : `Ativa há ${diasDesde} dia(s)`}
             </p>
           </div>
           <div className="flex flex-wrap gap-6 text-sm">
