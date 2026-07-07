@@ -697,6 +697,7 @@ export type Database = {
           created_at: string
           id: string
           parceiro_id: string
+          tipo_vinculo: string
         }
         Insert: {
           cliente_id: string
@@ -704,6 +705,7 @@ export type Database = {
           created_at?: string
           id?: string
           parceiro_id: string
+          tipo_vinculo?: string
         }
         Update: {
           cliente_id?: string
@@ -711,6 +713,7 @@ export type Database = {
           created_at?: string
           id?: string
           parceiro_id?: string
+          tipo_vinculo?: string
         }
         Relationships: [
           {
