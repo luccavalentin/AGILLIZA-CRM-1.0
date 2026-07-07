@@ -99,6 +99,10 @@ export function ChatClienteTab({ clienteId, info }: { clienteId: string; info?: 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clienteId, qc]);
 
+  useIncomingChatSound(
+    mensagens?.map((m) => ({ id: m.id, mine: m.remetente_tipo === "time" })),
+  );
+
   useEffect(() => {
     fimRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [mensagens?.length]);
