@@ -62,6 +62,24 @@ export const listarNos = createServerFn({ method: "GET" })
     return (rows ?? []) as ArquivoNo[];
   });
 
+/** Lista apenas as pastas da raiz (para exibir como submenus no menu Documentos). */
+export const listarPastasRaiz = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<{ id: string; nome: string }[]> => {
+    const { supabase, userId } = context;
+    const corr = await correspondenteDoUsuario(supabase, userId);
+    if (!corr) return [];
+    const { data: rows, error } = await supabase
+      .from("arquivos_nos")
+      .select("id, nome")
+      .eq("correspondente_id", corr)
+      .eq("tipo", "pasta")
+      .is("parent_id", null)
+      .order("nome", { ascending: true });
+    if (error) throw new Error(error.message);
+    return (rows ?? []) as { id: string; nome: string }[];
+  });
+
 /** Cria uma pasta. Se já existir uma pasta com o mesmo nome no nível, retorna a existente. */
 export const criarPasta = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

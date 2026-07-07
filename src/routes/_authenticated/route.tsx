@@ -1,14 +1,18 @@
 import { createFileRoute, Outlet, redirect, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { Folder } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/app-shell/app-shell";
 import { Logo } from "@/components/brand/Logo";
 import { navInterno, navParceiro } from "@/components/app-shell/nav-config";
+import type { NavGroup } from "@/components/app-shell/nav-config";
 import { filterNavByPermissions, permsToSet } from "@/components/app-shell/filter-nav";
 import { SidebarSkeleton } from "@/components/app-shell/sidebar-nav";
 import { getMinhaSessao } from "@/lib/session.functions";
 import { getMinhasPermissoes } from "@/lib/permissions.functions";
+import { listarPastasRaiz } from "@/lib/documentos/arquivos.functions";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -50,6 +54,47 @@ function InternalLayout() {
     const base = ehParceiro ? navParceiro : navInterno;
     return filterNavByPermissions(base, permsToSet(permsQuery.data), permsQuery.data.todas);
   }, [permsQuery.data, ehParceiro]);
+
+  const fnPastasRaiz = useServerFn(listarPastasRaiz);
+  const pastasQuery = useQuery({
+    queryKey: ["nav-pastas-documentos"],
+    queryFn: () => fnPastasRaiz(),
+    enabled: !!permsQuery.data && !ehParceiro,
+    staleTime: 60_000,
+  });
+
+  // Injeta as pastas raiz de Documentos como submenus do item "Arquivos".
+  // Feito de forma imutável (novos objetos) para nunca mutar a config de
+  // módulo — mutar geraria itens duplicados a cada renderização.
+  const navComPastas = useMemo<NavGroup[]>(() => {
+    const pastas = pastasQuery.data ?? [];
+    if (pastas.length === 0) return navFiltrada;
+    return navFiltrada.map((grupo) => ({
+      ...grupo,
+      items: grupo.items.map((item) => {
+        if (item.to !== "/documentos") return item;
+        return {
+          ...item,
+          children: [
+            {
+              label: "Todos os arquivos",
+              icon: item.icon,
+              to: "/documentos",
+              perm: item.perm,
+            },
+            ...pastas.map((p) => ({
+              label: p.nome,
+              icon: Folder,
+              to: "/documentos",
+              search: { pasta: p.id },
+              perm: item.perm,
+            })),
+          ],
+        };
+      }),
+    }));
+  }, [navFiltrada, pastasQuery.data]);
+
 
   useEffect(() => {
     if (!sessaoQuery.isLoading && !permsQuery.isLoading) {
@@ -137,7 +182,7 @@ function InternalLayout() {
 
   return (
     <AppShell
-      nav={navFiltrada}
+      nav={navComPastas}
       user={{
         id: profile?.id ?? "",
         nome: profile?.nome ?? null,

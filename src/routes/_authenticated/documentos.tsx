@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -65,6 +65,9 @@ import {
 
 export const Route = createFileRoute("/_authenticated/documentos")({
   head: () => ({ meta: [{ title: "Arquivos — Agilliza" }] }),
+  validateSearch: (search: Record<string, unknown>): { pasta?: string } => ({
+    pasta: typeof search.pasta === "string" ? search.pasta : undefined,
+  }),
   beforeLoad: () => assertModuloPermitido("documentos.arquivos"),
   component: Pagina,
 });
@@ -87,7 +90,11 @@ function sanitizePath(nome: string): string {
 
 function Pagina() {
   const qc = useQueryClient();
-  const [pasta, setPasta] = useState<string | null>(null);
+  const { pasta: pastaParam } = Route.useSearch();
+  const [pasta, setPasta] = useState<string | null>(pastaParam ?? null);
+  useEffect(() => {
+    setPasta(pastaParam ?? null);
+  }, [pastaParam]);
   const [busca, setBusca] = useState("");
   const [enviando, setEnviando] = useState<{ atual: number; total: number } | null>(null);
   const [novaPastaAberta, setNovaPastaAberta] = useState(false);
@@ -129,6 +136,7 @@ function Pagina() {
 
   const invalidar = useCallback(() => {
     qc.invalidateQueries({ queryKey: ["arquivos"] });
+    qc.invalidateQueries({ queryKey: ["nav-pastas-documentos"] });
   }, [qc]);
 
   /** Garante a existência da árvore de pastas (relativa à pasta atual) e retorna o id da folha. */

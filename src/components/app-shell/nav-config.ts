@@ -47,6 +47,8 @@ export interface NavItem {
   label: string;
   icon: LucideIcon;
   to?: string;
+  /** Parâmetros de busca (query string) opcionais para o destino. */
+  search?: Record<string, string>;
   children?: NavItem[];
   badge?: string;
   /** Ausente = item sempre visível (ex.: Visão Geral). */

@@ -95,6 +95,7 @@ function SidebarLink({
   return (
     <Link
       to={item.to as string}
+      search={(item.search ?? undefined) as never}
       onClick={onNavigate}
       aria-current={active ? "page" : undefined}
       className={cn(
