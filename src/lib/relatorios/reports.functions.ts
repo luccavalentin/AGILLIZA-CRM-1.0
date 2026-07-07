@@ -305,14 +305,17 @@ export const runReport = createServerFn({ method: "POST" })
       const isoDia = (d: Date) =>
         `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
+      const colsCmp =
+        "status,nome_banco,created_at,analista_id,comercial_id,parceiro_id,usuario_responsavel_id";
       let q = (supabase as any)
         .from("propostas")
-        .select("status,nome_banco,created_at")
+        .select(colsCmp)
         .gte("created_at", isoDia(inicio))
         .order("created_at", { ascending: true })
         .limit(20000);
       q = aplicarEscopo(q, filtros, userId, "usuario_responsavel_id");
       if (filtros.responsavel) q = q.eq("usuario_responsavel_id", filtros.responsavel);
+      q = aplicarFiltrosPessoa(q, filtros, colsCmp, "usuario_responsavel_id");
       const { data: rows } = await q;
       const props = ((rows ?? []) as any[]).filter((p) => p.status !== "rascunho");
       if (!props.length) return undefined;
