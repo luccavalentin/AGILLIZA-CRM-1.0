@@ -523,3 +523,20 @@ export const clienteSolicitarLGPD = createServerFn({ method: "POST" })
     if (error) throw new Error("Não foi possível registrar a solicitação.");
     return { ok: true };
   });
+
+// Exclusão do App do Cliente: apaga os dados do app e desativa o acesso ao App
+// no CRM. NÃO afeta o cadastro do cliente. Encerra a sessão em seguida.
+export const clienteExcluirDadosApp = createServerFn({ method: "POST" }).handler(
+  async (): Promise<{ ok: boolean }> => {
+    const sess = requireClienteSession();
+    const { portalDb } = await import("./portal-db.server");
+    const { data, error } = await portalDb().rpc("portal_excluir_app_cliente", {
+      _cid: sess.cid,
+    } as any);
+    if (error || !(data as any)?.ok) {
+      throw new Error("Não foi possível excluir seus dados. Tente novamente.");
+    }
+    limparCookieSessao();
+    return { ok: true };
+  },
+);
