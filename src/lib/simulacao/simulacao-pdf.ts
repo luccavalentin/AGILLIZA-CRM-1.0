@@ -216,7 +216,6 @@ function drawInfoFinanciamento(
         d?.cet ?? calcularCET(d?.valorFinanciamento ?? s.valor_financiamento, d?.parcelas),
       ),
     },
-    { label: "IOF crédito", valor: brlOuTraco(d?.iof ?? b?.valor_iof) },
   ];
 
 
@@ -312,7 +311,6 @@ export function baixarSimulacaoPDF(input: SimulacaoPdfInput) {
     { key: "taxa", label: "Taxa a.a.", align: "right" },
     { key: "prazo", label: "Prazo máx", align: "right" },
     { key: "financiamento", label: "Financ. máx", align: "right" },
-    { key: "iof", label: "IOF", align: "right" },
   ];
 
   const rows: ReportRow[] = (bancos ?? []).map((b) => ({
@@ -322,7 +320,6 @@ export function baixarSimulacaoPDF(input: SimulacaoPdfInput) {
     taxa: b.taxa_juros_ano != null ? formatPercent(b.taxa_juros_ano / 100) : "—",
     prazo: b.prazo_pagamento_max ? `${b.prazo_pagamento_max}m` : "—",
     financiamento: b.valor_financiamento_max != null ? formatBRL(b.valor_financiamento_max) : "—",
-    iof: b.valor_iof != null ? formatBRL(b.valor_iof) : "—",
   }));
 
   exportPDF(
