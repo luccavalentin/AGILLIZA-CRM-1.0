@@ -219,6 +219,14 @@ function Pagina() {
           <VendedoresTab clienteId={id} />
         </TabsContent>
 
+        <TabsContent value="imovel" className="mt-4">
+          <ImovelTab clienteId={id} cliente={c} />
+        </TabsContent>
+
+        <TabsContent value="iq" className="mt-4">
+          <IqTab clienteId={id} cliente={c} />
+        </TabsContent>
+
 
         <TabsContent value="resumo" className="mt-4 grid gap-4 sm:grid-cols-2">
           <Card>
