@@ -151,12 +151,28 @@ export function exportPDF(
       (acc, c, i) => {
         if (c.align === "right" || c.format === "brl" || c.format === "int" || c.format === "pct")
           acc[i] = { halign: "right" };
+        if (i === 0 && firstColLogos)
+          acc[0] = { ...(acc[0] ?? {}), cellPadding: { top: 4, right: 4, bottom: 4, left: 30 } };
         return acc;
       },
-      {} as Record<number, { halign: "right" }>,
+      {} as Record<number, any>,
     ),
     didDrawPage: () => {
       drawHeader(doc, pageW, titulo, descricao);
+    },
+    didDrawCell: (data) => {
+      if (data.section !== "body" || data.column.index !== 0 || !firstColLogos) return;
+      const brand = firstColLogos[String(data.cell.raw ?? "")];
+      if (!brand) return;
+      const h = Math.min(data.cell.height - 6, 12);
+      const w = h * brand.ratio;
+      const x = data.cell.x + 5;
+      const yy = data.cell.y + (data.cell.height - h) / 2;
+      try {
+        doc.addImage(brand.logo, "PNG", x, yy, w, h);
+      } catch {
+        /* fallback silencioso */
+      }
     },
   });
 
