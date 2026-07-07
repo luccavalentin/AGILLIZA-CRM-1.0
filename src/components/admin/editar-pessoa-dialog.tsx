@@ -37,6 +37,7 @@ export function EditarPessoaDialog({
   const [nome, setNome] = useState("");
   const [telefone, setTelefone] = useState("");
   const [nivelId, setNivelId] = useState("");
+  const [tipoPessoa, setTipoPessoa] = useState<TipoPessoa>("usuario");
 
   const { data: niveis } = useQuery({
     queryKey: ["niveis-acesso"],
@@ -48,6 +49,7 @@ export function EditarPessoaDialog({
       setNome(pessoa.nome ?? "");
       setTelefone(pessoa.telefone ?? "");
       setNivelId(pessoa.nivel_acesso_id ?? "");
+      setTipoPessoa(pessoa.tipo_pessoa ?? "usuario");
     }
   }, [pessoa]);
 
