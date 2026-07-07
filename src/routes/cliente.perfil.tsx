@@ -193,8 +193,9 @@ function Perfil() {
         </CardHeader>
         <CardContent className="space-y-3">
           <p className="text-sm text-muted-foreground">
-            Você pode baixar uma cópia dos seus dados ou solicitar a exclusão. A exclusão será
-            avaliada pela nossa equipe responsável.
+            Baixe uma cópia dos seus dados em PDF ou exclua seus dados do aplicativo. A exclusão
+            remove suas mensagens, notificações e histórico de acesso e desativa o acesso a este
+            aplicativo — seu cadastro na empresa não é afetado.
           </p>
           <Button
             variant="outline"
@@ -203,17 +204,34 @@ function Perfil() {
             disabled={baixar.isPending}
             onClick={() => baixar.mutate()}
           >
-            <Download className="mr-2 h-5 w-5" /> Baixar meus dados
+            <Download className="mr-2 h-5 w-5" /> Baixar meus dados (PDF)
           </Button>
-          <Button
-            variant="destructive"
-            size="lg"
-            className="w-full"
-            disabled={excluir.isPending}
-            onClick={() => excluir.mutate()}
-          >
-            <Trash2 className="mr-2 h-5 w-5" /> Solicitar exclusão de dados
-          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" size="lg" className="w-full" disabled={excluir.isPending}>
+                <Trash2 className="mr-2 h-5 w-5" /> Excluir meus dados do aplicativo
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Excluir dados do aplicativo?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Seus dados do aplicativo (mensagens, notificações e histórico de acesso) serão
+                  apagados e o acesso a este aplicativo será desativado. Seu cadastro na empresa
+                  permanece intacto. Esta ação não pode ser desfeita.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => excluir.mutate()}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  Excluir
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </CardContent>
       </Card>
     </div>
