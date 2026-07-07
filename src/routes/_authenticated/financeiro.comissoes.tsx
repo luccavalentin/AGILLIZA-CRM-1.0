@@ -40,9 +40,14 @@ const STATUS_LABEL: Record<string, string> = {
 function Pagina() {
   const qc = useQueryClient();
   const [status, setStatus] = useState<string>("");
+  const [de, setDe] = useState("");
+  const [ate, setAte] = useState("");
   const { data, isLoading } = useQuery({
-    queryKey: ["fin-comissoes", status],
-    queryFn: () => listarComissoes({ data: { status: status || undefined } }),
+    queryKey: ["fin-comissoes", status, de, ate],
+    queryFn: () =>
+      listarComissoes({
+        data: { status: status || undefined, de: de || undefined, ate: ate || undefined },
+      }),
   });
 
   const recalc = useMutation({
