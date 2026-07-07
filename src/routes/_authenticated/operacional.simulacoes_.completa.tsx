@@ -58,7 +58,7 @@ import {
   obterSimulacao,
 } from "@/lib/simulacao/simulacoes.functions";
 import { baixarSimulacaoPDF } from "@/lib/simulacao/simulacao-pdf";
-import { criarProposta } from "@/lib/propostas/propostas.functions";
+
 
 export const Route = createFileRoute("/_authenticated/operacional/simulacoes_/completa")({
   head: () => ({ meta: [{ title: "Simulação completa — Agilliza" }] }),
@@ -78,8 +78,6 @@ function Pagina() {
   const router = useRouter();
   const { duplicar, origem: origemFluxo } = Route.useSearch();
   const modoProposta = origemFluxo === "proposta";
-  const criarPropostaFn = useServerFn(criarProposta);
-  const [gerarProposta, setGerarProposta] = useState(modoProposta);
   const [f, setF] = useState<Form>({
     produto: "financiamento_imobiliario",
     tipo_imovel: "",
@@ -421,48 +419,23 @@ function Pagina() {
       setConcluidos(f.bancos_ids.length || 1);
 
       // Baixa o extrato imediatamente: detalhado (1 banco) ou comparativo (2+).
+      // Bancos que retornaram com erro são excluídos do PDF.
       let dadosSim: any = null;
       try {
         dadosSim = await obterSimulacao({ data: { id } });
-        baixarSimulacaoPDF({ simulacao: dadosSim.simulacao, bancos: dadosSim.bancos });
+        const bancosValidos = (dadosSim.bancos ?? []).filter(
+          (b: any) => (b.status_banco ?? b.n) !== "erro",
+        );
+        if (bancosValidos.length > 0) {
+          baixarSimulacaoPDF({ simulacao: dadosSim.simulacao, bancos: bancosValidos });
+        } else {
+          toast.error("Nenhum banco retornou simulação válida. O PDF não foi gerado.");
+        }
       } catch {
         /* download opcional — a simulação já foi criada */
       }
 
-      // Fluxo "Nova Proposta": cria a proposta e envia direto ao banco vencedor.
-      if (gerarProposta) {
-        try {
-          const bancos = (dadosSim?.bancos ?? []).filter(
-            (b: any) => b.status_banco === "simulada",
-          );
-          // Escolhe o banco vencedor pela menor parcela quando houver simulação retornada.
-          const vencedor = bancos
-            .slice()
-            .sort(
-              (a: any, b: any) =>
-                (Number(a.valor_parcela) || Infinity) - (Number(b.valor_parcela) || Infinity),
-            )[0];
-          const proposta = await criarPropostaFn({
-            data: {
-              simulacao_id: id,
-              banco_id: vencedor?.banco_id ?? undefined,
-            },
-          });
-          toast.success(`Proposta ${proposta.numero_proposta} criada e enviada ao banco.`);
-          router.navigate({
-            to: "/operacional/propostas/$id",
-            params: { id: proposta.proposta_id },
-            search: { complementar: 1 },
-          });
-          return;
-        } catch (e) {
-          toast.error(
-            e instanceof Error
-              ? `Simulação criada, mas a proposta falhou: ${e.message}`
-              : "Simulação criada, mas não foi possível gerar a proposta.",
-          );
-        }
-      }
+
       router.navigate({ to: "/operacional/simulacoes/$id", params: { id } });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Não foi possível criar a simulação.");
@@ -1099,26 +1072,12 @@ function Pagina() {
 
       <Separator className="border-border/60" />
 
-      {/* Envio ao banco como proposta */}
-      <label className="flex items-start gap-2 rounded-lg border border-primary/30 bg-primary/5 p-4 text-sm">
-        <Checkbox
-          checked={gerarProposta}
-          onCheckedChange={(c) => setGerarProposta(Boolean(c))}
-        />
-        <span>
-          <span className="font-medium text-foreground">Enviar direto ao banco como proposta</span>
-          <span className="block text-muted-foreground">
-            Ao concluir, a proposta é criada automaticamente com o banco vencedor (menor parcela) e
-            enviada ao banco. Desmarque para gerar apenas a simulação.
-          </span>
-        </span>
-      </label>
-
       <div className="flex justify-end pt-2">
         <Button className="h-11 px-8" onClick={enviar} disabled={enviando}>
-          {gerarProposta ? "Enviar proposta ao banco" : "Enviar solicitação"}
+          Gerar Simulação
         </Button>
       </div>
+
 
 
       <ConsultandoOverlay aberto={enviando} total={f.bancos_ids.length} concluidos={concluidos} />
