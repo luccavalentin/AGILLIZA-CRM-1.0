@@ -149,6 +149,10 @@ function PessoasPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const podeGerenciar = sessaoQuery.data?.podeGerenciarPessoas ?? false;
+
+
+
 
   const pessoas = (pessoasQuery.data ?? [])
     .filter((p) => (filtro === "todos" ? true : p.acesso_tipo === filtro))
