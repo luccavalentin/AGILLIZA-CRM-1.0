@@ -124,9 +124,8 @@ const SITUACAO_BANCO_TONE: Record<
 export const Route = createFileRoute("/_authenticated/operacional/propostas_/$id")({
   head: () => ({ meta: [{ title: "Proposta — Agilliza" }] }),
   beforeLoad: () => assertModuloPermitido("operacional.propostas"),
-  validateSearch: (search: Record<string, unknown>) => ({
-    complementar: search.complementar === 1 || search.complementar === "1" ? 1 : undefined,
-  }),
+  validateSearch: (search: Record<string, unknown>): { complementar?: 1 } =>
+    search.complementar === 1 || search.complementar === "1" ? { complementar: 1 } : {},
   component: Pagina,
   errorComponent: () => (
     <div className="p-6 text-sm text-muted-foreground">Não foi possível carregar a proposta.</div>
