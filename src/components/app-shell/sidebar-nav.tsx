@@ -64,14 +64,14 @@ export function SidebarNav({ nav, onNavigate }: SidebarProps) {
               <CollapsibleGroup
                 key={item.label}
                 item={item}
-                pathname={pathname}
+                melhor={melhor}
                 onNavigate={onNavigate}
               />
             ) : (
               <SidebarLink
                 key={item.label}
                 item={item}
-                active={itemAtivo(item, pathname)}
+                active={itemAtivo(item, melhor)}
                 onNavigate={onNavigate}
               />
             ),
