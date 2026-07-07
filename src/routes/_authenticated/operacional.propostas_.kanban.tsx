@@ -213,7 +213,7 @@ function Pagina() {
               key={col.destino}
               onDragOver={(e) => e.preventDefault()}
               onDrop={() => soltar(col.destino)}
-              className="flex min-h-40 max-h-[26rem] min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-muted/30 shadow-sm"
+              className="flex min-h-40 max-h-[30rem] min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-muted/30 shadow-sm"
             >
               <div className="shrink-0 overflow-hidden rounded-t-xl">
                 <div className={cn("h-[3px]", TONE_BAR[cfg.tone])} />
@@ -261,9 +261,13 @@ function Pagina() {
                             </p>
                           )}
                         </div>
+                      </div>
+
+                      {/* Status */}
+                      <div className="mt-2">
                         <span
                           className={cn(
-                            "shrink-0 self-start rounded-full px-2 py-0.5 text-[10px] font-medium",
+                            "inline-block rounded-full px-2 py-0.5 text-[10px] font-medium",
                             TONE_BADGE[cfg.tone],
                           )}
                         >
@@ -272,17 +276,17 @@ function Pagina() {
                       </div>
 
                       {/* Nº da proposta */}
-                      <div className="mt-2.5 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                      <div className="mt-2.5 flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
                         <span className="rounded bg-muted px-1.5 py-0.5 font-medium tabular-nums text-foreground">
                           #{numeroBanco}
                         </span>
                         {c.numero_proposta_banco && (
-                          <span className="truncate tabular-nums">Interno {c.numero_proposta}</span>
+                          <span className="tabular-nums">Interno {c.numero_proposta}</span>
                         )}
                       </div>
 
                       {/* Banco + valor */}
-                      <div className="mt-2.5 flex items-center justify-between gap-2 border-t border-border/60 pt-2.5">
+                      <div className="mt-2.5 flex flex-wrap items-center justify-between gap-x-2 gap-y-1 border-t border-border/60 pt-2.5">
                         <span className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
                           <Building2 className="h-3.5 w-3.5 shrink-0" />
                           <span className="truncate">{c.nome_banco ?? "—"}</span>
