@@ -267,7 +267,7 @@ function Pagina() {
                     <Calculator className="h-8 w-8 text-muted-foreground" />
                     <p className="text-sm text-muted-foreground">Nenhuma simulação encontrada.</p>
                     <Button asChild size="sm">
-                      <Link to="/operacional/simulacoes/nova">Criar primeira simulação</Link>
+                      <Link to="/operacional/simulacoes/completa">Criar primeira simulação</Link>
                     </Button>
                   </div>
                 </TableCell>
@@ -335,7 +335,7 @@ function Pagina() {
             <Calculator className="h-8 w-8 text-muted-foreground" />
             <p className="text-sm text-muted-foreground">Nenhuma simulação encontrada.</p>
             <Button asChild size="sm">
-              <Link to="/operacional/simulacoes/nova">Criar primeira simulação</Link>
+              <Link to="/operacional/simulacoes/completa">Criar primeira simulação</Link>
             </Button>
           </div>
         )}
