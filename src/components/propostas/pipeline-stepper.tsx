@@ -15,6 +15,18 @@ export function PipelineStepper({
   status: string;
   detalheStatus?: string | null;
 }) {
+  if (status === "cancelada") {
+    return (
+      <div className="w-full rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-center">
+        <p className="text-sm font-medium text-destructive">
+          Proposta cancelada — fluxo interrompido
+        </p>
+        {detalheStatus && (
+          <p className="mt-1 text-xs text-muted-foreground">Detalhe Status: {detalheStatus}</p>
+        )}
+      </div>
+    );
+  }
   const atual = indiceEtapa(status);
 
   return (
