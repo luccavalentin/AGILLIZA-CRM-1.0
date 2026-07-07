@@ -90,7 +90,11 @@ function sanitizePath(nome: string): string {
 
 function Pagina() {
   const qc = useQueryClient();
-  const [pasta, setPasta] = useState<string | null>(null);
+  const { pasta: pastaParam } = Route.useSearch();
+  const [pasta, setPasta] = useState<string | null>(pastaParam ?? null);
+  useEffect(() => {
+    setPasta(pastaParam ?? null);
+  }, [pastaParam]);
   const [busca, setBusca] = useState("");
   const [enviando, setEnviando] = useState<{ atual: number; total: number } | null>(null);
   const [novaPastaAberta, setNovaPastaAberta] = useState(false);
