@@ -1072,7 +1072,39 @@ function Pagina() {
 
 
       <ConsultandoOverlay aberto={enviando} total={f.bancos_ids.length} concluidos={concluidos} />
+
+      <AlertDialog open={!!confirmRenda} onOpenChange={(o) => !o && setConfirmRenda(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Renda abaixo do sugerido</AlertDialogTitle>
+            <AlertDialogDescription>
+              A renda informada de{" "}
+              <span className="font-semibold text-foreground">
+                {formatBRL(confirmRenda?.rendaInformada ?? 0)}
+              </span>{" "}
+              é inferior à renda familiar mínima estimada de{" "}
+              <span className="font-semibold text-foreground">
+                {formatBRL(confirmRenda?.rendaMinima ?? 0)}
+              </span>{" "}
+              para este financiamento. O banco poderá reprovar a operação. Deseja enviar
+              mesmo assim?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Revisar dados</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setConfirmRenda(null);
+                void executarEnvio();
+              }}
+            >
+              Enviar mesmo assim
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
+
   );
 }
 
