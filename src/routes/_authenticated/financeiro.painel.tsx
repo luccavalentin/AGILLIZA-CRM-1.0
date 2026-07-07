@@ -85,14 +85,14 @@ function Pagina() {
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <ReportKpiCard
-          titulo="A receber (30d)"
+          titulo={`A receber (${periodoLabel})`}
           valor={formatBRL(data?.aReceber30d ?? 0)}
           icon={TrendingUp}
           tone="success"
           sub={`Hoje: ${formatBRL(data?.aReceberHoje ?? 0)}`}
         />
         <ReportKpiCard
-          titulo="A pagar (30d)"
+          titulo={`A pagar (${periodoLabel})`}
           valor={formatBRL(data?.aPagar30d ?? 0)}
           icon={Wallet}
           tone="warning"
