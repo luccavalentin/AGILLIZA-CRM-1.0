@@ -163,8 +163,8 @@ function Pagina() {
         telefone_sac: q.data.telefone_sac ?? "",
         site: q.data.site ?? "",
         responsavel_nome: q.data.responsavel_nome ?? "",
-        politica_lgpd: q.data.politica_lgpd ?? "",
-        politica_privacidade: q.data.politica_privacidade ?? "",
+        politica_lgpd: q.data.politica_lgpd || POLITICA_LGPD_PADRAO,
+        politica_privacidade: q.data.politica_privacidade || POLITICA_PRIVACIDADE_PADRAO,
         email_dpo: q.data.email_dpo ?? "",
       });
     }
