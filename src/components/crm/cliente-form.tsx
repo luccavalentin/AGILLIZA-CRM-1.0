@@ -751,7 +751,8 @@ export function ClienteForm({
             <Label>Celular *</Label>
             <Input
               value={v.telefone_celular}
-              onChange={(e) => set("telefone_celular", e.target.value)}
+              onChange={(e) => set("telefone_celular", mascararTelefone(e.target.value))}
+              inputMode="numeric"
               placeholder="(11) 99999-9999"
             />
           </div>
