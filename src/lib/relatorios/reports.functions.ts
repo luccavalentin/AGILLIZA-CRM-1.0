@@ -1475,7 +1475,6 @@ const REPORTS_DISPONIVEIS = [
   "demandas",
   "tarefas",
   "financeiros",
-  "comissoes",
   "app-cliente",
   "operacionais",
 ] as const;
