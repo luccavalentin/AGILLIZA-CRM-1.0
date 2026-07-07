@@ -41,6 +41,7 @@ export interface PessoaLista {
   telefone: string | null;
   acesso_tipo: "sistema" | "portal_parceiro";
   tipo_pessoa: TipoPessoa;
+  tipos_pessoa: TipoPessoa[];
   login_habilitado: boolean;
   ativo: boolean;
   bloqueado_em: string | null;
