@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ArrowLeftRight } from "lucide-react";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -271,6 +271,46 @@ function Pagina() {
   }
 
   const mostraConjuge = f.possui_conjuge || f.compoe_renda;
+
+  // Habilita a inversão apenas quando os dados essenciais do cônjuge já existem.
+  const podeInverter = useMemo(() => {
+    return (
+      mostraConjuge &&
+      String(f.nome_conjuge ?? "").trim().length >= 3 &&
+      String(f.cpf_conjuge ?? "").trim().length > 0 &&
+      String(f.data_nascimento_conjuge ?? "").trim().length > 0
+    );
+  }, [mostraConjuge, f.nome_conjuge, f.cpf_conjuge, f.data_nascimento_conjuge]);
+
+  /**
+   * Inverte titular ⇄ cônjuge: quem era proponente vira cônjuge e vice-versa.
+   * Mantém possui_conjuge/compoe_renda para o bloco do cônjuge continuar visível.
+   */
+  function inverterPrincipal() {
+    setF((prev) => ({
+      ...prev,
+      // Titular recebe os dados do cônjuge
+      nome_cliente: prev.nome_conjuge ?? "",
+      cpf_cnpj: prev.cpf_conjuge ?? "",
+      renda_total: Number(prev.renda_conjuge) || 0,
+      data_nascimento: prev.data_nascimento_conjuge ?? "",
+      estado_civil: prev.estado_civil_conjuge || prev.estado_civil,
+      email: prev.email_conjuge ?? "",
+      celular: prev.celular_conjuge ?? "",
+      // Cônjuge recebe os dados do titular
+      nome_conjuge: prev.nome_cliente ?? "",
+      cpf_conjuge: prev.cpf_cnpj ?? "",
+      renda_conjuge: Number(prev.renda_total) || 0,
+      data_nascimento_conjuge: prev.data_nascimento ?? "",
+      estado_civil_conjuge: prev.estado_civil || prev.estado_civil_conjuge,
+      email_conjuge: prev.email ?? "",
+      celular_conjuge: prev.celular ?? "",
+      // O vínculo veio de um cliente do CRM que agora é o cônjuge — solta o vínculo.
+      cliente_id: null,
+    }));
+    setErros({});
+    toast.success("Titular e cônjuge invertidos. Confira os dados obrigatórios.");
+  }
 
   async function enviar() {
     const parsed = completaSchema.safeParse({ ...f, id_operacao_homefin: idOperacao });
@@ -785,7 +825,27 @@ function Pagina() {
         <>
           <Separator className="border-border/60" />
           <section className="space-y-4">
-            <h2 className="text-sm font-semibold text-foreground">Cônjuge / coobrigado</h2>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <h2 className="text-sm font-semibold text-foreground">Cônjuge / coobrigado</h2>
+              <div className="flex flex-col items-start gap-1 sm:items-end">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                  disabled={!podeInverter}
+                  onClick={inverterPrincipal}
+                >
+                  <ArrowLeftRight className="h-4 w-4" />
+                  Inverter principal
+                </Button>
+                {!podeInverter && (
+                  <p className="text-xs text-muted-foreground">
+                    Preencha nome, CPF e data de nascimento do cônjuge para inverter.
+                  </p>
+                )}
+              </div>
+            </div>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <Campo label="Nome">
                 <Input
@@ -811,6 +871,23 @@ function Pagina() {
                   value={f.data_nascimento_conjuge ?? ""}
                   onChange={(e) => set("data_nascimento_conjuge", e.target.value)}
                 />
+              </Campo>
+              <Campo label="Estado civil">
+                <Select
+                  value={f.estado_civil_conjuge ?? ""}
+                  onValueChange={(v) => set("estado_civil_conjuge", v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ESTADOS_CIVIS.map((p) => (
+                      <SelectItem key={p.value} value={p.value}>
+                        {p.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </Campo>
               <Campo label="E-mail">
                 <Input
