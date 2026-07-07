@@ -972,7 +972,8 @@ export function ClienteForm({
               <Label>Celular do cônjuge</Label>
               <Input
                 value={v.conjuge_celular}
-                onChange={(e) => set("conjuge_celular", e.target.value)}
+                onChange={(e) => set("conjuge_celular", mascararTelefone(e.target.value))}
+                inputMode="numeric"
                 placeholder="(11) 99999-9999"
               />
             </div>
