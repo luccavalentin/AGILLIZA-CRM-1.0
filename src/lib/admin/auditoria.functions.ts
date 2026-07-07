@@ -92,7 +92,7 @@ export const listarAuditoria = createServerFn({ method: "GET" })
 
     let query = supabase
       .from("admin_audit_logs")
-      .select("id, acao, entidade, entidade_id, ip, user_id, created_at")
+      .select("id, acao, descricao, entidade, entidade_id, ip, user_id, created_at")
       .eq("correspondente_id", corr);
 
     if (data?.dataInicio) query = query.gte("created_at", data.dataInicio);
@@ -102,7 +102,7 @@ export const listarAuditoria = createServerFn({ method: "GET" })
     if (data?.entidade) query = query.eq("entidade", data.entidade);
     if (data?.busca && data.busca.trim()) {
       const term = `%${data.busca.trim()}%`;
-      query = query.or(`acao.ilike.${term},entidade.ilike.${term},ip.ilike.${term}`);
+      query = query.or(`acao.ilike.${term},descricao.ilike.${term},entidade.ilike.${term},ip.ilike.${term}`);
     }
 
     const { data: rows, error } = await query
@@ -118,10 +118,14 @@ export const listarAuditoria = createServerFn({ method: "GET" })
       (profs ?? []).forEach((p: any) => nomes.set(p.id, p.nome ?? ""));
     }
 
-    return rows.map((r: any) => ({
-      ...r,
-      ator_nome: r.user_id ? (nomes.get(r.user_id) ?? null) : null,
-    }));
+    return rows.map((r: any) => {
+      const ator_nome = r.user_id ? (nomes.get(r.user_id) ?? null) : null;
+      const acao_label = rotuloAcao(r.acao);
+      const mensagem = r.descricao
+        ? `${ator_nome ?? "Alguém"} ${r.descricao}`
+        : `${ator_nome ?? "Alguém"} — ${acao_label}${r.entidade ? ` (${r.entidade})` : ""}`;
+      return { ...r, ator_nome, acao_label, mensagem };
+    });
   });
 
 /** Retorna as opções distintas (atores, ações, entidades) para os filtros. */
