@@ -111,6 +111,8 @@ export const listarPessoas = createServerFn({ method: "GET" })
 
     return pessoas.map((p) => ({
       ...p,
+      tipo_pessoa: (p.tipo_pessoa ?? "usuario") as TipoPessoa,
+      login_habilitado: p.login_habilitado ?? true,
       roles: rolesByUser.get(p.id) ?? [],
       nivel_acesso_nome: p.nivel_acesso_id ? (nomeByNivel.get(p.nivel_acesso_id) ?? null) : null,
     }));
