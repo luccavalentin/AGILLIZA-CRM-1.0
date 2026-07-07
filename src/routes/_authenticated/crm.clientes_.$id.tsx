@@ -189,6 +189,12 @@ function Pagina() {
           <TabsTrigger value="vendedores" className="shrink-0 gap-1.5 whitespace-nowrap rounded-lg data-[state=active]:shadow-sm">
             <Users className="size-4" /> Vendedores
           </TabsTrigger>
+          <TabsTrigger value="imovel" className="shrink-0 whitespace-nowrap rounded-lg data-[state=active]:shadow-sm">
+            Imóvel
+          </TabsTrigger>
+          <TabsTrigger value="iq" className="shrink-0 whitespace-nowrap rounded-lg data-[state=active]:shadow-sm">
+            IQ
+          </TabsTrigger>
           <TabsTrigger value="documentos" className="shrink-0 whitespace-nowrap rounded-lg data-[state=active]:shadow-sm">
             Documentos
           </TabsTrigger>
