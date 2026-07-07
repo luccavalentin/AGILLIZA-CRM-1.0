@@ -75,7 +75,7 @@ export function DocumentosChecklist({ clienteId }: { clienteId: string }) {
   const casado =
     cli?.estado_civil === "casado" || cli?.estado_civil === "uniao_estavel";
   const vendCasado = vend?.estado_civil === "casado" || vend?.estado_civil === "uniao_estavel";
-  const vendPJ = vend?.tipo_pessoa === "juridica";
+  const vendPJ = vend?.tipo_pessoa === "PJ";
 
   const temDoc = (cat: Categoria, key: string) =>
     (docs ?? []).some((d: any) => d.categoria === cat && d.tipo_documento === key);
