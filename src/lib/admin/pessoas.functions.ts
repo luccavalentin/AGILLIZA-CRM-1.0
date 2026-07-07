@@ -161,13 +161,19 @@ export const criarPessoaComAcesso = createServerFn({ method: "POST" })
       throw new Error("Papel não permitido.");
     }
 
-    // Senha provisória = o próprio e-mail do usuário (repassada e trocada no 1º acesso).
-    const senha = data.email;
+    const comLogin = data.com_login;
+    // Com login: senha provisória = o próprio e-mail (trocada no 1º acesso).
+    // Sem login: e-mail sintético + senha aleatória; a conta fica banida no Auth.
+    const emailReal = comLogin ? (data.email ?? "").trim() : "";
+    const emailAuth = comLogin
+      ? emailReal
+      : `semlogin+${crypto.randomUUID()}@parceiro.local`;
+    const senha = comLogin ? emailReal : gerarSenhaTemporaria();
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data: created, error: createErr } = await supabaseAdmin.auth.admin.createUser({
-      email: data.email,
+      email: emailAuth,
       password: senha,
       email_confirm: true,
       user_metadata: {
@@ -178,6 +184,8 @@ export const criarPessoaComAcesso = createServerFn({ method: "POST" })
         papel,
         acesso_tipo: acessoTipo,
         nivel_acesso_id: data.nivel_acesso_id,
+        tipo_pessoa: data.tipo_pessoa,
+        login_habilitado: comLogin,
       },
     });
 
@@ -185,6 +193,28 @@ export const criarPessoaComAcesso = createServerFn({ method: "POST" })
       // Mensagem genérica; não vaza se o e-mail já existe.
       throw new Error("Não foi possível criar a pessoa. Verifique os dados e tente novamente.");
     }
+
+    // Sem login: bane a conta no Auth (aparece nas buscas, mas não entra).
+    if (!comLogin) {
+      try {
+        await supabaseAdmin.auth.admin.updateUserById(created.user.id, {
+          ban_duration: "876000h",
+        });
+      } catch {
+        /* best-effort */
+      }
+    }
+
+    // Garante tipo_pessoa/login_habilitado no profile (a trigger já lê o metadata,
+    // mas reforçamos aqui para robustez).
+    await supabaseAdmin
+      .from("profiles")
+      .update({
+        tipo_pessoa: data.tipo_pessoa,
+        login_habilitado: comLogin,
+        email: comLogin ? emailReal : null,
+      })
+      .eq("id", created.user.id);
 
     // Auditoria (o trigger já criou profiles + user_roles).
     const { registrarAuditoria } = await import("@/lib/admin/audit.server");
@@ -199,10 +229,12 @@ export const criarPessoaComAcesso = createServerFn({ method: "POST" })
         nome: data.nome,
         acesso_tipo: acessoTipo,
         papel,
+        tipo_pessoa: data.tipo_pessoa,
+        com_login: comLogin,
       },
     });
 
-    return { email: data.email, senha_temporaria: senha };
+    return { email: comLogin ? emailReal : "", senha_temporaria: comLogin ? senha : "" };
   });
 
 /** Carrega o perfil alvo garantindo que pertence ao mesmo ecossistema do solicitante. */
