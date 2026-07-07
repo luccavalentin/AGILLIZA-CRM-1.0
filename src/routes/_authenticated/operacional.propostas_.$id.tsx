@@ -663,14 +663,14 @@ function TabResumo({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {bancos.length === 0 && (
+            {bancosVisiveis.length === 0 && (
               <TableRow>
                 <TableCell colSpan={10} className="py-8 text-center text-sm text-muted-foreground">
                   Nenhum banco vinculado.
                 </TableCell>
               </TableRow>
             )}
-            {bancos.map((b) => (
+            {bancosVisiveis.map((b) => (
               <TableRow key={b.id} className={cn(b.selecionado && "bg-accent/40")}>
                 <TableCell>
                   <Checkbox
