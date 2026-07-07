@@ -54,6 +54,10 @@ interface VendedorForm {
   agencia: string;
   conta_corrente: string;
   digito_conta: string;
+  conjuge_banco_conta: string;
+  conjuge_agencia: string;
+  conjuge_conta_corrente: string;
+  conjuge_digito_conta: string;
   email: string;
   telefone_celular: string;
   renda_total_declarada: string;
@@ -92,6 +96,10 @@ const VAZIO: VendedorForm = {
   agencia: "",
   conta_corrente: "",
   digito_conta: "",
+  conjuge_banco_conta: "",
+  conjuge_agencia: "",
+  conjuge_conta_corrente: "",
+  conjuge_digito_conta: "",
   email: "",
   telefone_celular: "",
   renda_total_declarada: "",
@@ -343,6 +351,15 @@ export function VendedoresTab({ clienteId }: { clienteId: string }) {
               <Campo label="Conta corrente"><Input value={form.conta_corrente} onChange={(e) => set({ conta_corrente: e.target.value })} /></Campo>
               <Campo label="Dígito"><Input value={form.digito_conta} onChange={(e) => set({ digito_conta: e.target.value })} /></Campo>
             </Secao>
+
+            {(form.estado_civil === "casado" || form.estado_civil === "uniao_estavel") && (
+              <Secao titulo="Conta bancária do cônjuge (opcional)">
+                <Campo label="Banco"><Input value={form.conjuge_banco_conta} onChange={(e) => set({ conjuge_banco_conta: e.target.value })} /></Campo>
+                <Campo label="Agência"><Input value={form.conjuge_agencia} onChange={(e) => set({ conjuge_agencia: e.target.value })} /></Campo>
+                <Campo label="Conta corrente"><Input value={form.conjuge_conta_corrente} onChange={(e) => set({ conjuge_conta_corrente: e.target.value })} /></Campo>
+                <Campo label="Dígito"><Input value={form.conjuge_digito_conta} onChange={(e) => set({ conjuge_digito_conta: e.target.value })} /></Campo>
+              </Secao>
+            )}
 
             <Secao titulo="Endereço">
               <Campo label="CEP"><Input value={form.cep} onChange={(e) => set({ cep: e.target.value })} /></Campo>

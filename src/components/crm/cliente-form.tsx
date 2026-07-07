@@ -74,6 +74,10 @@ export interface ClienteFormValues {
   conjuge_renda: string;
   conjuge_email: string;
   conjuge_celular: string;
+  conjuge_banco_conta: string;
+  conjuge_agencia: string;
+  conjuge_conta_corrente: string;
+  conjuge_digito_conta: string;
 }
 
 const ESTADOS_CIVIS = [
@@ -255,6 +259,10 @@ const emptyValues: ClienteFormValues = {
   conjuge_renda: "",
   conjuge_email: "",
   conjuge_celular: "",
+  conjuge_banco_conta: "",
+  conjuge_agencia: "",
+  conjuge_conta_corrente: "",
+  conjuge_digito_conta: "",
 };
 
 export function ClienteForm({
@@ -424,6 +432,10 @@ export function ClienteForm({
         conjuge_renda: casado ? rendaConjuge : null,
         conjuge_email: casado ? v.conjuge_email.trim() || null : null,
         conjuge_celular: casado ? soDigitos(v.conjuge_celular) || null : null,
+        conjuge_banco_conta: casado ? v.conjuge_banco_conta.trim() || null : null,
+        conjuge_agencia: casado ? v.conjuge_agencia.trim() || null : null,
+        conjuge_conta_corrente: casado ? v.conjuge_conta_corrente.trim() || null : null,
+        conjuge_digito_conta: casado ? v.conjuge_digito_conta.trim() || null : null,
       };
       let id = v.id;
       if (id) {
@@ -1070,6 +1082,46 @@ export function ClienteForm({
               />
             </div>
           </div>
+
+          {(v.estado_civil === "casado" || v.estado_civil === "uniao_estavel") && (
+            <div className="space-y-4 border-t pt-4 sm:col-span-2">
+              <p className="text-sm font-medium">Dados bancários do cônjuge (opcional)</p>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-1.5 sm:col-span-2">
+                  <Label>Banco</Label>
+                  <InputAutocomplete
+                    value={v.conjuge_banco_conta}
+                    onValueChange={(x) => set("conjuge_banco_conta", x)}
+                    options={OPCOES_BANCO}
+                    placeholder="Pesquisar banco ou digitar"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Agência</Label>
+                  <Input
+                    value={v.conjuge_agencia}
+                    onChange={(e) => set("conjuge_agencia", e.target.value)}
+                  />
+                </div>
+                <div className="grid grid-cols-[1fr_auto] gap-2">
+                  <div className="space-y-1.5">
+                    <Label>Conta corrente</Label>
+                    <Input
+                      value={v.conjuge_conta_corrente}
+                      onChange={(e) => set("conjuge_conta_corrente", e.target.value)}
+                    />
+                  </div>
+                  <div className="w-20 space-y-1.5">
+                    <Label>Dígito</Label>
+                    <Input
+                      value={v.conjuge_digito_conta}
+                      onChange={(e) => set("conjuge_digito_conta", e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 

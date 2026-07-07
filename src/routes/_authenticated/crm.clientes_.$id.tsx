@@ -376,6 +376,10 @@ function Pagina() {
               conjuge_renda: (c as any).conjuge_renda != null ? String((c as any).conjuge_renda) : "",
               conjuge_email: (c as any).conjuge_email ?? "",
               conjuge_celular: (c as any).conjuge_celular ?? "",
+              conjuge_banco_conta: (c as any).conjuge_banco_conta ?? "",
+              conjuge_agencia: (c as any).conjuge_agencia ?? "",
+              conjuge_conta_corrente: (c as any).conjuge_conta_corrente ?? "",
+              conjuge_digito_conta: (c as any).conjuge_digito_conta ?? "",
             }}
           />
         </TabsContent>

@@ -145,7 +145,8 @@ export const criarPessoaComAcesso = createServerFn({ method: "POST" })
       throw new Error("Papel não permitido.");
     }
 
-    const senha = gerarSenhaTemporaria();
+    // Senha provisória = o próprio e-mail do usuário (repassada e trocada no 1º acesso).
+    const senha = data.email;
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
@@ -337,7 +338,8 @@ export const resetarSenhaPessoa = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const { correspondenteId, alvo } = await carregarAlvo(supabase, userId, data.id);
 
-    const senha = gerarSenhaTemporaria();
+    // Senha provisória = o próprio e-mail do usuário.
+    const senha = alvo.email ?? gerarSenhaTemporaria();
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin.auth.admin.updateUserById(data.id, { password: senha });
     if (error) throw new Error("Não foi possível redefinir a senha.");

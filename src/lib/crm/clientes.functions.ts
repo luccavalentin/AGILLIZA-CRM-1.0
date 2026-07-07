@@ -189,6 +189,11 @@ const clienteInputSchema = z.object({
   conjuge_renda: z.number().nonnegative().optional().nullable(),
   conjuge_email: z.string().optional().nullable(),
   conjuge_celular: z.string().optional().nullable(),
+  // Dados bancários do cônjuge (opcionais).
+  conjuge_banco_conta: z.string().optional().nullable(),
+  conjuge_agencia: z.string().optional().nullable(),
+  conjuge_conta_corrente: z.string().optional().nullable(),
+  conjuge_digito_conta: z.string().optional().nullable(),
 });
 
 
@@ -258,6 +263,10 @@ export const criarCliente = createServerFn({ method: "POST" })
         conjuge_renda: data.conjuge_renda ?? null,
         conjuge_email: data.conjuge_email ?? null,
         conjuge_celular: data.conjuge_celular ?? null,
+        conjuge_banco_conta: data.conjuge_banco_conta ?? null,
+        conjuge_agencia: data.conjuge_agencia ?? null,
+        conjuge_conta_corrente: data.conjuge_conta_corrente ?? null,
+        conjuge_digito_conta: data.conjuge_digito_conta ?? null,
         responsavel_id: userId,
         criador_id: userId,
       })
@@ -333,6 +342,10 @@ export const atualizarCliente = createServerFn({ method: "POST" })
         conjuge_renda: campos.conjuge_renda ?? null,
         conjuge_email: campos.conjuge_email ?? null,
         conjuge_celular: campos.conjuge_celular ?? null,
+        conjuge_banco_conta: campos.conjuge_banco_conta ?? null,
+        conjuge_agencia: campos.conjuge_agencia ?? null,
+        conjuge_conta_corrente: campos.conjuge_conta_corrente ?? null,
+        conjuge_digito_conta: campos.conjuge_digito_conta ?? null,
       })
       .eq("id", id);
     if (error) throw error;
@@ -552,6 +565,10 @@ const vendedorSchema = z.object({
   agencia: z.string().optional().nullable(),
   conta_corrente: z.string().optional().nullable(),
   digito_conta: z.string().optional().nullable(),
+  conjuge_banco_conta: z.string().optional().nullable(),
+  conjuge_agencia: z.string().optional().nullable(),
+  conjuge_conta_corrente: z.string().optional().nullable(),
+  conjuge_digito_conta: z.string().optional().nullable(),
   email: z.string().optional().nullable(),
   telefone_celular: z.string().optional().nullable(),
   renda_total_declarada: z.string().optional().nullable(),
