@@ -262,25 +262,39 @@ export const runReport = createServerFn({ method: "POST" })
     // Opções de filtro comuns a TODOS os relatórios: status do módulo + lista de
     // responsáveis (usuários) do correspondente. Assim qualquer relatório pode
     // ser filtrado por status e por usuário.
-    const responsaveis = await listarResponsaveis();
+    const pessoas = await listarPessoas();
     resultado.filtrosDisponiveis = {
       ...resultado.filtrosDisponiveis,
       statuses: resultado.filtrosDisponiveis?.statuses ?? statusOpcoesPorCodigo(codigo),
-      responsaveis,
+      responsaveis: pessoas.todos,
+      analistas: pessoas.analistas,
+      comerciais: pessoas.comerciais,
+      corretores: pessoas.corretores,
+      imobiliarias: pessoas.imobiliarias,
     };
     return resultado;
 
-    async function listarResponsaveis(): Promise<{ value: string; label: string }[]> {
+    async function listarPessoas() {
+      type Opt = { value: string; label: string };
       let q = (supabase as any)
         .from("profiles")
-        .select("id,nome,ativo")
+        .select("id,nome,ativo,tipo_pessoa")
         .order("nome", { ascending: true })
         .limit(1000);
       if (corr) q = q.eq("correspondente_id", corr);
       const { data } = await q;
-      return ((data ?? []) as any[])
-        .filter((p) => p.ativo !== false && p.nome)
-        .map((p) => ({ value: p.id as string, label: p.nome as string }));
+      const linhas = ((data ?? []) as any[]).filter((p) => p.ativo !== false && p.nome);
+      const opt = (p: any): Opt => ({ value: p.id as string, label: p.nome as string });
+      const porTipo = (slug: string) =>
+        linhas.filter((p) => p.tipo_pessoa === slug).map(opt);
+      return {
+        todos: linhas.map(opt),
+        // "usuario" = Analista; "comercial" = Comercial Agilliza (ver tipos_pessoa).
+        analistas: porTipo("usuario"),
+        comerciais: porTipo("comercial"),
+        corretores: porTipo("corretor"),
+        imobiliarias: porTipo("imobiliaria"),
+      };
     }
 
 
