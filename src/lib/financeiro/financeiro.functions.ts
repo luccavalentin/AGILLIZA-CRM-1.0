@@ -528,7 +528,15 @@ export interface ComissaoItem {
 
 export const listarComissoes = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) => z.object({ status: z.string().optional() }).parse(data ?? {}))
+  .inputValidator((data) =>
+    z
+      .object({
+        status: z.string().optional(),
+        de: z.string().optional(),
+        ate: z.string().optional(),
+      })
+      .parse(data ?? {}),
+  )
   .handler(async ({ context, data }): Promise<ComissaoItem[]> => {
     const { supabase } = context;
     let query = supabase
@@ -538,6 +546,8 @@ export const listarComissoes = createServerFn({ method: "GET" })
       )
       .order("created_at", { ascending: false });
     if (data.status) query = query.eq("status", data.status as any);
+    if (data.de) query = query.gte("created_at", data.de);
+    if (data.ate) query = query.lte("created_at", `${data.ate}T23:59:59`);
     const { data: rows, error } = await query;
     if (error) throw new Error(error.message);
     return (rows ?? []).map((r: any) => ({
