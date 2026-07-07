@@ -9,11 +9,20 @@ import {
   User,
   FileText,
   ClipboardList,
+  Search,
+  X,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -25,7 +34,8 @@ import { DocumentosTab } from "@/components/crm/documentos-tab";
 import {
   explorarDocumentosGerais,
   obterFichaConsolidada,
-  type PastaClienteResumo,
+  COMERCIAL_AGILLIZA_LABEL,
+  type DGCliente,
 } from "@/lib/crm/documentos-gerais.functions";
 
 const brl = (n: number | null | undefined) =>
@@ -38,16 +48,31 @@ function fmtData(v: string | null | undefined) {
   return d.toLocaleDateString("pt-BR");
 }
 
-interface Selecao {
-  tipo: string;
-  parceiroKey: string;
+const SEM_CORRETOR = "Sem corretor vinculado";
+const COMERCIAL_KEY = "__comercial__";
+const SEM_CORRETOR_KEY = "__sem_corretor__";
+
+interface CorretorPasta {
+  key: string;
+  nome: string;
+  clientes: DGCliente[];
+}
+interface ImobiliariaPasta {
+  key: string;
+  nome: string;
+  comercial: boolean;
+  corretores: CorretorPasta[];
+  total_clientes: number;
 }
 
 export function DocumentosGerais() {
   const explorar = useServerFn(explorarDocumentosGerais);
   const [busca, setBusca] = useState("");
-  const [grupoAberto, setGrupoAberto] = useState<Selecao | null>(null);
-  const [cliente, setCliente] = useState<PastaClienteResumo | null>(null);
+  const [filtroImob, setFiltroImob] = useState<string>("todas");
+  const [filtroCorr, setFiltroCorr] = useState<string>("todos");
+  const [imobAberta, setImobAberta] = useState<string | null>(null);
+  const [corrAberto, setCorrAberto] = useState<string | null>(null);
+  const [cliente, setCliente] = useState<DGCliente | null>(null);
   const [fichaAberta, setFichaAberta] = useState(false);
 
   const { data, isLoading } = useQuery({
@@ -55,31 +80,87 @@ export function DocumentosGerais() {
     queryFn: () => explorar(),
   });
 
-  const grupos = data ?? [];
+  const clientes = data?.clientes ?? [];
+  const imobiliariasFiltro = data?.imobiliarias ?? [];
+  const corretoresFiltro = data?.corretores ?? [];
 
-  const parceiroAtual = useMemo(() => {
-    if (!grupoAberto) return null;
-    const g = grupos.find((x) => x.tipo === grupoAberto.tipo);
-    return g?.parceiros.find(
-      (p) => (p.parceiro_id ?? "__nenhum__") === grupoAberto.parceiroKey,
-    );
-  }, [grupoAberto, grupos]);
+  const filtrando =
+    busca.trim() !== "" || filtroImob !== "todas" || filtroCorr !== "todos";
 
-  const grupoAtual = grupoAberto ? grupos.find((x) => x.tipo === grupoAberto.tipo) : null;
-
+  // Clientes após aplicar os filtros da tela inicial.
   const clientesFiltrados = useMemo(() => {
-    if (!parceiroAtual) return [];
     const q = busca.trim().toLowerCase();
-    if (!q) return parceiroAtual.clientes;
-    return parceiroAtual.clientes.filter(
-      (c) =>
-        c.nome.toLowerCase().includes(q) ||
-        (c.numero_cliente ?? "").toLowerCase().includes(q) ||
-        (c.documento ?? "").includes(q),
-    );
-  }, [parceiroAtual, busca]);
+    return clientes.filter((c) => {
+      if (filtroImob === "comercial" && c.imobiliaria_id) return false;
+      if (filtroImob !== "todas" && filtroImob !== "comercial" && c.imobiliaria_id !== filtroImob)
+        return false;
+      if (filtroCorr !== "todos" && c.corretor_id !== filtroCorr) return false;
+      if (
+        q &&
+        !c.nome.toLowerCase().includes(q) &&
+        !(c.numero_cliente ?? "").toLowerCase().includes(q) &&
+        !(c.documento ?? "").includes(q)
+      )
+        return false;
+      return true;
+    });
+  }, [clientes, busca, filtroImob, filtroCorr]);
 
-  // Ficha do cliente selecionado
+  // Árvore Imobiliária → Corretor → Cliente (ordenada alfabeticamente).
+  const arvore = useMemo<ImobiliariaPasta[]>(() => {
+    const imobs = new Map<string, ImobiliariaPasta>();
+    for (const c of clientes) {
+      const imobKey = c.imobiliaria_id ?? COMERCIAL_KEY;
+      const imobNome = c.imobiliaria_id ? c.imobiliaria_nome ?? "—" : COMERCIAL_AGILLIZA_LABEL;
+      if (!imobs.has(imobKey)) {
+        imobs.set(imobKey, {
+          key: imobKey,
+          nome: imobNome,
+          comercial: !c.imobiliaria_id,
+          corretores: [],
+          total_clientes: 0,
+        });
+      }
+      const imob = imobs.get(imobKey)!;
+      const corrKey = c.corretor_id ?? SEM_CORRETOR_KEY;
+      const corrNome = c.corretor_id ? c.corretor_nome ?? "—" : SEM_CORRETOR;
+      let corr = imob.corretores.find((x) => x.key === corrKey);
+      if (!corr) {
+        corr = { key: corrKey, nome: corrNome, clientes: [] };
+        imob.corretores.push(corr);
+      }
+      corr.clientes.push(c);
+      imob.total_clientes += 1;
+    }
+    const ordCli = (a: DGCliente, b: DGCliente) => a.nome.localeCompare(b.nome, "pt-BR");
+    const lista = Array.from(imobs.values());
+    for (const imob of lista) {
+      imob.corretores.sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+      for (const corr of imob.corretores) corr.clientes.sort(ordCli);
+    }
+    // Imobiliárias em ordem alfabética; "Comercial Agilliza" por último.
+    return lista.sort((a, b) => {
+      if (a.comercial !== b.comercial) return a.comercial ? 1 : -1;
+      return a.nome.localeCompare(b.nome, "pt-BR");
+    });
+  }, [clientes]);
+
+  const imobAtual = imobAberta ? arvore.find((i) => i.key === imobAberta) ?? null : null;
+  const corrAtual =
+    imobAtual && corrAberto ? imobAtual.corretores.find((c) => c.key === corrAberto) ?? null : null;
+
+  function limparFiltros() {
+    setBusca("");
+    setFiltroImob("todas");
+    setFiltroCorr("todos");
+  }
+
+  function abrirCliente(c: DGCliente) {
+    setCliente(c);
+    setFichaAberta(false);
+  }
+
+  // ===== Ficha do cliente selecionado =====
   if (cliente) {
     return (
       <div className="space-y-4">
@@ -115,25 +196,83 @@ export function DocumentosGerais() {
         <button
           className="hover:text-foreground"
           onClick={() => {
-            setGrupoAberto(null);
-            setBusca("");
+            setImobAberta(null);
+            setCorrAberto(null);
           }}
         >
           Documentos Gerais
         </button>
-        {grupoAtual && (
+        {imobAtual && (
           <>
             <ChevronRight className="h-4 w-4" />
-            <span className="font-medium text-foreground">{grupoAtual.label}</span>
+            <button
+              className="font-medium text-foreground hover:underline"
+              onClick={() => setCorrAberto(null)}
+            >
+              {imobAtual.nome}
+            </button>
           </>
         )}
-        {parceiroAtual && (
+        {corrAtual && (
           <>
             <ChevronRight className="h-4 w-4" />
-            <span className="font-medium text-foreground">{parceiroAtual.nome}</span>
+            <span className="font-medium text-foreground">{corrAtual.nome}</span>
           </>
         )}
       </div>
+
+      {/* Filtros / consulta (tela inicial) */}
+      {!imobAberta && (
+        <Card>
+          <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-end">
+            <div className="relative flex-1">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Buscar cliente por nome, número ou documento…"
+                value={busca}
+                onChange={(e) => setBusca(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            <div className="w-full sm:w-52">
+              <Select value={filtroImob} onValueChange={setFiltroImob}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Imobiliária" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todas">Todas as imobiliárias</SelectItem>
+                  <SelectItem value="comercial">{COMERCIAL_AGILLIZA_LABEL}</SelectItem>
+                  {imobiliariasFiltro.map((i) => (
+                    <SelectItem key={i.id} value={i.id}>
+                      {i.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="w-full sm:w-52">
+              <Select value={filtroCorr} onValueChange={setFiltroCorr}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Corretor" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos os corretores</SelectItem>
+                  {corretoresFiltro.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {filtrando && (
+              <Button variant="ghost" size="sm" onClick={limparFiltros}>
+                <X className="mr-1 h-4 w-4" /> Limpar
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {isLoading ? (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -141,84 +280,104 @@ export function DocumentosGerais() {
             <Skeleton key={i} className="h-20 w-full" />
           ))}
         </div>
-      ) : grupos.length === 0 ? (
+      ) : clientes.length === 0 ? (
         <Card>
           <CardContent className="py-10 text-center text-sm text-muted-foreground">
             Nenhum cliente encontrado.
           </CardContent>
         </Card>
-      ) : !grupoAberto ? (
-        // Nível 1 + 2: grupos de vínculo e parceiros
-        <div className="space-y-6">
-          {grupos.map((g) => (
-            <div key={g.tipo} className="space-y-2">
-              <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                <Building2 className="h-4 w-4 text-muted-foreground" />
-                {g.label}
-                <span className="text-xs font-normal text-muted-foreground">
-                  ({g.total_clientes})
-                </span>
+      ) : filtrando && !imobAberta ? (
+        // Resultado da consulta (lista plana de clientes)
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {clientesFiltrados.map((c) => (
+            <button
+              key={c.cliente_id}
+              className="flex items-start gap-3 rounded-lg border border-border p-4 text-left transition-colors hover:bg-accent"
+              onClick={() => abrirCliente(c)}
+            >
+              <FolderOpen className="h-8 w-8 shrink-0 text-primary" />
+              <div className="min-w-0">
+                <p className="truncate font-medium text-foreground">{c.nome}</p>
+                <p className="truncate text-xs text-muted-foreground">
+                  {(c.imobiliaria_nome ?? COMERCIAL_AGILLIZA_LABEL)} ·{" "}
+                  {c.corretor_nome ?? SEM_CORRETOR}
+                </p>
+                <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <FileText className="h-3 w-3" /> {c.total_documentos} documento(s)
+                </p>
               </div>
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {g.parceiros.map((p) => {
-                  const key = p.parceiro_id ?? "__nenhum__";
-                  return (
-                    <button
-                      key={key}
-                      className="flex items-center gap-3 rounded-lg border border-border p-4 text-left transition-colors hover:bg-accent"
-                      onClick={() => setGrupoAberto({ tipo: g.tipo, parceiroKey: key })}
-                    >
-                      <Folder className="h-8 w-8 shrink-0 text-primary" />
-                      <div className="min-w-0">
-                        <p className="truncate font-medium text-foreground">{p.nome}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {p.clientes.length} cliente(s)
-                        </p>
-                      </div>
-                    </button>
-                  );
-                })}
+            </button>
+          ))}
+          {clientesFiltrados.length === 0 && (
+            <p className="text-sm text-muted-foreground">Nenhum cliente encontrado.</p>
+          )}
+        </div>
+      ) : !imobAberta ? (
+        // Nível 1: imobiliárias (+ Comercial Agilliza)
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {arvore.map((imob) => (
+            <button
+              key={imob.key}
+              className="flex items-center gap-3 rounded-lg border border-border p-4 text-left transition-colors hover:bg-accent"
+              onClick={() => {
+                setImobAberta(imob.key);
+                setCorrAberto(null);
+              }}
+            >
+              <Building2 className="h-8 w-8 shrink-0 text-primary" />
+              <div className="min-w-0">
+                <p className="truncate font-medium text-foreground">{imob.nome}</p>
+                <p className="text-xs text-muted-foreground">
+                  {imob.corretores.length} corretor(es) · {imob.total_clientes} cliente(s)
+                </p>
               </div>
-            </div>
+            </button>
+          ))}
+        </div>
+      ) : !corrAberto ? (
+        // Nível 2: corretores da imobiliária
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {(imobAtual?.corretores ?? []).map((corr) => (
+            <button
+              key={corr.key}
+              className="flex items-center gap-3 rounded-lg border border-border p-4 text-left transition-colors hover:bg-accent"
+              onClick={() => setCorrAberto(corr.key)}
+            >
+              <Folder className="h-8 w-8 shrink-0 text-primary" />
+              <div className="min-w-0">
+                <p className="truncate font-medium text-foreground">{corr.nome}</p>
+                <p className="text-xs text-muted-foreground">{corr.clientes.length} cliente(s)</p>
+              </div>
+            </button>
           ))}
         </div>
       ) : (
-        // Nível 3: clientes do parceiro
-        <div className="space-y-4">
-          <Input
-            placeholder="Buscar cliente por nome, número ou documento…"
-            value={busca}
-            onChange={(e) => setBusca(e.target.value)}
-            className="max-w-sm"
-          />
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {clientesFiltrados.map((c) => (
-              <button
-                key={c.cliente_id}
-                className="flex items-center gap-3 rounded-lg border border-border p-4 text-left transition-colors hover:bg-accent"
-                onClick={() => {
-                  setCliente(c);
-                  setFichaAberta(false);
-                }}
-              >
-                <FolderOpen className="h-8 w-8 shrink-0 text-primary" />
-                <div className="min-w-0">
-                  <p className="truncate font-medium text-foreground">{c.nome}</p>
-                  <p className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <FileText className="h-3 w-3" /> {c.total_documentos} documento(s)
-                  </p>
-                </div>
-              </button>
-            ))}
-            {clientesFiltrados.length === 0 && (
-              <p className="text-sm text-muted-foreground">Nenhum cliente encontrado.</p>
-            )}
-          </div>
+        // Nível 3: clientes do corretor
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {(corrAtual?.clientes ?? []).map((c) => (
+            <button
+              key={c.cliente_id}
+              className="flex items-center gap-3 rounded-lg border border-border p-4 text-left transition-colors hover:bg-accent"
+              onClick={() => abrirCliente(c)}
+            >
+              <FolderOpen className="h-8 w-8 shrink-0 text-primary" />
+              <div className="min-w-0">
+                <p className="truncate font-medium text-foreground">{c.nome}</p>
+                <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <FileText className="h-3 w-3" /> {c.total_documentos} documento(s)
+                </p>
+              </div>
+            </button>
+          ))}
+          {(corrAtual?.clientes ?? []).length === 0 && (
+            <p className="text-sm text-muted-foreground">Nenhum cliente encontrado.</p>
+          )}
         </div>
       )}
     </div>
   );
 }
+
 
 function Campo({ rotulo, valor }: { rotulo: string; valor: any }) {
   return (
