@@ -121,6 +121,38 @@ export function ChatClienteTab({ clienteId, info }: { clienteId: string; info?: 
     enviar.mutate(t);
   }
 
+  async function handleAnexo(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Arquivo muito grande (máx. 10MB).");
+      if (fileRef.current) fileRef.current.value = "";
+      return;
+    }
+    setEnviandoAnexo(true);
+    try {
+      const ext = file.name.split(".").pop()?.toLowerCase() || "bin";
+      const path = `${clienteId}/chat/${Date.now()}-${crypto.randomUUID()}.${ext}`;
+      const { error } = await supabase.storage
+        .from("cliente-documentos")
+        .upload(path, file, { contentType: file.type || undefined, upsert: false });
+      if (error) throw error;
+      await responder({
+        data: { cliente_id: clienteId, mensagem: texto.trim() || undefined, anexo_path: path },
+      });
+      setTexto("");
+      qc.invalidateQueries({ queryKey });
+      toast.success("Arquivo enviado.");
+    } catch (err) {
+      const motivo = err instanceof Error ? err.message : String(err);
+      toast.error(`Falha ao enviar o arquivo: ${motivo}`);
+    } finally {
+      setEnviandoAnexo(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  }
+
+
   return (
     <PopOutPanel title={`Conversa · ${info?.nome ?? "Cliente"}`} className="h-[32rem]">
     <Card className="flex h-full flex-col overflow-hidden border-border/60 shadow-sm">
