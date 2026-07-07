@@ -171,3 +171,108 @@ export const excluirFeriado = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+/* ------------------------- Catálogos editáveis ------------------------- */
+
+const CATEGORIAS: CategoriaCatalogo[] = ["tipo_demanda", "prioridade", "canal"];
+
+/**
+ * Lista os itens de um catálogo do correspondente. Na primeira vez que um
+ * catálogo é acessado, clona os itens padrão para o correspondente — assim
+ * até os itens "de fábrica" podem ser editados ou excluídos.
+ */
+export const listarCatalogoSla = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z.object({ categoria: z.enum(["tipo_demanda", "prioridade", "canal"]) }).parse(d),
+  )
+  .handler(async ({ data, context }): Promise<CatalogoItem[]> => {
+    const { supabase, userId } = context;
+    const corr = await correspondenteId(supabase, userId);
+
+    const sel = () =>
+      supabase
+        .from("sla_catalogo_itens")
+        .select("id, categoria, valor, label, ordem, ativo")
+        .eq("correspondente_id", corr)
+        .eq("categoria", data.categoria)
+        .order("ordem", { ascending: true });
+
+    const { data: rows, error } = await sel();
+    if (error) throw new Error(error.message);
+    if (rows && rows.length > 0) return rows as CatalogoItem[];
+
+    // Clona os padrões (idempotente via UNIQUE correspondente/categoria/valor).
+    const padrao = CATALOGO_PADRAO[data.categoria].map((it, i) => ({
+      correspondente_id: corr,
+      categoria: data.categoria,
+      valor: it.valor,
+      label: it.label,
+      ordem: i,
+      ativo: true,
+    }));
+    await supabase.from("sla_catalogo_itens").upsert(padrao, {
+      onConflict: "correspondente_id,categoria,valor",
+      ignoreDuplicates: true,
+    });
+    const { data: novo, error: e2 } = await sel();
+    if (e2) throw new Error(e2.message);
+    return (novo ?? []) as CatalogoItem[];
+  });
+
+/** Cria ou atualiza um item de catálogo. */
+export const salvarCatalogoItem = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        id: z.string().uuid().optional(),
+        categoria: z.enum(["tipo_demanda", "prioridade", "canal"]),
+        valor: z
+          .string()
+          .trim()
+          .min(1)
+          .max(60)
+          .regex(/^[a-z0-9_]+$/i, "Use apenas letras, números e sublinhado."),
+        label: z.string().trim().min(1).max(80),
+        ordem: z.number().int().min(0).max(999).default(0),
+        ativo: z.boolean().default(true),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }): Promise<CatalogoItem> => {
+    const { supabase, userId } = context;
+    const corr = await correspondenteId(supabase, userId);
+    const payload = {
+      correspondente_id: corr,
+      categoria: data.categoria,
+      valor: data.valor,
+      label: data.label,
+      ordem: data.ordem,
+      ativo: data.ativo,
+      updated_at: new Date().toISOString(),
+    };
+    const q = data.id
+      ? supabase.from("sla_catalogo_itens").update(payload).eq("id", data.id)
+      : supabase.from("sla_catalogo_itens").insert(payload);
+    const { data: row, error } = await q
+      .select("id, categoria, valor, label, ordem, ativo")
+      .single();
+    if (error) throw new Error(error.message);
+    return row as CatalogoItem;
+  });
+
+/** Remove um item de catálogo. */
+export const excluirCatalogoItem = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase
+      .from("sla_catalogo_itens")
+      .delete()
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export { CATEGORIAS };
