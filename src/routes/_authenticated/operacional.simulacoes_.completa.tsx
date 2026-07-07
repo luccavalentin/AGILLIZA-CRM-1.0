@@ -172,6 +172,7 @@ function Pagina() {
       prazo: Number(s.prazo) || prev.prazo,
       utiliza_fgts: s.utiliza_fgts ?? "N",
       fg_financiar_despesas: Boolean(s.fg_financiar_despesas),
+      valor_despesas_financiadas: Number(s.valor_despesas_financiadas) || 0,
       sistema_amortizacao: s.sistema_amortizacao ?? "S",
       cliente_id: s.cliente_id ?? prev.cliente_id,
       nome_cliente: s.nome_cliente ?? "",
