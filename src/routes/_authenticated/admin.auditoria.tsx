@@ -214,8 +214,8 @@ function Pagina() {
             <TableRow>
               <TableHead>Quando</TableHead>
               <TableHead>Ator</TableHead>
-              <TableHead>Ação</TableHead>
-              <TableHead>Entidade</TableHead>
+              <TableHead>O que aconteceu</TableHead>
+              <TableHead>Operação</TableHead>
               <TableHead>IP</TableHead>
             </TableRow>
           </TableHeader>
@@ -241,8 +241,8 @@ function Pagina() {
                     {fmtData(r.created_at)}
                   </TableCell>
                   <TableCell>{r.ator_nome ?? "—"}</TableCell>
-                  <TableCell className="font-medium text-foreground">{r.acao}</TableCell>
-                  <TableCell className="text-muted-foreground">{r.entidade ?? "—"}</TableCell>
+                  <TableCell className="font-medium text-foreground">{r.mensagem}</TableCell>
+                  <TableCell className="text-muted-foreground">{r.acao_label}</TableCell>
                   <TableCell className="text-muted-foreground">{r.ip ?? "—"}</TableCell>
                 </TableRow>
               ))
