@@ -145,7 +145,8 @@ export const criarPessoaComAcesso = createServerFn({ method: "POST" })
       throw new Error("Papel não permitido.");
     }
 
-    const senha = gerarSenhaTemporaria();
+    // Senha provisória = o próprio e-mail do usuário (repassada e trocada no 1º acesso).
+    const senha = data.email;
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
