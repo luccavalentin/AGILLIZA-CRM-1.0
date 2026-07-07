@@ -259,6 +259,10 @@ const emptyValues: ClienteFormValues = {
   conjuge_renda: "",
   conjuge_email: "",
   conjuge_celular: "",
+  conjuge_banco_conta: "",
+  conjuge_agencia: "",
+  conjuge_conta_corrente: "",
+  conjuge_digito_conta: "",
 };
 
 export function ClienteForm({
