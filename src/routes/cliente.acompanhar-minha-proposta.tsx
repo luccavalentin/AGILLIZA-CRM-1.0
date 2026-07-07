@@ -186,10 +186,24 @@ function AbaDocumentos() {
   );
 }
 
+function fileParaBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const res = reader.result as string;
+      resolve(res.split(",")[1] ?? "");
+    };
+    reader.onerror = () => reject(new Error("read"));
+    reader.readAsDataURL(file);
+  });
+}
+
 function AbaMensagens() {
   const qc = useQueryClient();
   const [texto, setTexto] = useState("");
   const fimRef = useRef<HTMLDivElement>(null);
+  const fotoRef = useRef<HTMLInputElement>(null);
+  const arquivoRef = useRef<HTMLInputElement>(null);
   const { data: mensagens } = useQuery({
     queryKey: ["cliente", "mensagens"],
     queryFn: () => clienteListarMensagens(),
@@ -205,6 +219,37 @@ function AbaMensagens() {
     onError: () => toast.error("Falha de conexão. Tente novamente."),
   });
 
+  const enviarAnexo = useMutation({
+    mutationFn: async (file: File) => {
+      const base64 = await fileParaBase64(file);
+      return clienteEnviarMensagemAnexo({
+        data: {
+          mensagem: texto.trim() || undefined,
+          nome_arquivo: file.name,
+          mime_type: file.type || "application/octet-stream",
+          conteudo_base64: base64,
+        },
+      });
+    },
+    onSuccess: () => {
+      setTexto("");
+      toast.success("Anexo enviado!");
+      qc.invalidateQueries({ queryKey: ["cliente", "mensagens"] });
+    },
+    onError: () => toast.error("Falha ao enviar o anexo. Verifique o arquivo e tente novamente."),
+  });
+
+  const enviandoAnexo = enviarAnexo.isPending;
+
+  function selecionar(file: File | undefined) {
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Arquivo muito grande (máx. 10MB).");
+      return;
+    }
+    enviarAnexo.mutate(file);
+  }
+
   // Marca as mensagens do time como lidas (uma vez por id, sem reenvio em loop).
   const marcadosRef = useRef<Set<string>>(new Set());
   useEffect(() => {
@@ -216,7 +261,6 @@ function AbaMensagens() {
       clienteMarcarLida({ data: { mensagem_ids: naoLidas } })
         .then(() => qc.invalidateQueries({ queryKey: ["cliente", "notificacoes"] }))
         .catch(() => {
-          // Falhou: libera para nova tentativa no próximo ciclo.
           naoLidas.forEach((id) => marcadosRef.current.delete(id));
         });
     }
@@ -228,14 +272,16 @@ function AbaMensagens() {
 
   return (
     <div className="flex flex-col">
-      <div className="min-h-[45dvh] space-y-3">
+      <div className="min-h-[45dvh] space-y-3 pb-2">
         {(mensagens ?? []).length === 0 ? (
           <p className="py-10 text-center text-sm text-muted-foreground">
-            Envie uma mensagem para falar com o time.
+            Envie uma mensagem ou um documento para falar com o time.
           </p>
         ) : (
           (mensagens ?? []).map((m) => {
             const doCliente = m.remetente_tipo === "cliente";
+            const temAnexo = !!m.anexo_url;
+            const soAnexo = temAnexo && (!m.mensagem || m.mensagem === m.anexo_nome);
             return (
               <div
                 key={m.id}
@@ -243,13 +289,35 @@ function AbaMensagens() {
               >
                 <div
                   className={cn(
-                    "max-w-[80%] rounded-2xl px-3 py-2 text-sm",
+                    "max-w-[80%] overflow-hidden rounded-2xl text-sm shadow-sm",
                     doCliente
-                      ? "rounded-br-sm bg-accent text-accent-foreground"
+                      ? "rounded-br-sm bg-primary text-primary-foreground"
                       : "rounded-bl-sm bg-muted text-foreground",
                   )}
                 >
-                  {m.mensagem}
+                  {temAnexo && m.anexo_is_imagem ? (
+                    <a href={m.anexo_url!} target="_blank" rel="noreferrer" className="block">
+                      <img
+                        src={m.anexo_url!}
+                        alt={m.anexo_nome ?? "Anexo"}
+                        className="max-h-64 w-full object-cover"
+                        loading="lazy"
+                      />
+                    </a>
+                  ) : temAnexo ? (
+                    <a
+                      href={m.anexo_url!}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex items-center gap-2 px-3 py-2 underline underline-offset-2"
+                    >
+                      <FileText className="h-4 w-4 shrink-0" />
+                      <span className="truncate">{m.anexo_nome ?? "Documento"}</span>
+                    </a>
+                  ) : null}
+                  {!soAnexo && (
+                    <p className="whitespace-pre-wrap px-3 py-2">{m.mensagem}</p>
+                  )}
                 </div>
                 <span className="mt-0.5 text-xs text-muted-foreground">
                   {new Date(m.criada_em).toLocaleString("pt-BR", {
@@ -263,17 +331,66 @@ function AbaMensagens() {
             );
           })
         )}
+        {enviandoAnexo && (
+          <div className="flex items-center justify-end gap-2 text-xs text-muted-foreground">
+            <Loader2 className="h-3.5 w-3.5 animate-spin" /> Enviando anexo…
+          </div>
+        )}
         <div ref={fimRef} />
       </div>
 
+      <input
+        ref={fotoRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={(e) => {
+          selecionar(e.target.files?.[0]);
+          e.target.value = "";
+        }}
+      />
+      <input
+        ref={arquivoRef}
+        type="file"
+        accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx"
+        className="hidden"
+        onChange={(e) => {
+          selecionar(e.target.files?.[0]);
+          e.target.value = "";
+        }}
+      />
+
       <form
-        className="sticky bottom-0 mt-3 flex items-end gap-2 bg-background pt-2"
+        className="sticky bottom-0 mt-3 flex items-end gap-1.5 bg-background pt-2"
         onSubmit={(e) => {
           e.preventDefault();
           const v = texto.trim();
           if (v) enviar.mutate(v);
         }}
       >
+        <Button
+          type="button"
+          size="icon"
+          variant="outline"
+          className="h-11 w-11 shrink-0"
+          disabled={enviandoAnexo}
+          onClick={() => fotoRef.current?.click()}
+          aria-label="Enviar foto"
+        >
+          <Camera className="h-5 w-5" />
+        </Button>
+        <Button
+          type="button"
+          size="icon"
+          variant="outline"
+          className="h-11 w-11 shrink-0"
+          disabled={enviandoAnexo}
+          onClick={() => arquivoRef.current?.click()}
+          aria-label="Anexar documento"
+        >
+          <Paperclip className="h-5 w-5" />
+        </Button>
         <Textarea
           value={texto}
           onChange={(e) => setTexto(e.target.value)}
@@ -281,7 +398,13 @@ function AbaMensagens() {
           rows={1}
           className="min-h-11 resize-none"
         />
-        <Button type="submit" size="lg" disabled={enviar.isPending || !texto.trim()}>
+        <Button
+          type="submit"
+          size="icon"
+          className="h-11 w-11 shrink-0"
+          disabled={enviar.isPending || enviandoAnexo || !texto.trim()}
+          aria-label="Enviar mensagem"
+        >
           <Send className="h-5 w-5" />
         </Button>
       </form>
