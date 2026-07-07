@@ -22,6 +22,9 @@ import {
   listarDocumentos,
   anexarDocumento,
 } from "@/lib/crm/clientes.functions";
+import { TIPOS_DOCUMENTO_POR_CATEGORIA } from "@/lib/crm/documento-tipos";
+
+const T = TIPOS_DOCUMENTO_POR_CATEGORIA;
 
 type Categoria = "comprador" | "conjuge" | "vendedor" | "vendedor_conjuge" | "imovel" | "outros";
 
@@ -187,24 +190,12 @@ export function DocumentosChecklist({ clienteId }: { clienteId: string }) {
           <CardTitle className="text-base">Checklist do comprador</CardTitle>
         </CardHeader>
         <CardContent className="space-y-1">
-          <DocItem
-            itemKey="c_doc_id"
-            cat="comprador"
-            label="Documento de identidade (RG, CPF ou CNH)"
-          />
+          <DocItem itemKey="c_doc_id" cat="comprador" label={T.comprador[0]} />
           {casado && (
-            <DocItem
-              itemKey="c_doc_id_conj"
-              cat="conjuge"
-              label="Documento de identidade do cônjuge (RG, CPF ou CNH)"
-            />
+            <DocItem itemKey="c_doc_id_conj" cat="conjuge" label={T.conjuge[0]} />
           )}
-          <DocItem
-            itemKey="c_comp_end"
-            cat="comprador"
-            label="Comprovante de endereço atualizado"
-          />
-          <DocItem itemKey="c_cert_ec" cat="comprador" label="Certidão de estado civil" />
+          <DocItem itemKey="c_comp_end" cat="comprador" label={T.comprador[1]} />
+          <DocItem itemKey="c_cert_ec" cat="comprador" label={T.comprador[2]} />
           <div className="my-2 border-t border-border" />
           <AutoItem label="Profissão" ok={filled(cli?.profissao)} />
           <AutoItem label="Telefone do comprador" ok={filled(cli?.telefone_celular)} />
@@ -226,14 +217,10 @@ export function DocumentosChecklist({ clienteId }: { clienteId: string }) {
               <p className="mb-1 text-xs font-medium text-muted-foreground">
                 Documentos para uso do FGTS
               </p>
-              <DocItem
-                itemKey="fgts_end"
-                cat="comprador"
-                label="Comprovante de endereço no nome do utilizador do FGTS"
-              />
-              <DocItem itemKey="fgts_irpf" cat="comprador" label="IRPF completo com recibo" />
-              <DocItem itemKey="fgts_ctps" cat="comprador" label="CTPS digital completa" />
-              <DocItem itemKey="fgts_extrato" cat="comprador" label="Extrato atualizado do FGTS" />
+              <DocItem itemKey="fgts_end" cat="comprador" label={T.comprador[3]} />
+              <DocItem itemKey="fgts_irpf" cat="comprador" label={T.comprador[4]} />
+              <DocItem itemKey="fgts_ctps" cat="comprador" label={T.comprador[5]} />
+              <DocItem itemKey="fgts_extrato" cat="comprador" label={T.comprador[6]} />
             </div>
           )}
         </CardContent>
@@ -249,32 +236,16 @@ export function DocumentosChecklist({ clienteId }: { clienteId: string }) {
         <CardContent className="space-y-1">
           {vendPJ ? (
             <>
-              <DocItem
-                itemKey="v_contrato_social"
-                cat="vendedor"
-                label="Contrato social / última alteração"
-              />
-              <DocItem itemKey="v_cnpj" cat="vendedor" label="Cartão CNPJ" />
-              <DocItem itemKey="v_doc_socios" cat="vendedor" label="Documento dos sócios" />
-              <DocItem
-                itemKey="v_comp_end_pj"
-                cat="vendedor"
-                label="Comprovante de endereço da empresa"
-              />
+              <DocItem itemKey="v_contrato_social" cat="vendedor" label={T.vendedor[3]} />
+              <DocItem itemKey="v_cnpj" cat="vendedor" label={T.vendedor[4]} />
+              <DocItem itemKey="v_doc_socios" cat="vendedor" label={T.vendedor[5]} />
+              <DocItem itemKey="v_comp_end_pj" cat="vendedor" label={T.vendedor[6]} />
             </>
           ) : (
             <>
-              <DocItem
-                itemKey="v_doc_id"
-                cat="vendedor"
-                label="Documento de identidade (RG ou CNH)"
-              />
-              <DocItem
-                itemKey="v_comp_end"
-                cat="vendedor"
-                label="Comprovante de endereço atualizado"
-              />
-              <DocItem itemKey="v_cert_ec" cat="vendedor" label="Certidão de estado civil" />
+              <DocItem itemKey="v_doc_id" cat="vendedor" label={T.vendedor[0]} />
+              <DocItem itemKey="v_comp_end" cat="vendedor" label={T.vendedor[1]} />
+              <DocItem itemKey="v_cert_ec" cat="vendedor" label={T.vendedor[2]} />
               <div className="my-2 border-t border-border" />
               <AutoItem label="Profissão" ok={filled(vend?.profissao)} />
               <AutoItem label="Telefone" ok={filled(vend?.telefone_celular)} />
@@ -310,16 +281,8 @@ export function DocumentosChecklist({ clienteId }: { clienteId: string }) {
           <CardTitle className="text-base">Checklist do imóvel</CardTitle>
         </CardHeader>
         <CardContent className="space-y-1">
-          <DocItem
-            itemKey="i_matricula"
-            cat="imovel"
-            label="Matrícula atualizada com certidão de ônus"
-          />
-          <DocItem
-            itemKey="i_iptu"
-            cat="imovel"
-            label="Capa do IPTU ou Certidão de Valor Venal"
-          />
+          <DocItem itemKey="i_matricula" cat="imovel" label={T.imovel[0]} />
+          <DocItem itemKey="i_iptu" cat="imovel" label={T.imovel[1]} />
           <div className="mt-2 flex items-center justify-between rounded-lg border border-border p-3">
             <Label className="text-sm">O imóvel fica em condomínio?</Label>
             <Switch
@@ -329,8 +292,8 @@ export function DocumentosChecklist({ clienteId }: { clienteId: string }) {
           </div>
           {check["i_condominio"] === true && (
             <div className="mt-2 space-y-1 rounded-lg border border-dashed border-border p-3">
-              <DocItem itemKey="i_cnd_cond" cat="imovel" label="CND condominial" />
-              <DocItem itemKey="i_planta" cat="imovel" label="Planta de quadra e lote" />
+              <DocItem itemKey="i_cnd_cond" cat="imovel" label={T.imovel[2]} />
+              <DocItem itemKey="i_planta" cat="imovel" label={T.imovel[3]} />
             </div>
           )}
           <div className="mt-3 grid gap-3 sm:grid-cols-2">

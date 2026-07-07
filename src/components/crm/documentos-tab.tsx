@@ -61,6 +61,7 @@ import {
   SLUG_CATEGORIAS,
   type DocumentoPasta,
 } from "@/lib/crm/documento-pastas.functions";
+import { tiposParaCategorias, TIPO_OUTRO } from "@/lib/crm/documento-tipos";
 
 type Categoria =
   | "comprador"
@@ -120,10 +121,12 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
   const [pastaId, setPastaId] = useState<string | null>(null);
   const [categoria, setCategoria] = useState<Categoria>("comprador");
   const [tipo, setTipo] = useState("");
+  const [tipoOutro, setTipoOutro] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [editDoc, setEditDoc] = useState<any | null>(null);
   const [editCategoria, setEditCategoria] = useState<Categoria>("comprador");
   const [editTipo, setEditTipo] = useState("");
+  const [editTipoOutro, setEditTipoOutro] = useState(false);
   const [salvandoEdit, setSalvandoEdit] = useState(false);
   const [delDoc, setDelDoc] = useState<any | null>(null);
   const [excluindo, setExcluindo] = useState(false);
@@ -154,6 +157,12 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
   const docsPasta = useMemo(
     () => (pasta ? (docs ?? []).filter((d: any) => docNaPasta(d, pasta)) : []),
     [docs, pasta],
+  );
+
+  const tiposCategoria = useMemo(() => tiposParaCategorias([categoria]), [categoria]);
+  const tiposEditCategoria = useMemo(
+    () => tiposParaCategorias([editCategoria]),
+    [editCategoria],
   );
 
   function abrirPasta(p: DocumentoPasta) {
@@ -222,8 +231,11 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
   function abrirEdicao(d: any) {
     setEditDoc(d);
     setEditCategoria(d.categoria);
-    setEditTipo(d.tipo_documento ?? "");
+    const t = d.tipo_documento ?? "";
+    setEditTipo(t);
+    setEditTipoOutro(t !== "" && !tiposParaCategorias([d.categoria as Categoria]).includes(t));
   }
+
 
   async function salvarEdicao() {
     if (!editDoc) return;
@@ -500,7 +512,14 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
           {categoriasPasta.length > 1 && (
             <div className="space-y-1.5">
               <label className="text-xs text-muted-foreground">Titular do documento</label>
-              <Select value={categoria} onValueChange={(v) => setCategoria(v as Categoria)}>
+              <Select
+                value={categoria}
+                onValueChange={(v) => {
+                  setCategoria(v as Categoria);
+                  setTipo("");
+                  setTipoOutro(false);
+                }}
+              >
                 <SelectTrigger className="w-52">
                   <SelectValue />
                 </SelectTrigger>
@@ -515,8 +534,39 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
             </div>
           )}
           <div className="space-y-1.5">
-            <label className="text-xs text-muted-foreground">Tipo (ex.: RG, IR, Matrícula)</label>
-            <Input className="w-52" value={tipo} onChange={(e) => setTipo(e.target.value)} />
+            <label className="text-xs text-muted-foreground">Tipo de documento</label>
+            <Select
+              value={tiposCategoria.includes(tipo) || tipo === "" ? tipo : TIPO_OUTRO}
+              onValueChange={(v) => {
+                if (v === TIPO_OUTRO) {
+                  setTipoOutro(true);
+                  setTipo("");
+                } else {
+                  setTipoOutro(false);
+                  setTipo(v);
+                }
+              }}
+            >
+              <SelectTrigger className="w-64">
+                <SelectValue placeholder="Selecione o tipo" />
+              </SelectTrigger>
+              <SelectContent>
+                {tiposCategoria.map((t) => (
+                  <SelectItem key={t} value={t}>
+                    {t}
+                  </SelectItem>
+                ))}
+                <SelectItem value={TIPO_OUTRO}>Outro (especificar)…</SelectItem>
+              </SelectContent>
+            </Select>
+            {(tipoOutro || tiposCategoria.length === 0) && (
+              <Input
+                className="mt-1.5 w-64"
+                placeholder="Descreva o tipo do documento"
+                value={tipo}
+                onChange={(e) => setTipo(e.target.value)}
+              />
+            )}
           </div>
           <Button asChild disabled={enviando} className="relative">
             <label>
@@ -622,8 +672,45 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
               </div>
             )}
             <div className="space-y-1.5">
-              <label className="text-xs text-muted-foreground">Tipo (ex.: RG, IR, Matrícula)</label>
-              <Input value={editTipo} onChange={(e) => setEditTipo(e.target.value)} />
+              <label className="text-xs text-muted-foreground">Tipo de documento</label>
+              <Select
+                value={
+                  tiposEditCategoria.includes(editTipo) || editTipo === ""
+                    ? editTipo
+                    : TIPO_OUTRO
+                }
+                onValueChange={(v) => {
+                  if (v === TIPO_OUTRO) {
+                    setEditTipoOutro(true);
+                    setEditTipo("");
+                  } else {
+                    setEditTipoOutro(false);
+                    setEditTipo(v);
+                  }
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  {tiposEditCategoria.map((t) => (
+                    <SelectItem key={t} value={t}>
+                      {t}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value={TIPO_OUTRO}>Outro (especificar)…</SelectItem>
+                </SelectContent>
+              </Select>
+              {(editTipoOutro ||
+                (editTipo !== "" && !tiposEditCategoria.includes(editTipo)) ||
+                tiposEditCategoria.length === 0) && (
+                <Input
+                  className="mt-1.5"
+                  placeholder="Descreva o tipo do documento"
+                  value={editTipo}
+                  onChange={(e) => setEditTipo(e.target.value)}
+                />
+              )}
             </div>
           </div>
           <DialogFooter>
