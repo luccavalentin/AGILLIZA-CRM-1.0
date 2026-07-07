@@ -1010,8 +1010,8 @@ function TabEnvolvidos({
     setOpen(true);
     // Sem cônjuge cadastrado na proposta: puxa os dados do cônjuge já
     // preenchidos na ficha do cliente (CRM) para pré-preencher o formulário.
-    const casado = ["casado", "uniao_estavel"].includes(String(e.estado_civil ?? ""));
-    if (!conj && e.cliente_id && casado) {
+    // O próprio server fn decide se o cliente é casado e tem cônjuge cadastrado.
+    if (!conj && e.cliente_id) {
       try {
         const dadosConj = await conjClienteFn({ data: { cliente_id: e.cliente_id } });
         if (dadosConj) setConjugeInicial(envolvidoParaForm(dadosConj));
@@ -1020,6 +1020,7 @@ function TabEnvolvidos({
       }
     }
   }
+
 
 
   // Abre automaticamente o formulário do comprador principal ao criar a proposta.
