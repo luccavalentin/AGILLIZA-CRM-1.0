@@ -1,11 +1,29 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { FileText, MessageSquare, UserRound, Clock } from "lucide-react";
+import {
+  FileText,
+  MessageSquare,
+  UserRound,
+  Clock,
+  CheckCircle2,
+  ListChecks,
+  FileSignature,
+  TrendingUp,
+} from "lucide-react";
+import {
+  RadialBarChart,
+  RadialBar,
+  PolarAngleAxis,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
+} from "recharts";
 import { clienteObterVisaoGeral } from "@/lib/portal/cliente.functions";
 import { TimelineCliente } from "@/components/cliente/timeline-cliente";
 import { ChipDocumento } from "@/components/cliente/chip-documento";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
@@ -25,6 +43,35 @@ function moeda(v: number | null) {
   return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
+function StatCard({
+  icon: Icon,
+  label,
+  valor,
+  cor,
+}: {
+  icon: typeof FileText;
+  label: string;
+  valor: string;
+  cor: string;
+}) {
+  return (
+    <Card className="border-border">
+      <CardContent className="flex items-center gap-3 p-4">
+        <span
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
+          style={{ backgroundColor: `color-mix(in oklab, ${cor} 15%, transparent)`, color: cor }}
+        >
+          <Icon className="h-5 w-5" />
+        </span>
+        <div className="min-w-0">
+          <p className="truncate text-xl font-bold leading-tight text-foreground">{valor}</p>
+          <p className="truncate text-xs text-muted-foreground">{label}</p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 function VisaoGeral() {
   const { data, isLoading } = useQuery({
     queryKey: ["cliente", "visao-geral"],
@@ -35,7 +82,12 @@ function VisaoGeral() {
   if (isLoading || !data) {
     return (
       <div className="space-y-4">
-        <Skeleton className="h-40 w-full rounded-lg" />
+        <Skeleton className="h-52 w-full rounded-lg" />
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-20 rounded-lg" />
+          ))}
+        </div>
         <Skeleton className="h-72 w-full rounded-lg" />
       </div>
     );
@@ -46,41 +98,137 @@ function VisaoGeral() {
   const progresso =
     processo.total > 0 ? Math.round((processo.ordem_atual / processo.total) * 100) : 0;
 
+  const concluidas = etapas.filter((e) => e.status === "concluida").length;
+  const restantes = etapas.filter((e) => e.status !== "concluida").length;
+
+  const progressoData = [{ name: "progresso", value: progresso, fill: "var(--chart-1)" }];
+  const etapasPie = [
+    { name: "Concluídas", value: concluidas, cor: "var(--chart-3)" },
+    { name: "A concluir", value: restantes, cor: "var(--chart-2)" },
+  ].filter((d) => d.value > 0);
+
   return (
     <div className="space-y-4">
-      {/* Etapa atual */}
-      <Card className="border-border">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-lg text-primary">
-            {processo.etapa_atual ?? "Processo em andamento"}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {processo.descricao && <p className="text-foreground">{processo.descricao}</p>}
-          <div className="space-y-1">
-            <Progress value={progresso} className="h-2" />
-            <p className="text-sm text-muted-foreground">
+      {/* Herói: progresso circular didático */}
+      <Card className="overflow-hidden border-border">
+        <CardContent className="grid gap-4 p-5 sm:grid-cols-[auto_1fr] sm:items-center">
+          <div className="relative mx-auto h-40 w-40">
+            <ResponsiveContainer width="100%" height="100%">
+              <RadialBarChart
+                innerRadius="72%"
+                outerRadius="100%"
+                data={progressoData}
+                startAngle={90}
+                endAngle={-270}
+              >
+                <PolarAngleAxis type="number" domain={[0, 100]} tick={false} />
+                <RadialBar background dataKey="value" cornerRadius={12} />
+              </RadialBarChart>
+            </ResponsiveContainer>
+            <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+              <span className="text-3xl font-bold text-primary">{progresso}%</span>
+              <span className="text-xs text-muted-foreground">concluído</span>
+            </div>
+          </div>
+          <div className="space-y-2 text-center sm:text-left">
+            <p className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
+              Sua jornada
+            </p>
+            <h2 className="text-xl font-bold text-foreground">
+              {processo.etapa_atual ?? "Processo em andamento"}
+            </h2>
+            {processo.descricao && (
+              <p className="text-sm text-muted-foreground">{processo.descricao}</p>
+            )}
+            <p className="text-sm font-medium text-primary">
               Etapa {processo.ordem_atual} de {processo.total}
             </p>
+            {dias != null && (
+              <p className="flex items-center justify-center gap-1.5 text-sm text-muted-foreground sm:justify-start">
+                <Clock className="h-4 w-4" />
+                {dias === 0
+                  ? "Atualizado hoje"
+                  : `Há ${dias} dia${dias > 1 ? "s" : ""} nesta etapa`}
+              </p>
+            )}
           </div>
-          {dias != null && (
-            <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
-              <Clock className="h-4 w-4" />
-              {dias === 0 ? "Atualizado hoje" : `Há ${dias} dia${dias > 1 ? "s" : ""} nesta etapa`}
-            </p>
-          )}
         </CardContent>
       </Card>
 
-      {/* Timeline */}
-      <Card className="border-border">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base">Seu processo</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <TimelineCliente etapas={etapas} />
-        </CardContent>
-      </Card>
+      {/* Indicadores rápidos */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <StatCard
+          icon={CheckCircle2}
+          label="Etapas concluídas"
+          valor={`${concluidas}/${processo.total || etapas.length}`}
+          cor="var(--chart-3)"
+        />
+        <StatCard
+          icon={ListChecks}
+          label="Etapas restantes"
+          valor={String(restantes)}
+          cor="var(--chart-2)"
+        />
+        <StatCard
+          icon={FileText}
+          label="Documentos pendentes"
+          valor={String(documentos_pendentes.length)}
+          cor="var(--chart-4)"
+        />
+        <StatCard
+          icon={FileSignature}
+          label="Propostas ativas"
+          valor={String(propostas.length)}
+          cor="var(--chart-1)"
+        />
+      </div>
+
+      {/* Gráfico de etapas + Timeline */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        {etapasPie.length > 0 && (
+          <Card className="border-border">
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <TrendingUp className="h-4 w-4 text-primary" /> Panorama das etapas
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-56">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={etapasPie}
+                      dataKey="value"
+                      nameKey="name"
+                      innerRadius={55}
+                      outerRadius={85}
+                      paddingAngle={3}
+                    >
+                      {etapasPie.map((d) => (
+                        <Cell key={d.name} fill={d.cor} />
+                      ))}
+                    </Pie>
+                    <Legend
+                      verticalAlign="bottom"
+                      iconType="circle"
+                      formatter={(v) => <span className="text-sm text-foreground">{v}</span>}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        <Card className="border-border">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Seu processo passo a passo</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <TimelineCliente etapas={etapas} />
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Próximas ações */}
       <Card className="border-border">
@@ -120,7 +268,7 @@ function VisaoGeral() {
           <CardHeader className="pb-2">
             <CardTitle className="text-base">Minhas propostas</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2">
+          <CardContent className="grid gap-2 sm:grid-cols-2">
             {propostas.map((p) => (
               <div key={p.id} className="rounded-md border border-border p-3">
                 <p className="font-medium">{p.banco ?? "Banco"}</p>
