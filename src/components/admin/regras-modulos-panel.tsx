@@ -146,6 +146,7 @@ export function RegrasModulosPanel() {
   const [carregadoPara, setCarregadoPara] = useState("");
   if (selecionado && carregadoPara !== nivelKey) {
     setEstado(estadoInicial(selecionado));
+    setAlvos(selecionado.alvos ?? {});
     setCarregadoPara(nivelKey);
     setDirty(false);
   }
