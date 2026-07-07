@@ -244,6 +244,23 @@ function Pagina() {
     [f.renda_total, f.compoe_renda, f.renda_conjuge],
   );
 
+  // Teto de financiamento (LTV) por produto: até 80% do valor do imóvel no
+  // financiamento imobiliário e 60% no home equity. A entrada precisa cobrir a
+  // diferença, senão o banco recusa com "valor de financiamento máximo permitido".
+  const ltvMax = f.produto === "home_equity" ? 0.6 : 0.8;
+  const financiamentoMaximo = useMemo(
+    () => Math.floor((Number(f.valor_imovel) || 0) * ltvMax),
+    [f.valor_imovel, ltvMax],
+  );
+  const entradaMinima = useMemo(
+    () => Math.max(0, (Number(f.valor_imovel) || 0) - financiamentoMaximo),
+    [f.valor_imovel, financiamentoMaximo],
+  );
+  const financiamentoExcedido =
+    (Number(f.valor_imovel) || 0) > 0 &&
+    (Number(f.valor_financiamento) || 0) > financiamentoMaximo;
+
+
 
 
   /** Aplica o prazo digitado, ajustando automaticamente pela regra de idade. */
