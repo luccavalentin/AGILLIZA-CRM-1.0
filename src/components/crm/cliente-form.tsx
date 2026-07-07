@@ -517,7 +517,10 @@ export function ClienteForm({
             {TIPOS_VINCULO.map((tipo) => {
               const desteTipo = vinculos.filter((x) => x.tipo_vinculo === tipo.valor);
               const idsTipo = new Set(desteTipo.map((x) => x.parceiro_id));
-              const opcoesParceiros = (parceiros.data ?? []).filter((p) => !idsTipo.has(p.id));
+              const tipoPessoa = TIPO_VINCULO_PESSOA[tipo.valor];
+              const opcoesParceiros = (parceiros.data ?? []).filter(
+                (p) => !idsTipo.has(p.id) && (p as any).tipo_pessoa === tipoPessoa,
+              );
               const sel = vinculoSel[tipo.valor] ?? "";
               return (
                 <div key={tipo.valor} className="space-y-2">
