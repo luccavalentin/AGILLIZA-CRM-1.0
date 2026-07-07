@@ -38,9 +38,17 @@ import { SimulacaoStatusBadge, BancoStatusBadge } from "@/components/simulacao/s
 import { DetalheBancoDialog } from "@/components/simulacao/detalhe-banco-dialog";
 import { SelecionarBancosPdfDialog } from "@/components/simulacao/selecionar-bancos-pdf-dialog";
 import { formatBRL, formatPercent } from "@/lib/simulacao/format";
+import { extrairDetalheBanco } from "@/lib/simulacao/detalhe-banco";
 import {
   baixarSimulacaoDetalhadaPDF,
 } from "@/lib/simulacao/simulacao-pdf";
+
+/** Valor total financiado do banco (financiamento + despesas/tarifas financiadas). */
+function totalFinanciado(b: any): number | null {
+  const d = extrairDetalheBanco(b?.raw_response);
+  return d?.financiamentoTotal ?? d?.valorFinanciamento ?? b?.valor_financiamento_max ?? null;
+}
+
 
 export const Route = createFileRoute("/_authenticated/operacional/simulacoes_/$id")({
   head: () => ({ meta: [{ title: "Simulação — Agilliza" }] }),
@@ -326,7 +334,12 @@ function Pagina() {
                         rotulo="Financ. máx"
                         valor={formatBRL(b.valor_financiamento_max)}
                       />
+                      <MobileStat
+                        rotulo="Total financiado"
+                        valor={formatBRL(totalFinanciado(b))}
+                      />
                       <MobileStat rotulo="IOF" valor={formatBRL(b.valor_iof)} />
+
                     </dl>
 
                     <div className="mt-3 flex items-center justify-end gap-2">
@@ -366,7 +379,9 @@ function Pagina() {
                       <TableHead className="text-right text-sm">Taxa a.a.</TableHead>
                       <TableHead className="text-right text-sm">Prazo máx</TableHead>
                       <TableHead className="text-right text-sm">Financ. máx</TableHead>
+                      <TableHead className="text-right text-sm">Total financiado</TableHead>
                       <TableHead className="text-right text-sm">IOF</TableHead>
+
                       <TableHead></TableHead>
                     </TableRow>
                   </TableHeader>
@@ -402,6 +417,10 @@ function Pagina() {
                         <TableCell className="py-4 text-right text-base tabular-nums">
                           {formatBRL(b.valor_financiamento_max)}
                         </TableCell>
+                        <TableCell className="py-4 text-right text-base font-semibold tabular-nums">
+                          {formatBRL(totalFinanciado(b))}
+                        </TableCell>
+
                         <TableCell className="py-4 text-right text-base tabular-nums">
                           {formatBRL(b.valor_iof)}
                         </TableCell>
