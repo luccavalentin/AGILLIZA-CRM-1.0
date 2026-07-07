@@ -143,7 +143,7 @@ function Pagina() {
   const itens = data?.itens ?? [];
 
   return (
-    <div className="min-h-[calc(100dvh-var(--app-header,4rem))] space-y-4 p-3 sm:p-4 lg:p-6">
+    <div className="flex h-[calc(100dvh-var(--app-header,4rem))] flex-col gap-4 overflow-hidden p-3 sm:p-4 lg:p-6">
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
         <div className="min-w-0">
           <h1 className="truncate text-lg font-semibold text-foreground sm:text-xl">
