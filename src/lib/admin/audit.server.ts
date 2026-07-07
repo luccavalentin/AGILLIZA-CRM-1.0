@@ -70,6 +70,7 @@ export async function registrarAuditoria(entrada: AuditoriaEntrada): Promise<voi
         _payload_novo: (entrada.payloadNovo as any) ?? null,
         _ip: obterIp(),
         _user_agent: obterUserAgent(),
+        _descricao: entrada.descricao ?? null,
       });
       if (error) throw error;
       return;
@@ -88,6 +89,7 @@ export async function registrarAuditoria(entrada: AuditoriaEntrada): Promise<voi
       user_agent: obterUserAgent(),
       payload_anterior: (entrada.payloadAnterior as any) ?? null,
       payload_novo: (entrada.payloadNovo as any) ?? null,
+      descricao: entrada.descricao ?? null,
     });
   } catch (e) {
     console.error("[auditoria] falha ao registrar", e);
