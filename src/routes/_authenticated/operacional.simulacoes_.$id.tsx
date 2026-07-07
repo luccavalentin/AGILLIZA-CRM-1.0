@@ -38,9 +38,17 @@ import { SimulacaoStatusBadge, BancoStatusBadge } from "@/components/simulacao/s
 import { DetalheBancoDialog } from "@/components/simulacao/detalhe-banco-dialog";
 import { SelecionarBancosPdfDialog } from "@/components/simulacao/selecionar-bancos-pdf-dialog";
 import { formatBRL, formatPercent } from "@/lib/simulacao/format";
+import { extrairDetalheBanco } from "@/lib/simulacao/detalhe-banco";
 import {
   baixarSimulacaoDetalhadaPDF,
 } from "@/lib/simulacao/simulacao-pdf";
+
+/** Valor total financiado do banco (financiamento + despesas/tarifas financiadas). */
+function totalFinanciado(b: any): number | null {
+  const d = extrairDetalheBanco(b?.raw_response);
+  return d?.financiamentoTotal ?? d?.valorFinanciamento ?? b?.valor_financiamento_max ?? null;
+}
+
 
 export const Route = createFileRoute("/_authenticated/operacional/simulacoes_/$id")({
   head: () => ({ meta: [{ title: "Simulação — Agilliza" }] }),
