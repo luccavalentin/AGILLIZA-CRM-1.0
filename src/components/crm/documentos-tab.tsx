@@ -62,6 +62,7 @@ import {
   type DocumentoPasta,
 } from "@/lib/crm/documento-pastas.functions";
 import { tiposParaCategorias, TIPO_OUTRO } from "@/lib/crm/documento-tipos";
+import { VisualizadorArquivo } from "@/components/comum/visualizador-arquivo";
 
 type Categoria =
   | "comprador"
