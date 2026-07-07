@@ -239,6 +239,22 @@ const emptyValues: ClienteFormValues = {
   utiliza_fgts: false,
   fg_autorizacao_dados: false,
   origem: "direto",
+  conjuge_nome: "",
+  conjuge_cpf: "",
+  conjuge_data_nascimento: "",
+  conjuge_nome_mae: "",
+  conjuge_sexo: "",
+  conjuge_nacionalidade: "Brasileira",
+  conjuge_tipo_documento_identidade: "",
+  conjuge_numero_documento: "",
+  conjuge_orgao_expedidor: "",
+  conjuge_uf_expedicao: "",
+  conjuge_data_expedicao: "",
+  conjuge_profissao: "",
+  conjuge_empresa: "",
+  conjuge_renda: "",
+  conjuge_email: "",
+  conjuge_celular: "",
 };
 
 export function ClienteForm({
