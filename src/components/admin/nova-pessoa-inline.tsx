@@ -237,26 +237,40 @@ export function NovaPessoaInline({
         {/* Tipo de pessoa */}
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
-            <Label>Tipo de pessoa</Label>
-            <Select
-              value={tipoPessoa}
-              onValueChange={(v) => {
-                setTipoPessoa(v);
-                const t = tiposAtivos.find((x) => x.slug === v);
-                if (t) setComLogin(t.login_padrao);
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione o tipo" />
-              </SelectTrigger>
-              <SelectContent>
-                {tiposAtivos.map((t) => (
-                  <SelectItem key={t.id} value={t.slug}>
+            <Label>Tipos de pessoa</Label>
+            <div className="flex flex-wrap gap-2">
+              {tiposAtivos.map((t) => {
+                const ativo = tiposPessoa.includes(t.slug);
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() =>
+                      setTiposPessoa((prev) => {
+                        if (prev.includes(t.slug)) {
+                          const next = prev.filter((s) => s !== t.slug);
+                          return next.length > 0 ? next : prev;
+                        }
+                        const next = [...prev, t.slug];
+                        if (next.length === 1) setComLogin(t.login_padrao);
+                        return next;
+                      })
+                    }
+                    className={
+                      "rounded-full border px-3 py-1 text-sm transition-colors " +
+                      (ativo
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-border bg-background text-foreground hover:bg-muted")
+                    }
+                  >
                     {t.nome}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Pode marcar mais de um. Os privilégios somam o acesso mais amplo.
+            </p>
           </div>
           {permiteSemLogin && (
             <div className="space-y-2">
