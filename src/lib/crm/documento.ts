@@ -66,3 +66,54 @@ export function formatarCelular(v: string): string {
   if (d.length === 10) return d.replace(/(\d{2})(\d{4})(\d{4})/, "($1) $2-$3");
   return v ?? "";
 }
+
+/** Máscara progressiva de telefone/celular BR enquanto digita (até 11 dígitos). */
+export function mascararTelefone(v: string): string {
+  const d = soDigitos(v).slice(0, 11);
+  if (d.length <= 2) return d.length ? `(${d}` : "";
+  if (d.length <= 6) return `(${d.slice(0, 2)}) ${d.slice(2)}`;
+  if (d.length <= 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
+  return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+}
+
+/**
+ * Valida celular/telefone BR: DDD válido (11-99) + 10 (fixo) ou 11 (celular)
+ * dígitos. Para celular (11 dígitos), o nono dígito deve ser 9.
+ */
+export function validarTelefone(v: string): boolean {
+  const d = soDigitos(v);
+  if (d.length !== 10 && d.length !== 11) return false;
+  const ddd = parseInt(d.slice(0, 2), 10);
+  if (ddd < 11) return false;
+  if (d.length === 11 && d[2] !== "9") return false;
+  return true;
+}
+
+/** Valida e-mail com formato padrão. */
+export function validarEmail(v: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test((v ?? "").trim());
+}
+
+/** Máscara progressiva de CPF (000.000.000-00). */
+export function mascararCPF(v: string): string {
+  const d = soDigitos(v).slice(0, 11);
+  if (d.length <= 3) return d;
+  if (d.length <= 6) return `${d.slice(0, 3)}.${d.slice(3)}`;
+  if (d.length <= 9) return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6)}`;
+  return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}`;
+}
+
+/** Máscara progressiva de CNPJ (00.000.000/0000-00). */
+export function mascararCNPJ(v: string): string {
+  const d = soDigitos(v).slice(0, 14);
+  if (d.length <= 2) return d;
+  if (d.length <= 5) return `${d.slice(0, 2)}.${d.slice(2)}`;
+  if (d.length <= 8) return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5)}`;
+  if (d.length <= 12) return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8)}`;
+  return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8, 12)}-${d.slice(12)}`;
+}
+
+/** Aplica a máscara de documento conforme o tipo de pessoa. */
+export function mascararDocumentoTipo(v: string, tipo: "PF" | "PJ"): string {
+  return tipo === "PF" ? mascararCPF(v) : mascararCNPJ(v);
+}

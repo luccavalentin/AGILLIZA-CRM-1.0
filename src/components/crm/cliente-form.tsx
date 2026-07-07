@@ -29,7 +29,16 @@ import {
   TIPO_VINCULO_PESSOA,
   type TipoVinculo,
 } from "@/lib/crm/clientes.functions";
-import { validarDocumento, validarCPF, soDigitos } from "@/lib/crm/documento";
+import {
+  validarDocumento,
+  validarCPF,
+  soDigitos,
+  validarEmail,
+  validarTelefone,
+  mascararTelefone,
+  mascararCPF,
+  mascararDocumentoTipo,
+} from "@/lib/crm/documento";
 
 export interface ClienteFormValues {
   id?: string;
@@ -305,6 +314,11 @@ export function ClienteForm({
     // Normaliza o sexo para o valor canônico ("M"/"F") aceito pelo <Select>.
     base.sexo = normalizarSexo(base.sexo);
     base.conjuge_sexo = normalizarSexo(base.conjuge_sexo);
+    // Aplica máscaras de exibição em documentos/telefones vindos crus do banco.
+    if (base.documento) base.documento = mascararDocumentoTipo(base.documento, base.tipo_pessoa);
+    if (base.conjuge_cpf) base.conjuge_cpf = mascararCPF(base.conjuge_cpf);
+    if (base.telefone_celular) base.telefone_celular = mascararTelefone(base.telefone_celular);
+    if (base.conjuge_celular) base.conjuge_celular = mascararTelefone(base.conjuge_celular);
     if (base.conjuge_renda) {
       const n = Number(base.conjuge_renda);
       if (!isNaN(n)) base.conjuge_renda = formatarMoedaBR(n);
@@ -428,8 +442,10 @@ export function ClienteForm({
       return toast.error(ehPF ? "Informe a data de nascimento." : "Informe a data de abertura.");
     }
 
-    if (!v.email.includes("@")) return toast.error("E-mail inválido.");
-    if (soDigitos(v.telefone_celular).length < 10) return toast.error("Celular inválido.");
+    if (!validarEmail(v.email)) return toast.error("E-mail inválido.");
+    if (!validarTelefone(v.telefone_celular)) {
+      return toast.error("Celular inválido. Informe DDD + número (ex.: (11) 99999-9999).");
+    }
     const renda = Number(v.renda_total_declarada.replace(/\./g, "").replace(",", "."));
     if (isNaN(renda) || renda < 0) return toast.error("Renda inválida.");
 
@@ -439,6 +455,12 @@ export function ClienteForm({
     if (casado && !v.conjuge_nome.trim()) return toast.error("Informe o nome do cônjuge.");
     if (casado && v.conjuge_cpf && !validarCPF(v.conjuge_cpf)) {
       return toast.error("CPF do cônjuge inválido.");
+    }
+    if (casado && v.conjuge_email && !validarEmail(v.conjuge_email)) {
+      return toast.error("E-mail do cônjuge inválido.");
+    }
+    if (casado && v.conjuge_celular && !validarTelefone(v.conjuge_celular)) {
+      return toast.error("Celular do cônjuge inválido.");
     }
     const rendaConjuge = v.conjuge_renda
       ? Number(v.conjuge_renda.replace(/\./g, "").replace(",", "."))
@@ -652,7 +674,14 @@ export function ClienteForm({
             <Label>Tipo de pessoa</Label>
             <Select
               value={v.tipo_pessoa}
-              onValueChange={(x) => set("tipo_pessoa", x as "PF" | "PJ")}
+              onValueChange={(x) => {
+                const tp = x as "PF" | "PJ";
+                setV((prev) => ({
+                  ...prev,
+                  tipo_pessoa: tp,
+                  documento: mascararDocumentoTipo(prev.documento, tp),
+                }));
+              }}
             >
               <SelectTrigger>
                 <SelectValue />
@@ -667,8 +696,9 @@ export function ClienteForm({
             <Label>{v.tipo_pessoa === "PF" ? "CPF *" : "CNPJ *"}</Label>
             <Input
               value={v.documento}
-              onChange={(e) => set("documento", e.target.value)}
-              placeholder="Somente números"
+              onChange={(e) => set("documento", mascararDocumentoTipo(e.target.value, v.tipo_pessoa))}
+              inputMode="numeric"
+              placeholder={v.tipo_pessoa === "PF" ? "000.000.000-00" : "00.000.000/0000-00"}
             />
           </div>
           <div className="space-y-1.5 sm:col-span-2">
@@ -734,7 +764,8 @@ export function ClienteForm({
             <Label>Celular *</Label>
             <Input
               value={v.telefone_celular}
-              onChange={(e) => set("telefone_celular", e.target.value)}
+              onChange={(e) => set("telefone_celular", mascararTelefone(e.target.value))}
+              inputMode="numeric"
               placeholder="(11) 99999-9999"
             />
           </div>
@@ -789,8 +820,9 @@ export function ClienteForm({
               <Label>CPF do cônjuge</Label>
               <Input
                 value={v.conjuge_cpf}
-                onChange={(e) => set("conjuge_cpf", e.target.value)}
-                placeholder="Somente números"
+                onChange={(e) => set("conjuge_cpf", mascararCPF(e.target.value))}
+                inputMode="numeric"
+                placeholder="000.000.000-00"
               />
             </div>
             <div className="space-y-1.5">
@@ -954,7 +986,8 @@ export function ClienteForm({
               <Label>Celular do cônjuge</Label>
               <Input
                 value={v.conjuge_celular}
-                onChange={(e) => set("conjuge_celular", e.target.value)}
+                onChange={(e) => set("conjuge_celular", mascararTelefone(e.target.value))}
+                inputMode="numeric"
                 placeholder="(11) 99999-9999"
               />
             </div>
