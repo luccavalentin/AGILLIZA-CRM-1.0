@@ -100,21 +100,40 @@ export function EditarPessoaDialog({
             <Input id="ep-nome" value={nome} onChange={(e) => setNome(e.target.value.toUpperCase())} required />
           </div>
           <div className="space-y-2">
-            <Label>Tipo de pessoa</Label>
-            <Select value={tipoPessoa} onValueChange={(v) => setTipoPessoa(v)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione o tipo" />
-              </SelectTrigger>
-              <SelectContent>
-                {(tipos ?? [])
-                  .filter((t) => t.ativo || t.slug === tipoPessoa)
-                  .map((t) => (
-                    <SelectItem key={t.id} value={t.slug}>
+            <Label>Tipos de pessoa</Label>
+            <p className="text-xs text-muted-foreground">
+              Selecione um ou mais. Os privilégios somam o acesso mais amplo.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {(tipos ?? [])
+                .filter((t) => t.ativo || tiposPessoa.includes(t.slug))
+                .map((t) => {
+                  const ativo = tiposPessoa.includes(t.slug);
+                  return (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() =>
+                        setTiposPessoa((prev) => {
+                          if (prev.includes(t.slug)) {
+                            const next = prev.filter((s) => s !== t.slug);
+                            return next.length > 0 ? next : prev;
+                          }
+                          return [...prev, t.slug];
+                        })
+                      }
+                      className={
+                        "rounded-full border px-3 py-1 text-sm transition-colors " +
+                        (ativo
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "border-border bg-background text-foreground hover:bg-muted")
+                      }
+                    >
                       {t.nome}
-                    </SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
+                    </button>
+                  );
+                })}
+            </div>
           </div>
           <div className="space-y-2">
             <Label htmlFor="ep-email">E-mail</Label>
