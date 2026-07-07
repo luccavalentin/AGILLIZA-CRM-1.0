@@ -204,8 +204,8 @@ function Pagina() {
 
   async function abrirArquivo(id: string) {
     try {
-      const { url } = await fnUrl({ data: { id } });
-      window.open(url, "_blank", "noopener");
+      const { url, nome } = await fnUrl({ data: { id } });
+      setVisualizando({ url, nome });
     } catch (e: any) {
       toast.error(e?.message ?? "Não foi possível abrir o arquivo.");
     }
