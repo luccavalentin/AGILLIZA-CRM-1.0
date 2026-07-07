@@ -1001,14 +1001,26 @@ function TabEnvolvidos({
     setOpen(true);
   }
 
-  function editar(e: any) {
+  async function editar(e: any) {
     setEditId(e.id);
     setInicial(envolvidoParaForm(e));
     const conj = envolvidos.find((x) => x.conjuge_de === e.id);
     setConjugeInicial(conj ? envolvidoParaForm(conj) : undefined);
     setConjugeId(conj?.id ?? null);
     setOpen(true);
+    // Sem cônjuge cadastrado na proposta: puxa os dados do cônjuge já
+    // preenchidos na ficha do cliente (CRM) para pré-preencher o formulário.
+    const casado = ["casado", "uniao_estavel"].includes(String(e.estado_civil ?? ""));
+    if (!conj && e.cliente_id && casado) {
+      try {
+        const dadosConj = await conjClienteFn({ data: { cliente_id: e.cliente_id } });
+        if (dadosConj) setConjugeInicial(envolvidoParaForm(dadosConj));
+      } catch {
+        /* ignora: mantém o bloco do cônjuge vazio */
+      }
+    }
   }
+
 
   // Abre automaticamente o formulário do comprador principal ao criar a proposta.
   useEffect(() => {
