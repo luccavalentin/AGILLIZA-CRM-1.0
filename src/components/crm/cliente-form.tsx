@@ -432,6 +432,10 @@ export function ClienteForm({
         conjuge_renda: casado ? rendaConjuge : null,
         conjuge_email: casado ? v.conjuge_email.trim() || null : null,
         conjuge_celular: casado ? soDigitos(v.conjuge_celular) || null : null,
+        conjuge_banco_conta: casado ? v.conjuge_banco_conta.trim() || null : null,
+        conjuge_agencia: casado ? v.conjuge_agencia.trim() || null : null,
+        conjuge_conta_corrente: casado ? v.conjuge_conta_corrente.trim() || null : null,
+        conjuge_digito_conta: casado ? v.conjuge_digito_conta.trim() || null : null,
       };
       let id = v.id;
       if (id) {
