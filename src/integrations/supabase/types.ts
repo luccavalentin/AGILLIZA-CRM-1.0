@@ -2995,6 +2995,7 @@ export type Database = {
           nome: string | null
           telefone: string | null
           tipo_pessoa: string
+          tipos_pessoa: string[]
           ultima_atividade: string | null
           updated_at: string
         }
@@ -3015,6 +3016,7 @@ export type Database = {
           nome?: string | null
           telefone?: string | null
           tipo_pessoa?: string
+          tipos_pessoa?: string[]
           ultima_atividade?: string | null
           updated_at?: string
         }
@@ -3035,6 +3037,7 @@ export type Database = {
           nome?: string | null
           telefone?: string | null
           tipo_pessoa?: string
+          tipos_pessoa?: string[]
           ultima_atividade?: string | null
           updated_at?: string
         }

@@ -16,6 +16,7 @@ export const criarSchema = z
     telefone: z.string().optional(),
     nivel_acesso_id: z.string().uuid("Selecione um nível de acesso."),
     tipo_pessoa: z.string().min(1).default("usuario"),
+    tipos_pessoa: z.array(z.string().min(1)).optional(),
     com_login: z.boolean().default(true),
     dados_parceiro: z
       .object({
@@ -40,6 +41,7 @@ export interface PessoaLista {
   telefone: string | null;
   acesso_tipo: "sistema" | "portal_parceiro";
   tipo_pessoa: TipoPessoa;
+  tipos_pessoa: TipoPessoa[];
   login_habilitado: boolean;
   ativo: boolean;
   bloqueado_em: string | null;
@@ -75,7 +77,7 @@ export const listarPessoas = createServerFn({ method: "GET" })
 
     const { data: pessoas, error } = await supabase
       .from("profiles")
-      .select("id, nome, email, telefone, acesso_tipo, tipo_pessoa, login_habilitado, ativo, bloqueado_em, nivel_acesso_id")
+      .select("id, nome, email, telefone, acesso_tipo, tipo_pessoa, tipos_pessoa, login_habilitado, ativo, bloqueado_em, nivel_acesso_id")
       .eq("correspondente_id", correspondenteId)
       .order("created_at", { ascending: true });
 
@@ -108,13 +110,18 @@ export const listarPessoas = createServerFn({ method: "GET" })
       (niveis ?? []).forEach((n) => nomeByNivel.set(n.id, n.nome));
     }
 
-    return pessoas.map((p) => ({
-      ...p,
-      tipo_pessoa: (p.tipo_pessoa ?? "usuario") as TipoPessoa,
-      login_habilitado: p.login_habilitado ?? true,
-      roles: rolesByUser.get(p.id) ?? [],
-      nivel_acesso_nome: p.nivel_acesso_id ? (nomeByNivel.get(p.nivel_acesso_id) ?? null) : null,
-    }));
+    return pessoas.map((p) => {
+      const tps = ((p as { tipos_pessoa?: string[] | null }).tipos_pessoa ?? []).filter(Boolean);
+      const primario = (p.tipo_pessoa ?? "usuario") as TipoPessoa;
+      return {
+        ...p,
+        tipo_pessoa: primario,
+        tipos_pessoa: (tps.length > 0 ? tps : [primario]) as TipoPessoa[],
+        login_habilitado: p.login_habilitado ?? true,
+        roles: rolesByUser.get(p.id) ?? [],
+        nivel_acesso_nome: p.nivel_acesso_id ? (nomeByNivel.get(p.nivel_acesso_id) ?? null) : null,
+      };
+    });
   });
 
 export interface ResultadoCriarPessoa {
@@ -161,6 +168,13 @@ export const criarPessoaComAcesso = createServerFn({ method: "POST" })
     }
 
     const comLogin = data.com_login;
+    // Tipos de pessoa (múltiplos): o primeiro é o "primário".
+    const tiposList = (
+      data.tipos_pessoa && data.tipos_pessoa.length > 0
+        ? data.tipos_pessoa
+        : [data.tipo_pessoa]
+    ).filter(Boolean);
+    const tipoPrimario = tiposList[0] ?? "usuario";
     // Com login: senha provisória = o próprio e-mail (trocada no 1º acesso).
     // Sem login: e-mail sintético + senha aleatória; a conta fica banida no Auth.
     const emailReal = comLogin ? (data.email ?? "").trim() : "";
@@ -183,7 +197,7 @@ export const criarPessoaComAcesso = createServerFn({ method: "POST" })
         papel,
         acesso_tipo: acessoTipo,
         nivel_acesso_id: data.nivel_acesso_id,
-        tipo_pessoa: data.tipo_pessoa,
+        tipo_pessoa: tipoPrimario,
         login_habilitado: comLogin,
       },
     });
@@ -209,10 +223,11 @@ export const criarPessoaComAcesso = createServerFn({ method: "POST" })
     await supabaseAdmin
       .from("profiles")
       .update({
-        tipo_pessoa: data.tipo_pessoa,
+        tipo_pessoa: tipoPrimario,
+        tipos_pessoa: tiposList,
         login_habilitado: comLogin,
         email: comLogin ? emailReal : null,
-      })
+      } as never)
       .eq("id", created.user.id);
 
     // Auditoria (o trigger já criou profiles + user_roles).
@@ -280,6 +295,7 @@ export const atualizarSchema = z.object({
   telefone: z.string().optional().nullable(),
   nivel_acesso_id: z.string().uuid("Selecione um nível de acesso."),
   tipo_pessoa: z.string().min(1).optional(),
+  tipos_pessoa: z.array(z.string().min(1)).optional(),
 });
 
 /** Atualiza dados básicos e o nível de acesso (papel/portal) de uma pessoa. */
@@ -303,6 +319,15 @@ export const atualizarPessoa = createServerFn({ method: "POST" })
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
+    // Tipos de pessoa múltiplos (primeiro = primário).
+    const tiposList = (
+      data.tipos_pessoa && data.tipos_pessoa.length > 0
+        ? data.tipos_pessoa
+        : data.tipo_pessoa
+          ? [data.tipo_pessoa]
+          : []
+    ).filter(Boolean);
+
     const { error: upErr } = await supabaseAdmin
       .from("profiles")
       .update({
@@ -310,8 +335,10 @@ export const atualizarPessoa = createServerFn({ method: "POST" })
         telefone: data.telefone ?? null,
         nivel_acesso_id: data.nivel_acesso_id,
         acesso_tipo: acessoTipo,
-        ...(data.tipo_pessoa ? { tipo_pessoa: data.tipo_pessoa } : {}),
-      })
+        ...(tiposList.length > 0
+          ? { tipo_pessoa: tiposList[0], tipos_pessoa: tiposList }
+          : {}),
+      } as never)
       .eq("id", data.id);
     if (upErr) throw new Error("Não foi possível atualizar a pessoa.");
 

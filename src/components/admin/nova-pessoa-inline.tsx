@@ -69,7 +69,7 @@ export function NovaPessoaInline({
 
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
-  const [tipoPessoa, setTipoPessoa] = useState<string>("");
+  const [tiposPessoa, setTiposPessoa] = useState<string[]>([]);
   const [comLogin, setComLogin] = useState(true);
 
   const [comissao, setComissao] = useState("");
@@ -96,13 +96,13 @@ export function NovaPessoaInline({
   });
   const tiposAtivos = useMemo(() => (tipos ?? []).filter((t) => t.ativo), [tipos]);
   const tipoSel = useMemo(
-    () => tiposAtivos.find((t) => t.slug === tipoPessoa),
-    [tiposAtivos, tipoPessoa],
+    () => tiposAtivos.find((t) => t.slug === tiposPessoa[0]),
+    [tiposAtivos, tiposPessoa],
   );
 
   // Seleciona o primeiro tipo automaticamente (e aplica o login padrão dele).
-  if (tiposAtivos.length > 0 && !tipoPessoa) {
-    setTipoPessoa(tiposAtivos[0].slug);
+  if (tiposAtivos.length > 0 && tiposPessoa.length === 0) {
+    setTiposPessoa([tiposAtivos[0].slug]);
     setComLogin(tiposAtivos[0].login_padrao);
   }
 
@@ -210,7 +210,8 @@ export function NovaPessoaInline({
       nome: nome.trim(),
       email: efetivoComLogin ? email.trim() : "",
       nivel_acesso_id: nivelId,
-      tipo_pessoa: tipoPessoa,
+      tipo_pessoa: tiposPessoa[0],
+      tipos_pessoa: tiposPessoa,
       com_login: efetivoComLogin,
       dados_parceiro: isParceiro
         ? {
@@ -236,26 +237,40 @@ export function NovaPessoaInline({
         {/* Tipo de pessoa */}
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
-            <Label>Tipo de pessoa</Label>
-            <Select
-              value={tipoPessoa}
-              onValueChange={(v) => {
-                setTipoPessoa(v);
-                const t = tiposAtivos.find((x) => x.slug === v);
-                if (t) setComLogin(t.login_padrao);
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione o tipo" />
-              </SelectTrigger>
-              <SelectContent>
-                {tiposAtivos.map((t) => (
-                  <SelectItem key={t.id} value={t.slug}>
+            <Label>Tipos de pessoa</Label>
+            <div className="flex flex-wrap gap-2">
+              {tiposAtivos.map((t) => {
+                const ativo = tiposPessoa.includes(t.slug);
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() =>
+                      setTiposPessoa((prev) => {
+                        if (prev.includes(t.slug)) {
+                          const next = prev.filter((s) => s !== t.slug);
+                          return next.length > 0 ? next : prev;
+                        }
+                        const next = [...prev, t.slug];
+                        if (next.length === 1) setComLogin(t.login_padrao);
+                        return next;
+                      })
+                    }
+                    className={
+                      "rounded-full border px-3 py-1 text-sm transition-colors " +
+                      (ativo
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-border bg-background text-foreground hover:bg-muted")
+                    }
+                  >
                     {t.nome}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Pode marcar mais de um. Os privilégios somam o acesso mais amplo.
+            </p>
           </div>
           {permiteSemLogin && (
             <div className="space-y-2">

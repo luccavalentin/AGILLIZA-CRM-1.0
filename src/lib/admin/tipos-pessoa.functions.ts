@@ -67,12 +67,19 @@ export const listarTiposPessoa = createServerFn({ method: "GET" })
 
     const { data: perfis } = await supabase
       .from("profiles")
-      .select("tipo_pessoa")
+      .select("tipo_pessoa, tipos_pessoa")
       .eq("correspondente_id", corr);
     const contagem = new Map<string, number>();
     (perfis ?? []).forEach((p: any) => {
-      if (!p.tipo_pessoa) return;
-      contagem.set(p.tipo_pessoa, (contagem.get(p.tipo_pessoa) ?? 0) + 1);
+      const tps: string[] =
+        Array.isArray(p.tipos_pessoa) && p.tipos_pessoa.length > 0
+          ? p.tipos_pessoa
+          : p.tipo_pessoa
+            ? [p.tipo_pessoa]
+            : [];
+      new Set(tps).forEach((slug) => {
+        contagem.set(slug, (contagem.get(slug) ?? 0) + 1);
+      });
     });
 
     return tipos.map((t: any) => ({
@@ -163,7 +170,7 @@ export const excluirTipoPessoa = createServerFn({ method: "POST" })
       .from("profiles")
       .select("id", { count: "exact", head: true })
       .eq("correspondente_id", corr)
-      .eq("tipo_pessoa", tipo.slug);
+      .or(`tipo_pessoa.eq.${tipo.slug},tipos_pessoa.cs.{${tipo.slug}}`);
     if ((count ?? 0) > 0) {
       throw new Error("Não é possível excluir: há pessoas vinculadas a este tipo.");
     }
