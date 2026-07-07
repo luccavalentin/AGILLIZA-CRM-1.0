@@ -119,6 +119,7 @@ function Pagina() {
     rendaMinima: number;
     rendaInformada: number;
   }>(null);
+  const [pctDespesas, setPctDespesas] = useState<number>(0);
 
   const { data: bancos } = useQuery({
     queryKey: ["bancos-ativos"],
@@ -786,7 +787,42 @@ function Pagina() {
             </label>
           </Campo>
           {f.fg_financiar_despesas && (
-            <Campo label="Valor das despesas a financiar">
+            <Campo label="Despesas a financiar (% do financiamento)">
+              <div className="relative">
+                <Input
+                  inputMode="decimal"
+                  className="pr-8 tabular-nums"
+                  placeholder="1 a 5"
+                  value={pctDespesas ? String(pctDespesas).replace(".", ",") : ""}
+                  onChange={(e) => {
+                    const raw = e.target.value.replace(/[^\d,.]/g, "").replace(",", ".");
+                    let pct = raw ? Number(raw) : 0;
+                    if (Number.isNaN(pct)) pct = 0;
+                    if (pct > 5) pct = 5;
+                    setPctDespesas(pct);
+                    set(
+                      "valor_despesas_financiadas",
+                      Math.round((f.valor_financiamento || 0) * (pct / 100) * 100) / 100,
+                    );
+                  }}
+                  onBlur={() => {
+                    if (pctDespesas > 0 && pctDespesas < 1) {
+                      setPctDespesas(1);
+                      set(
+                        "valor_despesas_financiadas",
+                        Math.round((f.valor_financiamento || 0) * 0.01 * 100) / 100,
+                      );
+                    }
+                  }}
+                />
+                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                  %
+                </span>
+              </div>
+              <p className="mt-2 mb-1 text-xs text-muted-foreground">
+                Mínimo 1% e máximo 5% do valor financiado. Ajuste o valor abaixo se
+                necessário.
+              </p>
               <CurrencyInput
                 value={f.valor_despesas_financiadas ?? 0}
                 onChange={(v) => set("valor_despesas_financiadas", v)}
