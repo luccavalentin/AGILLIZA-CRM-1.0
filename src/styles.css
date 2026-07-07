@@ -8,7 +8,7 @@
  * ver 00b-tons-cores-design-tokens.md
  *
  * Regras: nunca cor crua no .tsx (proibido text-white/bg-black/bg-[#...]).
- * Sempre token semântico. Azul #000F9F = ação; vermelho #F5333F = só alerta.
+ * Sempre token semântico. Azul #000F9F = ação; vermelho #C8102E = só alerta.
  */
 
 @custom-variant dark (&:where(.dark, .dark *));
