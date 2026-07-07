@@ -8,7 +8,7 @@
  * ver 00b-tons-cores-design-tokens.md
  *
  * Regras: nunca cor crua no .tsx (proibido text-white/bg-black/bg-[#...]).
- * Sempre token semântico. Azul #000F9F = ação; vermelho #F5333F = só alerta.
+ * Sempre token semântico. Azul #000F9F = ação; vermelho #C8102E = só alerta.
  */
 
 @custom-variant dark (&:where(.dark, .dark *));
@@ -21,8 +21,8 @@
   --brand-azul-escuro: #000a70;
   --brand-azul-noite: #00052e;
   --brand-azul-nevoa: #eef0ff;
-  --brand-vermelho: #f5333f;
-  --brand-vermelho-escuro: #b21f29;
+  --brand-vermelho: #c8102e;
+  --brand-vermelho-escuro: #8a0b20;
   --brand-verde: #10a37f;
   --brand-ambar: #eab308;
 
@@ -41,7 +41,7 @@
   --muted-foreground: #4b5563;
   --accent: #eef0ff;
   --accent-foreground: #000f9f;
-  --destructive: #f5333f;
+  --destructive: #c8102e;
   --destructive-foreground: #ffffff;
   --success: #10a37f;
   --success-foreground: #ffffff;
@@ -64,7 +64,7 @@
   --chart-2: #4b56d1;
   --chart-3: #10a37f;
   --chart-4: #eab308;
-  --chart-5: #f5333f;
+  --chart-5: #c8102e;
 
   /* Paleta de progressão da esteira (14 etapas): jornada azul -> verde. */
   --pipe-1: #4338ca;
@@ -100,7 +100,7 @@
   --muted-foreground: #4b5563;
   --accent: #eef0ff;
   --accent-foreground: #000f9f;
-  --destructive: #f5333f;
+  --destructive: #c8102e;
   --destructive-foreground: #ffffff;
   --success: #10a37f;
   --success-foreground: #ffffff;
@@ -124,7 +124,7 @@
   --chart-2: #4b56d1;
   --chart-3: #10a37f;
   --chart-4: #eab308;
-  --chart-5: #f5333f;
+  --chart-5: #c8102e;
 }
 
 /* Menu lateral: cor sólida da marca no claro, gradiente no escuro. */
