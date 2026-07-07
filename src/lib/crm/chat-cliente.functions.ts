@@ -9,8 +9,40 @@ export interface ChatMensagem {
   remetente_nome: string | null;
   mensagem: string;
   anexo_url: string | null;
+  anexo_nome: string | null;
+  anexo_is_imagem: boolean;
   lida_em: string | null;
   criada_em: string;
+}
+
+const IMG_EXT = /\.(png|jpe?g|gif|webp|bmp|heic|heif|svg)$/i;
+
+/** Converte caminhos de storage em URLs assinadas temporárias (imagens/docs do chat). */
+async function resolverAnexosChat<T extends { anexo_url: string | null }>(
+  supabase: any,
+  lista: T[],
+): Promise<(T & { anexo_nome: string | null; anexo_is_imagem: boolean })[]> {
+  return Promise.all(
+    lista.map(async (m) => {
+      let anexoUrl: string | null = m.anexo_url ?? null;
+      let anexoNome: string | null = null;
+      if (anexoUrl && !/^https?:\/\//i.test(anexoUrl)) {
+        const partes = anexoUrl.split("/");
+        anexoNome =
+          partes[partes.length - 1]?.replace(/^\d+-[0-9a-f-]+\./i, "arquivo.") ?? null;
+        const { data: signed } = await supabase.storage
+          .from("cliente-documentos")
+          .createSignedUrl(anexoUrl, 3600);
+        anexoUrl = signed?.signedUrl ?? null;
+      }
+      return {
+        ...m,
+        anexo_url: anexoUrl,
+        anexo_nome: anexoNome,
+        anexo_is_imagem: anexoUrl ? IMG_EXT.test(anexoUrl.split("?")[0]) : false,
+      };
+    }),
+  );
 }
 
 export interface ConversaCliente {
