@@ -360,6 +360,22 @@ function Pagina() {
               utiliza_fgts: (c as any).utiliza_fgts ?? false,
               fg_autorizacao_dados: (c as any).fg_autorizacao_dados ?? false,
               origem: c.origem,
+              conjuge_nome: (c as any).conjuge_nome ?? "",
+              conjuge_cpf: (c as any).conjuge_cpf ?? "",
+              conjuge_data_nascimento: (c as any).conjuge_data_nascimento ?? "",
+              conjuge_nome_mae: (c as any).conjuge_nome_mae ?? "",
+              conjuge_sexo: (c as any).conjuge_sexo ?? "",
+              conjuge_nacionalidade: (c as any).conjuge_nacionalidade ?? "",
+              conjuge_tipo_documento_identidade: (c as any).conjuge_tipo_documento_identidade ?? "",
+              conjuge_numero_documento: (c as any).conjuge_numero_documento ?? "",
+              conjuge_orgao_expedidor: (c as any).conjuge_orgao_expedidor ?? "",
+              conjuge_uf_expedicao: (c as any).conjuge_uf_expedicao ?? "",
+              conjuge_data_expedicao: (c as any).conjuge_data_expedicao ?? "",
+              conjuge_profissao: (c as any).conjuge_profissao ?? "",
+              conjuge_empresa: (c as any).conjuge_empresa ?? "",
+              conjuge_renda: (c as any).conjuge_renda != null ? String((c as any).conjuge_renda) : "",
+              conjuge_email: (c as any).conjuge_email ?? "",
+              conjuge_celular: (c as any).conjuge_celular ?? "",
             }}
           />
         </TabsContent>

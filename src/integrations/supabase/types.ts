@@ -999,6 +999,22 @@ export type Database = {
           agencia: string | null
           ativo: boolean
           banco_conta: string | null
+          conjuge_celular: string | null
+          conjuge_cpf: string | null
+          conjuge_data_expedicao: string | null
+          conjuge_data_nascimento: string | null
+          conjuge_email: string | null
+          conjuge_empresa: string | null
+          conjuge_nacionalidade: string | null
+          conjuge_nome: string | null
+          conjuge_nome_mae: string | null
+          conjuge_numero_documento: string | null
+          conjuge_orgao_expedidor: string | null
+          conjuge_profissao: string | null
+          conjuge_renda: number | null
+          conjuge_sexo: string | null
+          conjuge_tipo_documento_identidade: string | null
+          conjuge_uf_expedicao: string | null
           conta_corrente: string | null
           correspondente_id: string
           created_at: string
@@ -1048,6 +1064,22 @@ export type Database = {
           agencia?: string | null
           ativo?: boolean
           banco_conta?: string | null
+          conjuge_celular?: string | null
+          conjuge_cpf?: string | null
+          conjuge_data_expedicao?: string | null
+          conjuge_data_nascimento?: string | null
+          conjuge_email?: string | null
+          conjuge_empresa?: string | null
+          conjuge_nacionalidade?: string | null
+          conjuge_nome?: string | null
+          conjuge_nome_mae?: string | null
+          conjuge_numero_documento?: string | null
+          conjuge_orgao_expedidor?: string | null
+          conjuge_profissao?: string | null
+          conjuge_renda?: number | null
+          conjuge_sexo?: string | null
+          conjuge_tipo_documento_identidade?: string | null
+          conjuge_uf_expedicao?: string | null
           conta_corrente?: string | null
           correspondente_id: string
           created_at?: string
@@ -1097,6 +1129,22 @@ export type Database = {
           agencia?: string | null
           ativo?: boolean
           banco_conta?: string | null
+          conjuge_celular?: string | null
+          conjuge_cpf?: string | null
+          conjuge_data_expedicao?: string | null
+          conjuge_data_nascimento?: string | null
+          conjuge_email?: string | null
+          conjuge_empresa?: string | null
+          conjuge_nacionalidade?: string | null
+          conjuge_nome?: string | null
+          conjuge_nome_mae?: string | null
+          conjuge_numero_documento?: string | null
+          conjuge_orgao_expedidor?: string | null
+          conjuge_profissao?: string | null
+          conjuge_renda?: number | null
+          conjuge_sexo?: string | null
+          conjuge_tipo_documento_identidade?: string | null
+          conjuge_uf_expedicao?: string | null
           conta_corrente?: string | null
           correspondente_id?: string
           created_at?: string

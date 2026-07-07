@@ -58,6 +58,22 @@ export interface ClienteFormValues {
   utiliza_fgts: boolean;
   fg_autorizacao_dados: boolean;
   origem: string;
+  conjuge_nome: string;
+  conjuge_cpf: string;
+  conjuge_data_nascimento: string;
+  conjuge_nome_mae: string;
+  conjuge_sexo: string;
+  conjuge_nacionalidade: string;
+  conjuge_tipo_documento_identidade: string;
+  conjuge_numero_documento: string;
+  conjuge_orgao_expedidor: string;
+  conjuge_uf_expedicao: string;
+  conjuge_data_expedicao: string;
+  conjuge_profissao: string;
+  conjuge_empresa: string;
+  conjuge_renda: string;
+  conjuge_email: string;
+  conjuge_celular: string;
 }
 
 const ESTADOS_CIVIS = [
@@ -223,6 +239,22 @@ const emptyValues: ClienteFormValues = {
   utiliza_fgts: false,
   fg_autorizacao_dados: false,
   origem: "direto",
+  conjuge_nome: "",
+  conjuge_cpf: "",
+  conjuge_data_nascimento: "",
+  conjuge_nome_mae: "",
+  conjuge_sexo: "",
+  conjuge_nacionalidade: "Brasileira",
+  conjuge_tipo_documento_identidade: "",
+  conjuge_numero_documento: "",
+  conjuge_orgao_expedidor: "",
+  conjuge_uf_expedicao: "",
+  conjuge_data_expedicao: "",
+  conjuge_profissao: "",
+  conjuge_empresa: "",
+  conjuge_renda: "",
+  conjuge_email: "",
+  conjuge_celular: "",
 };
 
 export function ClienteForm({
@@ -257,6 +289,11 @@ export function ClienteForm({
     }
     // Normaliza o sexo para o valor canônico ("M"/"F") aceito pelo <Select>.
     base.sexo = normalizarSexo(base.sexo);
+    base.conjuge_sexo = normalizarSexo(base.conjuge_sexo);
+    if (base.conjuge_renda) {
+      const n = Number(base.conjuge_renda);
+      if (!isNaN(n)) base.conjuge_renda = formatarMoedaBR(n);
+    }
     return base;
   });
   const [end, setEnd] = useState({
@@ -331,6 +368,12 @@ export function ClienteForm({
     const renda = Number(v.renda_total_declarada.replace(/\./g, "").replace(",", "."));
     if (isNaN(renda) || renda < 0) return toast.error("Renda inválida.");
 
+    const casado = v.estado_civil === "casado" || v.estado_civil === "uniao_estavel";
+    if (casado && !v.conjuge_nome.trim()) return toast.error("Informe o nome do cônjuge.");
+    const rendaConjuge = v.conjuge_renda
+      ? Number(v.conjuge_renda.replace(/\./g, "").replace(",", "."))
+      : null;
+
     setSalvando(true);
     try {
       const payload = {
@@ -364,6 +407,23 @@ export function ClienteForm({
         utiliza_fgts: v.utiliza_fgts,
         fg_autorizacao_dados: v.fg_autorizacao_dados,
         origem: v.origem as any,
+        // Cônjuge: só envia quando casado/união estável; caso contrário limpa.
+        conjuge_nome: casado ? v.conjuge_nome.trim() || null : null,
+        conjuge_cpf: casado ? soDigitos(v.conjuge_cpf) || null : null,
+        conjuge_data_nascimento: casado ? v.conjuge_data_nascimento || null : null,
+        conjuge_nome_mae: casado ? v.conjuge_nome_mae.trim() || null : null,
+        conjuge_sexo: casado ? v.conjuge_sexo || null : null,
+        conjuge_nacionalidade: casado ? v.conjuge_nacionalidade.trim() || null : null,
+        conjuge_tipo_documento_identidade: casado ? v.conjuge_tipo_documento_identidade || null : null,
+        conjuge_numero_documento: casado ? v.conjuge_numero_documento.trim() || null : null,
+        conjuge_orgao_expedidor: casado ? v.conjuge_orgao_expedidor.trim() || null : null,
+        conjuge_uf_expedicao: casado ? v.conjuge_uf_expedicao || null : null,
+        conjuge_data_expedicao: casado ? v.conjuge_data_expedicao || null : null,
+        conjuge_profissao: casado ? v.conjuge_profissao.trim() || null : null,
+        conjuge_empresa: casado ? v.conjuge_empresa.trim() || null : null,
+        conjuge_renda: casado ? rendaConjuge : null,
+        conjuge_email: casado ? v.conjuge_email.trim() || null : null,
+        conjuge_celular: casado ? soDigitos(v.conjuge_celular) || null : null,
       };
       let id = v.id;
       if (id) {
@@ -537,6 +597,198 @@ export function ClienteForm({
           </div>
         </CardContent>
       </Card>
+
+      {(v.estado_civil === "casado" || v.estado_civil === "uniao_estavel") && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Dados do cônjuge</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Exigidos pelos bancos quando o proponente é casado ou vive em união estável.
+            </p>
+          </CardHeader>
+          <CardContent className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label>Nome completo do cônjuge *</Label>
+              <Input value={v.conjuge_nome} onChange={(e) => set("conjuge_nome", e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>CPF do cônjuge</Label>
+              <Input
+                value={v.conjuge_cpf}
+                onChange={(e) => set("conjuge_cpf", e.target.value)}
+                placeholder="Somente números"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Data de nascimento</Label>
+              <Input
+                type="date"
+                value={v.conjuge_data_nascimento}
+                onChange={(e) => set("conjuge_data_nascimento", e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Sexo</Label>
+              <Select
+                value={v.conjuge_sexo || undefined}
+                onValueChange={(x) => set("conjuge_sexo", x)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione" />
+                </SelectTrigger>
+                <SelectContent>
+                  {OPCOES_SEXO.map((o) => (
+                    <SelectItem key={o.v} value={o.v}>
+                      {o.l}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Nacionalidade</Label>
+              <Select
+                value={v.conjuge_nacionalidade || undefined}
+                onValueChange={(x) => set("conjuge_nacionalidade", x)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione" />
+                </SelectTrigger>
+                <SelectContent>
+                  {OPCOES_NACIONALIDADE.map((o) => (
+                    <SelectItem key={o} value={o}>
+                      {o}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label>Nome da mãe do cônjuge</Label>
+              <Input
+                value={v.conjuge_nome_mae}
+                onChange={(e) => set("conjuge_nome_mae", e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Tipo de documento</Label>
+              <Select
+                value={v.conjuge_tipo_documento_identidade || undefined}
+                onValueChange={(x) => set("conjuge_tipo_documento_identidade", x)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione" />
+                </SelectTrigger>
+                <SelectContent>
+                  {OPCOES_TIPO_DOCUMENTO.map((o) => (
+                    <SelectItem key={o} value={o}>
+                      {o}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Número do documento</Label>
+              <Input
+                value={v.conjuge_numero_documento}
+                onChange={(e) => set("conjuge_numero_documento", e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Órgão expedidor</Label>
+              <Select
+                value={v.conjuge_orgao_expedidor || undefined}
+                onValueChange={(x) => set("conjuge_orgao_expedidor", x)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione" />
+                </SelectTrigger>
+                <SelectContent>
+                  {OPCOES_ORGAO_EXPEDIDOR.map((o) => (
+                    <SelectItem key={o} value={o}>
+                      {o}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>UF de expedição</Label>
+              <Select
+                value={v.conjuge_uf_expedicao || undefined}
+                onValueChange={(x) => set("conjuge_uf_expedicao", x)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione" />
+                </SelectTrigger>
+                <SelectContent>
+                  {OPCOES_UF.map((o) => (
+                    <SelectItem key={o} value={o}>
+                      {o}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Data de expedição</Label>
+              <Input
+                type="date"
+                value={v.conjuge_data_expedicao}
+                onChange={(e) => set("conjuge_data_expedicao", e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Profissão</Label>
+              <Input
+                value={v.conjuge_profissao}
+                onChange={(e) => set("conjuge_profissao", e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Empresa</Label>
+              <Input
+                value={v.conjuge_empresa}
+                onChange={(e) => set("conjuge_empresa", e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Renda declarada (R$)</Label>
+              <div className="relative">
+                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                  R$
+                </span>
+                <Input
+                  inputMode="numeric"
+                  className="pl-9"
+                  value={v.conjuge_renda}
+                  onChange={(e) => set("conjuge_renda", mascararMoedaBR(e.target.value))}
+                  placeholder="0,00"
+                />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>E-mail do cônjuge</Label>
+              <Input
+                type="email"
+                value={v.conjuge_email}
+                onChange={(e) => set("conjuge_email", e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Celular do cônjuge</Label>
+              <Input
+                value={v.conjuge_celular}
+                onChange={(e) => set("conjuge_celular", e.target.value)}
+                placeholder="(11) 99999-9999"
+              />
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+
 
       <Card>
         <CardHeader>
