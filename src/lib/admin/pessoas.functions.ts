@@ -197,7 +197,7 @@ export const criarPessoaComAcesso = createServerFn({ method: "POST" })
         papel,
         acesso_tipo: acessoTipo,
         nivel_acesso_id: data.nivel_acesso_id,
-        tipo_pessoa: data.tipo_pessoa,
+        tipo_pessoa: tipoPrimario,
         login_habilitado: comLogin,
       },
     });
