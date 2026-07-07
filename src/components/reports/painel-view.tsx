@@ -98,9 +98,11 @@ export function PainelView({
     staleTime: 30_000,
   });
 
+  const tabelasKey = realtimeTabelas.join(",");
   useEffect(() => {
+    const tabelas = tabelasKey ? tabelasKey.split(",") : [];
     const channel = supabase.channel(`panel-${modulo}`);
-    realtimeTabelas.forEach((t) => {
+    tabelas.forEach((t) => {
       channel.on("postgres_changes", { event: "*", schema: "public", table: t }, () => {
         qc.invalidateQueries({ queryKey: ["panel", modulo] });
       });
@@ -109,7 +111,7 @@ export function PainelView({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [modulo, qc, realtimeTabelas]);
+  }, [modulo, qc, tabelasKey]);
 
   const atualizado = dataUpdatedAt
     ? new Date(dataUpdatedAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
