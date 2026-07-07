@@ -189,6 +189,7 @@ function Pagina() {
         .filter(Boolean),
       email_verificado_em: null,
     }));
+    if (s.cliente_id) setCadastroNome(s.nome_cliente ?? "");
   }, [origem]);
 
 
