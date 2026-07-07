@@ -83,7 +83,7 @@ export const buscarClientesCRM = createServerFn({ method: "GET" })
     let query = supabase
       .from("clientes")
       .select(
-        "id, nome, documento, email, telefone_celular, data_nascimento, estado_civil, renda_total_declarada, tipo_pessoa",
+        "id, nome, documento, email, telefone_celular, data_nascimento, estado_civil, renda_total_declarada, tipo_pessoa, conjuge_nome, conjuge_cpf, conjuge_renda, conjuge_data_nascimento, conjuge_email, conjuge_celular",
       )
       .limit(8);
     if (digitos.length >= 3) {

@@ -24,6 +24,12 @@ export interface ClienteCRM {
   estado_civil: string | null;
   renda_total_declarada: number | null;
   tipo_pessoa: string | null;
+  conjuge_nome: string | null;
+  conjuge_cpf: string | null;
+  conjuge_renda: number | null;
+  conjuge_data_nascimento: string | null;
+  conjuge_email: string | null;
+  conjuge_celular: string | null;
 }
 
 export function ClienteCRMPicker({

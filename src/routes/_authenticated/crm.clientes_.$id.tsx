@@ -124,6 +124,8 @@ function Pagina() {
           <Button
             variant="default"
             onClick={() => {
+              const ec = c.estado_civil ?? "";
+              const casado = ec === "casado" || ec === "uniao_estavel";
               sessionStorage.setItem(
                 "simulacao_wizard",
                 JSON.stringify({
@@ -133,6 +135,14 @@ function Pagina() {
                   data_nascimento: c.data_nascimento ?? "",
                   renda_total: Number(c.renda_total_declarada) || 0,
                   uf: c.uf_interesse ?? "",
+                  possui_conjuge: casado,
+                  compoe_renda: casado && Number((c as any).conjuge_renda) > 0,
+                  nome_conjuge: (c as any).conjuge_nome ?? "",
+                  cpf_conjuge: (c as any).conjuge_cpf ?? "",
+                  renda_conjuge: Number((c as any).conjuge_renda) || 0,
+                  data_nascimento_conjuge: (c as any).conjuge_data_nascimento ?? "",
+                  email_conjuge: (c as any).conjuge_email ?? "",
+                  celular_conjuge: (c as any).conjuge_celular ?? "",
                 }),
               );
               navigate({ to: "/operacional/simulacoes/completa" });
