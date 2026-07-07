@@ -683,8 +683,9 @@ export function ClienteForm({
             <Label>{v.tipo_pessoa === "PF" ? "CPF *" : "CNPJ *"}</Label>
             <Input
               value={v.documento}
-              onChange={(e) => set("documento", e.target.value)}
-              placeholder="Somente números"
+              onChange={(e) => set("documento", mascararDocumentoTipo(e.target.value, v.tipo_pessoa))}
+              inputMode="numeric"
+              placeholder={v.tipo_pessoa === "PF" ? "000.000.000-00" : "00.000.000/0000-00"}
             />
           </div>
           <div className="space-y-1.5 sm:col-span-2">
