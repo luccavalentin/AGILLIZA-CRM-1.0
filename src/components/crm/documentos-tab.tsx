@@ -611,7 +611,7 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
               <Button
                 size="icon"
                 variant="ghost"
-                onClick={() => baixar(d.storage_path)}
+                onClick={() => baixar(d.storage_path, d.nome_arquivo)}
                 title="Visualizar / baixar"
               >
                 <Download className="size-4" />
