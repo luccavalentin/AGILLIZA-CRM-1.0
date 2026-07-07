@@ -65,6 +65,9 @@ import {
 
 export const Route = createFileRoute("/_authenticated/documentos")({
   head: () => ({ meta: [{ title: "Arquivos — Agilliza" }] }),
+  validateSearch: (search: Record<string, unknown>): { pasta?: string } => ({
+    pasta: typeof search.pasta === "string" ? search.pasta : undefined,
+  }),
   beforeLoad: () => assertModuloPermitido("documentos.arquivos"),
   component: Pagina,
 });
