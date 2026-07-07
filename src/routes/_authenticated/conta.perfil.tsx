@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { UserRound, Loader2 } from "lucide-react";
+import { UserRound, Loader2, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getMinhaSessao, atualizarMeuPerfil } from "@/lib/session.functions";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/conta/perfil")({
   head: () => ({ meta: [{ title: "Meu perfil — Agilliza" }] }),
@@ -47,6 +48,27 @@ function Pagina() {
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
+  const [novaSenha, setNovaSenha] = useState("");
+  const [confirmaSenha, setConfirmaSenha] = useState("");
+  const [salvandoSenha, setSalvandoSenha] = useState(false);
+  const podeSalvarSenha = novaSenha.length >= 8 && novaSenha === confirmaSenha;
+
+  async function alterarSenha() {
+    if (!podeSalvarSenha) return;
+    setSalvandoSenha(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password: novaSenha });
+      if (error) throw error;
+      toast.success("Senha alterada com sucesso.");
+      setNovaSenha("");
+      setConfirmaSenha("");
+    } catch {
+      toast.error("Não foi possível alterar a senha. Faça login novamente e tente de novo.");
+    } finally {
+      setSalvandoSenha(false);
+    }
+  }
 
   const iniciais = (nome || "?").slice(0, 2).toUpperCase();
 
@@ -119,6 +141,45 @@ function Pagina() {
               </div>
             </>
           )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2 text-sm">
+            <Lock className="h-4 w-4 text-muted-foreground" />
+            Alterar senha
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="nova-senha">Nova senha</Label>
+            <Input
+              id="nova-senha"
+              type="password"
+              value={novaSenha}
+              onChange={(e) => setNovaSenha(e.target.value)}
+              placeholder="Mínimo de 8 caracteres"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="confirma-senha">Confirmar nova senha</Label>
+            <Input
+              id="confirma-senha"
+              type="password"
+              value={confirmaSenha}
+              onChange={(e) => setConfirmaSenha(e.target.value)}
+            />
+            {confirmaSenha.length > 0 && novaSenha !== confirmaSenha && (
+              <p className="text-xs text-destructive">As senhas não coincidem.</p>
+            )}
+          </div>
+          <div className="flex justify-end">
+            <Button onClick={alterarSenha} disabled={!podeSalvarSenha || salvandoSenha}>
+              {salvandoSenha && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Alterar senha
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>
