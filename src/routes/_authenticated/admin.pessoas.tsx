@@ -361,7 +361,6 @@ function PessoasPage() {
           <TabsContent value="tipos">
             <TiposPessoaPanel podeGerenciar={podeGerenciar} />
           </TabsContent>
-          </TabsContent>
         </Tabs>
       </div>
 
