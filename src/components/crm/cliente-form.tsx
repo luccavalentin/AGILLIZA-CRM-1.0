@@ -892,13 +892,21 @@ export function ClienteForm({
             </div>
             <div className="space-y-1.5">
               <Label>UF de expedição</Label>
-              <Combobox
+              <Select
                 value={v.conjuge_uf_expedicao}
                 onValueChange={(x) => set("conjuge_uf_expedicao", x)}
-                options={OPCOES_UF}
-                placeholder="Selecione"
-                searchPlaceholder="Buscar UF…"
-              />
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione" />
+                </SelectTrigger>
+                <SelectContent>
+                  {OPCOES_UF.map((uf) => (
+                    <SelectItem key={uf} value={uf}>
+                      {uf}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-1.5">
               <Label>Data de expedição</Label>
