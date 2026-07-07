@@ -43,6 +43,7 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RegrasModulosPanel } from "@/components/admin/regras-modulos-panel";
+import { TiposPessoaPanel } from "@/components/admin/tipos-pessoa-panel";
 import { NovaPessoaInline } from "@/components/admin/nova-pessoa-inline";
 import { EditarPessoaDialog } from "@/components/admin/editar-pessoa-dialog";
 import { getMinhaSessao } from "@/lib/session.functions";
