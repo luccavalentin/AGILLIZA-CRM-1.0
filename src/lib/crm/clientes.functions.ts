@@ -342,6 +342,10 @@ export const atualizarCliente = createServerFn({ method: "POST" })
         conjuge_renda: campos.conjuge_renda ?? null,
         conjuge_email: campos.conjuge_email ?? null,
         conjuge_celular: campos.conjuge_celular ?? null,
+        conjuge_banco_conta: campos.conjuge_banco_conta ?? null,
+        conjuge_agencia: campos.conjuge_agencia ?? null,
+        conjuge_conta_corrente: campos.conjuge_conta_corrente ?? null,
+        conjuge_digito_conta: campos.conjuge_digito_conta ?? null,
       })
       .eq("id", id);
     if (error) throw error;
