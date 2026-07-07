@@ -849,21 +849,13 @@ export function ClienteForm({
             </div>
             <div className="space-y-1.5">
               <Label>Nacionalidade</Label>
-              <Select
-                value={v.conjuge_nacionalidade || undefined}
+              <Combobox
+                value={v.conjuge_nacionalidade}
                 onValueChange={(x) => set("conjuge_nacionalidade", x)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione" />
-                </SelectTrigger>
-                <SelectContent>
-                  {OPCOES_NACIONALIDADE.map((o) => (
-                    <SelectItem key={o} value={o}>
-                      {o}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                options={OPCOES_NACIONALIDADE}
+                placeholder="Selecione"
+                searchPlaceholder="Buscar nacionalidade…"
+              />
             </div>
             <div className="space-y-1.5 sm:col-span-2">
               <Label>Nome da mãe do cônjuge</Label>
