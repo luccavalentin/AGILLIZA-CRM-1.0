@@ -35,6 +35,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
+import { useIncomingChatSound } from "@/hooks/use-chat-sound";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/operacional/demandas_/$id")({
