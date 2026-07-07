@@ -112,13 +112,13 @@
 
   /* Menu (sidebar): gradiente escuro da marca. */
   --sidebar: #000a6e;
-  --sidebar-foreground: #eef0ff;
-  --sidebar-primary: #ffffff;
-  --sidebar-primary-foreground: #000a6e;
-  --sidebar-accent: rgba(255, 255, 255, 0.12);
+  --sidebar-foreground: #ffffff;
+  --sidebar-primary: #ff7a1a;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #2f43ff;
   --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: rgba(255, 255, 255, 0.08);
-  --sidebar-ring: #4b56d1;
+  --sidebar-border: rgba(255, 255, 255, 0.14);
+  --sidebar-ring: #6f7bff;
 
   --chart-1: #000f9f;
   --chart-2: #4b56d1;
