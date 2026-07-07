@@ -94,8 +94,8 @@ const VAZIO: Form = {
   telefone_sac: "",
   site: "",
   responsavel_nome: "",
-  politica_lgpd: "",
-  politica_privacidade: "",
+  politica_lgpd: POLITICA_LGPD_PADRAO,
+  politica_privacidade: POLITICA_PRIVACIDADE_PADRAO,
   email_dpo: "",
 };
 
