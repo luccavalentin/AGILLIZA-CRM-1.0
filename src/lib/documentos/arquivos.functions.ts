@@ -284,3 +284,34 @@ export const caminhoNo = createServerFn({ method: "GET" })
     }
     return trilha;
   });
+
+/** Lista todas as pastas do correspondente com caminho completo (para mover). */
+export const listarPastas = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<PastaFlat[]> => {
+    const { supabase, userId } = context;
+    const corr = await correspondenteDoUsuario(supabase, userId);
+    if (!corr) return [];
+    const { data } = await supabase
+      .from("arquivos_nos")
+      .select("id, nome, parent_id")
+      .eq("correspondente_id", corr)
+      .eq("tipo", "pasta")
+      .limit(10000);
+    const nos = (data ?? []) as { id: string; nome: string; parent_id: string | null }[];
+    const mapa = new Map(nos.map((n) => [n.id, n]));
+    const caminhoDe = (id: string): string => {
+      const partes: string[] = [];
+      let atual: string | null = id;
+      for (let i = 0; i < 50 && atual; i++) {
+        const n = mapa.get(atual);
+        if (!n) break;
+        partes.unshift(n.nome);
+        atual = n.parent_id;
+      }
+      return partes.join(" / ");
+    };
+    return nos
+      .map((n) => ({ id: n.id, nome: n.nome, caminho: caminhoDe(n.id) }))
+      .sort((a, b) => a.caminho.localeCompare(b.caminho));
+  });
