@@ -396,6 +396,11 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
           </>
         )}
       </SheetContent>
+      <VisualizadorArquivo
+        arquivo={visualizando}
+        open={!!visualizando}
+        onOpenChange={(o: boolean) => !o && setVisualizando(null)}
+      />
     </Sheet>
   );
 }
