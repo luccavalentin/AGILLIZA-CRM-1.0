@@ -23,6 +23,17 @@ import { ConsultandoOverlay } from "@/components/simulacao/consultando-overlay";
 import { ClienteCRMPicker } from "@/components/simulacao/cliente-crm-picker";
 import { estadoCivilCrmParaCodigo } from "@/lib/propostas/dominios";
 import { DicaRendaMinima } from "@/components/simulacao/dica-renda-minima";
+import { avaliarRendaMinima } from "@/lib/simulacao/renda";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { taxaAnoDeBanco } from "@/lib/simulacao/simulacao-rapida";
 
 import {
