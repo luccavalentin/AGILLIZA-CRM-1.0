@@ -71,18 +71,19 @@ function drawClienteHeader(doc: jsPDF, pageW: number) {
 
   const slogan = "Crédito Inteligente é na";
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(13);
+  doc.setFontSize(11);
   const textW = doc.getTextWidth(slogan);
 
-  const logoH = 22;
+  // Logo maior e legível (mantém a proporção original da marca).
+  const logoH = 34;
   const logoW = logoH * AGILLIZA_LOGO_RATIO;
-  const gap = 12;
+  const gap = 14;
   const groupW = textW + gap + logoW;
   const startX = (pageW - groupW) / 2;
   const midY = HEADER_H / 2;
 
   doc.setTextColor("#FFFFFF");
-  doc.text(slogan, startX, midY + 4);
+  doc.text(slogan, startX, midY + 3.5);
   try {
     doc.addImage(AGILLIZA_LOGO_LIGHT, "PNG", startX + textW + gap, midY - logoH / 2, logoW, logoH);
   } catch {
