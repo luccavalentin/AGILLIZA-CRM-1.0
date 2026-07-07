@@ -119,6 +119,7 @@ function Pagina() {
     rendaMinima: number;
     rendaInformada: number;
   }>(null);
+  const [pctDespesas, setPctDespesas] = useState<number>(0);
 
   const { data: bancos } = useQuery({
     queryKey: ["bancos-ativos"],
