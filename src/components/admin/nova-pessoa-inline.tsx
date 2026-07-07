@@ -28,8 +28,8 @@ import {
   criarPessoaComAcesso,
   type CriarPessoaInput,
   type ResultadoCriarPessoa,
-  type TipoPessoa,
 } from "@/lib/admin/pessoas.functions";
+import { listarTiposPessoa } from "@/lib/admin/tipos-pessoa.functions";
 
 type MatrizEstado = Record<string, { permitido: boolean; escopo: EscopoDados }>;
 
