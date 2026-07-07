@@ -295,10 +295,15 @@ function AbaSimulacoes({ escopo, busca, dataInicio, dataFim }: FiltroProps) {
       }),
   });
 
-  async function converter(id: string) {
-    setConvertendo(id);
+  async function converter(id: string, bancoId: string | null) {
+    if (!bancoId) {
+      toast.error("Banco inválido para envio.");
+      return;
+    }
+    const chave = `${id}:${bancoId}`;
+    setConvertendo(chave);
     try {
-      const res = await criar({ data: { simulacao_id: id } });
+      const res = await criar({ data: { simulacao_id: id, banco_id: bancoId } });
       toast.success(`Proposta ${res.numero_proposta} criada.`);
       queryClient.invalidateQueries({ queryKey: ["propostas"] });
       router.navigate({
@@ -323,7 +328,7 @@ function AbaSimulacoes({ escopo, busca, dataInicio, dataFim }: FiltroProps) {
             <TableHead>Bancos simulados</TableHead>
             <TableHead className="text-right">Valor imóvel</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead className="w-40 text-right">Ação</TableHead>
+              <TableHead className="w-56 text-right">Enviar</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -369,19 +374,32 @@ function AbaSimulacoes({ escopo, busca, dataInicio, dataFim }: FiltroProps) {
                 <SimulacaoStatusBadge status={s.status} />
               </TableCell>
               <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  disabled={convertendo === s.id}
-                  onClick={() => converter(s.id)}
-                >
-                  {convertendo === s.id ? (
-                    <Loader2 className="mr-1 h-4 w-4 animate-spin" />
-                  ) : (
-                    <Send className="mr-1 h-4 w-4" />
+                <div className="flex flex-wrap justify-end gap-1.5">
+                  {s.bancos
+                    .filter((b) => b.status_banco === "simulada" && b.banco_id)
+                    .map((b) => {
+                      const chave = `${s.id}:${b.banco_id}`;
+                      return (
+                        <Button
+                          key={b.id}
+                          size="sm"
+                          variant="secondary"
+                          disabled={convertendo !== null}
+                          onClick={() => converter(s.id, b.banco_id)}
+                        >
+                          {convertendo === chave ? (
+                            <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                          ) : (
+                            <Send className="mr-1 h-4 w-4" />
+                          )}
+                          {b.nome_banco ?? "Banco"}
+                        </Button>
+                      );
+                    })}
+                  {s.bancos.filter((b) => b.status_banco === "simulada" && b.banco_id).length === 0 && (
+                    <span className="text-xs text-muted-foreground">Nenhum banco simulado</span>
                   )}
-                  Enviar proposta
-                </Button>
+                </div>
               </TableCell>
             </TableRow>
           ))}
