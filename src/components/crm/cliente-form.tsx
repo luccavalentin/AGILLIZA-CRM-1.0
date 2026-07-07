@@ -29,7 +29,7 @@ import {
   TIPO_VINCULO_PESSOA,
   type TipoVinculo,
 } from "@/lib/crm/clientes.functions";
-import { validarDocumento, soDigitos } from "@/lib/crm/documento";
+import { validarDocumento, validarCPF, soDigitos } from "@/lib/crm/documento";
 
 export interface ClienteFormValues {
   id?: string;
