@@ -23,6 +23,7 @@ import { SlaCountdown } from "@/components/operacional/sla-countdown";
 import { ToneBadge } from "@/components/crm/tone-badge";
 import { PRIORIDADE, statusDemanda } from "@/components/operacional/status";
 import { Button } from "@/components/ui/button";
+import { VisualizadorArquivo } from "@/components/comum/visualizador-arquivo";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
