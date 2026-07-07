@@ -580,16 +580,28 @@ function tabelaLabel(s: any, bancos: any[]): string {
   return normalizarSistemaAmortizacao(d?.sistemaAmortizacao, s.sistema_amortizacao) || "-";
 }
 
-/** Renda necessária: maior renda mínima entre os bancos (1ª parcela / 30%). */
+/**
+ * Renda mínima ESTIMADA: derivada da parcela estimada localmente pelo sistema
+ * de amortização (taxa/prazo/valor financiado), não da parcela informada pelo
+ * banco. Usa a maior renda mínima entre os bancos (1ª parcela estimada / 30%).
+ */
 function rendaNecessaria(s: any, bancos: any[]): number | null {
   let renda: number | null = null;
   for (const b of bancos) {
     const d = extrairDetalheBanco(b?.raw_response);
-    const parcela = d?.primeiraParcela ?? b?.valor_parcela ?? null;
-    if (parcela != null && parcela > 0) {
-      const r = parcela / 0.3;
-      if (renda == null || r > renda) renda = r;
-    }
+    if (!d) continue;
+    const av = avaliarRendaMinima({
+      valor_financiamento:
+        d.financiamentoTotal ?? d.valorFinanciamento ?? Number(s.valor_financiamento) || 0,
+      prazo_meses: d.prazoMeses ?? Number(s.prazo) || 0,
+      taxa_ano: d.taxaJurosAno ?? 0,
+      sistema: normalizarSistemaAmortizacao(
+        d.sistemaAmortizacao,
+        s.sistema_amortizacao,
+      ) as any,
+    });
+    const r = av?.rendaMinima ?? null;
+    if (r != null && r > 0 && (renda == null || r > renda)) renda = r;
   }
   return renda;
 }
