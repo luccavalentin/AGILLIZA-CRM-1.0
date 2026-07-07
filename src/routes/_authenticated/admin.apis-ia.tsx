@@ -122,6 +122,25 @@ function Pagina() {
           <Switch id="ativo" checked={ativo} onCheckedChange={setAtivo} />
         </div>
 
+        <div className="space-y-1.5">
+          <Label>Provedor de IA</Label>
+          <Select value={provedor} onValueChange={(v) => aplicarProvedor(v as ProvedorIA)}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="gemini">Google Gemini</SelectItem>
+              <SelectItem value="openai">OpenAI</SelectItem>
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground">
+            Ao trocar o provedor, o modelo, o endpoint e o nome do secret sugeridos são
+            preenchidos automaticamente. Ajuste conforme necessário.
+          </p>
+        </div>
+
+
+
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-1.5">
             <Label>Nome</Label>
