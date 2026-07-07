@@ -16,6 +16,8 @@ import { assertModuloPermitido } from "@/lib/route-guards";
 import { obterKpisFinanceiros } from "@/lib/financeiro/financeiro.functions";
 import { ReportKpiCard } from "@/components/financeiro/kpi-card";
 import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { formatBRL } from "@/lib/financeiro/format";
 
 export const Route = createFileRoute("/_authenticated/financeiro/painel")({
