@@ -356,6 +356,22 @@ function Pagina() {
     toast.success("Titular e cônjuge invertidos. Confira os dados obrigatórios.");
   }
 
+  /** Verifica a renda contra o sugestivo; abre o popup de confirmação se insuficiente. */
+  function rendaSuficiente(): boolean {
+    const av = avaliarRendaMinima({
+      valor_financiamento: f.valor_financiamento,
+      prazo_meses: f.prazo,
+      taxa_ano: melhorTaxaAno,
+      sistema: f.sistema_amortizacao === "P" ? "P" : "S",
+      renda_informada: rendaConsiderada,
+    });
+    if (av && av.suficiente === false) {
+      setConfirmRenda({ rendaMinima: av.rendaMinima, rendaInformada: rendaConsiderada });
+      return false;
+    }
+    return true;
+  }
+
   async function enviar() {
     const parsed = completaSchema.safeParse({ ...f, id_operacao_homefin: idOperacao });
     if (!parsed.success) {
@@ -365,6 +381,12 @@ function Pagina() {
       toast.error("Revise os campos destacados.");
       return;
     }
+    setErros({});
+    if (!rendaSuficiente()) return;
+    await executarEnvio();
+  }
+
+  async function executarEnvio() {
     setErros({});
     setConcluidos(0);
     setEnviando(true);
