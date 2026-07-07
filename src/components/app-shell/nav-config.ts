@@ -33,6 +33,7 @@ import {
   Landmark,
   Sparkles,
   ClipboardList,
+  Link as LinkIcon,
 } from "lucide-react";
 
 /** Permissão exigida por um item (chave = `${modulo}:view`). */
