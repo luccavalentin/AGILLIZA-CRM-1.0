@@ -815,7 +815,7 @@ function Pagina() {
             </label>
           </Campo>
           {f.fg_financiar_despesas && (
-            <Campo label="Despesas a financiar (% do financiamento)">
+            <Campo label="Despesas a financiar (% do valor do imóvel)">
               <div className="relative">
                 <Input
                   inputMode="decimal"
@@ -830,7 +830,7 @@ function Pagina() {
                     setPctDespesas(pct);
                     set(
                       "valor_despesas_financiadas",
-                      Math.round((f.valor_financiamento || 0) * (pct / 100) * 100) / 100,
+                      Math.round((f.valor_imovel || 0) * (pct / 100) * 100) / 100,
                     );
                   }}
                   onBlur={() => {
@@ -838,7 +838,7 @@ function Pagina() {
                       setPctDespesas(1);
                       set(
                         "valor_despesas_financiadas",
-                        Math.round((f.valor_financiamento || 0) * 0.01 * 100) / 100,
+                        Math.round((f.valor_imovel || 0) * 0.01 * 100) / 100,
                       );
                     }
                   }}
@@ -848,7 +848,7 @@ function Pagina() {
                 </span>
               </div>
               <p className="mt-2 mb-1 text-xs text-muted-foreground">
-                Mínimo 1% e máximo 5% do valor financiado. Ajuste o valor abaixo se
+                Mínimo 1% e máximo 5% do valor do imóvel. Ajuste o valor abaixo se
                 necessário.
               </p>
               <CurrencyInput
