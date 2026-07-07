@@ -283,11 +283,27 @@ export async function enviarSimulacaoImpl({
       resultados.push(await enviarBanco(b));
     }
 
-    const sucesso = resultados.filter((r) => r.status === "simulada").length;
-
+    // Status geral considerando TODOS os bancos selecionados (não só os desta
+    // chamada), pois o envio pode ser feito banco a banco para dar progresso.
+    const { data: todosBancos } = await supabase
+      .from("simulacao_bancos")
+      .select("status_banco")
+      .eq("simulacao_id", simulacaoId)
+      .eq("selecionado", true);
+    const listaStatus = (todosBancos ?? []) as { status_banco: string | null }[];
+    const sucesso = listaStatus.filter((r) => r.status_banco === "simulada").length;
+    const pendentes = listaStatus.filter(
+      (r) => r.status_banco !== "simulada" && r.status_banco !== "erro",
+    ).length;
 
     const novoStatus =
-      sucesso === bancos.length ? "simulada" : sucesso > 0 ? "parcialmente_simulada" : "erro_banco";
+      pendentes > 0
+        ? "enviando"
+        : sucesso === listaStatus.length
+          ? "simulada"
+          : sucesso > 0
+            ? "parcialmente_simulada"
+            : "erro_banco";
     await supabase.from("simulacoes").update({ status: novoStatus }).eq("id", simulacaoId);
     await supabase.from("simulacao_historico").insert({
       simulacao_id: simulacaoId,
