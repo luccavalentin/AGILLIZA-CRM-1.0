@@ -210,6 +210,12 @@ export const navInterno: NavGroup[] = [
         ],
       },
       {
+        label: "Links",
+        icon: LinkIcon,
+        to: "/links",
+        perm: { modulo: "documentos.links" },
+      },
+      {
         label: "Controle de Matrículas",
         icon: ClipboardList,
         to: "/matriculas",
