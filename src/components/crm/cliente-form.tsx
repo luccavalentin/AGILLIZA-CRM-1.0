@@ -314,6 +314,11 @@ export function ClienteForm({
     // Normaliza o sexo para o valor canônico ("M"/"F") aceito pelo <Select>.
     base.sexo = normalizarSexo(base.sexo);
     base.conjuge_sexo = normalizarSexo(base.conjuge_sexo);
+    // Aplica máscaras de exibição em documentos/telefones vindos crus do banco.
+    if (base.documento) base.documento = mascararDocumentoTipo(base.documento, base.tipo_pessoa);
+    if (base.conjuge_cpf) base.conjuge_cpf = mascararCPF(base.conjuge_cpf);
+    if (base.telefone_celular) base.telefone_celular = mascararTelefone(base.telefone_celular);
+    if (base.conjuge_celular) base.conjuge_celular = mascararTelefone(base.conjuge_celular);
     if (base.conjuge_renda) {
       const n = Number(base.conjuge_renda);
       if (!isNaN(n)) base.conjuge_renda = formatarMoedaBR(n);
