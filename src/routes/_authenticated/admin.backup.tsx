@@ -153,12 +153,35 @@ function Pagina() {
             <FileSpreadsheet className="mr-2 h-4 w-4" />
             {baixando ? "Gerando Excel…" : "Baixar backup completo (Excel)"}
           </Button>
+          <Button variant="secondary" disabled={baixandoDocs} onClick={baixarDocumentos}>
+            <FolderArchive className="mr-2 h-4 w-4" />
+            {baixandoDocs ? "Gerando ZIP…" : "Baixar documentos (ZIP)"}
+          </Button>
           <Button variant="outline" disabled={criar.isPending} onClick={() => criar.mutate()}>
             <Play className="mr-2 h-4 w-4" />
             {criar.isPending ? "Gerando…" : "Gerar snapshot"}
           </Button>
         </div>
       </div>
+
+      {baixandoDocs && progresso ? (
+        <div className="rounded-lg border border-border bg-card p-4">
+          <div className="mb-2 flex items-center justify-between text-sm">
+            <span className="font-medium text-foreground">
+              {progresso.total === 0
+                ? "Preparando documentos…"
+                : `Compactando documentos (${progresso.baixados}/${progresso.total})`}
+            </span>
+            {progresso.falhas > 0 ? (
+              <span className="text-xs text-destructive">{progresso.falhas} falha(s)</span>
+            ) : null}
+          </div>
+          <Progress
+            value={progresso.total > 0 ? (progresso.baixados / progresso.total) * 100 : 5}
+          />
+        </div>
+      ) : null}
+
 
 
       <div className="rounded-lg border border-border bg-card">
