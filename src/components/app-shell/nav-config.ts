@@ -305,13 +305,19 @@ export const navInterno: NavGroup[] = [
             to: "/admin/pessoas",
             perm: { modulo: "admin.pessoas" },
           },
+          {
+            label: "Bancos",
+            icon: Landmark,
+            to: "/admin/bancos",
+            perm: { modulo: "admin.integracoes" },
+          },
+          {
+            label: "SLA & Feriados",
+            icon: Timer,
+            to: "/admin/sla",
+            perm: { modulo: "admin.sla" },
+          },
         ],
-      },
-      {
-        label: "Bancos",
-        icon: Landmark,
-        to: "/admin/bancos",
-        perm: { modulo: "admin.integracoes" },
       },
       {
         label: "APIs de IA",
@@ -319,7 +325,7 @@ export const navInterno: NavGroup[] = [
         to: "/admin/apis-ia",
         perm: { modulo: "admin.integracoes" },
       },
-      { label: "SLA & Feriados", icon: Timer, to: "/admin/sla", perm: { modulo: "admin.sla" } },
+
 
       {
         label: "Comissões",
