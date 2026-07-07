@@ -2,7 +2,40 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-export type Prioridade = "p1" | "p2" | "p3";
+export type Prioridade = string;
+
+export type CategoriaCatalogo = "tipo_demanda" | "prioridade" | "canal";
+
+export interface CatalogoItem {
+  id: string;
+  categoria: CategoriaCatalogo;
+  valor: string;
+  label: string;
+  ordem: number;
+  ativo: boolean;
+}
+
+/** Itens padrão clonados por correspondente no primeiro acesso a cada catálogo. */
+const CATALOGO_PADRAO: Record<CategoriaCatalogo, Array<{ valor: string; label: string }>> = {
+  tipo_demanda: [
+    { valor: "analise_documento", label: "Análise de documento" },
+    { valor: "correcao", label: "Correção" },
+    { valor: "reenvio_simulacao", label: "Reenvio de simulação" },
+    { valor: "renovacao", label: "Renovação" },
+    { valor: "lgpd", label: "LGPD" },
+    { valor: "geral", label: "Geral" },
+  ],
+  prioridade: [
+    { valor: "p1", label: "P1 — Alta" },
+    { valor: "p2", label: "P2 — Média" },
+    { valor: "p3", label: "P3 — Baixa" },
+  ],
+  canal: [
+    { valor: "gestor", label: "Gestor" },
+    { valor: "correspondente", label: "Correspondente" },
+  ],
+};
+
 
 export interface SlaConfig {
   id: string;
