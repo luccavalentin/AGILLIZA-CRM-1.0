@@ -29,6 +29,7 @@ import {
   moverStatusProposta,
   adicionarFollowup,
   adicionarEnvolvido,
+  obterConjugeCliente,
   atualizarEnvolvido,
   removerEnvolvido,
   registrarDocumento,
