@@ -182,7 +182,7 @@ function InternalLayout() {
 
   return (
     <AppShell
-      nav={navFiltrada}
+      nav={navComPastas}
       user={{
         id: profile?.id ?? "",
         nome: profile?.nome ?? null,
