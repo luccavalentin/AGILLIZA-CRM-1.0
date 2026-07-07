@@ -235,6 +235,23 @@ function Pagina() {
           <Button variant="ghost" onClick={duplicar}>
             <Copy className="mr-1 h-4 w-4" /> Duplicar
           </Button>
+          <Button variant="ghost" onClick={editar}>
+            <Pencil className="mr-1 h-4 w-4" /> Editar
+          </Button>
+          <ConfirmDelete
+            titulo="Excluir simulação"
+            descricao={`A simulação ${s.numero_simulacao} será removida permanentemente.`}
+            onConfirm={excluir}
+            trigger={
+              <Button
+                variant="ghost"
+                className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+              >
+                <Trash2 className="mr-1 h-4 w-4" /> Excluir
+              </Button>
+            }
+          />
+
         </div>
       </div>
 
