@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { UserRound, Loader2, Lock } from "lucide-react";
+import { UserRound, Loader2, Lock, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getMinhaSessao, atualizarMeuPerfil } from "@/lib/session.functions";
 import { supabase } from "@/integrations/supabase/client";
+
+// URL assinada de longa duração (~10 anos) para exibir a foto de um bucket privado.
+const URL_EXPIRACAO_SEGUNDOS = 60 * 60 * 24 * 365 * 10;
 
 export const Route = createFileRoute("/_authenticated/conta/perfil")({
   head: () => ({ meta: [{ title: "Meu perfil — Agilliza" }] }),
@@ -31,6 +34,43 @@ function Pagina() {
   const [nome, setNome] = useState("");
   const [telefone, setTelefone] = useState("");
   const [fotoUrl, setFotoUrl] = useState("");
+  const [enviandoFoto, setEnviandoFoto] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  async function enviarFoto(file: File) {
+    const userId = sessao?.profile?.id;
+    if (!userId) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Selecione um arquivo de imagem.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("A imagem deve ter no máximo 5 MB.");
+      return;
+    }
+    setEnviandoFoto(true);
+    try {
+      const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+      const path = `${userId}/avatar-${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from("avatars")
+        .upload(path, file, { upsert: true, contentType: file.type });
+      if (upErr) throw upErr;
+      const { data: signed, error: signErr } = await supabase.storage
+        .from("avatars")
+        .createSignedUrl(path, URL_EXPIRACAO_SEGUNDOS);
+      if (signErr || !signed) throw signErr ?? new Error("Falha ao gerar URL.");
+      setFotoUrl(signed.signedUrl);
+      toast.success("Foto enviada. Clique em Salvar alterações para confirmar.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao enviar a foto.");
+    } finally {
+      setEnviandoFoto(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
+
+
 
   useEffect(() => {
     if (sessao?.profile) {
@@ -96,16 +136,36 @@ function Pagina() {
                   <AvatarImage src={fotoUrl || undefined} alt={nome} />
                   <AvatarFallback>{iniciais}</AvatarFallback>
                 </Avatar>
-                <div className="flex-1 space-y-1.5">
-                  <Label htmlFor="foto">URL da foto</Label>
-                  <Input
-                    id="foto"
-                    value={fotoUrl}
-                    onChange={(e) => setFotoUrl(e.target.value)}
-                    placeholder="https://…"
+                <div className="flex-1 space-y-2">
+                  <Label>Foto de perfil</Label>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) enviarFoto(f);
+                    }}
                   />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={enviandoFoto}
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    {enviandoFoto ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Upload className="mr-2 h-4 w-4" />
+                    )}
+                    Enviar foto
+                  </Button>
+                  <p className="text-xs text-muted-foreground">JPG ou PNG, até 5 MB.</p>
                 </div>
               </div>
+
 
               <div className="space-y-1.5">
                 <Label htmlFor="nome">Nome completo</Label>
