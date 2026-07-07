@@ -91,6 +91,19 @@ export function EditarPessoaDialog({
             <Input id="ep-nome" value={nome} onChange={(e) => setNome(e.target.value)} required />
           </div>
           <div className="space-y-2">
+            <Label>Tipo de pessoa</Label>
+            <Select value={tipoPessoa} onValueChange={(v) => setTipoPessoa(v as TipoPessoa)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="usuario">Usuário (equipe interna)</SelectItem>
+                <SelectItem value="imobiliaria">Imobiliária</SelectItem>
+                <SelectItem value="corretor">Corretor</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
             <Label htmlFor="ep-email">E-mail</Label>
             <Input id="ep-email" value={pessoa?.email ?? ""} readOnly disabled />
           </div>
