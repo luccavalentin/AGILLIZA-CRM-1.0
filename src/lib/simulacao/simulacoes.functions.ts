@@ -256,7 +256,7 @@ export const criarSimulacao = createServerFn({ method: "POST" })
       compoe_renda: dd.compoe_renda ?? false,
       nome_conjuge: dd.nome_conjuge ?? null,
       cpf_conjuge: dd.cpf_conjuge ?? null,
-      data_nascimento_conjuge: dd.data_nascimento_conjuge ?? null,
+      data_nascimento_conjuge: dd.data_nascimento_conjuge || null,
       email_conjuge: dd.email_conjuge ?? null,
       celular_conjuge: dd.celular_conjuge ?? null,
       renda_conjuge: dd.renda_conjuge ?? null,
