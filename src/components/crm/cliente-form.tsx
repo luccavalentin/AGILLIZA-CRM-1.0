@@ -255,6 +255,8 @@ export function ClienteForm({
       const n = Number(base.renda_total_declarada);
       if (!isNaN(n)) base.renda_total_declarada = formatarMoedaBR(n);
     }
+    // Normaliza o sexo para o valor canônico ("M"/"F") aceito pelo <Select>.
+    base.sexo = normalizarSexo(base.sexo);
     return base;
   });
   const [end, setEnd] = useState({
