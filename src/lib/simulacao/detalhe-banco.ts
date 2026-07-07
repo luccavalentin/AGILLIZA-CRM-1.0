@@ -101,6 +101,13 @@ export function calcularCET(
   return Number.isFinite(anual) ? anual : null;
 }
 
+/** Primeiro vencimento padrão (mesmo dia do mês seguinte) quando o banco não informa a data. */
+function primeiroVencimentoPadrao(): string {
+  const d = new Date();
+  d.setMonth(d.getMonth() + 1);
+  return d.toISOString().slice(0, 10);
+}
+
 /** Soma `n` meses a uma data ISO (YYYY-MM-DD), devolvendo ISO. */
 function addMeses(dataIso: string | null, n: number): string | null {
   if (!dataIso) return null;
@@ -193,7 +200,9 @@ export function extrairDetalheBanco(raw: unknown): DetalheBanco | null {
   // Se o banco não devolveu o plano completo, calculamos localmente pelo sistema de amortização.
   if (parcelas.length <= 2 && valorFin && prazo && taxaMes) {
     const dataInicial =
-      (desc.firstInstallment?.dueDate as string) ?? (brutas[0]?.dueDate as string) ?? null;
+      (desc.firstInstallment?.dueDate as string) ??
+      (brutas[0]?.dueDate as string) ??
+      primeiroVencimentoPadrao();
     parcelas = calcularPlano(valorFin, prazo, taxaMes, sistema, dataInicial);
     estimadas = parcelas.length > 0;
   }
@@ -240,7 +249,14 @@ export function extrairDetalheBanco(raw: unknown): DetalheBanco | null {
     financiamentoTotal: num(r.valorTotalFinanciamento) ?? valorFin,
     valorEntrada: num(desc.downPayment) ?? num(r.valorEntrada),
     despesasFinanciadas,
-    tarifaAvaliacao: num(desc.propertyEvaluation),
+    tarifaAvaliacao:
+      num(desc.propertyEvaluation) ??
+      num(desc.appraisalFee) ??
+      num(desc.evaluationFee) ??
+      num(desc.guaranteeEvaluationFee) ??
+      num(r.valorTarifaAvaliacaoBanco) ??
+      num(r.valorTarifaAvaliacaoGarantiaBanco) ??
+      num(r.tarifaAvaliacaoGarantia),
     iof: num(desc.iof?.totalValue ?? desc.iof?.value) ?? num(r.valorIofBanco),
     fgts: num(desc.fgtsAmount) ?? num(r.valorFgts),
     prazoMeses: prazo,
