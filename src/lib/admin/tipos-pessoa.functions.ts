@@ -170,7 +170,7 @@ export const excluirTipoPessoa = createServerFn({ method: "POST" })
       .from("profiles")
       .select("id", { count: "exact", head: true })
       .eq("correspondente_id", corr)
-      .eq("tipo_pessoa", tipo.slug);
+      .or(`tipo_pessoa.eq.${tipo.slug},tipos_pessoa.cs.{${tipo.slug}}`);
     if ((count ?? 0) > 0) {
       throw new Error("Não é possível excluir: há pessoas vinculadas a este tipo.");
     }
