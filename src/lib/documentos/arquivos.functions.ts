@@ -18,6 +18,13 @@ export interface Migalha {
   nome: string;
 }
 
+export interface PastaFlat {
+  id: string;
+  nome: string;
+  caminho: string;
+}
+
+
 async function correspondenteDoUsuario(
   supabase: { from: (t: string) => any },
   userId: string,
