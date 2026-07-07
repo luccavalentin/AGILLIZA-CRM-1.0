@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Menu, PanelLeftClose, PanelLeft, LogOut, UserRound, Lock, Bell } from "lucide-react";
+import { Logo } from "@/components/brand/Logo";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
