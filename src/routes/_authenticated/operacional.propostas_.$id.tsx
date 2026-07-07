@@ -975,6 +975,7 @@ function TabEnvolvidos({
   const addFn = useServerFn(adicionarEnvolvido);
   const updFn = useServerFn(atualizarEnvolvido);
   const delFn = useServerFn(removerEnvolvido);
+  const conjClienteFn = useServerFn(obterConjugeCliente);
   const [open, setOpen] = useState(false);
   const [salvando, setSalvando] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
