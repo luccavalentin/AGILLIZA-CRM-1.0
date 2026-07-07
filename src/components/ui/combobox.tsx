@@ -169,33 +169,39 @@ export function AsyncCombobox({
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          type="button"
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          disabled={disabled}
-          className={cn(
-            "w-full justify-between font-normal",
-            !value && "text-muted-foreground",
-            className,
-          )}
-        >
-          <span className="truncate">{value || placeholder}</span>
-          {value ? (
-            <X
-              className="ml-2 h-4 w-4 shrink-0 opacity-60 hover:opacity-100"
-              onClick={(e) => {
-                e.stopPropagation();
-                onValueChange("");
-              }}
-            />
-          ) : (
-            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-          )}
-        </Button>
-      </PopoverTrigger>
+      <div className={cn("relative", className)}>
+        <PopoverTrigger asChild>
+          <Button
+            type="button"
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            disabled={disabled}
+            className={cn("w-full justify-between font-normal pr-9", !value && "text-muted-foreground")}
+          >
+            <span className="truncate">{value || placeholder}</span>
+            {!value && <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />}
+          </Button>
+        </PopoverTrigger>
+        {value && !disabled && (
+          <button
+            type="button"
+            aria-label="Limpar seleção"
+            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-sm p-0.5 opacity-60 hover:opacity-100"
+            onPointerDown={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onValueChange("");
+            }}
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
+      </div>
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
         <Command shouldFilter={false}>
           <CommandInput
