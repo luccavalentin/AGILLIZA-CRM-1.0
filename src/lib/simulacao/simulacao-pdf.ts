@@ -260,15 +260,19 @@ function drawInfoFinanciamento(
   return y + linhas * (cardH + gap) + 8;
 }
 
-/** Faixa com o nome do banco centralizado, na cor institucional do banco e com sua logo. */
+/** Faixa com o nome do banco centralizado: fundo branco, borda e texto na cor institucional do banco, com sua logo. */
 function drawFaixaBanco(doc: jsPDF, pageW: number, nomeBanco: string, y: number): number {
   const w = pageW - MARGIN * 2;
   const h = 30;
   const brand = resolveBancoBrand(nomeBanco);
   const cor = brand?.cor ?? AZUL;
 
-  doc.setFillColor(cor);
-  doc.roundedRect(MARGIN, y, w, h, 3, 3, "F");
+  // Fundo branco com borda na cor institucional do banco
+  doc.setFillColor("#FFFFFF");
+  doc.setDrawColor(cor);
+  doc.setLineWidth(0.8);
+  doc.roundedRect(MARGIN, y, w, h, 3, 3, "FD");
+  doc.setLineWidth(0.2);
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(13);
@@ -288,7 +292,7 @@ function drawFaixaBanco(doc: jsPDF, pageW: number, nomeBanco: string, y: number)
       /* fallback silencioso */
     }
   }
-  doc.setTextColor("#FFFFFF");
+  doc.setTextColor(cor);
   doc.text(nomeBanco, startX + logoW + gap, midY + 4.5);
   return y + h + 12;
 }
