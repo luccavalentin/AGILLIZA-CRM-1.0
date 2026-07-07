@@ -317,12 +317,47 @@ export const clienteMinhasPropostas = createServerFn({ method: "GET" }).handler(
 // ----------------------------------------------------------------------------
 // Chat
 // ----------------------------------------------------------------------------
+const IMG_EXT = /\.(png|jpe?g|gif|webp|heic|heif|bmp|svg)$/i;
+
+// Resolve anexos: caminho no storage vira URL assinada temporária; URLs http
+// externas são mantidas como estão.
+async function resolverAnexos(
+  db: ReturnType<typeof import("./portal-db.server").portalDb>,
+  linhas: any[],
+): Promise<MensagemCliente[]> {
+  return Promise.all(
+    (linhas ?? []).map(async (m) => {
+      let anexoUrl: string | null = m.anexo_url ?? null;
+      let anexoNome: string | null = null;
+      if (anexoUrl && !/^https?:\/\//i.test(anexoUrl)) {
+        const partes = anexoUrl.split("/");
+        anexoNome = partes[partes.length - 1]?.replace(/^\d+-[0-9a-f-]+\./i, "arquivo.") ?? null;
+        const { data: signed } = await db.storage
+          .from("cliente-documentos")
+          .createSignedUrl(anexoUrl, 3600);
+        anexoUrl = signed?.signedUrl ?? null;
+      }
+      return {
+        id: m.id,
+        remetente_tipo: m.remetente_tipo,
+        mensagem: m.mensagem,
+        anexo_url: anexoUrl,
+        anexo_nome: anexoNome,
+        anexo_is_imagem: anexoUrl ? IMG_EXT.test(anexoUrl.split("?")[0]) : false,
+        lida_em: m.lida_em ?? null,
+        criada_em: m.criada_em,
+      } as MensagemCliente;
+    }),
+  );
+}
+
 export const clienteListarMensagens = createServerFn({ method: "GET" }).handler(
   async (): Promise<MensagemCliente[]> => {
     const sess = requireClienteSession();
     const { portalDb } = await import("./portal-db.server");
-    const { data } = await portalDb().rpc("portal_listar_mensagens", { _cid: sess.cid });
-    return ((data as any[]) ?? []) as MensagemCliente[];
+    const db = portalDb();
+    const { data } = await db.rpc("portal_listar_mensagens", { _cid: sess.cid });
+    return resolverAnexos(db, (data as any[]) ?? []);
   },
 );
 
@@ -336,14 +371,50 @@ export const clienteEnviarMensagem = createServerFn({ method: "POST" })
   .handler(async ({ data }): Promise<MensagemCliente> => {
     const sess = requireClienteSession();
     const { portalDb } = await import("./portal-db.server");
-    const { data: nova, error } = await portalDb().rpc("portal_enviar_mensagem", {
+    const db = portalDb();
+    const { data: nova, error } = await db.rpc("portal_enviar_mensagem", {
       _cid: sess.cid,
       _corr: sess.corr,
       _msg: data.mensagem,
       _anexo: data.anexo_url ?? null,
     } as any);
     if (error || !nova) throw new Error("Não foi possível enviar a mensagem.");
-    return nova as unknown as MensagemCliente;
+    return (await resolverAnexos(db, [nova]))[0];
+  });
+
+// Enviar mensagem com anexo (foto/documento) — upload em base64
+const enviarAnexoSchema = z.object({
+  mensagem: z.string().trim().max(2000).optional(),
+  nome_arquivo: z.string().trim().min(1).max(255),
+  mime_type: z.string().trim().min(1).max(120),
+  conteudo_base64: z.string().min(1).max(15_000_000),
+});
+
+export const clienteEnviarMensagemAnexo = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => enviarAnexoSchema.parse(d))
+  .handler(async ({ data }): Promise<MensagemCliente> => {
+    const sess = requireClienteSession();
+    const { portalDb } = await import("./portal-db.server");
+    const db = portalDb();
+
+    const bin = Buffer.from(data.conteudo_base64, "base64");
+    if (bin.length > 10 * 1024 * 1024) throw new Error("Arquivo muito grande (máx. 10MB).");
+    const ext = data.nome_arquivo.split(".").pop() ?? "bin";
+    const path = `${sess.cid}/chat/${Date.now()}-${crypto.randomUUID()}.${ext}`;
+
+    const { error: upErr } = await db.storage
+      .from("cliente-documentos")
+      .upload(path, bin, { contentType: data.mime_type, upsert: false });
+    if (upErr) throw new Error("Falha ao enviar o arquivo. Tente novamente.");
+
+    const { data: nova, error } = await db.rpc("portal_enviar_mensagem", {
+      _cid: sess.cid,
+      _corr: sess.corr,
+      _msg: data.mensagem?.trim() || data.nome_arquivo,
+      _anexo: path,
+    } as any);
+    if (error || !nova) throw new Error("Não foi possível enviar a mensagem.");
+    return (await resolverAnexos(db, [nova]))[0];
   });
 
 const marcarLidaSchema = z.object({ mensagem_ids: z.array(z.string().uuid()).max(500) });
