@@ -132,11 +132,12 @@ function Pagina() {
     enabled: Boolean(duplicar),
   });
 
-  // pré-preenche do wizard
+  // pré-preenche do wizard (consome e limpa imediatamente para não fixar o cliente)
   useEffect(() => {
     if (duplicar) return; // ao duplicar, os dados vêm da simulação de origem
     const raw = sessionStorage.getItem("simulacao_wizard");
     if (raw) {
+      sessionStorage.removeItem("simulacao_wizard");
       try {
         const w = JSON.parse(raw);
         setF((prev) => ({ ...prev, ...w }));
@@ -736,26 +737,53 @@ function Pagina() {
       <section className="space-y-4">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="text-sm font-semibold text-foreground">Titular</h2>
-          <div className="w-full sm:w-72">
-            <ClienteCRMPicker
-              selecionado={f.cliente_id ? f.nome_cliente : null}
-              onSelect={(c) => {
-                const ec = estadoCivilCrmParaCodigo(c.estado_civil);
-                setF((prev) => ({
-                  ...prev,
-                  cliente_id: c.id,
-                  nome_cliente: c.nome ?? "",
-                  cpf_cnpj: c.documento ? maskCpfCnpj(c.documento) : "",
-                  email: c.email ?? "",
-                  celular: c.telefone_celular ? maskCelular(c.telefone_celular) : "",
-                  data_nascimento: c.data_nascimento ?? "",
-                  estado_civil: ec || prev.estado_civil,
-                  renda_total: c.renda_total_declarada ?? prev.renda_total,
-                  possui_conjuge: ec === "CA" || ec === "UE",
-                }));
-                toast.success("Dados do cliente preenchidos.");
-              }}
-            />
+          <div className="flex w-full items-center gap-2 sm:w-auto">
+            <div className="w-full sm:w-72">
+              <ClienteCRMPicker
+                selecionado={f.cliente_id ? f.nome_cliente : null}
+                onSelect={(c) => {
+                  const ec = estadoCivilCrmParaCodigo(c.estado_civil);
+                  setF((prev) => ({
+                    ...prev,
+                    cliente_id: c.id,
+                    nome_cliente: c.nome ?? "",
+                    cpf_cnpj: c.documento ? maskCpfCnpj(c.documento) : "",
+                    email: c.email ?? "",
+                    celular: c.telefone_celular ? maskCelular(c.telefone_celular) : "",
+                    data_nascimento: c.data_nascimento ?? "",
+                    estado_civil: ec || prev.estado_civil,
+                    renda_total: c.renda_total_declarada ?? prev.renda_total,
+                    possui_conjuge: ec === "CA" || ec === "UE",
+                  }));
+                  toast.success("Dados do cliente preenchidos.");
+                }}
+              />
+            </div>
+            {f.cliente_id && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="shrink-0"
+                onClick={() => {
+                  setF((prev) => ({
+                    ...prev,
+                    cliente_id: null,
+                    nome_cliente: "",
+                    cpf_cnpj: "",
+                    email: "",
+                    celular: "",
+                    data_nascimento: "",
+                    estado_civil: "",
+                    renda_total: 0,
+                    possui_conjuge: false,
+                  }));
+                  toast.info("Titular removido. Pesquise outro cliente ou preencha manualmente.");
+                }}
+              >
+                Limpar
+              </Button>
+            )}
           </div>
         </div>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
