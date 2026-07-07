@@ -674,7 +674,14 @@ export function ClienteForm({
             <Label>Tipo de pessoa</Label>
             <Select
               value={v.tipo_pessoa}
-              onValueChange={(x) => set("tipo_pessoa", x as "PF" | "PJ")}
+              onValueChange={(x) => {
+                const tp = x as "PF" | "PJ";
+                setV((prev) => ({
+                  ...prev,
+                  tipo_pessoa: tp,
+                  documento: mascararDocumentoTipo(prev.documento, tp),
+                }));
+              }}
             >
               <SelectTrigger>
                 <SelectValue />
