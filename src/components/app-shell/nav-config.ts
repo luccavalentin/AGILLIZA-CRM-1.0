@@ -155,12 +155,52 @@ export const navInterno: NavGroup[] = [
         icon: ListChecks,
         to: "/operacional/tarefas",
         perm: { modulo: "operacional.tarefas" },
+        children: [
+          {
+            label: "Consultar tarefas",
+            icon: ListChecks,
+            to: "/operacional/tarefas",
+            perm: { modulo: "operacional.tarefas" },
+          },
+          {
+            label: "Calendário",
+            icon: CalendarDays,
+            to: "/operacional/tarefas/calendario",
+            perm: { modulo: "operacional.tarefas" },
+          },
+          {
+            label: "Equipe",
+            icon: Users,
+            to: "/operacional/tarefas/equipe",
+            perm: { modulo: "operacional.tarefas" },
+          },
+          {
+            label: "Kanban",
+            icon: KanbanSquare,
+            to: "/operacional/tarefas/kanban",
+            perm: { modulo: "operacional.tarefas" },
+          },
+        ],
       },
       {
         label: "Demandas",
         icon: Inbox,
         to: "/operacional/demandas",
         perm: { modulo: "operacional.demandas" },
+        children: [
+          {
+            label: "Consultar demandas",
+            icon: Inbox,
+            to: "/operacional/demandas",
+            perm: { modulo: "operacional.demandas" },
+          },
+          {
+            label: "Kanban",
+            icon: KanbanSquare,
+            to: "/operacional/demandas/kanban",
+            perm: { modulo: "operacional.demandas" },
+          },
+        ],
       },
     ],
   },
