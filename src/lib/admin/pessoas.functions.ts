@@ -25,14 +25,10 @@ export const criarSchema = z
   .refine((d) => !d.com_login || (d.email && d.email.trim().length > 0), {
     message: "Informe um e-mail para pessoas com acesso ao sistema.",
     path: ["email"],
-  })
-  .refine((d) => d.tipo_pessoa !== "usuario" || d.com_login, {
-    message: "Usuário interno precisa ter acesso ao sistema.",
-    path: ["com_login"],
   });
 
 export type CriarPessoaInput = z.infer<typeof criarSchema>;
-export type TipoPessoa = "usuario" | "imobiliaria" | "corretor";
+export type TipoPessoa = string;
 
 export interface PessoaLista {
   id: string;
