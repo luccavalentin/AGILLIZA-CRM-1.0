@@ -231,8 +231,11 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
   function abrirEdicao(d: any) {
     setEditDoc(d);
     setEditCategoria(d.categoria);
-    setEditTipo(d.tipo_documento ?? "");
+    const t = d.tipo_documento ?? "";
+    setEditTipo(t);
+    setEditTipoOutro(t !== "" && !tiposParaCategorias([d.categoria as Categoria]).includes(t));
   }
+
 
   async function salvarEdicao() {
     if (!editDoc) return;
