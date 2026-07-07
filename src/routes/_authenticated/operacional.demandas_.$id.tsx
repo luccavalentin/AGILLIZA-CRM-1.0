@@ -95,10 +95,10 @@ function Pagina() {
     }
   }
 
-  async function baixarAnexo(storage_path: string) {
+  async function baixarAnexo(storage_path: string, nome: string) {
     try {
       const { url } = await urlAnexoFn({ data: { storage_path } });
-      window.open(url, "_blank", "noopener");
+      setVisualizando({ url, nome });
     } catch {
       toast.error("Falha ao gerar link do anexo.");
     }
