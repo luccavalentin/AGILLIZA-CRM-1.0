@@ -680,12 +680,15 @@ function Pagina() {
           </Campo>
 
           <Campo label="Valor total do financiamento (R$)">
-            <CurrencyInput value={f.valor_financiamento} onChange={() => {}} />
+            <div className="flex h-10 items-center rounded-md border border-input bg-muted/40 px-3 text-sm font-semibold tabular-nums text-foreground">
+              {formatBRL(f.valor_financiamento)}
+            </div>
             <p className="text-xs text-muted-foreground">
               Calculado automaticamente: valor do imóvel − entrada
-              {f.financiar_despesas ? " (despesas incluídas ao enviar)" : ""}.
+              {f.fg_financiar_despesas ? " (despesas incluídas ao enviar)" : ""}.
             </p>
           </Campo>
+
 
 
 
