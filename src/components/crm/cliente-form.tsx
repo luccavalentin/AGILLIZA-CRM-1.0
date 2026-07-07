@@ -771,7 +771,8 @@ export function ClienteForm({
         </CardContent>
       </Card>
 
-      {(v.estado_civil === "casado" || v.estado_civil === "uniao_estavel") && (
+      {v.tipo_pessoa === "PF" &&
+        (v.estado_civil === "casado" || v.estado_civil === "uniao_estavel") && (
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Dados do cônjuge</CardTitle>
