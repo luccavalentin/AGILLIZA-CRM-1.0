@@ -259,7 +259,7 @@ function Pagina() {
   }
 
   // Apenas o Bradesco opera pelo sistema PRICE.
-  function isBradesco(b: { codigo_banco?: string | null; nome_banco?: string | null }) {
+  function isBradesco(b: { codigo_banco?: number | string | null; nome_banco?: string | null }) {
     return (
       String(b.codigo_banco ?? "").replace(/^0+/, "") === "237" ||
       (b.nome_banco ?? "").toLowerCase().includes("bradesco")
