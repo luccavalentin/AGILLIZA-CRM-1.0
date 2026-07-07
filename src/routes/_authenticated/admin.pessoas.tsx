@@ -252,7 +252,14 @@ function PessoasPage() {
                         !p.roles.includes("correspondente") && !p.roles.includes("admin");
                       return (
                         <TableRow key={p.id}>
-                          <TableCell className="font-medium">{p.nome ?? "—"}</TableCell>
+                          <TableCell className="font-medium">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span>{p.nome ?? "—"}</span>
+                              <Badge variant="outline" className="font-normal">
+                                {ROTULO_TIPO[p.tipo_pessoa] ?? "Usuário"}
+                              </Badge>
+                            </div>
+                          </TableCell>
                           <TableCell className="text-muted-foreground">{p.email ?? "—"}</TableCell>
                           <TableCell>
                             {p.nivel_acesso_nome ??
@@ -270,9 +277,13 @@ function PessoasPage() {
                             </Badge>
                           </TableCell>
                           <TableCell>
-                            <Badge variant={ativo ? "default" : "destructive"}>
-                              {ativo ? "Ativo" : "Inativo"}
-                            </Badge>
+                            {!p.login_habilitado ? (
+                              <Badge variant="secondary">Sem login</Badge>
+                            ) : (
+                              <Badge variant={ativo ? "default" : "destructive"}>
+                                {ativo ? "Ativo" : "Inativo"}
+                              </Badge>
+                            )}
                           </TableCell>
                           {podeGerenciar && (
                             <TableCell className="text-right">
