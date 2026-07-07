@@ -61,6 +61,7 @@ export function EditarPessoaDialog({
           nome: nome.trim(),
           telefone: telefone.trim() || null,
           nivel_acesso_id: nivelId,
+          tipo_pessoa: tipoPessoa,
         },
       }),
     onSuccess: async () => {
