@@ -693,9 +693,9 @@ export const runReport = createServerFn({ method: "POST" })
             rows: breakdown(rows, (p) => PRODUTO_LABEL(p.produto), valFn),
           },
           {
-            titulo: "Por analista Adm",
-            columns: colsBreak("Analista Adm"),
-            rows: breakdown(rows, nomeAnalista, valFn),
+            titulo: "Por analista Adm · separado por banco",
+            columns: colsBreak2("Analista Adm", "Banco"),
+            rows: breakdown2(rows, nomeAnalista, (p) => p.nome_banco, valFn),
           },
           {
             titulo: "Por analista Comercial · separado por banco",
