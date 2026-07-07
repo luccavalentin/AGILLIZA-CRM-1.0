@@ -368,6 +368,12 @@ export function ClienteForm({
     const renda = Number(v.renda_total_declarada.replace(/\./g, "").replace(",", "."));
     if (isNaN(renda) || renda < 0) return toast.error("Renda inválida.");
 
+    const casado = v.estado_civil === "casado" || v.estado_civil === "uniao_estavel";
+    if (casado && !v.conjuge_nome.trim()) return toast.error("Informe o nome do cônjuge.");
+    const rendaConjuge = v.conjuge_renda
+      ? Number(v.conjuge_renda.replace(/\./g, "").replace(",", "."))
+      : null;
+
     setSalvando(true);
     try {
       const payload = {
@@ -401,6 +407,23 @@ export function ClienteForm({
         utiliza_fgts: v.utiliza_fgts,
         fg_autorizacao_dados: v.fg_autorizacao_dados,
         origem: v.origem as any,
+        // Cônjuge: só envia quando casado/união estável; caso contrário limpa.
+        conjuge_nome: casado ? v.conjuge_nome.trim() || null : null,
+        conjuge_cpf: casado ? soDigitos(v.conjuge_cpf) || null : null,
+        conjuge_data_nascimento: casado ? v.conjuge_data_nascimento || null : null,
+        conjuge_nome_mae: casado ? v.conjuge_nome_mae.trim() || null : null,
+        conjuge_sexo: casado ? v.conjuge_sexo || null : null,
+        conjuge_nacionalidade: casado ? v.conjuge_nacionalidade.trim() || null : null,
+        conjuge_tipo_documento_identidade: casado ? v.conjuge_tipo_documento_identidade || null : null,
+        conjuge_numero_documento: casado ? v.conjuge_numero_documento.trim() || null : null,
+        conjuge_orgao_expedidor: casado ? v.conjuge_orgao_expedidor.trim() || null : null,
+        conjuge_uf_expedicao: casado ? v.conjuge_uf_expedicao || null : null,
+        conjuge_data_expedicao: casado ? v.conjuge_data_expedicao || null : null,
+        conjuge_profissao: casado ? v.conjuge_profissao.trim() || null : null,
+        conjuge_empresa: casado ? v.conjuge_empresa.trim() || null : null,
+        conjuge_renda: casado ? rendaConjuge : null,
+        conjuge_email: casado ? v.conjuge_email.trim() || null : null,
+        conjuge_celular: casado ? soDigitos(v.conjuge_celular) || null : null,
       };
       let id = v.id;
       if (id) {
