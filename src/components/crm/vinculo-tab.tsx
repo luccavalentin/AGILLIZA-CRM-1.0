@@ -34,7 +34,7 @@ export function VinculoTab({
   const listarDisp = useServerFn(listarParceirosDisponiveis);
   const vincular = useServerFn(vincularParceiro);
   const desvincular = useServerFn(desvincularParceiro);
-  const [selecionado, setSelecionado] = useState("");
+  const [selecao, setSelecao] = useState<Record<string, string>>({});
 
   const vinculos = useQuery({
     queryKey: ["cliente-vinculos", clienteId],
@@ -46,10 +46,11 @@ export function VinculoTab({
   });
 
   const adicionar = useMutation({
-    mutationFn: (parceiro_id: string) => vincular({ data: { cliente_id: clienteId, parceiro_id } }),
-    onSuccess: () => {
+    mutationFn: (v: { parceiro_id: string; tipo_vinculo: TipoVinculo }) =>
+      vincular({ data: { cliente_id: clienteId, ...v } }),
+    onSuccess: (_r, v) => {
       toast.success("Vínculo criado.");
-      setSelecionado("");
+      setSelecao((prev) => ({ ...prev, [v.tipo_vinculo]: "" }));
       qc.invalidateQueries({ queryKey: ["cliente-vinculos", clienteId] });
     },
     onError: (e: any) => toast.error(e?.message ?? "Não foi possível vincular."),
@@ -64,11 +65,8 @@ export function VinculoTab({
     onError: (e: any) => toast.error(e?.message ?? "Não foi possível remover."),
   });
 
-  const jaVinculados = new Set((vinculos.data ?? []).map((v) => v.parceiro_id));
-  const opcoes = (disponiveis.data ?? []).filter((p) => !jaVinculados.has(p.id));
-
   return (
-    <div className="grid gap-4 sm:grid-cols-2">
+    <div className="space-y-4">
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm">Responsável pelo atendimento</CardTitle>
@@ -81,80 +79,101 @@ export function VinculoTab({
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="flex items-center gap-2 text-sm">
-            <Users className="size-4" /> Parceiros vinculados
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-end gap-2">
-            <div className="flex-1">
-              <Select value={selecionado} onValueChange={setSelecionado}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione um usuário" />
-                </SelectTrigger>
-                <SelectContent>
-                  {opcoes.length === 0 ? (
-                    <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                      Nenhum usuário disponível
-                    </div>
-                  ) : (
-                    opcoes.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>
-                        {p.nome ?? p.email ?? p.id}
-                      </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
-            </div>
-            <Button
-              type="button"
-              disabled={!selecionado || adicionar.isPending}
-              onClick={() => adicionar.mutate(selecionado)}
-            >
-              {adicionar.isPending ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <UserPlus className="size-4" />
-              )}
-              Vincular
-            </Button>
-          </div>
-
-          {vinculos.isLoading ? (
-            <p className="text-sm text-muted-foreground">Carregando…</p>
-          ) : (vinculos.data?.length ?? 0) === 0 ? (
-            <p className="rounded-md border border-dashed border-border px-3 py-6 text-center text-sm text-muted-foreground">
-              Nenhum parceiro vinculado a este cliente.
-            </p>
-          ) : (
-            <div className="space-y-2">
-              {vinculos.data!.map((v) => (
-                <div
-                  key={v.id}
-                  className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card p-3 text-sm"
-                >
-                  <div className="min-w-0">
-                    <p className="truncate font-medium text-foreground">
-                      {v.nome ?? v.email ?? v.parceiro_id}
-                    </p>
-                    {v.email && v.nome && (
-                      <p className="truncate text-xs text-muted-foreground">{v.email}</p>
-                    )}
+      <div className="grid gap-4 md:grid-cols-3">
+        {TIPOS_VINCULO.map((tipo) => {
+          const desteTipo = (vinculos.data ?? []).filter(
+            (v) => v.tipo_vinculo === tipo.valor,
+          );
+          const jaVinculados = new Set(desteTipo.map((v) => v.parceiro_id));
+          const opcoes = (disponiveis.data ?? []).filter((p) => !jaVinculados.has(p.id));
+          const sel = selecao[tipo.valor] ?? "";
+          return (
+            <Card key={tipo.valor}>
+              <CardHeader className="pb-2">
+                <CardTitle className="flex items-center gap-2 text-sm">
+                  <Users className="size-4" /> {tipo.rotulo}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-end gap-2">
+                  <div className="flex-1">
+                    <Select
+                      value={sel}
+                      onValueChange={(val) =>
+                        setSelecao((prev) => ({ ...prev, [tipo.valor]: val }))
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione um usuário" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {opcoes.length === 0 ? (
+                          <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                            Nenhum usuário disponível
+                          </div>
+                        ) : (
+                          opcoes.map((p) => (
+                            <SelectItem key={p.id} value={p.id}>
+                              {p.nome ?? p.email ?? p.id}
+                            </SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
                   </div>
-                  <ConfirmDelete
-                    titulo="Remover vínculo"
-                    descricao="O vínculo deste usuário com o cliente será removido."
-                    onConfirm={() => remover.mutateAsync(v.id).then(() => undefined)}
-                  />
+                  <Button
+                    type="button"
+                    size="icon"
+                    disabled={!sel || adicionar.isPending}
+                    onClick={() =>
+                      adicionar.mutate({ parceiro_id: sel, tipo_vinculo: tipo.valor })
+                    }
+                  >
+                    {adicionar.isPending ? (
+                      <Loader2 className="size-4 animate-spin" />
+                    ) : (
+                      <UserPlus className="size-4" />
+                    )}
+                  </Button>
                 </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+
+                {vinculos.isLoading ? (
+                  <p className="text-sm text-muted-foreground">Carregando…</p>
+                ) : desteTipo.length === 0 ? (
+                  <p className="rounded-md border border-dashed border-border px-3 py-6 text-center text-xs text-muted-foreground">
+                    Nenhum vínculo neste tipo.
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {desteTipo.map((v) => (
+                      <div
+                        key={v.id}
+                        className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card p-3 text-sm"
+                      >
+                        <div className="min-w-0">
+                          <p className="truncate font-medium text-foreground">
+                            {v.nome ?? v.email ?? v.parceiro_id}
+                          </p>
+                          {v.email && v.nome && (
+                            <p className="truncate text-xs text-muted-foreground">{v.email}</p>
+                          )}
+                        </div>
+                        <ConfirmDelete
+                          titulo="Remover vínculo"
+                          descricao="O vínculo deste usuário com o cliente será removido."
+                          onConfirm={() =>
+                            remover.mutateAsync(v.id).then(() => undefined)
+                          }
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
     </div>
   );
 }
