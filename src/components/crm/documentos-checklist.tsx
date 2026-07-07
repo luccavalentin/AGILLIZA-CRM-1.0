@@ -217,14 +217,10 @@ export function DocumentosChecklist({ clienteId }: { clienteId: string }) {
               <p className="mb-1 text-xs font-medium text-muted-foreground">
                 Documentos para uso do FGTS
               </p>
-              <DocItem
-                itemKey="fgts_end"
-                cat="comprador"
-                label="Comprovante de endereço no nome do utilizador do FGTS"
-              />
-              <DocItem itemKey="fgts_irpf" cat="comprador" label="IRPF completo com recibo" />
-              <DocItem itemKey="fgts_ctps" cat="comprador" label="CTPS digital completa" />
-              <DocItem itemKey="fgts_extrato" cat="comprador" label="Extrato atualizado do FGTS" />
+              <DocItem itemKey="fgts_end" cat="comprador" label={T.comprador[3]} />
+              <DocItem itemKey="fgts_irpf" cat="comprador" label={T.comprador[4]} />
+              <DocItem itemKey="fgts_ctps" cat="comprador" label={T.comprador[5]} />
+              <DocItem itemKey="fgts_extrato" cat="comprador" label={T.comprador[6]} />
             </div>
           )}
         </CardContent>
