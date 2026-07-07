@@ -476,6 +476,17 @@ async function forkNivelPadrao(
     const { error: erroPerms } = await supabase.from("permissions").insert(rows);
     if (erroPerms) throw new Error(erroPerms.message);
   }
+
+  // Se pessoas do ecossistema ainda apontam para o template global oculto,
+  // movemos todas para a cópia visível/editável. Sem isso, a tela parece salvar,
+  // mas o usuário continua usando as permissões antigas do template global.
+  const { error: perfilErr } = await supabase
+    .from("profiles")
+    .update({ nivel_acesso_id: copia.id })
+    .eq("correspondente_id", corresp)
+    .eq("nivel_acesso_id", origemId);
+  if (perfilErr) throw new Error(perfilErr.message);
+
   return copia.id;
 }
 
@@ -828,12 +839,6 @@ export const salvarPermissoes = createServerFn({ method: "POST" })
         });
       });
       if (alvoRows.length) {
-        const { error: alvoErr } = await supabase
-          .from("permission_escopo_alvos")
-          .delete()
-          .in("permission_id", (inseridas ?? []).map((p: any) => p.id));
-        if (alvoErr) throw new Error(alvoErr.message);
-
         const { error: alvoInsertErr } = await supabaseAdmin
           .from("permission_escopo_alvos")
           .insert(alvoRows);
