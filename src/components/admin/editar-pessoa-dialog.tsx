@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { listarNiveisAcesso } from "@/lib/admin/regras-modulos.functions";
-import { atualizarPessoa, type PessoaLista } from "@/lib/admin/pessoas.functions";
+import { atualizarPessoa, type PessoaLista, type TipoPessoa } from "@/lib/admin/pessoas.functions";
 
 export function EditarPessoaDialog({
   pessoa,
