@@ -213,7 +213,7 @@ function Pagina() {
               key={col.destino}
               onDragOver={(e) => e.preventDefault()}
               onDrop={() => soltar(col.destino)}
-              className="flex min-h-40 max-h-[26rem] min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-muted/30 shadow-sm"
+              className="flex min-h-40 max-h-[30rem] min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-muted/30 shadow-sm"
             >
               <div className="shrink-0 overflow-hidden rounded-t-xl">
                 <div className={cn("h-[3px]", TONE_BAR[cfg.tone])} />
