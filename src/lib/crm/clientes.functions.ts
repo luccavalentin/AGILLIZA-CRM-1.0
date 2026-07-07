@@ -1140,7 +1140,7 @@ export const salvarChecklist = createServerFn({ method: "POST" })
     }
     const patch: Record<string, unknown> = { documentos_checklist: data.checklist };
     if (typeof data.utiliza_fgts === "boolean") patch.utiliza_fgts = data.utiliza_fgts;
-    const { error } = await supabase.from("clientes").update(patch).eq("id", data.cliente_id);
+    const { error } = await supabase.from("clientes").update(patch as never).eq("id", data.cliente_id);
     if (error) throw error;
     return { ok: true };
   });
