@@ -703,9 +703,14 @@ function PainelGestao({
   return (
     <Card className="h-[38rem] overflow-y-auto border-border/60 shadow-sm">
       <CardContent className="space-y-4 p-4">
-        <div>
-          <p className="text-sm font-semibold text-foreground">Gestão da conversa</p>
-          <p className="text-xs text-muted-foreground">{nome}</p>
+        <div className="flex items-center gap-2.5 rounded-xl border border-border/60 bg-gradient-to-r from-primary/5 to-transparent p-3">
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary/80 to-primary/50 text-xs font-semibold text-primary-foreground shadow-sm">
+            {iniciais(nome)}
+          </span>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold leading-tight text-foreground">Gestão da conversa</p>
+            <p className="truncate text-xs text-muted-foreground">{nome}</p>
+          </div>
         </div>
 
         {/* Etiquetas */}
