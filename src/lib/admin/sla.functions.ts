@@ -92,13 +92,14 @@ export const salvarSlaConfiguracao = createServerFn({ method: "POST" })
       .object({
         id: z.string().uuid().optional(),
         tipo: z.string().min(1),
-        prioridade: z.enum(["p1", "p2", "p3"]),
+        prioridade: z.string().min(1),
         horas_uteis: z.number().positive().max(2000),
         canal_escalonamento: z.string().min(1).default("gestor"),
         ativo: z.boolean().default(true),
       })
       .parse(d),
   )
+
   .handler(async ({ data, context }): Promise<SlaConfig> => {
     const { supabase, userId } = context;
     const corr = await correspondenteId(supabase, userId);
