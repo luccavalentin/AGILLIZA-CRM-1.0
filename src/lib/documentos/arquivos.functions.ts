@@ -265,12 +265,12 @@ export const caminhoNo = createServerFn({ method: "GET" })
     const trilha: Migalha[] = [];
     let atual: string | null = data.id;
     for (let i = 0; i < 50 && atual; i++) {
-      const { data: no } = await supabase
+      const { data: no } = (await supabase
         .from("arquivos_nos")
         .select("id, nome, parent_id")
         .eq("id", atual)
         .eq("correspondente_id", corr)
-        .maybeSingle();
+        .maybeSingle()) as { data: { id: string; nome: string; parent_id: string | null } | null };
       if (!no) break;
       trilha.unshift({ id: no.id, nome: no.nome });
       atual = no.parent_id;
