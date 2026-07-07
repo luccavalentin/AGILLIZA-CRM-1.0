@@ -502,7 +502,50 @@ export const criarProposta = createServerFn({ method: "POST" })
     return { proposta_id: inserted.id, numero_proposta: inserted.numero_proposta };
   });
 
+/**
+ * Dados do cônjuge já cadastrados na ficha do cliente (CRM), mapeados para o
+ * formato do formulário de envolvido. Usado para pré-preencher o bloco do
+ * cônjuge quando a proposta ainda não tem o coproponente cadastrado.
+ */
+export const obterConjugeCliente = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ cliente_id: z.string().uuid() }).parse(d))
+  .handler(async ({ context, data }): Promise<Record<string, unknown> | null> => {
+    const { supabase } = context;
+    const { data: cli } = await supabase
+      .from("clientes")
+      .select("*")
+      .eq("id", data.cliente_id)
+      .maybeSingle();
+    if (!cli) return null;
+    const c = cli as any;
+    const casado = ["casado", "uniao_estavel"].includes(String(c.estado_civil ?? ""));
+    if (!casado || (!c.conjuge_nome && !c.conjuge_cpf)) return null;
+    return {
+      tipo_qualificacao: "TI",
+      tipo_pessoa: "F",
+      nome: c.conjuge_nome,
+      cpf_cnpj: c.conjuge_cpf,
+      data_nascimento: c.conjuge_data_nascimento,
+      nome_mae: c.conjuge_nome_mae,
+      tipo_sexo: c.conjuge_sexo ? String(c.conjuge_sexo).trim().charAt(0).toUpperCase() : c.conjuge_sexo,
+      estado_civil: estadoCivilCrmParaCodigo(c.estado_civil) || null,
+      regime_casamento: regimeCasamentoCrmParaCodigo(c.regime_casamento) || null,
+      tipo_documento_identidade: c.conjuge_tipo_documento_identidade,
+      numero_documento: c.conjuge_numero_documento,
+      orgao_expedidor: c.conjuge_orgao_expedidor,
+      uf_expedicao: c.conjuge_uf_expedicao,
+      data_expedicao: c.conjuge_data_expedicao,
+      profissao: c.conjuge_profissao,
+      empresa: c.conjuge_empresa,
+      renda: c.conjuge_renda,
+      email: c.conjuge_email,
+      celular: c.conjuge_celular,
+    };
+  });
+
 /** ===== Bancos de uma proposta (para replicar) ===== */
+
 export const listarBancosDaProposta = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) => z.object({ proposta_id: z.string().uuid() }).parse(data))
