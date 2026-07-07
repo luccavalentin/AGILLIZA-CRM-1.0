@@ -9,6 +9,13 @@ function useActivePath() {
   return useRouterState({ select: (s) => s.location.pathname });
 }
 
+/** Pasta atualmente selecionada (query `?pasta=`), quando houver. */
+function useActivePasta() {
+  return useRouterState({
+    select: (s) => (s.location.search as { pasta?: string })?.pasta,
+  });
+}
+
 /** Coleta todos os destinos (`to`) de folhas da navegação. */
 function coletarDestinos(nav: NavGroup[]): string[] {
   const out: string[] = [];
@@ -36,11 +43,22 @@ function melhorDestino(nav: NavGroup[], pathname: string): string | null {
   return melhor;
 }
 
-function itemAtivo(item: NavItem, melhor: string | null): boolean {
-  if (item.to) return item.to === melhor;
-  if (item.children) return item.children.some((c) => itemAtivo(c, melhor));
+function itemAtivo(item: NavItem, melhor: string | null, pasta?: string): boolean {
+  if (item.to) {
+    if (item.to !== melhor) return false;
+    // Itens irmãos que compartilham o mesmo `to` mas apontam para pastas
+    // diferentes (ex.: subpastas de Documentos) são desambiguados pelo
+    // parâmetro `?pasta=`: cada um só fica ativo quando sua pasta é a atual.
+    const pastaItem = item.search?.pasta;
+    if (pastaItem !== undefined) return pastaItem === pasta;
+    // Item sem pasta (ex.: "Todos os arquivos") só é ativo sem pasta selecionada.
+    if (pasta !== undefined) return false;
+    return true;
+  }
+  if (item.children) return item.children.some((c) => itemAtivo(c, melhor, pasta));
   return false;
 }
+
 
 interface SidebarProps {
   nav: NavGroup[];
@@ -50,6 +68,7 @@ interface SidebarProps {
 /** Sidebar completa (desktop expandida / drawer mobile). */
 export function SidebarNav({ nav, onNavigate }: SidebarProps) {
   const pathname = useActivePath();
+  const pasta = useActivePasta();
   const melhor = melhorDestino(nav, pathname);
 
   return (
@@ -65,13 +84,14 @@ export function SidebarNav({ nav, onNavigate }: SidebarProps) {
                 key={item.label}
                 item={item}
                 melhor={melhor}
+                pasta={pasta}
                 onNavigate={onNavigate}
               />
             ) : (
               <SidebarLink
                 key={item.label}
                 item={item}
-                active={itemAtivo(item, melhor)}
+                active={itemAtivo(item, melhor, pasta)}
                 onNavigate={onNavigate}
               />
             ),
@@ -127,14 +147,16 @@ function SidebarLink({
 function CollapsibleGroup({
   item,
   melhor,
+  pasta,
   onNavigate,
 }: {
   item: NavItem;
   melhor: string | null;
+  pasta?: string;
   onNavigate?: () => void;
 }) {
   const Icon = item.icon;
-  const algumAtivo = itemAtivo(item, melhor);
+  const algumAtivo = itemAtivo(item, melhor, pasta);
   return (
     <Collapsible defaultOpen={algumAtivo}>
       <CollapsibleTrigger
@@ -152,7 +174,7 @@ function CollapsibleGroup({
           <SidebarLink
             key={child.label}
             item={child}
-            active={itemAtivo(child, melhor)}
+            active={itemAtivo(child, melhor, pasta)}
             onNavigate={onNavigate}
           />
         ))}
@@ -164,6 +186,7 @@ function CollapsibleGroup({
 /** Sidebar colapsada: apenas ícones com tooltip. */
 export function SidebarRail({ nav, onNavigate }: SidebarProps) {
   const pathname = useActivePath();
+  const pasta = useActivePasta();
   const melhor = melhorDestino(nav, pathname);
   const itens = nav.flatMap((g) => g.items);
 
@@ -171,7 +194,7 @@ export function SidebarRail({ nav, onNavigate }: SidebarProps) {
     <nav aria-label="Navegação principal" className="flex flex-col items-center gap-1 px-2 py-4">
       {itens.map((item) => {
         const Icon = item.icon;
-        const active = itemAtivo(item, melhor);
+        const active = itemAtivo(item, melhor, pasta);
         const to = item.to ?? item.children?.[0]?.to;
         return (
           <Tooltip key={item.label}>
