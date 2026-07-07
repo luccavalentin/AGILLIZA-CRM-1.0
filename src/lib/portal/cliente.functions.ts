@@ -54,6 +54,8 @@ export interface MensagemCliente {
   remetente_tipo: string;
   mensagem: string;
   anexo_url: string | null;
+  anexo_nome: string | null;
+  anexo_is_imagem: boolean;
   lida_em: string | null;
   criada_em: string;
 }
