@@ -229,7 +229,7 @@ export const criarSimulacao = createServerFn({ method: "POST" })
           documento: digitos,
           email: dd.email ?? null,
           telefone_celular: dd.celular ?? null,
-          data_nascimento: dd.data_nascimento ?? null,
+          data_nascimento: dd.data_nascimento || null,
           estado_civil: (dd.estado_civil as any) ?? null,
           renda_total_declarada: dd.renda_total ?? null,
           criador_id: userId,
