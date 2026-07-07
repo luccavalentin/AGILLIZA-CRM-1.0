@@ -702,7 +702,7 @@ export const anexarDocumento = createServerFn({ method: "POST" })
     z
       .object({
         cliente_id: z.string().uuid(),
-        categoria: z.enum(["comprador", "conjuge", "vendedor", "imovel", "outros"]),
+        categoria: z.enum(["comprador", "conjuge", "vendedor", "vendedor_conjuge", "imovel", "outros"]),
         tipo_documento: z.string().min(1),
         nome_arquivo: z.string().min(1),
         storage_path: z.string().min(1),
