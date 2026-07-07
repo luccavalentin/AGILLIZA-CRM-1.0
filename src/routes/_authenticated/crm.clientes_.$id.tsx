@@ -15,6 +15,7 @@ import { InteracoesTab } from "@/components/crm/interacoes-tab";
 import { VinculoTab } from "@/components/crm/vinculo-tab";
 import { ChatClienteTab } from "@/components/crm/chat-cliente-tab";
 import { VendedoresTab } from "@/components/crm/vendedores-tab";
+import { ImovelTab, IqTab } from "@/components/crm/imovel-iq-tab";
 import { StatusBadge } from "@/components/crm/tone-badge";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import {
@@ -188,6 +189,12 @@ function Pagina() {
           <TabsTrigger value="vendedores" className="shrink-0 gap-1.5 whitespace-nowrap rounded-lg data-[state=active]:shadow-sm">
             <Users className="size-4" /> Vendedores
           </TabsTrigger>
+          <TabsTrigger value="imovel" className="shrink-0 whitespace-nowrap rounded-lg data-[state=active]:shadow-sm">
+            Imóvel
+          </TabsTrigger>
+          <TabsTrigger value="iq" className="shrink-0 whitespace-nowrap rounded-lg data-[state=active]:shadow-sm">
+            IQ
+          </TabsTrigger>
           <TabsTrigger value="documentos" className="shrink-0 whitespace-nowrap rounded-lg data-[state=active]:shadow-sm">
             Documentos
           </TabsTrigger>
@@ -210,6 +217,14 @@ function Pagina() {
 
         <TabsContent value="vendedores" className="mt-4">
           <VendedoresTab clienteId={id} />
+        </TabsContent>
+
+        <TabsContent value="imovel" className="mt-4">
+          <ImovelTab clienteId={id} cliente={c} />
+        </TabsContent>
+
+        <TabsContent value="iq" className="mt-4">
+          <IqTab clienteId={id} cliente={c} />
         </TabsContent>
 
 
