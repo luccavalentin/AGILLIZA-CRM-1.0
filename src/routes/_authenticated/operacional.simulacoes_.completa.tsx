@@ -743,6 +743,8 @@ function Pagina() {
                     email_conjuge: c.conjuge_email ?? "",
                     celular_conjuge: c.conjuge_celular ? maskCelular(c.conjuge_celular) : "",
                   }));
+                  setCadastroNome(c.nome ?? "");
+                  setInvertido(false);
                   toast.success(
                     conjugePreenchido
                       ? "Dados do cliente e do cônjuge preenchidos."
