@@ -23,6 +23,17 @@ import { ConsultandoOverlay } from "@/components/simulacao/consultando-overlay";
 import { ClienteCRMPicker } from "@/components/simulacao/cliente-crm-picker";
 import { estadoCivilCrmParaCodigo } from "@/lib/propostas/dominios";
 import { DicaRendaMinima } from "@/components/simulacao/dica-renda-minima";
+import { avaliarRendaMinima } from "@/lib/simulacao/renda";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { taxaAnoDeBanco } from "@/lib/simulacao/simulacao-rapida";
 
 import {
@@ -100,6 +111,10 @@ function Pagina() {
   const [concluidos, setConcluidos] = useState(0);
   const [erros, setErros] = useState<Record<string, string>>({});
   const [entradaTocada, setEntradaTocada] = useState(false);
+  const [confirmRenda, setConfirmRenda] = useState<null | {
+    rendaMinima: number;
+    rendaInformada: number;
+  }>(null);
 
   const { data: bancos } = useQuery({
     queryKey: ["bancos-ativos"],
@@ -341,12 +356,39 @@ function Pagina() {
     toast.success("Titular e cônjuge invertidos. Confira os dados obrigatórios.");
   }
 
+  /** Verifica a renda contra o sugestivo; abre o popup de confirmação se insuficiente. */
+  function rendaSuficiente(): boolean {
+    const av = avaliarRendaMinima({
+      valor_financiamento: f.valor_financiamento,
+      prazo_meses: f.prazo,
+      taxa_ano: melhorTaxaAno,
+      sistema: f.sistema_amortizacao === "P" ? "P" : "S",
+      renda_informada: rendaConsiderada,
+    });
+    if (av && av.suficiente === false) {
+      setConfirmRenda({ rendaMinima: av.rendaMinima, rendaInformada: rendaConsiderada });
+      return false;
+    }
+    return true;
+  }
+
   async function enviar() {
     const parsed = completaSchema.safeParse({ ...f, id_operacao_homefin: idOperacao });
     if (!parsed.success) {
       const novos: Record<string, string> = {};
       for (const issue of parsed.error.issues) novos[String(issue.path[0])] = issue.message;
       setErros(novos);
+      toast.error("Revise os campos destacados.");
+      return;
+    }
+    setErros({});
+    if (!rendaSuficiente()) return;
+    await executarEnvio();
+  }
+
+  async function executarEnvio() {
+    const parsed = completaSchema.safeParse({ ...f, id_operacao_homefin: idOperacao });
+    if (!parsed.success) {
       toast.error("Revise os campos destacados.");
       return;
     }
@@ -1030,7 +1072,39 @@ function Pagina() {
 
 
       <ConsultandoOverlay aberto={enviando} total={f.bancos_ids.length} concluidos={concluidos} />
+
+      <AlertDialog open={!!confirmRenda} onOpenChange={(o) => !o && setConfirmRenda(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Renda abaixo do sugerido</AlertDialogTitle>
+            <AlertDialogDescription>
+              A renda informada de{" "}
+              <span className="font-semibold text-foreground">
+                {formatBRL(confirmRenda?.rendaInformada ?? 0)}
+              </span>{" "}
+              é inferior à renda familiar mínima estimada de{" "}
+              <span className="font-semibold text-foreground">
+                {formatBRL(confirmRenda?.rendaMinima ?? 0)}
+              </span>{" "}
+              para este financiamento. O banco poderá reprovar a operação. Deseja enviar
+              mesmo assim?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Revisar dados</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setConfirmRenda(null);
+                void executarEnvio();
+              }}
+            >
+              Enviar mesmo assim
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
+
   );
 }
 
