@@ -58,6 +58,22 @@ export interface ClienteFormValues {
   utiliza_fgts: boolean;
   fg_autorizacao_dados: boolean;
   origem: string;
+  conjuge_nome: string;
+  conjuge_cpf: string;
+  conjuge_data_nascimento: string;
+  conjuge_nome_mae: string;
+  conjuge_sexo: string;
+  conjuge_nacionalidade: string;
+  conjuge_tipo_documento_identidade: string;
+  conjuge_numero_documento: string;
+  conjuge_orgao_expedidor: string;
+  conjuge_uf_expedicao: string;
+  conjuge_data_expedicao: string;
+  conjuge_profissao: string;
+  conjuge_empresa: string;
+  conjuge_renda: string;
+  conjuge_email: string;
+  conjuge_celular: string;
 }
 
 const ESTADOS_CIVIS = [
