@@ -84,6 +84,7 @@ export function EditarPessoaDialog({
   function submeter(e: React.FormEvent) {
     e.preventDefault();
     if (nome.trim().length < 2) return toast.error("Informe o nome completo.");
+    if (tiposPessoa.length === 0) return toast.error("Selecione ao menos um tipo de pessoa.");
     if (!nivelId) return toast.error("Selecione um nível de acesso.");
     salvar.mutate();
   }
