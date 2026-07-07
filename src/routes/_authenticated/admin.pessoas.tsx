@@ -299,24 +299,37 @@ function PessoasPage() {
                                     <DropdownMenuItem onClick={() => setEditando(p)}>
                                       <Pencil className="mr-2 h-4 w-4" /> Editar
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => resetMut.mutate(p.id)}>
-                                      <KeyRound className="mr-2 h-4 w-4" /> Redefinir senha
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                      onClick={() =>
-                                        statusMut.mutate({ id: p.id, ativar: !ativo })
-                                      }
-                                    >
-                                      {ativo ? (
-                                        <>
-                                          <Ban className="mr-2 h-4 w-4" /> Desativar
-                                        </>
-                                      ) : (
-                                        <>
-                                          <CheckCircle2 className="mr-2 h-4 w-4" /> Ativar
-                                        </>
-                                      )}
-                                    </DropdownMenuItem>
+                                    {p.login_habilitado ? (
+                                      <>
+                                        <DropdownMenuItem onClick={() => resetMut.mutate(p.id)}>
+                                          <KeyRound className="mr-2 h-4 w-4" /> Redefinir senha
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                          onClick={() =>
+                                            statusMut.mutate({ id: p.id, ativar: !ativo })
+                                          }
+                                        >
+                                          {ativo ? (
+                                            <>
+                                              <Ban className="mr-2 h-4 w-4" /> Desativar
+                                            </>
+                                          ) : (
+                                            <>
+                                              <CheckCircle2 className="mr-2 h-4 w-4" /> Ativar
+                                            </>
+                                          )}
+                                        </DropdownMenuItem>
+                                      </>
+                                    ) : (
+                                      <DropdownMenuItem
+                                        onClick={() => {
+                                          setHabilitando(p);
+                                          setHabilitarEmail(p.email ?? "");
+                                        }}
+                                      >
+                                        <LogIn className="mr-2 h-4 w-4" /> Habilitar login
+                                      </DropdownMenuItem>
+                                    )}
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem
                                       className="text-destructive focus:text-destructive"
