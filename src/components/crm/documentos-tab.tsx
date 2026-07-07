@@ -99,6 +99,7 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
   const editar = useServerFn(editarDocumento);
   const excluir = useServerFn(excluirDocumento);
 
+  const [aba, setAba] = useState<"documentos" | "checklist">("documentos");
   const [pastaId, setPastaId] = useState<string | null>(null);
   const [categoria, setCategoria] = useState<Categoria>("comprador");
   const [tipo, setTipo] = useState("");
