@@ -203,6 +203,7 @@ function fileParaBase64(file: File): Promise<string> {
 function AbaMensagens() {
   const qc = useQueryClient();
   const [texto, setTexto] = useState("");
+  const [visualizando, setVisualizando] = useState<{ url: string; nome: string } | null>(null);
   const fimRef = useRef<HTMLDivElement>(null);
   const fotoRef = useRef<HTMLInputElement>(null);
   const arquivoRef = useRef<HTMLInputElement>(null);
