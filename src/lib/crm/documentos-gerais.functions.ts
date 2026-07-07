@@ -2,47 +2,41 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-/** Rótulos dos tipos de vínculo (primeiro nível do explorador). */
-export const VINCULO_LABEL: Record<string, string> = {
-  imobiliaria: "Imobiliária",
-  corretor: "Corretor",
-  comercial_agilliza: "Comercial",
-  sem_vinculo: "Sem vínculo",
-};
+/** Rótulo do grupo comercial (clientes sem imobiliária vinculada). */
+export const COMERCIAL_AGILLIZA_LABEL = "Comercial Agilliza";
 
-/** Ordem de exibição dos grupos de vínculo. */
-const VINCULO_ORDEM = ["imobiliaria", "corretor", "comercial_agilliza", "sem_vinculo"];
-
-export interface PastaClienteResumo {
+export interface DGCliente {
   cliente_id: string;
   nome: string;
   numero_cliente: string | null;
   documento: string | null;
   total_documentos: number;
+  imobiliaria_id: string | null;
+  imobiliaria_nome: string | null;
+  corretor_id: string | null;
+  corretor_nome: string | null;
 }
 
-export interface PastaParceiro {
-  parceiro_id: string | null;
+export interface DGOpcaoFiltro {
+  id: string;
   nome: string;
-  clientes: PastaClienteResumo[];
 }
 
-export interface GrupoVinculo {
-  tipo: string;
-  label: string;
-  parceiros: PastaParceiro[];
-  total_clientes: number;
+export interface DGResposta {
+  clientes: DGCliente[];
+  imobiliarias: DGOpcaoFiltro[];
+  corretores: DGOpcaoFiltro[];
 }
 
 /**
- * Monta a árvore do explorador de "Documentos Gerais":
- * Tipo de vínculo (Imobiliária / Corretor / Comercial / Sem vínculo)
- *   → Parceiro vinculado (ex.: TARGET IMOBILIÁRIA)
- *     → Cliente
+ * Dados do explorador de "Documentos Gerais".
+ * Estrutura de pastas montada no cliente:
+ *   Imobiliária  →  Corretor  →  Cliente
+ * Clientes sem imobiliária vinculada ficam em "Comercial Agilliza".
  */
 export const explorarDocumentosGerais = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }): Promise<GrupoVinculo[]> => {
+  .handler(async ({ context }): Promise<DGResposta> => {
     const { supabase, userId } = context;
     const { data: corr } = await supabase.rpc("correspondente_do_usuario", { _user_id: userId });
 
@@ -56,7 +50,9 @@ export const explorarDocumentosGerais = createServerFn({ method: "GET" })
     const { data: clientes, error: cliErr } = await clientesQuery.limit(1000);
     if (cliErr) throw cliErr;
     const listaClientes = clientes ?? [];
-    if (listaClientes.length === 0) return [];
+    if (listaClientes.length === 0) {
+      return { clientes: [], imobiliarias: [], corretores: [] };
+    }
 
     const idsClientes = listaClientes.map((c: any) => c.id);
 
@@ -89,57 +85,52 @@ export const explorarDocumentosGerais = createServerFn({ method: "GET" })
       totalDocs.set(d.cliente_id, (totalDocs.get(d.cliente_id) ?? 0) + 1);
     }
 
-    const resumo = (c: any): PastaClienteResumo => ({
-      cliente_id: c.id,
-      nome: c.nome,
-      numero_cliente: c.numero_cliente ?? null,
-      documento: c.documento ?? null,
-      total_documentos: totalDocs.get(c.id) ?? 0,
+    // Índice: cliente_id -> { imobiliaria, corretor } (primeiro vínculo de cada tipo).
+    const imobPorCliente = new Map<string, string>();
+    const corrPorCliente = new Map<string, string>();
+    for (const v of vinculos ?? []) {
+      if (!v.parceiro_id) continue;
+      if (v.tipo_vinculo === "imobiliaria" && !imobPorCliente.has(v.cliente_id)) {
+        imobPorCliente.set(v.cliente_id, v.parceiro_id);
+      }
+      if (v.tipo_vinculo === "corretor" && !corrPorCliente.has(v.cliente_id)) {
+        corrPorCliente.set(v.cliente_id, v.parceiro_id);
+      }
+    }
+
+    const imobiliariasSet = new Map<string, string>();
+    const corretoresSet = new Map<string, string>();
+
+    const clientesResp: DGCliente[] = listaClientes.map((c: any) => {
+      const imobId = imobPorCliente.get(c.id) ?? null;
+      const corrId = corrPorCliente.get(c.id) ?? null;
+      const imobNome = imobId ? nomesParceiros.get(imobId) ?? "—" : null;
+      const corrNome = corrId ? nomesParceiros.get(corrId) ?? "—" : null;
+      if (imobId && imobNome) imobiliariasSet.set(imobId, imobNome);
+      if (corrId && corrNome) corretoresSet.set(corrId, corrNome);
+      return {
+        cliente_id: c.id,
+        nome: c.nome,
+        numero_cliente: c.numero_cliente ?? null,
+        documento: c.documento ?? null,
+        total_documentos: totalDocs.get(c.id) ?? 0,
+        imobiliaria_id: imobId,
+        imobiliaria_nome: imobNome,
+        corretor_id: corrId,
+        corretor_nome: corrNome,
+      };
     });
 
-    // Índice: cliente_id -> lista de vínculos.
-    const vinculosPorCliente = new Map<string, { parceiro_id: string; tipo: string }[]>();
-    for (const v of vinculos ?? []) {
-      const arr = vinculosPorCliente.get(v.cliente_id) ?? [];
-      arr.push({ parceiro_id: v.parceiro_id, tipo: v.tipo_vinculo ?? "corretor" });
-      vinculosPorCliente.set(v.cliente_id, arr);
-    }
+    const ordenarNome = (a: DGOpcaoFiltro, b: DGOpcaoFiltro) =>
+      a.nome.localeCompare(b.nome, "pt-BR");
 
-    // grupos[tipo][parceiroKey] = { nome, clientes[] }
-    const grupos = new Map<string, Map<string, PastaParceiro>>();
-    function addCliente(tipo: string, parceiroId: string | null, parceiroNome: string, c: any) {
-      if (!grupos.has(tipo)) grupos.set(tipo, new Map());
-      const porParceiro = grupos.get(tipo)!;
-      const key = parceiroId ?? "__nenhum__";
-      if (!porParceiro.has(key)) {
-        porParceiro.set(key, { parceiro_id: parceiroId, nome: parceiroNome, clientes: [] });
-      }
-      porParceiro.get(key)!.clientes.push(resumo(c));
-    }
-
-    for (const c of listaClientes) {
-      const vs = vinculosPorCliente.get(c.id);
-      if (!vs || vs.length === 0) {
-        addCliente("sem_vinculo", null, "Sem parceiro vinculado", c);
-        continue;
-      }
-      for (const v of vs) {
-        addCliente(v.tipo, v.parceiro_id, nomesParceiros.get(v.parceiro_id) ?? "—", c);
-      }
-    }
-
-    const resultado: GrupoVinculo[] = [];
-    for (const tipo of VINCULO_ORDEM) {
-      const porParceiro = grupos.get(tipo);
-      if (!porParceiro || porParceiro.size === 0) continue;
-      const parceiros = Array.from(porParceiro.values()).sort((a, b) =>
-        a.nome.localeCompare(b.nome, "pt-BR"),
-      );
-      const total = parceiros.reduce((s, p) => s + p.clientes.length, 0);
-      resultado.push({ tipo, label: VINCULO_LABEL[tipo] ?? tipo, parceiros, total_clientes: total });
-    }
-    return resultado;
+    return {
+      clientes: clientesResp,
+      imobiliarias: Array.from(imobiliariasSet, ([id, nome]) => ({ id, nome })).sort(ordenarNome),
+      corretores: Array.from(corretoresSet, ([id, nome]) => ({ id, nome })).sort(ordenarNome),
+    };
   });
+
 
 export interface FichaConsolidada {
   comprador: Record<string, any> | null;
