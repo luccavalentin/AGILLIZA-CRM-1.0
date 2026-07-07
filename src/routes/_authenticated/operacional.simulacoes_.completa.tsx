@@ -3,13 +3,14 @@ import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { ArrowLeft, ArrowLeftRight } from "lucide-react";
+import { ArrowLeft, ArrowLeftRight, Link2, Repeat } from "lucide-react";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 
 import {
   Select,
@@ -109,6 +110,9 @@ function Pagina() {
   const [concluidos, setConcluidos] = useState(0);
   const [erros, setErros] = useState<Record<string, string>>({});
   const [entradaTocada, setEntradaTocada] = useState(false);
+  // Vínculo com o cadastro do CRM e marcação de inversão titular/cônjuge.
+  const [cadastroNome, setCadastroNome] = useState<string | null>(null);
+  const [invertido, setInvertido] = useState(false);
   const [confirmRenda, setConfirmRenda] = useState<null | {
     rendaMinima: number;
     rendaInformada: number;
@@ -185,6 +189,7 @@ function Pagina() {
         .filter(Boolean),
       email_verificado_em: null,
     }));
+    if (s.cliente_id) setCadastroNome(s.nome_cliente ?? "");
   }, [origem]);
 
 
@@ -348,9 +353,9 @@ function Pagina() {
       estado_civil_conjuge: prev.estado_civil || prev.estado_civil_conjuge,
       email_conjuge: prev.email ?? "",
       celular_conjuge: prev.celular ?? "",
-      // O vínculo veio de um cliente do CRM que agora é o cônjuge — solta o vínculo.
-      cliente_id: null,
+      // Mantém o vínculo com o cadastro do CRM, apenas marcando a inversão.
     }));
+    setInvertido((v) => !v);
     setErros({});
     toast.success("Titular e cônjuge invertidos. Confira os dados obrigatórios.");
   }
@@ -739,6 +744,8 @@ function Pagina() {
                     email_conjuge: c.conjuge_email ?? "",
                     celular_conjuge: c.conjuge_celular ? maskCelular(c.conjuge_celular) : "",
                   }));
+                  setCadastroNome(c.nome ?? "");
+                  setInvertido(false);
                   toast.success(
                     conjugePreenchido
                       ? "Dados do cliente e do cônjuge preenchidos."
@@ -773,6 +780,8 @@ function Pagina() {
                     email_conjuge: "",
                     celular_conjuge: "",
                   }));
+                  setCadastroNome(null);
+                  setInvertido(false);
                   toast.info("Titular removido. Pesquise outro cliente ou preencha manualmente.");
                 }}
               >
@@ -781,6 +790,22 @@ function Pagina() {
             )}
           </div>
         </div>
+        {(cadastroNome || invertido) && (
+          <div className="flex flex-wrap items-center gap-2">
+            {cadastroNome && (
+              <Badge variant="secondary" className="gap-1 font-normal">
+                <Link2 className="h-3 w-3" />
+                Vinculado ao cadastro: {cadastroNome}
+              </Badge>
+            )}
+            {invertido && (
+              <Badge variant="outline" className="gap-1 border-primary/40 text-primary">
+                <Repeat className="h-3 w-3" />
+                Titular e cônjuge invertidos
+              </Badge>
+            )}
+          </div>
+        )}
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <Campo
             label={
