@@ -247,12 +247,6 @@ export const navInterno: NavGroup[] = [
         perm: { modulo: "financeiro.contas_receber" },
       },
       {
-        label: "Comissões",
-        icon: Percent,
-        to: "/financeiro/comissoes",
-        perm: { modulo: "financeiro.comissoes" },
-      },
-      {
         label: "Fluxo de caixa",
         icon: Wallet,
         to: "/financeiro/fluxo-de-caixa",
