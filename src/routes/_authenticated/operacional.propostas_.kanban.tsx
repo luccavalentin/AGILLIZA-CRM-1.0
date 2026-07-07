@@ -226,7 +226,7 @@ function Pagina() {
                   </span>
                 </div>
               </div>
-              <div className="flex flex-1 flex-col gap-2 p-2">
+              <div className="flex flex-1 flex-col gap-2 overflow-y-auto p-2 [scrollbar-width:thin]">
                 {cards.map((c) => {
                   const terminal = STATUS_TERMINAIS.includes(c.status as PropostaStatus);
                   const numeroBanco = c.numero_proposta_banco ?? c.numero_proposta;
