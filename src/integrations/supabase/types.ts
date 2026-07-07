@@ -2394,6 +2394,39 @@ export type Database = {
         }
         Relationships: []
       }
+      links_uteis: {
+        Row: {
+          categoria: string | null
+          created_at: string
+          criado_por: string | null
+          descricao: string | null
+          id: string
+          titulo: string
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          categoria?: string | null
+          created_at?: string
+          criado_por?: string | null
+          descricao?: string | null
+          id?: string
+          titulo: string
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          categoria?: string | null
+          created_at?: string
+          criado_por?: string | null
+          descricao?: string | null
+          id?: string
+          titulo?: string
+          updated_at?: string
+          url?: string
+        }
+        Relationships: []
+      }
       matricula_config: {
         Row: {
           correspondente_id: string
