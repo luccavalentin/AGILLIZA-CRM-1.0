@@ -108,6 +108,7 @@ export const getConfigIA = createServerFn({ method: "GET" })
 
 
 const configSchema = z.object({
+  provedor: z.enum(["gemini", "openai"]).default("gemini"),
   nome: z.string().trim().min(1).default("Provedor de IA"),
   base_url: z.string().trim().url().optional().nullable().or(z.literal("")),
   modelo: z.string().trim().min(1),
@@ -116,6 +117,7 @@ const configSchema = z.object({
   secret_names: z.array(z.string().trim().min(1)).default(["GEMINI_API_KEY"]),
   ativo: z.boolean().default(true),
 });
+
 
 /** Salva a configuração do provedor de IA (metadados, prompt e temperatura — nunca valores de secrets). */
 export const salvarConfigIA = createServerFn({ method: "POST" })
