@@ -113,6 +113,15 @@ function PessoasPage() {
     queryFn: () => listarPessoas(),
   });
 
+  const tiposQuery = useQuery({
+    queryKey: ["tipos-pessoa"],
+    queryFn: () => listarTiposPessoa(),
+  });
+  const rotuloTipo = (slug: string) =>
+    (tiposQuery.data ?? []).find((t) => t.slug === slug)?.nome ??
+    ROTULO_TIPO[slug] ??
+    "Usuário";
+
   const statusMut = useMutation({
     mutationFn: (v: { id: string; ativar: boolean }) => alternarStatusFn({ data: v }),
     onSuccess: async (_r, v) => {
