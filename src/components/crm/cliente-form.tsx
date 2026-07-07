@@ -1123,18 +1123,13 @@ export function ClienteForm({
           </div>
           <div className="space-y-1.5">
             <Label>UF</Label>
-            <Select value={end.uf || undefined} onValueChange={(x) => setEnd((p) => ({ ...p, uf: x }))}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione" />
-              </SelectTrigger>
-              <SelectContent>
-                {OPCOES_UF.map((o) => (
-                  <SelectItem key={o} value={o}>
-                    {o}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Combobox
+              value={end.uf}
+              onValueChange={(x) => setEnd((p) => ({ ...p, uf: x }))}
+              options={OPCOES_UF}
+              placeholder="Selecione"
+              searchPlaceholder="Buscar UF…"
+            />
           </div>
         </CardContent>
       </Card>
