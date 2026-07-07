@@ -210,7 +210,8 @@ export function NovaPessoaInline({
       nome: nome.trim(),
       email: efetivoComLogin ? email.trim() : "",
       nivel_acesso_id: nivelId,
-      tipo_pessoa: tipoPessoa,
+      tipo_pessoa: tiposPessoa[0],
+      tipos_pessoa: tiposPessoa,
       com_login: efetivoComLogin,
       dados_parceiro: isParceiro
         ? {
