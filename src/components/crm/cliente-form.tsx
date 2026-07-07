@@ -1001,18 +1001,13 @@ export function ClienteForm({
           </div>
           <div className="space-y-1.5 sm:col-span-2">
             <Label>Naturalidade (cidade/UF de nascimento)</Label>
-            <Select value={v.naturalidade || undefined} onValueChange={(x) => set("naturalidade", x)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione" />
-              </SelectTrigger>
-              <SelectContent>
-                {OPCOES_NATURALIDADE.map((o) => (
-                  <SelectItem key={o} value={o}>
-                    {o}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Combobox
+              value={v.naturalidade}
+              onValueChange={(x) => set("naturalidade", x)}
+              options={OPCOES_NATURALIDADE}
+              placeholder="Selecione"
+              searchPlaceholder="Buscar cidade/UF…"
+            />
           </div>
 
           <div className="space-y-1.5">
