@@ -986,6 +986,15 @@ export interface VinculoParceiro {
   created_at: string;
 }
 
+/** Tipos de vínculo de atendimento disponíveis. */
+export const TIPOS_VINCULO = [
+  { valor: "imobiliaria", rotulo: "Imobiliária" },
+  { valor: "corretor", rotulo: "Corretor" },
+  { valor: "comercial_agilliza", rotulo: "Comercial Agilliza" },
+] as const;
+
+export type TipoVinculo = (typeof TIPOS_VINCULO)[number]["valor"];
+
 /** Lista os parceiros/usuários vinculados a um cliente. */
 export const listarVinculosCliente = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -994,7 +1003,7 @@ export const listarVinculosCliente = createServerFn({ method: "GET" })
     const { supabase } = context;
     const { data: rows, error } = await supabase
       .from("cliente_parceiros")
-      .select("id, parceiro_id, created_at")
+      .select("id, parceiro_id, tipo_vinculo, created_at")
       .eq("cliente_id", data.cliente_id)
       .order("created_at", { ascending: false });
     if (error) throw error;
@@ -1009,6 +1018,7 @@ export const listarVinculosCliente = createServerFn({ method: "GET" })
     return lista.map((r: any) => ({
       id: r.id,
       parceiro_id: r.parceiro_id,
+      tipo_vinculo: r.tipo_vinculo ?? "corretor",
       nome: mapa.get(r.parceiro_id)?.nome ?? null,
       email: mapa.get(r.parceiro_id)?.email ?? null,
       created_at: r.created_at,
