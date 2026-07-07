@@ -82,8 +82,14 @@ export function ReportView({
 
   const onFiltros = (f: ReportFiltros) => {
     const s: Record<string, string> = {};
-    for (const [k, v] of Object.entries(f))
-      if (v !== undefined && v !== "" && v !== null) s[k] = String(v);
+    for (const [k, v] of Object.entries(f)) {
+      if (v === undefined || v === "" || v === null) continue;
+      if (Array.isArray(v)) {
+        if (v.length > 0) s[k] = v.join(",");
+        continue;
+      }
+      s[k] = String(v);
+    }
     navigate({ to: ".", search: s, replace: true });
   };
 
