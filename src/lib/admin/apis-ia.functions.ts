@@ -88,21 +88,24 @@ export const getConfigIA = createServerFn({ method: "GET" })
     if (!data) return vazio;
 
     const cfg = (data.config ?? {}) as Record<string, unknown>;
+    const provedor: ProvedorIA = cfg.provedor === "openai" ? "openai" : "gemini";
     return {
       id: data.id,
-      nome: data.nome ?? "Provedor de IA",
+      provedor,
+      nome: data.nome ?? PRESETS_IA[provedor].nome,
       base_url: data.base_url,
-      modelo: typeof cfg.modelo === "string" ? cfg.modelo : "gemini-2.5-flash",
+      modelo: typeof cfg.modelo === "string" ? cfg.modelo : PRESETS_IA[provedor].modelo,
       temperatura: typeof cfg.temperatura === "number" ? cfg.temperatura : 0.2,
       prompt_scan: typeof cfg.prompt_scan === "string" ? cfg.prompt_scan : PROMPT_PADRAO,
       secret_names: Array.isArray(data.secret_names)
         ? (data.secret_names as string[])
-        : ["GEMINI_API_KEY"],
+        : [PRESETS_IA[provedor].secret_name],
       ativo: data.ativo,
       status: data.status,
       ultimo_ping_em: data.ultimo_ping_em,
     };
   });
+
 
 const configSchema = z.object({
   nome: z.string().trim().min(1).default("Provedor de IA"),
