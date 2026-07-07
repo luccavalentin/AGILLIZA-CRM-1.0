@@ -54,6 +54,10 @@ interface VendedorForm {
   agencia: string;
   conta_corrente: string;
   digito_conta: string;
+  conjuge_banco_conta: string;
+  conjuge_agencia: string;
+  conjuge_conta_corrente: string;
+  conjuge_digito_conta: string;
   email: string;
   telefone_celular: string;
   renda_total_declarada: string;
