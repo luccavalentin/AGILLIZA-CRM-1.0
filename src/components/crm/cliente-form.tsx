@@ -289,6 +289,8 @@ export function ClienteForm({
   const atualizar = useServerFn(atualizarCliente);
   const salvarEnd = useServerFn(salvarEndereco);
   const definirPortal = useServerFn(definirAcessoPortal);
+  const listarParceiros = useServerFn(listarParceirosDisponiveis);
+  const vincular = useServerFn(vincularParceiro);
 
   const [v, setV] = useState<ClienteFormValues>(() => {
     const base = { ...emptyValues, ...inicial };
