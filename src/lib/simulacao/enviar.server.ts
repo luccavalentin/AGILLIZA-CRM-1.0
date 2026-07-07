@@ -156,7 +156,7 @@ export async function enviarSimulacaoImpl({
           ? { usuarioParceiro: { idUsuarioParceiro: auth.idUsuarioParceiro } }
           : {}),
         ...dadosOportunidade,
-        bancos: bancos.map((b: any) => ({
+        bancos: bancosSelecionados.map((b: any) => ({
           idBanco: b.homefin_id_banco,
           codigoBanco: b.codigo_banco,
           nomeBanco: b.nome_banco,
