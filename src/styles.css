@@ -546,6 +546,15 @@ div[style*="Edit with Lovable"],
 .dark .chat-tag-red    { background: hsl(0 45% 26%);   color: hsl(0 90% 84%); }
 .dark .chat-tag-purple { background: hsl(270 45% 28%); color: hsl(270 85% 85%); }
 .dark .chat-tag-slate  { background: hsl(215 20% 28%); color: hsl(215 30% 82%); }
+
+/* Superfície do chat: fundo sutil com textura pontilhada */
+.chat-surface {
+  background-color: color-mix(in oklab, var(--muted) 35%, var(--background));
+  background-image:
+    radial-gradient(color-mix(in oklab, var(--foreground) 6%, transparent) 1px, transparent 1px);
+  background-size: 18px 18px;
+  background-position: center;
+}
 .chat-dot-blue { background: hsl(214 80% 50%); }
 .chat-dot-green { background: hsl(142 60% 42%); }
 .chat-dot-amber { background: hsl(35 90% 50%); }
