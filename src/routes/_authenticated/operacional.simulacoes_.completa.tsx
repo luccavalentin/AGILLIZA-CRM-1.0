@@ -78,8 +78,6 @@ function Pagina() {
   const router = useRouter();
   const { duplicar, origem: origemFluxo } = Route.useSearch();
   const modoProposta = origemFluxo === "proposta";
-  const criarPropostaFn = useServerFn(criarProposta);
-  const [gerarProposta, setGerarProposta] = useState(modoProposta);
   const [f, setF] = useState<Form>({
     produto: "financiamento_imobiliario",
     tipo_imovel: "",
