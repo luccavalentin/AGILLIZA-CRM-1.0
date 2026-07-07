@@ -50,6 +50,7 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
   const [novaTag, setNovaTag] = useState("");
   const [corTag, setCorTag] = useState(CORES[0]);
   const [enviando, setEnviando] = useState(false);
+  const [visualizando, setVisualizando] = useState<{ url: string; nome: string } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const toggleFn = useServerFn(toggleChecklistItem);
