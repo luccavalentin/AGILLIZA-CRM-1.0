@@ -88,6 +88,8 @@ export function exportPDF(
   rows: ReportRow[],
   filename?: string,
   nota?: string,
+  /** Logos opcionais desenhados na 1ª coluna, indexados pelo texto da célula (ex.: nome do banco). */
+  firstColLogos?: Record<string, { logo: string; ratio: number }>,
 ) {
   const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
   const pageW = doc.internal.pageSize.getWidth();
