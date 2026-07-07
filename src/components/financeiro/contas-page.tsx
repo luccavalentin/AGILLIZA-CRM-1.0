@@ -145,6 +145,26 @@ export function ContasPage({ tipo }: { tipo: ContaTipo }) {
             ))}
           </SelectContent>
         </Select>
+        <div className="flex items-center gap-2">
+          <label className="flex items-center gap-1 text-xs text-muted-foreground">
+            Venc. de
+            <Input
+              type="date"
+              className="w-40"
+              value={de}
+              onChange={(e) => setDe(e.target.value)}
+            />
+          </label>
+          <label className="flex items-center gap-1 text-xs text-muted-foreground">
+            até
+            <Input
+              type="date"
+              className="w-40"
+              value={ate}
+              onChange={(e) => setAte(e.target.value)}
+            />
+          </label>
+        </div>
         <form
           className="flex items-center gap-2"
           onSubmit={(e) => {
@@ -162,6 +182,21 @@ export function ContasPage({ tipo }: { tipo: ContaTipo }) {
             Filtrar
           </Button>
         </form>
+        {(de || ate || status || categoriaId || busca) && (
+          <Button
+            variant="ghost"
+            onClick={() => {
+              setDe("");
+              setAte("");
+              setStatus("");
+              setCategoriaId("");
+              setContraparte("");
+              setBusca("");
+            }}
+          >
+            Limpar
+          </Button>
+        )}
       </div>
 
       <div className="overflow-x-auto rounded-lg border border-border">
