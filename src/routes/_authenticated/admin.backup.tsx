@@ -8,10 +8,12 @@ import {
   RefreshCw,
   HardDrive,
   FileSpreadsheet,
+  FolderArchive,
   Trash2,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -40,6 +42,9 @@ import {
   exportarBackupCompleto,
 } from "@/lib/admin/backup.functions";
 import { exportarBackupXLSX } from "@/lib/admin/backup-xlsx";
+import { montarInventarioDocumentos } from "@/lib/admin/backup-documentos.functions";
+import { baixarDocumentosZip, type ProgressoBackup } from "@/lib/admin/backup-documentos-zip";
+
 
 export const Route = createFileRoute("/_authenticated/admin/backup")({
   head: () => ({ meta: [{ title: "Backup — Agilliza" }] }),
@@ -69,6 +74,8 @@ function Pagina() {
   const qc = useQueryClient();
   const backups = useQuery({ queryKey: ["admin-backups"], queryFn: () => listarBackups() });
   const [baixando, setBaixando] = useState(false);
+  const [baixandoDocs, setBaixandoDocs] = useState(false);
+  const [progresso, setProgresso] = useState<ProgressoBackup | null>(null);
 
   const criar = useMutation({
     mutationFn: () => criarBackup(),
@@ -102,6 +109,33 @@ function Pagina() {
     }
   }
 
+  async function baixarDocumentos() {
+    setBaixandoDocs(true);
+    setProgresso({ total: 0, baixados: 0, falhas: 0 });
+    try {
+      const { itens, falhas: falhasLink } = await montarInventarioDocumentos();
+      if (itens.length === 0) {
+        toast.info("Nenhum documento encontrado para backup.");
+        return;
+      }
+      setProgresso({ total: itens.length, baixados: 0, falhas: 0 });
+      const { falhas } = await baixarDocumentosZip(itens, setProgresso);
+      const totalFalhas = falhas + falhasLink;
+      if (totalFalhas > 0) {
+        toast.warning(
+          `Backup de documentos gerado com ${totalFalhas} arquivo(s) não incluído(s).`,
+        );
+      } else {
+        toast.success("Backup de documentos gerado (ZIP).");
+      }
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha ao gerar backup de documentos.");
+    } finally {
+      setBaixandoDocs(false);
+      setProgresso(null);
+    }
+  }
+
   return (
     <div className="space-y-6 p-4 md:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -110,7 +144,8 @@ function Pagina() {
           <div>
             <h1 className="text-xl font-semibold">Backup</h1>
             <p className="text-sm text-muted-foreground">
-              Baixe todos os dados do sistema em Excel ou registre snapshots lógicos.
+              Baixe os dados em Excel, todos os documentos em ZIP organizado por pastas, ou
+              registre snapshots lógicos.
             </p>
           </div>
         </div>
@@ -119,12 +154,35 @@ function Pagina() {
             <FileSpreadsheet className="mr-2 h-4 w-4" />
             {baixando ? "Gerando Excel…" : "Baixar backup completo (Excel)"}
           </Button>
+          <Button variant="secondary" disabled={baixandoDocs} onClick={baixarDocumentos}>
+            <FolderArchive className="mr-2 h-4 w-4" />
+            {baixandoDocs ? "Gerando ZIP…" : "Baixar documentos (ZIP)"}
+          </Button>
           <Button variant="outline" disabled={criar.isPending} onClick={() => criar.mutate()}>
             <Play className="mr-2 h-4 w-4" />
             {criar.isPending ? "Gerando…" : "Gerar snapshot"}
           </Button>
         </div>
       </div>
+
+      {baixandoDocs && progresso ? (
+        <div className="rounded-lg border border-border bg-card p-4">
+          <div className="mb-2 flex items-center justify-between text-sm">
+            <span className="font-medium text-foreground">
+              {progresso.total === 0
+                ? "Preparando documentos…"
+                : `Compactando documentos (${progresso.baixados}/${progresso.total})`}
+            </span>
+            {progresso.falhas > 0 ? (
+              <span className="text-xs text-destructive">{progresso.falhas} falha(s)</span>
+            ) : null}
+          </div>
+          <Progress
+            value={progresso.total > 0 ? (progresso.baixados / progresso.total) * 100 : 5}
+          />
+        </div>
+      ) : null}
+
 
 
       <div className="rounded-lg border border-border bg-card">
