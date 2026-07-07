@@ -163,6 +163,10 @@ export interface ReportResult {
     statuses?: { value: string; label: string }[];
     produtos?: string[];
     responsaveis?: { value: string; label: string }[];
+    analistas?: { value: string; label: string }[];
+    comerciais?: { value: string; label: string }[];
+    corretores?: { value: string; label: string }[];
+    imobiliarias?: { value: string; label: string }[];
   };
 }
 
