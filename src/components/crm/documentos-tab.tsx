@@ -42,6 +42,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { ToneBadge } from "@/components/crm/tone-badge";
+import { DocumentosChecklist } from "@/components/crm/documentos-checklist";
 import { supabase } from "@/integrations/supabase/client";
 import {
   listarDocumentos,
