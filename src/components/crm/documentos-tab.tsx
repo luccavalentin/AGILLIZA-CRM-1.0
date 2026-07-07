@@ -159,6 +159,12 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
     [docs, pasta],
   );
 
+  const tiposCategoria = useMemo(() => tiposParaCategorias([categoria]), [categoria]);
+  const tiposEditCategoria = useMemo(
+    () => tiposParaCategorias([editCategoria]),
+    [editCategoria],
+  );
+
   function abrirPasta(p: DocumentoPasta) {
     setPastaId(p.id);
     setCategoria(categoriasDaPasta(p)[0]);
