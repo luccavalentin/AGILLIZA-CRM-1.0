@@ -252,7 +252,6 @@ export function NovaPessoaInline({
                 {tiposAtivos.map((t) => (
                   <SelectItem key={t.id} value={t.slug}>
                     {t.nome}
-                    {t.acesso_tipo === "portal_parceiro" ? " · Parceiro" : " · Interno"}
                   </SelectItem>
                 ))}
               </SelectContent>
