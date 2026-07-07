@@ -57,6 +57,8 @@ export function ContasPage({ tipo }: { tipo: ContaTipo }) {
   const [categoriaId, setCategoriaId] = useState<string>("");
   const [contraparte, setContraparte] = useState("");
   const [busca, setBusca] = useState("");
+  const [de, setDe] = useState("");
+  const [ate, setAte] = useState("");
 
   const [baixarConta, setBaixarConta] = useState<any>(null);
   const [estorno, setEstorno] = useState<{ id: string; acao: "estornar" | "cancelar" } | null>(
