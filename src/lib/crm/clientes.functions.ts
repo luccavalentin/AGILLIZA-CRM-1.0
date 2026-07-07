@@ -837,6 +837,7 @@ export const editarDocumento = createServerFn({ method: "POST" })
           "imovel",
           "outros",
         ]),
+        pasta_id: z.string().uuid().optional().nullable(),
         tipo_documento: z.string().min(1),
       })
       .parse(d),
@@ -846,11 +847,24 @@ export const editarDocumento = createServerFn({ method: "POST" })
     if (!(await podeAcao(supabase, userId, "crm.clientes", "edit"))) {
       throw new Error("Você não tem permissão para editar documentos.");
     }
-    const { error } = await supabase
-      .from("cliente_documentos")
-      .update({ categoria: data.categoria, tipo_documento: data.tipo_documento })
-      .eq("id", data.id);
+    const patch: Record<string, unknown> = {
+      categoria: data.categoria,
+      tipo_documento: data.tipo_documento,
+    };
+    if (data.pasta_id !== undefined) patch.pasta_id = data.pasta_id;
+    const { error } = await supabase.from("cliente_documentos").update(patch).eq("id", data.id);
     if (error) throw error;
+    const { registrarAuditoria } = await import("@/lib/admin/audit.server");
+    await registrarAuditoria({
+      supabase,
+      userId,
+      correspondenteId: null,
+      acao: "documento.editar",
+      entidade: "cliente_documentos",
+      entidadeId: data.id,
+      descricao: `editou o documento "${data.tipo_documento}"`,
+      payloadNovo: { tipo: data.tipo_documento },
+    });
     return { ok: true };
   });
 
