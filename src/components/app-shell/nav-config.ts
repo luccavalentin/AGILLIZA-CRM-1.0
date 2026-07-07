@@ -266,7 +266,6 @@ export const navInterno: NavGroup[] = [
         children: [
           { label: "Relatório gerencial", icon: LayoutDashboard, to: "/relatorios/gerencial" },
           { label: "Personalizados", icon: SlidersHorizontal, to: "/relatorios/personalizados" },
-          { label: "Exportações", icon: FolderOpen, to: "/relatorios/exportacoes" },
         ],
       },
     ],
