@@ -15,6 +15,7 @@ import { InteracoesTab } from "@/components/crm/interacoes-tab";
 import { VinculoTab } from "@/components/crm/vinculo-tab";
 import { ChatClienteTab } from "@/components/crm/chat-cliente-tab";
 import { VendedoresTab } from "@/components/crm/vendedores-tab";
+import { ImovelTab, IqTab } from "@/components/crm/imovel-iq-tab";
 import { StatusBadge } from "@/components/crm/tone-badge";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import {
