@@ -78,6 +78,32 @@ export async function enviarSimulacaoImpl({
 
   const correspondente_id = sim.correspondente_id;
 
+  // ===== Financiar despesas =====
+  // A API HomeFin espera a flag como string "S"/"N" (nunca booleano) e, quando
+  // marcada, os valores de despesas e o total financiado (financiamento + despesas).
+  const financiarDespesas = Boolean(sim.fg_financiar_despesas);
+  const fgFinanciarDespesas = financiarDespesas ? "S" : "N";
+  const valorDespesasFinanciadas = financiarDespesas
+    ? num(sim.valor_despesas_financiadas)
+    : 0;
+  const valorFinanciamentoBase = num(sim.valor_financiamento);
+  const valorTotalFinanciamento = valorFinanciamentoBase + valorDespesasFinanciadas;
+
+  // Regra de bloqueio: não enviar ao banco se "financiar despesas" está marcado
+  // mas os valores não foram informados/calculados corretamente.
+  if (financiarDespesas) {
+    if (!(valorDespesasFinanciadas > 0)) {
+      throw new Error(
+        'Financiar despesas está marcado, mas o valor das despesas a financiar está vazio ou zerado.',
+      );
+    }
+    if (!(valorTotalFinanciamento > valorFinanciamentoBase)) {
+      throw new Error(
+        'Valor total do financiamento inválido para simulação com despesas financiadas.',
+      );
+    }
+  }
+
   // Rede de segurança do PRAZO por idade: mesmo que a simulação tenha sido
   // criada por outra origem (API, importação), ajustamos o prazo pela regra
   // mais restritiva (idade "corrida" do proponente mais velho) para que TODAS
@@ -143,7 +169,9 @@ export async function enviarSimulacaoImpl({
       valorFinanciamento: num(sim.valor_financiamento),
       prazo: num(sim.prazo),
       utilizaFgtsSimulacao: sim.utiliza_fgts ?? "N",
-      fgFinanciarDespesas: sim.fg_financiar_despesas ? "S" : "N",
+      fgFinanciarDespesas,
+      valorDespesasFinanciadas,
+      valorTotalFinanciamento,
       codigoSistemaAmortizacaoBanco: { id: sim.sistema_amortizacao ?? "S" },
     };
 
@@ -218,8 +246,15 @@ export async function enviarSimulacaoImpl({
           prazo: num(sim.prazo),
           codigoSistemaAmortizacaoBanco: { id: sim.sistema_amortizacao ?? "S" },
           banco: { idBanco: b.homefin_id_banco },
+          fgFinanciarDespesas,
+          valorDespesasFinanciadas,
+          valorTotalFinanciamento,
           fgAutorizacaoDados: true,
         };
+        console.log(
+          "Payload enviado para criar simulação HomeFin:",
+          JSON.stringify(simPayload),
+        );
         const simResp = await chamarIntegracao<any>(
           `/oportunidade/${idOportunidade}/simulacao`,
           "POST",
@@ -228,6 +263,51 @@ export async function enviarSimulacaoImpl({
         );
         const idSimulacao = String(simResp?.idSimulacao ?? "");
 
+        // PUT completo da simulação: garante que a HomeFin persista os campos de
+        // despesas financiadas ANTES da integração bancária. Enviamos o payload
+        // completo (não parcial) para não apagar/ignorar demais campos.
+        const putPayload = {
+          valorImovel: num(sim.valor_imovel),
+          valorFinanciamento: num(sim.valor_financiamento),
+          prazo: num(sim.prazo),
+          codigoSistemaAmortizacaoBanco: { id: sim.sistema_amortizacao ?? "S" },
+          valorDespesasFinanciadas,
+          valorTotalFinanciamento,
+          fgFinanciarDespesas,
+          fgAutorizacaoDados: true,
+        };
+        console.log(
+          "Payload enviado para atualizar simulação HomeFin:",
+          JSON.stringify(putPayload),
+          "fgFinanciarDespesas:",
+          fgFinanciarDespesas,
+          "valorDespesasFinanciadas:",
+          valorDespesasFinanciadas,
+          "valorTotalFinanciamento:",
+          valorTotalFinanciamento,
+        );
+        const putResp = await chamarIntegracao<any>(
+          `/oportunidade/${idOportunidade}/simulacao/${idSimulacao}`,
+          "PUT",
+          putPayload,
+          ctx,
+        );
+        console.log(
+          "Retorno atualização simulação HomeFin:",
+          JSON.stringify(putResp),
+        );
+
+        // Confirma que a HomeFin persistiu a flag antes de integrar ao banco.
+        if (financiarDespesas) {
+          const persistido =
+            putResp?.simulacao?.fgFinanciarDespesas ?? putResp?.fgFinanciarDespesas;
+          if (persistido != null && String(persistido).toUpperCase() !== "S") {
+            throw new Error(
+              "A integração não confirmou o financiamento de despesas na simulação. Envio ao banco cancelado.",
+            );
+          }
+        }
+
         // A resposta da integração traz os valores retornados pelo banco
         const integ = await chamarIntegracao<any>(
           `/oportunidade/${idOportunidade}/simulacao/${idSimulacao}/integracao`,
@@ -235,6 +315,7 @@ export async function enviarSimulacaoImpl({
           {},
           ctx,
         );
+
 
         const dados = integ ?? simResp;
 

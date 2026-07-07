@@ -4490,6 +4490,7 @@ export type Database = {
           usuario_criador_id: string
           usuario_responsavel_id: string | null
           utiliza_fgts: string | null
+          valor_despesas_financiadas: number
           valor_entrada: number | null
           valor_financiamento: number | null
           valor_imovel: number | null
@@ -4549,6 +4550,7 @@ export type Database = {
           usuario_criador_id: string
           usuario_responsavel_id?: string | null
           utiliza_fgts?: string | null
+          valor_despesas_financiadas?: number
           valor_entrada?: number | null
           valor_financiamento?: number | null
           valor_imovel?: number | null
@@ -4608,6 +4610,7 @@ export type Database = {
           usuario_criador_id?: string
           usuario_responsavel_id?: string | null
           utiliza_fgts?: string | null
+          valor_despesas_financiadas?: number
           valor_entrada?: number | null
           valor_financiamento?: number | null
           valor_imovel?: number | null

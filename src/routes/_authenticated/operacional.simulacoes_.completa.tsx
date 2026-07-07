@@ -92,6 +92,7 @@ function Pagina() {
     prazo: 360,
     utiliza_fgts: "N",
     fg_financiar_despesas: false,
+    valor_despesas_financiadas: 0,
     sistema_amortizacao: "S",
     nome_cliente: "",
     cpf_cnpj: "",
@@ -171,6 +172,7 @@ function Pagina() {
       prazo: Number(s.prazo) || prev.prazo,
       utiliza_fgts: s.utiliza_fgts ?? "N",
       fg_financiar_despesas: Boolean(s.fg_financiar_despesas),
+      valor_despesas_financiadas: Number(s.valor_despesas_financiadas) || 0,
       sistema_amortizacao: s.sistema_amortizacao ?? "S",
       cliente_id: s.cliente_id ?? prev.cliente_id,
       nome_cliente: s.nome_cliente ?? "",
@@ -783,6 +785,20 @@ function Pagina() {
               Incluir as despesas no valor financiado
             </label>
           </Campo>
+          {f.fg_financiar_despesas && (
+            <Campo label="Valor das despesas a financiar">
+              <CurrencyInput
+                value={f.valor_despesas_financiadas ?? 0}
+                onChange={(v) => set("valor_despesas_financiadas", v)}
+              />
+              <p className="mt-1 text-xs text-muted-foreground">
+                Total financiado:{" "}
+                {formatBRL(
+                  (f.valor_financiamento || 0) + (f.valor_despesas_financiadas || 0),
+                )}
+              </p>
+            </Campo>
+          )}
         </div>
       </section>
 

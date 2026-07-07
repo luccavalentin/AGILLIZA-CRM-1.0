@@ -1,0 +1,1 @@
+ALTER TABLE public.simulacoes ADD COLUMN IF NOT EXISTS valor_despesas_financiadas numeric NOT NULL DEFAULT 0;
