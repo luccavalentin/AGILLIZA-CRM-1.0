@@ -264,6 +264,17 @@ export function RegrasModulosPanel() {
     });
     setDirty(true);
   }
+  function toggleModulo(modulo: string, permitido: boolean) {
+    setEstado((prev) => {
+      const next = { ...prev };
+      for (const a of CATALOGO_MODULOS.find((m) => m.modulo === modulo)?.acoes ?? []) {
+        const k = chave(modulo, a.acao);
+        next[k] = { ...next[k], permitido };
+      }
+      return next;
+    });
+    setDirty(true);
+  }
 
   function alvoAtivo(modulo: string, alvo: EscopoAlvo): boolean {
     return (alvos[modulo] ?? []).some(
