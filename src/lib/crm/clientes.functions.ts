@@ -1034,6 +1034,17 @@ export const TIPOS_VINCULO = [
 
 export type TipoVinculo = (typeof TIPOS_VINCULO)[number]["valor"];
 
+/**
+ * Mapeia cada tipo de vínculo de atendimento para o slug de "tipo de pessoa"
+ * correspondente (profiles.tipo_pessoa). Assim cada campo lista somente os
+ * usuários cadastrados naquele tipo de pessoa.
+ */
+export const TIPO_VINCULO_PESSOA: Record<TipoVinculo, string> = {
+  imobiliaria: "imobiliaria",
+  corretor: "corretor",
+  comercial_agilliza: "comercial",
+};
+
 /** Lista os parceiros/usuários vinculados a um cliente. */
 export const listarVinculosCliente = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -1068,10 +1079,14 @@ export const listarVinculosCliente = createServerFn({ method: "GET" })
 export const listarParceirosDisponiveis = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(
-    async ({ context }): Promise<{ id: string; nome: string | null; email: string | null }[]> => {
+    async ({
+      context,
+    }): Promise<
+      { id: string; nome: string | null; email: string | null; tipo_pessoa: string | null }[]
+    > => {
       const { supabase, userId } = context;
       const { data: corr } = await supabase.rpc("correspondente_do_usuario", { _user_id: userId });
-      let query = supabase.from("profiles").select("id, nome, email").order("nome");
+      let query = supabase.from("profiles").select("id, nome, email, tipo_pessoa").order("nome");
       if (corr) query = query.eq("correspondente_id", corr);
       const { data, error } = await query.limit(500);
       if (error) throw error;
