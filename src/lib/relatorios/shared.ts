@@ -18,6 +18,12 @@ export interface ReportFiltros {
   valorMin?: number;
   valorMax?: number;
   busca?: string;
+  /** Filtros multi-seleção (Etapa: refino de filtros). */
+  bancos?: string[];
+  analistas?: string[];
+  comerciais?: string[];
+  corretores?: string[];
+  imobiliarias?: string[];
 }
 
 export const PERIODO_LABEL: Record<Periodo, string> = {
