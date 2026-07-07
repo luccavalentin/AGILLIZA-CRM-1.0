@@ -182,11 +182,7 @@ export function RegrasModulosPanel() {
       acesso_tipo: AcessoTipo;
     }) => atualizar({ data: v }),
     onSuccess: async (r: any) => {
-      toast.success(
-        r?.clonado
-          ? "Criamos uma cópia editável do nível padrão com o novo nome."
-          : "Nível atualizado.",
-      );
+      toast.success("Nível atualizado.");
       setEditarOpen(false);
       await qc.invalidateQueries({ queryKey: ["niveis-acesso"] });
       if (r?.id) {
