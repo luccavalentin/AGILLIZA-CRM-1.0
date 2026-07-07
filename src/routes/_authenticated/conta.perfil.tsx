@@ -143,6 +143,45 @@ function Pagina() {
           )}
         </CardContent>
       </Card>
+
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2 text-sm">
+            <Lock className="h-4 w-4 text-muted-foreground" />
+            Alterar senha
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="nova-senha">Nova senha</Label>
+            <Input
+              id="nova-senha"
+              type="password"
+              value={novaSenha}
+              onChange={(e) => setNovaSenha(e.target.value)}
+              placeholder="Mínimo de 8 caracteres"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="confirma-senha">Confirmar nova senha</Label>
+            <Input
+              id="confirma-senha"
+              type="password"
+              value={confirmaSenha}
+              onChange={(e) => setConfirmaSenha(e.target.value)}
+            />
+            {confirmaSenha.length > 0 && novaSenha !== confirmaSenha && (
+              <p className="text-xs text-destructive">As senhas não coincidem.</p>
+            )}
+          </div>
+          <div className="flex justify-end">
+            <Button onClick={alterarSenha} disabled={!podeSalvarSenha || salvandoSenha}>
+              {salvandoSenha && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Alterar senha
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
