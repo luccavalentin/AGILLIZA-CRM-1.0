@@ -195,7 +195,8 @@ export function NovaPessoaInline({
   const todasGlobalMarcadas = CATALOGO_MODULOS.every((mod) =>
     mod.acoes.every((a) => estado[chave(mod.modulo, a.acao)]?.permitido),
   );
-  const permiteSemLogin = tipoPessoa !== "usuario";
+  // Tipos de acesso "parceiro" podem existir sem login; internos exigem login.
+  const permiteSemLogin = tipoSel?.acesso_tipo === "portal_parceiro";
   const efetivoComLogin = permiteSemLogin ? comLogin : true;
 
   function submeter(e: React.FormEvent) {
