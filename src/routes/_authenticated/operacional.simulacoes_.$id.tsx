@@ -445,7 +445,7 @@ function Pagina() {
                                 disabled={b.status_banco !== "simulada" || criandoBanco !== null}
                                 onClick={() => criar(b.banco_id)}
                               >
-                                {criandoBanco === b.banco_id ? "Criando…" : "Criar proposta"}
+                                {criandoBanco === b.banco_id ? "Enviando…" : "Enviar Aprovação"}
                               </Button>
                             )}
                           </div>
