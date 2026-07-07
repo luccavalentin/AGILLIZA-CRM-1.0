@@ -136,6 +136,7 @@ function Pagina() {
 
   const invalidar = useCallback(() => {
     qc.invalidateQueries({ queryKey: ["arquivos"] });
+    qc.invalidateQueries({ queryKey: ["nav-pastas-documentos"] });
   }, [qc]);
 
   /** Garante a existência da árvore de pastas (relativa à pasta atual) e retorna o id da folha. */
