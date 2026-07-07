@@ -352,6 +352,15 @@ export function VendedoresTab({ clienteId }: { clienteId: string }) {
               <Campo label="Dígito"><Input value={form.digito_conta} onChange={(e) => set({ digito_conta: e.target.value })} /></Campo>
             </Secao>
 
+            {(form.estado_civil === "casado" || form.estado_civil === "uniao_estavel") && (
+              <Secao titulo="Conta bancária do cônjuge (opcional)">
+                <Campo label="Banco"><Input value={form.conjuge_banco_conta} onChange={(e) => set({ conjuge_banco_conta: e.target.value })} /></Campo>
+                <Campo label="Agência"><Input value={form.conjuge_agencia} onChange={(e) => set({ conjuge_agencia: e.target.value })} /></Campo>
+                <Campo label="Conta corrente"><Input value={form.conjuge_conta_corrente} onChange={(e) => set({ conjuge_conta_corrente: e.target.value })} /></Campo>
+                <Campo label="Dígito"><Input value={form.conjuge_digito_conta} onChange={(e) => set({ conjuge_digito_conta: e.target.value })} /></Campo>
+              </Secao>
+            )}
+
             <Secao titulo="Endereço">
               <Campo label="CEP"><Input value={form.cep} onChange={(e) => set({ cep: e.target.value })} /></Campo>
               <Campo label="Logradouro" full><Input value={form.logradouro} onChange={(e) => set({ logradouro: e.target.value })} /></Campo>
