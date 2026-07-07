@@ -28,7 +28,7 @@ export function SidebarNav({ nav, onNavigate }: SidebarProps) {
     <nav aria-label="Navegação principal" className="flex flex-col gap-4 px-3 py-4">
       {nav.map((group) => (
         <div key={group.id} className="flex flex-col gap-1">
-          <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-sidebar-foreground/50">
+          <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-sidebar-foreground/70">
             {group.label}
           </p>
           {group.items.map((item) =>
