@@ -12,10 +12,13 @@ import {
   excluirNivelAcesso,
   salvarPermissoes,
   type AcessoTipo,
+  type EscopoAlvo,
   type EscopoDados,
   type NivelAcesso,
   type PapelNivel,
 } from "@/lib/admin/regras-modulos.functions";
+import { listarPessoas } from "@/lib/admin/pessoas.functions";
+import { listarTiposPessoa } from "@/lib/admin/tipos-pessoa.functions";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -53,7 +56,18 @@ type MatrizEstado = Record<string, { permitido: boolean; escopo: EscopoDados }>;
 const ESCOPOS: { value: EscopoDados; label: string }[] = [
   { value: "todos", label: "Todos" },
   { value: "equipe", label: "Equipe" },
-  { value: "proprios", label: "Próprios" },
+  { value: "proprios", label: "Somente os meus" },
+  { value: "personalizado", label: "Personalizado" },
+];
+
+/** Papéis que podem ser escolhidos como alvo do escopo personalizado. */
+const PAPEIS_ALVO: { value: string; label: string }[] = [
+  { value: "gestor", label: "Gestor" },
+  { value: "comercial", label: "Comercial" },
+  { value: "analista", label: "Analista" },
+  { value: "financeiro", label: "Financeiro" },
+  { value: "corretor", label: "Corretor" },
+  { value: "imobiliaria", label: "Imobiliária" },
 ];
 
 const PORTAIS: { value: AcessoTipo; label: string }[] = [

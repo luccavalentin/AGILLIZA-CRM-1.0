@@ -2,7 +2,15 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-export type EscopoDados = "todos" | "equipe" | "proprios";
+export type EscopoDados = "todos" | "equipe" | "proprios" | "personalizado";
+
+export type EscopoAlvoTipo = "usuario" | "papel" | "tipo_pessoa";
+
+export interface EscopoAlvo {
+  alvo_tipo: EscopoAlvoTipo;
+  alvo_id?: string | null;
+  alvo_valor?: string | null;
+}
 
 export interface AcaoCatalogo {
   acao: string;
@@ -317,6 +325,8 @@ export interface NivelAcesso {
   papel: PapelNivel;
   acesso_tipo: AcessoTipo;
   permissoes: PermissaoAtual[];
+  /** Alvos do escopo personalizado, por módulo. */
+  alvos: Record<string, EscopoAlvo[]>;
 }
 
 /** Lista os níveis de acesso visíveis ao usuário e suas permissões. */
@@ -343,9 +353,38 @@ export const listarNiveisAcesso = createServerFn({ method: "GET" })
     const { data: perms } = ids.length
       ? await supabase
           .from("permissions")
-          .select("nivel_acesso_id, modulo, acao, permitido, escopo_dados")
+          .select("id, nivel_acesso_id, modulo, acao, permitido, escopo_dados")
           .in("nivel_acesso_id", ids)
       : { data: [] as any[] };
+
+    // Alvos do escopo personalizado (por permissão -> módulo).
+    const permIds = (perms ?? []).map((p: any) => p.id);
+    const { data: alvos } = permIds.length
+      ? await supabase
+          .from("permission_escopo_alvos")
+          .select("permission_id, alvo_tipo, alvo_id, alvo_valor")
+          .in("permission_id", permIds)
+      : { data: [] as any[] };
+
+    // Mapa permission_id -> { nivel, modulo }
+    const permInfo = new Map<string, { nivel: string; modulo: string }>();
+    (perms ?? []).forEach((p: any) =>
+      permInfo.set(p.id, { nivel: p.nivel_acesso_id, modulo: p.modulo }),
+    );
+    // nivel -> modulo -> alvos (deduplicados)
+    const alvosPorNivel = new Map<string, Record<string, EscopoAlvo[]>>();
+    (alvos ?? []).forEach((a: any) => {
+      const info = permInfo.get(a.permission_id);
+      if (!info) return;
+      const byModulo = alvosPorNivel.get(info.nivel) ?? {};
+      const lista = byModulo[info.modulo] ?? [];
+      const chave = `${a.alvo_tipo}:${a.alvo_id ?? ""}:${a.alvo_valor ?? ""}`;
+      if (!lista.some((x) => `${x.alvo_tipo}:${x.alvo_id ?? ""}:${x.alvo_valor ?? ""}` === chave)) {
+        lista.push({ alvo_tipo: a.alvo_tipo, alvo_id: a.alvo_id, alvo_valor: a.alvo_valor });
+      }
+      byModulo[info.modulo] = lista;
+      alvosPorNivel.set(info.nivel, byModulo);
+    });
 
     return (niveis ?? []).map((n: any) => ({
       id: n.id,
@@ -367,6 +406,7 @@ export const listarNiveisAcesso = createServerFn({ method: "GET" })
           permitido: p.permitido,
           escopo_dados: p.escopo_dados,
         })),
+      alvos: alvosPorNivel.get(n.id) ?? {},
     }));
   });
 
@@ -661,10 +701,24 @@ const permSchema = z.object({
         modulo: z.string().min(1),
         acao: z.string().min(1),
         permitido: z.boolean(),
-        escopo_dados: z.enum(["todos", "equipe", "proprios"]),
+        escopo_dados: z.enum(["todos", "equipe", "proprios", "personalizado"]),
       }),
     )
     .max(500),
+  /** Alvos do escopo personalizado, por módulo. */
+  alvos: z
+    .record(
+      z.string(),
+      z.array(
+        z.object({
+          alvo_tipo: z.enum(["usuario", "papel", "tipo_pessoa"]),
+          alvo_id: z.string().uuid().optional().nullable(),
+          alvo_valor: z.string().optional().nullable(),
+        }),
+      ),
+    )
+    .optional()
+    .default({}),
 });
 
 /** Salva a matriz de permissões de um nível de acesso (substitui o conjunto). */
@@ -711,8 +765,37 @@ export const salvarPermissoes = createServerFn({ method: "POST" })
       }));
 
     if (rows.length) {
-      const { error } = await supabase.from("permissions").insert(rows);
+      const { data: inseridas, error } = await supabase
+        .from("permissions")
+        .insert(rows)
+        .select("id, modulo, escopo_dados");
       if (error) throw new Error(error.message);
+
+      // Alvos do escopo personalizado: um registro por (permissão do módulo × alvo).
+      const alvoRows: {
+        permission_id: string;
+        alvo_tipo: string;
+        alvo_id: string | null;
+        alvo_valor: string | null;
+      }[] = [];
+      (inseridas ?? []).forEach((perm: any) => {
+        if (perm.escopo_dados !== "personalizado") return;
+        const lista = data.alvos?.[perm.modulo] ?? [];
+        lista.forEach((a) => {
+          alvoRows.push({
+            permission_id: perm.id,
+            alvo_tipo: a.alvo_tipo,
+            alvo_id: a.alvo_id ?? null,
+            alvo_valor: a.alvo_valor ?? null,
+          });
+        });
+      });
+      if (alvoRows.length) {
+        const { error: alvoErr } = await supabase
+          .from("permission_escopo_alvos")
+          .insert(alvoRows);
+        if (alvoErr) throw new Error(alvoErr.message);
+      }
     }
 
     const { registrarAuditoria } = await import("@/lib/admin/audit.server");
