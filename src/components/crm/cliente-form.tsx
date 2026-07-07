@@ -476,9 +476,11 @@ export function ClienteForm({
         const r = await criar({ data: payload });
         id = r.id;
         // Cria os vínculos de atendimento selecionados no novo cadastro.
-        for (const parceiroId of vinculos) {
+        for (const vinc of vinculos) {
           try {
-            await vincular({ data: { cliente_id: id, parceiro_id: parceiroId } });
+            await vincular({
+              data: { cliente_id: id, parceiro_id: vinc.parceiro_id, tipo_vinculo: vinc.tipo_vinculo },
+            });
           } catch {
             /* segue mesmo se um vínculo falhar */
           }
