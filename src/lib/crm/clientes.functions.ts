@@ -263,6 +263,10 @@ export const criarCliente = createServerFn({ method: "POST" })
         conjuge_renda: data.conjuge_renda ?? null,
         conjuge_email: data.conjuge_email ?? null,
         conjuge_celular: data.conjuge_celular ?? null,
+        conjuge_banco_conta: data.conjuge_banco_conta ?? null,
+        conjuge_agencia: data.conjuge_agencia ?? null,
+        conjuge_conta_corrente: data.conjuge_conta_corrente ?? null,
+        conjuge_digito_conta: data.conjuge_digito_conta ?? null,
         responsavel_id: userId,
         criador_id: userId,
       })
