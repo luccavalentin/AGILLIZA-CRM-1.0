@@ -27,6 +27,7 @@ import {
   criarPessoaComAcesso,
   type CriarPessoaInput,
   type ResultadoCriarPessoa,
+  type TipoPessoa,
 } from "@/lib/admin/pessoas.functions";
 
 type MatrizEstado = Record<string, { permitido: boolean; escopo: EscopoDados }>;
