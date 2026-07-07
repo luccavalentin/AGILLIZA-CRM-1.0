@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { ArrowLeft, Search, Building2, User, RotateCcw } from "lucide-react";
+import { ArrowLeft, Search, Building2, RotateCcw } from "lucide-react";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { listarPropostas, moverStatusProposta } from "@/lib/propostas/propostas.functions";
 import { statusProposta } from "@/components/propostas/status";
