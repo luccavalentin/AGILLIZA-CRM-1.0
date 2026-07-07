@@ -140,6 +140,10 @@ function Pagina() {
   });
   const meuId = sessao?.profile?.id ?? null;
 
+  useIncomingChatSound(
+    (data?.mensagens ?? []).map((m: any) => ({ id: m.id, mine: m.autor_id === meuId })),
+  );
+
   const d = data?.demanda;
   if (!d) return <div className="p-6 text-sm text-muted-foreground">Carregando…</div>;
 
