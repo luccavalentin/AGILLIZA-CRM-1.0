@@ -321,6 +321,50 @@ function Pagina() {
 
   const mostraConjuge = f.possui_conjuge || f.compoe_renda;
 
+  // Cliente do CRM vinculado a esta simulação — usado para permitir puxar os
+  // dados do cônjuge do cadastro mesmo quando a simulação está como solteiro.
+  const obterClienteCrmFn = useServerFn(obterClienteCRM);
+  const { data: crmVinculado } = useQuery({
+    queryKey: ["cliente-crm-vinculado", f.cliente_id],
+    queryFn: () => obterClienteCrmFn({ data: { id: f.cliente_id as string } }),
+    enabled: Boolean(f.cliente_id),
+  });
+
+  // O cadastro do CRM tem cônjuge preenchido?
+  const crmTemConjuge = Boolean(
+    crmVinculado &&
+      (crmVinculado.conjuge_nome ||
+        crmVinculado.conjuge_cpf ||
+        crmVinculado.conjuge_renda),
+  );
+
+  // Só oferece "puxar cônjuge" quando o CRM tem cônjuge mas a simulação atual
+  // ainda não trouxe esses dados (ex.: foi salva como solteiro).
+  const podePuxarConjugeCrm =
+    crmTemConjuge && !String(f.nome_conjuge ?? "").trim();
+
+  function puxarConjugeDoCRM() {
+    if (!crmVinculado) return;
+    setF((prev) => ({
+      ...prev,
+      possui_conjuge: true,
+      compoe_renda:
+        prev.compoe_renda || Number(crmVinculado.conjuge_renda) > 0,
+      nome_conjuge: crmVinculado.conjuge_nome ?? "",
+      cpf_conjuge: crmVinculado.conjuge_cpf
+        ? maskCpfCnpj(crmVinculado.conjuge_cpf)
+        : "",
+      renda_conjuge: crmVinculado.conjuge_renda ?? 0,
+      data_nascimento_conjuge: crmVinculado.conjuge_data_nascimento ?? "",
+      email_conjuge: crmVinculado.conjuge_email ?? "",
+      celular_conjuge: crmVinculado.conjuge_celular
+        ? maskCelular(crmVinculado.conjuge_celular)
+        : "",
+    }));
+    toast.success("Dados do cônjuge puxados do cadastro do CRM.");
+  }
+
+
   // Habilita a inversão apenas quando os dados essenciais do cônjuge já existem.
   const podeInverter = useMemo(() => {
     return (
