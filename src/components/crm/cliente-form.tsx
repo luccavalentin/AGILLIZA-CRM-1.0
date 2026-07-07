@@ -29,7 +29,7 @@ import {
   TIPO_VINCULO_PESSOA,
   type TipoVinculo,
 } from "@/lib/crm/clientes.functions";
-import { validarDocumento, soDigitos } from "@/lib/crm/documento";
+import { validarDocumento, validarCPF, soDigitos } from "@/lib/crm/documento";
 
 export interface ClienteFormValues {
   id?: string;
@@ -401,16 +401,45 @@ export function ClienteForm({
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!v.nome.trim()) return toast.error("Informe o nome.");
-    if (!validarDocumento(v.documento, v.tipo_pessoa)) return toast.error("Documento inválido.");
-    if (!v.data_nascimento) return toast.error("Informe a data.");
+    const ehPF = v.tipo_pessoa === "PF";
+
+    // Nome / razão social
+    if (!v.nome.trim()) {
+      return toast.error(ehPF ? "Informe o nome completo." : "Informe a razão social.");
+    }
+
+    // Documento: CPF (11 dígitos) para PF, CNPJ (14 dígitos) para PJ
+    const docDigitos = soDigitos(v.documento);
+    if (!docDigitos) {
+      return toast.error(ehPF ? "Informe o CPF." : "Informe o CNPJ.");
+    }
+    if (ehPF && docDigitos.length !== 11) {
+      return toast.error("O CPF deve conter 11 dígitos.");
+    }
+    if (!ehPF && docDigitos.length !== 14) {
+      return toast.error("O CNPJ deve conter 14 dígitos.");
+    }
+    if (!validarDocumento(docDigitos, v.tipo_pessoa)) {
+      return toast.error(ehPF ? "CPF inválido." : "CNPJ inválido.");
+    }
+
+    // Data de nascimento (PF) / abertura (PJ)
+    if (!v.data_nascimento) {
+      return toast.error(ehPF ? "Informe a data de nascimento." : "Informe a data de abertura.");
+    }
+
     if (!v.email.includes("@")) return toast.error("E-mail inválido.");
     if (soDigitos(v.telefone_celular).length < 10) return toast.error("Celular inválido.");
     const renda = Number(v.renda_total_declarada.replace(/\./g, "").replace(",", "."));
     if (isNaN(renda) || renda < 0) return toast.error("Renda inválida.");
 
-    const casado = v.estado_civil === "casado" || v.estado_civil === "uniao_estavel";
+    // Estado civil e cônjuge só se aplicam a Pessoa Física.
+    const casado =
+      ehPF && (v.estado_civil === "casado" || v.estado_civil === "uniao_estavel");
     if (casado && !v.conjuge_nome.trim()) return toast.error("Informe o nome do cônjuge.");
+    if (casado && v.conjuge_cpf && !validarCPF(v.conjuge_cpf)) {
+      return toast.error("CPF do cônjuge inválido.");
+    }
     const rendaConjuge = v.conjuge_renda
       ? Number(v.conjuge_renda.replace(/\./g, "").replace(",", "."))
       : null;
@@ -654,30 +683,15 @@ export function ClienteForm({
               onChange={(e) => set("data_nascimento", e.target.value)}
             />
           </div>
-          <div className="space-y-1.5">
-            <Label>Estado civil *</Label>
-            <Select value={v.estado_civil} onValueChange={(x) => set("estado_civil", x)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {ESTADOS_CIVIS.map((o) => (
-                  <SelectItem key={o.v} value={o.v}>
-                    {o.l}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          {(v.estado_civil === "casado" || v.estado_civil === "uniao_estavel") && (
+          {v.tipo_pessoa === "PF" && (
             <div className="space-y-1.5">
-              <Label>Regime de casamento</Label>
-              <Select value={v.regime_casamento} onValueChange={(x) => set("regime_casamento", x)}>
+              <Label>Estado civil *</Label>
+              <Select value={v.estado_civil} onValueChange={(x) => set("estado_civil", x)}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione" />
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {REGIMES.map((o) => (
+                  {ESTADOS_CIVIS.map((o) => (
                     <SelectItem key={o.v} value={o.v}>
                       {o.l}
                     </SelectItem>
@@ -686,6 +700,24 @@ export function ClienteForm({
               </Select>
             </div>
           )}
+          {v.tipo_pessoa === "PF" &&
+            (v.estado_civil === "casado" || v.estado_civil === "uniao_estavel") && (
+              <div className="space-y-1.5">
+                <Label>Regime de casamento</Label>
+                <Select value={v.regime_casamento} onValueChange={(x) => set("regime_casamento", x)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {REGIMES.map((o) => (
+                      <SelectItem key={o.v} value={o.v}>
+                        {o.l}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           <div className="space-y-1.5">
             <Label>Nome da mãe</Label>
             <Input value={v.mae} onChange={(e) => set("mae", e.target.value)} />
@@ -739,7 +771,8 @@ export function ClienteForm({
         </CardContent>
       </Card>
 
-      {(v.estado_civil === "casado" || v.estado_civil === "uniao_estavel") && (
+      {v.tipo_pessoa === "PF" &&
+        (v.estado_civil === "casado" || v.estado_civil === "uniao_estavel") && (
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Dados do cônjuge</CardTitle>
