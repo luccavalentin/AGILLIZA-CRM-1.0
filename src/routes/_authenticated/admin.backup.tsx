@@ -109,6 +109,33 @@ function Pagina() {
     }
   }
 
+  async function baixarDocumentos() {
+    setBaixandoDocs(true);
+    setProgresso({ total: 0, baixados: 0, falhas: 0 });
+    try {
+      const { itens, falhas: falhasLink } = await montarInventarioDocumentos();
+      if (itens.length === 0) {
+        toast.info("Nenhum documento encontrado para backup.");
+        return;
+      }
+      setProgresso({ total: itens.length, baixados: 0, falhas: 0 });
+      const { falhas } = await baixarDocumentosZip(itens, setProgresso);
+      const totalFalhas = falhas + falhasLink;
+      if (totalFalhas > 0) {
+        toast.warning(
+          `Backup de documentos gerado com ${totalFalhas} arquivo(s) não incluído(s).`,
+        );
+      } else {
+        toast.success("Backup de documentos gerado (ZIP).");
+      }
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha ao gerar backup de documentos.");
+    } finally {
+      setBaixandoDocs(false);
+      setProgresso(null);
+    }
+  }
+
   return (
     <div className="space-y-6 p-4 md:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
