@@ -78,6 +78,12 @@ export const navInterno: NavGroup[] = [
         perm: { modulo: "crm.clientes" },
       },
       { label: "Scan IA", icon: ScanLine, to: "/crm/scan-ia", perm: { modulo: "crm.scan_ia" } },
+      {
+        label: "Documentos Gerais",
+        icon: FolderTree,
+        to: "/crm/documentos",
+        perm: { modulo: "crm.clientes" },
+      },
     ],
   },
   {
