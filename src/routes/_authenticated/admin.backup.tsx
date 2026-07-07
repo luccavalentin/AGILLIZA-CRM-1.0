@@ -74,6 +74,8 @@ function Pagina() {
   const qc = useQueryClient();
   const backups = useQuery({ queryKey: ["admin-backups"], queryFn: () => listarBackups() });
   const [baixando, setBaixando] = useState(false);
+  const [baixandoDocs, setBaixandoDocs] = useState(false);
+  const [progresso, setProgresso] = useState<ProgressoBackup | null>(null);
 
   const criar = useMutation({
     mutationFn: () => criarBackup(),
