@@ -597,6 +597,13 @@ function TabResumo({
   }
 
   const status = proposta.status as PropostaStatus;
+  // Depois que a proposta já foi ao banco, mostra somente os bancos realmente
+  // enviados (não a lista de simulações vinculadas). Antes do envio, mostra
+  // todos para o usuário escolher qual enviar.
+  const houveEnvio = (bancos ?? []).some((b) => bancoJaEnviado(b));
+  const bancosVisiveis = houveEnvio
+    ? (bancos ?? []).filter((b) => bancoJaEnviado(b))
+    : (bancos ?? []);
   const podeEnviarBanco =
     Boolean(proposta.homefin_id_oportunidade) &&
     !["cancelada", "registrado", "credito_recusado", "contrato_emitido"].includes(status);
