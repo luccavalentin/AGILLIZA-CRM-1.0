@@ -5023,7 +5023,13 @@ export type Database = {
         | "aguardando"
         | "concluida"
         | "cancelada"
-      doc_categoria: "comprador" | "conjuge" | "vendedor" | "imovel" | "outros"
+      doc_categoria:
+        | "comprador"
+        | "conjuge"
+        | "vendedor"
+        | "imovel"
+        | "outros"
+        | "vendedor_conjuge"
       doc_status:
         | "pendente"
         | "recebido"
@@ -5252,7 +5258,14 @@ export const Constants = {
         "concluida",
         "cancelada",
       ],
-      doc_categoria: ["comprador", "conjuge", "vendedor", "imovel", "outros"],
+      doc_categoria: [
+        "comprador",
+        "conjuge",
+        "vendedor",
+        "imovel",
+        "outros",
+        "vendedor_conjuge",
+      ],
       doc_status: ["pendente", "recebido", "aprovado", "reprovado", "expirado"],
       escopo_dados: ["todos", "equipe", "proprios"],
       financial_categoria_tipo: ["despesa", "receita"],
