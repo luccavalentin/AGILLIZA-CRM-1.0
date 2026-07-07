@@ -807,8 +807,9 @@ export function ClienteForm({
               <Label>CPF do cônjuge</Label>
               <Input
                 value={v.conjuge_cpf}
-                onChange={(e) => set("conjuge_cpf", e.target.value)}
-                placeholder="Somente números"
+                onChange={(e) => set("conjuge_cpf", mascararCPF(e.target.value))}
+                inputMode="numeric"
+                placeholder="000.000.000-00"
               />
             </div>
             <div className="space-y-1.5">
