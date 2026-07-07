@@ -142,17 +142,22 @@ export function ReportChartView({
     const intTicks = !allowDecimals ? niceIntTicks(maxValor) : undefined;
     return (
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={chart.dados} layout="vertical">
-          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+        <BarChart
+          data={chart.dados}
+          layout="vertical"
+          margin={{ top: 4, right: 16, bottom: 4, left: 0 }}
+          barCategoryGap="35%"
+        >
+          <CartesianGrid
+            horizontal={false}
+            strokeDasharray="3 3"
+            stroke="hsl(var(--border))"
+          />
           <XAxis
             type="number"
-            tick={{ fontSize: 11 }}
-            stroke="hsl(var(--muted-foreground))"
-            tickFormatter={fmt}
+            hide
             allowDecimals={allowDecimals}
-            {...(intTicks
-              ? { ticks: intTicks, domain: [0, intTicks[intTicks.length - 1]] }
-              : {})}
+            {...(intTicks ? { domain: [0, intTicks[intTicks.length - 1]] } : {})}
           />
           <YAxis
             type="category"
@@ -160,10 +165,12 @@ export function ReportChartView({
             tick={colorByBank ? <BankYAxisTick /> : { fontSize: 11 }}
             stroke="hsl(var(--muted-foreground))"
             width={colorByBank ? 136 : 110}
+            tickLine={false}
+            axisLine={false}
           />
 
-          <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => fmt(v)} />
-          <Bar dataKey="valor" radius={[0, 4, 4, 0]} fill="var(--chart-1)">
+          <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => fmt(v)} cursor={false} />
+          <Bar dataKey="valor" radius={[0, 4, 4, 0]} fill="var(--chart-1)" maxBarSize={22}>
             {chart.dados.map((d, i) => (
               <Cell
                 key={i}
