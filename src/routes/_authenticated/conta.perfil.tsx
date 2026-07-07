@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { UserRound, Loader2, Lock } from "lucide-react";
+import { UserRound, Loader2, Lock, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getMinhaSessao, atualizarMeuPerfil } from "@/lib/session.functions";
 import { supabase } from "@/integrations/supabase/client";
+
+// URL assinada de longa duração (~10 anos) para exibir a foto de um bucket privado.
+const URL_EXPIRACAO_SEGUNDOS = 60 * 60 * 24 * 365 * 10;
 
 export const Route = createFileRoute("/_authenticated/conta/perfil")({
   head: () => ({ meta: [{ title: "Meu perfil — Agilliza" }] }),
