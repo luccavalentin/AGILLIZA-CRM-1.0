@@ -68,6 +68,7 @@ import { Route as AuthenticatedFinanceiroComissoesRouteImport } from './routes/_
 import { Route as AuthenticatedCrmScanIaRouteImport } from './routes/_authenticated/crm.scan-ia'
 import { Route as AuthenticatedCrmParceirosRouteImport } from './routes/_authenticated/crm.parceiros'
 import { Route as AuthenticatedCrmPainelRouteImport } from './routes/_authenticated/crm.painel'
+import { Route as AuthenticatedCrmDocumentosRouteImport } from './routes/_authenticated/crm.documentos'
 import { Route as AuthenticatedCrmClientesRouteImport } from './routes/_authenticated/crm.clientes'
 import { Route as AuthenticatedCrmChatRouteImport } from './routes/_authenticated/crm.chat'
 import { Route as AuthenticatedContaSegurancaRouteImport } from './routes/_authenticated/conta.seguranca'
@@ -429,6 +430,12 @@ const AuthenticatedCrmPainelRoute = AuthenticatedCrmPainelRouteImport.update({
   path: '/crm/painel',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedCrmDocumentosRoute =
+  AuthenticatedCrmDocumentosRouteImport.update({
+    id: '/crm/documentos',
+    path: '/crm/documentos',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedCrmClientesRoute =
   AuthenticatedCrmClientesRouteImport.update({
     id: '/crm/clientes',
@@ -655,6 +662,7 @@ export interface FileRoutesByFullPath {
   '/conta/seguranca': typeof AuthenticatedContaSegurancaRoute
   '/crm/chat': typeof AuthenticatedCrmChatRoute
   '/crm/clientes': typeof AuthenticatedCrmClientesRoute
+  '/crm/documentos': typeof AuthenticatedCrmDocumentosRoute
   '/crm/painel': typeof AuthenticatedCrmPainelRoute
   '/crm/parceiros': typeof AuthenticatedCrmParceirosRoute
   '/crm/scan-ia': typeof AuthenticatedCrmScanIaRoute
@@ -744,6 +752,7 @@ export interface FileRoutesByTo {
   '/conta/seguranca': typeof AuthenticatedContaSegurancaRoute
   '/crm/chat': typeof AuthenticatedCrmChatRoute
   '/crm/clientes': typeof AuthenticatedCrmClientesRoute
+  '/crm/documentos': typeof AuthenticatedCrmDocumentosRoute
   '/crm/painel': typeof AuthenticatedCrmPainelRoute
   '/crm/parceiros': typeof AuthenticatedCrmParceirosRoute
   '/crm/scan-ia': typeof AuthenticatedCrmScanIaRoute
@@ -837,6 +846,7 @@ export interface FileRoutesById {
   '/_authenticated/conta/seguranca': typeof AuthenticatedContaSegurancaRoute
   '/_authenticated/crm/chat': typeof AuthenticatedCrmChatRoute
   '/_authenticated/crm/clientes': typeof AuthenticatedCrmClientesRoute
+  '/_authenticated/crm/documentos': typeof AuthenticatedCrmDocumentosRoute
   '/_authenticated/crm/painel': typeof AuthenticatedCrmPainelRoute
   '/_authenticated/crm/parceiros': typeof AuthenticatedCrmParceirosRoute
   '/_authenticated/crm/scan-ia': typeof AuthenticatedCrmScanIaRoute
@@ -930,6 +940,7 @@ export interface FileRouteTypes {
     | '/conta/seguranca'
     | '/crm/chat'
     | '/crm/clientes'
+    | '/crm/documentos'
     | '/crm/painel'
     | '/crm/parceiros'
     | '/crm/scan-ia'
@@ -1019,6 +1030,7 @@ export interface FileRouteTypes {
     | '/conta/seguranca'
     | '/crm/chat'
     | '/crm/clientes'
+    | '/crm/documentos'
     | '/crm/painel'
     | '/crm/parceiros'
     | '/crm/scan-ia'
@@ -1111,6 +1123,7 @@ export interface FileRouteTypes {
     | '/_authenticated/conta/seguranca'
     | '/_authenticated/crm/chat'
     | '/_authenticated/crm/clientes'
+    | '/_authenticated/crm/documentos'
     | '/_authenticated/crm/painel'
     | '/_authenticated/crm/parceiros'
     | '/_authenticated/crm/scan-ia'
@@ -1588,6 +1601,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCrmPainelRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/crm/documentos': {
+      id: '/_authenticated/crm/documentos'
+      path: '/crm/documentos'
+      fullPath: '/crm/documentos'
+      preLoaderRoute: typeof AuthenticatedCrmDocumentosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/crm/clientes': {
       id: '/_authenticated/crm/clientes'
       path: '/crm/clientes'
@@ -1908,6 +1928,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedContaSegurancaRoute: typeof AuthenticatedContaSegurancaRoute
   AuthenticatedCrmChatRoute: typeof AuthenticatedCrmChatRoute
   AuthenticatedCrmClientesRoute: typeof AuthenticatedCrmClientesRoute
+  AuthenticatedCrmDocumentosRoute: typeof AuthenticatedCrmDocumentosRoute
   AuthenticatedCrmPainelRoute: typeof AuthenticatedCrmPainelRoute
   AuthenticatedCrmParceirosRoute: typeof AuthenticatedCrmParceirosRoute
   AuthenticatedCrmScanIaRoute: typeof AuthenticatedCrmScanIaRoute
@@ -1965,6 +1986,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedContaSegurancaRoute: AuthenticatedContaSegurancaRoute,
   AuthenticatedCrmChatRoute: AuthenticatedCrmChatRoute,
   AuthenticatedCrmClientesRoute: AuthenticatedCrmClientesRoute,
+  AuthenticatedCrmDocumentosRoute: AuthenticatedCrmDocumentosRoute,
   AuthenticatedCrmPainelRoute: AuthenticatedCrmPainelRoute,
   AuthenticatedCrmParceirosRoute: AuthenticatedCrmParceirosRoute,
   AuthenticatedCrmScanIaRoute: AuthenticatedCrmScanIaRoute,
