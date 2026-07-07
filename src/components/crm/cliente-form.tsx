@@ -436,8 +436,10 @@ export function ClienteForm({
       return toast.error(ehPF ? "Informe a data de nascimento." : "Informe a data de abertura.");
     }
 
-    if (!v.email.includes("@")) return toast.error("E-mail inválido.");
-    if (soDigitos(v.telefone_celular).length < 10) return toast.error("Celular inválido.");
+    if (!validarEmail(v.email)) return toast.error("E-mail inválido.");
+    if (!validarTelefone(v.telefone_celular)) {
+      return toast.error("Celular inválido. Informe DDD + número (ex.: (11) 99999-9999).");
+    }
     const renda = Number(v.renda_total_declarada.replace(/\./g, "").replace(",", "."));
     if (isNaN(renda) || renda < 0) return toast.error("Renda inválida.");
 
@@ -447,6 +449,12 @@ export function ClienteForm({
     if (casado && !v.conjuge_nome.trim()) return toast.error("Informe o nome do cônjuge.");
     if (casado && v.conjuge_cpf && !validarCPF(v.conjuge_cpf)) {
       return toast.error("CPF do cônjuge inválido.");
+    }
+    if (casado && v.conjuge_email && !validarEmail(v.conjuge_email)) {
+      return toast.error("E-mail do cônjuge inválido.");
+    }
+    if (casado && v.conjuge_celular && !validarTelefone(v.conjuge_celular)) {
+      return toast.error("Celular do cônjuge inválido.");
     }
     const rendaConjuge = v.conjuge_renda
       ? Number(v.conjuge_renda.replace(/\./g, "").replace(",", "."))
