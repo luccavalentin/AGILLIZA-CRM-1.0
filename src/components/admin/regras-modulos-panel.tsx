@@ -115,7 +115,12 @@ export function RegrasModulosPanel() {
   const [subaba, setSubaba] = useState<"papeis" | "permissoes">("papeis");
   const [selecionadoId, setSelecionadoId] = useState<string | null>(null);
   const [estado, setEstado] = useState<MatrizEstado>({});
+  const [alvos, setAlvos] = useState<Record<string, EscopoAlvo[]>>({});
+  const [alvosModulo, setAlvosModulo] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
+
+  const pessoasQuery = useQuery({ queryKey: ["pessoas"], queryFn: () => listarPessoas() });
+  const tiposQuery = useQuery({ queryKey: ["tipos-pessoa"], queryFn: () => listarTiposPessoa() });
 
   const [novoOpen, setNovoOpen] = useState(false);
   const [novoNome, setNovoNome] = useState("");
