@@ -53,27 +53,99 @@ function aplicarModo(modo: Modo) {
 
 function Perfil() {
   const [modo, setModo] = useState<Modo>(modoAtual);
+  const navigate = useNavigate();
 
   const baixar = useMutation({
     mutationFn: () => clienteBaixarMeusDados(),
-    onSuccess: (dados) => {
-      const blob = new Blob([JSON.stringify(dados, null, 2)], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "meus-dados.json";
-      a.click();
-      URL.revokeObjectURL(url);
-      toast.success("Seus dados foram baixados.");
+    onSuccess: async (dados) => {
+      const { default: jsPDF } = await import("jspdf");
+      const doc = new jsPDF({ unit: "pt", format: "a4" });
+      const margem = 40;
+      const larguraUtil = doc.internal.pageSize.getWidth() - margem * 2;
+      let y = margem;
+
+      const quebraPagina = (altura: number) => {
+        if (y + altura > doc.internal.pageSize.getHeight() - margem) {
+          doc.addPage();
+          y = margem;
+        }
+      };
+      const titulo = (t: string) => {
+        quebraPagina(28);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(14);
+        doc.text(t, margem, y);
+        y += 20;
+      };
+      const linha = (label: string, valor: string) => {
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(11);
+        const texto = `${label}: ${valor}`;
+        const linhas = doc.splitTextToSize(texto, larguraUtil) as string[];
+        quebraPagina(linhas.length * 15);
+        doc.text(linhas, margem, y);
+        y += linhas.length * 15;
+      };
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(18);
+      doc.text("Meus dados", margem, y);
+      y += 16;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.text(
+        `Gerado em ${new Date().toLocaleString("pt-BR")}`,
+        margem,
+        y,
+      );
+      y += 22;
+
+      const c = dados.cliente ?? {};
+      titulo("Cadastro");
+      linha("Nome", c.nome ?? "—");
+      linha("Tipo", c.tipo_pessoa ?? "—");
+      linha("E-mail", c.email ?? "—");
+      linha("Telefone", c.telefone_celular ?? "—");
+      linha("UF de interesse", c.uf_interesse ?? "—");
+      if (c.created_at) linha("Cliente desde", new Date(c.created_at).toLocaleDateString("pt-BR"));
+      y += 8;
+
+      titulo("Documentos");
+      if ((dados.documentos ?? []).length === 0) {
+        linha("", "Nenhum documento.");
+      } else {
+        (dados.documentos as any[]).forEach((d) =>
+          linha(d.tipo_documento ?? d.nome_arquivo ?? "Documento", d.status ?? "—"),
+        );
+      }
+      y += 8;
+
+      titulo("Mensagens");
+      if ((dados.mensagens ?? []).length === 0) {
+        linha("", "Nenhuma mensagem.");
+      } else {
+        (dados.mensagens as any[]).forEach((m) => {
+          const quem = m.remetente_tipo === "cliente" ? "Você" : "Time";
+          const quando = m.criada_em ? new Date(m.criada_em).toLocaleString("pt-BR") : "";
+          linha(`${quem} (${quando})`, m.mensagem ?? "");
+        });
+      }
+
+      doc.save("meus-dados.pdf");
+      toast.success("Seus dados foram baixados em PDF.");
     },
     onError: () => toast.error("Falha de conexão. Tente novamente."),
   });
 
   const excluir = useMutation({
-    mutationFn: () => clienteSolicitarLGPD({ data: { acao: "exclusao" } }),
-    onSuccess: () => toast.success("Solicitação registrada. Nossa equipe entrará em contato."),
+    mutationFn: () => clienteExcluirDadosApp(),
+    onSuccess: () => {
+      toast.success("Seus dados do aplicativo foram excluídos.");
+      navigate({ to: "/cliente/logout" });
+    },
     onError: () => toast.error("Falha de conexão. Tente novamente."),
   });
+
 
   const opcoes: { valor: Modo; label: string; icone: typeof Sun }[] = [
     { valor: "light", label: "Claro", icone: Sun },
