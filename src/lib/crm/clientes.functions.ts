@@ -894,6 +894,17 @@ export const excluirDocumento = createServerFn({ method: "POST" })
       descricao: `Documento excluído: ${doc.nome_arquivo}`,
       ator_id: userId,
     });
+    const { registrarAuditoria } = await import("@/lib/admin/audit.server");
+    await registrarAuditoria({
+      supabase,
+      userId,
+      correspondenteId: null,
+      acao: "documento.excluir",
+      entidade: "cliente_documentos",
+      entidadeId: doc.cliente_id,
+      descricao: `excluiu o documento "${doc.nome_arquivo}"`,
+      payloadAnterior: { nome_arquivo: doc.nome_arquivo },
+    });
     return { ok: true };
   });
 
