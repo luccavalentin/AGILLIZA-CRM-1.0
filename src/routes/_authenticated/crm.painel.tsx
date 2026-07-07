@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Input } from "@/components/ui/input";
+import { ChevronRight } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -86,7 +87,7 @@ function Pagina() {
             return (
               <div
                 key={stage.codigo}
-                className="group relative flex min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-card shadow-sm transition-shadow hover:shadow-md"
+                className="group relative flex min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-card shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-lg"
               >
                 <div className="flex min-w-0 flex-col p-3.5">
                   <div className="mb-3 flex items-center justify-between gap-2 border-b border-border pb-3">
@@ -120,19 +121,20 @@ function Pagina() {
                           onClick={() =>
                             navigate({ to: "/crm/clientes/$id", params: { id: c.id } })
                           }
-                          className="flex w-full items-center gap-2.5 rounded-lg border border-border bg-background p-2.5 text-left transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-sm"
+                          className="group/card flex w-full items-center gap-2.5 rounded-lg border border-border bg-background p-2.5 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/50 hover:bg-primary/5 hover:shadow-md active:translate-y-0 active:scale-[0.98]"
                         >
-                          <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+                          <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary transition-all duration-200 group-hover/card:scale-110 group-hover/card:bg-primary group-hover/card:text-primary-foreground">
                             {c.nome.trim().charAt(0).toUpperCase()}
                           </span>
                           <span className="min-w-0 flex-1">
-                            <span className="block truncate text-sm font-medium text-foreground">
+                            <span className="block truncate text-sm font-medium text-foreground transition-colors group-hover/card:text-primary">
                               {c.nome}
                             </span>
                             <span className="block font-mono text-[11px] text-muted-foreground">
                               {c.numero_cliente}
                             </span>
                           </span>
+                          <ChevronRight className="size-4 shrink-0 -translate-x-1 text-primary opacity-0 transition-all duration-200 group-hover/card:translate-x-0 group-hover/card:opacity-100" />
                         </button>
                       ))
                     )}
