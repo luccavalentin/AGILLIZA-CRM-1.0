@@ -786,13 +786,18 @@ export function ClienteForm({
           </div>
           <div className="space-y-1.5">
             <Label>UF de interesse</Label>
-            <Combobox
-              value={v.uf_interesse}
-              onValueChange={(x) => set("uf_interesse", x)}
-              options={OPCOES_UF}
-              placeholder="Selecione"
-              searchPlaceholder="Buscar UF…"
-            />
+            <Select value={v.uf_interesse} onValueChange={(x) => set("uf_interesse", x)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione" />
+              </SelectTrigger>
+              <SelectContent>
+                {OPCOES_UF.map((uf) => (
+                  <SelectItem key={uf} value={uf}>
+                    {uf}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </CardContent>
       </Card>
@@ -892,13 +897,21 @@ export function ClienteForm({
             </div>
             <div className="space-y-1.5">
               <Label>UF de expedição</Label>
-              <Combobox
+              <Select
                 value={v.conjuge_uf_expedicao}
                 onValueChange={(x) => set("conjuge_uf_expedicao", x)}
-                options={OPCOES_UF}
-                placeholder="Selecione"
-                searchPlaceholder="Buscar UF…"
-              />
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione" />
+                </SelectTrigger>
+                <SelectContent>
+                  {OPCOES_UF.map((uf) => (
+                    <SelectItem key={uf} value={uf}>
+                      {uf}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-1.5">
               <Label>Data de expedição</Label>
@@ -1033,13 +1046,18 @@ export function ClienteForm({
           </div>
           <div className="space-y-1.5">
             <Label>UF de expedição</Label>
-            <Combobox
-              value={v.uf_expedicao}
-              onValueChange={(x) => set("uf_expedicao", x)}
-              options={OPCOES_UF}
-              placeholder="Selecione"
-              searchPlaceholder="Buscar UF…"
-            />
+            <Select value={v.uf_expedicao} onValueChange={(x) => set("uf_expedicao", x)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione" />
+              </SelectTrigger>
+              <SelectContent>
+                {OPCOES_UF.map((uf) => (
+                  <SelectItem key={uf} value={uf}>
+                    {uf}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="space-y-1.5">
             <Label>Data de expedição</Label>
@@ -1122,13 +1140,18 @@ export function ClienteForm({
           </div>
           <div className="space-y-1.5">
             <Label>UF</Label>
-            <Combobox
-              value={end.uf}
-              onValueChange={(x) => setEnd((p) => ({ ...p, uf: x }))}
-              options={OPCOES_UF}
-              placeholder="Selecione"
-              searchPlaceholder="Buscar UF…"
-            />
+            <Select value={end.uf} onValueChange={(x) => setEnd((p) => ({ ...p, uf: x }))}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione" />
+              </SelectTrigger>
+              <SelectContent>
+                {OPCOES_UF.map((uf) => (
+                  <SelectItem key={uf} value={uf}>
+                    {uf}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </CardContent>
       </Card>
