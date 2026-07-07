@@ -440,7 +440,9 @@ async function forkNivelPadrao(
       acesso_tipo: overrides?.acesso_tipo ?? origem.acesso_tipo ?? "sistema",
       correspondente_id: corresp,
       ativo: true,
-      is_padrao: false,
+      // Mantém como padrão do correspondente: a partir daqui ele edita este
+      // registro no lugar (sem gerar novas cópias a cada alteração).
+      is_padrao: true,
     })
     .select("id")
     .single();
