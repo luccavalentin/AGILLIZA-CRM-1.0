@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Send, Upload, Paperclip } from "lucide-react";
+import { Send, Upload, Paperclip, Camera, FileText, Loader2 } from "lucide-react";
 import { z } from "zod";
 import {
   clienteObterVisaoGeral,
@@ -10,6 +10,7 @@ import {
   clienteMinhasPropostas,
   clienteListarMensagens,
   clienteEnviarMensagem,
+  clienteEnviarMensagemAnexo,
   clienteMarcarLida,
   clienteEnviarDocumentoPendente,
 } from "@/lib/portal/cliente.functions";
