@@ -36,6 +36,7 @@ import {
   validarEmail,
   validarTelefone,
   mascararTelefone,
+  mascararCPF,
   mascararDocumentoTipo,
 } from "@/lib/crm/documento";
 
