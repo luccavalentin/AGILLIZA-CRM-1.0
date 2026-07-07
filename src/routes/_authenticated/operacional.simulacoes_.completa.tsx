@@ -258,9 +258,37 @@ function Pagina() {
     });
   }
 
+  // Apenas o Bradesco opera pelo sistema PRICE.
+  function isBradesco(b: { codigo_banco?: number | string | null; nome_banco?: string | null }) {
+    return (
+      String(b.codigo_banco ?? "").replace(/^0+/, "") === "237" ||
+      (b.nome_banco ?? "").toLowerCase().includes("bradesco")
+    );
+  }
+
+  function setSistemaAmortizacao(v: string) {
+    if (v === "P") {
+      const bradesco = (bancos ?? []).filter(isBradesco).map((b) => b.id);
+      if (bradesco.length === 0) {
+        toast.error("O sistema PRICE está disponível apenas no Bradesco, que não está habilitado.");
+      } else {
+        toast.info("O sistema PRICE é oferecido somente pelo Bradesco. Apenas o Bradesco foi selecionado.");
+      }
+      setF((prev) => ({ ...prev, sistema_amortizacao: v, bancos_ids: bradesco }));
+      return;
+    }
+    set("sistema_amortizacao", v);
+  }
+
   function toggleBanco(id: string) {
     setF((prev) => {
+      const banco = (bancos ?? []).find((b) => b.id === id);
       const has = prev.bancos_ids.includes(id);
+      // No PRICE, só o Bradesco pode ser selecionado.
+      if (prev.sistema_amortizacao === "P" && !has && banco && !isBradesco(banco)) {
+        toast.info("No sistema PRICE, somente o Bradesco pode ser selecionado.");
+        return prev;
+      }
       return {
         ...prev,
         bancos_ids: has
@@ -269,6 +297,7 @@ function Pagina() {
       };
     });
   }
+
 
   const mostraConjuge = f.possui_conjuge || f.compoe_renda;
 
@@ -636,7 +665,7 @@ function Pagina() {
           >
             <Select
               value={f.sistema_amortizacao}
-              onValueChange={(v) => set("sistema_amortizacao", v)}
+              onValueChange={setSistemaAmortizacao}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Selecione" />
@@ -912,24 +941,36 @@ function Pagina() {
       {/* Bloco 4 — Bancos */}
       <section className="space-y-4">
         <h2 className="text-sm font-semibold text-foreground">Bancos</h2>
+        {f.sistema_amortizacao === "P" && (
+          <div className="rounded-lg border border-border bg-muted p-3 text-sm text-muted-foreground">
+            O sistema PRICE é oferecido somente pelo Bradesco. Apenas o Bradesco pode ser
+            selecionado enquanto esse sistema estiver escolhido.
+          </div>
+        )}
         {!bancos || bancos.length === 0 ? (
           <div className="rounded-lg border border-border bg-muted p-4 text-sm text-muted-foreground">
             Nenhum banco habilitado — abra Configurações → Bancos para ativar.
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-            {bancos.map((b) => (
-              <label
-                key={b.id}
-                className="flex items-center gap-2 rounded-md border border-border bg-card p-3 text-sm"
-              >
-                <Checkbox
-                  checked={f.bancos_ids.includes(b.id)}
-                  onCheckedChange={() => toggleBanco(b.id)}
-                />
-                {b.nome_banco}
-              </label>
-            ))}
+            {bancos.map((b) => {
+              const bloqueado = f.sistema_amortizacao === "P" && !isBradesco(b);
+              return (
+                <label
+                  key={b.id}
+                  className={`flex items-center gap-2 rounded-md border border-border bg-card p-3 text-sm ${
+                    bloqueado ? "opacity-50" : ""
+                  }`}
+                >
+                  <Checkbox
+                    checked={f.bancos_ids.includes(b.id)}
+                    disabled={bloqueado}
+                    onCheckedChange={() => toggleBanco(b.id)}
+                  />
+                  {b.nome_banco}
+                </label>
+              );
+            })}
           </div>
         )}
         {err("bancos_ids")}
