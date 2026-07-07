@@ -57,6 +57,7 @@ import {
   criarSimulacao,
   enviarSimulacaoBanco,
   obterSimulacao,
+  obterClienteCRM,
 } from "@/lib/simulacao/simulacoes.functions";
 import { baixarSimulacaoPDF } from "@/lib/simulacao/simulacao-pdf";
 
