@@ -140,6 +140,56 @@ export type Database = {
         }
         Relationships: []
       }
+      arquivos_nos: {
+        Row: {
+          content_type: string | null
+          correspondente_id: string
+          created_at: string
+          criado_por: string | null
+          id: string
+          nome: string
+          parent_id: string | null
+          storage_path: string | null
+          tamanho: number | null
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          content_type?: string | null
+          correspondente_id: string
+          created_at?: string
+          criado_por?: string | null
+          id?: string
+          nome: string
+          parent_id?: string | null
+          storage_path?: string | null
+          tamanho?: number | null
+          tipo?: string
+          updated_at?: string
+        }
+        Update: {
+          content_type?: string | null
+          correspondente_id?: string
+          created_at?: string
+          criado_por?: string | null
+          id?: string
+          nome?: string
+          parent_id?: string | null
+          storage_path?: string | null
+          tamanho?: number | null
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "arquivos_nos_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "arquivos_nos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       backup_jobs: {
         Row: {
           concluido_em: string | null

@@ -1,68 +1,56 @@
-# Portal do Parceiro guiado por permissões
 
-## Problema atual
+# Arquivos (estilo Google Drive) + Backup de Documentos
 
-Hoje o Portal do Parceiro (`/parceiro/*`) é um app paralelo, separado do portal do correspondente:
+Duas entregas: (1) transformar a tela **Arquivos** num gerenciador de pastas e arquivos com upload de arquivos e de pastas inteiras; (2) adicionar em **Backup** a opção de baixar todos os documentos do sistema, separados por pastas, renomeados e compactados.
 
-- Menu fixo de 6 itens (`navParceiro`), independente da matriz de permissões.
-- Páginas próprias, somente-leitura, com escopo fixo "clientes vinculados".
-- Não respeita o nível de acesso (Regras & Módulos) que o correspondente configura para o parceiro.
+## 1. Arquivos — gerenciador tipo Drive
 
-Resultado: o correspondente não consegue definir "o que o parceiro vê ou não", nem "próprios x todos". É exatamente o "código remendado" a ser eliminado.
+### Banco de dados (migração)
+- Tabela `arquivos_nos` (árvore de pastas e arquivos):
+  - `correspondente_id`, `parent_id` (auto-referência, null = raiz), `tipo` ('pasta' | 'arquivo'), `nome`, `storage_path` (só arquivo), `content_type`, `tamanho`, `criado_por`, timestamps.
+  - GRANT para authenticated/service_role, RLS por correspondente do usuário (mesma lógica das demais tabelas — `correspondente_id = correspondente_do_usuario(auth.uid())`).
+- Bucket privado de storage `arquivos` + políticas em `storage.objects` (authenticated no bucket).
 
-O portal do correspondente, por outro lado, já é 100% guiado por permissões:
-- `navInterno` é filtrado por `getMinhasPermissoes` (matriz `permissions` do `nivel_acesso`).
-- RLS + `usuario_escopo_dados` / `usuario_tem_acesso_*` aplicam o escopo próprios/equipe/todos.
-- A tela Regras & Módulos já cria níveis de acesso com `acesso_tipo = 'portal_parceiro'`.
+### Backend (`src/lib/documentos/arquivos.functions.ts`)
+- `listarNos(parent_id?)` — lista pastas/arquivos de um nível.
+- `criarPasta(parent_id, nome)`.
+- `registrarArquivo(parent_id, nome, storage_path, content_type, tamanho)` — registro após upload ao bucket.
+- `renomearNo(id, nome)`, `moverNo(id, novo_parent_id)`, `excluirNo(id)` (exclui recursivo pastas + arquivos do storage).
+- `urlArquivo(id)` — signed URL para abrir/baixar.
+- `caminhoNo(id)` — breadcrumb (lista de ancestrais).
 
-## Objetivo
+### UI (`src/routes/_authenticated/documentos.tsx` + componentes)
+- Barra superior: breadcrumb navegável, busca, botões **Nova pasta**, **Enviar arquivos**, **Enviar pasta** (`<input webkitdirectory>` — recria a árvore de subpastas no upload).
+- Grade/lista de itens com ícone de pasta/arquivo, tamanho, data; duplo clique/entrar em pasta.
+- Ações por item (menu): abrir, baixar, renomear, mover, excluir.
+- Arrastar-e-soltar arquivos na área para upload no nível atual.
+- Estados vazios reais, responsivo mobile-first, tokens semânticos.
+- A visão atual (lista de documentos de clientes somente-leitura) vira uma aba/atalho secundário "Documentos de clientes" para não perder a função existente.
 
-O parceiro passa a usar **as mesmas opções e páginas** do correspondente, porém:
-- Cada item de menu/módulo aparece **somente** se o nível de acesso do parceiro tiver a permissão `:view`.
-- Cada listagem respeita o **escopo** (próprios/equipe/todos) definido pelo correspondente.
-- Para o parceiro, **"próprios"** significa os registros dos **clientes vinculados a ele** (`cliente_parceiros`), além dos que ele mesmo criou/é responsável.
+## 2. Backup de Documentos (ZIP organizado)
 
-## Mudanças
+### Backend (`src/lib/admin/backup-documentos.functions.ts`)
+- `montarInventarioDocumentos()` — server fn autenticada que percorre, no escopo do correspondente, e devolve uma lista de `{ pasta, nomeArquivo, signedUrl }`:
+  - **Clientes/<Nome do Cliente>/** ← `cliente_documentos` (bucket `cliente-documentos`)
+  - **Propostas/<Nº proposta>/** ← `proposta_documentos` (bucket `documentos-proposta`)
+  - **Tarefas/<Nº>/** ← `tarefa-anexos`; **Demandas/<Nº>/** ← `demanda-anexos`
+  - **Financeiro/** ← `financeiro-comprovantes`
+  - **Formulários/<Banco>/** ← `formularios-bancarios`
+  - **Arquivos/<caminho de pastas>/** ← novo módulo `arquivos_nos`
+  - Nomes saneados e sem colisão (sufixo numérico), signed URLs curtas.
 
-### 1. Banco de dados (escopo do parceiro) — migração
+### Cliente (compactação no navegador)
+- Botão **Baixar documentos (ZIP)** na tela de Backup.
+- Usa `jszip` (client) para baixar cada URL, montar a árvore de pastas conforme o `pasta` do inventário e gerar um único `.zip` (`documentos-backup-AAAA-MM-DD.zip`), salvo via `file-saver`/blob. Feito no cliente para não estourar memória do runtime serverless.
+- Barra de progresso (baixados/total) e tratamento de falhas por arquivo (continua e lista os que falharam).
 
-Ajustar as funções SECURITY DEFINER para que, quando o usuário for parceiro (`acesso_tipo='portal_parceiro'`), o escopo "próprios" também inclua os registros ligados via `cliente_parceiros`:
-
-- Nova função `public.cliente_vinculado_ao_parceiro(_user_id uuid, _cliente_id uuid)` → `true` se existir vínculo em `cliente_parceiros`.
-- Atualizar `usuario_tem_acesso_cliente`, `usuario_tem_acesso_simulacao`, `usuario_tem_acesso_proposta` para incluir `OR cliente_vinculado_ao_parceiro(...)`.
-- Atualizar as policies `SELECT` de `clientes`, `simulacoes`, `propostas` (hoje comparam só `responsavel_id`/`criador_id`) para também aceitar o vínculo de parceiro no caso escopo "próprios".
-- `comissoes`: manter parceiro restrito ao seu `parceiro_id` (já é o caso); permitir `SELECT` quando `parceiro_id = auth.uid()`.
-
-Sem novas tabelas. Apenas `CREATE OR REPLACE FUNCTION` + `CREATE/ALTER POLICY`. RLS continua ativa e mais segura (o parceiro nunca enxerga fora do seu correspondente).
-
-### 2. Navegação unificada
-
-- Remover `navParceiro` fixo e passar a filtrar `navInterno` também para o parceiro, usando `getMinhasPermissoes`.
-- Adicionar suporte a "portal alvo" nos itens de nav: cada item declara os módulos que exige; o parceiro vê o mesmo item, apenas se tiver `:view`.
-- Ocultar do parceiro os grupos que não fazem sentido para ele quando sem permissão (Administração etc. já somem por falta de permissão).
-
-### 3. Shell/rotas do parceiro
-
-- O parceiro continua entrando por `/parceiro` (login com marca própria), mas após autenticado passa a usar o **mesmo AppShell e as mesmas páginas** do portal interno, com o menu filtrado por permissão.
-- Consolidar: as telas hoje duplicadas em `/parceiro/clientes`, `/parceiro/simulacoes`, etc. passam a redirecionar para as páginas internas equivalentes (`/crm/clientes`, `/operacional/simulacoes`, …), que já respeitam escopo. Assim não há duas implementações da mesma tela.
-- Manter a tela "Início" do parceiro (resumo da carteira) como página inicial dele.
-
-### 4. Sessão/roteamento
-
-- `getMinhasPermissoes` já funciona para o parceiro (lê `nivel_acesso_id`), sem mudança.
-- Ajustar o guard para permitir que o parceiro acesse as rotas internas permitidas, mantendo bloqueio das não permitidas.
-
-## Técnico
-
-- Arquivos principais: `supabase` (migração de funções + policies), `src/components/app-shell/nav-config.ts`, `src/components/app-shell/filter-nav.ts`, `src/routes/parceiro.tsx`, `src/routes/_authenticated/route.tsx`, rotas `src/routes/parceiro.*.tsx` (viram redirects/consolidam), `src/lib/parceiro/portal.functions.ts` (mantém só o resumo).
-- Segurança: escopo do parceiro nunca ultrapassa o `correspondente_id`; "próprios" = vínculo em `cliente_parceiros` + autoria. `supabaseAdmin` deixa de ser necessário nas listas (passam a usar RLS do próprio parceiro), reduzindo superfície.
+## Detalhes técnicos
+- Novo pacote: `jszip` (bun add). Download/zip roda no browser.
+- Upload de arquivos/pastas: client faz `supabase.storage.from('arquivos').upload(path)` e depois chama `registrarArquivo`; caminho no storage = `${correspondente_id}/${uuid}-${nome}`.
+- Exclusão recursiva: server fn resolve descendentes e remove objetos do storage em lote.
+- Todas as server fns com `requireSupabaseAuth` e escopo por correspondente; nada de dado mockado.
+- Marca branca preservada (sem citar provedores externos na UI).
 
 ## Fora de escopo
-
-- Não altera o enum `app_role` nem cria papéis novos.
-- Não muda a marca/telas do App do Cliente.
-
-## Pontos a confirmar
-
-1. Ao unificar, o parceiro passa a navegar pelas rotas internas (ex.: `/crm/clientes`) com a marca do portal — OK manter uma única implementação de cada tela (recomendado, evita remendo)?
-2. "Próprios" do parceiro = clientes vinculados em `cliente_parceiros` + os que ele criou. Confirma essa definição?
+- Compartilhamento/permissões por arquivo entre usuários (só escopo por correspondente).
+- Versionamento de arquivos.
