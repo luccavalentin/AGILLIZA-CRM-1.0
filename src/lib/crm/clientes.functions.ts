@@ -317,6 +317,22 @@ export const atualizarCliente = createServerFn({ method: "POST" })
         utiliza_fgts: campos.utiliza_fgts ?? false,
         fg_autorizacao_dados: campos.fg_autorizacao_dados ?? false,
         origem: campos.origem,
+        conjuge_nome: campos.conjuge_nome ?? null,
+        conjuge_cpf: campos.conjuge_cpf ?? null,
+        conjuge_data_nascimento: campos.conjuge_data_nascimento || null,
+        conjuge_nome_mae: campos.conjuge_nome_mae ?? null,
+        conjuge_sexo: campos.conjuge_sexo ?? null,
+        conjuge_nacionalidade: campos.conjuge_nacionalidade ?? null,
+        conjuge_tipo_documento_identidade: campos.conjuge_tipo_documento_identidade ?? null,
+        conjuge_numero_documento: campos.conjuge_numero_documento ?? null,
+        conjuge_orgao_expedidor: campos.conjuge_orgao_expedidor ?? null,
+        conjuge_uf_expedicao: campos.conjuge_uf_expedicao ?? null,
+        conjuge_data_expedicao: campos.conjuge_data_expedicao || null,
+        conjuge_profissao: campos.conjuge_profissao ?? null,
+        conjuge_empresa: campos.conjuge_empresa ?? null,
+        conjuge_renda: campos.conjuge_renda ?? null,
+        conjuge_email: campos.conjuge_email ?? null,
+        conjuge_celular: campos.conjuge_celular ?? null,
       })
       .eq("id", id);
     if (error) throw error;
