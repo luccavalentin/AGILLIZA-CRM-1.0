@@ -143,12 +143,14 @@ export const salvarConfigIA = createServerFn({ method: "POST" })
       secret_names: data.secret_names,
       ativo: data.ativo,
       config: {
+        provedor: data.provedor,
         modelo: data.modelo,
         temperatura: data.temperatura,
         prompt_scan: data.prompt_scan,
       },
       updated_at: new Date().toISOString(),
     };
+
 
     const q = existente
       ? supabase.from("admin_api_integrations").update(payload).eq("id", existente.id)
