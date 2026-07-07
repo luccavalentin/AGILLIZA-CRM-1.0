@@ -284,6 +284,32 @@ function Pagina() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [maxPrazoIdade]);
 
+  // Ao financiar as despesas, garante que a entrada continue cobrindo o mínimo
+  // exigido (LTV). Se incluir as despesas no financiado empurrar o valor acima
+  // do teto, aumenta a entrada automaticamente e avisa o usuário. Se a entrada
+  // já for suficiente mesmo com as despesas, não mexe.
+  useEffect(() => {
+    if (!f.fg_financiar_despesas) return;
+    const imovel = Number(f.valor_imovel) || 0;
+    if (imovel <= 0) return;
+    const despesas = Number(f.valor_despesas_financiadas) || 0;
+    const financiamentoComDespesas = (Number(f.valor_financiamento) || 0) + despesas;
+    if (financiamentoComDespesas <= financiamentoMaximo) return;
+    const novoFinanciamento = Math.max(0, financiamentoMaximo - despesas);
+    const novaEntrada = imovel - novoFinanciamento;
+    setEntradaTocada(true);
+    setF((prev) => ({
+      ...prev,
+      valor_entrada: novaEntrada,
+      valor_financiamento: novoFinanciamento,
+    }));
+    const pctMin = Math.round((1 - ltvMax) * 100);
+    toast.info(`Valor da entrada ajustado para o mínimo de ${pctMin}%.`);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [f.fg_financiar_despesas, f.valor_despesas_financiadas, f.valor_imovel, financiamentoMaximo]);
+
+
+
 
 
   function aplicarEntradaSugerida() {
