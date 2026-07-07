@@ -334,7 +334,12 @@ function Pagina() {
                         rotulo="Financ. máx"
                         valor={formatBRL(b.valor_financiamento_max)}
                       />
+                      <MobileStat
+                        rotulo="Total financiado"
+                        valor={formatBRL(totalFinanciado(b))}
+                      />
                       <MobileStat rotulo="IOF" valor={formatBRL(b.valor_iof)} />
+
                     </dl>
 
                     <div className="mt-3 flex items-center justify-end gap-2">
