@@ -319,6 +319,15 @@ export const atualizarPessoa = createServerFn({ method: "POST" })
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
+    // Tipos de pessoa múltiplos (primeiro = primário).
+    const tiposList = (
+      data.tipos_pessoa && data.tipos_pessoa.length > 0
+        ? data.tipos_pessoa
+        : data.tipo_pessoa
+          ? [data.tipo_pessoa]
+          : []
+    ).filter(Boolean);
+
     const { error: upErr } = await supabaseAdmin
       .from("profiles")
       .update({
@@ -326,8 +335,10 @@ export const atualizarPessoa = createServerFn({ method: "POST" })
         telefone: data.telefone ?? null,
         nivel_acesso_id: data.nivel_acesso_id,
         acesso_tipo: acessoTipo,
-        ...(data.tipo_pessoa ? { tipo_pessoa: data.tipo_pessoa } : {}),
-      })
+        ...(tiposList.length > 0
+          ? { tipo_pessoa: tiposList[0], tipos_pessoa: tiposList }
+          : {}),
+      } as never)
       .eq("id", data.id);
     if (upErr) throw new Error("Não foi possível atualizar a pessoa.");
 
