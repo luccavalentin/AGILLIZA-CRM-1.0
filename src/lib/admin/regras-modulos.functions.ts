@@ -386,28 +386,40 @@ export const listarNiveisAcesso = createServerFn({ method: "GET" })
       alvosPorNivel.set(info.nivel, byModulo);
     });
 
-    return (niveis ?? []).map((n: any) => ({
-      id: n.id,
-      nome: n.nome,
-      descricao: n.descricao,
-      ativo: n.ativo,
-      is_padrao: n.is_padrao,
-      papel: (n.papel ?? "comercial") as PapelNivel,
-      acesso_tipo: (n.acesso_tipo ?? "sistema") as AcessoTipo,
-      // Qualquer usuário que pode gerenciar pessoas edita todos os níveis.
-      // Níveis padrão (globais) são clonados automaticamente em uma cópia
-      // editável do correspondente na primeira alteração.
-      editavel: podeGerenciar === true,
-      permissoes: (perms ?? [])
-        .filter((p: any) => p.nivel_acesso_id === n.id)
-        .map((p: any) => ({
-          modulo: p.modulo,
-          acao: p.acao,
-          permitido: p.permitido,
-          escopo_dados: p.escopo_dados,
-        })),
-      alvos: alvosPorNivel.get(n.id) ?? {},
-    }));
+    // Se o correspondente já possui a sua versão de um nível padrão (mesmo
+    // nome + portal), escondemos o template global para não exibir duplicado.
+    const chavesProprias = new Set(
+      (niveis ?? [])
+        .filter((n: any) => n.correspondente_id)
+        .map((n: any) => `${n.nome}::${n.acesso_tipo ?? "sistema"}`),
+    );
+
+    return (niveis ?? [])
+      .filter(
+        (n: any) =>
+          n.correspondente_id ||
+          !chavesProprias.has(`${n.nome}::${n.acesso_tipo ?? "sistema"}`),
+      )
+      .map((n: any) => ({
+        id: n.id,
+        nome: n.nome,
+        descricao: n.descricao,
+        ativo: n.ativo,
+        is_padrao: n.is_padrao,
+        papel: (n.papel ?? "comercial") as PapelNivel,
+        acesso_tipo: (n.acesso_tipo ?? "sistema") as AcessoTipo,
+        // Qualquer usuário que pode gerenciar pessoas edita todos os níveis.
+        editavel: podeGerenciar === true,
+        permissoes: (perms ?? [])
+          .filter((p: any) => p.nivel_acesso_id === n.id)
+          .map((p: any) => ({
+            modulo: p.modulo,
+            acao: p.acao,
+            permitido: p.permitido,
+            escopo_dados: p.escopo_dados,
+          })),
+        alvos: alvosPorNivel.get(n.id) ?? {},
+      }));
   });
 
 /** Clona um nível padrão (global) em uma cópia editável do correspondente,
