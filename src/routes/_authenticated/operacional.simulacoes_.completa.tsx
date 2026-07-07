@@ -272,6 +272,46 @@ function Pagina() {
 
   const mostraConjuge = f.possui_conjuge || f.compoe_renda;
 
+  // Habilita a inversão apenas quando os dados essenciais do cônjuge já existem.
+  const podeInverter = useMemo(() => {
+    return (
+      mostraConjuge &&
+      String(f.nome_conjuge ?? "").trim().length >= 3 &&
+      String(f.cpf_conjuge ?? "").trim().length > 0 &&
+      String(f.data_nascimento_conjuge ?? "").trim().length > 0
+    );
+  }, [mostraConjuge, f.nome_conjuge, f.cpf_conjuge, f.data_nascimento_conjuge]);
+
+  /**
+   * Inverte titular ⇄ cônjuge: quem era proponente vira cônjuge e vice-versa.
+   * Mantém possui_conjuge/compoe_renda para o bloco do cônjuge continuar visível.
+   */
+  function inverterPrincipal() {
+    setF((prev) => ({
+      ...prev,
+      // Titular recebe os dados do cônjuge
+      nome_cliente: prev.nome_conjuge ?? "",
+      cpf_cnpj: prev.cpf_conjuge ?? "",
+      renda_total: Number(prev.renda_conjuge) || 0,
+      data_nascimento: prev.data_nascimento_conjuge ?? "",
+      estado_civil: prev.estado_civil_conjuge || prev.estado_civil,
+      email: prev.email_conjuge ?? "",
+      celular: prev.celular_conjuge ?? "",
+      // Cônjuge recebe os dados do titular
+      nome_conjuge: prev.nome_cliente ?? "",
+      cpf_conjuge: prev.cpf_cnpj ?? "",
+      renda_conjuge: Number(prev.renda_total) || 0,
+      data_nascimento_conjuge: prev.data_nascimento ?? "",
+      estado_civil_conjuge: prev.estado_civil || prev.estado_civil_conjuge,
+      email_conjuge: prev.email ?? "",
+      celular_conjuge: prev.celular ?? "",
+      // O vínculo veio de um cliente do CRM que agora é o cônjuge — solta o vínculo.
+      cliente_id: null,
+    }));
+    setErros({});
+    toast.success("Titular e cônjuge invertidos. Confira os dados obrigatórios.");
+  }
+
   async function enviar() {
     const parsed = completaSchema.safeParse({ ...f, id_operacao_homefin: idOperacao });
     if (!parsed.success) {
