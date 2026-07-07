@@ -173,7 +173,7 @@ export const obterFichaConsolidada = createServerFn({ method: "GET" })
       email: cli.email,
       telefone_celular: cli.telefone_celular,
       renda_total_declarada: cli.renda_total_declarada,
-      nome_mae: cli.nome_mae,
+      nome_mae: cli.mae,
       banco_conta: cli.banco_conta,
       agencia: cli.agencia,
       conta_corrente: cli.conta_corrente,
