@@ -160,16 +160,23 @@ export function NovaPessoaInline({
     setPermDirty(true);
   }
 
+  // Usuário interno sempre tem login; imobiliária/corretor podem ficar sem login.
+  const permiteSemLogin = tipoPessoa !== "usuario";
+  const efetivoComLogin = permiteSemLogin ? comLogin : true;
+
   function submeter(e: React.FormEvent) {
     e.preventDefault();
     if (nome.trim().length < 2) return toast.error("Informe o nome completo.");
-    if (!email.trim()) return toast.error("Informe o e-mail.");
+    if (efetivoComLogin && !email.trim())
+      return toast.error("Informe o e-mail para pessoas com acesso ao sistema.");
     if (!nivelId) return toast.error("Selecione um nível de acesso.");
 
     criar.mutate({
       nome: nome.trim(),
-      email: email.trim(),
+      email: efetivoComLogin ? email.trim() : "",
       nivel_acesso_id: nivelId,
+      tipo_pessoa: tipoPessoa,
+      com_login: efetivoComLogin,
       dados_parceiro: isParceiro
         ? {
             comissao_padrao: comissao ? Number(comissao) : undefined,
