@@ -120,6 +120,17 @@ export const CATALOGO_MODULOS: ModuloCatalogo[] = [
   },
   {
     grupo: "Documentos",
+    modulo: "documentos.links",
+    label: "Links",
+    acoes: [
+      { acao: "view", label: "Ver" },
+      { acao: "create", label: "Criar" },
+      { acao: "edit", label: "Editar" },
+      { acao: "delete", label: "Excluir" },
+    ],
+  },
+  {
+    grupo: "Documentos",
     modulo: "documentos.matriculas",
     label: "Controle de Matrículas",
     acoes: [
