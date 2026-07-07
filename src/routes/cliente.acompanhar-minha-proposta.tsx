@@ -297,24 +297,31 @@ function AbaMensagens() {
                   )}
                 >
                   {temAnexo && m.anexo_is_imagem ? (
-                    <a href={m.anexo_url!} target="_blank" rel="noreferrer" className="block">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setVisualizando({ url: m.anexo_url!, nome: m.anexo_nome ?? "Anexo" })
+                      }
+                      className="block"
+                    >
                       <img
                         src={m.anexo_url!}
                         alt={m.anexo_nome ?? "Anexo"}
                         className="max-h-64 w-full object-cover"
                         loading="lazy"
                       />
-                    </a>
+                    </button>
                   ) : temAnexo ? (
-                    <a
-                      href={m.anexo_url!}
-                      target="_blank"
-                      rel="noreferrer"
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setVisualizando({ url: m.anexo_url!, nome: m.anexo_nome ?? "Documento" })
+                      }
                       className="flex items-center gap-2 px-3 py-2 underline underline-offset-2"
                     >
                       <FileText className="h-4 w-4 shrink-0" />
                       <span className="truncate">{m.anexo_nome ?? "Documento"}</span>
-                    </a>
+                    </button>
                   ) : null}
                   {!soAnexo && (
                     <p className="whitespace-pre-wrap px-3 py-2">{m.mensagem}</p>
