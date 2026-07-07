@@ -123,6 +123,24 @@ export async function enviarSimulacaoImpl({
 
     // 1) Oportunidade (idempotência: reutiliza se já existe)
     let idOportunidade = sim.homefin_id_oportunidade as string | null;
+
+    // Campos que dependem da simulação atual e podem ter mudado desde a
+    // primeira criação da oportunidade (ex.: usuário marcou "financiar despesas"
+    // e reenviou). Precisam ser sincronizados também no reenvio, senão o banco
+    // continua recebendo os valores antigos.
+    const dadosOportunidade: Record<string, unknown> = {
+      tipoImovel: { id: sim.tipo_imovel },
+      usoImovel: { id: sim.uso_imovel },
+      uf: { codigo: sim.uf },
+      situacaoImovel: { codigo: sim.situacao_imovel },
+      valorImovel: num(sim.valor_imovel),
+      valorFinanciamento: num(sim.valor_financiamento),
+      prazo: num(sim.prazo),
+      utilizaFgtsSimulacao: sim.utiliza_fgts ?? "N",
+      fgFinanciarDespesas: sim.fg_financiar_despesas ? "S" : "N",
+      codigoSistemaAmortizacaoBanco: { id: sim.sistema_amortizacao ?? "S" },
+    };
+
     if (!idOportunidade) {
       const payload: Record<string, unknown> = {
         operacao: { idOperacao: String(sim.id_operacao_homefin) },
@@ -131,16 +149,7 @@ export async function enviarSimulacaoImpl({
         ...(auth.idUsuarioParceiro
           ? { usuarioParceiro: { idUsuarioParceiro: auth.idUsuarioParceiro } }
           : {}),
-        tipoImovel: { id: sim.tipo_imovel },
-        usoImovel: { id: sim.uso_imovel },
-        uf: { codigo: sim.uf },
-        situacaoImovel: { codigo: sim.situacao_imovel },
-        valorImovel: num(sim.valor_imovel),
-        valorFinanciamento: num(sim.valor_financiamento),
-        prazo: num(sim.prazo),
-        utilizaFgtsSimulacao: sim.utiliza_fgts ?? "N",
-        fgFinanciarDespesas: sim.fg_financiar_despesas ? "S" : "N",
-        codigoSistemaAmortizacaoBanco: { id: sim.sistema_amortizacao ?? "S" },
+        ...dadosOportunidade,
         bancos: bancos.map((b: any) => ({
           idBanco: b.homefin_id_banco,
           codigoBanco: b.codigo_banco,
@@ -178,7 +187,17 @@ export async function enviarSimulacaoImpl({
           codigo_oportunidade_homefin: op.codigoOportunidade ?? null,
         })
         .eq("id", simulacaoId);
+    } else {
+      // Reenvio: sincroniza os dados da oportunidade (inclui fgFinanciarDespesas)
+      // antes de rodar as simulações, para o banco receber os valores atuais.
+      await chamarIntegracao<any>(
+        `/oportunidade/${idOportunidade}`,
+        "PUT",
+        dadosOportunidade,
+        ctx,
+      );
     }
+
 
     // 2 + 3) Simulação + integração por banco.
     // Enviamos um banco de cada vez (SEQUENCIAL): disparar as chamadas em
