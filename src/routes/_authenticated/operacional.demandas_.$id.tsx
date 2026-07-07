@@ -23,6 +23,7 @@ import { SlaCountdown } from "@/components/operacional/sla-countdown";
 import { ToneBadge } from "@/components/crm/tone-badge";
 import { PRIORIDADE, statusDemanda } from "@/components/operacional/status";
 import { Button } from "@/components/ui/button";
+import { VisualizadorArquivo } from "@/components/comum/visualizador-arquivo";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -73,6 +74,7 @@ function Pagina() {
   const urlAnexoFn = useServerFn(urlAnexoDemanda);
   const fileRef = useRef<HTMLInputElement>(null);
   const [enviando, setEnviando] = useState(false);
+  const [visualizando, setVisualizando] = useState<{ url: string; nome: string } | null>(null);
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -95,10 +97,10 @@ function Pagina() {
     }
   }
 
-  async function baixarAnexo(storage_path: string) {
+  async function baixarAnexo(storage_path: string, nome: string) {
     try {
       const { url } = await urlAnexoFn({ data: { storage_path } });
-      window.open(url, "_blank", "noopener");
+      setVisualizando({ url, nome });
     } catch {
       toast.error("Falha ao gerar link do anexo.");
     }
@@ -388,7 +390,7 @@ function Pagina() {
                   variant="ghost"
                   size="icon"
                   className="h-7 w-7"
-                  onClick={() => baixarAnexo(a.storage_path)}
+                  onClick={() => baixarAnexo(a.storage_path, a.nome)}
                 >
                   <Download className="h-4 w-4" />
                 </Button>
@@ -408,6 +410,11 @@ function Pagina() {
           )}
         </div>
       </div>
+      <VisualizadorArquivo
+        arquivo={visualizando}
+        open={!!visualizando}
+        onOpenChange={(o: boolean) => !o && setVisualizando(null)}
+      />
     </div>
   );
 }

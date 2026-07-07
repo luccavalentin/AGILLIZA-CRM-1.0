@@ -62,6 +62,7 @@ import {
   listarPastas,
   type ArquivoNo,
 } from "@/lib/documentos/arquivos.functions";
+import { VisualizadorArquivo } from "@/components/comum/visualizador-arquivo";
 
 export const Route = createFileRoute("/_authenticated/documentos")({
   head: () => ({ meta: [{ title: "Arquivos — Agilliza" }] }),
@@ -104,6 +105,7 @@ function Pagina() {
   const [excluindo, setExcluindo] = useState<ArquivoNo | null>(null);
   const [movendo, setMovendo] = useState<ArquivoNo | null>(null);
   const [dragging, setDragging] = useState(false);
+  const [visualizando, setVisualizando] = useState<{ url: string; nome: string } | null>(null);
 
   const inputArquivos = useRef<HTMLInputElement>(null);
   const inputPasta = useRef<HTMLInputElement>(null);
@@ -203,8 +205,8 @@ function Pagina() {
 
   async function abrirArquivo(id: string) {
     try {
-      const { url } = await fnUrl({ data: { id } });
-      window.open(url, "_blank", "noopener");
+      const { url, nome } = await fnUrl({ data: { id } });
+      setVisualizando({ url, nome });
     } catch (e: any) {
       toast.error(e?.message ?? "Não foi possível abrir o arquivo.");
     }
@@ -532,6 +534,12 @@ function Pagina() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <VisualizadorArquivo
+        arquivo={visualizando}
+        open={!!visualizando}
+        onOpenChange={(o) => !o && setVisualizando(null)}
+      />
     </div>
   );
 }

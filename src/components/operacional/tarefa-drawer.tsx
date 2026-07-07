@@ -6,6 +6,7 @@ import { Plus, Paperclip, Download, Trash2, Tag as TagIcon, X } from "lucide-rea
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
+import { VisualizadorArquivo } from "@/components/comum/visualizador-arquivo";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -50,6 +51,7 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
   const [novaTag, setNovaTag] = useState("");
   const [corTag, setCorTag] = useState(CORES[0]);
   const [enviando, setEnviando] = useState(false);
+  const [visualizando, setVisualizando] = useState<{ url: string; nome: string } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const toggleFn = useServerFn(toggleChecklistItem);
@@ -121,10 +123,10 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
     }
   }
 
-  async function baixarAnexo(storage_path: string) {
+  async function baixarAnexo(storage_path: string, nome: string) {
     try {
       const { url } = await urlAnexoFn({ data: { storage_path } });
-      window.open(url, "_blank", "noopener");
+      setVisualizando({ url, nome });
     } catch {
       toast.error("Falha ao gerar link do anexo.");
     }
@@ -321,7 +323,7 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
                           variant="ghost"
                           size="icon"
                           className="h-7 w-7"
-                          onClick={() => baixarAnexo(a.storage_path)}
+                          onClick={() => baixarAnexo(a.storage_path, a.nome)}
                         >
                           <Download className="h-4 w-4" />
                         </Button>
@@ -394,6 +396,11 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
           </>
         )}
       </SheetContent>
+      <VisualizadorArquivo
+        arquivo={visualizando}
+        open={!!visualizando}
+        onOpenChange={(o: boolean) => !o && setVisualizando(null)}
+      />
     </Sheet>
   );
 }

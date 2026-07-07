@@ -62,6 +62,7 @@ import {
   type DocumentoPasta,
 } from "@/lib/crm/documento-pastas.functions";
 import { tiposParaCategorias, TIPO_OUTRO } from "@/lib/crm/documento-tipos";
+import { VisualizadorArquivo } from "@/components/comum/visualizador-arquivo";
 
 type Categoria =
   | "comprador"
@@ -139,6 +140,7 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
   const [renomearNome, setRenomearNome] = useState("");
   const [delPasta, setDelPasta] = useState<DocumentoPasta | null>(null);
   const [excluindoPasta, setExcluindoPasta] = useState(false);
+  const [visualizando, setVisualizando] = useState<{ url: string; nome: string } | null>(null);
 
   const { data: docs, isLoading } = useQuery({
     queryKey: ["cliente-docs", clienteId],
@@ -209,10 +211,10 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
     }
   }
 
-  async function baixar(storage_path: string) {
+  async function baixar(storage_path: string, nome: string) {
     try {
       const { url } = await gerarUrl({ data: { storage_path } });
-      window.open(url, "_blank");
+      setVisualizando({ url, nome });
     } catch {
       toast.error("Falha ao gerar link.");
     }
@@ -610,7 +612,7 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
               <Button
                 size="icon"
                 variant="ghost"
-                onClick={() => baixar(d.storage_path)}
+                onClick={() => baixar(d.storage_path, d.nome_arquivo)}
                 title="Visualizar / baixar"
               >
                 <Download className="size-4" />
@@ -748,6 +750,12 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <VisualizadorArquivo
+        arquivo={visualizando}
+        open={!!visualizando}
+        onOpenChange={(o) => !o && setVisualizando(null)}
+      />
     </div>
   );
 }

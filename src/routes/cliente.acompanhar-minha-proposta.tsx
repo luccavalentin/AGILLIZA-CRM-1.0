@@ -20,6 +20,7 @@ import { BradescoRetornoTimer, isBradesco } from "@/components/proposta/bradesco
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { VisualizadorArquivo } from "@/components/comum/visualizador-arquivo";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -202,6 +203,7 @@ function fileParaBase64(file: File): Promise<string> {
 function AbaMensagens() {
   const qc = useQueryClient();
   const [texto, setTexto] = useState("");
+  const [visualizando, setVisualizando] = useState<{ url: string; nome: string } | null>(null);
   const fimRef = useRef<HTMLDivElement>(null);
   const fotoRef = useRef<HTMLInputElement>(null);
   const arquivoRef = useRef<HTMLInputElement>(null);
@@ -297,24 +299,31 @@ function AbaMensagens() {
                   )}
                 >
                   {temAnexo && m.anexo_is_imagem ? (
-                    <a href={m.anexo_url!} target="_blank" rel="noreferrer" className="block">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setVisualizando({ url: m.anexo_url!, nome: m.anexo_nome ?? "Anexo" })
+                      }
+                      className="block"
+                    >
                       <img
                         src={m.anexo_url!}
                         alt={m.anexo_nome ?? "Anexo"}
                         className="max-h-64 w-full object-cover"
                         loading="lazy"
                       />
-                    </a>
+                    </button>
                   ) : temAnexo ? (
-                    <a
-                      href={m.anexo_url!}
-                      target="_blank"
-                      rel="noreferrer"
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setVisualizando({ url: m.anexo_url!, nome: m.anexo_nome ?? "Documento" })
+                      }
                       className="flex items-center gap-2 px-3 py-2 underline underline-offset-2"
                     >
                       <FileText className="h-4 w-4 shrink-0" />
                       <span className="truncate">{m.anexo_nome ?? "Documento"}</span>
-                    </a>
+                    </button>
                   ) : null}
                   {!soAnexo && (
                     <p className="whitespace-pre-wrap px-3 py-2">{m.mensagem}</p>
@@ -409,6 +418,11 @@ function AbaMensagens() {
           <Send className="h-5 w-5" />
         </Button>
       </form>
+      <VisualizadorArquivo
+        arquivo={visualizando}
+        open={!!visualizando}
+        onOpenChange={(o: boolean) => !o && setVisualizando(null)}
+      />
     </div>
   );
 }

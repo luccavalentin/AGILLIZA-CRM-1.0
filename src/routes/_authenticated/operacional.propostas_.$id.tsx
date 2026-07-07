@@ -41,6 +41,7 @@ import {
 } from "@/lib/propostas/propostas.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { VisualizadorArquivo } from "@/components/comum/visualizador-arquivo";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -1286,6 +1287,7 @@ function TabDocumentos({ propostaId, documentos }: { propostaId: string; documen
   const [tipo, setTipo] = useState("RG");
   const [parte, setParte] = useState("comprador1");
   const [uploading, setUploading] = useState(false);
+  const [visualizando, setVisualizando] = useState<{ url: string; nome: string } | null>(null);
 
   async function onFile(file: File) {
     if (file.size > 10 * 1024 * 1024) {
@@ -1317,10 +1319,10 @@ function TabDocumentos({ propostaId, documentos }: { propostaId: string; documen
     }
   }
 
-  async function baixar(storage_path: string) {
+  async function baixar(storage_path: string, nome: string) {
     try {
       const { url } = await urlFn({ data: { storage_path } });
-      window.open(url, "_blank");
+      setVisualizando({ url, nome });
     } catch {
       toast.error("Não foi possível gerar o link.");
     }
@@ -1413,7 +1415,7 @@ function TabDocumentos({ propostaId, documentos }: { propostaId: string; documen
                   </ToneBadge>
                 </TableCell>
                 <TableCell className="text-right">
-                  <Button size="icon" variant="ghost" onClick={() => baixar(d.storage_path)}>
+                  <Button size="icon" variant="ghost" onClick={() => baixar(d.storage_path, d.nome_documento ?? "documento")}>
                     <Download className="h-4 w-4" />
                   </Button>
                   <Button
@@ -1432,6 +1434,11 @@ function TabDocumentos({ propostaId, documentos }: { propostaId: string; documen
           </TableBody>
         </Table>
       </div>
+      <VisualizadorArquivo
+        arquivo={visualizando}
+        open={!!visualizando}
+        onOpenChange={(o: boolean) => !o && setVisualizando(null)}
+      />
     </div>
   );
 }
