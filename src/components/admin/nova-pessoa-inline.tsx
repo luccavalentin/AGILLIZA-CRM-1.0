@@ -28,8 +28,8 @@ import {
   criarPessoaComAcesso,
   type CriarPessoaInput,
   type ResultadoCriarPessoa,
-  type TipoPessoa,
 } from "@/lib/admin/pessoas.functions";
+import { listarTiposPessoa } from "@/lib/admin/tipos-pessoa.functions";
 
 type MatrizEstado = Record<string, { permitido: boolean; escopo: EscopoDados }>;
 
@@ -69,7 +69,7 @@ export function NovaPessoaInline({
 
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
-  const [tipoPessoa, setTipoPessoa] = useState<TipoPessoa>("usuario");
+  const [tipoPessoa, setTipoPessoa] = useState<string>("");
   const [comLogin, setComLogin] = useState(true);
 
   const [comissao, setComissao] = useState("");
@@ -87,6 +87,23 @@ export function NovaPessoaInline({
   // Seleciona o primeiro nível automaticamente.
   if (niveis && niveis.length > 0 && !nivelId) {
     setNivelId(niveis[0].id);
+  }
+
+  const listarTipos = useServerFn(listarTiposPessoa);
+  const { data: tipos } = useQuery({
+    queryKey: ["tipos-pessoa"],
+    queryFn: () => listarTipos(),
+  });
+  const tiposAtivos = useMemo(() => (tipos ?? []).filter((t) => t.ativo), [tipos]);
+  const tipoSel = useMemo(
+    () => tiposAtivos.find((t) => t.slug === tipoPessoa),
+    [tiposAtivos, tipoPessoa],
+  );
+
+  // Seleciona o primeiro tipo automaticamente (e aplica o login padrão dele).
+  if (tiposAtivos.length > 0 && !tipoPessoa) {
+    setTipoPessoa(tiposAtivos[0].slug);
+    setComLogin(tiposAtivos[0].login_padrao);
   }
 
   const nivel = useMemo(() => (niveis ?? []).find((n) => n.id === nivelId), [niveis, nivelId]);
@@ -178,7 +195,8 @@ export function NovaPessoaInline({
   const todasGlobalMarcadas = CATALOGO_MODULOS.every((mod) =>
     mod.acoes.every((a) => estado[chave(mod.modulo, a.acao)]?.permitido),
   );
-  const permiteSemLogin = tipoPessoa !== "usuario";
+  // Tipos de acesso "parceiro" podem existir sem login; internos exigem login.
+  const permiteSemLogin = tipoSel?.acesso_tipo === "portal_parceiro";
   const efetivoComLogin = permiteSemLogin ? comLogin : true;
 
   function submeter(e: React.FormEvent) {
@@ -221,15 +239,22 @@ export function NovaPessoaInline({
             <Label>Tipo de pessoa</Label>
             <Select
               value={tipoPessoa}
-              onValueChange={(v) => setTipoPessoa(v as TipoPessoa)}
+              onValueChange={(v) => {
+                setTipoPessoa(v);
+                const t = tiposAtivos.find((x) => x.slug === v);
+                if (t) setComLogin(t.login_padrao);
+              }}
             >
               <SelectTrigger>
-                <SelectValue />
+                <SelectValue placeholder="Selecione o tipo" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="usuario">Usuário (equipe interna)</SelectItem>
-                <SelectItem value="imobiliaria">Imobiliária</SelectItem>
-                <SelectItem value="corretor">Corretor</SelectItem>
+                {tiposAtivos.map((t) => (
+                  <SelectItem key={t.id} value={t.slug}>
+                    {t.nome}
+                    {t.acesso_tipo === "portal_parceiro" ? " · Parceiro" : " · Interno"}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>

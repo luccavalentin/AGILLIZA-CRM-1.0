@@ -12,7 +12,7 @@ export const criarSchema = z
     email: z.string().email("E-mail inválido.").optional().or(z.literal("")),
     telefone: z.string().optional(),
     nivel_acesso_id: z.string().uuid("Selecione um nível de acesso."),
-    tipo_pessoa: z.enum(["usuario", "imobiliaria", "corretor"]).default("usuario"),
+    tipo_pessoa: z.string().min(1).default("usuario"),
     com_login: z.boolean().default(true),
     dados_parceiro: z
       .object({
@@ -25,14 +25,10 @@ export const criarSchema = z
   .refine((d) => !d.com_login || (d.email && d.email.trim().length > 0), {
     message: "Informe um e-mail para pessoas com acesso ao sistema.",
     path: ["email"],
-  })
-  .refine((d) => d.tipo_pessoa !== "usuario" || d.com_login, {
-    message: "Usuário interno precisa ter acesso ao sistema.",
-    path: ["com_login"],
   });
 
 export type CriarPessoaInput = z.infer<typeof criarSchema>;
-export type TipoPessoa = "usuario" | "imobiliaria" | "corretor";
+export type TipoPessoa = string;
 
 export interface PessoaLista {
   id: string;
@@ -277,7 +273,7 @@ export const atualizarSchema = z.object({
   nome: z.string().min(2, "Informe o nome completo."),
   telefone: z.string().optional().nullable(),
   nivel_acesso_id: z.string().uuid("Selecione um nível de acesso."),
-  tipo_pessoa: z.enum(["usuario", "imobiliaria", "corretor"]).optional(),
+  tipo_pessoa: z.string().min(1).optional(),
 });
 
 /** Atualiza dados básicos e o nível de acesso (papel/portal) de uma pessoa. */

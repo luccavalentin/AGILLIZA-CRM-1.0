@@ -43,6 +43,8 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RegrasModulosPanel } from "@/components/admin/regras-modulos-panel";
+import { TiposPessoaPanel } from "@/components/admin/tipos-pessoa-panel";
+import { listarTiposPessoa } from "@/lib/admin/tipos-pessoa.functions";
 import { NovaPessoaInline } from "@/components/admin/nova-pessoa-inline";
 import { EditarPessoaDialog } from "@/components/admin/editar-pessoa-dialog";
 import { getMinhaSessao } from "@/lib/session.functions";
@@ -60,8 +62,8 @@ import { assertModuloPermitido } from "@/lib/route-guards";
 
 export const Route = createFileRoute("/_authenticated/admin/pessoas")({
   head: () => ({ meta: [{ title: "Pessoas do meu ecossistema — Agilliza" }] }),
-  validateSearch: (search: Record<string, unknown>): { tab?: "pessoas" | "regras" } => ({
-    tab: search.tab === "regras" ? "regras" : undefined,
+  validateSearch: (search: Record<string, unknown>): { tab?: "pessoas" | "regras" | "tipos" } => ({
+    tab: search.tab === "regras" ? "regras" : search.tab === "tipos" ? "tipos" : undefined,
   }),
   beforeLoad: () => assertModuloPermitido("admin.pessoas"),
   component: PessoasPage,
@@ -86,7 +88,7 @@ const ROTULO_TIPO: Record<string, string> = {
 
 function PessoasPage() {
   const { tab } = Route.useSearch();
-  const [aba, setAba] = useState<"pessoas" | "regras">(tab ?? "pessoas");
+  const [aba, setAba] = useState<"pessoas" | "regras" | "tipos">(tab ?? "pessoas");
   const [filtro, setFiltro] = useState<"todos" | "sistema" | "portal_parceiro">("todos");
   const [busca, setBusca] = useState("");
   const [criando, setCriando] = useState(false);
@@ -111,6 +113,15 @@ function PessoasPage() {
     queryKey: ["pessoas"],
     queryFn: () => listarPessoas(),
   });
+
+  const tiposQuery = useQuery({
+    queryKey: ["tipos-pessoa"],
+    queryFn: () => listarTiposPessoa(),
+  });
+  const rotuloTipo = (slug: string) =>
+    (tiposQuery.data ?? []).find((t) => t.slug === slug)?.nome ??
+    ROTULO_TIPO[slug] ??
+    "Usuário";
 
   const statusMut = useMutation({
     mutationFn: (v: { id: string; ativar: boolean }) => alternarStatusFn({ data: v }),
@@ -168,7 +179,8 @@ function PessoasPage() {
         <Tabs value={aba} onValueChange={(v) => setAba(v as typeof aba)}>
           <TabsList className="mb-6">
             <TabsTrigger value="pessoas">Pessoas</TabsTrigger>
-            <TabsTrigger value="regras">Regras & Módulos</TabsTrigger>
+            <TabsTrigger value="regras">Papéis & Permissões</TabsTrigger>
+            <TabsTrigger value="tipos">Tipos de Pessoa</TabsTrigger>
           </TabsList>
 
           <TabsContent value="pessoas">
@@ -256,7 +268,7 @@ function PessoasPage() {
                             <div className="flex flex-wrap items-center gap-2">
                               <span>{p.nome ?? "—"}</span>
                               <Badge variant="outline" className="font-normal">
-                                {ROTULO_TIPO[p.tipo_pessoa] ?? "Usuário"}
+                                {rotuloTipo(p.tipo_pessoa)}
                               </Badge>
                             </div>
                           </TableCell>
@@ -354,6 +366,10 @@ function PessoasPage() {
 
           <TabsContent value="regras">
             <RegrasModulosPanel />
+          </TabsContent>
+
+          <TabsContent value="tipos">
+            <TiposPessoaPanel podeGerenciar={podeGerenciar} />
           </TabsContent>
         </Tabs>
       </div>

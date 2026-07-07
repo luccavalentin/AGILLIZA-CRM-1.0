@@ -12,10 +12,13 @@ import {
   excluirNivelAcesso,
   salvarPermissoes,
   type AcessoTipo,
+  type EscopoAlvo,
   type EscopoDados,
   type NivelAcesso,
   type PapelNivel,
 } from "@/lib/admin/regras-modulos.functions";
+import { listarPessoas } from "@/lib/admin/pessoas.functions";
+import { listarTiposPessoa } from "@/lib/admin/tipos-pessoa.functions";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -53,7 +56,18 @@ type MatrizEstado = Record<string, { permitido: boolean; escopo: EscopoDados }>;
 const ESCOPOS: { value: EscopoDados; label: string }[] = [
   { value: "todos", label: "Todos" },
   { value: "equipe", label: "Equipe" },
-  { value: "proprios", label: "Próprios" },
+  { value: "proprios", label: "Somente os meus" },
+  { value: "personalizado", label: "Personalizado" },
+];
+
+/** Papéis que podem ser escolhidos como alvo do escopo personalizado. */
+const PAPEIS_ALVO: { value: string; label: string }[] = [
+  { value: "gestor", label: "Gestor" },
+  { value: "comercial", label: "Comercial" },
+  { value: "analista", label: "Analista" },
+  { value: "financeiro", label: "Financeiro" },
+  { value: "corretor", label: "Corretor" },
+  { value: "imobiliaria", label: "Imobiliária" },
 ];
 
 const PORTAIS: { value: AcessoTipo; label: string }[] = [
@@ -101,7 +115,12 @@ export function RegrasModulosPanel() {
   const [subaba, setSubaba] = useState<"papeis" | "permissoes">("papeis");
   const [selecionadoId, setSelecionadoId] = useState<string | null>(null);
   const [estado, setEstado] = useState<MatrizEstado>({});
+  const [alvos, setAlvos] = useState<Record<string, EscopoAlvo[]>>({});
+  const [alvosModulo, setAlvosModulo] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
+
+  const pessoasQuery = useQuery({ queryKey: ["pessoas"], queryFn: () => listarPessoas() });
+  const tiposQuery = useQuery({ queryKey: ["tipos-pessoa"], queryFn: () => listarTiposPessoa() });
 
   const [novoOpen, setNovoOpen] = useState(false);
   const [novoNome, setNovoNome] = useState("");
@@ -127,6 +146,7 @@ export function RegrasModulosPanel() {
   const [carregadoPara, setCarregadoPara] = useState("");
   if (selecionado && carregadoPara !== nivelKey) {
     setEstado(estadoInicial(selecionado));
+    setAlvos(selecionado.alvos ?? {});
     setCarregadoPara(nivelKey);
     setDirty(false);
   }
@@ -196,7 +216,17 @@ export function RegrasModulosPanel() {
         const [modulo, acao] = k.split(":");
         return { modulo, acao, permitido: v.permitido, escopo_dados: v.escopo };
       });
-      return salvar({ data: { nivel_acesso_id: selecionado.id, permissoes } });
+      // Só envia alvos dos módulos que estão em escopo personalizado.
+      const modulosPersonalizados = new Set(
+        permissoes.filter((p) => p.escopo_dados === "personalizado").map((p) => p.modulo),
+      );
+      const alvosFiltrados: Record<string, EscopoAlvo[]> = {};
+      Object.entries(alvos).forEach(([modulo, lista]) => {
+        if (modulosPersonalizados.has(modulo) && lista.length) alvosFiltrados[modulo] = lista;
+      });
+      return salvar({
+        data: { nivel_acesso_id: selecionado.id, permissoes, alvos: alvosFiltrados },
+      });
     },
     onSuccess: async (r: any) => {
       toast.success(
@@ -231,6 +261,31 @@ export function RegrasModulosPanel() {
         next[k] = { ...next[k], escopo };
       }
       return next;
+    });
+    setDirty(true);
+  }
+
+  function alvoAtivo(modulo: string, alvo: EscopoAlvo): boolean {
+    return (alvos[modulo] ?? []).some(
+      (a) =>
+        a.alvo_tipo === alvo.alvo_tipo &&
+        (a.alvo_id ?? null) === (alvo.alvo_id ?? null) &&
+        (a.alvo_valor ?? null) === (alvo.alvo_valor ?? null),
+    );
+  }
+
+  function toggleAlvo(modulo: string, alvo: EscopoAlvo, ativo: boolean) {
+    setAlvos((prev) => {
+      const lista = prev[modulo] ?? [];
+      const filtrada = lista.filter(
+        (a) =>
+          !(
+            a.alvo_tipo === alvo.alvo_tipo &&
+            (a.alvo_id ?? null) === (alvo.alvo_id ?? null) &&
+            (a.alvo_valor ?? null) === (alvo.alvo_valor ?? null)
+          ),
+      );
+      return { ...prev, [modulo]: ativo ? [...filtrada, alvo] : filtrada };
     });
     setDirty(true);
   }
@@ -504,7 +559,7 @@ export function RegrasModulosPanel() {
                                 );
                               })}
                             </div>
-                            <div className="w-full lg:w-40">
+                            <div className="w-full lg:w-52">
                               <Select
                                 value={escopoAtual}
                                 disabled={!editavel}
@@ -521,6 +576,18 @@ export function RegrasModulosPanel() {
                                   ))}
                                 </SelectContent>
                               </Select>
+                              {escopoAtual === "personalizado" ? (
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  disabled={!editavel}
+                                  className="mt-2 w-full"
+                                  onClick={() => setAlvosModulo(mod.modulo)}
+                                >
+                                  Escolher quem ({(alvos[mod.modulo] ?? []).length})
+                                </Button>
+                              ) : null}
                             </div>
                           </div>
                         );
@@ -752,6 +819,109 @@ export function RegrasModulosPanel() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Dialog: escolher alvos do escopo personalizado */}
+      <Dialog open={alvosModulo !== null} onOpenChange={(o) => !o && setAlvosModulo(null)}>
+        <DialogContent className="max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              Quem este papel pode ver
+              {alvosModulo
+                ? ` — ${CATALOGO_MODULOS.find((m) => m.modulo === alvosModulo)?.label ?? ""}`
+                : ""}
+            </DialogTitle>
+          </DialogHeader>
+          {alvosModulo ? (
+            <div className="space-y-5">
+              <div className="space-y-2">
+                <p className="text-sm font-semibold text-foreground">Por papel</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {PAPEIS_ALVO.map((p) => (
+                    <label key={p.value} className="flex items-center gap-2 text-sm">
+                      <Checkbox
+                        checked={alvoAtivo(alvosModulo, {
+                          alvo_tipo: "papel",
+                          alvo_valor: p.value,
+                        })}
+                        onCheckedChange={(v) =>
+                          toggleAlvo(
+                            alvosModulo,
+                            { alvo_tipo: "papel", alvo_valor: p.value },
+                            v === true,
+                          )
+                        }
+                      />
+                      {p.label}
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-sm font-semibold text-foreground">Por tipo de pessoa</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {(tiposQuery.data ?? []).map((t) => (
+                    <label key={t.id} className="flex items-center gap-2 text-sm">
+                      <Checkbox
+                        checked={alvoAtivo(alvosModulo, {
+                          alvo_tipo: "tipo_pessoa",
+                          alvo_valor: t.slug,
+                        })}
+                        onCheckedChange={(v) =>
+                          toggleAlvo(
+                            alvosModulo,
+                            { alvo_tipo: "tipo_pessoa", alvo_valor: t.slug },
+                            v === true,
+                          )
+                        }
+                      />
+                      {t.nome}
+                    </label>
+                  ))}
+                  {(tiposQuery.data ?? []).length === 0 ? (
+                    <p className="text-xs text-muted-foreground">Nenhum tipo cadastrado.</p>
+                  ) : null}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-sm font-semibold text-foreground">Por usuário específico</p>
+                <div className="max-h-56 space-y-1 overflow-y-auto rounded-md border p-2">
+                  {(pessoasQuery.data ?? []).map((u) => (
+                    <label key={u.id} className="flex items-center gap-2 text-sm">
+                      <Checkbox
+                        checked={alvoAtivo(alvosModulo, {
+                          alvo_tipo: "usuario",
+                          alvo_id: u.id,
+                        })}
+                        onCheckedChange={(v) =>
+                          toggleAlvo(
+                            alvosModulo,
+                            { alvo_tipo: "usuario", alvo_id: u.id },
+                            v === true,
+                          )
+                        }
+                      />
+                      <span className="truncate">
+                        {u.nome ?? "—"}
+                        {u.email ? (
+                          <span className="text-muted-foreground"> · {u.email}</span>
+                        ) : null}
+                      </span>
+                    </label>
+                  ))}
+                  {(pessoasQuery.data ?? []).length === 0 ? (
+                    <p className="text-xs text-muted-foreground">Nenhuma pessoa cadastrada.</p>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+          ) : null}
+          <DialogFooter>
+            <Button onClick={() => setAlvosModulo(null)}>Concluir</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -21,7 +21,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { listarNiveisAcesso } from "@/lib/admin/regras-modulos.functions";
-import { atualizarPessoa, type PessoaLista, type TipoPessoa } from "@/lib/admin/pessoas.functions";
+import { atualizarPessoa, type PessoaLista } from "@/lib/admin/pessoas.functions";
+import { listarTiposPessoa } from "@/lib/admin/tipos-pessoa.functions";
 
 export function EditarPessoaDialog({
   pessoa,
@@ -37,7 +38,13 @@ export function EditarPessoaDialog({
   const [nome, setNome] = useState("");
   const [telefone, setTelefone] = useState("");
   const [nivelId, setNivelId] = useState("");
-  const [tipoPessoa, setTipoPessoa] = useState<TipoPessoa>("usuario");
+  const [tipoPessoa, setTipoPessoa] = useState<string>("usuario");
+
+  const listarTipos = useServerFn(listarTiposPessoa);
+  const { data: tipos } = useQuery({
+    queryKey: ["tipos-pessoa"],
+    queryFn: () => listarTipos(),
+  });
 
   const { data: niveis } = useQuery({
     queryKey: ["niveis-acesso"],
@@ -92,14 +99,19 @@ export function EditarPessoaDialog({
           </div>
           <div className="space-y-2">
             <Label>Tipo de pessoa</Label>
-            <Select value={tipoPessoa} onValueChange={(v) => setTipoPessoa(v as TipoPessoa)}>
+            <Select value={tipoPessoa} onValueChange={(v) => setTipoPessoa(v)}>
               <SelectTrigger>
-                <SelectValue />
+                <SelectValue placeholder="Selecione o tipo" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="usuario">Usuário (equipe interna)</SelectItem>
-                <SelectItem value="imobiliaria">Imobiliária</SelectItem>
-                <SelectItem value="corretor">Corretor</SelectItem>
+                {(tipos ?? [])
+                  .filter((t) => t.ativo || t.slug === tipoPessoa)
+                  .map((t) => (
+                    <SelectItem key={t.id} value={t.slug}>
+                      {t.nome}
+                      {t.acesso_tipo === "portal_parceiro" ? " · Parceiro" : " · Interno"}
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
           </div>

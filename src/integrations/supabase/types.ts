@@ -2778,6 +2778,41 @@ export type Database = {
           },
         ]
       }
+      permission_escopo_alvos: {
+        Row: {
+          alvo_id: string | null
+          alvo_tipo: string
+          alvo_valor: string | null
+          created_at: string
+          id: string
+          permission_id: string
+        }
+        Insert: {
+          alvo_id?: string | null
+          alvo_tipo: string
+          alvo_valor?: string | null
+          created_at?: string
+          id?: string
+          permission_id: string
+        }
+        Update: {
+          alvo_id?: string | null
+          alvo_tipo?: string
+          alvo_valor?: string | null
+          created_at?: string
+          id?: string
+          permission_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "permission_escopo_alvos_permission_id_fkey"
+            columns: ["permission_id"]
+            isOneToOne: false
+            referencedRelation: "permissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       permissions: {
         Row: {
           acao: string
@@ -4875,6 +4910,48 @@ export type Database = {
           },
         ]
       }
+      tipos_pessoa: {
+        Row: {
+          acesso_tipo: Database["public"]["Enums"]["acesso_tipo"]
+          ativo: boolean
+          correspondente_id: string
+          created_at: string
+          descricao: string | null
+          id: string
+          is_padrao: boolean
+          login_padrao: boolean
+          nome: string
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          acesso_tipo?: Database["public"]["Enums"]["acesso_tipo"]
+          ativo?: boolean
+          correspondente_id: string
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          is_padrao?: boolean
+          login_padrao?: boolean
+          nome: string
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          acesso_tipo?: Database["public"]["Enums"]["acesso_tipo"]
+          ativo?: boolean
+          correspondente_id?: string
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          is_padrao?: boolean
+          login_padrao?: boolean
+          nome?: string
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -5071,6 +5148,10 @@ export type Database = {
         Args: { _modulo: string; _user_id: string }
         Returns: Database["public"]["Enums"]["escopo_dados"]
       }
+      usuario_escopo_inclui_dono: {
+        Args: { _modulo: string; _owner_id: string; _user_id: string }
+        Returns: boolean
+      }
       usuario_pode_admin: { Args: { _user_id: string }; Returns: boolean }
       usuario_pode_financeiro: { Args: { _user_id: string }; Returns: boolean }
       usuario_tem_acesso_cliente: {
@@ -5138,7 +5219,7 @@ export type Database = {
         | "aprovado"
         | "reprovado"
         | "expirado"
-      escopo_dados: "todos" | "equipe" | "proprios"
+      escopo_dados: "todos" | "equipe" | "proprios" | "personalizado"
       financial_categoria_tipo: "despesa" | "receita"
       financial_recorrencia: "nenhuma" | "mensal" | "anual" | "parcelado"
       financial_status:
@@ -5369,7 +5450,7 @@ export const Constants = {
         "vendedor_conjuge",
       ],
       doc_status: ["pendente", "recebido", "aprovado", "reprovado", "expirado"],
-      escopo_dados: ["todos", "equipe", "proprios"],
+      escopo_dados: ["todos", "equipe", "proprios", "personalizado"],
       financial_categoria_tipo: ["despesa", "receita"],
       financial_recorrencia: ["nenhuma", "mensal", "anual", "parcelado"],
       financial_status: [
