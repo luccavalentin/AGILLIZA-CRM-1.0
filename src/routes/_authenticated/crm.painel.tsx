@@ -82,24 +82,16 @@ function Pagina() {
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {data!.map((stage, idx) => {
-            const hue = `var(--pipe-${(idx % 14) + 1})`;
             const temClientes = stage.clientes.length > 0;
             return (
               <div
                 key={stage.codigo}
                 className="group relative flex min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-card shadow-sm transition-shadow hover:shadow-md"
-                style={{
-                  background: `linear-gradient(180deg, color-mix(in srgb, ${hue} 7%, var(--card)) 0%, var(--card) 55%)`,
-                }}
               >
-                <div className="h-1.5 w-full" style={{ background: hue }} />
                 <div className="flex min-w-0 flex-col p-3.5">
-                  <div className="mb-3 flex items-center justify-between gap-2">
+                  <div className="mb-3 flex items-center justify-between gap-2 border-b border-border pb-3">
                     <div className="flex min-w-0 items-center gap-2">
-                      <span
-                        className="flex size-6 shrink-0 items-center justify-center rounded-md text-[11px] font-bold text-white"
-                        style={{ background: hue }}
-                      >
+                      <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-muted text-[11px] font-semibold text-muted-foreground">
                         {idx + 1}
                       </span>
                       <span className="min-w-0 truncate text-sm font-semibold text-foreground">
@@ -107,13 +99,11 @@ function Pagina() {
                       </span>
                     </div>
                     <span
-                      className="shrink-0 rounded-full px-2 py-0.5 text-xs font-bold"
-                      style={{
-                        color: temClientes ? "#fff" : "var(--muted-foreground)",
-                        background: temClientes
-                          ? hue
-                          : "color-mix(in srgb, var(--muted-foreground) 12%, transparent)",
-                      }}
+                      className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${
+                        temClientes
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted text-muted-foreground"
+                      }`}
                     >
                       {stage.clientes.length}
                     </span>
@@ -130,13 +120,9 @@ function Pagina() {
                           onClick={() =>
                             navigate({ to: "/crm/clientes/$id", params: { id: c.id } })
                           }
-                          className="flex w-full items-center gap-2.5 rounded-lg border border-border bg-background p-2.5 text-left transition-all hover:-translate-y-0.5 hover:shadow-sm"
-                          style={{ borderLeft: `3px solid ${hue}` }}
+                          className="flex w-full items-center gap-2.5 rounded-lg border border-border bg-background p-2.5 text-left transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-sm"
                         >
-                          <span
-                            className="flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
-                            style={{ background: hue }}
-                          >
+                          <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
                             {c.nome.trim().charAt(0).toUpperCase()}
                           </span>
                           <span className="min-w-0 flex-1">
