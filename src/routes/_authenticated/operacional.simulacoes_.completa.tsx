@@ -132,11 +132,12 @@ function Pagina() {
     enabled: Boolean(duplicar),
   });
 
-  // pré-preenche do wizard
+  // pré-preenche do wizard (consome e limpa imediatamente para não fixar o cliente)
   useEffect(() => {
     if (duplicar) return; // ao duplicar, os dados vêm da simulação de origem
     const raw = sessionStorage.getItem("simulacao_wizard");
     if (raw) {
+      sessionStorage.removeItem("simulacao_wizard");
       try {
         const w = JSON.parse(raw);
         setF((prev) => ({ ...prev, ...w }));
