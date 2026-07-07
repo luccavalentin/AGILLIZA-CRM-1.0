@@ -137,7 +137,17 @@ function PessoasPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const podeGerenciar = sessaoQuery.data?.podeGerenciarPessoas ?? false;
+  const habilitarMut = useMutation({
+    mutationFn: (v: { id: string; email: string }) => habilitarLoginFn({ data: v }),
+    onSuccess: async (res) => {
+      await qc.invalidateQueries({ queryKey: ["pessoas"] });
+      setHabilitando(null);
+      setHabilitarEmail("");
+      setCredenciais(res);
+      toast.success("Login habilitado.");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
 
 
   const pessoas = (pessoasQuery.data ?? [])
