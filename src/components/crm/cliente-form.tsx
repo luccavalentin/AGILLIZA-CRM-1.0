@@ -899,21 +899,13 @@ export function ClienteForm({
             </div>
             <div className="space-y-1.5">
               <Label>Órgão expedidor</Label>
-              <Select
-                value={v.conjuge_orgao_expedidor || undefined}
+              <Combobox
+                value={v.conjuge_orgao_expedidor}
                 onValueChange={(x) => set("conjuge_orgao_expedidor", x)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione" />
-                </SelectTrigger>
-                <SelectContent>
-                  {OPCOES_ORGAO_EXPEDIDOR.map((o) => (
-                    <SelectItem key={o} value={o}>
-                      {o}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                options={OPCOES_ORGAO_EXPEDIDOR}
+                placeholder="Selecione"
+                searchPlaceholder="Buscar órgão…"
+              />
             </div>
             <div className="space-y-1.5">
               <Label>UF de expedição</Label>
