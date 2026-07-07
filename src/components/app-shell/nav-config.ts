@@ -17,6 +17,7 @@ import {
   Bell,
   ShieldCheck,
   ScanLine,
+  FolderTree,
   DatabaseBackup,
   UserRound,
   Lock,
