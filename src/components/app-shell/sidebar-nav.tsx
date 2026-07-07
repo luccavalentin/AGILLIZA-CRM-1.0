@@ -147,14 +147,16 @@ function SidebarLink({
 function CollapsibleGroup({
   item,
   melhor,
+  pasta,
   onNavigate,
 }: {
   item: NavItem;
   melhor: string | null;
+  pasta?: string;
   onNavigate?: () => void;
 }) {
   const Icon = item.icon;
-  const algumAtivo = itemAtivo(item, melhor);
+  const algumAtivo = itemAtivo(item, melhor, pasta);
   return (
     <Collapsible defaultOpen={algumAtivo}>
       <CollapsibleTrigger
@@ -172,7 +174,7 @@ function CollapsibleGroup({
           <SidebarLink
             key={child.label}
             item={child}
-            active={itemAtivo(child, melhor)}
+            active={itemAtivo(child, melhor, pasta)}
             onNavigate={onNavigate}
           />
         ))}
