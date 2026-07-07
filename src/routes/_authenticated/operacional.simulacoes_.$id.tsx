@@ -2,12 +2,14 @@ import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ArrowLeft, RefreshCw, Copy, Download, ChevronDown } from "lucide-react";
+import { ArrowLeft, RefreshCw, Copy, Download, ChevronDown, Pencil, Trash2 } from "lucide-react";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { supabase } from "@/integrations/supabase/client";
+import { ConfirmDelete } from "@/components/shared/confirm-delete";
 import {
   obterSimulacao,
   enviarSimulacaoBanco,
+  excluirSimulacao,
 } from "@/lib/simulacao/simulacoes.functions";
 import { criarProposta } from "@/lib/propostas/propostas.functions";
 import { Button } from "@/components/ui/button";
@@ -122,6 +124,28 @@ function Pagina() {
     });
   }
 
+  function editar() {
+    if (!data) return;
+    try {
+      sessionStorage.setItem("simulacao_wizard", JSON.stringify(data.simulacao));
+      toast.info("Dados carregados no formulário para edição.");
+      router.navigate({ to: "/operacional/simulacoes/completa" });
+    } catch {
+      toast.error("Não foi possível abrir a simulação para edição.");
+    }
+  }
+
+  async function excluir() {
+    try {
+      await excluirSimulacao({ data: { id } });
+      toast.success("Simulação excluída.");
+      qc.invalidateQueries({ queryKey: ["simulacoes"] });
+      router.navigate({ to: "/operacional/simulacoes" });
+    } catch {
+      toast.error("Não foi possível excluir a simulação.");
+    }
+  }
+
   const [criandoBanco, setCriandoBanco] = useState<string | null>(null);
   async function criar(bancoId: string) {
     setCriandoBanco(bancoId);
@@ -211,6 +235,23 @@ function Pagina() {
           <Button variant="ghost" onClick={duplicar}>
             <Copy className="mr-1 h-4 w-4" /> Duplicar
           </Button>
+          <Button variant="ghost" onClick={editar}>
+            <Pencil className="mr-1 h-4 w-4" /> Editar
+          </Button>
+          <ConfirmDelete
+            titulo="Excluir simulação"
+            descricao={`A simulação ${s.numero_simulacao} será removida permanentemente.`}
+            onConfirm={excluir}
+            trigger={
+              <Button
+                variant="ghost"
+                className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+              >
+                <Trash2 className="mr-1 h-4 w-4" /> Excluir
+              </Button>
+            }
+          />
+
         </div>
       </div>
 
