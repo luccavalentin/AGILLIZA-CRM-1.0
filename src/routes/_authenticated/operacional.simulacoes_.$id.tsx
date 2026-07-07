@@ -289,7 +289,7 @@ function Pagina() {
           ) : (
             <>
               {/* Mobile: cartões */}
-              <div className="grid gap-3 md:hidden">
+              <div className="grid gap-3 lg:hidden">
                 {bancos.map((b: any) => (
                   <div key={b.id} className="rounded-lg border border-border p-4">
                     <div className="flex items-start gap-3">
@@ -369,7 +369,7 @@ function Pagina() {
               </div>
 
               {/* Desktop: tabela */}
-              <div className="hidden overflow-x-auto rounded-lg border border-border md:block">
+              <div className="hidden overflow-x-auto rounded-lg border border-border lg:block">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -388,7 +388,7 @@ function Pagina() {
                   <TableBody>
                     {bancos.map((b: any) => (
                       <TableRow key={b.id}>
-                        <TableCell className="py-4 text-base font-semibold">
+                        <TableCell className="py-3 text-sm font-semibold">
                           <div className="flex items-center gap-2.5">
                             <BancoLogo nome={b.nome_banco} size="lg" />
                             <span style={{ color: corDoBanco(b.nome_banco) }}>
@@ -402,26 +402,26 @@ function Pagina() {
                             <p className="mt-1 text-xs text-destructive">{b.mensagem_banco}</p>
                           )}
                         </TableCell>
-                        <TableCell className="py-4">
+                        <TableCell className="py-3">
                           <BancoStatusBadge status={b.status_banco} />
                         </TableCell>
-                        <TableCell className="py-4 text-right text-base font-semibold tabular-nums">
+                        <TableCell className="py-3 text-right text-sm font-semibold tabular-nums whitespace-nowrap">
                           {formatBRL(b.valor_parcela)}
                         </TableCell>
-                        <TableCell className="py-4 text-right text-base tabular-nums">
+                        <TableCell className="py-3 text-right text-sm tabular-nums whitespace-nowrap">
                           {b.taxa_juros_ano != null ? formatPercent(b.taxa_juros_ano / 100) : "—"}
                         </TableCell>
-                        <TableCell className="py-4 text-right text-base tabular-nums">
+                        <TableCell className="py-3 text-right text-sm tabular-nums whitespace-nowrap">
                           {b.prazo_pagamento_max ? `${b.prazo_pagamento_max}m` : "—"}
                         </TableCell>
-                        <TableCell className="py-4 text-right text-base tabular-nums">
+                        <TableCell className="py-3 text-right text-sm tabular-nums whitespace-nowrap">
                           {formatBRL(b.valor_financiamento_max)}
                         </TableCell>
-                        <TableCell className="py-4 text-right text-base font-semibold tabular-nums">
+                        <TableCell className="py-3 text-right text-sm font-semibold tabular-nums whitespace-nowrap">
                           {formatBRL(totalFinanciado(b))}
                         </TableCell>
 
-                        <TableCell className="py-4 text-right text-base tabular-nums">
+                        <TableCell className="py-3 text-right text-sm tabular-nums whitespace-nowrap">
                           {formatBRL(b.valor_iof)}
                         </TableCell>
                         <TableCell className="text-right">
