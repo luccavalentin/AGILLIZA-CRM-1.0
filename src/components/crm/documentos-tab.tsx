@@ -121,10 +121,12 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
   const [pastaId, setPastaId] = useState<string | null>(null);
   const [categoria, setCategoria] = useState<Categoria>("comprador");
   const [tipo, setTipo] = useState("");
+  const [tipoOutro, setTipoOutro] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [editDoc, setEditDoc] = useState<any | null>(null);
   const [editCategoria, setEditCategoria] = useState<Categoria>("comprador");
   const [editTipo, setEditTipo] = useState("");
+  const [editTipoOutro, setEditTipoOutro] = useState(false);
   const [salvandoEdit, setSalvandoEdit] = useState(false);
   const [delDoc, setDelDoc] = useState<any | null>(null);
   const [excluindo, setExcluindo] = useState(false);
