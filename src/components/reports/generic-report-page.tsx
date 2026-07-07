@@ -96,7 +96,10 @@ export function GenericReportPage({
           bancos={bancos}
           produtos={produtos}
           statuses={statuses}
-          responsaveis={responsaveis}
+          analistas={analistas}
+          comerciais={comerciais}
+          corretores={corretores}
+          imobiliarias={imobiliarias}
         />
       }
     >
