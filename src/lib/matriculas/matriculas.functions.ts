@@ -122,11 +122,14 @@ export const listarUsuariosCorrespondente = createServerFn({ method: "GET" })
     const { userId } = context;
     const corr = await correspondenteDoUsuario(supabase, userId);
 
+    // Somente correspondentes (equipe interna Agilliza). Exclui parceiros
+    // externos (corretor parceiro / imobiliária parceira).
     const { data, error } = await supabase
       .from("profiles")
-      .select("id,nome")
+      .select("id,nome,tipo_pessoa")
       .eq("correspondente_id", corr)
       .not("nome", "is", null)
+      .not("tipo_pessoa", "in", "(corretor,imobiliaria)")
       .order("nome", { ascending: true });
 
     if (error) throw new Error(error.message);
