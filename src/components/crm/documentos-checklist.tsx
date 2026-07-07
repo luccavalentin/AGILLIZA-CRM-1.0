@@ -190,24 +190,12 @@ export function DocumentosChecklist({ clienteId }: { clienteId: string }) {
           <CardTitle className="text-base">Checklist do comprador</CardTitle>
         </CardHeader>
         <CardContent className="space-y-1">
-          <DocItem
-            itemKey="c_doc_id"
-            cat="comprador"
-            label="Documento de identidade (RG, CPF ou CNH)"
-          />
+          <DocItem itemKey="c_doc_id" cat="comprador" label={T.comprador[0]} />
           {casado && (
-            <DocItem
-              itemKey="c_doc_id_conj"
-              cat="conjuge"
-              label="Documento de identidade do cônjuge (RG, CPF ou CNH)"
-            />
+            <DocItem itemKey="c_doc_id_conj" cat="conjuge" label={T.conjuge[0]} />
           )}
-          <DocItem
-            itemKey="c_comp_end"
-            cat="comprador"
-            label="Comprovante de endereço atualizado"
-          />
-          <DocItem itemKey="c_cert_ec" cat="comprador" label="Certidão de estado civil" />
+          <DocItem itemKey="c_comp_end" cat="comprador" label={T.comprador[1]} />
+          <DocItem itemKey="c_cert_ec" cat="comprador" label={T.comprador[2]} />
           <div className="my-2 border-t border-border" />
           <AutoItem label="Profissão" ok={filled(cli?.profissao)} />
           <AutoItem label="Telefone do comprador" ok={filled(cli?.telefone_celular)} />
