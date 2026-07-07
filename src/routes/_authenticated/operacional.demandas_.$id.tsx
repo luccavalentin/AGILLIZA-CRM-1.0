@@ -410,6 +410,11 @@ function Pagina() {
           )}
         </div>
       </div>
+      <VisualizadorArquivo
+        arquivo={visualizando}
+        open={!!visualizando}
+        onOpenChange={(o: boolean) => !o && setVisualizando(null)}
+      />
     </div>
   );
 }
