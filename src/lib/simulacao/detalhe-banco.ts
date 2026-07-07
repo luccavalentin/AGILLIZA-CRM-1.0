@@ -101,6 +101,13 @@ export function calcularCET(
   return Number.isFinite(anual) ? anual : null;
 }
 
+/** Primeiro vencimento padrão (mesmo dia do mês seguinte) quando o banco não informa a data. */
+function primeiroVencimentoPadrao(): string {
+  const d = new Date();
+  d.setMonth(d.getMonth() + 1);
+  return d.toISOString().slice(0, 10);
+}
+
 /** Soma `n` meses a uma data ISO (YYYY-MM-DD), devolvendo ISO. */
 function addMeses(dataIso: string | null, n: number): string | null {
   if (!dataIso) return null;
