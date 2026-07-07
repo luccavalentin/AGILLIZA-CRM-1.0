@@ -8,10 +8,12 @@ import {
   RefreshCw,
   HardDrive,
   FileSpreadsheet,
+  FolderArchive,
   Trash2,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -40,6 +42,9 @@ import {
   exportarBackupCompleto,
 } from "@/lib/admin/backup.functions";
 import { exportarBackupXLSX } from "@/lib/admin/backup-xlsx";
+import { montarInventarioDocumentos } from "@/lib/admin/backup-documentos.functions";
+import { baixarDocumentosZip, type ProgressoBackup } from "@/lib/admin/backup-documentos-zip";
+
 
 export const Route = createFileRoute("/_authenticated/admin/backup")({
   head: () => ({ meta: [{ title: "Backup — Agilliza" }] }),
