@@ -155,7 +155,7 @@ export function SidebarRail({ nav, onNavigate }: SidebarProps) {
                   "relative flex h-10 w-10 items-center justify-center rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
                   active
                     ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                    : "text-sidebar-foreground/70 hover:bg-white/10 hover:text-sidebar-foreground",
+                    : "text-sidebar-primary hover:bg-white/15 hover:text-sidebar-foreground",
                 )}
               >
                 {active && (
