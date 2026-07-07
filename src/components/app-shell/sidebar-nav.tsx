@@ -151,7 +151,7 @@ function CollapsibleGroup({
           <SidebarLink
             key={child.label}
             item={child}
-            active={itemAtivo(child, pathname)}
+            active={itemAtivo(child, melhor)}
             onNavigate={onNavigate}
           />
         ))}
