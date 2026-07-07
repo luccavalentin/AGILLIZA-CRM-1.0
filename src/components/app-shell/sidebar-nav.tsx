@@ -9,9 +9,36 @@ function useActivePath() {
   return useRouterState({ select: (s) => s.location.pathname });
 }
 
-function itemAtivo(item: NavItem, pathname: string): boolean {
-  if (item.to) return pathname === item.to || pathname.startsWith(item.to + "/");
-  if (item.children) return item.children.some((c) => itemAtivo(c, pathname));
+/** Coleta todos os destinos (`to`) de folhas da navegação. */
+function coletarDestinos(nav: NavGroup[]): string[] {
+  const out: string[] = [];
+  const visit = (item: NavItem) => {
+    if (item.children && item.children.length > 0) item.children.forEach(visit);
+    else if (item.to) out.push(item.to);
+  };
+  nav.forEach((g) => g.items.forEach(visit));
+  return out;
+}
+
+/**
+ * Determina o único destino "vencedor" para o pathname atual: a rota mais
+ * específica (mais longa) que casa exatamente ou como prefixo. Evita que itens
+ * irmãos cujo `to` é prefixo de outro (ex.: /simulacoes e /simulacoes/nova)
+ * fiquem ativos ao mesmo tempo.
+ */
+function melhorDestino(nav: NavGroup[], pathname: string): string | null {
+  let melhor: string | null = null;
+  for (const to of coletarDestinos(nav)) {
+    if (pathname === to || pathname.startsWith(to + "/")) {
+      if (!melhor || to.length > melhor.length) melhor = to;
+    }
+  }
+  return melhor;
+}
+
+function itemAtivo(item: NavItem, melhor: string | null): boolean {
+  if (item.to) return item.to === melhor;
+  if (item.children) return item.children.some((c) => itemAtivo(c, melhor));
   return false;
 }
 
@@ -23,6 +50,7 @@ interface SidebarProps {
 /** Sidebar completa (desktop expandida / drawer mobile). */
 export function SidebarNav({ nav, onNavigate }: SidebarProps) {
   const pathname = useActivePath();
+  const melhor = melhorDestino(nav, pathname);
 
   return (
     <nav aria-label="Navegação principal" className="flex flex-col gap-4 px-3 py-4">
@@ -36,14 +64,14 @@ export function SidebarNav({ nav, onNavigate }: SidebarProps) {
               <CollapsibleGroup
                 key={item.label}
                 item={item}
-                pathname={pathname}
+                melhor={melhor}
                 onNavigate={onNavigate}
               />
             ) : (
               <SidebarLink
                 key={item.label}
                 item={item}
-                active={itemAtivo(item, pathname)}
+                active={itemAtivo(item, melhor)}
                 onNavigate={onNavigate}
               />
             ),
@@ -97,15 +125,15 @@ function SidebarLink({
 
 function CollapsibleGroup({
   item,
-  pathname,
+  melhor,
   onNavigate,
 }: {
   item: NavItem;
-  pathname: string;
+  melhor: string | null;
   onNavigate?: () => void;
 }) {
   const Icon = item.icon;
-  const algumAtivo = itemAtivo(item, pathname);
+  const algumAtivo = itemAtivo(item, melhor);
   return (
     <Collapsible defaultOpen={algumAtivo}>
       <CollapsibleTrigger
@@ -123,7 +151,7 @@ function CollapsibleGroup({
           <SidebarLink
             key={child.label}
             item={child}
-            active={itemAtivo(child, pathname)}
+            active={itemAtivo(child, melhor)}
             onNavigate={onNavigate}
           />
         ))}
@@ -135,13 +163,14 @@ function CollapsibleGroup({
 /** Sidebar colapsada: apenas ícones com tooltip. */
 export function SidebarRail({ nav, onNavigate }: SidebarProps) {
   const pathname = useActivePath();
+  const melhor = melhorDestino(nav, pathname);
   const itens = nav.flatMap((g) => g.items);
 
   return (
     <nav aria-label="Navegação principal" className="flex flex-col items-center gap-1 px-2 py-4">
       {itens.map((item) => {
         const Icon = item.icon;
-        const active = itemAtivo(item, pathname);
+        const active = itemAtivo(item, melhor);
         const to = item.to ?? item.children?.[0]?.to;
         return (
           <Tooltip key={item.label}>
