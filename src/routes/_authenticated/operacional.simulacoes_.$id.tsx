@@ -289,7 +289,7 @@ function Pagina() {
           ) : (
             <>
               {/* Mobile: cartões */}
-              <div className="grid gap-3 md:hidden">
+              <div className="grid gap-3 lg:hidden">
                 {bancos.map((b: any) => (
                   <div key={b.id} className="rounded-lg border border-border p-4">
                     <div className="flex items-start gap-3">
