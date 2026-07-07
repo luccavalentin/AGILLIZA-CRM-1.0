@@ -1017,18 +1017,13 @@ export function ClienteForm({
 
           <div className="space-y-1.5">
             <Label>Tipo de documento</Label>
-            <Select value={v.tipo_documento_identidade || undefined} onValueChange={(x) => set("tipo_documento_identidade", x)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione" />
-              </SelectTrigger>
-              <SelectContent>
-                {OPCOES_TIPO_DOCUMENTO.map((o) => (
-                  <SelectItem key={o} value={o}>
-                    {o}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Combobox
+              value={v.tipo_documento_identidade}
+              onValueChange={(x) => set("tipo_documento_identidade", x)}
+              options={OPCOES_TIPO_DOCUMENTO}
+              placeholder="Selecione"
+              searchPlaceholder="Buscar tipo…"
+            />
           </div>
           <div className="space-y-1.5">
             <Label>Número do documento</Label>
