@@ -39,11 +39,28 @@ function InfoCard({ rotulo, valor }: { rotulo: string; valor: string }) {
 }
 
 /** Botão + diálogo com o detalhamento completo (parcelas, CET, taxas...) de um banco. */
-export function DetalheBancoDialog({ banco }: { banco: any }) {
+export function DetalheBancoDialog({
+  banco,
+  simulacao,
+  proposta,
+}: {
+  banco: any;
+  simulacao?: any;
+  proposta?: any;
+}) {
   const detalhe = useMemo(() => extrairDetalheBanco(banco?.raw_response), [banco]);
   const temDetalhe = !!detalhe && detalhe.parcelas.length > 0;
 
+  function baixar() {
+    if (proposta) {
+      baixarPropostaDetalhadaPDF({ proposta, bancos: [banco] });
+    } else {
+      baixarSimulacaoDetalhadaPDF({ simulacao: simulacao ?? {}, bancos: [banco] });
+    }
+  }
+
   return (
+
     <Dialog>
       <DialogTrigger asChild>
         <Button variant="ghost" size="sm">
