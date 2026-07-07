@@ -243,6 +243,8 @@ function Pagina() {
           </div>
         </CardContent>
       </Card>
+
+      <ChatSoundSetting />
     </div>
   );
 }
