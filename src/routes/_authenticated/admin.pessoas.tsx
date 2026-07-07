@@ -267,9 +267,13 @@ function PessoasPage() {
                           <TableCell className="font-medium">
                             <div className="flex flex-wrap items-center gap-2">
                               <span>{p.nome ?? "—"}</span>
-                              <Badge variant="outline" className="font-normal">
-                                {rotuloTipo(p.tipo_pessoa)}
-                              </Badge>
+                              {(p.tipos_pessoa?.length ? p.tipos_pessoa : [p.tipo_pessoa]).map(
+                                (slug) => (
+                                  <Badge key={slug} variant="outline" className="font-normal">
+                                    {rotuloTipo(slug)}
+                                  </Badge>
+                                ),
+                              )}
                             </div>
                           </TableCell>
                           <TableCell className="text-muted-foreground">{p.email ?? "—"}</TableCell>
