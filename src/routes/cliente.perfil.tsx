@@ -1,12 +1,26 @@
 import { useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Sun, Moon, Monitor, Download, Trash2 } from "lucide-react";
 import { setTheme } from "@/lib/theme";
-import { clienteBaixarMeusDados, clienteSolicitarLGPD } from "@/lib/portal/cliente.functions";
+import {
+  clienteBaixarMeusDados,
+  clienteExcluirDadosApp,
+} from "@/lib/portal/cliente.functions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/cliente/perfil")({
