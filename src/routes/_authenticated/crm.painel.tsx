@@ -86,7 +86,7 @@ function Pagina() {
             return (
               <div
                 key={stage.codigo}
-                className="group relative flex min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-card shadow-sm transition-shadow hover:shadow-md"
+                className="group relative flex min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-card shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-lg"
               >
                 <div className="flex min-w-0 flex-col p-3.5">
                   <div className="mb-3 flex items-center justify-between gap-2 border-b border-border pb-3">
