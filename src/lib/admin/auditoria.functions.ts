@@ -5,6 +5,9 @@ import { z } from "zod";
 export interface AuditoriaLinha {
   id: string;
   acao: string;
+  acao_label: string;
+  descricao: string | null;
+  mensagem: string;
   entidade: string | null;
   entidade_id: string | null;
   ip: string | null;
@@ -15,8 +18,42 @@ export interface AuditoriaLinha {
 
 export interface OpcoesAuditoria {
   atores: { id: string; nome: string }[];
-  acoes: string[];
+  acoes: { valor: string; rotulo: string }[];
   entidades: string[];
+}
+
+/** Rótulo legível para cada tipo de ação registrada. */
+const ACAO_LABEL: Record<string, string> = {
+  "cliente.criar": "Criou cliente",
+  "cliente.atualizar": "Atualizou cliente",
+  "cliente.excluir": "Excluiu cliente",
+  "documento.anexar": "Anexou documento",
+  "documento.editar": "Editou documento",
+  "documento.excluir": "Excluiu documento",
+  "documento_pasta.criar": "Criou pasta",
+  "documento_pasta.renomear": "Renomeou pasta",
+  "documento_pasta.excluir": "Excluiu pasta",
+  "proposta.replicar": "Replicou proposta",
+  "proposta.excluir": "Excluiu proposta",
+  "proposta.enviar_banco": "Enviou proposta ao banco",
+  "simulacao.enviar_banco": "Enviou simulação ao banco",
+  "pessoa.criar": "Cadastrou pessoa",
+  "pessoa.atualizar": "Atualizou pessoa",
+  "pessoa.excluir": "Excluiu pessoa",
+  "pessoa.ativar": "Ativou pessoa",
+  "pessoa.desativar": "Desativou pessoa",
+  "pessoa.habilitar_login": "Habilitou login da pessoa",
+  "pessoa.resetar_senha": "Redefiniu senha da pessoa",
+  "nivel_acesso.criar": "Criou papel de acesso",
+  "nivel_acesso.atualizar": "Atualizou papel de acesso",
+  "nivel_acesso.excluir": "Excluiu papel de acesso",
+  "nivel_acesso.personalizar": "Personalizou papel de acesso",
+  "nivel_acesso.salvar_permissoes": "Salvou permissões",
+  "nivel_acesso.personalizar_permissoes": "Personalizou permissões",
+};
+
+export function rotuloAcao(acao: string): string {
+  return ACAO_LABEL[acao] ?? acao.replace(/[._]/g, " ");
 }
 
 async function correspondenteDoUsuario(
