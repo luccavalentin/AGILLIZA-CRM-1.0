@@ -247,6 +247,22 @@ div[style*="Edit with Lovable"],
   animation: carga 1.2s linear infinite;
 }
 
+@keyframes piscar-aviso {
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(234, 179, 8, 0.55);
+  }
+  50% {
+    opacity: 0.55;
+    box-shadow: 0 0 0 6px rgba(234, 179, 8, 0);
+  }
+}
+
+@utility animate-piscar-aviso {
+  animation: piscar-aviso 1s ease-in-out infinite;
+}
+
 /* ============================= DPS ============================= */
 /* Documento da Declaração Pessoal de Saúde (tela + impressão). */
 .dps-screen {

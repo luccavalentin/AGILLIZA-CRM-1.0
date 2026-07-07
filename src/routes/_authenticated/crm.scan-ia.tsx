@@ -113,6 +113,17 @@ function Pagina() {
         </div>
       </div>
 
+      <button
+        type="button"
+        disabled
+        aria-live="polite"
+        className="animate-piscar-aviso flex w-full items-center justify-center gap-2 rounded-md bg-yellow-400 px-4 py-3 text-sm font-bold uppercase tracking-wide text-yellow-950 cursor-not-allowed"
+      >
+        <ScanLine className="h-4 w-4" />
+        Aguarde a integração da API!!
+      </button>
+
+
       <div className="space-y-3 rounded-lg border border-border bg-card p-4">
         <div className="grid gap-2 sm:max-w-sm">
           <Label htmlFor="tipo-doc">Tipo de documento</Label>
