@@ -139,6 +139,7 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
   const [renomearNome, setRenomearNome] = useState("");
   const [delPasta, setDelPasta] = useState<DocumentoPasta | null>(null);
   const [excluindoPasta, setExcluindoPasta] = useState(false);
+  const [visualizando, setVisualizando] = useState<{ url: string; nome: string } | null>(null);
 
   const { data: docs, isLoading } = useQuery({
     queryKey: ["cliente-docs", clienteId],
