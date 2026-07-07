@@ -103,6 +103,7 @@ export type Database = {
           acao: string
           correspondente_id: string | null
           created_at: string
+          descricao: string | null
           entidade: string | null
           entidade_id: string | null
           id: string
@@ -116,6 +117,7 @@ export type Database = {
           acao: string
           correspondente_id?: string | null
           created_at?: string
+          descricao?: string | null
           entidade?: string | null
           entidade_id?: string | null
           id?: string
@@ -129,6 +131,7 @@ export type Database = {
           acao?: string
           correspondente_id?: string | null
           created_at?: string
+          descricao?: string | null
           entidade?: string | null
           entidade_id?: string | null
           id?: string
@@ -425,6 +428,47 @@ export type Database = {
           },
         ]
       }
+      cliente_documento_pastas: {
+        Row: {
+          cliente_id: string
+          correspondente_id: string
+          created_at: string
+          id: string
+          nome: string
+          ordem: number
+          slug: string | null
+          updated_at: string
+        }
+        Insert: {
+          cliente_id: string
+          correspondente_id: string
+          created_at?: string
+          id?: string
+          nome: string
+          ordem?: number
+          slug?: string | null
+          updated_at?: string
+        }
+        Update: {
+          cliente_id?: string
+          correspondente_id?: string
+          created_at?: string
+          id?: string
+          nome?: string
+          ordem?: number
+          slug?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cliente_documento_pastas_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cliente_documentos: {
         Row: {
           aprovado_em: string | null
@@ -437,6 +481,7 @@ export type Database = {
           id: string
           mime_type: string | null
           nome_arquivo: string
+          pasta_id: string | null
           status: Database["public"]["Enums"]["doc_status"]
           storage_path: string
           tamanho_bytes: number | null
@@ -455,6 +500,7 @@ export type Database = {
           id?: string
           mime_type?: string | null
           nome_arquivo: string
+          pasta_id?: string | null
           status?: Database["public"]["Enums"]["doc_status"]
           storage_path: string
           tamanho_bytes?: number | null
@@ -473,6 +519,7 @@ export type Database = {
           id?: string
           mime_type?: string | null
           nome_arquivo?: string
+          pasta_id?: string | null
           status?: Database["public"]["Enums"]["doc_status"]
           storage_path?: string
           tamanho_bytes?: number | null
@@ -500,6 +547,13 @@ export type Database = {
             columns: ["enviado_por"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cliente_documentos_pasta_id_fkey"
+            columns: ["pasta_id"]
+            isOneToOne: false
+            referencedRelation: "cliente_documento_pastas"
             referencedColumns: ["id"]
           },
         ]
