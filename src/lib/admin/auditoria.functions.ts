@@ -5,6 +5,9 @@ import { z } from "zod";
 export interface AuditoriaLinha {
   id: string;
   acao: string;
+  acao_label: string;
+  descricao: string | null;
+  mensagem: string;
   entidade: string | null;
   entidade_id: string | null;
   ip: string | null;
@@ -15,8 +18,42 @@ export interface AuditoriaLinha {
 
 export interface OpcoesAuditoria {
   atores: { id: string; nome: string }[];
-  acoes: string[];
+  acoes: { valor: string; rotulo: string }[];
   entidades: string[];
+}
+
+/** Rótulo legível para cada tipo de ação registrada. */
+const ACAO_LABEL: Record<string, string> = {
+  "cliente.criar": "Criou cliente",
+  "cliente.atualizar": "Atualizou cliente",
+  "cliente.excluir": "Excluiu cliente",
+  "documento.anexar": "Anexou documento",
+  "documento.editar": "Editou documento",
+  "documento.excluir": "Excluiu documento",
+  "documento_pasta.criar": "Criou pasta",
+  "documento_pasta.renomear": "Renomeou pasta",
+  "documento_pasta.excluir": "Excluiu pasta",
+  "proposta.replicar": "Replicou proposta",
+  "proposta.excluir": "Excluiu proposta",
+  "proposta.enviar_banco": "Enviou proposta ao banco",
+  "simulacao.enviar_banco": "Enviou simulação ao banco",
+  "pessoa.criar": "Cadastrou pessoa",
+  "pessoa.atualizar": "Atualizou pessoa",
+  "pessoa.excluir": "Excluiu pessoa",
+  "pessoa.ativar": "Ativou pessoa",
+  "pessoa.desativar": "Desativou pessoa",
+  "pessoa.habilitar_login": "Habilitou login da pessoa",
+  "pessoa.resetar_senha": "Redefiniu senha da pessoa",
+  "nivel_acesso.criar": "Criou papel de acesso",
+  "nivel_acesso.atualizar": "Atualizou papel de acesso",
+  "nivel_acesso.excluir": "Excluiu papel de acesso",
+  "nivel_acesso.personalizar": "Personalizou papel de acesso",
+  "nivel_acesso.salvar_permissoes": "Salvou permissões",
+  "nivel_acesso.personalizar_permissoes": "Personalizou permissões",
+};
+
+export function rotuloAcao(acao: string): string {
+  return ACAO_LABEL[acao] ?? acao.replace(/[._]/g, " ");
 }
 
 async function correspondenteDoUsuario(
@@ -55,7 +92,7 @@ export const listarAuditoria = createServerFn({ method: "GET" })
 
     let query = supabase
       .from("admin_audit_logs")
-      .select("id, acao, entidade, entidade_id, ip, user_id, created_at")
+      .select("id, acao, descricao, entidade, entidade_id, ip, user_id, created_at")
       .eq("correspondente_id", corr);
 
     if (data?.dataInicio) query = query.gte("created_at", data.dataInicio);
@@ -65,7 +102,7 @@ export const listarAuditoria = createServerFn({ method: "GET" })
     if (data?.entidade) query = query.eq("entidade", data.entidade);
     if (data?.busca && data.busca.trim()) {
       const term = `%${data.busca.trim()}%`;
-      query = query.or(`acao.ilike.${term},entidade.ilike.${term},ip.ilike.${term}`);
+      query = query.or(`acao.ilike.${term},descricao.ilike.${term},entidade.ilike.${term},ip.ilike.${term}`);
     }
 
     const { data: rows, error } = await query
@@ -81,10 +118,14 @@ export const listarAuditoria = createServerFn({ method: "GET" })
       (profs ?? []).forEach((p: any) => nomes.set(p.id, p.nome ?? ""));
     }
 
-    return rows.map((r: any) => ({
-      ...r,
-      ator_nome: r.user_id ? (nomes.get(r.user_id) ?? null) : null,
-    }));
+    return rows.map((r: any) => {
+      const ator_nome = r.user_id ? (nomes.get(r.user_id) ?? null) : null;
+      const acao_label = rotuloAcao(r.acao);
+      const mensagem = r.descricao
+        ? `${ator_nome ?? "Alguém"} ${r.descricao}`
+        : `${ator_nome ?? "Alguém"} — ${acao_label}${r.entidade ? ` (${r.entidade})` : ""}`;
+      return { ...r, ator_nome, acao_label, mensagem };
+    });
   });
 
 /** Retorna as opções distintas (atores, ações, entidades) para os filtros. */
@@ -123,7 +164,9 @@ export const opcoesAuditoria = createServerFn({ method: "GET" })
 
     return {
       atores,
-      acoes: [...acoes].sort(),
+      acoes: [...acoes]
+        .sort()
+        .map((valor) => ({ valor, rotulo: rotuloAcao(valor) })),
       entidades: [...entidades].sort(),
     };
   });

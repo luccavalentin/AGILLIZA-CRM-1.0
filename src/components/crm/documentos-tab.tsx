@@ -10,6 +10,7 @@ import {
   X,
   Loader2,
   Folder,
+  FolderPlus,
   ChevronLeft,
   Pencil,
   Trash2,
@@ -52,6 +53,14 @@ import {
   editarDocumento,
   excluirDocumento,
 } from "@/lib/crm/clientes.functions";
+import {
+  listarPastasDocumentos,
+  criarPastaDocumentos,
+  renomearPastaDocumentos,
+  excluirPastaDocumentos,
+  SLUG_CATEGORIAS,
+  type DocumentoPasta,
+} from "@/lib/crm/documento-pastas.functions";
 
 type Categoria =
   | "comprador"
@@ -70,19 +79,6 @@ const CATEGORIA_LABEL: Record<Categoria, string> = {
   outros: "Outros",
 };
 
-type Pasta = {
-  id: string;
-  nome: string;
-  categorias: Categoria[];
-};
-
-const PASTAS: Pasta[] = [
-  { id: "comprador", nome: "Comprador / Titular e Cônjuge", categorias: ["comprador", "conjuge"] },
-  { id: "vendedor", nome: "Vendedor e Cônjuge", categorias: ["vendedor", "vendedor_conjuge"] },
-  { id: "imovel", nome: "Imóvel", categorias: ["imovel"] },
-  { id: "outros", nome: "Outros", categorias: ["outros"] },
-];
-
 const statusTone: Record<string, "success" | "warning" | "danger" | "muted" | "info"> = {
   aprovado: "success",
   recebido: "info",
@@ -90,6 +86,22 @@ const statusTone: Record<string, "success" | "warning" | "danger" | "muted" | "i
   reprovado: "danger",
   expirado: "danger",
 };
+
+/** Categorias oferecidas no seletor "titular" de uma pasta. */
+function categoriasDaPasta(pasta: DocumentoPasta | null): Categoria[] {
+  if (!pasta) return ["outros"];
+  if (pasta.slug && SLUG_CATEGORIAS[pasta.slug]) {
+    return SLUG_CATEGORIAS[pasta.slug] as Categoria[];
+  }
+  return ["outros"];
+}
+
+/** Um documento pertence à pasta por vínculo direto ou (legado) pela categoria. */
+function docNaPasta(doc: any, pasta: DocumentoPasta): boolean {
+  if (doc.pasta_id) return doc.pasta_id === pasta.id;
+  if (!pasta.slug) return false;
+  return (SLUG_CATEGORIAS[pasta.slug] ?? []).includes(doc.categoria);
+}
 
 export function DocumentosTab({ clienteId }: { clienteId: string }) {
   const qc = useQueryClient();
@@ -99,6 +111,10 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
   const gerarUrl = useServerFn(urlDocumento);
   const editar = useServerFn(editarDocumento);
   const excluir = useServerFn(excluirDocumento);
+  const listarPastas = useServerFn(listarPastasDocumentos);
+  const criarPasta = useServerFn(criarPastaDocumentos);
+  const renomearPasta = useServerFn(renomearPastaDocumentos);
+  const excluirPasta = useServerFn(excluirPastaDocumentos);
 
   const [aba, setAba] = useState<"documentos" | "checklist">("documentos");
   const [pastaId, setPastaId] = useState<string | null>(null);
@@ -112,38 +128,49 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
   const [delDoc, setDelDoc] = useState<any | null>(null);
   const [excluindo, setExcluindo] = useState(false);
 
+  // Pastas
+  const [novaPastaOpen, setNovaPastaOpen] = useState(false);
+  const [novaPastaNome, setNovaPastaNome] = useState("");
+  const [salvandoPasta, setSalvandoPasta] = useState(false);
+  const [renomearAlvo, setRenomearAlvo] = useState<DocumentoPasta | null>(null);
+  const [renomearNome, setRenomearNome] = useState("");
+  const [delPasta, setDelPasta] = useState<DocumentoPasta | null>(null);
+  const [excluindoPasta, setExcluindoPasta] = useState(false);
+
   const { data: docs, isLoading } = useQuery({
     queryKey: ["cliente-docs", clienteId],
     queryFn: () => listar({ data: { cliente_id: clienteId } }),
   });
+  const { data: pastas, isLoading: pastasLoading } = useQuery({
+    queryKey: ["cliente-doc-pastas", clienteId],
+    queryFn: () => listarPastas({ data: { cliente_id: clienteId } }),
+  });
 
-  const pasta = useMemo(() => PASTAS.find((p) => p.id === pastaId) ?? null, [pastaId]);
-
-  const contagem = useMemo(() => {
-    const map: Record<string, number> = {};
-    for (const p of PASTAS) map[p.id] = 0;
-    for (const d of docs ?? []) {
-      const p = PASTAS.find((x) => x.categorias.includes(d.categoria));
-      if (p) map[p.id] += 1;
-    }
-    return map;
-  }, [docs]);
+  const pasta = useMemo(
+    () => (pastas ?? []).find((p) => p.id === pastaId) ?? null,
+    [pastas, pastaId],
+  );
 
   const docsPasta = useMemo(
-    () => (pasta ? (docs ?? []).filter((d: any) => pasta.categorias.includes(d.categoria)) : []),
+    () => (pasta ? (docs ?? []).filter((d: any) => docNaPasta(d, pasta)) : []),
     [docs, pasta],
   );
 
-  function abrirPasta(p: Pasta) {
+  function abrirPasta(p: DocumentoPasta) {
     setPastaId(p.id);
-    setCategoria(p.categorias[0]);
+    setCategoria(categoriasDaPasta(p)[0]);
     setTipo("");
+  }
+
+  function recarregar() {
+    qc.invalidateQueries({ queryKey: ["cliente-docs", clienteId] });
+    qc.invalidateQueries({ queryKey: ["cliente-doc-pastas", clienteId] });
   }
 
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     e.target.value = "";
-    if (!file) return;
+    if (!file || !pasta) return;
     if (file.size > 10 * 1024 * 1024) return toast.error("Arquivo acima de 10 MB.");
     if (!tipo.trim()) return toast.error("Informe o tipo do documento.");
     setEnviando(true);
@@ -155,6 +182,7 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
         data: {
           cliente_id: clienteId,
           categoria,
+          pasta_id: pasta.id,
           tipo_documento: tipo.trim(),
           nome_arquivo: file.name,
           storage_path: path,
@@ -164,7 +192,7 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
       });
       toast.success("Documento anexado.");
       setTipo("");
-      qc.invalidateQueries({ queryKey: ["cliente-docs", clienteId] });
+      recarregar();
     } catch (err: any) {
       toast.error(err?.message ?? "Falha no upload.");
     } finally {
@@ -207,7 +235,7 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
       });
       toast.success("Documento atualizado.");
       setEditDoc(null);
-      qc.invalidateQueries({ queryKey: ["cliente-docs", clienteId] });
+      recarregar();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Falha ao atualizar.");
     } finally {
@@ -222,11 +250,58 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
       await excluir({ data: { id: delDoc.id } });
       toast.success("Documento excluído.");
       setDelDoc(null);
-      qc.invalidateQueries({ queryKey: ["cliente-docs", clienteId] });
+      recarregar();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Falha ao excluir.");
     } finally {
       setExcluindo(false);
+    }
+  }
+
+  async function confirmarNovaPasta() {
+    if (!novaPastaNome.trim()) return toast.error("Informe o nome da pasta.");
+    setSalvandoPasta(true);
+    try {
+      await criarPasta({ data: { cliente_id: clienteId, nome: novaPastaNome.trim() } });
+      toast.success("Pasta criada.");
+      setNovaPastaOpen(false);
+      setNovaPastaNome("");
+      qc.invalidateQueries({ queryKey: ["cliente-doc-pastas", clienteId] });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao criar pasta.");
+    } finally {
+      setSalvandoPasta(false);
+    }
+  }
+
+  async function confirmarRenomear() {
+    if (!renomearAlvo) return;
+    if (!renomearNome.trim()) return toast.error("Informe o nome da pasta.");
+    setSalvandoPasta(true);
+    try {
+      await renomearPasta({ data: { id: renomearAlvo.id, nome: renomearNome.trim() } });
+      toast.success("Pasta renomeada.");
+      setRenomearAlvo(null);
+      qc.invalidateQueries({ queryKey: ["cliente-doc-pastas", clienteId] });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao renomear.");
+    } finally {
+      setSalvandoPasta(false);
+    }
+  }
+
+  async function confirmarExclusaoPasta() {
+    if (!delPasta) return;
+    setExcluindoPasta(true);
+    try {
+      await excluirPasta({ data: { id: delPasta.id } });
+      toast.success("Pasta excluída.");
+      setDelPasta(null);
+      recarregar();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao excluir pasta.");
+    } finally {
+      setExcluindoPasta(false);
     }
   }
 
@@ -262,7 +337,7 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
     );
   }
 
-  if (isLoading) {
+  if (isLoading || pastasLoading) {
     return (
       <div className="space-y-4">
         {abaBar}
@@ -275,28 +350,139 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
   if (!pasta) {
     return (
       <div className="space-y-4">
-        {abaBar}
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          {abaBar}
+          <Button size="sm" variant="outline" onClick={() => setNovaPastaOpen(true)}>
+            <FolderPlus className="size-4" />
+            Nova pasta
+          </Button>
+        </div>
         <div className="grid gap-3 sm:grid-cols-2">
-          {PASTAS.map((p) => (
-            <button
+          {(pastas ?? []).map((p) => (
+            <div
               key={p.id}
-              type="button"
-              onClick={() => abrirPasta(p)}
-              className="flex items-center gap-3 rounded-lg border border-border bg-card p-4 text-left transition-colors hover:border-primary/50 hover:bg-accent"
+              className="group flex items-center gap-3 rounded-lg border border-border bg-card p-4 transition-colors hover:border-primary/50"
             >
-              <Folder className="size-8 shrink-0 text-primary" />
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-foreground">{p.nome}</p>
-                <p className="text-xs text-muted-foreground">
-                  {contagem[p.id] ?? 0} documento(s)
-                </p>
+              <button
+                type="button"
+                onClick={() => abrirPasta(p)}
+                className="flex min-w-0 flex-1 items-center gap-3 text-left"
+              >
+                <Folder className="size-8 shrink-0 text-primary" />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-foreground">{p.nome}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {p.total_documentos} documento(s)
+                  </p>
+                </div>
+              </button>
+              <div className="flex shrink-0 items-center gap-1">
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  title="Renomear pasta"
+                  onClick={() => {
+                    setRenomearAlvo(p);
+                    setRenomearNome(p.nome);
+                  }}
+                >
+                  <Pencil className="size-4" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  title="Excluir pasta"
+                  onClick={() => setDelPasta(p)}
+                >
+                  <Trash2 className="size-4 text-destructive" />
+                </Button>
               </div>
-            </button>
+            </div>
           ))}
         </div>
+
+        {/* Nova pasta */}
+        <Dialog open={novaPastaOpen} onOpenChange={(o) => !o && setNovaPastaOpen(false)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Nova pasta</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-1.5">
+              <label className="text-xs text-muted-foreground">Nome da pasta</label>
+              <Input
+                value={novaPastaNome}
+                onChange={(e) => setNovaPastaNome(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && confirmarNovaPasta()}
+                placeholder="Ex.: Certidões, Comprovantes…"
+                autoFocus
+              />
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setNovaPastaOpen(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={confirmarNovaPasta} disabled={salvandoPasta}>
+                {salvandoPasta ? "Criando…" : "Criar pasta"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Renomear pasta */}
+        <Dialog open={!!renomearAlvo} onOpenChange={(o) => !o && setRenomearAlvo(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Renomear pasta</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-1.5">
+              <label className="text-xs text-muted-foreground">Nome da pasta</label>
+              <Input
+                value={renomearNome}
+                onChange={(e) => setRenomearNome(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && confirmarRenomear()}
+                autoFocus
+              />
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setRenomearAlvo(null)}>
+                Cancelar
+              </Button>
+              <Button onClick={confirmarRenomear} disabled={salvandoPasta}>
+                {salvandoPasta ? "Salvando…" : "Salvar"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Excluir pasta */}
+        <AlertDialog open={!!delPasta} onOpenChange={(o) => !o && setDelPasta(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Excluir pasta?</AlertDialogTitle>
+              <AlertDialogDescription>
+                A pasta "{delPasta?.nome}" será removida. Os documentos dentro dela serão movidos
+                para "Outros". Esta ação não pode ser desfeita.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={(e) => {
+                  e.preventDefault();
+                  confirmarExclusaoPasta();
+                }}
+                disabled={excluindoPasta}
+              >
+                {excluindoPasta ? "Excluindo…" : "Excluir"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     );
   }
+
+  const categoriasPasta = categoriasDaPasta(pasta);
 
   // Visão dentro de uma pasta
   return (
@@ -311,7 +497,7 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
 
       <Card>
         <CardContent className="flex flex-wrap items-end gap-3 pt-6">
-          {pasta.categorias.length > 1 && (
+          {categoriasPasta.length > 1 && (
             <div className="space-y-1.5">
               <label className="text-xs text-muted-foreground">Titular do documento</label>
               <Select value={categoria} onValueChange={(v) => setCategoria(v as Categoria)}>
@@ -319,7 +505,7 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {pasta.categorias.map((c) => (
+                  {categoriasPasta.map((c) => (
                     <SelectItem key={c} value={c}>
                       {CATEGORIA_LABEL[c]}
                     </SelectItem>
@@ -418,23 +604,23 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
             <DialogTitle>Editar documento</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="space-y-1.5">
-              <label className="text-xs text-muted-foreground">Titular do documento</label>
-              <Select value={editCategoria} onValueChange={(v) => setEditCategoria(v as Categoria)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {(PASTAS.find((p) => p.categorias.includes(editCategoria))?.categorias ?? []).map(
-                    (c) => (
+            {categoriasPasta.length > 1 && (
+              <div className="space-y-1.5">
+                <label className="text-xs text-muted-foreground">Titular do documento</label>
+                <Select value={editCategoria} onValueChange={(v) => setEditCategoria(v as Categoria)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categoriasPasta.map((c) => (
                       <SelectItem key={c} value={c}>
                         {CATEGORIA_LABEL[c]}
                       </SelectItem>
-                    ),
-                  )}
-                </SelectContent>
-              </Select>
-            </div>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="space-y-1.5">
               <label className="text-xs text-muted-foreground">Tipo (ex.: RG, IR, Matrícula)</label>
               <Input value={editTipo} onChange={(e) => setEditTipo(e.target.value)} />
