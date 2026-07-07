@@ -80,6 +80,11 @@ export function NotificationsBell({ userId }: NotificationsBellProps) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["notificacoes"] }),
   });
 
+  const limpar = useMutation({
+    mutationFn: () => limparNotificacoes(),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["notificacoes"] }),
+  });
+
   const naoLidas = data?.naoLidas ?? 0;
   const itens = data?.itens ?? [];
   const itensNaoLidos = itens.filter((n) => !n.lida);
