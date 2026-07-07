@@ -18,6 +18,8 @@ import {
   listarParceirosDisponiveis,
   vincularParceiro,
   desvincularParceiro,
+  TIPOS_VINCULO,
+  type TipoVinculo,
 } from "@/lib/crm/clientes.functions";
 
 export function VinculoTab({
