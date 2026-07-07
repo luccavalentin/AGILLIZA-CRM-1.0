@@ -198,6 +198,43 @@ export function NovaPessoaInline({
           </Button>
         </div>
 
+        {/* Tipo de pessoa */}
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label>Tipo de pessoa</Label>
+            <Select
+              value={tipoPessoa}
+              onValueChange={(v) => setTipoPessoa(v as TipoPessoa)}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="usuario">Usuário (equipe interna)</SelectItem>
+                <SelectItem value="imobiliaria">Imobiliária</SelectItem>
+                <SelectItem value="corretor">Corretor</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          {permiteSemLogin && (
+            <div className="space-y-2">
+              <Label>Acesso ao sistema</Label>
+              <div className="flex items-center gap-3 rounded-md border px-3 py-2">
+                <Switch
+                  id="np-login"
+                  checked={comLogin}
+                  onCheckedChange={setComLogin}
+                />
+                <Label htmlFor="np-login" className="cursor-pointer text-sm font-normal">
+                  {comLogin
+                    ? "Com login (acessa o Portal do Parceiro)"
+                    : "Sem login (aparece nas buscas; habilite depois)"}
+                </Label>
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Dados básicos */}
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
@@ -211,15 +248,23 @@ export function NovaPessoaInline({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="np-email">E-mail</Label>
+            <Label htmlFor="np-email">
+              {efetivoComLogin ? "E-mail" : "E-mail (opcional)"}
+            </Label>
             <Input
               id="np-email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="nome@empresa.com"
-              required
+              required={efetivoComLogin}
+              disabled={!efetivoComLogin}
             />
+            {!efetivoComLogin && (
+              <p className="text-xs text-muted-foreground">
+                Sem login, o e-mail não é necessário agora. Você pode habilitar o acesso depois na lista de pessoas.
+              </p>
+            )}
           </div>
         </div>
 
