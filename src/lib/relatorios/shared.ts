@@ -18,6 +18,12 @@ export interface ReportFiltros {
   valorMin?: number;
   valorMax?: number;
   busca?: string;
+  /** Filtros multi-seleção (Etapa: refino de filtros). */
+  bancos?: string[];
+  analistas?: string[];
+  comerciais?: string[];
+  corretores?: string[];
+  imobiliarias?: string[];
 }
 
 export const PERIODO_LABEL: Record<Periodo, string> = {
@@ -157,6 +163,10 @@ export interface ReportResult {
     statuses?: { value: string; label: string }[];
     produtos?: string[];
     responsaveis?: { value: string; label: string }[];
+    analistas?: { value: string; label: string }[];
+    comerciais?: { value: string; label: string }[];
+    corretores?: { value: string; label: string }[];
+    imobiliarias?: { value: string; label: string }[];
   };
 }
 

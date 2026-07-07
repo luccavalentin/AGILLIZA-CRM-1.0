@@ -9,6 +9,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { MultiSelect, MultiSelectChips, type MultiOption } from "@/components/reports/multi-select";
 import {
   PERIODO_LABEL,
   ESCOPO_LABEL,
@@ -52,41 +53,51 @@ export function VisionSelector({
   );
 }
 
-/** Barra de filtros de relatório com período obrigatório + filtros extras + chips ativos. */
+/** Barra de filtros de relatório: período + intervalo + multi-seleções combináveis + chips ativos. */
 export function ReportFiltersBar({
   filtros,
   onChange,
   bancos,
   produtos,
   statuses,
-  responsaveis,
+  analistas,
+  comerciais,
+  corretores,
+  imobiliarias,
 }: {
   filtros: ReportFiltros;
   onChange: (f: ReportFiltros) => void;
   bancos?: string[];
   produtos?: string[];
   statuses?: { value: string; label: string }[];
-  responsaveis?: { value: string; label: string }[];
+  analistas?: MultiOption[];
+  comerciais?: MultiOption[];
+  corretores?: MultiOption[];
+  imobiliarias?: MultiOption[];
 }) {
   const set = (patch: Partial<ReportFiltros>) => onChange({ ...filtros, ...patch });
-  const statusLabel = (v: string) => statuses?.find((s) => s.value === v)?.label ?? v;
-  const respLabel = (v: string) => responsaveis?.find((r) => r.value === v)?.label ?? v;
+  const bancoOpts: MultiOption[] = (bancos ?? []).map((b) => ({ value: b, label: b }));
 
   const chips: { key: keyof ReportFiltros; label: string }[] = [];
-  if (filtros.banco) chips.push({ key: "banco", label: `Banco: ${filtros.banco}` });
   if (filtros.produto) chips.push({ key: "produto", label: `Produto: ${filtros.produto}` });
   if (filtros.status)
-    chips.push({ key: "status", label: `Status: ${statusLabel(filtros.status)}` });
-  if (filtros.responsavel)
-    chips.push({ key: "responsavel", label: `Responsável: ${respLabel(filtros.responsavel)}` });
+    chips.push({
+      key: "status",
+      label: `Status: ${statuses?.find((s) => s.value === filtros.status)?.label ?? filtros.status}`,
+    });
   if (filtros.valorMin != null)
     chips.push({ key: "valorMin", label: `Mín: ${filtros.valorMin.toLocaleString("pt-BR")}` });
   if (filtros.valorMax != null)
     chips.push({ key: "valorMax", label: `Máx: ${filtros.valorMax.toLocaleString("pt-BR")}` });
   if (filtros.busca) chips.push({ key: "busca", label: `Busca: ${filtros.busca}` });
 
-  const temExtra =
-    (bancos?.length || produtos?.length || statuses?.length || responsaveis?.length) ?? 0;
+  const temAlgum =
+    chips.length > 0 ||
+    (filtros.bancos?.length ?? 0) > 0 ||
+    (filtros.analistas?.length ?? 0) > 0 ||
+    (filtros.comerciais?.length ?? 0) > 0 ||
+    (filtros.corretores?.length ?? 0) > 0 ||
+    (filtros.imobiliarias?.length ?? 0) > 0;
 
   return (
     <div className="space-y-2 rounded-lg border border-border bg-card p-3">
@@ -123,24 +134,52 @@ export function ReportFiltersBar({
           />
         </div>
 
-        {!!bancos?.length && (
-          <Select
-            value={filtros.banco ?? "__all"}
-            onValueChange={(v) => set({ banco: v === "__all" ? undefined : v })}
-          >
-            <SelectTrigger className="h-9 w-44">
-              <SelectValue placeholder="Banco" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__all">Todos os bancos</SelectItem>
-              {bancos.map((b) => (
-                <SelectItem key={b} value={b}>
-                  {b}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        {!!bancoOpts.length && (
+          <MultiSelect
+            options={bancoOpts}
+            selected={filtros.bancos ?? []}
+            onChange={(v) => set({ bancos: v })}
+            placeholder="Bancos"
+            className="w-44"
+          />
         )}
+        {!!analistas?.length && (
+          <MultiSelect
+            options={analistas}
+            selected={filtros.analistas ?? []}
+            onChange={(v) => set({ analistas: v })}
+            placeholder="Analista"
+            className="w-44"
+          />
+        )}
+        {!!comerciais?.length && (
+          <MultiSelect
+            options={comerciais}
+            selected={filtros.comerciais ?? []}
+            onChange={(v) => set({ comerciais: v })}
+            placeholder="Comercial Agilliza"
+            className="w-52"
+          />
+        )}
+        {!!corretores?.length && (
+          <MultiSelect
+            options={corretores}
+            selected={filtros.corretores ?? []}
+            onChange={(v) => set({ corretores: v })}
+            placeholder="Corretor"
+            className="w-44"
+          />
+        )}
+        {!!imobiliarias?.length && (
+          <MultiSelect
+            options={imobiliarias}
+            selected={filtros.imobiliarias ?? []}
+            onChange={(v) => set({ imobiliarias: v })}
+            placeholder="Imobiliária"
+            className="w-48"
+          />
+        )}
+
         {!!produtos?.length && (
           <Select
             value={filtros.produto ?? "__all"}
@@ -177,24 +216,6 @@ export function ReportFiltersBar({
             </SelectContent>
           </Select>
         )}
-        {!!responsaveis?.length && (
-          <Select
-            value={filtros.responsavel ?? "__all"}
-            onValueChange={(v) => set({ responsavel: v === "__all" ? undefined : v })}
-          >
-            <SelectTrigger className="h-9 w-52">
-              <SelectValue placeholder="Responsável" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__all">Todos os responsáveis</SelectItem>
-              {responsaveis.map((r) => (
-                <SelectItem key={r.value} value={r.value}>
-                  {r.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
 
         <Input
           value={filtros.busca ?? ""}
@@ -203,7 +224,7 @@ export function ReportFiltersBar({
           className="h-9 w-48"
         />
 
-        {(chips.length > 0 || temExtra) && (
+        {temAlgum && (
           <Button
             variant="ghost"
             size="sm"
@@ -214,8 +235,38 @@ export function ReportFiltersBar({
         )}
       </div>
 
-      {chips.length > 0 && (
+      {temAlgum && (
         <div className="flex flex-wrap gap-1.5">
+          <MultiSelectChips
+            prefix="Banco"
+            options={bancoOpts}
+            selected={filtros.bancos ?? []}
+            onChange={(v) => set({ bancos: v })}
+          />
+          <MultiSelectChips
+            prefix="Analista"
+            options={analistas ?? []}
+            selected={filtros.analistas ?? []}
+            onChange={(v) => set({ analistas: v })}
+          />
+          <MultiSelectChips
+            prefix="Comercial"
+            options={comerciais ?? []}
+            selected={filtros.comerciais ?? []}
+            onChange={(v) => set({ comerciais: v })}
+          />
+          <MultiSelectChips
+            prefix="Corretor"
+            options={corretores ?? []}
+            selected={filtros.corretores ?? []}
+            onChange={(v) => set({ corretores: v })}
+          />
+          <MultiSelectChips
+            prefix="Imobiliária"
+            options={imobiliarias ?? []}
+            selected={filtros.imobiliarias ?? []}
+            onChange={(v) => set({ imobiliarias: v })}
+          />
           {chips.map((c) => (
             <Badge key={c.key} variant="secondary" className="gap-1">
               {c.label}

@@ -25,6 +25,11 @@ const filtrosSchema = z.object({
     valorMin: z.number().optional(),
     valorMax: z.number().optional(),
     busca: z.string().optional(),
+    bancos: z.array(z.string()).optional(),
+    analistas: z.array(z.string()).optional(),
+    comerciais: z.array(z.string()).optional(),
+    corretores: z.array(z.string()).optional(),
+    imobiliarias: z.array(z.string()).optional(),
   }),
 });
 
@@ -139,6 +144,41 @@ function aplicarEscopo(query: any, filtros: ReportFiltros, userId: string, colRe
   return query;
 }
 
+/**
+ * Aplica os filtros de pessoa (analista, comercial, corretor, imobiliária) e banco.
+ * Cada grupo é multi-seleção (OR interno) e os grupos se combinam (AND entre grupos).
+ * As colunas específicas (analista_id, comercial_id, parceiro_id, nome_banco) só são
+ * usadas quando presentes no `select`; caso contrário cai no responsável genérico.
+ */
+function aplicarFiltrosPessoa(query: any, filtros: ReportFiltros, cols: string, colResp: string) {
+  const temCol = (c: string) => `,${cols.replace(/\s/g, "")},`.includes(`,${c},`);
+  const naoVazio = (a?: string[]) => Array.isArray(a) && a.length > 0;
+
+  if (temCol("analista_id") && naoVazio(filtros.analistas))
+    query = query.in("analista_id", filtros.analistas);
+  if (temCol("comercial_id") && naoVazio(filtros.comerciais))
+    query = query.in("comercial_id", filtros.comerciais);
+
+  const parceiros = [...(filtros.corretores ?? []), ...(filtros.imobiliarias ?? [])];
+  if (temCol("parceiro_id") && parceiros.length > 0)
+    query = query.in("parceiro_id", parceiros);
+
+  if (temCol("nome_banco") && naoVazio(filtros.bancos))
+    query = query.in("nome_banco", filtros.bancos);
+
+  // Fallback: relatórios que só têm a coluna de responsável recebem a união dos ids.
+  if (colResp && !temCol("analista_id") && !temCol("comercial_id") && !temCol("parceiro_id")) {
+    const uniao = [
+      ...(filtros.analistas ?? []),
+      ...(filtros.comerciais ?? []),
+      ...(filtros.corretores ?? []),
+      ...(filtros.imobiliarias ?? []),
+    ];
+    if (uniao.length > 0) query = query.in(colResp, uniao);
+  }
+  return query;
+}
+
 function serieMensal(rows: { data: string; valor?: number }[]): ChartSerie[] {
   const map = new Map<string, { valor: number; count: number }>();
   for (const r of rows) {
@@ -222,25 +262,39 @@ export const runReport = createServerFn({ method: "POST" })
     // Opções de filtro comuns a TODOS os relatórios: status do módulo + lista de
     // responsáveis (usuários) do correspondente. Assim qualquer relatório pode
     // ser filtrado por status e por usuário.
-    const responsaveis = await listarResponsaveis();
+    const pessoas = await listarPessoas();
     resultado.filtrosDisponiveis = {
       ...resultado.filtrosDisponiveis,
       statuses: resultado.filtrosDisponiveis?.statuses ?? statusOpcoesPorCodigo(codigo),
-      responsaveis,
+      responsaveis: pessoas.todos,
+      analistas: pessoas.analistas,
+      comerciais: pessoas.comerciais,
+      corretores: pessoas.corretores,
+      imobiliarias: pessoas.imobiliarias,
     };
     return resultado;
 
-    async function listarResponsaveis(): Promise<{ value: string; label: string }[]> {
+    async function listarPessoas() {
+      type Opt = { value: string; label: string };
       let q = (supabase as any)
         .from("profiles")
-        .select("id,nome,ativo")
+        .select("id,nome,ativo,tipo_pessoa")
         .order("nome", { ascending: true })
         .limit(1000);
       if (corr) q = q.eq("correspondente_id", corr);
       const { data } = await q;
-      return ((data ?? []) as any[])
-        .filter((p) => p.ativo !== false && p.nome)
-        .map((p) => ({ value: p.id as string, label: p.nome as string }));
+      const linhas = ((data ?? []) as any[]).filter((p) => p.ativo !== false && p.nome);
+      const opt = (p: any): Opt => ({ value: p.id as string, label: p.nome as string });
+      const porTipo = (slug: string) =>
+        linhas.filter((p) => p.tipo_pessoa === slug).map(opt);
+      return {
+        todos: linhas.map(opt),
+        // "usuario" = Analista; "comercial" = Comercial Agilliza (ver tipos_pessoa).
+        analistas: porTipo("usuario"),
+        comerciais: porTipo("comercial"),
+        corretores: porTipo("corretor"),
+        imobiliarias: porTipo("imobiliaria"),
+      };
     }
 
 
@@ -251,14 +305,17 @@ export const runReport = createServerFn({ method: "POST" })
       const isoDia = (d: Date) =>
         `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
+      const colsCmp =
+        "status,nome_banco,created_at,analista_id,comercial_id,parceiro_id,usuario_responsavel_id";
       let q = (supabase as any)
         .from("propostas")
-        .select("status,nome_banco,created_at")
+        .select(colsCmp)
         .gte("created_at", isoDia(inicio))
         .order("created_at", { ascending: true })
         .limit(20000);
       q = aplicarEscopo(q, filtros, userId, "usuario_responsavel_id");
       if (filtros.responsavel) q = q.eq("usuario_responsavel_id", filtros.responsavel);
+      q = aplicarFiltrosPessoa(q, filtros, colsCmp, "usuario_responsavel_id");
       const { data: rows } = await q;
       const props = ((rows ?? []) as any[]).filter((p) => p.status !== "rascunho");
       if (!props.length) return undefined;
@@ -329,6 +386,7 @@ export const runReport = createServerFn({ method: "POST" })
         .limit(5000);
       q = aplicarEscopo(q, filtros, userId, colResp);
       if (filtros.responsavel && colResp) q = q.eq(colResp, filtros.responsavel);
+      q = aplicarFiltrosPessoa(q, filtros, cols, colResp);
       // Filtro por status: usa a coluna informada ou "status" quando presente no select.
       const statusCol =
         opts?.statusCol === false
@@ -535,6 +593,7 @@ export const runReport = createServerFn({ method: "POST" })
       if (filtros.banco) q = q.eq("nome_banco", filtros.banco);
       if (filtros.produto) q = q.eq("produto", filtros.produto);
       if (filtros.status) q = q.eq("status", filtros.status);
+      q = aplicarFiltrosPessoa(q, filtros, cols, "usuario_responsavel_id");
       const { data: rowsRaw, error } = await q;
       if (error) throw new Error(error.message);
       const props = (rowsRaw ?? []) as any[];

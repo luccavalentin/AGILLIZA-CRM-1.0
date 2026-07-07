@@ -65,7 +65,10 @@ export function GenericReportPage({
           .sort()
           .map((v) => ({ value: v, label: v }))
       : undefined);
-  const responsaveis = disp?.responsaveis;
+  const analistas = disp?.analistas;
+  const comerciais = disp?.comerciais;
+  const corretores = disp?.corretores;
+  const imobiliarias = disp?.imobiliarias;
 
   return (
     <ReportShell
@@ -93,7 +96,10 @@ export function GenericReportPage({
           bancos={bancos}
           produtos={produtos}
           statuses={statuses}
-          responsaveis={responsaveis}
+          analistas={analistas}
+          comerciais={comerciais}
+          corretores={corretores}
+          imobiliarias={imobiliarias}
         />
       }
     >

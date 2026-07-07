@@ -25,6 +25,11 @@ export function parseReportSearch(search: Record<string, unknown>): ReportFiltro
   const num = (v: unknown) =>
     v != null && v !== "" && Number.isFinite(Number(v)) ? Number(v) : undefined;
   const str = (v: unknown) => (typeof v === "string" && v ? v : undefined);
+  const arr = (v: unknown) => {
+    if (Array.isArray(v)) return v.map(String).filter(Boolean);
+    if (typeof v === "string" && v) return v.split(",").filter(Boolean);
+    return undefined;
+  };
   return {
     periodo,
     escopo,
@@ -38,6 +43,11 @@ export function parseReportSearch(search: Record<string, unknown>): ReportFiltro
     valorMin: num(search.valorMin),
     valorMax: num(search.valorMax),
     busca: str(search.busca),
+    bancos: arr(search.bancos),
+    analistas: arr(search.analistas),
+    comerciais: arr(search.comerciais),
+    corretores: arr(search.corretores),
+    imobiliarias: arr(search.imobiliarias),
   };
 }
 
@@ -72,8 +82,14 @@ export function ReportView({
 
   const onFiltros = (f: ReportFiltros) => {
     const s: Record<string, string> = {};
-    for (const [k, v] of Object.entries(f))
-      if (v !== undefined && v !== "" && v !== null) s[k] = String(v);
+    for (const [k, v] of Object.entries(f)) {
+      if (v === undefined || v === "" || v === null) continue;
+      if (Array.isArray(v)) {
+        if (v.length > 0) s[k] = v.join(",");
+        continue;
+      }
+      s[k] = String(v);
+    }
     navigate({ to: ".", search: s, replace: true });
   };
 
