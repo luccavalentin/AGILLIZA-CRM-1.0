@@ -171,12 +171,6 @@ export const navInterno: NavGroup[] = [
             perm: { modulo: "operacional.tarefas" },
           },
           {
-            label: "Equipe",
-            icon: Users,
-            to: "/operacional/tarefas/equipe",
-            perm: { modulo: "operacional.tarefas" },
-          },
-          {
             label: "Kanban",
             icon: KanbanSquare,
             to: "/operacional/tarefas/kanban",
