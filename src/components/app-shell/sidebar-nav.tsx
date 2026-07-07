@@ -163,6 +163,7 @@ function CollapsibleGroup({
 /** Sidebar colapsada: apenas ícones com tooltip. */
 export function SidebarRail({ nav, onNavigate }: SidebarProps) {
   const pathname = useActivePath();
+  const melhor = melhorDestino(nav, pathname);
   const itens = nav.flatMap((g) => g.items);
 
   return (
