@@ -124,6 +124,28 @@ function Pagina() {
     });
   }
 
+  function editar() {
+    if (!data) return;
+    try {
+      sessionStorage.setItem("simulacao_wizard", JSON.stringify(data.simulacao));
+      toast.info("Dados carregados no formulário para edição.");
+      router.navigate({ to: "/operacional/simulacoes/completa" });
+    } catch {
+      toast.error("Não foi possível abrir a simulação para edição.");
+    }
+  }
+
+  async function excluir() {
+    try {
+      await excluirSimulacao({ data: { id } });
+      toast.success("Simulação excluída.");
+      qc.invalidateQueries({ queryKey: ["simulacoes"] });
+      router.navigate({ to: "/operacional/simulacoes" });
+    } catch {
+      toast.error("Não foi possível excluir a simulação.");
+    }
+  }
+
   const [criandoBanco, setCriandoBanco] = useState<string | null>(null);
   async function criar(bancoId: string) {
     setCriandoBanco(bancoId);
