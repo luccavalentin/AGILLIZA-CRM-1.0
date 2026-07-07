@@ -785,6 +785,20 @@ function Pagina() {
               Incluir as despesas no valor financiado
             </label>
           </Campo>
+          {f.fg_financiar_despesas && (
+            <Campo label="Valor das despesas a financiar">
+              <CurrencyInput
+                value={f.valor_despesas_financiadas ?? 0}
+                onChange={(v) => set("valor_despesas_financiadas", v)}
+              />
+              <p className="mt-1 text-xs text-muted-foreground">
+                Total financiado:{" "}
+                {formatBRL(
+                  (f.valor_financiamento || 0) + (f.valor_despesas_financiadas || 0),
+                )}
+              </p>
+            </Campo>
+          )}
         </div>
       </section>
 
