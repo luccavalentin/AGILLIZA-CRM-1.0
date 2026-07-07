@@ -104,7 +104,7 @@ function config() {
 export function sanitizarMensagemErro(msg: string | null | undefined): string {
   const fallback = "Não foi possível enviar ao banco. Tente novamente em instantes.";
   if (!msg) return fallback;
-  if (/supabase|lovable|service[_ ]role|environment variable|cloud/i.test(msg)) {
+  if (/supabase|service[_ ]role|environment variable|cloud/i.test(msg)) {
     return fallback;
   }
   return msg;
