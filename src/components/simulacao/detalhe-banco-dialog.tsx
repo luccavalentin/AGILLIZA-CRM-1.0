@@ -21,6 +21,8 @@ import { Button } from "@/components/ui/button";
 import { BancoStatusBadge } from "@/components/simulacao/status-badge";
 import { extrairDetalheBanco, normalizarSistemaAmortizacao } from "@/lib/simulacao/detalhe-banco";
 import { formatBRL } from "@/lib/simulacao/format";
+import { baixarSimulacaoDetalhadaPDF } from "@/lib/simulacao/simulacao-pdf";
+import { baixarPropostaDetalhadaPDF } from "@/lib/propostas/proposta-pdf";
 
 function pct(v: number | null | undefined): string {
   if (v == null || Number.isNaN(v)) return "—";
