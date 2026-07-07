@@ -16,6 +16,7 @@ export const criarSchema = z
     telefone: z.string().optional(),
     nivel_acesso_id: z.string().uuid("Selecione um nível de acesso."),
     tipo_pessoa: z.string().min(1).default("usuario"),
+    tipos_pessoa: z.array(z.string().min(1)).optional(),
     com_login: z.boolean().default(true),
     dados_parceiro: z
       .object({
