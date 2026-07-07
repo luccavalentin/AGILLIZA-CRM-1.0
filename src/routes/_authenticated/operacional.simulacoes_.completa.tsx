@@ -792,6 +792,13 @@ function Pagina() {
                     estado_civil: "",
                     renda_total: 0,
                     possui_conjuge: false,
+                    compoe_renda: false,
+                    nome_conjuge: "",
+                    cpf_conjuge: "",
+                    renda_conjuge: 0,
+                    data_nascimento_conjuge: "",
+                    email_conjuge: "",
+                    celular_conjuge: "",
                   }));
                   toast.info("Titular removido. Pesquise outro cliente ou preencha manualmente.");
                 }}
