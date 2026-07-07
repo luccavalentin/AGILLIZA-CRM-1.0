@@ -1,0 +1,1 @@
+ALTER TYPE public.doc_categoria ADD VALUE IF NOT EXISTS 'vendedor_conjuge';
