@@ -51,6 +51,7 @@ import {
   alternarStatusPessoa,
   resetarSenhaPessoa,
   excluirPessoa,
+  habilitarLoginPessoa,
   type PessoaLista,
   type ResultadoCriarPessoa,
 } from "@/lib/admin/pessoas.functions";
