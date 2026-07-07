@@ -258,9 +258,37 @@ function Pagina() {
     });
   }
 
+  // Apenas o Bradesco opera pelo sistema PRICE.
+  function isBradesco(b: { codigo_banco?: string | null; nome_banco?: string | null }) {
+    return (
+      String(b.codigo_banco ?? "").replace(/^0+/, "") === "237" ||
+      (b.nome_banco ?? "").toLowerCase().includes("bradesco")
+    );
+  }
+
+  function setSistemaAmortizacao(v: string) {
+    if (v === "P") {
+      const bradesco = (bancos ?? []).filter(isBradesco).map((b) => b.id);
+      if (bradesco.length === 0) {
+        toast.error("O sistema PRICE está disponível apenas no Bradesco, que não está habilitado.");
+      } else {
+        toast.info("O sistema PRICE é oferecido somente pelo Bradesco. Apenas o Bradesco foi selecionado.");
+      }
+      setF((prev) => ({ ...prev, sistema_amortizacao: v, bancos_ids: bradesco }));
+      return;
+    }
+    set("sistema_amortizacao", v);
+  }
+
   function toggleBanco(id: string) {
     setF((prev) => {
+      const banco = (bancos ?? []).find((b) => b.id === id);
       const has = prev.bancos_ids.includes(id);
+      // No PRICE, só o Bradesco pode ser selecionado.
+      if (prev.sistema_amortizacao === "P" && !has && banco && !isBradesco(banco)) {
+        toast.info("No sistema PRICE, somente o Bradesco pode ser selecionado.");
+        return prev;
+      }
       return {
         ...prev,
         bancos_ids: has
@@ -269,6 +297,7 @@ function Pagina() {
       };
     });
   }
+
 
   const mostraConjuge = f.possui_conjuge || f.compoe_renda;
 
