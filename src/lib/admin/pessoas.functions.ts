@@ -273,7 +273,7 @@ export const atualizarSchema = z.object({
   nome: z.string().min(2, "Informe o nome completo."),
   telefone: z.string().optional().nullable(),
   nivel_acesso_id: z.string().uuid("Selecione um nível de acesso."),
-  tipo_pessoa: z.enum(["usuario", "imobiliaria", "corretor"]).optional(),
+  tipo_pessoa: z.string().min(1).optional(),
 });
 
 /** Atualiza dados básicos e o nível de acesso (papel/portal) de uma pessoa. */
