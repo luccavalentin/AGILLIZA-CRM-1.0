@@ -421,13 +421,22 @@ function Pagina() {
       setConcluidos(f.bancos_ids.length || 1);
 
       // Baixa o extrato imediatamente: detalhado (1 banco) ou comparativo (2+).
+      // Bancos que retornaram com erro são excluídos do PDF.
       let dadosSim: any = null;
       try {
         dadosSim = await obterSimulacao({ data: { id } });
-        baixarSimulacaoPDF({ simulacao: dadosSim.simulacao, bancos: dadosSim.bancos });
+        const bancosValidos = (dadosSim.bancos ?? []).filter(
+          (b: any) => (b.status_banco ?? b.n) !== "erro",
+        );
+        if (bancosValidos.length > 0) {
+          baixarSimulacaoPDF({ simulacao: dadosSim.simulacao, bancos: bancosValidos });
+        } else {
+          toast.error("Nenhum banco retornou simulação válida. O PDF não foi gerado.");
+        }
       } catch {
         /* download opcional — a simulação já foi criada */
       }
+
 
       router.navigate({ to: "/operacional/simulacoes/$id", params: { id } });
     } catch (e) {
