@@ -1,14 +1,15 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useRef, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
+import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, GripVertical } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { assertModuloPermitido } from "@/lib/route-guards";
-import { listarPainel } from "@/lib/crm/clientes.functions";
+import { listarPainel, definirEtapa, type PainelStage } from "@/lib/crm/clientes.functions";
 import { usePipelineRealtime } from "@/hooks/use-pipeline-realtime";
 
 export const Route = createFileRoute("/_authenticated/crm/painel")({
@@ -20,16 +21,64 @@ export const Route = createFileRoute("/_authenticated/crm/painel")({
   ),
 });
 
+interface Arrasto {
+  clienteId: string;
+  origem: string;
+}
+
 function Pagina() {
   usePipelineRealtime();
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const listar = useServerFn(listarPainel);
+  const mover = useServerFn(definirEtapa);
   const [desde, setDesde] = useState("");
   const [ate, setAte] = useState("");
+  const [arrasto, setArrasto] = useState<Arrasto | null>(null);
+  const [alvo, setAlvo] = useState<string | null>(null);
+  const arrastouRef = useRef(false);
+
+  const queryKey = ["crm-painel", desde, ate];
   const { data, isLoading } = useQuery({
-    queryKey: ["crm-painel", desde, ate],
+    queryKey,
     queryFn: () => listar({ data: { desde: desde || undefined, ate: ate || undefined } }),
   });
+
+  async function moverPara(codigoDestino: string) {
+    const info = arrasto;
+    setArrasto(null);
+    setAlvo(null);
+    if (!info || info.origem === codigoDestino) return;
+
+    // Atualização otimista: move o card na hora.
+    const anterior = qc.getQueryData<PainelStage[]>(queryKey);
+    let clienteMovido: PainelStage["clientes"][number] | undefined;
+    if (anterior) {
+      const novo = anterior.map((s) => {
+        if (s.codigo === info.origem) {
+          const c = s.clientes.find((x) => x.id === info.clienteId);
+          if (c) clienteMovido = c;
+          return { ...s, clientes: s.clientes.filter((x) => x.id !== info.clienteId) };
+        }
+        return s;
+      });
+      if (clienteMovido) {
+        const destino = novo.find((s) => s.codigo === codigoDestino);
+        if (destino) destino.clientes = [...destino.clientes, clienteMovido];
+      }
+      qc.setQueryData(queryKey, novo);
+    }
+
+    try {
+      await mover({ data: { cliente_id: info.clienteId, codigo_destino: codigoDestino } });
+      toast.success("Etapa atualizada.");
+    } catch (e) {
+      if (anterior) qc.setQueryData(queryKey, anterior);
+      toast.error(e instanceof Error ? e.message : "Falha ao mover o cliente.");
+    } finally {
+      qc.invalidateQueries({ queryKey: ["crm-painel"] });
+    }
+  }
 
   return (
     <div className="space-y-4 p-4 sm:p-6">
@@ -37,7 +86,8 @@ function Pagina() {
         <div>
           <h1 className="text-xl font-semibold text-foreground">Painel da esteira</h1>
           <p className="text-sm text-muted-foreground">
-            Visão das 12 etapas. A esteira avança automaticamente.
+            Visão das 12 etapas. A esteira avança automaticamente — ou arraste um cliente para
+            mover manualmente.
           </p>
         </div>
         <div className="flex flex-wrap items-end gap-3">
@@ -84,10 +134,27 @@ function Pagina() {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {data!.map((stage, idx) => {
             const temClientes = stage.clientes.length > 0;
+            const ehAlvo = alvo === stage.codigo && arrasto?.origem !== stage.codigo;
             return (
               <div
                 key={stage.codigo}
-                className="group relative flex min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-card shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-lg"
+                onDragOver={(e) => {
+                  if (!arrasto) return;
+                  e.preventDefault();
+                  if (alvo !== stage.codigo) setAlvo(stage.codigo);
+                }}
+                onDragLeave={(e) => {
+                  if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                    setAlvo((a) => (a === stage.codigo ? null : a));
+                  }
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  moverPara(stage.codigo);
+                }}
+                className={`group relative flex min-w-0 flex-col overflow-hidden rounded-xl border bg-card shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-lg ${
+                  ehAlvo ? "border-primary ring-2 ring-primary/40" : "border-border"
+                }`}
               >
                 <span
                   className={`absolute inset-x-0 top-0 h-1 origin-left transition-transform duration-300 ${
@@ -124,18 +191,40 @@ function Pagina() {
                   </div>
                   <div className="space-y-2">
                     {!temClientes ? (
-                      <p className="rounded-lg border border-dashed border-border px-3 py-5 text-center text-xs text-muted-foreground">
-                        Nenhum cliente
+                      <p
+                        className={`rounded-lg border border-dashed px-3 py-5 text-center text-xs transition-colors ${
+                          ehAlvo
+                            ? "border-primary/60 bg-primary/5 text-primary"
+                            : "border-border text-muted-foreground"
+                        }`}
+                      >
+                        {ehAlvo ? "Solte aqui" : "Nenhum cliente"}
                       </p>
                     ) : (
                       stage.clientes.map((c) => (
                         <button
                           key={c.id}
-                          onClick={() =>
-                            navigate({ to: "/crm/clientes/$id", params: { id: c.id } })
-                          }
-                          className="group/card flex w-full items-center gap-2.5 rounded-lg border border-border bg-background p-2.5 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/50 hover:bg-primary/5 hover:shadow-md active:translate-y-0 active:scale-[0.98]"
+                          draggable
+                          onDragStart={(e) => {
+                            arrastouRef.current = true;
+                            e.dataTransfer.effectAllowed = "move";
+                            e.dataTransfer.setData("text/plain", c.id);
+                            setArrasto({ clienteId: c.id, origem: stage.codigo });
+                          }}
+                          onDragEnd={() => {
+                            setArrasto(null);
+                            setAlvo(null);
+                            setTimeout(() => {
+                              arrastouRef.current = false;
+                            }, 0);
+                          }}
+                          onClick={() => {
+                            if (arrastouRef.current) return;
+                            navigate({ to: "/crm/clientes/$id", params: { id: c.id } });
+                          }}
+                          className="group/card flex w-full cursor-grab items-center gap-2 rounded-lg border border-border bg-background p-2.5 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/50 hover:bg-primary/5 hover:shadow-md active:translate-y-0 active:scale-[0.98] active:cursor-grabbing"
                         >
+                          <GripVertical className="size-4 shrink-0 text-muted-foreground/60" />
                           <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary transition-all duration-200 group-hover/card:scale-110 group-hover/card:bg-primary group-hover/card:text-primary-foreground">
                             {c.nome.trim().charAt(0).toUpperCase()}
                           </span>
@@ -161,4 +250,3 @@ function Pagina() {
     </div>
   );
 }
-
