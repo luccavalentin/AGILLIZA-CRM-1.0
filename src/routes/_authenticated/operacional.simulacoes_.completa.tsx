@@ -716,7 +716,15 @@ function Pagina() {
                 )}
               </p>
             )}
+            {financiamentoExcedido && (
+              <p className="text-xs font-medium text-destructive">
+                O banco financia no máximo {Math.round(ltvMax * 100)}% do imóvel (
+                {formatBRL(financiamentoMaximo)}). Informe uma entrada de pelo menos{" "}
+                {formatBRL(entradaMinima)}.
+              </p>
+            )}
           </Campo>
+
 
           <Campo label="Valor total do financiamento (R$)">
             <div className="flex h-10 items-center rounded-md border border-input bg-muted/40 px-3 text-sm font-semibold tabular-nums text-foreground">
