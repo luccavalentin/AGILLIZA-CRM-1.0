@@ -683,30 +683,15 @@ export function ClienteForm({
               onChange={(e) => set("data_nascimento", e.target.value)}
             />
           </div>
-          <div className="space-y-1.5">
-            <Label>Estado civil *</Label>
-            <Select value={v.estado_civil} onValueChange={(x) => set("estado_civil", x)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {ESTADOS_CIVIS.map((o) => (
-                  <SelectItem key={o.v} value={o.v}>
-                    {o.l}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          {(v.estado_civil === "casado" || v.estado_civil === "uniao_estavel") && (
+          {v.tipo_pessoa === "PF" && (
             <div className="space-y-1.5">
-              <Label>Regime de casamento</Label>
-              <Select value={v.regime_casamento} onValueChange={(x) => set("regime_casamento", x)}>
+              <Label>Estado civil *</Label>
+              <Select value={v.estado_civil} onValueChange={(x) => set("estado_civil", x)}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione" />
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {REGIMES.map((o) => (
+                  {ESTADOS_CIVIS.map((o) => (
                     <SelectItem key={o.v} value={o.v}>
                       {o.l}
                     </SelectItem>
@@ -715,6 +700,24 @@ export function ClienteForm({
               </Select>
             </div>
           )}
+          {v.tipo_pessoa === "PF" &&
+            (v.estado_civil === "casado" || v.estado_civil === "uniao_estavel") && (
+              <div className="space-y-1.5">
+                <Label>Regime de casamento</Label>
+                <Select value={v.regime_casamento} onValueChange={(x) => set("regime_casamento", x)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {REGIMES.map((o) => (
+                      <SelectItem key={o.v} value={o.v}>
+                        {o.l}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           <div className="space-y-1.5">
             <Label>Nome da mãe</Label>
             <Input value={v.mae} onChange={(e) => set("mae", e.target.value)} />
