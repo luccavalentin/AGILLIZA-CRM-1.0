@@ -4,8 +4,11 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const CHAVE_IA = "ia";
 
+export type ProvedorIA = "gemini" | "openai";
+
 export interface ConfigIA {
   id: string | null;
+  provedor: ProvedorIA;
   nome: string;
   base_url: string | null;
   modelo: string;
@@ -17,9 +20,29 @@ export interface ConfigIA {
   ultimo_ping_em: string | null;
 }
 
+/** Presets por provedor de IA (modelo, endpoint e nome do secret sugeridos). */
+export const PRESETS_IA: Record<
+  ProvedorIA,
+  { nome: string; modelo: string; base_url: string; secret_name: string }
+> = {
+  gemini: {
+    nome: "Google Gemini",
+    modelo: "gemini-2.5-flash",
+    base_url: "https://generativelanguage.googleapis.com",
+    secret_name: "GEMINI_API_KEY",
+  },
+  openai: {
+    nome: "OpenAI",
+    modelo: "gpt-4o-mini",
+    base_url: "https://api.openai.com/v1",
+    secret_name: "OPENAI_API_KEY",
+  },
+};
+
 const PROMPT_PADRAO =
   "Você é um assistente de extração de dados de documentos brasileiros (RG, CPF, CNH, comprovantes de renda e residência). " +
   "Extraia os campos solicitados em JSON, sem inventar valores. Deixe vazio o que não estiver legível.";
+
 
 async function correspondenteDoUsuario(
   supabase: { from: (t: string) => any },
@@ -41,16 +64,18 @@ export const getConfigIA = createServerFn({ method: "GET" })
     const corr = await correspondenteDoUsuario(supabase, userId);
     const vazio: ConfigIA = {
       id: null,
-      nome: "Provedor de IA",
-      base_url: null,
-      modelo: "gemini-2.5-flash",
+      provedor: "gemini",
+      nome: PRESETS_IA.gemini.nome,
+      base_url: PRESETS_IA.gemini.base_url,
+      modelo: PRESETS_IA.gemini.modelo,
       temperatura: 0.2,
       prompt_scan: PROMPT_PADRAO,
-      secret_names: ["GEMINI_API_KEY"],
+      secret_names: [PRESETS_IA.gemini.secret_name],
       ativo: true,
       status: null,
       ultimo_ping_em: null,
     };
+
     if (!corr) return vazio;
 
     const { data, error } = await supabase
@@ -63,23 +88,27 @@ export const getConfigIA = createServerFn({ method: "GET" })
     if (!data) return vazio;
 
     const cfg = (data.config ?? {}) as Record<string, unknown>;
+    const provedor: ProvedorIA = cfg.provedor === "openai" ? "openai" : "gemini";
     return {
       id: data.id,
-      nome: data.nome ?? "Provedor de IA",
+      provedor,
+      nome: data.nome ?? PRESETS_IA[provedor].nome,
       base_url: data.base_url,
-      modelo: typeof cfg.modelo === "string" ? cfg.modelo : "gemini-2.5-flash",
+      modelo: typeof cfg.modelo === "string" ? cfg.modelo : PRESETS_IA[provedor].modelo,
       temperatura: typeof cfg.temperatura === "number" ? cfg.temperatura : 0.2,
       prompt_scan: typeof cfg.prompt_scan === "string" ? cfg.prompt_scan : PROMPT_PADRAO,
       secret_names: Array.isArray(data.secret_names)
         ? (data.secret_names as string[])
-        : ["GEMINI_API_KEY"],
+        : [PRESETS_IA[provedor].secret_name],
       ativo: data.ativo,
       status: data.status,
       ultimo_ping_em: data.ultimo_ping_em,
     };
   });
 
+
 const configSchema = z.object({
+  provedor: z.enum(["gemini", "openai"]).default("gemini"),
   nome: z.string().trim().min(1).default("Provedor de IA"),
   base_url: z.string().trim().url().optional().nullable().or(z.literal("")),
   modelo: z.string().trim().min(1),
@@ -88,6 +117,7 @@ const configSchema = z.object({
   secret_names: z.array(z.string().trim().min(1)).default(["GEMINI_API_KEY"]),
   ativo: z.boolean().default(true),
 });
+
 
 /** Salva a configuração do provedor de IA (metadados, prompt e temperatura — nunca valores de secrets). */
 export const salvarConfigIA = createServerFn({ method: "POST" })
@@ -113,12 +143,14 @@ export const salvarConfigIA = createServerFn({ method: "POST" })
       secret_names: data.secret_names,
       ativo: data.ativo,
       config: {
+        provedor: data.provedor,
         modelo: data.modelo,
         temperatura: data.temperatura,
         prompt_scan: data.prompt_scan,
       },
       updated_at: new Date().toISOString(),
     };
+
 
     const q = existente
       ? supabase.from("admin_api_integrations").update(payload).eq("id", existente.id)

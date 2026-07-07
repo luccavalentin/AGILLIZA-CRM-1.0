@@ -10,8 +10,21 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { assertModuloPermitido } from "@/lib/route-guards";
-import { getConfigIA, salvarConfigIA } from "@/lib/admin/apis-ia.functions";
+import {
+  getConfigIA,
+  salvarConfigIA,
+  PRESETS_IA,
+  type ProvedorIA,
+} from "@/lib/admin/apis-ia.functions";
+
 
 export const Route = createFileRoute("/_authenticated/admin/apis-ia")({
   head: () => ({ meta: [{ title: "APIs de IA — Agilliza" }] }),
@@ -28,30 +41,43 @@ function Pagina() {
   const qc = useQueryClient();
   const q = useQuery({ queryKey: ["admin-config-ia"], queryFn: () => getConfigIA() });
 
-  const [nome, setNome] = useState("");
-  const [modelo, setModelo] = useState("gemini-2.5-flash");
+  const [provedor, setProvedor] = useState<ProvedorIA>("gemini");
+  const [nome, setNome] = useState(PRESETS_IA.gemini.nome);
+  const [modelo, setModelo] = useState(PRESETS_IA.gemini.modelo);
   const [temperatura, setTemperatura] = useState(0.2);
-  const [baseUrl, setBaseUrl] = useState("");
+  const [baseUrl, setBaseUrl] = useState(PRESETS_IA.gemini.base_url);
   const [prompt, setPrompt] = useState("");
-  const [secretName, setSecretName] = useState("GEMINI_API_KEY");
+  const [secretName, setSecretName] = useState(PRESETS_IA.gemini.secret_name);
   const [ativo, setAtivo] = useState(true);
 
   useEffect(() => {
     if (q.data) {
+      setProvedor(q.data.provedor);
       setNome(q.data.nome);
       setModelo(q.data.modelo);
       setTemperatura(q.data.temperatura);
       setBaseUrl(q.data.base_url ?? "");
       setPrompt(q.data.prompt_scan);
-      setSecretName(q.data.secret_names[0] ?? "GEMINI_API_KEY");
+      setSecretName(q.data.secret_names[0] ?? PRESETS_IA[q.data.provedor].secret_name);
       setAtivo(q.data.ativo);
     }
   }, [q.data]);
+
+  /** Ao trocar de provedor, aplica os presets (modelo, endpoint e secret sugeridos). */
+  function aplicarProvedor(p: ProvedorIA) {
+    const preset = PRESETS_IA[p];
+    setProvedor(p);
+    setNome(preset.nome);
+    setModelo(preset.modelo);
+    setBaseUrl(preset.base_url);
+    setSecretName(preset.secret_name);
+  }
 
   const salvar = useMutation({
     mutationFn: () =>
       salvarConfigIA({
         data: {
+          provedor,
           nome,
           modelo,
           temperatura,
@@ -67,6 +93,7 @@ function Pagina() {
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Falha ao salvar."),
   });
+
 
   if (q.isLoading) {
     return (
@@ -94,6 +121,25 @@ function Pagina() {
           <Label htmlFor="ativo">Integração de IA ativa</Label>
           <Switch id="ativo" checked={ativo} onCheckedChange={setAtivo} />
         </div>
+
+        <div className="space-y-1.5">
+          <Label>Provedor de IA</Label>
+          <Select value={provedor} onValueChange={(v) => aplicarProvedor(v as ProvedorIA)}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="gemini">Google Gemini</SelectItem>
+              <SelectItem value="openai">OpenAI</SelectItem>
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground">
+            Ao trocar o provedor, o modelo, o endpoint e o nome do secret sugeridos são
+            preenchidos automaticamente. Ajuste conforme necessário.
+          </p>
+        </div>
+
+
 
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-1.5">
