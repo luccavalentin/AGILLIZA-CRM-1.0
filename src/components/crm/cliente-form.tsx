@@ -77,7 +77,22 @@ const REGIMES = [
 ];
 
 // Sugestões pré-cadastradas para os campos de autocomplete (texto livre + seleção).
-const OPCOES_SEXO = ["Masculino", "Feminino"];
+const OPCOES_SEXO = [
+  { v: "M", l: "Masculino" },
+  { v: "F", l: "Feminino" },
+];
+
+/**
+ * Normaliza o sexo salvo para o valor canônico do <Select> ("M"/"F").
+ * O cadastro antigo e a sincronização de propostas podem gravar tanto o
+ * nome completo ("Masculino"/"Feminino") quanto a inicial ("M"/"F"); sem
+ * normalizar, o valor não bate com as opções e o campo aparece vazio.
+ */
+function normalizarSexo(valor?: string | null): string {
+  if (!valor) return "";
+  const c = valor.trim().charAt(0).toUpperCase();
+  return c === "M" || c === "F" ? c : "";
+}
 const OPCOES_NACIONALIDADE = [
   "Brasileira",
   "Portuguesa",
@@ -240,6 +255,8 @@ export function ClienteForm({
       const n = Number(base.renda_total_declarada);
       if (!isNaN(n)) base.renda_total_declarada = formatarMoedaBR(n);
     }
+    // Normaliza o sexo para o valor canônico ("M"/"F") aceito pelo <Select>.
+    base.sexo = normalizarSexo(base.sexo);
     return base;
   });
   const [end, setEnd] = useState({
@@ -537,8 +554,8 @@ export function ClienteForm({
               </SelectTrigger>
               <SelectContent>
                 {OPCOES_SEXO.map((o) => (
-                  <SelectItem key={o} value={o}>
-                    {o}
+                  <SelectItem key={o.v} value={o.v}>
+                    {o.l}
                   </SelectItem>
                 ))}
               </SelectContent>
