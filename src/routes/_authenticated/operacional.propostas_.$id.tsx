@@ -1286,6 +1286,7 @@ function TabDocumentos({ propostaId, documentos }: { propostaId: string; documen
   const [tipo, setTipo] = useState("RG");
   const [parte, setParte] = useState("comprador1");
   const [uploading, setUploading] = useState(false);
+  const [visualizando, setVisualizando] = useState<{ url: string; nome: string } | null>(null);
 
   async function onFile(file: File) {
     if (file.size > 10 * 1024 * 1024) {
