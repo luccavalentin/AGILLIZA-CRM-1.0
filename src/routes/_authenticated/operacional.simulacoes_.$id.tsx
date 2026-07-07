@@ -360,22 +360,22 @@ function Pagina() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Banco</TableHead>
-                      <TableHead>Situação</TableHead>
-                      <TableHead className="text-right">Parcela</TableHead>
-                      <TableHead className="text-right">Taxa a.a.</TableHead>
-                      <TableHead className="text-right">Prazo máx</TableHead>
-                      <TableHead className="text-right">Financ. máx</TableHead>
-                      <TableHead className="text-right">IOF</TableHead>
+                      <TableHead className="text-sm">Banco</TableHead>
+                      <TableHead className="text-sm">Situação</TableHead>
+                      <TableHead className="text-right text-sm">Parcela</TableHead>
+                      <TableHead className="text-right text-sm">Taxa a.a.</TableHead>
+                      <TableHead className="text-right text-sm">Prazo máx</TableHead>
+                      <TableHead className="text-right text-sm">Financ. máx</TableHead>
+                      <TableHead className="text-right text-sm">IOF</TableHead>
                       <TableHead></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {bancos.map((b: any) => (
                       <TableRow key={b.id}>
-                        <TableCell className="font-medium">
-                          <div className="flex items-center gap-2">
-                            <BancoLogo nome={b.nome_banco} size="sm" />
+                        <TableCell className="py-4 text-base font-semibold">
+                          <div className="flex items-center gap-2.5">
+                            <BancoLogo nome={b.nome_banco} size="lg" />
                             <span style={{ color: corDoBanco(b.nome_banco) }}>
                               {b.nome_banco}
                             </span>
@@ -387,22 +387,22 @@ function Pagina() {
                             <p className="mt-1 text-xs text-destructive">{b.mensagem_banco}</p>
                           )}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="py-4">
                           <BancoStatusBadge status={b.status_banco} />
                         </TableCell>
-                        <TableCell className="text-right tabular-nums">
+                        <TableCell className="py-4 text-right text-base font-semibold tabular-nums">
                           {formatBRL(b.valor_parcela)}
                         </TableCell>
-                        <TableCell className="text-right tabular-nums">
+                        <TableCell className="py-4 text-right text-base tabular-nums">
                           {b.taxa_juros_ano != null ? formatPercent(b.taxa_juros_ano / 100) : "—"}
                         </TableCell>
-                        <TableCell className="text-right tabular-nums">
+                        <TableCell className="py-4 text-right text-base tabular-nums">
                           {b.prazo_pagamento_max ? `${b.prazo_pagamento_max}m` : "—"}
                         </TableCell>
-                        <TableCell className="text-right tabular-nums">
+                        <TableCell className="py-4 text-right text-base tabular-nums">
                           {formatBRL(b.valor_financiamento_max)}
                         </TableCell>
-                        <TableCell className="text-right tabular-nums">
+                        <TableCell className="py-4 text-right text-base tabular-nums">
                           {formatBRL(b.valor_iof)}
                         </TableCell>
                         <TableCell className="text-right">
