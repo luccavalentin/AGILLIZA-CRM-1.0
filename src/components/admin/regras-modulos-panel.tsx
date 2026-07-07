@@ -265,6 +265,31 @@ export function RegrasModulosPanel() {
     setDirty(true);
   }
 
+  function alvoAtivo(modulo: string, alvo: EscopoAlvo): boolean {
+    return (alvos[modulo] ?? []).some(
+      (a) =>
+        a.alvo_tipo === alvo.alvo_tipo &&
+        (a.alvo_id ?? null) === (alvo.alvo_id ?? null) &&
+        (a.alvo_valor ?? null) === (alvo.alvo_valor ?? null),
+    );
+  }
+
+  function toggleAlvo(modulo: string, alvo: EscopoAlvo, ativo: boolean) {
+    setAlvos((prev) => {
+      const lista = prev[modulo] ?? [];
+      const filtrada = lista.filter(
+        (a) =>
+          !(
+            a.alvo_tipo === alvo.alvo_tipo &&
+            (a.alvo_id ?? null) === (alvo.alvo_id ?? null) &&
+            (a.alvo_valor ?? null) === (alvo.alvo_valor ?? null)
+          ),
+      );
+      return { ...prev, [modulo]: ativo ? [...filtrada, alvo] : filtrada };
+    });
+    setDirty(true);
+  }
+
   function abrirEditar(nivel?: NivelAcesso) {
     const alvo = nivel ?? selecionado;
     if (!alvo) return;
