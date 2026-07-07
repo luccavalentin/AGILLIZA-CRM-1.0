@@ -209,7 +209,11 @@ export function RegrasModulosPanel() {
     mutationFn: () => {
       if (!selecionado) throw new Error("Selecione um nível.");
       const permissoes = Object.entries(estado).map(([k, v]) => {
-        const [modulo, acao] = k.split(":");
+        // A ação pode conter ":" (ex.: "pii:view"), então separamos só no
+        // primeiro ":" — o módulo nunca contém ":".
+        const idx = k.indexOf(":");
+        const modulo = k.slice(0, idx);
+        const acao = k.slice(idx + 1);
         return { modulo, acao, permitido: v.permitido, escopo_dados: v.escopo };
       });
       // Só envia alvos dos módulos que estão em escopo personalizado.
