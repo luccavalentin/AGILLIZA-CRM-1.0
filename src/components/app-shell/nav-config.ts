@@ -255,23 +255,15 @@ export const navInterno: NavGroup[] = [
   },
   {
     id: "relatorios",
-    label: "Relatórios",
+    label: "Relatórios gerenciais",
     items: [
       {
-        label: "Relatórios",
+        label: "Relatórios gerenciais",
         icon: BarChart3,
-        to: "/relatorios/painel-geral",
+        to: "/relatorios/gerencial",
         perm: { modulo: "relatorios.geral" },
         children: [
-          { label: "Painel geral", icon: LayoutDashboard, to: "/relatorios/painel-geral" },
-          { label: "Comercial", icon: LineChart, to: "/relatorios/comerciais" },
-          { label: "Simulações", icon: Calculator, to: "/relatorios/simulacoes" },
-          { label: "Propostas", icon: FileText, to: "/relatorios/propostas" },
-          { label: "Clientes", icon: Users, to: "/relatorios/clientes" },
-          { label: "Demandas", icon: Inbox, to: "/relatorios/demandas" },
-          { label: "Tarefas", icon: ListChecks, to: "/relatorios/tarefas" },
-          { label: "Financeiro", icon: Wallet, to: "/relatorios/financeiros" },
-          { label: "Comissões", icon: Percent, to: "/relatorios/comissoes" },
+          { label: "Relatório gerencial", icon: LayoutDashboard, to: "/relatorios/gerencial" },
           { label: "Personalizados", icon: SlidersHorizontal, to: "/relatorios/personalizados" },
           { label: "Exportações", icon: FolderOpen, to: "/relatorios/exportacoes" },
         ],
