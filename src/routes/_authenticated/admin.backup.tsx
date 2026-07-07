@@ -144,7 +144,8 @@ function Pagina() {
           <div>
             <h1 className="text-xl font-semibold">Backup</h1>
             <p className="text-sm text-muted-foreground">
-              Baixe todos os dados do sistema em Excel ou registre snapshots lógicos.
+              Baixe os dados em Excel, todos os documentos em ZIP organizado por pastas, ou
+              registre snapshots lógicos.
             </p>
           </div>
         </div>
