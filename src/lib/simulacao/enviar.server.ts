@@ -78,6 +78,32 @@ export async function enviarSimulacaoImpl({
 
   const correspondente_id = sim.correspondente_id;
 
+  // ===== Financiar despesas =====
+  // A API HomeFin espera a flag como string "S"/"N" (nunca booleano) e, quando
+  // marcada, os valores de despesas e o total financiado (financiamento + despesas).
+  const financiarDespesas = Boolean(sim.fg_financiar_despesas);
+  const fgFinanciarDespesas = financiarDespesas ? "S" : "N";
+  const valorDespesasFinanciadas = financiarDespesas
+    ? num(sim.valor_despesas_financiadas)
+    : 0;
+  const valorFinanciamentoBase = num(sim.valor_financiamento);
+  const valorTotalFinanciamento = valorFinanciamentoBase + valorDespesasFinanciadas;
+
+  // Regra de bloqueio: não enviar ao banco se "financiar despesas" está marcado
+  // mas os valores não foram informados/calculados corretamente.
+  if (financiarDespesas) {
+    if (!(valorDespesasFinanciadas > 0)) {
+      throw new Error(
+        'Financiar despesas está marcado, mas o valor das despesas a financiar está vazio ou zerado.',
+      );
+    }
+    if (!(valorTotalFinanciamento > valorFinanciamentoBase)) {
+      throw new Error(
+        'Valor total do financiamento inválido para simulação com despesas financiadas.',
+      );
+    }
+  }
+
   // Rede de segurança do PRAZO por idade: mesmo que a simulação tenha sido
   // criada por outra origem (API, importação), ajustamos o prazo pela regra
   // mais restritiva (idade "corrida" do proponente mais velho) para que TODAS
