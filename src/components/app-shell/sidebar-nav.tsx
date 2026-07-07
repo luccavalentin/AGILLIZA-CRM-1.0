@@ -9,9 +9,36 @@ function useActivePath() {
   return useRouterState({ select: (s) => s.location.pathname });
 }
 
-function itemAtivo(item: NavItem, pathname: string): boolean {
-  if (item.to) return pathname === item.to || pathname.startsWith(item.to + "/");
-  if (item.children) return item.children.some((c) => itemAtivo(c, pathname));
+/** Coleta todos os destinos (`to`) de folhas da navegação. */
+function coletarDestinos(nav: NavGroup[]): string[] {
+  const out: string[] = [];
+  const visit = (item: NavItem) => {
+    if (item.children && item.children.length > 0) item.children.forEach(visit);
+    else if (item.to) out.push(item.to);
+  };
+  nav.forEach((g) => g.items.forEach(visit));
+  return out;
+}
+
+/**
+ * Determina o único destino "vencedor" para o pathname atual: a rota mais
+ * específica (mais longa) que casa exatamente ou como prefixo. Evita que itens
+ * irmãos cujo `to` é prefixo de outro (ex.: /simulacoes e /simulacoes/nova)
+ * fiquem ativos ao mesmo tempo.
+ */
+function melhorDestino(nav: NavGroup[], pathname: string): string | null {
+  let melhor: string | null = null;
+  for (const to of coletarDestinos(nav)) {
+    if (pathname === to || pathname.startsWith(to + "/")) {
+      if (!melhor || to.length > melhor.length) melhor = to;
+    }
+  }
+  return melhor;
+}
+
+function itemAtivo(item: NavItem, melhor: string | null): boolean {
+  if (item.to) return item.to === melhor;
+  if (item.children) return item.children.some((c) => itemAtivo(c, melhor));
   return false;
 }
 
