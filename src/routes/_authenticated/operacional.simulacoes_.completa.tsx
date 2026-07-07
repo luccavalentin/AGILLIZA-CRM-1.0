@@ -111,6 +111,10 @@ function Pagina() {
   const [concluidos, setConcluidos] = useState(0);
   const [erros, setErros] = useState<Record<string, string>>({});
   const [entradaTocada, setEntradaTocada] = useState(false);
+  const [confirmRenda, setConfirmRenda] = useState<null | {
+    rendaMinima: number;
+    rendaInformada: number;
+  }>(null);
 
   const { data: bancos } = useQuery({
     queryKey: ["bancos-ativos"],
