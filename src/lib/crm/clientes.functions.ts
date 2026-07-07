@@ -720,6 +720,7 @@ export const anexarDocumento = createServerFn({ method: "POST" })
       .object({
         cliente_id: z.string().uuid(),
         categoria: z.enum(["comprador", "conjuge", "vendedor", "vendedor_conjuge", "imovel", "outros"]),
+        pasta_id: z.string().uuid().optional().nullable(),
         tipo_documento: z.string().min(1),
         nome_arquivo: z.string().min(1),
         storage_path: z.string().min(1),
@@ -739,6 +740,7 @@ export const anexarDocumento = createServerFn({ method: "POST" })
     const { error } = await supabase.from("cliente_documentos").insert({
       cliente_id: data.cliente_id,
       categoria: data.categoria,
+      pasta_id: data.pasta_id ?? null,
       tipo_documento: data.tipo_documento,
       nome_arquivo: data.nome_arquivo,
       storage_path: data.storage_path,
@@ -754,6 +756,17 @@ export const anexarDocumento = createServerFn({ method: "POST" })
       tipo: "documento",
       descricao: `Documento anexado: ${data.nome_arquivo}`,
       ator_id: userId,
+    });
+    const { registrarAuditoria } = await import("@/lib/admin/audit.server");
+    await registrarAuditoria({
+      supabase,
+      userId,
+      correspondenteId: null,
+      acao: "documento.anexar",
+      entidade: "cliente_documentos",
+      entidadeId: data.cliente_id,
+      descricao: `anexou o documento "${data.nome_arquivo}"`,
+      payloadNovo: { nome_arquivo: data.nome_arquivo, tipo: data.tipo_documento },
     });
     return { ok: true };
   });
