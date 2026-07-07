@@ -518,9 +518,8 @@ export function RegrasModulosPanel() {
                   </p>
                 ) : selecionado.is_padrao ? (
                   <p className="text-sm text-muted-foreground">
-                    Este é um nível padrão do sistema. Ao renomear ou salvar permissões, criaremos
-                    automaticamente uma cópia editável — que você poderá ajustar e excluir
-                    livremente.
+                    Este é um nível padrão. Você pode renomeá-lo e ajustar as permissões
+                    diretamente — as alterações são aplicadas a este mesmo nível.
                   </p>
                 ) : null}
 
