@@ -104,6 +104,7 @@ function Pagina() {
   const [excluindo, setExcluindo] = useState<ArquivoNo | null>(null);
   const [movendo, setMovendo] = useState<ArquivoNo | null>(null);
   const [dragging, setDragging] = useState(false);
+  const [visualizando, setVisualizando] = useState<{ url: string; nome: string } | null>(null);
 
   const inputArquivos = useRef<HTMLInputElement>(null);
   const inputPasta = useRef<HTMLInputElement>(null);
