@@ -981,6 +981,7 @@ export const definirAcessoPortal = createServerFn({ method: "POST" })
 export interface VinculoParceiro {
   id: string;
   parceiro_id: string;
+  tipo_vinculo: string;
   nome: string | null;
   email: string | null;
   created_at: string;
