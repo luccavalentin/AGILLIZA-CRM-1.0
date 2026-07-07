@@ -559,7 +559,7 @@ export function RegrasModulosPanel() {
                                 );
                               })}
                             </div>
-                            <div className="w-full lg:w-40">
+                            <div className="w-full lg:w-52">
                               <Select
                                 value={escopoAtual}
                                 disabled={!editavel}
@@ -576,6 +576,18 @@ export function RegrasModulosPanel() {
                                   ))}
                                 </SelectContent>
                               </Select>
+                              {escopoAtual === "personalizado" ? (
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  disabled={!editavel}
+                                  className="mt-2 w-full"
+                                  onClick={() => setAlvosModulo(mod.modulo)}
+                                >
+                                  Escolher quem ({(alvos[mod.modulo] ?? []).length})
+                                </Button>
+                              ) : null}
                             </div>
                           </div>
                         );
