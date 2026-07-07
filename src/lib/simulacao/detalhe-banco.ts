@@ -193,7 +193,9 @@ export function extrairDetalheBanco(raw: unknown): DetalheBanco | null {
   // Se o banco não devolveu o plano completo, calculamos localmente pelo sistema de amortização.
   if (parcelas.length <= 2 && valorFin && prazo && taxaMes) {
     const dataInicial =
-      (desc.firstInstallment?.dueDate as string) ?? (brutas[0]?.dueDate as string) ?? null;
+      (desc.firstInstallment?.dueDate as string) ??
+      (brutas[0]?.dueDate as string) ??
+      primeiroVencimentoPadrao();
     parcelas = calcularPlano(valorFin, prazo, taxaMes, sistema, dataInicial);
     estimadas = parcelas.length > 0;
   }
