@@ -216,7 +216,17 @@ export function RegrasModulosPanel() {
         const [modulo, acao] = k.split(":");
         return { modulo, acao, permitido: v.permitido, escopo_dados: v.escopo };
       });
-      return salvar({ data: { nivel_acesso_id: selecionado.id, permissoes } });
+      // Só envia alvos dos módulos que estão em escopo personalizado.
+      const modulosPersonalizados = new Set(
+        permissoes.filter((p) => p.escopo_dados === "personalizado").map((p) => p.modulo),
+      );
+      const alvosFiltrados: Record<string, EscopoAlvo[]> = {};
+      Object.entries(alvos).forEach(([modulo, lista]) => {
+        if (modulosPersonalizados.has(modulo) && lista.length) alvosFiltrados[modulo] = lista;
+      });
+      return salvar({
+        data: { nivel_acesso_id: selecionado.id, permissoes, alvos: alvosFiltrados },
+      });
     },
     onSuccess: async (r: any) => {
       toast.success(
