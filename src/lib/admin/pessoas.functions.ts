@@ -223,10 +223,11 @@ export const criarPessoaComAcesso = createServerFn({ method: "POST" })
     await supabaseAdmin
       .from("profiles")
       .update({
-        tipo_pessoa: data.tipo_pessoa,
+        tipo_pessoa: tipoPrimario,
+        tipos_pessoa: tiposList,
         login_habilitado: comLogin,
         email: comLogin ? emailReal : null,
-      })
+      } as never)
       .eq("id", created.user.id);
 
     // Auditoria (o trigger já criou profiles + user_roles).
