@@ -62,6 +62,7 @@ import {
   listarPastas,
   type ArquivoNo,
 } from "@/lib/documentos/arquivos.functions";
+import { VisualizadorArquivo } from "@/components/comum/visualizador-arquivo";
 
 export const Route = createFileRoute("/_authenticated/documentos")({
   head: () => ({ meta: [{ title: "Arquivos — Agilliza" }] }),
