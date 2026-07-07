@@ -593,8 +593,8 @@ function rendaNecessaria(s: any, bancos: any[]): number | null {
     if (!d) continue;
     const av = avaliarRendaMinima({
       valor_financiamento:
-        d.financiamentoTotal ?? d.valorFinanciamento ?? Number(s.valor_financiamento) || 0,
-      prazo_meses: d.prazoMeses ?? Number(s.prazo) || 0,
+        d.financiamentoTotal ?? d.valorFinanciamento ?? (Number(s.valor_financiamento) || 0),
+      prazo_meses: d.prazoMeses ?? (Number(s.prazo) || 0),
       taxa_ano: d.taxaJurosAno ?? 0,
       sistema: normalizarSistemaAmortizacao(
         d.sistemaAmortizacao,
