@@ -251,16 +251,37 @@ function drawInfoFinanciamento(
   return y + linhas * (cardH + gap) + 8;
 }
 
-/** Faixa com o nome do banco (discrimina o banco em cada folha). */
+/** Faixa com o nome do banco centralizado, na cor institucional do banco e com sua logo. */
 function drawFaixaBanco(doc: jsPDF, pageW: number, nomeBanco: string, y: number): number {
   const w = pageW - MARGIN * 2;
-  doc.setFillColor(AZUL);
-  doc.roundedRect(MARGIN, y, w, 22, 3, 3, "F");
-  doc.setTextColor("#FFFFFF");
+  const h = 30;
+  const brand = resolveBancoBrand(nomeBanco);
+  const cor = brand?.cor ?? AZUL;
+
+  doc.setFillColor(cor);
+  doc.roundedRect(MARGIN, y, w, h, 3, 3, "F");
+
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(11);
-  doc.text(nomeBanco, MARGIN + 12, y + 15);
-  return y + 22 + 12;
+  doc.setFontSize(13);
+  const textW = doc.getTextWidth(nomeBanco);
+
+  const logoH = 18;
+  const logoW = brand ? logoH * brand.ratio : 0;
+  const gap = brand ? 10 : 0;
+  const groupW = logoW + gap + textW;
+  const startX = MARGIN + (w - groupW) / 2;
+  const midY = y + h / 2;
+
+  if (brand) {
+    try {
+      doc.addImage(brand.logo, "PNG", startX, midY - logoH / 2, logoW, logoH);
+    } catch {
+      /* fallback silencioso */
+    }
+  }
+  doc.setTextColor("#FFFFFF");
+  doc.text(nomeBanco, startX + logoW + gap, midY + 4.5);
+  return y + h + 12;
 }
 
 function drawDisclaimer(doc: jsPDF, pageW: number, y: number) {
