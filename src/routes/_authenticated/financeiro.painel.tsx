@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { TrendingUp, Wallet, LineChart as LineChartIcon, AlertTriangle } from "lucide-react";
 import {
