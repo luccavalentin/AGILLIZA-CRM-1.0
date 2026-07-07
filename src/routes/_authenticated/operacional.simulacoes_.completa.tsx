@@ -665,7 +665,7 @@ function Pagina() {
           >
             <Select
               value={f.sistema_amortizacao}
-              onValueChange={(v) => set("sistema_amortizacao", v)}
+              onValueChange={setSistemaAmortizacao}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Selecione" />
