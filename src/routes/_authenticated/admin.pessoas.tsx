@@ -169,7 +169,8 @@ function PessoasPage() {
         <Tabs value={aba} onValueChange={(v) => setAba(v as typeof aba)}>
           <TabsList className="mb-6">
             <TabsTrigger value="pessoas">Pessoas</TabsTrigger>
-            <TabsTrigger value="regras">Regras & Módulos</TabsTrigger>
+            <TabsTrigger value="regras">Papéis & Permissões</TabsTrigger>
+            <TabsTrigger value="tipos">Tipos de Pessoa</TabsTrigger>
           </TabsList>
 
           <TabsContent value="pessoas">
