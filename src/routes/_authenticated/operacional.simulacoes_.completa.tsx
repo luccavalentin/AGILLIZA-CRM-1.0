@@ -387,6 +387,11 @@ function Pagina() {
   }
 
   async function executarEnvio() {
+    const parsed = completaSchema.safeParse({ ...f, id_operacao_homefin: idOperacao });
+    if (!parsed.success) {
+      toast.error("Revise os campos destacados.");
+      return;
+    }
     setErros({});
     setConcluidos(0);
     setEnviando(true);
