@@ -1097,3 +1097,50 @@ export const getClienteNegocios = createServerFn({ method: "GET" })
       propostas: (props ?? []) as ClienteNegocios["propostas"],
     };
   });
+
+/** Dados do cadastro usados para pré-marcar o checklist de documentação. */
+export const getChecklistDados = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ cliente_id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { data: cli, error } = await supabase
+      .from("clientes")
+      .select(
+        "tipo_pessoa, estado_civil, profissao, email, telefone_celular, conjuge_nome, conjuge_profissao, conjuge_email, conjuge_celular, agencia, conta_corrente, banco_conta, utiliza_fgts, documentos_checklist",
+      )
+      .eq("id", data.cliente_id)
+      .maybeSingle();
+    if (error) throw error;
+    const { data: vendedores } = await supabase
+      .from("cliente_vendedores")
+      .select(
+        "id, tipo_pessoa, nome, estado_civil, profissao, email, telefone_celular, banco_conta, agencia, conta_corrente",
+      )
+      .eq("cliente_id", data.cliente_id);
+    return { cliente: cli ?? null, vendedores: vendedores ?? [] };
+  });
+
+/** Persiste o estado manual do checklist e (opcionalmente) o uso de FGTS. */
+export const salvarChecklist = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        cliente_id: z.string().uuid(),
+        checklist: z.record(z.string(), z.any()),
+        utiliza_fgts: z.boolean().optional(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }): Promise<{ ok: true }> => {
+    const { supabase, userId } = context;
+    if (!(await podeAcao(supabase, userId, "crm.clientes", "edit"))) {
+      throw new Error("Você não tem permissão para editar o checklist.");
+    }
+    const patch: Record<string, unknown> = { documentos_checklist: data.checklist };
+    if (typeof data.utiliza_fgts === "boolean") patch.utiliza_fgts = data.utiliza_fgts;
+    const { error } = await supabase.from("clientes").update(patch as never).eq("id", data.cliente_id);
+    if (error) throw error;
+    return { ok: true };
+  });

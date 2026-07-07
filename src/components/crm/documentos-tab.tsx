@@ -42,6 +42,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { ToneBadge } from "@/components/crm/tone-badge";
+import { DocumentosChecklist } from "@/components/crm/documentos-checklist";
 import { supabase } from "@/integrations/supabase/client";
 import {
   listarDocumentos,
@@ -99,6 +100,7 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
   const editar = useServerFn(editarDocumento);
   const excluir = useServerFn(excluirDocumento);
 
+  const [aba, setAba] = useState<"documentos" | "checklist">("documentos");
   const [pastaId, setPastaId] = useState<string | null>(null);
   const [categoria, setCategoria] = useState<Categoria>("comprador");
   const [tipo, setTipo] = useState("");
@@ -228,30 +230,70 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
     }
   }
 
+  const abaBar = (
+    <div className="inline-flex rounded-lg border border-border p-1">
+      <button
+        type="button"
+        onClick={() => setAba("documentos")}
+        className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+          aba === "documentos" ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+        }`}
+      >
+        Pastas de documentos
+      </button>
+      <button
+        type="button"
+        onClick={() => setAba("checklist")}
+        className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+          aba === "checklist" ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+        }`}
+      >
+        Checklist
+      </button>
+    </div>
+  );
+
+  if (aba === "checklist") {
+    return (
+      <div className="space-y-4">
+        {abaBar}
+        <DocumentosChecklist clienteId={clienteId} />
+      </div>
+    );
+  }
+
   if (isLoading) {
-    return <p className="text-sm text-muted-foreground">Carregando…</p>;
+    return (
+      <div className="space-y-4">
+        {abaBar}
+        <p className="text-sm text-muted-foreground">Carregando…</p>
+      </div>
+    );
   }
 
   // Visão de pastas
   if (!pasta) {
     return (
-      <div className="grid gap-3 sm:grid-cols-2">
-        {PASTAS.map((p) => (
-          <button
-            key={p.id}
-            type="button"
-            onClick={() => abrirPasta(p)}
-            className="flex items-center gap-3 rounded-lg border border-border bg-card p-4 text-left transition-colors hover:border-primary/50 hover:bg-accent"
-          >
-            <Folder className="size-8 shrink-0 text-primary" />
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium text-foreground">{p.nome}</p>
-              <p className="text-xs text-muted-foreground">
-                {contagem[p.id] ?? 0} documento(s)
-              </p>
-            </div>
-          </button>
-        ))}
+      <div className="space-y-4">
+        {abaBar}
+        <div className="grid gap-3 sm:grid-cols-2">
+          {PASTAS.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => abrirPasta(p)}
+              className="flex items-center gap-3 rounded-lg border border-border bg-card p-4 text-left transition-colors hover:border-primary/50 hover:bg-accent"
+            >
+              <Folder className="size-8 shrink-0 text-primary" />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium text-foreground">{p.nome}</p>
+                <p className="text-xs text-muted-foreground">
+                  {contagem[p.id] ?? 0} documento(s)
+                </p>
+              </div>
+            </button>
+          ))}
+        </div>
       </div>
     );
   }

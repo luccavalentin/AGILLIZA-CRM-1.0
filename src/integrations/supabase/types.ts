@@ -1024,6 +1024,7 @@ export type Database = {
           digito_conta: string | null
           documento: string
           documento_secundario: string | null
+          documentos_checklist: Json
           email: string | null
           empresa: string | null
           estado_civil:
@@ -1089,6 +1090,7 @@ export type Database = {
           digito_conta?: string | null
           documento: string
           documento_secundario?: string | null
+          documentos_checklist?: Json
           email?: string | null
           empresa?: string | null
           estado_civil?:
@@ -1154,6 +1156,7 @@ export type Database = {
           digito_conta?: string | null
           documento?: string
           documento_secundario?: string | null
+          documentos_checklist?: Json
           email?: string | null
           empresa?: string | null
           estado_civil?:
