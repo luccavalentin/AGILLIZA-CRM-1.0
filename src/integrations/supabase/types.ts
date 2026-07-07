@@ -4488,6 +4488,42 @@ export type Database = {
           },
         ]
       }
+      sla_catalogo_itens: {
+        Row: {
+          ativo: boolean
+          categoria: string
+          correspondente_id: string
+          created_at: string
+          id: string
+          label: string
+          ordem: number
+          updated_at: string
+          valor: string
+        }
+        Insert: {
+          ativo?: boolean
+          categoria: string
+          correspondente_id: string
+          created_at?: string
+          id?: string
+          label: string
+          ordem?: number
+          updated_at?: string
+          valor: string
+        }
+        Update: {
+          ativo?: boolean
+          categoria?: string
+          correspondente_id?: string
+          created_at?: string
+          id?: string
+          label?: string
+          ordem?: number
+          updated_at?: string
+          valor?: string
+        }
+        Relationships: []
+      }
       sla_configuracoes: {
         Row: {
           ativo: boolean
@@ -4496,7 +4532,7 @@ export type Database = {
           created_at: string
           horas_uteis: number
           id: string
-          prioridade: Database["public"]["Enums"]["prioridade_op"]
+          prioridade: string
           tipo: string
           updated_at: string
         }
@@ -4507,7 +4543,7 @@ export type Database = {
           created_at?: string
           horas_uteis?: number
           id?: string
-          prioridade?: Database["public"]["Enums"]["prioridade_op"]
+          prioridade?: string
           tipo: string
           updated_at?: string
         }
@@ -4518,7 +4554,7 @@ export type Database = {
           created_at?: string
           horas_uteis?: number
           id?: string
-          prioridade?: Database["public"]["Enums"]["prioridade_op"]
+          prioridade?: string
           tipo?: string
           updated_at?: string
         }
