@@ -246,8 +246,15 @@ export async function enviarSimulacaoImpl({
           prazo: num(sim.prazo),
           codigoSistemaAmortizacaoBanco: { id: sim.sistema_amortizacao ?? "S" },
           banco: { idBanco: b.homefin_id_banco },
+          fgFinanciarDespesas,
+          valorDespesasFinanciadas,
+          valorTotalFinanciamento,
           fgAutorizacaoDados: true,
         };
+        console.log(
+          "Payload enviado para criar simulação HomeFin:",
+          JSON.stringify(simPayload),
+        );
         const simResp = await chamarIntegracao<any>(
           `/oportunidade/${idOportunidade}/simulacao`,
           "POST",
@@ -256,6 +263,51 @@ export async function enviarSimulacaoImpl({
         );
         const idSimulacao = String(simResp?.idSimulacao ?? "");
 
+        // PUT completo da simulação: garante que a HomeFin persista os campos de
+        // despesas financiadas ANTES da integração bancária. Enviamos o payload
+        // completo (não parcial) para não apagar/ignorar demais campos.
+        const putPayload = {
+          valorImovel: num(sim.valor_imovel),
+          valorFinanciamento: num(sim.valor_financiamento),
+          prazo: num(sim.prazo),
+          codigoSistemaAmortizacaoBanco: { id: sim.sistema_amortizacao ?? "S" },
+          valorDespesasFinanciadas,
+          valorTotalFinanciamento,
+          fgFinanciarDespesas,
+          fgAutorizacaoDados: true,
+        };
+        console.log(
+          "Payload enviado para atualizar simulação HomeFin:",
+          JSON.stringify(putPayload),
+          "fgFinanciarDespesas:",
+          fgFinanciarDespesas,
+          "valorDespesasFinanciadas:",
+          valorDespesasFinanciadas,
+          "valorTotalFinanciamento:",
+          valorTotalFinanciamento,
+        );
+        const putResp = await chamarIntegracao<any>(
+          `/oportunidade/${idOportunidade}/simulacao/${idSimulacao}`,
+          "PUT",
+          putPayload,
+          ctx,
+        );
+        console.log(
+          "Retorno atualização simulação HomeFin:",
+          JSON.stringify(putResp),
+        );
+
+        // Confirma que a HomeFin persistiu a flag antes de integrar ao banco.
+        if (financiarDespesas) {
+          const persistido =
+            putResp?.simulacao?.fgFinanciarDespesas ?? putResp?.fgFinanciarDespesas;
+          if (persistido != null && String(persistido).toUpperCase() !== "S") {
+            throw new Error(
+              "A integração não confirmou o financiamento de despesas na simulação. Envio ao banco cancelado.",
+            );
+          }
+        }
+
         // A resposta da integração traz os valores retornados pelo banco
         const integ = await chamarIntegracao<any>(
           `/oportunidade/${idOportunidade}/simulacao/${idSimulacao}/integracao`,
@@ -263,6 +315,7 @@ export async function enviarSimulacaoImpl({
           {},
           ctx,
         );
+
 
         const dados = integ ?? simResp;
 
