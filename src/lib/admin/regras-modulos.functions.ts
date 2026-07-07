@@ -736,10 +736,10 @@ export const salvarPermissoes = createServerFn({ method: "POST" })
     let clonado = false;
     const { data: nivel } = await supabase
       .from("access_levels")
-      .select("id, is_padrao")
+      .select("id, is_padrao, correspondente_id")
       .eq("id", data.nivel_acesso_id)
       .maybeSingle();
-    if (nivel?.is_padrao) {
+    if (nivel?.is_padrao && !nivel.correspondente_id) {
       const { data: corresp } = await supabase.rpc("correspondente_do_usuario", {
         _user_id: userId,
       });
