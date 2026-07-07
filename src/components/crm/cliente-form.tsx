@@ -23,6 +23,8 @@ import {
   atualizarCliente,
   salvarEndereco,
   definirAcessoPortal,
+  listarParceirosDisponiveis,
+  vincularParceiro,
 } from "@/lib/crm/clientes.functions";
 import { validarDocumento, soDigitos } from "@/lib/crm/documento";
 
