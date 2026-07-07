@@ -68,6 +68,7 @@ interface SidebarProps {
 /** Sidebar completa (desktop expandida / drawer mobile). */
 export function SidebarNav({ nav, onNavigate }: SidebarProps) {
   const pathname = useActivePath();
+  const pasta = useActivePasta();
   const melhor = melhorDestino(nav, pathname);
 
   return (
@@ -83,13 +84,14 @@ export function SidebarNav({ nav, onNavigate }: SidebarProps) {
                 key={item.label}
                 item={item}
                 melhor={melhor}
+                pasta={pasta}
                 onNavigate={onNavigate}
               />
             ) : (
               <SidebarLink
                 key={item.label}
                 item={item}
-                active={itemAtivo(item, melhor)}
+                active={itemAtivo(item, melhor, pasta)}
                 onNavigate={onNavigate}
               />
             ),
