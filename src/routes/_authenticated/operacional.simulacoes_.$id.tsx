@@ -93,6 +93,32 @@ function Pagina() {
     };
   }, [id, qc]);
 
+  // Baixa automaticamente o PDF detalhado assim que o retorno da simulação
+  // chega (pelo menos um banco com status "simulada"). Só dispara uma vez por
+  // simulação para não rebaixar a cada polling/atualização.
+  const pdfBaixadoRef = useRef(false);
+  useEffect(() => {
+    if (!data) return;
+    if (pdfBaixadoRef.current) return;
+    const chaveSessao = `sim_pdf_auto_${id}`;
+    if (sessionStorage.getItem(chaveSessao)) {
+      pdfBaixadoRef.current = true;
+      return;
+    }
+    const temRetorno = (data.bancos ?? []).some(
+      (b: any) => b.status_banco === "simulada" && b.valor_parcela != null,
+    );
+    if (!temRetorno) return;
+    pdfBaixadoRef.current = true;
+    sessionStorage.setItem(chaveSessao, "1");
+    try {
+      baixarSimulacaoDetalhadaPDF({ simulacao: data.simulacao, bancos: data.bancos });
+      toast.success("PDF detalhado baixado automaticamente.");
+    } catch {
+      toast.error("Não foi possível baixar o PDF detalhado automaticamente.");
+    }
+  }, [data, id]);
+
   async function reenviar() {
     try {
       await enviarSimulacaoBanco({ data: { simulacao_id: id } });
