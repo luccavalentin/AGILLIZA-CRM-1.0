@@ -1106,6 +1106,19 @@ export type Database = {
           fg_autorizacao_dados: boolean
           foto_url: string | null
           id: string
+          imovel_bairro: string | null
+          imovel_cep: string | null
+          imovel_cidade: string | null
+          imovel_complemento: string | null
+          imovel_logradouro: string | null
+          imovel_numero: string | null
+          imovel_situacao: string | null
+          imovel_tipo: string | null
+          imovel_uf: string | null
+          imovel_uso: string | null
+          imovel_valor: number | null
+          iq_comentario: string | null
+          iq_nome: string | null
           lgpd_aceite_em: string | null
           lgpd_aceite_ip: string | null
           lgpd_aceite_versao: string | null
@@ -1176,6 +1189,19 @@ export type Database = {
           fg_autorizacao_dados?: boolean
           foto_url?: string | null
           id?: string
+          imovel_bairro?: string | null
+          imovel_cep?: string | null
+          imovel_cidade?: string | null
+          imovel_complemento?: string | null
+          imovel_logradouro?: string | null
+          imovel_numero?: string | null
+          imovel_situacao?: string | null
+          imovel_tipo?: string | null
+          imovel_uf?: string | null
+          imovel_uso?: string | null
+          imovel_valor?: number | null
+          iq_comentario?: string | null
+          iq_nome?: string | null
           lgpd_aceite_em?: string | null
           lgpd_aceite_ip?: string | null
           lgpd_aceite_versao?: string | null
@@ -1246,6 +1272,19 @@ export type Database = {
           fg_autorizacao_dados?: boolean
           foto_url?: string | null
           id?: string
+          imovel_bairro?: string | null
+          imovel_cep?: string | null
+          imovel_cidade?: string | null
+          imovel_complemento?: string | null
+          imovel_logradouro?: string | null
+          imovel_numero?: string | null
+          imovel_situacao?: string | null
+          imovel_tipo?: string | null
+          imovel_uf?: string | null
+          imovel_uso?: string | null
+          imovel_valor?: number | null
+          iq_comentario?: string | null
+          iq_nome?: string | null
           lgpd_aceite_em?: string | null
           lgpd_aceite_ip?: string | null
           lgpd_aceite_versao?: string | null
