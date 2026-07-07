@@ -61,6 +61,7 @@ import {
   SLUG_CATEGORIAS,
   type DocumentoPasta,
 } from "@/lib/crm/documento-pastas.functions";
+import { tiposParaCategorias, TIPO_OUTRO } from "@/lib/crm/documento-tipos";
 
 type Categoria =
   | "comprador"
