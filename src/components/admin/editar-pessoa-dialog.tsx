@@ -95,7 +95,7 @@ export function EditarPessoaDialog({
         <form onSubmit={submeter} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="ep-nome">Nome completo</Label>
-            <Input id="ep-nome" value={nome} onChange={(e) => setNome(e.target.value)} required />
+            <Input id="ep-nome" value={nome} onChange={(e) => setNome(e.target.value.toUpperCase())} required />
           </div>
           <div className="space-y-2">
             <Label>Tipo de pessoa</Label>

@@ -283,8 +283,8 @@ export function NovaPessoaInline({
             <Input
               id="np-nome"
               value={nome}
-              onChange={(e) => setNome(e.target.value)}
-              placeholder="Ex.: Maria Silva"
+              onChange={(e) => setNome(e.target.value.toUpperCase())}
+              placeholder="Ex.: MARIA SILVA"
               required
             />
           </div>
