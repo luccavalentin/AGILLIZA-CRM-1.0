@@ -330,7 +330,7 @@ function Pagina() {
                     </dl>
 
                     <div className="mt-3 flex items-center justify-end gap-2">
-                      <DetalheBancoDialog banco={b} />
+                      <DetalheBancoDialog banco={b} simulacao={s} />
                       {b.status_banco === "erro" ? (
                         <Button
                           size="sm"
@@ -407,7 +407,7 @@ function Pagina() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-1">
-                            <DetalheBancoDialog banco={b} />
+                            <DetalheBancoDialog banco={b} simulacao={s} />
                             {b.status_banco === "erro" ? (
                               <Button
                                 size="sm"
