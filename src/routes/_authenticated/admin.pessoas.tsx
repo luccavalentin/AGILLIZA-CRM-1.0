@@ -357,6 +357,11 @@ function PessoasPage() {
           <TabsContent value="regras">
             <RegrasModulosPanel />
           </TabsContent>
+
+          <TabsContent value="tipos">
+            <TiposPessoaPanel podeGerenciar={podeGerenciar} />
+          </TabsContent>
+          </TabsContent>
         </Tabs>
       </div>
 
