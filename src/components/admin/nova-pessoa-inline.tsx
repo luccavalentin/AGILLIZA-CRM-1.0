@@ -69,7 +69,7 @@ export function NovaPessoaInline({
 
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
-  const [tipoPessoa, setTipoPessoa] = useState<TipoPessoa>("usuario");
+  const [tipoPessoa, setTipoPessoa] = useState<string>("");
   const [comLogin, setComLogin] = useState(true);
 
   const [comissao, setComissao] = useState("");
