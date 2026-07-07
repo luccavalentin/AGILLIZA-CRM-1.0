@@ -321,26 +321,31 @@ export function ClienteForm({
   const [salvando, setSalvando] = useState(false);
   const [buscandoCep, setBuscandoCep] = useState(false);
 
-  // Vínculos de atendimento: parceiros a vincular ao criar um novo cliente.
+  // Vínculos de atendimento: usuários a vincular ao criar um novo cliente, por tipo.
   const novoCadastro = !v.id;
-  const [vinculos, setVinculos] = useState<string[]>([]);
-  const [vinculoSel, setVinculoSel] = useState("");
+  const [vinculos, setVinculos] = useState<Array<{ parceiro_id: string; tipo_vinculo: TipoVinculo }>>(
+    [],
+  );
+  const [vinculoSel, setVinculoSel] = useState<Record<string, string>>({});
   const parceiros = useQuery({
     queryKey: ["parceiros-disponiveis"],
     queryFn: () => listarParceiros(),
     enabled: novoCadastro,
   });
-  const opcoesParceiros = (parceiros.data ?? []).filter((p) => !vinculos.includes(p.id));
   const nomeParceiro = (id: string) => {
     const p = (parceiros.data ?? []).find((x) => x.id === id);
     return p?.nome ?? p?.email ?? id;
   };
-  const adicionarVinculo = () => {
-    if (!vinculoSel) return;
-    setVinculos((prev) => [...prev, vinculoSel]);
-    setVinculoSel("");
+  const adicionarVinculo = (tipo: TipoVinculo) => {
+    const id = vinculoSel[tipo];
+    if (!id) return;
+    setVinculos((prev) => [...prev, { parceiro_id: id, tipo_vinculo: tipo }]);
+    setVinculoSel((prev) => ({ ...prev, [tipo]: "" }));
   };
-  const removerVinculo = (id: string) => setVinculos((prev) => prev.filter((x) => x !== id));
+  const removerVinculo = (parceiro_id: string, tipo: TipoVinculo) =>
+    setVinculos((prev) =>
+      prev.filter((x) => !(x.parceiro_id === parceiro_id && x.tipo_vinculo === tipo)),
+    );
 
   async function alternarPortal(ativo: boolean) {
     if (!v.id) return;
