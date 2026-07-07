@@ -1045,7 +1045,15 @@ export const listarParceirosDisponiveis = createServerFn({ method: "GET" })
 export const vincularParceiro = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
-    z.object({ cliente_id: z.string().uuid(), parceiro_id: z.string().uuid() }).parse(d),
+    z
+      .object({
+        cliente_id: z.string().uuid(),
+        parceiro_id: z.string().uuid(),
+        tipo_vinculo: z
+          .enum(["imobiliaria", "corretor", "comercial_agilliza"])
+          .default("corretor"),
+      })
+      .parse(d),
   )
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const { supabase, userId } = context;
@@ -1054,10 +1062,11 @@ export const vincularParceiro = createServerFn({ method: "POST" })
     const { error } = await supabase.from("cliente_parceiros").insert({
       cliente_id: data.cliente_id,
       parceiro_id: data.parceiro_id,
+      tipo_vinculo: data.tipo_vinculo,
       correspondente_id: corr,
     });
     if (error) {
-      if ((error as any).code === "23505") throw new Error("Este usuário já está vinculado.");
+      if ((error as any).code === "23505") throw new Error("Este usuário já está vinculado neste tipo.");
       throw error;
     }
     return { ok: true };
