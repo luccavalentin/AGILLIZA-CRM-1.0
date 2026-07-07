@@ -869,6 +869,10 @@ export type Database = {
           cidade: string | null
           cliente_id: string
           complemento: string | null
+          conjuge_agencia: string | null
+          conjuge_banco_conta: string | null
+          conjuge_conta_corrente: string | null
+          conjuge_digito_conta: string | null
           conta_corrente: string | null
           created_at: string
           data_expedicao: string | null
@@ -910,6 +914,10 @@ export type Database = {
           cidade?: string | null
           cliente_id: string
           complemento?: string | null
+          conjuge_agencia?: string | null
+          conjuge_banco_conta?: string | null
+          conjuge_conta_corrente?: string | null
+          conjuge_digito_conta?: string | null
           conta_corrente?: string | null
           created_at?: string
           data_expedicao?: string | null
@@ -951,6 +959,10 @@ export type Database = {
           cidade?: string | null
           cliente_id?: string
           complemento?: string | null
+          conjuge_agencia?: string | null
+          conjuge_banco_conta?: string | null
+          conjuge_conta_corrente?: string | null
+          conjuge_digito_conta?: string | null
           conta_corrente?: string | null
           created_at?: string
           data_expedicao?: string | null
@@ -999,10 +1011,14 @@ export type Database = {
           agencia: string | null
           ativo: boolean
           banco_conta: string | null
+          conjuge_agencia: string | null
+          conjuge_banco_conta: string | null
           conjuge_celular: string | null
+          conjuge_conta_corrente: string | null
           conjuge_cpf: string | null
           conjuge_data_expedicao: string | null
           conjuge_data_nascimento: string | null
+          conjuge_digito_conta: string | null
           conjuge_email: string | null
           conjuge_empresa: string | null
           conjuge_nacionalidade: string | null
@@ -1065,10 +1081,14 @@ export type Database = {
           agencia?: string | null
           ativo?: boolean
           banco_conta?: string | null
+          conjuge_agencia?: string | null
+          conjuge_banco_conta?: string | null
           conjuge_celular?: string | null
+          conjuge_conta_corrente?: string | null
           conjuge_cpf?: string | null
           conjuge_data_expedicao?: string | null
           conjuge_data_nascimento?: string | null
+          conjuge_digito_conta?: string | null
           conjuge_email?: string | null
           conjuge_empresa?: string | null
           conjuge_nacionalidade?: string | null
@@ -1131,10 +1151,14 @@ export type Database = {
           agencia?: string | null
           ativo?: boolean
           banco_conta?: string | null
+          conjuge_agencia?: string | null
+          conjuge_banco_conta?: string | null
           conjuge_celular?: string | null
+          conjuge_conta_corrente?: string | null
           conjuge_cpf?: string | null
           conjuge_data_expedicao?: string | null
           conjuge_data_nascimento?: string | null
+          conjuge_digito_conta?: string | null
           conjuge_email?: string | null
           conjuge_empresa?: string | null
           conjuge_nacionalidade?: string | null
