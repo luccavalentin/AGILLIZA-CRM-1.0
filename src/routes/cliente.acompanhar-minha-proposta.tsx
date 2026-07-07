@@ -418,6 +418,11 @@ function AbaMensagens() {
           <Send className="h-5 w-5" />
         </Button>
       </form>
+      <VisualizadorArquivo
+        arquivo={visualizando}
+        open={!!visualizando}
+        onOpenChange={(o: boolean) => !o && setVisualizando(null)}
+      />
     </div>
   );
 }
