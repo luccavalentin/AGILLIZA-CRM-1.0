@@ -182,11 +182,7 @@ export function RegrasModulosPanel() {
       acesso_tipo: AcessoTipo;
     }) => atualizar({ data: v }),
     onSuccess: async (r: any) => {
-      toast.success(
-        r?.clonado
-          ? "Criamos uma cópia editável do nível padrão com o novo nome."
-          : "Nível atualizado.",
-      );
+      toast.success("Nível atualizado.");
       setEditarOpen(false);
       await qc.invalidateQueries({ queryKey: ["niveis-acesso"] });
       if (r?.id) {
@@ -229,11 +225,7 @@ export function RegrasModulosPanel() {
       });
     },
     onSuccess: async (r: any) => {
-      toast.success(
-        r?.clonado
-          ? "Criamos uma cópia editável do nível padrão com essas permissões."
-          : "Permissões salvas.",
-      );
+      toast.success("Permissões salvas.");
       setDirty(false);
       await qc.invalidateQueries({ queryKey: ["niveis-acesso"] });
       if (r?.nivel_acesso_id) {
@@ -526,9 +518,8 @@ export function RegrasModulosPanel() {
                   </p>
                 ) : selecionado.is_padrao ? (
                   <p className="text-sm text-muted-foreground">
-                    Este é um nível padrão do sistema. Ao renomear ou salvar permissões, criaremos
-                    automaticamente uma cópia editável — que você poderá ajustar e excluir
-                    livremente.
+                    Este é um nível padrão. Você pode renomeá-lo e ajustar as permissões
+                    diretamente — as alterações são aplicadas a este mesmo nível.
                   </p>
                 ) : null}
 

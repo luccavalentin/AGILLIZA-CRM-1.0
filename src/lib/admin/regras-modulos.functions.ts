@@ -386,28 +386,40 @@ export const listarNiveisAcesso = createServerFn({ method: "GET" })
       alvosPorNivel.set(info.nivel, byModulo);
     });
 
-    return (niveis ?? []).map((n: any) => ({
-      id: n.id,
-      nome: n.nome,
-      descricao: n.descricao,
-      ativo: n.ativo,
-      is_padrao: n.is_padrao,
-      papel: (n.papel ?? "comercial") as PapelNivel,
-      acesso_tipo: (n.acesso_tipo ?? "sistema") as AcessoTipo,
-      // Qualquer usuário que pode gerenciar pessoas edita todos os níveis.
-      // Níveis padrão (globais) são clonados automaticamente em uma cópia
-      // editável do correspondente na primeira alteração.
-      editavel: podeGerenciar === true,
-      permissoes: (perms ?? [])
-        .filter((p: any) => p.nivel_acesso_id === n.id)
-        .map((p: any) => ({
-          modulo: p.modulo,
-          acao: p.acao,
-          permitido: p.permitido,
-          escopo_dados: p.escopo_dados,
-        })),
-      alvos: alvosPorNivel.get(n.id) ?? {},
-    }));
+    // Se o correspondente já possui a sua versão de um nível padrão (mesmo
+    // nome + portal), escondemos o template global para não exibir duplicado.
+    const chavesProprias = new Set(
+      (niveis ?? [])
+        .filter((n: any) => n.correspondente_id)
+        .map((n: any) => `${n.nome}::${n.acesso_tipo ?? "sistema"}`),
+    );
+
+    return (niveis ?? [])
+      .filter(
+        (n: any) =>
+          n.correspondente_id ||
+          !chavesProprias.has(`${n.nome}::${n.acesso_tipo ?? "sistema"}`),
+      )
+      .map((n: any) => ({
+        id: n.id,
+        nome: n.nome,
+        descricao: n.descricao,
+        ativo: n.ativo,
+        is_padrao: n.is_padrao,
+        papel: (n.papel ?? "comercial") as PapelNivel,
+        acesso_tipo: (n.acesso_tipo ?? "sistema") as AcessoTipo,
+        // Qualquer usuário que pode gerenciar pessoas edita todos os níveis.
+        editavel: podeGerenciar === true,
+        permissoes: (perms ?? [])
+          .filter((p: any) => p.nivel_acesso_id === n.id)
+          .map((p: any) => ({
+            modulo: p.modulo,
+            acao: p.acao,
+            permitido: p.permitido,
+            escopo_dados: p.escopo_dados,
+          })),
+        alvos: alvosPorNivel.get(n.id) ?? {},
+      }));
   });
 
 /** Clona um nível padrão (global) em uma cópia editável do correspondente,
@@ -440,7 +452,9 @@ async function forkNivelPadrao(
       acesso_tipo: overrides?.acesso_tipo ?? origem.acesso_tipo ?? "sistema",
       correspondente_id: corresp,
       ativo: true,
-      is_padrao: false,
+      // Mantém como padrão do correspondente: a partir daqui ele edita este
+      // registro no lugar (sem gerar novas cópias a cada alteração).
+      is_padrao: true,
     })
     .select("id")
     .single();
@@ -594,14 +608,14 @@ export const atualizarNivelAcesso = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const { data: nivel } = await supabase
       .from("access_levels")
-      .select("id, is_padrao, nome, descricao, papel, acesso_tipo")
+      .select("id, is_padrao, correspondente_id, nome, descricao, papel, acesso_tipo")
       .eq("id", data.id)
       .maybeSingle();
     if (!nivel) throw new Error("Nível de acesso não encontrado.");
 
-    // Níveis padrão são globais: cria uma cópia editável do correspondente
-    // já com o novo nome/descrição e retorna o id dela.
-    if (nivel.is_padrao) {
+    // Só o template global (sem correspondente) é clonado uma única vez.
+    // O nível padrão já pertencente ao correspondente é editado no lugar.
+    if (nivel.is_padrao && !nivel.correspondente_id) {
       const { data: corresp } = await supabase.rpc("correspondente_do_usuario", {
         _user_id: userId,
       });
@@ -734,10 +748,10 @@ export const salvarPermissoes = createServerFn({ method: "POST" })
     let clonado = false;
     const { data: nivel } = await supabase
       .from("access_levels")
-      .select("id, is_padrao")
+      .select("id, is_padrao, correspondente_id")
       .eq("id", data.nivel_acesso_id)
       .maybeSingle();
-    if (nivel?.is_padrao) {
+    if (nivel?.is_padrao && !nivel.correspondente_id) {
       const { data: corresp } = await supabase.rpc("correspondente_do_usuario", {
         _user_id: userId,
       });
