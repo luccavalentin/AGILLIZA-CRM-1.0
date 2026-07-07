@@ -182,20 +182,17 @@ function Pagina() {
           <TabsTrigger value="vinculo" className="shrink-0 whitespace-nowrap rounded-lg data-[state=active]:shadow-sm">
             Vínculo de atendimento
           </TabsTrigger>
-          <TabsTrigger value="resumo" className="shrink-0 whitespace-nowrap rounded-lg data-[state=active]:shadow-sm">
-            Resumo
-          </TabsTrigger>
           <TabsTrigger value="dados" className="shrink-0 whitespace-nowrap rounded-lg data-[state=active]:shadow-sm">
             Dados do comprador
           </TabsTrigger>
           <TabsTrigger value="vendedores" className="shrink-0 gap-1.5 whitespace-nowrap rounded-lg data-[state=active]:shadow-sm">
             <Users className="size-4" /> Vendedores
           </TabsTrigger>
-          <TabsTrigger value="negocios" className="shrink-0 whitespace-nowrap rounded-lg data-[state=active]:shadow-sm">
-            Negócios
-          </TabsTrigger>
           <TabsTrigger value="documentos" className="shrink-0 whitespace-nowrap rounded-lg data-[state=active]:shadow-sm">
             Documentos
+          </TabsTrigger>
+          <TabsTrigger value="negocios" className="shrink-0 whitespace-nowrap rounded-lg data-[state=active]:shadow-sm">
+            Negócios
           </TabsTrigger>
           <TabsTrigger value="mensagens" className="shrink-0 gap-1.5 whitespace-nowrap rounded-lg data-[state=active]:shadow-sm">
             <MessageCircle className="size-4" /> App cliente
@@ -205,6 +202,9 @@ function Pagina() {
           </TabsTrigger>
           <TabsTrigger value="historico" className="shrink-0 whitespace-nowrap rounded-lg data-[state=active]:shadow-sm">
             Histórico
+          </TabsTrigger>
+          <TabsTrigger value="resumo" className="shrink-0 whitespace-nowrap rounded-lg data-[state=active]:shadow-sm">
+            Resumo
           </TabsTrigger>
         </TabsList>
 
