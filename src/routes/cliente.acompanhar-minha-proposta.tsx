@@ -14,6 +14,7 @@ import {
   clienteMarcarLida,
   clienteEnviarDocumentoPendente,
 } from "@/lib/portal/cliente.functions";
+import { useIncomingChatSound } from "@/hooks/use-chat-sound";
 import { TimelineCliente } from "@/components/cliente/timeline-cliente";
 import { ChipDocumento } from "@/components/cliente/chip-documento";
 import { BradescoRetornoTimer, isBradesco } from "@/components/proposta/bradesco-timer";
@@ -268,6 +269,10 @@ function AbaMensagens() {
         });
     }
   }, [mensagens, qc]);
+
+  useIncomingChatSound(
+    mensagens?.map((m) => ({ id: m.id, mine: m.remetente_tipo === "cliente" })),
+  );
 
   useEffect(() => {
     fimRef.current?.scrollIntoView({ behavior: "smooth" });

@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { PopOutPanel } from "@/components/shared/pop-out-panel";
+import { useIncomingChatSound } from "@/hooks/use-chat-sound";
 import { supabase } from "@/integrations/supabase/client";
 import {
   listarChatCliente,
@@ -98,6 +99,10 @@ export function ChatClienteTab({ clienteId, info }: { clienteId: string; info?: 
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clienteId, qc]);
+
+  useIncomingChatSound(
+    mensagens?.map((m) => ({ id: m.id, mine: m.remetente_tipo === "time" })),
+  );
 
   useEffect(() => {
     fimRef.current?.scrollIntoView({ behavior: "smooth" });

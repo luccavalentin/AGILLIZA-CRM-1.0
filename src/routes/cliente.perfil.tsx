@@ -22,6 +22,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
+import { ChatSoundSetting } from "@/components/shared/chat-sound-setting";
 
 export const Route = createFileRoute("/cliente/perfil")({
   head: () => ({ meta: [{ title: "Meu perfil — Meu Financiamento" }] }),
@@ -186,6 +187,10 @@ function Perfil() {
           </div>
         </CardContent>
       </Card>
+
+      <ChatSoundSetting />
+
+
 
       <Card className="border-border">
         <CardHeader className="pb-2">

@@ -35,6 +35,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
+import { useIncomingChatSound } from "@/hooks/use-chat-sound";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/operacional/demandas_/$id")({
@@ -51,6 +52,30 @@ function fmtData(iso: string | null): string {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+function fmtHora(iso: string): string {
+  return new Date(iso).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+}
+
+function fmtDia(iso: string): string {
+  const d = new Date(iso);
+  const hoje = new Date();
+  const ontem = new Date();
+  ontem.setDate(hoje.getDate() - 1);
+  const mesmoDia = (a: Date, b: Date) =>
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate();
+  if (mesmoDia(d, hoje)) return "Hoje";
+  if (mesmoDia(d, ontem)) return "Ontem";
+  return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" });
+}
+
+function iniciaisChat(nome?: string | null): string {
+  if (!nome) return "?";
+  const p = nome.trim().split(/\s+/);
+  return ((p[0]?.[0] ?? "") + (p.length > 1 ? p[p.length - 1][0] : "")).toUpperCase();
 }
 
 const STATUS_OPCOES: DemandaStatus[] = [
@@ -139,6 +164,10 @@ function Pagina() {
     queryFn: () => getMinhaSessao(),
   });
   const meuId = sessao?.profile?.id ?? null;
+
+  useIncomingChatSound(
+    (data?.mensagens ?? []).map((m: any) => ({ id: m.id, mine: m.autor_id === meuId })),
+  );
 
   const d = data?.demanda;
   if (!d) return <div className="p-6 text-sm text-muted-foreground">Carregando…</div>;
@@ -231,55 +260,98 @@ function Pagina() {
               </div>
             </div>
 
-            <div className="flex-1 space-y-1 overflow-y-auto bg-gradient-to-b from-muted/20 to-transparent p-4">
+            <div className="chat-surface flex-1 space-y-1 overflow-y-auto p-4">
               {(data?.mensagens ?? []).length === 0 ? (
-                <div className="flex h-full flex-col items-center justify-center gap-2 text-center">
-                  <div className="flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary">
-                    <MessageCircle className="size-6" />
+                <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
+                  <div className="flex size-14 items-center justify-center rounded-full bg-primary/10 text-primary">
+                    <MessageCircle className="size-7" />
                   </div>
-                  <p className="text-sm text-muted-foreground">Sem mensagens ainda.</p>
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Nenhuma mensagem ainda</p>
+                    <p className="text-xs text-muted-foreground">
+                      Escreva a primeira mensagem desta demanda.
+                    </p>
+                  </div>
                 </div>
               ) : (
-                (data?.mensagens ?? []).map((m: any) => {
+                (data?.mensagens ?? []).map((m: any, i: number) => {
                   const meu = meuId != null && m.autor_id === meuId;
+                  const lista = data?.mensagens ?? [];
+                  const anterior = lista[i - 1];
+                  const proxima = lista[i + 1];
+                  const mostrarDia =
+                    !anterior || fmtDia(anterior.created_at) !== fmtDia(m.created_at);
+                  const mesmoAutorAntes = !mostrarDia && anterior?.autor_id === m.autor_id;
+                  const mesmoAutorDepois =
+                    proxima?.autor_id === m.autor_id &&
+                    fmtDia(proxima?.created_at ?? "") === fmtDia(m.created_at);
                   return (
-                    <div key={m.id} className={cn("flex", meu ? "justify-end" : "justify-start")}>
+                    <div key={m.id}>
+                      {mostrarDia && (
+                        <div className="my-3 flex items-center justify-center">
+                          <span className="rounded-full bg-background/80 px-3 py-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground shadow-sm ring-1 ring-border/50 backdrop-blur">
+                            {fmtDia(m.created_at)}
+                          </span>
+                        </div>
+                      )}
                       <div
                         className={cn(
-                          "max-w-[80%] rounded-2xl px-3.5 py-2 text-sm shadow-sm",
-                          meu
-                            ? "rounded-br-md bg-primary text-primary-foreground"
-                            : "rounded-bl-md border border-border/60 bg-card text-foreground",
+                          "flex items-end gap-2",
+                          meu ? "justify-end" : "justify-start",
+                          mesmoAutorAntes ? "mt-0.5" : "mt-2",
                         )}
                       >
-                        <div className="mb-0.5 flex items-center gap-2">
-                          <span
-                            className={cn(
-                              "text-[11px] font-semibold",
-                              meu ? "text-primary-foreground/90" : "text-primary",
-                            )}
-                          >
-                            {meu ? "Você" : (m.nome_autor ?? "—")}
-                          </span>
-                          <ToneBadge tone={m.visivel_cliente ? "info" : "muted"}>
-                            {m.visivel_cliente ? "Cliente" : "Interno"}
-                          </ToneBadge>
-                        </div>
-                        <p className="whitespace-pre-wrap break-words leading-relaxed">{m.corpo}</p>
-                        <p
+                        {!meu &&
+                          (mesmoAutorDepois ? (
+                            <span className="size-7 shrink-0" />
+                          ) : (
+                            <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary/80 to-primary/50 text-[10px] font-semibold text-primary-foreground shadow-sm">
+                              {iniciaisChat(m.nome_autor)}
+                            </span>
+                          ))}
+                        <div
                           className={cn(
-                            "mt-1 text-right text-[10px]",
-                            meu ? "text-primary-foreground/70" : "text-muted-foreground",
+                            "max-w-[80%] px-3.5 py-2 text-sm shadow-sm",
+                            meu
+                              ? "rounded-2xl rounded-br-md bg-primary text-primary-foreground"
+                              : "rounded-2xl rounded-bl-md border border-border/60 bg-card text-foreground",
+                            mesmoAutorAntes && (meu ? "rounded-tr-md" : "rounded-tl-md"),
                           )}
                         >
-                          {fmtData(m.created_at)}
-                        </p>
+                          {!mesmoAutorAntes && (
+                            <div className="mb-0.5 flex items-center gap-2">
+                              <span
+                                className={cn(
+                                  "text-[11px] font-semibold",
+                                  meu ? "text-primary-foreground/90" : "text-primary",
+                                )}
+                              >
+                                {meu ? "Você" : (m.nome_autor ?? "—")}
+                              </span>
+                              <ToneBadge tone={m.visivel_cliente ? "info" : "muted"}>
+                                {m.visivel_cliente ? "Cliente" : "Interno"}
+                              </ToneBadge>
+                            </div>
+                          )}
+                          <p className="whitespace-pre-wrap break-words leading-relaxed">
+                            {m.corpo}
+                          </p>
+                          <p
+                            className={cn(
+                              "mt-1 text-right text-[10px]",
+                              meu ? "text-primary-foreground/70" : "text-muted-foreground",
+                            )}
+                          >
+                            {fmtHora(m.created_at)}
+                          </p>
+                        </div>
                       </div>
                     </div>
                   );
                 })
               )}
             </div>
+
 
             <div className="space-y-2 border-t bg-muted/30 p-3">
               <div className="flex items-end gap-2">
