@@ -251,9 +251,34 @@ export function ChatClienteTab({ clienteId, info }: { clienteId: string; info?: 
                           : (info?.nome?.trim() || "Cliente")}
                       </p>
                     )}
-                    <p className="whitespace-pre-wrap break-words leading-relaxed">
-                      {m.mensagem}
-                    </p>
+                    {m.anexo_url &&
+                      (m.anexo_is_imagem ? (
+                        <a href={m.anexo_url} target="_blank" rel="noreferrer">
+                          <img
+                            src={m.anexo_url}
+                            alt={m.anexo_nome ?? "Imagem"}
+                            className="mb-1 max-h-56 w-full rounded-lg object-cover"
+                          />
+                        </a>
+                      ) : (
+                        <a
+                          href={m.anexo_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className={cn(
+                            "mb-1 flex items-center gap-2 rounded-lg px-2.5 py-2 text-xs font-medium underline-offset-2 hover:underline",
+                            doTime ? "bg-primary-foreground/15" : "bg-muted",
+                          )}
+                        >
+                          <FileText className="h-4 w-4 shrink-0" />
+                          <span className="truncate">{m.anexo_nome ?? "Arquivo"}</span>
+                        </a>
+                      ))}
+                    {m.mensagem && m.mensagem !== m.anexo_nome && (
+                      <p className="whitespace-pre-wrap break-words leading-relaxed">
+                        {m.mensagem}
+                      </p>
+                    )}
                     <p
                       className={cn(
                         "mt-1 text-right text-[10px]",
