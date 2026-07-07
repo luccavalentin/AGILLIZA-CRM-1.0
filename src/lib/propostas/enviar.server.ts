@@ -533,23 +533,16 @@ export async function enviarPropostaImpl({
     payloadNovo: { status: novoStatus, bancos: resultados.length },
   });
 
-  // Logo após enviar, consulta a oportunidade algumas vezes em curto intervalo.
-  // Alguns bancos aceitam a inclusão primeiro e só gravam o número/status da
-  // proposta alguns segundos depois; essa reconciliação curta evita que a tela
-  // fique parada em "em análise" até o próximo agendamento.
+  // Logo após enviar, faz UMA reconciliação rápida (sem esperas longas) para
+  // já refletir o número/status quando o banco grava de imediato. Os casos em
+  // que o banco demora são reconciliados pelo polling agendado — não vale a
+  // pena travar a resposta ao usuário por vários segundos aqui.
   if (sucesso > 0) {
-    for (let tentativa = 0; tentativa < 3; tentativa++) {
-      try {
-        if (tentativa > 0) await new Promise((resolve) => setTimeout(resolve, 2_500));
-        const sinc = await sincronizarPropostaImpl({ propostaId, userId, supabase });
-        if (sinc?.status) novoStatus = sinc.status as PropostaStatus;
-        if (!["enviada_banco", "em_analise_credito"].includes(String(sinc?.status ?? ""))) {
-          break;
-        }
-      } catch (e) {
-        console.error("[proposta] sincronização pós-envio falhou", e);
-        break;
-      }
+    try {
+      const sinc = await sincronizarPropostaImpl({ propostaId, userId, supabase });
+      if (sinc?.status) novoStatus = sinc.status as PropostaStatus;
+    } catch (e) {
+      console.error("[proposta] sincronização pós-envio falhou", e);
     }
   }
 

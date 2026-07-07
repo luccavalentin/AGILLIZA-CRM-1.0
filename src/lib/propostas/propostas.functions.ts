@@ -1189,12 +1189,19 @@ export const cancelarProposta = createServerFn({ method: "POST" })
     });
 
     if (prop.enviada_em) {
-      try {
-        const { cancelarPropostaHomefinImpl } = await import("./enviar.server");
-        await cancelarPropostaHomefinImpl({ propostaId: data.proposta_id, supabase });
-      } catch {
-        /* falha externa não bloqueia o cancelamento local */
-      }
+      // Notifica o banco do cancelamento em background — o cancelamento local
+      // já está persistido e não deve esperar a integração (que pode demorar).
+      const notificarBanco = (async () => {
+        try {
+          const { cancelarPropostaHomefinImpl } = await import("./enviar.server");
+          await cancelarPropostaHomefinImpl({ propostaId: data.proposta_id, supabase });
+        } catch {
+          /* falha externa não bloqueia o cancelamento local */
+        }
+      })();
+      const waitUntil = (globalThis as any)?.ctx?.waitUntil ?? (globalThis as any)?.waitUntil;
+      if (typeof waitUntil === "function") waitUntil(notificarBanco);
+      else await notificarBanco;
     }
     return { ok: true };
   });
