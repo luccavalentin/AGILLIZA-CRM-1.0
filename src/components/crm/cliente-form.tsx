@@ -1183,11 +1183,12 @@ export function ClienteForm({
         <CardContent className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5 sm:col-span-2">
             <Label>Banco</Label>
-            <InputAutocomplete
+            <Combobox
               value={v.banco_conta}
               onValueChange={(x) => set("banco_conta", x)}
               options={OPCOES_BANCO}
-              placeholder="Pesquisar banco ou digitar"
+              placeholder="Selecione o banco"
+              searchPlaceholder="Buscar banco…"
             />
           </div>
 
