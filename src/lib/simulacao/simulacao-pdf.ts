@@ -352,6 +352,13 @@ export function baixarSimulacaoPDF(input: SimulacaoPdfInput) {
     financiamento: b.valor_financiamento_max != null ? formatBRL(b.valor_financiamento_max) : "—",
   }));
 
+  const firstColLogos: Record<string, { logo: string; ratio: number }> = {};
+  (bancos ?? []).forEach((b) => {
+    const nome = b.nome_banco ?? "—";
+    const brand = resolveBancoBrand(nome);
+    if (brand) firstColLogos[nome] = { logo: brand.logo, ratio: brand.ratio };
+  });
+
   exportPDF(
     "Comparativo de Financiamento",
     `${produto} · ${s.nome_cliente ?? "Cliente não informado"}`,
@@ -361,6 +368,7 @@ export function baixarSimulacaoPDF(input: SimulacaoPdfInput) {
     rows,
     sanitizarNomeArquivo(nomeDescritivo(s, bancos ?? [])),
     DISCLAIMER,
+    firstColLogos,
   );
 
 }
