@@ -239,15 +239,22 @@ export function NovaPessoaInline({
             <Label>Tipo de pessoa</Label>
             <Select
               value={tipoPessoa}
-              onValueChange={(v) => setTipoPessoa(v as TipoPessoa)}
+              onValueChange={(v) => {
+                setTipoPessoa(v);
+                const t = tiposAtivos.find((x) => x.slug === v);
+                if (t) setComLogin(t.login_padrao);
+              }}
             >
               <SelectTrigger>
-                <SelectValue />
+                <SelectValue placeholder="Selecione o tipo" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="usuario">Usuário (equipe interna)</SelectItem>
-                <SelectItem value="imobiliaria">Imobiliária</SelectItem>
-                <SelectItem value="corretor">Corretor</SelectItem>
+                {tiposAtivos.map((t) => (
+                  <SelectItem key={t.id} value={t.slug}>
+                    {t.nome}
+                    {t.acesso_tipo === "portal_parceiro" ? " · Parceiro" : " · Interno"}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
