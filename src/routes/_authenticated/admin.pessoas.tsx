@@ -268,7 +268,7 @@ function PessoasPage() {
                             <div className="flex flex-wrap items-center gap-2">
                               <span>{p.nome ?? "—"}</span>
                               <Badge variant="outline" className="font-normal">
-                                {ROTULO_TIPO[p.tipo_pessoa] ?? "Usuário"}
+                                {rotuloTipo(p.tipo_pessoa)}
                               </Badge>
                             </div>
                           </TableCell>
