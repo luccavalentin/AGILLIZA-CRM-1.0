@@ -73,6 +73,7 @@ function Pagina() {
   const urlAnexoFn = useServerFn(urlAnexoDemanda);
   const fileRef = useRef<HTMLInputElement>(null);
   const [enviando, setEnviando] = useState(false);
+  const [visualizando, setVisualizando] = useState<{ url: string; nome: string } | null>(null);
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
