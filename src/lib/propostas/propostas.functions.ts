@@ -360,7 +360,7 @@ export const criarProposta = createServerFn({ method: "POST" })
           .maybeSingle();
         const c = cli as any;
         const e = (end ?? {}) as any;
-        await supabase.from("proposta_envolvidos").insert({
+        const { data: insTit } = await supabase.from("proposta_envolvidos").insert({
           proposta_id: inserted.id,
           cliente_id: clienteId,
           tipo_qualificacao: "CO",
@@ -395,7 +395,47 @@ export const criarProposta = createServerFn({ method: "POST" })
           utiliza_fgts: c.utiliza_fgts ?? false,
           fg_autorizacao_dados: c.fg_autorizacao_dados ?? false,
           dados: { pai: c.pai ?? null, nacionalidade: c.nacionalidade ?? null, naturalidade: c.naturalidade ?? null, banco_conta: c.banco_conta ?? null },
-        } as any);
+        } as any).select("id").maybeSingle();
+
+        // Cônjuge/coproponente já cadastrado na ficha do cliente entra como
+        // envolvido vinculado ao titular (conjuge_de), para o formulário já vir preenchido.
+        const ehCasado = ["casado", "uniao_estavel"].includes(String(c.estado_civil ?? ""));
+        if (insTit?.id && ehCasado && (c.conjuge_nome || c.conjuge_cpf)) {
+          await supabase.from("proposta_envolvidos").insert({
+            proposta_id: inserted.id,
+            conjuge_de: insTit.id,
+            tipo_qualificacao: "TI",
+            tipo_pessoa: "F",
+            nome: c.conjuge_nome,
+            cpf_cnpj: c.conjuge_cpf,
+            data_nascimento: c.conjuge_data_nascimento,
+            nome_mae: c.conjuge_nome_mae,
+            tipo_sexo: c.conjuge_sexo ? String(c.conjuge_sexo).trim().charAt(0).toUpperCase() : c.conjuge_sexo,
+            estado_civil: estadoCivilCrmParaCodigo(c.estado_civil) || null,
+            regime_casamento: regimeCasamentoCrmParaCodigo(c.regime_casamento) || null,
+            tipo_documento_identidade: c.conjuge_tipo_documento_identidade,
+            numero_documento: c.conjuge_numero_documento,
+            data_expedicao: c.conjuge_data_expedicao,
+            orgao_expedidor: c.conjuge_orgao_expedidor,
+            uf_expedicao: c.conjuge_uf_expedicao,
+            profissao: c.conjuge_profissao,
+            empresa: c.conjuge_empresa,
+            renda: c.conjuge_renda,
+            agencia: c.conjuge_agencia,
+            conta_corrente: c.conjuge_conta_corrente,
+            digito_conta: c.conjuge_digito_conta,
+            email: c.conjuge_email,
+            celular: c.conjuge_celular,
+            cep: e.cep ?? null,
+            logradouro: e.logradouro ?? null,
+            numero_logradouro: e.numero ?? null,
+            complemento: e.complemento ?? null,
+            bairro: e.bairro ?? null,
+            municipio: e.cidade ?? null,
+            uf: e.uf ?? c.uf_interesse ?? null,
+            dados: { nacionalidade: c.conjuge_nacionalidade ?? null, banco_conta: c.conjuge_banco_conta ?? null },
+          } as any);
+        }
       }
 
       // Vendedores do imóvel cadastrados no cliente entram como envolvidos (VD).
