@@ -552,8 +552,8 @@ export function ClienteForm({
               </SelectTrigger>
               <SelectContent>
                 {OPCOES_SEXO.map((o) => (
-                  <SelectItem key={o} value={o}>
-                    {o}
+                  <SelectItem key={o.v} value={o.v}>
+                    {o.l}
                   </SelectItem>
                 ))}
               </SelectContent>
