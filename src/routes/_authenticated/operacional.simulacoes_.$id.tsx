@@ -379,7 +379,9 @@ function Pagina() {
                       <TableHead className="text-right text-sm">Taxa a.a.</TableHead>
                       <TableHead className="text-right text-sm">Prazo máx</TableHead>
                       <TableHead className="text-right text-sm">Financ. máx</TableHead>
+                      <TableHead className="text-right text-sm">Total financiado</TableHead>
                       <TableHead className="text-right text-sm">IOF</TableHead>
+
                       <TableHead></TableHead>
                     </TableRow>
                   </TableHeader>
