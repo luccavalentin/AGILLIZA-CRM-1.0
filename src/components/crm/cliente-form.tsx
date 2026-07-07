@@ -25,6 +25,8 @@ import {
   definirAcessoPortal,
   listarParceirosDisponiveis,
   vincularParceiro,
+  TIPOS_VINCULO,
+  type TipoVinculo,
 } from "@/lib/crm/clientes.functions";
 import { validarDocumento, soDigitos } from "@/lib/crm/documento";
 
