@@ -55,6 +55,47 @@ function InternalLayout() {
     return filterNavByPermissions(base, permsToSet(permsQuery.data), permsQuery.data.todas);
   }, [permsQuery.data, ehParceiro]);
 
+  const fnPastasRaiz = useServerFn(listarPastasRaiz);
+  const pastasQuery = useQuery({
+    queryKey: ["nav-pastas-documentos"],
+    queryFn: () => fnPastasRaiz(),
+    enabled: !!permsQuery.data && !ehParceiro,
+    staleTime: 60_000,
+  });
+
+  // Injeta as pastas raiz de Documentos como submenus do item "Arquivos".
+  // Feito de forma imutável (novos objetos) para nunca mutar a config de
+  // módulo — mutar geraria itens duplicados a cada renderização.
+  const navComPastas = useMemo<NavGroup[]>(() => {
+    const pastas = pastasQuery.data ?? [];
+    if (pastas.length === 0) return navFiltrada;
+    return navFiltrada.map((grupo) => ({
+      ...grupo,
+      items: grupo.items.map((item) => {
+        if (item.to !== "/documentos") return item;
+        return {
+          ...item,
+          children: [
+            {
+              label: "Todos os arquivos",
+              icon: item.icon,
+              to: "/documentos",
+              perm: item.perm,
+            },
+            ...pastas.map((p) => ({
+              label: p.nome,
+              icon: Folder,
+              to: "/documentos",
+              search: { pasta: p.id },
+              perm: item.perm,
+            })),
+          ],
+        };
+      }),
+    }));
+  }, [navFiltrada, pastasQuery.data]);
+
+
   useEffect(() => {
     if (!sessaoQuery.isLoading && !permsQuery.isLoading) {
       setCarregamentoTravado(false);
