@@ -456,17 +456,36 @@ function Pagina() {
         },
       });
       sessionStorage.removeItem("simulacao_wizard");
-      try {
-        await enviarSimulacaoBanco({ data: { simulacao_id: id } });
-      } catch (e) {
-        toast.error(
-          e instanceof Error
-            ? e.message
-            : "Falha ao enviar ao banco. Você pode reenviar na tela da simulação.",
-        );
+      // Envia banco a banco (sequencial) para dar progresso real na barra.
+      // O 1º envio cria a oportunidade; os demais reutilizam a mesma.
+      const idsBancos = f.bancos_ids.length > 0 ? f.bancos_ids : [];
+      if (idsBancos.length === 0) {
+        try {
+          await enviarSimulacaoBanco({ data: { simulacao_id: id } });
+        } catch (e) {
+          toast.error(
+            e instanceof Error
+              ? e.message
+              : "Falha ao enviar ao banco. Você pode reenviar na tela da simulação.",
+          );
+        }
+        setConcluidos(1);
+      } else {
+        for (let i = 0; i < idsBancos.length; i++) {
+          try {
+            await enviarSimulacaoBanco({
+              data: { simulacao_id: id, banco_ids: [idsBancos[i]] },
+            });
+          } catch (e) {
+            toast.error(
+              e instanceof Error
+                ? e.message
+                : "Falha ao enviar a um dos bancos. Você pode reenviar na tela da simulação.",
+            );
+          }
+          setConcluidos(i + 1);
+        }
       }
-      // Marca todos os bancos como concluídos para a barra chegar a 100%.
-      setConcluidos(f.bancos_ids.length || 1);
 
       // Baixa o extrato imediatamente: detalhado (1 banco) ou comparativo (2+).
       // Bancos que retornaram com erro são excluídos do PDF.
