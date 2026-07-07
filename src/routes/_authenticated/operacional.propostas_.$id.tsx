@@ -1413,7 +1413,7 @@ function TabDocumentos({ propostaId, documentos }: { propostaId: string; documen
                   </ToneBadge>
                 </TableCell>
                 <TableCell className="text-right">
-                  <Button size="icon" variant="ghost" onClick={() => baixar(d.storage_path)}>
+                  <Button size="icon" variant="ghost" onClick={() => baixar(d.storage_path, d.nome_documento ?? "documento")}>
                     <Download className="h-4 w-4" />
                   </Button>
                   <Button
