@@ -1317,10 +1317,10 @@ function TabDocumentos({ propostaId, documentos }: { propostaId: string; documen
     }
   }
 
-  async function baixar(storage_path: string) {
+  async function baixar(storage_path: string, nome: string) {
     try {
       const { url } = await urlFn({ data: { storage_path } });
-      window.open(url, "_blank");
+      setVisualizando({ url, nome });
     } catch {
       toast.error("Não foi possível gerar o link.");
     }
