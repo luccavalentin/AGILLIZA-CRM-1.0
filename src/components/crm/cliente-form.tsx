@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Loader2, UserPlus, Users, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { InputAutocomplete } from "@/components/ui/input-autocomplete";
+import { Combobox } from "@/components/ui/combobox";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
@@ -786,18 +786,13 @@ export function ClienteForm({
           </div>
           <div className="space-y-1.5">
             <Label>UF de interesse</Label>
-            <Select value={v.uf_interesse || undefined} onValueChange={(x) => set("uf_interesse", x)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione" />
-              </SelectTrigger>
-              <SelectContent>
-                {OPCOES_UF.map((o) => (
-                  <SelectItem key={o} value={o}>
-                    {o}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Combobox
+              value={v.uf_interesse}
+              onValueChange={(x) => set("uf_interesse", x)}
+              options={OPCOES_UF}
+              placeholder="Selecione"
+              searchPlaceholder="Buscar UF…"
+            />
           </div>
         </CardContent>
       </Card>
@@ -853,21 +848,13 @@ export function ClienteForm({
             </div>
             <div className="space-y-1.5">
               <Label>Nacionalidade</Label>
-              <Select
-                value={v.conjuge_nacionalidade || undefined}
+              <Combobox
+                value={v.conjuge_nacionalidade}
                 onValueChange={(x) => set("conjuge_nacionalidade", x)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione" />
-                </SelectTrigger>
-                <SelectContent>
-                  {OPCOES_NACIONALIDADE.map((o) => (
-                    <SelectItem key={o} value={o}>
-                      {o}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                options={OPCOES_NACIONALIDADE}
+                placeholder="Selecione"
+                searchPlaceholder="Buscar nacionalidade…"
+              />
             </div>
             <div className="space-y-1.5 sm:col-span-2">
               <Label>Nome da mãe do cônjuge</Label>
@@ -878,21 +865,13 @@ export function ClienteForm({
             </div>
             <div className="space-y-1.5">
               <Label>Tipo de documento</Label>
-              <Select
-                value={v.conjuge_tipo_documento_identidade || undefined}
+              <Combobox
+                value={v.conjuge_tipo_documento_identidade}
                 onValueChange={(x) => set("conjuge_tipo_documento_identidade", x)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione" />
-                </SelectTrigger>
-                <SelectContent>
-                  {OPCOES_TIPO_DOCUMENTO.map((o) => (
-                    <SelectItem key={o} value={o}>
-                      {o}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                options={OPCOES_TIPO_DOCUMENTO}
+                placeholder="Selecione"
+                searchPlaceholder="Buscar tipo…"
+              />
             </div>
             <div className="space-y-1.5">
               <Label>Número do documento</Label>
@@ -903,39 +882,23 @@ export function ClienteForm({
             </div>
             <div className="space-y-1.5">
               <Label>Órgão expedidor</Label>
-              <Select
-                value={v.conjuge_orgao_expedidor || undefined}
+              <Combobox
+                value={v.conjuge_orgao_expedidor}
                 onValueChange={(x) => set("conjuge_orgao_expedidor", x)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione" />
-                </SelectTrigger>
-                <SelectContent>
-                  {OPCOES_ORGAO_EXPEDIDOR.map((o) => (
-                    <SelectItem key={o} value={o}>
-                      {o}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                options={OPCOES_ORGAO_EXPEDIDOR}
+                placeholder="Selecione"
+                searchPlaceholder="Buscar órgão…"
+              />
             </div>
             <div className="space-y-1.5">
               <Label>UF de expedição</Label>
-              <Select
-                value={v.conjuge_uf_expedicao || undefined}
+              <Combobox
+                value={v.conjuge_uf_expedicao}
                 onValueChange={(x) => set("conjuge_uf_expedicao", x)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione" />
-                </SelectTrigger>
-                <SelectContent>
-                  {OPCOES_UF.map((o) => (
-                    <SelectItem key={o} value={o}>
-                      {o}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                options={OPCOES_UF}
+                placeholder="Selecione"
+                searchPlaceholder="Buscar UF…"
+              />
             </div>
             <div className="space-y-1.5">
               <Label>Data de expedição</Label>
@@ -1022,49 +985,34 @@ export function ClienteForm({
           </div>
           <div className="space-y-1.5">
             <Label>Nacionalidade</Label>
-            <Select value={v.nacionalidade || undefined} onValueChange={(x) => set("nacionalidade", x)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione" />
-              </SelectTrigger>
-              <SelectContent>
-                {OPCOES_NACIONALIDADE.map((o) => (
-                  <SelectItem key={o} value={o}>
-                    {o}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Combobox
+              value={v.nacionalidade}
+              onValueChange={(x) => set("nacionalidade", x)}
+              options={OPCOES_NACIONALIDADE}
+              placeholder="Selecione"
+              searchPlaceholder="Buscar nacionalidade…"
+            />
           </div>
           <div className="space-y-1.5 sm:col-span-2">
             <Label>Naturalidade (cidade/UF de nascimento)</Label>
-            <Select value={v.naturalidade || undefined} onValueChange={(x) => set("naturalidade", x)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione" />
-              </SelectTrigger>
-              <SelectContent>
-                {OPCOES_NATURALIDADE.map((o) => (
-                  <SelectItem key={o} value={o}>
-                    {o}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Combobox
+              value={v.naturalidade}
+              onValueChange={(x) => set("naturalidade", x)}
+              options={OPCOES_NATURALIDADE}
+              placeholder="Selecione"
+              searchPlaceholder="Buscar cidade/UF…"
+            />
           </div>
 
           <div className="space-y-1.5">
             <Label>Tipo de documento</Label>
-            <Select value={v.tipo_documento_identidade || undefined} onValueChange={(x) => set("tipo_documento_identidade", x)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione" />
-              </SelectTrigger>
-              <SelectContent>
-                {OPCOES_TIPO_DOCUMENTO.map((o) => (
-                  <SelectItem key={o} value={o}>
-                    {o}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Combobox
+              value={v.tipo_documento_identidade}
+              onValueChange={(x) => set("tipo_documento_identidade", x)}
+              options={OPCOES_TIPO_DOCUMENTO}
+              placeholder="Selecione"
+              searchPlaceholder="Buscar tipo…"
+            />
           </div>
           <div className="space-y-1.5">
             <Label>Número do documento</Label>
@@ -1075,33 +1023,23 @@ export function ClienteForm({
           </div>
           <div className="space-y-1.5">
             <Label>Órgão expedidor</Label>
-            <Select value={v.orgao_expedidor || undefined} onValueChange={(x) => set("orgao_expedidor", x)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione" />
-              </SelectTrigger>
-              <SelectContent>
-                {OPCOES_ORGAO_EXPEDIDOR.map((o) => (
-                  <SelectItem key={o} value={o}>
-                    {o}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Combobox
+              value={v.orgao_expedidor}
+              onValueChange={(x) => set("orgao_expedidor", x)}
+              options={OPCOES_ORGAO_EXPEDIDOR}
+              placeholder="Selecione"
+              searchPlaceholder="Buscar órgão…"
+            />
           </div>
           <div className="space-y-1.5">
             <Label>UF de expedição</Label>
-            <Select value={v.uf_expedicao || undefined} onValueChange={(x) => set("uf_expedicao", x)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione" />
-              </SelectTrigger>
-              <SelectContent>
-                {OPCOES_UF.map((o) => (
-                  <SelectItem key={o} value={o}>
-                    {o}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Combobox
+              value={v.uf_expedicao}
+              onValueChange={(x) => set("uf_expedicao", x)}
+              options={OPCOES_UF}
+              placeholder="Selecione"
+              searchPlaceholder="Buscar UF…"
+            />
           </div>
           <div className="space-y-1.5">
             <Label>Data de expedição</Label>
@@ -1184,18 +1122,13 @@ export function ClienteForm({
           </div>
           <div className="space-y-1.5">
             <Label>UF</Label>
-            <Select value={end.uf || undefined} onValueChange={(x) => setEnd((p) => ({ ...p, uf: x }))}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione" />
-              </SelectTrigger>
-              <SelectContent>
-                {OPCOES_UF.map((o) => (
-                  <SelectItem key={o} value={o}>
-                    {o}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Combobox
+              value={end.uf}
+              onValueChange={(x) => setEnd((p) => ({ ...p, uf: x }))}
+              options={OPCOES_UF}
+              placeholder="Selecione"
+              searchPlaceholder="Buscar UF…"
+            />
           </div>
         </CardContent>
       </Card>
@@ -1249,11 +1182,12 @@ export function ClienteForm({
         <CardContent className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5 sm:col-span-2">
             <Label>Banco</Label>
-            <InputAutocomplete
+            <Combobox
               value={v.banco_conta}
               onValueChange={(x) => set("banco_conta", x)}
               options={OPCOES_BANCO}
-              placeholder="Pesquisar banco ou digitar"
+              placeholder="Selecione o banco"
+              searchPlaceholder="Buscar banco…"
             />
           </div>
 
@@ -1284,11 +1218,12 @@ export function ClienteForm({
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5 sm:col-span-2">
                   <Label>Banco</Label>
-                  <InputAutocomplete
+                  <Combobox
                     value={v.conjuge_banco_conta}
                     onValueChange={(x) => set("conjuge_banco_conta", x)}
                     options={OPCOES_BANCO}
-                    placeholder="Pesquisar banco ou digitar"
+                    placeholder="Selecione o banco"
+                    searchPlaceholder="Buscar banco…"
                   />
                 </div>
                 <div className="space-y-1.5">
