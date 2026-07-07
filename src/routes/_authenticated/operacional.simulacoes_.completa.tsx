@@ -110,6 +110,9 @@ function Pagina() {
   const [concluidos, setConcluidos] = useState(0);
   const [erros, setErros] = useState<Record<string, string>>({});
   const [entradaTocada, setEntradaTocada] = useState(false);
+  // Vínculo com o cadastro do CRM e marcação de inversão titular/cônjuge.
+  const [cadastroNome, setCadastroNome] = useState<string | null>(null);
+  const [invertido, setInvertido] = useState(false);
   const [confirmRenda, setConfirmRenda] = useState<null | {
     rendaMinima: number;
     rendaInformada: number;
