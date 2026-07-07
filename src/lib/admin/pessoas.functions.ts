@@ -308,6 +308,7 @@ export const atualizarPessoa = createServerFn({ method: "POST" })
         telefone: data.telefone ?? null,
         nivel_acesso_id: data.nivel_acesso_id,
         acesso_tipo: acessoTipo,
+        ...(data.tipo_pessoa ? { tipo_pessoa: data.tipo_pessoa } : {}),
       })
       .eq("id", data.id);
     if (upErr) throw new Error("Não foi possível atualizar a pessoa.");
