@@ -149,6 +149,8 @@ export function SidebarRail({ nav, onNavigate }: SidebarProps) {
               <Link
                 to={to as string}
                 onClick={onNavigate}
+                aria-current={active ? "page" : undefined}
+                aria-label={item.label}
                 className={cn(
                   "relative flex h-10 w-10 items-center justify-center rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
                   active
