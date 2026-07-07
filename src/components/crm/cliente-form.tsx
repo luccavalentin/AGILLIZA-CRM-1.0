@@ -74,6 +74,10 @@ export interface ClienteFormValues {
   conjuge_renda: string;
   conjuge_email: string;
   conjuge_celular: string;
+  conjuge_banco_conta: string;
+  conjuge_agencia: string;
+  conjuge_conta_corrente: string;
+  conjuge_digito_conta: string;
 }
 
 const ESTADOS_CIVIS = [
