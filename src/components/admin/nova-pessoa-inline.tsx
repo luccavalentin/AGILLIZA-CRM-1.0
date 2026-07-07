@@ -96,13 +96,13 @@ export function NovaPessoaInline({
   });
   const tiposAtivos = useMemo(() => (tipos ?? []).filter((t) => t.ativo), [tipos]);
   const tipoSel = useMemo(
-    () => tiposAtivos.find((t) => t.slug === tipoPessoa),
-    [tiposAtivos, tipoPessoa],
+    () => tiposAtivos.find((t) => t.slug === tiposPessoa[0]),
+    [tiposAtivos, tiposPessoa],
   );
 
   // Seleciona o primeiro tipo automaticamente (e aplica o login padrão dele).
-  if (tiposAtivos.length > 0 && !tipoPessoa) {
-    setTipoPessoa(tiposAtivos[0].slug);
+  if (tiposAtivos.length > 0 && tiposPessoa.length === 0) {
+    setTiposPessoa([tiposAtivos[0].slug]);
     setComLogin(tiposAtivos[0].login_padrao);
   }
 
