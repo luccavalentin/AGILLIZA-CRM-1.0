@@ -257,7 +257,9 @@ export const excluirNo = createServerFn({ method: "POST" })
 /** Signed URL para abrir/baixar um arquivo. */
 export const urlArquivo = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) => z.object({ id: z.string().uuid() }).parse(data))
+  .inputValidator((data) =>
+    z.object({ id: z.string().uuid(), download: z.boolean().optional() }).parse(data),
+  )
   .handler(async ({ context, data }): Promise<{ url: string; nome: string }> => {
     const { supabase, userId } = context;
     const corr = await correspondenteDoUsuario(supabase, userId);
@@ -271,7 +273,11 @@ export const urlArquivo = createServerFn({ method: "POST" })
     if (!no?.storage_path) throw new Error("Arquivo não encontrado.");
     const { data: signed, error } = await supabase.storage
       .from("arquivos")
-      .createSignedUrl(no.storage_path, 300, { download: no.nome });
+      .createSignedUrl(
+        no.storage_path,
+        300,
+        data.download ? { download: no.nome } : undefined,
+      );
     if (error || !signed?.signedUrl) throw new Error("Não foi possível gerar o link.");
     return { url: signed.signedUrl, nome: no.nome };
   });
