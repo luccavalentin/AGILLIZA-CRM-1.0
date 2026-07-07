@@ -12,7 +12,7 @@ import {
   Tags,
   ListChecks,
   Signal,
-  ArrowUpRight,
+  
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -106,7 +106,7 @@ function Pagina() {
 
       <SecaoSla tipos={tipos.data} prioridades={prioridades.data} canais={canais.data} />
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-6 lg:grid-cols-2">
         <SecaoCatalogo
           categoria="tipo_demanda"
           titulo="Tipos de demanda"
@@ -118,12 +118,6 @@ function Pagina() {
           titulo="Prioridades"
           icon={<Signal className="h-4 w-4 text-muted-foreground" />}
           q={prioridades}
-        />
-        <SecaoCatalogo
-          categoria="canal"
-          titulo="Escalonar para"
-          icon={<ArrowUpRight className="h-4 w-4 text-muted-foreground" />}
-          q={canais}
         />
       </div>
 
