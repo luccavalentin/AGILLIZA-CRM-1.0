@@ -6,21 +6,33 @@ import type { AppRole } from "@/lib/session.functions";
 /** Papéis que NUNCA podem ser atribuídos por outro usuário do ecossistema. */
 const PAPEIS_PROIBIDOS: AppRole[] = ["correspondente", "admin"];
 
-export const criarSchema = z.object({
-  nome: z.string().min(2, "Informe o nome completo."),
-  email: z.string().email("E-mail inválido."),
-  telefone: z.string().optional(),
-  nivel_acesso_id: z.string().uuid("Selecione um nível de acesso."),
-  dados_parceiro: z
-    .object({
-      creci: z.string().optional(),
-      comissao_padrao: z.number().optional(),
-      imobiliaria_id: z.string().uuid().optional().nullable(),
-    })
-    .optional(),
-});
+export const criarSchema = z
+  .object({
+    nome: z.string().min(2, "Informe o nome completo."),
+    email: z.string().email("E-mail inválido.").optional().or(z.literal("")),
+    telefone: z.string().optional(),
+    nivel_acesso_id: z.string().uuid("Selecione um nível de acesso."),
+    tipo_pessoa: z.enum(["usuario", "imobiliaria", "corretor"]).default("usuario"),
+    com_login: z.boolean().default(true),
+    dados_parceiro: z
+      .object({
+        creci: z.string().optional(),
+        comissao_padrao: z.number().optional(),
+        imobiliaria_id: z.string().uuid().optional().nullable(),
+      })
+      .optional(),
+  })
+  .refine((d) => !d.com_login || (d.email && d.email.trim().length > 0), {
+    message: "Informe um e-mail para pessoas com acesso ao sistema.",
+    path: ["email"],
+  })
+  .refine((d) => d.tipo_pessoa !== "usuario" || d.com_login, {
+    message: "Usuário interno precisa ter acesso ao sistema.",
+    path: ["com_login"],
+  });
 
 export type CriarPessoaInput = z.infer<typeof criarSchema>;
+export type TipoPessoa = "usuario" | "imobiliaria" | "corretor";
 
 export interface PessoaLista {
   id: string;
@@ -28,6 +40,8 @@ export interface PessoaLista {
   email: string | null;
   telefone: string | null;
   acesso_tipo: "sistema" | "portal_parceiro";
+  tipo_pessoa: TipoPessoa;
+  login_habilitado: boolean;
   ativo: boolean;
   bloqueado_em: string | null;
   roles: AppRole[];
