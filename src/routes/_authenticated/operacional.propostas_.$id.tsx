@@ -29,6 +29,7 @@ import {
   moverStatusProposta,
   adicionarFollowup,
   adicionarEnvolvido,
+  obterConjugeCliente,
   atualizarEnvolvido,
   removerEnvolvido,
   registrarDocumento,
@@ -974,6 +975,7 @@ function TabEnvolvidos({
   const addFn = useServerFn(adicionarEnvolvido);
   const updFn = useServerFn(atualizarEnvolvido);
   const delFn = useServerFn(removerEnvolvido);
+  const conjClienteFn = useServerFn(obterConjugeCliente);
   const [open, setOpen] = useState(false);
   const [salvando, setSalvando] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
@@ -999,14 +1001,27 @@ function TabEnvolvidos({
     setOpen(true);
   }
 
-  function editar(e: any) {
+  async function editar(e: any) {
     setEditId(e.id);
     setInicial(envolvidoParaForm(e));
     const conj = envolvidos.find((x) => x.conjuge_de === e.id);
     setConjugeInicial(conj ? envolvidoParaForm(conj) : undefined);
     setConjugeId(conj?.id ?? null);
     setOpen(true);
+    // Sem cônjuge cadastrado na proposta: puxa os dados do cônjuge já
+    // preenchidos na ficha do cliente (CRM) para pré-preencher o formulário.
+    // O próprio server fn decide se o cliente é casado e tem cônjuge cadastrado.
+    if (!conj && e.cliente_id) {
+      try {
+        const dadosConj = await conjClienteFn({ data: { cliente_id: e.cliente_id } });
+        if (dadosConj) setConjugeInicial(envolvidoParaForm(dadosConj));
+      } catch {
+        /* ignora: mantém o bloco do cônjuge vazio */
+      }
+    }
   }
+
+
 
   // Abre automaticamente o formulário do comprador principal ao criar a proposta.
   useEffect(() => {
