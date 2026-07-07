@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Send, Loader2, MessageCircle } from "lucide-react";
+import { Send, Loader2, MessageCircle, Paperclip, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -65,6 +65,8 @@ export function ChatClienteTab({ clienteId, info }: { clienteId: string; info?: 
   const responder = useServerFn(responderChatCliente);
   const marcarLido = useServerFn(marcarChatClienteLido);
   const [texto, setTexto] = useState("");
+  const [enviandoAnexo, setEnviandoAnexo] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
   const fimRef = useRef<HTMLDivElement>(null);
 
   const queryKey = ["chat-cliente", clienteId];
@@ -118,6 +120,38 @@ export function ChatClienteTab({ clienteId, info }: { clienteId: string; info?: 
     if (!t || enviar.isPending) return;
     enviar.mutate(t);
   }
+
+  async function handleAnexo(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Arquivo muito grande (máx. 10MB).");
+      if (fileRef.current) fileRef.current.value = "";
+      return;
+    }
+    setEnviandoAnexo(true);
+    try {
+      const ext = file.name.split(".").pop()?.toLowerCase() || "bin";
+      const path = `${clienteId}/chat/${Date.now()}-${crypto.randomUUID()}.${ext}`;
+      const { error } = await supabase.storage
+        .from("cliente-documentos")
+        .upload(path, file, { contentType: file.type || undefined, upsert: false });
+      if (error) throw error;
+      await responder({
+        data: { cliente_id: clienteId, mensagem: texto.trim() || undefined, anexo_path: path },
+      });
+      setTexto("");
+      qc.invalidateQueries({ queryKey });
+      toast.success("Arquivo enviado.");
+    } catch (err) {
+      const motivo = err instanceof Error ? err.message : String(err);
+      toast.error(`Falha ao enviar o arquivo: ${motivo}`);
+    } finally {
+      setEnviandoAnexo(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  }
+
 
   return (
     <PopOutPanel title={`Conversa · ${info?.nome ?? "Cliente"}`} className="h-[32rem]">
@@ -217,9 +251,34 @@ export function ChatClienteTab({ clienteId, info }: { clienteId: string; info?: 
                           : (info?.nome?.trim() || "Cliente")}
                       </p>
                     )}
-                    <p className="whitespace-pre-wrap break-words leading-relaxed">
-                      {m.mensagem}
-                    </p>
+                    {m.anexo_url &&
+                      (m.anexo_is_imagem ? (
+                        <a href={m.anexo_url} target="_blank" rel="noreferrer">
+                          <img
+                            src={m.anexo_url}
+                            alt={m.anexo_nome ?? "Imagem"}
+                            className="mb-1 max-h-56 w-full rounded-lg object-cover"
+                          />
+                        </a>
+                      ) : (
+                        <a
+                          href={m.anexo_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className={cn(
+                            "mb-1 flex items-center gap-2 rounded-lg px-2.5 py-2 text-xs font-medium underline-offset-2 hover:underline",
+                            doTime ? "bg-primary-foreground/15" : "bg-muted",
+                          )}
+                        >
+                          <FileText className="h-4 w-4 shrink-0" />
+                          <span className="truncate">{m.anexo_nome ?? "Arquivo"}</span>
+                        </a>
+                      ))}
+                    {m.mensagem && m.mensagem !== m.anexo_nome && (
+                      <p className="whitespace-pre-wrap break-words leading-relaxed">
+                        {m.mensagem}
+                      </p>
+                    )}
                     <p
                       className={cn(
                         "mt-1 text-right text-[10px]",
@@ -240,6 +299,28 @@ export function ChatClienteTab({ clienteId, info }: { clienteId: string; info?: 
       </div>
 
       <div className="flex items-end gap-2 border-t bg-muted/30 p-3">
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.txt"
+          className="hidden"
+          onChange={handleAnexo}
+        />
+        <Button
+          type="button"
+          onClick={() => fileRef.current?.click()}
+          disabled={enviandoAnexo || enviar.isPending}
+          size="icon"
+          variant="outline"
+          className="h-11 w-11 shrink-0 rounded-xl"
+          title="Anexar imagem ou documento"
+        >
+          {enviandoAnexo ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Paperclip className="h-4 w-4" />
+          )}
+        </Button>
         <Textarea
           value={texto}
           onChange={(e) => setTexto(e.target.value)}

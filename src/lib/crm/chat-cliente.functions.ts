@@ -9,8 +9,40 @@ export interface ChatMensagem {
   remetente_nome: string | null;
   mensagem: string;
   anexo_url: string | null;
+  anexo_nome: string | null;
+  anexo_is_imagem: boolean;
   lida_em: string | null;
   criada_em: string;
+}
+
+const IMG_EXT = /\.(png|jpe?g|gif|webp|bmp|heic|heif|svg)$/i;
+
+/** Converte caminhos de storage em URLs assinadas temporárias (imagens/docs do chat). */
+async function resolverAnexosChat<T extends { anexo_url: string | null }>(
+  supabase: any,
+  lista: T[],
+): Promise<(T & { anexo_nome: string | null; anexo_is_imagem: boolean })[]> {
+  return Promise.all(
+    lista.map(async (m) => {
+      let anexoUrl: string | null = m.anexo_url ?? null;
+      let anexoNome: string | null = null;
+      if (anexoUrl && !/^https?:\/\//i.test(anexoUrl)) {
+        const partes = anexoUrl.split("/");
+        anexoNome =
+          partes[partes.length - 1]?.replace(/^\d+-[0-9a-f-]+\./i, "arquivo.") ?? null;
+        const { data: signed } = await supabase.storage
+          .from("cliente-documentos")
+          .createSignedUrl(anexoUrl, 3600);
+        anexoUrl = signed?.signedUrl ?? null;
+      }
+      return {
+        ...m,
+        anexo_url: anexoUrl,
+        anexo_nome: anexoNome,
+        anexo_is_imagem: anexoUrl ? IMG_EXT.test(anexoUrl.split("?")[0]) : false,
+      };
+    }),
+  );
 }
 
 export interface ConversaCliente {
@@ -152,7 +184,10 @@ export const listarChatCliente = createServerFn({ method: "GET" })
       .order("criada_em", { ascending: true })
       .limit(500);
     if (error) throw new Error(error.message);
-    const lista = (rows ?? []) as Omit<ChatMensagem, "remetente_nome">[];
+    const lista = (rows ?? []) as Omit<
+      ChatMensagem,
+      "remetente_nome" | "anexo_nome" | "anexo_is_imagem"
+    >[];
 
     // Nome completo dos membros da equipe que enviaram mensagens
     const idsTime = Array.from(
@@ -168,7 +203,8 @@ export const listarChatCliente = createServerFn({ method: "GET" })
       for (const p of perfis ?? []) nomes.set(p.id, p.nome ?? "");
     }
 
-    return lista.map((m) => ({
+    const comAnexo = await resolverAnexosChat(supabase, lista);
+    return comAnexo.map((m) => ({
       ...m,
       remetente_nome:
         m.remetente_tipo === "time" ? (nomes.get(m.remetente_id ?? "") ?? null) : null,
@@ -178,20 +214,31 @@ export const listarChatCliente = createServerFn({ method: "GET" })
 /** Envia uma mensagem ao cliente como time e notifica o cliente no App. */
 export const responderChatCliente = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { cliente_id: string; mensagem: string }) =>
+  .inputValidator((d: { cliente_id: string; mensagem?: string; anexo_path?: string }) =>
     z
-      .object({ cliente_id: z.string().uuid(), mensagem: z.string().trim().min(1).max(4000) })
+      .object({
+        cliente_id: z.string().uuid(),
+        mensagem: z.string().trim().max(4000).optional(),
+        anexo_path: z.string().trim().max(1000).optional(),
+      })
+      .refine((v) => (v.mensagem?.trim()?.length ?? 0) > 0 || !!v.anexo_path, {
+        message: "Escreva uma mensagem ou anexe um arquivo.",
+      })
       .parse(d),
   )
   .handler(async ({ data, context }): Promise<ChatMensagem> => {
     const { supabase } = context;
+    const nomeAnexo = data.anexo_path?.split("/").pop() ?? null;
     const { data: nova, error } = await supabase.rpc("portal_time_responder", {
       _cid: data.cliente_id,
-      _msg: data.mensagem,
-      _anexo: null as unknown as string,
+      _msg: data.mensagem?.trim() || nomeAnexo || "Arquivo",
+      _anexo: (data.anexo_path ?? null) as unknown as string,
     });
     if (error) throw new Error(error.message);
-    return nova as unknown as ChatMensagem;
+    const [resolvida] = await resolverAnexosChat(supabase, [
+      nova as unknown as { anexo_url: string | null },
+    ]);
+    return resolvida as unknown as ChatMensagem;
   });
 
 /** Marca como lidas as mensagens enviadas pelo cliente. */
