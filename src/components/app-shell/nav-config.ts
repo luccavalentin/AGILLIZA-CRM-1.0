@@ -10,7 +10,7 @@ import {
   ListChecks,
   FolderOpen,
   Wallet,
-  Percent,
+  
   BarChart3,
   UserCog,
   SlidersHorizontal,
@@ -247,12 +247,6 @@ export const navInterno: NavGroup[] = [
         perm: { modulo: "financeiro.contas_receber" },
       },
       {
-        label: "Comissões",
-        icon: Percent,
-        to: "/financeiro/comissoes",
-        perm: { modulo: "financeiro.comissoes" },
-      },
-      {
         label: "Fluxo de caixa",
         icon: Wallet,
         to: "/financeiro/fluxo-de-caixa",
@@ -317,6 +311,18 @@ export const navInterno: NavGroup[] = [
             to: "/admin/sla",
             perm: { modulo: "admin.sla" },
           },
+          {
+            label: "Auditoria",
+            icon: ShieldCheck,
+            to: "/admin/auditoria",
+            perm: { modulo: "admin.auditoria" },
+          },
+          {
+            label: "Backup",
+            icon: DatabaseBackup,
+            to: "/admin/backup",
+            perm: { modulo: "admin.backup" },
+          },
         ],
       },
       {
@@ -328,28 +334,10 @@ export const navInterno: NavGroup[] = [
 
 
       {
-        label: "Comissões",
-        icon: Percent,
-        to: "/admin/comissoes",
-        perm: { modulo: "admin.comissoes" },
-      },
-      {
         label: "Notificações",
         icon: Bell,
         to: "/admin/notificacoes",
         perm: { modulo: "admin.notificacoes" },
-      },
-      {
-        label: "Auditoria",
-        icon: ShieldCheck,
-        to: "/admin/auditoria",
-        perm: { modulo: "admin.auditoria" },
-      },
-      {
-        label: "Backup",
-        icon: DatabaseBackup,
-        to: "/admin/backup",
-        perm: { modulo: "admin.backup" },
       },
       {
         label: "Parâmetros",

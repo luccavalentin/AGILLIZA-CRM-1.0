@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Bell, CheckCheck } from "lucide-react";
+import { Bell, CheckCheck, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -14,6 +14,7 @@ import {
   marcarNotificacaoLida,
   marcarTodasLidas,
   excluirNotificacao,
+  limparNotificacoes,
   type Notificacao,
 } from "@/lib/notificacoes.functions";
 
@@ -79,6 +80,11 @@ export function NotificationsBell({ userId }: NotificationsBellProps) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["notificacoes"] }),
   });
 
+  const limpar = useMutation({
+    mutationFn: () => limparNotificacoes(),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["notificacoes"] }),
+  });
+
   const naoLidas = data?.naoLidas ?? 0;
   const itens = data?.itens ?? [];
   const itensNaoLidos = itens.filter((n) => !n.lida);
@@ -130,16 +136,29 @@ export function NotificationsBell({ userId }: NotificationsBellProps) {
       <PopoverContent align="end" className="w-80 p-0">
         <div className="flex items-center justify-between border-b px-4 py-3">
           <span className="text-sm font-semibold text-foreground">Notificações</span>
-          {naoLidas > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-auto px-2 py-1 text-xs"
-              onClick={() => marcarTodas.mutate()}
-            >
-              <CheckCheck className="mr-1 h-3.5 w-3.5" /> Marcar todas
-            </Button>
-          )}
+          <div className="flex items-center gap-1">
+            {naoLidas > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-auto px-2 py-1 text-xs"
+                onClick={() => marcarTodas.mutate()}
+              >
+                <CheckCheck className="mr-1 h-3.5 w-3.5" /> Marcar todas
+              </Button>
+            )}
+            {itens.length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-auto px-2 py-1 text-xs text-muted-foreground hover:text-destructive"
+                onClick={() => limpar.mutate()}
+                disabled={limpar.isPending}
+              >
+                <Trash2 className="mr-1 h-3.5 w-3.5" /> Limpar
+              </Button>
+            )}
+          </div>
         </div>
         <ScrollArea className="max-h-80">
           {itens.length === 0 ? (
