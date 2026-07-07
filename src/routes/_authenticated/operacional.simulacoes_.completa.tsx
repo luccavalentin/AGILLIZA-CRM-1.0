@@ -429,40 +429,6 @@ function Pagina() {
         /* download opcional — a simulação já foi criada */
       }
 
-      // Fluxo "Nova Proposta": cria a proposta e envia direto ao banco vencedor.
-      if (gerarProposta) {
-        try {
-          const bancos = (dadosSim?.bancos ?? []).filter(
-            (b: any) => b.status_banco === "simulada",
-          );
-          // Escolhe o banco vencedor pela menor parcela quando houver simulação retornada.
-          const vencedor = bancos
-            .slice()
-            .sort(
-              (a: any, b: any) =>
-                (Number(a.valor_parcela) || Infinity) - (Number(b.valor_parcela) || Infinity),
-            )[0];
-          const proposta = await criarPropostaFn({
-            data: {
-              simulacao_id: id,
-              banco_id: vencedor?.banco_id ?? undefined,
-            },
-          });
-          toast.success(`Proposta ${proposta.numero_proposta} criada e enviada ao banco.`);
-          router.navigate({
-            to: "/operacional/propostas/$id",
-            params: { id: proposta.proposta_id },
-            search: { complementar: 1 },
-          });
-          return;
-        } catch (e) {
-          toast.error(
-            e instanceof Error
-              ? `Simulação criada, mas a proposta falhou: ${e.message}`
-              : "Simulação criada, mas não foi possível gerar a proposta.",
-          );
-        }
-      }
       router.navigate({ to: "/operacional/simulacoes/$id", params: { id } });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Não foi possível criar a simulação.");
