@@ -249,7 +249,7 @@ export const criarSimulacao = createServerFn({ method: "POST" })
       nome_cliente: dd.nome_cliente ?? null,
       email: dd.email ?? null,
       celular: dd.celular ?? null,
-      data_nascimento: dd.data_nascimento ?? null,
+      data_nascimento: dd.data_nascimento || null,
       renda_total: dd.renda_total ?? null,
       estado_civil: dd.estado_civil ?? null,
       possui_conjuge: dd.possui_conjuge ?? false,
