@@ -679,6 +679,16 @@ function Pagina() {
             )}
           </Campo>
 
+          <Campo label="Valor total do financiamento (R$)">
+            <CurrencyInput value={f.valor_financiamento} onChange={() => {}} />
+            <p className="text-xs text-muted-foreground">
+              Calculado automaticamente: valor do imóvel − entrada
+              {f.financiar_despesas ? " (despesas incluídas ao enviar)" : ""}.
+            </p>
+          </Campo>
+
+
+
           <Campo
             label={
               <>
