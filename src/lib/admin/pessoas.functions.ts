@@ -333,7 +333,56 @@ export const atualizarPessoa = createServerFn({ method: "POST" })
       entidadeId: data.id,
       payloadAnterior: { nome: alvo.nome, nivel_acesso_id: alvo.nivel_acesso_id },
       payloadNovo: { nome: data.nome, nivel_acesso_id: data.nivel_acesso_id, papel },
+  });
+
+/**
+ * Habilita o login de uma pessoa que foi cadastrada sem acesso (imobiliária/corretor).
+ * Define o e-mail real, gera senha provisória, desbane no Auth e marca login_habilitado.
+ */
+export const habilitarLoginPessoa = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) =>
+    z
+      .object({ id: z.string().uuid(), email: z.string().email("E-mail inválido.") })
+      .parse(data),
+  )
+  .handler(async ({ data, context }): Promise<ResultadoCriarPessoa> => {
+    const { supabase, userId } = context;
+    const { correspondenteId } = await carregarAlvo(supabase, userId, data.id);
+
+    const email = data.email.trim();
+    const senha = email;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { error: authErr } = await supabaseAdmin.auth.admin.updateUserById(data.id, {
+      email,
+      email_confirm: true,
+      password: senha,
+      ban_duration: "none",
     });
+    if (authErr) {
+      throw new Error("Não foi possível habilitar o login. Verifique o e-mail e tente novamente.");
+    }
+
+    const { error: upErr } = await supabaseAdmin
+      .from("profiles")
+      .update({ email, login_habilitado: true, ativo: true, bloqueado_em: null })
+      .eq("id", data.id);
+    if (upErr) throw new Error("Não foi possível habilitar o login.");
+
+    const { registrarAuditoria } = await import("@/lib/admin/audit.server");
+    await registrarAuditoria({
+      supabase,
+      userId,
+      correspondenteId,
+      acao: "pessoa.habilitar_login",
+      entidade: "profiles",
+      entidadeId: data.id,
+      payloadNovo: { email },
+    });
+
+    return { email, senha_temporaria: senha };
+  });
 
     return { ok: true };
   });
