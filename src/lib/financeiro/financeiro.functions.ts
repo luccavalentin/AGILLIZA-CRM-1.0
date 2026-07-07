@@ -675,7 +675,12 @@ export interface FinanceiroKpis {
 
 export const obterKpisFinanceiros = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }): Promise<FinanceiroKpis> => {
+  .inputValidator((data) =>
+    z
+      .object({ de: z.string().optional(), ate: z.string().optional() })
+      .parse(data ?? {}),
+  )
+  .handler(async ({ context, data }): Promise<FinanceiroKpis> => {
     const { supabase } = context;
     const hoje = new Date();
     hoje.setHours(0, 0, 0, 0);
@@ -683,7 +688,10 @@ export const obterKpisFinanceiros = createServerFn({ method: "GET" })
     const hojeStr = iso(hoje);
     const em30 = new Date(hoje);
     em30.setDate(em30.getDate() + 30);
-    const em30Str = iso(em30);
+    // Janela do período: usa de/ate quando informados, senão hoje..+30d.
+    const inicioStr = data.de || hojeStr;
+    const fimStr = data.ate || iso(em30);
+    const em30Str = fimStr;
     const limiteInadimplencia = new Date(hoje);
     limiteInadimplencia.setDate(limiteInadimplencia.getDate() - 10);
     const inadimStr = iso(limiteInadimplencia);
