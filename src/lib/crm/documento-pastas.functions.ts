@@ -221,7 +221,7 @@ export const excluirPastaDocumentos = createServerFn({ method: "POST" })
         .update({ categoria: "outros" })
         .eq("cliente_id", pasta.cliente_id)
         .is("pasta_id", null)
-        .in("categoria", SLUG_CATEGORIAS[pasta.slug]);
+        .in("categoria", SLUG_CATEGORIAS[pasta.slug] as any);
     }
 
     const { error } = await supabase.from("cliente_documento_pastas").delete().eq("id", data.id);
