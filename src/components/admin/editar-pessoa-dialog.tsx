@@ -99,14 +99,19 @@ export function EditarPessoaDialog({
           </div>
           <div className="space-y-2">
             <Label>Tipo de pessoa</Label>
-            <Select value={tipoPessoa} onValueChange={(v) => setTipoPessoa(v as TipoPessoa)}>
+            <Select value={tipoPessoa} onValueChange={(v) => setTipoPessoa(v)}>
               <SelectTrigger>
-                <SelectValue />
+                <SelectValue placeholder="Selecione o tipo" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="usuario">Usuário (equipe interna)</SelectItem>
-                <SelectItem value="imobiliaria">Imobiliária</SelectItem>
-                <SelectItem value="corretor">Corretor</SelectItem>
+                {(tipos ?? [])
+                  .filter((t) => t.ativo || t.slug === tipoPessoa)
+                  .map((t) => (
+                    <SelectItem key={t.id} value={t.slug}>
+                      {t.nome}
+                      {t.acesso_tipo === "portal_parceiro" ? " · Parceiro" : " · Interno"}
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
           </div>
