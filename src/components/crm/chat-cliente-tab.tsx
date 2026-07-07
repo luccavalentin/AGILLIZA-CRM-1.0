@@ -299,6 +299,28 @@ export function ChatClienteTab({ clienteId, info }: { clienteId: string; info?: 
       </div>
 
       <div className="flex items-end gap-2 border-t bg-muted/30 p-3">
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.txt"
+          className="hidden"
+          onChange={handleAnexo}
+        />
+        <Button
+          type="button"
+          onClick={() => fileRef.current?.click()}
+          disabled={enviandoAnexo || enviar.isPending}
+          size="icon"
+          variant="outline"
+          className="h-11 w-11 shrink-0 rounded-xl"
+          title="Anexar imagem ou documento"
+        >
+          {enviandoAnexo ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Paperclip className="h-4 w-4" />
+          )}
+        </Button>
         <Textarea
           value={texto}
           onChange={(e) => setTexto(e.target.value)}
