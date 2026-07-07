@@ -69,12 +69,20 @@ export function DetalheBancoDialog({
       </DialogTrigger>
       <DialogContent className="max-h-[90vh] max-w-4xl overflow-hidden p-0">
         <DialogHeader className="border-b border-border p-4">
-          <DialogTitle className="flex items-center gap-2">
-            <BancoLogo nome={banco?.nome_banco} size="lg" />
-            <span style={{ color: corDoBanco(banco?.nome_banco) }}>{banco?.nome_banco ?? "Banco"}</span>
-            <BancoStatusBadge status={banco?.status_banco} />
-          </DialogTitle>
+          <div className="flex items-center justify-between gap-2 pr-8">
+            <DialogTitle className="flex items-center gap-2">
+              <BancoLogo nome={banco?.nome_banco} size="lg" />
+              <span style={{ color: corDoBanco(banco?.nome_banco) }}>{banco?.nome_banco ?? "Banco"}</span>
+              <BancoStatusBadge status={banco?.status_banco} />
+            </DialogTitle>
+            {temDetalhe && (
+              <Button variant="outline" size="sm" onClick={baixar}>
+                <Download className="mr-1 h-4 w-4" /> Baixar detalhamento
+              </Button>
+            )}
+          </div>
         </DialogHeader>
+
 
         <div className="max-h-[calc(90vh-4rem)] space-y-6 overflow-y-auto p-4">
           {!temDetalhe ? (
