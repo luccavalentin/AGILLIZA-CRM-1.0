@@ -110,11 +110,11 @@ function CollapsibleGroup({
     <Collapsible defaultOpen={algumAtivo}>
       <CollapsibleTrigger
         className={cn(
-          "flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-sidebar-foreground/80 transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
+          "flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-sidebar-foreground transition-colors hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
           "[&[data-state=open]>svg:last-child]:rotate-90",
         )}
       >
-        <Icon className="h-[18px] w-[18px] shrink-0 text-sidebar-foreground/70" />
+        <Icon className="h-[18px] w-[18px] shrink-0 text-sidebar-primary" />
         <span className="truncate">{item.label}</span>
         <ChevronRight className="ml-auto h-4 w-4 transition-transform" />
       </CollapsibleTrigger>
