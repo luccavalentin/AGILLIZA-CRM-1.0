@@ -597,6 +597,13 @@ function TabResumo({
   }
 
   const status = proposta.status as PropostaStatus;
+  // Depois que a proposta já foi ao banco, mostra somente os bancos realmente
+  // enviados (não a lista de simulações vinculadas). Antes do envio, mostra
+  // todos para o usuário escolher qual enviar.
+  const houveEnvio = (bancos ?? []).some((b) => bancoJaEnviado(b));
+  const bancosVisiveis = houveEnvio
+    ? (bancos ?? []).filter((b) => bancoJaEnviado(b))
+    : (bancos ?? []);
   const podeEnviarBanco =
     Boolean(proposta.homefin_id_oportunidade) &&
     !["cancelada", "registrado", "credito_recusado", "contrato_emitido"].includes(status);
@@ -636,7 +643,9 @@ function TabResumo({
     <div className="space-y-5">
       <div className="rounded-lg border border-border">
         <div className="border-b border-border px-4 py-2 text-sm font-medium text-muted-foreground">
-          Bancos / Simulações vinculadas — envie somente o banco escolhido nesta proposta
+          {houveEnvio
+            ? "Banco enviado nesta proposta"
+            : "Bancos / Simulações vinculadas — envie somente o banco escolhido nesta proposta"}
         </div>
         <Table>
           <TableHeader>
@@ -654,14 +663,14 @@ function TabResumo({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {bancos.length === 0 && (
+            {bancosVisiveis.length === 0 && (
               <TableRow>
                 <TableCell colSpan={10} className="py-8 text-center text-sm text-muted-foreground">
                   Nenhum banco vinculado.
                 </TableCell>
               </TableRow>
             )}
-            {bancos.map((b) => (
+            {bancosVisiveis.map((b) => (
               <TableRow key={b.id} className={cn(b.selecionado && "bg-accent/40")}>
                 <TableCell>
                   <Checkbox
