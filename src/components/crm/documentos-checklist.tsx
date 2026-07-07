@@ -281,16 +281,8 @@ export function DocumentosChecklist({ clienteId }: { clienteId: string }) {
           <CardTitle className="text-base">Checklist do imóvel</CardTitle>
         </CardHeader>
         <CardContent className="space-y-1">
-          <DocItem
-            itemKey="i_matricula"
-            cat="imovel"
-            label="Matrícula atualizada com certidão de ônus"
-          />
-          <DocItem
-            itemKey="i_iptu"
-            cat="imovel"
-            label="Capa do IPTU ou Certidão de Valor Venal"
-          />
+          <DocItem itemKey="i_matricula" cat="imovel" label={T.imovel[0]} />
+          <DocItem itemKey="i_iptu" cat="imovel" label={T.imovel[1]} />
           <div className="mt-2 flex items-center justify-between rounded-lg border border-border p-3">
             <Label className="text-sm">O imóvel fica em condomínio?</Label>
             <Switch
@@ -300,8 +292,8 @@ export function DocumentosChecklist({ clienteId }: { clienteId: string }) {
           </div>
           {check["i_condominio"] === true && (
             <div className="mt-2 space-y-1 rounded-lg border border-dashed border-border p-3">
-              <DocItem itemKey="i_cnd_cond" cat="imovel" label="CND condominial" />
-              <DocItem itemKey="i_planta" cat="imovel" label="Planta de quadra e lote" />
+              <DocItem itemKey="i_cnd_cond" cat="imovel" label={T.imovel[2]} />
+              <DocItem itemKey="i_planta" cat="imovel" label={T.imovel[3]} />
             </div>
           )}
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
