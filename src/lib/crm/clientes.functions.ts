@@ -792,6 +792,67 @@ export const urlDocumento = createServerFn({ method: "POST" })
     return { url: signed.signedUrl };
   });
 
+/** Edita metadados do documento (categoria/tipo). */
+export const editarDocumento = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        id: z.string().uuid(),
+        categoria: z.enum([
+          "comprador",
+          "conjuge",
+          "vendedor",
+          "vendedor_conjuge",
+          "imovel",
+          "outros",
+        ]),
+        tipo_documento: z.string().min(1),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }): Promise<{ ok: true }> => {
+    const { supabase, userId } = context;
+    if (!(await podeAcao(supabase, userId, "crm.clientes", "edit"))) {
+      throw new Error("Você não tem permissão para editar documentos.");
+    }
+    const { error } = await supabase
+      .from("cliente_documentos")
+      .update({ categoria: data.categoria, tipo_documento: data.tipo_documento })
+      .eq("id", data.id);
+    if (error) throw error;
+    return { ok: true };
+  });
+
+/** Exclui documento (registro + arquivo no storage). */
+export const excluirDocumento = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }): Promise<{ ok: true }> => {
+    const { supabase, userId } = context;
+    if (!(await podeAcao(supabase, userId, "crm.clientes", "edit"))) {
+      throw new Error("Você não tem permissão para excluir documentos.");
+    }
+    const { data: doc } = await supabase
+      .from("cliente_documentos")
+      .select("id, cliente_id, storage_path, nome_arquivo")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (!doc) throw new Error("Documento não encontrado.");
+    if (doc.storage_path) {
+      await supabase.storage.from("cliente-documentos").remove([doc.storage_path]);
+    }
+    const { error } = await supabase.from("cliente_documentos").delete().eq("id", data.id);
+    if (error) throw error;
+    await supabase.from("cliente_historico").insert({
+      cliente_id: doc.cliente_id,
+      tipo: "documento",
+      descricao: `Documento excluído: ${doc.nome_arquivo}`,
+      ator_id: userId,
+    });
+    return { ok: true };
+  });
+
 /** Move etapa manualmente (respeita regra de não retroceder). */
 export const moverEtapa = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
