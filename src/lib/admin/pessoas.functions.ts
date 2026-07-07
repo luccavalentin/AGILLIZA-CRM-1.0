@@ -8,7 +8,10 @@ const PAPEIS_PROIBIDOS: AppRole[] = ["correspondente", "admin"];
 
 export const criarSchema = z
   .object({
-    nome: z.string().min(2, "Informe o nome completo."),
+    nome: z
+      .string()
+      .min(2, "Informe o nome completo.")
+      .transform((v) => v.trim().toUpperCase()),
     email: z.string().email("E-mail inválido.").optional().or(z.literal("")),
     telefone: z.string().optional(),
     nivel_acesso_id: z.string().uuid("Selecione um nível de acesso."),
@@ -270,7 +273,10 @@ async function carregarAlvo(supabase: any, userId: string, alvoId: string) {
 
 export const atualizarSchema = z.object({
   id: z.string().uuid(),
-  nome: z.string().min(2, "Informe o nome completo."),
+  nome: z
+    .string()
+    .min(2, "Informe o nome completo.")
+    .transform((v) => v.trim().toUpperCase()),
   telefone: z.string().optional().nullable(),
   nivel_acesso_id: z.string().uuid("Selecione um nível de acesso."),
   tipo_pessoa: z.string().min(1).optional(),
