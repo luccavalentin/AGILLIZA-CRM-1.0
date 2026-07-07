@@ -476,6 +476,17 @@ async function forkNivelPadrao(
     const { error: erroPerms } = await supabase.from("permissions").insert(rows);
     if (erroPerms) throw new Error(erroPerms.message);
   }
+
+  // Se pessoas do ecossistema ainda apontam para o template global oculto,
+  // movemos todas para a cópia visível/editável. Sem isso, a tela parece salvar,
+  // mas o usuário continua usando as permissões antigas do template global.
+  const { error: perfilErr } = await supabase
+    .from("profiles")
+    .update({ nivel_acesso_id: copia.id })
+    .eq("correspondente_id", corresp)
+    .eq("nivel_acesso_id", origemId);
+  if (perfilErr) throw new Error(perfilErr.message);
+
   return copia.id;
 }
 
@@ -606,7 +617,16 @@ export const atualizarNivelAcesso = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const { data: nivel } = await supabase
+    const { data: pode } = await supabase.rpc("pode_gerenciar_pessoas", { _user_id: userId });
+    if (!pode) throw new Error("Você não tem permissão para editar níveis de acesso.");
+
+    const { data: corresp } = await supabase.rpc("correspondente_do_usuario", {
+      _user_id: userId,
+    });
+    if (!corresp) throw new Error("Correspondente não encontrado para o usuário.");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: nivel } = await supabaseAdmin
       .from("access_levels")
       .select("id, is_padrao, correspondente_id, nome, descricao, papel, acesso_tipo")
       .eq("id", data.id)
@@ -616,11 +636,7 @@ export const atualizarNivelAcesso = createServerFn({ method: "POST" })
     // Só o template global (sem correspondente) é clonado uma única vez.
     // O nível padrão já pertencente ao correspondente é editado no lugar.
     if (nivel.is_padrao && !nivel.correspondente_id) {
-      const { data: corresp } = await supabase.rpc("correspondente_do_usuario", {
-        _user_id: userId,
-      });
-      if (!corresp) throw new Error("Correspondente não encontrado para o usuário.");
-      const novoId = await forkNivelPadrao(supabase, corresp, data.id, {
+      const novoId = await forkNivelPadrao(supabaseAdmin, corresp, data.id, {
         nome: data.nome,
         descricao: data.descricao ?? null,
         papel: (data.papel ?? nivel.papel) as PapelNivel,
@@ -639,7 +655,11 @@ export const atualizarNivelAcesso = createServerFn({ method: "POST" })
       return { ok: true, id: novoId, clonado: true };
     }
 
-    const { error } = await supabase
+    if (nivel.correspondente_id !== corresp) {
+      throw new Error("Este nível de acesso não pertence ao seu ecossistema.");
+    }
+
+    const { data: atualizado, error } = await supabaseAdmin
       .from("access_levels")
       .update({
         nome: data.nome,
@@ -647,14 +667,17 @@ export const atualizarNivelAcesso = createServerFn({ method: "POST" })
         ...(data.papel ? { papel: data.papel } : {}),
         ...(data.acesso_tipo ? { acesso_tipo: data.acesso_tipo } : {}),
       })
-      .eq("id", data.id);
+      .eq("id", data.id)
+      .select("id")
+      .maybeSingle();
     if (error) throw new Error(error.message);
+    if (!atualizado) throw new Error("Nenhum nível de acesso foi atualizado.");
 
     const { registrarAuditoria } = await import("@/lib/admin/audit.server");
     await registrarAuditoria({
       supabase,
       userId,
-      correspondenteId: null,
+      correspondenteId: corresp,
       acao: "nivel_acesso.atualizar",
       entidade: "access_levels",
       entidadeId: data.id,
@@ -742,27 +765,38 @@ export const salvarPermissoes = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
 
+    const { data: pode } = await supabase.rpc("pode_gerenciar_pessoas", { _user_id: userId });
+    if (!pode) throw new Error("Você não tem permissão para editar permissões.");
+
+    const { data: corresp } = await supabase.rpc("correspondente_do_usuario", {
+      _user_id: userId,
+    });
+    if (!corresp) throw new Error("Correspondente não encontrado para o usuário.");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
     // Se o nível é padrão (global), cria uma cópia editável do correspondente
     // e grava as permissões nela em vez de tentar escrever no template global.
     let alvoId = data.nivel_acesso_id;
     let clonado = false;
-    const { data: nivel } = await supabase
+    const { data: nivel, error: nivelErr } = await supabaseAdmin
       .from("access_levels")
       .select("id, is_padrao, correspondente_id")
       .eq("id", data.nivel_acesso_id)
       .maybeSingle();
+    if (nivelErr) throw new Error(nivelErr.message);
+    if (!nivel) throw new Error("Nível de acesso não encontrado.");
+
     if (nivel?.is_padrao && !nivel.correspondente_id) {
-      const { data: corresp } = await supabase.rpc("correspondente_do_usuario", {
-        _user_id: userId,
-      });
-      if (!corresp) throw new Error("Correspondente não encontrado para o usuário.");
-      alvoId = await forkNivelPadrao(supabase, corresp, data.nivel_acesso_id);
+      alvoId = await forkNivelPadrao(supabaseAdmin, corresp, data.nivel_acesso_id);
       clonado = true;
+    } else if (nivel.correspondente_id !== corresp) {
+      throw new Error("Este nível de acesso não pertence ao seu ecossistema.");
     }
 
-    // Remove as permissões antigas e regrava (RLS garante que só níveis do
-    // próprio correspondente e gestor autorizado podem escrever).
-    const { error: delErr } = await supabase
+    // Remove as permissões antigas e regrava após a autorização acima. Usamos
+    // escrita administrativa para evitar falso positivo de RLS (sem erro, 0 linhas afetadas).
+    const { error: delErr } = await supabaseAdmin
       .from("permissions")
       .delete()
       .eq("nivel_acesso_id", alvoId);
@@ -779,7 +813,7 @@ export const salvarPermissoes = createServerFn({ method: "POST" })
       }));
 
     if (rows.length) {
-      const { data: inseridas, error } = await supabase
+      const { data: inseridas, error } = await supabaseAdmin
         .from("permissions")
         .insert(rows)
         .select("id, modulo, escopo_dados");
@@ -805,10 +839,10 @@ export const salvarPermissoes = createServerFn({ method: "POST" })
         });
       });
       if (alvoRows.length) {
-        const { error: alvoErr } = await supabase
+        const { error: alvoInsertErr } = await supabaseAdmin
           .from("permission_escopo_alvos")
           .insert(alvoRows);
-        if (alvoErr) throw new Error(alvoErr.message);
+        if (alvoInsertErr) throw new Error(alvoInsertErr.message);
       }
     }
 
@@ -816,7 +850,7 @@ export const salvarPermissoes = createServerFn({ method: "POST" })
     await registrarAuditoria({
       supabase,
       userId,
-      correspondenteId: null,
+      correspondenteId: corresp,
       acao: clonado ? "nivel_acesso.personalizar_permissoes" : "nivel_acesso.salvar_permissoes",
       entidade: "access_levels",
       entidadeId: alvoId,

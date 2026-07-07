@@ -120,7 +120,9 @@ export function NovaPessoaInline({
     mutationFn: () => {
       if (!nivelId) throw new Error("Selecione um nível de acesso.");
       const permissoes = Object.entries(estado).map(([k, v]) => {
-        const [modulo, acao] = k.split(":");
+        const idx = k.indexOf(":");
+        const modulo = k.slice(0, idx);
+        const acao = k.slice(idx + 1);
         return { modulo, acao, permitido: v.permitido, escopo_dados: v.escopo };
       });
       return salvar({ data: { nivel_acesso_id: nivelId, permissoes } });
