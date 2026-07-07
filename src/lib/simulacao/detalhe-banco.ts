@@ -215,7 +215,10 @@ export function extrairDetalheBanco(raw: unknown): DetalheBanco | null {
     num(desc.valorTotalFinanciamento) ??
     num(r.valorTotalFinanciamento) ??
     valorFin;
-  const despesasApi = num(r.valorDespesasFinanciadas) ?? num(desc.expensesFinancedValue);
+  const despesasApi =
+    num(r.valorDespesasFinanciadas) ??
+    num(desc.valorDespesasFinanciadas) ??
+    num(desc.expensesFinancedValue);
   const despesasDerivada =
     financiamentoTotalRaw != null && financiamentoBase != null
       ? Math.max(0, Math.round((financiamentoTotalRaw - financiamentoBase) * 100) / 100)
