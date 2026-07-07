@@ -98,6 +98,26 @@ export const buscarClientesCRM = createServerFn({ method: "GET" })
     return rows ?? [];
   });
 
+/** Busca um único cliente do CRM (por id) com os dados do cônjuge, para permitir
+ * puxar o cônjuge do cadastro mesmo quando a simulação foi salva como solteiro. */
+export const obterClienteCRM = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { data: row, error } = await supabase
+      .from("clientes")
+      .select(
+        "id, nome, documento, email, telefone_celular, data_nascimento, estado_civil, renda_total_declarada, tipo_pessoa, conjuge_nome, conjuge_cpf, conjuge_renda, conjuge_data_nascimento, conjuge_email, conjuge_celular",
+      )
+      .eq("id", data.id)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    return row ?? null;
+  });
+
+
+
 /** ===== Verificação por e-mail (OTP) ===== */
 export const enviarOtpEmail = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

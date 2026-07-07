@@ -57,6 +57,7 @@ import {
   criarSimulacao,
   enviarSimulacaoBanco,
   obterSimulacao,
+  obterClienteCRM,
 } from "@/lib/simulacao/simulacoes.functions";
 import { baixarSimulacaoPDF } from "@/lib/simulacao/simulacao-pdf";
 
@@ -319,6 +320,50 @@ function Pagina() {
 
 
   const mostraConjuge = f.possui_conjuge || f.compoe_renda;
+
+  // Cliente do CRM vinculado a esta simulação — usado para permitir puxar os
+  // dados do cônjuge do cadastro mesmo quando a simulação está como solteiro.
+  const obterClienteCrmFn = useServerFn(obterClienteCRM);
+  const { data: crmVinculado } = useQuery({
+    queryKey: ["cliente-crm-vinculado", f.cliente_id],
+    queryFn: () => obterClienteCrmFn({ data: { id: f.cliente_id as string } }),
+    enabled: Boolean(f.cliente_id),
+  });
+
+  // O cadastro do CRM tem cônjuge preenchido?
+  const crmTemConjuge = Boolean(
+    crmVinculado &&
+      (crmVinculado.conjuge_nome ||
+        crmVinculado.conjuge_cpf ||
+        crmVinculado.conjuge_renda),
+  );
+
+  // Só oferece "puxar cônjuge" quando o CRM tem cônjuge mas a simulação atual
+  // ainda não trouxe esses dados (ex.: foi salva como solteiro).
+  const podePuxarConjugeCrm =
+    crmTemConjuge && !String(f.nome_conjuge ?? "").trim();
+
+  function puxarConjugeDoCRM() {
+    if (!crmVinculado) return;
+    setF((prev) => ({
+      ...prev,
+      possui_conjuge: true,
+      compoe_renda:
+        prev.compoe_renda || Number(crmVinculado.conjuge_renda) > 0,
+      nome_conjuge: crmVinculado.conjuge_nome ?? "",
+      cpf_conjuge: crmVinculado.conjuge_cpf
+        ? maskCpfCnpj(crmVinculado.conjuge_cpf)
+        : "",
+      renda_conjuge: crmVinculado.conjuge_renda ?? 0,
+      data_nascimento_conjuge: crmVinculado.conjuge_data_nascimento ?? "",
+      email_conjuge: crmVinculado.conjuge_email ?? "",
+      celular_conjuge: crmVinculado.conjuge_celular
+        ? maskCelular(crmVinculado.conjuge_celular)
+        : "",
+    }));
+    toast.success("Dados do cônjuge puxados do cadastro do CRM.");
+  }
+
 
   // Habilita a inversão apenas quando os dados essenciais do cônjuge já existem.
   const podeInverter = useMemo(() => {
@@ -927,6 +972,25 @@ function Pagina() {
             </label>
           </Campo>
         </div>
+        {podePuxarConjugeCrm && (
+          <div className="flex flex-col gap-2 rounded-lg border border-primary/30 bg-primary/5 p-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-xs text-muted-foreground">
+              O cadastro do CRM
+              {crmVinculado?.conjuge_nome ? ` de ${crmVinculado.conjuge_nome}` : ""} tem
+              um cônjuge registrado. Deseja puxar esses dados para esta simulação?
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="shrink-0 gap-2"
+              onClick={puxarConjugeDoCRM}
+            >
+              <Link2 className="h-4 w-4" />
+              Puxar cônjuge do CRM
+            </Button>
+          </div>
+        )}
         {f.valor_financiamento > 0 && f.prazo >= 60 && (
           <DicaRendaMinima
             valorFinanciamento={f.valor_financiamento}
