@@ -1437,7 +1437,7 @@ function TabDocumentos({ propostaId, documentos }: { propostaId: string; documen
       <VisualizadorArquivo
         arquivo={visualizando}
         open={!!visualizando}
-        onOpenChange={(o) => !o && setVisualizando(null)}
+        onOpenChange={(o: boolean) => !o && setVisualizando(null)}
       />
     </div>
   );
