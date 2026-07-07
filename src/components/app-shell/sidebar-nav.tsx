@@ -186,6 +186,7 @@ function CollapsibleGroup({
 /** Sidebar colapsada: apenas ícones com tooltip. */
 export function SidebarRail({ nav, onNavigate }: SidebarProps) {
   const pathname = useActivePath();
+  const pasta = useActivePasta();
   const melhor = melhorDestino(nav, pathname);
   const itens = nav.flatMap((g) => g.items);
 
@@ -193,7 +194,7 @@ export function SidebarRail({ nav, onNavigate }: SidebarProps) {
     <nav aria-label="Navegação principal" className="flex flex-col items-center gap-1 px-2 py-4">
       {itens.map((item) => {
         const Icon = item.icon;
-        const active = itemAtivo(item, melhor);
+        const active = itemAtivo(item, melhor, pasta);
         const to = item.to ?? item.children?.[0]?.to;
         return (
           <Tooltip key={item.label}>
