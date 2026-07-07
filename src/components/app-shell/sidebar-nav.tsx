@@ -50,6 +50,7 @@ interface SidebarProps {
 /** Sidebar completa (desktop expandida / drawer mobile). */
 export function SidebarNav({ nav, onNavigate }: SidebarProps) {
   const pathname = useActivePath();
+  const melhor = melhorDestino(nav, pathname);
 
   return (
     <nav aria-label="Navegação principal" className="flex flex-col gap-4 px-3 py-4">
