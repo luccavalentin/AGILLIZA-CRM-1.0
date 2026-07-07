@@ -78,6 +78,12 @@ const ROTULO_PAPEL: Record<string, string> = {
   cliente: "Cliente",
 };
 
+const ROTULO_TIPO: Record<string, string> = {
+  usuario: "Usuário",
+  imobiliaria: "Imobiliária",
+  corretor: "Corretor",
+};
+
 function PessoasPage() {
   const { tab } = Route.useSearch();
   const [aba, setAba] = useState<"pessoas" | "regras">(tab ?? "pessoas");
