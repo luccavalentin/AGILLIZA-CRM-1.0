@@ -168,6 +168,13 @@ export const criarPessoaComAcesso = createServerFn({ method: "POST" })
     }
 
     const comLogin = data.com_login;
+    // Tipos de pessoa (múltiplos): o primeiro é o "primário".
+    const tiposList = (
+      data.tipos_pessoa && data.tipos_pessoa.length > 0
+        ? data.tipos_pessoa
+        : [data.tipo_pessoa]
+    ).filter(Boolean);
+    const tipoPrimario = tiposList[0] ?? "usuario";
     // Com login: senha provisória = o próprio e-mail (trocada no 1º acesso).
     // Sem login: e-mail sintético + senha aleatória; a conta fica banida no Auth.
     const emailReal = comLogin ? (data.email ?? "").trim() : "";
