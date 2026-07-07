@@ -34,6 +34,43 @@ function Pagina() {
   const [nome, setNome] = useState("");
   const [telefone, setTelefone] = useState("");
   const [fotoUrl, setFotoUrl] = useState("");
+  const [enviandoFoto, setEnviandoFoto] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  async function enviarFoto(file: File) {
+    const userId = sessao?.profile?.id;
+    if (!userId) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Selecione um arquivo de imagem.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("A imagem deve ter no máximo 5 MB.");
+      return;
+    }
+    setEnviandoFoto(true);
+    try {
+      const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+      const path = `${userId}/avatar-${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from("avatars")
+        .upload(path, file, { upsert: true, contentType: file.type });
+      if (upErr) throw upErr;
+      const { data: signed, error: signErr } = await supabase.storage
+        .from("avatars")
+        .createSignedUrl(path, URL_EXPIRACAO_SEGUNDOS);
+      if (signErr || !signed) throw signErr ?? new Error("Falha ao gerar URL.");
+      setFotoUrl(signed.signedUrl);
+      toast.success("Foto enviada. Clique em Salvar alterações para confirmar.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao enviar a foto.");
+    } finally {
+      setEnviandoFoto(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
+
+
 
   useEffect(() => {
     if (sessao?.profile) {
