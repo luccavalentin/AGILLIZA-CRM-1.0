@@ -339,24 +339,11 @@ function Pagina() {
               onChange={set("telefone_empresa")}
             />
             <Campo
-              id="telefone_sac"
-              label="Telefone SAC"
-              value={form.telefone_sac ?? ""}
-              onChange={set("telefone_sac")}
-            />
-            <Campo
               id="site"
               label="Site"
               value={form.site ?? ""}
               onChange={set("site")}
               placeholder="https://"
-            />
-            <Campo
-              id="email_dpo"
-              label="E-mail do DPO"
-              type="email"
-              value={form.email_dpo ?? ""}
-              onChange={set("email_dpo")}
             />
           </CardContent>
         </Card>
