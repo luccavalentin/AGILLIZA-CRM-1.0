@@ -57,15 +57,21 @@ export async function enviarSimulacaoImpl({
     throw new Error("Selecione a operação antes de enviar ao banco.");
   }
 
-  let bancosQuery = supabase
+  // Todos os bancos selecionados (usados para registrar a oportunidade completa).
+  const { data: bancosSelecionados } = await supabase
     .from("simulacao_bancos")
     .select("*")
     .eq("simulacao_id", simulacaoId)
     .eq("selecionado", true);
-  if (bancoIds && bancoIds.length > 0) {
-    bancosQuery = bancosQuery.in("banco_id", bancoIds);
+  if (!bancosSelecionados || bancosSelecionados.length === 0) {
+    throw new Error("Selecione ao menos um banco antes de enviar.");
   }
-  const { data: bancos } = await bancosQuery;
+
+  // Subconjunto que será processado nesta chamada (permite progresso por banco).
+  const bancos =
+    bancoIds && bancoIds.length > 0
+      ? bancosSelecionados.filter((b: any) => bancoIds.includes(b.banco_id))
+      : bancosSelecionados;
   if (!bancos || bancos.length === 0) {
     throw new Error("Selecione ao menos um banco antes de enviar.");
   }
@@ -150,7 +156,7 @@ export async function enviarSimulacaoImpl({
           ? { usuarioParceiro: { idUsuarioParceiro: auth.idUsuarioParceiro } }
           : {}),
         ...dadosOportunidade,
-        bancos: bancos.map((b: any) => ({
+        bancos: bancosSelecionados.map((b: any) => ({
           idBanco: b.homefin_id_banco,
           codigoBanco: b.codigo_banco,
           nomeBanco: b.nome_banco,
@@ -277,11 +283,27 @@ export async function enviarSimulacaoImpl({
       resultados.push(await enviarBanco(b));
     }
 
-    const sucesso = resultados.filter((r) => r.status === "simulada").length;
-
+    // Status geral considerando TODOS os bancos selecionados (não só os desta
+    // chamada), pois o envio pode ser feito banco a banco para dar progresso.
+    const { data: todosBancos } = await supabase
+      .from("simulacao_bancos")
+      .select("status_banco")
+      .eq("simulacao_id", simulacaoId)
+      .eq("selecionado", true);
+    const listaStatus = (todosBancos ?? []) as { status_banco: string | null }[];
+    const sucesso = listaStatus.filter((r) => r.status_banco === "simulada").length;
+    const pendentes = listaStatus.filter(
+      (r) => r.status_banco !== "simulada" && r.status_banco !== "erro",
+    ).length;
 
     const novoStatus =
-      sucesso === bancos.length ? "simulada" : sucesso > 0 ? "parcialmente_simulada" : "erro_banco";
+      pendentes > 0
+        ? "enviando"
+        : sucesso === listaStatus.length
+          ? "simulada"
+          : sucesso > 0
+            ? "parcialmente_simulada"
+            : "erro_banco";
     await supabase.from("simulacoes").update({ status: novoStatus }).eq("id", simulacaoId);
     await supabase.from("simulacao_historico").insert({
       simulacao_id: simulacaoId,
