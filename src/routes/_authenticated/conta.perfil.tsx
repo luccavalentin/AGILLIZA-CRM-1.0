@@ -49,6 +49,27 @@ function Pagina() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const [novaSenha, setNovaSenha] = useState("");
+  const [confirmaSenha, setConfirmaSenha] = useState("");
+  const [salvandoSenha, setSalvandoSenha] = useState(false);
+  const podeSalvarSenha = novaSenha.length >= 8 && novaSenha === confirmaSenha;
+
+  async function alterarSenha() {
+    if (!podeSalvarSenha) return;
+    setSalvandoSenha(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password: novaSenha });
+      if (error) throw error;
+      toast.success("Senha alterada com sucesso.");
+      setNovaSenha("");
+      setConfirmaSenha("");
+    } catch {
+      toast.error("Não foi possível alterar a senha. Faça login novamente e tente de novo.");
+    } finally {
+      setSalvandoSenha(false);
+    }
+  }
+
   const iniciais = (nome || "?").slice(0, 2).toUpperCase();
 
   return (
