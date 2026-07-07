@@ -209,10 +209,10 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
     }
   }
 
-  async function baixar(storage_path: string) {
+  async function baixar(storage_path: string, nome: string) {
     try {
       const { url } = await gerarUrl({ data: { storage_path } });
-      window.open(url, "_blank");
+      setVisualizando({ url, nome });
     } catch {
       toast.error("Falha ao gerar link.");
     }
