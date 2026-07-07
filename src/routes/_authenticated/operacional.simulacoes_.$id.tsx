@@ -455,6 +455,14 @@ function Pagina() {
               </div>
             </>
           )}
+          {bancos.length > 0 && (
+            <p className="mt-4 rounded-lg border border-border bg-muted/40 p-3 text-xs leading-relaxed text-muted-foreground">
+              <strong className="font-medium text-foreground">Importante:</strong> Isto é
+              apenas uma simulação. A efetivação do resultado apresentado está condicionada
+              à análise de sua proposta de financiamento. A taxa de juros apresentada na
+              simulação é apenas para referência.
+            </p>
+          )}
         </TabsContent>
 
         <TabsContent value="dados" className="mt-4">
