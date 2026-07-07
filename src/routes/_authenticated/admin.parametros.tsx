@@ -24,6 +24,56 @@ export const Route = createFileRoute("/_authenticated/admin/parametros")({
 
 type Form = Omit<ParametrosGlobais, "id" | "logo_url" | "cor_primaria">;
 
+const POLITICA_LGPD_PADRAO = `POLÍTICA DE PROTEÇÃO DE DADOS (LGPD)
+
+Esta Política descreve como tratamos os dados pessoais de clientes, parceiros e usuários, em conformidade com a Lei nº 13.709/2018 (Lei Geral de Proteção de Dados Pessoais — LGPD).
+
+1. Controlador dos dados
+Somos o controlador responsável pelas decisões sobre o tratamento dos seus dados pessoais, garantindo a observância dos princípios da finalidade, adequação, necessidade, transparência, segurança e prevenção previstos na LGPD.
+
+2. Dados tratados
+Coletamos apenas os dados necessários à prestação dos nossos serviços de correspondência bancária e crédito imobiliário, tais como dados cadastrais (nome, CPF/CNPJ, data de nascimento), dados de contato, dados financeiros e documentos exigidos pelas instituições financeiras parceiras.
+
+3. Finalidades e bases legais
+Tratamos os dados para: (a) executar contratos e procedimentos pré-contratuais; (b) cumprir obrigações legais e regulatórias; (c) atender ao legítimo interesse na análise e viabilização de operações de crédito; e (d) com base no consentimento, quando aplicável. Os dados não são utilizados para finalidades incompatíveis com as aqui informadas.
+
+4. Compartilhamento
+Os dados podem ser compartilhados com instituições financeiras parceiras, órgãos reguladores e prestadores de serviço estritamente necessários à operação, sempre observando salvaguardas contratuais e de segurança.
+
+5. Direitos do titular
+Nos termos do art. 18 da LGPD, o titular pode solicitar: confirmação da existência de tratamento; acesso, correção, anonimização, portabilidade ou eliminação de dados; informação sobre compartilhamento; e revogação do consentimento. As solicitações são atendidas nos prazos legais.
+
+6. Segurança e retenção
+Adotamos medidas técnicas e administrativas para proteger os dados contra acessos não autorizados e situações acidentais ou ilícitas. Os dados são mantidos pelo tempo necessário às finalidades e às obrigações legais aplicáveis, sendo posteriormente eliminados de forma segura.
+
+7. Encarregado (DPO)
+As solicitações e dúvidas relacionadas à proteção de dados podem ser encaminhadas ao Encarregado pelo Tratamento de Dados Pessoais por meio dos nossos canais oficiais de atendimento.`;
+
+const POLITICA_PRIVACIDADE_PADRAO = `POLÍTICA DE PRIVACIDADE
+
+Esta Política de Privacidade tem por objetivo esclarecer, de forma transparente, como coletamos, utilizamos, armazenamos e protegemos as informações dos usuários, em conformidade com a legislação brasileira aplicável, incluindo a Lei nº 13.709/2018 (LGPD) e o Marco Civil da Internet (Lei nº 12.965/2014).
+
+1. Informações coletadas
+Coletamos informações fornecidas diretamente pelo usuário (dados cadastrais, de contato e financeiros) e informações geradas pelo uso da plataforma (registros de acesso e dados de navegação), sempre limitadas ao necessário.
+
+2. Uso das informações
+As informações são utilizadas para viabilizar e acompanhar operações de crédito, prestar suporte, cumprir obrigações legais e regulatórias, aprimorar nossos serviços e garantir a segurança da plataforma.
+
+3. Cookies e tecnologias similares
+Podemos utilizar cookies e tecnologias semelhantes para melhorar a experiência de navegação, lembrar preferências e produzir estatísticas de uso. O usuário pode gerenciar cookies nas configurações do seu navegador.
+
+4. Compartilhamento de informações
+Não comercializamos dados pessoais. O compartilhamento ocorre apenas com instituições financeiras parceiras, prestadores de serviço essenciais e autoridades competentes, quando exigido por lei ou necessário à execução dos serviços.
+
+5. Armazenamento e segurança
+Empregamos medidas de segurança técnicas e organizacionais adequadas para proteger as informações. Os dados são armazenados em ambiente controlado e mantidos apenas pelo período necessário às finalidades e às exigências legais.
+
+6. Direitos do usuário
+O usuário pode solicitar acesso, correção, atualização, portabilidade ou exclusão de seus dados, bem como revogar consentimentos, mediante contato pelos nossos canais oficiais de atendimento.
+
+7. Alterações desta Política
+Esta Política pode ser atualizada a qualquer momento para refletir mudanças legais ou operacionais. A versão vigente estará sempre disponível na plataforma.`;
+
 const VAZIO: Form = {
   nome_empresa: "",
   razao_social: "",
