@@ -25,6 +25,11 @@ const filtrosSchema = z.object({
     valorMin: z.number().optional(),
     valorMax: z.number().optional(),
     busca: z.string().optional(),
+    bancos: z.array(z.string()).optional(),
+    analistas: z.array(z.string()).optional(),
+    comerciais: z.array(z.string()).optional(),
+    corretores: z.array(z.string()).optional(),
+    imobiliarias: z.array(z.string()).optional(),
   }),
 });
 
