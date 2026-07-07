@@ -12,7 +12,7 @@ export const criarSchema = z
     email: z.string().email("E-mail inválido.").optional().or(z.literal("")),
     telefone: z.string().optional(),
     nivel_acesso_id: z.string().uuid("Selecione um nível de acesso."),
-    tipo_pessoa: z.enum(["usuario", "imobiliaria", "corretor"]).default("usuario"),
+    tipo_pessoa: z.string().min(1).default("usuario"),
     com_login: z.boolean().default(true),
     dados_parceiro: z
       .object({
