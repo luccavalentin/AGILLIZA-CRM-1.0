@@ -157,8 +157,8 @@ function Pagina() {
               <SelectContent>
                 <SelectItem value={TODOS}>Todas as operações</SelectItem>
                 {(opcoes.data?.acoes ?? []).map((a) => (
-                  <SelectItem key={a} value={a}>
-                    {a}
+                  <SelectItem key={a.valor} value={a.valor}>
+                    {a.rotulo}
                   </SelectItem>
                 ))}
               </SelectContent>
