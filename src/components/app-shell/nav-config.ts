@@ -33,6 +33,7 @@ import {
   Landmark,
   Sparkles,
   ClipboardList,
+  Link as LinkIcon,
 } from "lucide-react";
 
 /** Permissão exigida por um item (chave = `${modulo}:view`). */
@@ -208,6 +209,12 @@ export const navInterno: NavGroup[] = [
             perm: { modulo: "documentos.formularios" },
           },
         ],
+      },
+      {
+        label: "Links",
+        icon: LinkIcon,
+        to: "/links",
+        perm: { modulo: "documentos.links" },
       },
       {
         label: "Controle de Matrículas",

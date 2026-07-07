@@ -29,6 +29,7 @@ import { Route as AuthenticatedSemAcessoRouteImport } from './routes/_authentica
 import { Route as AuthenticatedRelatoriosRouteImport } from './routes/_authenticated/relatorios'
 import { Route as AuthenticatedParceiroInicioRouteImport } from './routes/_authenticated/parceiro-inicio'
 import { Route as AuthenticatedMatriculasRouteImport } from './routes/_authenticated/matriculas'
+import { Route as AuthenticatedLinksRouteImport } from './routes/_authenticated/links'
 import { Route as AuthenticatedFormulariosRouteImport } from './routes/_authenticated/formularios'
 import { Route as AuthenticatedDocumentosRouteImport } from './routes/_authenticated/documentos'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
@@ -198,6 +199,11 @@ const AuthenticatedParceiroInicioRoute =
 const AuthenticatedMatriculasRoute = AuthenticatedMatriculasRouteImport.update({
   id: '/matriculas',
   path: '/matriculas',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedLinksRoute = AuthenticatedLinksRouteImport.update({
+  id: '/links',
+  path: '/links',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedFormulariosRoute =
@@ -618,6 +624,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/documentos': typeof AuthenticatedDocumentosRoute
   '/formularios': typeof AuthenticatedFormulariosRouteWithChildren
+  '/links': typeof AuthenticatedLinksRoute
   '/matriculas': typeof AuthenticatedMatriculasRoute
   '/parceiro-inicio': typeof AuthenticatedParceiroInicioRoute
   '/relatorios': typeof AuthenticatedRelatoriosRouteWithChildren
@@ -707,6 +714,7 @@ export interface FileRoutesByTo {
   '/portal': typeof PortalRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/documentos': typeof AuthenticatedDocumentosRoute
+  '/links': typeof AuthenticatedLinksRoute
   '/matriculas': typeof AuthenticatedMatriculasRoute
   '/parceiro-inicio': typeof AuthenticatedParceiroInicioRoute
   '/sem-acesso': typeof AuthenticatedSemAcessoRoute
@@ -798,6 +806,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/documentos': typeof AuthenticatedDocumentosRoute
   '/_authenticated/formularios': typeof AuthenticatedFormulariosRouteWithChildren
+  '/_authenticated/links': typeof AuthenticatedLinksRoute
   '/_authenticated/matriculas': typeof AuthenticatedMatriculasRoute
   '/_authenticated/parceiro-inicio': typeof AuthenticatedParceiroInicioRoute
   '/_authenticated/relatorios': typeof AuthenticatedRelatoriosRouteWithChildren
@@ -890,6 +899,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/documentos'
     | '/formularios'
+    | '/links'
     | '/matriculas'
     | '/parceiro-inicio'
     | '/relatorios'
@@ -979,6 +989,7 @@ export interface FileRouteTypes {
     | '/portal'
     | '/dashboard'
     | '/documentos'
+    | '/links'
     | '/matriculas'
     | '/parceiro-inicio'
     | '/sem-acesso'
@@ -1069,6 +1080,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/documentos'
     | '/_authenticated/formularios'
+    | '/_authenticated/links'
     | '/_authenticated/matriculas'
     | '/_authenticated/parceiro-inicio'
     | '/_authenticated/relatorios'
@@ -1301,6 +1313,13 @@ declare module '@tanstack/react-router' {
       path: '/matriculas'
       fullPath: '/matriculas'
       preLoaderRoute: typeof AuthenticatedMatriculasRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/links': {
+      id: '/_authenticated/links'
+      path: '/links'
+      fullPath: '/links'
+      preLoaderRoute: typeof AuthenticatedLinksRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/formularios': {
@@ -1867,6 +1886,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedDocumentosRoute: typeof AuthenticatedDocumentosRoute
   AuthenticatedFormulariosRoute: typeof AuthenticatedFormulariosRouteWithChildren
+  AuthenticatedLinksRoute: typeof AuthenticatedLinksRoute
   AuthenticatedMatriculasRoute: typeof AuthenticatedMatriculasRoute
   AuthenticatedParceiroInicioRoute: typeof AuthenticatedParceiroInicioRoute
   AuthenticatedRelatoriosRoute: typeof AuthenticatedRelatoriosRouteWithChildren
@@ -1923,6 +1943,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedDocumentosRoute: AuthenticatedDocumentosRoute,
   AuthenticatedFormulariosRoute: AuthenticatedFormulariosRouteWithChildren,
+  AuthenticatedLinksRoute: AuthenticatedLinksRoute,
   AuthenticatedMatriculasRoute: AuthenticatedMatriculasRoute,
   AuthenticatedParceiroInicioRoute: AuthenticatedParceiroInicioRoute,
   AuthenticatedRelatoriosRoute: AuthenticatedRelatoriosRouteWithChildren,
