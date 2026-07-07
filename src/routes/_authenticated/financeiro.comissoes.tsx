@@ -78,6 +78,30 @@ function Pagina() {
         </TabsList>
       </Tabs>
 
+      <div className="flex flex-wrap items-center gap-2">
+        <label className="flex items-center gap-1 text-xs text-muted-foreground">
+          De
+          <Input type="date" className="w-40" value={de} onChange={(e) => setDe(e.target.value)} />
+        </label>
+        <label className="flex items-center gap-1 text-xs text-muted-foreground">
+          até
+          <Input type="date" className="w-40" value={ate} onChange={(e) => setAte(e.target.value)} />
+        </label>
+        {(de || ate) && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setDe("");
+              setAte("");
+            }}
+          >
+            Limpar
+          </Button>
+        )}
+      </div>
+
+
       <div className="overflow-x-auto rounded-lg border border-border">
         <Table>
           <TableHeader>
