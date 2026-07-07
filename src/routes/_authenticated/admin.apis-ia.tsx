@@ -41,30 +41,43 @@ function Pagina() {
   const qc = useQueryClient();
   const q = useQuery({ queryKey: ["admin-config-ia"], queryFn: () => getConfigIA() });
 
-  const [nome, setNome] = useState("");
-  const [modelo, setModelo] = useState("gemini-2.5-flash");
+  const [provedor, setProvedor] = useState<ProvedorIA>("gemini");
+  const [nome, setNome] = useState(PRESETS_IA.gemini.nome);
+  const [modelo, setModelo] = useState(PRESETS_IA.gemini.modelo);
   const [temperatura, setTemperatura] = useState(0.2);
-  const [baseUrl, setBaseUrl] = useState("");
+  const [baseUrl, setBaseUrl] = useState(PRESETS_IA.gemini.base_url);
   const [prompt, setPrompt] = useState("");
-  const [secretName, setSecretName] = useState("GEMINI_API_KEY");
+  const [secretName, setSecretName] = useState(PRESETS_IA.gemini.secret_name);
   const [ativo, setAtivo] = useState(true);
 
   useEffect(() => {
     if (q.data) {
+      setProvedor(q.data.provedor);
       setNome(q.data.nome);
       setModelo(q.data.modelo);
       setTemperatura(q.data.temperatura);
       setBaseUrl(q.data.base_url ?? "");
       setPrompt(q.data.prompt_scan);
-      setSecretName(q.data.secret_names[0] ?? "GEMINI_API_KEY");
+      setSecretName(q.data.secret_names[0] ?? PRESETS_IA[q.data.provedor].secret_name);
       setAtivo(q.data.ativo);
     }
   }, [q.data]);
+
+  /** Ao trocar de provedor, aplica os presets (modelo, endpoint e secret sugeridos). */
+  function aplicarProvedor(p: ProvedorIA) {
+    const preset = PRESETS_IA[p];
+    setProvedor(p);
+    setNome(preset.nome);
+    setModelo(preset.modelo);
+    setBaseUrl(preset.base_url);
+    setSecretName(preset.secret_name);
+  }
 
   const salvar = useMutation({
     mutationFn: () =>
       salvarConfigIA({
         data: {
+          provedor,
           nome,
           modelo,
           temperatura,
@@ -80,6 +93,7 @@ function Pagina() {
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Falha ao salvar."),
   });
+
 
   if (q.isLoading) {
     return (
