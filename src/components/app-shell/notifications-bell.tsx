@@ -14,6 +14,7 @@ import {
   marcarNotificacaoLida,
   marcarTodasLidas,
   excluirNotificacao,
+  limparNotificacoes,
   type Notificacao,
 } from "@/lib/notificacoes.functions";
 
