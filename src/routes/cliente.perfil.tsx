@@ -187,6 +187,10 @@ function Perfil() {
         </CardContent>
       </Card>
 
+      <ChatSoundSetting />
+
+
+
       <Card className="border-border">
         <CardHeader className="pb-2">
           <CardTitle className="text-base">Privacidade e meus dados (LGPD)</CardTitle>
