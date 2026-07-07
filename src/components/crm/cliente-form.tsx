@@ -26,6 +26,7 @@ import {
   listarParceirosDisponiveis,
   vincularParceiro,
   TIPOS_VINCULO,
+  TIPO_VINCULO_PESSOA,
   type TipoVinculo,
 } from "@/lib/crm/clientes.functions";
 import { validarDocumento, soDigitos } from "@/lib/crm/documento";
