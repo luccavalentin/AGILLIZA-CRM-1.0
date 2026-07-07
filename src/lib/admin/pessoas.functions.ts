@@ -77,7 +77,7 @@ export const listarPessoas = createServerFn({ method: "GET" })
 
     const { data: pessoas, error } = await supabase
       .from("profiles")
-      .select("id, nome, email, telefone, acesso_tipo, tipo_pessoa, login_habilitado, ativo, bloqueado_em, nivel_acesso_id")
+      .select("id, nome, email, telefone, acesso_tipo, tipo_pessoa, tipos_pessoa, login_habilitado, ativo, bloqueado_em, nivel_acesso_id")
       .eq("correspondente_id", correspondenteId)
       .order("created_at", { ascending: true });
 
