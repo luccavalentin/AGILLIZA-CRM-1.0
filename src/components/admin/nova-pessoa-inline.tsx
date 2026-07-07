@@ -334,20 +334,30 @@ export function NovaPessoaInline({
                   pessoas com esse nível.
                 </p>
               </div>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                disabled={!permDirty || salvarPermMut.isPending}
-                onClick={() => salvarPermMut.mutate()}
-              >
-                {salvarPermMut.isPending ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Save className="mr-2 h-4 w-4" />
-                )}
-                Salvar permissões
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => marcarTudoGlobal(!todasGlobalMarcadas)}
+                >
+                  {todasGlobalMarcadas ? "Limpar todos" : "Selecionar todos"}
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={!permDirty || salvarPermMut.isPending}
+                  onClick={() => salvarPermMut.mutate()}
+                >
+                  {salvarPermMut.isPending ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Save className="mr-2 h-4 w-4" />
+                  )}
+                  Salvar permissões
+                </Button>
+              </div>
             </div>
 
             <div className="max-h-80 space-y-4 overflow-y-auto pr-1">
