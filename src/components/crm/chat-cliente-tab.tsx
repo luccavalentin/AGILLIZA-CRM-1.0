@@ -538,7 +538,7 @@ export function ChatClienteConversa({ clienteId, info }: { clienteId: string; in
                               rel="noreferrer"
                               className={cn(
                                 "mb-1 flex items-center gap-2 rounded-lg px-2.5 py-2 text-xs font-medium underline-offset-2 hover:underline",
-                                doTime ? "bg-primary-foreground/15" : "bg-muted",
+                                doTime ? "bg-primary-foreground/15" : "bg-chat-them-foreground/10",
                               )}
                             >
                               <FileText className="h-4 w-4 shrink-0" />
