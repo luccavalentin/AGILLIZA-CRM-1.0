@@ -15,6 +15,8 @@ import {
   BellRing,
   Timer,
   Check,
+  ChevronDown,
+  GitBranch,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
