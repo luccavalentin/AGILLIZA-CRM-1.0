@@ -1400,8 +1400,10 @@ export const listarContratosEmitidos = createServerFn({ method: "GET" })
       .select("cliente_id, numero_proposta, nome_banco, valor_financiamento, created_at")
       .in("cliente_id", ids)
       .order("created_at", { ascending: false });
-    const porCliente = new Map<string, (typeof propostas)[number]>();
-    for (const p of propostas ?? []) {
+    const propostasLista = propostas ?? [];
+    type PropostaResumo = (typeof propostasLista)[number];
+    const porCliente = new Map<string, PropostaResumo>();
+    for (const p of propostasLista) {
       if (p.cliente_id && !porCliente.has(p.cliente_id)) porCliente.set(p.cliente_id, p);
     }
     return lista.map((c) => {
