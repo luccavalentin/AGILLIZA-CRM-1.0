@@ -159,7 +159,17 @@ function Pagina() {
           </div>
         </div>
         <div className="flex flex-wrap items-end gap-3">
-          <div className="hidden items-center gap-2 rounded-xl border border-border/60 bg-card px-3 py-2 shadow-sm sm:flex">
+          <button
+            type="button"
+            onClick={() => totalClientes > 0 && setDialogStage("__todos__")}
+            disabled={totalClientes === 0}
+            title={totalClientes > 0 ? "Ver todos os clientes" : undefined}
+            className={`hidden items-center gap-2 rounded-xl border border-border/60 bg-card px-3 py-2 shadow-sm transition-all sm:flex ${
+              totalClientes > 0
+                ? "cursor-pointer hover:border-primary/50 hover:shadow-md"
+                : "cursor-default"
+            }`}
+          >
             <Users className="size-4 text-primary" />
             <span className="text-sm font-semibold tabular-nums text-foreground">
               {totalClientes}
@@ -167,7 +177,7 @@ function Pagina() {
             <span className="text-xs text-muted-foreground">
               em {etapasAtivas} de 12 etapas
             </span>
-          </div>
+          </button>
           <div className="relative w-full sm:w-64">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
