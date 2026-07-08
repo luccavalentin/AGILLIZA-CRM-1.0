@@ -137,6 +137,7 @@
 /* Menu lateral: cor sólida da marca no claro, gradiente no escuro. */
 .app-sidebar {
   background-color: var(--sidebar);
+  background-image: linear-gradient(180deg, #000f9f 0%, #000a70 60%, #00073f 100%);
 }
 .dark .app-sidebar {
   background-image: linear-gradient(180deg, #000a6e 0%, #00052e 100%);

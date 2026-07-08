@@ -24,6 +24,7 @@ import { Route as ParceiroClientesRouteImport } from './routes/parceiro.clientes
 import { Route as ClienteVisaoGeralRouteImport } from './routes/cliente.visao-geral'
 import { Route as ClientePerfilRouteImport } from './routes/cliente.perfil'
 import { Route as ClienteLogoutRouteImport } from './routes/cliente.logout'
+import { Route as ClienteChatRouteImport } from './routes/cliente.chat'
 import { Route as ClienteAcompanharMinhaPropostaRouteImport } from './routes/cliente.acompanhar-minha-proposta'
 import { Route as AuthenticatedRelatoriosRouteImport } from './routes/_authenticated/relatorios'
 import { Route as AuthenticatedParceiroInicioRouteImport } from './routes/_authenticated/parceiro-inicio'
@@ -171,6 +172,11 @@ const ClientePerfilRoute = ClientePerfilRouteImport.update({
 const ClienteLogoutRoute = ClienteLogoutRouteImport.update({
   id: '/logout',
   path: '/logout',
+  getParentRoute: () => ClienteRoute,
+} as any)
+const ClienteChatRoute = ClienteChatRouteImport.update({
+  id: '/chat',
+  path: '/chat',
   getParentRoute: () => ClienteRoute,
 } as any)
 const ClienteAcompanharMinhaPropostaRoute =
@@ -623,6 +629,7 @@ export interface FileRoutesByFullPath {
   '/parceiro-inicio': typeof AuthenticatedParceiroInicioRoute
   '/relatorios': typeof AuthenticatedRelatoriosRouteWithChildren
   '/cliente/acompanhar-minha-proposta': typeof ClienteAcompanharMinhaPropostaRoute
+  '/cliente/chat': typeof ClienteChatRoute
   '/cliente/logout': typeof ClienteLogoutRoute
   '/cliente/perfil': typeof ClientePerfilRoute
   '/cliente/visao-geral': typeof ClienteVisaoGeralRoute
@@ -711,6 +718,7 @@ export interface FileRoutesByTo {
   '/matriculas': typeof AuthenticatedMatriculasRoute
   '/parceiro-inicio': typeof AuthenticatedParceiroInicioRoute
   '/cliente/acompanhar-minha-proposta': typeof ClienteAcompanharMinhaPropostaRoute
+  '/cliente/chat': typeof ClienteChatRoute
   '/cliente/logout': typeof ClienteLogoutRoute
   '/cliente/perfil': typeof ClientePerfilRoute
   '/cliente/visao-geral': typeof ClienteVisaoGeralRoute
@@ -803,6 +811,7 @@ export interface FileRoutesById {
   '/_authenticated/parceiro-inicio': typeof AuthenticatedParceiroInicioRoute
   '/_authenticated/relatorios': typeof AuthenticatedRelatoriosRouteWithChildren
   '/cliente/acompanhar-minha-proposta': typeof ClienteAcompanharMinhaPropostaRoute
+  '/cliente/chat': typeof ClienteChatRoute
   '/cliente/logout': typeof ClienteLogoutRoute
   '/cliente/perfil': typeof ClientePerfilRoute
   '/cliente/visao-geral': typeof ClienteVisaoGeralRoute
@@ -895,6 +904,7 @@ export interface FileRouteTypes {
     | '/parceiro-inicio'
     | '/relatorios'
     | '/cliente/acompanhar-minha-proposta'
+    | '/cliente/chat'
     | '/cliente/logout'
     | '/cliente/perfil'
     | '/cliente/visao-geral'
@@ -983,6 +993,7 @@ export interface FileRouteTypes {
     | '/matriculas'
     | '/parceiro-inicio'
     | '/cliente/acompanhar-minha-proposta'
+    | '/cliente/chat'
     | '/cliente/logout'
     | '/cliente/perfil'
     | '/cliente/visao-geral'
@@ -1074,6 +1085,7 @@ export interface FileRouteTypes {
     | '/_authenticated/parceiro-inicio'
     | '/_authenticated/relatorios'
     | '/cliente/acompanhar-minha-proposta'
+    | '/cliente/chat'
     | '/cliente/logout'
     | '/cliente/perfil'
     | '/cliente/visao-geral'
@@ -1266,6 +1278,13 @@ declare module '@tanstack/react-router' {
       path: '/logout'
       fullPath: '/cliente/logout'
       preLoaderRoute: typeof ClienteLogoutRouteImport
+      parentRoute: typeof ClienteRoute
+    }
+    '/cliente/chat': {
+      id: '/cliente/chat'
+      path: '/chat'
+      fullPath: '/cliente/chat'
+      preLoaderRoute: typeof ClienteChatRouteImport
       parentRoute: typeof ClienteRoute
     }
     '/cliente/acompanhar-minha-proposta': {
@@ -1995,6 +2014,7 @@ const AuthenticatedRouteRouteWithChildren =
 
 interface ClienteRouteChildren {
   ClienteAcompanharMinhaPropostaRoute: typeof ClienteAcompanharMinhaPropostaRoute
+  ClienteChatRoute: typeof ClienteChatRoute
   ClienteLogoutRoute: typeof ClienteLogoutRoute
   ClientePerfilRoute: typeof ClientePerfilRoute
   ClienteVisaoGeralRoute: typeof ClienteVisaoGeralRoute
@@ -2002,6 +2022,7 @@ interface ClienteRouteChildren {
 
 const ClienteRouteChildren: ClienteRouteChildren = {
   ClienteAcompanharMinhaPropostaRoute: ClienteAcompanharMinhaPropostaRoute,
+  ClienteChatRoute: ClienteChatRoute,
   ClienteLogoutRoute: ClienteLogoutRoute,
   ClientePerfilRoute: ClientePerfilRoute,
   ClienteVisaoGeralRoute: ClienteVisaoGeralRoute,
