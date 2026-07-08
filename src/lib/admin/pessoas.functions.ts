@@ -141,11 +141,6 @@ export const criarPessoaComAcesso = createServerFn({ method: "POST" })
   .handler(async ({ data, context }): Promise<ResultadoCriarPessoa> => {
     const { supabase, userId } = context;
 
-    const { data: pode } = await supabase.rpc("pode_gerenciar_pessoas", {
-      _user_id: userId,
-    });
-    if (!pode) throw new Error("Você não tem permissão para gerenciar pessoas.");
-
     const { data: me } = await supabase
       .from("profiles")
       .select("correspondente_id")
@@ -167,6 +162,28 @@ export const criarPessoaComAcesso = createServerFn({ method: "POST" })
     if (PAPEIS_PROIBIDOS.includes(papel)) {
       throw new Error("Papel não permitido.");
     }
+
+    // Autorização:
+    //  - quem gerencia pessoas pode criar qualquer nível permitido;
+    //  - quem apenas cadastra clientes pode criar cadastros de parceiro
+    //    (imobiliária/corretor) ou comercial, para vincular na hora.
+    const { data: podeGerenciar } = await supabase.rpc("pode_gerenciar_pessoas", {
+      _user_id: userId,
+    });
+    let autorizado = podeGerenciar === true;
+    if (!autorizado) {
+      const inlinePermitido = acessoTipo === "portal_parceiro" || papel === "comercial";
+      if (inlinePermitido) {
+        const { data: podeCliente } = await supabase.rpc("usuario_tem_permissao", {
+          _user_id: userId,
+          _modulo: "crm.clientes",
+          _acao: "create",
+        });
+        autorizado = podeCliente === true;
+      }
+    }
+    if (!autorizado) throw new Error("Você não tem permissão para gerenciar pessoas.");
+
 
     const comLogin = data.com_login;
     // Tipos de pessoa (múltiplos): o primeiro é o "primário".

@@ -59,10 +59,20 @@ export function CriarVinculoInline({
     enabled: aberto,
   });
 
-  // Sugere um nível de acesso adequado ao tipo (parceiros -> portal do parceiro).
+  // Sugere um nível de acesso adequado ao tipo:
+  //  - imobiliaria -> "Imobiliária Parceira"
+  //  - corretor    -> "Corretor Parceiro"
+  //  - comercial   -> "Comercial"
+  // Cai para portal do parceiro / sistema quando não há correspondência direta.
   const nivelSugerido = useMemo(() => {
     const lista = niveis ?? [];
     if (lista.length === 0) return "";
+    // 1) casamento direto pelo papel do nível com o tipo da pessoa.
+    const porPapel = lista.find(
+      (n) => (n as { papel?: string }).papel === tipoPessoa,
+    );
+    if (porPapel) return porPapel.id;
+    // 2) fallback por portal (parceiros) ou sistema.
     const querParceiro = tipoPessoa === "imobiliaria" || tipoPessoa === "corretor";
     const preferido = lista.find((n) =>
       querParceiro ? n.acesso_tipo === "portal_parceiro" : n.acesso_tipo === "sistema",
