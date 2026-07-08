@@ -352,20 +352,21 @@ function Pagina() {
       {(() => null)()}
 
       {/* Tabela (telas médias e maiores) */}
-      <div className="hidden rounded-lg border border-border md:block">
+      <div className="hidden overflow-hidden rounded-xl border border-border/60 bg-card shadow-sm md:block">
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead>Número</TableHead>
-              <TableHead>Cliente</TableHead>
-              <TableHead>Produto</TableHead>
-              <TableHead>Bancos simulados</TableHead>
-              <TableHead className="text-right">Valor imóvel</TableHead>
-              <TableHead className="text-right">Prazo</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="w-12 text-right">Ações</TableHead>
+            <TableRow className="border-border/60 bg-muted/40 hover:bg-muted/40">
+              <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Número</TableHead>
+              <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Cliente</TableHead>
+              <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Produto</TableHead>
+              <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Bancos simulados</TableHead>
+              <TableHead className="text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">Valor imóvel</TableHead>
+              <TableHead className="text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">Prazo</TableHead>
+              <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Status</TableHead>
+              <TableHead className="w-12 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">Ações</TableHead>
             </TableRow>
           </TableHeader>
+
           <TableBody>
             {isLoading && (
               <TableRow>
