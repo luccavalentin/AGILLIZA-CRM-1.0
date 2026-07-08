@@ -366,6 +366,12 @@ function Pagina() {
       valor_imovel: dados.valorImovel,
       valor_entrada: dados.valorEntrada,
       valor_financiamento: dados.valorFinanciamento,
+      // A jogada já infla o imóvel para liberar 100% do valor necessário. Se as
+      // despesas continuassem sendo financiadas, o efeito de ajuste recalcularia
+      // as despesas sobre o imóvel inflado e reduziria o financiamento, desfazendo
+      // a jogada. Por isso desligamos o financiamento de despesas ao aplicá-la.
+      fg_financiar_despesas: false,
+      valor_despesas_financiadas: 0,
     }));
     toast.success(
       `Jogada aplicada: imóvel ${formatBRL(dados.valorImovel)}, entrada ${formatBRL(dados.valorEntrada)}, financiamento ${formatBRL(dados.valorFinanciamento)}.`,

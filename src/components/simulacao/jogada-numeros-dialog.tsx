@@ -56,9 +56,11 @@ export function JogadaNumerosDialog({
     if (liberar <= 0 || ltv <= 0) {
       return { valorImovel: 0, entrada: 0, pctEntrada: 0, valido: false };
     }
-    // Arredonda o valor de compra e venda para o milhar mais próximo.
+    // Arredonda o valor de compra e venda PARA CIMA no milhar. Arredondar para o
+    // mais próximo podia baixar o valor abaixo do bruto necessário e fazer o
+    // financiamento estourar o LTV do banco (o oposto do objetivo da jogada).
     const bruto = liberar / ltv;
-    const valorImovel = Math.round(bruto / 1000) * 1000;
+    const valorImovel = Math.ceil(bruto / 1000) * 1000;
     const entrada = Math.max(0, valorImovel - liberar);
     const pctEntrada = valorImovel > 0 ? (entrada / valorImovel) * 100 : 0;
     return { valorImovel, entrada, pctEntrada, valido: true };
