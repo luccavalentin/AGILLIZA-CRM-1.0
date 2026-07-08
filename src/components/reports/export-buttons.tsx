@@ -39,6 +39,7 @@ export function ExportButtons({
   async function onPDF() {
     setBusy(true);
     try {
+      const { exportPDF } = await import("@/lib/relatorios/report-pdf");
       exportPDF(result.titulo, result.descricao, meta, result.kpis, result.columns, result.rows);
       await log("pdf");
     } catch {
@@ -51,6 +52,7 @@ export function ExportButtons({
   async function onXLSX() {
     setBusy(true);
     try {
+      const { exportXLSX } = await import("@/lib/relatorios/report-xlsx");
       exportXLSX(codigo, result.titulo, meta, result.columns, result.rows);
       await log("xlsx");
     } catch {
