@@ -25,6 +25,22 @@ export interface DocumentoPasta {
   ordem: number;
   is_sistema: boolean;
   total_documentos: number;
+  criado_por: string | null;
+  criado_por_nome: string | null;
+}
+
+async function nomesDeUsuarios(
+  supabase: any,
+  ids: (string | null | undefined)[],
+): Promise<Map<string, string>> {
+  const unicos = Array.from(new Set(ids.filter((v): v is string => !!v)));
+  const mapa = new Map<string, string>();
+  if (unicos.length === 0) return mapa;
+  const { data } = await supabase.from("profiles").select("id, nome").in("id", unicos);
+  for (const p of (data ?? []) as { id: string; nome: string | null }[]) {
+    if (p.nome) mapa.set(p.id, p.nome);
+  }
+  return mapa;
 }
 
 async function correspondenteDoUsuario(supabase: any, userId: string): Promise<string | null> {
