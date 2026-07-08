@@ -102,6 +102,7 @@ function BrandSymbol() {
 function SidebarLinks({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?: () => void }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const ativo = (to: string) => pathname === to || pathname.startsWith(to + "/");
+  const chatNaoLidas = useChatNaoLidas();
 
   if (collapsed) {
     return (
@@ -109,11 +110,13 @@ function SidebarLinks({ collapsed, onNavigate }: { collapsed: boolean; onNavigat
         {NAV_CLIENTE.flatMap((g) => g.items).map((item) => {
           const Icon = item.icon;
           const active = ativo(item.to);
+          const piscando = !!item.chat && chatNaoLidas > 0;
           return (
-            <Tooltip key={item.to}>
+            <Tooltip key={item.label}>
               <TooltipTrigger asChild>
                 <Link
                   to={item.to}
+                  search={item.search as never}
                   onClick={onNavigate}
                   aria-current={active ? "page" : undefined}
                   aria-label={item.label}
@@ -122,12 +125,19 @@ function SidebarLinks({ collapsed, onNavigate }: { collapsed: boolean; onNavigat
                     active
                       ? "bg-sidebar-accent text-sidebar-accent-foreground"
                       : "text-sidebar-foreground/70 hover:bg-white/10 hover:text-sidebar-foreground",
+                    piscando && "animate-pulse",
                   )}
                 >
                   {active && (
                     <span className="absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-full bg-sidebar-primary" />
                   )}
                   <Icon className="h-[18px] w-[18px]" />
+                  {piscando && (
+                    <span className="absolute right-1.5 top-1.5 flex h-2.5 w-2.5">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-destructive opacity-75" />
+                      <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-destructive" />
+                    </span>
+                  )}
                 </Link>
               </TooltipTrigger>
               <TooltipContent side="right">{item.label}</TooltipContent>
@@ -148,10 +158,12 @@ function SidebarLinks({ collapsed, onNavigate }: { collapsed: boolean; onNavigat
           {group.items.map((item) => {
             const Icon = item.icon;
             const active = ativo(item.to);
+            const piscando = !!item.chat && chatNaoLidas > 0;
             return (
               <Link
-                key={item.to}
+                key={item.label}
                 to={item.to}
+                search={item.search as never}
                 onClick={onNavigate}
                 aria-current={active ? "page" : undefined}
                 className={cn(
@@ -159,6 +171,7 @@ function SidebarLinks({ collapsed, onNavigate }: { collapsed: boolean; onNavigat
                   active
                     ? "bg-sidebar-accent text-sidebar-accent-foreground"
                     : "text-sidebar-foreground/80 hover:bg-white/10 hover:text-sidebar-foreground",
+                  piscando && !active && "animate-pulse",
                 )}
               >
                 {active && (
@@ -171,6 +184,11 @@ function SidebarLinks({ collapsed, onNavigate }: { collapsed: boolean; onNavigat
                   )}
                 />
                 <span className="truncate">{item.label}</span>
+                {piscando && (
+                  <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1.5 text-[10px] font-semibold text-destructive-foreground">
+                    {chatNaoLidas > 9 ? "9+" : chatNaoLidas}
+                  </span>
+                )}
               </Link>
             );
           })}
@@ -179,6 +197,7 @@ function SidebarLinks({ collapsed, onNavigate }: { collapsed: boolean; onNavigat
     </nav>
   );
 }
+
 
 function NotificacoesBell() {
   const { data: notificacoes } = useQuery({
