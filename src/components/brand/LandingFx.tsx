@@ -114,8 +114,10 @@ export function LandingFx({ className }: { className?: string }) {
 
     const frame = (now: number) => {
       const time = (now - start) / 1000;
-      smx += (mx - smx) * 0.05;
-      smy += (my - smy) * 0.05;
+      // Rastreamento firme: o brilho acompanha o ponteiro quase coladinho,
+      // com só um leve amortecimento para não ficar "duro".
+      smx += (mx - smx) * 0.35;
+      smy += (my - smy) * 0.35;
       intensity += (targetIntensity - intensity) * 0.06;
 
       ctx.clearRect(0, 0, w, h);
@@ -139,9 +141,9 @@ export function LandingFx({ className }: { className?: string }) {
         const fy =
           o.y + Math.cos(t * 0.9 + o.phase) * 0.14 + Math.sin(t * 0.5 + o.phase * 0.7) * 0.09;
 
-        // Atração perceptível em direção ao mouse.
-        const px = (fx + (smx - fx) * 0.22) * w;
-        const py = (fy + (smy - fy) * 0.22) * h;
+        // Forte atração ao ponteiro: os orbes se concentram onde o mouse está.
+        const px = (fx + (smx - fx) * 0.55) * w;
+        const py = (fy + (smy - fy) * 0.55) * h;
         const radius = o.r * minDim;
 
         const g = ctx.createRadialGradient(px, py, 0, px, py, radius);
@@ -153,6 +155,23 @@ export function LandingFx({ className }: { className?: string }) {
         ctx.arc(px, py, radius, 0, Math.PI * 2);
         ctx.fill();
       }
+
+      // Núcleo de luz exatamente sob o ponteiro, para o foco cair onde
+      // a seta do mouse está (e não atrás dela).
+      {
+        const cx = smx * w;
+        const cy = smy * h;
+        const coreR = minDim * 0.28;
+        const core = ctx.createRadialGradient(cx, cy, 0, cx, cy, coreR);
+        core.addColorStop(0, `hsla(205, 90%, 68%, ${0.5 * intensity})`);
+        core.addColorStop(0.5, `hsla(216, 80%, 56%, ${0.22 * intensity})`);
+        core.addColorStop(1, `hsla(216, 80%, 50%, 0)`);
+        ctx.fillStyle = core;
+        ctx.beginPath();
+        ctx.arc(cx, cy, coreR, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
 
 
       // Ondas concêntricas onde o mouse passou.
