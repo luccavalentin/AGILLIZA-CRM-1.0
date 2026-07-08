@@ -116,8 +116,16 @@ export function LandingFx({ className }: { className?: string }) {
       const time = (now - start) / 1000;
       smx += (mx - smx) * 0.05;
       smy += (my - smy) * 0.05;
+      intensity += (targetIntensity - intensity) * 0.06;
 
       ctx.clearRect(0, 0, w, h);
+
+      // Em repouso o canvas fica limpo (sem luz) para não ofuscar o conteúdo.
+      if (intensity < 0.01) {
+        raf = requestAnimationFrame(frame);
+        return;
+      }
+
       ctx.globalCompositeOperation = "lighter";
 
       const minDim = Math.min(w, h);
@@ -125,6 +133,7 @@ export function LandingFx({ className }: { className?: string }) {
       for (const o of orbs) {
         // Campo de fluxo: soma de senos para deriva orgânica (movimento amplo).
         const t = reduce ? 0 : time * o.speed;
+
         const fx =
           o.x + Math.sin(t + o.phase) * 0.14 + Math.cos(t * 0.6 + o.phase * 1.3) * 0.09;
         const fy =
