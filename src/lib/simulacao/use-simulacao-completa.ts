@@ -302,6 +302,8 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
     valorImovel: number;
     valorEntrada: number;
     valorFinanciamento: number;
+    financiaCustas: boolean;
+    valorCustas: number;
   }) {
     setEntradaTocada(true);
     setF((prev) => ({
@@ -309,12 +311,16 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
       valor_imovel: dados.valorImovel,
       valor_entrada: dados.valorEntrada,
       valor_financiamento: dados.valorFinanciamento,
-      // Desliga o financiamento de despesas para não desfazer a jogada.
-      fg_financiar_despesas: false,
-      valor_despesas_financiadas: 0,
+      // Quando a jogada inclui custas, marca o flag para o banco receber a
+      // operação como "custas financiadas"; senão, desliga para não desfazer a jogada.
+      fg_financiar_despesas: dados.financiaCustas,
+      valor_despesas_financiadas: dados.financiaCustas ? dados.valorCustas : 0,
     }));
+    const msgCustas = dados.financiaCustas
+      ? `, custas financiadas ${formatBRL(dados.valorCustas)}`
+      : "";
     toast.success(
-      `Jogada aplicada: imóvel ${formatBRL(dados.valorImovel)}, entrada ${formatBRL(dados.valorEntrada)}, financiamento ${formatBRL(dados.valorFinanciamento)}.`,
+      `Jogada aplicada: imóvel ${formatBRL(dados.valorImovel)}, entrada ${formatBRL(dados.valorEntrada)}, financiamento ${formatBRL(dados.valorFinanciamento)}${msgCustas}.`,
     );
   }
 
