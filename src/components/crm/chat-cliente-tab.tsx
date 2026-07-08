@@ -15,6 +15,7 @@ import {
   listarChatCliente,
   responderChatCliente,
   marcarChatClienteLido,
+  type ChatMensagem,
 } from "@/lib/crm/chat-cliente.functions";
 
 function formatarHora(iso: string): string {
@@ -110,13 +111,32 @@ export function ChatClienteTab({ clienteId, info }: { clienteId: string; info?: 
 
   const enviar = useMutation({
     mutationFn: (mensagem: string) => responder({ data: { cliente_id: clienteId, mensagem } }),
-    onSuccess: () => {
+    onMutate: async (mensagem: string) => {
+      await qc.cancelQueries({ queryKey });
+      const anterior = qc.getQueryData<ChatMensagem[]>(queryKey);
+      const otimista: ChatMensagem = {
+        id: `otimista-${crypto.randomUUID()}`,
+        remetente_tipo: "time",
+        remetente_id: null,
+        remetente_nome: null,
+        mensagem,
+        anexo_url: null,
+        anexo_nome: null,
+        anexo_is_imagem: false,
+        lida_em: null,
+        criada_em: new Date().toISOString(),
+      };
+      qc.setQueryData<ChatMensagem[]>(queryKey, [...(anterior ?? []), otimista]);
       setTexto("");
-      qc.invalidateQueries({ queryKey });
+      return { anterior };
     },
-    onError: (err) => {
+    onError: (err, _mensagem, ctx) => {
+      if (ctx?.anterior) qc.setQueryData(queryKey, ctx.anterior);
       const motivo = err instanceof Error ? err.message : String(err);
       toast.error(`Não foi possível enviar a mensagem: ${motivo}`);
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey });
     },
   });
 
