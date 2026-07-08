@@ -135,6 +135,32 @@
   background-image: linear-gradient(180deg, #000a6e 0%, #00052e 100%);
 }
 
+/* Painel de marca da tela de autenticação (lado esquerdo, telas grandes). */
+.auth-brand-panel {
+  background-color: var(--brand-azul-noite);
+  background-image:
+    radial-gradient(120% 120% at 100% 0%, rgba(31, 78, 143, 0.55) 0%, transparent 55%),
+    radial-gradient(90% 90% at 0% 100%, rgba(0, 15, 159, 0.55) 0%, transparent 60%),
+    linear-gradient(150deg, #00052e 0%, #000a70 45%, #0b1b3a 100%);
+}
+/* Textura de pontos sutil sobre o painel. */
+.auth-brand-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+  background-size: 22px 22px;
+  pointer-events: none;
+}
+/* Brilho decorativo no topo do cartão de formulário. */
+.auth-form-card {
+  background-color: var(--card);
+  box-shadow:
+    0 1px 0 0 color-mix(in oklab, var(--foreground) 4%, transparent),
+    0 24px 60px -30px color-mix(in oklab, var(--brand-azul-profundo) 45%, transparent);
+}
+
+
 /* Scrollbar discreta dentro do menu — sem barra branca feia. */
 .sidebar-scroll {
   scrollbar-width: thin;
