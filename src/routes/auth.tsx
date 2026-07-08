@@ -126,9 +126,12 @@ function AuthPage() {
 
   return (
     <AuthSplitLayout
+      portalNome="Portal do Correspondente"
+      portalDescricao="Acesse sua operação de crédito imobiliário."
       bannerTitulo="Sua operação de crédito imobiliário, organizada."
       bannerSubtitulo="Simulações, propostas, contratos, financeiro e comissões em um só lugar."
     >
+
       <Tabs defaultValue="entrar" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="entrar">Entrar</TabsTrigger>
