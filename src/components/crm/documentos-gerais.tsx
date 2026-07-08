@@ -44,6 +44,8 @@ import {
   type DGCliente,
 } from "@/lib/crm/documentos-gerais.functions";
 import { imprimirFichaPDF } from "@/lib/crm/ficha-pdf";
+import { GerenciadorArquivos } from "@/components/documentos/gerenciador-arquivos";
+import { FolderKanban, Users2 } from "lucide-react";
 
 const brl = (n: number | null | undefined) =>
   n == null ? "—" : n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
