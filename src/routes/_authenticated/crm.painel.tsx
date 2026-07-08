@@ -464,6 +464,23 @@ function Pagina() {
                   </div>
                 </div>
               </div>
+              {stage.codigo === "contrato_emitido" && (
+                <button
+                  type="button"
+                  onClick={() => setArquivoAberto(true)}
+                  title="Abrir arquivo de contratos emitidos"
+                  className="group/arq flex min-w-0 flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-primary/40 bg-primary/5 p-4 text-center shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary hover:bg-primary/10 hover:shadow-lg"
+                >
+                  <span className="grid size-11 place-items-center rounded-xl bg-primary/10 text-primary transition-colors group-hover/arq:bg-primary group-hover/arq:text-primary-foreground">
+                    <FolderClosed className="size-5" />
+                  </span>
+                  <span className="text-sm font-semibold text-foreground">Contratos emitidos</span>
+                  <span className="text-[11px] text-muted-foreground">
+                    Arquivo dos contratos já emitidos
+                  </span>
+                </button>
+              )}
+              </Fragment>
             );
           })}
         </div>
