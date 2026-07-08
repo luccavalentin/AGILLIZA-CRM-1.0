@@ -158,24 +158,38 @@ export function DocumentosGerais() {
   const raizes = useMemo<PastaNode[]>(() => {
     const comerciais = new Map<string, PastaNode>();
 
-    for (const c of clientes) {
-      const comKey = c.comercial_id ? `com:${c.comercial_id}` : SEM_COMERCIAL_KEY;
-      const comNome = c.comercial_id ? titulo(c.comercial_nome) : SEM_COMERCIAL_LABEL;
-      let com = comerciais.get(comKey);
+    function garantirComercial(key: string, nome: string): PastaNode {
+      let com = comerciais.get(key);
       if (!com) {
         com = {
-          key: comKey,
-          nome: comNome,
+          key,
+          nome,
           tipo: "comercial",
           subpastas: [],
           clientes: [],
           total_clientes: 0,
         };
-        comerciais.set(comKey, com);
+        comerciais.set(key, com);
       }
+      return com;
+    }
 
+    // Semeia uma pasta para cada comercial cadastrado na base (mesmo sem clientes).
+    for (const cm of comerciaisBase) {
+      garantirComercial(`com:${cm.id}`, titulo(cm.nome));
+    }
+
+    for (const c of clientes) {
+      const comKey = c.comercial_id ? `com:${c.comercial_id}` : SEM_COMERCIAL_KEY;
+      const comNome = c.comercial_id ? titulo(c.comercial_nome) : SEM_COMERCIAL_LABEL;
+      const com = garantirComercial(comKey, comNome);
+
+      // Sem imobiliária: usa "Avulso · <primeiro nome do comercial>".
+      const semImobNome = c.comercial_id
+        ? `Avulso · ${primeiroNome(c.comercial_nome)}`.trim().replace(/·\s*$/, "").trim()
+        : SEM_IMOB;
       const imobKey = c.imobiliaria_id ? `imob:${c.imobiliaria_id}` : SEM_IMOB_KEY;
-      const imobNome = c.imobiliaria_id ? titulo(c.imobiliaria_nome) : SEM_IMOB;
+      const imobNome = c.imobiliaria_id ? titulo(c.imobiliaria_nome) : semImobNome;
       const imob = garantirFilho(com, imobKey, imobNome, "imob");
 
       const corrKey = c.corretor_id ?? SEM_CORRETOR_KEY;
@@ -193,7 +207,8 @@ export function DocumentosGerais() {
       if (aSem !== bSem) return aSem ? 1 : -1;
       return a.nome.localeCompare(b.nome, "pt-BR");
     });
-  }, [clientes]);
+  }, [clientes, comerciaisBase]);
+
 
   // Traça o caminho atual na árvore, coletando as pastas percorridas.
   const trilha = useMemo<PastaNode[]>(() => {
