@@ -346,7 +346,7 @@ export const obterContextoChatCliente = createServerFn({ method: "GET" })
     const { supabase } = context;
     const { data: cliente } = await supabase
       .from("clientes")
-      .select("id, nome, cliente_pipeline(pipeline_stages(nome))")
+      .select("id, nome, numero_cliente, cliente_pipeline(pipeline_stages(nome))")
       .eq("id", data.cliente_id)
       .maybeSingle();
 
@@ -360,11 +360,15 @@ export const obterContextoChatCliente = createServerFn({ method: "GET" })
 
     const nomeCompleto = (cliente as any)?.nome?.trim() ?? null;
     const primeiroNome = nomeCompleto ? nomeCompleto.split(/\s+/)[0] : null;
+    // Número puxado automaticamente: proposta mais recente e, na ausência dela,
+    // o número do cliente — assim a mensagem sempre traz uma referência.
+    const numeroProposta =
+      (proposta as any)?.numero_proposta ?? (cliente as any)?.numero_cliente ?? null;
 
     return {
       cliente_id: data.cliente_id,
       primeiro_nome: primeiroNome,
-      numero_proposta: (proposta as any)?.numero_proposta ?? null,
+      numero_proposta: numeroProposta,
       status_proposta: (proposta as any)?.status ?? null,
       nome_banco: (proposta as any)?.nome_banco ?? null,
       etapa_nome:

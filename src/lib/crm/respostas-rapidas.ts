@@ -30,17 +30,24 @@ export interface ContextoResposta {
 
 /** Substitui placeholders {chave} pelos valores do contexto do cliente. */
 export function aplicarVariaveis(texto: string, ctx?: ContextoResposta): string {
-  if (!ctx) return texto;
   const mapa: Record<string, string | null | undefined> = {
-    primeiro_nome: ctx.primeiro_nome,
-    numero_proposta: ctx.numero_proposta,
-    nome_banco: ctx.nome_banco,
-    etapa: ctx.etapa,
+    primeiro_nome: ctx?.primeiro_nome,
+    numero_proposta: ctx?.numero_proposta,
+    nome_banco: ctx?.nome_banco,
+    etapa: ctx?.etapa,
   };
-  return texto.replace(/\{(\w+)\}/g, (bruto, chave: string) => {
+  const substituido = texto.replace(/\{(\w+)\}/g, (bruto, chave: string) => {
+    if (!(chave in mapa)) return bruto;
     const valor = mapa[chave];
-    return valor != null && String(valor).trim() ? String(valor) : bruto;
+    // Placeholder conhecido, porém sem valor: remove o token para não vazar
+    // "{numero_proposta}" cru na mensagem enviada ao cliente.
+    return valor != null && String(valor).trim() ? String(valor) : "";
   });
+  // Limpa resíduos de tokens removidos (espaços duplos e espaço antes de pontuação).
+  return substituido
+    .replace(/[ \t]{2,}/g, " ")
+    .replace(/\s+([.,;:!?])/g, "$1")
+    .trim();
 }
 
 const PADRAO: RespostaRapida[] = [
