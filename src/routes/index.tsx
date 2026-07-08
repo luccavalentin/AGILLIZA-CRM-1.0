@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Building2, UserRound, Handshake, ChevronRight } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
+import { LandingFx } from "@/components/brand/LandingFx";
 import { Card } from "@/components/ui/card";
 
 export const Route = createFileRoute("/")({
@@ -43,6 +44,7 @@ const CARDS: AcessoCard[] = [
 function Landing() {
   return (
     <div className="landing-bg flex min-h-[100dvh] flex-col">
+      <LandingFx />
       <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col items-center justify-center px-4 py-12 sm:py-16">
         <div className="mb-10 flex flex-col items-center gap-4 text-center sm:mb-14">
           <Logo variant="light" className="h-14 sm:h-16" />
