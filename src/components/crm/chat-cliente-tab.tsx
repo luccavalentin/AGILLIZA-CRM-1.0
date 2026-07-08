@@ -123,12 +123,27 @@ export function ChatClienteConversa({ clienteId, info }: { clienteId: string; in
   const editar = useServerFn(editarChatCliente);
   const excluir = useServerFn(excluirChatCliente);
   const marcarLido = useServerFn(marcarChatClienteLido);
+  const contextoFn = useServerFn(obterContextoChatCliente);
   const sessaoFn = useServerFn(getMinhaSessao);
   const { data: sessao } = useQuery({
     queryKey: ["minha-sessao"],
     queryFn: () => sessaoFn(),
     staleTime: 5 * 60_000,
   });
+  const { data: ctxCliente } = useQuery({
+    queryKey: ["chat-contexto-cliente", clienteId],
+    queryFn: () => contextoFn({ data: { cliente_id: clienteId } }),
+    staleTime: 60_000,
+  });
+  const contextoResposta: ContextoResposta = useMemo(
+    () => ({
+      primeiro_nome: ctxCliente?.primeiro_nome ?? info?.nome?.trim().split(/\s+/)[0] ?? null,
+      numero_proposta: ctxCliente?.numero_proposta ?? null,
+      nome_banco: ctxCliente?.nome_banco ?? null,
+      etapa: ctxCliente?.etapa_nome ?? info?.contexto ?? null,
+    }),
+    [ctxCliente, info?.nome, info?.contexto],
+  );
   const meuNome = sessao?.profile?.nome?.trim() || null;
   const [texto, setTexto] = useState("");
   const [enviandoAnexo, setEnviandoAnexo] = useState(false);
