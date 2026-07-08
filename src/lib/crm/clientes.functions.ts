@@ -1378,6 +1378,29 @@ export const definirDataContratoEmitido = createServerFn({ method: "POST" })
   });
 
 /**
+ * Arquiva (ou desarquiva) o contrato de um cliente. Ao arquivar, o cliente sai
+ * do quadro da esteira e passa a viver apenas na pasta de contratos emitidos.
+ */
+export const arquivarContrato = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        cliente_id: z.string().uuid(),
+        arquivar: z.boolean(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }): Promise<{ ok: true }> => {
+    const { error } = await context.supabase
+      .from("clientes")
+      .update({ contrato_arquivado_em: data.arquivar ? new Date().toISOString() : null })
+      .eq("id", data.cliente_id);
+    if (error) throw error;
+    return { ok: true };
+  });
+
+/**
  * Arquivo dos contratos emitidos: clientes cuja data de emissão definida pelo
  * usuário já chegou (hoje ou anterior), mais recentes primeiro. Enriquecido
  * com dados da proposta mais recente do cliente (RLS aplica o escopo).
