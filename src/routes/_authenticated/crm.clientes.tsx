@@ -176,14 +176,14 @@ function Pagina() {
                     className="group cursor-pointer border-border/50 transition-colors hover:bg-muted/50"
                     onClick={() => navigate({ to: "/crm/clientes/$id", params: { id: c.id } })}
                   >
-                    <TableCell>
+                    <TableCell className="py-3.5">
                       <span className="rounded-md bg-muted px-2 py-1 font-mono text-[11px] font-medium text-muted-foreground">
                         {c.numero_cliente}
                       </span>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="py-3.5">
                       <div className="flex items-center gap-3">
-                        <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[11px] font-semibold text-primary">
+                        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/70 text-[11px] font-semibold text-primary-foreground shadow-sm ring-1 ring-primary/20 transition-transform group-hover:scale-105">
                           {iniciais(c.nome)}
                         </span>
                         <span className="font-medium text-foreground transition-colors group-hover:text-primary">
@@ -191,6 +191,7 @@ function Pagina() {
                         </span>
                       </div>
                     </TableCell>
+
                     <TableCell className="text-sm text-muted-foreground">
                       {c.documento_masc
                         ? mascararDocumento(c.documento)
