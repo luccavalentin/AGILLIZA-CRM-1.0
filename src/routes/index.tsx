@@ -56,35 +56,38 @@ function Landing() {
           </p>
         </div>
 
-        <div className="grid w-full gap-5 sm:grid-cols-3 sm:gap-6">
+        <div className="grid w-full max-w-md gap-3 sm:max-w-3xl sm:grid-cols-3 sm:gap-5">
           {CARDS.map(({ to, titulo, subtitulo, icon: Icon, destaque }) => (
             <Link key={to} to={to} className="group focus-visible:outline-none">
               <Card
                 className={
-                  "landing-card relative flex h-full flex-col items-start gap-5 overflow-hidden border p-7 text-left group-focus-visible:ring-2 group-focus-visible:ring-white/40 sm:p-8 " +
+                  "landing-card relative flex h-full items-center gap-4 overflow-hidden border p-4 text-left group-focus-visible:ring-2 group-focus-visible:ring-white/40 sm:flex-col sm:items-start sm:gap-4 sm:p-6 " +
                   (destaque ? "landing-card-destaque" : "")
                 }
               >
                 {destaque && (
-                  <span className="absolute right-5 top-5 text-[0.7rem] font-medium uppercase tracking-[0.16em] text-destructive-foreground/80">
+                  <span className="absolute right-4 top-4 text-[0.62rem] font-medium uppercase tracking-[0.16em] text-destructive-foreground/70">
                     Cliente
                   </span>
                 )}
                 <span
                   className={
-                    "landing-icon flex h-14 w-14 shrink-0 items-center justify-center rounded-full " +
+                    "landing-icon flex h-11 w-11 shrink-0 items-center justify-center rounded-full sm:h-12 sm:w-12 " +
                     (destaque ? "landing-icon-destaque" : "")
                   }
                 >
-                  <Icon strokeWidth={1.5} className="h-6 w-6" />
+                  <Icon strokeWidth={1.5} className="h-5 w-5" />
                 </span>
-                <div className="flex-1">
-                  <h2 className="text-xl font-semibold tracking-tight text-primary-foreground sm:text-[1.4rem]">
+                <div className="min-w-0 flex-1 sm:mt-1">
+                  <h2 className="truncate text-base font-semibold tracking-tight text-primary-foreground sm:text-lg">
                     {titulo}
                   </h2>
-                  <p className="mt-1.5 text-sm text-primary-foreground/60">{subtitulo}</p>
+                  <p className="mt-0.5 truncate text-xs text-primary-foreground/55 sm:text-sm">
+                    {subtitulo}
+                  </p>
                 </div>
-                <span className="mt-3 inline-flex items-center gap-1.5 border-t border-white/10 pt-4 text-sm font-medium text-primary-foreground/75 transition-colors group-hover:text-primary-foreground">
+                <ChevronRight className="h-5 w-5 shrink-0 text-primary-foreground/50 transition-transform group-hover:translate-x-1 group-hover:text-primary-foreground sm:hidden" />
+                <span className="mt-2 hidden items-center gap-1.5 text-sm font-medium text-primary-foreground/75 transition-colors group-hover:text-primary-foreground sm:inline-flex">
                   Acessar
                   <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </span>
@@ -93,6 +96,7 @@ function Landing() {
           ))}
         </div>
       </main>
+
 
       <footer className="py-6 text-center text-xs text-primary-foreground">
         © {new Date().getFullYear()} Agilliza — Crédito Imobiliário. Todos os direitos reservados.
