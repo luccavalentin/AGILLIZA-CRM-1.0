@@ -596,10 +596,68 @@ function Pagina() {
               Contratos emitidos
             </DialogTitle>
             <DialogDescription>
-              Arquivo dos contratos já emitidos — nome, data, nº da proposta e banco.
+              Arquivo dos contratos já emitidos — pesquise e filtre por data.
             </DialogDescription>
           </DialogHeader>
-          <div className="max-h-[60vh] space-y-2 overflow-y-auto pr-1">
+          <div className="space-y-3 border-y border-border/60 py-3">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={contratoBusca}
+                onChange={(e) => setContratoBusca(e.target.value)}
+                placeholder="Buscar por nome, nº do cliente, proposta ou banco..."
+                className="h-9 rounded-lg pl-9 pr-9 text-sm"
+              />
+              {contratoBusca && (
+                <button
+                  type="button"
+                  onClick={() => setContratoBusca("")}
+                  className="absolute right-2 top-1/2 grid size-6 -translate-y-1/2 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                  aria-label="Limpar busca"
+                >
+                  <X className="size-3.5" />
+                </button>
+              )}
+            </div>
+            <div className="flex flex-wrap items-end gap-2">
+              <div className="space-y-1">
+                <label className="text-[11px] font-medium text-muted-foreground">Emitido de</label>
+                <Input
+                  type="date"
+                  value={contratoDesde}
+                  onChange={(e) => setContratoDesde(e.target.value)}
+                  className="h-9 w-36 rounded-lg text-sm"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[11px] font-medium text-muted-foreground">até</label>
+                <Input
+                  type="date"
+                  value={contratoAte}
+                  onChange={(e) => setContratoAte(e.target.value)}
+                  className="h-9 w-36 rounded-lg text-sm"
+                />
+              </div>
+              {(contratoDesde || contratoAte || contratoBusca) && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-9"
+                  onClick={() => {
+                    setContratoBusca("");
+                    setContratoDesde("");
+                    setContratoAte("");
+                  }}
+                >
+                  Limpar
+                </Button>
+              )}
+              <span className="ml-auto self-center text-[11px] tabular-nums text-muted-foreground">
+                {contratosFiltrados.length} contrato(s)
+              </span>
+            </div>
+          </div>
+          <div className="mt-3 max-h-[52vh] space-y-2 overflow-y-auto pr-1">
             {carregandoContratos ? (
               Array.from({ length: 4 }).map((_, i) => (
                 <Skeleton key={i} className="h-16 w-full rounded-lg" />
@@ -611,8 +669,15 @@ function Pagina() {
                   Nenhum contrato emitido arquivado ainda.
                 </p>
               </div>
+            ) : contratosFiltrados.length === 0 ? (
+              <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed border-border px-4 py-10 text-center">
+                <Search className="size-7 text-muted-foreground/60" />
+                <p className="text-sm text-muted-foreground">
+                  Nenhum contrato encontrado com esses filtros.
+                </p>
+              </div>
             ) : (
-              (contratos ?? []).map((ct) => (
+              contratosFiltrados.map((ct) => (
                 <button
                   key={ct.cliente_id}
                   type="button"
