@@ -1,5 +1,8 @@
-import { Checkbox } from "@/components/ui/checkbox";
+import { Check } from "lucide-react";
+import { BancoLogo } from "@/components/bancos/banco-logo";
+import { corDoBanco } from "@/lib/bancos/cores";
 import { Erro } from "@/components/simulacao/completa/campo";
+import { cn } from "@/lib/utils";
 import type { SimulacaoCompletaCtx } from "@/lib/simulacao/use-simulacao-completa";
 
 export function SecaoBancos({ ctx }: { ctx: SimulacaoCompletaCtx }) {
@@ -7,35 +10,82 @@ export function SecaoBancos({ ctx }: { ctx: SimulacaoCompletaCtx }) {
 
   return (
     <section className="space-y-4">
-      <h2 className="text-sm font-semibold text-foreground">Bancos</h2>
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-sm font-semibold text-foreground">Bancos</h2>
+        {bancos && bancos.length > 0 && (
+          <span className="text-xs text-muted-foreground">
+            {f.bancos_ids.length} de {bancos.length} selecionados
+          </span>
+        )}
+      </div>
+
       {f.sistema_amortizacao === "P" && (
         <div className="rounded-lg border border-border bg-muted p-3 text-sm text-muted-foreground">
           O sistema PRICE é oferecido somente pelo Bradesco. Apenas o Bradesco pode ser
           selecionado enquanto esse sistema estiver escolhido.
         </div>
       )}
+
       {!bancos || bancos.length === 0 ? (
         <div className="rounded-lg border border-border bg-muted p-4 text-sm text-muted-foreground">
           Nenhum banco habilitado — abra Configurações → Bancos para ativar.
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {bancos.map((b) => {
             const bloqueado = f.sistema_amortizacao === "P" && !ehBradesco(b);
+            const selecionado = f.bancos_ids.includes(b.id);
+            const cor = corDoBanco(b.nome_banco);
             return (
-              <label
+              <button
                 key={b.id}
-                className={`flex items-center gap-2 rounded-md border border-border bg-card p-3 text-sm ${
-                  bloqueado ? "opacity-50" : ""
-                }`}
+                type="button"
+                disabled={bloqueado}
+                aria-pressed={selecionado}
+                onClick={() => toggleBanco(b.id)}
+                style={selecionado ? { borderColor: cor } : undefined}
+                className={cn(
+                  "group relative flex items-center gap-3 overflow-hidden rounded-xl border bg-card p-3 text-left transition-all duration-200",
+                  "hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                  selecionado ? "border-2 shadow-sm" : "border-border",
+                  bloqueado && "pointer-events-none opacity-45",
+                )}
               >
-                <Checkbox
-                  checked={f.bancos_ids.includes(b.id)}
-                  disabled={bloqueado}
-                  onCheckedChange={() => toggleBanco(b.id)}
+                {/* Faixa lateral na cor institucional do banco quando selecionado */}
+                <span
+                  aria-hidden
+                  className={cn(
+                    "absolute inset-y-0 left-0 w-1 transition-opacity",
+                    selecionado ? "opacity-100" : "opacity-0",
+                  )}
+                  style={{ backgroundColor: cor }}
                 />
-                {b.nome_banco}
-              </label>
+
+                <BancoLogo nome={b.nome_banco} size="xl" className="shrink-0" />
+
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-semibold text-foreground">
+                    {b.nome_banco}
+                  </span>
+                  <span className="block text-xs text-muted-foreground">
+                    {selecionado ? "Selecionado" : "Toque para incluir"}
+                  </span>
+                </span>
+
+                {/* Marcador de seleção */}
+                <span
+                  aria-hidden
+                  className={cn(
+                    "grid h-5 w-5 shrink-0 place-items-center rounded-full border transition-all",
+                    selecionado
+                      ? "border-transparent text-white"
+                      : "border-border text-transparent group-hover:border-muted-foreground/50",
+                  )}
+                  style={selecionado ? { backgroundColor: cor } : undefined}
+                >
+                  <Check className="h-3.5 w-3.5" strokeWidth={3} />
+                </span>
+              </button>
             );
           })}
         </div>
