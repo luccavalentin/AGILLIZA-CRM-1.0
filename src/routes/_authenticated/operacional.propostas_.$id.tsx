@@ -361,9 +361,9 @@ function Pagina() {
 
 function Kpi({ label, valor }: { label: string; valor: React.ReactNode }) {
   return (
-    <div>
-      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className="font-semibold text-foreground">{valor}</p>
+    <div className="p-5">
+      <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+      <div className="mt-1 text-base font-semibold text-foreground">{valor}</div>
     </div>
   );
 }
