@@ -167,10 +167,10 @@ function SidebarLinks({ collapsed, onNavigate }: { collapsed: boolean; onNavigat
                 onClick={onNavigate}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "group relative flex min-h-10 items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                  "group relative flex min-h-10 items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-sidebar-foreground transition-colors",
                   active
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                    : "text-sidebar-foreground hover:bg-white/15 hover:text-sidebar-foreground",
+                    ? "bg-white/20 font-semibold text-white shadow-sm"
+                    : "hover:bg-white/15 hover:text-white",
                   piscando && !active && "animate-pulse",
                 )}
               >
@@ -180,7 +180,7 @@ function SidebarLinks({ collapsed, onNavigate }: { collapsed: boolean; onNavigat
                 <Icon
                   className={cn(
                     "h-[18px] w-[18px] shrink-0",
-                    active ? "text-sidebar-accent-foreground" : "text-sidebar-foreground/90",
+                    active ? "text-white" : "text-sidebar-foreground",
                   )}
                 />
 
