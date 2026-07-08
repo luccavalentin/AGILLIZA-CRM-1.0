@@ -483,7 +483,7 @@ export function ChatClienteConversa({ clienteId, info }: { clienteId: string; in
                       "max-w-[78%] px-3.5 py-2 text-sm shadow-sm",
                       doTime
                         ? "rounded-2xl rounded-br-md bg-primary text-primary-foreground"
-                        : "rounded-2xl rounded-bl-md border border-border/60 bg-card text-foreground",
+                        : "rounded-2xl rounded-bl-md border border-primary/20 bg-card text-foreground",
                       mesmoAutorAntes && (doTime ? "rounded-tr-md" : "rounded-tl-md"),
                     )}
                   >
