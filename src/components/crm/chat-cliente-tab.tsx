@@ -649,7 +649,7 @@ export function ChatClienteConversa({ clienteId, info }: { clienteId: string; in
         open={!!confirmarExcluir}
         onOpenChange={(o) => !o && setConfirmarExcluir(null)}
       >
-        <AlertDialogContent>
+        <AlertDialogContent className="z-[90]">
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir mensagem?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -692,7 +692,7 @@ function MsgAcoes({
         <button
           type="button"
           className={cn(
-            "flex size-6 shrink-0 items-center justify-center self-center rounded-full text-muted-foreground opacity-0 transition-opacity hover:bg-muted group-hover:opacity-100 focus:opacity-100",
+            "flex size-6 shrink-0 items-center justify-center self-center rounded-full text-muted-foreground opacity-60 transition-opacity hover:bg-muted hover:opacity-100 group-hover:opacity-100 focus:opacity-100 data-[state=open]:opacity-100",
             lado === "time" ? "order-first" : "",
           )}
           aria-label="Ações da mensagem"
@@ -700,7 +700,8 @@ function MsgAcoes({
           <MoreVertical className="size-4" />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align={lado === "time" ? "end" : "start"} className="w-40">
+      <DropdownMenuContent align={lado === "time" ? "end" : "start"} className="z-[80] w-40">
+
         {onReply && (
           <DropdownMenuItem onClick={onReply}>
             <Reply className="mr-2 size-4" /> Responder
