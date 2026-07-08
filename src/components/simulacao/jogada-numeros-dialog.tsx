@@ -22,7 +22,7 @@ import { formatBRL } from "@/lib/simulacao/format";
  *
  * Exemplo: imóvel de R$ 250 mil, cliente sem entrada, LTV 80%.
  *   valor ajustado = 250.000 / 0,8 = 312.500 (arredonda p/ 313.000)
- *   entrada de fachada = 313.000 - 250.000 = 63.000
+ *   novo valor de entrada = 313.000 - 250.000 = 63.000
  *   financiamento liberado = 250.000
  *
  * Com "incluir custas" o divisor é reduzido pelo percentual de custas, inflando
