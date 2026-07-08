@@ -39,7 +39,6 @@ import { DocumentosTab } from "@/components/crm/documentos-tab";
 import {
   explorarDocumentosGerais,
   obterFichaConsolidada,
-  AVULSO_LABEL,
   SEM_COMERCIAL_LABEL,
   type DGCliente,
 } from "@/lib/crm/documentos-gerais.functions";
