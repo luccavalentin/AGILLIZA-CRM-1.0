@@ -1409,13 +1409,11 @@ export const listarContratosEmitidos = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<ContratoEmitido[]> => {
     const { supabase } = context;
-    const hoje = new Date().toISOString().slice(0, 10);
     const { data: clientes, error } = await supabase
       .from("clientes")
-      .select("id, nome, numero_cliente, contrato_emitido_em")
-      .not("contrato_emitido_em", "is", null)
-      .lte("contrato_emitido_em", hoje)
-      .order("contrato_emitido_em", { ascending: false });
+      .select("id, nome, numero_cliente, contrato_emitido_em, contrato_arquivado_em")
+      .not("contrato_arquivado_em", "is", null)
+      .order("contrato_arquivado_em", { ascending: false });
     if (error) throw error;
     const lista = clientes ?? [];
     if (lista.length === 0) return [];
