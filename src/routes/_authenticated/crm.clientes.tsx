@@ -88,7 +88,10 @@ function Pagina() {
             </p>
           </div>
         </div>
-        <Button asChild className="shrink-0 shadow-sm">
+        <Button
+          asChild
+          className="h-11 shrink-0 rounded-xl bg-gradient-to-br from-primary to-primary/80 px-5 font-semibold text-primary-foreground shadow-md ring-1 ring-primary/20 transition-all hover:shadow-lg hover:brightness-105"
+        >
           <Link to="/crm/clientes/novo">
             <Plus className="size-4" /> Novo cliente
           </Link>
