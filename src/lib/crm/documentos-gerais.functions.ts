@@ -66,16 +66,16 @@ export const explorarDocumentosGerais = createServerFn({ method: "GET" })
       .select("cliente_id, parceiro_id, tipo_vinculo")
       .in("cliente_id", idsClientes);
 
-    // Nomes dos parceiros.
-    const idsParceiros = Array.from(
-      new Set((vinculos ?? []).map((v: any) => v.parceiro_id).filter(Boolean)),
-    );
+    // Nomes de parceiros (imobiliária/corretor) e comerciais (responsáveis).
+    const idsPerfis = new Set<string>();
+    for (const v of vinculos ?? []) if (v.parceiro_id) idsPerfis.add(v.parceiro_id);
+    for (const c of listaClientes) if (c.responsavel_id) idsPerfis.add(c.responsavel_id);
     let nomesParceiros = new Map<string, string>();
-    if (idsParceiros.length > 0) {
+    if (idsPerfis.size > 0) {
       const { data: perfis } = await supabase
         .from("profiles")
         .select("id, nome")
-        .in("id", idsParceiros);
+        .in("id", Array.from(idsPerfis));
       nomesParceiros = new Map((perfis ?? []).map((p: any) => [p.id, p.nome ?? "—"]));
     }
 
