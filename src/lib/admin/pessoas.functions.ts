@@ -125,6 +125,7 @@ export const listarPessoas = createServerFn({ method: "GET" })
   });
 
 export interface ResultadoCriarPessoa {
+  id: string;
   email: string;
   senha_temporaria: string;
 }
