@@ -81,6 +81,23 @@ function primeiroNome(s: string | null | undefined): string {
 
 type PastaTipo = "comercial" | "imob" | "corretor";
 
+/** Rótulo e cor da etiqueta que identifica o nível da pasta. */
+const PASTA_BADGE: Record<PastaTipo, { label: string; classe: string }> = {
+  comercial: {
+    label: "Comercial Agilliza",
+    classe: "border-primary/25 bg-primary/10 text-primary",
+  },
+  imob: {
+    label: "Imobiliária",
+    classe: "border-sky-500/25 bg-sky-500/10 text-sky-600 dark:text-sky-400",
+  },
+  corretor: {
+    label: "Corretor",
+    classe:
+      "border-violet-500/25 bg-violet-500/10 text-violet-600 dark:text-violet-400",
+  },
+};
+
 interface PastaNode {
   key: string;
   nome: string;
@@ -423,6 +440,14 @@ export function DocumentosGerais() {
               <span className="pointer-events-none absolute inset-x-0 top-0 h-0.5 scale-x-0 bg-gradient-to-r from-primary/60 to-primary/10 transition-transform group-hover:scale-x-100" />
               <IconePasta tipo={p.tipo} />
               <div className="min-w-0 flex-1">
+                <span
+                  className={cn(
+                    "mb-1 inline-flex w-fit items-center rounded-full border px-2 py-0.5 text-[10px] font-medium",
+                    PASTA_BADGE[p.tipo].classe,
+                  )}
+                >
+                  {PASTA_BADGE[p.tipo].label}
+                </span>
                 <p className="truncate font-semibold text-foreground">{p.nome}</p>
                 <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
                   {p.subpastas.length > 0 && (
