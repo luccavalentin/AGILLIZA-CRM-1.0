@@ -458,7 +458,8 @@ function Pagina() {
         </TabsContent>
 
         <TabsContent value="mensagens" className="mt-4">
-          <div className="h-[68dvh] max-h-[600px] min-h-[380px]">
+          <div className="h-[60dvh] max-h-[560px] min-h-[340px]">
+
 
             <ChatClienteTab
               clienteId={id}
