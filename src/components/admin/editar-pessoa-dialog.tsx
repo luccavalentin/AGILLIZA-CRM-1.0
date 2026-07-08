@@ -23,6 +23,7 @@ import {
 import { listarNiveisAcesso } from "@/lib/admin/regras-modulos.functions";
 import { atualizarPessoa, type PessoaLista } from "@/lib/admin/pessoas.functions";
 import { listarTiposPessoa } from "@/lib/admin/tipos-pessoa.functions";
+import { PermissoesResumo } from "@/components/admin/permissoes-resumo";
 
 export function EditarPessoaDialog({
   pessoa,
