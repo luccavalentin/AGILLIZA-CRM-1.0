@@ -29,7 +29,19 @@ const T = TIPOS_DOCUMENTO_POR_CATEGORIA;
 
 type Categoria = "comprador" | "conjuge" | "vendedor" | "vendedor_conjuge" | "imovel" | "outros";
 
+interface ItemChecklist {
+  id: string;
+  label: string;
+  feito: boolean;
+}
+interface GrupoChecklist {
+  id: string;
+  titulo: string;
+  itens: ItemChecklist[];
+}
+
 const filled = (v: unknown) => typeof v === "string" && v.trim().length > 0;
+
 
 function AutoItem({ label, ok }: { label: string; ok: boolean }) {
   return (
