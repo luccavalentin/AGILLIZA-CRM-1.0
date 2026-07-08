@@ -1,7 +1,9 @@
 // Respostas rápidas (templates) do chat — salvas por navegador (localStorage).
 // Estilo "WhatsApp Business": mensagens prontas para agilizar o atendimento.
+// Suportam variáveis dinâmicas relacionadas à proposta do cliente, ex.:
+// {primeiro_nome}, {numero_proposta}, {nome_banco}, {etapa}.
 
-const STORAGE_KEY = "agilliza:chat-respostas-rapidas";
+const STORAGE_KEY = "agilliza:chat-respostas-rapidas-v2";
 const EVENTO = "agilliza:chat-respostas-rapidas-change";
 
 export interface RespostaRapida {
@@ -10,28 +12,73 @@ export interface RespostaRapida {
   texto: string;
 }
 
+/** Variáveis disponíveis para uso nas respostas rápidas. */
+export const VARIAVEIS_RESPOSTA = [
+  { chave: "primeiro_nome", rotulo: "Primeiro nome do cliente" },
+  { chave: "numero_proposta", rotulo: "Número da proposta" },
+  { chave: "nome_banco", rotulo: "Banco da proposta" },
+  { chave: "etapa", rotulo: "Etapa atual da esteira" },
+] as const;
+
+/** Contexto do cliente usado para preencher as variáveis. */
+export interface ContextoResposta {
+  primeiro_nome?: string | null;
+  numero_proposta?: string | null;
+  nome_banco?: string | null;
+  etapa?: string | null;
+}
+
+/** Substitui placeholders {chave} pelos valores do contexto do cliente. */
+export function aplicarVariaveis(texto: string, ctx?: ContextoResposta): string {
+  if (!ctx) return texto;
+  const mapa: Record<string, string | null | undefined> = {
+    primeiro_nome: ctx.primeiro_nome,
+    numero_proposta: ctx.numero_proposta,
+    nome_banco: ctx.nome_banco,
+    etapa: ctx.etapa,
+  };
+  return texto.replace(/\{(\w+)\}/g, (bruto, chave: string) => {
+    const valor = mapa[chave];
+    return valor != null && String(valor).trim() ? String(valor) : bruto;
+  });
+}
+
 const PADRAO: RespostaRapida[] = [
   {
-    id: "saudacao",
+    id: "saudacao-proposta",
     titulo: "Saudação",
-    texto: "Olá! Aqui é da equipe. Como podemos te ajudar hoje?",
+    texto:
+      "Olá, {primeiro_nome}! Aqui é da equipe Agilliza, cuidando da sua proposta {numero_proposta}. Como podemos te ajudar?",
   },
   {
-    id: "documentos",
+    id: "atualizacao-proposta",
+    titulo: "Atualização da proposta",
+    texto:
+      "Olá, {primeiro_nome}! Temos novidades sobre a sua proposta {numero_proposta}: ela está agora na etapa \"{etapa}\". Seguimos acompanhando de perto.",
+  },
+  {
+    id: "documentos-proposta",
     titulo: "Pedir documentos",
     texto:
-      "Para darmos andamento, poderia nos enviar os documentos solicitados? Assim que recebermos, seguimos com a análise.",
+      "Oi, {primeiro_nome}! Para dar andamento à sua proposta {numero_proposta} junto ao {nome_banco}, precisamos de alguns documentos. Poderia nos enviar por aqui?",
   },
   {
-    id: "em-analise",
-    titulo: "Em análise",
+    id: "em-analise-banco",
+    titulo: "Em análise no banco",
     texto:
-      "Sua proposta está em análise pelo banco. Assim que tivermos um retorno, avisaremos por aqui.",
+      "{primeiro_nome}, a sua proposta {numero_proposta} está em análise no {nome_banco}. Assim que houver retorno, avisamos por aqui.",
+  },
+  {
+    id: "aprovacao",
+    titulo: "Boa notícia / aprovação",
+    texto:
+      "Ótima notícia, {primeiro_nome}! Sua proposta {numero_proposta} avançou para a etapa \"{etapa}\". Em breve trazemos os próximos passos.",
   },
   {
     id: "agradecimento",
     titulo: "Agradecimento",
-    texto: "Obrigado pelo contato! Qualquer dúvida, estamos à disposição.",
+    texto:
+      "Obrigado pelo contato, {primeiro_nome}! Qualquer dúvida sobre a proposta {numero_proposta}, estamos à disposição.",
   },
 ];
 

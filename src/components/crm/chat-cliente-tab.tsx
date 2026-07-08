@@ -60,13 +60,17 @@ import {
   editarChatCliente,
   excluirChatCliente,
   marcarChatClienteLido,
+  obterContextoChatCliente,
   type ChatMensagem,
 } from "@/lib/crm/chat-cliente.functions";
 import {
   getRespostasRapidas,
   setRespostasRapidas,
   subscribeRespostasRapidas,
+  aplicarVariaveis,
+  VARIAVEIS_RESPOSTA,
   type RespostaRapida,
+  type ContextoResposta,
 } from "@/lib/crm/respostas-rapidas";
 import { getMinhaSessao } from "@/lib/session.functions";
 
@@ -119,12 +123,27 @@ export function ChatClienteConversa({ clienteId, info }: { clienteId: string; in
   const editar = useServerFn(editarChatCliente);
   const excluir = useServerFn(excluirChatCliente);
   const marcarLido = useServerFn(marcarChatClienteLido);
+  const contextoFn = useServerFn(obterContextoChatCliente);
   const sessaoFn = useServerFn(getMinhaSessao);
   const { data: sessao } = useQuery({
     queryKey: ["minha-sessao"],
     queryFn: () => sessaoFn(),
     staleTime: 5 * 60_000,
   });
+  const { data: ctxCliente } = useQuery({
+    queryKey: ["chat-contexto-cliente", clienteId],
+    queryFn: () => contextoFn({ data: { cliente_id: clienteId } }),
+    staleTime: 60_000,
+  });
+  const contextoResposta: ContextoResposta = useMemo(
+    () => ({
+      primeiro_nome: ctxCliente?.primeiro_nome ?? info?.nome?.trim().split(/\s+/)[0] ?? null,
+      numero_proposta: ctxCliente?.numero_proposta ?? null,
+      nome_banco: ctxCliente?.nome_banco ?? null,
+      etapa: ctxCliente?.etapa_nome ?? info?.contexto ?? null,
+    }),
+    [ctxCliente, info?.nome, info?.contexto],
+  );
   const meuNome = sessao?.profile?.nome?.trim() || null;
   const [texto, setTexto] = useState("");
   const [enviandoAnexo, setEnviandoAnexo] = useState(false);
@@ -610,7 +629,10 @@ export function ChatClienteConversa({ clienteId, info }: { clienteId: string; in
           className="hidden"
           onChange={handleAnexo}
         />
-        <RespostasRapidas onEscolher={(t) => setTexto((prev) => (prev ? `${prev} ${t}` : t))} />
+        <RespostasRapidas
+          contexto={contextoResposta}
+          onEscolher={(t) => setTexto((prev) => (prev ? `${prev} ${t}` : t))}
+        />
         <Button
           type="button"
           onClick={() => fileRef.current?.click()}
@@ -756,13 +778,38 @@ function MsgAcoes({
 }
 
 /** Popover de respostas rápidas (templates) — editáveis, salvas no navegador. */
-function RespostasRapidas({ onEscolher }: { onEscolher: (texto: string) => void }) {
+function RespostasRapidas({
+  onEscolher,
+  contexto,
+}: {
+  onEscolher: (texto: string) => void;
+  contexto?: ContextoResposta;
+}) {
   const [aberto, setAberto] = useState(false);
   const [lista, setLista] = useState<RespostaRapida[]>([]);
   const [gerenciando, setGerenciando] = useState(false);
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [formTitulo, setFormTitulo] = useState("");
   const [formTexto, setFormTexto] = useState("");
+  const formTextoRef = useRef<HTMLTextAreaElement>(null);
+
+  function inserirVariavel(chave: string) {
+    const el = formTextoRef.current;
+    const token = `{${chave}}`;
+    if (!el) {
+      setFormTexto((prev) => (prev ? `${prev} ${token}` : token));
+      return;
+    }
+    const start = el.selectionStart ?? formTexto.length;
+    const end = el.selectionEnd ?? formTexto.length;
+    const novo = formTexto.slice(0, start) + token + formTexto.slice(end);
+    setFormTexto(novo);
+    requestAnimationFrame(() => {
+      el.focus();
+      const pos = start + token.length;
+      el.setSelectionRange(pos, pos);
+    });
+  }
 
   useEffect(() => {
     setLista(getRespostasRapidas());
@@ -829,11 +876,23 @@ function RespostasRapidas({ onEscolher }: { onEscolher: (texto: string) => void 
       <PopoverContent
         align="start"
         side="top"
-        className="z-[70] w-80 p-0"
+        className="z-[70] w-[22rem] overflow-hidden rounded-xl p-0 shadow-xl"
         collisionPadding={12}
       >
-        <div className="flex items-center justify-between border-b px-3 py-2">
-          <span className="text-sm font-semibold">Respostas rápidas</span>
+        <div className="flex items-center justify-between border-b bg-gradient-to-r from-primary/10 via-card to-card px-3 py-2.5">
+          <div className="flex items-center gap-2">
+            <span className="flex size-7 items-center justify-center rounded-lg bg-primary/15 text-primary">
+              <Zap className="size-3.5" />
+            </span>
+            <div className="leading-tight">
+              <span className="block text-sm font-semibold text-foreground">
+                Respostas rápidas
+              </span>
+              <span className="block text-[10px] text-muted-foreground">
+                Personalizadas com os dados da proposta
+              </span>
+            </div>
+          </div>
           <Button
             type="button"
             variant={gerenciando ? "secondary" : "ghost"}
@@ -847,7 +906,7 @@ function RespostasRapidas({ onEscolher }: { onEscolher: (texto: string) => void 
             {gerenciando ? "Concluir" : "Gerenciar"}
           </Button>
         </div>
-        <div className="max-h-64 overflow-y-auto p-2">
+        <div className="max-h-64 space-y-1 overflow-y-auto p-2">
           {lista.length === 0 && (
             <p className="px-2 py-6 text-center text-xs text-muted-foreground">
               Nenhuma resposta rápida cadastrada.
@@ -855,64 +914,101 @@ function RespostasRapidas({ onEscolher }: { onEscolher: (texto: string) => void 
               Use “Gerenciar” para criar a primeira.
             </p>
           )}
-          {lista.map((r) => (
-            <div
-              key={r.id}
-              className="group/resp flex items-start gap-2 rounded-lg px-2 py-2 hover:bg-muted"
-            >
-              <button
-                type="button"
-                className="min-w-0 flex-1 text-left disabled:cursor-default"
-                onClick={() => {
-                  if (gerenciando) return;
-                  onEscolher(r.texto);
-                  setAberto(false);
-                }}
-                disabled={gerenciando}
+          {lista.map((r) => {
+            const preview = aplicarVariaveis(r.texto, contexto);
+            return (
+              <div
+                key={r.id}
+                className="group/resp flex items-start gap-2 rounded-lg border border-transparent px-2 py-2 transition-colors hover:border-primary/30 hover:bg-primary/5"
               >
-                <span className="block text-xs font-semibold text-foreground">{r.titulo}</span>
-                <span className="line-clamp-2 text-xs text-muted-foreground">{r.texto}</span>
-              </button>
-              {gerenciando && (
-                <div className="flex shrink-0 items-center gap-1">
-                  <button
-                    type="button"
-                    className="text-muted-foreground hover:text-foreground"
-                    onClick={() => editar(r)}
-                    aria-label="Editar"
-                  >
-                    <Pencil className="size-4" />
-                  </button>
-                  <button
-                    type="button"
-                    className="text-muted-foreground hover:text-destructive"
-                    onClick={() => remover(r.id)}
-                    aria-label="Remover"
-                  >
-                    <Trash2 className="size-4" />
-                  </button>
-                </div>
-              )}
-            </div>
-          ))}
+                <button
+                  type="button"
+                  className="min-w-0 flex-1 text-left disabled:cursor-default"
+                  onClick={() => {
+                    if (gerenciando) return;
+                    onEscolher(preview);
+                    setAberto(false);
+                  }}
+                  disabled={gerenciando}
+                >
+                  <span className="mb-0.5 flex items-center gap-1.5 text-xs font-semibold text-foreground">
+                    <span className="size-1.5 rounded-full bg-primary/70" />
+                    {r.titulo}
+                  </span>
+                  <span className="line-clamp-2 text-xs leading-snug text-muted-foreground">
+                    {preview}
+                  </span>
+                </button>
+                {gerenciando && (
+                  <div className="flex shrink-0 items-center gap-1">
+                    <button
+                      type="button"
+                      className="text-muted-foreground hover:text-foreground"
+                      onClick={() => editar(r)}
+                      aria-label="Editar"
+                    >
+                      <Pencil className="size-4" />
+                    </button>
+                    <button
+                      type="button"
+                      className="text-muted-foreground hover:text-destructive"
+                      onClick={() => remover(r.id)}
+                      aria-label="Remover"
+                    >
+                      <Trash2 className="size-4" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
         {gerenciando && (
-          <div className="space-y-2 border-t p-3">
+          <div className="space-y-2 border-t bg-muted/20 p-3">
             <p className="text-xs font-medium text-foreground">
               {editandoId ? "Editar resposta" : "Nova resposta"}
             </p>
             <Input
               value={formTitulo}
               onChange={(e) => setFormTitulo(e.target.value)}
-              placeholder="Título (ex.: Saudação)"
+              placeholder="Título (ex.: Atualização da proposta)"
               className="h-8 text-xs"
             />
             <Textarea
+              ref={formTextoRef}
               value={formTexto}
               onChange={(e) => setFormTexto(e.target.value)}
-              placeholder="Texto da resposta rápida…"
+              placeholder="Ex.: Olá {primeiro_nome}, temos novidades sobre a sua proposta {numero_proposta}…"
               className="min-h-[60px] resize-none text-xs"
             />
+            <div className="space-y-1">
+              <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                Inserir variável
+              </p>
+              <div className="flex flex-wrap gap-1">
+                {VARIAVEIS_RESPOSTA.map((v) => (
+                  <button
+                    key={v.chave}
+                    type="button"
+                    onClick={() => inserirVariavel(v.chave)}
+                    title={v.rotulo}
+                    className="rounded-full border border-primary/30 bg-primary/5 px-2 py-0.5 text-[10px] font-medium text-primary transition-colors hover:bg-primary/15"
+                  >
+                    {`{${v.chave}}`}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {formTexto.trim() && (
+              <div className="rounded-lg border border-border/60 bg-background p-2">
+                <p className="mb-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                  Prévia
+                </p>
+                <p className="text-xs leading-snug text-foreground">
+                  {aplicarVariaveis(formTexto, contexto)}
+                </p>
+              </div>
+            )}
             <div className="flex gap-2">
               {editandoId && (
                 <Button
