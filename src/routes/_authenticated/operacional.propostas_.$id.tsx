@@ -226,15 +226,12 @@ function Pagina() {
   const multiBanco = bancosEnviados.length > 1;
 
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-5 p-4 md:p-6">
-      <div className="flex items-center justify-between gap-3">
-        <Button asChild variant="ghost" size="sm">
-          <Link to="/operacional/propostas">
-            <ArrowLeft className="mr-1 h-4 w-4" /> Voltar
-          </Link>
-        </Button>
-        <AcoesTopo proposta={p} propostaId={id} bancos={data.bancos} />
-      </div>
+    <div className="mx-auto w-full max-w-6xl space-y-4 p-4 md:p-6">
+      <Button asChild variant="ghost" size="sm" className="-ml-2 text-muted-foreground hover:text-foreground">
+        <Link to="/operacional/propostas">
+          <ArrowLeft className="mr-1 h-4 w-4" /> Voltar para propostas
+        </Link>
+      </Button>
 
       {(data.bancos ?? []).some(
         (b: any) =>
@@ -243,38 +240,46 @@ function Pagina() {
           ["enviada", "em_analise", "", null, undefined].includes(b.status_banco),
       ) && <BradescoRetornoTimer enviadoEm={p.enviada_em} />}
 
-
-      {/* Header linha 1 */}
-      <div className="rounded-lg border border-border bg-card p-5">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-semibold text-foreground">
+      {/* Header */}
+      <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+        <div className="flex flex-col gap-4 border-b border-border p-5 lg:flex-row lg:items-start lg:justify-between">
+          <div className="min-w-0">
+            <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+              {p.produto ?? "Operação"}
+            </span>
+            <h1 className="mt-2 truncate text-2xl font-semibold text-foreground">
               Proposta {p.numero_proposta_banco || p.codigo_oportunidade_homefin || p.numero_proposta}
             </h1>
-            <p className="text-sm text-muted-foreground">
-              {p.produto ?? "Operação"} ·{" "}
+            <p className="mt-1 text-sm text-muted-foreground">
               {status === "cancelada"
                 ? "Proposta cancelada"
                 : `Ativa há ${diasDesde} dia(s)`}
             </p>
           </div>
-          <div className="flex flex-wrap gap-6 text-sm">
-            <Kpi
-              label={multiBanco ? "Bancos enviados" : "Banco escolhido"}
-              valor={multiBanco ? `${bancosEnviados.length} bancos` : (p.nome_banco ?? "—")}
-            />
-            <Kpi label="R$ Financiado" valor={formatBRL(p.valor_financiamento)} />
-            {!multiBanco && (
-              <Kpi
-                label="Situação"
-                valor={<PropostaStatusBadge status={status} banco={p.nome_banco} />}
-              />
-            )}
-          </div>
+          <AcoesTopo proposta={p} propostaId={id} bancos={data.bancos} />
+        </div>
+
+        {/* KPIs */}
+        <div className="grid grid-cols-1 divide-y divide-border border-b border-border sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-3">
+          <Kpi
+            label={multiBanco ? "Bancos enviados" : "Banco escolhido"}
+            valor={multiBanco ? `${bancosEnviados.length} bancos` : (p.nome_banco ?? "—")}
+          />
+          <Kpi label="Valor financiado" valor={formatBRL(p.valor_financiamento)} />
+          <Kpi
+            label="Situação"
+            valor={
+              multiBanco ? (
+                <span className="text-sm text-muted-foreground">Ver por banco abaixo</span>
+              ) : (
+                <PropostaStatusBadge status={status} banco={p.nome_banco} />
+              )
+            }
+          />
         </div>
 
         {multiBanco && (
-          <div className="mt-5 rounded-lg border border-border bg-muted/30 p-4">
+          <div className="border-b border-border p-5">
             <p className="mb-3 text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
               Situação por banco
             </p>
@@ -282,7 +287,7 @@ function Pagina() {
               {bancosEnviados.map((b: any) => (
                 <div
                   key={b.id}
-                  className="flex items-center justify-between gap-2 rounded-md border border-border bg-card px-3 py-2"
+                  className="flex items-center justify-between gap-2 rounded-md border border-border bg-muted/30 px-3 py-2"
                 >
                   <span className="truncate text-sm font-medium" style={{ color: corDoBanco(b.nome_banco) }}>
                     {b.nome_banco}
@@ -298,7 +303,7 @@ function Pagina() {
           </div>
         )}
 
-        <div className="mt-6">
+        <div className="p-5">
           <PipelineStepper status={status} detalheStatus={p.detalhe_status_atual} />
         </div>
       </div>
@@ -356,9 +361,9 @@ function Pagina() {
 
 function Kpi({ label, valor }: { label: string; valor: React.ReactNode }) {
   return (
-    <div>
-      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className="font-semibold text-foreground">{valor}</p>
+    <div className="p-5">
+      <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+      <div className="mt-1 text-base font-semibold text-foreground">{valor}</div>
     </div>
   );
 }
@@ -454,8 +459,12 @@ function AcoesTopo({
     bancosPendentes.length > 0 &&
     !["cancelada", "registrado", "credito_recusado", "contrato_emitido"].includes(status);
 
+  const temDecisao = proximos.length > 0 || (status !== "cancelada" && status !== "registrado");
+
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center lg:justify-end">
+      <div className="flex flex-wrap items-center gap-2">
+
       {(status === "rascunho" || status === "erro_envio") && (
         <Button size="sm" onClick={enviar} disabled={busy}>
           {busy ? (
@@ -517,6 +526,10 @@ function AcoesTopo({
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+      </div>
+
+      {temDecisao && (
+        <div className="flex flex-wrap items-center gap-2 sm:border-l sm:border-border sm:pl-2">
       {proximos.map((s) => {
         const tone = statusProposta(s).tone;
         const isRecusa = s === "credito_recusado";
@@ -560,6 +573,8 @@ function AcoesTopo({
             </DialogFooter>
           </DialogContent>
         </Dialog>
+      )}
+        </div>
       )}
     </div>
   );
