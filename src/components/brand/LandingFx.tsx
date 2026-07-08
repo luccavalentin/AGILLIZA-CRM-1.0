@@ -134,14 +134,14 @@ export function LandingFx() {
       // Ondas concêntricas onde o mouse passou.
       ctx.globalCompositeOperation = "screen";
       for (const rp of ripples) {
-        rp.t += 0.012;
-        const alpha = (1 - rp.t) * 0.22;
+        rp.t += 0.01;
+        const alpha = (1 - rp.t) * 0.4;
         if (alpha <= 0) continue;
-        const rad = rp.t * minDim * 0.5;
+        const rad = rp.t * minDim * 0.6;
         ctx.beginPath();
         ctx.arc(rp.x * w, rp.y * h, rad, 0, Math.PI * 2);
-        ctx.strokeStyle = `hsla(210, 90%, 72%, ${alpha})`;
-        ctx.lineWidth = 1.2;
+        ctx.strokeStyle = `hsla(205, 95%, 75%, ${alpha})`;
+        ctx.lineWidth = 1.6;
         ctx.stroke();
       }
       for (let i = ripples.length - 1; i >= 0; i--) {
