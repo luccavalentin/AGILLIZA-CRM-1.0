@@ -113,11 +113,15 @@ export const explorarDocumentosGerais = createServerFn({ method: "GET" })
       totalDocs.set(d.cliente_id, (totalDocs.get(d.cliente_id) ?? 0) + 1);
     }
 
-    // Índice: cliente_id -> { imobiliaria, corretor } (primeiro vínculo de cada tipo).
+    // Índice: cliente_id -> { comercial, imobiliaria, corretor } (primeiro vínculo de cada tipo).
+    const comercialPorCliente = new Map<string, string>();
     const imobPorCliente = new Map<string, string>();
     const corrPorCliente = new Map<string, string>();
     for (const v of vinculos ?? []) {
       if (!v.parceiro_id) continue;
+      if (v.tipo_vinculo === "comercial_agilliza" && !comercialPorCliente.has(v.cliente_id)) {
+        comercialPorCliente.set(v.cliente_id, v.parceiro_id);
+      }
       if (v.tipo_vinculo === "imobiliaria" && !imobPorCliente.has(v.cliente_id)) {
         imobPorCliente.set(v.cliente_id, v.parceiro_id);
       }
