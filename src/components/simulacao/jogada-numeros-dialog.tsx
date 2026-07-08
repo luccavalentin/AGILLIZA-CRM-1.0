@@ -76,11 +76,7 @@ export function JogadaNumerosDialog({
 
   const calc = useMemo(() => {
     const liberar = Number(valorLiberar) || 0;
-    const ltv = (Number(ltvPct) || 0) / 100;
-    // Com custas, reduz o divisor pelo percentual informado (ex.: 80% - 5% = 75%),
-    // inflando ainda mais o compra e venda para cobrir cartório/ITBI.
-    const custas = incluirCustas ? (Number(custasPct) || 0) / 100 : 0;
-    const divisor = ltv - custas;
+    const divisor = (Number(ltvPct) || 0) / 100;
     if (liberar <= 0 || divisor <= 0) {
       return { valorImovel: 0, entrada: 0, pctEntrada: 0, valido: false };
     }
