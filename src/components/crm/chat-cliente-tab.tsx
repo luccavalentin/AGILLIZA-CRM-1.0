@@ -17,6 +17,7 @@ import {
   marcarChatClienteLido,
   type ChatMensagem,
 } from "@/lib/crm/chat-cliente.functions";
+import { getMinhaSessao } from "@/lib/session.functions";
 
 function formatarHora(iso: string): string {
   return new Date(iso).toLocaleTimeString("pt-BR", {
