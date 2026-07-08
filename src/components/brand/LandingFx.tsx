@@ -68,7 +68,7 @@ export function LandingFx({ className }: { className?: string }) {
         return {
           x: Math.random(),
           y: Math.random(),
-          r: (w < 640 ? 0.5 : 0.42) + Math.random() * 0.25,
+          r: (w < 640 ? 0.22 : 0.18) + Math.random() * 0.1,
           hue: p.hue,
           sat: p.sat,
           phase: Math.random() * Math.PI * 2,
