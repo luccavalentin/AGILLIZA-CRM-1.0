@@ -983,7 +983,8 @@ export const definirDatasVistoria = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
-    const patch: Record<string, string | null> = {};
+    const patch: { vistoria_agendada_em?: string | null; vistoria_concluida_em?: string | null } =
+      {};
     if (data.vistoria_agendada_em !== undefined)
       patch.vistoria_agendada_em = data.vistoria_agendada_em;
     if (data.vistoria_concluida_em !== undefined)
