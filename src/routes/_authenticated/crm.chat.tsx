@@ -312,16 +312,16 @@ function Pagina() {
   ];
 
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-5 p-4 md:p-6">
-      <div className="flex items-center gap-3 rounded-2xl border border-border/60 bg-gradient-to-r from-primary/5 via-card to-card p-4 shadow-sm">
+    <div className="flex h-[calc(100dvh-3.5rem)] w-full flex-col gap-4 p-4 md:p-6">
+      <div className="flex shrink-0 items-center gap-3 rounded-2xl border border-border/60 bg-gradient-to-r from-primary/5 via-card to-card p-4 shadow-sm">
         <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
           <MessagesSquare className="h-5 w-5" />
         </div>
-        <div>
+        <div className="min-w-0">
           <h1 className="text-xl font-semibold tracking-tight text-foreground">
             Chat e Follow-up Cliente
           </h1>
-          <p className="text-sm text-muted-foreground">
+          <p className="hidden text-sm text-muted-foreground sm:block">
             Converse, etiquete, filtre e acompanhe os SLAs de atualização e
             lembrete de cada cliente.
           </p>
@@ -330,22 +330,24 @@ function Pagina() {
 
       {/* Gestão da conversa — barra horizontal no topo (acima das colunas) */}
       {alvoAtual && (
-        <BarraGestao
-          key={alvoAtual.cliente_id}
-          clienteId={alvoAtual.cliente_id}
-          nome={alvoAtual.nome}
-          documento={alvoAtual.documento}
-          contexto={alvoAtual.etapa_nome ?? null}
-          etiquetas={etiquetas ?? []}
-        />
+        <div className="shrink-0">
+          <BarraGestao
+            key={alvoAtual.cliente_id}
+            clienteId={alvoAtual.cliente_id}
+            nome={alvoAtual.nome}
+            documento={alvoAtual.documento}
+            contexto={alvoAtual.etapa_nome ?? null}
+            etiquetas={etiquetas ?? []}
+          />
+        </div>
       )}
 
-      <div className="grid gap-4 lg:grid-cols-[22rem_1fr]">
+      <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[22rem_1fr] xl:grid-cols-[24rem_1fr]">
 
         {/* Lista de conversas — no mobile some quando uma conversa é aberta */}
         <Card
           className={cn(
-            "h-[70vh] flex-col overflow-hidden border-border/60 shadow-sm lg:flex lg:h-[38rem]",
+            "h-full min-h-0 flex-col overflow-hidden border-border/60 shadow-sm lg:flex",
             selecionado ? "hidden" : "flex",
           )}
         >
