@@ -187,9 +187,9 @@ export function ChatClienteConversa({ clienteId, info }: { clienteId: string; in
 
 
   return (
-    <PopOutPanel title={`Conversa · ${info?.nome ?? "Cliente"}`} className="h-full min-h-[24rem]">
     <Card className="flex h-full flex-col overflow-hidden border-border/60 shadow-sm">
       <div className="flex items-center gap-3 border-b bg-muted/30 px-4 py-3">
+
         <div className="relative flex size-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/70 text-sm font-semibold text-primary-foreground shadow-sm">
           {iniciais(info?.nome)}
           <span className="absolute -bottom-0.5 -right-0.5 size-3 rounded-full border-2 border-background bg-emerald-500" />
