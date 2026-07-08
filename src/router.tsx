@@ -19,6 +19,8 @@ export const getRouter = () => {
   const REFERENCIA_STALE = 10 * 60_000; // 10 min
   const chavesReferencia = [
     ["minha-sessao"],
+    ["minhas-permissoes"],
+    ["nav-pastas-documentos"],
     ["pipeline-stages"],
     ["chat-etiquetas"],
     ["admin-config-modulos"],
