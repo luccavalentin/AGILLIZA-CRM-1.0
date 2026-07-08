@@ -3,7 +3,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Loader2, UserPlus, Users, X } from "lucide-react";
+import { Loader2, Plus, UserPlus, Users, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Combobox } from "@/components/ui/combobox";
@@ -39,6 +39,7 @@ import {
   mascararCPF,
   mascararDocumentoTipo,
 } from "@/lib/crm/documento";
+import { CriarVinculoInline } from "@/components/crm/criar-vinculo-inline";
 
 export interface ClienteFormValues {
   id?: string;
@@ -344,6 +345,7 @@ export function ClienteForm({
     [],
   );
   const [vinculoSel, setVinculoSel] = useState<Record<string, string>>({});
+  const [criarTipo, setCriarTipo] = useState<TipoVinculo | null>(null);
   const parceiros = useQuery({
     queryKey: ["parceiros-disponiveis"],
     queryFn: () => listarParceiros(),
@@ -607,8 +609,17 @@ export function ClienteForm({
                       size="icon"
                       disabled={!sel}
                       onClick={() => adicionarVinculo(tipo.valor)}
+                      title="Vincular usuário selecionado"
                     >
                       <UserPlus className="size-4" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setCriarTipo(tipo.valor)}
+                      title={`Criar novo ${tipo.rotulo}`}
+                    >
+                      <Plus className="size-4" /> Novo
                     </Button>
                   </div>
                   {desteTipo.length > 0 && (
@@ -636,6 +647,27 @@ export function ClienteForm({
             })}
           </CardContent>
         </Card>
+      )}
+
+      {criarTipo && (
+        <CriarVinculoInline
+          aberto={criarTipo !== null}
+          onOpenChange={(v) => {
+            if (!v) setCriarTipo(null);
+          }}
+          tipoPessoa={TIPO_VINCULO_PESSOA[criarTipo]}
+          rotuloTipo={TIPOS_VINCULO.find((t) => t.valor === criarTipo)?.rotulo ?? ""}
+          onCriado={(id) => {
+            const tipo = criarTipo;
+            if (!tipo) return;
+            setVinculos((prev) =>
+              prev.some((x) => x.parceiro_id === id && x.tipo_vinculo === tipo)
+                ? prev
+                : [...prev, { parceiro_id: id, tipo_vinculo: tipo }],
+            );
+            parceiros.refetch();
+          }}
+        />
       )}
 
       <Card>

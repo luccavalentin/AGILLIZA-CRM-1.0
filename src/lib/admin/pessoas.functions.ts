@@ -125,6 +125,7 @@ export const listarPessoas = createServerFn({ method: "GET" })
   });
 
 export interface ResultadoCriarPessoa {
+  id: string;
   email: string;
   senha_temporaria: string;
 }
@@ -248,7 +249,7 @@ export const criarPessoaComAcesso = createServerFn({ method: "POST" })
       },
     });
 
-    return { email: comLogin ? emailReal : "", senha_temporaria: comLogin ? senha : "" };
+    return { id: created.user.id, email: comLogin ? emailReal : "", senha_temporaria: comLogin ? senha : "" };
   });
 
 /** Carrega o perfil alvo garantindo que pertence ao mesmo ecossistema do solicitante. */
@@ -413,7 +414,7 @@ export const habilitarLoginPessoa = createServerFn({ method: "POST" })
       payloadNovo: { email },
     });
 
-    return { email, senha_temporaria: senha };
+    return { id: data.id, email, senha_temporaria: senha };
   });
 
 /** Ativa ou desativa (bloqueia) o acesso de uma pessoa. */
@@ -482,7 +483,7 @@ export const resetarSenhaPessoa = createServerFn({ method: "POST" })
       entidadeId: data.id,
     });
 
-    return { email: alvo.email ?? "", senha_temporaria: senha };
+    return { id: data.id, email: alvo.email ?? "", senha_temporaria: senha };
   });
 
 /** Exclui definitivamente uma pessoa (remove o acesso ao sistema). */
