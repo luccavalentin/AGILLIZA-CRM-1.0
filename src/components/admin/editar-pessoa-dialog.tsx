@@ -163,6 +163,20 @@ export function EditarPessoaDialog({
               </SelectContent>
             </Select>
           </div>
+          {nivelSelecionado && (
+            <div className="space-y-2 rounded-lg border p-4">
+              <div>
+                <p className="text-sm font-medium">
+                  Permissões de acesso — o que esta pessoa pode ver e editar
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Vinculadas ao nível “{nivelSelecionado.nome}”. Alterar as regras em “Papéis &amp;
+                  Permissões” vale imediatamente para todas as pessoas deste nível.
+                </p>
+              </div>
+              <PermissoesResumo nivel={nivelSelecionado} />
+            </div>
+          )}
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>
               Cancelar
