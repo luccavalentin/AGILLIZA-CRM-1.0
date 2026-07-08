@@ -132,3 +132,22 @@ export function subscribeNotificationPrefs(cb: () => void): () => void {
     window.removeEventListener("storage", cb);
   };
 }
+
+/** Mapeia o `tipo` bruto de uma notificação para uma categoria de preferência. */
+export function categoriaDeTipo(tipo: string | null | undefined): TipoNotificacao {
+  const t = (tipo ?? "").toLowerCase();
+  if (t.includes("chat") || t.includes("mensagem")) return "chat";
+  if (t.includes("tarefa") || t.includes("demanda") || t.includes("sla")) return "tarefas";
+  if (t.includes("proposta") || t.includes("envio") || t.includes("banco")) return "propostas";
+  if (t.includes("cliente") || t.includes("interacao") || t.includes("cadastro") || t.includes("crm"))
+    return "crm";
+  if (
+    t.includes("financ") ||
+    t.includes("pagar") ||
+    t.includes("receber") ||
+    t.includes("comiss") ||
+    t.includes("contrato")
+  )
+    return "financeiro";
+  return "sistema";
+}
