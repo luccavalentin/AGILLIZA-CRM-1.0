@@ -122,24 +122,18 @@ function Pagina() {
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
-              <TableRow className="border-border/60 bg-muted/40 hover:bg-muted/40">
-                {[
-                  "Número",
-                  "Nome",
-                  "Documento",
-                  "Contato",
-                  "Etapa",
-                  "Responsável",
-                  "Portal",
-                ].map((h) => (
-                  <TableHead
-                    key={h}
-                    className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground"
-                  >
-                    {h}
-                  </TableHead>
-                ))}
-                <TableHead className="w-12 text-right text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+              <TableRow className="border-b border-border/60 bg-muted/30 hover:bg-muted/30">
+                {["Cliente", "Documento", "Contato", "Etapa", "Responsável", "Portal"].map(
+                  (h) => (
+                    <TableHead
+                      key={h}
+                      className="h-11 px-4 text-[10.5px] font-semibold uppercase tracking-[0.09em] text-muted-foreground/80"
+                    >
+                      {h}
+                    </TableHead>
+                  ),
+                )}
+                <TableHead className="h-11 w-14 px-4 text-right text-[10.5px] font-semibold uppercase tracking-[0.09em] text-muted-foreground/80">
                   Ações
                 </TableHead>
               </TableRow>
@@ -147,77 +141,140 @@ function Pagina() {
             <TableBody>
               {isLoading ? (
                 Array.from({ length: 6 }).map((_, i) => (
-                  <TableRow key={i}>
-                    {Array.from({ length: 8 }).map((__, j) => (
-                      <TableCell key={j}>
+                  <TableRow key={i} className="border-border/40">
+                    <TableCell className="px-4 py-4">
+                      <div className="flex items-center gap-3">
+                        <Skeleton className="size-9 shrink-0 rounded-full" />
+                        <div className="space-y-1.5">
+                          <Skeleton className="h-3.5 w-40" />
+                          <Skeleton className="h-2.5 w-20" />
+                        </div>
+                      </div>
+                    </TableCell>
+                    {Array.from({ length: 6 }).map((__, j) => (
+                      <TableCell key={j} className="px-4">
                         <Skeleton className="h-4 w-24" />
                       </TableCell>
                     ))}
                   </TableRow>
                 ))
               ) : (data?.itens.length ?? 0) === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={8} className="py-16 text-center">
-                    <div className="mx-auto mb-3 flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary">
-                      <Users className="size-6" />
+                <TableRow className="hover:bg-transparent">
+                  <TableCell colSpan={7} className="py-20 text-center">
+                    <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-primary ring-1 ring-primary/15">
+                      <Users className="size-7" />
                     </div>
-                    <p className="text-sm font-medium text-foreground">
+                    <p className="text-sm font-semibold text-foreground">
                       Nenhum cliente encontrado
                     </p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="mt-1 text-xs text-muted-foreground">
                       Cadastre o primeiro cliente para começar.
                     </p>
+                    <Button asChild size="sm" className="mt-4">
+                      <Link to="/crm/clientes/novo">
+                        <Plus className="size-4" /> Novo cliente
+                      </Link>
+                    </Button>
                   </TableCell>
                 </TableRow>
               ) : (
                 data!.itens.map((c) => (
                   <TableRow
                     key={c.id}
-                    className="group cursor-pointer border-border/50 transition-colors hover:bg-muted/50"
+                    className="group relative cursor-pointer border-border/40 transition-colors hover:bg-primary/[0.035]"
                     onClick={() => navigate({ to: "/crm/clientes/$id", params: { id: c.id } })}
                   >
-                    <TableCell className="py-3.5">
-                      <span className="rounded-md bg-muted px-2 py-1 font-mono text-[11px] font-medium text-muted-foreground">
-                        {c.numero_cliente}
-                      </span>
-                    </TableCell>
-                    <TableCell className="py-3.5">
+                    {/* Cliente: avatar + nome + número */}
+                    <TableCell className="px-4 py-3.5">
                       <div className="flex items-center gap-3">
-                        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/70 text-[11px] font-semibold text-primary-foreground shadow-sm ring-1 ring-primary/20 transition-transform group-hover:scale-105">
+                        <span className="absolute inset-y-0 left-0 w-[3px] origin-top scale-y-0 rounded-r-full bg-primary transition-transform duration-200 group-hover:scale-y-100" />
+                        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/70 text-[11px] font-semibold text-primary-foreground shadow-sm ring-1 ring-primary/20 transition-transform duration-200 group-hover:scale-105">
                           {iniciais(c.nome)}
                         </span>
-                        <span className="font-medium text-foreground transition-colors group-hover:text-primary">
-                          {c.nome}
-                        </span>
+                        <div className="min-w-0">
+                          <span className="block truncate font-medium leading-tight text-foreground transition-colors group-hover:text-primary">
+                            {c.nome}
+                          </span>
+                          <span className="mt-0.5 block font-mono text-[10.5px] leading-tight text-muted-foreground/70">
+                            {c.numero_cliente}
+                          </span>
+                        </div>
                       </div>
                     </TableCell>
 
-                    <TableCell className="text-sm text-muted-foreground">
-                      {c.documento_masc
-                        ? mascararDocumento(c.documento)
-                        : formatarDocumento(c.documento)}
+                    {/* Documento */}
+                    <TableCell className="px-4">
+                      <span className="font-mono text-[13px] tabular-nums text-foreground/80">
+                        {c.documento_masc
+                          ? mascararDocumento(c.documento)
+                          : formatarDocumento(c.documento)}
+                      </span>
                     </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {c.telefone_celular ? formatarCelular(c.telefone_celular) : (c.email ?? "—")}
+
+                    {/* Contato: telefone + e-mail */}
+                    <TableCell className="px-4">
+                      <div className="flex flex-col gap-0.5 text-sm">
+                        {c.telefone_celular ? (
+                          <span className="flex items-center gap-1.5 text-foreground/80">
+                            <Phone className="size-3.5 shrink-0 text-muted-foreground/60" />
+                            {formatarCelular(c.telefone_celular)}
+                          </span>
+                        ) : null}
+                        {c.email ? (
+                          <span className="flex items-center gap-1.5 truncate text-xs text-muted-foreground">
+                            <Mail className="size-3.5 shrink-0 text-muted-foreground/60" />
+                            <span className="truncate">{c.email}</span>
+                          </span>
+                        ) : null}
+                        {!c.telefone_celular && !c.email && (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </div>
                     </TableCell>
-                    <TableCell>
-                      {c.etapa_nome ? <ToneBadge tone="info">{c.etapa_nome}</ToneBadge> : "—"}
+
+                    {/* Etapa */}
+                    <TableCell className="px-4">
+                      {c.etapa_nome ? (
+                        <ToneBadge tone="info" className="gap-1.5">
+                          <span className="size-1.5 shrink-0 rounded-full bg-primary" />
+                          {c.etapa_nome}
+                        </ToneBadge>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">—</span>
+                      )}
                     </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {c.responsavel_nome ?? "—"}
+
+                    {/* Responsável */}
+                    <TableCell className="px-4">
+                      {c.responsavel_nome ? (
+                        <div className="flex items-center gap-2">
+                          <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-muted text-[9px] font-semibold text-muted-foreground ring-1 ring-border">
+                            {iniciais(c.responsavel_nome)}
+                          </span>
+                          <span className="truncate text-[13px] text-foreground/80">
+                            {c.responsavel_nome}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">—</span>
+                      )}
                     </TableCell>
-                    <TableCell>
+
+                    {/* Portal */}
+                    <TableCell className="px-4">
                       <StatusBadge status={c.portal_acesso_ativo ? "ativo" : "inativo"} />
                     </TableCell>
-                    <TableCell
-                      className="text-right"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <ConfirmDelete
-                        titulo="Excluir cliente"
-                        descricao={`O cliente "${c.nome}" e seus registros vinculados serão removidos permanentemente.`}
-                        onConfirm={() => handleExcluir(c.id)}
-                      />
+
+                    {/* Ações */}
+                    <TableCell className="px-4 text-right" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center justify-end gap-1">
+                        <ConfirmDelete
+                          titulo="Excluir cliente"
+                          descricao={`O cliente "${c.nome}" e seus registros vinculados serão removidos permanentemente.`}
+                          onConfirm={() => handleExcluir(c.id)}
+                        />
+                        <ChevronRight className="size-4 -translate-x-1 text-primary opacity-0 transition-all duration-200 group-hover:translate-x-0 group-hover:opacity-100" />
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
@@ -225,6 +282,7 @@ function Pagina() {
             </TableBody>
           </Table>
         </div>
+
         {(data?.total ?? 0) > 0 && (
           <div className="flex items-center justify-between border-t border-border/60 bg-muted/20 px-4 py-3 text-xs text-muted-foreground">
             <span>
