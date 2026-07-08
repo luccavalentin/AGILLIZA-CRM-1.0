@@ -25,15 +25,20 @@ const LABEL_STATUS_BANCO: Record<string, string> = {
   expirada: "Expirada",
 };
 
-// Paleta institucional fixa (independe do tema do usuário)
-const AZUL = "#000F9F";
-const CORAL = "#F5333F";
-const GRAFITE = "#0B0B0F";
-const CINZA = "#6B7280";
-const ZEBRA = "#F7F8FA";
-const BORDA = "#E4E6EF";
+// Paleta do documento — segue o tema (claro/escuro) ativo na geração.
+import { getPdfPalette, type PdfPalette } from "@/lib/relatorios/pdf-theme";
+let P: PdfPalette = getPdfPalette();
+
+/** Preenche o fundo da página quando o tema é escuro. */
+function drawPageBackground(doc: jsPDF, pageW: number, pageH: number) {
+  if (!P.pageBg) return;
+  doc.setFillColor(P.pageBg);
+  doc.rect(0, 0, pageW, pageH, "F");
+}
+
 const HEADER_H = 68;
 const MARGIN = 36;
+
 
 // ---------------------------------------------------------------------------
 // Helpers de formatação
@@ -65,9 +70,10 @@ function produtoLabel(s: any): string {
 
 /** Faixa azul com o slogan "Crédito Inteligente é na" + logo Agilliza centralizados. */
 function drawClienteHeader(doc: jsPDF, pageW: number) {
-  doc.setFillColor(AZUL);
+  P = getPdfPalette();
+  doc.setFillColor(P.azul);
   doc.rect(0, 0, pageW, HEADER_H, "F");
-  doc.setFillColor(CORAL);
+  doc.setFillColor(P.coral);
   doc.rect(0, HEADER_H, pageW, 3, "F");
 
   const slogan = "Crédito Inteligente é na";
@@ -94,12 +100,12 @@ function drawClienteHeader(doc: jsPDF, pageW: number) {
 
 function drawFooter(doc: jsPDF, pageW: number, pageH: number, pageNum: number, total: number) {
   const y = pageH - 22;
-  doc.setDrawColor(BORDA);
+  doc.setDrawColor(P.borda);
   doc.setLineWidth(0.5);
   doc.line(MARGIN, y, pageW - MARGIN, y);
   doc.setFontSize(7.5);
   doc.setFont("helvetica", "normal");
-  doc.setTextColor(CINZA);
+  doc.setTextColor(P.cinza);
   const emitido = new Date().toLocaleString("pt-BR");
   doc.text(`Agilliza · Crédito Imobiliário  —  Emitido em ${emitido}`, MARGIN, y + 12);
   doc.text(`Página ${pageNum} de ${total}`, pageW - MARGIN, y + 12, { align: "right" });
@@ -122,11 +128,11 @@ function drawTituloExtrato(
   titulo = "Extrato da Simulação de Financiamento",
   dataLabel = "Data da Simulação",
 ): number {
-  doc.setTextColor(AZUL);
+  doc.setTextColor(P.destaque);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(14);
   doc.text(titulo, MARGIN, y);
-  doc.setTextColor(GRAFITE);
+  doc.setTextColor(P.texto);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(8);
   doc.text(`${dataLabel}: ${dataTxt(s.created_at ?? new Date())}`, pageW - MARGIN, y, {
@@ -139,11 +145,11 @@ function drawTituloExtrato(
 function drawDadosCliente(doc: jsPDF, pageW: number, s: any, y: number): number {
   const w = pageW - MARGIN * 2;
   const boxH = 44;
-  doc.setFillColor(ZEBRA);
-  doc.setDrawColor(BORDA);
+  doc.setFillColor(P.card);
+  doc.setDrawColor(P.borda);
   doc.setLineWidth(0.5);
   doc.roundedRect(MARGIN, y, w, boxH, 4, 4, "FD");
-  doc.setFillColor(CORAL);
+  doc.setFillColor(P.coral);
   doc.rect(MARGIN, y + 8, 3, boxH - 16, "F");
 
   const colX = [MARGIN + 14, MARGIN + w * 0.5, MARGIN + w * 0.75];
@@ -154,11 +160,11 @@ function drawDadosCliente(doc: jsPDF, pageW: number, s: any, y: number): number 
     s.cpf_cnpj ?? "—",
   ];
   rotulos.forEach((r, i) => {
-    doc.setTextColor(CINZA);
+    doc.setTextColor(P.cinza);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(6.5);
     doc.text(r, colX[i], y + 16);
-    doc.setTextColor(AZUL);
+    doc.setTextColor(P.destaque);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(i === 0 ? 11 : 10);
     doc.text(String(valores[i]), colX[i], y + 32, { maxWidth: (i === 0 ? w * 0.5 : w * 0.25) - 16 });
@@ -233,7 +239,7 @@ function drawInfoFinanciamento(
   }
 
 
-  doc.setTextColor(AZUL);
+  doc.setTextColor(P.destaque);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(10);
   doc.text("Informações do Financiamento", startX, y);
@@ -247,15 +253,15 @@ function drawInfoFinanciamento(
     const rowIdx = Math.floor(i / cols);
     const x = startX + col * (cardW + gap);
     const cy = y + rowIdx * (cardH + gap);
-    doc.setFillColor(ZEBRA);
-    doc.setDrawColor(BORDA);
+    doc.setFillColor(P.card);
+    doc.setDrawColor(P.borda);
     doc.setLineWidth(0.5);
     doc.roundedRect(x, cy, cardW, cardH, 3, 3, "FD");
-    doc.setTextColor(CINZA);
+    doc.setTextColor(P.cinza);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(6);
     doc.text(it.label.toUpperCase(), x + 8, cy + 12, { maxWidth: cardW - 14 });
-    doc.setTextColor(AZUL);
+    doc.setTextColor(P.destaque);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(10);
     doc.text(it.valor, x + 8, cy + 27, { maxWidth: cardW - 14 });
@@ -270,10 +276,10 @@ function drawFaixaBanco(doc: jsPDF, pageW: number, nomeBanco: string, y: number)
   const w = pageW - MARGIN * 2;
   const h = 30;
   const brand = resolveBancoBrand(nomeBanco);
-  const cor = brand?.cor ?? AZUL;
+  const cor = brand?.cor ?? P.destaque;
 
   // Fundo branco com borda na cor institucional do banco
-  doc.setFillColor("#FFFFFF");
+  doc.setFillColor(P.card);
   doc.setDrawColor(cor);
   doc.setLineWidth(0.8);
   doc.roundedRect(MARGIN, y, w, h, 3, 3, "FD");
@@ -303,7 +309,7 @@ function drawFaixaBanco(doc: jsPDF, pageW: number, nomeBanco: string, y: number)
 }
 
 function drawDisclaimer(doc: jsPDF, pageW: number, y: number) {
-  doc.setTextColor("#000000");
+  doc.setTextColor(P.texto);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(7.5);
   doc.text(DISCLAIMER, MARGIN, y, { maxWidth: pageW - MARGIN * 2, lineHeightFactor: 1.4 });
@@ -328,6 +334,7 @@ function anexarDetalhesBancos(doc: jsPDF, pageW: number, pageH: number, s: any, 
     const parcelas = d?.parcelas ?? [];
 
     doc.addPage("a4", "landscape");
+    drawPageBackground(doc, pageW, pageH);
     drawBrandHeader(doc, pageW, DETALHE_HEADER_H, "Detalhamento da Simulação", subtitulo);
     let y = DETALHE_HEADER_H + 24;
     y = drawFaixaBanco(doc, pageW, nomeBanco, y);
@@ -350,7 +357,7 @@ function anexarDetalhesBancos(doc: jsPDF, pageW: number, pageH: number, s: any, 
       { label: "Última parcela", valor: brlOuTraco(d?.ultimaParcela) },
       { label: "Somatório das parcelas", valor: brlOuTraco(d?.somatorioParcelas) },
     ];
-    doc.setTextColor(AZUL);
+    doc.setTextColor(P.destaque);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(10);
     doc.text("Resumo do Pagamento", MARGIN, gy);
@@ -360,15 +367,15 @@ function anexarDetalhesBancos(doc: jsPDF, pageW: number, pageH: number, s: any, 
     const rCardH = 40;
     resumo.forEach((it, i) => {
       const x = MARGIN + i * (rCardW + rGap);
-      doc.setFillColor(ZEBRA);
-      doc.setDrawColor(BORDA);
+      doc.setFillColor(P.card);
+      doc.setDrawColor(P.borda);
       doc.setLineWidth(0.5);
       doc.roundedRect(x, gy, rCardW, rCardH, 3, 3, "FD");
-      doc.setTextColor(CINZA);
+      doc.setTextColor(P.cinza);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(6);
       doc.text(it.label.toUpperCase(), x + 8, gy + 14, { maxWidth: rCardW - 12 });
-      doc.setTextColor(AZUL);
+      doc.setTextColor(P.destaque);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(11);
       doc.text(it.valor, x + 8, gy + 31, { maxWidth: rCardW - 12 });
@@ -391,12 +398,13 @@ function anexarDetalhesBancos(doc: jsPDF, pageW: number, pageH: number, s: any, 
       styles: {
         fontSize: 7,
         cellPadding: 3,
-        textColor: GRAFITE,
-        lineColor: BORDA,
+        textColor: P.texto,
+        fillColor: P.pageBg ?? "#FFFFFF",
+        lineColor: P.borda,
         lineWidth: 0.25,
       },
-      headStyles: { fillColor: AZUL, textColor: "#FFFFFF", fontStyle: "bold" as const, fontSize: 7 },
-      alternateRowStyles: { fillColor: ZEBRA },
+      headStyles: { fillColor: P.azul, textColor: P.headText, fontStyle: "bold" as const, fontSize: 7 },
+      alternateRowStyles: { fillColor: P.card },
       columnStyles: {
         0: { halign: "right" as const },
         2: { halign: "right" as const },
@@ -412,14 +420,14 @@ function anexarDetalhesBancos(doc: jsPDF, pageW: number, pageH: number, s: any, 
     const rightX = MARGIN + leftW + colGap;
     const rightW = w - leftW - colGap;
 
-    doc.setTextColor(AZUL);
+    doc.setTextColor(P.destaque);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(10);
     doc.text(`Plano de Pagamento (${parcelas.length} parcelas)`, rightX, blocoTop);
     if (d?.parcelasEstimadas) {
       doc.setFont("helvetica", "italic");
       doc.setFontSize(6.5);
-      doc.setTextColor(CINZA);
+      doc.setTextColor(P.cinza);
       doc.text("Projeção a partir da taxa/sistema do banco (1ª/última reais).", rightX, blocoTop + 10, {
         maxWidth: rightW,
       });
@@ -429,7 +437,7 @@ function anexarDetalhesBancos(doc: jsPDF, pageW: number, pageH: number, s: any, 
     if (parcelas.length === 0) {
       doc.setFont("helvetica", "normal");
       doc.setFontSize(8);
-      doc.setTextColor(CINZA);
+      doc.setTextColor(P.cinza);
       doc.text("Detalhamento de parcelas indisponível para esta simulação.", rightX, tblTop + 14, {
         maxWidth: rightW,
       });
@@ -464,6 +472,7 @@ function anexarDetalhesBancos(doc: jsPDF, pageW: number, pageH: number, s: any, 
 
       if (restante.length > 0) {
         doc.addPage("a4", "landscape");
+        drawPageBackground(doc, pageW, pageH);
         drawBrandHeader(doc, pageW, DETALHE_HEADER_H, `Plano de Pagamento — ${nomeBanco}`, subtitulo);
         autoTable(doc, {
           startY: DETALHE_HEADER_H + 24,
@@ -471,6 +480,9 @@ function anexarDetalhesBancos(doc: jsPDF, pageW: number, pageH: number, s: any, 
           head: cabecalho,
           body: restante.map(linhaParcela),
           ...estiloTabela,
+          willDrawPage: (hook) => {
+            if (hook.pageNumber > 1) drawPageBackground(doc, pageW, pageH);
+          },
           didDrawPage: () => {
             drawBrandHeader(doc, pageW, DETALHE_HEADER_H, `Plano de Pagamento — ${nomeBanco}`, subtitulo);
           },
@@ -582,12 +594,14 @@ export function baixarSimulacaoSimplificadaPDF({
   dataLabel,
 }: SimulacaoPdfInput) {
   const lista = bancosParaExtrato(bancos);
+  P = getPdfPalette();
   const doc = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
 
   lista.forEach((b, idx) => {
     if (idx > 0) doc.addPage();
+    drawPageBackground(doc, pageW, pageH);
     const d = extrairDetalheBanco(b?.raw_response);
     drawClienteHeader(doc, pageW);
     let y = HEADER_H + 26;
@@ -602,7 +616,7 @@ export function baixarSimulacaoSimplificadaPDF({
       { label: "Última parcela", valor: brlOuTraco(d?.ultimaParcela) },
       { label: "Somatório das parcelas", valor: brlOuTraco(d?.somatorioParcelas) },
     ];
-    doc.setTextColor(AZUL);
+    doc.setTextColor(P.destaque);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(10);
     doc.text("Resumo do Pagamento", MARGIN, y);
@@ -613,15 +627,15 @@ export function baixarSimulacaoSimplificadaPDF({
     const cardH = 40;
     resumo.forEach((it, i) => {
       const x = MARGIN + i * (cardW + gap);
-      doc.setFillColor(ZEBRA);
-      doc.setDrawColor(BORDA);
+      doc.setFillColor(P.card);
+      doc.setDrawColor(P.borda);
       doc.setLineWidth(0.5);
       doc.roundedRect(x, y, cardW, cardH, 3, 3, "FD");
-      doc.setTextColor(CINZA);
+      doc.setTextColor(P.cinza);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(6.5);
       doc.text(it.label.toUpperCase(), x + 10, y + 15, { maxWidth: cardW - 16 });
-      doc.setTextColor(AZUL);
+      doc.setTextColor(P.destaque);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(12);
       doc.text(it.valor, x + 10, y + 32, { maxWidth: cardW - 16 });
@@ -649,12 +663,14 @@ export function baixarSimulacaoDetalhadaPDF({
   dataLabel,
 }: SimulacaoPdfInput) {
   const lista = bancosParaExtrato(bancos);
+  P = getPdfPalette();
   const doc = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
 
   lista.forEach((b, idx) => {
     if (idx > 0) doc.addPage();
+    drawPageBackground(doc, pageW, pageH);
     const d = extrairDetalheBanco(b?.raw_response);
     const nomeBanco = b?.nome_banco ?? "Banco";
 
@@ -666,14 +682,14 @@ export function baixarSimulacaoDetalhadaPDF({
     y = drawInfoFinanciamento(doc, pageW, s, b, d, y);
 
     const parcelas = d?.parcelas ?? [];
-    doc.setTextColor(AZUL);
+    doc.setTextColor(P.destaque);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(10);
     doc.text(`Plano de Pagamento (${parcelas.length} parcelas)`, MARGIN, y);
     if (d?.parcelasEstimadas) {
       doc.setFont("helvetica", "italic");
       doc.setFontSize(7);
-      doc.setTextColor(CINZA);
+      doc.setTextColor(P.cinza);
       doc.text(
         "Projeção calculada a partir da taxa e do sistema informados pelo banco (1ª/última parcela reais).",
         pageW - MARGIN,
@@ -687,7 +703,7 @@ export function baixarSimulacaoDetalhadaPDF({
     if (parcelas.length === 0) {
       doc.setFont("helvetica", "normal");
       doc.setFontSize(9);
-      doc.setTextColor(CINZA);
+      doc.setTextColor(P.cinza);
       doc.text("Detalhamento de parcelas indisponível para esta simulação.", MARGIN, y + 16);
     } else {
       autoTable(doc, {
@@ -714,18 +730,22 @@ export function baixarSimulacaoDetalhadaPDF({
         styles: {
           fontSize: 6.5,
           cellPadding: 3,
-          textColor: GRAFITE,
-          lineColor: BORDA,
+          textColor: P.texto,
+          fillColor: P.pageBg ?? "#FFFFFF",
+          lineColor: P.borda,
           lineWidth: 0.25,
         },
-        headStyles: { fillColor: AZUL, textColor: "#FFFFFF", fontStyle: "bold", fontSize: 6.5 },
-        alternateRowStyles: { fillColor: ZEBRA },
+        headStyles: { fillColor: P.azul, textColor: P.headText, fontStyle: "bold", fontSize: 6.5 },
+        alternateRowStyles: { fillColor: P.card },
         columnStyles: {
           0: { halign: "right" },
           2: { halign: "right" },
           3: { halign: "right" },
           4: { halign: "right" },
           5: { halign: "right" },
+        },
+        willDrawPage: (hook) => {
+          if (hook.pageNumber > 1) drawPageBackground(doc, pageW, pageH);
         },
         // Redesenha o cabeçalho institucional quando o plano quebra em novas páginas
         didDrawPage: (hook) => {
@@ -738,7 +758,10 @@ export function baixarSimulacaoDetalhadaPDF({
   // Disclaimer legal na última página, acima do rodapé.
   const disclaimerY = pageH - 64;
   const finalY = (doc as any).lastAutoTable?.finalY ?? 0;
-  if (finalY > disclaimerY - 6) doc.addPage();
+  if (finalY > disclaimerY - 6) {
+    doc.addPage();
+    drawPageBackground(doc, pageW, pageH);
+  }
   drawDisclaimer(doc, pageW, pageH - 58);
 
   const total = doc.getNumberOfPages();

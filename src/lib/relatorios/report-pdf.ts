@@ -3,15 +3,20 @@ import autoTable from "jspdf-autotable";
 import type { ReportColumn, ReportRow, ReportKpi } from "@/lib/relatorios/shared";
 import { formatCell, footerValue } from "@/lib/relatorios/report-format";
 import { AGILLIZA_LOGO_LIGHT, AGILLIZA_LOGO_RATIO } from "@/lib/relatorios/brand-logo";
+import { getPdfPalette, type PdfPalette } from "@/lib/relatorios/pdf-theme";
 
-/** Cores institucionais fixas do PDF (ignora o tema do usuário). */
-const AZUL = "#000F9F";
-const CORAL = "#F5333F";
-const GRAFITE = "#0B0B0F";
-const CINZA = "#6B7280";
-const ZEBRA = "#F7F8FA";
+/** Paleta do documento — segue o tema (claro/escuro) ativo no momento da geração. */
+let P: PdfPalette = getPdfPalette();
+
+/** Preenche o fundo da página quando o tema é escuro. */
+function drawPageBackground(doc: jsPDF, pageW: number, pageH: number) {
+  if (!P.pageBg) return;
+  doc.setFillColor(P.pageBg);
+  doc.rect(0, 0, pageW, pageH, "F");
+}
 
 const HEADER_H = 84;
+
 
 /** Desenha o cabeçalho institucional (faixa azul + logo à esquerda + título) em cada página. */
 function drawHeader(doc: jsPDF, pageW: number, titulo: string, descricao: string) {
@@ -29,10 +34,11 @@ export function drawBrandHeader(
   titulo: string,
   descricao: string,
 ) {
-  doc.setFillColor(AZUL);
+  P = getPdfPalette();
+  doc.setFillColor(P.azul);
   doc.rect(0, 0, pageW, headerH, "F");
   // Detalhe coral inferior
-  doc.setFillColor(CORAL);
+  doc.setFillColor(P.coral);
   doc.rect(0, headerH, pageW, 3, "F");
 
   // Logo em destaque (canto esquerdo)
@@ -45,7 +51,7 @@ export function drawBrandHeader(
     doc.addImage(AGILLIZA_LOGO_LIGHT, "PNG", logoX, logoY, logoW, logoH);
     // Separador vertical entre logo e título
     const sepX = logoX + logoW + 18;
-    doc.setDrawColor("#4655C4");
+    doc.setDrawColor(P.sep);
     doc.setLineWidth(1);
     doc.line(sepX, headerH * 0.28, sepX, headerH * 0.72);
     textoX = sepX + 18;
@@ -60,19 +66,19 @@ export function drawBrandHeader(
   doc.text(titulo, textoX, centroY - 3);
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
-  doc.setTextColor("#C7CBF0");
+  doc.setTextColor(P.subHead);
   doc.text(descricao, textoX, centroY + 13);
 }
 
 /** Desenha o rodapé institucional com paginação. */
 function drawFooter(doc: jsPDF, pageW: number, pageH: number, pageNum: number, total: number) {
   const y = pageH - 22;
-  doc.setDrawColor("#E4E6EF");
+  doc.setDrawColor(P.borda);
   doc.setLineWidth(0.5);
   doc.line(32, y, pageW - 32, y);
   doc.setFontSize(7.5);
   doc.setFont("helvetica", "normal");
-  doc.setTextColor(CINZA);
+  doc.setTextColor(P.cinza);
   const emitido = new Date().toLocaleString("pt-BR");
   doc.text(`Agilliza · Crédito Imobiliário  —  Emitido em ${emitido}`, 32, y + 12);
   doc.text(`Página ${pageNum} de ${total}`, pageW - 32, y + 12, { align: "right" });
@@ -97,22 +103,25 @@ export function exportPDF(
   /** Informações do documento em destaque (Data, Cliente, CPF...). Substitui a linha meta. */
   docInfo?: { label: string; value: string }[],
 ) {
+  P = getPdfPalette();
   const doc = new jsPDF({ orientation, unit: "pt", format: "a4" });
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
+  drawPageBackground(doc, pageW, pageH);
 
   let y = HEADER_H + 22;
+
 
   // Painel de informações do documento (Data, Cliente, CPF...) — legível e profissional.
   if (docInfo && docInfo.length) {
     const boxX = 32;
     const boxW = pageW - 64;
     const boxH = 46;
-    doc.setFillColor(ZEBRA);
-    doc.setDrawColor("#E4E6EF");
+    doc.setFillColor(P.card);
+    doc.setDrawColor(P.borda);
     doc.setLineWidth(0.75);
     doc.roundedRect(boxX, y, boxW, boxH, 5, 5, "FD");
-    doc.setFillColor(CORAL);
+    doc.setFillColor(P.coral);
     doc.rect(boxX, y + 9, 3, boxH - 18, "F");
 
     const innerX = boxX + 16;
@@ -123,15 +132,15 @@ export function exportPDF(
       const cx = innerX + i * colW;
       // separador entre colunas
       if (i > 0) {
-        doc.setDrawColor("#E1E3EE");
+        doc.setDrawColor(P.borda);
         doc.setLineWidth(0.5);
         doc.line(cx - 8, y + 12, cx - 8, y + boxH - 12);
       }
-      doc.setTextColor(CINZA);
+      doc.setTextColor(P.cinza);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(7);
       doc.text(it.label.toUpperCase(), cx, y + 18, { maxWidth: colW - 12 });
-      doc.setTextColor(AZUL);
+      doc.setTextColor(P.destaque);
       doc.setFont("helvetica", "bold");
       // fonte adaptativa: mantém o valor em uma única linha legível
       let vSize = 11;
@@ -144,7 +153,7 @@ export function exportPDF(
     });
     y += boxH + 18;
   } else {
-    doc.setTextColor(GRAFITE);
+    doc.setTextColor(P.texto);
     doc.setFontSize(8);
     doc.setFont("helvetica", "normal");
     doc.text(meta.join("   ·   "), 32, y);
@@ -164,16 +173,16 @@ export function exportPDF(
       const col = i % porLinha;
       const x = 32 + col * (cardW + gap);
       const cy = y + linha * (cardH + gap);
-      doc.setFillColor(ZEBRA);
-      doc.setDrawColor("#E4E6EF");
+      doc.setFillColor(P.card);
+      doc.setDrawColor(P.borda);
       doc.roundedRect(x, cy, cardW, cardH, 4, 4, "FD");
-      doc.setFillColor(CORAL);
+      doc.setFillColor(P.coral);
       doc.rect(x, cy + 8, 3, cardH - 16, "F");
-      doc.setTextColor(CINZA);
+      doc.setTextColor(P.cinza);
       doc.setFont("helvetica", "normal");
       doc.setFontSize(7);
       doc.text(k.label.toUpperCase(), x + 12, cy + 18, { maxWidth: cardW - 20 });
-      doc.setTextColor(AZUL);
+      doc.setTextColor(P.destaque);
       doc.setFont("helvetica", "bold");
       // fonte adaptativa: garante o valor em uma única linha
       let size = 13;
@@ -201,13 +210,14 @@ export function exportPDF(
     styles: {
       fontSize: 7.5,
       cellPadding: 4,
-      textColor: GRAFITE,
-      lineColor: "#E4E6EF",
+      textColor: P.texto,
+      fillColor: P.pageBg ?? "#FFFFFF",
+      lineColor: P.borda,
       lineWidth: 0.25,
     },
-    headStyles: { fillColor: AZUL, textColor: "#FFFFFF", fontStyle: "bold" },
-    footStyles: { fillColor: "#E9EBF5", textColor: AZUL, fontStyle: "bold" },
-    alternateRowStyles: { fillColor: ZEBRA },
+    headStyles: { fillColor: P.azul, textColor: P.headText, fontStyle: "bold" },
+    footStyles: { fillColor: P.footFill, textColor: P.footText, fontStyle: "bold" },
+    alternateRowStyles: { fillColor: P.card },
     columnStyles: columns.reduce(
       (acc, c, i) => {
         if (c.align === "right" || c.format === "brl" || c.format === "int" || c.format === "pct")
@@ -218,6 +228,9 @@ export function exportPDF(
       },
       {} as Record<number, any>,
     ),
+    willDrawPage: (data) => {
+      if (data.pageNumber > 1) drawPageBackground(doc, pageW, pageH);
+    },
     didDrawPage: () => {
       drawHeader(doc, pageW, titulo, descricao);
     },
@@ -246,7 +259,7 @@ export function exportPDF(
       drawHeader(doc, pageW, titulo, descricao);
       ny = HEADER_H + 30;
     }
-    doc.setTextColor(CINZA);
+    doc.setTextColor(P.cinza);
     doc.setFont("helvetica", "italic");
     doc.setFontSize(7.5);
     doc.text(nota.trim(), 32, ny, { maxWidth: pageW - 64, lineHeightFactor: 1.4 });
