@@ -211,6 +211,22 @@ export function extrairDetalheBanco(raw: unknown): DetalheBanco | null {
       primeiroVencimentoPadrao();
     parcelas = calcularPlano(valorFin, prazo, taxaMes, sistema, dataInicial);
     estimadas = parcelas.length > 0;
+
+    // A parcela calculada (amortização + juros) não inclui seguros (MIP/DFI) e
+    // taxa de administração, por isso fica menor que a parcela real do banco.
+    // Ajustamos cada parcela adicionando esses encargos (diferença entre a
+    // parcela real informada pelo banco e a 1ª parcela calculada) para que o
+    // plano bata exatamente com o valor da parcela do banco.
+    const parcelaBanco = num(r.valorParcelaBanco) ?? num(desc.installmentValue);
+    if (estimadas && parcelaBanco != null && parcelaBanco > 0) {
+      const encargos = Math.round((parcelaBanco - parcelas[0].parcela) * 100) / 100;
+      if (encargos > 0) {
+        parcelas = parcelas.map((p) => ({
+          ...p,
+          parcela: Math.round((p.parcela + encargos) * 100) / 100,
+        }));
+      }
+    }
   }
 
   const somatorio = parcelas.length ? parcelas.reduce((s, p) => s + p.parcela, 0) : null;
