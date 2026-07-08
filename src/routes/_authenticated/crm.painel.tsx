@@ -58,13 +58,21 @@ function Pagina() {
   const listar = useServerFn(listarPainel);
   const mover = useServerFn(definirEtapa);
   const salvarDatas = useServerFn(definirDatasVistoria);
+  const listarContratos = useServerFn(listarContratosEmitidos);
   const [desde, setDesde] = useState("");
   const [ate, setAte] = useState("");
   const [busca, setBusca] = useState("");
   const [dialogStage, setDialogStage] = useState<string | null>(null);
+  const [arquivoAberto, setArquivoAberto] = useState(false);
   const [arrasto, setArrasto] = useState<Arrasto | null>(null);
   const [alvo, setAlvo] = useState<string | null>(null);
   const arrastouRef = useRef(false);
+
+  const { data: contratos, isLoading: carregandoContratos } = useQuery({
+    queryKey: ["crm-contratos-emitidos"],
+    queryFn: () => listarContratos(),
+    enabled: arquivoAberto,
+  });
 
   const queryKey = ["crm-painel", desde, ate];
   const { data, isLoading } = useQuery({
