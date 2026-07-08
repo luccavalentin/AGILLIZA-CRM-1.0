@@ -447,7 +447,13 @@ export const listarPainel = createServerFn({ method: "GET" })
       ordem: s.ordem,
       clientes: filtradas
         .filter((r: any) => r.cliente_pipeline?.pipeline_stages?.codigo === s.codigo)
-        .map((r: any) => ({ id: r.id, nome: r.nome, numero_cliente: r.numero_cliente })),
+        .map((r: any) => ({
+          id: r.id,
+          nome: r.nome,
+          numero_cliente: r.numero_cliente,
+          vistoria_agendada_em: r.vistoria_agendada_em ?? null,
+          vistoria_concluida_em: r.vistoria_concluida_em ?? null,
+        })),
     }));
   });
 
