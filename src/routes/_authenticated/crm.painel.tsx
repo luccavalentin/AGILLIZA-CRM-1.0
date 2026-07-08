@@ -176,7 +176,6 @@ function Pagina() {
   }
 
 
-  }
 
 
   const termo = busca.trim().toLowerCase();
