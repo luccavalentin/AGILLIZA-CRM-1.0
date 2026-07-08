@@ -179,6 +179,8 @@ export function LandingFx({ className }: { className?: string }) {
     resize();
     window.addEventListener("resize", resize);
     window.addEventListener("pointermove", onMove, { passive: true });
+    window.addEventListener("pointerleave", onLeave);
+    window.addEventListener("blur", onLeave);
     start = performance.now();
     raf = requestAnimationFrame(frame);
 
@@ -186,6 +188,8 @@ export function LandingFx({ className }: { className?: string }) {
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", resize);
       window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerleave", onLeave);
+      window.removeEventListener("blur", onLeave);
     };
   }, []);
 
