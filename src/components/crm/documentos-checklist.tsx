@@ -45,6 +45,61 @@ function AutoItem({ label, ok }: { label: string; ok: boolean }) {
   );
 }
 
+function AdicionarItem({ onAdd }: { onAdd: (label: string) => void }) {
+  const [texto, setTexto] = useState("");
+  const [aberto, setAberto] = useState(false);
+  function confirmar() {
+    const v = texto.trim();
+    if (!v) return;
+    onAdd(v);
+    setTexto("");
+    setAberto(false);
+  }
+  if (!aberto) {
+    return (
+      <div className="pt-2">
+        <Button type="button" variant="outline" size="sm" onClick={() => setAberto(true)}>
+          <Plus className="size-4" /> Adicionar item
+        </Button>
+      </div>
+    );
+  }
+  return (
+    <div className="mt-2 flex items-center gap-2">
+      <Input
+        autoFocus
+        value={texto}
+        placeholder="Novo item do checklist…"
+        onChange={(e) => setTexto(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            confirmar();
+          } else if (e.key === "Escape") {
+            setAberto(false);
+            setTexto("");
+          }
+        }}
+        className="h-9"
+      />
+      <Button type="button" size="sm" onClick={confirmar}>
+        <Plus className="size-4" /> Incluir
+      </Button>
+      <Button
+        type="button"
+        size="sm"
+        variant="ghost"
+        onClick={() => {
+          setAberto(false);
+          setTexto("");
+        }}
+      >
+        Cancelar
+      </Button>
+    </div>
+  );
+}
+
 export function DocumentosChecklist({ clienteId }: { clienteId: string }) {
   const qc = useQueryClient();
   const getDados = useServerFn(getChecklistDados);
@@ -103,12 +158,11 @@ export function DocumentosChecklist({ clienteId }: { clienteId: string }) {
   }
 
   const hidden: string[] = Array.isArray(check.__hidden) ? check.__hidden : [];
-  const custom: { id: string; label: string }[] = Array.isArray(check.__custom)
+  const custom: { id: string; label: string; cat?: Categoria }[] = Array.isArray(check.__custom)
     ? check.__custom
     : [];
   const labels: Record<string, string> =
     check.__labels && typeof check.__labels === "object" ? check.__labels : {};
-  const [novoItem, setNovoItem] = useState("");
   const [editKey, setEditKey] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
 
@@ -146,19 +200,18 @@ export function DocumentosChecklist({ clienteId }: { clienteId: string }) {
     });
   }
 
-  function addCustom(label: string) {
+  function addCustom(label: string, cat: Categoria = "outros") {
     const texto = label.trim();
     if (!texto) return;
     setCheck((prev) => {
       const c = Array.isArray(prev.__custom) ? prev.__custom : [];
       const next = {
         ...prev,
-        __custom: [...c, { id: crypto.randomUUID(), label: texto }],
+        __custom: [...c, { id: crypto.randomUUID(), label: texto, cat }],
       };
       persistir(next);
       return next;
     });
-    setNovoItem("");
   }
 
   function removeCustom(id: string) {
@@ -360,6 +413,18 @@ export function DocumentosChecklist({ clienteId }: { clienteId: string }) {
               <DocItem itemKey="fgts_extrato" cat="comprador" label={T.comprador[6]} />
             </div>
           )}
+          {custom
+            .filter((c) => c.cat === "comprador")
+            .map((item) => (
+              <DocItem
+                key={item.id}
+                itemKey={`custom_${item.id}`}
+                label={item.label}
+                cat="comprador"
+                onRemove={() => removeCustom(item.id)}
+              />
+            ))}
+          <AdicionarItem onAdd={(l) => addCustom(l, "comprador")} />
         </CardContent>
       </Card>
 
@@ -409,6 +474,18 @@ export function DocumentosChecklist({ clienteId }: { clienteId: string }) {
               Cadastre um vendedor na aba “Vendedores” para validar os dados automaticamente.
             </p>
           )}
+          {custom
+            .filter((c) => c.cat === "vendedor")
+            .map((item) => (
+              <DocItem
+                key={item.id}
+                itemKey={`custom_${item.id}`}
+                label={item.label}
+                cat="vendedor"
+                onRemove={() => removeCustom(item.id)}
+              />
+            ))}
+          <AdicionarItem onAdd={(l) => addCustom(l, "vendedor")} />
         </CardContent>
       </Card>
 
@@ -485,6 +562,18 @@ export function DocumentosChecklist({ clienteId }: { clienteId: string }) {
               </Select>
             </div>
           </div>
+          {custom
+            .filter((c) => c.cat === "imovel")
+            .map((item) => (
+              <DocItem
+                key={item.id}
+                itemKey={`custom_${item.id}`}
+                label={item.label}
+                cat="imovel"
+                onRemove={() => removeCustom(item.id)}
+              />
+            ))}
+          <AdicionarItem onAdd={(l) => addCustom(l, "imovel")} />
         </CardContent>
       </Card>
 
@@ -494,36 +583,23 @@ export function DocumentosChecklist({ clienteId }: { clienteId: string }) {
           <CardTitle className="text-base">Itens personalizados</CardTitle>
         </CardHeader>
         <CardContent className="space-y-1">
-          {custom.length === 0 && (
+          {custom.filter((c) => !c.cat || c.cat === "outros").length === 0 && (
             <p className="text-sm text-muted-foreground">
               Adicione itens próprios ao checklist deste cliente.
             </p>
           )}
-          {custom.map((item) => (
-            <DocItem
-              key={item.id}
-              itemKey={`custom_${item.id}`}
-              label={item.label}
-              cat="outros"
-              onRemove={() => removeCustom(item.id)}
-            />
-          ))}
-          <div className="mt-3 flex items-center gap-2">
-            <Input
-              value={novoItem}
-              placeholder="Novo item do checklist…"
-              onChange={(e) => setNovoItem(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  addCustom(novoItem);
-                }
-              }}
-            />
-            <Button type="button" variant="secondary" onClick={() => addCustom(novoItem)}>
-              <Plus className="size-4" /> Incluir
-            </Button>
-          </div>
+          {custom
+            .filter((c) => !c.cat || c.cat === "outros")
+            .map((item) => (
+              <DocItem
+                key={item.id}
+                itemKey={`custom_${item.id}`}
+                label={item.label}
+                cat="outros"
+                onRemove={() => removeCustom(item.id)}
+              />
+            ))}
+          <AdicionarItem onAdd={(l) => addCustom(l, "outros")} />
         </CardContent>
       </Card>
     </div>
