@@ -405,6 +405,7 @@ export interface PainelStage {
     vistoria_agendada_em: string | null;
     vistoria_concluida_em: string | null;
     pipeline_atualizado_em: string | null;
+    contrato_emitido_em: string | null;
   }[];
 }
 
