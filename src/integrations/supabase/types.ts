@@ -1115,6 +1115,7 @@ export type Database = {
           conjuge_tipo_documento_identidade: string | null
           conjuge_uf_expedicao: string | null
           conta_corrente: string | null
+          contrato_arquivado_em: string | null
           contrato_emitido_em: string | null
           correspondente_id: string
           created_at: string
@@ -1201,6 +1202,7 @@ export type Database = {
           conjuge_tipo_documento_identidade?: string | null
           conjuge_uf_expedicao?: string | null
           conta_corrente?: string | null
+          contrato_arquivado_em?: string | null
           contrato_emitido_em?: string | null
           correspondente_id: string
           created_at?: string
@@ -1287,6 +1289,7 @@ export type Database = {
           conjuge_tipo_documento_identidade?: string | null
           conjuge_uf_expedicao?: string | null
           conta_corrente?: string | null
+          contrato_arquivado_em?: string | null
           contrato_emitido_em?: string | null
           correspondente_id?: string
           created_at?: string

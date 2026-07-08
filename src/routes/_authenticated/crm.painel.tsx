@@ -15,6 +15,7 @@ import {
   Workflow,
   Users,
   Search,
+  Archive,
   X,
 } from "lucide-react";
 
@@ -33,6 +34,7 @@ import {
   definirEtapa,
   definirDatasVistoria,
   definirDataContratoEmitido,
+  arquivarContrato,
   listarContratosEmitidos,
   type PainelStage,
 } from "@/lib/crm/clientes.functions";
@@ -60,12 +62,16 @@ function Pagina() {
   const mover = useServerFn(definirEtapa);
   const salvarDatas = useServerFn(definirDatasVistoria);
   const salvarContratoData = useServerFn(definirDataContratoEmitido);
+  const arquivarContratoFn = useServerFn(arquivarContrato);
   const listarContratos = useServerFn(listarContratosEmitidos);
   const [desde, setDesde] = useState("");
   const [ate, setAte] = useState("");
   const [busca, setBusca] = useState("");
   const [dialogStage, setDialogStage] = useState<string | null>(null);
   const [arquivoAberto, setArquivoAberto] = useState(false);
+  const [contratoBusca, setContratoBusca] = useState("");
+  const [contratoDesde, setContratoDesde] = useState("");
+  const [contratoAte, setContratoAte] = useState("");
   const [arrasto, setArrasto] = useState<Arrasto | null>(null);
   const [alvo, setAlvo] = useState<string | null>(null);
   const arrastouRef = useRef(false);
@@ -175,10 +181,46 @@ function Pagina() {
     }
   }
 
+  async function arquivarContratoEmitido(clienteId: string) {
+    const anterior = qc.getQueryData<PainelStage[]>(queryKey);
+    if (anterior) {
+      qc.setQueryData(
+        queryKey,
+        anterior.map((s) => ({
+          ...s,
+          clientes: s.clientes.filter((c) => c.id !== clienteId),
+        })),
+      );
+    }
+    try {
+      await arquivarContratoFn({ data: { cliente_id: clienteId, arquivar: true } });
+      toast.success("Contrato arquivado na pasta de contratos emitidos.");
+      qc.invalidateQueries({ queryKey: ["crm-contratos-emitidos"] });
+    } catch (e) {
+      if (anterior) qc.setQueryData(queryKey, anterior);
+      toast.error(e instanceof Error ? e.message : "Falha ao arquivar o contrato.");
+    } finally {
+      qc.invalidateQueries({ queryKey: ["crm-painel"] });
+    }
+  }
+
+
+
 
 
 
   const termo = busca.trim().toLowerCase();
+  const termoContrato = contratoBusca.trim().toLowerCase();
+  const contratosFiltrados = (contratos ?? []).filter((ct) => {
+    if (termoContrato) {
+      const alvo = `${ct.nome_cliente ?? ""} ${ct.numero_cliente ?? ""} ${ct.numero_proposta ?? ""} ${ct.nome_banco ?? ""}`.toLowerCase();
+      if (!alvo.includes(termoContrato)) return false;
+    }
+    const dia = ct.contrato_emitido_em ?? null;
+    if (contratoDesde && (!dia || dia < contratoDesde)) return false;
+    if (contratoAte && (!dia || dia > contratoAte)) return false;
+    return true;
+  });
   const dadosFiltrados = (data ?? []).map((s) => ({
     ...s,
     clientes: termo
@@ -441,18 +483,32 @@ function Pagina() {
                               </div>
                             )}
                             {stage.codigo === "contrato_emitido" && (
-                              <div className="flex items-center gap-2 border-t border-border/70 px-2.5 py-2">
-                                <CalendarCheck className="size-3.5 shrink-0 text-primary" />
-                                <label className="shrink-0 text-[11px] font-medium text-muted-foreground">
-                                  Emitido em
-                                </label>
-                                <Input
-                                  type="date"
-                                  value={c.contrato_emitido_em ?? ""}
-                                  onChange={(e) => salvarDataContrato(c.id, e.target.value)}
-                                  className="h-7 flex-1 px-2 text-xs"
-                                  title="Data de emissão do contrato (definida por você)"
-                                />
+                              <div className="space-y-2 border-t border-border/70 px-2.5 py-2">
+                                <div className="flex items-center gap-2">
+                                  <CalendarCheck className="size-3.5 shrink-0 text-primary" />
+                                  <label className="shrink-0 text-[11px] font-medium text-muted-foreground">
+                                    Emitido em
+                                  </label>
+                                  <Input
+                                    type="date"
+                                    value={c.contrato_emitido_em ?? ""}
+                                    onChange={(e) => salvarDataContrato(c.id, e.target.value)}
+                                    className="h-7 flex-1 px-2 text-xs"
+                                    title="Data de emissão do contrato (definida por você)"
+                                  />
+                                </div>
+                                {c.contrato_emitido_em && (
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => arquivarContratoEmitido(c.id)}
+                                    className="h-7 w-full gap-1.5 text-xs"
+                                  >
+                                    <Archive className="size-3.5" />
+                                    Arquivar contrato
+                                  </Button>
+                                )}
                               </div>
                             )}
 
@@ -540,10 +596,68 @@ function Pagina() {
               Contratos emitidos
             </DialogTitle>
             <DialogDescription>
-              Arquivo dos contratos já emitidos — nome, data, nº da proposta e banco.
+              Arquivo dos contratos já emitidos — pesquise e filtre por data.
             </DialogDescription>
           </DialogHeader>
-          <div className="max-h-[60vh] space-y-2 overflow-y-auto pr-1">
+          <div className="space-y-3 border-y border-border/60 py-3">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={contratoBusca}
+                onChange={(e) => setContratoBusca(e.target.value)}
+                placeholder="Buscar por nome, nº do cliente, proposta ou banco..."
+                className="h-9 rounded-lg pl-9 pr-9 text-sm"
+              />
+              {contratoBusca && (
+                <button
+                  type="button"
+                  onClick={() => setContratoBusca("")}
+                  className="absolute right-2 top-1/2 grid size-6 -translate-y-1/2 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                  aria-label="Limpar busca"
+                >
+                  <X className="size-3.5" />
+                </button>
+              )}
+            </div>
+            <div className="flex flex-wrap items-end gap-2">
+              <div className="space-y-1">
+                <label className="text-[11px] font-medium text-muted-foreground">Emitido de</label>
+                <Input
+                  type="date"
+                  value={contratoDesde}
+                  onChange={(e) => setContratoDesde(e.target.value)}
+                  className="h-9 w-36 rounded-lg text-sm"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[11px] font-medium text-muted-foreground">até</label>
+                <Input
+                  type="date"
+                  value={contratoAte}
+                  onChange={(e) => setContratoAte(e.target.value)}
+                  className="h-9 w-36 rounded-lg text-sm"
+                />
+              </div>
+              {(contratoDesde || contratoAte || contratoBusca) && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-9"
+                  onClick={() => {
+                    setContratoBusca("");
+                    setContratoDesde("");
+                    setContratoAte("");
+                  }}
+                >
+                  Limpar
+                </Button>
+              )}
+              <span className="ml-auto self-center text-[11px] tabular-nums text-muted-foreground">
+                {contratosFiltrados.length} contrato(s)
+              </span>
+            </div>
+          </div>
+          <div className="mt-3 max-h-[52vh] space-y-2 overflow-y-auto pr-1">
             {carregandoContratos ? (
               Array.from({ length: 4 }).map((_, i) => (
                 <Skeleton key={i} className="h-16 w-full rounded-lg" />
@@ -555,8 +669,15 @@ function Pagina() {
                   Nenhum contrato emitido arquivado ainda.
                 </p>
               </div>
+            ) : contratosFiltrados.length === 0 ? (
+              <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed border-border px-4 py-10 text-center">
+                <Search className="size-7 text-muted-foreground/60" />
+                <p className="text-sm text-muted-foreground">
+                  Nenhum contrato encontrado com esses filtros.
+                </p>
+              </div>
             ) : (
-              (contratos ?? []).map((ct) => (
+              contratosFiltrados.map((ct) => (
                 <button
                   key={ct.cliente_id}
                   type="button"

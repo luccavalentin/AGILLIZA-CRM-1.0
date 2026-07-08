@@ -433,6 +433,7 @@ export const listarPainel = createServerFn({ method: "GET" })
         "id, nome, numero_cliente, vistoria_agendada_em, vistoria_concluida_em, contrato_emitido_em, cliente_pipeline(ultima_atualizacao_em, pipeline_stages(codigo))",
       )
       .eq("ativo", true)
+      .is("contrato_arquivado_em", null)
       .order("nome");
     if (e2) throw e2;
     const filtradas = (rows ?? []).filter((r: any) => {
@@ -1349,6 +1350,7 @@ export interface ContratoEmitido {
   nome_banco: string | null;
   valor_financiamento: number | null;
   contrato_emitido_em: string | null;
+  contrato_arquivado_em: string | null;
 }
 
 /**
@@ -1376,6 +1378,29 @@ export const definirDataContratoEmitido = createServerFn({ method: "POST" })
   });
 
 /**
+ * Arquiva (ou desarquiva) o contrato de um cliente. Ao arquivar, o cliente sai
+ * do quadro da esteira e passa a viver apenas na pasta de contratos emitidos.
+ */
+export const arquivarContrato = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        cliente_id: z.string().uuid(),
+        arquivar: z.boolean(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }): Promise<{ ok: true }> => {
+    const { error } = await context.supabase
+      .from("clientes")
+      .update({ contrato_arquivado_em: data.arquivar ? new Date().toISOString() : null })
+      .eq("id", data.cliente_id);
+    if (error) throw error;
+    return { ok: true };
+  });
+
+/**
  * Arquivo dos contratos emitidos: clientes cuja data de emissão definida pelo
  * usuário já chegou (hoje ou anterior), mais recentes primeiro. Enriquecido
  * com dados da proposta mais recente do cliente (RLS aplica o escopo).
@@ -1384,13 +1409,11 @@ export const listarContratosEmitidos = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<ContratoEmitido[]> => {
     const { supabase } = context;
-    const hoje = new Date().toISOString().slice(0, 10);
     const { data: clientes, error } = await supabase
       .from("clientes")
-      .select("id, nome, numero_cliente, contrato_emitido_em")
-      .not("contrato_emitido_em", "is", null)
-      .lte("contrato_emitido_em", hoje)
-      .order("contrato_emitido_em", { ascending: false });
+      .select("id, nome, numero_cliente, contrato_emitido_em, contrato_arquivado_em")
+      .not("contrato_arquivado_em", "is", null)
+      .order("contrato_arquivado_em", { ascending: false });
     if (error) throw error;
     const lista = clientes ?? [];
     if (lista.length === 0) return [];
@@ -1416,6 +1439,7 @@ export const listarContratosEmitidos = createServerFn({ method: "GET" })
         nome_banco: p?.nome_banco ?? null,
         valor_financiamento: p?.valor_financiamento ?? null,
         contrato_emitido_em: c.contrato_emitido_em ?? null,
+        contrato_arquivado_em: c.contrato_arquivado_em ?? null,
       };
     });
   });
