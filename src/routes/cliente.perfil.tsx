@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import { ChatSoundSetting } from "@/components/shared/chat-sound-setting";
+import { CabecalhoPagina } from "@/components/cliente/cabecalho-pagina";
 
 export const Route = createFileRoute("/cliente/perfil")({
   head: () => ({ meta: [{ title: "Meu perfil — Meu Financiamento" }] }),
