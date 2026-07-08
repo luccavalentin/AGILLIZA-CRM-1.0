@@ -322,3 +322,52 @@ export const marcarChatClienteLido = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+export interface ContextoChatCliente {
+  cliente_id: string;
+  primeiro_nome: string | null;
+  numero_proposta: string | null;
+  status_proposta: string | null;
+  nome_banco: string | null;
+  etapa_nome: string | null;
+}
+
+/**
+ * Contexto do cliente para respostas rápidas do chat: primeiro nome, número e
+ * status da proposta mais recente, banco e etapa da esteira. Usado para
+ * preencher placeholders como {primeiro_nome} e {numero_proposta}.
+ */
+export const obterContextoChatCliente = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { cliente_id: string }) =>
+    z.object({ cliente_id: z.string().uuid() }).parse(d),
+  )
+  .handler(async ({ data, context }): Promise<ContextoChatCliente> => {
+    const { supabase } = context;
+    const { data: cliente } = await supabase
+      .from("clientes")
+      .select("id, nome, cliente_pipeline(pipeline_stages(nome))")
+      .eq("id", data.cliente_id)
+      .maybeSingle();
+
+    const { data: proposta } = await supabase
+      .from("propostas")
+      .select("numero_proposta, status, nome_banco")
+      .eq("cliente_id", data.cliente_id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const nomeCompleto = (cliente as any)?.nome?.trim() ?? null;
+    const primeiroNome = nomeCompleto ? nomeCompleto.split(/\s+/)[0] : null;
+
+    return {
+      cliente_id: data.cliente_id,
+      primeiro_nome: primeiroNome,
+      numero_proposta: (proposta as any)?.numero_proposta ?? null,
+      status_proposta: (proposta as any)?.status ?? null,
+      nome_banco: (proposta as any)?.nome_banco ?? null,
+      etapa_nome:
+        (cliente as any)?.cliente_pipeline?.pipeline_stages?.nome ?? null,
+    };
+  });
