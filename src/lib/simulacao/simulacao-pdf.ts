@@ -330,9 +330,7 @@ function anexarDetalhesBancos(doc: jsPDF, pageW: number, pageH: number, s: any, 
     const w = pageW - MARGIN * 2;
     const pad = 12;
     const groupTop = y;
-    let gy = y + pad + 4;
-
-    gy = drawInfoFinanciamento(doc, pageW - pad * 2, s, b, d, gy + 0);
+    let gy = drawInfoFinanciamento(doc, pageW, s, b, d, groupTop + pad + 6);
 
     // Resumo do pagamento (valores fornecidos pela instituição — sem recálculo)
     const resumo: { label: string; valor: string }[] = [
@@ -343,14 +341,13 @@ function anexarDetalhesBancos(doc: jsPDF, pageW: number, pageH: number, s: any, 
     doc.setTextColor(AZUL);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(10);
-    doc.text("Resumo do Pagamento", MARGIN + pad, gy);
+    doc.text("Resumo do Pagamento", MARGIN, gy);
     gy += 8;
-    const innerW = w - pad * 2;
     const gap = 8;
-    const cardW = (innerW - gap * 2) / 3;
+    const cardW = (w - gap * 2) / 3;
     const cardH = 40;
     resumo.forEach((it, i) => {
-      const x = MARGIN + pad + i * (cardW + gap);
+      const x = MARGIN + i * (cardW + gap);
       doc.setFillColor(ZEBRA);
       doc.setDrawColor(BORDA);
       doc.setLineWidth(0.5);
@@ -366,14 +363,15 @@ function anexarDetalhesBancos(doc: jsPDF, pageW: number, pageH: number, s: any, 
     });
     gy += cardH + pad;
 
-    // Contorno do painel agrupado
+    // Contorno do painel agrupado (leve folga externa para não encostar nos cartões)
     doc.setDrawColor(resolveBancoBrand(nomeBanco)?.cor ?? AZUL);
     doc.setLineWidth(0.8);
-    doc.roundedRect(MARGIN, groupTop, w, gy - groupTop, 4, 4, "S");
+    doc.roundedRect(MARGIN - 8, groupTop, w + 16, gy - groupTop, 4, 4, "S");
     doc.setLineWidth(0.2);
-    y = gy + 12;
+    y = gy + 14;
 
     drawDisclaimer(doc, pageW, y);
+
 
     // ----- Plano de parcelas do banco -----
     const parcelas = d?.parcelas ?? [];
