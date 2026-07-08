@@ -18,7 +18,7 @@ import { formatBRL } from "@/lib/simulacao/format";
 /**
  * "Jogada de números": infla o valor de compra e venda declarado para que o
  * percentual máximo financiável (LTV do banco) libere exatamente o valor que o
- * cliente precisa — a diferença vira uma entrada "de fachada".
+ * cliente precisa — a diferença vira o novo valor de entrada.
  *
  * Exemplo: imóvel de R$ 250 mil, cliente sem entrada, LTV 80%.
  *   valor ajustado = 250.000 / 0,8 = 312.500 (arredonda p/ 313.000)
