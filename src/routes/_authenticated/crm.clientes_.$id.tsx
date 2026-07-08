@@ -418,24 +418,27 @@ function Pagina() {
         </TabsContent>
 
         <TabsContent value="mensagens" className="mt-4">
-          <ChatClienteTab
-            clienteId={id}
-            info={{
-              nome: c.nome,
-              documento: docExib,
-              email: c.email,
-              celular: c.telefone_celular ? formatarCelular(c.telefone_celular) : null,
-              contexto: (() => {
-                const nSim = negocios?.simulacoes.length ?? 0;
-                const nProp = negocios?.propostas.length ?? 0;
-                const partes: string[] = [];
-                if (nProp > 0) partes.push(`${nProp} proposta${nProp > 1 ? "s" : ""}`);
-                if (nSim > 0) partes.push(`${nSim} simulação${nSim > 1 ? "ões" : ""}`);
-                return partes.join(" · ") || null;
-              })(),
-            }}
-          />
+          <div className="h-[min(75vh,640px)] min-h-[420px]">
+            <ChatClienteTab
+              clienteId={id}
+              info={{
+                nome: c.nome,
+                documento: docExib,
+                email: c.email,
+                celular: c.telefone_celular ? formatarCelular(c.telefone_celular) : null,
+                contexto: (() => {
+                  const nSim = negocios?.simulacoes.length ?? 0;
+                  const nProp = negocios?.propostas.length ?? 0;
+                  const partes: string[] = [];
+                  if (nProp > 0) partes.push(`${nProp} proposta${nProp > 1 ? "s" : ""}`);
+                  if (nSim > 0) partes.push(`${nSim} simulação${nSim > 1 ? "ões" : ""}`);
+                  return partes.join(" · ") || null;
+                })(),
+              }}
+            />
+          </div>
         </TabsContent>
+
 
         <TabsContent value="interacoes" className="mt-4">
           <InteracoesTab clienteId={id} />
