@@ -58,14 +58,21 @@ function Pagina() {
     }
   }
 
+  const iniciais = (nome: string) => {
+    const partes = nome.trim().split(/\s+/);
+    const a = partes[0]?.[0] ?? "";
+    const b = partes.length > 1 ? partes[partes.length - 1][0] : "";
+    return (a + b).toUpperCase() || "?";
+  };
+
   return (
-    <div className="space-y-4 p-4 sm:p-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-semibold text-foreground">Clientes</h1>
+    <div className="space-y-5 p-4 sm:p-6">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Clientes</h1>
           <p className="text-sm text-muted-foreground">Gestão de clientes do seu ecossistema.</p>
         </div>
-        <Button asChild>
+        <Button asChild className="shadow-sm">
           <Link to="/crm/clientes/novo">
             <Plus className="size-4" /> Novo cliente
           </Link>
@@ -94,103 +101,142 @@ function Pagina() {
         </Button>
       </form>
 
-      <Card className="overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Número</TableHead>
-              <TableHead>Nome</TableHead>
-              <TableHead>Documento</TableHead>
-              <TableHead>Contato</TableHead>
-              <TableHead>Etapa</TableHead>
-              <TableHead>Responsável</TableHead>
-              <TableHead>Portal</TableHead>
-              <TableHead className="w-12 text-right">Ações</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              Array.from({ length: 6 }).map((_, i) => (
-                <TableRow key={i}>
-                  {Array.from({ length: 8 }).map((__, j) => (
-                    <TableCell key={j}>
-                      <Skeleton className="h-4 w-24" />
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : (data?.itens.length ?? 0) === 0 ? (
-              <TableRow>
-                <TableCell colSpan={8} className="py-12 text-center">
-                  <Users className="mx-auto mb-2 size-8 text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground">
-                    Nenhum cliente encontrado. Cadastre o primeiro.
-                  </p>
-                </TableCell>
+      <Card className="overflow-hidden shadow-sm">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="border-border/60 bg-muted/40 hover:bg-muted/40">
+                {[
+                  "Número",
+                  "Nome",
+                  "Documento",
+                  "Contato",
+                  "Etapa",
+                  "Responsável",
+                  "Portal",
+                ].map((h) => (
+                  <TableHead
+                    key={h}
+                    className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground"
+                  >
+                    {h}
+                  </TableHead>
+                ))}
+                <TableHead className="w-12 text-right text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Ações
+                </TableHead>
               </TableRow>
-            ) : (
-              data!.itens.map((c) => (
-                <TableRow
-                  key={c.id}
-                  className="cursor-pointer"
-                  onClick={() => navigate({ to: "/crm/clientes/$id", params: { id: c.id } })}
-                >
-                  <TableCell className="font-mono text-xs text-muted-foreground">
-                    {c.numero_cliente}
-                  </TableCell>
-                  <TableCell className="font-medium text-foreground">{c.nome}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {c.documento_masc
-                      ? mascararDocumento(c.documento)
-                      : formatarDocumento(c.documento)}
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {c.telefone_celular ? formatarCelular(c.telefone_celular) : (c.email ?? "—")}
-                  </TableCell>
-                  <TableCell>
-                    {c.etapa_nome ? <ToneBadge tone="info">{c.etapa_nome}</ToneBadge> : "—"}
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {c.responsavel_nome ?? "—"}
-                  </TableCell>
-                  <TableCell>
-                    <StatusBadge status={c.portal_acesso_ativo ? "ativo" : "inativo"} />
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <ConfirmDelete
-                      titulo="Excluir cliente"
-                      descricao={`O cliente "${c.nome}" e seus registros vinculados serão removidos permanentemente.`}
-                      onConfirm={() => handleExcluir(c.id)}
-                    />
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                Array.from({ length: 6 }).map((_, i) => (
+                  <TableRow key={i}>
+                    {Array.from({ length: 8 }).map((__, j) => (
+                      <TableCell key={j}>
+                        <Skeleton className="h-4 w-24" />
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : (data?.itens.length ?? 0) === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="py-16 text-center">
+                    <div className="mx-auto mb-3 flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+                      <Users className="size-6" />
+                    </div>
+                    <p className="text-sm font-medium text-foreground">
+                      Nenhum cliente encontrado
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Cadastre o primeiro cliente para começar.
+                    </p>
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </Card>
-
-      {(data?.total ?? 0) > 20 && (
-        <div className="flex items-center justify-end gap-2 text-sm">
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={pagina === 1 || isFetching}
-            onClick={() => setPagina((p) => p - 1)}
-          >
-            Anterior
-          </Button>
-          <span className="text-muted-foreground">Página {pagina}</span>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={pagina * 20 >= (data?.total ?? 0) || isFetching}
-            onClick={() => setPagina((p) => p + 1)}
-          >
-            Próxima
-          </Button>
+              ) : (
+                data!.itens.map((c) => (
+                  <TableRow
+                    key={c.id}
+                    className="group cursor-pointer border-border/50 transition-colors hover:bg-muted/50"
+                    onClick={() => navigate({ to: "/crm/clientes/$id", params: { id: c.id } })}
+                  >
+                    <TableCell>
+                      <span className="rounded-md bg-muted px-2 py-1 font-mono text-[11px] font-medium text-muted-foreground">
+                        {c.numero_cliente}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[11px] font-semibold text-primary">
+                          {iniciais(c.nome)}
+                        </span>
+                        <span className="font-medium text-foreground transition-colors group-hover:text-primary">
+                          {c.nome}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {c.documento_masc
+                        ? mascararDocumento(c.documento)
+                        : formatarDocumento(c.documento)}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {c.telefone_celular ? formatarCelular(c.telefone_celular) : (c.email ?? "—")}
+                    </TableCell>
+                    <TableCell>
+                      {c.etapa_nome ? <ToneBadge tone="info">{c.etapa_nome}</ToneBadge> : "—"}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {c.responsavel_nome ?? "—"}
+                    </TableCell>
+                    <TableCell>
+                      <StatusBadge status={c.portal_acesso_ativo ? "ativo" : "inativo"} />
+                    </TableCell>
+                    <TableCell
+                      className="text-right"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <ConfirmDelete
+                        titulo="Excluir cliente"
+                        descricao={`O cliente "${c.nome}" e seus registros vinculados serão removidos permanentemente.`}
+                        onConfirm={() => handleExcluir(c.id)}
+                      />
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
         </div>
-      )}
+        {(data?.total ?? 0) > 0 && (
+          <div className="flex items-center justify-between border-t border-border/60 bg-muted/20 px-4 py-3 text-xs text-muted-foreground">
+            <span>
+              {data?.itens.length ?? 0} de {data?.total ?? 0} cliente
+              {(data?.total ?? 0) === 1 ? "" : "s"}
+            </span>
+            {(data?.total ?? 0) > 20 && (
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={pagina === 1 || isFetching}
+                  onClick={() => setPagina((p) => p - 1)}
+                >
+                  Anterior
+                </Button>
+                <span>Página {pagina}</span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={pagina * 20 >= (data?.total ?? 0) || isFetching}
+                  onClick={() => setPagina((p) => p + 1)}
+                >
+                  Próxima
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+      </Card>
     </div>
   );
 }
