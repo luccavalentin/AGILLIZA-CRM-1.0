@@ -15,6 +15,7 @@ import {
   Workflow,
   Users,
   Search,
+  Archive,
   X,
 } from "lucide-react";
 
