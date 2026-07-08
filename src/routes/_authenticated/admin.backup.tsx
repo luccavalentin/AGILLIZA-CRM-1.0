@@ -319,6 +319,44 @@ function Pagina() {
           </Table>
         )}
       </div>
+
+      <Dialog open={configAberta} onOpenChange={setConfigAberta}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Configurar retenção de backup</DialogTitle>
+            <DialogDescription>
+              Defina por quantos dias os registros de backup ficam armazenados no sistema antes de
+              serem removidos automaticamente.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            <Label htmlFor="retencao-dias">Dias de retenção</Label>
+            <Input
+              id="retencao-dias"
+              type="number"
+              min={1}
+              max={365}
+              value={diasInput}
+              onChange={(e) => setDiasInput(Number(e.target.value))}
+            />
+            <p className="text-xs text-muted-foreground">
+              Entre 1 e 365 dias. Padrão do sistema: 2 dias.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfigAberta(false)}>
+              Cancelar
+            </Button>
+            <Button
+              disabled={salvarConfig.isPending || !diasInput || diasInput < 1}
+              onClick={() => salvarConfig.mutate(Math.round(diasInput))}
+            >
+              {salvarConfig.isPending ? "Salvando…" : "Salvar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
+
   );
 }
