@@ -1,5 +1,6 @@
 import { createFileRoute, useRouter, Link } from "@tanstack/react-router";
 import { corDoBanco } from "@/lib/bancos/cores";
+import { BancoLogo } from "@/components/bancos/banco-logo";
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -263,7 +264,23 @@ function Pagina() {
         <div className="grid grid-cols-1 divide-y divide-border border-b border-border sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-3">
           <Kpi
             label={multiBanco ? "Bancos enviados" : "Banco escolhido"}
-            valor={multiBanco ? `${bancosEnviados.length} bancos` : (p.nome_banco ?? "—")}
+            valor={
+              multiBanco ? (
+                `${bancosEnviados.length} bancos`
+              ) : p.nome_banco ? (
+                <span className="flex min-w-0 items-center gap-2">
+                  <BancoLogo nome={p.nome_banco} size="lg" className="shrink-0" />
+                  <span
+                    className="truncate"
+                    style={{ color: corDoBanco(p.nome_banco) }}
+                  >
+                    {p.nome_banco}
+                  </span>
+                </span>
+              ) : (
+                "—"
+              )
+            }
           />
           <Kpi label="Valor financiado" valor={formatBRL(p.valor_financiamento)} />
           <Kpi
@@ -287,10 +304,16 @@ function Pagina() {
               {bancosEnviados.map((b: any) => (
                 <div
                   key={b.id}
-                  className="flex items-center justify-between gap-2 rounded-md border border-border bg-muted/30 px-3 py-2"
+                  className="flex items-center justify-between gap-2 rounded-lg border border-border bg-muted/30 px-3 py-2.5 transition-colors hover:bg-muted/50"
                 >
-                  <span className="truncate text-sm font-medium" style={{ color: corDoBanco(b.nome_banco) }}>
-                    {b.nome_banco}
+                  <span className="flex min-w-0 items-center gap-2">
+                    <BancoLogo nome={b.nome_banco} size="md" className="shrink-0" />
+                    <span
+                      className="truncate text-sm font-semibold"
+                      style={{ color: corDoBanco(b.nome_banco) }}
+                    >
+                      {b.nome_banco}
+                    </span>
                   </span>
                   <ToneBadge
                     tone={SITUACAO_BANCO_TONE[(b.situacao_banco as SituacaoBanco) ?? "nao_enviado"]}
@@ -657,13 +680,14 @@ function TabResumo({
 
   return (
     <div className="space-y-5">
-      <div className="rounded-lg border border-border">
-        <div className="border-b border-border px-4 py-2 text-sm font-medium text-muted-foreground">
+      <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+        <div className="border-b border-border px-4 py-3 text-sm font-medium text-muted-foreground">
           {houveEnvio
             ? "Banco enviado nesta proposta"
             : "Bancos / Simulações vinculadas — envie somente o banco escolhido nesta proposta"}
         </div>
-        <Table>
+        <div className="overflow-x-auto">
+        <Table className="min-w-[880px]">
           <TableHeader>
             <TableRow>
               <TableHead className="w-10"></TableHead>
@@ -696,7 +720,14 @@ function TabResumo({
                     aria-label={`Selecionar ${b.nome_banco}`}
                   />
                 </TableCell>
-                <TableCell className="font-medium" style={{ color: corDoBanco(b.nome_banco) }}>{b.nome_banco}</TableCell>
+                <TableCell className="font-medium">
+                  <span className="flex items-center gap-2">
+                    <BancoLogo nome={b.nome_banco} size="md" className="shrink-0" />
+                    <span className="whitespace-nowrap" style={{ color: corDoBanco(b.nome_banco) }}>
+                      {b.nome_banco}
+                    </span>
+                  </span>
+                </TableCell>
                 <TableCell className="max-w-44 truncate text-xs tabular-nums text-muted-foreground">
                   {b.numero_proposta_banco ?? "—"}
                 </TableCell>
@@ -771,6 +802,7 @@ function TabResumo({
             ))}
           </TableBody>
         </Table>
+        </div>
       </div>
 
       <div className="grid gap-3 rounded-lg border border-border bg-card p-5 sm:grid-cols-2 md:grid-cols-3">
@@ -858,7 +890,8 @@ function DetalhamentoBancoDialog({
         </DialogHeader>
         <div className="space-y-3 text-sm">
           {banco?.nome_banco && (
-            <p className="font-medium" style={{ color: corDoBanco(banco.nome_banco) }}>
+            <p className="flex items-center gap-2 font-medium" style={{ color: corDoBanco(banco.nome_banco) }}>
+              <BancoLogo nome={banco.nome_banco} size="md" className="shrink-0" />
               {banco.nome_banco}
             </p>
           )}
@@ -939,9 +972,7 @@ function EnvioResultadoDialog({
               key={`ok-${i}`}
               className="flex items-center gap-3 rounded-xl border border-emerald-500/25 bg-emerald-500/5 px-3 py-2.5"
             >
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
-                <Building2 className="h-4 w-4" />
-              </span>
+              <BancoLogo nome={r.nome_banco} size="lg" className="shrink-0" />
               <span
                 className="flex-1 text-sm font-medium"
                 style={{ color: corDoBanco(r.nome_banco ?? "") }}
@@ -957,9 +988,7 @@ function EnvioResultadoDialog({
               key={`err-${i}`}
               className="flex items-start gap-3 rounded-xl border border-destructive/25 bg-destructive/5 px-3 py-2.5"
             >
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-destructive/15 text-destructive">
-                <Building2 className="h-4 w-4" />
-              </span>
+              <BancoLogo nome={r.nome_banco} size="lg" className="shrink-0" />
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-foreground">
                   {r.nome_banco ?? "Banco"}
