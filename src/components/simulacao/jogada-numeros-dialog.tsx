@@ -48,6 +48,8 @@ export function JogadaNumerosDialog({
   const [aberto, setAberto] = useState(false);
   const [valorLiberar, setValorLiberar] = useState(0);
   const [ltvPct, setLtvPct] = useState(Math.round(ltvMax * 100));
+  const [incluirCustas, setIncluirCustas] = useState(false);
+  const [custasPct, setCustasPct] = useState(5);
 
   // Ao abrir, preenche com o valor atual do imóvel (cenário "financiar 100%").
   useEffect(() => {
@@ -60,18 +62,23 @@ export function JogadaNumerosDialog({
   const calc = useMemo(() => {
     const liberar = Number(valorLiberar) || 0;
     const ltv = (Number(ltvPct) || 0) / 100;
-    if (liberar <= 0 || ltv <= 0) {
+    // Com custas, reduz o divisor pelo percentual informado (ex.: 80% - 5% = 75%),
+    // inflando ainda mais o compra e venda para cobrir cartório/ITBI.
+    const custas = incluirCustas ? (Number(custasPct) || 0) / 100 : 0;
+    const divisor = ltv - custas;
+    if (liberar <= 0 || divisor <= 0) {
       return { valorImovel: 0, entrada: 0, pctEntrada: 0, valido: false };
     }
     // Arredonda o valor de compra e venda PARA CIMA no milhar. Arredondar para o
     // mais próximo podia baixar o valor abaixo do bruto necessário e fazer o
     // financiamento estourar o LTV do banco (o oposto do objetivo da jogada).
-    const bruto = liberar / ltv;
+    const bruto = liberar / divisor;
     const valorImovel = Math.ceil(bruto / 1000) * 1000;
     const entrada = Math.max(0, valorImovel - liberar);
     const pctEntrada = valorImovel > 0 ? (entrada / valorImovel) * 100 : 0;
     return { valorImovel, entrada, pctEntrada, valido: true };
-  }, [valorLiberar, ltvPct]);
+  }, [valorLiberar, ltvPct, incluirCustas, custasPct]);
+
 
   function aplicar() {
     if (!calc.valido) return;
