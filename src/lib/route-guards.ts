@@ -3,7 +3,7 @@ import { getMinhasPermissoes } from "@/lib/permissions.functions";
 
 /**
  * Garante que o usuário tenha permissão de visualização no módulo.
- * Chamado no `beforeLoad` das rotas internas; sem permissão -> /sem-acesso.
+ * Chamado no `beforeLoad` das rotas internas; sem permissão -> /dashboard (sem tela de acesso negado).
  */
 export async function assertModuloPermitido(modulo: string): Promise<void> {
   const perms = await getMinhasPermissoes();
