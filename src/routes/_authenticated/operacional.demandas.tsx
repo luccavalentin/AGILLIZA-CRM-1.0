@@ -262,7 +262,10 @@ function Pagina() {
                         {statusDemanda(d.status).label}
                       </ToneBadge>
                     </td>
-                    <td className="px-4 py-3 text-right align-middle">
+                    <td
+                      className="px-4 py-3 text-right align-middle"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <ConfirmDelete
                         titulo="Excluir demanda"
                         descricao={`A demanda ${d.numero} será removida permanentemente.`}
