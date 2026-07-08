@@ -398,7 +398,13 @@ export interface PainelStage {
   codigo: string;
   nome: string;
   ordem: number;
-  clientes: { id: string; nome: string; numero_cliente: string }[];
+  clientes: {
+    id: string;
+    nome: string;
+    numero_cliente: string;
+    vistoria_agendada_em: string | null;
+    vistoria_concluida_em: string | null;
+  }[];
 }
 
 /** Kanban da esteira: etapas com clientes posicionados (RLS aplica escopo). */
