@@ -94,41 +94,98 @@ export function exportPDF(
   appendPages?: (doc: jsPDF, pageW: number, pageH: number) => void,
   /** Orientação da página (padrão: landscape). */
   orientation: "landscape" | "portrait" = "landscape",
+  /** Informações do documento em destaque (Data, Cliente, CPF...). Substitui a linha meta. */
+  docInfo?: { label: string; value: string }[],
 ) {
   const doc = new jsPDF({ orientation, unit: "pt", format: "a4" });
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
 
-  let y = HEADER_H + 24;
-  doc.setTextColor(GRAFITE);
-  doc.setFontSize(8);
-  doc.setFont("helvetica", "normal");
-  doc.text(meta.join("   ·   "), 32, y);
-  y += 20;
+  let y = HEADER_H + 22;
 
-  // KPIs em cartões
+  // Painel de informações do documento (Data, Cliente, CPF...) — legível e profissional.
+  if (docInfo && docInfo.length) {
+    const boxX = 32;
+    const boxW = pageW - 64;
+    const boxH = 46;
+    doc.setFillColor(ZEBRA);
+    doc.setDrawColor("#E4E6EF");
+    doc.setLineWidth(0.75);
+    doc.roundedRect(boxX, y, boxW, boxH, 5, 5, "FD");
+    doc.setFillColor(CORAL);
+    doc.rect(boxX, y + 9, 3, boxH - 18, "F");
+
+    const innerX = boxX + 16;
+    const innerW = boxW - 28;
+    const n = docInfo.length;
+    const colW = innerW / n;
+    docInfo.forEach((it, i) => {
+      const cx = innerX + i * colW;
+      // separador entre colunas
+      if (i > 0) {
+        doc.setDrawColor("#E1E3EE");
+        doc.setLineWidth(0.5);
+        doc.line(cx - 8, y + 12, cx - 8, y + boxH - 12);
+      }
+      doc.setTextColor(CINZA);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(7);
+      doc.text(it.label.toUpperCase(), cx, y + 18, { maxWidth: colW - 12 });
+      doc.setTextColor(AZUL);
+      doc.setFont("helvetica", "bold");
+      // fonte adaptativa para caber no espaço da coluna
+      let vSize = 11;
+      doc.setFontSize(vSize);
+      while (vSize > 8 && doc.getTextWidth(String(it.value)) > colW - 12) {
+        vSize -= 0.5;
+        doc.setFontSize(vSize);
+      }
+      doc.text(String(it.value), cx, y + 34, { maxWidth: colW - 10 });
+    });
+    y += boxH + 18;
+  } else {
+    doc.setTextColor(GRAFITE);
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "normal");
+    doc.text(meta.join("   ·   "), 32, y);
+    y += 20;
+  }
+
+  // KPIs em cartões (com quebra em linhas quando não cabem lado a lado)
   if (kpis.length) {
     const gap = 10;
-    const cols = Math.min(kpis.length, 6);
-    const cardW = (pageW - 64 - gap * (cols - 1)) / cols;
-    const cardH = 44;
-    kpis.slice(0, 6).forEach((k, i) => {
-      const x = 32 + i * (cardW + gap);
+    const lista = kpis.slice(0, 6);
+    const maxPorLinha = orientation === "portrait" ? 3 : 6;
+    const porLinha = Math.min(lista.length, maxPorLinha);
+    const cardW = (pageW - 64 - gap * (porLinha - 1)) / porLinha;
+    const cardH = 46;
+    lista.forEach((k, i) => {
+      const linha = Math.floor(i / porLinha);
+      const col = i % porLinha;
+      const x = 32 + col * (cardW + gap);
+      const cy = y + linha * (cardH + gap);
       doc.setFillColor(ZEBRA);
       doc.setDrawColor("#E4E6EF");
-      doc.roundedRect(x, y, cardW, cardH, 4, 4, "FD");
+      doc.roundedRect(x, cy, cardW, cardH, 4, 4, "FD");
       doc.setFillColor(CORAL);
-      doc.rect(x, y + 8, 3, cardH - 16, "F");
+      doc.rect(x, cy + 8, 3, cardH - 16, "F");
       doc.setTextColor(CINZA);
       doc.setFont("helvetica", "normal");
       doc.setFontSize(7);
-      doc.text(k.label.toUpperCase(), x + 12, y + 18, { maxWidth: cardW - 20 });
+      doc.text(k.label.toUpperCase(), x + 12, cy + 18, { maxWidth: cardW - 20 });
       doc.setTextColor(AZUL);
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(13);
-      doc.text(k.valor, x + 12, y + 36, { maxWidth: cardW - 20 });
+      // fonte adaptativa: garante o valor em uma única linha
+      let size = 13;
+      doc.setFontSize(size);
+      while (size > 9 && doc.getTextWidth(String(k.valor)) > cardW - 20) {
+        size -= 0.5;
+        doc.setFontSize(size);
+      }
+      doc.text(String(k.valor), x + 12, cy + 36);
     });
-    y += cardH + 20;
+    const linhas = Math.ceil(lista.length / porLinha);
+    y += linhas * cardH + (linhas - 1) * gap + 20;
   }
 
   const head = [columns.map((c) => c.label)];
