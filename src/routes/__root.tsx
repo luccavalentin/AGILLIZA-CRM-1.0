@@ -13,6 +13,7 @@ import { THEME_INIT_SCRIPT } from "@/lib/theme";
 
 import appCss from "../styles.css?url";
 import { reportError } from "../lib/error-reporting";
+import { FloatingChatHost } from "@/components/shared/floating-chat-host";
 
 function NotFoundComponent() {
   return (
