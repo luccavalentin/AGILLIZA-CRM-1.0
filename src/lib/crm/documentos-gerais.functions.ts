@@ -97,11 +97,19 @@ export const explorarDocumentosGerais = createServerFn({ method: "GET" })
 
     const idsClientes = listaClientes.map((c: any) => c.id);
 
-    // Vínculos de atendimento desses clientes.
-    const { data: vinculos } = await supabase
-      .from("cliente_parceiros")
-      .select("cliente_id, parceiro_id, tipo_vinculo")
-      .in("cliente_id", idsClientes);
+    // Vínculos de atendimento desses clientes (paginado: até 1000 clientes
+    // podem ter vários vínculos cada, estourando o limite padrão).
+    const vinculos: { cliente_id: string; parceiro_id: string | null; tipo_vinculo: string }[] = [];
+    for (let inicio = 0; ; inicio += 1000) {
+      const { data: lote } = await supabase
+        .from("cliente_parceiros")
+        .select("cliente_id, parceiro_id, tipo_vinculo")
+        .in("cliente_id", idsClientes)
+        .range(inicio, inicio + 999);
+      const rows = (lote ?? []) as typeof vinculos;
+      vinculos.push(...rows);
+      if (rows.length < 1000) break;
+    }
 
     // Nomes de parceiros (imobiliária/corretor) e comerciais (responsáveis).
     const idsPerfis = new Set<string>();
@@ -119,14 +127,20 @@ export const explorarDocumentosGerais = createServerFn({ method: "GET" })
       nomesParceiros = new Map((perfis ?? []).map((p: any) => [p.id, p.nome ?? "—"]));
     }
 
-    // Contagem de documentos por cliente.
-    const { data: docs } = await supabase
-      .from("cliente_documentos")
-      .select("cliente_id")
-      .in("cliente_id", idsClientes);
+    // Contagem de documentos por cliente (paginada para não estourar o
+    // limite padrão de 1000 linhas, que subestimaria os totais).
     const totalDocs = new Map<string, number>();
-    for (const d of docs ?? []) {
-      totalDocs.set(d.cliente_id, (totalDocs.get(d.cliente_id) ?? 0) + 1);
+    for (let inicio = 0; ; inicio += 1000) {
+      const { data: docs } = await supabase
+        .from("cliente_documentos")
+        .select("cliente_id")
+        .in("cliente_id", idsClientes)
+        .range(inicio, inicio + 999);
+      const lote = docs ?? [];
+      for (const d of lote) {
+        totalDocs.set(d.cliente_id, (totalDocs.get(d.cliente_id) ?? 0) + 1);
+      }
+      if (lote.length < 1000) break;
     }
 
     // Índice: cliente_id -> { comercial, imobiliaria, corretor } (primeiro vínculo de cada tipo).

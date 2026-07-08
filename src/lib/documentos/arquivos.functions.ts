@@ -68,19 +68,27 @@ export const listarNos = createServerFn({ method: "GET" })
     const corr = await correspondenteDoUsuario(supabase, userId);
     if (!corr) return [];
 
-    let query = supabase
-      .from("arquivos_nos")
-      .select("id, parent_id, tipo, nome, storage_path, content_type, tamanho, created_at, criado_por")
-      .eq("correspondente_id", corr);
+    // Paginação: uma pasta com mais de 1000 itens seria cortada pelo limite
+    // padrão do Supabase sem aviso. Buscamos em lotes até esgotar.
+    const lista: any[] = [];
+    for (let inicio = 0; ; inicio += 1000) {
+      let query = supabase
+        .from("arquivos_nos")
+        .select(
+          "id, parent_id, tipo, nome, storage_path, content_type, tamanho, created_at, criado_por",
+        )
+        .eq("correspondente_id", corr);
+      query = data.parent_id ? query.eq("parent_id", data.parent_id) : query.is("parent_id", null);
+      const { data: rows, error } = await query
+        .order("tipo", { ascending: true })
+        .order("nome", { ascending: true })
+        .range(inicio, inicio + 999);
+      if (error) throw new Error(error.message);
+      const lote = (rows ?? []) as any[];
+      lista.push(...lote);
+      if (lote.length < 1000) break;
+    }
 
-    query = data.parent_id ? query.eq("parent_id", data.parent_id) : query.is("parent_id", null);
-
-    const { data: rows, error } = await query
-      .order("tipo", { ascending: true })
-      .order("nome", { ascending: true });
-    if (error) throw new Error(error.message);
-
-    const lista = (rows ?? []) as any[];
     const nomes = await nomesDeUsuarios(supabase, lista.map((r) => r.criado_por));
     return lista.map((r) => ({
       ...r,
@@ -217,10 +225,30 @@ export const moverNo = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const corr = await correspondenteDoUsuario(supabase, userId);
     if (!corr) throw new Error("Sem correspondente.");
-    if (data.novo_parent_id === data.id) throw new Error("Destino inválido.");
+    const destino = data.novo_parent_id ?? null;
+    if (destino === data.id) throw new Error("Destino inválido.");
+
+    // Impede mover uma pasta para dentro de si mesma (descendente): isso
+    // criaria um ciclo e tornaria a subárvore inacessível a partir da raiz.
+    if (destino) {
+      let atual: string | null = destino;
+      for (let i = 0; i < 100 && atual; i++) {
+        if (atual === data.id)
+          throw new Error("Não é possível mover uma pasta para dentro dela mesma.");
+        const { data: no } = (await supabase
+          .from("arquivos_nos")
+          .select("parent_id")
+          .eq("id", atual)
+          .eq("correspondente_id", corr)
+          .maybeSingle()) as { data: { parent_id: string | null } | null };
+        if (!no) break;
+        atual = no.parent_id;
+      }
+    }
+
     const { error } = await supabase
       .from("arquivos_nos")
-      .update({ parent_id: data.novo_parent_id ?? null })
+      .update({ parent_id: destino })
       .eq("id", data.id)
       .eq("correspondente_id", corr);
     if (error) throw new Error(error.message);
@@ -251,19 +279,28 @@ export const excluirNo = createServerFn({ method: "POST" })
     if (raiz?.storage_path) pathsStorage.push(raiz.storage_path);
 
     for (let i = 0; i < 100 && fronteira.length > 0; i++) {
-      const { data: filhos } = await supabase
-        .from("arquivos_nos")
-        .select("id, storage_path")
-        .eq("correspondente_id", corr)
-        .in("parent_id", fronteira);
-      const lista = (filhos ?? []) as { id: string; storage_path: string | null }[];
-      if (lista.length === 0) break;
-      fronteira = lista.map((f) => f.id);
-      for (const f of lista) {
+      // Pagina cada nível: sem isso, um nível com >1000 filhos deixaria IDs
+      // de fora, gerando arquivos órfãos no storage e nós não excluídos.
+      const nivel: { id: string; storage_path: string | null }[] = [];
+      for (let inicio = 0; ; inicio += 1000) {
+        const { data: filhos } = await supabase
+          .from("arquivos_nos")
+          .select("id, storage_path")
+          .eq("correspondente_id", corr)
+          .in("parent_id", fronteira)
+          .range(inicio, inicio + 999);
+        const lote = (filhos ?? []) as { id: string; storage_path: string | null }[];
+        nivel.push(...lote);
+        if (lote.length < 1000) break;
+      }
+      if (nivel.length === 0) break;
+      fronteira = nivel.map((f) => f.id);
+      for (const f of nivel) {
         idsParaExcluir.push(f.id);
         if (f.storage_path) pathsStorage.push(f.storage_path);
       }
     }
+
 
     if (pathsStorage.length > 0) {
       for (let i = 0; i < pathsStorage.length; i += 100) {
