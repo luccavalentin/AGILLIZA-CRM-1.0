@@ -103,12 +103,11 @@ export function DocumentosChecklist({ clienteId }: { clienteId: string }) {
   }
 
   const hidden: string[] = Array.isArray(check.__hidden) ? check.__hidden : [];
-  const custom: { id: string; label: string }[] = Array.isArray(check.__custom)
+  const custom: { id: string; label: string; cat?: Categoria }[] = Array.isArray(check.__custom)
     ? check.__custom
     : [];
   const labels: Record<string, string> =
     check.__labels && typeof check.__labels === "object" ? check.__labels : {};
-  const [novoItem, setNovoItem] = useState("");
   const [editKey, setEditKey] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
 
