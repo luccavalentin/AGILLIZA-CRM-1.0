@@ -737,34 +737,61 @@ function RespostasRapidas({ onEscolher }: { onEscolher: (texto: string) => void 
   const [aberto, setAberto] = useState(false);
   const [lista, setLista] = useState<RespostaRapida[]>([]);
   const [gerenciando, setGerenciando] = useState(false);
-  const [novoTitulo, setNovoTitulo] = useState("");
-  const [novoTexto, setNovoTexto] = useState("");
+  const [editandoId, setEditandoId] = useState<string | null>(null);
+  const [formTitulo, setFormTitulo] = useState("");
+  const [formTexto, setFormTexto] = useState("");
 
   useEffect(() => {
     setLista(getRespostasRapidas());
     return subscribeRespostasRapidas(() => setLista(getRespostasRapidas()));
   }, []);
 
-  function adicionar() {
-    const titulo = novoTitulo.trim();
-    const texto = novoTexto.trim();
+  function limparForm() {
+    setEditandoId(null);
+    setFormTitulo("");
+    setFormTexto("");
+  }
+
+  function salvar() {
+    const titulo = formTitulo.trim();
+    const texto = formTexto.trim();
     if (!titulo || !texto) return;
-    const nova = { id: crypto.randomUUID(), titulo, texto };
-    const proxima = [...lista, nova];
+    let proxima: RespostaRapida[];
+    if (editandoId) {
+      proxima = lista.map((r) => (r.id === editandoId ? { ...r, titulo, texto } : r));
+    } else {
+      proxima = [...lista, { id: crypto.randomUUID(), titulo, texto }];
+    }
     setLista(proxima);
     setRespostasRapidas(proxima);
-    setNovoTitulo("");
-    setNovoTexto("");
+    limparForm();
+  }
+
+  function editar(r: RespostaRapida) {
+    setEditandoId(r.id);
+    setFormTitulo(r.titulo);
+    setFormTexto(r.texto);
+    setGerenciando(true);
   }
 
   function remover(id: string) {
     const proxima = lista.filter((r) => r.id !== id);
     setLista(proxima);
     setRespostasRapidas(proxima);
+    if (editandoId === id) limparForm();
   }
 
   return (
-    <Popover open={aberto} onOpenChange={setAberto}>
+    <Popover
+      open={aberto}
+      onOpenChange={(v) => {
+        setAberto(v);
+        if (!v) {
+          setGerenciando(false);
+          limparForm();
+        }
+      }}
+    >
       <PopoverTrigger asChild>
         <Button
           type="button"
@@ -776,23 +803,33 @@ function RespostasRapidas({ onEscolher }: { onEscolher: (texto: string) => void 
           <Zap className="h-4 w-4" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="start" side="top" className="w-80 p-0">
+      <PopoverContent
+        align="start"
+        side="top"
+        className="z-[70] w-80 p-0"
+        collisionPadding={12}
+      >
         <div className="flex items-center justify-between border-b px-3 py-2">
           <span className="text-sm font-semibold">Respostas rápidas</span>
           <Button
             type="button"
-            variant="ghost"
+            variant={gerenciando ? "secondary" : "ghost"}
             size="sm"
             className="h-auto px-2 py-1 text-xs"
-            onClick={() => setGerenciando((v) => !v)}
+            onClick={() => {
+              setGerenciando((v) => !v);
+              if (gerenciando) limparForm();
+            }}
           >
             {gerenciando ? "Concluir" : "Gerenciar"}
           </Button>
         </div>
-        <div className="max-h-72 overflow-y-auto p-2">
+        <div className="max-h-64 overflow-y-auto p-2">
           {lista.length === 0 && (
-            <p className="px-2 py-4 text-center text-xs text-muted-foreground">
+            <p className="px-2 py-6 text-center text-xs text-muted-foreground">
               Nenhuma resposta rápida cadastrada.
+              <br />
+              Use “Gerenciar” para criar a primeira.
             </p>
           )}
           {lista.map((r) => (
@@ -802,7 +839,7 @@ function RespostasRapidas({ onEscolher }: { onEscolher: (texto: string) => void 
             >
               <button
                 type="button"
-                className="min-w-0 flex-1 text-left"
+                className="min-w-0 flex-1 text-left disabled:cursor-default"
                 onClick={() => {
                   if (gerenciando) return;
                   onEscolher(r.texto);
@@ -814,41 +851,73 @@ function RespostasRapidas({ onEscolher }: { onEscolher: (texto: string) => void 
                 <span className="line-clamp-2 text-xs text-muted-foreground">{r.texto}</span>
               </button>
               {gerenciando && (
-                <button
-                  type="button"
-                  className="shrink-0 text-muted-foreground hover:text-destructive"
-                  onClick={() => remover(r.id)}
-                  aria-label="Remover"
-                >
-                  <Trash2 className="size-4" />
-                </button>
+                <div className="flex shrink-0 items-center gap-1">
+                  <button
+                    type="button"
+                    className="text-muted-foreground hover:text-foreground"
+                    onClick={() => editar(r)}
+                    aria-label="Editar"
+                  >
+                    <Pencil className="size-4" />
+                  </button>
+                  <button
+                    type="button"
+                    className="text-muted-foreground hover:text-destructive"
+                    onClick={() => remover(r.id)}
+                    aria-label="Remover"
+                  >
+                    <Trash2 className="size-4" />
+                  </button>
+                </div>
               )}
             </div>
           ))}
         </div>
         {gerenciando && (
           <div className="space-y-2 border-t p-3">
+            <p className="text-xs font-medium text-foreground">
+              {editandoId ? "Editar resposta" : "Nova resposta"}
+            </p>
             <Input
-              value={novoTitulo}
-              onChange={(e) => setNovoTitulo(e.target.value)}
+              value={formTitulo}
+              onChange={(e) => setFormTitulo(e.target.value)}
               placeholder="Título (ex.: Saudação)"
               className="h-8 text-xs"
             />
             <Textarea
-              value={novoTexto}
-              onChange={(e) => setNovoTexto(e.target.value)}
+              value={formTexto}
+              onChange={(e) => setFormTexto(e.target.value)}
               placeholder="Texto da resposta rápida…"
               className="min-h-[60px] resize-none text-xs"
             />
-            <Button
-              type="button"
-              size="sm"
-              className="w-full"
-              onClick={adicionar}
-              disabled={!novoTitulo.trim() || !novoTexto.trim()}
-            >
-              <Plus className="mr-1 size-4" /> Adicionar
-            </Button>
+            <div className="flex gap-2">
+              {editandoId && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="flex-1"
+                  onClick={limparForm}
+                >
+                  Cancelar
+                </Button>
+              )}
+              <Button
+                type="button"
+                size="sm"
+                className="flex-1"
+                onClick={salvar}
+                disabled={!formTitulo.trim() || !formTexto.trim()}
+              >
+                {editandoId ? (
+                  "Salvar"
+                ) : (
+                  <>
+                    <Plus className="mr-1 size-4" /> Adicionar
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         )}
       </PopoverContent>
