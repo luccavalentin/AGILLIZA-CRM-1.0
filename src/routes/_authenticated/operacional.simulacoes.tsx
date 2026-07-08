@@ -172,9 +172,6 @@ function Pagina() {
             className="group h-11 gap-2.5 px-4 shadow-sm transition-all hover:shadow-md"
           >
             <Link to="/operacional/simulacoes/completa">
-              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary-foreground/15 transition-colors group-hover:bg-primary-foreground/25">
-                <FileText className="h-4 w-4" />
-              </span>
               <span className="flex flex-col items-start leading-tight">
                 <span className="text-sm font-semibold">Simulação completa</span>
                 <span className="text-[11px] font-normal text-primary-foreground/70">
