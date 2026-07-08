@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { CurrencyInput } from "@/components/simulacao/currency-input";
 import { formatBRL } from "@/lib/simulacao/format";
 
@@ -23,6 +24,12 @@ import { formatBRL } from "@/lib/simulacao/format";
  *   valor ajustado = 250.000 / 0,8 = 312.500 (arredonda p/ 313.000)
  *   entrada de fachada = 313.000 - 250.000 = 63.000
  *   financiamento liberado = 250.000
+ *
+ * Com "incluir custas" o divisor é reduzido pelo percentual de custas, inflando
+ * mais o compra e venda para cobrir despesas de cartório/ITBI.
+ *   Ex.: imóvel R$ 300 mil, sem entrada, LTV 80%, custas 5% → divisor 0,75.
+ *   valor ajustado = 300.000 / 0,75 = 400.000
+ *   entrada de fachada = 400.000 - 300.000 = 100.000 | financiado 300.000
  */
 export function JogadaNumerosDialog({
   valorImovelAtual,
@@ -41,6 +48,8 @@ export function JogadaNumerosDialog({
   const [aberto, setAberto] = useState(false);
   const [valorLiberar, setValorLiberar] = useState(0);
   const [ltvPct, setLtvPct] = useState(Math.round(ltvMax * 100));
+  const [incluirCustas, setIncluirCustas] = useState(false);
+  const [custasPct, setCustasPct] = useState(5);
 
   // Ao abrir, preenche com o valor atual do imóvel (cenário "financiar 100%").
   useEffect(() => {
@@ -53,18 +62,23 @@ export function JogadaNumerosDialog({
   const calc = useMemo(() => {
     const liberar = Number(valorLiberar) || 0;
     const ltv = (Number(ltvPct) || 0) / 100;
-    if (liberar <= 0 || ltv <= 0) {
+    // Com custas, reduz o divisor pelo percentual informado (ex.: 80% - 5% = 75%),
+    // inflando ainda mais o compra e venda para cobrir cartório/ITBI.
+    const custas = incluirCustas ? (Number(custasPct) || 0) / 100 : 0;
+    const divisor = ltv - custas;
+    if (liberar <= 0 || divisor <= 0) {
       return { valorImovel: 0, entrada: 0, pctEntrada: 0, valido: false };
     }
     // Arredonda o valor de compra e venda PARA CIMA no milhar. Arredondar para o
     // mais próximo podia baixar o valor abaixo do bruto necessário e fazer o
     // financiamento estourar o LTV do banco (o oposto do objetivo da jogada).
-    const bruto = liberar / ltv;
+    const bruto = liberar / divisor;
     const valorImovel = Math.ceil(bruto / 1000) * 1000;
     const entrada = Math.max(0, valorImovel - liberar);
     const pctEntrada = valorImovel > 0 ? (entrada / valorImovel) * 100 : 0;
     return { valorImovel, entrada, pctEntrada, valido: true };
-  }, [valorLiberar, ltvPct]);
+  }, [valorLiberar, ltvPct, incluirCustas, custasPct]);
+
 
   function aplicar() {
     if (!calc.valido) return;
@@ -119,6 +133,36 @@ export function JogadaNumerosDialog({
               LTV do banco. Normalmente 80% (financiamento) ou 60% (home equity).
             </p>
           </div>
+
+          <div className="space-y-3 rounded-lg border border-border bg-muted/20 p-3">
+            <div className="flex items-center justify-between gap-3">
+              <div className="space-y-0.5">
+                <Label className="text-sm">Incluir custas</Label>
+                <p className="text-xs text-muted-foreground">
+                  Infla mais o compra e venda para cobrir cartório e ITBI.
+                </p>
+              </div>
+              <Switch checked={incluirCustas} onCheckedChange={setIncluirCustas} />
+            </div>
+            {incluirCustas && (
+              <div className="space-y-1.5">
+                <Label>Percentual de custas (%)</Label>
+                <input
+                  type="number"
+                  min={0}
+                  max={ltvPct - 1}
+                  value={custasPct}
+                  onChange={(e) => setCustasPct(Number(e.target.value))}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Reduz o divisor (ex.: 80% − 5% = 75%). Normalmente ~5%.
+                </p>
+              </div>
+            )}
+          </div>
+
+
 
           {calc.valido && (
             <div className="space-y-2 rounded-lg border border-border bg-muted/40 p-3 text-sm">
