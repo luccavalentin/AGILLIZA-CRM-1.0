@@ -138,9 +138,13 @@ function Pagina() {
   }));
   const totalClientes = dadosFiltrados.reduce((acc, s) => acc + s.clientes.length, 0);
   const etapasAtivas = dadosFiltrados.filter((s) => s.clientes.length > 0).length;
-  const stageDialog = dialogStage
-    ? dadosFiltrados.find((s) => s.codigo === dialogStage)
-    : null;
+  const verTodos = dialogStage === "__todos__";
+  const stageDialog =
+    dialogStage && !verTodos ? dadosFiltrados.find((s) => s.codigo === dialogStage) : null;
+  const clientesDialog = verTodos
+    ? dadosFiltrados.flatMap((s) => s.clientes.map((c) => ({ ...c, etapaNome: s.nome })))
+    : (stageDialog?.clientes.map((c) => ({ ...c, etapaNome: stageDialog.nome })) ?? []);
+  const tituloDialog = verTodos ? "Todos os clientes" : (stageDialog?.nome ?? "Etapa");
 
   return (
     <div className="space-y-6 p-4 sm:p-6">
