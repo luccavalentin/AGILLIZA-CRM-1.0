@@ -386,6 +386,23 @@ export const getPanelDados = createServerFn({ method: "POST" })
     );
     const taxa = enviadas.length ? (aprovadas / enviadas.length) * 100 : 0;
 
+    // Métricas operacionais complementares
+    const emAnalise = enviadas.filter((p) =>
+      ["enviada_banco", "em_analise_credito"].includes(p.status),
+    ).length;
+    const recusadas = propRows.filter((p) => p.status === "credito_recusado").length;
+    const rascunhos = propRows.length - enviadas.length;
+    const volumeSimulado = simRows.reduce((s, r) => s + (r.valor_financiamento ?? 0), 0);
+    const ticket = contratos ? volumeContratos / contratos : 0;
+    const convSimProp = simRows.length ? (enviadas.length / simRows.length) * 100 : 0;
+    const convPropContrato = enviadas.length ? (contratos / enviadas.length) * 100 : 0;
+    const slaEmDia = demAbertas.length
+      ? ((demAbertas.length - demVencidas.length) / demAbertas.length) * 100
+      : 100;
+    const demConcluidas = demRows.filter((d) => d.status === "concluida").length;
+    const tkConcluidas = tkRows.filter((t) => t.status === "concluida").length;
+    const taxaConclusaoTarefas = tkRows.length ? (tkConcluidas / tkRows.length) * 100 : 0;
+
     const statusMap = new Map<string, number>();
     propRows.forEach((p) => statusMap.set(p.status, (statusMap.get(p.status) ?? 0) + 1));
     const simStatusMap = new Map<string, number>();
