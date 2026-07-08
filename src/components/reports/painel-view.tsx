@@ -201,7 +201,15 @@ export function PainelView({
                 subtitulo={data.chart.subtitulo}
                 abrirTo={abrirTo}
               >
-                <div className="h-72 w-full xl:h-80">
+                <div
+                  className="w-full"
+                  style={{
+                    height: Math.min(
+                      420,
+                      Math.max(168, data.chart.dados.length * 52 + 44),
+                    ),
+                  }}
+                >
                   <ReportChartView
                     chart={{ titulo: data.chart.titulo, tipo: "barh", dados: data.chart.dados }}
                     colorByBank={data.chart.porBanco}
@@ -213,6 +221,7 @@ export function PainelView({
               <MetricList items={data.ranking.itens} colorByBank={data.chart.porBanco} />
             </PanelCard>
           </div>
+
 
           <SectionTitle>Alertas</SectionTitle>
           {data.alertas.length === 0 ? (
