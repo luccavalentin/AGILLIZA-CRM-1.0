@@ -61,7 +61,8 @@ const brlCompacto = (v: number) => {
   return brl(n);
 };
 const int = (v: number) => (v || 0).toLocaleString("pt-BR");
-const pct = (v: number) => `${v.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`;
+const pct = (v: number) =>
+  `${Math.min(100, Math.max(0, v || 0)).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`;
 
 function topItens(map: Map<string, number>, limite = 8) {
   return [...map.entries()]
