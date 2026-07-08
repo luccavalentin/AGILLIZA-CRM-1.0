@@ -7,6 +7,18 @@ function formatarData(iso: string | null) {
   return new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
 }
 
+function formatarDataLonga(iso: string | null) {
+  if (!iso) return null;
+  // Datas civis (YYYY-MM-DD) sem conversão de fuso.
+  const [ano, mes, dia] = iso.slice(0, 10).split("-").map(Number);
+  if (!ano || !mes || !dia) return null;
+  return new Date(ano, mes - 1, dia).toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
+}
+
 export function TimelineCliente({ etapas }: { etapas: EtapaCliente[] }) {
   return (
     <ol className="space-y-0">
