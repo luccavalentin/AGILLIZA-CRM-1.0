@@ -412,6 +412,12 @@
   }
 }
 
+/* font-mono agora usa Inter (marca) — mantém dígitos tabulares p/ alinhar números e códigos */
+.font-mono {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+}
+
 /* Remoção de marca d'água / badge do ambiente de hospedagem */
 #lovable-badge {
   display: none !important;
