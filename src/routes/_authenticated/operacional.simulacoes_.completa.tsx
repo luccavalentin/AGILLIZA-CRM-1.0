@@ -252,13 +252,23 @@ function Pagina() {
     () => Math.floor((Number(f.valor_imovel) || 0) * ltvMax),
     [f.valor_imovel, ltvMax],
   );
+  // Quando as despesas são financiadas, elas ocupam parte do teto, então o
+  // financiamento do imóvel disponível diminui e a entrada mínima aumenta.
+  const despesasNoTeto = f.fg_financiar_despesas
+    ? Number(f.valor_despesas_financiadas) || 0
+    : 0;
+  const financiamentoImovelMaximo = Math.max(0, financiamentoMaximo - despesasNoTeto);
   const entradaMinima = useMemo(
     () => Math.max(0, (Number(f.valor_imovel) || 0) - financiamentoMaximo),
     [f.valor_imovel, financiamentoMaximo],
   );
+  const entradaMinimaEfetiva = Math.max(
+    0,
+    (Number(f.valor_imovel) || 0) - financiamentoImovelMaximo,
+  );
   const financiamentoExcedido =
     (Number(f.valor_imovel) || 0) > 0 &&
-    (Number(f.valor_financiamento) || 0) > financiamentoMaximo;
+    (Number(f.valor_financiamento) || 0) > financiamentoImovelMaximo;
 
 
 
