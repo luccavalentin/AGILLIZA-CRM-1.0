@@ -489,6 +489,81 @@ function Pagina() {
 
         </DialogContent>
       </Dialog>
+
+      <Dialog open={arquivoAberto} onOpenChange={setArquivoAberto}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FolderClosed className="size-4 text-primary" />
+              Contratos emitidos
+            </DialogTitle>
+            <DialogDescription>
+              Arquivo dos contratos já emitidos — nome, data, nº da proposta e banco.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[60vh] space-y-2 overflow-y-auto pr-1">
+            {carregandoContratos ? (
+              Array.from({ length: 4 }).map((_, i) => (
+                <Skeleton key={i} className="h-16 w-full rounded-lg" />
+              ))
+            ) : (contratos ?? []).length === 0 ? (
+              <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed border-border px-4 py-10 text-center">
+                <FolderClosed className="size-7 text-muted-foreground/60" />
+                <p className="text-sm text-muted-foreground">
+                  Nenhum contrato emitido arquivado ainda.
+                </p>
+              </div>
+            ) : (
+              (contratos ?? []).map((ct) => (
+                <button
+                  key={ct.id}
+                  type="button"
+                  disabled={!ct.cliente_id}
+                  onClick={() => {
+                    if (!ct.cliente_id) return;
+                    setArquivoAberto(false);
+                    navigate({ to: "/crm/clientes/$id", params: { id: ct.cliente_id } });
+                  }}
+                  className="group flex w-full items-start gap-3 rounded-lg border border-border bg-background p-3 text-left transition-all hover:border-primary/50 hover:bg-primary/5 hover:shadow-sm disabled:cursor-default disabled:hover:border-border disabled:hover:bg-background"
+                >
+                  <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <FileText className="size-4" />
+                  </span>
+                  <span className="min-w-0 flex-1 space-y-1">
+                    <span className="block truncate text-sm font-medium text-foreground transition-colors group-hover:text-primary">
+                      {ct.nome_cliente ?? "Cliente"}
+                    </span>
+                    <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+                      <span className="inline-flex items-center gap-1 font-mono">
+                        <FileText className="size-3" />
+                        {ct.numero_proposta ?? "—"}
+                      </span>
+                      <span className="inline-flex items-center gap-1">
+                        <CalendarCheck className="size-3" />
+                        {ct.contrato_emitido_em
+                          ? new Date(ct.contrato_emitido_em).toLocaleDateString("pt-BR")
+                          : "—"}
+                      </span>
+                      {ct.nome_banco && (
+                        <span className="inline-flex items-center gap-1">
+                          <Building2 className="size-3" />
+                          {ct.nome_banco}
+                        </span>
+                      )}
+                    </span>
+                  </span>
+                  {ct.valor_financiamento != null && (
+                    <span className="shrink-0 text-xs font-semibold tabular-nums text-foreground">
+                      {`R$ ${Number(ct.valor_financiamento).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`}
+                    </span>
+                  )}
+                </button>
+              ))
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
+
   );
 }
