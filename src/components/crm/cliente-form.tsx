@@ -39,6 +39,7 @@ import {
   mascararCPF,
   mascararDocumentoTipo,
 } from "@/lib/crm/documento";
+import { CriarVinculoInline } from "@/components/crm/criar-vinculo-inline";
 
 export interface ClienteFormValues {
   id?: string;
