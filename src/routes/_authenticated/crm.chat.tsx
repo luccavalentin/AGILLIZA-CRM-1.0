@@ -79,7 +79,7 @@ const CORES = [
   { id: "slate", nome: "Cinza" },
 ] as const;
 
-type FiltroChat = "todas" | "nao_lidas" | "sla" | "lembrete";
+type FiltroChat = "todas" | "nao_lidas" | "sla" | "lembrete" | "arquivadas";
 
 function formatarHora(iso: string): string {
   return new Date(iso).toLocaleString("pt-BR", {
