@@ -9,7 +9,12 @@ import { ChevronRight, GripVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { assertModuloPermitido } from "@/lib/route-guards";
-import { listarPainel, definirEtapa, type PainelStage } from "@/lib/crm/clientes.functions";
+import {
+  listarPainel,
+  definirEtapa,
+  definirDatasVistoria,
+  type PainelStage,
+} from "@/lib/crm/clientes.functions";
 import { usePipelineRealtime } from "@/hooks/use-pipeline-realtime";
 
 export const Route = createFileRoute("/_authenticated/crm/painel")({
