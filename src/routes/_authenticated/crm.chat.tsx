@@ -712,8 +712,268 @@ function BarraGestao({
 
   const aplicadas = etiquetas.filter((e) => tagsAplicadas.has(e.id));
 
+  const etapaAtual =
+    stages?.find((s) => s.codigo === atual?.codigo)?.nome ?? "Cadastro básico";
+  const temLembrete = Boolean(lembreteEm);
+  const contextoLinha = [documento, contexto].filter(Boolean).join(" · ");
+
   return (
-    <Card className="h-[38rem] overflow-y-auto border-border/60 shadow-sm">
+    <Card className="overflow-hidden border-border/60 shadow-sm">
+      <div className="flex flex-col gap-3 p-3 xl:flex-row xl:flex-wrap xl:items-stretch xl:gap-0">
+        {/* Identidade */}
+        <div className="flex min-w-0 items-center gap-3 xl:flex-1 xl:pr-4">
+          <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary/80 to-primary/50 text-sm font-semibold text-primary-foreground shadow-sm">
+            {iniciais(nome)}
+          </span>
+          <div className="min-w-0">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-primary/80">
+              Gestão da conversa
+            </p>
+            <p className="truncate text-sm font-semibold leading-tight text-foreground">
+              {nome}
+            </p>
+            {contextoLinha && (
+              <p className="truncate text-xs text-muted-foreground">
+                {contextoLinha}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Etiquetas */}
+        <div className="flex min-w-0 flex-col justify-center gap-1.5 border-t border-border/50 pt-3 xl:border-l xl:border-t-0 xl:px-4 xl:pt-0">
+          <div className="flex items-center gap-1.5">
+            <Tag className="h-3.5 w-3.5 text-muted-foreground" />
+            <span className="text-[11px] font-medium text-muted-foreground">
+              Etiquetas
+            </span>
+          </div>
+          <div className="flex flex-wrap items-center gap-1">
+            {aplicadas.length === 0 ? (
+              <span className="text-[11px] text-muted-foreground">Nenhuma</span>
+            ) : (
+              aplicadas.map((e) => (
+                <TagChip
+                  key={e.id}
+                  etiqueta={e}
+                  onRemove={() => toggleTag.mutate(e.id)}
+                />
+              ))
+            )}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 gap-1 rounded-full px-2.5 text-[11px]"
+                >
+                  <Plus className="h-3.5 w-3.5" /> Gerenciar
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="start" className="w-64 space-y-3 p-3">
+                <div className="max-h-40 space-y-1 overflow-y-auto">
+                  {etiquetas.length === 0 && (
+                    <p className="text-[11px] text-muted-foreground">
+                      Crie a primeira etiqueta abaixo.
+                    </p>
+                  )}
+                  {etiquetas.map((e) => {
+                    const on = tagsAplicadas.has(e.id);
+                    return (
+                      <div key={e.id} className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          disabled={toggleTag.isPending}
+                          onClick={() => toggleTag.mutate(e.id)}
+                          className={cn(
+                            "flex flex-1 items-center gap-2 rounded-md border px-2 py-1 text-left text-xs transition-colors",
+                            on
+                              ? "border-primary bg-primary/5"
+                              : "border-border hover:bg-muted",
+                          )}
+                        >
+                          <span className={cn("chat-tag-dot", `chat-dot-${e.cor}`)} />
+                          <span className="flex-1 truncate">{e.nome}</span>
+                          {on && <Check className="h-3.5 w-3.5 text-primary" />}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={removerTag.isPending}
+                          onClick={() => {
+                            if (
+                              window.confirm(
+                                `Excluir a etiqueta "${e.nome}"? Ela será removida de todos os clientes.`,
+                              )
+                            ) {
+                              removerTag.mutate(e.id);
+                            }
+                          }}
+                          className="rounded-md p-1 text-muted-foreground transition-colors hover:text-destructive disabled:opacity-50"
+                          aria-label={`Excluir ${e.nome}`}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="space-y-2 border-t pt-2">
+                  <Input
+                    value={novaTag}
+                    onChange={(ev) => setNovaTag(ev.target.value)}
+                    placeholder="Nova etiqueta…"
+                    className="h-8 text-xs"
+                  />
+                  <div className="flex items-center gap-1">
+                    {CORES.map((c) => (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() => setNovaCor(c.id)}
+                        aria-label={c.nome}
+                        className={cn(
+                          "chat-tag-dot h-5 w-5 rounded-full ring-offset-1 transition",
+                          `chat-dot-${c.id}`,
+                          novaCor === c.id &&
+                            "ring-2 ring-primary ring-offset-background",
+                        )}
+                      />
+                    ))}
+                  </div>
+                  <Button
+                    size="sm"
+                    className="h-8 w-full text-xs"
+                    disabled={!novaTag.trim() || adicionarTag.isPending}
+                    onClick={() => adicionarTag.mutate()}
+                  >
+                    {adicionarTag.isPending ? (
+                      <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Plus className="mr-1.5 h-3.5 w-3.5" />
+                    )}
+                    Criar etiqueta
+                  </Button>
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
+        </div>
+
+        {/* SLA e lembrete */}
+        <div className="flex flex-col justify-center gap-1.5 border-t border-border/50 pt-3 xl:border-l xl:border-t-0 xl:px-4 xl:pt-0">
+          <div className="flex items-center gap-1.5">
+            <AlarmClock className="h-3.5 w-3.5 text-muted-foreground" />
+            <span className="text-[11px] font-medium text-muted-foreground">
+              SLA e lembrete
+            </span>
+          </div>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 justify-between gap-2 text-xs"
+              >
+                <span className="flex items-center gap-1.5">
+                  <Timer className="h-3.5 w-3.5 text-muted-foreground" />
+                  {slaHoras}h
+                  {temLembrete && (
+                    <span className="chat-tag chat-tag-amber">
+                      <BellRing className="h-3 w-3" /> lembrete
+                    </span>
+                  )}
+                </span>
+                <ChevronDown className="h-3.5 w-3.5 opacity-60" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="w-72 space-y-2.5 p-3">
+              <div className="space-y-1">
+                <label className="text-[11px] text-muted-foreground">
+                  SLA de atualização (horas sem resposta)
+                </label>
+                <Input
+                  type="number"
+                  min={1}
+                  value={slaHoras}
+                  onChange={(e) => setSlaHoras(e.target.value)}
+                  className="h-8 text-xs"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[11px] text-muted-foreground">
+                  Lembrete de follow-up
+                </label>
+                <Input
+                  type="datetime-local"
+                  value={lembreteEm}
+                  onChange={(e) => setLembreteEm(e.target.value)}
+                  className="h-8 text-xs"
+                />
+              </div>
+              <Textarea
+                value={lembreteNota}
+                onChange={(e) => setLembreteNota(e.target.value)}
+                placeholder="Nota do lembrete (opcional)…"
+                className="min-h-[3rem] text-xs"
+              />
+              <Button
+                size="sm"
+                className="h-8 w-full text-xs"
+                disabled={gravarMeta.isPending}
+                onClick={() => gravarMeta.mutate()}
+              >
+                {gravarMeta.isPending ? (
+                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <BellRing className="mr-1.5 h-3.5 w-3.5" />
+                )}
+                Salvar SLA e lembrete
+              </Button>
+            </PopoverContent>
+          </Popover>
+        </div>
+
+        {/* Esteira */}
+        <div className="flex flex-col justify-center gap-1.5 border-t border-border/50 pt-3 xl:border-l xl:border-t-0 xl:pl-4 xl:pt-0">
+          <div className="flex items-center gap-1.5">
+            <GitBranch className="h-3.5 w-3.5 text-muted-foreground" />
+            <span className="text-[11px] font-medium text-muted-foreground">
+              Esteira · {etapaAtual}
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Select value={destino} onValueChange={setDestino}>
+              <SelectTrigger className="h-8 w-40 text-xs">
+                <SelectValue placeholder="Mover para…" />
+              </SelectTrigger>
+              <SelectContent>
+                {(stages ?? []).map((s) => (
+                  <SelectItem key={s.codigo} value={s.codigo}>
+                    {s.nome}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button
+              size="sm"
+              className="h-8 gap-1 text-xs"
+              disabled={!destino || avancar.isPending || destino === atual?.codigo}
+              onClick={() => avancar.mutate(destino)}
+            >
+              {avancar.isPending ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <ArrowRight className="h-3.5 w-3.5" />
+              )}
+              Mover
+            </Button>
+          </div>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
       <CardContent className="space-y-4 p-4">
         <div className="flex items-center gap-2.5 rounded-xl border border-border/60 bg-gradient-to-r from-primary/5 to-transparent p-3">
           <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary/80 to-primary/50 text-xs font-semibold text-primary-foreground shadow-sm">
