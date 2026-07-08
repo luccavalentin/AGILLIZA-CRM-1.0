@@ -260,7 +260,7 @@ function Pagina() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-4 p-4 md:p-6">
+    <div className="mx-auto w-full max-w-[1600px] space-y-4 p-4 md:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <FolderOpen className="h-6 w-6 text-primary" />

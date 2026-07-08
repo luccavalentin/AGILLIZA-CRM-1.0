@@ -226,7 +226,7 @@ function Pagina() {
   const multiBanco = bancosEnviados.length > 1;
 
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-4 p-4 md:p-6">
+    <div className="mx-auto w-full max-w-[1600px] space-y-4 p-4 md:p-6">
       <Button asChild variant="ghost" size="sm" className="-ml-2 text-muted-foreground hover:text-foreground">
         <Link to="/operacional/propostas">
           <ArrowLeft className="mr-1 h-4 w-4" /> Voltar para propostas

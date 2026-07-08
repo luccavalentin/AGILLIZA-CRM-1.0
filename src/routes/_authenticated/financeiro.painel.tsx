@@ -46,7 +46,7 @@ function Pagina() {
   const periodoLabel = de || ate ? "no período" : "30d";
 
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-6 p-4 md:p-6">
+    <div className="mx-auto w-full max-w-[1600px] space-y-6 p-4 md:p-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold text-foreground">Painel financeiro</h1>
