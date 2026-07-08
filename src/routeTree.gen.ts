@@ -58,7 +58,6 @@ import { Route as AuthenticatedOperacionalSimulacoesRouteImport } from './routes
 import { Route as AuthenticatedOperacionalPropostasRouteImport } from './routes/_authenticated/operacional.propostas'
 import { Route as AuthenticatedOperacionalPainelRouteImport } from './routes/_authenticated/operacional.painel'
 import { Route as AuthenticatedOperacionalDemandasRouteImport } from './routes/_authenticated/operacional.demandas'
-import { Route as AuthenticatedOperacionalContratosRouteImport } from './routes/_authenticated/operacional.contratos'
 import { Route as AuthenticatedFormulariosBancoRouteImport } from './routes/_authenticated/formularios.$banco'
 import { Route as AuthenticatedFinanceiroPainelRouteImport } from './routes/_authenticated/financeiro.painel'
 import { Route as AuthenticatedFinanceiroFluxoDeCaixaRouteImport } from './routes/_authenticated/financeiro.fluxo-de-caixa'
@@ -372,12 +371,6 @@ const AuthenticatedOperacionalDemandasRoute =
     path: '/operacional/demandas',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedOperacionalContratosRoute =
-  AuthenticatedOperacionalContratosRouteImport.update({
-    id: '/operacional/contratos',
-    path: '/operacional/contratos',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
 const AuthenticatedFormulariosBancoRoute =
   AuthenticatedFormulariosBancoRouteImport.update({
     id: '/$banco',
@@ -673,7 +666,6 @@ export interface FileRoutesByFullPath {
   '/financeiro/fluxo-de-caixa': typeof AuthenticatedFinanceiroFluxoDeCaixaRoute
   '/financeiro/painel': typeof AuthenticatedFinanceiroPainelRoute
   '/formularios/$banco': typeof AuthenticatedFormulariosBancoRoute
-  '/operacional/contratos': typeof AuthenticatedOperacionalContratosRoute
   '/operacional/demandas': typeof AuthenticatedOperacionalDemandasRoute
   '/operacional/painel': typeof AuthenticatedOperacionalPainelRoute
   '/operacional/propostas': typeof AuthenticatedOperacionalPropostasRoute
@@ -763,7 +755,6 @@ export interface FileRoutesByTo {
   '/financeiro/fluxo-de-caixa': typeof AuthenticatedFinanceiroFluxoDeCaixaRoute
   '/financeiro/painel': typeof AuthenticatedFinanceiroPainelRoute
   '/formularios/$banco': typeof AuthenticatedFormulariosBancoRoute
-  '/operacional/contratos': typeof AuthenticatedOperacionalContratosRoute
   '/operacional/demandas': typeof AuthenticatedOperacionalDemandasRoute
   '/operacional/painel': typeof AuthenticatedOperacionalPainelRoute
   '/operacional/propostas': typeof AuthenticatedOperacionalPropostasRoute
@@ -857,7 +848,6 @@ export interface FileRoutesById {
   '/_authenticated/financeiro/fluxo-de-caixa': typeof AuthenticatedFinanceiroFluxoDeCaixaRoute
   '/_authenticated/financeiro/painel': typeof AuthenticatedFinanceiroPainelRoute
   '/_authenticated/formularios/$banco': typeof AuthenticatedFormulariosBancoRoute
-  '/_authenticated/operacional/contratos': typeof AuthenticatedOperacionalContratosRoute
   '/_authenticated/operacional/demandas': typeof AuthenticatedOperacionalDemandasRoute
   '/_authenticated/operacional/painel': typeof AuthenticatedOperacionalPainelRoute
   '/_authenticated/operacional/propostas': typeof AuthenticatedOperacionalPropostasRoute
@@ -951,7 +941,6 @@ export interface FileRouteTypes {
     | '/financeiro/fluxo-de-caixa'
     | '/financeiro/painel'
     | '/formularios/$banco'
-    | '/operacional/contratos'
     | '/operacional/demandas'
     | '/operacional/painel'
     | '/operacional/propostas'
@@ -1041,7 +1030,6 @@ export interface FileRouteTypes {
     | '/financeiro/fluxo-de-caixa'
     | '/financeiro/painel'
     | '/formularios/$banco'
-    | '/operacional/contratos'
     | '/operacional/demandas'
     | '/operacional/painel'
     | '/operacional/propostas'
@@ -1134,7 +1122,6 @@ export interface FileRouteTypes {
     | '/_authenticated/financeiro/fluxo-de-caixa'
     | '/_authenticated/financeiro/painel'
     | '/_authenticated/formularios/$banco'
-    | '/_authenticated/operacional/contratos'
     | '/_authenticated/operacional/demandas'
     | '/_authenticated/operacional/painel'
     | '/_authenticated/operacional/propostas'
@@ -1529,13 +1516,6 @@ declare module '@tanstack/react-router' {
       path: '/operacional/demandas'
       fullPath: '/operacional/demandas'
       preLoaderRoute: typeof AuthenticatedOperacionalDemandasRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/operacional/contratos': {
-      id: '/_authenticated/operacional/contratos'
-      path: '/operacional/contratos'
-      fullPath: '/operacional/contratos'
-      preLoaderRoute: typeof AuthenticatedOperacionalContratosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/formularios/$banco': {
@@ -1938,7 +1918,6 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedFinanceiroContasAReceberRoute: typeof AuthenticatedFinanceiroContasAReceberRoute
   AuthenticatedFinanceiroFluxoDeCaixaRoute: typeof AuthenticatedFinanceiroFluxoDeCaixaRoute
   AuthenticatedFinanceiroPainelRoute: typeof AuthenticatedFinanceiroPainelRoute
-  AuthenticatedOperacionalContratosRoute: typeof AuthenticatedOperacionalContratosRoute
   AuthenticatedOperacionalDemandasRoute: typeof AuthenticatedOperacionalDemandasRoute
   AuthenticatedOperacionalPainelRoute: typeof AuthenticatedOperacionalPainelRoute
   AuthenticatedOperacionalPropostasRoute: typeof AuthenticatedOperacionalPropostasRoute
@@ -1999,8 +1978,6 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedFinanceiroFluxoDeCaixaRoute:
     AuthenticatedFinanceiroFluxoDeCaixaRoute,
   AuthenticatedFinanceiroPainelRoute: AuthenticatedFinanceiroPainelRoute,
-  AuthenticatedOperacionalContratosRoute:
-    AuthenticatedOperacionalContratosRoute,
   AuthenticatedOperacionalDemandasRoute: AuthenticatedOperacionalDemandasRoute,
   AuthenticatedOperacionalPainelRoute: AuthenticatedOperacionalPainelRoute,
   AuthenticatedOperacionalPropostasRoute:

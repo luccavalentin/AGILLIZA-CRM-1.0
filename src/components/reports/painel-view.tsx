@@ -33,7 +33,7 @@ const PERIODOS: Periodo[] = ["hoje", "7d", "15d", "30d", "mes", "mes_anterior", 
 function linkParaMetrica(label: string): string | undefined {
   const l = label.toLowerCase();
   if (l.includes("taxa de aprova")) return "/relatorios/propostas";
-  if (l.includes("contrato")) return "/operacional/contratos";
+  if (l.includes("contrato")) return "/operacional/propostas";
   if (l.includes("simula")) return "/operacional/simulacoes";
   if (l.includes("tarefa")) return "/operacional/tarefas";
   if (l.includes("demanda") || l.includes("sla")) return "/operacional/demandas";
