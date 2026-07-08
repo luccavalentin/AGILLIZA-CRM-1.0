@@ -176,7 +176,8 @@ export function ChatClienteConversa({ clienteId, info }: { clienteId: string; in
 
   useEffect(() => {
     if (!buscaAberta) fimRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [mensagens?.length, buscaAberta]);
+  }, [mensagens?.length, buscaAberta, peerTyping]);
+
 
   const enviar = useMutation({
     mutationFn: (payload: { mensagem: string; responde_a?: string }) =>
