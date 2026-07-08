@@ -145,19 +145,18 @@ export function DocumentosChecklist({ clienteId }: { clienteId: string }) {
     });
   }
 
-  function addCustom(label: string) {
+  function addCustom(label: string, cat: Categoria = "outros") {
     const texto = label.trim();
     if (!texto) return;
     setCheck((prev) => {
       const c = Array.isArray(prev.__custom) ? prev.__custom : [];
       const next = {
         ...prev,
-        __custom: [...c, { id: crypto.randomUUID(), label: texto }],
+        __custom: [...c, { id: crypto.randomUUID(), label: texto, cat }],
       };
       persistir(next);
       return next;
     });
-    setNovoItem("");
   }
 
   function removeCustom(id: string) {
