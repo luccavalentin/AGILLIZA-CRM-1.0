@@ -266,11 +266,7 @@ export function ChatCliente({ altura = "h-[62dvh]" }: { altura?: string }) {
         className="flex items-end gap-1.5 border-t border-border/60 bg-background/95 p-3 backdrop-blur supports-[backdrop-filter]:bg-background/80"
         onSubmit={(e) => {
           e.preventDefault();
-          const v = texto.trim();
-          if (v) {
-            notifyStop();
-            enviar.mutate(v);
-          }
+          submeter();
         }}
       >
         <Button
