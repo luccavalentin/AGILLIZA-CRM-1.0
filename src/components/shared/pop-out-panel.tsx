@@ -175,28 +175,31 @@ export function FloatingWindow({
       aria-modal={mobileExpanded}
       style={style}
       className={cn(
-        "fixed z-[60] flex max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden rounded-2xl border border-border/70 bg-background shadow-2xl ring-1 ring-black/5 backdrop-blur supports-[backdrop-filter]:bg-background/95",
+        "fixed z-[60] flex max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden rounded-2xl border bg-background shadow-2xl backdrop-blur supports-[backdrop-filter]:bg-background/95 transition-shadow",
         !isMobile && "min-w-[18rem]",
-        minimized ? "h-auto" : mobileExpanded ? "" : "min-h-[20rem] resize",
+        minimized
+          ? "h-auto border-primary/60 ring-2 ring-primary/40 shadow-[0_12px_40px_-12px_hsl(var(--primary)/0.55)]"
+          : "border-primary/40 ring-1 ring-primary/20",
+        !minimized && (mobileExpanded ? "" : "min-h-[20rem] resize"),
       )}
     >
       <div
         onPointerDown={mobileExpanded ? undefined : startDrag}
         onDoubleClick={() => setMinimized((v) => !v)}
         className={cn(
-          "flex shrink-0 items-center justify-between gap-2 border-b border-border/60 bg-gradient-to-b from-muted/70 to-muted/40 px-3.5 py-2.5 select-none",
+          "flex shrink-0 items-center justify-between gap-2 border-b border-primary/30 bg-gradient-to-r from-primary to-primary/80 px-3.5 py-2.5 text-primary-foreground select-none",
           mobileExpanded ? "cursor-default" : "cursor-grab active:cursor-grabbing",
         )}
       >
         <div className="flex min-w-0 items-center gap-2">
           {!mobileExpanded && (
             <span className="hidden gap-1 sm:flex" aria-hidden>
-              <span className="size-2.5 rounded-full bg-destructive/70" />
-              <span className="size-2.5 rounded-full bg-amber-400/80" />
-              <span className="size-2.5 rounded-full bg-emerald-500/80" />
+              <span className="size-2.5 rounded-full bg-destructive/80" />
+              <span className="size-2.5 rounded-full bg-amber-400/90" />
+              <span className="size-2.5 rounded-full bg-emerald-400/90" />
             </span>
           )}
-          <p className="truncate text-xs font-semibold text-foreground">{title}</p>
+          <p className="truncate text-xs font-semibold text-primary-foreground">{title}</p>
         </div>
         <div className="flex items-center gap-0.5">
           <button
@@ -204,7 +207,7 @@ export function FloatingWindow({
             onClick={() => setMinimized((v) => !v)}
             title={minimized ? "Expandir" : "Minimizar"}
             aria-label={minimized ? "Expandir" : "Minimizar"}
-            className="flex size-7 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            className="flex size-7 items-center justify-center rounded-lg text-primary-foreground/80 transition-colors hover:bg-primary-foreground/15 hover:text-primary-foreground"
           >
             {minimized ? <Maximize2 className="size-3.5" /> : <Minus className="size-3.5" />}
           </button>
@@ -213,7 +216,7 @@ export function FloatingWindow({
             onClick={onClose}
             title="Reacoplar"
             aria-label="Reacoplar"
-            className="flex size-7 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+            className="flex size-7 items-center justify-center rounded-lg text-primary-foreground/80 transition-colors hover:bg-destructive/80 hover:text-destructive-foreground"
           >
             <X className="size-3.5" />
           </button>
