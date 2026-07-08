@@ -345,6 +345,7 @@ export function ClienteForm({
     [],
   );
   const [vinculoSel, setVinculoSel] = useState<Record<string, string>>({});
+  const [criarTipo, setCriarTipo] = useState<TipoVinculo | null>(null);
   const parceiros = useQuery({
     queryKey: ["parceiros-disponiveis"],
     queryFn: () => listarParceiros(),
