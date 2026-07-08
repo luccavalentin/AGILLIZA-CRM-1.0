@@ -146,6 +146,11 @@ export const getPanelDados = createServerFn({ method: "POST" })
     const ateFim = `${ate}T23:59:59`;
     const buckets = construirBuckets(de, ate);
 
+    // Um contrato entra no período pela data de emissão (contrato_emitido_em),
+    // não pela data de criação da proposta (que pode ser de meses antes).
+    const dentroPeriodo = (iso?: string | null) =>
+      !!iso && iso.slice(0, 10) >= de && iso.slice(0, 10) <= ate;
+
     const escopoEq = (q: any, col: string) => (data.escopo === "minha" ? q.eq(col, userId) : q);
 
     if (data.modulo === "visao-geral") {
