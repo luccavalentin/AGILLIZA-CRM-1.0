@@ -508,7 +508,9 @@ function Pagina() {
     setErros({});
     if (financiamentoExcedido) {
       toast.error(
-        `O banco financia no máximo ${Math.round(ltvMax * 100)}% do imóvel (${formatBRL(financiamentoMaximo)}). Aumente a entrada para pelo menos ${formatBRL(entradaMinima)}.`,
+        f.fg_financiar_despesas
+          ? `Financiamento + despesas não pode passar de ${Math.round(ltvMax * 100)}% do imóvel (${formatBRL(financiamentoMaximo)}). Aumente a entrada para pelo menos ${formatBRL(entradaMinimaEfetiva)}.`
+          : `O banco financia no máximo ${Math.round(ltvMax * 100)}% do imóvel (${formatBRL(financiamentoMaximo)}). Aumente a entrada para pelo menos ${formatBRL(entradaMinima)}.`,
       );
       return;
     }
