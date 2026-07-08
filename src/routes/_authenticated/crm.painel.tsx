@@ -441,18 +441,32 @@ function Pagina() {
                               </div>
                             )}
                             {stage.codigo === "contrato_emitido" && (
-                              <div className="flex items-center gap-2 border-t border-border/70 px-2.5 py-2">
-                                <CalendarCheck className="size-3.5 shrink-0 text-primary" />
-                                <label className="shrink-0 text-[11px] font-medium text-muted-foreground">
-                                  Emitido em
-                                </label>
-                                <Input
-                                  type="date"
-                                  value={c.contrato_emitido_em ?? ""}
-                                  onChange={(e) => salvarDataContrato(c.id, e.target.value)}
-                                  className="h-7 flex-1 px-2 text-xs"
-                                  title="Data de emissão do contrato (definida por você)"
-                                />
+                              <div className="space-y-2 border-t border-border/70 px-2.5 py-2">
+                                <div className="flex items-center gap-2">
+                                  <CalendarCheck className="size-3.5 shrink-0 text-primary" />
+                                  <label className="shrink-0 text-[11px] font-medium text-muted-foreground">
+                                    Emitido em
+                                  </label>
+                                  <Input
+                                    type="date"
+                                    value={c.contrato_emitido_em ?? ""}
+                                    onChange={(e) => salvarDataContrato(c.id, e.target.value)}
+                                    className="h-7 flex-1 px-2 text-xs"
+                                    title="Data de emissão do contrato (definida por você)"
+                                  />
+                                </div>
+                                {c.contrato_emitido_em && (
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => arquivarContratoEmitido(c.id)}
+                                    className="h-7 w-full gap-1.5 text-xs"
+                                  >
+                                    <Archive className="size-3.5" />
+                                    Arquivar contrato
+                                  </Button>
+                                )}
                               </div>
                             )}
 
