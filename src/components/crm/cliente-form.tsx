@@ -649,6 +649,27 @@ export function ClienteForm({
         </Card>
       )}
 
+      {criarTipo && (
+        <CriarVinculoInline
+          aberto={criarTipo !== null}
+          onOpenChange={(v) => {
+            if (!v) setCriarTipo(null);
+          }}
+          tipoPessoa={TIPO_VINCULO_PESSOA[criarTipo]}
+          rotuloTipo={TIPOS_VINCULO.find((t) => t.valor === criarTipo)?.rotulo ?? ""}
+          onCriado={(id) => {
+            const tipo = criarTipo;
+            if (!tipo) return;
+            setVinculos((prev) =>
+              prev.some((x) => x.parceiro_id === id && x.tipo_vinculo === tipo)
+                ? prev
+                : [...prev, { parceiro_id: id, tipo_vinculo: tipo }],
+            );
+            parceiros.refetch();
+          }}
+        />
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Acesso ao Portal do Cliente</CardTitle>
