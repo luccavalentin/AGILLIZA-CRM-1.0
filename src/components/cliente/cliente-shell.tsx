@@ -55,8 +55,7 @@ const NAV_CLIENTE: { id: string; label: string; items: NavItemCliente[] }[] = [
       {
         label: "Conversar",
         icon: MessageCircle,
-        to: "/cliente/acompanhar-minha-proposta",
-        search: { tab: "mensagens" },
+        to: "/cliente/chat",
         chat: true,
       },
     ],
