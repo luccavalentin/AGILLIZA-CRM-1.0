@@ -305,7 +305,7 @@ export function DocumentosGerais() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="todas">Todas as imobiliárias</SelectItem>
-                  <SelectItem value="comercial">{AVULSO_LABEL}</SelectItem>
+                  <SelectItem value="comercial">{SEM_IMOB}</SelectItem>
                   {imobiliariasFiltro.map((i) => (
                     <SelectItem key={i.id} value={i.id}>
                       {titulo(i.nome)}
