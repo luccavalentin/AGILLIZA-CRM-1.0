@@ -225,17 +225,47 @@ export function DocumentosChecklist({ clienteId }: { clienteId: string }) {
     if (hidden.includes(itemKey)) return null;
     const has = temDoc(cat, label);
     const checked = has || check[itemKey] === true;
+    const display = labels[itemKey] ?? label;
+    const editing = editKey === itemKey;
     return (
       <div className="flex items-center gap-3 py-1.5">
         <Checkbox
           checked={checked}
           onCheckedChange={(v) => setManual(itemKey, v === true)}
         />
-        <span className={`flex-1 text-sm ${checked ? "text-foreground" : "text-muted-foreground"}`}>
-          {label}
-        </span>
-        {has && (
+        {editing ? (
+          <Input
+            autoFocus
+            value={editText}
+            onChange={(e) => setEditText(e.target.value)}
+            onBlur={() => saveEdit(itemKey)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                saveEdit(itemKey);
+              } else if (e.key === "Escape") {
+                setEditKey(null);
+              }
+            }}
+            className="h-8 flex-1"
+          />
+        ) : (
+          <span className={`flex-1 text-sm ${checked ? "text-foreground" : "text-muted-foreground"}`}>
+            {display}
+          </span>
+        )}
+        {has && !editing && (
           <span className="rounded bg-success/10 px-1.5 py-0.5 text-xs text-success">enviado</span>
+        )}
+        {!editing && (
+          <button
+            type="button"
+            onClick={() => startEdit(itemKey, display)}
+            aria-label="Editar item"
+            className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          >
+            <Pencil className="size-3.5" />
+          </button>
         )}
         <label className="inline-flex cursor-pointer items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-foreground hover:bg-accent">
           {subindo === label ? (
