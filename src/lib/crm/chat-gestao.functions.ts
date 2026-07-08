@@ -248,7 +248,9 @@ export const overviewGestaoChat = createServerFn({ method: "GET" })
           .in("cliente_id", data.cliente_ids),
         supabase
           .from("crm_chat_meta")
-          .select("cliente_id, sla_atualizacao_horas, lembrete_em, lembrete_nota")
+          .select(
+            "cliente_id, sla_atualizacao_horas, lembrete_em, lembrete_nota, arquivado, arquivado_em",
+          )
           .in("cliente_id", data.cliente_ids),
       ]);
 
