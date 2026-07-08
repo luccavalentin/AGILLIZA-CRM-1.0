@@ -136,7 +136,9 @@ export const getChatMeta = createServerFn({ method: "GET" })
     const { supabase } = context;
     const { data: row, error } = await supabase
       .from("crm_chat_meta")
-      .select("cliente_id, sla_atualizacao_horas, lembrete_em, lembrete_nota")
+      .select(
+        "cliente_id, sla_atualizacao_horas, lembrete_em, lembrete_nota, arquivado, arquivado_em",
+      )
       .eq("cliente_id", data.cliente_id)
       .maybeSingle();
     if (error) throw new Error(error.message);
@@ -146,8 +148,34 @@ export const getChatMeta = createServerFn({ method: "GET" })
         sla_atualizacao_horas: 24,
         lembrete_em: null,
         lembrete_nota: null,
+        arquivado: false,
+        arquivado_em: null,
       }
     );
+  });
+
+/** Arquiva ou desarquiva uma conversa. Não apaga o histórico. */
+export const definirArquivamentoConversa = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { cliente_id: string; arquivado: boolean }) =>
+    z
+      .object({ cliente_id: z.string().uuid(), arquivado: z.boolean() })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const corr = await correspondenteDoUsuario(supabase, userId);
+    const { error } = await supabase.from("crm_chat_meta").upsert(
+      {
+        cliente_id: data.cliente_id,
+        correspondente_id: corr,
+        arquivado: data.arquivado,
+        arquivado_em: data.arquivado ? new Date().toISOString() : null,
+      },
+      { onConflict: "cliente_id" },
+    );
+    if (error) throw new Error(error.message);
+    return { ok: true, arquivado: data.arquivado };
   });
 
 export const salvarChatMeta = createServerFn({ method: "POST" })
