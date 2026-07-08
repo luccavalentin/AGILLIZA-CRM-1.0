@@ -8,6 +8,7 @@ import { Logo } from "@/components/brand/Logo";
 import symbolLight from "@/assets/brand/agilliza-symbol-oficial-light.png";
 import { SidebarNav, SidebarRail } from "./sidebar-nav";
 import { Topbar, type ShellUser } from "./topbar";
+import { ChatAlertWatcher } from "@/components/shared/chat-alert-watcher";
 import type { NavGroup } from "./nav-config";
 
 const STORAGE_KEY = "agilliza-sidebar-collapsed";
@@ -63,6 +64,7 @@ export function AppShell({
 
   return (
     <TooltipProvider delayDuration={200}>
+      <ChatAlertWatcher />
       <a
         href="#conteudo-principal"
         className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-primary-foreground"

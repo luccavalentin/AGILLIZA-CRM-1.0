@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Bell, CheckCheck, Trash2 } from "lucide-react";
@@ -17,6 +17,8 @@ import {
   limparNotificacoes,
   type Notificacao,
 } from "@/lib/notificacoes.functions";
+import { playNotificationSound } from "@/lib/chat-sound";
+import { categoriaDeTipo, tipoAtivo, tipoComSom } from "@/lib/notification-prefs";
 
 function formatarData(iso: string): string {
   const d = new Date(iso);
@@ -41,6 +43,27 @@ export function NotificationsBell({ userId }: NotificationsBellProps) {
     queryKey: ["notificacoes"],
     queryFn: () => listarNotificacoes(),
   });
+
+  // Toca som para notificações novas conforme as preferências por tipo.
+  // (Mensagens de chat têm alerta próprio e são ignoradas aqui p/ evitar duplicidade.)
+  const notifVistas = useRef<Set<string> | null>(null);
+  useEffect(() => {
+    const itens = data?.itens ?? [];
+    if (notifVistas.current === null) {
+      notifVistas.current = new Set(itens.map((n) => n.id));
+      return;
+    }
+    for (const n of itens) {
+      if (notifVistas.current.has(n.id)) continue;
+      notifVistas.current.add(n.id);
+      if (n.lida) continue;
+      const cat = categoriaDeTipo(n.tipo);
+      if (cat === "chat") continue;
+      if (tipoAtivo(cat) && tipoComSom(cat)) playNotificationSound();
+    }
+  }, [data?.itens]);
+
+
 
   // Subscription realtime: revalida a lista a cada novo evento.
   useEffect(() => {

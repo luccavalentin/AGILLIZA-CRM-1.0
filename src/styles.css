@@ -389,6 +389,23 @@ div[style*="Edit with Lovable"],
   animation: piscar-aviso 1s ease-in-out infinite;
 }
 
+/* Pisca o item de menu do chat quando chega mensagem nova. */
+@keyframes piscar-chat {
+  0%,
+  100% {
+    background-color: color-mix(in srgb, var(--sidebar-primary) 18%, transparent);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--sidebar-primary) 50%, transparent);
+  }
+  50% {
+    background-color: color-mix(in srgb, var(--sidebar-primary) 45%, transparent);
+    box-shadow: 0 0 0 5px color-mix(in srgb, var(--sidebar-primary) 0%, transparent);
+  }
+}
+
+@utility animate-piscar-chat {
+  animation: piscar-chat 1.1s ease-in-out infinite;
+}
+
 /* ============================= DPS ============================= */
 /* Documento da Declaração Pessoal de Saúde (tela + impressão). */
 .dps-screen {

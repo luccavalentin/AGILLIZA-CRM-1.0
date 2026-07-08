@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { Menu, PanelLeftClose, PanelLeft, LogOut, UserRound, Lock, Bell } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
 import { Button } from "@/components/ui/button";
@@ -51,7 +51,6 @@ export function Topbar({
   onToggleCollapse,
   onSignOut,
 }: TopbarProps) {
-  const navigate = useNavigate();
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-2 border-b border-border bg-background/85 px-3 backdrop-blur supports-[backdrop-filter]:bg-background/70 sm:px-4">
@@ -128,8 +127,10 @@ export function Topbar({
                   <Lock className="mr-2 h-4 w-4" /> Segurança
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate({ to: "/admin/notificacoes" as string })}>
-                <Bell className="mr-2 h-4 w-4" /> Notificações
+              <DropdownMenuItem asChild>
+                <Link to={"/conta/notificacoes" as string}>
+                  <Bell className="mr-2 h-4 w-4" /> Notificações
+                </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem

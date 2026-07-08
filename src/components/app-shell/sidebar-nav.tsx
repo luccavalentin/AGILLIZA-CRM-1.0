@@ -1,9 +1,13 @@
+import { useEffect } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useChatFlash, stopFlash } from "@/components/shared/chat-alert-store";
 import type { NavGroup, NavItem } from "./nav-config";
+
+const ROTA_CHAT = "/crm/chat";
 
 function useActivePath() {
   return useRouterState({ select: (s) => s.location.pathname });
@@ -112,17 +116,29 @@ function SidebarLink({
   onNavigate?: () => void;
 }) {
   const Icon = item.icon;
+  const flash = useChatFlash();
+  const isChat = item.to === ROTA_CHAT;
+  const piscar = isChat && flash && !active;
+
+  useEffect(() => {
+    if (isChat && active) stopFlash();
+  }, [isChat, active]);
+
   return (
     <Link
       to={item.to as string}
       search={(item.search ?? undefined) as never}
-      onClick={onNavigate}
+      onClick={() => {
+        if (isChat) stopFlash();
+        onNavigate?.();
+      }}
       aria-current={active ? "page" : undefined}
       className={cn(
         "group relative flex min-h-10 items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
         active
           ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
           : "text-sidebar-foreground hover:bg-white/15 hover:text-sidebar-foreground",
+        piscar && "animate-piscar-chat",
       )}
     >
       {active && (
@@ -135,7 +151,10 @@ function SidebarLink({
         )}
       />
       <span className="truncate">{item.label}</span>
-      {item.badge && (
+      {piscar && (
+        <span className="ml-auto h-2 w-2 shrink-0 animate-pulse rounded-full bg-sidebar-primary" />
+      )}
+      {item.badge && !piscar && (
         <span className="ml-auto rounded-full bg-sidebar-primary px-1.5 text-[10px] font-semibold text-sidebar-primary-foreground">
           {item.badge}
         </span>
@@ -188,6 +207,7 @@ export function SidebarRail({ nav, onNavigate }: SidebarProps) {
   const pathname = useActivePath();
   const pasta = useActivePasta();
   const melhor = melhorDestino(nav, pathname);
+  const flash = useChatFlash();
   const itens = nav.flatMap((g) => g.items);
 
   return (
@@ -196,12 +216,17 @@ export function SidebarRail({ nav, onNavigate }: SidebarProps) {
         const Icon = item.icon;
         const active = itemAtivo(item, melhor, pasta);
         const to = item.to ?? item.children?.[0]?.to;
+        const isChat = to === ROTA_CHAT || item.to === ROTA_CHAT;
+        const piscar = isChat && flash && !active;
         return (
           <Tooltip key={item.label}>
             <TooltipTrigger asChild>
               <Link
                 to={to as string}
-                onClick={onNavigate}
+                onClick={() => {
+                  if (isChat) stopFlash();
+                  onNavigate?.();
+                }}
                 aria-current={active ? "page" : undefined}
                 aria-label={item.label}
                 className={cn(
@@ -209,12 +234,16 @@ export function SidebarRail({ nav, onNavigate }: SidebarProps) {
                   active
                     ? "bg-sidebar-accent text-sidebar-accent-foreground"
                     : "text-sidebar-primary hover:bg-white/15 hover:text-sidebar-foreground",
+                  piscar && "animate-piscar-chat",
                 )}
               >
                 {active && (
                   <span className="absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-full bg-sidebar-primary" />
                 )}
                 <Icon className="h-[18px] w-[18px]" />
+                {piscar && (
+                  <span className="absolute right-1 top-1 h-2 w-2 animate-pulse rounded-full bg-sidebar-primary" />
+                )}
               </Link>
             </TooltipTrigger>
             <TooltipContent side="right">{item.label}</TooltipContent>
