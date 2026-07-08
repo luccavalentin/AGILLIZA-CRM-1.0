@@ -51,6 +51,16 @@ export function DetalheBancoDialog({
   const detalhe = useMemo(() => extrairDetalheBanco(banco?.raw_response), [banco]);
   const temDetalhe = !!detalhe && detalhe.parcelas.length > 0;
 
+  // Alerta quando a simulação pediu para financiar despesas mas ESTE banco não
+  // as incorporou ao financiamento (limite de LTV/política do banco). Sem isto,
+  // o valor menor deste banco parece um erro em vez de uma decisão da instituição.
+  const despesasSolicitadas =
+    Boolean(simulacao?.fg_financiar_despesas) &&
+    Number(simulacao?.valor_despesas_financiadas ?? 0) > 0;
+  const despesasFinanciadasBanco = Number(detalhe?.despesasFinanciadas ?? 0);
+  const bancoNaoFinanciouDespesas =
+    despesasSolicitadas && !(despesasFinanciadasBanco > 0);
+
   function baixar() {
     if (proposta) {
       baixarPropostaDetalhadaPDF({ proposta, bancos: [banco] });
