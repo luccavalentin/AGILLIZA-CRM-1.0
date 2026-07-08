@@ -838,7 +838,17 @@ function Pagina() {
             <label className="flex items-center gap-2 py-2 text-sm text-foreground">
               <Checkbox
                 checked={!!f.fg_financiar_despesas}
-                onCheckedChange={(v) => set("fg_financiar_despesas", v === true)}
+                onCheckedChange={(v) => {
+                  const marcado = v === true;
+                  set("fg_financiar_despesas", marcado);
+                  if (marcado) {
+                    setPctDespesas(5);
+                    set(
+                      "valor_despesas_financiadas",
+                      Math.round((f.valor_imovel || 0) * 0.05 * 100) / 100,
+                    );
+                  }
+                }}
               />
               Incluir as despesas no valor financiado
             </label>
