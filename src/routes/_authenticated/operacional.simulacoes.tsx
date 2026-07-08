@@ -153,10 +153,34 @@ function Pagina() {
     }
   }
 
-  async function handleEnviarProposta(id: string) {
+  async function handleEnviarProposta(id: string, numero: string) {
+    setEnvio({ id, numero, bancos: [] });
+    setBancoSelecionado(null);
+    setEnvioCarregando(true);
     try {
-      const res = await criar({ data: { simulacao_id: id } });
+      const dados = await obter({ data: { id } });
+      const simulados = (dados.bancos ?? []).filter(
+        (b: any) => b.status_banco === "simulada" && b.banco_id,
+      );
+      setEnvio({ id, numero, bancos: simulados });
+      if (simulados.length === 1) setBancoSelecionado(simulados[0].banco_id);
+    } catch {
+      toast.error("Não foi possível carregar os bancos da simulação.");
+      setEnvio(null);
+    } finally {
+      setEnvioCarregando(false);
+    }
+  }
+
+  async function confirmarEnvio() {
+    if (!envio || !bancoSelecionado) return;
+    setEnviando(true);
+    try {
+      const res = await criar({
+        data: { simulacao_id: envio.id, banco_id: bancoSelecionado },
+      });
       toast.success(`Proposta ${res.numero_proposta} criada.`);
+      setEnvio(null);
       router.navigate({
         to: "/operacional/propostas/$id",
         params: { id: res.proposta_id },
@@ -164,8 +188,11 @@ function Pagina() {
       });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Não foi possível gerar a proposta.");
+    } finally {
+      setEnviando(false);
     }
   }
+
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-6 p-4 md:p-6">
