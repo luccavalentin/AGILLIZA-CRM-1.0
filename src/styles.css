@@ -358,6 +358,9 @@
   --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
+  --color-chat-them: var(--chat-them);
+  --color-chat-them-foreground: var(--chat-them-foreground);
+  --color-chat-them-border: var(--chat-them-border);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
   --color-success: var(--success);
