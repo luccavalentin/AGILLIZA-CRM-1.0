@@ -288,6 +288,46 @@ function Pagina() {
             </div>
           ) : (
             <>
+              <div className="mb-4 flex flex-wrap items-center gap-x-6 gap-y-2 rounded-lg border border-border bg-muted/30 p-3 text-sm">
+                <span className="text-muted-foreground">
+                  Valor do imóvel:{" "}
+                  <span className="font-medium text-foreground tabular-nums">
+                    {formatBRL(s.valor_imovel)}
+                  </span>
+                </span>
+                <span className="text-muted-foreground">
+                  Valor financiado:{" "}
+                  <span className="font-medium text-foreground tabular-nums">
+                    {formatBRL(s.valor_financiamento)}
+                  </span>
+                </span>
+                <span className="text-muted-foreground">
+                  Financiar despesas:{" "}
+                  <span className="font-medium text-foreground">
+                    {s.fg_financiar_despesas ? "Sim" : "Não"}
+                  </span>
+                </span>
+                {s.fg_financiar_despesas && (
+                  <>
+                    <span className="text-muted-foreground">
+                      Despesas financiadas:{" "}
+                      <span className="font-medium text-foreground tabular-nums">
+                        {formatBRL(s.valor_despesas_financiadas)}
+                      </span>
+                    </span>
+                    <span className="text-muted-foreground">
+                      Total financiado:{" "}
+                      <span className="font-medium text-foreground tabular-nums">
+                        {formatBRL(
+                          (Number(s.valor_financiamento) || 0) +
+                            (Number(s.valor_despesas_financiadas) || 0),
+                        )}
+                      </span>
+                    </span>
+                  </>
+                )}
+              </div>
+
               {/* Mobile: cartões */}
               <div className="grid gap-3 lg:hidden">
                 {bancos.map((b: any) => (
@@ -471,6 +511,25 @@ function Pagina() {
               <Item termo="Valor do imóvel" desc={formatBRL(s.valor_imovel)} />
               <Item termo="Valor financiado" desc={formatBRL(s.valor_financiamento)} />
               <Item termo="Entrada" desc={formatBRL(s.valor_entrada)} />
+              <Item
+                termo="Financiar despesas"
+                desc={s.fg_financiar_despesas ? "Sim" : "Não"}
+              />
+              {s.fg_financiar_despesas && (
+                <>
+                  <Item
+                    termo="Despesas financiadas"
+                    desc={formatBRL(s.valor_despesas_financiadas)}
+                  />
+                  <Item
+                    termo="Total financiado"
+                    desc={formatBRL(
+                      (Number(s.valor_financiamento) || 0) +
+                        (Number(s.valor_despesas_financiadas) || 0),
+                    )}
+                  />
+                </>
+              )}
               <Item termo="Prazo" desc={s.prazo ? `${s.prazo} meses` : "—"} />
               <Item termo="Sistema" desc={s.sistema_amortizacao === "P" ? "PRICE" : "SAC"} />
               <Item termo="Utiliza FGTS" desc={s.utiliza_fgts === "S" ? "Sim" : "Não"} />
