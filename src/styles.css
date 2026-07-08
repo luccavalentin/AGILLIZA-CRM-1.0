@@ -395,6 +395,9 @@
   --color-sidebar-ring: var(--sidebar-ring);
 
   --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+  /* Manual da marca: família única Inter. Mono usa Inter com dígitos tabulares. */
+  --font-mono: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
 }
 
 @layer base {
