@@ -51,6 +51,8 @@ import {
   fecharChatFlutuante,
 } from "@/components/shared/floating-chat-store";
 import { useIncomingChatSound } from "@/hooks/use-chat-sound";
+import { useChatTyping } from "@/hooks/use-chat-typing";
+import { TypingIndicator } from "@/components/shared/typing-indicator";
 import { supabase } from "@/integrations/supabase/client";
 import {
   listarChatCliente,
