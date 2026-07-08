@@ -306,13 +306,15 @@ function Pagina() {
 
 
   const contadores = useMemo(() => {
-    const lista = conversas ?? [];
+    const lista = (conversas ?? []).filter((c) => !arquivada(c.cliente_id));
     return {
       nao_lidas: lista.filter((c) => c.nao_lidas > 0).length,
       sla: lista.filter((c) =>
         slaEstourado(c.cliente_id, c.ultimo_remetente, c.ultima_em),
       ).length,
       lembrete: lista.filter((c) => lembreteDevido(c.cliente_id)).length,
+      arquivadas: (conversas ?? []).filter((c) => arquivada(c.cliente_id))
+        .length,
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversas, metasCliente]);
@@ -322,6 +324,7 @@ function Pagina() {
     { id: "nao_lidas", label: "Não lidas", count: contadores.nao_lidas },
     { id: "sla", label: "SLA estourado", count: contadores.sla },
     { id: "lembrete", label: "Lembretes", count: contadores.lembrete },
+    { id: "arquivadas", label: "Arquivadas", count: contadores.arquivadas },
   ];
 
   return (
