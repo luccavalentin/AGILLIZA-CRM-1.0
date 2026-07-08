@@ -381,6 +381,47 @@ function Pagina() {
           })}
         </div>
       )}
+
+      <Dialog open={!!dialogStage} onOpenChange={(o) => !o && setDialogStage(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Users className="size-4 text-primary" />
+              {stageDialog?.nome ?? "Etapa"}
+            </DialogTitle>
+            <DialogDescription>
+              {stageDialog?.clientes.length ?? 0} cliente(s) nesta etapa. Clique para abrir o
+              cadastro.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[60vh] space-y-2 overflow-y-auto pr-1">
+            {(stageDialog?.clientes ?? []).map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => {
+                  setDialogStage(null);
+                  navigate({ to: "/crm/clientes/$id", params: { id: c.id } });
+                }}
+                className="group flex w-full items-center gap-2.5 rounded-lg border border-border bg-background p-2.5 text-left transition-all hover:border-primary/50 hover:bg-primary/5 hover:shadow-sm"
+              >
+                <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary transition-all group-hover:bg-primary group-hover:text-primary-foreground">
+                  {c.nome.trim().charAt(0).toUpperCase()}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-medium text-foreground transition-colors group-hover:text-primary">
+                    {c.nome}
+                  </span>
+                  <span className="block font-mono text-[11px] text-muted-foreground">
+                    {c.numero_cliente}
+                  </span>
+                </span>
+                <ChevronRight className="size-4 shrink-0 text-primary opacity-0 transition-opacity group-hover:opacity-100" />
+              </button>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
