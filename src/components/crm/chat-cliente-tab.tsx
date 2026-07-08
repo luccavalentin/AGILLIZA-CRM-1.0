@@ -60,13 +60,17 @@ import {
   editarChatCliente,
   excluirChatCliente,
   marcarChatClienteLido,
+  obterContextoChatCliente,
   type ChatMensagem,
 } from "@/lib/crm/chat-cliente.functions";
 import {
   getRespostasRapidas,
   setRespostasRapidas,
   subscribeRespostasRapidas,
+  aplicarVariaveis,
+  VARIAVEIS_RESPOSTA,
   type RespostaRapida,
+  type ContextoResposta,
 } from "@/lib/crm/respostas-rapidas";
 import { getMinhaSessao } from "@/lib/session.functions";
 
