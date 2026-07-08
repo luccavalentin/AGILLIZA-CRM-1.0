@@ -104,7 +104,7 @@ export function PipelineTimeline({
             i > 0 ? (
               <span
                 className={cn(
-                  "absolute right-1/2 top-[18px] h-0.5 w-full -translate-y-1/2 transition-colors duration-500",
+                  "pointer-events-none absolute right-1/2 top-[18px] h-0.5 w-full -translate-y-1/2 transition-colors duration-500",
                   alcancada ? "bg-gradient-to-r from-success to-primary" : "bg-border",
                 )}
                 aria-hidden
