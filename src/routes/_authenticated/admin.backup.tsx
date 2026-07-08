@@ -1,18 +1,20 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   DatabaseBackup,
-  Play,
   RefreshCw,
   HardDrive,
   FileSpreadsheet,
   FolderArchive,
   Trash2,
+  Settings,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -34,15 +36,25 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import {
   listarBackups,
-  criarBackup,
   excluirBackup,
   exportarBackupCompleto,
+  obterConfigBackup,
+  salvarConfigBackup,
 } from "@/lib/admin/backup.functions";
 import { montarInventarioDocumentos } from "@/lib/admin/backup-documentos.functions";
 import { baixarDocumentosZip, type ProgressoBackup } from "@/lib/admin/backup-documentos-zip";
+
 
 
 export const Route = createFileRoute("/_authenticated/admin/backup")({
