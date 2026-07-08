@@ -240,12 +240,12 @@ export function MetricList({
                 {i.display ?? i.valor.toLocaleString("pt-BR")}
               </span>
             </div>
-            <div className="mt-1 h-1 w-full overflow-hidden rounded-full bg-muted">
+            <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-muted">
               <div
-                className="h-full rounded-full"
+                className="h-full rounded-full transition-all duration-500"
                 style={{
                   width: `${(i.valor / max) * 100}%`,
-                  backgroundColor: cor ?? "hsl(var(--primary) / 0.7)",
+                  backgroundColor: cor ?? "color-mix(in oklab, var(--primary) 75%, transparent)",
                 }}
               />
             </div>
