@@ -211,7 +211,9 @@ export const salvarChatMeta = createServerFn({ method: "POST" })
         },
         { onConflict: "cliente_id" },
       )
-      .select("cliente_id, sla_atualizacao_horas, lembrete_em, lembrete_nota")
+      .select(
+        "cliente_id, sla_atualizacao_horas, lembrete_em, lembrete_nota, arquivado, arquivado_em",
+      )
       .single();
     if (error) throw new Error(error.message);
     return row as ChatMeta;
