@@ -372,17 +372,16 @@ export const navInterno: NavGroup[] = [
             to: "/admin/auditoria",
             perm: { modulo: "admin.auditoria" },
           },
+          {
+            label: "Notificações",
+            icon: Bell,
+            to: "/admin/notificacoes",
+            perm: { modulo: "admin.notificacoes" },
+          },
         ],
       },
 
 
-
-      {
-        label: "Notificações",
-        icon: Bell,
-        to: "/admin/notificacoes",
-        perm: { modulo: "admin.notificacoes" },
-      },
       {
         label: "Parâmetros",
         icon: Building2,
