@@ -2,7 +2,7 @@ import { useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Sun, Moon, Monitor, Download, Trash2 } from "lucide-react";
+import { Sun, Moon, Monitor, Download, Trash2, UserRound } from "lucide-react";
 import { setTheme } from "@/lib/theme";
 import {
   clienteBaixarMeusDados,
@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import { ChatSoundSetting } from "@/components/shared/chat-sound-setting";
+import { CabecalhoPagina } from "@/components/cliente/cabecalho-pagina";
 
 export const Route = createFileRoute("/cliente/perfil")({
   head: () => ({ meta: [{ title: "Meu perfil — Meu Financiamento" }] }),
@@ -156,7 +157,13 @@ function Perfil() {
 
   return (
     <div className="space-y-4">
+      <CabecalhoPagina
+        icon={UserRound}
+        titulo="Meu perfil"
+        subtitulo="Preferências de aparência, som e privacidade dos seus dados"
+      />
       <Card className="border-border">
+
         <CardHeader className="pb-2">
           <CardTitle className="text-base">Aparência</CardTitle>
         </CardHeader>

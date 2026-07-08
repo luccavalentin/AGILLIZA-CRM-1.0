@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Send, Upload, Paperclip, Camera, FileText, Loader2 } from "lucide-react";
+import { Send, Upload, Paperclip, Camera, FileText, Loader2, ListChecks } from "lucide-react";
 import { z } from "zod";
 import {
   clienteObterVisaoGeral,
@@ -18,6 +18,7 @@ import { useIncomingChatSound } from "@/hooks/use-chat-sound";
 import { useChatTyping } from "@/hooks/use-chat-typing";
 import { TypingIndicator } from "@/components/shared/typing-indicator";
 import { TimelineCliente } from "@/components/cliente/timeline-cliente";
+import { CabecalhoPagina } from "@/components/cliente/cabecalho-pagina";
 import { ChipDocumento } from "@/components/cliente/chip-documento";
 import { BradescoRetornoTimer, isBradesco } from "@/components/proposta/bradesco-timer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -27,6 +28,7 @@ import { VisualizadorArquivo } from "@/components/comum/visualizador-arquivo";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+
 
 const searchSchema = z.object({
   tab: z.enum(["processo", "documentos", "mensagens", "propostas"]).catch("processo"),
@@ -48,33 +50,42 @@ function Acompanhar() {
   const navigate = Route.useNavigate();
 
   return (
-    <Tabs
-      value={tab}
-      onValueChange={(v) => navigate({ search: { tab: v as typeof tab } })}
-      className="w-full"
-    >
-      <TabsList className="grid w-full grid-cols-4">
-        <TabsTrigger value="processo">Processo</TabsTrigger>
-        <TabsTrigger value="documentos">Docs</TabsTrigger>
-        <TabsTrigger value="mensagens">Mensagens</TabsTrigger>
-        <TabsTrigger value="propostas">Propostas</TabsTrigger>
-      </TabsList>
+    <div className="space-y-4">
+      <CabecalhoPagina
+        icon={ListChecks}
+        titulo="Acompanhar minha proposta"
+        subtitulo="Processo, documentos, mensagens e propostas em um só lugar"
+      />
 
-      <TabsContent value="processo" className="mt-4">
-        <AbaProcesso />
-      </TabsContent>
-      <TabsContent value="documentos" className="mt-4">
-        <AbaDocumentos />
-      </TabsContent>
-      <TabsContent value="mensagens" className="mt-4">
-        <AbaMensagens />
-      </TabsContent>
-      <TabsContent value="propostas" className="mt-4">
-        <AbaPropostas />
-      </TabsContent>
-    </Tabs>
+      <Tabs
+        value={tab}
+        onValueChange={(v) => navigate({ search: { tab: v as typeof tab } })}
+        className="w-full"
+      >
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="processo">Processo</TabsTrigger>
+          <TabsTrigger value="documentos">Docs</TabsTrigger>
+          <TabsTrigger value="mensagens">Mensagens</TabsTrigger>
+          <TabsTrigger value="propostas">Propostas</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="processo" className="mt-4">
+          <AbaProcesso />
+        </TabsContent>
+        <TabsContent value="documentos" className="mt-4">
+          <AbaDocumentos />
+        </TabsContent>
+        <TabsContent value="mensagens" className="mt-4">
+          <AbaMensagens />
+        </TabsContent>
+        <TabsContent value="propostas" className="mt-4">
+          <AbaPropostas />
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 }
+
 
 function AbaProcesso() {
   const { data, isLoading } = useQuery({
@@ -292,8 +303,17 @@ function AbaMensagens() {
   }, [mensagens]);
 
   return (
-    <div className="flex flex-col">
-      <div className="min-h-[45dvh] space-y-3 pb-2">
+    <div className="flex flex-col overflow-hidden rounded-2xl border border-border/70 bg-card shadow-sm">
+      <div className="flex items-center gap-2 border-b border-border/70 bg-muted/30 px-4 py-3">
+        <span className="relative flex h-2.5 w-2.5">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500/60" />
+          <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500" />
+        </span>
+        <p className="text-sm font-medium text-foreground">Fale com o time</p>
+        <span className="ml-auto text-xs text-muted-foreground">Respondemos em horário comercial</span>
+      </div>
+      <div className="min-h-[45dvh] space-y-3 bg-gradient-to-b from-muted/20 to-transparent px-3 py-3 sm:px-4">
+
         {(mensagens ?? []).length === 0 ? (
           <p className="py-10 text-center text-sm text-muted-foreground">
             Envie uma mensagem ou um documento para falar com o time.
@@ -402,7 +422,7 @@ function AbaMensagens() {
       />
 
       <form
-        className="sticky bottom-0 mt-3 flex items-end gap-1.5 bg-background pt-2"
+        className="sticky bottom-0 flex items-end gap-1.5 border-t border-border/70 bg-background/95 p-3 backdrop-blur supports-[backdrop-filter]:bg-background/80"
         onSubmit={(e) => {
           e.preventDefault();
           const v = texto.trim();
