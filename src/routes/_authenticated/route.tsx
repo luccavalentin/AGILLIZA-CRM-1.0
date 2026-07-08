@@ -34,17 +34,20 @@ function InternalLayout() {
   const queryClient = useQueryClient();
   const [carregamentoTravado, setCarregamentoTravado] = useState(false);
 
+  // Sessão e matriz de permissões mudam raramente (login / edição de acessos).
+  // Cache longo (5 min) evita refetch da matriz — que passa por RLS pesada —
+  // a cada navegação entre telas.
   const sessaoQuery = useQuery({
     queryKey: ["minha-sessao"],
     queryFn: () => getMinhaSessao(),
     retry: 1,
-    staleTime: 60_000,
+    staleTime: 5 * 60_000,
   });
   const permsQuery = useQuery({
     queryKey: ["minhas-permissoes"],
     queryFn: () => getMinhasPermissoes(),
     retry: 1,
-    staleTime: 60_000,
+    staleTime: 5 * 60_000,
   });
 
   const ehParceiro = sessaoQuery.data?.profile?.acesso_tipo === "portal_parceiro";
@@ -60,7 +63,7 @@ function InternalLayout() {
     queryKey: ["nav-pastas-documentos"],
     queryFn: () => fnPastasRaiz(),
     enabled: !!permsQuery.data && !ehParceiro,
-    staleTime: 60_000,
+    staleTime: 5 * 60_000,
   });
 
   // Injeta as pastas raiz de Documentos como submenus do item "Arquivos".
