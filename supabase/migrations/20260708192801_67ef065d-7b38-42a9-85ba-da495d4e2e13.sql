@@ -1,0 +1,1 @@
+ALTER TABLE public.clientes ADD COLUMN IF NOT EXISTS contrato_emitido_em date;

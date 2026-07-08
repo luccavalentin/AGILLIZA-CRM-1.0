@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useRef, useState } from "react";
+import { Fragment, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -32,6 +32,7 @@ import {
   listarPainel,
   definirEtapa,
   definirDatasVistoria,
+  definirDataContratoEmitido,
   listarContratosEmitidos,
   type PainelStage,
 } from "@/lib/crm/clientes.functions";
@@ -58,6 +59,7 @@ function Pagina() {
   const listar = useServerFn(listarPainel);
   const mover = useServerFn(definirEtapa);
   const salvarDatas = useServerFn(definirDatasVistoria);
+  const salvarContratoData = useServerFn(definirDataContratoEmitido);
   const listarContratos = useServerFn(listarContratosEmitidos);
   const [desde, setDesde] = useState("");
   const [ate, setAte] = useState("");
@@ -144,6 +146,36 @@ function Pagina() {
       qc.invalidateQueries({ queryKey: ["crm-painel"] });
     }
   }
+
+
+
+  async function salvarDataContrato(clienteId: string, valor: string) {
+    const novoValor = valor || null;
+    const anterior = qc.getQueryData<PainelStage[]>(queryKey);
+    if (anterior) {
+      qc.setQueryData(
+        queryKey,
+        anterior.map((s) => ({
+          ...s,
+          clientes: s.clientes.map((c) =>
+            c.id === clienteId ? { ...c, contrato_emitido_em: novoValor } : c,
+          ),
+        })),
+      );
+    }
+    try {
+      await salvarContratoData({ data: { cliente_id: clienteId, contrato_emitido_em: novoValor } });
+      toast.success("Data de emissão salva.");
+      qc.invalidateQueries({ queryKey: ["crm-contratos-emitidos"] });
+    } catch (e) {
+      if (anterior) qc.setQueryData(queryKey, anterior);
+      toast.error(e instanceof Error ? e.message : "Falha ao salvar a data.");
+    } finally {
+      qc.invalidateQueries({ queryKey: ["crm-painel"] });
+    }
+  }
+
+
 
 
   const termo = busca.trim().toLowerCase();
@@ -269,8 +301,8 @@ function Pagina() {
             const temClientes = stage.clientes.length > 0;
             const ehAlvo = alvo === stage.codigo && arrasto?.origem !== stage.codigo;
             return (
+              <Fragment key={stage.codigo}>
               <div
-                key={stage.codigo}
                 onDragOver={(e) => {
                   if (!arrasto) return;
                   e.preventDefault();
@@ -313,17 +345,7 @@ function Pagina() {
                       </span>
                     </div>
                     <div className="flex shrink-0 items-center gap-1.5">
-                      {stage.codigo === "contrato_emitido" && (
-                        <button
-                          type="button"
-                          onClick={() => setArquivoAberto(true)}
-                          title="Abrir arquivo de contratos emitidos"
-                          className="flex h-6 items-center gap-1 rounded-full border border-primary/30 bg-primary/5 px-2 text-[11px] font-semibold text-primary shadow-sm transition-all hover:border-primary/60 hover:bg-primary/10"
-                        >
-                          <FolderClosed className="size-3.5" />
-                          Arquivo
-                        </button>
-                      )}
+
                       <button
                         type="button"
                         onClick={() => temClientes && setDialogStage(stage.codigo)}
@@ -421,16 +443,19 @@ function Pagina() {
                             {stage.codigo === "contrato_emitido" && (
                               <div className="flex items-center gap-2 border-t border-border/70 px-2.5 py-2">
                                 <CalendarCheck className="size-3.5 shrink-0 text-primary" />
-                                <span className="shrink-0 text-[11px] font-medium text-muted-foreground">
+                                <label className="shrink-0 text-[11px] font-medium text-muted-foreground">
                                   Emitido em
-                                </span>
-                                <span className="ml-auto text-[11px] font-semibold tabular-nums text-foreground">
-                                  {c.pipeline_atualizado_em
-                                    ? new Date(c.pipeline_atualizado_em).toLocaleDateString("pt-BR")
-                                    : "—"}
-                                </span>
+                                </label>
+                                <Input
+                                  type="date"
+                                  value={c.contrato_emitido_em ?? ""}
+                                  onChange={(e) => salvarDataContrato(c.id, e.target.value)}
+                                  className="h-7 flex-1 px-2 text-xs"
+                                  title="Data de emissão do contrato (definida por você)"
+                                />
                               </div>
                             )}
+
                           </div>
                         );
                       })
@@ -439,6 +464,23 @@ function Pagina() {
                   </div>
                 </div>
               </div>
+              {stage.codigo === "contrato_emitido" && (
+                <button
+                  type="button"
+                  onClick={() => setArquivoAberto(true)}
+                  title="Abrir arquivo de contratos emitidos"
+                  className="group/arq flex min-w-0 flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-primary/40 bg-primary/5 p-4 text-center shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary hover:bg-primary/10 hover:shadow-lg"
+                >
+                  <span className="grid size-11 place-items-center rounded-xl bg-primary/10 text-primary transition-colors group-hover/arq:bg-primary group-hover/arq:text-primary-foreground">
+                    <FolderClosed className="size-5" />
+                  </span>
+                  <span className="text-sm font-semibold text-foreground">Contratos emitidos</span>
+                  <span className="text-[11px] text-muted-foreground">
+                    Arquivo dos contratos já emitidos
+                  </span>
+                </button>
+              )}
+              </Fragment>
             );
           })}
         </div>
@@ -516,11 +558,9 @@ function Pagina() {
             ) : (
               (contratos ?? []).map((ct) => (
                 <button
-                  key={ct.id}
+                  key={ct.cliente_id}
                   type="button"
-                  disabled={!ct.cliente_id}
                   onClick={() => {
-                    if (!ct.cliente_id) return;
                     setArquivoAberto(false);
                     navigate({ to: "/crm/clientes/$id", params: { id: ct.cliente_id } });
                   }}

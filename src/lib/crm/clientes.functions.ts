@@ -405,6 +405,7 @@ export interface PainelStage {
     vistoria_agendada_em: string | null;
     vistoria_concluida_em: string | null;
     pipeline_atualizado_em: string | null;
+    contrato_emitido_em: string | null;
   }[];
 }
 
@@ -429,7 +430,7 @@ export const listarPainel = createServerFn({ method: "GET" })
     const { data: rows, error: e2 } = await supabase
       .from("clientes")
       .select(
-        "id, nome, numero_cliente, vistoria_agendada_em, vistoria_concluida_em, cliente_pipeline(ultima_atualizacao_em, pipeline_stages(codigo))",
+        "id, nome, numero_cliente, vistoria_agendada_em, vistoria_concluida_em, contrato_emitido_em, cliente_pipeline(ultima_atualizacao_em, pipeline_stages(codigo))",
       )
       .eq("ativo", true)
       .order("nome");
@@ -456,6 +457,8 @@ export const listarPainel = createServerFn({ method: "GET" })
           vistoria_agendada_em: r.vistoria_agendada_em ?? null,
           vistoria_concluida_em: r.vistoria_concluida_em ?? null,
           pipeline_atualizado_em: r.cliente_pipeline?.ultima_atualizacao_em ?? null,
+          contrato_emitido_em: r.contrato_emitido_em ?? null,
+
 
         })),
     }));
@@ -1339,30 +1342,80 @@ export const salvarImovelIq = createServerFn({ method: "POST" })
   });
 
 export interface ContratoEmitido {
-  id: string;
-  numero_proposta: string | null;
+  cliente_id: string;
+  numero_cliente: string | null;
   nome_cliente: string | null;
-  cliente_id: string | null;
+  numero_proposta: string | null;
   nome_banco: string | null;
   valor_financiamento: number | null;
   contrato_emitido_em: string | null;
 }
 
 /**
- * Arquivo dos contratos emitidos: propostas com `contrato_emitido_em`
- * preenchido, mais recentes primeiro (RLS aplica o escopo do usuário).
+ * Define (ou limpa) a data de emissão do contrato de um cliente. A data é
+ * escolhida pelo usuário no painel; quando ela chega (hoje ou já passou),
+ * o contrato passa a aparecer na pasta de contratos emitidos.
+ */
+export const definirDataContratoEmitido = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        cliente_id: z.string().uuid(),
+        contrato_emitido_em: z.string().date().nullable(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }): Promise<{ ok: true }> => {
+    const { error } = await context.supabase
+      .from("clientes")
+      .update({ contrato_emitido_em: data.contrato_emitido_em })
+      .eq("id", data.cliente_id);
+    if (error) throw error;
+    return { ok: true };
+  });
+
+/**
+ * Arquivo dos contratos emitidos: clientes cuja data de emissão definida pelo
+ * usuário já chegou (hoje ou anterior), mais recentes primeiro. Enriquecido
+ * com dados da proposta mais recente do cliente (RLS aplica o escopo).
  */
 export const listarContratosEmitidos = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<ContratoEmitido[]> => {
     const { supabase } = context;
-    const { data, error } = await supabase
-      .from("propostas")
-      .select(
-        "id, numero_proposta, nome_cliente, cliente_id, nome_banco, valor_financiamento, contrato_emitido_em",
-      )
+    const hoje = new Date().toISOString().slice(0, 10);
+    const { data: clientes, error } = await supabase
+      .from("clientes")
+      .select("id, nome, numero_cliente, contrato_emitido_em")
       .not("contrato_emitido_em", "is", null)
+      .lte("contrato_emitido_em", hoje)
       .order("contrato_emitido_em", { ascending: false });
     if (error) throw error;
-    return (data ?? []) as ContratoEmitido[];
+    const lista = clientes ?? [];
+    if (lista.length === 0) return [];
+    const ids = lista.map((c) => c.id);
+    const { data: propostas } = await supabase
+      .from("propostas")
+      .select("cliente_id, numero_proposta, nome_banco, valor_financiamento, created_at")
+      .in("cliente_id", ids)
+      .order("created_at", { ascending: false });
+    const propostasLista = propostas ?? [];
+    type PropostaResumo = (typeof propostasLista)[number];
+    const porCliente = new Map<string, PropostaResumo>();
+    for (const p of propostasLista) {
+      if (p.cliente_id && !porCliente.has(p.cliente_id)) porCliente.set(p.cliente_id, p);
+    }
+    return lista.map((c) => {
+      const p = porCliente.get(c.id);
+      return {
+        cliente_id: c.id,
+        numero_cliente: c.numero_cliente ?? null,
+        nome_cliente: c.nome ?? null,
+        numero_proposta: p?.numero_proposta ?? null,
+        nome_banco: p?.nome_banco ?? null,
+        valor_financiamento: p?.valor_financiamento ?? null,
+        contrato_emitido_em: c.contrato_emitido_em ?? null,
+      };
+    });
   });
