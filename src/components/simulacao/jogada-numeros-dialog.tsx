@@ -80,7 +80,7 @@ export function JogadaNumerosDialog({
     const liberar = Number(valorLiberar) || 0;
     const divisor = (Number(ltvPct) || 0) / 100;
     if (liberar <= 0 || divisor <= 0) {
-      return { valorImovel: 0, entrada: 0, pctEntrada: 0, valido: false };
+      return { valorImovel: 0, entrada: 0, pctEntrada: 0, custas: 0, financiamentoBase: 0, valido: false };
     }
     // Arredonda o valor de compra e venda PARA CIMA no milhar. Arredondar para o
     // mais próximo podia baixar o valor abaixo do bruto necessário e fazer o
@@ -89,8 +89,12 @@ export function JogadaNumerosDialog({
     const valorImovel = Math.ceil(bruto / 1000) * 1000;
     const entrada = Math.max(0, valorImovel - liberar);
     const pctEntrada = valorImovel > 0 ? (entrada / valorImovel) * 100 : 0;
-    return { valorImovel, entrada, pctEntrada, valido: true };
-  }, [valorLiberar, ltvPct]);
+    // Parte do financiamento correspondente às custas (informada ao banco como
+    // "custas financiadas"). Reduz a base para o total financiado seguir = liberar.
+    const custas = incluirCustas ? Math.round(valorImovel * ((Number(custasPct) || 0) / 100)) : 0;
+    const financiamentoBase = Math.max(0, liberar - custas);
+    return { valorImovel, entrada, pctEntrada, custas, financiamentoBase, valido: true };
+  }, [valorLiberar, ltvPct, incluirCustas, custasPct]);
 
 
   function aplicar() {
@@ -98,7 +102,9 @@ export function JogadaNumerosDialog({
     onAplicar({
       valorImovel: calc.valorImovel,
       valorEntrada: calc.entrada,
-      valorFinanciamento: Number(valorLiberar) || 0,
+      valorFinanciamento: calc.financiamentoBase,
+      financiaCustas: incluirCustas,
+      valorCustas: calc.custas,
     });
     setAberto(false);
   }
