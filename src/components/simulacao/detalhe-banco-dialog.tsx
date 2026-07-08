@@ -64,10 +64,12 @@ export function DetalheBancoDialog({
   const bancoNaoFinanciouDespesas =
     despesasSolicitadas && !!detalhe && !(despesasFinanciadasBanco > 0);
 
-  function baixar() {
+  async function baixar() {
     if (proposta) {
+      const { baixarPropostaDetalhadaPDF } = await import("@/lib/propostas/proposta-pdf");
       baixarPropostaDetalhadaPDF({ proposta, bancos: [banco] });
     } else {
+      const { baixarSimulacaoDetalhadaPDF } = await import("@/lib/simulacao/simulacao-pdf");
       baixarSimulacaoDetalhadaPDF({ simulacao: simulacao ?? {}, bancos: [banco] });
     }
   }
