@@ -118,7 +118,7 @@ function Pagina() {
       </form>
 
 
-      <Card className="overflow-hidden shadow-sm">
+      <Card className="overflow-hidden rounded-2xl border-border/60 shadow-sm">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
