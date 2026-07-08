@@ -793,7 +793,24 @@ export const listarDocumentos = createServerFn({ method: "GET" })
       .eq("cliente_id", data.cliente_id)
       .order("created_at", { ascending: false });
     if (error) throw error;
-    return rows ?? [];
+    const lista = (rows ?? []) as any[];
+    const ids = Array.from(
+      new Set(lista.map((r) => r.enviado_por).filter((v): v is string => !!v)),
+    );
+    const nomes = new Map<string, string>();
+    if (ids.length > 0) {
+      const { data: profs } = await context.supabase
+        .from("profiles")
+        .select("id, nome")
+        .in("id", ids);
+      for (const p of (profs ?? []) as { id: string; nome: string | null }[]) {
+        if (p.nome) nomes.set(p.id, p.nome);
+      }
+    }
+    return lista.map((r) => ({
+      ...r,
+      enviado_por_nome: r.enviado_por ? (nomes.get(r.enviado_por) ?? null) : null,
+    }));
   });
 
 /** Aprova/reprova documento. */
