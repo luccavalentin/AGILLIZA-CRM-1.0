@@ -56,8 +56,23 @@ export function JogadaNumerosDialog({
     if (aberto) {
       setValorLiberar(valorImovelAtual || 0);
       setLtvPct(Math.round(ltvMax * 100));
+      setIncluirCustas(false);
     }
   }, [aberto, valorImovelAtual, ltvMax]);
+
+  // Marcar custas reduz o percentual da calculadora; desmarcar devolve.
+  function alternarCustas(on: boolean) {
+    setIncluirCustas(on);
+    setLtvPct((p) => (on ? p - (Number(custasPct) || 0) : p + (Number(custasPct) || 0)));
+  }
+
+  // Alterar o percentual de custas reajusta o percentual da calculadora.
+  function alterarCustas(novo: number) {
+    if (incluirCustas) {
+      setLtvPct((p) => p + (Number(custasPct) || 0) - (Number(novo) || 0));
+    }
+    setCustasPct(novo);
+  }
 
   const calc = useMemo(() => {
     const liberar = Number(valorLiberar) || 0;
