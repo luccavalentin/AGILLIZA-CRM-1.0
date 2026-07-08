@@ -281,9 +281,12 @@ function ChecklistsPersonalizados(props: ChecklistsCfgProps) {
                   setAlvo(null);
                 }}
               >
+                <div className="pb-2">
+                  <AdicionarItem onAdd={(l) => props.addItem(g.id, l)} />
+                </div>
                 {g.itens.length === 0 && (
                   <p className="py-2 text-xs text-muted-foreground">
-                    Sem itens. Adicione documentos ou tarefas abaixo.
+                    Sem itens. Use "Adicionar item" acima para incluir documentos ou tarefas.
                   </p>
                 )}
                 {g.itens.map((it) => (
