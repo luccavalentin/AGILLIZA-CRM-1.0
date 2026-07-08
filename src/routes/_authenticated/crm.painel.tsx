@@ -4,10 +4,17 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
-import { ChevronRight, GripVertical, CalendarClock, Workflow, Users } from "lucide-react";
+import { ChevronRight, GripVertical, CalendarClock, Workflow, Users, Search, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import {
   listarPainel,
@@ -40,6 +47,8 @@ function Pagina() {
   const salvarDatas = useServerFn(definirDatasVistoria);
   const [desde, setDesde] = useState("");
   const [ate, setAte] = useState("");
+  const [busca, setBusca] = useState("");
+  const [dialogStage, setDialogStage] = useState<string | null>(null);
   const [arrasto, setArrasto] = useState<Arrasto | null>(null);
   const [alvo, setAlvo] = useState<string | null>(null);
   const arrastouRef = useRef(false);
@@ -116,8 +125,22 @@ function Pagina() {
   }
 
 
-  const totalClientes = (data ?? []).reduce((acc, s) => acc + s.clientes.length, 0);
-  const etapasAtivas = (data ?? []).filter((s) => s.clientes.length > 0).length;
+  const termo = busca.trim().toLowerCase();
+  const dadosFiltrados = (data ?? []).map((s) => ({
+    ...s,
+    clientes: termo
+      ? s.clientes.filter(
+          (c) =>
+            c.nome.toLowerCase().includes(termo) ||
+            (c.numero_cliente ?? "").toLowerCase().includes(termo),
+        )
+      : s.clientes,
+  }));
+  const totalClientes = dadosFiltrados.reduce((acc, s) => acc + s.clientes.length, 0);
+  const etapasAtivas = dadosFiltrados.filter((s) => s.clientes.length > 0).length;
+  const stageDialog = dialogStage
+    ? dadosFiltrados.find((s) => s.codigo === dialogStage)
+    : null;
 
   return (
     <div className="space-y-6 p-4 sm:p-6">
@@ -144,6 +167,25 @@ function Pagina() {
             <span className="text-xs text-muted-foreground">
               em {etapasAtivas} de 12 etapas
             </span>
+          </div>
+          <div className="relative w-full sm:w-64">
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+              placeholder="Buscar cliente ou nº..."
+              className="h-10 rounded-xl pl-9 pr-9 shadow-sm"
+            />
+            {busca && (
+              <button
+                type="button"
+                onClick={() => setBusca("")}
+                className="absolute right-2 top-1/2 grid size-6 -translate-y-1/2 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                aria-label="Limpar busca"
+              >
+                <X className="size-3.5" />
+              </button>
+            )}
           </div>
           <div className="space-y-1">
             <label className="text-xs font-medium text-muted-foreground">De</label>
@@ -188,7 +230,7 @@ function Pagina() {
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {data!.map((stage, idx) => {
+          {dadosFiltrados.map((stage, idx) => {
             const temClientes = stage.clientes.length > 0;
             const ehAlvo = alvo === stage.codigo && arrasto?.origem !== stage.codigo;
             return (
@@ -235,15 +277,20 @@ function Pagina() {
                         {stage.nome}
                       </span>
                     </div>
-                    <span
-                      className={`flex h-6 min-w-6 shrink-0 items-center justify-center rounded-full px-2 text-xs font-bold tabular-nums transition-colors duration-300 ${
+                    <button
+                      type="button"
+                      onClick={() => temClientes && setDialogStage(stage.codigo)}
+                      disabled={!temClientes}
+                      title={temClientes ? "Ver clientes desta etapa" : undefined}
+                      className={`flex h-6 min-w-6 shrink-0 items-center justify-center gap-1 rounded-full px-2 text-xs font-bold tabular-nums transition-all duration-300 ${
                         temClientes
-                          ? "bg-primary text-primary-foreground shadow-sm"
-                          : "bg-muted text-muted-foreground"
+                          ? "cursor-pointer bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 hover:ring-2 hover:ring-primary/40"
+                          : "cursor-default bg-muted text-muted-foreground"
                       }`}
                     >
+                      <Users className="size-3" />
                       {stage.clientes.length}
-                    </span>
+                    </button>
                   </div>
                   <div className="space-y-2">
                     {!temClientes ? (
@@ -334,6 +381,47 @@ function Pagina() {
           })}
         </div>
       )}
+
+      <Dialog open={!!dialogStage} onOpenChange={(o) => !o && setDialogStage(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Users className="size-4 text-primary" />
+              {stageDialog?.nome ?? "Etapa"}
+            </DialogTitle>
+            <DialogDescription>
+              {stageDialog?.clientes.length ?? 0} cliente(s) nesta etapa. Clique para abrir o
+              cadastro.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[60vh] space-y-2 overflow-y-auto pr-1">
+            {(stageDialog?.clientes ?? []).map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => {
+                  setDialogStage(null);
+                  navigate({ to: "/crm/clientes/$id", params: { id: c.id } });
+                }}
+                className="group flex w-full items-center gap-2.5 rounded-lg border border-border bg-background p-2.5 text-left transition-all hover:border-primary/50 hover:bg-primary/5 hover:shadow-sm"
+              >
+                <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary transition-all group-hover:bg-primary group-hover:text-primary-foreground">
+                  {c.nome.trim().charAt(0).toUpperCase()}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-medium text-foreground transition-colors group-hover:text-primary">
+                    {c.nome}
+                  </span>
+                  <span className="block font-mono text-[11px] text-muted-foreground">
+                    {c.numero_cliente}
+                  </span>
+                </span>
+                <ChevronRight className="size-4 shrink-0 text-primary opacity-0 transition-opacity group-hover:opacity-100" />
+              </button>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
