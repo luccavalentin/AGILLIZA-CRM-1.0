@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { CurrencyInput } from "@/components/simulacao/currency-input";
 import { formatBRL } from "@/lib/simulacao/format";
 
