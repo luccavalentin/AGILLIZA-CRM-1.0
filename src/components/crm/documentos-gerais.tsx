@@ -216,9 +216,23 @@ export function DocumentosGerais() {
     setFichaAberta(false);
   }
 
-  function iconePasta(tipo: PastaTipo) {
-    if (tipo === "imob") return <Building2 className="h-8 w-8 shrink-0 text-primary" />;
-    return <Folder className="h-8 w-8 shrink-0 text-primary" />;
+  function IconePasta({ tipo, aberta }: { tipo: PastaTipo; aberta?: boolean }) {
+    const conf: Record<PastaTipo, { Icon: typeof Folder; classe: string }> = {
+      comercial: { Icon: Briefcase, classe: "from-primary/20 to-primary/5 text-primary" },
+      imob: { Icon: Building2, classe: "from-sky-500/20 to-sky-500/5 text-sky-600 dark:text-sky-400" },
+      corretor: { Icon: IdCard, classe: "from-violet-500/20 to-violet-500/5 text-violet-600 dark:text-violet-400" },
+    };
+    const { Icon, classe } = conf[tipo];
+    return (
+      <span
+        className={cn(
+          "flex size-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br shadow-inner ring-1 ring-inset ring-border/40",
+          classe,
+        )}
+      >
+        {aberta ? <FolderOpen className="h-5 w-5" /> : <Icon className="h-5 w-5" />}
+      </span>
+    );
   }
 
   // ===== Ficha do cliente selecionado =====
