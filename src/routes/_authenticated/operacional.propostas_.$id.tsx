@@ -890,7 +890,8 @@ function DetalhamentoBancoDialog({
         </DialogHeader>
         <div className="space-y-3 text-sm">
           {banco?.nome_banco && (
-            <p className="font-medium" style={{ color: corDoBanco(banco.nome_banco) }}>
+            <p className="flex items-center gap-2 font-medium" style={{ color: corDoBanco(banco.nome_banco) }}>
+              <BancoLogo nome={banco.nome_banco} size="md" className="shrink-0" />
               {banco.nome_banco}
             </p>
           )}
