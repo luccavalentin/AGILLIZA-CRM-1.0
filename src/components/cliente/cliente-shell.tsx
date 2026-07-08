@@ -10,6 +10,7 @@ import {
   Bell,
   Gauge,
   ListChecks,
+  MessageCircle,
   type LucideIcon,
 } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
@@ -27,7 +28,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ThemeToggle } from "@/components/app-shell/theme-toggle";
-import { clienteListarNotificacoes } from "@/lib/portal/cliente.functions";
+import {
+  clienteListarNotificacoes,
+  clienteListarMensagens,
+} from "@/lib/portal/cliente.functions";
 import { cn } from "@/lib/utils";
 
 const STORAGE_KEY = "agilliza-cliente-sidebar-collapsed";
@@ -36,6 +40,9 @@ interface NavItemCliente {
   label: string;
   icon: LucideIcon;
   to: string;
+  search?: Record<string, unknown>;
+  /** Marca o item que exibe o indicador piscante de mensagens novas. */
+  chat?: boolean;
 }
 
 const NAV_CLIENTE: { id: string; label: string; items: NavItemCliente[] }[] = [
@@ -45,6 +52,13 @@ const NAV_CLIENTE: { id: string; label: string; items: NavItemCliente[] }[] = [
     items: [
       { label: "Início", icon: Gauge, to: "/cliente/visao-geral" },
       { label: "Acompanhar", icon: ListChecks, to: "/cliente/acompanhar-minha-proposta" },
+      {
+        label: "Conversar",
+        icon: MessageCircle,
+        to: "/cliente/acompanhar-minha-proposta",
+        search: { tab: "mensagens" },
+        chat: true,
+      },
     ],
   },
   {
@@ -53,6 +67,19 @@ const NAV_CLIENTE: { id: string; label: string; items: NavItemCliente[] }[] = [
     items: [{ label: "Meu perfil", icon: UserRound, to: "/cliente/perfil" }],
   },
 ];
+
+/** Conta mensagens da equipe ainda não lidas pelo cliente. */
+function useChatNaoLidas() {
+  const { data } = useQuery({
+    queryKey: ["cliente", "chat-nao-lidas"],
+    queryFn: () => clienteListarMensagens(),
+    refetchInterval: (q: any) => (q.state.status === "error" ? false : 8000),
+  });
+  return (data ?? []).filter(
+    (m: any) => (m.remetente_tipo ?? m.ln) === "time" && !m.lida_em,
+  ).length;
+}
+
 
 export interface ClienteShellUser {
   nome: string;
