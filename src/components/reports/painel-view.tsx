@@ -118,7 +118,7 @@ export function PainelView({
     : undefined;
 
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-6 p-4 md:p-6">
+    <div className="mx-auto w-full max-w-[1600px] space-y-8 p-4 md:p-6">
       <PanelHeader
         eyebrow={eyebrow}
         titulo={titulo}
@@ -201,7 +201,7 @@ export function PainelView({
                 subtitulo={data.chart.subtitulo}
                 abrirTo={abrirTo}
               >
-                <div className="h-64 w-full">
+                <div className="h-72 w-full xl:h-80">
                   <ReportChartView
                     chart={{ titulo: data.chart.titulo, tipo: "barh", dados: data.chart.dados }}
                     colorByBank={data.chart.porBanco}
