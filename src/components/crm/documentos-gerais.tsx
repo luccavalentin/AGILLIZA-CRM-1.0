@@ -81,6 +81,23 @@ function primeiroNome(s: string | null | undefined): string {
 
 type PastaTipo = "comercial" | "imob" | "corretor";
 
+/** Rótulo e cor da etiqueta que identifica o nível da pasta. */
+const PASTA_BADGE: Record<PastaTipo, { label: string; classe: string }> = {
+  comercial: {
+    label: "Comercial Agilliza",
+    classe: "border-primary/25 bg-primary/10 text-primary",
+  },
+  imob: {
+    label: "Imobiliária",
+    classe: "border-sky-500/25 bg-sky-500/10 text-sky-600 dark:text-sky-400",
+  },
+  corretor: {
+    label: "Corretor",
+    classe:
+      "border-violet-500/25 bg-violet-500/10 text-violet-600 dark:text-violet-400",
+  },
+};
+
 interface PastaNode {
   key: string;
   nome: string;
