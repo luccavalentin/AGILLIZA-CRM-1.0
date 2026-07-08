@@ -332,9 +332,12 @@ export const getPanelDados = createServerFn({ method: "POST" })
       escopoEq(
         supabase
           .from("propostas")
-          .select("status,valor_financiamento_aprovado,valor_financiamento,nome_banco,created_at")
-          .gte("created_at", de)
-          .lte("created_at", ateFim)
+          .select(
+            "status,valor_financiamento_aprovado,valor_financiamento,nome_banco,created_at,contrato_emitido_em",
+          )
+          .or(
+            `and(created_at.gte.${de},created_at.lte.${ateFim}),and(contrato_emitido_em.gte.${de},contrato_emitido_em.lte.${ateFim})`,
+          )
           .limit(5000),
         "usuario_responsavel_id",
       ),
