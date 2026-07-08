@@ -217,6 +217,32 @@
   background-color: rgba(200, 16, 46, 0.18);
   border-color: rgba(200, 16, 46, 0.6) !important;
 }
+/* Ícone circular refinado — anel sutil, sem bloco quadrado pesado. */
+.landing-icon {
+  color: var(--primary-foreground, #fff);
+  background:
+    radial-gradient(120% 120% at 30% 20%, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.02));
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 8px 20px -12px rgba(0, 0, 0, 0.6);
+  transition:
+    border-color 0.25s ease,
+    transform 0.25s ease,
+    box-shadow 0.25s ease;
+}
+.group:hover .landing-icon {
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+}
+.landing-icon-destaque {
+  background:
+    radial-gradient(120% 120% at 30% 20%, rgba(200, 16, 46, 0.35), rgba(200, 16, 46, 0.08));
+  border-color: rgba(200, 16, 46, 0.45);
+}
+.group:hover .landing-icon-destaque {
+  border-color: rgba(200, 16, 46, 0.7);
+}
 
 /* Camada de efeito interativo (segue o mouse) sobre o fundo da landing. */
 .landing-fx {
