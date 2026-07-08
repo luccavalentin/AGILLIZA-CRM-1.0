@@ -988,9 +988,7 @@ function EnvioResultadoDialog({
               key={`err-${i}`}
               className="flex items-start gap-3 rounded-xl border border-destructive/25 bg-destructive/5 px-3 py-2.5"
             >
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-destructive/15 text-destructive">
-                <Building2 className="h-4 w-4" />
-              </span>
+              <BancoLogo nome={r.nome_banco} size="lg" className="shrink-0" />
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-foreground">
                   {r.nome_banco ?? "Banco"}
