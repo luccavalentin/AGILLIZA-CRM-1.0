@@ -24,6 +24,7 @@ import { ConsultandoOverlay } from "@/components/simulacao/consultando-overlay";
 import { ClienteCRMPicker } from "@/components/simulacao/cliente-crm-picker";
 import { estadoCivilCrmParaCodigo } from "@/lib/propostas/dominios";
 import { DicaRendaMinima } from "@/components/simulacao/dica-renda-minima";
+import { JogadaNumerosDialog } from "@/components/simulacao/jogada-numeros-dialog";
 import { avaliarRendaMinima } from "@/lib/simulacao/renda";
 import {
   AlertDialog,
@@ -351,6 +352,24 @@ function Pagina() {
         valor_financiamento: Math.max(0, prev.valor_imovel - entrada),
       };
     });
+  }
+
+  /** Aplica a "jogada de números": infla o valor de compra e venda para liberar o financiamento. */
+  function aplicarJogadaNumeros(dados: {
+    valorImovel: number;
+    valorEntrada: number;
+    valorFinanciamento: number;
+  }) {
+    setEntradaTocada(true);
+    setF((prev) => ({
+      ...prev,
+      valor_imovel: dados.valorImovel,
+      valor_entrada: dados.valorEntrada,
+      valor_financiamento: dados.valorFinanciamento,
+    }));
+    toast.success(
+      `Jogada aplicada: imóvel ${formatBRL(dados.valorImovel)}, entrada ${formatBRL(dados.valorEntrada)}, financiamento ${formatBRL(dados.valorFinanciamento)}.`,
+    );
   }
 
   // Apenas o Bradesco opera pelo sistema PRICE.
@@ -736,6 +755,14 @@ function Pagina() {
           </Campo>
         </div>
         <Separator className="border-border/60" />
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-sm font-medium text-foreground">Valores da operação</p>
+          <JogadaNumerosDialog
+            valorImovelAtual={Number(f.valor_imovel) || 0}
+            ltvMax={ltvMax}
+            onAplicar={aplicarJogadaNumeros}
+          />
+        </div>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <Campo
             label={
