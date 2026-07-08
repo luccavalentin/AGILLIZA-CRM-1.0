@@ -35,14 +35,27 @@ import {
 } from "@/components/ui/table";
 import { SimulacaoStatusBadge } from "@/components/simulacao/status-badge";
 import { BancosSimulados } from "@/components/simulacao/bancos-simulados";
+import { BancoLogo } from "@/components/bancos/banco-logo";
+import { corDoBanco } from "@/lib/bancos/cores";
+import { cn } from "@/lib/utils";
+import { Checkbox } from "@/components/ui/checkbox";
 import { ConfirmDelete } from "@/components/shared/confirm-delete";
 import { formatBRL } from "@/lib/simulacao/format";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
+
 
 export const Route = createFileRoute("/_authenticated/operacional/simulacoes")({
   head: () => ({ meta: [{ title: "Simulações — Agilliza" }] }),
