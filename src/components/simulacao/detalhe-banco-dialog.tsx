@@ -95,6 +95,21 @@ export function DetalheBancoDialog({
 
 
         <div className="max-h-[calc(90vh-4rem)] space-y-6 overflow-y-auto p-4">
+          {bancoNaoFinanciouDespesas && (
+            <div className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+              <div className="text-sm text-foreground">
+                <p className="font-semibold">Este banco não financiou as despesas solicitadas</p>
+                <p className="mt-1 text-muted-foreground">
+                  As despesas de {formatBRL(Number(simulacao?.valor_despesas_financiadas ?? 0))} não
+                  foram incorporadas ao financiamento por este banco — normalmente por atingir o
+                  limite máximo de financiamento (LTV) para o perfil do cliente. Por isso o valor
+                  financiado pode aparecer menor que o de outros bancos. As despesas deverão ser
+                  pagas à vista ou o valor financiado ajustado.
+                </p>
+              </div>
+            </div>
+          )}
           {!temDetalhe ? (
             <p className="py-8 text-center text-sm text-muted-foreground">
               Detalhamento de parcelas indisponível para esta simulação.
