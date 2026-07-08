@@ -237,9 +237,13 @@ export function ChatClienteConversa({ clienteId, info }: { clienteId: string; in
     },
     onError: (err, _payload, ctx) => {
       if (ctx?.anterior) qc.setQueryData(queryKey, ctx.anterior);
-      const motivo = err instanceof Error ? err.message : String(err);
+      const bruto = err instanceof Error ? err.message : String(err);
+      const motivo = /unauthorized|authorization header|invalid token|no token/i.test(bruto)
+        ? "sua sessão expirou. Atualize a página e entre novamente."
+        : bruto;
       toast.error(`Não foi possível enviar a mensagem: ${motivo}`);
     },
+
     onSettled: () => {
       qc.invalidateQueries({ queryKey });
     },
