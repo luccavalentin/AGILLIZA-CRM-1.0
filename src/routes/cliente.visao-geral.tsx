@@ -318,8 +318,7 @@ function VisaoGeral() {
             </p>
           )}
           <Link
-            to="/cliente/acompanhar-minha-proposta"
-            search={{ tab: "mensagens" }}
+            to="/cliente/chat"
             className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-primary underline underline-offset-2"
           >
             <MessageSquare className="h-4 w-4" /> Falar com o time
