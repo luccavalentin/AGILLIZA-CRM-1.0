@@ -125,8 +125,22 @@ function Pagina() {
   }
 
 
-  const totalClientes = (data ?? []).reduce((acc, s) => acc + s.clientes.length, 0);
-  const etapasAtivas = (data ?? []).filter((s) => s.clientes.length > 0).length;
+  const termo = busca.trim().toLowerCase();
+  const dadosFiltrados = (data ?? []).map((s) => ({
+    ...s,
+    clientes: termo
+      ? s.clientes.filter(
+          (c) =>
+            c.nome.toLowerCase().includes(termo) ||
+            (c.numero_cliente ?? "").toLowerCase().includes(termo),
+        )
+      : s.clientes,
+  }));
+  const totalClientes = dadosFiltrados.reduce((acc, s) => acc + s.clientes.length, 0);
+  const etapasAtivas = dadosFiltrados.filter((s) => s.clientes.length > 0).length;
+  const stageDialog = dialogStage
+    ? dadosFiltrados.find((s) => s.codigo === dialogStage)
+    : null;
 
   return (
     <div className="space-y-6 p-4 sm:p-6">
