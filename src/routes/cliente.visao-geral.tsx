@@ -110,8 +110,15 @@ function VisaoGeral() {
 
   return (
     <div className="space-y-4">
+      <CabecalhoPagina
+        icon={Gauge}
+        titulo="Meu financiamento"
+        subtitulo="Acompanhe a evolução do seu processo em tempo real"
+      />
+
       {/* Herói: progresso circular didático */}
       <Card className="overflow-hidden border-border">
+
         <CardContent className="grid gap-4 p-5 sm:grid-cols-[auto_1fr] sm:items-center">
           <div className="relative mx-auto h-40 w-40">
             <ResponsiveContainer width="100%" height="100%">
