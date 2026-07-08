@@ -4,7 +4,19 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
-import { ChevronRight, GripVertical, CalendarClock, Workflow, Users, Search, X } from "lucide-react";
+import {
+  ChevronRight,
+  GripVertical,
+  CalendarClock,
+  CalendarCheck,
+  FolderClosed,
+  FileText,
+  Building2,
+  Workflow,
+  Users,
+  Search,
+  X,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -20,6 +32,7 @@ import {
   listarPainel,
   definirEtapa,
   definirDatasVistoria,
+  listarContratosEmitidos,
   type PainelStage,
 } from "@/lib/crm/clientes.functions";
 import { usePipelineRealtime } from "@/hooks/use-pipeline-realtime";
