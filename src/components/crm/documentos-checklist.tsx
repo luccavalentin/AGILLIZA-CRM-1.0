@@ -267,29 +267,52 @@ export function DocumentosChecklist({ clienteId }: { clienteId: string }) {
             <Pencil className="size-3.5" />
           </button>
         )}
-        <label className="inline-flex cursor-pointer items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-foreground hover:bg-accent">
-          {subindo === label ? (
-            <Loader2 className="size-3.5 animate-spin" />
-          ) : (
-            <Upload className="size-3.5" />
-          )}
-          Enviar
-          <input
-            type="file"
-            accept=".pdf,.jpg,.jpeg,.png"
-            className="sr-only"
-            onChange={(e) => enviar(e, cat, label)}
-            disabled={subindo === label}
-          />
-        </label>
-        <button
-          type="button"
-          onClick={onRemove ?? (() => hideItem(itemKey))}
-          aria-label="Remover item"
-          className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-        >
-          <Trash2 className="size-3.5" />
-        </button>
+        {editing ? (
+          <>
+            <button
+              type="button"
+              onClick={() => saveEdit(itemKey)}
+              aria-label="Salvar item"
+              className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-success/10 hover:text-success"
+            >
+              <Check className="size-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setEditKey(null)}
+              aria-label="Cancelar edição"
+              className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            >
+              <X className="size-3.5" />
+            </button>
+          </>
+        ) : (
+          <>
+            <label className="inline-flex cursor-pointer items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-foreground hover:bg-accent">
+              {subindo === label ? (
+                <Loader2 className="size-3.5 animate-spin" />
+              ) : (
+                <Upload className="size-3.5" />
+              )}
+              Enviar
+              <input
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png"
+                className="sr-only"
+                onChange={(e) => enviar(e, cat, label)}
+                disabled={subindo === label}
+              />
+            </label>
+            <button
+              type="button"
+              onClick={onRemove ?? (() => hideItem(itemKey))}
+              aria-label="Remover item"
+              className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+            >
+              <Trash2 className="size-3.5" />
+            </button>
+          </>
+        )}
       </div>
     );
   }
