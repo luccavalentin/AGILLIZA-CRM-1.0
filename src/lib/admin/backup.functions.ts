@@ -150,6 +150,9 @@ export const listarBackups = createServerFn({ method: "GET" })
     const corr = await correspondenteDoUsuario(supabase, userId);
     if (!corr) return [];
 
+    // Retenção: remove registros além da janela configurada (padrão 2 dias).
+    await purgarExpirados(supabase, corr, await retencaoDias(supabase, corr));
+
     const { data, error } = await supabase
       .from("backup_jobs")
       .select("id, status, tamanho_bytes, manifesto, erro, iniciado_em, concluido_em, created_at")
@@ -159,6 +162,7 @@ export const listarBackups = createServerFn({ method: "GET" })
     if (error) throw error;
     return (data ?? []) as BackupLista[];
   });
+
 
 /** Gera um snapshot lógico: contagem por tabela do escopo do correspondente. */
 export const criarBackup = createServerFn({ method: "POST" })
