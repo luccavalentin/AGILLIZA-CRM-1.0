@@ -257,6 +257,11 @@ export function PainelView({
               <PanelCard titulo={data.ranking.titulo}>
                 <MetricList items={data.ranking.itens} colorByBank={data.chart.porBanco} />
               </PanelCard>
+              {data.recusadasPorBanco && data.recusadasPorBanco.itens.length > 0 && (
+                <PanelCard titulo={data.recusadasPorBanco.titulo}>
+                  <MetricList items={data.recusadasPorBanco.itens} colorByBank />
+                </PanelCard>
+              )}
             </div>
           </div>
 
