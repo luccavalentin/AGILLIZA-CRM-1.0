@@ -92,6 +92,14 @@ export function ChatCliente({ altura = "h-[62dvh]" }: { altura?: string }) {
 
   const enviandoAnexo = enviarAnexo.isPending;
 
+  function submeter() {
+    const v = texto.trim();
+    if (!v || enviar.isPending || enviandoAnexo) return;
+    notifyStop();
+    enviar.mutate(v);
+  }
+
+
   function selecionar(file: File | undefined) {
     if (!file) return;
     if (file.size > 10 * 1024 * 1024) {
@@ -266,11 +274,7 @@ export function ChatCliente({ altura = "h-[62dvh]" }: { altura?: string }) {
         className="flex items-end gap-1.5 border-t border-border/60 bg-background/95 p-3 backdrop-blur supports-[backdrop-filter]:bg-background/80"
         onSubmit={(e) => {
           e.preventDefault();
-          const v = texto.trim();
-          if (v) {
-            notifyStop();
-            enviar.mutate(v);
-          }
+          submeter();
         }}
       >
         <Button
@@ -301,10 +305,17 @@ export function ChatCliente({ altura = "h-[62dvh]" }: { altura?: string }) {
             setTexto(e.target.value);
             if (e.target.value.trim()) notifyTyping();
           }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              submeter();
+            }
+          }}
           placeholder="Escreva sua mensagem…"
           rows={1}
-          className="min-h-11 resize-none"
+          className="max-h-32 min-h-11 resize-none"
         />
+
         <Button
           type="submit"
           size="icon"
