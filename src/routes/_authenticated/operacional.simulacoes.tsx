@@ -3,10 +3,10 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
-  Plus,
   Search,
   Calculator,
-  ChevronDown,
+  Zap,
+  FileText,
   MoreHorizontal,
   Eye,
   Copy,
@@ -152,25 +152,43 @@ function Pagina() {
           <h1 className="text-xl font-semibold text-foreground">Simulações</h1>
           <p className="text-sm text-muted-foreground">Financiamento imobiliário e home equity.</p>
         </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button>
-              <Plus className="mr-1 h-4 w-4" /> Nova simulação
-              <ChevronDown className="ml-1 h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem asChild>
-              <Link to="/operacional/simulacoes/nova" search={{ modo: "rapida" }}>
-                Simulação rápida
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link to="/operacional/simulacoes/completa">Simulação completa</Link>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="flex flex-wrap items-center gap-2.5">
+          <Button
+            asChild
+            variant="outline"
+            className="group h-11 gap-2.5 border-border/70 bg-card px-4 shadow-sm transition-all hover:border-primary/40 hover:bg-accent hover:shadow-md"
+          >
+            <Link to="/operacional/simulacoes/nova" search={{ modo: "rapida" }}>
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-primary transition-colors group-hover:bg-primary/15">
+                <Zap className="h-4 w-4" />
+              </span>
+              <span className="flex flex-col items-start leading-tight">
+                <span className="text-sm font-semibold">Simulação rápida</span>
+                <span className="text-[11px] font-normal text-muted-foreground">
+                  Cálculo imediato
+                </span>
+              </span>
+            </Link>
+          </Button>
+          <Button
+            asChild
+            className="group h-11 gap-2.5 px-4 shadow-sm transition-all hover:shadow-md"
+          >
+            <Link to="/operacional/simulacoes/completa">
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary-foreground/15 transition-colors group-hover:bg-primary-foreground/25">
+                <FileText className="h-4 w-4" />
+              </span>
+              <span className="flex flex-col items-start leading-tight">
+                <span className="text-sm font-semibold">Simulação completa</span>
+                <span className="text-[11px] font-normal text-primary-foreground/70">
+                  Envio aos bancos
+                </span>
+              </span>
+            </Link>
+          </Button>
+        </div>
       </div>
+
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Tabs value={escopo} onValueChange={(v) => setEscopo(v as "todas" | "minhas")}>
