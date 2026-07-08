@@ -120,7 +120,8 @@ export function PipelineTimeline({
           );
 
           const wrapperClasses =
-            "group relative flex min-w-[84px] flex-1 flex-col items-center px-1";
+            "group relative flex min-w-[104px] flex-1 flex-col items-center px-1.5";
+
 
           if (onSelecionar) {
             return (
