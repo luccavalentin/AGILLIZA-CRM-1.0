@@ -386,6 +386,23 @@ export const getPanelDados = createServerFn({ method: "POST" })
     );
     const taxa = enviadas.length ? (aprovadas / enviadas.length) * 100 : 0;
 
+    // Métricas operacionais complementares
+    const emAnalise = enviadas.filter((p) =>
+      ["enviada_banco", "em_analise_credito"].includes(p.status),
+    ).length;
+    const recusadas = propRows.filter((p) => p.status === "credito_recusado").length;
+    const rascunhos = propRows.length - enviadas.length;
+    const volumeSimulado = simRows.reduce((s, r) => s + (r.valor_financiamento ?? 0), 0);
+    const ticket = contratos ? volumeContratos / contratos : 0;
+    const convSimProp = simRows.length ? (enviadas.length / simRows.length) * 100 : 0;
+    const convPropContrato = enviadas.length ? (contratos / enviadas.length) * 100 : 0;
+    const slaEmDia = demAbertas.length
+      ? ((demAbertas.length - demVencidas.length) / demAbertas.length) * 100
+      : 100;
+    const demConcluidas = demRows.filter((d) => d.status === "concluida").length;
+    const tkConcluidas = tkRows.filter((t) => t.status === "concluida").length;
+    const taxaConclusaoTarefas = tkRows.length ? (tkConcluidas / tkRows.length) * 100 : 0;
+
     const statusMap = new Map<string, number>();
     propRows.forEach((p) => statusMap.set(p.status, (statusMap.get(p.status) ?? 0) + 1));
     const simStatusMap = new Map<string, number>();
@@ -452,24 +469,52 @@ export const getPanelDados = createServerFn({ method: "POST" })
 
     return {
       heros: [
-        { label: "Simulações", valor: int(simRows.length), tone: "neutral" },
-        { label: "Propostas", valor: int(enviadas.length), tone: "brand" },
-        { label: "Taxa de aprovação", valor: pct(taxa), hint: `${aprovadas} aprovadas`, tone: "success" },
-        { label: "Contratos emitidos", valor: int(contratos), hint: brlCompacto(volumeContratos), tone: "success" },
+        {
+          label: "Simulações",
+          valor: int(simRows.length),
+          hint: `${int(simConcluidas)} concluídas · ${brlCompacto(volumeSimulado)}`,
+          tone: "neutral",
+        },
+        {
+          label: "Propostas ativas",
+          valor: int(enviadas.length),
+          hint: `${int(emAnalise)} em análise`,
+          tone: "brand",
+        },
+        {
+          label: "Taxa de aprovação",
+          valor: pct(taxa),
+          hint: `${aprovadas} aprovadas · ${recusadas} recusadas`,
+          tone: "success",
+        },
+        {
+          label: "Contratos emitidos",
+          valor: int(contratos),
+          hint: `${brlCompacto(volumeContratos)} · ticket ${brlCompacto(ticket)}`,
+          tone: "success",
+        },
       ],
       minis: [
         { label: "Volume contratado", valor: brlCompacto(volumeContratos), tone: "success" },
-        { label: "Simulações concluídas", valor: int(simConcluidas), tone: "success" },
+        { label: "Ticket médio", valor: brlCompacto(ticket), tone: "brand" },
+        { label: "Conversão sim→proposta", valor: pct(convSimProp), tone: "brand" },
+        { label: "Conversão proposta→contrato", valor: pct(convPropContrato), tone: "success" },
+        { label: "Propostas em análise", valor: int(emAnalise), tone: "warning" },
+        { label: "Recusadas", valor: int(recusadas), tone: recusadas ? "danger" : "neutral" },
+        { label: "Rascunhos", valor: int(rascunhos), tone: "neutral" },
         { label: "Simulações com erro", valor: int(simErro), tone: simErro ? "danger" : "neutral" },
+        {
+          label: "SLA em dia",
+          valor: pct(slaEmDia),
+          tone: slaEmDia >= 90 ? "success" : slaEmDia >= 70 ? "warning" : "danger",
+        },
         { label: "Demandas abertas", valor: int(demAbertas.length), tone: "warning" },
         { label: "SLA vencido", valor: int(demVencidas.length), tone: demVencidas.length ? "danger" : "neutral" },
+        { label: "Demandas concluídas", valor: int(demConcluidas), tone: "success" },
         { label: "Tarefas abertas", valor: int(tkAbertas.length), tone: "neutral" },
         { label: "Tarefas atrasadas", valor: int(tkAtrasadas.length), tone: tkAtrasadas.length ? "danger" : "neutral" },
-        {
-          label: "Demandas concluídas",
-          valor: int(demRows.filter((d) => d.status === "concluida").length),
-          tone: "success",
-        },
+        { label: "Tarefas concluídas", valor: int(tkConcluidas), tone: "success" },
+        { label: "Conclusão de tarefas", valor: pct(taxaConclusaoTarefas), tone: "success" },
       ],
       evolucao: {
         titulo: "Evolução do período",
@@ -480,7 +525,7 @@ export const getPanelDados = createServerFn({ method: "POST" })
       },
       chart: {
         titulo: "Funil operacional",
-        subtitulo: "Simulações, propostas e contratos",
+        subtitulo: "Simulações → propostas → contratos",
         dados: chartDados,
       },
       distribuicao: distDados.length
