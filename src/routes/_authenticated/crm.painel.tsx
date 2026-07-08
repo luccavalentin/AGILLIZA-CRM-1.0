@@ -208,7 +208,7 @@ function Pagina() {
                   e.preventDefault();
                   moverPara(stage.codigo);
                 }}
-                className={`group relative flex min-w-0 flex-col overflow-hidden rounded-xl border bg-card shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-lg ${
+                className={`group relative flex min-w-0 flex-col overflow-hidden rounded-2xl border bg-card shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-lg ${
                   ehAlvo ? "border-primary ring-2 ring-primary/40" : "border-border"
                 }`}
               >
