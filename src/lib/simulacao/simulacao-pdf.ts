@@ -221,9 +221,10 @@ function drawInfoFinanciamento(
   ];
 
   // Tarifa de avaliação de garantia (custo à vista, não financiado).
+  // Valor padrão fixo aplicado a todos os bancos.
   if (d?.tarifaAvaliacao != null) {
     itens.splice(2, 0, {
-      label: "Tarifa de av. de garantia (não financiada)",
+      label: "Tarifa de av. de garantia (valor padrão · não financiada)",
       valor: brlOuTraco(d.tarifaAvaliacao),
     });
   }
