@@ -219,6 +219,17 @@ export const getPanelDados = createServerFn({ method: "POST" })
         .sort((a, b) => b[1] - a[1])
         .map(([s, v]) => ({ label: rotularStatus(s, PROP_LABEL), valor: v }));
 
+      // Recusadas por banco — cor/nome do banco + quantidade
+      const recusadasBancoMap = new Map<string, number>();
+      enviadas
+        .filter((p) => p.status === "credito_recusado")
+        .forEach((p) =>
+          recusadasBancoMap.set(
+            p.nome_banco ?? "—",
+            (recusadasBancoMap.get(p.nome_banco ?? "—") ?? 0) + 1,
+          ),
+        );
+
       // Evolução — propostas x contratos ao longo do tempo
       const propBucket = contarPorBucket(enviadas, buckets);
       const contratoBucket = contarPorBucket(contratos, buckets);
