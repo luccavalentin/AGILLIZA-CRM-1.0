@@ -483,15 +483,16 @@ export function ChatClienteConversa({ clienteId, info }: { clienteId: string; in
                       "max-w-[78%] px-3.5 py-2 text-sm shadow-sm",
                       doTime
                         ? "rounded-2xl rounded-br-md bg-primary text-primary-foreground"
-                        : "rounded-2xl rounded-bl-md border border-primary/20 bg-card text-foreground",
+                        : "rounded-2xl rounded-bl-md border border-chat-them-border bg-chat-them text-chat-them-foreground",
                       mesmoAutorAntes && (doTime ? "rounded-tr-md" : "rounded-tl-md"),
                     )}
                   >
+
                     {!mesmoAutorAntes && (
                       <p
                         className={cn(
                           "mb-0.5 text-[11px] font-semibold",
-                          doTime ? "text-primary-foreground/90" : "text-primary",
+                          doTime ? "text-primary-foreground/90" : "text-chat-them-foreground/80",
                         )}
                       >
                         {doTime
@@ -507,7 +508,7 @@ export function ChatClienteConversa({ clienteId, info }: { clienteId: string; in
                           "mb-1 rounded-lg border-l-2 px-2 py-1 text-[11px]",
                           doTime
                             ? "border-primary-foreground/50 bg-primary-foreground/10 text-primary-foreground/80"
-                            : "border-primary/50 bg-primary/5 text-muted-foreground",
+                            : "border-chat-them-foreground/30 bg-chat-them-foreground/5 text-chat-them-foreground/80",
                         )}
                       >
                         <span className="block font-semibold">{m.citacao.autor}</span>
@@ -537,7 +538,7 @@ export function ChatClienteConversa({ clienteId, info }: { clienteId: string; in
                               rel="noreferrer"
                               className={cn(
                                 "mb-1 flex items-center gap-2 rounded-lg px-2.5 py-2 text-xs font-medium underline-offset-2 hover:underline",
-                                doTime ? "bg-primary-foreground/15" : "bg-muted",
+                                doTime ? "bg-primary-foreground/15" : "bg-chat-them-foreground/10",
                               )}
                             >
                               <FileText className="h-4 w-4 shrink-0" />
@@ -555,7 +556,7 @@ export function ChatClienteConversa({ clienteId, info }: { clienteId: string; in
                     <div
                       className={cn(
                         "mt-1 flex items-center justify-end gap-1 text-[10px]",
-                        doTime ? "text-primary-foreground/70" : "text-muted-foreground",
+                        doTime ? "text-primary-foreground/70" : "text-chat-them-foreground/60",
                       )}
                     >
                       {m.editada_em && !excluida && <span className="italic">editado</span>}
