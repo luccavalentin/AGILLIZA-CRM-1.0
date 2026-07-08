@@ -297,10 +297,17 @@ export function ChatCliente({ altura = "h-[62dvh]" }: { altura?: string }) {
             setTexto(e.target.value);
             if (e.target.value.trim()) notifyTyping();
           }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              submeter();
+            }
+          }}
           placeholder="Escreva sua mensagem…"
           rows={1}
-          className="min-h-11 resize-none"
+          className="max-h-32 min-h-11 resize-none"
         />
+
         <Button
           type="submit"
           size="icon"
