@@ -66,25 +66,25 @@ function Landing() {
                 }
               >
                 {destaque && (
-                  <span className="absolute right-4 top-4 rounded-full bg-destructive/25 px-3 py-1 text-xs font-semibold text-destructive-foreground">
+                  <span className="absolute right-5 top-5 text-[0.7rem] font-medium uppercase tracking-[0.16em] text-destructive-foreground/80">
                     Cliente
                   </span>
                 )}
                 <span
                   className={
-                    "flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl " +
-                    (destaque
-                      ? "bg-destructive/25 text-destructive-foreground"
-                      : "bg-white/10 text-primary-foreground")
+                    "landing-icon flex h-14 w-14 shrink-0 items-center justify-center rounded-full " +
+                    (destaque ? "landing-icon-destaque" : "")
                   }
                 >
-                  <Icon className="h-8 w-8" />
+                  <Icon strokeWidth={1.5} className="h-6 w-6" />
                 </span>
                 <div className="flex-1">
-                  <h2 className="text-xl font-bold text-primary-foreground sm:text-2xl">{titulo}</h2>
-                  <p className="mt-1 text-sm text-primary-foreground/65">{subtitulo}</p>
+                  <h2 className="text-xl font-semibold tracking-tight text-primary-foreground sm:text-[1.4rem]">
+                    {titulo}
+                  </h2>
+                  <p className="mt-1.5 text-sm text-primary-foreground/60">{subtitulo}</p>
                 </div>
-                <span className="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-primary-foreground/85 transition-colors group-hover:text-primary-foreground">
+                <span className="mt-3 inline-flex items-center gap-1.5 border-t border-white/10 pt-4 text-sm font-medium text-primary-foreground/75 transition-colors group-hover:text-primary-foreground">
                   Acessar
                   <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </span>
