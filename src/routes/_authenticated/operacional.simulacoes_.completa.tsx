@@ -755,6 +755,14 @@ function Pagina() {
           </Campo>
         </div>
         <Separator className="border-border/60" />
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-sm font-medium text-foreground">Valores da operação</p>
+          <JogadaNumerosDialog
+            valorImovelAtual={Number(f.valor_imovel) || 0}
+            ltvMax={ltvMax}
+            onAplicar={aplicarJogadaNumeros}
+          />
+        </div>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <Campo
             label={
