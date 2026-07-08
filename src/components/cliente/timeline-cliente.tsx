@@ -1,4 +1,4 @@
-import { Check } from "lucide-react";
+import { Check, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { EtapaCliente } from "@/lib/portal/cliente.functions";
 
