@@ -321,12 +321,14 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
   }
 
   const abaBar = (
-    <div className="inline-flex rounded-lg border border-border p-1">
+    <div className="inline-flex rounded-xl border border-border/60 bg-muted/40 p-1 shadow-sm">
       <button
         type="button"
         onClick={() => setAba("documentos")}
-        className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-          aba === "documentos" ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+        className={`rounded-lg px-3.5 py-1.5 text-sm font-medium transition-all ${
+          aba === "documentos"
+            ? "bg-gradient-to-r from-primary to-primary/80 text-primary-foreground shadow"
+            : "text-muted-foreground hover:text-foreground"
         }`}
       >
         Pastas de documentos
@@ -334,14 +336,17 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
       <button
         type="button"
         onClick={() => setAba("checklist")}
-        className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-          aba === "checklist" ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+        className={`rounded-lg px-3.5 py-1.5 text-sm font-medium transition-all ${
+          aba === "checklist"
+            ? "bg-gradient-to-r from-primary to-primary/80 text-primary-foreground shadow"
+            : "text-muted-foreground hover:text-foreground"
         }`}
       >
         Checklist
       </button>
     </div>
   );
+
 
   if (aba === "checklist") {
     return (
@@ -376,32 +381,35 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
           {(pastas ?? []).map((p) => (
             <div
               key={p.id}
-              className="group flex items-center gap-3 rounded-lg border border-border bg-card p-4 transition-colors hover:border-primary/50"
+              className="group relative flex items-center gap-3 overflow-hidden rounded-xl border border-border/70 bg-card p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
             >
+              <span className="pointer-events-none absolute inset-x-0 top-0 h-0.5 scale-x-0 bg-gradient-to-r from-primary/60 to-primary/10 transition-transform group-hover:scale-x-100" />
               <button
                 type="button"
                 onClick={() => abrirPasta(p)}
                 className="flex min-w-0 flex-1 items-center gap-3 text-left"
               >
-                <Folder className="size-8 shrink-0 text-primary" />
+                <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 text-primary shadow-inner ring-1 ring-inset ring-border/40 transition-colors group-hover:from-primary/25">
+                  <Folder className="size-5" />
+                </span>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-foreground">{p.nome}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {p.total_documentos} documento(s)
+                  <p className="truncate text-sm font-semibold text-foreground">{p.nome}</p>
+                  <p className="mt-0.5 inline-flex items-center gap-1 text-xs text-muted-foreground">
+                    <FileText className="size-3" /> {p.total_documentos} documento(s)
                   </p>
                   {p.criado_por_nome ? (
-                    <span className="mt-1 inline-flex max-w-full items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+                    <span className="mt-1.5 inline-flex max-w-full items-center gap-1 rounded-full border border-primary/20 bg-primary/5 px-2 py-0.5 text-[11px] font-medium text-primary">
                       <User className="size-3 shrink-0" />
                       <span className="truncate">{p.criado_por_nome}</span>
                     </span>
                   ) : null}
                 </div>
-
               </button>
-              <div className="flex shrink-0 items-center gap-1">
+              <div className="flex shrink-0 items-center gap-0.5 opacity-70 transition-opacity group-hover:opacity-100">
                 <Button
                   size="icon"
                   variant="ghost"
+                  className="size-8"
                   title="Renomear pasta"
                   onClick={() => {
                     setRenomearAlvo(p);
@@ -413,6 +421,7 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
                 <Button
                   size="icon"
                   variant="ghost"
+                  className="size-8 hover:bg-destructive/10"
                   title="Excluir pasta"
                   onClick={() => setDelPasta(p)}
                 >
@@ -422,6 +431,7 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
             </div>
           ))}
         </div>
+
 
         {/* Nova pasta */}
         <Dialog open={novaPastaOpen} onOpenChange={(o) => !o && setNovaPastaOpen(false)}>
