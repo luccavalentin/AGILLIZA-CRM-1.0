@@ -90,6 +90,8 @@ export function exportPDF(
   nota?: string,
   /** Logos opcionais desenhados na 1ª coluna, indexados pelo texto da célula (ex.: nome do banco). */
   firstColLogos?: Record<string, { logo: string; ratio: number }>,
+  /** Callback opcional para anexar páginas extras (ex.: detalhamento por banco) antes da paginação. */
+  appendPages?: (doc: jsPDF, pageW: number, pageH: number) => void,
 ) {
   const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
   const pageW = doc.internal.pageSize.getWidth();
