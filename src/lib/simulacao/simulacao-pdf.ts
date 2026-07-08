@@ -312,22 +312,27 @@ function drawDisclaimer(doc: jsPDF, pageW: number, y: number) {
 /** Cabeçalho landscape das páginas de detalhamento (mesma faixa azul do comparativo). */
 const DETALHE_HEADER_H = 84;
 
-/** Anexa uma página landscape por banco com o detalhamento completo da simulação. */
+/** Anexa, por banco, uma página landscape com o detalhamento agrupado + o plano de parcelas. */
 function anexarDetalhesBancos(doc: jsPDF, pageW: number, pageH: number, s: any, bancos: any[]) {
   const lista = bancosParaExtrato(bancos);
+  const subtitulo = `${produtoLabel(s)} · ${s.nome_cliente ?? "Cliente não informado"}`;
+
   lista.forEach((b) => {
-    doc.addPage("a4", "landscape");
     const d = extrairDetalheBanco(b?.raw_response);
-    drawBrandHeader(
-      doc,
-      pageW,
-      DETALHE_HEADER_H,
-      "Detalhamento da Simulação",
-      `${produtoLabel(s)} · ${s.nome_cliente ?? "Cliente não informado"}`,
-    );
+    const nomeBanco = b?.nome_banco ?? "Banco";
+
+    doc.addPage("a4", "landscape");
+    drawBrandHeader(doc, pageW, DETALHE_HEADER_H, "Detalhamento da Simulação", subtitulo);
     let y = DETALHE_HEADER_H + 24;
-    y = drawFaixaBanco(doc, pageW, b?.nome_banco ?? "Banco", y);
-    y = drawInfoFinanciamento(doc, pageW, s, b, d, y);
+    y = drawFaixaBanco(doc, pageW, nomeBanco, y);
+
+    // ----- Painel agrupado: Informações do Financiamento + Resumo do Pagamento -----
+    const w = pageW - MARGIN * 2;
+    const pad = 12;
+    const groupTop = y;
+    let gy = y + pad + 4;
+
+    gy = drawInfoFinanciamento(doc, pageW - pad * 2, s, b, d, gy + 0);
 
     // Resumo do pagamento (valores fornecidos pela instituição — sem recálculo)
     const resumo: { label: string; valor: string }[] = [
@@ -338,32 +343,102 @@ function anexarDetalhesBancos(doc: jsPDF, pageW: number, pageH: number, s: any, 
     doc.setTextColor(AZUL);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(10);
-    doc.text("Resumo do Pagamento", MARGIN, y);
-    y += 8;
-    const w = pageW - MARGIN * 2;
+    doc.text("Resumo do Pagamento", MARGIN + pad, gy);
+    gy += 8;
+    const innerW = w - pad * 2;
     const gap = 8;
-    const cardW = (w - gap * 2) / 3;
+    const cardW = (innerW - gap * 2) / 3;
     const cardH = 40;
     resumo.forEach((it, i) => {
-      const x = MARGIN + i * (cardW + gap);
+      const x = MARGIN + pad + i * (cardW + gap);
       doc.setFillColor(ZEBRA);
       doc.setDrawColor(BORDA);
       doc.setLineWidth(0.5);
-      doc.roundedRect(x, y, cardW, cardH, 3, 3, "FD");
+      doc.roundedRect(x, gy, cardW, cardH, 3, 3, "FD");
       doc.setTextColor(CINZA);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(6.5);
-      doc.text(it.label.toUpperCase(), x + 10, y + 15, { maxWidth: cardW - 16 });
+      doc.text(it.label.toUpperCase(), x + 10, gy + 15, { maxWidth: cardW - 16 });
       doc.setTextColor(AZUL);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(12);
-      doc.text(it.valor, x + 10, y + 32, { maxWidth: cardW - 16 });
+      doc.text(it.valor, x + 10, gy + 32, { maxWidth: cardW - 16 });
     });
-    y += cardH + 20;
+    gy += cardH + pad;
+
+    // Contorno do painel agrupado
+    doc.setDrawColor(resolveBancoBrand(nomeBanco)?.cor ?? AZUL);
+    doc.setLineWidth(0.8);
+    doc.roundedRect(MARGIN, groupTop, w, gy - groupTop, 4, 4, "S");
+    doc.setLineWidth(0.2);
+    y = gy + 12;
 
     drawDisclaimer(doc, pageW, y);
+
+    // ----- Plano de parcelas do banco -----
+    const parcelas = d?.parcelas ?? [];
+    doc.addPage("a4", "landscape");
+    drawBrandHeader(doc, pageW, DETALHE_HEADER_H, `Plano de Pagamento — ${nomeBanco}`, subtitulo);
+    let py = DETALHE_HEADER_H + 26;
+    doc.setTextColor(AZUL);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.text(`Plano de Pagamento (${parcelas.length} parcelas)`, MARGIN, py);
+    if (d?.parcelasEstimadas) {
+      doc.setFont("helvetica", "italic");
+      doc.setFontSize(7);
+      doc.setTextColor(CINZA);
+      doc.text(
+        "Projeção calculada a partir da taxa e do sistema informados pelo banco (1ª/última parcela reais).",
+        pageW - MARGIN,
+        py,
+        { align: "right" },
+      );
+    }
+    py += 8;
+
+    if (parcelas.length === 0) {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.setTextColor(CINZA);
+      doc.text("Detalhamento de parcelas indisponível para esta simulação.", MARGIN, py + 16);
+    } else {
+      autoTable(doc, {
+        startY: py,
+        head: [["Parc.", "Data", "Amortização", "Juros", "Parcela", "Saldo devedor"]],
+        body: parcelas.map((p) => [
+          String(p.numero),
+          p.data ? dataTxt(p.data) : "—",
+          formatBRL(p.amortizacao),
+          formatBRL(p.juros),
+          formatBRL(p.parcela),
+          formatBRL(p.saldoDevedor),
+        ]),
+        margin: { left: MARGIN, right: MARGIN, top: DETALHE_HEADER_H + 16, bottom: 40 },
+        styles: {
+          fontSize: 7,
+          cellPadding: 3,
+          textColor: GRAFITE,
+          lineColor: BORDA,
+          lineWidth: 0.25,
+        },
+        headStyles: { fillColor: AZUL, textColor: "#FFFFFF", fontStyle: "bold", fontSize: 7 },
+        alternateRowStyles: { fillColor: ZEBRA },
+        columnStyles: {
+          0: { halign: "right" },
+          2: { halign: "right" },
+          3: { halign: "right" },
+          4: { halign: "right" },
+          5: { halign: "right" },
+        },
+        didDrawPage: () => {
+          drawBrandHeader(doc, pageW, DETALHE_HEADER_H, `Plano de Pagamento — ${nomeBanco}`, subtitulo);
+        },
+      });
+    }
   });
 }
+
 
 /** Gera e baixa um PDF institucional consolidado (dados + comparativo de bancos). */
 export function baixarSimulacaoPDF(input: SimulacaoPdfInput) {
