@@ -405,7 +405,14 @@ function Pagina() {
                         ? "Pasta"
                         : `${formatBytes(n.tamanho)} · ${new Date(n.created_at).toLocaleDateString("pt-BR")}`}
                     </p>
+                    {n.criado_por_nome ? (
+                      <span className="mt-1 inline-flex max-w-full items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+                        <User className="h-3 w-3 shrink-0" />
+                        <span className="truncate">{n.criado_por_nome}</span>
+                      </span>
+                    ) : null}
                   </div>
+
                 </button>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
