@@ -193,6 +193,9 @@ export function exportPDF(
     doc.text(nota.trim(), 32, ny, { maxWidth: pageW - 64, lineHeightFactor: 1.4 });
   }
 
+  // Páginas extras opcionais (ex.: detalhamento de cada banco) antes da paginação.
+  if (appendPages) appendPages(doc, pageW, pageH);
+
   // Rodapé com paginação (após conhecer o total de páginas)
   const total = doc.getNumberOfPages();
   for (let p = 1; p <= total; p++) {
