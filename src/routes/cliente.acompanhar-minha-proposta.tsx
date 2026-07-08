@@ -50,33 +50,42 @@ function Acompanhar() {
   const navigate = Route.useNavigate();
 
   return (
-    <Tabs
-      value={tab}
-      onValueChange={(v) => navigate({ search: { tab: v as typeof tab } })}
-      className="w-full"
-    >
-      <TabsList className="grid w-full grid-cols-4">
-        <TabsTrigger value="processo">Processo</TabsTrigger>
-        <TabsTrigger value="documentos">Docs</TabsTrigger>
-        <TabsTrigger value="mensagens">Mensagens</TabsTrigger>
-        <TabsTrigger value="propostas">Propostas</TabsTrigger>
-      </TabsList>
+    <div className="space-y-4">
+      <CabecalhoPagina
+        icon={ListChecks}
+        titulo="Acompanhar minha proposta"
+        subtitulo="Processo, documentos, mensagens e propostas em um só lugar"
+      />
 
-      <TabsContent value="processo" className="mt-4">
-        <AbaProcesso />
-      </TabsContent>
-      <TabsContent value="documentos" className="mt-4">
-        <AbaDocumentos />
-      </TabsContent>
-      <TabsContent value="mensagens" className="mt-4">
-        <AbaMensagens />
-      </TabsContent>
-      <TabsContent value="propostas" className="mt-4">
-        <AbaPropostas />
-      </TabsContent>
-    </Tabs>
+      <Tabs
+        value={tab}
+        onValueChange={(v) => navigate({ search: { tab: v as typeof tab } })}
+        className="w-full"
+      >
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="processo">Processo</TabsTrigger>
+          <TabsTrigger value="documentos">Docs</TabsTrigger>
+          <TabsTrigger value="mensagens">Mensagens</TabsTrigger>
+          <TabsTrigger value="propostas">Propostas</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="processo" className="mt-4">
+          <AbaProcesso />
+        </TabsContent>
+        <TabsContent value="documentos" className="mt-4">
+          <AbaDocumentos />
+        </TabsContent>
+        <TabsContent value="mensagens" className="mt-4">
+          <AbaMensagens />
+        </TabsContent>
+        <TabsContent value="propostas" className="mt-4">
+          <AbaPropostas />
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 }
+
 
 function AbaProcesso() {
   const { data, isLoading } = useQuery({
