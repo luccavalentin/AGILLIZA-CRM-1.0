@@ -413,6 +413,18 @@ export function DocumentosChecklist({ clienteId }: { clienteId: string }) {
               <DocItem itemKey="fgts_extrato" cat="comprador" label={T.comprador[6]} />
             </div>
           )}
+          {custom
+            .filter((c) => c.cat === "comprador")
+            .map((item) => (
+              <DocItem
+                key={item.id}
+                itemKey={`custom_${item.id}`}
+                label={item.label}
+                cat="comprador"
+                onRemove={() => removeCustom(item.id)}
+              />
+            ))}
+          <AdicionarItem onAdd={(l) => addCustom(l, "comprador")} />
         </CardContent>
       </Card>
 
