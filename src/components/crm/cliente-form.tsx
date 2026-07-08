@@ -609,8 +609,17 @@ export function ClienteForm({
                       size="icon"
                       disabled={!sel}
                       onClick={() => adicionarVinculo(tipo.valor)}
+                      title="Vincular usuário selecionado"
                     >
                       <UserPlus className="size-4" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setCriarTipo(tipo.valor)}
+                      title={`Criar novo ${tipo.rotulo}`}
+                    >
+                      <Plus className="size-4" /> Novo
                     </Button>
                   </div>
                   {desteTipo.length > 0 && (
