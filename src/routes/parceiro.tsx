@@ -89,15 +89,12 @@ function PortalParceiro() {
 
   return (
     <AuthSplitLayout
+      portalNome="Portal do Parceiro"
+      portalDescricao="Entre com e-mail e senha fornecidos pelo correspondente."
       bannerTitulo="Traga clientes e acompanhe a esteira."
       bannerSubtitulo="Portal exclusivo para imobiliárias e corretores parceiros."
     >
-      <div className="space-y-2 text-center">
-        <h1 className="text-2xl font-semibold text-foreground">Portal do Parceiro</h1>
-        <p className="text-sm text-muted-foreground">
-          Entre com e-mail e senha fornecidos pelo correspondente.
-        </p>
-      </div>
+
 
       <form onSubmit={entrar} className="mt-6 space-y-4">
         <div className="space-y-2">
