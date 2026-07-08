@@ -354,6 +354,24 @@ function Pagina() {
     });
   }
 
+  /** Aplica a "jogada de números": infla o valor de compra e venda para liberar o financiamento. */
+  function aplicarJogadaNumeros(dados: {
+    valorImovel: number;
+    valorEntrada: number;
+    valorFinanciamento: number;
+  }) {
+    setEntradaTocada(true);
+    setF((prev) => ({
+      ...prev,
+      valor_imovel: dados.valorImovel,
+      valor_entrada: dados.valorEntrada,
+      valor_financiamento: dados.valorFinanciamento,
+    }));
+    toast.success(
+      `Jogada aplicada: imóvel ${formatBRL(dados.valorImovel)}, entrada ${formatBRL(dados.valorEntrada)}, financiamento ${formatBRL(dados.valorFinanciamento)}.`,
+    );
+  }
+
   // Apenas o Bradesco opera pelo sistema PRICE.
   function isBradesco(b: { codigo_banco?: number | string | null; nome_banco?: string | null }) {
     return (
