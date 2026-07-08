@@ -49,10 +49,10 @@ async function nomesDeUsuarios(
   if (unicos.length === 0) return mapa;
   const { data } = await supabase
     .from("profiles")
-    .select("id, nome_completo")
+    .select("id, nome")
     .in("id", unicos);
-  for (const p of (data ?? []) as { id: string; nome_completo: string | null }[]) {
-    if (p.nome_completo) mapa.set(p.id, p.nome_completo);
+  for (const p of (data ?? []) as { id: string; nome: string | null }[]) {
+    if (p.nome) mapa.set(p.id, p.nome);
   }
   return mapa;
 }
