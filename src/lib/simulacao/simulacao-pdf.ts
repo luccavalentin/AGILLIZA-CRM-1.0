@@ -191,8 +191,11 @@ function drawInfoFinanciamento(
   b: any,
   d: DetalheBanco | null,
   y: number,
+  opts?: { x?: number; width?: number; cols?: number },
 ): number {
-  const w = pageW - MARGIN * 2;
+  const startX = opts?.x ?? MARGIN;
+  const w = opts?.width ?? pageW - MARGIN * 2;
+  const cols = opts?.cols ?? 3;
   const itens: { label: string; valor: string }[] = [
     { label: "Valor de compra e venda", valor: brlOuTraco(d?.valorImovel ?? s.valor_imovel) },
     { label: "Despesas financiadas", valor: brlOuTraco(d?.despesasFinanciadas) },
@@ -233,17 +236,16 @@ function drawInfoFinanciamento(
   doc.setTextColor(AZUL);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(10);
-  doc.text("Informações do Financiamento", MARGIN, y);
+  doc.text("Informações do Financiamento", startX, y);
   y += 8;
 
   const gap = 8;
-  const cols = 3;
   const cardW = (w - gap * (cols - 1)) / cols;
   const cardH = 34;
   itens.forEach((it, i) => {
     const col = i % cols;
     const rowIdx = Math.floor(i / cols);
-    const x = MARGIN + col * (cardW + gap);
+    const x = startX + col * (cardW + gap);
     const cy = y + rowIdx * (cardH + gap);
     doc.setFillColor(ZEBRA);
     doc.setDrawColor(BORDA);
@@ -261,6 +263,7 @@ function drawInfoFinanciamento(
   const linhas = Math.ceil(itens.length / cols);
   return y + linhas * (cardH + gap) + 8;
 }
+
 
 /** Faixa com o nome do banco centralizado: fundo branco, borda e texto na cor institucional do banco, com sua logo. */
 function drawFaixaBanco(doc: jsPDF, pageW: number, nomeBanco: string, y: number): number {
