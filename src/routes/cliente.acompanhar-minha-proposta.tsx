@@ -312,7 +312,7 @@ function AbaMensagens() {
         <p className="text-sm font-medium text-foreground">Fale com o time</p>
         <span className="ml-auto text-xs text-muted-foreground">Respondemos em horário comercial</span>
       </div>
-      <div className="min-h-[45dvh] space-y-3 bg-gradient-to-b from-muted/20 to-transparent px-3 py-3 sm:px-4">
+      <div className="h-[48dvh] max-h-[480px] min-h-[240px] space-y-3 overflow-y-auto bg-gradient-to-b from-muted/20 to-transparent px-3 py-3 sm:px-4">
 
         {(mensagens ?? []).length === 0 ? (
           <p className="py-10 text-center text-sm text-muted-foreground">
