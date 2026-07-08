@@ -134,6 +134,36 @@ export function JogadaNumerosDialog({
             </p>
           </div>
 
+          <div className="space-y-3 rounded-lg border border-border bg-muted/20 p-3">
+            <div className="flex items-center justify-between gap-3">
+              <div className="space-y-0.5">
+                <Label className="text-sm">Incluir custas</Label>
+                <p className="text-xs text-muted-foreground">
+                  Infla mais o compra e venda para cobrir cartório e ITBI.
+                </p>
+              </div>
+              <Switch checked={incluirCustas} onCheckedChange={setIncluirCustas} />
+            </div>
+            {incluirCustas && (
+              <div className="space-y-1.5">
+                <Label>Percentual de custas (%)</Label>
+                <input
+                  type="number"
+                  min={0}
+                  max={ltvPct - 1}
+                  value={custasPct}
+                  onChange={(e) => setCustasPct(Number(e.target.value))}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Reduz o divisor (ex.: 80% − 5% = 75%). Normalmente ~5%.
+                </p>
+              </div>
+            )}
+          </div>
+
+
+
           {calc.valido && (
             <div className="space-y-2 rounded-lg border border-border bg-muted/40 p-3 text-sm">
               <div className="flex items-center justify-between">
