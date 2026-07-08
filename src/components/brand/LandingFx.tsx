@@ -56,6 +56,11 @@ export function LandingFx({ className }: { className?: string }) {
     let smx = 0.5;
     let smy = 0.45;
 
+    // Intensidade do efeito: 0 em repouso, sobe apenas quando o mouse está sobre
+    // a área (para não ofuscar as informações). Interpolada suavemente.
+    let intensity = 0;
+    let targetIntensity = 0;
+
     const buildOrbs = () => {
       const count = w < 640 ? 4 : 6;
       orbs = Array.from({ length: count }, (_, i) => {
