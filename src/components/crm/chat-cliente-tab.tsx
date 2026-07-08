@@ -724,19 +724,34 @@ function MsgAcoes({
   onDelete?: () => void;
 }) {
   return (
-    <DropdownMenu modal={false}>
-      <DropdownMenuTrigger asChild>
+    <div
+      className={cn(
+        "flex shrink-0 items-center gap-0.5 self-center",
+        lado === "time" ? "order-first" : "",
+      )}
+    >
+      {/* Resposta rápida — 1 clique, sem abrir menu (fluido) */}
+      {onReply && (
         <button
           type="button"
-          className={cn(
-            "flex size-6 shrink-0 items-center justify-center self-center rounded-full text-muted-foreground opacity-60 transition-opacity hover:bg-muted hover:opacity-100 group-hover:opacity-100 focus:opacity-100 data-[state=open]:opacity-100",
-            lado === "time" ? "order-first" : "",
-          )}
-          aria-label="Ações da mensagem"
+          onClick={onReply}
+          aria-label="Responder"
+          title="Responder"
+          className="flex size-7 items-center justify-center rounded-full text-muted-foreground opacity-0 transition-opacity hover:bg-muted hover:text-primary group-hover:opacity-100 focus:opacity-100"
         >
-          <MoreVertical className="size-4" />
+          <Reply className="size-4" />
         </button>
-      </DropdownMenuTrigger>
+      )}
+      <DropdownMenu modal={false}>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            className="flex size-6 shrink-0 items-center justify-center self-center rounded-full text-muted-foreground opacity-60 transition-opacity hover:bg-muted hover:opacity-100 group-hover:opacity-100 focus:opacity-100 data-[state=open]:opacity-100"
+            aria-label="Mais ações da mensagem"
+          >
+            <MoreVertical className="size-4" />
+          </button>
+        </DropdownMenuTrigger>
       <DropdownMenuContent
         align={lado === "time" ? "end" : "start"}
         side={lado === "time" ? "left" : "right"}
