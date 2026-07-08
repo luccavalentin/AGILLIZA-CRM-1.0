@@ -24,6 +24,7 @@ import { ConsultandoOverlay } from "@/components/simulacao/consultando-overlay";
 import { ClienteCRMPicker } from "@/components/simulacao/cliente-crm-picker";
 import { estadoCivilCrmParaCodigo } from "@/lib/propostas/dominios";
 import { DicaRendaMinima } from "@/components/simulacao/dica-renda-minima";
+import { JogadaNumerosDialog } from "@/components/simulacao/jogada-numeros-dialog";
 import { avaliarRendaMinima } from "@/lib/simulacao/renda";
 import {
   AlertDialog,
