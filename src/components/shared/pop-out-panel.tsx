@@ -178,7 +178,7 @@ export function FloatingWindow({
         "fixed z-[60] flex max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden rounded-2xl border bg-background shadow-2xl backdrop-blur supports-[backdrop-filter]:bg-background/95 transition-shadow",
         !isMobile && "min-w-[18rem]",
         minimized
-          ? "h-auto border-primary/60 ring-2 ring-primary/40 shadow-[0_12px_40px_-12px_hsl(var(--primary)/0.55)]"
+          ? "h-auto border-primary/60 ring-2 ring-primary/40 shadow-[0_12px_40px_-12px_color-mix(in_oklab,var(--primary)_55%,transparent)]"
           : "border-primary/40 ring-1 ring-primary/20",
         !minimized && (mobileExpanded ? "" : "min-h-[20rem] resize"),
       )}
