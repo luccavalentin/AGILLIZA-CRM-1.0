@@ -73,7 +73,7 @@ function titulo(s: string | null | undefined): string {
     });
 }
 
-type PastaTipo = "imob" | "avulso" | "comercial" | "corretor";
+type PastaTipo = "comercial" | "imob" | "corretor";
 
 interface PastaNode {
   key: string;
