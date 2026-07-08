@@ -79,8 +79,8 @@ function Pagina() {
   const { data: contratos, isLoading: carregandoContratos } = useQuery({
     queryKey: ["crm-contratos-emitidos"],
     queryFn: () => listarContratos(),
-    enabled: arquivoAberto,
   });
+  const totalArquivados = contratos?.length ?? 0;
 
   const queryKey = ["crm-painel", desde, ate];
   const { data, isLoading } = useQuery({
