@@ -22,6 +22,7 @@ import {
 } from "recharts";
 import { clienteObterVisaoGeral } from "@/lib/portal/cliente.functions";
 import { TimelineCliente } from "@/components/cliente/timeline-cliente";
+import { CabecalhoPagina } from "@/components/cliente/cabecalho-pagina";
 import { ChipDocumento } from "@/components/cliente/chip-documento";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
