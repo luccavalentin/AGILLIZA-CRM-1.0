@@ -90,7 +90,11 @@ export function AppShell({
           <div className="sidebar-scroll flex-1 overflow-y-auto">
             {hydrated && collapsed ? <SidebarRail nav={nav} /> : <SidebarNav nav={nav} />}
           </div>
+          <div className="border-t border-sidebar-border p-2">
+            <SidebarSignOut collapsed={hydrated && collapsed} onSignOut={onSignOut} />
+          </div>
         </aside>
+
 
         {/* Drawer mobile */}
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
