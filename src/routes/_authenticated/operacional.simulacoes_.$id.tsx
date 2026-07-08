@@ -190,35 +190,38 @@ function Pagina() {
   const melhorId = bancosComTaxa.length > 1 ? bancosComTaxa[0]?.id : undefined;
 
   return (
-    <div className="mx-auto w-full max-w-[1600px] space-y-6 p-4 md:p-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
+    <div className="mx-auto w-full max-w-[1600px] space-y-5 p-4 md:p-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-4">
+        <div className="flex min-w-0 items-center gap-3">
           <Button
             variant="ghost"
             size="icon"
+            className="h-9 w-9 shrink-0"
             onClick={() => router.navigate({ to: "/operacional/simulacoes" })}
           >
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <div>
+          <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <h1 className="text-xl font-semibold text-foreground">{s.numero_simulacao}</h1>
+              <h1 className="truncate text-lg font-semibold tracking-tight text-foreground">
+                {s.numero_simulacao}
+              </h1>
               <SimulacaoStatusBadge status={s.status} />
             </div>
-            <p className="text-sm text-muted-foreground">
+            <p className="truncate text-sm text-muted-foreground">
               {s.nome_cliente ?? "—"} ·{" "}
               {s.produto === "home_equity" ? "Home Equity" : "Financiamento"}
             </p>
           </div>
         </div>
-        <div className="flex gap-2">
-          <Button variant="secondary" onClick={reenviar}>
-            <RefreshCw className="mr-1 h-4 w-4" /> Reenviar ao banco
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" className="h-9" onClick={reenviar}>
+            <RefreshCw className="mr-1.5 h-4 w-4" /> Reenviar
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="secondary">
-                <Download className="mr-1 h-4 w-4" /> Baixar PDF{" "}
+              <Button variant="outline" size="sm" className="h-9">
+                <Download className="mr-1.5 h-4 w-4" /> Baixar PDF
                 <ChevronDown className="ml-1 h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -245,28 +248,38 @@ function Pagina() {
             simulacao={s}
             bancos={bancos}
           />
-          <Button variant="ghost" onClick={duplicar}>
-            <Copy className="mr-1 h-4 w-4" /> Duplicar
-          </Button>
-          <Button variant="ghost" onClick={editar}>
-            <Pencil className="mr-1 h-4 w-4" /> Editar
-          </Button>
-          <ConfirmDelete
-            titulo="Excluir simulação"
-            descricao={`A simulação ${s.numero_simulacao} será removida permanentemente.`}
-            onConfirm={excluir}
-            trigger={
-              <Button
-                variant="ghost"
-                className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-              >
-                <Trash2 className="mr-1 h-4 w-4" /> Excluir
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-9 w-9" aria-label="Mais ações">
+                <ChevronDown className="h-4 w-4" />
               </Button>
-            }
-          />
-
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={duplicar}>
+                <Copy className="mr-2 h-4 w-4" /> Duplicar
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={editar}>
+                <Pencil className="mr-2 h-4 w-4" /> Editar
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <ConfirmDelete
+                titulo="Excluir simulação"
+                descricao={`A simulação ${s.numero_simulacao} será removida permanentemente.`}
+                onConfirm={excluir}
+                trigger={
+                  <DropdownMenuItem
+                    onSelect={(e) => e.preventDefault()}
+                    className="text-destructive focus:text-destructive"
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" /> Excluir
+                  </DropdownMenuItem>
+                }
+              />
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
+
 
       {s.ultimo_erro && (
         <Card className="border-destructive/30 bg-card p-4">

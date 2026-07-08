@@ -3,7 +3,20 @@ import { useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Loader2, Plus, UserPlus, Users, X } from "lucide-react";
+import {
+  Loader2,
+  Plus,
+  UserPlus,
+  Users,
+  X,
+  KeyRound,
+  IdCard,
+  Heart,
+  FileText,
+  MapPin,
+  ShieldCheck,
+  Landmark,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Combobox } from "@/components/ui/combobox";
@@ -672,7 +685,10 @@ export function ClienteForm({
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Acesso ao Portal do Cliente</CardTitle>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <KeyRound className="size-4 text-primary" /> Acesso ao Portal do Cliente
+          </CardTitle>
+
         </CardHeader>
         <CardContent className="flex items-center justify-between gap-4">
           <div className="text-sm text-muted-foreground">
@@ -699,7 +715,10 @@ export function ClienteForm({
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Dados básicos</CardTitle>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <IdCard className="size-4 text-primary" /> Dados básicos
+          </CardTitle>
+
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
@@ -838,7 +857,10 @@ export function ClienteForm({
         (v.estado_civil === "casado" || v.estado_civil === "uniao_estavel") && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Dados do cônjuge</CardTitle>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Heart className="size-4 text-primary" /> Dados do cônjuge
+            </CardTitle>
+
             <p className="text-sm text-muted-foreground">
               Exigidos pelos bancos quando o proponente é casado ou vive em união estável.
             </p>
@@ -1007,7 +1029,10 @@ export function ClienteForm({
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Documento de identidade e qualificação</CardTitle>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <FileText className="size-4 text-primary" /> Documento de identidade e qualificação
+          </CardTitle>
+
           <p className="text-sm text-muted-foreground">
             Dados exigidos pelos bancos para análise e aprovação do financiamento.
           </p>
@@ -1119,7 +1144,10 @@ export function ClienteForm({
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Endereço</CardTitle>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <MapPin className="size-4 text-primary" /> Endereço
+          </CardTitle>
+
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
@@ -1190,7 +1218,10 @@ export function ClienteForm({
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">FGTS e autorização de dados</CardTitle>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <ShieldCheck className="size-4 text-primary" /> FGTS e autorização de dados
+          </CardTitle>
+
           <p className="text-sm text-muted-foreground">
             Informações exigidas no envio da proposta ao banco — preenchidas aqui já seguem para a
             proposta automaticamente.
@@ -1229,7 +1260,10 @@ export function ClienteForm({
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Dados bancários</CardTitle>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Landmark className="size-4 text-primary" /> Dados bancários
+          </CardTitle>
+
           <p className="text-sm text-muted-foreground">
             Conta usada para crédito e débito das parcelas do financiamento.
           </p>
