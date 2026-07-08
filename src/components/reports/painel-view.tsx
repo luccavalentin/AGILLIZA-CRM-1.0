@@ -201,7 +201,7 @@ export function PainelView({
                 subtitulo={data.chart.subtitulo}
                 abrirTo={abrirTo}
               >
-                <div className="h-64 w-full">
+                <div className="h-72 w-full xl:h-80">
                   <ReportChartView
                     chart={{ titulo: data.chart.titulo, tipo: "barh", dados: data.chart.dados }}
                     colorByBank={data.chart.porBanco}
