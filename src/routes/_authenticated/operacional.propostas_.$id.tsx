@@ -574,6 +574,8 @@ function AcoesTopo({
           </DialogContent>
         </Dialog>
       )}
+        </div>
+      )}
     </div>
   );
 }
