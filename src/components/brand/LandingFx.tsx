@@ -178,9 +178,9 @@ export function LandingFx({ className }: { className?: string }) {
       ctx.globalCompositeOperation = "screen";
       for (const rp of ripples) {
         rp.t += 0.01;
-        const alpha = (1 - rp.t) * 0.4 * intensity;
+        const alpha = (1 - rp.t) * 0.18 * intensity;
         if (alpha <= 0) continue;
-        const rad = rp.t * minDim * 0.6;
+        const rad = rp.t * minDim * 0.3;
         ctx.beginPath();
         ctx.arc(rp.x * w, rp.y * h, rad, 0, Math.PI * 2);
         ctx.strokeStyle = `hsla(205, 95%, 75%, ${alpha})`;
