@@ -1066,6 +1066,9 @@ export function DocumentosChecklist({ clienteId }: { clienteId: string }) {
           <CardTitle className="text-base">Itens personalizados</CardTitle>
         </CardHeader>
         <CardContent className="space-y-1">
+          <div className="pb-2">
+            <AdicionarItem onAdd={(l) => addCustom(l, "outros")} />
+          </div>
           {custom.filter((c) => !c.cat || c.cat === "outros").length === 0 && (
             <p className="text-sm text-muted-foreground">
               Adicione itens próprios ao checklist deste cliente.
