@@ -88,7 +88,7 @@ export function JogadaNumerosDialog({
     const entrada = Math.max(0, valorImovel - liberar);
     const pctEntrada = valorImovel > 0 ? (entrada / valorImovel) * 100 : 0;
     return { valorImovel, entrada, pctEntrada, valido: true };
-  }, [valorLiberar, ltvPct, incluirCustas, custasPct]);
+  }, [valorLiberar, ltvPct]);
 
 
   function aplicar() {
