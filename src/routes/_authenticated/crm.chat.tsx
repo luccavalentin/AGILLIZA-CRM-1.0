@@ -574,13 +574,17 @@ function Pagina() {
   );
 }
 
-function PainelGestao({
+function BarraGestao({
   clienteId,
   nome,
+  documento,
+  contexto,
   etiquetas,
 }: {
   clienteId: string;
   nome: string;
+  documento?: string | null;
+  contexto?: string | null;
   etiquetas: ChatEtiqueta[];
 }) {
   const qc = useQueryClient();
