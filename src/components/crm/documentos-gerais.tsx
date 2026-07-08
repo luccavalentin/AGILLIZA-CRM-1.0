@@ -91,14 +91,14 @@ const PASTA_BADGE: Record<PastaTipo, { label: string; classe: string }> = {
   },
   imob: {
     label: "Imobiliária",
-    classe: "border-sky-500/25 bg-sky-500/10 text-sky-600 dark:text-sky-400",
+    classe: "border-primary/25 bg-primary/10 text-primary",
   },
   corretor: {
     label: "Corretor",
-    classe:
-      "border-violet-500/25 bg-violet-500/10 text-violet-600 dark:text-violet-400",
+    classe: "border-primary/25 bg-primary/10 text-primary",
   },
 };
+
 
 interface PastaNode {
   key: string;
@@ -267,8 +267,9 @@ export function DocumentosGerais() {
   function IconePasta({ tipo, aberta }: { tipo: PastaTipo; aberta?: boolean }) {
     const conf: Record<PastaTipo, { Icon: typeof Folder; classe: string }> = {
       comercial: { Icon: Briefcase, classe: "from-primary/20 to-primary/5 text-primary" },
-      imob: { Icon: Building2, classe: "from-sky-500/20 to-sky-500/5 text-sky-600 dark:text-sky-400" },
-      corretor: { Icon: IdCard, classe: "from-violet-500/20 to-violet-500/5 text-violet-600 dark:text-violet-400" },
+      imob: { Icon: Building2, classe: "from-primary/20 to-primary/5 text-primary" },
+      corretor: { Icon: IdCard, classe: "from-primary/20 to-primary/5 text-primary" },
+
     };
     const { Icon, classe } = conf[tipo];
     return (
