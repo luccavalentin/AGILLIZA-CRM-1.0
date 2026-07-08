@@ -269,7 +269,6 @@ export const getPanelDados = createServerFn({ method: "POST" })
           { label: "Contratos emitidos", valor: int(contratos.length), hint: brlCompacto(volume), tone: "success" },
         ],
         minis: [
-          { label: "Contratos emitidos", valor: int(contratos.length), tone: "success" },
           { label: "Volume contratado", valor: brlCompacto(volume), tone: "success" },
           { label: "Volume simulado", valor: brlCompacto(volumeSimulado), tone: "neutral" },
           { label: "Volume aprovado", valor: brlCompacto(volumeAprovado), tone: "success" },
