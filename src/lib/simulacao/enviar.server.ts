@@ -431,6 +431,16 @@ export async function enviarSimulacaoImpl({
           ? e.message
           : "Falha ao enviar ao banco.";
     const msg = sanitizarMensagemErro(bruto);
+    // Nenhum banco deste lote pode ficar preso em "aguardando"/"enviando":
+    // marca os pendentes como erro para o usuário poder reenviar.
+    const idsLote = (bancos as any[]).map((b) => b.id);
+    if (idsLote.length > 0) {
+      await supabase
+        .from("simulacao_bancos")
+        .update({ status_banco: "erro", mensagem_banco: msg })
+        .in("id", idsLote)
+        .in("status_banco", ["aguardando", "enviando"]);
+    }
     await supabase
       .from("simulacoes")
       .update({ status: "erro_banco", ultimo_erro: msg })
