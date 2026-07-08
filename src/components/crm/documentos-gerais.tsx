@@ -77,6 +77,8 @@ interface PastaNode {
   subpastas: PastaNode[];
   clientes: DGCliente[];
   total_clientes: number;
+  /** Analistas (criadores) marcados como etiqueta na pasta comercial. */
+  analistas?: Map<string, string>;
 }
 
 function garantirFilho(pai: PastaNode, key: string, nome: string, tipo: PastaTipo): PastaNode {
