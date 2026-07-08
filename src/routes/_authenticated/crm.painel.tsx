@@ -47,6 +47,8 @@ function Pagina() {
   const salvarDatas = useServerFn(definirDatasVistoria);
   const [desde, setDesde] = useState("");
   const [ate, setAte] = useState("");
+  const [busca, setBusca] = useState("");
+  const [dialogStage, setDialogStage] = useState<string | null>(null);
   const [arrasto, setArrasto] = useState<Arrasto | null>(null);
   const [alvo, setAlvo] = useState<string | null>(null);
   const arrastouRef = useRef(false);
