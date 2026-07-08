@@ -508,7 +508,7 @@ export function ChatClienteConversa({ clienteId, info }: { clienteId: string; in
                           "mb-1 rounded-lg border-l-2 px-2 py-1 text-[11px]",
                           doTime
                             ? "border-primary-foreground/50 bg-primary-foreground/10 text-primary-foreground/80"
-                            : "border-primary/50 bg-primary/5 text-muted-foreground",
+                            : "border-chat-them-foreground/30 bg-chat-them-foreground/5 text-chat-them-foreground/80",
                         )}
                       >
                         <span className="block font-semibold">{m.citacao.autor}</span>
