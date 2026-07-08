@@ -404,8 +404,10 @@ export interface PainelStage {
     numero_cliente: string;
     vistoria_agendada_em: string | null;
     vistoria_concluida_em: string | null;
+    pipeline_atualizado_em: string | null;
   }[];
 }
+
 
 /** Kanban da esteira: etapas com clientes posicionados (RLS aplica escopo). */
 export const listarPainel = createServerFn({ method: "GET" })
