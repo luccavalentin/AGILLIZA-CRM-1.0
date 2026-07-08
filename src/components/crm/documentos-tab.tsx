@@ -321,12 +321,14 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
   }
 
   const abaBar = (
-    <div className="inline-flex rounded-lg border border-border p-1">
+    <div className="inline-flex rounded-xl border border-border/60 bg-muted/40 p-1 shadow-sm">
       <button
         type="button"
         onClick={() => setAba("documentos")}
-        className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-          aba === "documentos" ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+        className={`rounded-lg px-3.5 py-1.5 text-sm font-medium transition-all ${
+          aba === "documentos"
+            ? "bg-gradient-to-r from-primary to-primary/80 text-primary-foreground shadow"
+            : "text-muted-foreground hover:text-foreground"
         }`}
       >
         Pastas de documentos
@@ -334,14 +336,17 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
       <button
         type="button"
         onClick={() => setAba("checklist")}
-        className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-          aba === "checklist" ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+        className={`rounded-lg px-3.5 py-1.5 text-sm font-medium transition-all ${
+          aba === "checklist"
+            ? "bg-gradient-to-r from-primary to-primary/80 text-primary-foreground shadow"
+            : "text-muted-foreground hover:text-foreground"
         }`}
       >
         Checklist
       </button>
     </div>
   );
+
 
   if (aba === "checklist") {
     return (
