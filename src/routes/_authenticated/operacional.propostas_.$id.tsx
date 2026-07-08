@@ -264,7 +264,23 @@ function Pagina() {
         <div className="grid grid-cols-1 divide-y divide-border border-b border-border sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-3">
           <Kpi
             label={multiBanco ? "Bancos enviados" : "Banco escolhido"}
-            valor={multiBanco ? `${bancosEnviados.length} bancos` : (p.nome_banco ?? "—")}
+            valor={
+              multiBanco ? (
+                `${bancosEnviados.length} bancos`
+              ) : p.nome_banco ? (
+                <span className="flex min-w-0 items-center gap-2">
+                  <BancoLogo nome={p.nome_banco} size="lg" className="shrink-0" />
+                  <span
+                    className="truncate"
+                    style={{ color: corDoBanco(p.nome_banco) }}
+                  >
+                    {p.nome_banco}
+                  </span>
+                </span>
+              ) : (
+                "—"
+              )
+            }
           />
           <Kpi label="Valor financiado" valor={formatBRL(p.valor_financiamento)} />
           <Kpi
