@@ -152,7 +152,7 @@ function SidebarLinks({ collapsed, onNavigate }: { collapsed: boolean; onNavigat
     <nav aria-label="Navegação principal" className="flex flex-col gap-4 px-3 py-4">
       {NAV_CLIENTE.map((group) => (
         <div key={group.id} className="flex flex-col gap-1">
-          <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-sidebar-foreground/70">
+          <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-sidebar-foreground/80">
             {group.label}
           </p>
           {group.items.map((item) => {
