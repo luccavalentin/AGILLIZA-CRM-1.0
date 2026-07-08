@@ -184,12 +184,12 @@ export function imprimirFichaPDF(clienteNome: string, data: FichaConsolidada): v
 <title>Ficha — ${escapeHtml(nome)}</title>
 <style>
   :root {
-    --tinta: #101828;
-    --suave: #667085;
+    --tinta: #0b0b0f;
+    --suave: #4b5563;
     --linha: #e4e7ec;
-    --marca: #0b1f3a;
-    --marca-2: #1e5aa8;
-    --fundo-campo: #f8fafc;
+    --marca: #000f9f;
+    --marca-2: #000a70;
+    --fundo-campo: #f7f8fa;
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; }
