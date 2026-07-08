@@ -86,3 +86,12 @@ export function previewChatSound(): void {
   tone(ctx, 587.33, now, 0.14, 0.14);
   tone(ctx, 880.0, now + 0.1, 0.2, 0.16);
 }
+
+/** Som neutro de notificação (um toque curto), independente da pref de chat. */
+export function playNotificationSound(): void {
+  const ctx = getCtx();
+  if (!ctx) return;
+  const now = ctx.currentTime;
+  tone(ctx, 660, now, 0.12, 0.12);
+  tone(ctx, 990, now + 0.09, 0.16, 0.13);
+}
