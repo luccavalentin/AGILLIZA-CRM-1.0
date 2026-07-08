@@ -91,14 +91,14 @@ const PASTA_BADGE: Record<PastaTipo, { label: string; classe: string }> = {
   },
   imob: {
     label: "Imobiliária",
-    classe: "border-sky-500/25 bg-sky-500/10 text-sky-600 dark:text-sky-400",
+    classe: "border-primary/25 bg-primary/10 text-primary",
   },
   corretor: {
     label: "Corretor",
-    classe:
-      "border-violet-500/25 bg-violet-500/10 text-violet-600 dark:text-violet-400",
+    classe: "border-primary/25 bg-primary/10 text-primary",
   },
 };
+
 
 interface PastaNode {
   key: string;
