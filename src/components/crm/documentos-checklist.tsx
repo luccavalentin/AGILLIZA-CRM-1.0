@@ -857,6 +857,9 @@ export function DocumentosChecklist({ clienteId }: { clienteId: string }) {
           <CardTitle className="text-base">Checklist do comprador</CardTitle>
         </CardHeader>
         <CardContent className="space-y-1">
+          <div className="pb-2">
+            <AdicionarItem onAdd={(l) => addCustom(l, "comprador")} />
+          </div>
           <DocItem itemKey="c_doc_id" cat="comprador" label={T.comprador[0]} />
           {casado && (
             <DocItem itemKey="c_doc_id_conj" cat="conjuge" label={T.conjuge[0]} />
