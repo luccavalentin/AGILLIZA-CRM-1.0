@@ -649,7 +649,7 @@ export function ChatClienteConversa({ clienteId, info }: { clienteId: string; in
         open={!!confirmarExcluir}
         onOpenChange={(o) => !o && setConfirmarExcluir(null)}
       >
-        <AlertDialogContent>
+        <AlertDialogContent className="z-[90]">
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir mensagem?</AlertDialogTitle>
             <AlertDialogDescription>
