@@ -171,7 +171,7 @@ function SidebarLinks({ collapsed, onNavigate }: { collapsed: boolean; onNavigat
                   "group relative flex min-h-10 items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
                   active
                     ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                    : "text-sidebar-foreground/80 hover:bg-white/10 hover:text-sidebar-foreground",
+                    : "text-sidebar-foreground hover:bg-white/15 hover:text-sidebar-foreground",
                   piscando && !active && "animate-pulse",
                 )}
               >
@@ -181,9 +181,10 @@ function SidebarLinks({ collapsed, onNavigate }: { collapsed: boolean; onNavigat
                 <Icon
                   className={cn(
                     "h-[18px] w-[18px] shrink-0",
-                    active ? "text-sidebar-accent-foreground" : "text-sidebar-foreground/70",
+                    active ? "text-sidebar-accent-foreground" : "text-sidebar-foreground/90",
                   )}
                 />
+
                 <span className="truncate">{item.label}</span>
                 {piscando && (
                   <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1.5 text-[10px] font-semibold text-destructive-foreground">
