@@ -159,7 +159,7 @@ export function LandingFx({ className }: { className?: string }) {
       ctx.globalCompositeOperation = "screen";
       for (const rp of ripples) {
         rp.t += 0.01;
-        const alpha = (1 - rp.t) * 0.4;
+        const alpha = (1 - rp.t) * 0.4 * intensity;
         if (alpha <= 0) continue;
         const rad = rp.t * minDim * 0.6;
         ctx.beginPath();
