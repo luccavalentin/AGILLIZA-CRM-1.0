@@ -304,5 +304,29 @@ export const exportarBackupCompleto = createServerFn({ method: "GET" })
       }
     }
 
-    return { geradoEm: new Date().toISOString(), tabelas };
+    // Registra o backup no histórico (retido pela janela configurada).
+    const manifesto: Record<string, number> = {};
+    let totalRegistros = 0;
+    for (const t of tabelas) {
+      manifesto[t.tabela] = t.linhas.length;
+      totalRegistros += t.linhas.length;
+    }
+    const agora = new Date().toISOString();
+    try {
+      await supabase.from("backup_jobs").insert({
+        correspondente_id: corr,
+        status: "concluido",
+        criador_id: userId,
+        manifesto,
+        tamanho_bytes: totalRegistros * 1024,
+        iniciado_em: agora,
+        concluido_em: agora,
+      });
+      await purgarExpirados(supabase, corr, await retencaoDias(supabase, corr));
+    } catch {
+      // não bloqueia a exportação caso o registro falhe
+    }
+
+    return { geradoEm: agora, tabelas };
   });
+
