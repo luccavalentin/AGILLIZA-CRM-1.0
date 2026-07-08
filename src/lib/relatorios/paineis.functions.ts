@@ -245,7 +245,10 @@ export const getPanelDados = createServerFn({ method: "POST" })
 
       // Evolução — propostas x contratos ao longo do tempo
       const propBucket = contarPorBucket(enviadas, buckets);
-      const contratoBucket = contarPorBucket(contratos, buckets);
+      const contratoBucket = contarPorBucket(
+        contratos.map((p) => ({ created_at: p.contrato_emitido_em })),
+        buckets,
+      );
       const evoDados: PanelSerie[] = buckets.chaves.map((k) => ({
         label: buckets.rotulo(k),
         valor: propBucket.get(k) ?? 0,
