@@ -352,84 +352,47 @@ export function DocumentosGerais() {
         </Card>
       ) : filtrando && caminho.length === 0 ? (
         // Resultado da consulta (lista plana de clientes)
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {clientesFiltrados.map((c) => (
-            <button
-              key={c.cliente_id}
-              className="flex items-start gap-3 rounded-lg border border-border p-4 text-left transition-colors hover:bg-accent"
-              onClick={() => abrirCliente(c)}
-            >
-              <FolderOpen className="h-8 w-8 shrink-0 text-primary" />
-              <div className="min-w-0">
-                <p className="truncate font-medium text-foreground">{titulo(c.nome)}</p>
-                <p className="truncate text-xs text-muted-foreground">
-                  {c.imobiliaria_nome ? titulo(c.imobiliaria_nome) : AVULSO_LABEL} ·{" "}
-                  {c.corretor_nome ? titulo(c.corretor_nome) : SEM_CORRETOR}
-                </p>
-                <p className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <FileText className="h-3 w-3" /> {c.total_documentos} documento(s)
-                </p>
-              </div>
-            </button>
+            <CardCliente key={c.cliente_id} c={c} onOpen={() => abrirCliente(c)} mostrarVinculos />
           ))}
           {clientesFiltrados.length === 0 && (
             <p className="text-sm text-muted-foreground">Nenhum cliente encontrado.</p>
           )}
         </div>
       ) : pastasNivel.length > 0 ? (
-        // Nível de pastas (imobiliárias/avulso/comercial/corretor)
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        // Nível de pastas (comercial → imobiliária → corretor)
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {pastasNivel.map((p) => (
             <button
               key={p.key}
-              className="flex flex-col gap-2 rounded-lg border border-border p-4 text-left transition-colors hover:bg-accent"
+              className="group relative flex items-center gap-3 overflow-hidden rounded-xl border border-border/70 bg-card p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
               onClick={() => setCaminho([...caminho, p.key])}
             >
-              <div className="flex items-center gap-3">
-                {iconePasta(p.tipo)}
-                <div className="min-w-0">
-                  <p className="truncate font-medium text-foreground">{p.nome}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {p.subpastas.length > 0
-                      ? `${p.subpastas.length} pasta(s) · ${p.total_clientes} cliente(s)`
-                      : `${p.total_clientes} cliente(s)`}
-                  </p>
-                </div>
-              </div>
-              {p.tipo === "comercial" && p.analistas && p.analistas.size > 0 && (
-                <div className="flex flex-wrap gap-1">
-                  {Array.from(p.analistas.values()).map((nome) => (
-                    <span
-                      key={nome}
-                      className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/60 px-2 py-0.5 text-[10px] font-medium text-muted-foreground"
-                      title="Analista que criou o cadastro"
-                    >
-                      <UserCog className="h-3 w-3" />
-                      {nome}
+              <span className="pointer-events-none absolute inset-x-0 top-0 h-0.5 scale-x-0 bg-gradient-to-r from-primary/60 to-primary/10 transition-transform group-hover:scale-x-100" />
+              <IconePasta tipo={p.tipo} />
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-semibold text-foreground">{p.nome}</p>
+                <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
+                  {p.subpastas.length > 0 && (
+                    <span className="inline-flex items-center gap-1">
+                      <Folder className="h-3 w-3" /> {p.subpastas.length} pasta(s)
                     </span>
-                  ))}
-                </div>
-              )}
+                  )}
+                  <span className="inline-flex items-center gap-1">
+                    <Users className="h-3 w-3" /> {p.total_clientes} cliente(s)
+                  </span>
+                </p>
+              </div>
+              <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/60 transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
             </button>
           ))}
         </div>
       ) : (
         // Nível de clientes (dentro de um corretor)
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {clientesNivel.map((c) => (
-            <button
-              key={c.cliente_id}
-              className="flex items-center gap-3 rounded-lg border border-border p-4 text-left transition-colors hover:bg-accent"
-              onClick={() => abrirCliente(c)}
-            >
-              <FolderOpen className="h-8 w-8 shrink-0 text-primary" />
-              <div className="min-w-0">
-                <p className="truncate font-medium text-foreground">{titulo(c.nome)}</p>
-                <p className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <FileText className="h-3 w-3" /> {c.total_documentos} documento(s)
-                </p>
-              </div>
-            </button>
+            <CardCliente key={c.cliente_id} c={c} onOpen={() => abrirCliente(c)} />
           ))}
           {clientesNivel.length === 0 && (
             <p className="text-sm text-muted-foreground">Nenhum cliente encontrado.</p>
