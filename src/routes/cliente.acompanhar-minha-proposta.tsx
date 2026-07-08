@@ -314,7 +314,7 @@ function AbaMensagens() {
                     "max-w-[80%] overflow-hidden rounded-2xl text-sm shadow-sm",
                     doCliente
                       ? "rounded-br-sm bg-primary text-primary-foreground"
-                      : "rounded-bl-sm bg-muted text-foreground",
+                      : "rounded-bl-sm border border-chat-them-border bg-chat-them text-chat-them-foreground",
                   )}
                 >
                   {excluida ? (
