@@ -615,7 +615,14 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
                 <p className="text-xs text-muted-foreground">
                   {CATEGORIA_LABEL[d.categoria as Categoria]} · {d.tipo_documento} · v{d.versao}
                 </p>
+                {d.enviado_por_nome ? (
+                  <span className="mt-1 inline-flex max-w-full items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+                    <User className="size-3 shrink-0" />
+                    <span className="truncate">Enviado por {d.enviado_por_nome}</span>
+                  </span>
+                ) : null}
               </div>
+
               <ToneBadge tone={statusTone[d.status] ?? "muted"}>{d.status}</ToneBadge>
               <Button
                 size="icon"
