@@ -967,7 +967,6 @@ export function DocumentosChecklist({ clienteId }: { clienteId: string }) {
                 onRemove={() => removeCustom(item.id)}
               />
             ))}
-          <AdicionarItem onAdd={(l) => addCustom(l, "vendedor")} />
         </CardContent>
       </Card>
 
