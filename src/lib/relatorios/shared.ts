@@ -112,7 +112,7 @@ export interface ChartSerie {
 export interface ReportChart {
   titulo: string;
   subtitulo?: string;
-  tipo: "bar" | "line" | "barh" | "funnel";
+  tipo: "bar" | "line" | "barh" | "funnel" | "donut";
   dados: ChartSerie[];
   serie1?: string;
   serie2?: string;
