@@ -7,10 +7,13 @@ import {
   FolderOpen,
   ChevronRight,
   User,
+  Users,
   FileText,
   ClipboardList,
   Search,
   UserCog,
+  Briefcase,
+  IdCard,
   X,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -31,11 +34,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
 import { DocumentosTab } from "@/components/crm/documentos-tab";
 import {
   explorarDocumentosGerais,
   obterFichaConsolidada,
-  AVULSO_LABEL,
   SEM_COMERCIAL_LABEL,
   type DGCliente,
 } from "@/lib/crm/documentos-gerais.functions";
@@ -52,7 +55,8 @@ function fmtData(v: string | null | undefined) {
 
 const SEM_CORRETOR = "Sem corretor vinculado";
 const SEM_CORRETOR_KEY = "__sem_corretor__";
-const AVULSO_KEY = "__avulso__";
+const SEM_IMOB = "Sem imobiliária";
+const SEM_IMOB_KEY = "__sem_imob__";
 const SEM_COMERCIAL_KEY = "__sem_comercial__";
 
 // Palavras que permanecem minúsculas no meio do nome.
@@ -69,7 +73,7 @@ function titulo(s: string | null | undefined): string {
     });
 }
 
-type PastaTipo = "imob" | "avulso" | "comercial" | "corretor";
+type PastaTipo = "comercial" | "imob" | "corretor";
 
 interface PastaNode {
   key: string;
@@ -139,65 +143,47 @@ export function DocumentosGerais() {
     });
   }, [clientes, busca, filtroImob, filtroCorr]);
 
-  // Árvore de pastas:
-  //   Imobiliária → Corretor → Cliente
-  //   Avulso (mãe) → Comercial → Corretor → Cliente  (clientes sem imobiliária)
+  // Árvore de pastas (hierarquia oficial):
+  //   Comercial Agilliza → Imobiliária → Corretor → Cliente
+  // Todo comercial tem a sua pasta; dentro dela ficam as imobiliárias com que
+  // trabalha (uma mesma imobiliária pode aparecer em vários comerciais), e cada
+  // imobiliária lista os corretores e, por fim, os clientes.
   const raizes = useMemo<PastaNode[]>(() => {
-    const imobs = new Map<string, PastaNode>();
-    let avulso: PastaNode | null = null;
+    const comerciais = new Map<string, PastaNode>();
 
     for (const c of clientes) {
+      const comKey = c.comercial_id ? `com:${c.comercial_id}` : SEM_COMERCIAL_KEY;
+      const comNome = c.comercial_id ? titulo(c.comercial_nome) : SEM_COMERCIAL_LABEL;
+      let com = comerciais.get(comKey);
+      if (!com) {
+        com = {
+          key: comKey,
+          nome: comNome,
+          tipo: "comercial",
+          subpastas: [],
+          clientes: [],
+          total_clientes: 0,
+        };
+        comerciais.set(comKey, com);
+      }
+
+      const imobKey = c.imobiliaria_id ? `imob:${c.imobiliaria_id}` : SEM_IMOB_KEY;
+      const imobNome = c.imobiliaria_id ? titulo(c.imobiliaria_nome) : SEM_IMOB;
+      const imob = garantirFilho(com, imobKey, imobNome, "imob");
+
       const corrKey = c.corretor_id ?? SEM_CORRETOR_KEY;
       const corrNome = c.corretor_id ? titulo(c.corretor_nome) : SEM_CORRETOR;
-
-      if (c.imobiliaria_id) {
-        const imobKey = `imob:${c.imobiliaria_id}`;
-        let imob = imobs.get(imobKey);
-        if (!imob) {
-          imob = {
-            key: imobKey,
-            nome: titulo(c.imobiliaria_nome),
-            tipo: "imob",
-            subpastas: [],
-            clientes: [],
-            total_clientes: 0,
-          };
-          imobs.set(imobKey, imob);
-        }
-        const corr = garantirFilho(imob, corrKey, corrNome, "corretor");
-        corr.clientes.push(c);
-      } else {
-        if (!avulso) {
-          avulso = {
-            key: AVULSO_KEY,
-            nome: AVULSO_LABEL,
-            tipo: "avulso",
-            subpastas: [],
-            clientes: [],
-            total_clientes: 0,
-          };
-        }
-        const comKey = c.comercial_id ? `com:${c.comercial_id}` : SEM_COMERCIAL_KEY;
-        const comNome = c.comercial_id ? titulo(c.comercial_nome) : SEM_COMERCIAL_LABEL;
-        const com = garantirFilho(avulso, comKey, comNome, "comercial");
-        // Marca o analista que criou o cadastro como etiqueta da pasta comercial.
-        if (c.analista_id) {
-          if (!com.analistas) com.analistas = new Map();
-          com.analistas.set(c.analista_id, titulo(c.analista_nome));
-        }
-        const corr = garantirFilho(com, corrKey, corrNome, "corretor");
-        corr.clientes.push(c);
-      }
+      const corr = garantirFilho(imob, corrKey, corrNome, "corretor");
+      corr.clientes.push(c);
     }
 
-    const lista = Array.from(imobs.values());
-    if (avulso) lista.push(avulso);
+    const lista = Array.from(comerciais.values());
     for (const r of lista) finalizar(r);
-    // Imobiliárias em ordem alfabética; "Avulso" por último.
+    // Comerciais em ordem alfabética; "Sem comercial" por último.
     return lista.sort((a, b) => {
-      const aAvulso = a.tipo === "avulso";
-      const bAvulso = b.tipo === "avulso";
-      if (aAvulso !== bAvulso) return aAvulso ? 1 : -1;
+      const aSem = a.key === SEM_COMERCIAL_KEY;
+      const bSem = b.key === SEM_COMERCIAL_KEY;
+      if (aSem !== bSem) return aSem ? 1 : -1;
       return a.nome.localeCompare(b.nome, "pt-BR");
     });
   }, [clientes]);
@@ -230,9 +216,23 @@ export function DocumentosGerais() {
     setFichaAberta(false);
   }
 
-  function iconePasta(tipo: PastaTipo) {
-    if (tipo === "imob") return <Building2 className="h-8 w-8 shrink-0 text-primary" />;
-    return <Folder className="h-8 w-8 shrink-0 text-primary" />;
+  function IconePasta({ tipo, aberta }: { tipo: PastaTipo; aberta?: boolean }) {
+    const conf: Record<PastaTipo, { Icon: typeof Folder; classe: string }> = {
+      comercial: { Icon: Briefcase, classe: "from-primary/20 to-primary/5 text-primary" },
+      imob: { Icon: Building2, classe: "from-sky-500/20 to-sky-500/5 text-sky-600 dark:text-sky-400" },
+      corretor: { Icon: IdCard, classe: "from-violet-500/20 to-violet-500/5 text-violet-600 dark:text-violet-400" },
+    };
+    const { Icon, classe } = conf[tipo];
+    return (
+      <span
+        className={cn(
+          "flex size-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br shadow-inner ring-1 ring-inset ring-border/40",
+          classe,
+        )}
+      >
+        {aberta ? <FolderOpen className="h-5 w-5" /> : <Icon className="h-5 w-5" />}
+      </span>
+    );
   }
 
   // ===== Ficha do cliente selecionado =====
@@ -304,7 +304,7 @@ export function DocumentosGerais() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="todas">Todas as imobiliárias</SelectItem>
-                  <SelectItem value="comercial">{AVULSO_LABEL}</SelectItem>
+                  <SelectItem value="comercial">{SEM_IMOB}</SelectItem>
                   {imobiliariasFiltro.map((i) => (
                     <SelectItem key={i.id} value={i.id}>
                       {titulo(i.nome)}
@@ -351,84 +351,47 @@ export function DocumentosGerais() {
         </Card>
       ) : filtrando && caminho.length === 0 ? (
         // Resultado da consulta (lista plana de clientes)
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {clientesFiltrados.map((c) => (
-            <button
-              key={c.cliente_id}
-              className="flex items-start gap-3 rounded-lg border border-border p-4 text-left transition-colors hover:bg-accent"
-              onClick={() => abrirCliente(c)}
-            >
-              <FolderOpen className="h-8 w-8 shrink-0 text-primary" />
-              <div className="min-w-0">
-                <p className="truncate font-medium text-foreground">{titulo(c.nome)}</p>
-                <p className="truncate text-xs text-muted-foreground">
-                  {c.imobiliaria_nome ? titulo(c.imobiliaria_nome) : AVULSO_LABEL} ·{" "}
-                  {c.corretor_nome ? titulo(c.corretor_nome) : SEM_CORRETOR}
-                </p>
-                <p className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <FileText className="h-3 w-3" /> {c.total_documentos} documento(s)
-                </p>
-              </div>
-            </button>
+            <CardCliente key={c.cliente_id} c={c} onOpen={() => abrirCliente(c)} mostrarVinculos />
           ))}
           {clientesFiltrados.length === 0 && (
             <p className="text-sm text-muted-foreground">Nenhum cliente encontrado.</p>
           )}
         </div>
       ) : pastasNivel.length > 0 ? (
-        // Nível de pastas (imobiliárias/avulso/comercial/corretor)
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        // Nível de pastas (comercial → imobiliária → corretor)
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {pastasNivel.map((p) => (
             <button
               key={p.key}
-              className="flex flex-col gap-2 rounded-lg border border-border p-4 text-left transition-colors hover:bg-accent"
+              className="group relative flex items-center gap-3 overflow-hidden rounded-xl border border-border/70 bg-card p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
               onClick={() => setCaminho([...caminho, p.key])}
             >
-              <div className="flex items-center gap-3">
-                {iconePasta(p.tipo)}
-                <div className="min-w-0">
-                  <p className="truncate font-medium text-foreground">{p.nome}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {p.subpastas.length > 0
-                      ? `${p.subpastas.length} pasta(s) · ${p.total_clientes} cliente(s)`
-                      : `${p.total_clientes} cliente(s)`}
-                  </p>
-                </div>
-              </div>
-              {p.tipo === "comercial" && p.analistas && p.analistas.size > 0 && (
-                <div className="flex flex-wrap gap-1">
-                  {Array.from(p.analistas.values()).map((nome) => (
-                    <span
-                      key={nome}
-                      className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/60 px-2 py-0.5 text-[10px] font-medium text-muted-foreground"
-                      title="Analista que criou o cadastro"
-                    >
-                      <UserCog className="h-3 w-3" />
-                      {nome}
+              <span className="pointer-events-none absolute inset-x-0 top-0 h-0.5 scale-x-0 bg-gradient-to-r from-primary/60 to-primary/10 transition-transform group-hover:scale-x-100" />
+              <IconePasta tipo={p.tipo} />
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-semibold text-foreground">{p.nome}</p>
+                <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
+                  {p.subpastas.length > 0 && (
+                    <span className="inline-flex items-center gap-1">
+                      <Folder className="h-3 w-3" /> {p.subpastas.length} pasta(s)
                     </span>
-                  ))}
-                </div>
-              )}
+                  )}
+                  <span className="inline-flex items-center gap-1">
+                    <Users className="h-3 w-3" /> {p.total_clientes} cliente(s)
+                  </span>
+                </p>
+              </div>
+              <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/60 transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
             </button>
           ))}
         </div>
       ) : (
         // Nível de clientes (dentro de um corretor)
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {clientesNivel.map((c) => (
-            <button
-              key={c.cliente_id}
-              className="flex items-center gap-3 rounded-lg border border-border p-4 text-left transition-colors hover:bg-accent"
-              onClick={() => abrirCliente(c)}
-            >
-              <FolderOpen className="h-8 w-8 shrink-0 text-primary" />
-              <div className="min-w-0">
-                <p className="truncate font-medium text-foreground">{titulo(c.nome)}</p>
-                <p className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <FileText className="h-3 w-3" /> {c.total_documentos} documento(s)
-                </p>
-              </div>
-            </button>
+            <CardCliente key={c.cliente_id} c={c} onOpen={() => abrirCliente(c)} />
           ))}
           {clientesNivel.length === 0 && (
             <p className="text-sm text-muted-foreground">Nenhum cliente encontrado.</p>
@@ -439,6 +402,51 @@ export function DocumentosGerais() {
   );
 }
 
+/** Card de cliente com etiqueta do usuário que o cadastrou (target). */
+function CardCliente({
+  c,
+  onOpen,
+  mostrarVinculos,
+}: {
+  c: DGCliente;
+  onOpen: () => void;
+  mostrarVinculos?: boolean;
+}) {
+  return (
+    <button
+      className="group relative flex flex-col gap-2.5 overflow-hidden rounded-xl border border-border/70 bg-card p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
+      onClick={onOpen}
+    >
+      <span className="pointer-events-none absolute inset-x-0 top-0 h-0.5 scale-x-0 bg-gradient-to-r from-primary/60 to-primary/10 transition-transform group-hover:scale-x-100" />
+      <div className="flex items-start gap-3">
+        <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 text-primary shadow-inner ring-1 ring-inset ring-border/40">
+          <FolderOpen className="h-5 w-5" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-semibold text-foreground">{titulo(c.nome)}</p>
+          {mostrarVinculos && (
+            <p className="truncate text-xs text-muted-foreground">
+              {c.imobiliaria_nome ? titulo(c.imobiliaria_nome) : SEM_IMOB} ·{" "}
+              {c.corretor_nome ? titulo(c.corretor_nome) : SEM_CORRETOR}
+            </p>
+          )}
+          <p className="mt-0.5 inline-flex items-center gap-1 text-xs text-muted-foreground">
+            <FileText className="h-3 w-3" /> {c.total_documentos} documento(s)
+          </p>
+        </div>
+      </div>
+      {c.analista_nome && (
+        <span
+          className="inline-flex w-fit items-center gap-1 rounded-full border border-primary/25 bg-primary/8 px-2 py-0.5 text-[10px] font-medium text-primary"
+          title="Cadastrado por"
+        >
+          <UserCog className="h-3 w-3" />
+          {titulo(c.analista_nome)}
+        </span>
+      )}
+    </button>
+  );
+}
 
 
 function Campo({ rotulo, valor }: { rotulo: string; valor: any }) {
