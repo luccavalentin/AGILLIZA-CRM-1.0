@@ -12,6 +12,10 @@ import {
   Download,
   Pencil,
   Send,
+  ListChecks,
+  Building2,
+  Clock,
+  Wallet,
 } from "lucide-react";
 import { toast } from "sonner";
 import { assertModuloPermitido } from "@/lib/route-guards";
@@ -195,125 +199,174 @@ function Pagina() {
   }
 
 
+  const itens = data?.itens ?? [];
+  const kpiTotal = data?.total ?? itens.length;
+  const kpiValor = itens.reduce((acc, s) => acc + (Number(s.valor_imovel) || 0), 0);
+  const kpiBancos = itens.reduce(
+    (acc, s) => acc + (Array.isArray(s.bancos) ? s.bancos.length : 0),
+    0,
+  );
+  const prazos = itens.map((s) => Number(s.prazo)).filter((n) => n > 0);
+  const kpiPrazo = prazos.length
+    ? Math.round(prazos.reduce((a, b) => a + b, 0) / prazos.length)
+    : 0;
+  const kpis = [
+    { label: "Simulações", valor: String(kpiTotal), icon: ListChecks },
+    { label: "Volume em imóveis", valor: formatBRL(kpiValor), icon: Wallet },
+    { label: "Cotações em bancos", valor: String(kpiBancos), icon: Building2 },
+    { label: "Prazo médio", valor: kpiPrazo ? `${kpiPrazo} meses` : "—", icon: Clock },
+  ];
+
   return (
+
     <div className="mx-auto w-full max-w-[1600px] space-y-6 p-4 md:p-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-semibold text-foreground">Simulações</h1>
-          <p className="text-sm text-muted-foreground">Financiamento imobiliário e home equity.</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2.5">
-          <Button
-            asChild
-            variant="outline"
-            className="group h-11 gap-2.5 border-border/70 bg-card px-4 shadow-sm transition-all hover:border-primary/40 hover:bg-accent hover:shadow-md"
-          >
-            <Link to="/operacional/simulacoes/nova" search={{ modo: "rapida" }}>
-              <span className="flex flex-col items-start leading-tight">
-                <span className="text-sm font-semibold">Simulação rápida</span>
-                <span className="text-[11px] font-normal text-muted-foreground">
-                  Cálculo imediato
-                </span>
-              </span>
-            </Link>
-          </Button>
-          <Button
-            asChild
-            className="group h-11 gap-2.5 px-4 shadow-sm transition-all hover:shadow-md"
-          >
-            <Link to="/operacional/simulacoes/completa">
-              <span className="flex flex-col items-start leading-tight">
-                <span className="text-sm font-semibold">Simulação completa</span>
-                <span className="text-[11px] font-normal text-primary-foreground/70">
-                  Envio aos bancos
-                </span>
-              </span>
-            </Link>
-          </Button>
-        </div>
-      </div>
-
-
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <Tabs value={escopo} onValueChange={(v) => setEscopo(v as "todas" | "minhas")}>
-          <TabsList>
-            <TabsTrigger value="todas">Gerais</TabsTrigger>
-            <TabsTrigger value="minhas">Minhas</TabsTrigger>
-          </TabsList>
-        </Tabs>
-        <form
-          className="flex w-full max-w-sm items-center gap-2"
-          onSubmit={(e) => {
-            e.preventDefault();
-            setBusca(q);
-          }}
-        >
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              className="pl-9"
-              placeholder="Número, cliente ou documento"
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-            />
+      {/* Cabeçalho */}
+      <div className="relative overflow-hidden rounded-2xl border border-border/60 bg-gradient-to-br from-card via-card to-primary/5 p-5 shadow-sm md:p-6">
+        <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-primary/10 blur-3xl" />
+        <div className="relative flex flex-wrap items-start justify-between gap-4">
+          <div className="min-w-0">
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-primary/80">
+              Consultar simulações
+            </p>
+            <h1 className="mt-1 text-2xl font-bold tracking-tight text-foreground">Simulações</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Financiamento imobiliário e home equity, em um só lugar.
+            </p>
           </div>
-          <Button type="submit" variant="secondary">
-            Buscar
-          </Button>
-        </form>
+          <div className="flex flex-wrap items-center gap-2.5">
+            <Button
+              asChild
+              variant="outline"
+              className="group h-11 gap-2.5 border-border/70 bg-card px-4 shadow-sm transition-all hover:border-primary/40 hover:bg-accent hover:shadow-md"
+            >
+              <Link to="/operacional/simulacoes/nova" search={{ modo: "rapida" }}>
+                <span className="flex flex-col items-start leading-tight">
+                  <span className="text-sm font-semibold">Simulação rápida</span>
+                  <span className="text-[11px] font-normal text-muted-foreground">
+                    Cálculo imediato
+                  </span>
+                </span>
+              </Link>
+            </Button>
+            <Button
+              asChild
+              className="group h-11 gap-2.5 px-4 shadow-sm transition-all hover:shadow-md"
+            >
+              <Link to="/operacional/simulacoes/completa">
+                <span className="flex flex-col items-start leading-tight">
+                  <span className="text-sm font-semibold">Simulação completa</span>
+                  <span className="text-[11px] font-normal text-primary-foreground/70">
+                    Envio aos bancos
+                  </span>
+                </span>
+              </Link>
+            </Button>
+          </div>
+        </div>
       </div>
 
-      <div className="flex flex-wrap items-end gap-3">
-        <div className="space-y-1">
-          <label className="text-xs text-muted-foreground">De</label>
-          <Input
-            type="date"
-            value={desde}
-            onChange={(e) => setDesde(e.target.value)}
-            className="w-40"
-          />
-        </div>
-        <div className="space-y-1">
-          <label className="text-xs text-muted-foreground">Até</label>
-          <Input
-            type="date"
-            value={ate}
-            onChange={(e) => setAte(e.target.value)}
-            className="w-40"
-          />
-        </div>
-        {(desde || ate) && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              setDesde("");
-              setAte("");
+      {/* KPIs */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {kpis.map((k) => (
+          <div
+            key={k.label}
+            className="flex items-center gap-3 rounded-xl border border-border/60 bg-card p-4 shadow-sm transition-shadow hover:shadow-md"
+          >
+            <div className="grid size-10 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
+              <k.icon className="size-5" />
+            </div>
+            <div className="min-w-0">
+              <p className="truncate text-lg font-bold tabular-nums text-foreground">{k.valor}</p>
+              <p className="truncate text-xs text-muted-foreground">{k.label}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Barra de filtros */}
+      <div className="rounded-xl border border-border/60 bg-card p-3 shadow-sm md:p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <Tabs value={escopo} onValueChange={(v) => setEscopo(v as "todas" | "minhas")}>
+            <TabsList>
+              <TabsTrigger value="todas">Gerais</TabsTrigger>
+              <TabsTrigger value="minhas">Minhas</TabsTrigger>
+            </TabsList>
+          </Tabs>
+          <form
+            className="flex w-full max-w-sm items-center gap-2"
+            onSubmit={(e) => {
+              e.preventDefault();
+              setBusca(q);
             }}
           >
-            Limpar datas
-          </Button>
-        )}
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                className="pl-9"
+                placeholder="Número, cliente ou documento"
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+              />
+            </div>
+            <Button type="submit" variant="secondary">
+              Buscar
+            </Button>
+          </form>
+        </div>
+        <div className="mt-3 flex flex-wrap items-end gap-3 border-t border-border/50 pt-3">
+          <div className="space-y-1">
+            <label className="text-xs text-muted-foreground">De</label>
+            <Input
+              type="date"
+              value={desde}
+              onChange={(e) => setDesde(e.target.value)}
+              className="w-40"
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs text-muted-foreground">Até</label>
+            <Input
+              type="date"
+              value={ate}
+              onChange={(e) => setAte(e.target.value)}
+              className="w-40"
+            />
+          </div>
+          {(desde || ate) && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setDesde("");
+                setAte("");
+              }}
+            >
+              Limpar datas
+            </Button>
+          )}
+        </div>
       </div>
+
 
       {/* Ações reutilizáveis por item */}
       {(() => null)()}
 
       {/* Tabela (telas médias e maiores) */}
-      <div className="hidden rounded-lg border border-border md:block">
+      <div className="hidden overflow-hidden rounded-xl border border-border/60 bg-card shadow-sm md:block">
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead>Número</TableHead>
-              <TableHead>Cliente</TableHead>
-              <TableHead>Produto</TableHead>
-              <TableHead>Bancos simulados</TableHead>
-              <TableHead className="text-right">Valor imóvel</TableHead>
-              <TableHead className="text-right">Prazo</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="w-12 text-right">Ações</TableHead>
+            <TableRow className="border-border/60 bg-muted/40 hover:bg-muted/40">
+              <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Número</TableHead>
+              <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Cliente</TableHead>
+              <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Produto</TableHead>
+              <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Bancos simulados</TableHead>
+              <TableHead className="text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">Valor imóvel</TableHead>
+              <TableHead className="text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">Prazo</TableHead>
+              <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Status</TableHead>
+              <TableHead className="w-12 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">Ações</TableHead>
             </TableRow>
           </TableHeader>
+
           <TableBody>
             {isLoading && (
               <TableRow>
@@ -338,12 +391,13 @@ function Pagina() {
             {data?.itens.map((s) => (
               <TableRow
                 key={s.id}
-                className="cursor-pointer"
+                className="cursor-pointer border-border/50 transition-colors hover:bg-primary/5"
                 onClick={() =>
                   router.navigate({ to: "/operacional/simulacoes/$id", params: { id: s.id } })
                 }
               >
-                <TableCell className="font-medium">{s.numero_simulacao}</TableCell>
+                <TableCell className="font-semibold text-primary">{s.numero_simulacao}</TableCell>
+
                 <TableCell>{s.nome_cliente ?? "—"}</TableCell>
                 <TableCell>
                   {s.produto === "home_equity"
