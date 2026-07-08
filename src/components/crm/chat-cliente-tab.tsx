@@ -171,6 +171,9 @@ export function ChatClienteConversa({ clienteId, info }: { clienteId: string; in
     mensagens?.map((m) => ({ id: m.id, mine: m.remetente_tipo === "time" })),
   );
 
+  const { peerTyping, notifyTyping, notifyStop } = useChatTyping(clienteId, "time");
+
+
   useEffect(() => {
     if (!buscaAberta) fimRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [mensagens?.length, buscaAberta]);
