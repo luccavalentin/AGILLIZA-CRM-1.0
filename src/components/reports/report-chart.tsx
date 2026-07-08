@@ -5,6 +5,8 @@ import {
   LabelList,
   LineChart,
   Line,
+  PieChart,
+  Pie,
   XAxis,
   YAxis,
   CartesianGrid,
