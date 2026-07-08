@@ -180,12 +180,13 @@ function Pagina() {
   const metasCliente = useMemo(() => {
     const m = new Map<
       string,
-      { sla_horas: number; lembrete_em: string | null }
+      { sla_horas: number; lembrete_em: string | null; arquivado: boolean }
     >();
     for (const meta of overview?.metas ?? []) {
       m.set(meta.cliente_id, {
         sla_horas: meta.sla_atualizacao_horas,
         lembrete_em: meta.lembrete_em,
+        arquivado: meta.arquivado ?? false,
       });
     }
     return m;
@@ -201,6 +202,9 @@ function Pagina() {
     const em = metasCliente.get(clienteId)?.lembrete_em;
     if (!em) return false;
     return new Date(em).getTime() <= agora;
+  }
+  function arquivada(clienteId: string) {
+    return metasCliente.get(clienteId)?.arquivado ?? false;
   }
 
   // Clientes com App habilitado (mesmo sem conversa ainda) para iniciar chat.
