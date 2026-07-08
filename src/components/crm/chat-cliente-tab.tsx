@@ -15,6 +15,7 @@ import {
   listarChatCliente,
   responderChatCliente,
   marcarChatClienteLido,
+  type ChatMensagem,
 } from "@/lib/crm/chat-cliente.functions";
 
 function formatarHora(iso: string): string {
