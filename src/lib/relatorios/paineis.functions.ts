@@ -381,6 +381,17 @@ export const getPanelDados = createServerFn({ method: "POST" })
       .sort((a, b) => b[1] - a[1])
       .map(([s, v]) => ({ label: rotularStatus(s, distLabelMap), valor: v }));
 
+    // Recusadas por banco — cor/nome do banco + quantidade
+    const recusadasBancoMap = new Map<string, number>();
+    propRows
+      .filter((p) => p.status === "credito_recusado")
+      .forEach((p) =>
+        recusadasBancoMap.set(
+          p.nome_banco ?? "—",
+          (recusadasBancoMap.get(p.nome_banco ?? "—") ?? 0) + 1,
+        ),
+      );
+
     // Evolução — simulações x propostas ao longo do tempo
     const simBucket = contarPorBucket(simRows, buckets);
     const propBucket = contarPorBucket(enviadas, buckets);
