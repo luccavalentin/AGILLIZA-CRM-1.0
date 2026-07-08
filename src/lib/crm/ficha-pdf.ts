@@ -1,4 +1,6 @@
 import type { FichaConsolidada } from "@/lib/crm/documentos-gerais.functions";
+import logoLight from "@/assets/brand/agilliza-logo-oficial-light.png";
+import symbolMarca from "@/assets/brand/agilliza-symbol-oficial.png";
 
 const MINUSCULAS = new Set(["de", "da", "do", "das", "dos", "e", "di", "du"]);
 
@@ -13,9 +15,9 @@ function titulo(s: string | null | undefined): string {
 }
 
 function brl(n: number | null | undefined): string {
-  return n == null
+  return n == null || n === ("" as any)
     ? "—"
-    : n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+    : Number(n).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
 function fmtData(v: string | null | undefined): string {
@@ -25,8 +27,13 @@ function fmtData(v: string | null | undefined): string {
   return d.toLocaleDateString("pt-BR");
 }
 
+function docLabel(tipo: string | null | undefined): string {
+  return tipo === "juridica" ? "CNPJ" : "CPF";
+}
+
 function val(v: any): string {
   if (v === null || v === undefined || v === "") return "—";
+  if (typeof v === "boolean") return v ? "Sim" : "Não";
   return escapeHtml(String(v));
 }
 
@@ -38,8 +45,28 @@ function escapeHtml(s: string): string {
     .replace(/"/g, "&quot;");
 }
 
-function campos(pares: Array<[string, string]>): string {
-  return `<div class="grid">${pares
+/** Monta o bloco de endereço em uma linha legível. */
+function enderecoLinha(e: Record<string, any> | null | undefined): string | null {
+  if (!e) return null;
+  const linha1 = [e.logradouro, e.numero].filter(Boolean).join(", ");
+  const linha2 = [e.complemento, e.bairro].filter(Boolean).join(" · ");
+  const linha3 = [
+    [e.cidade, e.uf].filter(Boolean).join(" / "),
+    e.cep ? `CEP ${e.cep}` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  const tudo = [linha1, linha2, linha3].filter(Boolean).join(" — ");
+  return tudo || null;
+}
+
+type Par = [string, string];
+
+/** Descarta campos vazios ("—") para que a ficha não fique poluída. */
+function campos(pares: Par[]): string {
+  const preenchidos = pares.filter(([, valor]) => valor && valor !== "—");
+  const lista = preenchidos.length ? preenchidos : pares.slice(0, 2);
+  return `<div class="grid">${lista
     .map(
       ([rotulo, valor]) => `
         <div class="field">
@@ -50,10 +77,13 @@ function campos(pares: Array<[string, string]>): string {
     .join("")}</div>`;
 }
 
-function secao(titulo: string, corpo: string): string {
+function secao(num: number, tit: string, corpo: string): string {
   return `
     <section class="secao">
-      <h2 class="secao-titulo">${escapeHtml(titulo)}</h2>
+      <div class="secao-head">
+        <span class="secao-num">${String(num).padStart(2, "0")}</span>
+        <h2 class="secao-titulo">${escapeHtml(tit)}</h2>
+      </div>
       ${corpo}
     </section>`;
 }
@@ -65,31 +95,49 @@ function secao(titulo: string, corpo: string): string {
 export function imprimirFichaPDF(clienteNome: string, data: FichaConsolidada): void {
   const nome = titulo(clienteNome);
   const agora = new Date().toLocaleString("pt-BR");
+  const logoUrl = new URL(logoLight, window.location.origin).href;
+  const marcaUrl = new URL(symbolMarca, window.location.origin).href;
+  const meta = data.meta ?? {};
 
   const partes: string[] = [];
+  let n = 0;
 
-  // Comprador
+  // Comprador / proponente
   if (data.comprador) {
     const c = data.comprador;
     partes.push(
       secao(
-        "Comprador",
+        ++n,
+        c.tipo_pessoa === "juridica" ? "Proponente (PJ)" : "Comprador / Proponente",
         campos([
           ["Nome", val(c.nome)],
-          ["Documento", val(c.documento)],
-          ["Nascimento", fmtData(c.data_nascimento)],
+          [docLabel(c.tipo_pessoa), val(c.documento)],
+          ["RG / Doc. secundário", val(c.documento_secundario || c.numero_documento)],
+          ["Órgão expedidor", val([c.orgao_expedidor, c.uf_expedicao].filter(Boolean).join("/") || null)],
+          ["Data de nascimento", fmtData(c.data_nascimento)],
+          ["Sexo", val(c.sexo)],
           ["Estado civil", val(c.estado_civil)],
-          ["Profissão", val(c.profissao)],
+          ["Regime de casamento", val(c.regime_casamento)],
           ["Nacionalidade", val(c.nacionalidade)],
+          ["Naturalidade", val(c.naturalidade)],
+          ["Profissão", val(c.profissao)],
+          ["Empresa", val(c.empresa)],
           ["E-mail", val(c.email)],
           ["Celular", val(c.telefone_celular)],
           ["Renda declarada", brl(c.renda_total_declarada)],
+          ["Utiliza FGTS", val(c.utiliza_fgts)],
           ["Nome da mãe", val(c.nome_mae)],
+          ["Nome do pai", val(c.nome_pai)],
           ["Banco", val(c.banco_conta)],
           [
             "Agência / Conta",
-            val([c.agencia, c.conta_corrente].filter(Boolean).join(" / ") || null),
+            val(
+              [c.agencia, [c.conta_corrente, c.digito_conta].filter(Boolean).join("-")]
+                .filter(Boolean)
+                .join(" / ") || null,
+            ),
           ],
+          ["Endereço", val(enderecoLinha(c.endereco))],
         ]),
       ),
     );
@@ -100,22 +148,30 @@ export function imprimirFichaPDF(clienteNome: string, data: FichaConsolidada): v
     const c = data.conjuge;
     partes.push(
       secao(
-        "Cônjuge",
+        ++n,
+        "Cônjuge / Coproponente",
         campos([
           ["Nome", val(c.nome)],
-          ["Documento", val(c.documento)],
-          ["Nascimento", fmtData(c.data_nascimento)],
-          ["Profissão", val(c.profissao)],
+          ["CPF", val(c.documento)],
+          ["RG / Doc.", val(c.numero_documento)],
+          ["Órgão expedidor", val([c.orgao_expedidor, c.uf_expedicao].filter(Boolean).join("/") || null)],
+          ["Data de nascimento", fmtData(c.data_nascimento)],
+          ["Sexo", val(c.sexo)],
           ["Nacionalidade", val(c.nacionalidade)],
+          ["Profissão", val(c.profissao)],
+          ["Empresa", val(c.empresa)],
           ["E-mail", val(c.email)],
           ["Celular", val(c.telefone_celular)],
-          ["Renda", brl(c.renda)],
+          ["Renda declarada", brl(c.renda)],
           ["Nome da mãe", val(c.nome_mae)],
-          ["Empresa", val(c.empresa)],
           ["Banco", val(c.banco_conta)],
           [
             "Agência / Conta",
-            val([c.agencia, c.conta_corrente].filter(Boolean).join(" / ") || null),
+            val(
+              [c.agencia, [c.conta_corrente, c.digito_conta].filter(Boolean).join("-")]
+                .filter(Boolean)
+                .join(" / ") || null,
+            ),
           ],
         ]),
       ),
@@ -130,17 +186,39 @@ export function imprimirFichaPDF(clienteNome: string, data: FichaConsolidada): v
           .map(
             (v, i) => `
             <div class="bloco">
-              <h3 class="bloco-titulo">${escapeHtml(v.nome ?? `Vendedor ${i + 1}`)}</h3>
+              <h3 class="bloco-titulo">${escapeHtml(titulo(v.nome) || `Vendedor ${i + 1}`)}</h3>
               ${campos([
-                ["Documento", val(v.documento ?? v.cpf_cnpj)],
+                [docLabel(v.tipo_pessoa), val(v.documento)],
+                ["RG / Doc.", val(v.numero_documento || v.documento_secundario)],
+                ["Data de nascimento", fmtData(v.data_nascimento)],
                 ["Estado civil", val(v.estado_civil)],
+                ["Nacionalidade", val(v.nacionalidade)],
                 ["Profissão", val(v.profissao)],
                 ["E-mail", val(v.email)],
                 ["Celular", val(v.telefone_celular)],
+                ["Nome da mãe", val(v.mae)],
                 ["Banco", val(v.banco_conta)],
                 [
                   "Agência / Conta",
-                  val([v.agencia, v.conta_corrente].filter(Boolean).join(" / ") || null),
+                  val(
+                    [v.agencia, [v.conta_corrente, v.digito_conta].filter(Boolean).join("-")]
+                      .filter(Boolean)
+                      .join(" / ") || null,
+                  ),
+                ],
+                [
+                  "Endereço",
+                  val(
+                    enderecoLinha({
+                      logradouro: v.logradouro,
+                      numero: v.numero,
+                      complemento: v.complemento,
+                      bairro: v.bairro,
+                      cidade: v.cidade,
+                      uf: v.uf,
+                      cep: v.cep,
+                    }),
+                  ),
                 ],
               ])}
             </div>`,
@@ -148,6 +226,7 @@ export function imprimirFichaPDF(clienteNome: string, data: FichaConsolidada): v
           .join("");
   partes.push(
     secao(
+      ++n,
       data.vendedores.length > 1 ? `Vendedores (${data.vendedores.length})` : "Vendedor",
       vendedoresCorpo,
     ),
@@ -161,21 +240,31 @@ export function imprimirFichaPDF(clienteNome: string, data: FichaConsolidada): v
           .map(
             (im, i) => `
             <div class="bloco">
-              <h3 class="bloco-titulo">Imóvel ${i + 1}</h3>
+              <h3 class="bloco-titulo">Imóvel ${i + 1}${im.valor != null ? ` · <span class="destaque">${brl(im.valor)}</span>` : ""}</h3>
               ${campos([
                 ["Tipo", val(im.tipo)],
                 ["Uso", val(im.uso)],
-                ["Logradouro", val(im.logradouro)],
-                [
-                  "Cidade / UF",
-                  val([im.cidade, im.uf].filter(Boolean).join(" / ") || null),
-                ],
+                ["Situação", val(im.situacao)],
                 ["Valor", brl(im.valor)],
+                [
+                  "Endereço",
+                  val(
+                    enderecoLinha({
+                      logradouro: im.logradouro,
+                      numero: im.numero,
+                      complemento: im.complemento,
+                      bairro: im.bairro,
+                      cidade: im.cidade,
+                      uf: im.uf,
+                      cep: im.cep,
+                    }),
+                  ),
+                ],
               ])}
             </div>`,
           )
           .join("");
-  partes.push(secao(data.imoveis.length > 1 ? "Imóveis" : "Imóvel", imoveisCorpo));
+  partes.push(secao(++n, data.imoveis.length > 1 ? "Imóveis" : "Imóvel", imoveisCorpo));
 
   const html = `<!doctype html>
 <html lang="pt-BR">
@@ -186,13 +275,15 @@ export function imprimirFichaPDF(clienteNome: string, data: FichaConsolidada): v
   :root {
     --tinta: #0b0b0f;
     --suave: #4b5563;
-    --linha: #e4e7ec;
-    --marca: #000f9f;
-    --marca-2: #000a70;
+    --linha: #e6e8f0;
+    --azul-profundo: #000f9f;
+    --azul-escuro: #000a70;
+    --azul-noite: #00052e;
+    --azul-nevoa: #eef0ff;
     --fundo-campo: #f7f8fa;
   }
   * { box-sizing: border-box; }
-  html, body { margin: 0; padding: 0; }
+  html, body { margin: 0; padding: 0; background: #fff; }
   body {
     font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     color: var(--tinta);
@@ -201,126 +292,189 @@ export function imprimirFichaPDF(clienteNome: string, data: FichaConsolidada): v
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
-  .pagina { max-width: 780px; margin: 0 auto; padding: 32px 36px 48px; }
+  .pagina { max-width: 800px; margin: 0 auto; padding: 0 0 40px; }
+
+  /* Cabeçalho */
   .cabecalho {
+    background: linear-gradient(135deg, var(--azul-noite) 0%, var(--azul-escuro) 55%, var(--azul-profundo) 100%);
+    color: #fff;
+    padding: 30px 40px 26px;
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
     gap: 24px;
-    padding-bottom: 20px;
-    border-bottom: 3px solid var(--marca);
+    position: relative;
+    overflow: hidden;
   }
-  .marca-nome {
-    font-size: 18px;
-    font-weight: 700;
-    letter-spacing: .5px;
-    color: var(--marca);
+  .cabecalho::after {
+    content: "";
+    position: absolute;
+    right: -40px; top: -60px;
+    width: 220px; height: 220px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,255,255,.10), transparent 70%);
   }
-  .marca-sub {
-    font-size: 10px;
-    text-transform: uppercase;
-    letter-spacing: 1.5px;
-    color: var(--suave);
-    margin-top: 2px;
-  }
-  .doc-meta { text-align: right; font-size: 10px; color: var(--suave); }
-  .titulo-doc {
-    margin: 24px 0 4px;
-    font-size: 22px;
-    font-weight: 700;
-    color: var(--marca);
+  .logo { height: 40px; width: auto; display: block; }
+  .cab-meta { text-align: right; font-size: 10px; color: rgba(255,255,255,.72); line-height: 1.7; }
+  .cab-meta strong { color: #fff; font-weight: 600; }
+
+  /* Faixa do título */
+  .titulo-faixa {
+    padding: 26px 40px 22px;
+    border-bottom: 1px solid var(--linha);
   }
   .subtitulo-doc {
-    font-size: 11px;
+    font-size: 10px;
     text-transform: uppercase;
-    letter-spacing: 2px;
-    color: var(--suave);
-    margin-bottom: 8px;
+    letter-spacing: 2.5px;
+    color: var(--azul-profundo);
+    font-weight: 700;
   }
+  .titulo-doc {
+    margin: 6px 0 12px;
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--azul-noite);
+    letter-spacing: -.3px;
+  }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .3px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--azul-nevoa);
+    color: var(--azul-escuro);
+    border: 1px solid #d9ddfb;
+  }
+
+  /* Conteúdo */
+  .corpo { padding: 8px 40px 0; }
   .secao { margin-top: 26px; page-break-inside: avoid; }
+  .secao-head { display: flex; align-items: center; gap: 10px; margin: 0 0 12px; }
+  .secao-num {
+    font-size: 11px;
+    font-weight: 700;
+    color: #fff;
+    background: var(--azul-profundo);
+    width: 24px; height: 24px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+  }
   .secao-titulo {
     font-size: 13px;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 1px;
-    color: #fff;
-    background: linear-gradient(90deg, var(--marca), var(--marca-2));
-    padding: 8px 14px;
-    border-radius: 6px;
-    margin: 0 0 14px;
+    color: var(--azul-noite);
+    margin: 0;
+    padding-bottom: 6px;
+    border-bottom: 2px solid var(--azul-nevoa);
+    flex: 1;
   }
-  .grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-  }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .field {
     background: var(--fundo-campo);
     border: 1px solid var(--linha);
-    border-radius: 6px;
-    padding: 8px 12px;
+    border-radius: 8px;
+    padding: 9px 13px;
     display: flex;
     flex-direction: column;
   }
   .field-label {
     font-size: 8.5px;
-    font-weight: 600;
+    font-weight: 700;
     text-transform: uppercase;
     letter-spacing: .8px;
     color: var(--suave);
   }
-  .field-value { font-size: 12.5px; font-weight: 600; color: var(--tinta); margin-top: 2px; word-break: break-word; }
+  .field-value {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--tinta);
+    margin-top: 3px;
+    word-break: break-word;
+  }
   .bloco {
     border: 1px solid var(--linha);
-    border-left: 4px solid var(--marca-2);
-    border-radius: 6px;
-    padding: 12px 14px;
+    border-left: 4px solid var(--azul-profundo);
+    border-radius: 8px;
+    padding: 13px 15px;
     margin-bottom: 12px;
     page-break-inside: avoid;
+    background: #fff;
   }
-  .bloco-titulo { margin: 0 0 10px; font-size: 12.5px; font-weight: 700; color: var(--marca); }
-  .vazio { color: var(--suave); font-style: italic; }
+  .bloco-titulo { margin: 0 0 10px; font-size: 13px; font-weight: 700; color: var(--azul-noite); }
+  .destaque { color: var(--azul-profundo); }
+  .vazio { color: var(--suave); font-style: italic; margin: 0; }
+
+  /* Rodapé */
   .rodape {
-    margin-top: 36px;
-    padding-top: 12px;
-    border-top: 1px solid var(--linha);
+    margin: 40px 40px 0;
+    padding-top: 14px;
+    border-top: 2px solid var(--azul-nevoa);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
     font-size: 9px;
     color: var(--suave);
-    display: flex;
-    justify-content: space-between;
   }
+  .rodape-marca { display: flex; align-items: center; gap: 8px; }
+  .rodape-simbolo { height: 22px; width: auto; }
+  .rodape strong { color: var(--azul-escuro); }
+
   @media print {
-    .pagina { padding: 0 12px; }
-    @page { margin: 16mm 12mm; }
+    .pagina { max-width: none; }
+    .cabecalho { padding: 24px 24mm; }
+    .titulo-faixa, .corpo { padding-left: 24mm; padding-right: 24mm; }
+    .rodape { margin-left: 24mm; margin-right: 24mm; }
+    @page { margin: 0 0 12mm; }
   }
 </style>
 </head>
 <body>
   <div class="pagina">
     <div class="cabecalho">
-      <div>
-        <div class="marca-nome">Agilliza</div>
-        <div class="marca-sub">Crédito Imobiliário</div>
-      </div>
-      <div class="doc-meta">
-        Ficha consolidada do cliente<br/>
-        Emitida em ${escapeHtml(agora)}
+      <img class="logo" src="${logoUrl}" alt="Agilliza" />
+      <div class="cab-meta">
+        <strong>Ficha Consolidada do Cliente</strong><br/>
+        Emitida em ${escapeHtml(agora)}${
+          meta.numero_cliente ? `<br/>Cliente Nº ${escapeHtml(String(meta.numero_cliente))}` : ""
+        }
       </div>
     </div>
 
-    <div class="subtitulo-doc">Cliente</div>
-    <h1 class="titulo-doc">${escapeHtml(nome)}</h1>
+    <div class="titulo-faixa">
+      <div class="subtitulo-doc">Crédito Imobiliário</div>
+      <h1 class="titulo-doc">${escapeHtml(nome)}</h1>
+      <div class="chips">
+        ${meta.tipo_pessoa ? `<span class="chip">${escapeHtml(meta.tipo_pessoa === "juridica" ? "Pessoa Jurídica" : "Pessoa Física")}</span>` : ""}
+        ${meta.origem ? `<span class="chip">Origem: ${escapeHtml(String(meta.origem))}</span>` : ""}
+        ${meta.uf_interesse ? `<span class="chip">UF de interesse: ${escapeHtml(String(meta.uf_interesse))}</span>` : ""}
+        ${meta.criado_em ? `<span class="chip">Cadastro: ${escapeHtml(fmtData(meta.criado_em))}</span>` : ""}
+      </div>
+    </div>
 
-    ${partes.join("")}
+    <div class="corpo">
+      ${partes.join("")}
+    </div>
 
     <div class="rodape">
-      <span>Documento gerado automaticamente pelo sistema Agilliza.</span>
+      <div class="rodape-marca">
+        <img class="rodape-simbolo" src="${marcaUrl}" alt="" />
+        <span>Documento gerado automaticamente pela plataforma <strong>Agilliza</strong>.</span>
+      </div>
       <span>${escapeHtml(nome)}</span>
     </div>
   </div>
   <script>
     window.addEventListener("load", function () {
-      setTimeout(function () { window.focus(); window.print(); }, 250);
+      setTimeout(function () { window.focus(); window.print(); }, 350);
     });
   </script>
 </body>
