@@ -73,6 +73,12 @@ function titulo(s: string | null | undefined): string {
     });
 }
 
+/** Primeiro nome já formatado ("LUCCA VALENTIN" → "Lucca"). */
+function primeiroNome(s: string | null | undefined): string {
+  const t = titulo(s);
+  return t === "—" ? "" : t.split(" ")[0];
+}
+
 type PastaTipo = "comercial" | "imob" | "corretor";
 
 interface PastaNode {
