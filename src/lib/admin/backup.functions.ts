@@ -25,6 +25,106 @@ async function correspondenteDoUsuario(
   return data?.correspondente_id ?? null;
 }
 
+const RETENCAO_PADRAO = 2;
+
+/** Lê a quantidade de dias de retenção de backup do correspondente (padrão: 2). */
+async function retencaoDias(supabase: any, corr: string): Promise<number> {
+  const { data } = await supabase
+    .from("parametros_globais")
+    .select("backup_retencao_dias")
+    .eq("correspondente_id", corr)
+    .maybeSingle();
+  const n = Number(data?.backup_retencao_dias);
+  return Number.isFinite(n) && n > 0 ? n : RETENCAO_PADRAO;
+}
+
+/** Remove registros de backup mais antigos que a janela de retenção configurada. */
+async function purgarExpirados(supabase: any, corr: string, dias: number): Promise<void> {
+  const limite = new Date(Date.now() - dias * 24 * 60 * 60 * 1000).toISOString();
+  await supabase
+    .from("backup_jobs")
+    .delete()
+    .eq("correspondente_id", corr)
+    .lt("created_at", limite);
+}
+
+/** Indica se o usuário pode configurar a retenção de backup. */
+async function podeConfigurar(supabase: any, userId: string): Promise<boolean> {
+  const { data: temTudo } = await supabase.rpc("has_any_role", {
+    _user_id: userId,
+    _roles: ["admin", "correspondente"],
+  });
+  if (temTudo) return true;
+  const { data: perfil } = await supabase
+    .from("profiles")
+    .select("nivel_acesso_id")
+    .eq("id", userId)
+    .maybeSingle();
+  if (!perfil?.nivel_acesso_id) return false;
+  const { data: row } = await supabase
+    .from("permissions")
+    .select("permitido")
+    .eq("nivel_acesso_id", perfil.nivel_acesso_id)
+    .eq("modulo", "admin.backup")
+    .eq("acao", "configurar")
+    .eq("permitido", true)
+    .maybeSingle();
+  return !!row;
+}
+
+export interface ConfigBackup {
+  retencaoDias: number;
+  podeConfigurar: boolean;
+}
+
+/** Retorna a configuração de retenção e se o usuário pode alterá-la. */
+export const obterConfigBackup = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<ConfigBackup> => {
+    const { supabase, userId } = context;
+    const corr = await correspondenteDoUsuario(supabase, userId);
+    if (!corr) return { retencaoDias: RETENCAO_PADRAO, podeConfigurar: false };
+    const [dias, pode] = await Promise.all([
+      retencaoDias(supabase, corr),
+      podeConfigurar(supabase, userId),
+    ]);
+    return { retencaoDias: dias, podeConfigurar: pode };
+  });
+
+/** Salva a janela de retenção de backup (somente usuários com permissão). */
+export const salvarConfigBackup = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => z.object({ retencaoDias: z.number().int().min(1).max(365) }).parse(data))
+  .handler(async ({ context, data }): Promise<{ ok: true }> => {
+    const { supabase, userId } = context;
+    const corr = await correspondenteDoUsuario(supabase, userId);
+    if (!corr) throw new Error("Sem correspondente.");
+    if (!(await podeConfigurar(supabase, userId))) {
+      throw new Error("Sem permissão para configurar o backup.");
+    }
+    const { data: existente } = await supabase
+      .from("parametros_globais")
+      .select("id")
+      .eq("correspondente_id", corr)
+      .maybeSingle();
+    if (existente?.id) {
+      const { error } = await supabase
+        .from("parametros_globais")
+        .update({ backup_retencao_dias: data.retencaoDias })
+        .eq("id", existente.id);
+      if (error) throw error;
+    } else {
+      const { error } = await supabase
+        .from("parametros_globais")
+        .insert({ correspondente_id: corr, backup_retencao_dias: data.retencaoDias });
+      if (error) throw error;
+    }
+    // Aplica a nova janela imediatamente.
+    await purgarExpirados(supabase, corr, data.retencaoDias);
+    return { ok: true };
+  });
+
+
 // Tabelas incluídas no manifesto do backup lógico (escopo por correspondente).
 const TABELAS_BACKUP = [
   "clientes",
@@ -50,6 +150,9 @@ export const listarBackups = createServerFn({ method: "GET" })
     const corr = await correspondenteDoUsuario(supabase, userId);
     if (!corr) return [];
 
+    // Retenção: remove registros além da janela configurada (padrão 2 dias).
+    await purgarExpirados(supabase, corr, await retencaoDias(supabase, corr));
+
     const { data, error } = await supabase
       .from("backup_jobs")
       .select("id, status, tamanho_bytes, manifesto, erro, iniciado_em, concluido_em, created_at")
@@ -59,6 +162,7 @@ export const listarBackups = createServerFn({ method: "GET" })
     if (error) throw error;
     return (data ?? []) as BackupLista[];
   });
+
 
 /** Gera um snapshot lógico: contagem por tabela do escopo do correspondente. */
 export const criarBackup = createServerFn({ method: "POST" })
@@ -200,5 +304,29 @@ export const exportarBackupCompleto = createServerFn({ method: "GET" })
       }
     }
 
-    return { geradoEm: new Date().toISOString(), tabelas };
+    // Registra o backup no histórico (retido pela janela configurada).
+    const manifesto: Record<string, number> = {};
+    let totalRegistros = 0;
+    for (const t of tabelas) {
+      manifesto[t.tabela] = t.linhas.length;
+      totalRegistros += t.linhas.length;
+    }
+    const agora = new Date().toISOString();
+    try {
+      await supabase.from("backup_jobs").insert({
+        correspondente_id: corr,
+        status: "concluido",
+        criador_id: userId,
+        manifesto,
+        tamanho_bytes: totalRegistros * 1024,
+        iniciado_em: agora,
+        concluido_em: agora,
+      });
+      await purgarExpirados(supabase, corr, await retencaoDias(supabase, corr));
+    } catch {
+      // não bloqueia a exportação caso o registro falhe
+    }
+
+    return { geradoEm: agora, tabelas };
   });
+

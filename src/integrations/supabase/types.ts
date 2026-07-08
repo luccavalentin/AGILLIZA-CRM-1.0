@@ -2764,6 +2764,7 @@ export type Database = {
       }
       parametros_globais: {
         Row: {
+          backup_retencao_dias: number
           bairro: string | null
           cep: string | null
           cidade: string | null
@@ -2794,6 +2795,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          backup_retencao_dias?: number
           bairro?: string | null
           cep?: string | null
           cidade?: string | null
@@ -2824,6 +2826,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          backup_retencao_dias?: number
           bairro?: string | null
           cep?: string | null
           cidade?: string | null

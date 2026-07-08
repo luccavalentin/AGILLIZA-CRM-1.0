@@ -1,18 +1,20 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   DatabaseBackup,
-  Play,
   RefreshCw,
   HardDrive,
   FileSpreadsheet,
   FolderArchive,
   Trash2,
+  Settings,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -34,15 +36,25 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import {
   listarBackups,
-  criarBackup,
   excluirBackup,
   exportarBackupCompleto,
+  obterConfigBackup,
+  salvarConfigBackup,
 } from "@/lib/admin/backup.functions";
 import { montarInventarioDocumentos } from "@/lib/admin/backup-documentos.functions";
 import { baixarDocumentosZip, type ProgressoBackup } from "@/lib/admin/backup-documentos-zip";
+
 
 
 export const Route = createFileRoute("/_authenticated/admin/backup")({
@@ -72,19 +84,31 @@ function formatBytes(n: number | null): string {
 function Pagina() {
   const qc = useQueryClient();
   const backups = useQuery({ queryKey: ["admin-backups"], queryFn: () => listarBackups() });
+  const config = useQuery({ queryKey: ["admin-backup-config"], queryFn: () => obterConfigBackup() });
   const [baixando, setBaixando] = useState(false);
   const [baixandoDocs, setBaixandoDocs] = useState(false);
   const [progresso, setProgresso] = useState<ProgressoBackup | null>(null);
+  const [configAberta, setConfigAberta] = useState(false);
+  const [diasInput, setDiasInput] = useState<number>(2);
 
-  const criar = useMutation({
-    mutationFn: () => criarBackup(),
-    onSuccess: (r) => {
-      if (r.status === "concluido") toast.success("Backup gerado.");
-      else toast.error("Backup finalizou com erro.");
+  const retencaoDias = config.data?.retencaoDias ?? 2;
+  const podeConfigurar = config.data?.podeConfigurar ?? false;
+
+  useEffect(() => {
+    if (config.data) setDiasInput(config.data.retencaoDias);
+  }, [config.data]);
+
+  const salvarConfig = useMutation({
+    mutationFn: (dias: number) => salvarConfigBackup({ data: { retencaoDias: dias } }),
+    onSuccess: () => {
+      toast.success("Configuração de retenção salva.");
+      setConfigAberta(false);
+      qc.invalidateQueries({ queryKey: ["admin-backup-config"] });
       qc.invalidateQueries({ queryKey: ["admin-backups"] });
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao gerar backup."),
+    onError: (e: any) => toast.error(e?.message ?? "Falha ao salvar configuração."),
   });
+
 
   const excluir = useMutation({
     mutationFn: (id: string) => excluirBackup({ data: { id } }),
@@ -102,6 +126,8 @@ function Pagina() {
       const { exportarBackupXLSX } = await import("@/lib/admin/backup-xlsx");
       exportarBackupXLSX(dados);
       toast.success("Backup completo exportado em Excel.");
+      qc.invalidateQueries({ queryKey: ["admin-backups"] });
+
     } catch (e: any) {
       toast.error(e?.message ?? "Falha ao exportar backup.");
     } finally {
@@ -144,8 +170,8 @@ function Pagina() {
           <div>
             <h1 className="text-xl font-semibold">Backup</h1>
             <p className="text-sm text-muted-foreground">
-              Baixe os dados em Excel, todos os documentos em ZIP organizado por pastas, ou
-              registre snapshots lógicos.
+              Baixe os dados do sistema em uma planilha Excel profissional e formatada, ou todos
+              os documentos em ZIP organizado por pastas.
             </p>
           </div>
         </div>
@@ -158,12 +184,20 @@ function Pagina() {
             <FolderArchive className="mr-2 h-4 w-4" />
             {baixandoDocs ? "Gerando ZIP…" : "Baixar documentos (ZIP)"}
           </Button>
-          <Button variant="outline" disabled={criar.isPending} onClick={() => criar.mutate()}>
-            <Play className="mr-2 h-4 w-4" />
-            {criar.isPending ? "Gerando…" : "Gerar snapshot"}
-          </Button>
+          {podeConfigurar ? (
+            <Button
+              variant="outline"
+              size="icon"
+              aria-label="Configurar retenção de backup"
+              title="Configurar retenção"
+              onClick={() => setConfigAberta(true)}
+            >
+              <Settings className="h-4 w-4" />
+            </Button>
+          ) : null}
         </div>
       </div>
+
 
       {baixandoDocs && progresso ? (
         <div className="rounded-lg border border-border bg-card p-4">
@@ -187,7 +221,13 @@ function Pagina() {
 
       <div className="rounded-lg border border-border bg-card">
         <div className="flex items-center justify-between border-b border-border p-4">
-          <h2 className="text-sm font-semibold">Histórico</h2>
+          <div>
+            <h2 className="text-sm font-semibold">Histórico</h2>
+            <p className="text-xs text-muted-foreground">
+              Os registros são mantidos por {retencaoDias} dia{retencaoDias === 1 ? "" : "s"} após
+              gerados e removidos automaticamente.
+            </p>
+          </div>
           <Button
             variant="ghost"
             size="sm"
@@ -196,6 +236,7 @@ function Pagina() {
             <RefreshCw className="mr-2 h-4 w-4" /> Atualizar
           </Button>
         </div>
+
 
         {backups.isLoading ? (
           <div className="space-y-2 p-4">
@@ -278,6 +319,44 @@ function Pagina() {
           </Table>
         )}
       </div>
+
+      <Dialog open={configAberta} onOpenChange={setConfigAberta}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Configurar retenção de backup</DialogTitle>
+            <DialogDescription>
+              Defina por quantos dias os registros de backup ficam armazenados no sistema antes de
+              serem removidos automaticamente.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            <Label htmlFor="retencao-dias">Dias de retenção</Label>
+            <Input
+              id="retencao-dias"
+              type="number"
+              min={1}
+              max={365}
+              value={diasInput}
+              onChange={(e) => setDiasInput(Number(e.target.value))}
+            />
+            <p className="text-xs text-muted-foreground">
+              Entre 1 e 365 dias. Padrão do sistema: 2 dias.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfigAberta(false)}>
+              Cancelar
+            </Button>
+            <Button
+              disabled={salvarConfig.isPending || !diasInput || diasInput < 1}
+              onClick={() => salvarConfig.mutate(Math.round(diasInput))}
+            >
+              {salvarConfig.isPending ? "Salvando…" : "Salvar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
+
   );
 }
