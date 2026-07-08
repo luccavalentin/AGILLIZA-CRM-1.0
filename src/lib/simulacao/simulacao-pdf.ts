@@ -559,6 +559,7 @@ export function baixarSimulacaoPDF(input: SimulacaoPdfInput) {
     firstColLogos,
     undefined,
     "portrait",
+    docInfo,
   );
 
 }
