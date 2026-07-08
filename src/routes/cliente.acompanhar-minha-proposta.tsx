@@ -15,6 +15,8 @@ import {
   clienteEnviarDocumentoPendente,
 } from "@/lib/portal/cliente.functions";
 import { useIncomingChatSound } from "@/hooks/use-chat-sound";
+import { useChatTyping } from "@/hooks/use-chat-typing";
+import { TypingIndicator } from "@/components/shared/typing-indicator";
 import { TimelineCliente } from "@/components/cliente/timeline-cliente";
 import { ChipDocumento } from "@/components/cliente/chip-documento";
 import { BradescoRetornoTimer, isBradesco } from "@/components/proposta/bradesco-timer";
