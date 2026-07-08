@@ -43,6 +43,8 @@ export function JogadaNumerosDialog({
     valorImovel: number;
     valorEntrada: number;
     valorFinanciamento: number;
+    financiaCustas: boolean;
+    valorCustas: number;
   }) => void;
 }) {
   const [aberto, setAberto] = useState(false);
