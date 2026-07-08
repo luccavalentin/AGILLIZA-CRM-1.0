@@ -1218,7 +1218,10 @@ export function ClienteForm({
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">FGTS e autorização de dados</CardTitle>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <ShieldCheck className="size-4 text-primary" /> FGTS e autorização de dados
+          </CardTitle>
+
           <p className="text-sm text-muted-foreground">
             Informações exigidas no envio da proposta ao banco — preenchidas aqui já seguem para a
             proposta automaticamente.
