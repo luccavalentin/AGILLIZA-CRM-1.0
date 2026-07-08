@@ -1,6 +1,8 @@
 import type { FichaConsolidada } from "@/lib/crm/documentos-gerais.functions";
 import logoLight from "@/assets/brand/agilliza-logo-oficial-light.png";
-import symbolMarca from "@/assets/brand/agilliza-symbol-oficial.png";
+import symbolLight from "@/assets/brand/agilliza-symbol-oficial-light.png";
+import symbolDark from "@/assets/brand/agilliza-symbol-oficial.png";
+import { getTheme } from "@/lib/theme";
 
 const MINUSCULAS = new Set(["de", "da", "do", "das", "dos", "e", "di", "du"]);
 
@@ -95,8 +97,9 @@ function secao(num: number, tit: string, corpo: string): string {
 export function imprimirFichaPDF(clienteNome: string, data: FichaConsolidada): void {
   const nome = titulo(clienteNome);
   const agora = new Date().toLocaleString("pt-BR");
+  const dark = getTheme() === "dark";
   const logoUrl = new URL(logoLight, window.location.origin).href;
-  const marcaUrl = new URL(symbolMarca, window.location.origin).href;
+  const marcaUrl = new URL(dark ? symbolLight : symbolDark, window.location.origin).href;
   const meta = data.meta ?? {};
 
   const partes: string[] = [];
@@ -273,17 +276,32 @@ export function imprimirFichaPDF(clienteNome: string, data: FichaConsolidada): v
 <title>Ficha — ${escapeHtml(nome)}</title>
 <style>
   :root {
+    ${
+      dark
+        ? `--pagina-bg: #0e0f16;
+    --tinta: #e6e8f0;
+    --suave: #9aa3b2;
+    --linha: #2e3142;
+    --card: #171826;
+    --accent: #93a6ff;
+    --chip-bg: #1a1c28;
+    --chip-texto: #93a6ff;
+    --chip-borda: #2e3142;
+    --badge: #000f9f;`
+        : `--pagina-bg: #ffffff;
     --tinta: #0b0b0f;
     --suave: #4b5563;
     --linha: #e6e8f0;
-    --azul-profundo: #000f9f;
-    --azul-escuro: #000a70;
-    --azul-noite: #00052e;
-    --azul-nevoa: #eef0ff;
-    --fundo-campo: #f7f8fa;
+    --card: #f7f8fa;
+    --accent: #000f9f;
+    --chip-bg: #eef0ff;
+    --chip-texto: #000a70;
+    --chip-borda: #d9ddfb;
+    --badge: #000f9f;`
+    }
   }
   * { box-sizing: border-box; }
-  html, body { margin: 0; padding: 0; background: #fff; }
+  html, body { margin: 0; padding: 0; background: var(--pagina-bg); }
   body {
     font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     color: var(--tinta);
@@ -296,7 +314,7 @@ export function imprimirFichaPDF(clienteNome: string, data: FichaConsolidada): v
 
   /* Cabeçalho */
   .cabecalho {
-    background: linear-gradient(135deg, var(--azul-noite) 0%, var(--azul-escuro) 55%, var(--azul-profundo) 100%);
+    background: linear-gradient(135deg, #00052e 0%, #000a70 55%, #000f9f 100%);
     color: #fff;
     padding: 30px 40px 26px;
     display: flex;
@@ -327,14 +345,14 @@ export function imprimirFichaPDF(clienteNome: string, data: FichaConsolidada): v
     font-size: 10px;
     text-transform: uppercase;
     letter-spacing: 2.5px;
-    color: var(--azul-profundo);
+    color: var(--accent);
     font-weight: 700;
   }
   .titulo-doc {
     margin: 6px 0 12px;
     font-size: 26px;
     font-weight: 700;
-    color: var(--azul-noite);
+    color: var(--accent);
     letter-spacing: -.3px;
   }
   .chips { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -344,8 +362,8 @@ export function imprimirFichaPDF(clienteNome: string, data: FichaConsolidada): v
     letter-spacing: .3px;
     padding: 4px 10px;
     border-radius: 999px;
-    background: var(--azul-nevoa);
-    color: var(--azul-escuro);
+    background: var(--chip-bg);
+    color: var(--accent);
     border: 1px solid #d9ddfb;
   }
 
@@ -357,7 +375,7 @@ export function imprimirFichaPDF(clienteNome: string, data: FichaConsolidada): v
     font-size: 11px;
     font-weight: 700;
     color: #fff;
-    background: var(--azul-profundo);
+    background: var(--badge);
     width: 24px; height: 24px;
     border-radius: 6px;
     display: inline-flex;
@@ -370,15 +388,15 @@ export function imprimirFichaPDF(clienteNome: string, data: FichaConsolidada): v
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 1px;
-    color: var(--azul-noite);
+    color: var(--accent);
     margin: 0;
     padding-bottom: 6px;
-    border-bottom: 2px solid var(--azul-nevoa);
+    border-bottom: 2px solid var(--linha);
     flex: 1;
   }
   .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .field {
-    background: var(--fundo-campo);
+    background: var(--card);
     border: 1px solid var(--linha);
     border-radius: 8px;
     padding: 9px 13px;
@@ -401,22 +419,22 @@ export function imprimirFichaPDF(clienteNome: string, data: FichaConsolidada): v
   }
   .bloco {
     border: 1px solid var(--linha);
-    border-left: 4px solid var(--azul-profundo);
+    border-left: 4px solid var(--accent);
     border-radius: 8px;
     padding: 13px 15px;
     margin-bottom: 12px;
     page-break-inside: avoid;
-    background: #fff;
+    background: var(--card);
   }
-  .bloco-titulo { margin: 0 0 10px; font-size: 13px; font-weight: 700; color: var(--azul-noite); }
-  .destaque { color: var(--azul-profundo); }
+  .bloco-titulo { margin: 0 0 10px; font-size: 13px; font-weight: 700; color: var(--accent); }
+  .destaque { color: var(--accent); }
   .vazio { color: var(--suave); font-style: italic; margin: 0; }
 
   /* Rodapé */
   .rodape {
     margin: 40px 40px 0;
     padding-top: 14px;
-    border-top: 2px solid var(--azul-nevoa);
+    border-top: 2px solid var(--linha);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -426,7 +444,7 @@ export function imprimirFichaPDF(clienteNome: string, data: FichaConsolidada): v
   }
   .rodape-marca { display: flex; align-items: center; gap: 8px; }
   .rodape-simbolo { height: 22px; width: auto; }
-  .rodape strong { color: var(--azul-escuro); }
+  .rodape strong { color: var(--accent); }
 
   @media print {
     .pagina { max-width: none; }
