@@ -19,6 +19,9 @@ export interface DGCliente {
   corretor_nome: string | null;
   comercial_id: string | null;
   comercial_nome: string | null;
+  /** Analista que criou o cadastro (marcado como etiqueta na pasta). */
+  analista_id: string | null;
+  analista_nome: string | null;
 }
 
 export interface DGOpcaoFiltro {
