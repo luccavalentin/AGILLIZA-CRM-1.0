@@ -966,10 +966,42 @@ export const definirEtapa = createServerFn({ method: "POST" })
   });
 
 
+/**
+ * Define as datas de vistoria (agendamento e/ou conclusão) da operação do
+ * cliente. Como ficam na ficha do cliente, valem para todos os processos e
+ * envolvidos ligados a essa operação e são exibidas também no portal do cliente.
+ */
+export const definirDatasVistoria = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        cliente_id: z.string().uuid(),
+        vistoria_agendada_em: z.string().date().nullable().optional(),
+        vistoria_concluida_em: z.string().date().nullable().optional(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }): Promise<{ ok: true }> => {
+    const patch: Record<string, string | null> = {};
+    if (data.vistoria_agendada_em !== undefined)
+      patch.vistoria_agendada_em = data.vistoria_agendada_em;
+    if (data.vistoria_concluida_em !== undefined)
+      patch.vistoria_concluida_em = data.vistoria_concluida_em;
+    if (Object.keys(patch).length === 0) return { ok: true };
+    const { error } = await context.supabase
+      .from("clientes")
+      .update(patch)
+      .eq("id", data.cliente_id);
+    if (error) throw error;
+    return { ok: true };
+  });
+
 /** Busca de clientes para combobox (Etapa 04). */
 export const buscarClientesCRM = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ q: z.string() }).parse(d))
+
   .handler(async ({ data, context }) => {
     const term = data.q.trim();
     if (!term) return [];
