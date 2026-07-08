@@ -203,8 +203,11 @@ function Pagina() {
                 return (
                   <tr
                     key={d.id}
+                    onClick={() =>
+                      navigate({ to: "/operacional/demandas/$id", params: { id: d.id } })
+                    }
                     className={cn(
-                      "group transition-colors hover:bg-accent/40",
+                      "group cursor-pointer transition-colors hover:bg-accent/40",
                       late && "bg-destructive/[0.04]",
                     )}
                   >
