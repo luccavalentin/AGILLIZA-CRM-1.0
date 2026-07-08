@@ -144,7 +144,10 @@ function Pagina() {
       toast.error(e instanceof Error ? e.message : "Falha ao salvar a data.");
     } finally {
       qc.invalidateQueries({ queryKey: ["crm-painel"] });
+    }
   }
+
+
 
   async function salvarDataContrato(clienteId: string, valor: string) {
     const novoValor = valor || null;
