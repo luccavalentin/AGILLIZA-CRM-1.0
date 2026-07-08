@@ -1,0 +1,1 @@
+ALTER TABLE public.cliente_documento_pastas ADD COLUMN IF NOT EXISTS criado_por uuid REFERENCES public.profiles(id) ON DELETE SET NULL;

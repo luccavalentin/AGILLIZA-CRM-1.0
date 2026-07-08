@@ -449,6 +449,7 @@ export type Database = {
           cliente_id: string
           correspondente_id: string
           created_at: string
+          criado_por: string | null
           id: string
           nome: string
           ordem: number
@@ -459,6 +460,7 @@ export type Database = {
           cliente_id: string
           correspondente_id: string
           created_at?: string
+          criado_por?: string | null
           id?: string
           nome: string
           ordem?: number
@@ -469,6 +471,7 @@ export type Database = {
           cliente_id?: string
           correspondente_id?: string
           created_at?: string
+          criado_por?: string | null
           id?: string
           nome?: string
           ordem?: number
@@ -481,6 +484,13 @@ export type Database = {
             columns: ["cliente_id"]
             isOneToOne: false
             referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cliente_documento_pastas_criado_por_fkey"
+            columns: ["criado_por"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
