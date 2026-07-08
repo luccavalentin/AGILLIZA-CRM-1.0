@@ -68,19 +68,27 @@ export const listarNos = createServerFn({ method: "GET" })
     const corr = await correspondenteDoUsuario(supabase, userId);
     if (!corr) return [];
 
-    let query = supabase
-      .from("arquivos_nos")
-      .select("id, parent_id, tipo, nome, storage_path, content_type, tamanho, created_at, criado_por")
-      .eq("correspondente_id", corr);
+    // Paginação: uma pasta com mais de 1000 itens seria cortada pelo limite
+    // padrão do Supabase sem aviso. Buscamos em lotes até esgotar.
+    const lista: any[] = [];
+    for (let inicio = 0; ; inicio += 1000) {
+      let query = supabase
+        .from("arquivos_nos")
+        .select(
+          "id, parent_id, tipo, nome, storage_path, content_type, tamanho, created_at, criado_por",
+        )
+        .eq("correspondente_id", corr);
+      query = data.parent_id ? query.eq("parent_id", data.parent_id) : query.is("parent_id", null);
+      const { data: rows, error } = await query
+        .order("tipo", { ascending: true })
+        .order("nome", { ascending: true })
+        .range(inicio, inicio + 999);
+      if (error) throw new Error(error.message);
+      const lote = (rows ?? []) as any[];
+      lista.push(...lote);
+      if (lote.length < 1000) break;
+    }
 
-    query = data.parent_id ? query.eq("parent_id", data.parent_id) : query.is("parent_id", null);
-
-    const { data: rows, error } = await query
-      .order("tipo", { ascending: true })
-      .order("nome", { ascending: true });
-    if (error) throw new Error(error.message);
-
-    const lista = (rows ?? []) as any[];
     const nomes = await nomesDeUsuarios(supabase, lista.map((r) => r.criado_por));
     return lista.map((r) => ({
       ...r,
