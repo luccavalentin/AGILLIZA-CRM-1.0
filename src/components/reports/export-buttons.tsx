@@ -4,8 +4,6 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { registrarExport } from "@/lib/relatorios/reports.functions";
-import { exportXLSX } from "@/lib/relatorios/report-xlsx";
-import { exportPDF } from "@/lib/relatorios/report-pdf";
 import type { ReportResult, ReportFiltros } from "@/lib/relatorios/shared";
 
 /** Botões de exportação PDF/XLSX que registram histórico e auditoria. */
