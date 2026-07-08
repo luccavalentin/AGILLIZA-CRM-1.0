@@ -60,6 +60,8 @@ export interface MensagemCliente {
   anexo_is_imagem: boolean;
   lida_em: string | null;
   criada_em: string;
+  editada_em: string | null;
+  excluida_em: string | null;
 }
 
 export interface NotificacaoCliente {
