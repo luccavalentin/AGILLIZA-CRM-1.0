@@ -288,6 +288,46 @@ function Pagina() {
             </div>
           ) : (
             <>
+              <div className="mb-4 flex flex-wrap items-center gap-x-6 gap-y-2 rounded-lg border border-border bg-muted/30 p-3 text-sm">
+                <span className="text-muted-foreground">
+                  Valor do imóvel:{" "}
+                  <span className="font-medium text-foreground tabular-nums">
+                    {formatBRL(s.valor_imovel)}
+                  </span>
+                </span>
+                <span className="text-muted-foreground">
+                  Valor financiado:{" "}
+                  <span className="font-medium text-foreground tabular-nums">
+                    {formatBRL(s.valor_financiamento)}
+                  </span>
+                </span>
+                <span className="text-muted-foreground">
+                  Financiar despesas:{" "}
+                  <span className="font-medium text-foreground">
+                    {s.fg_financiar_despesas ? "Sim" : "Não"}
+                  </span>
+                </span>
+                {s.fg_financiar_despesas && (
+                  <>
+                    <span className="text-muted-foreground">
+                      Despesas financiadas:{" "}
+                      <span className="font-medium text-foreground tabular-nums">
+                        {formatBRL(s.valor_despesas_financiadas)}
+                      </span>
+                    </span>
+                    <span className="text-muted-foreground">
+                      Total financiado:{" "}
+                      <span className="font-medium text-foreground tabular-nums">
+                        {formatBRL(
+                          (Number(s.valor_financiamento) || 0) +
+                            (Number(s.valor_despesas_financiadas) || 0),
+                        )}
+                      </span>
+                    </span>
+                  </>
+                )}
+              </div>
+
               {/* Mobile: cartões */}
               <div className="grid gap-3 lg:hidden">
                 {bancos.map((b: any) => (
