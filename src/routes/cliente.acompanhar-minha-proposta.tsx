@@ -193,17 +193,7 @@ function AbaDocumentos() {
   );
 }
 
-function fileParaBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const res = reader.result as string;
-      resolve(res.split(",")[1] ?? "");
-    };
-    reader.onerror = () => reject(new Error("read"));
-    reader.readAsDataURL(file);
-  });
-}
+
 
 function AbaMensagens() {
   return <ChatCliente altura="h-[48dvh] max-h-[480px] min-h-[240px]" />;
