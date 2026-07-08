@@ -16,7 +16,7 @@ export const Route = createFileRoute("/_authenticated/crm/documentos")({
 
 function Pagina() {
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-6 p-4 md:p-6">
+    <div className="mx-auto w-full max-w-[1600px] space-y-6 p-4 md:p-6">
       <div className="flex items-center gap-2">
         <FolderTree className="h-5 w-5 text-muted-foreground" />
         <div>

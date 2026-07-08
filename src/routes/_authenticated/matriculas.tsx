@@ -78,7 +78,7 @@ function Pagina() {
     return <div className="p-6 text-sm text-muted-foreground">Carregando…</div>;
 
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-6 p-4 md:p-6">
+    <div className="mx-auto w-full max-w-[1600px] space-y-6 p-4 md:p-6">
       <div>
         <h1 className="text-xl font-semibold text-foreground">
           Controle de Solicitação de Matrículas
