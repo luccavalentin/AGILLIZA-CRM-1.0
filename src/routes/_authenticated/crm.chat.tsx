@@ -803,7 +803,7 @@ function BarraGestao({
         </div>
 
         {/* Etiquetas */}
-        <div className="flex min-w-0 flex-col justify-center gap-1.5 border-t border-border/50 pt-3 xl:border-l xl:border-t-0 xl:px-4 xl:pt-0">
+        <div className="flex min-w-0 flex-col justify-center gap-1.5 border-t border-primary/15 pt-3 xl:border-l xl:border-l-primary/15 xl:border-t-0 xl:px-4 xl:pt-0">
           <div className="flex items-center gap-1.5">
             <Tag className="h-3.5 w-3.5 text-muted-foreground" />
             <span className="text-[11px] font-medium text-muted-foreground">
@@ -922,7 +922,7 @@ function BarraGestao({
         </div>
 
         {/* SLA e lembrete */}
-        <div className="flex flex-col justify-center gap-1.5 border-t border-border/50 pt-3 xl:border-l xl:border-t-0 xl:px-4 xl:pt-0">
+        <div className="flex flex-col justify-center gap-1.5 border-t border-primary/15 pt-3 xl:border-l xl:border-l-primary/15 xl:border-t-0 xl:px-4 xl:pt-0">
           <div className="flex items-center gap-1.5">
             <AlarmClock className="h-3.5 w-3.5 text-muted-foreground" />
             <span className="text-[11px] font-medium text-muted-foreground">
@@ -996,7 +996,7 @@ function BarraGestao({
         </div>
 
         {/* Esteira */}
-        <div className="flex flex-col justify-center gap-1.5 border-t border-border/50 pt-3 xl:border-l xl:border-t-0 xl:pl-4 xl:pt-0">
+        <div className="flex flex-col justify-center gap-1.5 border-t border-primary/15 pt-3 xl:border-l xl:border-l-primary/15 xl:border-t-0 xl:pl-4 xl:pt-0">
           <div className="flex items-center gap-1.5">
             <GitBranch className="h-3.5 w-3.5 text-muted-foreground" />
             <span className="text-[11px] font-medium text-muted-foreground">
