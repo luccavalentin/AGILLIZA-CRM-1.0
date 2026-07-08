@@ -248,6 +248,12 @@ function Pagina() {
         ),
       );
     }
+    // Arquivadas ficam ocultas exceto no filtro dedicado.
+    if (filtro === "arquivadas") {
+      lista = lista.filter((c) => arquivada(c.cliente_id));
+    } else {
+      lista = lista.filter((c) => !arquivada(c.cliente_id));
+    }
     if (filtro === "nao_lidas") lista = lista.filter((c) => c.nao_lidas > 0);
     if (filtro === "sla")
       lista = lista.filter((c) =>
