@@ -783,6 +783,23 @@ function BarraGestao({
               </p>
             )}
           </div>
+          <Button
+            variant={estaArquivada ? "default" : "outline"}
+            size="sm"
+            className="ml-auto h-8 shrink-0 gap-1.5 text-xs"
+            disabled={alternarArquivo.isPending}
+            onClick={() => alternarArquivo.mutate()}
+            title="O histórico é excluído automaticamente 2 meses após a emissão do contrato."
+          >
+            {alternarArquivo.isPending ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : estaArquivada ? (
+              <ArchiveRestore className="h-3.5 w-3.5" />
+            ) : (
+              <Archive className="h-3.5 w-3.5" />
+            )}
+            {estaArquivada ? "Desarquivar" : "Arquivar"}
+          </Button>
         </div>
 
         {/* Etiquetas */}
