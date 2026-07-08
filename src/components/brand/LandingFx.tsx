@@ -44,7 +44,7 @@ export function LandingFx({ className }: { className?: string }) {
       { hue: 216, sat: 70 },
       { hue: 226, sat: 80 },
       { hue: 232, sat: 85 },
-      { hue: 350, sat: 70 },
+      { hue: 205, sat: 80 },
     ];
 
     let orbs: Orb[] = [];
