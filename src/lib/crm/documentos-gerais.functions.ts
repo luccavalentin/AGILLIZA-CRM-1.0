@@ -2,8 +2,10 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-/** Rótulo do grupo comercial (clientes sem imobiliária vinculada). */
-export const COMERCIAL_AGILLIZA_LABEL = "Comercial Agilliza";
+/** Rótulo da pasta-mãe para clientes sem imobiliária vinculada. */
+export const AVULSO_LABEL = "Avulso";
+/** Rótulo usado quando não há comercial responsável definido. */
+export const SEM_COMERCIAL_LABEL = "Sem comercial";
 
 export interface DGCliente {
   cliente_id: string;
@@ -15,6 +17,8 @@ export interface DGCliente {
   imobiliaria_nome: string | null;
   corretor_id: string | null;
   corretor_nome: string | null;
+  comercial_id: string | null;
+  comercial_nome: string | null;
 }
 
 export interface DGOpcaoFiltro {
