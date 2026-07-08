@@ -265,8 +265,6 @@ export function PainelView({
             </div>
           </div>
 
-
-
           <SectionTitle>Alertas</SectionTitle>
           {data.alertas.length === 0 ? (
             <Card className="flex items-center gap-3 p-4">
