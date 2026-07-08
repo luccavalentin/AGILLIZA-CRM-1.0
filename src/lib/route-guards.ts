@@ -9,6 +9,9 @@ export async function assertModuloPermitido(modulo: string): Promise<void> {
   const perms = await getMinhasPermissoes();
   if (perms.todas) return;
   if (!perms.chaves.includes(`${modulo}:view`)) {
-    throw redirect({ to: "/sem-acesso" });
+    // Requisito de produto: usuário sem permissão NÃO deve ver "acesso negado".
+    // O item já não aparece no menu (filter-nav); ao tentar a URL direta,
+    // ele é levado silenciosamente para o início que todo interno acessa.
+    throw redirect({ to: "/dashboard" });
   }
 }
