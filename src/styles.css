@@ -254,6 +254,10 @@
   pointer-events: none;
   opacity: 1;
 }
+/* Efeito dentro do painel de marca da tela de login. */
+.landing-fx.auth-fx {
+  z-index: 1;
+}
 
 
 

@@ -24,7 +24,7 @@ interface Ripple {
   t: number; // 0..1
 }
 
-export function LandingFx() {
+export function LandingFx({ className }: { className?: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -165,5 +165,5 @@ export function LandingFx() {
     };
   }, []);
 
-  return <canvas ref={canvasRef} className="landing-fx" aria-hidden="true" />;
+  return <canvas ref={canvasRef} className={`landing-fx ${className ?? ""}`} aria-hidden="true" />;
 }

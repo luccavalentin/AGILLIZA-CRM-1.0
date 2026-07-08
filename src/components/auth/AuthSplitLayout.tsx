@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
+import { LandingFx } from "@/components/brand/LandingFx";
 
 interface Recurso {
   titulo: string;
@@ -44,6 +45,7 @@ export function AuthSplitLayout({
     <div className="grid min-h-[100dvh] lg:grid-cols-[1.05fr_1fr]">
       {/* Painel de marca — visível em telas grandes. */}
       <aside className="auth-brand-panel relative hidden flex-col justify-between overflow-hidden p-10 xl:p-16 lg:flex">
+        <LandingFx className="auth-fx" />
         <div className="relative z-10 flex items-center justify-between">
           <Logo variant="light" className="h-10" />
           <span className="rounded-full border border-white/15 px-3 py-1 text-[0.7rem] font-medium uppercase tracking-[0.14em] text-primary-foreground/80">
