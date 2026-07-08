@@ -284,6 +284,9 @@ export const getPanelDados = createServerFn({ method: "POST" })
           titulo: chartPorBanco ? "Bancos" : "Status das simulações",
           itens: chartDados.slice(0, 6),
         },
+        recusadasPorBanco: recusadasBancoMap.size
+          ? { titulo: "Recusadas por banco", itens: topItens(recusadasBancoMap, 8) }
+          : undefined,
         alertas: simErro
           ? [
               {
