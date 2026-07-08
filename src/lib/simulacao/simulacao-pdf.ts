@@ -300,11 +300,12 @@ function drawFaixaBanco(doc: jsPDF, pageW: number, nomeBanco: string, y: number)
 }
 
 function drawDisclaimer(doc: jsPDF, pageW: number, y: number) {
-  doc.setTextColor(CINZA);
-  doc.setFont("helvetica", "italic");
+  doc.setTextColor("#000000");
+  doc.setFont("helvetica", "bold");
   doc.setFontSize(7.5);
   doc.text(DISCLAIMER, MARGIN, y, { maxWidth: pageW - MARGIN * 2, lineHeightFactor: 1.4 });
 }
+
 
 // ---------------------------------------------------------------------------
 // Consolidado (comparativo entre bancos) — usado na listagem
