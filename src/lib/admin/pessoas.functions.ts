@@ -483,7 +483,7 @@ export const resetarSenhaPessoa = createServerFn({ method: "POST" })
       entidadeId: data.id,
     });
 
-    return { email: alvo.email ?? "", senha_temporaria: senha };
+    return { id: data.id, email: alvo.email ?? "", senha_temporaria: senha };
   });
 
 /** Exclui definitivamente uma pessoa (remove o acesso ao sistema). */
