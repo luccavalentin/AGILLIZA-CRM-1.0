@@ -365,12 +365,13 @@ export function DocumentosGerais() {
             <Skeleton key={i} className="h-20 w-full" />
           ))}
         </div>
-      ) : clientes.length === 0 ? (
+      ) : raizes.length === 0 ? (
         <Card>
           <CardContent className="py-10 text-center text-sm text-muted-foreground">
-            Nenhum cliente encontrado.
+            Nenhum comercial cadastrado.
           </CardContent>
         </Card>
+
       ) : filtrando && caminho.length === 0 ? (
         // Resultado da consulta (lista plana de clientes)
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
