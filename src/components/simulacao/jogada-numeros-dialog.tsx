@@ -174,7 +174,7 @@ export function JogadaNumerosDialog({
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">
-                  Entrada de fachada ({Math.round(calc.pctEntrada)}%)
+                  Novo valor de entrada ({Math.round(calc.pctEntrada)}%)
                 </span>
                 <span className="font-semibold tabular-nums text-foreground">
                   {formatBRL(calc.entrada)}
