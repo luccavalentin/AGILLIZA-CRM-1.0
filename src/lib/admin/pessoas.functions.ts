@@ -249,7 +249,7 @@ export const criarPessoaComAcesso = createServerFn({ method: "POST" })
       },
     });
 
-    return { email: comLogin ? emailReal : "", senha_temporaria: comLogin ? senha : "" };
+    return { id: created.user.id, email: comLogin ? emailReal : "", senha_temporaria: comLogin ? senha : "" };
   });
 
 /** Carrega o perfil alvo garantindo que pertence ao mesmo ecossistema do solicitante. */
