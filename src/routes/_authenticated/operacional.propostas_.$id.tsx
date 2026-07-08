@@ -459,8 +459,12 @@ function AcoesTopo({
     bancosPendentes.length > 0 &&
     !["cancelada", "registrado", "credito_recusado", "contrato_emitido"].includes(status);
 
+  const temDecisao = proximos.length > 0 || (status !== "cancelada" && status !== "registrado");
+
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center lg:justify-end">
+      <div className="flex flex-wrap items-center gap-2">
+
       {(status === "rascunho" || status === "erro_envio") && (
         <Button size="sm" onClick={enviar} disabled={busy}>
           {busy ? (
