@@ -281,9 +281,12 @@ function ChecklistsPersonalizados(props: ChecklistsCfgProps) {
                   setAlvo(null);
                 }}
               >
+                <div className="pb-2">
+                  <AdicionarItem onAdd={(l) => props.addItem(g.id, l)} />
+                </div>
                 {g.itens.length === 0 && (
                   <p className="py-2 text-xs text-muted-foreground">
-                    Sem itens. Adicione documentos ou tarefas abaixo.
+                    Sem itens. Use "Adicionar item" acima para incluir documentos ou tarefas.
                   </p>
                 )}
                 {g.itens.map((it) => (
@@ -321,8 +324,8 @@ function ChecklistsPersonalizados(props: ChecklistsCfgProps) {
                     }}
                   />
                 ))}
-                <AdicionarItem onAdd={(l) => props.addItem(g.id, l)} />
               </CardContent>
+
             </Card>
           );
         })}
@@ -854,6 +857,9 @@ export function DocumentosChecklist({ clienteId }: { clienteId: string }) {
           <CardTitle className="text-base">Checklist do comprador</CardTitle>
         </CardHeader>
         <CardContent className="space-y-1">
+          <div className="pb-2">
+            <AdicionarItem onAdd={(l) => addCustom(l, "comprador")} />
+          </div>
           <DocItem itemKey="c_doc_id" cat="comprador" label={T.comprador[0]} />
           {casado && (
             <DocItem itemKey="c_doc_id_conj" cat="conjuge" label={T.conjuge[0]} />
@@ -898,7 +904,6 @@ export function DocumentosChecklist({ clienteId }: { clienteId: string }) {
                 onRemove={() => removeCustom(item.id)}
               />
             ))}
-          <AdicionarItem onAdd={(l) => addCustom(l, "comprador")} />
         </CardContent>
       </Card>
 
@@ -910,6 +915,9 @@ export function DocumentosChecklist({ clienteId }: { clienteId: string }) {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-1">
+          <div className="pb-2">
+            <AdicionarItem onAdd={(l) => addCustom(l, "vendedor")} />
+          </div>
           {vendPJ ? (
             <>
               <DocItem itemKey="v_contrato_social" cat="vendedor" label={T.vendedor[3]} />
@@ -959,7 +967,6 @@ export function DocumentosChecklist({ clienteId }: { clienteId: string }) {
                 onRemove={() => removeCustom(item.id)}
               />
             ))}
-          <AdicionarItem onAdd={(l) => addCustom(l, "vendedor")} />
         </CardContent>
       </Card>
 
@@ -969,6 +976,9 @@ export function DocumentosChecklist({ clienteId }: { clienteId: string }) {
           <CardTitle className="text-base">Checklist do imóvel</CardTitle>
         </CardHeader>
         <CardContent className="space-y-1">
+          <div className="pb-2">
+            <AdicionarItem onAdd={(l) => addCustom(l, "imovel")} />
+          </div>
           <DocItem itemKey="i_matricula" cat="imovel" label={T.imovel[0]} />
           <DocItem itemKey="i_iptu" cat="imovel" label={T.imovel[1]} />
           <div className="mt-2 flex items-center justify-between rounded-lg border border-border p-3">
@@ -1047,7 +1057,6 @@ export function DocumentosChecklist({ clienteId }: { clienteId: string }) {
                 onRemove={() => removeCustom(item.id)}
               />
             ))}
-          <AdicionarItem onAdd={(l) => addCustom(l, "imovel")} />
         </CardContent>
       </Card>
 
@@ -1057,6 +1066,9 @@ export function DocumentosChecklist({ clienteId }: { clienteId: string }) {
           <CardTitle className="text-base">Itens personalizados</CardTitle>
         </CardHeader>
         <CardContent className="space-y-1">
+          <div className="pb-2">
+            <AdicionarItem onAdd={(l) => addCustom(l, "outros")} />
+          </div>
           {custom.filter((c) => !c.cat || c.cat === "outros").length === 0 && (
             <p className="text-sm text-muted-foreground">
               Adicione itens próprios ao checklist deste cliente.
@@ -1073,7 +1085,6 @@ export function DocumentosChecklist({ clienteId }: { clienteId: string }) {
                 onRemove={() => removeCustom(item.id)}
               />
             ))}
-          <AdicionarItem onAdd={(l) => addCustom(l, "outros")} />
         </CardContent>
       </Card>
 
