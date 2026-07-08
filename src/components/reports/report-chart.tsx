@@ -2,6 +2,7 @@ import {
   BarChart,
   Bar,
   Cell,
+  LabelList,
   LineChart,
   Line,
   XAxis,
@@ -16,6 +17,11 @@ import { formatBRL } from "@/lib/simulacao/format";
 import { corDoBanco } from "@/lib/bancos/cores";
 import { logoUrlDoBanco } from "@/components/bancos/banco-logo";
 
+// Tokens do tema são valores HEX (não canais HSL), então referencie-os
+// diretamente com var(--x) — envolver em hsl() produziria cor inválida.
+const AXIS = "var(--muted-foreground)";
+const GRID = "color-mix(in oklab, var(--border) 70%, transparent)";
+
 /** Tick do eixo Y que exibe o logo do banco ao lado do nome. */
 function BankYAxisTick(props: {
   x?: number;
@@ -26,9 +32,9 @@ function BankYAxisTick(props: {
   const { x = 0, y = 0, payload } = props;
   const label = String(payload?.value ?? "");
   const logo = logoUrlDoBanco(label);
-  const size = 16;
-  const left = -128;
-  const textX = logo ? left + size + 6 : left;
+  const size = 18;
+  const left = -132;
+  const textX = logo ? left + size + 8 : left;
   return (
     <g transform={`translate(${x},${y})`}>
       {logo && (
@@ -46,8 +52,9 @@ function BankYAxisTick(props: {
         y={0}
         dy={4}
         textAnchor="start"
-        fontSize={11}
-        fill="hsl(var(--muted-foreground))"
+        fontSize={12}
+        fontWeight={500}
+        fill="var(--foreground)"
       >
         {label}
       </text>
@@ -58,7 +65,6 @@ function BankYAxisTick(props: {
 /** Gera ticks inteiros únicos e "redondos" de 0 até um máximo confortável. */
 function niceIntTicks(max: number): number[] {
   const topo = Math.max(1, Math.ceil(max));
-  // Passo inteiro que resulta em ~4 divisões, sempre >= 1.
   const step = Math.max(1, Math.ceil(topo / 4));
   const fim = Math.ceil(topo / step) * step;
   const ticks: number[] = [];
@@ -66,14 +72,17 @@ function niceIntTicks(max: number): number[] {
   return ticks;
 }
 
-
-
 const tooltipStyle = {
-  background: "hsl(var(--card))",
-  border: "1px solid hsl(var(--border))",
-  borderRadius: 8,
+  background: "var(--card)",
+  border: "1px solid var(--border)",
+  borderRadius: 12,
+  boxShadow: "0 12px 32px -12px color-mix(in oklab, var(--foreground) 25%, transparent)",
   fontSize: 12,
+  padding: "8px 12px",
 };
+
+const tooltipLabelStyle = { color: "var(--muted-foreground)", fontWeight: 500, marginBottom: 2 };
+const tooltipItemStyle = { color: "var(--foreground)", fontWeight: 600 };
 
 /** Renderiza um gráfico de relatório/painel conforme o tipo. */
 export function ReportChartView({
@@ -87,12 +96,11 @@ export function ReportChartView({
   const fmt = chart.moeda
     ? (v: number) => formatBRL(Number(v))
     : (v: number) => Number(v).toLocaleString("pt-BR");
-  // Contagens não têm casas decimais; valores monetários mantêm o formato BRL.
   const allowDecimals = Boolean(chart.moeda);
 
   if (chart.dados.length === 0) {
     return (
-      <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+      <div className="flex h-full min-h-[8rem] items-center justify-center rounded-lg border border-dashed border-border/70 text-sm text-muted-foreground">
         Sem dados no período.
       </div>
     );
@@ -101,24 +109,46 @@ export function ReportChartView({
   if (chart.tipo === "line") {
     return (
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={chart.dados}>
-          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-          <XAxis dataKey="label" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
+        <LineChart data={chart.dados} margin={{ top: 8, right: 12, bottom: 0, left: 0 }}>
+          <defs>
+            <linearGradient id="lineFill1" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="var(--chart-1)" stopOpacity={0.18} />
+              <stop offset="100%" stopColor="var(--chart-1)" stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid strokeDasharray="4 4" stroke={GRID} vertical={false} />
+          <XAxis
+            dataKey="label"
+            tick={{ fontSize: 11, fill: AXIS }}
+            stroke={GRID}
+            tickLine={false}
+            axisLine={false}
+            dy={6}
+          />
           <YAxis
-            tick={{ fontSize: 11 }}
-            stroke="hsl(var(--muted-foreground))"
+            tick={{ fontSize: 11, fill: AXIS }}
+            stroke={GRID}
             width={56}
+            tickLine={false}
+            axisLine={false}
             allowDecimals={allowDecimals}
           />
-          <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => fmt(v)} />
+          <Tooltip
+            contentStyle={tooltipStyle}
+            labelStyle={tooltipLabelStyle}
+            itemStyle={tooltipItemStyle}
+            formatter={(v: number) => fmt(v)}
+            cursor={{ stroke: GRID, strokeWidth: 1 }}
+          />
           {chart.serie2 && <Legend wrapperStyle={{ fontSize: 12 }} />}
           <Line
             type="monotone"
             dataKey="valor"
             name={chart.serie1 ?? "Total"}
             stroke="var(--chart-1)"
-            strokeWidth={2}
+            strokeWidth={2.5}
             dot={false}
+            activeDot={{ r: 4, strokeWidth: 0 }}
           />
           {chart.serie2 && (
             <Line
@@ -126,8 +156,9 @@ export function ReportChartView({
               dataKey="valor2"
               name={chart.serie2}
               stroke="var(--chart-3)"
-              strokeWidth={2}
+              strokeWidth={2.5}
               dot={false}
+              activeDot={{ r: 4, strokeWidth: 0 }}
             />
           )}
         </LineChart>
@@ -136,8 +167,6 @@ export function ReportChartView({
   }
 
   if (chart.tipo === "barh" || chart.tipo === "funnel") {
-    // Para contagens (sem decimais), gera ticks inteiros únicos e evita que o
-    // recharts arredonde ticks fracionários em números repetidos (ex.: 1 1 2 2).
     const maxValor = Math.max(0, ...chart.dados.map((d) => Number(d.valor) || 0));
     const intTicks = !allowDecimals ? niceIntTicks(maxValor) : undefined;
     return (
@@ -145,14 +174,16 @@ export function ReportChartView({
         <BarChart
           data={chart.dados}
           layout="vertical"
-          margin={{ top: 4, right: 16, bottom: 4, left: 0 }}
-          barCategoryGap="35%"
+          margin={{ top: 4, right: 44, bottom: 4, left: 0 }}
+          barCategoryGap="28%"
         >
-          <CartesianGrid
-            horizontal={false}
-            strokeDasharray="3 3"
-            stroke="hsl(var(--border))"
-          />
+          <defs>
+            <linearGradient id="barhFill" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stopColor="var(--chart-1)" stopOpacity={0.85} />
+              <stop offset="100%" stopColor="var(--chart-1)" stopOpacity={1} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid horizontal={false} strokeDasharray="4 4" stroke={GRID} />
           <XAxis
             type="number"
             hide
@@ -162,21 +193,29 @@ export function ReportChartView({
           <YAxis
             type="category"
             dataKey="label"
-            tick={colorByBank ? <BankYAxisTick /> : { fontSize: 11 }}
-            stroke="hsl(var(--muted-foreground))"
-            width={colorByBank ? 136 : 110}
+            tick={colorByBank ? <BankYAxisTick /> : { fontSize: 12, fill: "var(--foreground)" }}
+            stroke={AXIS}
+            width={colorByBank ? 144 : 116}
             tickLine={false}
             axisLine={false}
           />
-
-          <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => fmt(v)} cursor={false} />
-          <Bar dataKey="valor" radius={[0, 4, 4, 0]} fill="var(--chart-1)" maxBarSize={22}>
+          <Tooltip
+            contentStyle={tooltipStyle}
+            labelStyle={tooltipLabelStyle}
+            itemStyle={tooltipItemStyle}
+            formatter={(v: number) => fmt(v)}
+            cursor={{ fill: "color-mix(in oklab, var(--muted) 55%, transparent)" }}
+          />
+          <Bar dataKey="valor" radius={[6, 6, 6, 6]} fill="url(#barhFill)" maxBarSize={26}>
             {chart.dados.map((d, i) => (
-              <Cell
-                key={i}
-                fill={colorByBank ? corDoBanco(d.label) : "var(--chart-1)"}
-              />
+              <Cell key={i} fill={colorByBank ? corDoBanco(d.label) : "url(#barhFill)"} />
             ))}
+            <LabelList
+              dataKey="valor"
+              position="right"
+              formatter={(v: number) => fmt(v)}
+              style={{ fontSize: 11, fontWeight: 600, fill: "var(--foreground)" }}
+            />
           </Bar>
         </BarChart>
       </ResponsiveContainer>
@@ -185,23 +224,41 @@ export function ReportChartView({
 
   return (
     <ResponsiveContainer width="100%" height="100%">
-      <BarChart data={chart.dados}>
-        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-        <XAxis dataKey="label" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
+      <BarChart data={chart.dados} margin={{ top: 12, right: 12, bottom: 0, left: 0 }}>
+        <defs>
+          <linearGradient id="barvFill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="var(--chart-1)" stopOpacity={1} />
+            <stop offset="100%" stopColor="var(--chart-1)" stopOpacity={0.75} />
+          </linearGradient>
+        </defs>
+        <CartesianGrid strokeDasharray="4 4" stroke={GRID} vertical={false} />
+        <XAxis
+          dataKey="label"
+          tick={{ fontSize: 11, fill: AXIS }}
+          stroke={GRID}
+          tickLine={false}
+          axisLine={false}
+          dy={6}
+        />
         <YAxis
-          tick={{ fontSize: 11 }}
-          stroke="hsl(var(--muted-foreground))"
+          tick={{ fontSize: 11, fill: AXIS }}
+          stroke={GRID}
           width={56}
+          tickLine={false}
+          axisLine={false}
           tickFormatter={fmt}
           allowDecimals={allowDecimals}
         />
-        <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => fmt(v)} />
-        <Bar dataKey="valor" radius={[4, 4, 0, 0]} fill="var(--chart-1)">
+        <Tooltip
+          contentStyle={tooltipStyle}
+          labelStyle={tooltipLabelStyle}
+          itemStyle={tooltipItemStyle}
+          formatter={(v: number) => fmt(v)}
+          cursor={{ fill: "color-mix(in oklab, var(--muted) 55%, transparent)" }}
+        />
+        <Bar dataKey="valor" radius={[6, 6, 0, 0]} fill="url(#barvFill)" maxBarSize={48}>
           {chart.dados.map((d, i) => (
-            <Cell
-              key={i}
-              fill={colorByBank ? corDoBanco(d.label) : "var(--chart-1)"}
-            />
+            <Cell key={i} fill={colorByBank ? corDoBanco(d.label) : "url(#barvFill)"} />
           ))}
         </Bar>
       </BarChart>
