@@ -414,7 +414,7 @@ export const habilitarLoginPessoa = createServerFn({ method: "POST" })
       payloadNovo: { email },
     });
 
-    return { email, senha_temporaria: senha };
+    return { id: data.id, email, senha_temporaria: senha };
   });
 
 /** Ativa ou desativa (bloqueia) o acesso de uma pessoa. */
