@@ -10,12 +10,14 @@ import { cn } from "@/lib/utils";
 
 export function DicaRendaMinima({
   valorFinanciamento,
+  valorImovel,
   prazoMeses,
   taxaAno,
   sistema,
   rendaInformada,
 }: {
   valorFinanciamento: number;
+  valorImovel?: number | null;
   prazoMeses: number;
   taxaAno: number;
   sistema: SistemaAmortizacao;
@@ -23,6 +25,7 @@ export function DicaRendaMinima({
 }) {
   const av = avaliarRendaMinima({
     valor_financiamento: valorFinanciamento,
+    valor_imovel: valorImovel,
     prazo_meses: prazoMeses,
     taxa_ano: taxaAno,
     sistema,
