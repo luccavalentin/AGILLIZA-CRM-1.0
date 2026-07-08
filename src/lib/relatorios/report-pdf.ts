@@ -133,14 +133,14 @@ export function exportPDF(
       doc.text(it.label.toUpperCase(), cx, y + 18, { maxWidth: colW - 12 });
       doc.setTextColor(AZUL);
       doc.setFont("helvetica", "bold");
-      // fonte adaptativa para caber no espaço da coluna
+      // fonte adaptativa: mantém o valor em uma única linha legível
       let vSize = 11;
       doc.setFontSize(vSize);
-      while (vSize > 8 && doc.getTextWidth(String(it.value)) > colW - 12) {
+      while (vSize > 7.5 && doc.getTextWidth(String(it.value)) > colW - 12) {
         vSize -= 0.5;
         doc.setFontSize(vSize);
       }
-      doc.text(String(it.value), cx, y + 34, { maxWidth: colW - 10 });
+      doc.text(String(it.value), cx, y + 33);
     });
     y += boxH + 18;
   } else {
