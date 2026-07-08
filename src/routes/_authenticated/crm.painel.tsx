@@ -34,6 +34,7 @@ import {
   definirEtapa,
   definirDatasVistoria,
   definirDataContratoEmitido,
+  arquivarContrato,
   listarContratosEmitidos,
   type PainelStage,
 } from "@/lib/crm/clientes.functions";
