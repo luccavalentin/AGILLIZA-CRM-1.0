@@ -215,6 +215,17 @@ function AbaMensagens() {
     queryFn: () => clienteListarMensagens(),
     refetchInterval: (q: any) => (q.state.status === "error" ? false : 8000),
   });
+  const { data: visao } = useQuery({
+    queryKey: ["cliente", "visao-geral"],
+    queryFn: () => clienteObterVisaoGeral(),
+    staleTime: 60_000,
+  });
+  const { peerTyping, notifyTyping, notifyStop } = useChatTyping(
+    visao?.cliente_id,
+    "cliente",
+  );
+
+
 
   const enviar = useMutation({
     mutationFn: (mensagem: string) => clienteEnviarMensagem({ data: { mensagem } }),
