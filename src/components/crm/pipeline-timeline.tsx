@@ -91,13 +91,14 @@ export function PipelineTimeline({
           const label = (
             <span
               className={cn(
-                "mt-2 line-clamp-2 w-full text-center text-[11px] leading-tight transition-colors",
+                "mt-2 w-full text-balance break-words text-center text-[11px] leading-tight transition-colors",
                 atual ? "font-semibold text-foreground" : "text-muted-foreground",
               )}
             >
               {s.nome}
             </span>
           );
+
 
           const conector =
             i > 0 ? (
