@@ -50,7 +50,8 @@ export function SelecionarBancosPdfDialog({ open, onOpenChange, simulacao, banco
     setSelecionados(novo);
   }
 
-  function gerar() {
+  async function gerar() {
+    const { baixarSimulacaoPDF } = await import("@/lib/simulacao/simulacao-pdf");
     baixarSimulacaoPDF({ simulacao, bancos: escolhidos });
     onOpenChange(false);
   }
