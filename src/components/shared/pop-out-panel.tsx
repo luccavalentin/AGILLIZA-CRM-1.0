@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { Maximize2, Minimize2, X } from "lucide-react";
+import { Maximize2, Minimize2, Minus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+
 
 interface PopOutPanelProps {
   /** Título exibido na barra da janela flutuante. */
