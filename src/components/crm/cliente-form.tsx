@@ -685,7 +685,10 @@ export function ClienteForm({
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Acesso ao Portal do Cliente</CardTitle>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <KeyRound className="size-4 text-primary" /> Acesso ao Portal do Cliente
+          </CardTitle>
+
         </CardHeader>
         <CardContent className="flex items-center justify-between gap-4">
           <div className="text-sm text-muted-foreground">
