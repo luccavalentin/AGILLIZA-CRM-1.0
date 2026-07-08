@@ -56,6 +56,11 @@ export function LandingFx({ className }: { className?: string }) {
     let smx = 0.5;
     let smy = 0.45;
 
+    // Intensidade do efeito: 0 em repouso, sobe apenas quando o mouse está sobre
+    // a área (para não ofuscar as informações). Interpolada suavemente.
+    let intensity = 0;
+    let targetIntensity = 0;
+
     const buildOrbs = () => {
       const count = w < 640 ? 4 : 6;
       orbs = Array.from({ length: count }, (_, i) => {
@@ -87,11 +92,21 @@ export function LandingFx({ className }: { className?: string }) {
       const rect = canvas.getBoundingClientRect();
       mx = (e.clientX - rect.left) / rect.width;
       my = (e.clientY - rect.top) / rect.height;
+      // Só ativa o efeito quando o ponteiro está sobre a área do canvas.
+      const dentro =
+        e.clientX >= rect.left &&
+        e.clientX <= rect.right &&
+        e.clientY >= rect.top &&
+        e.clientY <= rect.bottom;
+      targetIntensity = dentro ? 1 : 0;
       // Cria ondas esparsas para não sobrecarregar.
-      if (!reduce && Math.random() < 0.3) {
+      if (dentro && !reduce && Math.random() < 0.3) {
         ripples.push({ x: mx, y: my, t: 0 });
         if (ripples.length > 14) ripples.shift();
       }
+    };
+    const onLeave = () => {
+      targetIntensity = 0;
     };
 
     let start = performance.now();
@@ -101,8 +116,16 @@ export function LandingFx({ className }: { className?: string }) {
       const time = (now - start) / 1000;
       smx += (mx - smx) * 0.05;
       smy += (my - smy) * 0.05;
+      intensity += (targetIntensity - intensity) * 0.06;
 
       ctx.clearRect(0, 0, w, h);
+
+      // Em repouso o canvas fica limpo (sem luz) para não ofuscar o conteúdo.
+      if (intensity < 0.01) {
+        raf = requestAnimationFrame(frame);
+        return;
+      }
+
       ctx.globalCompositeOperation = "lighter";
 
       const minDim = Math.min(w, h);
@@ -110,6 +133,7 @@ export function LandingFx({ className }: { className?: string }) {
       for (const o of orbs) {
         // Campo de fluxo: soma de senos para deriva orgânica (movimento amplo).
         const t = reduce ? 0 : time * o.speed;
+
         const fx =
           o.x + Math.sin(t + o.phase) * 0.14 + Math.cos(t * 0.6 + o.phase * 1.3) * 0.09;
         const fy =
@@ -121,8 +145,8 @@ export function LandingFx({ className }: { className?: string }) {
         const radius = o.r * minDim;
 
         const g = ctx.createRadialGradient(px, py, 0, px, py, radius);
-        g.addColorStop(0, `hsla(${o.hue}, ${o.sat}%, 60%, 0.42)`);
-        g.addColorStop(0.4, `hsla(${o.hue}, ${o.sat}%, 48%, 0.20)`);
+        g.addColorStop(0, `hsla(${o.hue}, ${o.sat}%, 60%, ${0.42 * intensity})`);
+        g.addColorStop(0.4, `hsla(${o.hue}, ${o.sat}%, 48%, ${0.2 * intensity})`);
         g.addColorStop(1, `hsla(${o.hue}, ${o.sat}%, 42%, 0)`);
         ctx.fillStyle = g;
         ctx.beginPath();
@@ -135,7 +159,7 @@ export function LandingFx({ className }: { className?: string }) {
       ctx.globalCompositeOperation = "screen";
       for (const rp of ripples) {
         rp.t += 0.01;
-        const alpha = (1 - rp.t) * 0.4;
+        const alpha = (1 - rp.t) * 0.4 * intensity;
         if (alpha <= 0) continue;
         const rad = rp.t * minDim * 0.6;
         ctx.beginPath();
@@ -155,6 +179,8 @@ export function LandingFx({ className }: { className?: string }) {
     resize();
     window.addEventListener("resize", resize);
     window.addEventListener("pointermove", onMove, { passive: true });
+    window.addEventListener("pointerleave", onLeave);
+    window.addEventListener("blur", onLeave);
     start = performance.now();
     raf = requestAnimationFrame(frame);
 
@@ -162,6 +188,8 @@ export function LandingFx({ className }: { className?: string }) {
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", resize);
       window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerleave", onLeave);
+      window.removeEventListener("blur", onLeave);
     };
   }, []);
 
