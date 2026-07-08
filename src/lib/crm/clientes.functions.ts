@@ -433,6 +433,7 @@ export const listarPainel = createServerFn({ method: "GET" })
         "id, nome, numero_cliente, vistoria_agendada_em, vistoria_concluida_em, contrato_emitido_em, cliente_pipeline(ultima_atualizacao_em, pipeline_stages(codigo))",
       )
       .eq("ativo", true)
+      .is("contrato_arquivado_em", null)
       .order("nome");
     if (e2) throw e2;
     const filtradas = (rows ?? []).filter((r: any) => {
