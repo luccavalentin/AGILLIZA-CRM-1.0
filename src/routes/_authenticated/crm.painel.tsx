@@ -37,6 +37,7 @@ function Pagina() {
   const qc = useQueryClient();
   const listar = useServerFn(listarPainel);
   const mover = useServerFn(definirEtapa);
+  const salvarDatas = useServerFn(definirDatasVistoria);
   const [desde, setDesde] = useState("");
   const [ate, setAte] = useState("");
   const [arrasto, setArrasto] = useState<Arrasto | null>(null);
