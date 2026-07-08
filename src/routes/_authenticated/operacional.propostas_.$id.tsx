@@ -680,13 +680,14 @@ function TabResumo({
 
   return (
     <div className="space-y-5">
-      <div className="rounded-lg border border-border">
-        <div className="border-b border-border px-4 py-2 text-sm font-medium text-muted-foreground">
+      <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+        <div className="border-b border-border px-4 py-3 text-sm font-medium text-muted-foreground">
           {houveEnvio
             ? "Banco enviado nesta proposta"
             : "Bancos / Simulações vinculadas — envie somente o banco escolhido nesta proposta"}
         </div>
-        <Table>
+        <div className="overflow-x-auto">
+        <Table className="min-w-[880px]">
           <TableHeader>
             <TableRow>
               <TableHead className="w-10"></TableHead>
