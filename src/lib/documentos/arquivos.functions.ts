@@ -39,6 +39,24 @@ async function correspondenteDoUsuario(
   return data?.correspondente_id ?? null;
 }
 
+/** Resolve nomes de exibição de usuários (profiles) a partir de seus ids. */
+async function nomesDeUsuarios(
+  supabase: { from: (t: string) => any },
+  ids: (string | null | undefined)[],
+): Promise<Map<string, string>> {
+  const unicos = Array.from(new Set(ids.filter((v): v is string => !!v)));
+  const mapa = new Map<string, string>();
+  if (unicos.length === 0) return mapa;
+  const { data } = await supabase
+    .from("profiles")
+    .select("id, nome_completo")
+    .in("id", unicos);
+  for (const p of (data ?? []) as { id: string; nome_completo: string | null }[]) {
+    if (p.nome_completo) mapa.set(p.id, p.nome_completo);
+  }
+  return mapa;
+}
+
 /** Lista pastas e arquivos de um nível (parent_id null = raiz). */
 export const listarNos = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
