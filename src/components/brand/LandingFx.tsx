@@ -88,7 +88,7 @@ export function LandingFx() {
       mx = (e.clientX - rect.left) / rect.width;
       my = (e.clientY - rect.top) / rect.height;
       // Cria ondas esparsas para não sobrecarregar.
-      if (!reduce && Math.random() < 0.18) {
+      if (!reduce && Math.random() < 0.3) {
         ripples.push({ x: mx, y: my, t: 0 });
         if (ripples.length > 14) ripples.shift();
       }
