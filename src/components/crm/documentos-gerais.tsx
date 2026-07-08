@@ -10,6 +10,7 @@ import {
   FileText,
   ClipboardList,
   Search,
+  UserCog,
   X,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
