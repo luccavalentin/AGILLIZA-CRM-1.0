@@ -61,8 +61,8 @@ export interface ChatClienteInfo {
   contexto?: string | null;
 }
 
-/** Chat interno: equipe conversa com o cliente pelas mensagens do App do Cliente. */
-export function ChatClienteTab({ clienteId, info }: { clienteId: string; info?: ChatClienteInfo }) {
+/** Corpo da conversa (cabeçalho, mensagens e composer), sem casca flutuante. */
+export function ChatClienteConversa({ clienteId, info }: { clienteId: string; info?: ChatClienteInfo }) {
   const qc = useQueryClient();
   const listar = useServerFn(listarChatCliente);
   const responder = useServerFn(responderChatCliente);
