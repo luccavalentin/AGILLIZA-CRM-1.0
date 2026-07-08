@@ -347,10 +347,23 @@ export const getPanelDados = createServerFn({ method: "POST" })
         "usuario_responsavel_id",
       ),
       escopoEq(
-        supabase.from("demandas").select("status,prazo_sla,titulo,id").limit(5000),
+        supabase
+          .from("demandas")
+          .select("status,prazo_sla,titulo,id")
+          .gte("created_at", de)
+          .lte("created_at", ateFim)
+          .limit(5000),
         "responsavel_id",
       ),
-      escopoEq(supabase.from("tasks").select("status,prazo,id").limit(5000), "responsavel_id"),
+      escopoEq(
+        supabase
+          .from("tasks")
+          .select("status,prazo,id")
+          .gte("created_at", de)
+          .lte("created_at", ateFim)
+          .limit(5000),
+        "responsavel_id",
+      ),
     ]);
     if (sims.error) throw new Error(sims.error.message);
     if (props.error) throw new Error(props.error.message);
