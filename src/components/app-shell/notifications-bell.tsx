@@ -17,6 +17,8 @@ import {
   limparNotificacoes,
   type Notificacao,
 } from "@/lib/notificacoes.functions";
+import { playNotificationSound } from "@/lib/chat-sound";
+import { categoriaDeTipo, tipoAtivo, tipoComSom } from "@/lib/notification-prefs";
 
 function formatarData(iso: string): string {
   const d = new Date(iso);
