@@ -186,11 +186,14 @@ export function DocumentosChecklist({ clienteId }: { clienteId: string }) {
     itemKey,
     label,
     cat,
+    onRemove,
   }: {
     itemKey: string;
     label: string;
     cat: Categoria;
+    onRemove?: () => void;
   }) {
+    if (hidden.includes(itemKey)) return null;
     const has = temDoc(cat, label);
     const checked = has || check[itemKey] === true;
     return (
@@ -220,6 +223,14 @@ export function DocumentosChecklist({ clienteId }: { clienteId: string }) {
             disabled={subindo === label}
           />
         </label>
+        <button
+          type="button"
+          onClick={onRemove ?? (() => hideItem(itemKey))}
+          aria-label="Remover item"
+          className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+        >
+          <Trash2 className="size-3.5" />
+        </button>
       </div>
     );
   }
