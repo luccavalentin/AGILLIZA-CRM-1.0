@@ -4,12 +4,17 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
-import { ChevronRight, GripVertical } from "lucide-react";
+import { ChevronRight, GripVertical, CalendarClock } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { assertModuloPermitido } from "@/lib/route-guards";
-import { listarPainel, definirEtapa, type PainelStage } from "@/lib/crm/clientes.functions";
+import {
+  listarPainel,
+  definirEtapa,
+  definirDatasVistoria,
+  type PainelStage,
+} from "@/lib/crm/clientes.functions";
 import { usePipelineRealtime } from "@/hooks/use-pipeline-realtime";
 
 export const Route = createFileRoute("/_authenticated/crm/painel")({
@@ -32,6 +37,7 @@ function Pagina() {
   const qc = useQueryClient();
   const listar = useServerFn(listarPainel);
   const mover = useServerFn(definirEtapa);
+  const salvarDatas = useServerFn(definirDatasVistoria);
   const [desde, setDesde] = useState("");
   const [ate, setAte] = useState("");
   const [arrasto, setArrasto] = useState<Arrasto | null>(null);
@@ -79,6 +85,36 @@ function Pagina() {
       qc.invalidateQueries({ queryKey: ["crm-painel"] });
     }
   }
+
+  async function salvarDataVistoria(
+    clienteId: string,
+    campo: "vistoria_agendada_em" | "vistoria_concluida_em",
+    valor: string,
+  ) {
+    const novoValor = valor || null;
+    const anterior = qc.getQueryData<PainelStage[]>(queryKey);
+    if (anterior) {
+      qc.setQueryData(
+        queryKey,
+        anterior.map((s) => ({
+          ...s,
+          clientes: s.clientes.map((c) =>
+            c.id === clienteId ? { ...c, [campo]: novoValor } : c,
+          ),
+        })),
+      );
+    }
+    try {
+      await salvarDatas({ data: { cliente_id: clienteId, [campo]: novoValor } });
+      toast.success("Data da vistoria salva.");
+    } catch (e) {
+      if (anterior) qc.setQueryData(queryKey, anterior);
+      toast.error(e instanceof Error ? e.message : "Falha ao salvar a data.");
+    } finally {
+      qc.invalidateQueries({ queryKey: ["crm-painel"] });
+    }
+  }
+
 
   return (
     <div className="space-y-4 p-4 sm:p-6">
@@ -201,44 +237,75 @@ function Pagina() {
                         {ehAlvo ? "Solte aqui" : "Nenhum cliente"}
                       </p>
                     ) : (
-                      stage.clientes.map((c) => (
-                        <button
-                          key={c.id}
-                          draggable
-                          onDragStart={(e) => {
-                            arrastouRef.current = true;
-                            e.dataTransfer.effectAllowed = "move";
-                            e.dataTransfer.setData("text/plain", c.id);
-                            setArrasto({ clienteId: c.id, origem: stage.codigo });
-                          }}
-                          onDragEnd={() => {
-                            setArrasto(null);
-                            setAlvo(null);
-                            setTimeout(() => {
-                              arrastouRef.current = false;
-                            }, 0);
-                          }}
-                          onClick={() => {
-                            if (arrastouRef.current) return;
-                            navigate({ to: "/crm/clientes/$id", params: { id: c.id } });
-                          }}
-                          className="group/card flex w-full cursor-grab items-center gap-2 rounded-lg border border-border bg-background p-2.5 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/50 hover:bg-primary/5 hover:shadow-md active:translate-y-0 active:scale-[0.98] active:cursor-grabbing"
-                        >
-                          <GripVertical className="size-4 shrink-0 text-muted-foreground/60" />
-                          <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary transition-all duration-200 group-hover/card:scale-110 group-hover/card:bg-primary group-hover/card:text-primary-foreground">
-                            {c.nome.trim().charAt(0).toUpperCase()}
-                          </span>
-                          <span className="min-w-0 flex-1">
-                            <span className="block truncate text-sm font-medium text-foreground transition-colors group-hover/card:text-primary">
-                              {c.nome}
-                            </span>
-                            <span className="block font-mono text-[11px] text-muted-foreground">
-                              {c.numero_cliente}
-                            </span>
-                          </span>
-                          <ChevronRight className="size-4 shrink-0 -translate-x-1 text-primary opacity-0 transition-all duration-200 group-hover/card:translate-x-0 group-hover/card:opacity-100" />
-                        </button>
-                      ))
+                      stage.clientes.map((c) => {
+                        const campoVistoria =
+                          stage.codigo === "vistoria_agenda"
+                            ? "vistoria_agendada_em"
+                            : stage.codigo === "vistoria_ok"
+                              ? "vistoria_concluida_em"
+                              : null;
+                        return (
+                          <div
+                            key={c.id}
+                            className="rounded-lg border border-border bg-background transition-all duration-200 hover:border-primary/50 hover:shadow-md"
+                          >
+                            <button
+                              draggable
+                              onDragStart={(e) => {
+                                arrastouRef.current = true;
+                                e.dataTransfer.effectAllowed = "move";
+                                e.dataTransfer.setData("text/plain", c.id);
+                                setArrasto({ clienteId: c.id, origem: stage.codigo });
+                              }}
+                              onDragEnd={() => {
+                                setArrasto(null);
+                                setAlvo(null);
+                                setTimeout(() => {
+                                  arrastouRef.current = false;
+                                }, 0);
+                              }}
+                              onClick={() => {
+                                if (arrastouRef.current) return;
+                                navigate({ to: "/crm/clientes/$id", params: { id: c.id } });
+                              }}
+                              className="group/card flex w-full cursor-grab items-center gap-2 rounded-lg p-2.5 text-left transition-colors hover:bg-primary/5 active:scale-[0.98] active:cursor-grabbing"
+                            >
+                              <GripVertical className="size-4 shrink-0 text-muted-foreground/60" />
+                              <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary transition-all duration-200 group-hover/card:scale-110 group-hover/card:bg-primary group-hover/card:text-primary-foreground">
+                                {c.nome.trim().charAt(0).toUpperCase()}
+                              </span>
+                              <span className="min-w-0 flex-1">
+                                <span className="block truncate text-sm font-medium text-foreground transition-colors group-hover/card:text-primary">
+                                  {c.nome}
+                                </span>
+                                <span className="block font-mono text-[11px] text-muted-foreground">
+                                  {c.numero_cliente}
+                                </span>
+                              </span>
+                              <ChevronRight className="size-4 shrink-0 -translate-x-1 text-primary opacity-0 transition-all duration-200 group-hover/card:translate-x-0 group-hover/card:opacity-100" />
+                            </button>
+                            {campoVistoria && (
+                              <div className="flex items-center gap-2 border-t border-border/70 px-2.5 py-2">
+                                <CalendarClock className="size-3.5 shrink-0 text-muted-foreground" />
+                                <label className="shrink-0 text-[11px] font-medium text-muted-foreground">
+                                  {stage.codigo === "vistoria_agenda"
+                                    ? "Agendada"
+                                    : "Concluída"}
+                                </label>
+                                <Input
+                                  type="date"
+                                  value={c[campoVistoria] ?? ""}
+                                  onChange={(e) =>
+                                    salvarDataVistoria(c.id, campoVistoria, e.target.value)
+                                  }
+                                  className="h-7 flex-1 px-2 text-xs"
+                                />
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })
+
                     )}
                   </div>
                 </div>

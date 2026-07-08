@@ -1146,6 +1146,8 @@ export type Database = {
           uf_interesse: string | null
           updated_at: string
           utiliza_fgts: boolean
+          vistoria_agendada_em: string | null
+          vistoria_concluida_em: string | null
         }
         Insert: {
           agencia?: string | null
@@ -1229,6 +1231,8 @@ export type Database = {
           uf_interesse?: string | null
           updated_at?: string
           utiliza_fgts?: boolean
+          vistoria_agendada_em?: string | null
+          vistoria_concluida_em?: string | null
         }
         Update: {
           agencia?: string | null
@@ -1312,6 +1316,8 @@ export type Database = {
           uf_interesse?: string | null
           updated_at?: string
           utiliza_fgts?: boolean
+          vistoria_agendada_em?: string | null
+          vistoria_concluida_em?: string | null
         }
         Relationships: [
           {

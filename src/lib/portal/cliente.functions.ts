@@ -26,6 +26,8 @@ export interface EtapaCliente {
   descricao_cliente: string | null;
   status: "concluida" | "atual" | "proxima";
   concluida_em: string | null;
+  /** Data-marco informada pelo time (ex.: agendamento/conclusão da vistoria). */
+  data_marco?: string | null;
 }
 
 export interface ContatoTime {

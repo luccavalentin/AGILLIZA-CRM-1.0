@@ -1,10 +1,22 @@
-import { Check } from "lucide-react";
+import { Check, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { EtapaCliente } from "@/lib/portal/cliente.functions";
 
 function formatarData(iso: string | null) {
   if (!iso) return null;
   return new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
+}
+
+function formatarDataLonga(iso: string | null) {
+  if (!iso) return null;
+  // Datas civis (YYYY-MM-DD) sem conversão de fuso.
+  const [ano, mes, dia] = iso.slice(0, 10).split("-").map(Number);
+  if (!ano || !mes || !dia) return null;
+  return new Date(ano, mes - 1, dia).toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
 }
 
 export function TimelineCliente({ etapas }: { etapas: EtapaCliente[] }) {
@@ -52,6 +64,19 @@ export function TimelineCliente({ etapas }: { etapas: EtapaCliente[] }) {
               {etapa.concluida_em && (
                 <p className="mt-0.5 text-xs text-success">
                   Concluída em {formatarData(etapa.concluida_em)}
+                </p>
+              )}
+              {etapa.data_marco && (
+                <p
+                  className={cn(
+                    "mt-1 inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-xs font-medium",
+                    etapa.status === "concluida"
+                      ? "border-success/30 bg-success/10 text-success"
+                      : "border-primary/30 bg-primary/10 text-primary",
+                  )}
+                >
+                  <Calendar className="h-3 w-3" />
+                  {formatarDataLonga(etapa.data_marco)}
                 </p>
               )}
             </div>

@@ -398,7 +398,13 @@ export interface PainelStage {
   codigo: string;
   nome: string;
   ordem: number;
-  clientes: { id: string; nome: string; numero_cliente: string }[];
+  clientes: {
+    id: string;
+    nome: string;
+    numero_cliente: string;
+    vistoria_agendada_em: string | null;
+    vistoria_concluida_em: string | null;
+  }[];
 }
 
 /** Kanban da esteira: etapas com clientes posicionados (RLS aplica escopo). */
@@ -421,7 +427,7 @@ export const listarPainel = createServerFn({ method: "GET" })
     const { data: rows, error: e2 } = await supabase
       .from("clientes")
       .select(
-        "id, nome, numero_cliente, cliente_pipeline(ultima_atualizacao_em, pipeline_stages(codigo))",
+        "id, nome, numero_cliente, vistoria_agendada_em, vistoria_concluida_em, cliente_pipeline(ultima_atualizacao_em, pipeline_stages(codigo))",
       )
       .eq("ativo", true)
       .order("nome");
@@ -441,7 +447,13 @@ export const listarPainel = createServerFn({ method: "GET" })
       ordem: s.ordem,
       clientes: filtradas
         .filter((r: any) => r.cliente_pipeline?.pipeline_stages?.codigo === s.codigo)
-        .map((r: any) => ({ id: r.id, nome: r.nome, numero_cliente: r.numero_cliente })),
+        .map((r: any) => ({
+          id: r.id,
+          nome: r.nome,
+          numero_cliente: r.numero_cliente,
+          vistoria_agendada_em: r.vistoria_agendada_em ?? null,
+          vistoria_concluida_em: r.vistoria_concluida_em ?? null,
+        })),
     }));
   });
 
@@ -954,10 +966,43 @@ export const definirEtapa = createServerFn({ method: "POST" })
   });
 
 
+/**
+ * Define as datas de vistoria (agendamento e/ou conclusão) da operação do
+ * cliente. Como ficam na ficha do cliente, valem para todos os processos e
+ * envolvidos ligados a essa operação e são exibidas também no portal do cliente.
+ */
+export const definirDatasVistoria = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        cliente_id: z.string().uuid(),
+        vistoria_agendada_em: z.string().date().nullable().optional(),
+        vistoria_concluida_em: z.string().date().nullable().optional(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }): Promise<{ ok: true }> => {
+    const patch: { vistoria_agendada_em?: string | null; vistoria_concluida_em?: string | null } =
+      {};
+    if (data.vistoria_agendada_em !== undefined)
+      patch.vistoria_agendada_em = data.vistoria_agendada_em;
+    if (data.vistoria_concluida_em !== undefined)
+      patch.vistoria_concluida_em = data.vistoria_concluida_em;
+    if (Object.keys(patch).length === 0) return { ok: true };
+    const { error } = await context.supabase
+      .from("clientes")
+      .update(patch)
+      .eq("id", data.cliente_id);
+    if (error) throw error;
+    return { ok: true };
+  });
+
 /** Busca de clientes para combobox (Etapa 04). */
 export const buscarClientesCRM = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ q: z.string() }).parse(d))
+
   .handler(async ({ data, context }) => {
     const term = data.q.trim();
     if (!term) return [];
