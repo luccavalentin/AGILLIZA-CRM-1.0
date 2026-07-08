@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
@@ -49,6 +49,7 @@ function atrasada(d: any): boolean {
 function Pagina() {
   const [escopo, setEscopo] = useState<"minhas" | "equipe">("equipe");
   const [q, setQ] = useState("");
+  const navigate = useNavigate();
   const escalarFn = useServerFn(escalarDemanda);
   const excluir = useServerFn(excluirDemanda);
 
@@ -202,8 +203,11 @@ function Pagina() {
                 return (
                   <tr
                     key={d.id}
+                    onClick={() =>
+                      navigate({ to: "/operacional/demandas/$id", params: { id: d.id } })
+                    }
                     className={cn(
-                      "group transition-colors hover:bg-accent/40",
+                      "group cursor-pointer transition-colors hover:bg-accent/40",
                       late && "bg-destructive/[0.04]",
                     )}
                   >
@@ -258,7 +262,10 @@ function Pagina() {
                         {statusDemanda(d.status).label}
                       </ToneBadge>
                     </td>
-                    <td className="px-4 py-3 text-right align-middle">
+                    <td
+                      className="px-4 py-3 text-right align-middle"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <ConfirmDelete
                         titulo="Excluir demanda"
                         descricao={`A demanda ${d.numero} será removida permanentemente.`}
