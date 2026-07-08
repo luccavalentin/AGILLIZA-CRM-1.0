@@ -72,7 +72,10 @@ export const explorarDocumentosGerais = createServerFn({ method: "GET" })
     // Nomes de parceiros (imobiliária/corretor) e comerciais (responsáveis).
     const idsPerfis = new Set<string>();
     for (const v of vinculos ?? []) if (v.parceiro_id) idsPerfis.add(v.parceiro_id);
-    for (const c of listaClientes) if (c.responsavel_id) idsPerfis.add(c.responsavel_id);
+    for (const c of listaClientes) {
+      if (c.responsavel_id) idsPerfis.add(c.responsavel_id);
+      if (c.criador_id) idsPerfis.add(c.criador_id);
+    }
     let nomesParceiros = new Map<string, string>();
     if (idsPerfis.size > 0) {
       const { data: perfis } = await supabase
