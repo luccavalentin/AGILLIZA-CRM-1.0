@@ -583,15 +583,26 @@ function FichaDialog({
       <DialogContent className="max-h-[90vh] max-w-3xl overflow-hidden p-0">
         <DialogHeader className="relative overflow-hidden border-b border-border/60 bg-gradient-to-r from-primary/12 via-primary/5 to-transparent p-5">
           <span className="pointer-events-none absolute -right-10 -top-12 size-40 rounded-full bg-primary/10 blur-3xl" />
-          <DialogTitle className="relative flex items-center gap-3">
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/70 text-primary-foreground shadow-md ring-1 ring-inset ring-primary/30">
-              <User className="h-5 w-5" />
-            </span>
-            <span className="flex flex-col">
-              <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Ficha consolidada</span>
-              <span className="text-base font-semibold text-foreground">{titulo(clienteNome)}</span>
-            </span>
-          </DialogTitle>
+          <div className="relative flex items-center justify-between gap-3">
+            <DialogTitle className="flex items-center gap-3">
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/70 text-primary-foreground shadow-md ring-1 ring-inset ring-primary/30">
+                <User className="h-5 w-5" />
+              </span>
+              <span className="flex flex-col">
+                <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Ficha consolidada</span>
+                <span className="text-base font-semibold text-foreground">{titulo(clienteNome)}</span>
+              </span>
+            </DialogTitle>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={!data}
+              onClick={() => data && imprimirFichaPDF(clienteNome, data)}
+              className="mr-8 shrink-0 gap-2 border-primary/30 bg-background/70 text-primary hover:bg-primary/10"
+            >
+              <Printer className="h-4 w-4" /> Imprimir PDF
+            </Button>
+          </div>
         </DialogHeader>
         <div className="max-h-[calc(90vh-5.5rem)] overflow-y-auto p-5">
 
