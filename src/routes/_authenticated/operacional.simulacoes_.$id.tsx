@@ -471,6 +471,25 @@ function Pagina() {
               <Item termo="Valor do imóvel" desc={formatBRL(s.valor_imovel)} />
               <Item termo="Valor financiado" desc={formatBRL(s.valor_financiamento)} />
               <Item termo="Entrada" desc={formatBRL(s.valor_entrada)} />
+              <Item
+                termo="Financiar despesas"
+                desc={s.fg_financiar_despesas ? "Sim" : "Não"}
+              />
+              {s.fg_financiar_despesas && (
+                <>
+                  <Item
+                    termo="Despesas financiadas"
+                    desc={formatBRL(s.valor_despesas_financiadas)}
+                  />
+                  <Item
+                    termo="Total financiado"
+                    desc={formatBRL(
+                      (Number(s.valor_financiamento) || 0) +
+                        (Number(s.valor_despesas_financiadas) || 0),
+                    )}
+                  />
+                </>
+              )}
               <Item termo="Prazo" desc={s.prazo ? `${s.prazo} meses` : "—"} />
               <Item termo="Sistema" desc={s.sistema_amortizacao === "P" ? "PRICE" : "SAC"} />
               <Item termo="Utiliza FGTS" desc={s.utiliza_fgts === "S" ? "Sim" : "Não"} />
