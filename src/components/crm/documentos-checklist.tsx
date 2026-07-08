@@ -976,6 +976,9 @@ export function DocumentosChecklist({ clienteId }: { clienteId: string }) {
           <CardTitle className="text-base">Checklist do imóvel</CardTitle>
         </CardHeader>
         <CardContent className="space-y-1">
+          <div className="pb-2">
+            <AdicionarItem onAdd={(l) => addCustom(l, "imovel")} />
+          </div>
           <DocItem itemKey="i_matricula" cat="imovel" label={T.imovel[0]} />
           <DocItem itemKey="i_iptu" cat="imovel" label={T.imovel[1]} />
           <div className="mt-2 flex items-center justify-between rounded-lg border border-border p-3">
