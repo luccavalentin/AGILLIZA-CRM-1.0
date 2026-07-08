@@ -915,6 +915,9 @@ export function DocumentosChecklist({ clienteId }: { clienteId: string }) {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-1">
+          <div className="pb-2">
+            <AdicionarItem onAdd={(l) => addCustom(l, "vendedor")} />
+          </div>
           {vendPJ ? (
             <>
               <DocItem itemKey="v_contrato_social" cat="vendedor" label={T.vendedor[3]} />
