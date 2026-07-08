@@ -468,6 +468,9 @@ export const getPanelDados = createServerFn({ method: "POST" })
         titulo: statusMap.size ? "Status de propostas" : "Status de simulações",
         itens: statusMap.size ? topItens(statusMap, 6) : topItens(simStatusMap, 6),
       },
+      recusadasPorBanco: recusadasBancoMap.size
+        ? { titulo: "Recusadas por banco", itens: topItens(recusadasBancoMap, 8) }
+        : undefined,
       alertas,
     };
   });
