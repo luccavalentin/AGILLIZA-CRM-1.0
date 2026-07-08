@@ -540,27 +540,34 @@ function Pagina() {
         </Card>
 
         {/* Chat + follow-up — no mobile ocupa a tela inteira quando aberto */}
-        <div className={cn(selecionado ? "block" : "hidden lg:block")}>
+        <div
+          className={cn(
+            "min-h-0 flex-col",
+            selecionado ? "flex" : "hidden lg:flex",
+          )}
+        >
           <button
             type="button"
             onClick={() => setSelecionado(null)}
-            className="mb-3 inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground lg:hidden"
+            className="mb-3 inline-flex shrink-0 items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground lg:hidden"
           >
             <ArrowLeft className="h-4 w-4" />
             Voltar às conversas
           </button>
           {alvoAtual ? (
-            <ChatClienteTab
-              key={alvoAtual.cliente_id}
-              clienteId={alvoAtual.cliente_id}
-              info={{
-                nome: alvoAtual.nome,
-                documento: alvoAtual.documento,
-                contexto: alvoAtual.etapa_nome ?? undefined,
-              }}
-            />
+            <div className="min-h-0 flex-1">
+              <ChatClienteTab
+                key={alvoAtual.cliente_id}
+                clienteId={alvoAtual.cliente_id}
+                info={{
+                  nome: alvoAtual.nome,
+                  documento: alvoAtual.documento,
+                  contexto: alvoAtual.etapa_nome ?? undefined,
+                }}
+              />
+            </div>
           ) : (
-            <Card className="flex h-[38rem] flex-col items-center justify-center gap-3 border-border/60 border-dashed text-center shadow-sm">
+            <Card className="flex h-full min-h-0 flex-1 flex-col items-center justify-center gap-3 border-dashed border-border/60 text-center shadow-sm">
               <div className="flex size-14 items-center justify-center rounded-full bg-primary/10 text-primary">
                 <MessagesSquare className="h-6 w-6" />
               </div>
@@ -570,6 +577,7 @@ function Pagina() {
             </Card>
           )}
         </div>
+
       </div>
 
     </div>
