@@ -161,10 +161,10 @@ export function LandingFx({ className }: { className?: string }) {
       {
         const cx = smx * w;
         const cy = smy * h;
-        const coreR = minDim * 0.28;
+        const coreR = minDim * 0.12;
         const core = ctx.createRadialGradient(cx, cy, 0, cx, cy, coreR);
-        core.addColorStop(0, `hsla(205, 90%, 68%, ${0.5 * intensity})`);
-        core.addColorStop(0.5, `hsla(216, 80%, 56%, ${0.22 * intensity})`);
+        core.addColorStop(0, `hsla(205, 90%, 68%, ${0.28 * intensity})`);
+        core.addColorStop(0.5, `hsla(216, 80%, 56%, ${0.12 * intensity})`);
         core.addColorStop(1, `hsla(216, 80%, 50%, 0)`);
         ctx.fillStyle = core;
         ctx.beginPath();
