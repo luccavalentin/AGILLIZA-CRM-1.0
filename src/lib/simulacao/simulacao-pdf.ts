@@ -376,39 +376,35 @@ function anexarDetalhesBancos(doc: jsPDF, pageW: number, pageH: number, s: any, 
     gy += rCardH + 12;
 
     drawDisclaimer(doc, pageW, gy);
+    gy += 24;
 
-    // ----- Coluna direita (50%): plano de pagamento (as simulações) -----
-    const rightX = MARGIN + leftW + colGap;
-    const rightW = w - leftW - colGap;
+    // ----- Plano de pagamento (as simulações) — largura total, abaixo do bloco -----
     doc.setTextColor(AZUL);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(10);
-    doc.text(`Plano de Pagamento (${parcelas.length} parcelas)`, rightX, blocoTop);
+    doc.text(`Plano de Pagamento (${parcelas.length} parcelas)`, MARGIN, gy);
     if (d?.parcelasEstimadas) {
       doc.setFont("helvetica", "italic");
-      doc.setFontSize(6.5);
+      doc.setFontSize(7);
       doc.setTextColor(CINZA);
       doc.text(
-        "Projeção a partir da taxa/sistema do banco (1ª/última parcela reais).",
-        rightX,
-        blocoTop + 10,
-        { maxWidth: rightW },
+        "Projeção calculada a partir da taxa e do sistema informados pelo banco (1ª/última parcela reais).",
+        pageW - MARGIN,
+        gy,
+        { align: "right" },
       );
     }
-    const tblStart = blocoTop + (d?.parcelasEstimadas ? 18 : 8);
+    gy += 8;
 
     if (parcelas.length === 0) {
       doc.setFont("helvetica", "normal");
-      doc.setFontSize(8);
+      doc.setFontSize(9);
       doc.setTextColor(CINZA);
-      doc.text("Detalhamento de parcelas indisponível para esta simulação.", rightX, tblStart + 14, {
-        maxWidth: rightW,
-      });
+      doc.text("Detalhamento de parcelas indisponível para esta simulação.", MARGIN, gy + 16);
     } else {
       autoTable(doc, {
-        startY: tblStart,
-        tableWidth: rightW,
-        margin: { left: rightX, right: MARGIN, top: DETALHE_HEADER_H + 16, bottom: 40 },
+        startY: gy,
+        margin: { left: MARGIN, right: MARGIN, top: DETALHE_HEADER_H + 16, bottom: 40 },
         head: [["Parc.", "Data", "Amortização", "Juros", "Parcela", "Saldo devedor"]],
         body: parcelas.map((p) => [
           String(p.numero),
@@ -419,13 +415,13 @@ function anexarDetalhesBancos(doc: jsPDF, pageW: number, pageH: number, s: any, 
           formatBRL(p.saldoDevedor),
         ]),
         styles: {
-          fontSize: 6,
-          cellPadding: 2,
+          fontSize: 7,
+          cellPadding: 3,
           textColor: GRAFITE,
           lineColor: BORDA,
           lineWidth: 0.25,
         },
-        headStyles: { fillColor: AZUL, textColor: "#FFFFFF", fontStyle: "bold", fontSize: 6 },
+        headStyles: { fillColor: AZUL, textColor: "#FFFFFF", fontStyle: "bold", fontSize: 7 },
         alternateRowStyles: { fillColor: ZEBRA },
         columnStyles: {
           0: { halign: "right" },
@@ -441,6 +437,7 @@ function anexarDetalhesBancos(doc: jsPDF, pageW: number, pageH: number, s: any, 
     }
   });
 }
+
 
 
 
