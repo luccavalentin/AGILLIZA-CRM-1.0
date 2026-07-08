@@ -309,6 +309,62 @@ function drawDisclaimer(doc: jsPDF, pageW: number, y: number) {
 // Consolidado (comparativo entre bancos) — usado na listagem
 // ---------------------------------------------------------------------------
 
+/** Cabeçalho landscape das páginas de detalhamento (mesma faixa azul do comparativo). */
+const DETALHE_HEADER_H = 84;
+
+/** Anexa uma página landscape por banco com o detalhamento completo da simulação. */
+function anexarDetalhesBancos(doc: jsPDF, pageW: number, pageH: number, s: any, bancos: any[]) {
+  const lista = bancosParaExtrato(bancos);
+  lista.forEach((b) => {
+    doc.addPage("a4", "landscape");
+    const d = extrairDetalheBanco(b?.raw_response);
+    drawBrandHeader(
+      doc,
+      pageW,
+      DETALHE_HEADER_H,
+      "Detalhamento da Simulação",
+      `${produtoLabel(s)} · ${s.nome_cliente ?? "Cliente não informado"}`,
+    );
+    let y = DETALHE_HEADER_H + 24;
+    y = drawFaixaBanco(doc, pageW, b?.nome_banco ?? "Banco", y);
+    y = drawInfoFinanciamento(doc, pageW, s, b, d, y);
+
+    // Resumo do pagamento (valores fornecidos pela instituição — sem recálculo)
+    const resumo: { label: string; valor: string }[] = [
+      { label: "1ª parcela", valor: brlOuTraco(d?.primeiraParcela ?? b?.valor_parcela) },
+      { label: "Última parcela", valor: brlOuTraco(d?.ultimaParcela) },
+      { label: "Somatório das parcelas", valor: brlOuTraco(d?.somatorioParcelas) },
+    ];
+    doc.setTextColor(AZUL);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.text("Resumo do Pagamento", MARGIN, y);
+    y += 8;
+    const w = pageW - MARGIN * 2;
+    const gap = 8;
+    const cardW = (w - gap * 2) / 3;
+    const cardH = 40;
+    resumo.forEach((it, i) => {
+      const x = MARGIN + i * (cardW + gap);
+      doc.setFillColor(ZEBRA);
+      doc.setDrawColor(BORDA);
+      doc.setLineWidth(0.5);
+      doc.roundedRect(x, y, cardW, cardH, 3, 3, "FD");
+      doc.setTextColor(CINZA);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(6.5);
+      doc.text(it.label.toUpperCase(), x + 10, y + 15, { maxWidth: cardW - 16 });
+      doc.setTextColor(AZUL);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.text(it.valor, x + 10, y + 32, { maxWidth: cardW - 16 });
+    });
+    y += cardH + 20;
+
+    drawDisclaimer(doc, pageW, y);
+  });
+}
+
 /** Gera e baixa um PDF institucional consolidado (dados + comparativo de bancos). */
 export function baixarSimulacaoPDF(input: SimulacaoPdfInput) {
   const { simulacao: s, bancos } = input;
