@@ -11,7 +11,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { formatBRL } from "@/lib/simulacao/format";
-import { baixarSimulacaoPDF } from "@/lib/simulacao/simulacao-pdf";
 
 interface Props {
   open: boolean;
