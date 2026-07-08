@@ -16,6 +16,7 @@ import {
   Pencil,
   Search,
   Trash2,
+  User,
   Upload,
   UploadCloud,
 } from "lucide-react";
