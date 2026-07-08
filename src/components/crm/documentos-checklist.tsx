@@ -324,8 +324,8 @@ function ChecklistsPersonalizados(props: ChecklistsCfgProps) {
                     }}
                   />
                 ))}
-                <AdicionarItem onAdd={(l) => props.addItem(g.id, l)} />
               </CardContent>
+
             </Card>
           );
         })}
