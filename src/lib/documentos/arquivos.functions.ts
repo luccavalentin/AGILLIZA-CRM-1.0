@@ -217,10 +217,30 @@ export const moverNo = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const corr = await correspondenteDoUsuario(supabase, userId);
     if (!corr) throw new Error("Sem correspondente.");
-    if (data.novo_parent_id === data.id) throw new Error("Destino inválido.");
+    const destino = data.novo_parent_id ?? null;
+    if (destino === data.id) throw new Error("Destino inválido.");
+
+    // Impede mover uma pasta para dentro de si mesma (descendente): isso
+    // criaria um ciclo e tornaria a subárvore inacessível a partir da raiz.
+    if (destino) {
+      let atual: string | null = destino;
+      for (let i = 0; i < 100 && atual; i++) {
+        if (atual === data.id)
+          throw new Error("Não é possível mover uma pasta para dentro dela mesma.");
+        const { data: no } = (await supabase
+          .from("arquivos_nos")
+          .select("parent_id")
+          .eq("id", atual)
+          .eq("correspondente_id", corr)
+          .maybeSingle()) as { data: { parent_id: string | null } | null };
+        if (!no) break;
+        atual = no.parent_id;
+      }
+    }
+
     const { error } = await supabase
       .from("arquivos_nos")
-      .update({ parent_id: data.novo_parent_id ?? null })
+      .update({ parent_id: destino })
       .eq("id", data.id)
       .eq("correspondente_id", corr);
     if (error) throw new Error(error.message);
