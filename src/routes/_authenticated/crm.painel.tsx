@@ -277,15 +277,20 @@ function Pagina() {
                         {stage.nome}
                       </span>
                     </div>
-                    <span
-                      className={`flex h-6 min-w-6 shrink-0 items-center justify-center rounded-full px-2 text-xs font-bold tabular-nums transition-colors duration-300 ${
+                    <button
+                      type="button"
+                      onClick={() => temClientes && setDialogStage(stage.codigo)}
+                      disabled={!temClientes}
+                      title={temClientes ? "Ver clientes desta etapa" : undefined}
+                      className={`flex h-6 min-w-6 shrink-0 items-center justify-center gap-1 rounded-full px-2 text-xs font-bold tabular-nums transition-all duration-300 ${
                         temClientes
-                          ? "bg-primary text-primary-foreground shadow-sm"
-                          : "bg-muted text-muted-foreground"
+                          ? "cursor-pointer bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 hover:ring-2 hover:ring-primary/40"
+                          : "cursor-default bg-muted text-muted-foreground"
                       }`}
                     >
+                      <Users className="size-3" />
                       {stage.clientes.length}
-                    </span>
+                    </button>
                   </div>
                   <div className="space-y-2">
                     {!temClientes ? (
