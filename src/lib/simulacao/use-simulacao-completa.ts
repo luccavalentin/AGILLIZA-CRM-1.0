@@ -511,6 +511,7 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
   /** Verifica a renda contra o sugestivo; abre o popup de confirmação se insuficiente. */
   function rendaSuficiente(): boolean {
     const av = avaliarRendaMinima({
+      valor_imovel: f.valor_imovel,
       valor_financiamento: f.valor_financiamento,
       prazo_meses: f.prazo,
       taxa_ano: melhorTaxaAno,
