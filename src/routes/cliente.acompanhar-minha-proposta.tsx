@@ -1,33 +1,24 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Send, Upload, Paperclip, Camera, FileText, Loader2, ListChecks } from "lucide-react";
+import { Upload, Paperclip, ListChecks } from "lucide-react";
 import { z } from "zod";
 import {
   clienteObterVisaoGeral,
   clienteMeusDocumentos,
   clienteMinhasPropostas,
-  clienteListarMensagens,
-  clienteEnviarMensagem,
-  clienteEnviarMensagemAnexo,
-  clienteMarcarLida,
   clienteEnviarDocumentoPendente,
 } from "@/lib/portal/cliente.functions";
-import { useIncomingChatSound } from "@/hooks/use-chat-sound";
-import { useChatTyping } from "@/hooks/use-chat-typing";
-import { TypingIndicator } from "@/components/shared/typing-indicator";
 import { TimelineCliente } from "@/components/cliente/timeline-cliente";
 import { CabecalhoPagina } from "@/components/cliente/cabecalho-pagina";
 import { ChipDocumento } from "@/components/cliente/chip-documento";
+import { ChatCliente } from "@/components/cliente/chat-cliente";
 import { BradescoRetornoTimer, isBradesco } from "@/components/proposta/bradesco-timer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { VisualizadorArquivo } from "@/components/comum/visualizador-arquivo";
-import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
 
 
 const searchSchema = z.object({
