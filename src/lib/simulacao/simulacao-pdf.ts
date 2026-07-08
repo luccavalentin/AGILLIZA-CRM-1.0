@@ -430,6 +430,7 @@ export function baixarSimulacaoPDF(input: SimulacaoPdfInput) {
     sanitizarNomeArquivo(nomeDescritivo(s, bancos ?? [])),
     DISCLAIMER,
     firstColLogos,
+    (doc, pageW, pageH) => anexarDetalhesBancos(doc, pageW, pageH, s, bancos ?? []),
   );
 
 }
