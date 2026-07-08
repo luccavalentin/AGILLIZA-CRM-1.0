@@ -2,8 +2,11 @@ import { getTheme } from "@/lib/theme";
 
 /**
  * Paleta dos documentos/relatórios (PDF e HTML de impressão).
- * Segue o tema ativo do sistema: claro (institucional) ou escuro.
- * Os relatórios saem no mesmo tom da interface no momento da geração.
+ *
+ * IMPORTANTE: o relatório é SEMPRE branco e formal. A única diferença entre o
+ * modo claro e o modo escuro é o TOM DE AZUL usado nos destaques (faixa de
+ * cabeçalho, cabeçalho de tabela, valores), acompanhando o tom do menu do
+ * sistema. O fundo, o texto, os cartões e as bordas permanecem idênticos.
  */
 export interface PdfPalette {
   /** Fundo da página (null = branco/sem preenchimento). */
@@ -36,16 +39,22 @@ export interface PdfPalette {
   dark: boolean;
 }
 
-const LIGHT: PdfPalette = {
+/** Base formal branca — compartilhada pelos dois modos. */
+const BASE = {
   pageBg: null,
-  azul: "#000F9F",
   coral: "#F5333F",
   texto: "#0B0B0F",
   cinza: "#6B7280",
   card: "#F7F8FA",
   borda: "#E4E6EF",
-  destaque: "#000F9F",
   headText: "#FFFFFF",
+} as const;
+
+/** Modo claro — azul institucional vivo. */
+const LIGHT: PdfPalette = {
+  ...BASE,
+  azul: "#000F9F",
+  destaque: "#000F9F",
   subHead: "#C7CBF0",
   footFill: "#E9EBF5",
   footText: "#000F9F",
@@ -53,22 +62,18 @@ const LIGHT: PdfPalette = {
   dark: false,
 };
 
+/** Modo escuro — mesmo relatório branco/formal, apenas o azul num tom mais profundo (tom do menu escuro). */
 const DARK: PdfPalette = {
-  pageBg: "#0E0F16",
-  azul: "#000A70",
-  coral: "#F5333F",
-  texto: "#E6E8F0",
-  cinza: "#9AA3B2",
-  card: "#1A1C28",
-  borda: "#2E3142",
-  destaque: "#93A6FF",
-  headText: "#FFFFFF",
-  subHead: "#C7CBF0",
-  footFill: "#1A1C28",
-  footText: "#93A6FF",
-  sep: "#4655C4",
+  ...BASE,
+  azul: "#050A3C",
+  destaque: "#050A3C",
+  subHead: "#AEB4E6",
+  footFill: "#E7E9F4",
+  footText: "#050A3C",
+  sep: "#2A3390",
   dark: true,
 };
+
 
 /** Devolve a paleta do documento conforme o tema ativo do sistema. */
 export function getPdfPalette(): PdfPalette {
