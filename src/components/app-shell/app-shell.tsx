@@ -1,7 +1,8 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
+import { LogOut } from "lucide-react";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/brand/Logo";
 import symbolLight from "@/assets/brand/agilliza-symbol-oficial-light.png";
@@ -90,7 +91,11 @@ export function AppShell({
           <div className="sidebar-scroll flex-1 overflow-y-auto">
             {hydrated && collapsed ? <SidebarRail nav={nav} /> : <SidebarNav nav={nav} />}
           </div>
+          <div className="border-t border-sidebar-border p-2">
+            <SidebarSignOut collapsed={hydrated && collapsed} onSignOut={onSignOut} />
+          </div>
         </aside>
+
 
         {/* Drawer mobile */}
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
@@ -102,9 +107,19 @@ export function AppShell({
             <div className="flex h-16 items-center border-b border-sidebar-border px-4">
               <Logo variant="light" className="h-7" />
             </div>
-            <div className="sidebar-scroll h-[calc(100dvh-4rem)] overflow-y-auto">
+            <div className="sidebar-scroll h-[calc(100dvh-8rem)] overflow-y-auto">
               <SidebarNav nav={nav} onNavigate={() => setMobileOpen(false)} />
             </div>
+            <div className="border-t border-sidebar-border p-2">
+              <SidebarSignOut
+                collapsed={false}
+                onSignOut={() => {
+                  setMobileOpen(false);
+                  onSignOut();
+                }}
+              />
+            </div>
+
           </SheetContent>
         </Sheet>
 
@@ -126,5 +141,42 @@ export function AppShell({
         </div>
       </div>
     </TooltipProvider>
+  );
+}
+
+/** Botão "Sair" fixo no rodapé da sidebar. */
+function SidebarSignOut({
+  collapsed,
+  onSignOut,
+}: {
+  collapsed: boolean;
+  onSignOut: () => void;
+}) {
+  if (collapsed) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            onClick={onSignOut}
+            aria-label="Sair"
+            className="flex h-10 w-full items-center justify-center rounded-md text-sidebar-foreground transition-colors hover:bg-white/15"
+          >
+            <LogOut className="h-[18px] w-[18px]" />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="right">Sair</TooltipContent>
+      </Tooltip>
+    );
+  }
+  return (
+    <button
+      type="button"
+      onClick={onSignOut}
+      className="flex min-h-10 w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-sidebar-foreground transition-colors hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
+    >
+      <LogOut className="h-[18px] w-[18px] shrink-0" />
+      <span className="truncate">Sair</span>
+    </button>
   );
 }
