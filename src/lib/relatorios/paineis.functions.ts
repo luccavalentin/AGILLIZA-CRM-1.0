@@ -182,13 +182,18 @@ export const getPanelDados = createServerFn({ method: "POST" })
 
       const simRows = (sims.data ?? []) as any[];
       const simCount = simRows.length;
-      const rows = (props.data ?? []) as any[];
+      const rowsBrutas = (props.data ?? []) as any[];
+      // Propostas cujo movimento (criação) ocorre no período.
+      const rows = rowsBrutas.filter((p) => dentroPeriodo(p.created_at));
       const enviadas = rows.filter((p) => p.status !== "rascunho");
       const aprovadas = enviadas.filter((p) =>
         ["credito_aprovado", "contrato_emitido", "registrado"].includes(p.status),
       );
-      const contratos = enviadas.filter((p) =>
-        ["contrato_emitido", "registrado"].includes(p.status),
+      // Contratos entram pela DATA DE EMISSÃO no período (independe da criação).
+      const contratos = rowsBrutas.filter(
+        (p) =>
+          ["contrato_emitido", "registrado"].includes(p.status) &&
+          dentroPeriodo(p.contrato_emitido_em),
       );
       const simConcluidas = simRows.filter((s) =>
         ["simulada", "parcialmente_simulada", "promovida"].includes(s.status),
