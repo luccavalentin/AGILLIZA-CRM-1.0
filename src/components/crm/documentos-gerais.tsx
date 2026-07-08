@@ -179,6 +179,11 @@ export function DocumentosGerais() {
         const comKey = c.comercial_id ? `com:${c.comercial_id}` : SEM_COMERCIAL_KEY;
         const comNome = c.comercial_id ? titulo(c.comercial_nome) : SEM_COMERCIAL_LABEL;
         const com = garantirFilho(avulso, comKey, comNome, "comercial");
+        // Marca o analista que criou o cadastro como etiqueta da pasta comercial.
+        if (c.analista_id) {
+          if (!com.analistas) com.analistas = new Map();
+          com.analistas.set(c.analista_id, titulo(c.analista_nome));
+        }
         const corr = garantirFilho(com, corrKey, corrNome, "corretor");
         corr.clientes.push(c);
       }
