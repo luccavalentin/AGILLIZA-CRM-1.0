@@ -715,7 +715,10 @@ export function ClienteForm({
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Dados básicos</CardTitle>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <IdCard className="size-4 text-primary" /> Dados básicos
+          </CardTitle>
+
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
