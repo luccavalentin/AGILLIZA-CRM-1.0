@@ -193,6 +193,14 @@ export function JogadaNumerosDialog({
                   {formatBRL(Number(valorLiberar) || 0)}
                 </span>
               </div>
+              {incluirCustas && calc.custas > 0 && (
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Custas financiadas</span>
+                  <span className="font-semibold tabular-nums text-foreground">
+                    {formatBRL(calc.custas)}
+                  </span>
+                </div>
+              )}
             </div>
           )}
         </div>
