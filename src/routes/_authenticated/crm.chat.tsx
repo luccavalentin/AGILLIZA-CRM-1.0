@@ -60,6 +60,7 @@ import {
   getChatMeta,
   salvarChatMeta,
   overviewGestaoChat,
+  definirArquivamentoConversa,
   type ChatEtiqueta,
 } from "@/lib/crm/chat-gestao.functions";
 
