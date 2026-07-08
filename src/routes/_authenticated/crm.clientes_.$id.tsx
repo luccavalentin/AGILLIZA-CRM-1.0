@@ -104,26 +104,65 @@ function Pagina() {
   const c = det.cliente;
   const docExib = det.podePii ? formatarDocumento(c.documento) : mascararDocumento(c.documento);
 
+  const iniciais = (c.nome ?? "?")
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((p: string) => p[0]?.toUpperCase() ?? "")
+    .join("");
+  const celularExib = det.podePii ? formatarCelular((c as any).telefone_celular) : null;
+
   return (
     <div className="space-y-5 p-4 sm:p-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <Button asChild variant="ghost" size="icon">
-            <Link to="/crm/clientes">
-              <ArrowLeft className="size-4" />
-            </Link>
-          </Button>
-          <div>
-            <h1 className="text-xl font-semibold text-foreground">{c.nome}</h1>
-            <p className="font-mono text-xs text-muted-foreground">
-              {c.numero_cliente} · {docExib}
-            </p>
+      <div className="flex items-center gap-2">
+        <Button asChild variant="ghost" size="icon" className="h-9 w-9 shrink-0">
+          <Link to="/crm/clientes">
+            <ArrowLeft className="size-4" />
+          </Link>
+        </Button>
+        <span className="text-sm text-muted-foreground">Voltar aos clientes</span>
+      </div>
+
+      {/* Cabeçalho do cliente */}
+      <div className="relative overflow-hidden rounded-2xl border border-border/70 bg-gradient-to-br from-primary/[0.06] via-card to-card p-5 sm:p-6">
+        <span
+          aria-hidden
+          className="pointer-events-none absolute -right-12 -top-16 h-40 w-40 rounded-full bg-primary/10 blur-3xl"
+        />
+        <div className="relative flex flex-wrap items-start justify-between gap-4">
+          <div className="flex min-w-0 items-center gap-4">
+            <span className="grid size-14 shrink-0 place-items-center rounded-2xl bg-primary/10 text-lg font-semibold text-primary ring-1 ring-inset ring-primary/15">
+              {iniciais}
+            </span>
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="truncate text-xl font-semibold tracking-tight text-foreground">
+                  {c.nome}
+                </h1>
+                <StatusBadge status={c.portal_acesso_ativo ? "ativo" : "inativo"} />
+              </div>
+              <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
+                <span className="font-mono text-xs">{c.numero_cliente}</span>
+                <span className="text-border">·</span>
+                <span className="font-mono text-xs">{docExib}</span>
+                {celularExib && (
+                  <>
+                    <span className="text-border">·</span>
+                    <span className="text-xs">{celularExib}</span>
+                  </>
+                )}
+                {c.uf_interesse && (
+                  <>
+                    <span className="text-border">·</span>
+                    <span className="text-xs">{c.uf_interesse}</span>
+                  </>
+                )}
+              </div>
+            </div>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <StatusBadge status={c.portal_acesso_ativo ? "ativo" : "inativo"} />
           <Button
             variant="default"
+            className="shrink-0"
             onClick={() => {
               const ec = c.estado_civil ?? "";
               const casado = ec === "casado" || ec === "uniao_estavel";
@@ -149,7 +188,7 @@ function Pagina() {
               navigate({ to: "/operacional/simulacoes/completa" });
             }}
           >
-            <Calculator className="size-4" /> Nova simulação personalizada
+            <Calculator className="size-4" /> Nova simulação
           </Button>
         </div>
       </div>
@@ -176,6 +215,7 @@ function Pagina() {
           )}
         </CardContent>
       </Card>
+
 
 
       <Tabs defaultValue="resumo">
