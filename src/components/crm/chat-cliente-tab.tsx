@@ -778,13 +778,38 @@ function MsgAcoes({
 }
 
 /** Popover de respostas rápidas (templates) — editáveis, salvas no navegador. */
-function RespostasRapidas({ onEscolher }: { onEscolher: (texto: string) => void }) {
+function RespostasRapidas({
+  onEscolher,
+  contexto,
+}: {
+  onEscolher: (texto: string) => void;
+  contexto?: ContextoResposta;
+}) {
   const [aberto, setAberto] = useState(false);
   const [lista, setLista] = useState<RespostaRapida[]>([]);
   const [gerenciando, setGerenciando] = useState(false);
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [formTitulo, setFormTitulo] = useState("");
   const [formTexto, setFormTexto] = useState("");
+  const formTextoRef = useRef<HTMLTextAreaElement>(null);
+
+  function inserirVariavel(chave: string) {
+    const el = formTextoRef.current;
+    const token = `{${chave}}`;
+    if (!el) {
+      setFormTexto((prev) => (prev ? `${prev} ${token}` : token));
+      return;
+    }
+    const start = el.selectionStart ?? formTexto.length;
+    const end = el.selectionEnd ?? formTexto.length;
+    const novo = formTexto.slice(0, start) + token + formTexto.slice(end);
+    setFormTexto(novo);
+    requestAnimationFrame(() => {
+      el.focus();
+      const pos = start + token.length;
+      el.setSelectionRange(pos, pos);
+    });
+  }
 
   useEffect(() => {
     setLista(getRespostasRapidas());
