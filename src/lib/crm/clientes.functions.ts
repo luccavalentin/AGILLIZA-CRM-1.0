@@ -1439,6 +1439,7 @@ export const listarContratosEmitidos = createServerFn({ method: "GET" })
         nome_banco: p?.nome_banco ?? null,
         valor_financiamento: p?.valor_financiamento ?? null,
         contrato_emitido_em: c.contrato_emitido_em ?? null,
+        contrato_arquivado_em: c.contrato_arquivado_em ?? null,
       };
     });
   });
