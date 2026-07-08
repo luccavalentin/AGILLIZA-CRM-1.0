@@ -737,6 +737,24 @@ function BarraGestao({
       toast.error(e instanceof Error ? e.message : "Não foi possível salvar."),
   });
 
+  const estaArquivada = meta?.arquivado ?? false;
+  const alternarArquivo = useMutation({
+    mutationFn: () =>
+      arquivar({ data: { cliente_id: clienteId, arquivado: !estaArquivada } }),
+    onSuccess: () => {
+      toast.success(
+        estaArquivada ? "Conversa desarquivada." : "Conversa arquivada.",
+      );
+      qc.invalidateQueries({ queryKey: ["chat-meta", clienteId] });
+      qc.invalidateQueries({ queryKey: ["chat-overview"] });
+      qc.invalidateQueries({ queryKey: ["chat-overview-cliente", clienteId] });
+    },
+    onError: (e) =>
+      toast.error(
+        e instanceof Error ? e.message : "Não foi possível arquivar.",
+      ),
+  });
+
   const aplicadas = etiquetas.filter((e) => tagsAplicadas.has(e.id));
 
   const etapaAtual =
