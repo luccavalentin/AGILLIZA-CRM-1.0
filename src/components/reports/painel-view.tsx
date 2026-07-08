@@ -193,6 +193,25 @@ export function PainelView({
             ))}
           </div>
 
+          {data.evolucao && data.evolucao.dados.length > 1 && (
+            <>
+              <SectionTitle>Evolução</SectionTitle>
+              <PanelCard titulo={data.evolucao.titulo} subtitulo={data.evolucao.subtitulo}>
+                <div className="h-[280px] w-full">
+                  <ReportChartView
+                    chart={{
+                      titulo: data.evolucao.titulo,
+                      tipo: "line",
+                      dados: data.evolucao.dados,
+                      serie1: data.evolucao.serie1,
+                      serie2: data.evolucao.serie2,
+                    }}
+                  />
+                </div>
+              </PanelCard>
+            </>
+          )}
+
           <SectionTitle>Operação</SectionTitle>
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
             <div className="lg:col-span-2">
@@ -217,10 +236,30 @@ export function PainelView({
                 </div>
               </PanelCard>
             </div>
-            <PanelCard titulo={data.ranking.titulo}>
-              <MetricList items={data.ranking.itens} colorByBank={data.chart.porBanco} />
-            </PanelCard>
+            <div className="space-y-4">
+              {data.distribuicao && data.distribuicao.dados.length > 0 && (
+                <PanelCard
+                  titulo={data.distribuicao.titulo}
+                  subtitulo={data.distribuicao.subtitulo}
+                >
+                  <div className="h-[240px] w-full">
+                    <ReportChartView
+                      chart={{
+                        titulo: data.distribuicao.titulo,
+                        tipo: "donut",
+                        dados: data.distribuicao.dados,
+                      }}
+                      colorByBank={data.distribuicao.porBanco}
+                    />
+                  </div>
+                </PanelCard>
+              )}
+              <PanelCard titulo={data.ranking.titulo}>
+                <MetricList items={data.ranking.itens} colorByBank={data.chart.porBanco} />
+              </PanelCard>
+            </div>
           </div>
+
 
 
           <SectionTitle>Alertas</SectionTitle>

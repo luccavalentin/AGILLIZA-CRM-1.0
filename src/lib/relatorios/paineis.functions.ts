@@ -20,6 +20,7 @@ export interface PanelMetric {
 export interface PanelSerie {
   label: string;
   valor: number;
+  valor2?: number;
 }
 export interface PanelAlert {
   tone: "warning" | "danger" | "success";
@@ -27,23 +28,111 @@ export interface PanelAlert {
   descricao?: string;
   contador?: number;
 }
+export interface PanelDistribuicao {
+  titulo: string;
+  subtitulo?: string;
+  dados: PanelSerie[];
+  porBanco?: boolean;
+}
+export interface PanelEvolucao {
+  titulo: string;
+  subtitulo?: string;
+  serie1: string;
+  serie2: string;
+  dados: PanelSerie[];
+}
 
 export interface PanelDados {
   heros: PanelMetric[];
   minis: PanelMetric[];
+  evolucao?: PanelEvolucao;
   chart: { titulo: string; subtitulo?: string; dados: PanelSerie[]; porBanco?: boolean };
+  distribuicao?: PanelDistribuicao;
   ranking: { titulo: string; itens: { label: string; valor: number }[] };
   alertas: PanelAlert[];
 }
 
 const brl = (v: number) => (v || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const brlCompacto = (v: number) => {
+  const n = v || 0;
+  if (n >= 1_000_000) return `R$ ${(n / 1_000_000).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}mi`;
+  if (n >= 1_000) return `R$ ${(n / 1_000).toLocaleString("pt-BR", { maximumFractionDigits: 0 })}mil`;
+  return brl(n);
+};
 const int = (v: number) => (v || 0).toLocaleString("pt-BR");
+const pct = (v: number) => `${v.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`;
 
 function topItens(map: Map<string, number>, limite = 8) {
   return [...map.entries()]
     .sort((a, b) => b[1] - a[1])
     .slice(0, limite)
     .map(([label, valor]) => ({ label: label || "—", valor }));
+}
+
+/** Rótulos amigáveis para status de propostas. */
+const PROP_LABEL: Record<string, string> = {
+  rascunho: "Rascunho",
+  enviada_banco: "Enviada ao banco",
+  em_analise_credito: "Em análise",
+  credito_aprovado: "Aprovada",
+  credito_recusado: "Recusada",
+  contrato_emitido: "Contrato emitido",
+  registrado: "Registrado",
+  cancelada: "Cancelada",
+  pendente: "Pendente",
+};
+const SIM_LABEL: Record<string, string> = {
+  rascunho: "Rascunho",
+  em_simulacao: "Em simulação",
+  simulada: "Simulada",
+  parcialmente_simulada: "Parcial",
+  promovida: "Promovida",
+  erro_banco: "Erro",
+  cancelada: "Cancelada",
+};
+const rotularStatus = (s: string, mapa: Record<string, string>) =>
+  mapa[s] ?? (s ? s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, " ") : "—");
+
+/** Constrói baldes temporais (por dia ou por mês) cobrindo o intervalo. */
+function construirBuckets(deISO: string, ateISO: string) {
+  const de = new Date(`${deISO}T00:00:00`);
+  const ate = new Date(`${ateISO}T23:59:59`);
+  const dias = Math.max(0, Math.round((ate.getTime() - de.getTime()) / 86_400_000));
+  const porMes = dias > 62;
+  const chaveDe = (d: Date) =>
+    porMes
+      ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`
+      : `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const chaves: string[] = [];
+  const cursor = new Date(de);
+  if (porMes) cursor.setDate(1);
+  else cursor.setHours(0, 0, 0, 0);
+  let guarda = 0;
+  while (cursor <= ate && guarda < 400) {
+    chaves.push(chaveDe(cursor));
+    if (porMes) cursor.setMonth(cursor.getMonth() + 1);
+    else cursor.setDate(cursor.getDate() + 1);
+    guarda++;
+  }
+  const rotulo = (chave: string) => {
+    if (porMes) {
+      const [y, m] = chave.split("-");
+      return new Date(Number(y), Number(m) - 1, 1).toLocaleDateString("pt-BR", { month: "short" });
+    }
+    const [, m, d] = chave.split("-");
+    return `${d}/${m}`;
+  };
+  const chaveDaData = (iso?: string | null) => (iso ? chaveDe(new Date(iso)) : "");
+  return { chaves, rotulo, chaveDaData, porMes };
+}
+
+function contarPorBucket(rows: { created_at?: string | null }[], buckets: ReturnType<typeof construirBuckets>) {
+  const m = new Map<string, number>();
+  for (const r of rows) {
+    const k = buckets.chaveDaData(r.created_at);
+    if (k) m.set(k, (m.get(k) ?? 0) + 1);
+  }
+  return m;
 }
 
 export const getPanelDados = createServerFn({ method: "POST" })
@@ -54,6 +143,7 @@ export const getPanelDados = createServerFn({ method: "POST" })
     const f = data as unknown as ReportFiltros;
     const { de, ate } = resolverIntervalo(f);
     const ateFim = `${ate}T23:59:59`;
+    const buckets = construirBuckets(de, ate);
 
     const escopoEq = (q: any, col: string) => (data.escopo === "minha" ? q.eq(col, userId) : q);
 
@@ -99,7 +189,15 @@ export const getPanelDados = createServerFn({ method: "POST" })
         (s, p) => s + (p.valor_financiamento_aprovado ?? p.valor_financiamento ?? 0),
         0,
       );
+      const volumeSimulado = simRows.reduce((s, r) => s + (r.valor_financiamento ?? 0), 0);
+      const volumeAprovado = aprovadas.reduce(
+        (s, p) => s + (p.valor_financiamento_aprovado ?? p.valor_financiamento ?? 0),
+        0,
+      );
+      const ticket = contratos.length ? volume / contratos.length : 0;
       const taxa = enviadas.length ? (aprovadas.length / enviadas.length) * 100 : 0;
+      const conversao = simCount ? (contratos.length / simCount) * 100 : 0;
+
       const bancoMap = new Map<string, number>();
       enviadas.forEach((p) =>
         bancoMap.set(p.nome_banco ?? "—", (bancoMap.get(p.nome_banco ?? "—") ?? 0) + 1),
@@ -110,46 +208,66 @@ export const getPanelDados = createServerFn({ method: "POST" })
       );
       const chartPorBanco = bancoMap.size > 0;
       const chartDados = chartPorBanco ? topItens(bancoMap, 8) : topItens(simStatusMap, 8);
+
+      // Distribuição (donut) — status das propostas enviadas
+      const statusMap = new Map<string, number>();
+      enviadas.forEach((p) =>
+        statusMap.set(p.status, (statusMap.get(p.status) ?? 0) + 1),
+      );
+      const distDados = [...statusMap.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .map(([s, v]) => ({ label: rotularStatus(s, PROP_LABEL), valor: v }));
+
+      // Evolução — propostas x contratos ao longo do tempo
+      const propBucket = contarPorBucket(enviadas, buckets);
+      const contratoBucket = contarPorBucket(contratos, buckets);
+      const evoDados: PanelSerie[] = buckets.chaves.map((k) => ({
+        label: buckets.rotulo(k),
+        valor: propBucket.get(k) ?? 0,
+        valor2: contratoBucket.get(k) ?? 0,
+      }));
+
       return {
         heros: [
-          { label: "Simulações", valor: int(simCount), tone: "neutral" },
+          { label: "Simulações", valor: int(simCount), hint: brlCompacto(volumeSimulado), tone: "neutral" },
           { label: "Propostas enviadas", valor: int(enviadas.length), tone: "brand" },
-          {
-            label: "Taxa de aprovação",
-            valor: `${taxa.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`,
-            tone: "success",
-          },
-          { label: "Contratos", valor: int(contratos.length), hint: brl(volume), tone: "success" },
+          { label: "Taxa de aprovação", valor: pct(taxa), hint: `${aprovadas.length} aprovadas`, tone: "success" },
+          { label: "Contratos", valor: int(contratos.length), hint: brlCompacto(volume), tone: "success" },
         ],
         minis: [
+          { label: "Volume simulado", valor: brlCompacto(volumeSimulado), tone: "neutral" },
+          { label: "Volume aprovado", valor: brlCompacto(volumeAprovado), tone: "success" },
+          { label: "Ticket médio", valor: brlCompacto(ticket), tone: "brand" },
+          { label: "Conversão sim→contrato", valor: pct(conversao), tone: "success" },
           { label: "Simulações concluídas", valor: int(simConcluidas), tone: "success" },
-          {
-            label: "Simulações com erro",
-            valor: int(simErro),
-            tone: simErro ? "danger" : "neutral",
-          },
+          { label: "Simulações com erro", valor: int(simErro), tone: simErro ? "danger" : "neutral" },
           { label: "Aprovadas", valor: int(aprovadas.length), tone: "success" },
           {
             label: "Em análise",
             valor: int(
-              enviadas.filter((p) => ["enviada_banco", "em_analise_credito"].includes(p.status))
-                .length,
+              enviadas.filter((p) => ["enviada_banco", "em_analise_credito"].includes(p.status)).length,
             ),
             tone: "warning",
           },
-          {
-            label: "Recusadas",
-            valor: int(enviadas.filter((p) => p.status === "credito_recusado").length),
-            tone: "danger",
-          },
+          { label: "Recusadas", valor: int(enviadas.filter((p) => p.status === "credito_recusado").length), tone: "danger" },
           { label: "Rascunhos", valor: int(rows.length - enviadas.length), tone: "neutral" },
         ],
+        evolucao: {
+          titulo: "Evolução do período",
+          subtitulo: "Propostas enviadas e contratos emitidos",
+          serie1: "Propostas",
+          serie2: "Contratos",
+          dados: evoDados,
+        },
         chart: {
           titulo: chartPorBanco ? "Ranking de bancos" : "Simulações por status",
           subtitulo: chartPorBanco ? "Propostas enviadas" : "Movimento das simulações",
           dados: chartDados,
           porBanco: chartPorBanco,
         },
+        distribuicao: distDados.length
+          ? { titulo: "Distribuição de propostas", subtitulo: "Por status", dados: distDados }
+          : undefined,
         ranking: {
           titulo: chartPorBanco ? "Bancos" : "Status das simulações",
           itens: chartDados.slice(0, 6),
@@ -172,7 +290,7 @@ export const getPanelDados = createServerFn({ method: "POST" })
       escopoEq(
         supabase
           .from("simulacoes")
-          .select("status,created_at")
+          .select("status,valor_financiamento,created_at")
           .gte("created_at", de)
           .lte("created_at", ateFim)
           .limit(5000),
@@ -181,7 +299,7 @@ export const getPanelDados = createServerFn({ method: "POST" })
       escopoEq(
         supabase
           .from("propostas")
-          .select("status,created_at")
+          .select("status,valor_financiamento_aprovado,valor_financiamento,created_at")
           .gte("created_at", de)
           .lte("created_at", ateFim)
           .limit(5000),
@@ -203,6 +321,7 @@ export const getPanelDados = createServerFn({ method: "POST" })
     const demRows = (dem.data ?? []) as any[];
     const tkRows = (tk.data ?? []) as any[];
     const agora = new Date();
+    const enviadas = propRows.filter((p) => p.status !== "rascunho");
     const simConcluidas = simRows.filter((s) =>
       ["simulada", "parcialmente_simulada", "promovida"].includes(s.status),
     ).length;
@@ -210,14 +329,22 @@ export const getPanelDados = createServerFn({ method: "POST" })
     const aprovadas = propRows.filter((p) =>
       ["credito_aprovado", "contrato_emitido", "registrado"].includes(p.status),
     ).length;
-    const contratos = propRows.filter((p) =>
+    const contratosRows = propRows.filter((p) =>
       ["contrato_emitido", "registrado"].includes(p.status),
-    ).length;
+    );
+    const contratos = contratosRows.length;
+    const volumeContratos = contratosRows.reduce(
+      (s, p) => s + (p.valor_financiamento_aprovado ?? p.valor_financiamento ?? 0),
+      0,
+    );
     const demAbertas = demRows.filter((d) => !["concluida", "cancelada"].includes(d.status));
     const demVencidas = demAbertas.filter((d) => d.prazo_sla && new Date(d.prazo_sla) < agora);
+    const tkAbertas = tkRows.filter((t) => !["concluida", "cancelada"].includes(t.status));
     const tkAtrasadas = tkRows.filter(
       (t) => !["concluida", "cancelada"].includes(t.status) && t.prazo && new Date(t.prazo) < agora,
     );
+    const taxa = enviadas.length ? (aprovadas / enviadas.length) * 100 : 0;
+
     const statusMap = new Map<string, number>();
     propRows.forEach((p) => statusMap.set(p.status, (statusMap.get(p.status) ?? 0) + 1));
     const simStatusMap = new Map<string, number>();
@@ -226,11 +353,27 @@ export const getPanelDados = createServerFn({ method: "POST" })
     );
     const chartDados = [
       { label: "Simulações", valor: simRows.length },
-      { label: "Simulações concluídas", valor: simConcluidas },
-      { label: "Propostas", valor: propRows.filter((p) => p.status !== "rascunho").length },
+      { label: "Concluídas", valor: simConcluidas },
+      { label: "Propostas", valor: enviadas.length },
       { label: "Aprovadas", valor: aprovadas },
       { label: "Contratos", valor: contratos },
     ];
+
+    // Distribuição (donut) — status de propostas (ou simulações se não houver)
+    const distMapa = statusMap.size ? statusMap : simStatusMap;
+    const distLabelMap = statusMap.size ? PROP_LABEL : SIM_LABEL;
+    const distDados = [...distMapa.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .map(([s, v]) => ({ label: rotularStatus(s, distLabelMap), valor: v }));
+
+    // Evolução — simulações x propostas ao longo do tempo
+    const simBucket = contarPorBucket(simRows, buckets);
+    const propBucket = contarPorBucket(enviadas, buckets);
+    const evoDados: PanelSerie[] = buckets.chaves.map((k) => ({
+      label: buckets.rotulo(k),
+      valor: simBucket.get(k) ?? 0,
+      valor2: propBucket.get(k) ?? 0,
+    }));
 
     const alertas: PanelAlert[] = [];
     if (simErro)
@@ -258,36 +401,43 @@ export const getPanelDados = createServerFn({ method: "POST" })
     return {
       heros: [
         { label: "Simulações", valor: int(simRows.length), tone: "neutral" },
-        {
-          label: "Propostas",
-          valor: int(propRows.filter((p) => p.status !== "rascunho").length),
-          tone: "brand",
-        },
-        { label: "Aprovadas", valor: int(aprovadas), tone: "success" },
-        { label: "Demandas abertas", valor: int(demAbertas.length), tone: "warning" },
+        { label: "Propostas", valor: int(enviadas.length), tone: "brand" },
+        { label: "Taxa de aprovação", valor: pct(taxa), hint: `${aprovadas} aprovadas`, tone: "success" },
+        { label: "Contratos", valor: int(contratos), hint: brlCompacto(volumeContratos), tone: "success" },
       ],
       minis: [
+        { label: "Volume contratado", valor: brlCompacto(volumeContratos), tone: "success" },
         { label: "Simulações concluídas", valor: int(simConcluidas), tone: "success" },
         { label: "Simulações com erro", valor: int(simErro), tone: simErro ? "danger" : "neutral" },
-        { label: "Contratos", valor: int(contratos), tone: "success" },
-        { label: "SLA vencido", valor: int(demVencidas.length), tone: "danger" },
-        {
-          label: "Tarefas abertas",
-          valor: int(tkRows.filter((t) => !["concluida", "cancelada"].includes(t.status)).length),
-          tone: "neutral",
-        },
-        { label: "Tarefas atrasadas", valor: int(tkAtrasadas.length), tone: "danger" },
+        { label: "Demandas abertas", valor: int(demAbertas.length), tone: "warning" },
+        { label: "SLA vencido", valor: int(demVencidas.length), tone: demVencidas.length ? "danger" : "neutral" },
+        { label: "Tarefas abertas", valor: int(tkAbertas.length), tone: "neutral" },
+        { label: "Tarefas atrasadas", valor: int(tkAtrasadas.length), tone: tkAtrasadas.length ? "danger" : "neutral" },
         {
           label: "Demandas concluídas",
           valor: int(demRows.filter((d) => d.status === "concluida").length),
           tone: "success",
         },
       ],
+      evolucao: {
+        titulo: "Evolução do período",
+        subtitulo: "Simulações e propostas ao longo do tempo",
+        serie1: "Simulações",
+        serie2: "Propostas",
+        dados: evoDados,
+      },
       chart: {
         titulo: "Funil operacional",
         subtitulo: "Simulações, propostas e contratos",
         dados: chartDados,
       },
+      distribuicao: distDados.length
+        ? {
+            titulo: statusMap.size ? "Distribuição de propostas" : "Distribuição de simulações",
+            subtitulo: "Por status",
+            dados: distDados,
+          }
+        : undefined,
       ranking: {
         titulo: statusMap.size ? "Status de propostas" : "Status de simulações",
         itens: statusMap.size ? topItens(statusMap, 6) : topItens(simStatusMap, 6),

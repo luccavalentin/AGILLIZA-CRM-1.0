@@ -5,6 +5,8 @@ import {
   LabelList,
   LineChart,
   Line,
+  PieChart,
+  Pie,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -105,6 +107,68 @@ export function ReportChartView({
       </div>
     );
   }
+
+  if (chart.tipo === "donut") {
+    const paleta = [
+      "var(--chart-1)",
+      "var(--chart-2)",
+      "var(--chart-3)",
+      "var(--chart-4)",
+      "var(--chart-5)",
+      "color-mix(in oklab, var(--chart-1) 55%, var(--chart-4))",
+      "color-mix(in oklab, var(--chart-2) 55%, var(--chart-5))",
+      "color-mix(in oklab, var(--chart-3) 55%, var(--foreground) 15%)",
+    ];
+    const total = chart.dados.reduce((s, d) => s + (Number(d.valor) || 0), 0);
+    return (
+      <ResponsiveContainer width="100%" height="100%">
+        <PieChart>
+          <Pie
+            data={chart.dados}
+            dataKey="valor"
+            nameKey="label"
+            cx="50%"
+            cy="50%"
+            innerRadius="58%"
+            outerRadius="86%"
+            paddingAngle={2}
+            stroke="var(--card)"
+            strokeWidth={2}
+          >
+            {chart.dados.map((d, i) => (
+              <Cell
+                key={i}
+                fill={colorByBank ? corDoBanco(d.label) : paleta[i % paleta.length]}
+              />
+            ))}
+            <LabelList
+              dataKey="valor"
+              position="outside"
+              formatter={(v: number) =>
+                total ? `${Math.round((Number(v) / total) * 100)}%` : ""
+              }
+              style={{ fontSize: 11, fontWeight: 600, fill: "var(--foreground)" }}
+            />
+          </Pie>
+          <Tooltip
+            contentStyle={tooltipStyle}
+            labelStyle={tooltipLabelStyle}
+            itemStyle={tooltipItemStyle}
+            formatter={(v: number, n: string) => [fmt(v), n]}
+          />
+          <Legend
+            wrapperStyle={{ fontSize: 12 }}
+            iconType="circle"
+            layout="vertical"
+            align="right"
+            verticalAlign="middle"
+          />
+        </PieChart>
+      </ResponsiveContainer>
+    );
+  }
+
+
 
   if (chart.tipo === "line") {
     return (
