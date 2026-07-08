@@ -49,20 +49,36 @@ export const explorarDocumentosGerais = createServerFn({ method: "GET" })
     const { supabase, userId } = context;
     const { data: corr } = await supabase.rpc("correspondente_do_usuario", { _user_id: userId });
 
-    // Todos os usuários "Comercial Agilliza" (profiles.tipo_pessoa = 'comercial'),
-    // para criar uma pasta por comercial mesmo sem clientes vinculados.
+    // Todos os usuários "Comercial Agilliza": seja pelo tipo de pessoa
+    // (profiles.tipo_pessoa = 'comercial') ou pelo papel (user_roles.role = 'comercial').
+    // Cria uma pasta por comercial mesmo sem clientes vinculados.
     const ordenarNome = (a: DGOpcaoFiltro, b: DGOpcaoFiltro) =>
       a.nome.localeCompare(b.nome, "pt-BR");
-    let comerciaisQuery = supabase
+    const comerciaisMap = new Map<string, string>();
+
+    // 1) Por tipo de pessoa "Comercial Agilliza".
+    let porTipoQuery = supabase
       .from("profiles")
       .select("id, nome, correspondente_id")
       .eq("tipo_pessoa", "comercial");
-    if (corr) comerciaisQuery = comerciaisQuery.eq("correspondente_id", corr);
-    const { data: comerciaisRows } = await comerciaisQuery;
-    const comerciaisMap = new Map<string, string>();
-    for (const p of comerciaisRows ?? []) {
+    if (corr) porTipoQuery = porTipoQuery.eq("correspondente_id", corr);
+    const { data: porTipo } = await porTipoQuery;
+    for (const p of porTipo ?? []) {
       if ((p as any)?.id) comerciaisMap.set((p as any).id, (p as any).nome ?? "—");
     }
+
+    // 2) Por papel "comercial".
+    let porPapelQuery = supabase
+      .from("user_roles")
+      .select("user_id, profiles!inner(id, nome, correspondente_id)")
+      .eq("role", "comercial");
+    if (corr) porPapelQuery = porPapelQuery.eq("profiles.correspondente_id", corr);
+    const { data: porPapel } = await porPapelQuery;
+    for (const r of porPapel ?? []) {
+      const p = (r as any).profiles;
+      if (p?.id) comerciaisMap.set(p.id, p.nome ?? "—");
+    }
+
     const comerciais = Array.from(comerciaisMap, ([id, nome]) => ({ id, nome })).sort(ordenarNome);
 
     // Clientes acessíveis (RLS aplica o escopo do usuário).
