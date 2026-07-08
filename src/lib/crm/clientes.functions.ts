@@ -404,8 +404,10 @@ export interface PainelStage {
     numero_cliente: string;
     vistoria_agendada_em: string | null;
     vistoria_concluida_em: string | null;
+    pipeline_atualizado_em: string | null;
   }[];
 }
+
 
 /** Kanban da esteira: etapas com clientes posicionados (RLS aplica escopo). */
 export const listarPainel = createServerFn({ method: "GET" })
@@ -453,6 +455,8 @@ export const listarPainel = createServerFn({ method: "GET" })
           numero_cliente: r.numero_cliente,
           vistoria_agendada_em: r.vistoria_agendada_em ?? null,
           vistoria_concluida_em: r.vistoria_concluida_em ?? null,
+          pipeline_atualizado_em: r.cliente_pipeline?.ultima_atualizacao_em ?? null,
+
         })),
     }));
   });
@@ -1332,4 +1336,33 @@ export const salvarImovelIq = createServerFn({ method: "POST" })
       .eq("id", cliente_id);
     if (error) throw error;
     return { ok: true };
+  });
+
+export interface ContratoEmitido {
+  id: string;
+  numero_proposta: string | null;
+  nome_cliente: string | null;
+  cliente_id: string | null;
+  nome_banco: string | null;
+  valor_financiamento: number | null;
+  contrato_emitido_em: string | null;
+}
+
+/**
+ * Arquivo dos contratos emitidos: propostas com `contrato_emitido_em`
+ * preenchido, mais recentes primeiro (RLS aplica o escopo do usuário).
+ */
+export const listarContratosEmitidos = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<ContratoEmitido[]> => {
+    const { supabase } = context;
+    const { data, error } = await supabase
+      .from("propostas")
+      .select(
+        "id, numero_proposta, nome_cliente, cliente_id, nome_banco, valor_financiamento, contrato_emitido_em",
+      )
+      .not("contrato_emitido_em", "is", null)
+      .order("contrato_emitido_em", { ascending: false });
+    if (error) throw error;
+    return (data ?? []) as ContratoEmitido[];
   });
