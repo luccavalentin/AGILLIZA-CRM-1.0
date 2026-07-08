@@ -629,7 +629,10 @@ export function ChatClienteConversa({ clienteId, info }: { clienteId: string; in
           className="hidden"
           onChange={handleAnexo}
         />
-        <RespostasRapidas onEscolher={(t) => setTexto((prev) => (prev ? `${prev} ${t}` : t))} />
+        <RespostasRapidas
+          contexto={contextoResposta}
+          onEscolher={(t) => setTexto((prev) => (prev ? `${prev} ${t}` : t))}
+        />
         <Button
           type="button"
           onClick={() => fileRef.current?.click()}
