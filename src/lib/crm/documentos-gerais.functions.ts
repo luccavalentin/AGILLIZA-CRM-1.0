@@ -2,8 +2,10 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-/** Rótulo do grupo comercial (clientes sem imobiliária vinculada). */
-export const COMERCIAL_AGILLIZA_LABEL = "Comercial Agilliza";
+/** Rótulo da pasta-mãe para clientes sem imobiliária vinculada. */
+export const AVULSO_LABEL = "Avulso";
+/** Rótulo usado quando não há comercial responsável definido. */
+export const SEM_COMERCIAL_LABEL = "Sem comercial";
 
 export interface DGCliente {
   cliente_id: string;
@@ -15,6 +17,8 @@ export interface DGCliente {
   imobiliaria_nome: string | null;
   corretor_id: string | null;
   corretor_nome: string | null;
+  comercial_id: string | null;
+  comercial_nome: string | null;
 }
 
 export interface DGOpcaoFiltro {
@@ -43,7 +47,7 @@ export const explorarDocumentosGerais = createServerFn({ method: "GET" })
     // Clientes acessíveis (RLS aplica o escopo do usuário).
     let clientesQuery = supabase
       .from("clientes")
-      .select("id, nome, numero_cliente, documento")
+      .select("id, nome, numero_cliente, documento, responsavel_id")
       .eq("ativo", true)
       .order("nome", { ascending: true });
     if (corr) clientesQuery = clientesQuery.eq("correspondente_id", corr);
@@ -62,16 +66,16 @@ export const explorarDocumentosGerais = createServerFn({ method: "GET" })
       .select("cliente_id, parceiro_id, tipo_vinculo")
       .in("cliente_id", idsClientes);
 
-    // Nomes dos parceiros.
-    const idsParceiros = Array.from(
-      new Set((vinculos ?? []).map((v: any) => v.parceiro_id).filter(Boolean)),
-    );
+    // Nomes de parceiros (imobiliária/corretor) e comerciais (responsáveis).
+    const idsPerfis = new Set<string>();
+    for (const v of vinculos ?? []) if (v.parceiro_id) idsPerfis.add(v.parceiro_id);
+    for (const c of listaClientes) if (c.responsavel_id) idsPerfis.add(c.responsavel_id);
     let nomesParceiros = new Map<string, string>();
-    if (idsParceiros.length > 0) {
+    if (idsPerfis.size > 0) {
       const { data: perfis } = await supabase
         .from("profiles")
         .select("id, nome")
-        .in("id", idsParceiros);
+        .in("id", Array.from(idsPerfis));
       nomesParceiros = new Map((perfis ?? []).map((p: any) => [p.id, p.nome ?? "—"]));
     }
 
@@ -106,6 +110,8 @@ export const explorarDocumentosGerais = createServerFn({ method: "GET" })
       const corrId = corrPorCliente.get(c.id) ?? null;
       const imobNome = imobId ? nomesParceiros.get(imobId) ?? "—" : null;
       const corrNome = corrId ? nomesParceiros.get(corrId) ?? "—" : null;
+      const comId = c.responsavel_id ?? null;
+      const comNome = comId ? nomesParceiros.get(comId) ?? "—" : null;
       if (imobId && imobNome) imobiliariasSet.set(imobId, imobNome);
       if (corrId && corrNome) corretoresSet.set(corrId, corrNome);
       return {
@@ -118,6 +124,8 @@ export const explorarDocumentosGerais = createServerFn({ method: "GET" })
         imobiliaria_nome: imobNome,
         corretor_id: corrId,
         corretor_nome: corrNome,
+        comercial_id: comId,
+        comercial_nome: comNome,
       };
     });
 
