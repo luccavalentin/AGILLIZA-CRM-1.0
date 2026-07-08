@@ -301,8 +301,8 @@ function Pagina() {
             const temClientes = stage.clientes.length > 0;
             const ehAlvo = alvo === stage.codigo && arrasto?.origem !== stage.codigo;
             return (
+              <Fragment key={stage.codigo}>
               <div
-                key={stage.codigo}
                 onDragOver={(e) => {
                   if (!arrasto) return;
                   e.preventDefault();
