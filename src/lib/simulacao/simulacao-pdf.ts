@@ -769,6 +769,8 @@ function rendaNecessaria(s: any, bancos: any[]): number | null {
     const d = extrairDetalheBanco(b?.raw_response);
     if (!d) continue;
     const av = avaliarRendaMinima({
+      valor_imovel:
+        d.valorImovel ?? (Number(s.valor_imovel) || 0),
       valor_financiamento:
         d.financiamentoTotal ?? d.valorFinanciamento ?? (Number(s.valor_financiamento) || 0),
       prazo_meses: d.prazoMeses ?? (Number(s.prazo) || 0),
