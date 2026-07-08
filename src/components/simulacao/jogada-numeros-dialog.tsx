@@ -56,16 +56,27 @@ export function JogadaNumerosDialog({
     if (aberto) {
       setValorLiberar(valorImovelAtual || 0);
       setLtvPct(Math.round(ltvMax * 100));
+      setIncluirCustas(false);
     }
   }, [aberto, valorImovelAtual, ltvMax]);
 
+  // Marcar custas reduz o percentual da calculadora; desmarcar devolve.
+  function alternarCustas(on: boolean) {
+    setIncluirCustas(on);
+    setLtvPct((p) => (on ? p - (Number(custasPct) || 0) : p + (Number(custasPct) || 0)));
+  }
+
+  // Alterar o percentual de custas reajusta o percentual da calculadora.
+  function alterarCustas(novo: number) {
+    if (incluirCustas) {
+      setLtvPct((p) => p + (Number(custasPct) || 0) - (Number(novo) || 0));
+    }
+    setCustasPct(novo);
+  }
+
   const calc = useMemo(() => {
     const liberar = Number(valorLiberar) || 0;
-    const ltv = (Number(ltvPct) || 0) / 100;
-    // Com custas, reduz o divisor pelo percentual informado (ex.: 80% - 5% = 75%),
-    // inflando ainda mais o compra e venda para cobrir cartório/ITBI.
-    const custas = incluirCustas ? (Number(custasPct) || 0) / 100 : 0;
-    const divisor = ltv - custas;
+    const divisor = (Number(ltvPct) || 0) / 100;
     if (liberar <= 0 || divisor <= 0) {
       return { valorImovel: 0, entrada: 0, pctEntrada: 0, valido: false };
     }
@@ -77,7 +88,7 @@ export function JogadaNumerosDialog({
     const entrada = Math.max(0, valorImovel - liberar);
     const pctEntrada = valorImovel > 0 ? (entrada / valorImovel) * 100 : 0;
     return { valorImovel, entrada, pctEntrada, valido: true };
-  }, [valorLiberar, ltvPct, incluirCustas, custasPct]);
+  }, [valorLiberar, ltvPct]);
 
 
   function aplicar() {
@@ -114,9 +125,6 @@ export function JogadaNumerosDialog({
               onChange={setValorLiberar}
               placeholder="Ex: 250.000,00"
             />
-            <p className="text-xs text-muted-foreground">
-              Quanto o cliente precisa financiar (ex.: o valor real do imóvel, sem entrada).
-            </p>
           </div>
 
           <div className="space-y-1.5">
@@ -129,20 +137,12 @@ export function JogadaNumerosDialog({
               onChange={(e) => setLtvPct(Number(e.target.value))}
               className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             />
-            <p className="text-xs text-muted-foreground">
-              LTV do banco. Normalmente 80% (financiamento) ou 60% (home equity).
-            </p>
           </div>
 
           <div className="space-y-3 rounded-lg border border-border bg-muted/20 p-3">
             <div className="flex items-center justify-between gap-3">
-              <div className="space-y-0.5">
-                <Label className="text-sm">Incluir custas</Label>
-                <p className="text-xs text-muted-foreground">
-                  Infla mais o compra e venda para cobrir cartório e ITBI.
-                </p>
-              </div>
-              <Switch checked={incluirCustas} onCheckedChange={setIncluirCustas} />
+              <Label className="text-sm">Incluir custas</Label>
+              <Switch checked={incluirCustas} onCheckedChange={alternarCustas} />
             </div>
             {incluirCustas && (
               <div className="space-y-1.5">
@@ -150,17 +150,16 @@ export function JogadaNumerosDialog({
                 <input
                   type="number"
                   min={0}
-                  max={ltvPct - 1}
+                  max={99}
                   value={custasPct}
-                  onChange={(e) => setCustasPct(Number(e.target.value))}
+                  onChange={(e) => alterarCustas(Number(e.target.value))}
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 />
-                <p className="text-xs text-muted-foreground">
-                  Reduz o divisor (ex.: 80% − 5% = 75%). Normalmente ~5%.
-                </p>
               </div>
             )}
           </div>
+
+
 
 
 
