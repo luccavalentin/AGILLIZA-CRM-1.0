@@ -401,15 +401,14 @@ function Pagina() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Users className="size-4 text-primary" />
-              {stageDialog?.nome ?? "Etapa"}
+              {tituloDialog}
             </DialogTitle>
             <DialogDescription>
-              {stageDialog?.clientes.length ?? 0} cliente(s) nesta etapa. Clique para abrir o
-              cadastro.
+              {clientesDialog.length} cliente(s). Clique para abrir o cadastro.
             </DialogDescription>
           </DialogHeader>
           <div className="max-h-[60vh] space-y-2 overflow-y-auto pr-1">
-            {(stageDialog?.clientes ?? []).map((c) => (
+            {clientesDialog.map((c) => (
               <button
                 key={c.id}
                 type="button"
@@ -426,14 +425,20 @@ function Pagina() {
                   <span className="block truncate text-sm font-medium text-foreground transition-colors group-hover:text-primary">
                     {c.nome}
                   </span>
-                  <span className="block font-mono text-[11px] text-muted-foreground">
+                  <span className="flex items-center gap-1.5 font-mono text-[11px] text-muted-foreground">
                     {c.numero_cliente}
+                    {verTodos && (
+                      <span className="truncate rounded-full bg-muted px-1.5 py-0.5 font-sans text-[10px] font-medium text-muted-foreground">
+                        {c.etapaNome}
+                      </span>
+                    )}
                   </span>
                 </span>
                 <ChevronRight className="size-4 shrink-0 text-primary opacity-0 transition-opacity group-hover:opacity-100" />
               </button>
             ))}
           </div>
+
         </DialogContent>
       </Dialog>
     </div>
