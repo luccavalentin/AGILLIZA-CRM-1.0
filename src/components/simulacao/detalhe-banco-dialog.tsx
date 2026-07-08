@@ -58,8 +58,11 @@ export function DetalheBancoDialog({
     Boolean(simulacao?.fg_financiar_despesas) &&
     Number(simulacao?.valor_despesas_financiadas ?? 0) > 0;
   const despesasFinanciadasBanco = Number(detalhe?.despesasFinanciadas ?? 0);
+  // Só sinalizamos quando ESTE banco de fato respondeu (tem detalhe) e, mesmo
+  // assim, não incorporou as despesas. Sem o retorno do banco (pendente/erro)
+  // não dá para afirmar que ele recusou — evita falso positivo.
   const bancoNaoFinanciouDespesas =
-    despesasSolicitadas && !(despesasFinanciadasBanco > 0);
+    despesasSolicitadas && !!detalhe && !(despesasFinanciadasBanco > 0);
 
   function baixar() {
     if (proposta) {
