@@ -123,7 +123,7 @@ export function DocumentosChecklist({ clienteId }: { clienteId: string }) {
     if (!texto) return;
     setCheck((prev) => {
       const l = prev.__labels && typeof prev.__labels === "object" ? prev.__labels : {};
-      const next = { ...prev, __labels: { ...l, [itemKey]: texto } };
+      const next: Record<string, any> = { ...prev, __labels: { ...l, [itemKey]: texto } };
       // custom items store the label on the entry too
       if (Array.isArray(prev.__custom) && itemKey.startsWith("custom_")) {
         const id = itemKey.slice("custom_".length);
