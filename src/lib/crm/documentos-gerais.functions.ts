@@ -47,7 +47,7 @@ export const explorarDocumentosGerais = createServerFn({ method: "GET" })
     // Clientes acessíveis (RLS aplica o escopo do usuário).
     let clientesQuery = supabase
       .from("clientes")
-      .select("id, nome, numero_cliente, documento")
+      .select("id, nome, numero_cliente, documento, responsavel_id")
       .eq("ativo", true)
       .order("nome", { ascending: true });
     if (corr) clientesQuery = clientesQuery.eq("correspondente_id", corr);
