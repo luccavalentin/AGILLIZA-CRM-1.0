@@ -90,9 +90,11 @@ export function EditarPessoaDialog({
     salvar.mutate();
   }
 
+  const nivelSelecionado = (niveis ?? []).find((n) => n.id === nivelId);
+
   return (
     <Dialog open={!!pessoa} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Editar pessoa</DialogTitle>
         </DialogHeader>
