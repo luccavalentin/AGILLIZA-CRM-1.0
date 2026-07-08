@@ -218,24 +218,39 @@ function Pagina() {
 
                     {/* Contato: telefone + e-mail */}
                     <TableCell className="px-4">
-                      <div className="flex flex-col gap-0.5 text-sm">
+                      <div className="flex flex-col gap-1.5 text-sm">
                         {c.telefone_celular ? (
-                          <span className="flex items-center gap-1.5 text-foreground/80">
-                            <Phone className="size-3.5 shrink-0 text-muted-foreground/60" />
-                            {formatarCelular(c.telefone_celular)}
-                          </span>
+                          <a
+                            href={`tel:${c.telefone_celular.replace(/\D/g, "")}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="group/contato flex w-fit max-w-full items-center gap-2 rounded-md text-foreground transition-colors hover:text-primary"
+                          >
+                            <span className="grid size-6 shrink-0 place-items-center rounded-md bg-primary/10 text-primary transition-colors group-hover/contato:bg-primary group-hover/contato:text-primary-foreground">
+                              <Phone className="size-3" />
+                            </span>
+                            <span className="truncate font-medium tabular-nums">
+                              {formatarCelular(c.telefone_celular)}
+                            </span>
+                          </a>
                         ) : null}
                         {c.email ? (
-                          <span className="flex items-center gap-1.5 truncate text-xs text-muted-foreground">
-                            <Mail className="size-3.5 shrink-0 text-muted-foreground/60" />
+                          <a
+                            href={`mailto:${c.email}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="group/contato flex w-fit max-w-full items-center gap-2 rounded-md text-xs text-muted-foreground transition-colors hover:text-primary"
+                          >
+                            <span className="grid size-6 shrink-0 place-items-center rounded-md bg-muted text-muted-foreground transition-colors group-hover/contato:bg-primary/10 group-hover/contato:text-primary">
+                              <Mail className="size-3" />
+                            </span>
                             <span className="truncate">{c.email}</span>
-                          </span>
+                          </a>
                         ) : null}
                         {!c.telefone_celular && !c.email && (
                           <span className="text-muted-foreground">—</span>
                         )}
                       </div>
                     </TableCell>
+
 
                     {/* Etapa */}
                     <TableCell className="px-4">
