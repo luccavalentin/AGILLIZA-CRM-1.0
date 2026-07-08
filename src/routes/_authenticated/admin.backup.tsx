@@ -126,6 +126,8 @@ function Pagina() {
       const { exportarBackupXLSX } = await import("@/lib/admin/backup-xlsx");
       exportarBackupXLSX(dados);
       toast.success("Backup completo exportado em Excel.");
+      qc.invalidateQueries({ queryKey: ["admin-backups"] });
+
     } catch (e: any) {
       toast.error(e?.message ?? "Falha ao exportar backup.");
     } finally {
