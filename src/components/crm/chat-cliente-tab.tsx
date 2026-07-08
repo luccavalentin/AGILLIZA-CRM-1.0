@@ -254,6 +254,8 @@ export function ChatClienteConversa({ clienteId, info }: { clienteId: string; in
   function submeter() {
     const t = texto.trim();
     if (!t) return;
+    notifyStop();
+
     if (editando) {
       if (salvarEdicao.isPending) return;
       salvarEdicao.mutate({ id: editando.id, mensagem: t });
