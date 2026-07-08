@@ -303,8 +303,17 @@ function AbaMensagens() {
   }, [mensagens]);
 
   return (
-    <div className="flex flex-col">
-      <div className="min-h-[45dvh] space-y-3 pb-2">
+    <div className="flex flex-col overflow-hidden rounded-2xl border border-border/70 bg-card shadow-sm">
+      <div className="flex items-center gap-2 border-b border-border/70 bg-muted/30 px-4 py-3">
+        <span className="relative flex h-2.5 w-2.5">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500/60" />
+          <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500" />
+        </span>
+        <p className="text-sm font-medium text-foreground">Fale com o time</p>
+        <span className="ml-auto text-xs text-muted-foreground">Respondemos em horário comercial</span>
+      </div>
+      <div className="min-h-[45dvh] space-y-3 bg-gradient-to-b from-muted/20 to-transparent px-3 py-3 sm:px-4">
+
         {(mensagens ?? []).length === 0 ? (
           <p className="py-10 text-center text-sm text-muted-foreground">
             Envie uma mensagem ou um documento para falar com o time.
