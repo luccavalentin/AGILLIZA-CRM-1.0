@@ -256,7 +256,8 @@ export function extrairDetalheBanco(raw: unknown): DetalheBanco | null {
       num(desc.guaranteeEvaluationFee) ??
       num(r.valorTarifaAvaliacaoBanco) ??
       num(r.valorTarifaAvaliacaoGarantiaBanco) ??
-      num(r.tarifaAvaliacaoGarantia),
+      num(r.tarifaAvaliacaoGarantia) ??
+      TARIFA_AVALIACAO_GARANTIA_PADRAO,
     iof: num(desc.iof?.totalValue ?? desc.iof?.value) ?? num(r.valorIofBanco),
     fgts: num(desc.fgtsAmount) ?? num(r.valorFgts),
     prazoMeses: prazo,
