@@ -33,6 +33,8 @@ export interface DGResposta {
   clientes: DGCliente[];
   imobiliarias: DGOpcaoFiltro[];
   corretores: DGOpcaoFiltro[];
+  /** Todos os comerciais cadastrados na base (para criar a pasta mesmo sem clientes). */
+  comerciais: DGOpcaoFiltro[];
 }
 
 /**
@@ -47,6 +49,22 @@ export const explorarDocumentosGerais = createServerFn({ method: "GET" })
     const { supabase, userId } = context;
     const { data: corr } = await supabase.rpc("correspondente_do_usuario", { _user_id: userId });
 
+    // Todos os comerciais cadastrados na base (para criar a pasta mesmo sem clientes).
+    const ordenarNome = (a: DGOpcaoFiltro, b: DGOpcaoFiltro) =>
+      a.nome.localeCompare(b.nome, "pt-BR");
+    let comerciaisQuery = supabase
+      .from("user_roles")
+      .select("user_id, profiles!inner(id, nome, correspondente_id)")
+      .eq("role", "comercial");
+    if (corr) comerciaisQuery = comerciaisQuery.eq("profiles.correspondente_id", corr);
+    const { data: comerciaisRows } = await comerciaisQuery;
+    const comerciaisMap = new Map<string, string>();
+    for (const r of comerciaisRows ?? []) {
+      const p = (r as any).profiles;
+      if (p?.id) comerciaisMap.set(p.id, p.nome ?? "—");
+    }
+    const comerciais = Array.from(comerciaisMap, ([id, nome]) => ({ id, nome })).sort(ordenarNome);
+
     // Clientes acessíveis (RLS aplica o escopo do usuário).
     let clientesQuery = supabase
       .from("clientes")
@@ -58,7 +76,7 @@ export const explorarDocumentosGerais = createServerFn({ method: "GET" })
     if (cliErr) throw cliErr;
     const listaClientes = clientes ?? [];
     if (listaClientes.length === 0) {
-      return { clientes: [], imobiliarias: [], corretores: [] };
+      return { clientes: [], imobiliarias: [], corretores: [], comerciais };
     }
 
     const idsClientes = listaClientes.map((c: any) => c.id);
@@ -139,13 +157,11 @@ export const explorarDocumentosGerais = createServerFn({ method: "GET" })
       };
     });
 
-    const ordenarNome = (a: DGOpcaoFiltro, b: DGOpcaoFiltro) =>
-      a.nome.localeCompare(b.nome, "pt-BR");
-
     return {
       clientes: clientesResp,
       imobiliarias: Array.from(imobiliariasSet, ([id, nome]) => ({ id, nome })).sort(ordenarNome),
       corretores: Array.from(corretoresSet, ([id, nome]) => ({ id, nome })).sort(ordenarNome),
+      comerciais,
     };
   });
 

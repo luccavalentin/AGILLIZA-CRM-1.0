@@ -73,6 +73,12 @@ function titulo(s: string | null | undefined): string {
     });
 }
 
+/** Primeiro nome já formatado ("LUCCA VALENTIN" → "Lucca"). */
+function primeiroNome(s: string | null | undefined): string {
+  const t = titulo(s);
+  return t === "—" ? "" : t.split(" ")[0];
+}
+
 type PastaTipo = "comercial" | "imob" | "corretor";
 
 interface PastaNode {
@@ -121,6 +127,7 @@ export function DocumentosGerais() {
   const clientes = data?.clientes ?? [];
   const imobiliariasFiltro = data?.imobiliarias ?? [];
   const corretoresFiltro = data?.corretores ?? [];
+  const comerciaisBase = data?.comerciais ?? [];
 
   const filtrando = busca.trim() !== "" || filtroImob !== "todas" || filtroCorr !== "todos";
 
@@ -151,24 +158,38 @@ export function DocumentosGerais() {
   const raizes = useMemo<PastaNode[]>(() => {
     const comerciais = new Map<string, PastaNode>();
 
-    for (const c of clientes) {
-      const comKey = c.comercial_id ? `com:${c.comercial_id}` : SEM_COMERCIAL_KEY;
-      const comNome = c.comercial_id ? titulo(c.comercial_nome) : SEM_COMERCIAL_LABEL;
-      let com = comerciais.get(comKey);
+    function garantirComercial(key: string, nome: string): PastaNode {
+      let com = comerciais.get(key);
       if (!com) {
         com = {
-          key: comKey,
-          nome: comNome,
+          key,
+          nome,
           tipo: "comercial",
           subpastas: [],
           clientes: [],
           total_clientes: 0,
         };
-        comerciais.set(comKey, com);
+        comerciais.set(key, com);
       }
+      return com;
+    }
 
+    // Semeia uma pasta para cada comercial cadastrado na base (mesmo sem clientes).
+    for (const cm of comerciaisBase) {
+      garantirComercial(`com:${cm.id}`, titulo(cm.nome));
+    }
+
+    for (const c of clientes) {
+      const comKey = c.comercial_id ? `com:${c.comercial_id}` : SEM_COMERCIAL_KEY;
+      const comNome = c.comercial_id ? titulo(c.comercial_nome) : SEM_COMERCIAL_LABEL;
+      const com = garantirComercial(comKey, comNome);
+
+      // Sem imobiliária: usa "Avulso · <primeiro nome do comercial>".
+      const semImobNome = c.comercial_id
+        ? `Avulso · ${primeiroNome(c.comercial_nome)}`.trim().replace(/·\s*$/, "").trim()
+        : SEM_IMOB;
       const imobKey = c.imobiliaria_id ? `imob:${c.imobiliaria_id}` : SEM_IMOB_KEY;
-      const imobNome = c.imobiliaria_id ? titulo(c.imobiliaria_nome) : SEM_IMOB;
+      const imobNome = c.imobiliaria_id ? titulo(c.imobiliaria_nome) : semImobNome;
       const imob = garantirFilho(com, imobKey, imobNome, "imob");
 
       const corrKey = c.corretor_id ?? SEM_CORRETOR_KEY;
@@ -186,7 +207,8 @@ export function DocumentosGerais() {
       if (aSem !== bSem) return aSem ? 1 : -1;
       return a.nome.localeCompare(b.nome, "pt-BR");
     });
-  }, [clientes]);
+  }, [clientes, comerciaisBase]);
+
 
   // Traça o caminho atual na árvore, coletando as pastas percorridas.
   const trilha = useMemo<PastaNode[]>(() => {
@@ -343,12 +365,13 @@ export function DocumentosGerais() {
             <Skeleton key={i} className="h-20 w-full" />
           ))}
         </div>
-      ) : clientes.length === 0 ? (
+      ) : raizes.length === 0 ? (
         <Card>
           <CardContent className="py-10 text-center text-sm text-muted-foreground">
-            Nenhum cliente encontrado.
+            Nenhum comercial cadastrado.
           </CardContent>
         </Card>
+
       ) : filtrando && caminho.length === 0 ? (
         // Resultado da consulta (lista plana de clientes)
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
