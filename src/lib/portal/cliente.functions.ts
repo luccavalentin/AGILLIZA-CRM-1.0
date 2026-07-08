@@ -237,6 +237,7 @@ export const getSessaoCliente = createServerFn({ method: "GET" }).handler(
 // Visao geral (home)
 // ----------------------------------------------------------------------------
 export interface VisaoGeralCliente {
+  cliente_id: string;
   processo: {
     etapa_atual: string | null;
     descricao: string | null;
@@ -261,6 +262,7 @@ export const clienteObterVisaoGeral = createServerFn({ method: "GET" }).handler(
     const v = data as any;
 
     return {
+      cliente_id: sess.cid,
       processo: {
         etapa_atual: v.etapa_atual ?? null,
         descricao: v.descricao ?? null,

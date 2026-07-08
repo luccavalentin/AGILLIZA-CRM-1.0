@@ -79,27 +79,40 @@ export function FloatingWindow({
   onClose: () => void;
   children: ReactNode;
 }) {
-  const WIDTH = 416;
+  const [viewport, setViewport] = useState(() => ({
+    w: typeof window !== "undefined" ? window.innerWidth : 1024,
+    h: typeof window !== "undefined" ? window.innerHeight : 768,
+  }));
+  const isMobile = viewport.w < 640;
+  const WIDTH = isMobile ? Math.max(280, viewport.w - 24) : 420;
+
+  const clamp = useCallback(
+    (x: number, y: number) => ({
+      x: Math.min(Math.max(8, x), Math.max(8, window.innerWidth - WIDTH - 8)),
+      y: Math.min(Math.max(8, y), Math.max(8, window.innerHeight - 56)),
+    }),
+    [WIDTH],
+  );
+
   const [pos, setPos] = useState(() => {
     const vw = typeof window !== "undefined" ? window.innerWidth : 1024;
     const vh = typeof window !== "undefined" ? window.innerHeight : 768;
+    const w = vw < 640 ? Math.max(280, vw - 24) : 420;
     return {
-      x: Math.max(16, Math.round((vw - WIDTH) / 2)),
-      y: Math.max(72, Math.round(vh * 0.12)),
+      x: Math.max(12, Math.round((vw - w) / 2)),
+      y: Math.max(64, Math.round(vh * 0.1)),
     };
   });
   const [minimized, setMinimized] = useState(false);
   const dragRef = useRef<{ dx: number; dy: number } | null>(null);
 
-  const onPointerMove = useCallback((e: PointerEvent) => {
-    if (!dragRef.current) return;
-    const x = Math.min(
-      Math.max(8, e.clientX - dragRef.current.dx),
-      Math.max(8, window.innerWidth - WIDTH - 8),
-    );
-    const y = Math.min(Math.max(8, e.clientY - dragRef.current.dy), window.innerHeight - 60);
-    setPos({ x, y });
-  }, []);
+  const onPointerMove = useCallback(
+    (e: PointerEvent) => {
+      if (!dragRef.current) return;
+      setPos(clamp(e.clientX - dragRef.current.dx, e.clientY - dragRef.current.dy));
+    },
+    [clamp],
+  );
 
   const stopDrag = useCallback(() => {
     dragRef.current = null;
@@ -108,6 +121,20 @@ export function FloatingWindow({
   }, [onPointerMove]);
 
   useEffect(() => stopDrag, [stopDrag]);
+
+  // Mantém a janela dentro da viewport ao redimensionar / girar o dispositivo.
+  useEffect(() => {
+    function onResize() {
+      setViewport({ w: window.innerWidth, h: window.innerHeight });
+      setPos((p) => clamp(p.x, p.y));
+    }
+    window.addEventListener("resize", onResize);
+    window.addEventListener("orientationchange", onResize);
+    return () => {
+      window.removeEventListener("resize", onResize);
+      window.removeEventListener("orientationchange", onResize);
+    };
+  }, [clamp]);
 
   function startDrag(e: React.PointerEvent) {
     dragRef.current = { dx: e.clientX - pos.x, dy: e.clientY - pos.y };
@@ -123,29 +150,61 @@ export function FloatingWindow({
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
+  // No mobile aberto, ocupa a tela como um bottom-sheet fixo (sem arrastar).
+  const mobileExpanded = isMobile && !minimized;
+
+  const style: React.CSSProperties = mobileExpanded
+    ? {
+        left: 12,
+        right: 12,
+        bottom: 12,
+        top: 64,
+        width: "auto",
+      }
+    : {
+        left: pos.x,
+        top: pos.y,
+        width: WIDTH,
+        ...(minimized ? {} : { height: "min(85dvh, 44rem)" }),
+      };
+
   return createPortal(
     <div
       role="dialog"
       aria-label={title}
-      style={{ left: pos.x, top: pos.y, width: WIDTH, ...(minimized ? {} : { height: "min(85vh, 44rem)" }) }}
+      aria-modal={mobileExpanded}
+      style={style}
       className={cn(
-        "fixed z-[60] flex min-w-[18rem] max-w-[95vw] flex-col overflow-hidden rounded-xl border border-border bg-background shadow-2xl",
-        minimized ? "h-auto" : "min-h-[20rem] resize",
+        "fixed z-[60] flex max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden rounded-2xl border border-border/70 bg-background shadow-2xl ring-1 ring-black/5 backdrop-blur supports-[backdrop-filter]:bg-background/95",
+        !isMobile && "min-w-[18rem]",
+        minimized ? "h-auto" : mobileExpanded ? "" : "min-h-[20rem] resize",
       )}
     >
       <div
-        onPointerDown={startDrag}
+        onPointerDown={mobileExpanded ? undefined : startDrag}
         onDoubleClick={() => setMinimized((v) => !v)}
-        className="flex shrink-0 cursor-grab items-center justify-between gap-2 border-b bg-muted/50 px-3 py-2 active:cursor-grabbing select-none"
+        className={cn(
+          "flex shrink-0 items-center justify-between gap-2 border-b border-border/60 bg-gradient-to-b from-muted/70 to-muted/40 px-3.5 py-2.5 select-none",
+          mobileExpanded ? "cursor-default" : "cursor-grab active:cursor-grabbing",
+        )}
       >
-        <p className="truncate text-xs font-semibold text-foreground">{title}</p>
+        <div className="flex min-w-0 items-center gap-2">
+          {!mobileExpanded && (
+            <span className="hidden gap-1 sm:flex" aria-hidden>
+              <span className="size-2.5 rounded-full bg-destructive/70" />
+              <span className="size-2.5 rounded-full bg-amber-400/80" />
+              <span className="size-2.5 rounded-full bg-emerald-500/80" />
+            </span>
+          )}
+          <p className="truncate text-xs font-semibold text-foreground">{title}</p>
+        </div>
         <div className="flex items-center gap-0.5">
           <button
             type="button"
             onClick={() => setMinimized((v) => !v)}
             title={minimized ? "Expandir" : "Minimizar"}
             aria-label={minimized ? "Expandir" : "Minimizar"}
-            className="flex size-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            className="flex size-7 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           >
             {minimized ? <Maximize2 className="size-3.5" /> : <Minus className="size-3.5" />}
           </button>
@@ -154,7 +213,7 @@ export function FloatingWindow({
             onClick={onClose}
             title="Reacoplar"
             aria-label="Reacoplar"
-            className="flex size-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            className="flex size-7 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
           >
             <X className="size-3.5" />
           </button>
@@ -167,4 +226,5 @@ export function FloatingWindow({
     document.body,
   );
 }
+
 

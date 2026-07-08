@@ -15,6 +15,8 @@ import {
   clienteEnviarDocumentoPendente,
 } from "@/lib/portal/cliente.functions";
 import { useIncomingChatSound } from "@/hooks/use-chat-sound";
+import { useChatTyping } from "@/hooks/use-chat-typing";
+import { TypingIndicator } from "@/components/shared/typing-indicator";
 import { TimelineCliente } from "@/components/cliente/timeline-cliente";
 import { ChipDocumento } from "@/components/cliente/chip-documento";
 import { BradescoRetornoTimer, isBradesco } from "@/components/proposta/bradesco-timer";
@@ -213,6 +215,17 @@ function AbaMensagens() {
     queryFn: () => clienteListarMensagens(),
     refetchInterval: (q: any) => (q.state.status === "error" ? false : 8000),
   });
+  const { data: visao } = useQuery({
+    queryKey: ["cliente", "visao-geral"],
+    queryFn: () => clienteObterVisaoGeral(),
+    staleTime: 60_000,
+  });
+  const { peerTyping, notifyTyping, notifyStop } = useChatTyping(
+    visao?.cliente_id,
+    "cliente",
+  );
+
+
 
   const enviar = useMutation({
     mutationFn: (mensagem: string) => clienteEnviarMensagem({ data: { mensagem } }),
@@ -361,7 +374,9 @@ function AbaMensagens() {
             <Loader2 className="h-3.5 w-3.5 animate-spin" /> Enviando anexo…
           </div>
         )}
+        {peerTyping && <TypingIndicator lado="time" nome="O time" className="mt-1" />}
         <div ref={fimRef} />
+
       </div>
 
       <input
@@ -391,7 +406,10 @@ function AbaMensagens() {
         onSubmit={(e) => {
           e.preventDefault();
           const v = texto.trim();
-          if (v) enviar.mutate(v);
+          if (v) {
+            notifyStop();
+            enviar.mutate(v);
+          }
         }}
       >
         <Button
@@ -418,7 +436,10 @@ function AbaMensagens() {
         </Button>
         <Textarea
           value={texto}
-          onChange={(e) => setTexto(e.target.value)}
+          onChange={(e) => {
+            setTexto(e.target.value);
+            if (e.target.value.trim()) notifyTyping();
+          }}
           placeholder="Escreva sua mensagem…"
           rows={1}
           className="min-h-11 resize-none"

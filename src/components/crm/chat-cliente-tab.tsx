@@ -51,6 +51,8 @@ import {
   fecharChatFlutuante,
 } from "@/components/shared/floating-chat-store";
 import { useIncomingChatSound } from "@/hooks/use-chat-sound";
+import { useChatTyping } from "@/hooks/use-chat-typing";
+import { TypingIndicator } from "@/components/shared/typing-indicator";
 import { supabase } from "@/integrations/supabase/client";
 import {
   listarChatCliente,
@@ -169,9 +171,13 @@ export function ChatClienteConversa({ clienteId, info }: { clienteId: string; in
     mensagens?.map((m) => ({ id: m.id, mine: m.remetente_tipo === "time" })),
   );
 
+  const { peerTyping, notifyTyping, notifyStop } = useChatTyping(clienteId, "time");
+
+
   useEffect(() => {
     if (!buscaAberta) fimRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [mensagens?.length, buscaAberta]);
+  }, [mensagens?.length, buscaAberta, peerTyping]);
+
 
   const enviar = useMutation({
     mutationFn: (payload: { mensagem: string; responde_a?: string }) =>
@@ -248,6 +254,8 @@ export function ChatClienteConversa({ clienteId, info }: { clienteId: string; in
   function submeter() {
     const t = texto.trim();
     if (!t) return;
+    notifyStop();
+
     if (editando) {
       if (salvarEdicao.isPending) return;
       salvarEdicao.mutate({ id: editando.id, mensagem: t });
@@ -558,7 +566,11 @@ export function ChatClienteConversa({ clienteId, info }: { clienteId: string; in
             );
           })
         )}
+        {peerTyping && (
+          <TypingIndicator lado="cliente" nome={info?.nome?.trim() || "Cliente"} className="mt-2" />
+        )}
         <div ref={fimRef} />
+
       </div>
 
       {/* Barra de resposta/edição acima do composer */}
@@ -617,7 +629,10 @@ export function ChatClienteConversa({ clienteId, info }: { clienteId: string; in
         <Textarea
           ref={textareaRef}
           value={texto}
-          onChange={(e) => setTexto(e.target.value)}
+          onChange={(e) => {
+            setTexto(e.target.value);
+            if (e.target.value.trim()) notifyTyping();
+          }}
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();
