@@ -130,6 +130,7 @@ function finalizar(node: PastaNode): number {
 export function DocumentosGerais() {
   const explorar = useServerFn(explorarDocumentosGerais);
   const [busca, setBusca] = useState("");
+  const [filtroComercial, setFiltroComercial] = useState<string>("todos");
   const [filtroImob, setFiltroImob] = useState<string>("todas");
   const [filtroCorr, setFiltroCorr] = useState<string>("todos");
   const [caminho, setCaminho] = useState<string[]>([]);
