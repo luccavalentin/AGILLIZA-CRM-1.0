@@ -474,6 +474,18 @@ export function DocumentosChecklist({ clienteId }: { clienteId: string }) {
               Cadastre um vendedor na aba “Vendedores” para validar os dados automaticamente.
             </p>
           )}
+          {custom
+            .filter((c) => c.cat === "vendedor")
+            .map((item) => (
+              <DocItem
+                key={item.id}
+                itemKey={`custom_${item.id}`}
+                label={item.label}
+                cat="vendedor"
+                onRemove={() => removeCustom(item.id)}
+              />
+            ))}
+          <AdicionarItem onAdd={(l) => addCustom(l, "vendedor")} />
         </CardContent>
       </Card>
 
