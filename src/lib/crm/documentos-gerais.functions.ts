@@ -33,6 +33,8 @@ export interface DGResposta {
   clientes: DGCliente[];
   imobiliarias: DGOpcaoFiltro[];
   corretores: DGOpcaoFiltro[];
+  /** Todos os comerciais cadastrados na base (para criar a pasta mesmo sem clientes). */
+  comerciais: DGOpcaoFiltro[];
 }
 
 /**
