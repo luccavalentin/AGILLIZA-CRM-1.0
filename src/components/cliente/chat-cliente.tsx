@@ -132,7 +132,7 @@ export function ChatCliente({ altura = "h-[62dvh]" }: { altura?: string }) {
       {/* Cabeçalho do chat */}
       <div className="flex items-center gap-3 border-b border-border/60 bg-gradient-to-r from-primary to-[var(--brand-azul-escuro)] px-4 py-3 text-primary-foreground">
         <Avatar className="h-9 w-9 ring-2 ring-white/25">
-          {contato?.foto_url ? <AvatarImage src={contato.foto_url} alt={contato.nome} /> : null}
+          {contato?.foto_url ? <AvatarImage src={contato.foto_url} alt={contato.nome ?? ""} /> : null}
           <AvatarFallback className="bg-white/15 text-xs text-primary-foreground">
             {contato?.nome ? iniciais(contato.nome) : "AG"}
           </AvatarFallback>
