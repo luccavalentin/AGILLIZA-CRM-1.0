@@ -252,6 +252,7 @@ export function DocumentosGerais() {
 
   function limparFiltros() {
     setBusca("");
+    setFiltroComercial("todos");
     setFiltroImob("todas");
     setFiltroCorr("todos");
   }
