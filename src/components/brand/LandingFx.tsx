@@ -165,5 +165,5 @@ export function LandingFx({ className }: { className?: string }) {
     };
   }, []);
 
-  return <canvas ref={canvasRef} className="landing-fx" aria-hidden="true" />;
+  return <canvas ref={canvasRef} className={`landing-fx ${className ?? ""}`} aria-hidden="true" />;
 }
