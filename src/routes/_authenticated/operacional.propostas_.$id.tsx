@@ -720,7 +720,14 @@ function TabResumo({
                     aria-label={`Selecionar ${b.nome_banco}`}
                   />
                 </TableCell>
-                <TableCell className="font-medium" style={{ color: corDoBanco(b.nome_banco) }}>{b.nome_banco}</TableCell>
+                <TableCell className="font-medium">
+                  <span className="flex items-center gap-2">
+                    <BancoLogo nome={b.nome_banco} size="md" className="shrink-0" />
+                    <span className="whitespace-nowrap" style={{ color: corDoBanco(b.nome_banco) }}>
+                      {b.nome_banco}
+                    </span>
+                  </span>
+                </TableCell>
                 <TableCell className="max-w-44 truncate text-xs tabular-nums text-muted-foreground">
                   {b.numero_proposta_banco ?? "—"}
                 </TableCell>
