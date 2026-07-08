@@ -1,7 +1,9 @@
 import { createStart, createMiddleware } from "@tanstack/react-start";
 
 import { renderErrorPage } from "./lib/error-page";
-import { attachSupabaseAuth } from "@/integrations/supabase/auth-attacher";
+// Attacher resiliente: renova a sessão antes de anexar o token, evitando o
+// erro "No authorization header provided" quando o token expira em abas abertas.
+import { attachSupabaseAuth } from "@/integrations/supabase/auth-attacher-resilient";
 
 const errorMiddleware = createMiddleware().server(async ({ next }) => {
   try {
