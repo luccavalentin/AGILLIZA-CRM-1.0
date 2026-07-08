@@ -857,7 +857,10 @@ export function ClienteForm({
         (v.estado_civil === "casado" || v.estado_civil === "uniao_estavel") && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Dados do cônjuge</CardTitle>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Heart className="size-4 text-primary" /> Dados do cônjuge
+            </CardTitle>
+
             <p className="text-sm text-muted-foreground">
               Exigidos pelos bancos quando o proponente é casado ou vive em união estável.
             </p>
