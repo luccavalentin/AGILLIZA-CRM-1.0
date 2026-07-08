@@ -13,6 +13,7 @@ import { THEME_INIT_SCRIPT } from "@/lib/theme";
 
 import appCss from "../styles.css?url";
 import { reportError } from "../lib/error-reporting";
+import { FloatingChatHost } from "@/components/shared/floating-chat-host";
 
 function NotFoundComponent() {
   return (
@@ -132,7 +133,9 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
+      <FloatingChatHost />
       <Toaster richColors position="top-right" />
+
     </QueryClientProvider>
   );
 }

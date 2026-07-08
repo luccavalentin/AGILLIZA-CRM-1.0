@@ -70,7 +70,7 @@ export function PopOutPanel({
   );
 }
 
-function FloatingWindow({
+export function FloatingWindow({
   title,
   onClose,
   children,

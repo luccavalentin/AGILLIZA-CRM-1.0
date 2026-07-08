@@ -1,14 +1,18 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Send, Loader2, MessageCircle, Paperclip, FileText } from "lucide-react";
+import { Send, Loader2, MessageCircle, Paperclip, FileText, Maximize2 } from "lucide-react";
 import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { PopOutPanel } from "@/components/shared/pop-out-panel";
+import {
+  useFloatingChat,
+  abrirChatFlutuante,
+  fecharChatFlutuante,
+} from "@/components/shared/floating-chat-store";
 import { useIncomingChatSound } from "@/hooks/use-chat-sound";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -61,8 +65,8 @@ export interface ChatClienteInfo {
   contexto?: string | null;
 }
 
-/** Chat interno: equipe conversa com o cliente pelas mensagens do App do Cliente. */
-export function ChatClienteTab({ clienteId, info }: { clienteId: string; info?: ChatClienteInfo }) {
+/** Corpo da conversa (cabeçalho, mensagens e composer), sem casca flutuante. */
+export function ChatClienteConversa({ clienteId, info }: { clienteId: string; info?: ChatClienteInfo }) {
   const qc = useQueryClient();
   const listar = useServerFn(listarChatCliente);
   const responder = useServerFn(responderChatCliente);
@@ -187,9 +191,9 @@ export function ChatClienteTab({ clienteId, info }: { clienteId: string; info?: 
 
 
   return (
-    <PopOutPanel title={`Conversa · ${info?.nome ?? "Cliente"}`} className="h-full min-h-[24rem]">
     <Card className="flex h-full flex-col overflow-hidden border-border/60 shadow-sm">
       <div className="flex items-center gap-3 border-b bg-muted/30 px-4 py-3">
+
         <div className="relative flex size-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/70 text-sm font-semibold text-primary-foreground shadow-sm">
           {iniciais(info?.nome)}
           <span className="absolute -bottom-0.5 -right-0.5 size-3 rounded-full border-2 border-background bg-emerald-500" />
@@ -380,6 +384,53 @@ export function ChatClienteTab({ clienteId, info }: { clienteId: string; info?: 
         </Button>
       </div>
     </Card>
-    </PopOutPanel>
   );
 }
+
+/**
+ * Chat interno com o cliente. Permite "soltar" a conversa em uma janela
+ * flutuante GLOBAL, que continua aberta ao navegar entre telas do sistema.
+ */
+export function ChatClienteTab({ clienteId, info }: { clienteId: string; info?: ChatClienteInfo }) {
+  const flutuante = useFloatingChat();
+  const estaFlutuando = flutuante?.clienteId === clienteId;
+
+  if (estaFlutuando) {
+    return (
+      <div className="flex h-full min-h-[24rem] flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border/70 bg-muted/20 p-6 text-center">
+        <div className="flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+          <Maximize2 className="size-6" />
+        </div>
+        <div>
+          <p className="text-sm font-medium text-foreground">Aberta em janela flutuante</p>
+          <p className="text-xs text-muted-foreground">
+            A conversa continua disponível mesmo ao trocar de tela.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={fecharChatFlutuante}
+          className="rounded-md border border-border/60 bg-background px-3 py-1.5 text-xs font-medium text-foreground shadow-sm transition-colors hover:bg-accent"
+        >
+          Reacoplar janela
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative h-full min-h-[24rem]">
+      <button
+        type="button"
+        onClick={() => abrirChatFlutuante(clienteId, info)}
+        title="Soltar em janela flutuante"
+        aria-label="Soltar em janela flutuante"
+        className="absolute right-2 top-2 z-20 flex size-7 items-center justify-center rounded-md border border-border/60 bg-background/80 text-muted-foreground shadow-sm backdrop-blur transition-colors hover:bg-accent hover:text-foreground"
+      >
+        <Maximize2 className="size-3.5" />
+      </button>
+      <ChatClienteConversa clienteId={clienteId} info={info} />
+    </div>
+  );
+}
+
