@@ -533,22 +533,15 @@ function Pagina() {
             Voltar às conversas
           </button>
           {alvoAtual ? (
-            <div className="grid gap-4 xl:grid-cols-[1fr_19rem]">
-              <ChatClienteTab
-                key={alvoAtual.cliente_id}
-                clienteId={alvoAtual.cliente_id}
-                info={{
-                  nome: alvoAtual.nome,
-                  documento: alvoAtual.documento,
-                  contexto: alvoAtual.etapa_nome ?? undefined,
-                }}
-              />
-              <PainelGestao
-                clienteId={alvoAtual.cliente_id}
-                nome={alvoAtual.nome}
-                etiquetas={etiquetas ?? []}
-              />
-            </div>
+            <ChatClienteTab
+              key={alvoAtual.cliente_id}
+              clienteId={alvoAtual.cliente_id}
+              info={{
+                nome: alvoAtual.nome,
+                documento: alvoAtual.documento,
+                contexto: alvoAtual.etapa_nome ?? undefined,
+              }}
+            />
           ) : (
             <Card className="flex h-[38rem] flex-col items-center justify-center gap-3 border-border/60 border-dashed text-center shadow-sm">
               <div className="flex size-14 items-center justify-center rounded-full bg-primary/10 text-primary">
