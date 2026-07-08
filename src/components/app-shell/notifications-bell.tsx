@@ -44,6 +44,27 @@ export function NotificationsBell({ userId }: NotificationsBellProps) {
     queryFn: () => listarNotificacoes(),
   });
 
+  // Toca som para notificações novas conforme as preferências por tipo.
+  // (Mensagens de chat têm alerta próprio e são ignoradas aqui p/ evitar duplicidade.)
+  const notifVistas = useRef<Set<string> | null>(null);
+  useEffect(() => {
+    const itens = data?.itens ?? [];
+    if (notifVistas.current === null) {
+      notifVistas.current = new Set(itens.map((n) => n.id));
+      return;
+    }
+    for (const n of itens) {
+      if (notifVistas.current.has(n.id)) continue;
+      notifVistas.current.add(n.id);
+      if (n.lida) continue;
+      const cat = categoriaDeTipo(n.tipo);
+      if (cat === "chat") continue;
+      if (tipoAtivo(cat) && tipoComSom(cat)) playNotificationSound();
+    }
+  }, [data?.itens]);
+
+
+
   // Subscription realtime: revalida a lista a cada novo evento.
   useEffect(() => {
     const canal = supabase
