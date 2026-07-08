@@ -13,6 +13,11 @@ export interface ChatMensagem {
   anexo_is_imagem: boolean;
   lida_em: string | null;
   criada_em: string;
+  editada_em: string | null;
+  excluida_em: string | null;
+  responde_a: string | null;
+  /** Prévia da mensagem citada (quando responde_a aponta para outra mensagem). */
+  citacao: { autor: string; texto: string } | null;
 }
 
 const IMG_EXT = /\.(png|jpe?g|gif|webp|bmp|heic|heif|svg)$/i;
