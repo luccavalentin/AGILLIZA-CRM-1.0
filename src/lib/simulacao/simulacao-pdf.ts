@@ -434,11 +434,15 @@ function anexarDetalhesBancos(doc: jsPDF, pageW: number, pageH: number, s: any, 
         maxWidth: rightW,
       });
     } else {
-      // Quantas linhas cabem na coluna direita da primeira página.
-      const rowH = 12;
-      const headerH = 14;
-      const dispH = pageH - 44 - tblTop;
-      const cabeNaColuna = Math.max(0, Math.floor((dispH - headerH) / rowH));
+      // Quantas linhas cabem, com folga, na coluna direita da primeira página.
+      // Precisa ser conservador para a 1ª tabela NUNCA paginar (senão a
+      // continuação herdaria a margem da coluna direita). O que sobra segue em
+      // sequência, já na largura total, nas páginas seguintes.
+      const rowH = 14.5; // altura real de cada linha (fonte 7 + padding 3)
+      const headerH = 16;
+      const bottomSafe = 48; // rodapé + respiro
+      const dispH = pageH - bottomSafe - tblTop;
+      const cabeNaColuna = Math.max(0, Math.floor((dispH - headerH) / rowH) - 1);
 
       const primeira = parcelas.slice(0, cabeNaColuna);
       const restante = parcelas.slice(cabeNaColuna);
@@ -447,12 +451,16 @@ function anexarDetalhesBancos(doc: jsPDF, pageW: number, pageH: number, s: any, 
         autoTable(doc, {
           startY: tblTop,
           tableWidth: rightW,
-          margin: { left: rightX, right: MARGIN, top: DETALHE_HEADER_H + 16, bottom: 40 },
+          // pageBreak "avoid": garante que este bloco não quebre para outra
+          // página presa na coluna direita — o excedente vai em "restante".
+          pageBreak: "avoid",
+          margin: { left: rightX, right: MARGIN, top: DETALHE_HEADER_H + 16, bottom: bottomSafe },
           head: cabecalho,
           body: primeira.map(linhaParcela),
           ...estiloTabela,
         });
       }
+
 
       if (restante.length > 0) {
         doc.addPage("a4", "landscape");
