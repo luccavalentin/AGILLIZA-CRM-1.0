@@ -126,7 +126,7 @@ export function ChatClienteTab({ clienteId, info }: { clienteId: string; info?: 
         id: `otimista-${crypto.randomUUID()}`,
         remetente_tipo: "time",
         remetente_id: null,
-        remetente_nome: null,
+        remetente_nome: meuNome,
         mensagem,
         anexo_url: null,
         anexo_nome: null,
