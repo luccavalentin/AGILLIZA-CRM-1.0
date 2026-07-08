@@ -284,15 +284,24 @@ function Pagina() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [maxPrazoIdade]);
 
-  // Ao financiar as despesas, garante que a entrada continue cobrindo o mínimo
-  // exigido (LTV). Se incluir as despesas no financiado empurrar o valor acima
-  // do teto, aumenta a entrada automaticamente e avisa o usuário. Se a entrada
-  // já for suficiente mesmo com as despesas, não mexe.
+  // Ao financiar as despesas (padrão 5% do imóvel), o valor financiado + despesas
+  // não pode ultrapassar o teto (80% do imóvel). Quando a soma estoura o teto,
+  // reduz o financiamento e aumenta a entrada automaticamente, avisando o usuário
+  // com o percentual real de entrada resultante. Se a entrada já for suficiente
+  // mesmo com as despesas, não mexe.
   useEffect(() => {
     if (!f.fg_financiar_despesas) return;
     const imovel = Number(f.valor_imovel) || 0;
     if (imovel <= 0) return;
+    // Mantém as despesas coladas no percentual escolhido (padrão 5%) quando o
+    // valor do imóvel muda.
+    const pct = pctDespesas > 0 ? pctDespesas : 5;
+    const despesasAlvo = Math.round(imovel * (pct / 100) * 100) / 100;
     const despesas = Number(f.valor_despesas_financiadas) || 0;
+    if (Math.abs(despesas - despesasAlvo) > 0.5) {
+      setF((prev) => ({ ...prev, valor_despesas_financiadas: despesasAlvo }));
+      return;
+    }
     const financiamentoComDespesas = (Number(f.valor_financiamento) || 0) + despesas;
     if (financiamentoComDespesas <= financiamentoMaximo) return;
     const novoFinanciamento = Math.max(0, financiamentoMaximo - despesas);
@@ -303,10 +312,20 @@ function Pagina() {
       valor_entrada: novaEntrada,
       valor_financiamento: novoFinanciamento,
     }));
-    const pctMin = Math.round((1 - ltvMax) * 100);
-    toast.info(`Valor da entrada ajustado para o mínimo de ${pctMin}%.`);
+    const pctEntrada = Math.round((novaEntrada / imovel) * 100);
+    toast.info(
+      `Entrada ajustada para ${pctEntrada}% (${formatBRL(novaEntrada)}) — o financiamento com as despesas não pode passar de ${Math.round(ltvMax * 100)}% do imóvel.`,
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [f.fg_financiar_despesas, f.valor_despesas_financiadas, f.valor_imovel, financiamentoMaximo]);
+  }, [
+    f.fg_financiar_despesas,
+    f.valor_despesas_financiadas,
+    f.valor_financiamento,
+    f.valor_imovel,
+    pctDespesas,
+    financiamentoMaximo,
+  ]);
+
 
 
 
