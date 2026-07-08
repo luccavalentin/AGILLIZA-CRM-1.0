@@ -30,6 +30,16 @@ export function PipelineTimeline({
   const percent = total > 1 ? Math.round((Math.max(0, posicao - 1) / (total - 1)) * 100) : 0;
   const nomeAtual = atualIdx >= 0 ? ordenadas[atualIdx].nome : "—";
 
+  // Etapa atual não corresponde a nenhuma etapa cadastrada (esteira reconfigurada).
+  if (total > 0 && atualIdx < 0) {
+    return (
+      <p className="text-sm text-destructive">
+        A etapa atual do cliente não existe mais na esteira. Reconfigure a esteira ou mova o
+        cliente para uma etapa válida.
+      </p>
+    );
+  }
+
   return (
     <div className="space-y-4">
       {/* Cabeçalho com etapa atual e progresso */}
