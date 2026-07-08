@@ -120,10 +120,10 @@ function SidebarLinks({ collapsed, onNavigate }: { collapsed: boolean; onNavigat
                   aria-current={active ? "page" : undefined}
                   aria-label={item.label}
                   className={cn(
-                    "relative flex h-10 w-10 items-center justify-center rounded-md transition-colors",
+                    "relative flex h-10 w-10 items-center justify-center rounded-md text-sidebar-foreground transition-colors",
                     active
-                      ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                      : "text-sidebar-foreground hover:bg-white/15 hover:text-sidebar-foreground",
+                      ? "bg-white/20 text-white shadow-sm"
+                      : "hover:bg-white/15 hover:text-white",
                     piscando && "animate-pulse",
                   )}
 
@@ -152,7 +152,7 @@ function SidebarLinks({ collapsed, onNavigate }: { collapsed: boolean; onNavigat
     <nav aria-label="Navegação principal" className="flex flex-col gap-4 px-3 py-4">
       {NAV_CLIENTE.map((group) => (
         <div key={group.id} className="flex flex-col gap-1">
-          <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-sidebar-foreground/70">
+          <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-sidebar-foreground/80">
             {group.label}
           </p>
           {group.items.map((item) => {
@@ -167,10 +167,10 @@ function SidebarLinks({ collapsed, onNavigate }: { collapsed: boolean; onNavigat
                 onClick={onNavigate}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "group relative flex min-h-10 items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                  "group relative flex min-h-10 items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-sidebar-foreground transition-colors",
                   active
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                    : "text-sidebar-foreground hover:bg-white/15 hover:text-sidebar-foreground",
+                    ? "bg-white/20 font-semibold text-white shadow-sm"
+                    : "hover:bg-white/15 hover:text-white",
                   piscando && !active && "animate-pulse",
                 )}
               >
@@ -180,7 +180,7 @@ function SidebarLinks({ collapsed, onNavigate }: { collapsed: boolean; onNavigat
                 <Icon
                   className={cn(
                     "h-[18px] w-[18px] shrink-0",
-                    active ? "text-sidebar-accent-foreground" : "text-sidebar-foreground/90",
+                    active ? "text-white" : "text-sidebar-foreground",
                   )}
                 />
 
