@@ -505,6 +505,14 @@ export function baixarSimulacaoPDF(input: SimulacaoPdfInput) {
     `UF: ${s.uf ?? "—"}`,
   ];
 
+  const docInfo = [
+    { label: "Data da simulação", value: dataTxt(s.created_at ?? new Date()) },
+    { label: "Nº da simulação", value: String(s.numero_simulacao ?? "—") },
+    { label: "Cliente", value: (s.nome_cliente ?? "—").toString() },
+    { label: "CPF / CNPJ", value: s.cpf_cnpj ?? "—" },
+  ];
+
+
   const kpis: ReportKpi[] = [
     { label: "Valor do imóvel", valor: formatBRL(s.valor_imovel) },
     { label: "Financiamento", valor: formatBRL(s.valor_financiamento) },
