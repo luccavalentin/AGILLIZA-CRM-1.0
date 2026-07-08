@@ -2,8 +2,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Check, Upload, Loader2, CircleDashed } from "lucide-react";
+import { Check, Upload, Loader2, CircleDashed, Trash2, Plus } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -101,6 +102,49 @@ export function DocumentosChecklist({ clienteId }: { clienteId: string }) {
     });
   }
 
+  const hidden: string[] = Array.isArray(check.__hidden) ? check.__hidden : [];
+  const custom: { id: string; label: string }[] = Array.isArray(check.__custom)
+    ? check.__custom
+    : [];
+  const [novoItem, setNovoItem] = useState("");
+
+  function hideItem(key: string) {
+    setCheck((prev) => {
+      const h: string[] = Array.isArray(prev.__hidden) ? prev.__hidden : [];
+      const next = { ...prev, __hidden: Array.from(new Set([...h, key])) };
+      persistir(next);
+      return next;
+    });
+  }
+
+  function addCustom(label: string) {
+    const texto = label.trim();
+    if (!texto) return;
+    setCheck((prev) => {
+      const c = Array.isArray(prev.__custom) ? prev.__custom : [];
+      const next = {
+        ...prev,
+        __custom: [...c, { id: crypto.randomUUID(), label: texto }],
+      };
+      persistir(next);
+      return next;
+    });
+    setNovoItem("");
+  }
+
+  function removeCustom(id: string) {
+    setCheck((prev) => {
+      const c = Array.isArray(prev.__custom) ? prev.__custom : [];
+      const next: Record<string, any> = {
+        ...prev,
+        __custom: c.filter((x: { id: string }) => x.id !== id),
+      };
+      delete next[`custom_${id}`];
+      persistir(next);
+      return next;
+    });
+  }
+
   async function toggleFgts(v: boolean) {
     setFgts(v);
     await persistir(check, v);
@@ -142,11 +186,14 @@ export function DocumentosChecklist({ clienteId }: { clienteId: string }) {
     itemKey,
     label,
     cat,
+    onRemove,
   }: {
     itemKey: string;
     label: string;
     cat: Categoria;
+    onRemove?: () => void;
   }) {
+    if (hidden.includes(itemKey)) return null;
     const has = temDoc(cat, label);
     const checked = has || check[itemKey] === true;
     return (
@@ -176,6 +223,14 @@ export function DocumentosChecklist({ clienteId }: { clienteId: string }) {
             disabled={subindo === label}
           />
         </label>
+        <button
+          type="button"
+          onClick={onRemove ?? (() => hideItem(itemKey))}
+          aria-label="Remover item"
+          className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+        >
+          <Trash2 className="size-3.5" />
+        </button>
       </div>
     );
   }
@@ -350,6 +405,46 @@ export function DocumentosChecklist({ clienteId }: { clienteId: string }) {
           </div>
         </CardContent>
       </Card>
+
+      {/* ITENS PERSONALIZADOS */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Itens personalizados</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-1">
+          {custom.length === 0 && (
+            <p className="text-sm text-muted-foreground">
+              Adicione itens próprios ao checklist deste cliente.
+            </p>
+          )}
+          {custom.map((item) => (
+            <DocItem
+              key={item.id}
+              itemKey={`custom_${item.id}`}
+              label={item.label}
+              cat="outros"
+              onRemove={() => removeCustom(item.id)}
+            />
+          ))}
+          <div className="mt-3 flex items-center gap-2">
+            <Input
+              value={novoItem}
+              placeholder="Novo item do checklist…"
+              onChange={(e) => setNovoItem(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  addCustom(novoItem);
+                }
+              }}
+            />
+            <Button type="button" variant="secondary" onClick={() => addCustom(novoItem)}>
+              <Plus className="size-4" /> Incluir
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
+
   );
 }
