@@ -199,7 +199,26 @@ function Pagina() {
   }
 
 
+  const itens = data?.itens ?? [];
+  const kpiTotal = data?.total ?? itens.length;
+  const kpiValor = itens.reduce((acc, s) => acc + (Number(s.valor_imovel) || 0), 0);
+  const kpiBancos = itens.reduce(
+    (acc, s) => acc + (Array.isArray(s.bancos) ? s.bancos.length : 0),
+    0,
+  );
+  const prazos = itens.map((s) => Number(s.prazo)).filter((n) => n > 0);
+  const kpiPrazo = prazos.length
+    ? Math.round(prazos.reduce((a, b) => a + b, 0) / prazos.length)
+    : 0;
+  const kpis = [
+    { label: "Simulações", valor: String(kpiTotal), icon: ListChecks },
+    { label: "Volume em imóveis", valor: formatBRL(kpiValor), icon: Wallet },
+    { label: "Cotações em bancos", valor: String(kpiBancos), icon: Building2 },
+    { label: "Prazo médio", valor: kpiPrazo ? `${kpiPrazo} meses` : "—", icon: Clock },
+  ];
+
   return (
+
     <div className="mx-auto w-full max-w-[1600px] space-y-6 p-4 md:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
