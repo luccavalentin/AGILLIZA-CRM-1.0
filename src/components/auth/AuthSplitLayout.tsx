@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
+import { LandingFx } from "@/components/brand/LandingFx";
 
 interface Recurso {
   titulo: string;
