@@ -63,15 +63,12 @@ function PortalCliente() {
 
   return (
     <AuthSplitLayout
+      portalNome="Portal do Cliente"
+      portalDescricao="Acesse com seus dados para acompanhar o processo."
       bannerTitulo="Acompanhe seu financiamento em tempo real."
       bannerSubtitulo="Consulte o andamento do seu processo, documentos e próximos passos."
     >
-      <div className="space-y-2 text-center">
-        <h1 className="text-2xl font-semibold text-foreground">Portal do Cliente</h1>
-        <p className="text-sm text-muted-foreground">
-          Acesse com seus dados para acompanhar o processo.
-        </p>
-      </div>
+
 
       <Tabs defaultValue="pf" className="mt-6 w-full" onValueChange={() => setDocumento("")}>
         <TabsList className="grid w-full grid-cols-2">
