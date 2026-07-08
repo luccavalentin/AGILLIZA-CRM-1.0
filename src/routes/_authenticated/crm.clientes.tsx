@@ -240,9 +240,9 @@ function Pagina() {
                     {/* Etapa */}
                     <TableCell className="px-4">
                       {c.etapa_nome ? (
-                        <ToneBadge tone="info" className="gap-1.5">
+                        <ToneBadge tone="info" className="max-w-full gap-1.5">
                           <span className="size-1.5 shrink-0 rounded-full bg-primary" />
-                          {c.etapa_nome}
+                          <span className="truncate">{c.etapa_nome}</span>
                         </ToneBadge>
                       ) : (
                         <span className="text-sm text-muted-foreground">—</span>
