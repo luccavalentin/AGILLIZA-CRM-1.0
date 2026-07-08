@@ -157,13 +157,11 @@ export const explorarDocumentosGerais = createServerFn({ method: "GET" })
       };
     });
 
-    const ordenarNome = (a: DGOpcaoFiltro, b: DGOpcaoFiltro) =>
-      a.nome.localeCompare(b.nome, "pt-BR");
-
     return {
       clientes: clientesResp,
       imobiliarias: Array.from(imobiliariasSet, ([id, nome]) => ({ id, nome })).sort(ordenarNome),
       corretores: Array.from(corretoresSet, ([id, nome]) => ({ id, nome })).sort(ordenarNome),
+      comerciais,
     };
   });
 
