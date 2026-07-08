@@ -157,6 +157,7 @@ export const criarPastaDocumentos = createServerFn({ method: "POST" })
         nome: data.nome,
         slug: null,
         ordem: (max?.ordem ?? 0) + 1,
+        criado_por: userId,
       })
       .select("id")
       .single();
