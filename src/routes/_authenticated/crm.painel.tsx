@@ -86,6 +86,36 @@ function Pagina() {
     }
   }
 
+  async function salvarDataVistoria(
+    clienteId: string,
+    campo: "vistoria_agendada_em" | "vistoria_concluida_em",
+    valor: string,
+  ) {
+    const novoValor = valor || null;
+    const anterior = qc.getQueryData<PainelStage[]>(queryKey);
+    if (anterior) {
+      qc.setQueryData(
+        queryKey,
+        anterior.map((s) => ({
+          ...s,
+          clientes: s.clientes.map((c) =>
+            c.id === clienteId ? { ...c, [campo]: novoValor } : c,
+          ),
+        })),
+      );
+    }
+    try {
+      await salvarDatas({ data: { cliente_id: clienteId, [campo]: novoValor } });
+      toast.success("Data da vistoria salva.");
+    } catch (e) {
+      if (anterior) qc.setQueryData(queryKey, anterior);
+      toast.error(e instanceof Error ? e.message : "Falha ao salvar a data.");
+    } finally {
+      qc.invalidateQueries({ queryKey: ["crm-painel"] });
+    }
+  }
+
+
   return (
     <div className="space-y-4 p-4 sm:p-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
