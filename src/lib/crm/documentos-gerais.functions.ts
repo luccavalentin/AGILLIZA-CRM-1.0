@@ -97,11 +97,19 @@ export const explorarDocumentosGerais = createServerFn({ method: "GET" })
 
     const idsClientes = listaClientes.map((c: any) => c.id);
 
-    // Vínculos de atendimento desses clientes.
-    const { data: vinculos } = await supabase
-      .from("cliente_parceiros")
-      .select("cliente_id, parceiro_id, tipo_vinculo")
-      .in("cliente_id", idsClientes);
+    // Vínculos de atendimento desses clientes (paginado: até 1000 clientes
+    // podem ter vários vínculos cada, estourando o limite padrão).
+    const vinculos: { cliente_id: string; parceiro_id: string | null; tipo_vinculo: string }[] = [];
+    for (let inicio = 0; ; inicio += 1000) {
+      const { data: lote } = await supabase
+        .from("cliente_parceiros")
+        .select("cliente_id, parceiro_id, tipo_vinculo")
+        .in("cliente_id", idsClientes)
+        .range(inicio, inicio + 999);
+      const rows = (lote ?? []) as typeof vinculos;
+      vinculos.push(...rows);
+      if (rows.length < 1000) break;
+    }
 
     // Nomes de parceiros (imobiliária/corretor) e comerciais (responsáveis).
     const idsPerfis = new Set<string>();
