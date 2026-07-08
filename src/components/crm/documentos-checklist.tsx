@@ -102,6 +102,49 @@ export function DocumentosChecklist({ clienteId }: { clienteId: string }) {
     });
   }
 
+  const hidden: string[] = Array.isArray(check.__hidden) ? check.__hidden : [];
+  const custom: { id: string; label: string }[] = Array.isArray(check.__custom)
+    ? check.__custom
+    : [];
+  const [novoItem, setNovoItem] = useState("");
+
+  function hideItem(key: string) {
+    setCheck((prev) => {
+      const h: string[] = Array.isArray(prev.__hidden) ? prev.__hidden : [];
+      const next = { ...prev, __hidden: Array.from(new Set([...h, key])) };
+      persistir(next);
+      return next;
+    });
+  }
+
+  function addCustom(label: string) {
+    const texto = label.trim();
+    if (!texto) return;
+    setCheck((prev) => {
+      const c = Array.isArray(prev.__custom) ? prev.__custom : [];
+      const next = {
+        ...prev,
+        __custom: [...c, { id: crypto.randomUUID(), label: texto }],
+      };
+      persistir(next);
+      return next;
+    });
+    setNovoItem("");
+  }
+
+  function removeCustom(id: string) {
+    setCheck((prev) => {
+      const c = Array.isArray(prev.__custom) ? prev.__custom : [];
+      const next: Record<string, any> = {
+        ...prev,
+        __custom: c.filter((x: { id: string }) => x.id !== id),
+      };
+      delete next[`custom_${id}`];
+      persistir(next);
+      return next;
+    });
+  }
+
   async function toggleFgts(v: boolean) {
     setFgts(v);
     await persistir(check, v);
