@@ -492,7 +492,7 @@ export function ChatClienteConversa({ clienteId, info }: { clienteId: string; in
                       <p
                         className={cn(
                           "mb-0.5 text-[11px] font-semibold",
-                          doTime ? "text-primary-foreground/90" : "text-primary",
+                          doTime ? "text-primary-foreground/90" : "text-chat-them-foreground/80",
                         )}
                       >
                         {doTime
