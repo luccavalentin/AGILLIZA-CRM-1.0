@@ -168,6 +168,25 @@ function Pagina() {
               em {etapasAtivas} de 12 etapas
             </span>
           </div>
+          <div className="relative w-full sm:w-64">
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+              placeholder="Buscar cliente ou nº..."
+              className="h-10 rounded-xl pl-9 pr-9 shadow-sm"
+            />
+            {busca && (
+              <button
+                type="button"
+                onClick={() => setBusca("")}
+                className="absolute right-2 top-1/2 grid size-6 -translate-y-1/2 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                aria-label="Limpar busca"
+              >
+                <X className="size-3.5" />
+              </button>
+            )}
+          </div>
           <div className="space-y-1">
             <label className="text-xs font-medium text-muted-foreground">De</label>
             <Input
