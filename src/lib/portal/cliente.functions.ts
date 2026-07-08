@@ -262,6 +262,7 @@ export const clienteObterVisaoGeral = createServerFn({ method: "GET" }).handler(
     const v = data as any;
 
     return {
+      cliente_id: sess.cid,
       processo: {
         etapa_atual: v.etapa_atual ?? null,
         descricao: v.descricao ?? null,
