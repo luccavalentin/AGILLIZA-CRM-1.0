@@ -35,14 +35,27 @@ import {
 } from "@/components/ui/table";
 import { SimulacaoStatusBadge } from "@/components/simulacao/status-badge";
 import { BancosSimulados } from "@/components/simulacao/bancos-simulados";
+import { BancoLogo } from "@/components/bancos/banco-logo";
+import { corDoBanco } from "@/lib/bancos/cores";
+import { cn } from "@/lib/utils";
+import { Checkbox } from "@/components/ui/checkbox";
 import { ConfirmDelete } from "@/components/shared/confirm-delete";
 import { formatBRL } from "@/lib/simulacao/format";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
+
 
 export const Route = createFileRoute("/_authenticated/operacional/simulacoes")({
   head: () => ({ meta: [{ title: "Simulações — Agilliza" }] }),
@@ -67,6 +80,17 @@ function Pagina() {
   const [busca, setBusca] = useState("");
   const [desde, setDesde] = useState("");
   const [ate, setAte] = useState("");
+
+  // Envio de proposta: diálogo para escolher UM banco por vez.
+  const [envio, setEnvio] = useState<{
+    id: string;
+    numero: string;
+    bancos: any[];
+  } | null>(null);
+  const [envioCarregando, setEnvioCarregando] = useState(false);
+  const [bancoSelecionado, setBancoSelecionado] = useState<string | null>(null);
+  const [enviando, setEnviando] = useState(false);
+
 
   const { data, isLoading } = useQuery({
     queryKey: ["simulacoes", escopo, busca, desde, ate],
@@ -129,10 +153,34 @@ function Pagina() {
     }
   }
 
-  async function handleEnviarProposta(id: string) {
+  async function handleEnviarProposta(id: string, numero: string) {
+    setEnvio({ id, numero, bancos: [] });
+    setBancoSelecionado(null);
+    setEnvioCarregando(true);
     try {
-      const res = await criar({ data: { simulacao_id: id } });
+      const dados = await obter({ data: { id } });
+      const simulados = (dados.bancos ?? []).filter(
+        (b: any) => b.status_banco === "simulada" && b.banco_id,
+      );
+      setEnvio({ id, numero, bancos: simulados });
+      if (simulados.length === 1) setBancoSelecionado(simulados[0].banco_id);
+    } catch {
+      toast.error("Não foi possível carregar os bancos da simulação.");
+      setEnvio(null);
+    } finally {
+      setEnvioCarregando(false);
+    }
+  }
+
+  async function confirmarEnvio() {
+    if (!envio || !bancoSelecionado) return;
+    setEnviando(true);
+    try {
+      const res = await criar({
+        data: { simulacao_id: envio.id, banco_id: bancoSelecionado },
+      });
       toast.success(`Proposta ${res.numero_proposta} criada.`);
+      setEnvio(null);
       router.navigate({
         to: "/operacional/propostas/$id",
         params: { id: res.proposta_id },
@@ -140,8 +188,11 @@ function Pagina() {
       });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Não foi possível gerar a proposta.");
+    } finally {
+      setEnviando(false);
     }
   }
+
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-6 p-4 md:p-6">
@@ -324,7 +375,7 @@ function Pagina() {
                     onBaixarComparativo={() => handleBaixarComparativo(s.id)}
                     onBaixarDetalhada={() => handleBaixarDetalhada(s.id)}
                     onDuplicar={() => handleDuplicar(s.id)}
-                    onEnviarProposta={() => handleEnviarProposta(s.id)}
+                    onEnviarProposta={() => handleEnviarProposta(s.id, s.numero_simulacao)}
                     onExcluir={() => handleExcluir(s.id)}
                     numero={s.numero_simulacao}
                   />
@@ -375,7 +426,7 @@ function Pagina() {
                   onBaixarComparativo={() => handleBaixarComparativo(s.id)}
                   onBaixarDetalhada={() => handleBaixarDetalhada(s.id)}
                   onDuplicar={() => handleDuplicar(s.id)}
-                  onEnviarProposta={() => handleEnviarProposta(s.id)}
+                  onEnviarProposta={() => handleEnviarProposta(s.id, s.numero_simulacao)}
                   onExcluir={() => handleExcluir(s.id)}
                   numero={s.numero_simulacao}
                 />
@@ -410,9 +461,75 @@ function Pagina() {
           </div>
         ))}
       </div>
+
+      {/* Enviar proposta: escolher UM banco por vez */}
+      <Dialog open={!!envio} onOpenChange={(o) => !o && setEnvio(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Enviar proposta</DialogTitle>
+            <DialogDescription>
+              Selecione o banco para o qual deseja enviar a proposta{" "}
+              {envio?.numero ? `da simulação ${envio.numero}` : ""}. É permitido um banco por vez.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-2">
+            {envioCarregando ? (
+              <p className="py-6 text-center text-sm text-muted-foreground">Carregando bancos…</p>
+            ) : (envio?.bancos.length ?? 0) === 0 ? (
+              <p className="py-6 text-center text-sm text-muted-foreground">
+                Nenhum banco simulado disponível para envio.
+              </p>
+            ) : (
+              envio?.bancos.map((b: any) => {
+                const marcado = bancoSelecionado === b.banco_id;
+                const cor = corDoBanco(b.nome_banco);
+                return (
+                  <label
+                    key={b.banco_id}
+                    style={marcado ? { borderColor: cor } : undefined}
+                    className={cn(
+                      "flex cursor-pointer items-center gap-3 rounded-lg border bg-card p-3 transition-colors",
+                      marcado ? "border-2" : "border-border hover:bg-accent",
+                    )}
+                  >
+                    <Checkbox
+                      checked={marcado}
+                      onCheckedChange={(v) =>
+                        setBancoSelecionado(v ? b.banco_id : null)
+                      }
+                    />
+                    <BancoLogo nome={b.nome_banco} size="lg" className="shrink-0" />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-semibold text-foreground">
+                        {b.nome_banco}
+                      </span>
+                      {b.valor_parcela != null && (
+                        <span className="block text-xs text-muted-foreground">
+                          Parcela {formatBRL(b.valor_parcela)}
+                        </span>
+                      )}
+                    </span>
+                  </label>
+                );
+              })
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEnvio(null)} disabled={enviando}>
+              Cancelar
+            </Button>
+            <Button onClick={confirmarEnvio} disabled={!bancoSelecionado || enviando}>
+              {enviando ? "Enviando…" : "Enviar proposta"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
+
 
 function AcoesSimulacao({
   onVisualizar,
