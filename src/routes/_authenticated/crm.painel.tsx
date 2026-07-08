@@ -144,7 +144,35 @@ function Pagina() {
       toast.error(e instanceof Error ? e.message : "Falha ao salvar a data.");
     } finally {
       qc.invalidateQueries({ queryKey: ["crm-painel"] });
+  }
+
+  async function salvarDataContrato(clienteId: string, valor: string) {
+    const novoValor = valor || null;
+    const anterior = qc.getQueryData<PainelStage[]>(queryKey);
+    if (anterior) {
+      qc.setQueryData(
+        queryKey,
+        anterior.map((s) => ({
+          ...s,
+          clientes: s.clientes.map((c) =>
+            c.id === clienteId ? { ...c, contrato_emitido_em: novoValor } : c,
+          ),
+        })),
+      );
     }
+    try {
+      await salvarContratoData({ data: { cliente_id: clienteId, contrato_emitido_em: novoValor } });
+      toast.success("Data de emissão salva.");
+      qc.invalidateQueries({ queryKey: ["crm-contratos-emitidos"] });
+    } catch (e) {
+      if (anterior) qc.setQueryData(queryKey, anterior);
+      toast.error(e instanceof Error ? e.message : "Falha ao salvar a data.");
+    } finally {
+      qc.invalidateQueries({ queryKey: ["crm-painel"] });
+    }
+  }
+
+
   }
 
 
