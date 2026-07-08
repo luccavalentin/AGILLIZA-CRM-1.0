@@ -127,9 +127,9 @@ function FloatingWindow({
     <div
       role="dialog"
       aria-label={title}
-      style={{ left: pos.x, top: pos.y }}
+      style={{ left: pos.x, top: pos.y, width: WIDTH }}
       className={cn(
-        "fixed z-[60] flex w-[92vw] min-w-[18rem] max-w-[32rem] flex-col overflow-hidden rounded-xl border border-border bg-background shadow-2xl",
+        "fixed z-[60] flex min-w-[18rem] max-w-[95vw] flex-col overflow-hidden rounded-xl border border-border bg-background shadow-2xl",
         minimized
           ? "h-auto"
           : "max-h-[85vh] min-h-[20rem] resize",
