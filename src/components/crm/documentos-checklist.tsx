@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Check, Upload, Loader2, CircleDashed, Trash2, Plus } from "lucide-react";
+import { Check, Upload, Loader2, CircleDashed, Trash2, Plus, Pencil, X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -106,7 +106,36 @@ export function DocumentosChecklist({ clienteId }: { clienteId: string }) {
   const custom: { id: string; label: string }[] = Array.isArray(check.__custom)
     ? check.__custom
     : [];
+  const labels: Record<string, string> =
+    check.__labels && typeof check.__labels === "object" ? check.__labels : {};
   const [novoItem, setNovoItem] = useState("");
+  const [editKey, setEditKey] = useState<string | null>(null);
+  const [editText, setEditText] = useState("");
+
+  function startEdit(itemKey: string, current: string) {
+    setEditKey(itemKey);
+    setEditText(current);
+  }
+
+  function saveEdit(itemKey: string) {
+    const texto = editText.trim();
+    setEditKey(null);
+    if (!texto) return;
+    setCheck((prev) => {
+      const l = prev.__labels && typeof prev.__labels === "object" ? prev.__labels : {};
+      const next: Record<string, any> = { ...prev, __labels: { ...l, [itemKey]: texto } };
+      // custom items store the label on the entry too
+      if (Array.isArray(prev.__custom) && itemKey.startsWith("custom_")) {
+        const id = itemKey.slice("custom_".length);
+        next.__custom = prev.__custom.map((x: { id: string; label: string }) =>
+          x.id === id ? { ...x, label: texto } : x,
+        );
+      }
+      persistir(next);
+      return next;
+    });
+  }
+
 
   function hideItem(key: string) {
     setCheck((prev) => {
@@ -196,41 +225,94 @@ export function DocumentosChecklist({ clienteId }: { clienteId: string }) {
     if (hidden.includes(itemKey)) return null;
     const has = temDoc(cat, label);
     const checked = has || check[itemKey] === true;
+    const display = labels[itemKey] ?? label;
+    const editing = editKey === itemKey;
     return (
       <div className="flex items-center gap-3 py-1.5">
         <Checkbox
           checked={checked}
           onCheckedChange={(v) => setManual(itemKey, v === true)}
         />
-        <span className={`flex-1 text-sm ${checked ? "text-foreground" : "text-muted-foreground"}`}>
-          {label}
-        </span>
-        {has && (
+        {editing ? (
+          <Input
+            autoFocus
+            value={editText}
+            onChange={(e) => setEditText(e.target.value)}
+            onBlur={() => saveEdit(itemKey)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                saveEdit(itemKey);
+              } else if (e.key === "Escape") {
+                setEditKey(null);
+              }
+            }}
+            className="h-8 flex-1"
+          />
+        ) : (
+          <span className={`flex-1 text-sm ${checked ? "text-foreground" : "text-muted-foreground"}`}>
+            {display}
+          </span>
+        )}
+        {has && !editing && (
           <span className="rounded bg-success/10 px-1.5 py-0.5 text-xs text-success">enviado</span>
         )}
-        <label className="inline-flex cursor-pointer items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-foreground hover:bg-accent">
-          {subindo === label ? (
-            <Loader2 className="size-3.5 animate-spin" />
-          ) : (
-            <Upload className="size-3.5" />
-          )}
-          Enviar
-          <input
-            type="file"
-            accept=".pdf,.jpg,.jpeg,.png"
-            className="sr-only"
-            onChange={(e) => enviar(e, cat, label)}
-            disabled={subindo === label}
-          />
-        </label>
-        <button
-          type="button"
-          onClick={onRemove ?? (() => hideItem(itemKey))}
-          aria-label="Remover item"
-          className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-        >
-          <Trash2 className="size-3.5" />
-        </button>
+        {!editing && (
+          <button
+            type="button"
+            onClick={() => startEdit(itemKey, display)}
+            aria-label="Editar item"
+            className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          >
+            <Pencil className="size-3.5" />
+          </button>
+        )}
+        {editing ? (
+          <>
+            <button
+              type="button"
+              onClick={() => saveEdit(itemKey)}
+              aria-label="Salvar item"
+              className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-success/10 hover:text-success"
+            >
+              <Check className="size-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setEditKey(null)}
+              aria-label="Cancelar edição"
+              className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            >
+              <X className="size-3.5" />
+            </button>
+          </>
+        ) : (
+          <>
+            <label className="inline-flex cursor-pointer items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-foreground hover:bg-accent">
+              {subindo === label ? (
+                <Loader2 className="size-3.5 animate-spin" />
+              ) : (
+                <Upload className="size-3.5" />
+              )}
+              Enviar
+              <input
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png"
+                className="sr-only"
+                onChange={(e) => enviar(e, cat, label)}
+                disabled={subindo === label}
+              />
+            </label>
+            <button
+              type="button"
+              onClick={onRemove ?? (() => hideItem(itemKey))}
+              aria-label="Remover item"
+              className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+            >
+              <Trash2 className="size-3.5" />
+            </button>
+          </>
+        )}
       </div>
     );
   }
