@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Building2, UserRound, Handshake, ChevronRight } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
+import { LandingFx } from "@/components/brand/LandingFx";
 import { Card } from "@/components/ui/card";
 
 export const Route = createFileRoute("/")({
