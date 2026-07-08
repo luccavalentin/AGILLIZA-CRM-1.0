@@ -455,7 +455,7 @@ export const getPanelDados = createServerFn({ method: "POST" })
         { label: "Simulações", valor: int(simRows.length), tone: "neutral" },
         { label: "Propostas", valor: int(enviadas.length), tone: "brand" },
         { label: "Taxa de aprovação", valor: pct(taxa), hint: `${aprovadas} aprovadas`, tone: "success" },
-        { label: "Contratos", valor: int(contratos), hint: brlCompacto(volumeContratos), tone: "success" },
+        { label: "Contratos emitidos", valor: int(contratos), hint: brlCompacto(volumeContratos), tone: "success" },
       ],
       minis: [
         { label: "Volume contratado", valor: brlCompacto(volumeContratos), tone: "success" },
