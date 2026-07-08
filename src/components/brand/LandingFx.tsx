@@ -88,7 +88,7 @@ export function LandingFx() {
       mx = (e.clientX - rect.left) / rect.width;
       my = (e.clientY - rect.top) / rect.height;
       // Cria ondas esparsas para não sobrecarregar.
-      if (!reduce && Math.random() < 0.18) {
+      if (!reduce && Math.random() < 0.3) {
         ripples.push({ x: mx, y: my, t: 0 });
         if (ripples.length > 14) ripples.shift();
       }
@@ -108,39 +108,40 @@ export function LandingFx() {
       const minDim = Math.min(w, h);
 
       for (const o of orbs) {
-        // Campo de fluxo: soma de senos para deriva orgânica.
+        // Campo de fluxo: soma de senos para deriva orgânica (movimento amplo).
         const t = reduce ? 0 : time * o.speed;
         const fx =
-          o.x + Math.sin(t + o.phase) * 0.08 + Math.cos(t * 0.6 + o.phase * 1.3) * 0.05;
+          o.x + Math.sin(t + o.phase) * 0.14 + Math.cos(t * 0.6 + o.phase * 1.3) * 0.09;
         const fy =
-          o.y + Math.cos(t * 0.9 + o.phase) * 0.08 + Math.sin(t * 0.5 + o.phase * 0.7) * 0.05;
+          o.y + Math.cos(t * 0.9 + o.phase) * 0.14 + Math.sin(t * 0.5 + o.phase * 0.7) * 0.09;
 
-        // Atração suave em direção ao mouse.
-        const px = (fx + (smx - fx) * 0.12) * w;
-        const py = (fy + (smy - fy) * 0.12) * h;
+        // Atração perceptível em direção ao mouse.
+        const px = (fx + (smx - fx) * 0.22) * w;
+        const py = (fy + (smy - fy) * 0.22) * h;
         const radius = o.r * minDim;
 
         const g = ctx.createRadialGradient(px, py, 0, px, py, radius);
-        g.addColorStop(0, `hsla(${o.hue}, ${o.sat}%, 58%, 0.20)`);
-        g.addColorStop(0.4, `hsla(${o.hue}, ${o.sat}%, 45%, 0.10)`);
-        g.addColorStop(1, `hsla(${o.hue}, ${o.sat}%, 40%, 0)`);
+        g.addColorStop(0, `hsla(${o.hue}, ${o.sat}%, 60%, 0.42)`);
+        g.addColorStop(0.4, `hsla(${o.hue}, ${o.sat}%, 48%, 0.20)`);
+        g.addColorStop(1, `hsla(${o.hue}, ${o.sat}%, 42%, 0)`);
         ctx.fillStyle = g;
         ctx.beginPath();
         ctx.arc(px, py, radius, 0, Math.PI * 2);
         ctx.fill();
       }
 
+
       // Ondas concêntricas onde o mouse passou.
       ctx.globalCompositeOperation = "screen";
       for (const rp of ripples) {
-        rp.t += 0.012;
-        const alpha = (1 - rp.t) * 0.22;
+        rp.t += 0.01;
+        const alpha = (1 - rp.t) * 0.4;
         if (alpha <= 0) continue;
-        const rad = rp.t * minDim * 0.5;
+        const rad = rp.t * minDim * 0.6;
         ctx.beginPath();
         ctx.arc(rp.x * w, rp.y * h, rad, 0, Math.PI * 2);
-        ctx.strokeStyle = `hsla(210, 90%, 72%, ${alpha})`;
-        ctx.lineWidth = 1.2;
+        ctx.strokeStyle = `hsla(205, 95%, 75%, ${alpha})`;
+        ctx.lineWidth = 1.6;
         ctx.stroke();
       }
       for (let i = ripples.length - 1; i >= 0; i--) {
