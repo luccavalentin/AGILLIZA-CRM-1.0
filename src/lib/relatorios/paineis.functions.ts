@@ -49,6 +49,7 @@ export interface PanelDados {
   chart: { titulo: string; subtitulo?: string; dados: PanelSerie[]; porBanco?: boolean };
   distribuicao?: PanelDistribuicao;
   ranking: { titulo: string; itens: { label: string; valor: number }[] };
+  recusadasPorBanco?: { titulo: string; itens: { label: string; valor: number }[] };
   alertas: PanelAlert[];
 }
 
