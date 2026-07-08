@@ -147,12 +147,17 @@ export function DocumentosGerais() {
   const corretoresFiltro = data?.corretores ?? [];
   const comerciaisBase = data?.comerciais ?? [];
 
-  const filtrando = busca.trim() !== "" || filtroImob !== "todas" || filtroCorr !== "todos";
+  const filtrando =
+    busca.trim() !== "" ||
+    filtroComercial !== "todos" ||
+    filtroImob !== "todas" ||
+    filtroCorr !== "todos";
 
   // Clientes após aplicar os filtros da tela inicial.
   const clientesFiltrados = useMemo(() => {
     const q = busca.trim().toLowerCase();
     return clientes.filter((c) => {
+      if (filtroComercial !== "todos" && c.comercial_id !== filtroComercial) return false;
       if (filtroImob === "comercial" && c.imobiliaria_id) return false;
       if (filtroImob !== "todas" && filtroImob !== "comercial" && c.imobiliaria_id !== filtroImob)
         return false;
@@ -166,7 +171,7 @@ export function DocumentosGerais() {
         return false;
       return true;
     });
-  }, [clientes, busca, filtroImob, filtroCorr]);
+  }, [clientes, busca, filtroComercial, filtroImob, filtroCorr]);
 
   // Árvore de pastas (hierarquia oficial):
   //   Comercial Agilliza → Imobiliária → Corretor → Cliente
