@@ -104,7 +104,7 @@ export function DetalheBancoDialog({
                 />
                 <InfoCard rotulo="Valor de compra e venda" valor={formatBRL(detalhe!.valorImovel)} />
                 <InfoCard rotulo="Despesas financiadas" valor={formatBRL(detalhe!.despesasFinanciadas)} />
-                <InfoCard rotulo="Tarifa de av. de garantia" valor={formatBRL(detalhe!.tarifaAvaliacao)} />
+                <InfoCard rotulo="Tarifa de av. de garantia (não financiada)" valor={formatBRL(detalhe!.tarifaAvaliacao)} />
                 <InfoCard
                   rotulo="Financiamento total"
                   valor={formatBRL(detalhe!.financiamentoTotal ?? detalhe!.valorFinanciamento)}

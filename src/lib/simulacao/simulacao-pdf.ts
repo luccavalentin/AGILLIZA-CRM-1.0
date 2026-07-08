@@ -220,10 +220,10 @@ function drawInfoFinanciamento(
     },
   ];
 
-  // Só exibe a tarifa de avaliação de garantia quando a API efetivamente retorna o valor.
+  // Tarifa de avaliação de garantia (custo à vista, não financiado).
   if (d?.tarifaAvaliacao != null) {
     itens.splice(2, 0, {
-      label: "Tarifa de av. de garantia",
+      label: "Tarifa de av. de garantia (não financiada)",
       valor: brlOuTraco(d.tarifaAvaliacao),
     });
   }

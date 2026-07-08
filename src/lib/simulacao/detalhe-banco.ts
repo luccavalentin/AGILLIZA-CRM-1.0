@@ -1,5 +1,11 @@
 import { parseBRL } from "@/lib/simulacao/format";
 
+/**
+ * Tarifa de avaliação de garantia padrão (R$ 1.950), aplicada quando o banco
+ * não informa o valor. É um custo à vista — não entra no valor financiado.
+ */
+export const TARIFA_AVALIACAO_GARANTIA_PADRAO = 1950;
+
 /** Uma parcela do plano de pagamento (valores já convertidos em número). */
 export interface ParcelaDetalhe {
   numero: number;
@@ -256,7 +262,8 @@ export function extrairDetalheBanco(raw: unknown): DetalheBanco | null {
       num(desc.guaranteeEvaluationFee) ??
       num(r.valorTarifaAvaliacaoBanco) ??
       num(r.valorTarifaAvaliacaoGarantiaBanco) ??
-      num(r.tarifaAvaliacaoGarantia),
+      num(r.tarifaAvaliacaoGarantia) ??
+      TARIFA_AVALIACAO_GARANTIA_PADRAO,
     iof: num(desc.iof?.totalValue ?? desc.iof?.value) ?? num(r.valorIofBanco),
     fgts: num(desc.fgtsAmount) ?? num(r.valorFgts),
     prazoMeses: prazo,
