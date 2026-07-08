@@ -84,19 +84,31 @@ function formatBytes(n: number | null): string {
 function Pagina() {
   const qc = useQueryClient();
   const backups = useQuery({ queryKey: ["admin-backups"], queryFn: () => listarBackups() });
+  const config = useQuery({ queryKey: ["admin-backup-config"], queryFn: () => obterConfigBackup() });
   const [baixando, setBaixando] = useState(false);
   const [baixandoDocs, setBaixandoDocs] = useState(false);
   const [progresso, setProgresso] = useState<ProgressoBackup | null>(null);
+  const [configAberta, setConfigAberta] = useState(false);
+  const [diasInput, setDiasInput] = useState<number>(2);
 
-  const criar = useMutation({
-    mutationFn: () => criarBackup(),
-    onSuccess: (r) => {
-      if (r.status === "concluido") toast.success("Backup gerado.");
-      else toast.error("Backup finalizou com erro.");
+  const retencaoDias = config.data?.retencaoDias ?? 2;
+  const podeConfigurar = config.data?.podeConfigurar ?? false;
+
+  useEffect(() => {
+    if (config.data) setDiasInput(config.data.retencaoDias);
+  }, [config.data]);
+
+  const salvarConfig = useMutation({
+    mutationFn: (dias: number) => salvarConfigBackup({ data: { retencaoDias: dias } }),
+    onSuccess: () => {
+      toast.success("Configuração de retenção salva.");
+      setConfigAberta(false);
+      qc.invalidateQueries({ queryKey: ["admin-backup-config"] });
       qc.invalidateQueries({ queryKey: ["admin-backups"] });
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao gerar backup."),
+    onError: (e: any) => toast.error(e?.message ?? "Falha ao salvar configuração."),
   });
+
 
   const excluir = useMutation({
     mutationFn: (id: string) => excluirBackup({ data: { id } }),
