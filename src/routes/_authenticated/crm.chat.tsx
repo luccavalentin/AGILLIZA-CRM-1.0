@@ -17,6 +17,8 @@ import {
   Check,
   ChevronDown,
   GitBranch,
+  Archive,
+  ArchiveRestore,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
@@ -58,6 +60,7 @@ import {
   getChatMeta,
   salvarChatMeta,
   overviewGestaoChat,
+  definirArquivamentoConversa,
   type ChatEtiqueta,
 } from "@/lib/crm/chat-gestao.functions";
 
@@ -76,7 +79,7 @@ const CORES = [
   { id: "slate", nome: "Cinza" },
 ] as const;
 
-type FiltroChat = "todas" | "nao_lidas" | "sla" | "lembrete";
+type FiltroChat = "todas" | "nao_lidas" | "sla" | "lembrete" | "arquivadas";
 
 function formatarHora(iso: string): string {
   return new Date(iso).toLocaleString("pt-BR", {
@@ -177,12 +180,13 @@ function Pagina() {
   const metasCliente = useMemo(() => {
     const m = new Map<
       string,
-      { sla_horas: number; lembrete_em: string | null }
+      { sla_horas: number; lembrete_em: string | null; arquivado: boolean }
     >();
     for (const meta of overview?.metas ?? []) {
       m.set(meta.cliente_id, {
         sla_horas: meta.sla_atualizacao_horas,
         lembrete_em: meta.lembrete_em,
+        arquivado: meta.arquivado ?? false,
       });
     }
     return m;
@@ -198,6 +202,9 @@ function Pagina() {
     const em = metasCliente.get(clienteId)?.lembrete_em;
     if (!em) return false;
     return new Date(em).getTime() <= agora;
+  }
+  function arquivada(clienteId: string) {
+    return metasCliente.get(clienteId)?.arquivado ?? false;
   }
 
   // Clientes com App habilitado (mesmo sem conversa ainda) para iniciar chat.
@@ -240,6 +247,12 @@ function Pagina() {
           (e) => e.id === etiquetaFiltro,
         ),
       );
+    }
+    // Arquivadas ficam ocultas exceto no filtro dedicado.
+    if (filtro === "arquivadas") {
+      lista = lista.filter((c) => arquivada(c.cliente_id));
+    } else {
+      lista = lista.filter((c) => !arquivada(c.cliente_id));
     }
     if (filtro === "nao_lidas") lista = lista.filter((c) => c.nao_lidas > 0);
     if (filtro === "sla")
@@ -293,13 +306,15 @@ function Pagina() {
 
 
   const contadores = useMemo(() => {
-    const lista = conversas ?? [];
+    const lista = (conversas ?? []).filter((c) => !arquivada(c.cliente_id));
     return {
       nao_lidas: lista.filter((c) => c.nao_lidas > 0).length,
       sla: lista.filter((c) =>
         slaEstourado(c.cliente_id, c.ultimo_remetente, c.ultima_em),
       ).length,
       lembrete: lista.filter((c) => lembreteDevido(c.cliente_id)).length,
+      arquivadas: (conversas ?? []).filter((c) => arquivada(c.cliente_id))
+        .length,
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversas, metasCliente]);
@@ -309,6 +324,7 @@ function Pagina() {
     { id: "nao_lidas", label: "Não lidas", count: contadores.nao_lidas },
     { id: "sla", label: "SLA estourado", count: contadores.sla },
     { id: "lembrete", label: "Lembretes", count: contadores.lembrete },
+    { id: "arquivadas", label: "Arquivadas", count: contadores.arquivadas },
   ];
 
   return (
@@ -603,6 +619,7 @@ function BarraGestao({
   const mover = useServerFn(moverEtapa);
   const getMeta = useServerFn(getChatMeta);
   const salvarMeta = useServerFn(salvarChatMeta);
+  const arquivar = useServerFn(definirArquivamentoConversa);
   const definirTags = useServerFn(definirEtiquetasCliente);
   const criarTag = useServerFn(criarEtiquetaChat);
   const excluirTag = useServerFn(excluirEtiquetaChat);
@@ -720,6 +737,24 @@ function BarraGestao({
       toast.error(e instanceof Error ? e.message : "Não foi possível salvar."),
   });
 
+  const estaArquivada = meta?.arquivado ?? false;
+  const alternarArquivo = useMutation({
+    mutationFn: () =>
+      arquivar({ data: { cliente_id: clienteId, arquivado: !estaArquivada } }),
+    onSuccess: () => {
+      toast.success(
+        estaArquivada ? "Conversa desarquivada." : "Conversa arquivada.",
+      );
+      qc.invalidateQueries({ queryKey: ["chat-meta", clienteId] });
+      qc.invalidateQueries({ queryKey: ["chat-overview"] });
+      qc.invalidateQueries({ queryKey: ["chat-overview-cliente", clienteId] });
+    },
+    onError: (e) =>
+      toast.error(
+        e instanceof Error ? e.message : "Não foi possível arquivar.",
+      ),
+  });
+
   const aplicadas = etiquetas.filter((e) => tagsAplicadas.has(e.id));
 
   const etapaAtual =
@@ -748,6 +783,23 @@ function BarraGestao({
               </p>
             )}
           </div>
+          <Button
+            variant={estaArquivada ? "default" : "outline"}
+            size="sm"
+            className="ml-auto h-8 shrink-0 gap-1.5 text-xs"
+            disabled={alternarArquivo.isPending}
+            onClick={() => alternarArquivo.mutate()}
+            title="O histórico é excluído automaticamente 2 meses após a emissão do contrato."
+          >
+            {alternarArquivo.isPending ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : estaArquivada ? (
+              <ArchiveRestore className="h-3.5 w-3.5" />
+            ) : (
+              <Archive className="h-3.5 w-3.5" />
+            )}
+            {estaArquivada ? "Desarquivar" : "Arquivar"}
+          </Button>
         </div>
 
         {/* Etiquetas */}

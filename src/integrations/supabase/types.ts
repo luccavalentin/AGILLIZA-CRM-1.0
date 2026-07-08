@@ -1585,6 +1585,8 @@ export type Database = {
       }
       crm_chat_meta: {
         Row: {
+          arquivado: boolean
+          arquivado_em: string | null
           cliente_id: string
           correspondente_id: string
           created_at: string
@@ -1594,6 +1596,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          arquivado?: boolean
+          arquivado_em?: string | null
           cliente_id: string
           correspondente_id: string
           created_at?: string
@@ -1603,6 +1607,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          arquivado?: boolean
+          arquivado_em?: string | null
           cliente_id?: string
           correspondente_id?: string
           created_at?: string
@@ -5267,6 +5273,7 @@ export type Database = {
         Returns: Json
       }
       portal_visao_geral: { Args: { _cid: string }; Returns: Json }
+      purgar_conversas_pos_contrato: { Args: never; Returns: number }
       registrar_auditoria:
         | {
             Args: {
