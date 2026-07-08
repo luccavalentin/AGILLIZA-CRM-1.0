@@ -210,6 +210,17 @@ function Pagina() {
 
 
   const termo = busca.trim().toLowerCase();
+  const termoContrato = contratoBusca.trim().toLowerCase();
+  const contratosFiltrados = (contratos ?? []).filter((ct) => {
+    if (termoContrato) {
+      const alvo = `${ct.nome_cliente ?? ""} ${ct.numero_cliente ?? ""} ${ct.numero_proposta ?? ""} ${ct.nome_banco ?? ""}`.toLowerCase();
+      if (!alvo.includes(termoContrato)) return false;
+    }
+    const dia = ct.contrato_emitido_em ?? null;
+    if (contratoDesde && (!dia || dia < contratoDesde)) return false;
+    if (contratoAte && (!dia || dia > contratoAte)) return false;
+    return true;
+  });
   const dadosFiltrados = (data ?? []).map((s) => ({
     ...s,
     clientes: termo
