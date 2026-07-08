@@ -118,6 +118,8 @@ export const explorarDocumentosGerais = createServerFn({ method: "GET" })
       const corrNome = corrId ? nomesParceiros.get(corrId) ?? "—" : null;
       const comId = c.responsavel_id ?? null;
       const comNome = comId ? nomesParceiros.get(comId) ?? "—" : null;
+      const anaId = c.criador_id ?? null;
+      const anaNome = anaId ? nomesParceiros.get(anaId) ?? "—" : null;
       if (imobId && imobNome) imobiliariasSet.set(imobId, imobNome);
       if (corrId && corrNome) corretoresSet.set(corrId, corrNome);
       return {
@@ -132,6 +134,8 @@ export const explorarDocumentosGerais = createServerFn({ method: "GET" })
         corretor_nome: corrNome,
         comercial_id: comId,
         comercial_nome: comNome,
+        analista_id: anaId,
+        analista_nome: anaNome,
       };
     });
 
