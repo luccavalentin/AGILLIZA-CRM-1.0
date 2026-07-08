@@ -418,6 +418,19 @@ function Pagina() {
                                 />
                               </div>
                             )}
+                            {stage.codigo === "contrato_emitido" && (
+                              <div className="flex items-center gap-2 border-t border-border/70 px-2.5 py-2">
+                                <CalendarCheck className="size-3.5 shrink-0 text-primary" />
+                                <span className="shrink-0 text-[11px] font-medium text-muted-foreground">
+                                  Emitido em
+                                </span>
+                                <span className="ml-auto text-[11px] font-semibold tabular-nums text-foreground">
+                                  {c.pipeline_atualizado_em
+                                    ? new Date(c.pipeline_atualizado_em).toLocaleDateString("pt-BR")
+                                    : "—"}
+                                </span>
+                              </div>
+                            )}
                           </div>
                         );
                       })
