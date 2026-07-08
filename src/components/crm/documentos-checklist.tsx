@@ -562,6 +562,18 @@ export function DocumentosChecklist({ clienteId }: { clienteId: string }) {
               </Select>
             </div>
           </div>
+          {custom
+            .filter((c) => c.cat === "imovel")
+            .map((item) => (
+              <DocItem
+                key={item.id}
+                itemKey={`custom_${item.id}`}
+                label={item.label}
+                cat="imovel"
+                onRemove={() => removeCustom(item.id)}
+              />
+            ))}
+          <AdicionarItem onAdd={(l) => addCustom(l, "imovel")} />
         </CardContent>
       </Card>
 
