@@ -525,14 +525,27 @@ function Pagina() {
                   type="button"
                   onClick={() => setArquivoAberto(true)}
                   title="Abrir arquivo de contratos emitidos"
-                  className="group/arq flex min-w-0 flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-primary/40 bg-primary/5 p-4 text-center shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary hover:bg-primary/10 hover:shadow-lg"
+                  className="group/arq relative flex min-w-0 flex-col items-center justify-center gap-3 overflow-hidden rounded-2xl border border-primary/25 bg-gradient-to-br from-primary/5 via-card to-primary/10 p-5 text-center shadow-sm ring-1 ring-inset ring-primary/5 transition-all duration-300 hover:-translate-y-1 hover:border-primary/50 hover:shadow-xl hover:ring-primary/20"
                 >
-                  <span className="grid size-11 place-items-center rounded-xl bg-primary/10 text-primary transition-colors group-hover/arq:bg-primary group-hover/arq:text-primary-foreground">
-                    <FolderClosed className="size-5" />
+                  <span className="pointer-events-none absolute -right-6 -top-6 size-20 rounded-full bg-primary/10 blur-2xl transition-opacity duration-300 group-hover/arq:opacity-80" />
+                  <span className="relative grid size-12 place-items-center rounded-2xl bg-primary/10 text-primary shadow-inner transition-all duration-300 group-hover/arq:scale-105 group-hover/arq:bg-primary group-hover/arq:text-primary-foreground group-hover/arq:shadow-lg">
+                    <FolderClosed className="size-6" />
+                    {totalArquivados > 0 && (
+                      <span className="absolute -right-1.5 -top-1.5 grid min-h-5 min-w-5 place-items-center rounded-full bg-primary px-1 text-[10px] font-bold leading-none text-primary-foreground shadow-md ring-2 ring-card">
+                        {totalArquivados}
+                      </span>
+                    )}
                   </span>
-                  <span className="text-sm font-semibold text-foreground">Contratos emitidos</span>
-                  <span className="text-[11px] text-muted-foreground">
-                    Arquivo dos contratos já emitidos
+                  <span className="relative flex flex-col gap-1">
+                    <span className="text-sm font-semibold text-foreground">Contratos emitidos</span>
+                    <span className="text-[11px] leading-snug text-muted-foreground">
+                      {totalArquivados > 0
+                        ? `${totalArquivados} contrato${totalArquivados > 1 ? "s" : ""} arquivado${totalArquivados > 1 ? "s" : ""}`
+                        : "Arquivo dos contratos já emitidos"}
+                    </span>
+                  </span>
+                  <span className="relative mt-0.5 inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-primary transition-colors group-hover/arq:bg-primary group-hover/arq:text-primary-foreground">
+                    Abrir arquivo
                   </span>
                 </button>
               )}
