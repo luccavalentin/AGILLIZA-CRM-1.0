@@ -287,8 +287,8 @@ function Pagina() {
 
                       {/* Banco + valor */}
                       <div className="mt-2.5 flex flex-wrap items-center justify-between gap-x-2 gap-y-1 border-t border-border/60 pt-2.5">
-                        <span className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
-                          <Building2 className="h-3.5 w-3.5 shrink-0" />
+                        <span className="flex min-w-0 items-center gap-1.5 text-xs font-medium text-foreground">
+                          <BancoLogo nome={c.nome_banco} size="xs" className="shrink-0" />
                           <span className="truncate">{c.nome_banco ?? "—"}</span>
                         </span>
                         <span className="shrink-0 text-sm font-bold tabular-nums text-foreground">
