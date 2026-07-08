@@ -1029,7 +1029,10 @@ export function ClienteForm({
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Documento de identidade e qualificação</CardTitle>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <FileText className="size-4 text-primary" /> Documento de identidade e qualificação
+          </CardTitle>
+
           <p className="text-sm text-muted-foreground">
             Dados exigidos pelos bancos para análise e aprovação do financiamento.
           </p>
