@@ -2,7 +2,7 @@ import { useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Sun, Moon, Monitor, Download, Trash2 } from "lucide-react";
+import { Sun, Moon, Monitor, Download, Trash2, UserRound } from "lucide-react";
 import { setTheme } from "@/lib/theme";
 import {
   clienteBaixarMeusDados,
