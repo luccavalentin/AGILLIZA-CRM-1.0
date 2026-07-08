@@ -11,6 +11,8 @@ export interface ArquivoNo {
   content_type: string | null;
   tamanho: number | null;
   created_at: string;
+  criado_por: string | null;
+  criado_por_nome: string | null;
 }
 
 export interface Migalha {
