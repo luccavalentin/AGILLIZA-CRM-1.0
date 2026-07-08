@@ -441,16 +441,19 @@ function Pagina() {
                             {stage.codigo === "contrato_emitido" && (
                               <div className="flex items-center gap-2 border-t border-border/70 px-2.5 py-2">
                                 <CalendarCheck className="size-3.5 shrink-0 text-primary" />
-                                <span className="shrink-0 text-[11px] font-medium text-muted-foreground">
+                                <label className="shrink-0 text-[11px] font-medium text-muted-foreground">
                                   Emitido em
-                                </span>
-                                <span className="ml-auto text-[11px] font-semibold tabular-nums text-foreground">
-                                  {c.pipeline_atualizado_em
-                                    ? new Date(c.pipeline_atualizado_em).toLocaleDateString("pt-BR")
-                                    : "—"}
-                                </span>
+                                </label>
+                                <Input
+                                  type="date"
+                                  value={c.contrato_emitido_em ?? ""}
+                                  onChange={(e) => salvarDataContrato(c.id, e.target.value)}
+                                  className="h-7 flex-1 px-2 text-xs"
+                                  title="Data de emissão do contrato (definida por você)"
+                                />
                               </div>
                             )}
+
                           </div>
                         );
                       })
