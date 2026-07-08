@@ -187,8 +187,13 @@ export const getPanelDados = createServerFn({ method: "POST" })
       // Propostas cujo movimento (criação) ocorre no período.
       const rows = rowsBrutas.filter((p) => dentroPeriodo(p.created_at));
       const enviadas = rows.filter((p) => p.status !== "rascunho");
-      const aprovadas = enviadas.filter((p) =>
-        ["credito_aprovado", "contrato_emitido", "registrado"].includes(p.status),
+      // Aprovadas: crédito aprovado (pela criação) + contratos (pela emissão),
+      // mantendo o funil monotônico (aprovadas >= contratos) e sem base mista.
+      const aprovadas = rowsBrutas.filter(
+        (p) =>
+          (p.status === "credito_aprovado" && dentroPeriodo(p.created_at)) ||
+          (["contrato_emitido", "registrado"].includes(p.status) &&
+            dentroPeriodo(p.contrato_emitido_em)),
       );
       // Contratos entram pela DATA DE EMISSÃO no período (independe da criação).
       const contratos = rowsBrutas.filter(
