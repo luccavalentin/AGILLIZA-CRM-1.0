@@ -49,6 +49,7 @@ export interface PanelDados {
   chart: { titulo: string; subtitulo?: string; dados: PanelSerie[]; porBanco?: boolean };
   distribuicao?: PanelDistribuicao;
   ranking: { titulo: string; itens: { label: string; valor: number }[] };
+  recusadasPorBanco?: { titulo: string; itens: { label: string; valor: number }[] };
   alertas: PanelAlert[];
 }
 
@@ -218,6 +219,17 @@ export const getPanelDados = createServerFn({ method: "POST" })
         .sort((a, b) => b[1] - a[1])
         .map(([s, v]) => ({ label: rotularStatus(s, PROP_LABEL), valor: v }));
 
+      // Recusadas por banco — cor/nome do banco + quantidade
+      const recusadasBancoMap = new Map<string, number>();
+      enviadas
+        .filter((p) => p.status === "credito_recusado")
+        .forEach((p) =>
+          recusadasBancoMap.set(
+            p.nome_banco ?? "—",
+            (recusadasBancoMap.get(p.nome_banco ?? "—") ?? 0) + 1,
+          ),
+        );
+
       // Evolução — propostas x contratos ao longo do tempo
       const propBucket = contarPorBucket(enviadas, buckets);
       const contratoBucket = contarPorBucket(contratos, buckets);
@@ -272,6 +284,9 @@ export const getPanelDados = createServerFn({ method: "POST" })
           titulo: chartPorBanco ? "Bancos" : "Status das simulações",
           itens: chartDados.slice(0, 6),
         },
+        recusadasPorBanco: recusadasBancoMap.size
+          ? { titulo: "Recusadas por banco", itens: topItens(recusadasBancoMap, 8) }
+          : undefined,
         alertas: simErro
           ? [
               {
@@ -299,7 +314,7 @@ export const getPanelDados = createServerFn({ method: "POST" })
       escopoEq(
         supabase
           .from("propostas")
-          .select("status,valor_financiamento_aprovado,valor_financiamento,created_at")
+          .select("status,valor_financiamento_aprovado,valor_financiamento,nome_banco,created_at")
           .gte("created_at", de)
           .lte("created_at", ateFim)
           .limit(5000),
@@ -365,6 +380,17 @@ export const getPanelDados = createServerFn({ method: "POST" })
     const distDados = [...distMapa.entries()]
       .sort((a, b) => b[1] - a[1])
       .map(([s, v]) => ({ label: rotularStatus(s, distLabelMap), valor: v }));
+
+    // Recusadas por banco — cor/nome do banco + quantidade
+    const recusadasBancoMap = new Map<string, number>();
+    propRows
+      .filter((p) => p.status === "credito_recusado")
+      .forEach((p) =>
+        recusadasBancoMap.set(
+          p.nome_banco ?? "—",
+          (recusadasBancoMap.get(p.nome_banco ?? "—") ?? 0) + 1,
+        ),
+      );
 
     // Evolução — simulações x propostas ao longo do tempo
     const simBucket = contarPorBucket(simRows, buckets);
@@ -442,6 +468,9 @@ export const getPanelDados = createServerFn({ method: "POST" })
         titulo: statusMap.size ? "Status de propostas" : "Status de simulações",
         itens: statusMap.size ? topItens(statusMap, 6) : topItens(simStatusMap, 6),
       },
+      recusadasPorBanco: recusadasBancoMap.size
+        ? { titulo: "Recusadas por banco", itens: topItens(recusadasBancoMap, 8) }
+        : undefined,
       alertas,
     };
   });
