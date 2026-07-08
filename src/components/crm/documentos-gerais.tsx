@@ -55,7 +55,8 @@ function fmtData(v: string | null | undefined) {
 
 const SEM_CORRETOR = "Sem corretor vinculado";
 const SEM_CORRETOR_KEY = "__sem_corretor__";
-const AVULSO_KEY = "__avulso__";
+const SEM_IMOB = "Sem imobiliária";
+const SEM_IMOB_KEY = "__sem_imob__";
 const SEM_COMERCIAL_KEY = "__sem_comercial__";
 
 // Palavras que permanecem minúsculas no meio do nome.
