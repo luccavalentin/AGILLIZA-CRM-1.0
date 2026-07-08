@@ -7,10 +7,13 @@ import {
   FolderOpen,
   ChevronRight,
   User,
+  Users,
   FileText,
   ClipboardList,
   Search,
   UserCog,
+  Briefcase,
+  IdCard,
   X,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
