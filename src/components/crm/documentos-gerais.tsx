@@ -44,6 +44,8 @@ import {
   type DGCliente,
 } from "@/lib/crm/documentos-gerais.functions";
 import { imprimirFichaPDF } from "@/lib/crm/ficha-pdf";
+import { GerenciadorArquivos } from "@/components/documentos/gerenciador-arquivos";
+import { FolderKanban, Users2 } from "lucide-react";
 
 const brl = (n: number | null | undefined) =>
   n == null ? "—" : n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -343,7 +345,21 @@ export function DocumentosGerais() {
 
 
   return (
-    <div className="space-y-4">
+    <Tabs defaultValue="clientes" className="space-y-4">
+      <TabsList className="h-auto flex-wrap gap-1 bg-muted/60 p-1">
+        <TabsTrigger value="clientes" className="gap-2 data-[state=active]:shadow-sm">
+          <Users2 className="h-4 w-4" /> Por cliente
+        </TabsTrigger>
+        <TabsTrigger value="arquivos" className="gap-2 data-[state=active]:shadow-sm">
+          <FolderKanban className="h-4 w-4" /> Pastas &amp; arquivos
+        </TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="arquivos" className="mt-0">
+        <GerenciadorArquivos mostrarCabecalho={false} />
+      </TabsContent>
+
+      <TabsContent value="clientes" className="mt-0 space-y-4">
       {/* Breadcrumb */}
       <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
         <button className="hover:text-foreground" onClick={() => setCaminho([])}>
@@ -500,7 +516,8 @@ export function DocumentosGerais() {
           )}
         </div>
       )}
-    </div>
+      </TabsContent>
+    </Tabs>
   );
 }
 
