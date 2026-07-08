@@ -244,79 +244,17 @@
   border-color: rgba(200, 16, 46, 0.7);
 }
 
-/* Camada de efeito interativo (segue o mouse) sobre o fundo da landing. */
+/* Camada de efeito interativo (canvas) sobre o fundo da landing. */
 .landing-fx {
   position: absolute;
   inset: 0;
   z-index: -1;
-  overflow: hidden;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
-  --mx: 50%;
-  --my: 40%;
-  --dx: 0px;
-  --dy: 0px;
+  opacity: 0.9;
 }
-/* Brilho que segue diretamente o cursor. */
-.landing-fx__cursor {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(
-    36rem 36rem at var(--mx) var(--my),
-    rgba(120, 170, 255, 0.18) 0%,
-    rgba(80, 120, 220, 0.08) 35%,
-    transparent 70%
-  );
-  transition: background 0.05s linear;
-}
-/* Blobs de luz que flutuam e reagem ao mouse (parallax + deriva contínua). */
-.landing-fx__blob {
-  position: absolute;
-  width: 42rem;
-  height: 42rem;
-  border-radius: 50%;
-  filter: blur(70px);
-  opacity: 0.55;
-  mix-blend-mode: screen;
-  will-change: transform;
-}
-.landing-fx__blob--a {
-  top: -12rem;
-  left: -6rem;
-  background: radial-gradient(circle at 30% 30%, rgba(31, 78, 143, 0.85), transparent 65%);
-  transform: translate(var(--dx), var(--dy));
-  animation: landing-float-a 18s ease-in-out infinite;
-}
-.landing-fx__blob--b {
-  bottom: -14rem;
-  right: -8rem;
-  background: radial-gradient(circle at 60% 40%, rgba(0, 30, 200, 0.7), transparent 65%);
-  transform: translate(calc(var(--dx) * -1), calc(var(--dy) * -1));
-  animation: landing-float-b 22s ease-in-out infinite;
-}
-.landing-fx__blob--c {
-  top: 30%;
-  left: 45%;
-  width: 30rem;
-  height: 30rem;
-  background: radial-gradient(circle at 50% 50%, rgba(200, 16, 46, 0.35), transparent 65%);
-  transform: translate(calc(var(--dx) * 0.6), calc(var(--dy) * 0.6));
-  animation: landing-float-c 26s ease-in-out infinite;
-}
-@keyframes landing-float-a {
-  0%, 100% { margin: 0 0; }
-  50% { margin: 3rem 2rem; }
-}
-@keyframes landing-float-b {
-  0%, 100% { margin: 0 0; }
-  50% { margin: -3rem -2.5rem; }
-}
-@keyframes landing-float-c {
-  0%, 100% { margin: 0 0; }
-  50% { margin: 2rem -3rem; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .landing-fx__blob { animation: none; }
-}
+
 
 
 /* Scrollbar discreta dentro do menu — sem barra branca feia. */
