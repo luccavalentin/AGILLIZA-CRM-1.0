@@ -5,8 +5,6 @@ import { useServerFn } from "@tanstack/react-start";
 import {
   Search,
   Calculator,
-  Zap,
-  FileText,
   MoreHorizontal,
   Eye,
   Copy,
@@ -159,9 +157,6 @@ function Pagina() {
             className="group h-11 gap-2.5 border-border/70 bg-card px-4 shadow-sm transition-all hover:border-primary/40 hover:bg-accent hover:shadow-md"
           >
             <Link to="/operacional/simulacoes/nova" search={{ modo: "rapida" }}>
-              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-primary transition-colors group-hover:bg-primary/15">
-                <Zap className="h-4 w-4" />
-              </span>
               <span className="flex flex-col items-start leading-tight">
                 <span className="text-sm font-semibold">Simulação rápida</span>
                 <span className="text-[11px] font-normal text-muted-foreground">
@@ -175,9 +170,6 @@ function Pagina() {
             className="group h-11 gap-2.5 px-4 shadow-sm transition-all hover:shadow-md"
           >
             <Link to="/operacional/simulacoes/completa">
-              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary-foreground/15 transition-colors group-hover:bg-primary-foreground/25">
-                <FileText className="h-4 w-4" />
-              </span>
               <span className="flex flex-col items-start leading-tight">
                 <span className="text-sm font-semibold">Simulação completa</span>
                 <span className="text-[11px] font-normal text-primary-foreground/70">
