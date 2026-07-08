@@ -1076,7 +1076,22 @@ export function DocumentosChecklist({ clienteId }: { clienteId: string }) {
           <AdicionarItem onAdd={(l) => addCustom(l, "outros")} />
         </CardContent>
       </Card>
+
+      {/* CHECKLISTS PERSONALIZADOS (grupos configuráveis + drag & drop) */}
+      <ChecklistsPersonalizados
+        grupos={grupos}
+        addGrupo={addGrupo}
+        renameGrupo={renameGrupo}
+        removeGrupo={removeGrupo}
+        addItem={addItemGrupo}
+        toggleItem={toggleItemGrupo}
+        renameItem={renameItemGrupo}
+        removeItem={removeItemGrupo}
+        moverGrupo={moverGrupo}
+        moverItem={moverItem}
+      />
     </div>
+
 
   );
 }
