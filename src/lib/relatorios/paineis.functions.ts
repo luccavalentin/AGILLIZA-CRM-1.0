@@ -353,7 +353,9 @@ export const getPanelDados = createServerFn({ method: "POST" })
     if (tk.error) throw new Error(tk.error.message);
 
     const simRows = (sims.data ?? []) as any[];
-    const propRows = (props.data ?? []) as any[];
+    const propRowsBrutas = (props.data ?? []) as any[];
+    // Propostas criadas no período (base das métricas por criação).
+    const propRows = propRowsBrutas.filter((p) => dentroPeriodo(p.created_at));
     const demRows = (dem.data ?? []) as any[];
     const tkRows = (tk.data ?? []) as any[];
     const agora = new Date();
@@ -365,8 +367,11 @@ export const getPanelDados = createServerFn({ method: "POST" })
     const aprovadas = propRows.filter((p) =>
       ["credito_aprovado", "contrato_emitido", "registrado"].includes(p.status),
     ).length;
-    const contratosRows = propRows.filter((p) =>
-      ["contrato_emitido", "registrado"].includes(p.status),
+    // Contratos entram pela DATA DE EMISSÃO no período (independe da criação).
+    const contratosRows = propRowsBrutas.filter(
+      (p) =>
+        ["contrato_emitido", "registrado"].includes(p.status) &&
+        dentroPeriodo(p.contrato_emitido_em),
     );
     const contratos = contratosRows.length;
     const volumeContratos = contratosRows.reduce(
