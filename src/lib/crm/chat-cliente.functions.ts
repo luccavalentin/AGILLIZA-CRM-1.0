@@ -184,15 +184,17 @@ export const listarChatCliente = createServerFn({ method: "GET" })
     const { supabase } = context;
     const { data: rows, error } = await supabase
       .from("cliente_app_mensagens")
-      .select("id, remetente_tipo, remetente_id, mensagem, anexo_url, lida_em, criada_em")
+      .select(
+        "id, remetente_tipo, remetente_id, mensagem, anexo_url, lida_em, criada_em, editada_em, excluida_em, responde_a",
+      )
       .eq("cliente_id", data.cliente_id)
       .order("criada_em", { ascending: true })
       .limit(500);
     if (error) throw new Error(error.message);
-    const lista = (rows ?? []) as Omit<
+    const lista = (rows ?? []) as (Omit<
       ChatMensagem,
-      "remetente_nome" | "anexo_nome" | "anexo_is_imagem"
-    >[];
+      "remetente_nome" | "anexo_nome" | "anexo_is_imagem" | "citacao"
+    >)[];
 
     // Nome completo dos membros da equipe que enviaram mensagens
     const idsTime = Array.from(
@@ -208,12 +210,31 @@ export const listarChatCliente = createServerFn({ method: "GET" })
       for (const p of perfis ?? []) nomes.set(p.id, p.nome ?? "");
     }
 
+    // Mapa id -> mensagem (para prévia de citações/respostas).
+    const porId = new Map<string, (typeof lista)[number]>();
+    for (const m of lista) porId.set(m.id, m);
+    function autorDe(m: (typeof lista)[number]): string {
+      if (m.remetente_tipo === "time") return nomes.get(m.remetente_id ?? "") || "Equipe";
+      return "Cliente";
+    }
+
     const comAnexo = await resolverAnexosChat(supabase, lista);
-    return comAnexo.map((m) => ({
-      ...m,
-      remetente_nome:
-        m.remetente_tipo === "time" ? (nomes.get(m.remetente_id ?? "") ?? null) : null,
-    }));
+    return comAnexo.map((m) => {
+      const alvo = m.responde_a ? porId.get(m.responde_a) : null;
+      return {
+        ...m,
+        remetente_nome:
+          m.remetente_tipo === "time" ? (nomes.get(m.remetente_id ?? "") ?? null) : null,
+        citacao: alvo
+          ? {
+              autor: autorDe(alvo),
+              texto: alvo.excluida_em
+                ? "Mensagem excluída"
+                : (alvo.mensagem?.trim() || "Anexo"),
+            }
+          : null,
+      };
+    });
   });
 
 /** Envia uma mensagem ao cliente como time e notifica o cliente no App. */
