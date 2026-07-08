@@ -19,6 +19,9 @@ export interface DGCliente {
   corretor_nome: string | null;
   comercial_id: string | null;
   comercial_nome: string | null;
+  /** Analista que criou o cadastro (marcado como etiqueta na pasta). */
+  analista_id: string | null;
+  analista_nome: string | null;
 }
 
 export interface DGOpcaoFiltro {
@@ -47,7 +50,7 @@ export const explorarDocumentosGerais = createServerFn({ method: "GET" })
     // Clientes acessíveis (RLS aplica o escopo do usuário).
     let clientesQuery = supabase
       .from("clientes")
-      .select("id, nome, numero_cliente, documento, responsavel_id")
+      .select("id, nome, numero_cliente, documento, responsavel_id, criador_id")
       .eq("ativo", true)
       .order("nome", { ascending: true });
     if (corr) clientesQuery = clientesQuery.eq("correspondente_id", corr);
@@ -69,7 +72,10 @@ export const explorarDocumentosGerais = createServerFn({ method: "GET" })
     // Nomes de parceiros (imobiliária/corretor) e comerciais (responsáveis).
     const idsPerfis = new Set<string>();
     for (const v of vinculos ?? []) if (v.parceiro_id) idsPerfis.add(v.parceiro_id);
-    for (const c of listaClientes) if (c.responsavel_id) idsPerfis.add(c.responsavel_id);
+    for (const c of listaClientes) {
+      if (c.responsavel_id) idsPerfis.add(c.responsavel_id);
+      if (c.criador_id) idsPerfis.add(c.criador_id);
+    }
     let nomesParceiros = new Map<string, string>();
     if (idsPerfis.size > 0) {
       const { data: perfis } = await supabase
@@ -112,6 +118,8 @@ export const explorarDocumentosGerais = createServerFn({ method: "GET" })
       const corrNome = corrId ? nomesParceiros.get(corrId) ?? "—" : null;
       const comId = c.responsavel_id ?? null;
       const comNome = comId ? nomesParceiros.get(comId) ?? "—" : null;
+      const anaId = c.criador_id ?? null;
+      const anaNome = anaId ? nomesParceiros.get(anaId) ?? "—" : null;
       if (imobId && imobNome) imobiliariasSet.set(imobId, imobNome);
       if (corrId && corrNome) corretoresSet.set(corrId, corrNome);
       return {
@@ -126,6 +134,8 @@ export const explorarDocumentosGerais = createServerFn({ method: "GET" })
         corretor_nome: corrNome,
         comercial_id: comId,
         comercial_nome: comNome,
+        analista_id: anaId,
+        analista_nome: anaNome,
       };
     });
 
