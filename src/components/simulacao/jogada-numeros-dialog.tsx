@@ -29,7 +29,7 @@ import { formatBRL } from "@/lib/simulacao/format";
  * mais o compra e venda para cobrir despesas de cartório/ITBI.
  *   Ex.: imóvel R$ 300 mil, sem entrada, LTV 80%, custas 5% → divisor 0,75.
  *   valor ajustado = 300.000 / 0,75 = 400.000
- *   entrada de fachada = 400.000 - 300.000 = 100.000 | financiado 300.000
+ *   novo valor de entrada = 400.000 - 300.000 = 100.000 | financiado 300.000
  */
 export function JogadaNumerosDialog({
   valorImovelAtual,
