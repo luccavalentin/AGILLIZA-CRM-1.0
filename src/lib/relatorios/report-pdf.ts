@@ -92,8 +92,10 @@ export function exportPDF(
   firstColLogos?: Record<string, { logo: string; ratio: number }>,
   /** Callback opcional para anexar páginas extras (ex.: detalhamento por banco) antes da paginação. */
   appendPages?: (doc: jsPDF, pageW: number, pageH: number) => void,
+  /** Orientação da página (padrão: landscape). */
+  orientation: "landscape" | "portrait" = "landscape",
 ) {
-  const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
+  const doc = new jsPDF({ orientation, unit: "pt", format: "a4" });
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
 
