@@ -326,7 +326,20 @@ function Pagina() {
         </div>
       </div>
 
+      {/* Gestão da conversa — barra horizontal no topo (acima das colunas) */}
+      {alvoAtual && (
+        <BarraGestao
+          key={alvoAtual.cliente_id}
+          clienteId={alvoAtual.cliente_id}
+          nome={alvoAtual.nome}
+          documento={alvoAtual.documento}
+          contexto={alvoAtual.etapa_nome ?? null}
+          etiquetas={etiquetas ?? []}
+        />
+      )}
+
       <div className="grid gap-4 lg:grid-cols-[22rem_1fr]">
+
         {/* Lista de conversas — no mobile some quando uma conversa é aberta */}
         <Card
           className={cn(
