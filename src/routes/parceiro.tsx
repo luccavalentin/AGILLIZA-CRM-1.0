@@ -93,6 +93,11 @@ function PortalParceiro() {
       portalDescricao="Entre com e-mail e senha fornecidos pelo correspondente."
       bannerTitulo="Traga clientes e acompanhe a esteira."
       bannerSubtitulo="Portal exclusivo para imobiliárias e corretores parceiros."
+      recursos={[
+        { titulo: "Indicações", descricao: "Cadastre e acompanhe seus clientes." },
+        { titulo: "Esteira", descricao: "Veja cada etapa até a assinatura." },
+        { titulo: "Comissões", descricao: "Acompanhe seus repasses e recebíveis." },
+      ]}
     >
 
 

@@ -67,6 +67,11 @@ function PortalCliente() {
       portalDescricao="Acesse com seus dados para acompanhar o processo."
       bannerTitulo="Acompanhe seu financiamento em tempo real."
       bannerSubtitulo="Consulte o andamento do seu processo, documentos e próximos passos."
+      recursos={[
+        { titulo: "Andamento", descricao: "Veja cada etapa do seu financiamento." },
+        { titulo: "Documentos", descricao: "Envie e consulte tudo pelo celular." },
+        { titulo: "Atendimento", descricao: "Fale com seu consultor pelo chat." },
+      ]}
     >
 
 
