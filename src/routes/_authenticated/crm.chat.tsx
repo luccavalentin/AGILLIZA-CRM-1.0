@@ -619,6 +619,7 @@ function BarraGestao({
   const mover = useServerFn(moverEtapa);
   const getMeta = useServerFn(getChatMeta);
   const salvarMeta = useServerFn(salvarChatMeta);
+  const arquivar = useServerFn(definirArquivamentoConversa);
   const definirTags = useServerFn(definirEtiquetasCliente);
   const criarTag = useServerFn(criarEtiquetaChat);
   const excluirTag = useServerFn(excluirEtiquetaChat);
