@@ -1144,7 +1144,10 @@ export function ClienteForm({
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Endereço</CardTitle>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <MapPin className="size-4 text-primary" /> Endereço
+          </CardTitle>
+
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
