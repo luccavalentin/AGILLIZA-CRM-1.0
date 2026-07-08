@@ -119,14 +119,20 @@ export const explorarDocumentosGerais = createServerFn({ method: "GET" })
       nomesParceiros = new Map((perfis ?? []).map((p: any) => [p.id, p.nome ?? "—"]));
     }
 
-    // Contagem de documentos por cliente.
-    const { data: docs } = await supabase
-      .from("cliente_documentos")
-      .select("cliente_id")
-      .in("cliente_id", idsClientes);
+    // Contagem de documentos por cliente (paginada para não estourar o
+    // limite padrão de 1000 linhas, que subestimaria os totais).
     const totalDocs = new Map<string, number>();
-    for (const d of docs ?? []) {
-      totalDocs.set(d.cliente_id, (totalDocs.get(d.cliente_id) ?? 0) + 1);
+    for (let inicio = 0; ; inicio += 1000) {
+      const { data: docs } = await supabase
+        .from("cliente_documentos")
+        .select("cliente_id")
+        .in("cliente_id", idsClientes)
+        .range(inicio, inicio + 999);
+      const lote = docs ?? [];
+      for (const d of lote) {
+        totalDocs.set(d.cliente_id, (totalDocs.get(d.cliente_id) ?? 0) + 1);
+      }
+      if (lote.length < 1000) break;
     }
 
     // Índice: cliente_id -> { comercial, imobiliaria, corretor } (primeiro vínculo de cada tipo).
