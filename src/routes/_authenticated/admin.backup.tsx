@@ -170,8 +170,8 @@ function Pagina() {
           <div>
             <h1 className="text-xl font-semibold">Backup</h1>
             <p className="text-sm text-muted-foreground">
-              Baixe os dados em Excel, todos os documentos em ZIP organizado por pastas, ou
-              registre snapshots lógicos.
+              Baixe os dados do sistema em uma planilha Excel profissional e formatada, ou todos
+              os documentos em ZIP organizado por pastas.
             </p>
           </div>
         </div>
@@ -184,12 +184,20 @@ function Pagina() {
             <FolderArchive className="mr-2 h-4 w-4" />
             {baixandoDocs ? "Gerando ZIP…" : "Baixar documentos (ZIP)"}
           </Button>
-          <Button variant="outline" disabled={criar.isPending} onClick={() => criar.mutate()}>
-            <Play className="mr-2 h-4 w-4" />
-            {criar.isPending ? "Gerando…" : "Gerar snapshot"}
-          </Button>
+          {podeConfigurar ? (
+            <Button
+              variant="outline"
+              size="icon"
+              aria-label="Configurar retenção de backup"
+              title="Configurar retenção"
+              onClick={() => setConfigAberta(true)}
+            >
+              <Settings className="h-4 w-4" />
+            </Button>
+          ) : null}
         </div>
       </div>
+
 
       {baixandoDocs && progresso ? (
         <div className="rounded-lg border border-border bg-card p-4">
