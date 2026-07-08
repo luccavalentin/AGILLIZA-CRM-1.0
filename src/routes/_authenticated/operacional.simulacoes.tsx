@@ -12,6 +12,10 @@ import {
   Download,
   Pencil,
   Send,
+  ListChecks,
+  Building2,
+  Clock,
+  Wallet,
 } from "lucide-react";
 import { toast } from "sonner";
 import { assertModuloPermitido } from "@/lib/route-guards";
