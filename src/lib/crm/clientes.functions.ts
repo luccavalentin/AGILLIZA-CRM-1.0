@@ -457,6 +457,8 @@ export const listarPainel = createServerFn({ method: "GET" })
           vistoria_agendada_em: r.vistoria_agendada_em ?? null,
           vistoria_concluida_em: r.vistoria_concluida_em ?? null,
           pipeline_atualizado_em: r.cliente_pipeline?.ultima_atualizacao_em ?? null,
+          contrato_emitido_em: r.contrato_emitido_em ?? null,
+
 
         })),
     }));
