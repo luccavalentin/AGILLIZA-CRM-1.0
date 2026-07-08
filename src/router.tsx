@@ -38,6 +38,12 @@ export const getRouter = () => {
     routeTree,
     context: { queryClient },
     scrollRestoration: true,
+    // Pré-carrega o código e os dados da tela assim que o mouse passa sobre o
+    // link (ou ao tocar, no mobile). Isso torna a troca entre menus quase
+    // instantânea, pois o chunk da rota já chega antes do clique.
+    defaultPreload: "intent",
+    defaultPreloadDelay: 30,
+    // Deixa o TanStack Query controlar a validade do cache dos loaders.
     defaultPreloadStaleTime: 0,
   });
 
