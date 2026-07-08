@@ -329,6 +329,7 @@ function Pagina() {
         {w.valor_financiamento > 0 && w.prazo_meses >= PRAZO_MIN && (
           <DicaRendaMinima
             valorFinanciamento={w.valor_financiamento}
+            valorImovel={w.valor_imovel}
             prazoMeses={w.prazo_meses}
             taxaAno={melhorTaxaAno}
             sistema="S"

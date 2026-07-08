@@ -37,8 +37,11 @@ export function rendaMinimaParaParcela(
 }
 
 /**
- * Avalia a renda mínima exigida para o valor de financiamento informado e,
- * se a renda for informada, indica se está dentro do exigido.
+ * Avalia a renda mínima necessária para financiar o IMÓVEL informado.
+ *
+ * A base do cálculo é o valor do imóvel (quanto de renda a pessoa precisaria
+ * ter para financiar aquele imóvel). Quando o valor do imóvel não é informado,
+ * cai para o valor de financiamento como aproximação.
  */
 export function avaliarRendaMinima(params: {
   valor_financiamento: number;
@@ -46,11 +49,21 @@ export function avaliarRendaMinima(params: {
   taxa_ano: number;
   sistema: SistemaAmortizacao;
   renda_informada?: number | null;
+  /** Valor do imóvel — base preferencial para a renda mínima. */
+  valor_imovel?: number | null;
 }): AvaliacaoRenda | null {
-  const { valor_financiamento, prazo_meses, taxa_ano, sistema, renda_informada } = params;
+  const { valor_financiamento, prazo_meses, taxa_ano, sistema, renda_informada, valor_imovel } =
+    params;
+
+  // Base do cálculo: valor do imóvel (preferencial) ou valor financiado.
+  const base =
+    Number.isFinite(valor_imovel) && (valor_imovel ?? 0) > 0
+      ? (valor_imovel as number)
+      : valor_financiamento;
+
   if (
-    !Number.isFinite(valor_financiamento) ||
-    valor_financiamento <= 0 ||
+    !Number.isFinite(base) ||
+    base <= 0 ||
     !Number.isFinite(prazo_meses) ||
     prazo_meses <= 0
   ) {
@@ -58,7 +71,7 @@ export function avaliarRendaMinima(params: {
   }
 
   const { primeira_parcela } = calcularSimulacao({
-    valor_financiamento,
+    valor_financiamento: base,
     prazo_meses,
     taxa_ano,
     sistema,

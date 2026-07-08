@@ -175,6 +175,7 @@ export function SecaoTitular({ ctx }: { ctx: SimulacaoCompletaCtx }) {
       {f.valor_financiamento > 0 && f.prazo >= 60 && (
         <DicaRendaMinima
           valorFinanciamento={f.valor_financiamento}
+          valorImovel={f.valor_imovel}
           prazoMeses={f.prazo}
           taxaAno={melhorTaxaAno}
           sistema={f.sistema_amortizacao === "P" ? "P" : "S"}
