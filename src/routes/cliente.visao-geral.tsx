@@ -9,6 +9,7 @@ import {
   ListChecks,
   FileSignature,
   TrendingUp,
+  Gauge,
 } from "lucide-react";
 import {
   RadialBarChart,
