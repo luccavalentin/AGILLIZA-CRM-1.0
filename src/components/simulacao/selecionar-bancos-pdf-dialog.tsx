@@ -11,7 +11,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { formatBRL } from "@/lib/simulacao/format";
-import { baixarSimulacaoPDF } from "@/lib/simulacao/simulacao-pdf";
 
 interface Props {
   open: boolean;
@@ -50,7 +49,8 @@ export function SelecionarBancosPdfDialog({ open, onOpenChange, simulacao, banco
     setSelecionados(novo);
   }
 
-  function gerar() {
+  async function gerar() {
+    const { baixarSimulacaoPDF } = await import("@/lib/simulacao/simulacao-pdf");
     baixarSimulacaoPDF({ simulacao, bancos: escolhidos });
     onOpenChange(false);
   }

@@ -4,8 +4,6 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { registrarExport } from "@/lib/relatorios/reports.functions";
-import { exportXLSX } from "@/lib/relatorios/report-xlsx";
-import { exportPDF } from "@/lib/relatorios/report-pdf";
 import type { ReportResult, ReportFiltros } from "@/lib/relatorios/shared";
 
 /** Botões de exportação PDF/XLSX que registram histórico e auditoria. */
@@ -41,6 +39,7 @@ export function ExportButtons({
   async function onPDF() {
     setBusy(true);
     try {
+      const { exportPDF } = await import("@/lib/relatorios/report-pdf");
       exportPDF(result.titulo, result.descricao, meta, result.kpis, result.columns, result.rows);
       await log("pdf");
     } catch {
@@ -53,6 +52,7 @@ export function ExportButtons({
   async function onXLSX() {
     setBusy(true);
     try {
+      const { exportXLSX } = await import("@/lib/relatorios/report-xlsx");
       exportXLSX(codigo, result.titulo, meta, result.columns, result.rows);
       await log("xlsx");
     } catch {

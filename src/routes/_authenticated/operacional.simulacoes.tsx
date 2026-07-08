@@ -21,7 +21,6 @@ import {
   obterSimulacao,
 } from "@/lib/simulacao/simulacoes.functions";
 import { criarProposta } from "@/lib/propostas/propostas.functions";
-import { baixarSimulacaoPDF, baixarSimulacaoDetalhadaPDF } from "@/lib/simulacao/simulacao-pdf";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -127,6 +126,7 @@ function Pagina() {
   async function handleBaixarComparativo(id: string) {
     try {
       const dados = await obter({ data: { id } });
+      const { baixarSimulacaoPDF } = await import("@/lib/simulacao/simulacao-pdf");
       baixarSimulacaoPDF({ simulacao: dados.simulacao, bancos: dados.bancos });
     } catch {
       toast.error("Não foi possível gerar o PDF da simulação.");
@@ -136,6 +136,7 @@ function Pagina() {
   async function handleBaixarDetalhada(id: string) {
     try {
       const dados = await obter({ data: { id } });
+      const { baixarSimulacaoDetalhadaPDF } = await import("@/lib/simulacao/simulacao-pdf");
       baixarSimulacaoDetalhadaPDF({ simulacao: dados.simulacao, bancos: dados.bancos });
     } catch {
       toast.error("Não foi possível gerar o PDF da simulação.");

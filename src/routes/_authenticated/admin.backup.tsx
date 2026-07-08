@@ -41,7 +41,6 @@ import {
   excluirBackup,
   exportarBackupCompleto,
 } from "@/lib/admin/backup.functions";
-import { exportarBackupXLSX } from "@/lib/admin/backup-xlsx";
 import { montarInventarioDocumentos } from "@/lib/admin/backup-documentos.functions";
 import { baixarDocumentosZip, type ProgressoBackup } from "@/lib/admin/backup-documentos-zip";
 
@@ -100,6 +99,7 @@ function Pagina() {
     setBaixando(true);
     try {
       const dados = await exportarBackupCompleto();
+      const { exportarBackupXLSX } = await import("@/lib/admin/backup-xlsx");
       exportarBackupXLSX(dados);
       toast.success("Backup completo exportado em Excel.");
     } catch (e: any) {
