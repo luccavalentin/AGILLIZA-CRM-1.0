@@ -375,7 +375,7 @@ function Pagina() {
                     onBaixarComparativo={() => handleBaixarComparativo(s.id)}
                     onBaixarDetalhada={() => handleBaixarDetalhada(s.id)}
                     onDuplicar={() => handleDuplicar(s.id)}
-                    onEnviarProposta={() => handleEnviarProposta(s.id)}
+                    onEnviarProposta={() => handleEnviarProposta(s.id, s.numero_simulacao)}
                     onExcluir={() => handleExcluir(s.id)}
                     numero={s.numero_simulacao}
                   />
@@ -426,7 +426,7 @@ function Pagina() {
                   onBaixarComparativo={() => handleBaixarComparativo(s.id)}
                   onBaixarDetalhada={() => handleBaixarDetalhada(s.id)}
                   onDuplicar={() => handleDuplicar(s.id)}
-                  onEnviarProposta={() => handleEnviarProposta(s.id)}
+                  onEnviarProposta={() => handleEnviarProposta(s.id, s.numero_simulacao)}
                   onExcluir={() => handleExcluir(s.id)}
                   numero={s.numero_simulacao}
                 />
