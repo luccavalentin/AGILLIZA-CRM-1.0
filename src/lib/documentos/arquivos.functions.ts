@@ -279,19 +279,28 @@ export const excluirNo = createServerFn({ method: "POST" })
     if (raiz?.storage_path) pathsStorage.push(raiz.storage_path);
 
     for (let i = 0; i < 100 && fronteira.length > 0; i++) {
-      const { data: filhos } = await supabase
-        .from("arquivos_nos")
-        .select("id, storage_path")
-        .eq("correspondente_id", corr)
-        .in("parent_id", fronteira);
-      const lista = (filhos ?? []) as { id: string; storage_path: string | null }[];
-      if (lista.length === 0) break;
-      fronteira = lista.map((f) => f.id);
-      for (const f of lista) {
+      // Pagina cada nível: sem isso, um nível com >1000 filhos deixaria IDs
+      // de fora, gerando arquivos órfãos no storage e nós não excluídos.
+      const nivel: { id: string; storage_path: string | null }[] = [];
+      for (let inicio = 0; ; inicio += 1000) {
+        const { data: filhos } = await supabase
+          .from("arquivos_nos")
+          .select("id, storage_path")
+          .eq("correspondente_id", corr)
+          .in("parent_id", fronteira)
+          .range(inicio, inicio + 999);
+        const lote = (filhos ?? []) as { id: string; storage_path: string | null }[];
+        nivel.push(...lote);
+        if (lote.length < 1000) break;
+      }
+      if (nivel.length === 0) break;
+      fronteira = nivel.map((f) => f.id);
+      for (const f of nivel) {
         idsParaExcluir.push(f.id);
         if (f.storage_path) pathsStorage.push(f.storage_path);
       }
     }
+
 
     if (pathsStorage.length > 0) {
       for (let i = 0; i < pathsStorage.length; i += 100) {
