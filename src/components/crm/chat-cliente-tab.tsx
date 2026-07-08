@@ -66,6 +66,13 @@ export function ChatClienteTab({ clienteId, info }: { clienteId: string; info?: 
   const listar = useServerFn(listarChatCliente);
   const responder = useServerFn(responderChatCliente);
   const marcarLido = useServerFn(marcarChatClienteLido);
+  const sessaoFn = useServerFn(getMinhaSessao);
+  const { data: sessao } = useQuery({
+    queryKey: ["minha-sessao"],
+    queryFn: () => sessaoFn(),
+    staleTime: 5 * 60_000,
+  });
+  const meuNome = sessao?.profile?.nome?.trim() || null;
   const [texto, setTexto] = useState("");
   const [enviandoAnexo, setEnviandoAnexo] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
