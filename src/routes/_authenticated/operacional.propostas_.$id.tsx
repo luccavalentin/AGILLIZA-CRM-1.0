@@ -304,10 +304,16 @@ function Pagina() {
               {bancosEnviados.map((b: any) => (
                 <div
                   key={b.id}
-                  className="flex items-center justify-between gap-2 rounded-md border border-border bg-muted/30 px-3 py-2"
+                  className="flex items-center justify-between gap-2 rounded-lg border border-border bg-muted/30 px-3 py-2.5 transition-colors hover:bg-muted/50"
                 >
-                  <span className="truncate text-sm font-medium" style={{ color: corDoBanco(b.nome_banco) }}>
-                    {b.nome_banco}
+                  <span className="flex min-w-0 items-center gap-2">
+                    <BancoLogo nome={b.nome_banco} size="md" className="shrink-0" />
+                    <span
+                      className="truncate text-sm font-semibold"
+                      style={{ color: corDoBanco(b.nome_banco) }}
+                    >
+                      {b.nome_banco}
+                    </span>
                   </span>
                   <ToneBadge
                     tone={SITUACAO_BANCO_TONE[(b.situacao_banco as SituacaoBanco) ?? "nao_enviado"]}
