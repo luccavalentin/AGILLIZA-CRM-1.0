@@ -221,7 +221,13 @@ function Pagina() {
 
       <div className="rounded-lg border border-border bg-card">
         <div className="flex items-center justify-between border-b border-border p-4">
-          <h2 className="text-sm font-semibold">Histórico</h2>
+          <div>
+            <h2 className="text-sm font-semibold">Histórico</h2>
+            <p className="text-xs text-muted-foreground">
+              Os registros são mantidos por {retencaoDias} dia{retencaoDias === 1 ? "" : "s"} após
+              gerados e removidos automaticamente.
+            </p>
+          </div>
           <Button
             variant="ghost"
             size="sm"
@@ -230,6 +236,7 @@ function Pagina() {
             <RefreshCw className="mr-2 h-4 w-4" /> Atualizar
           </Button>
         </div>
+
 
         {backups.isLoading ? (
           <div className="space-y-2 p-4">
