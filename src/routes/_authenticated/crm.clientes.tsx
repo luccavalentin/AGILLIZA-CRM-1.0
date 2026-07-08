@@ -119,21 +119,26 @@ function Pagina() {
 
 
       <Card className="overflow-hidden rounded-2xl border-border/60 shadow-sm">
-        <div className="overflow-x-auto">
-          <Table>
+        <div className="w-full">
+          <Table className="w-full table-fixed">
             <TableHeader>
               <TableRow className="border-b border-border/60 bg-muted/30 hover:bg-muted/30">
-                {["Cliente", "Documento", "Contato", "Etapa", "Responsável", "Portal"].map(
-                  (h) => (
-                    <TableHead
-                      key={h}
-                      className="h-11 px-4 text-[10.5px] font-semibold uppercase tracking-[0.09em] text-muted-foreground/80"
-                    >
-                      {h}
-                    </TableHead>
-                  ),
-                )}
-                <TableHead className="h-11 w-14 px-4 text-right text-[10.5px] font-semibold uppercase tracking-[0.09em] text-muted-foreground/80">
+                {[
+                  { h: "Cliente", w: "w-[24%]" },
+                  { h: "Documento", w: "w-[13%]" },
+                  { h: "Contato", w: "w-[21%]" },
+                  { h: "Etapa", w: "w-[17%]" },
+                  { h: "Responsável", w: "w-[16%]" },
+                  { h: "Portal", w: "w-[9%]" },
+                ].map(({ h, w }) => (
+                  <TableHead
+                    key={h}
+                    className={`h-11 px-4 text-[10.5px] font-semibold uppercase tracking-[0.09em] text-muted-foreground/80 ${w}`}
+                  >
+                    {h}
+                  </TableHead>
+                ))}
+                <TableHead className="h-11 w-14 px-3 text-right text-[10.5px] font-semibold uppercase tracking-[0.09em] text-muted-foreground/80">
                   Ações
                 </TableHead>
               </TableRow>
