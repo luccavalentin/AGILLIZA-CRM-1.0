@@ -391,12 +391,13 @@ function Pagina() {
             {data?.itens.map((s) => (
               <TableRow
                 key={s.id}
-                className="cursor-pointer"
+                className="cursor-pointer border-border/50 transition-colors hover:bg-primary/5"
                 onClick={() =>
                   router.navigate({ to: "/operacional/simulacoes/$id", params: { id: s.id } })
                 }
               >
-                <TableCell className="font-medium">{s.numero_simulacao}</TableCell>
+                <TableCell className="font-semibold text-primary">{s.numero_simulacao}</TableCell>
+
                 <TableCell>{s.nome_cliente ?? "—"}</TableCell>
                 <TableCell>
                   {s.produto === "home_equity"
