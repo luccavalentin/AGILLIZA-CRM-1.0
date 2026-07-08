@@ -227,6 +227,116 @@ export function DocumentosChecklist({ clienteId }: { clienteId: string }) {
     });
   }
 
+  // ===== Checklists personalizados (grupos configuráveis pelo usuário) =====
+  const grupos: GrupoChecklist[] = Array.isArray(check.__grupos) ? check.__grupos : [];
+
+  function setGrupos(
+    updater: (g: GrupoChecklist[]) => GrupoChecklist[],
+  ) {
+    setCheck((prev) => {
+      const atuais: GrupoChecklist[] = Array.isArray(prev.__grupos) ? prev.__grupos : [];
+      const next = { ...prev, __grupos: updater(atuais) };
+      persistir(next);
+      return next;
+    });
+  }
+
+  function addGrupo(titulo: string) {
+    const t = titulo.trim();
+    if (!t) return;
+    setGrupos((g) => [...g, { id: crypto.randomUUID(), titulo: t, itens: [] }]);
+  }
+
+  function renameGrupo(id: string, titulo: string) {
+    const t = titulo.trim();
+    if (!t) return;
+    setGrupos((g) => g.map((x) => (x.id === id ? { ...x, titulo: t } : x)));
+  }
+
+  function removeGrupo(id: string) {
+    setGrupos((g) => g.filter((x) => x.id !== id));
+  }
+
+  function addItemGrupo(grupoId: string, label: string) {
+    const t = label.trim();
+    if (!t) return;
+    setGrupos((g) =>
+      g.map((x) =>
+        x.id === grupoId
+          ? { ...x, itens: [...x.itens, { id: crypto.randomUUID(), label: t, feito: false }] }
+          : x,
+      ),
+    );
+  }
+
+  function toggleItemGrupo(grupoId: string, itemId: string, feito: boolean) {
+    setGrupos((g) =>
+      g.map((x) =>
+        x.id === grupoId
+          ? { ...x, itens: x.itens.map((it) => (it.id === itemId ? { ...it, feito } : it)) }
+          : x,
+      ),
+    );
+  }
+
+  function renameItemGrupo(grupoId: string, itemId: string, label: string) {
+    const t = label.trim();
+    if (!t) return;
+    setGrupos((g) =>
+      g.map((x) =>
+        x.id === grupoId
+          ? { ...x, itens: x.itens.map((it) => (it.id === itemId ? { ...it, label: t } : it)) }
+          : x,
+      ),
+    );
+  }
+
+  function removeItemGrupo(grupoId: string, itemId: string) {
+    setGrupos((g) =>
+      g.map((x) =>
+        x.id === grupoId ? { ...x, itens: x.itens.filter((it) => it.id !== itemId) } : x,
+      ),
+    );
+  }
+
+  function moverGrupo(fromId: string, toId: string) {
+    if (fromId === toId) return;
+    setGrupos((g) => {
+      const from = g.findIndex((x) => x.id === fromId);
+      const to = g.findIndex((x) => x.id === toId);
+      if (from < 0 || to < 0) return g;
+      const copia = [...g];
+      const [movido] = copia.splice(from, 1);
+      copia.splice(to, 0, movido);
+      return copia;
+    });
+  }
+
+  /** Move um item (reordena dentro do grupo ou transfere entre grupos). */
+  function moverItem(
+    origem: { grupoId: string; itemId: string },
+    destino: { grupoId: string; itemId?: string },
+  ) {
+    if (origem.grupoId === destino.grupoId && origem.itemId === destino.itemId) return;
+    setGrupos((g) => {
+      const copia = g.map((x) => ({ ...x, itens: [...x.itens] }));
+      const gOrigem = copia.find((x) => x.id === origem.grupoId);
+      const gDestino = copia.find((x) => x.id === destino.grupoId);
+      if (!gOrigem || !gDestino) return g;
+      const idx = gOrigem.itens.findIndex((it) => it.id === origem.itemId);
+      if (idx < 0) return g;
+      const [movido] = gOrigem.itens.splice(idx, 1);
+      let insertAt = gDestino.itens.length;
+      if (destino.itemId) {
+        const destIdx = gDestino.itens.findIndex((it) => it.id === destino.itemId);
+        if (destIdx >= 0) insertAt = destIdx;
+      }
+      gDestino.itens.splice(insertAt, 0, movido);
+      return copia;
+    });
+  }
+
+
   async function toggleFgts(v: boolean) {
     setFgts(v);
     await persistir(check, v);
