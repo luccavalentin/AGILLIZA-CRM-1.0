@@ -556,7 +556,7 @@ export function ChatClienteConversa({ clienteId, info }: { clienteId: string; in
                     <div
                       className={cn(
                         "mt-1 flex items-center justify-end gap-1 text-[10px]",
-                        doTime ? "text-primary-foreground/70" : "text-muted-foreground",
+                        doTime ? "text-primary-foreground/70" : "text-chat-them-foreground/60",
                       )}
                     >
                       {m.editada_em && !excluida && <span className="italic">editado</span>}
