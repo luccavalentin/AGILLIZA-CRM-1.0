@@ -526,6 +526,10 @@ function AcoesTopo({
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+      </div>
+
+      {temDecisao && (
+        <div className="flex flex-wrap items-center gap-2 sm:border-l sm:border-border sm:pl-2">
       {proximos.map((s) => {
         const tone = statusProposta(s).tone;
         const isRecusa = s === "credito_recusado";
