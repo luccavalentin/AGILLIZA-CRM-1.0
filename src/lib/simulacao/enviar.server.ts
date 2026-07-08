@@ -224,12 +224,25 @@ export async function enviarSimulacaoImpl({
     } else {
       // Reenvio: sincroniza os dados da oportunidade (inclui fgFinanciarDespesas)
       // antes de rodar as simulações, para o banco receber os valores atuais.
-      await chamarIntegracao<any>(
-        `/oportunidade/${idOportunidade}`,
-        "PUT",
-        dadosOportunidade,
-        ctx,
-      );
+      //
+      // IMPORTANTE: essa sincronização é "best-effort". Se a integração retornar
+      // erro aqui (ex.: HTTP 500 intermitente no PUT da oportunidade), NÃO
+      // abortamos todo o envio — cada banco reenvia seus próprios valores no
+      // POST da simulação logo abaixo. Abortar aqui deixaria os bancos presos
+      // em "aguardando" para sempre.
+      try {
+        await chamarIntegracao<any>(
+          `/oportunidade/${idOportunidade}`,
+          "PUT",
+          dadosOportunidade,
+          ctx,
+        );
+      } catch (e) {
+        console.warn(
+          "Falha ao sincronizar oportunidade (PUT). Prosseguindo com o envio por banco.",
+          e instanceof Error ? e.message : String(e),
+        );
+      }
     }
 
 
@@ -418,6 +431,16 @@ export async function enviarSimulacaoImpl({
           ? e.message
           : "Falha ao enviar ao banco.";
     const msg = sanitizarMensagemErro(bruto);
+    // Nenhum banco deste lote pode ficar preso em "aguardando"/"enviando":
+    // marca os pendentes como erro para o usuário poder reenviar.
+    const idsLote = (bancos as any[]).map((b) => b.id);
+    if (idsLote.length > 0) {
+      await supabase
+        .from("simulacao_bancos")
+        .update({ status_banco: "erro", mensagem_banco: msg })
+        .in("id", idsLote)
+        .in("status_banco", ["aguardando", "enviando"]);
+    }
     await supabase
       .from("simulacoes")
       .update({ status: "erro_banco", ultimo_erro: msg })
