@@ -68,7 +68,7 @@ export function LandingFx({ className }: { className?: string }) {
         return {
           x: Math.random(),
           y: Math.random(),
-          r: (w < 640 ? 0.5 : 0.42) + Math.random() * 0.25,
+          r: (w < 640 ? 0.22 : 0.18) + Math.random() * 0.1,
           hue: p.hue,
           sat: p.sat,
           phase: Math.random() * Math.PI * 2,
@@ -147,8 +147,8 @@ export function LandingFx({ className }: { className?: string }) {
         const radius = o.r * minDim;
 
         const g = ctx.createRadialGradient(px, py, 0, px, py, radius);
-        g.addColorStop(0, `hsla(${o.hue}, ${o.sat}%, 60%, ${0.42 * intensity})`);
-        g.addColorStop(0.4, `hsla(${o.hue}, ${o.sat}%, 48%, ${0.2 * intensity})`);
+        g.addColorStop(0, `hsla(${o.hue}, ${o.sat}%, 60%, ${0.2 * intensity})`);
+        g.addColorStop(0.4, `hsla(${o.hue}, ${o.sat}%, 48%, ${0.09 * intensity})`);
         g.addColorStop(1, `hsla(${o.hue}, ${o.sat}%, 42%, 0)`);
         ctx.fillStyle = g;
         ctx.beginPath();
@@ -161,10 +161,10 @@ export function LandingFx({ className }: { className?: string }) {
       {
         const cx = smx * w;
         const cy = smy * h;
-        const coreR = minDim * 0.28;
+        const coreR = minDim * 0.12;
         const core = ctx.createRadialGradient(cx, cy, 0, cx, cy, coreR);
-        core.addColorStop(0, `hsla(205, 90%, 68%, ${0.5 * intensity})`);
-        core.addColorStop(0.5, `hsla(216, 80%, 56%, ${0.22 * intensity})`);
+        core.addColorStop(0, `hsla(205, 90%, 68%, ${0.28 * intensity})`);
+        core.addColorStop(0.5, `hsla(216, 80%, 56%, ${0.12 * intensity})`);
         core.addColorStop(1, `hsla(216, 80%, 50%, 0)`);
         ctx.fillStyle = core;
         ctx.beginPath();
@@ -178,9 +178,9 @@ export function LandingFx({ className }: { className?: string }) {
       ctx.globalCompositeOperation = "screen";
       for (const rp of ripples) {
         rp.t += 0.01;
-        const alpha = (1 - rp.t) * 0.4 * intensity;
+        const alpha = (1 - rp.t) * 0.18 * intensity;
         if (alpha <= 0) continue;
-        const rad = rp.t * minDim * 0.6;
+        const rad = rp.t * minDim * 0.3;
         ctx.beginPath();
         ctx.arc(rp.x * w, rp.y * h, rad, 0, Math.PI * 2);
         ctx.strokeStyle = `hsla(205, 95%, 75%, ${alpha})`;
