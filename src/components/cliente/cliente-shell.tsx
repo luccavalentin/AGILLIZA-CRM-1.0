@@ -124,9 +124,10 @@ function SidebarLinks({ collapsed, onNavigate }: { collapsed: boolean; onNavigat
                     "relative flex h-10 w-10 items-center justify-center rounded-md transition-colors",
                     active
                       ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                      : "text-sidebar-foreground/70 hover:bg-white/10 hover:text-sidebar-foreground",
+                      : "text-sidebar-foreground hover:bg-white/15 hover:text-sidebar-foreground",
                     piscando && "animate-pulse",
                   )}
+
                 >
                   {active && (
                     <span className="absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-full bg-sidebar-primary" />
