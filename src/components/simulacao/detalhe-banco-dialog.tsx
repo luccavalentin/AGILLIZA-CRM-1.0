@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { corDoBanco } from "@/lib/bancos/cores";
 import { BancoLogo } from "@/components/bancos/banco-logo";
-import { FileText, Download } from "lucide-react";
+import { FileText, Download, AlertTriangle } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -51,6 +51,16 @@ export function DetalheBancoDialog({
   const detalhe = useMemo(() => extrairDetalheBanco(banco?.raw_response), [banco]);
   const temDetalhe = !!detalhe && detalhe.parcelas.length > 0;
 
+  // Alerta quando a simulação pediu para financiar despesas mas ESTE banco não
+  // as incorporou ao financiamento (limite de LTV/política do banco). Sem isto,
+  // o valor menor deste banco parece um erro em vez de uma decisão da instituição.
+  const despesasSolicitadas =
+    Boolean(simulacao?.fg_financiar_despesas) &&
+    Number(simulacao?.valor_despesas_financiadas ?? 0) > 0;
+  const despesasFinanciadasBanco = Number(detalhe?.despesasFinanciadas ?? 0);
+  const bancoNaoFinanciouDespesas =
+    despesasSolicitadas && !(despesasFinanciadasBanco > 0);
+
   function baixar() {
     if (proposta) {
       baixarPropostaDetalhadaPDF({ proposta, bancos: [banco] });
@@ -85,6 +95,21 @@ export function DetalheBancoDialog({
 
 
         <div className="max-h-[calc(90vh-4rem)] space-y-6 overflow-y-auto p-4">
+          {bancoNaoFinanciouDespesas && (
+            <div className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+              <div className="text-sm text-foreground">
+                <p className="font-semibold">Este banco não financiou as despesas solicitadas</p>
+                <p className="mt-1 text-muted-foreground">
+                  As despesas de {formatBRL(Number(simulacao?.valor_despesas_financiadas ?? 0))} não
+                  foram incorporadas ao financiamento por este banco — normalmente por atingir o
+                  limite máximo de financiamento (LTV) para o perfil do cliente. Por isso o valor
+                  financiado pode aparecer menor que o de outros bancos. As despesas deverão ser
+                  pagas à vista ou o valor financiado ajustado.
+                </p>
+              </div>
+            </div>
+          )}
           {!temDetalhe ? (
             <p className="py-8 text-center text-sm text-muted-foreground">
               Detalhamento de parcelas indisponível para esta simulação.
