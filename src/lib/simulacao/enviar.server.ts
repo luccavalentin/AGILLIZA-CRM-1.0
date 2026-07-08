@@ -224,12 +224,25 @@ export async function enviarSimulacaoImpl({
     } else {
       // Reenvio: sincroniza os dados da oportunidade (inclui fgFinanciarDespesas)
       // antes de rodar as simulações, para o banco receber os valores atuais.
-      await chamarIntegracao<any>(
-        `/oportunidade/${idOportunidade}`,
-        "PUT",
-        dadosOportunidade,
-        ctx,
-      );
+      //
+      // IMPORTANTE: essa sincronização é "best-effort". Se a integração retornar
+      // erro aqui (ex.: HTTP 500 intermitente no PUT da oportunidade), NÃO
+      // abortamos todo o envio — cada banco reenvia seus próprios valores no
+      // POST da simulação logo abaixo. Abortar aqui deixaria os bancos presos
+      // em "aguardando" para sempre.
+      try {
+        await chamarIntegracao<any>(
+          `/oportunidade/${idOportunidade}`,
+          "PUT",
+          dadosOportunidade,
+          ctx,
+        );
+      } catch (e) {
+        console.warn(
+          "Falha ao sincronizar oportunidade (PUT). Prosseguindo com o envio por banco.",
+          e instanceof Error ? e.message : String(e),
+        );
+      }
     }
 
 
