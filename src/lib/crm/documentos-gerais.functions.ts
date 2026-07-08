@@ -49,19 +49,19 @@ export const explorarDocumentosGerais = createServerFn({ method: "GET" })
     const { supabase, userId } = context;
     const { data: corr } = await supabase.rpc("correspondente_do_usuario", { _user_id: userId });
 
-    // Todos os comerciais cadastrados na base (para criar a pasta mesmo sem clientes).
+    // Todos os usuários "Comercial Agilliza" (profiles.tipo_pessoa = 'comercial'),
+    // para criar uma pasta por comercial mesmo sem clientes vinculados.
     const ordenarNome = (a: DGOpcaoFiltro, b: DGOpcaoFiltro) =>
       a.nome.localeCompare(b.nome, "pt-BR");
     let comerciaisQuery = supabase
-      .from("user_roles")
-      .select("user_id, profiles!inner(id, nome, correspondente_id)")
-      .eq("role", "comercial");
-    if (corr) comerciaisQuery = comerciaisQuery.eq("profiles.correspondente_id", corr);
+      .from("profiles")
+      .select("id, nome, correspondente_id")
+      .eq("tipo_pessoa", "comercial");
+    if (corr) comerciaisQuery = comerciaisQuery.eq("correspondente_id", corr);
     const { data: comerciaisRows } = await comerciaisQuery;
     const comerciaisMap = new Map<string, string>();
-    for (const r of comerciaisRows ?? []) {
-      const p = (r as any).profiles;
-      if (p?.id) comerciaisMap.set(p.id, p.nome ?? "—");
+    for (const p of comerciaisRows ?? []) {
+      if ((p as any)?.id) comerciaisMap.set((p as any).id, (p as any).nome ?? "—");
     }
     const comerciais = Array.from(comerciaisMap, ([id, nome]) => ({ id, nome })).sort(ordenarNome);
 
