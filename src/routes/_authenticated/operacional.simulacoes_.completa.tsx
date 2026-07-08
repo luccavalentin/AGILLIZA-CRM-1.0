@@ -761,7 +761,10 @@ function Pagina() {
 
           <Campo label="Valor total do financiamento (R$)">
             <div className="flex h-10 items-center rounded-md border border-input bg-muted/40 px-3 text-sm font-semibold tabular-nums text-foreground">
-              {formatBRL(f.valor_financiamento)}
+              {formatBRL(
+                (f.valor_financiamento || 0) +
+                  (f.fg_financiar_despesas ? Number(f.valor_despesas_financiadas) || 0 : 0),
+              )}
             </div>
           </Campo>
 
