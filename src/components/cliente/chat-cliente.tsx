@@ -92,6 +92,14 @@ export function ChatCliente({ altura = "h-[62dvh]" }: { altura?: string }) {
 
   const enviandoAnexo = enviarAnexo.isPending;
 
+  function submeter() {
+    const v = texto.trim();
+    if (!v || enviar.isPending || enviandoAnexo) return;
+    notifyStop();
+    enviar.mutate(v);
+  }
+
+
   function selecionar(file: File | undefined) {
     if (!file) return;
     if (file.size > 10 * 1024 * 1024) {
