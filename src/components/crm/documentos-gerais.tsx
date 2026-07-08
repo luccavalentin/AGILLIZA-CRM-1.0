@@ -121,6 +121,7 @@ export function DocumentosGerais() {
   const clientes = data?.clientes ?? [];
   const imobiliariasFiltro = data?.imobiliarias ?? [];
   const corretoresFiltro = data?.corretores ?? [];
+  const comerciaisBase = data?.comerciais ?? [];
 
   const filtrando = busca.trim() !== "" || filtroImob !== "todas" || filtroCorr !== "todos";
 
