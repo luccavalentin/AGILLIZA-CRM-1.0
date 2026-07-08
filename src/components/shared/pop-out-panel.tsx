@@ -127,12 +127,10 @@ export function FloatingWindow({
     <div
       role="dialog"
       aria-label={title}
-      style={{ left: pos.x, top: pos.y, width: WIDTH }}
+      style={{ left: pos.x, top: pos.y, width: WIDTH, ...(minimized ? {} : { height: "min(85vh, 44rem)" }) }}
       className={cn(
         "fixed z-[60] flex min-w-[18rem] max-w-[95vw] flex-col overflow-hidden rounded-xl border border-border bg-background shadow-2xl",
-        minimized
-          ? "h-auto"
-          : "max-h-[85vh] min-h-[20rem] resize",
+        minimized ? "h-auto" : "min-h-[20rem] resize",
       )}
     >
       <div
