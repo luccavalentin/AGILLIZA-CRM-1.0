@@ -381,18 +381,34 @@ export function DocumentosGerais() {
           {pastasNivel.map((p) => (
             <button
               key={p.key}
-              className="flex items-center gap-3 rounded-lg border border-border p-4 text-left transition-colors hover:bg-accent"
+              className="flex flex-col gap-2 rounded-lg border border-border p-4 text-left transition-colors hover:bg-accent"
               onClick={() => setCaminho([...caminho, p.key])}
             >
-              {iconePasta(p.tipo)}
-              <div className="min-w-0">
-                <p className="truncate font-medium text-foreground">{p.nome}</p>
-                <p className="text-xs text-muted-foreground">
-                  {p.subpastas.length > 0
-                    ? `${p.subpastas.length} pasta(s) · ${p.total_clientes} cliente(s)`
-                    : `${p.total_clientes} cliente(s)`}
-                </p>
+              <div className="flex items-center gap-3">
+                {iconePasta(p.tipo)}
+                <div className="min-w-0">
+                  <p className="truncate font-medium text-foreground">{p.nome}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {p.subpastas.length > 0
+                      ? `${p.subpastas.length} pasta(s) · ${p.total_clientes} cliente(s)`
+                      : `${p.total_clientes} cliente(s)`}
+                  </p>
+                </div>
               </div>
+              {p.tipo === "comercial" && p.analistas && p.analistas.size > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {Array.from(p.analistas.values()).map((nome) => (
+                    <span
+                      key={nome}
+                      className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/60 px-2 py-0.5 text-[10px] font-medium text-muted-foreground"
+                      title="Analista que criou o cadastro"
+                    >
+                      <UserCog className="h-3 w-3" />
+                      {nome}
+                    </span>
+                  ))}
+                </div>
+              )}
             </button>
           ))}
         </div>
