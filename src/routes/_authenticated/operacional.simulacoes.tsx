@@ -81,6 +81,17 @@ function Pagina() {
   const [desde, setDesde] = useState("");
   const [ate, setAte] = useState("");
 
+  // Envio de proposta: diálogo para escolher UM banco por vez.
+  const [envio, setEnvio] = useState<{
+    id: string;
+    numero: string;
+    bancos: any[];
+  } | null>(null);
+  const [envioCarregando, setEnvioCarregando] = useState(false);
+  const [bancoSelecionado, setBancoSelecionado] = useState<string | null>(null);
+  const [enviando, setEnviando] = useState(false);
+
+
   const { data, isLoading } = useQuery({
     queryKey: ["simulacoes", escopo, busca, desde, ate],
     queryFn: () =>
