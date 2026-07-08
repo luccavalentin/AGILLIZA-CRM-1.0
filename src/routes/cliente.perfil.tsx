@@ -157,7 +157,13 @@ function Perfil() {
 
   return (
     <div className="space-y-4">
+      <CabecalhoPagina
+        icon={UserRound}
+        titulo="Meu perfil"
+        subtitulo="Preferências de aparência, som e privacidade dos seus dados"
+      />
       <Card className="border-border">
+
         <CardHeader className="pb-2">
           <CardTitle className="text-base">Aparência</CardTitle>
         </CardHeader>
