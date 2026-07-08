@@ -516,7 +516,8 @@ export function DocumentosGerais() {
           )}
         </div>
       )}
-    </div>
+      </TabsContent>
+    </Tabs>
   );
 }
 
