@@ -13,6 +13,8 @@ import { supabase } from "@/integrations/supabase/client";
  */
 export function usePipelineRealtime() {
   const qc = useQueryClient();
+  // Nome único por instância: evita colisão de canais entre múltiplas abas/telas.
+  const channelName = useRef(`cliente-pipeline-sync-${Math.random().toString(36).slice(2)}`);
 
   useEffect(() => {
     const invalidar = () => {
@@ -23,7 +25,7 @@ export function usePipelineRealtime() {
     };
 
     const channel = supabase
-      .channel("cliente-pipeline-sync")
+      .channel(channelName.current)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "cliente_pipeline" },
