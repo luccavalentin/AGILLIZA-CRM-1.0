@@ -541,11 +541,9 @@ function Pagina() {
             ) : (
               (contratos ?? []).map((ct) => (
                 <button
-                  key={ct.id}
+                  key={ct.cliente_id}
                   type="button"
-                  disabled={!ct.cliente_id}
                   onClick={() => {
-                    if (!ct.cliente_id) return;
                     setArquivoAberto(false);
                     navigate({ to: "/crm/clientes/$id", params: { id: ct.cliente_id } });
                   }}
