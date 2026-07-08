@@ -42,11 +42,11 @@ const CARDS: AcessoCard[] = [
 
 function Landing() {
   return (
-    <div className="flex min-h-[100dvh] flex-col bg-muted">
+    <div className="landing-bg flex min-h-[100dvh] flex-col">
       <main className="flex flex-1 flex-col items-center justify-center px-4 py-12">
         <div className="mb-10 flex flex-col items-center gap-3 text-center">
-          <Logo variant="dark" className="h-11" />
-          <p className="max-w-sm text-sm text-muted-foreground">
+          <Logo variant="light" className="h-11" />
+          <p className="max-w-sm text-sm text-primary-foreground/70">
             Selecione como você deseja acessar a plataforma.
           </p>
         </div>
@@ -54,29 +54,29 @@ function Landing() {
         <div className="flex w-full max-w-md flex-col gap-4">
           {CARDS.map(({ to, titulo, subtitulo, icon: Icon, destaque }) => (
             <Link key={to} to={to} className="group focus-visible:outline-none">
-              <Card className="flex items-center gap-4 p-5 transition-colors hover:border-primary group-focus-visible:ring-2 group-focus-visible:ring-ring">
+              <Card className="landing-card flex items-center gap-4 border p-5 group-focus-visible:ring-2 group-focus-visible:ring-white/40">
                 <span
                   className={
                     "flex h-12 w-12 shrink-0 items-center justify-center rounded-xl " +
                     (destaque
-                      ? "bg-destructive/10 text-destructive"
-                      : "bg-accent text-accent-foreground")
+                      ? "bg-destructive/20 text-destructive-foreground"
+                      : "bg-white/10 text-primary-foreground")
                   }
                 >
                   <Icon className="h-6 w-6" />
                 </span>
                 <div className="flex-1">
-                  <h2 className="text-base font-semibold text-card-foreground">{titulo}</h2>
-                  <p className="text-sm text-muted-foreground">{subtitulo}</p>
+                  <h2 className="text-base font-semibold text-primary-foreground">{titulo}</h2>
+                  <p className="text-sm text-primary-foreground/60">{subtitulo}</p>
                 </div>
-                <ChevronRight className="h-5 w-5 text-muted-foreground transition-transform group-hover:translate-x-1" />
+                <ChevronRight className="h-5 w-5 text-primary-foreground/50 transition-transform group-hover:translate-x-1" />
               </Card>
             </Link>
           ))}
         </div>
       </main>
 
-      <footer className="py-6 text-center text-xs text-muted-foreground">
+      <footer className="py-6 text-center text-xs text-primary-foreground/45">
         © {new Date().getFullYear()} Agilliza — Crédito Imobiliário. Todos os direitos reservados.
       </footer>
     </div>

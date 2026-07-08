@@ -160,6 +160,55 @@
     0 24px 60px -30px color-mix(in oklab, var(--brand-azul-profundo) 45%, transparent);
 }
 
+/* Fundo sofisticado da tela de seleção de acesso (landing). */
+.landing-bg {
+  position: relative;
+  background-color: var(--brand-azul-noite);
+  background-image:
+    radial-gradient(80% 60% at 85% 0%, rgba(31, 78, 143, 0.45) 0%, transparent 55%),
+    radial-gradient(70% 60% at 10% 100%, rgba(0, 15, 159, 0.5) 0%, transparent 60%),
+    radial-gradient(50% 50% at 50% 30%, rgba(200, 16, 46, 0.14) 0%, transparent 60%),
+    linear-gradient(155deg, #00052e 0%, #000a70 50%, #0b1b3a 100%);
+  isolation: isolate;
+}
+/* Textura de grade fina sobre o fundo. */
+.landing-bg::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 46px 46px;
+  mask-image: radial-gradient(120% 100% at 50% 0%, #000 30%, transparent 85%);
+  pointer-events: none;
+}
+/* Vinheta suave para dar profundidade. */
+.landing-bg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: radial-gradient(120% 90% at 50% 40%, transparent 45%, rgba(0, 5, 46, 0.6) 100%);
+  pointer-events: none;
+}
+/* Cartão translúcido de acesso sobre o fundo escuro. */
+.landing-card {
+  background-color: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  backdrop-filter: blur(12px);
+  transition:
+    background-color 0.25s ease,
+    border-color 0.25s ease,
+    transform 0.25s ease;
+}
+.landing-card:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.28) !important;
+  transform: translateY(-2px);
+}
+
 
 /* Scrollbar discreta dentro do menu — sem barra branca feia. */
 .sidebar-scroll {
