@@ -66,6 +66,19 @@ export function TimelineCliente({ etapas }: { etapas: EtapaCliente[] }) {
                   Concluída em {formatarData(etapa.concluida_em)}
                 </p>
               )}
+              {etapa.data_marco && (
+                <p
+                  className={cn(
+                    "mt-1 inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-xs font-medium",
+                    etapa.status === "concluida"
+                      ? "border-success/30 bg-success/10 text-success"
+                      : "border-primary/30 bg-primary/10 text-primary",
+                  )}
+                >
+                  <Calendar className="h-3 w-3" />
+                  {formatarDataLonga(etapa.data_marco)}
+                </p>
+              )}
             </div>
           </li>
         );
