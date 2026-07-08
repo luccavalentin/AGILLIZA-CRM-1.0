@@ -18,18 +18,18 @@ import { formatBRL } from "@/lib/simulacao/format";
 /**
  * "Jogada de números": infla o valor de compra e venda declarado para que o
  * percentual máximo financiável (LTV do banco) libere exatamente o valor que o
- * cliente precisa — a diferença vira uma entrada "de fachada".
+ * cliente precisa — a diferença vira o novo valor de entrada.
  *
  * Exemplo: imóvel de R$ 250 mil, cliente sem entrada, LTV 80%.
  *   valor ajustado = 250.000 / 0,8 = 312.500 (arredonda p/ 313.000)
- *   entrada de fachada = 313.000 - 250.000 = 63.000
+ *   novo valor de entrada = 313.000 - 250.000 = 63.000
  *   financiamento liberado = 250.000
  *
  * Com "incluir custas" o divisor é reduzido pelo percentual de custas, inflando
  * mais o compra e venda para cobrir despesas de cartório/ITBI.
  *   Ex.: imóvel R$ 300 mil, sem entrada, LTV 80%, custas 5% → divisor 0,75.
  *   valor ajustado = 300.000 / 0,75 = 400.000
- *   entrada de fachada = 400.000 - 300.000 = 100.000 | financiado 300.000
+ *   novo valor de entrada = 400.000 - 300.000 = 100.000 | financiado 300.000
  */
 export function JogadaNumerosDialog({
   valorImovelAtual,
@@ -174,7 +174,7 @@ export function JogadaNumerosDialog({
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">
-                  Entrada de fachada ({Math.round(calc.pctEntrada)}%)
+                  Novo valor de entrada ({Math.round(calc.pctEntrada)}%)
                 </span>
                 <span className="font-semibold tabular-nums text-foreground">
                   {formatBRL(calc.entrada)}
