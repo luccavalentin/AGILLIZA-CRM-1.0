@@ -120,10 +120,10 @@ function SidebarLinks({ collapsed, onNavigate }: { collapsed: boolean; onNavigat
                   aria-current={active ? "page" : undefined}
                   aria-label={item.label}
                   className={cn(
-                    "relative flex h-10 w-10 items-center justify-center rounded-md transition-colors",
+                    "relative flex h-10 w-10 items-center justify-center rounded-md text-sidebar-foreground transition-colors",
                     active
-                      ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                      : "text-sidebar-foreground hover:bg-white/15 hover:text-sidebar-foreground",
+                      ? "bg-white/20 text-white shadow-sm"
+                      : "hover:bg-white/15 hover:text-white",
                     piscando && "animate-pulse",
                   )}
 
