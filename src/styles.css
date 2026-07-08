@@ -41,6 +41,10 @@
   --muted-foreground: #4b5563;
   --accent: #eef0ff;
   --accent-foreground: #000f9f;
+  /* Bolha de chat do "outro" usuário (cliente) — cor distinta do time */
+  --chat-them: #e2f4ed;
+  --chat-them-foreground: #0b3b2e;
+  --chat-them-border: #b6e3d3;
   --destructive: #c8102e;
   --destructive-foreground: #ffffff;
   --success: #10a37f;
