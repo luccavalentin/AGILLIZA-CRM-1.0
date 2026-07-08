@@ -261,15 +261,43 @@ export function DocumentosGerais() {
   if (cliente) {
     return (
       <div className="space-y-4">
-        <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <button className="hover:text-foreground" onClick={() => setCliente(null)}>
             Documentos Gerais
           </button>
           <ChevronRight className="h-4 w-4" />
           <span className="font-medium text-foreground">{titulo(cliente.nome)}</span>
-          <div className="ml-auto">
-            <Button variant="outline" size="sm" onClick={() => setFichaAberta(true)}>
-              <ClipboardList className="mr-1 h-4 w-4" /> Consultar ficha
+        </div>
+
+        {/* Cabeçalho sofisticado do cliente */}
+        <div className="relative overflow-hidden rounded-2xl border border-border/60 bg-gradient-to-br from-primary/10 via-card to-card p-5 shadow-sm">
+          <span className="pointer-events-none absolute -right-16 -top-16 size-48 rounded-full bg-primary/10 blur-3xl" />
+          <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-4">
+              <span className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary/70 text-primary-foreground shadow-lg ring-1 ring-inset ring-primary/30">
+                <FolderOpen className="h-7 w-7" />
+              </span>
+              <div className="min-w-0">
+                <p className="truncate text-lg font-semibold text-foreground">{titulo(cliente.nome)}</p>
+                <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
+                  {cliente.numero_cliente && (
+                    <span className="inline-flex items-center gap-1">
+                      <IdCard className="h-3 w-3" /> {cliente.numero_cliente}
+                    </span>
+                  )}
+                  <span className="inline-flex items-center gap-1">
+                    <FileText className="h-3 w-3" /> {cliente.total_documentos} documento(s)
+                  </span>
+                </p>
+              </div>
+            </div>
+            <Button
+              size="lg"
+              onClick={() => setFichaAberta(true)}
+              className="group relative w-full overflow-hidden bg-gradient-to-r from-primary to-primary/80 shadow-md transition-all hover:shadow-lg hover:brightness-110 sm:w-auto"
+            >
+              <span className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/25 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
+              <ClipboardList className="mr-2 h-4 w-4" /> Consultar ficha
             </Button>
           </div>
         </div>
@@ -285,6 +313,7 @@ export function DocumentosGerais() {
       </div>
     );
   }
+
 
   return (
     <div className="space-y-4">
@@ -474,12 +503,13 @@ function CardCliente({
 
 function Campo({ rotulo, valor }: { rotulo: string; valor: any }) {
   return (
-    <div>
-      <p className="text-xs uppercase tracking-wide text-muted-foreground">{rotulo}</p>
-      <p className="text-sm text-foreground">{valor === null || valor === undefined || valor === "" ? "—" : String(valor)}</p>
+    <div className="rounded-lg border border-border/50 bg-muted/30 px-3 py-2 transition-colors hover:border-primary/30 hover:bg-muted/50">
+      <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{rotulo}</p>
+      <p className="mt-0.5 text-sm font-medium text-foreground">{valor === null || valor === undefined || valor === "" ? "—" : String(valor)}</p>
     </div>
   );
 }
+
 
 function FichaDialog({
   clienteId,
@@ -502,12 +532,20 @@ function FichaDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] max-w-3xl overflow-hidden p-0">
-        <DialogHeader className="border-b border-border p-4">
-          <DialogTitle className="flex items-center gap-2">
-            <User className="h-4 w-4" /> Ficha consolidada — {clienteNome}
+        <DialogHeader className="relative overflow-hidden border-b border-border/60 bg-gradient-to-r from-primary/12 via-primary/5 to-transparent p-5">
+          <span className="pointer-events-none absolute -right-10 -top-12 size-40 rounded-full bg-primary/10 blur-3xl" />
+          <DialogTitle className="relative flex items-center gap-3">
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/70 text-primary-foreground shadow-md ring-1 ring-inset ring-primary/30">
+              <User className="h-5 w-5" />
+            </span>
+            <span className="flex flex-col">
+              <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Ficha consolidada</span>
+              <span className="text-base font-semibold text-foreground">{titulo(clienteNome)}</span>
+            </span>
           </DialogTitle>
         </DialogHeader>
-        <div className="max-h-[calc(90vh-4rem)] overflow-y-auto p-4">
+        <div className="max-h-[calc(90vh-5.5rem)] overflow-y-auto p-5">
+
           {isLoading || !data ? (
             <div className="space-y-2">
               {Array.from({ length: 6 }).map((_, i) => (
