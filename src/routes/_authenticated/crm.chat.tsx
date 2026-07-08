@@ -763,7 +763,7 @@ function BarraGestao({
   const contextoLinha = [documento, contexto].filter(Boolean).join(" · ");
 
   return (
-    <Card className="overflow-hidden border-border/60 shadow-sm">
+    <Card className="overflow-hidden border-border/60 border-l-2 border-l-primary/40 shadow-sm">
       <div className="flex flex-col gap-3 p-3 xl:flex-row xl:flex-wrap xl:items-stretch xl:gap-0">
         {/* Identidade */}
         <div className="flex min-w-0 items-center gap-3 xl:flex-1 xl:pr-4">
