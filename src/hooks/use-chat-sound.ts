@@ -1,9 +1,11 @@
 import { useEffect, useRef } from "react";
-import { playChatSound } from "@/lib/chat-sound";
+import { signalIncomingChat } from "@/components/shared/chat-alert-store";
 
 /**
- * Toca o som característico de chat quando uma nova mensagem RECEBIDA
- * (não enviada por mim) aparece na lista. Ignora a carga inicial.
+ * Sinaliza a chegada de novas mensagens RECEBIDAS (não enviadas por mim):
+ * toca o som característico (se habilitado) e faz o menu de chat piscar.
+ * Ignora a carga inicial. A deduplicação por id (no store) evita alerta
+ * duplicado quando o watcher global e esta tela veem a mesma mensagem.
  * Use em qualquer chat de qualquer portal.
  */
 export function useIncomingChatSound(
@@ -16,13 +18,11 @@ export function useIncomingChatSound(
       seen.current = new Set(items.map((i) => i.id));
       return;
     }
-    let recebeuNova = false;
     for (const it of items) {
       if (!seen.current.has(it.id)) {
         seen.current.add(it.id);
-        if (!it.mine) recebeuNova = true;
+        if (!it.mine) signalIncomingChat(it.id);
       }
     }
-    if (recebeuNova) playChatSound();
   }, [items]);
 }

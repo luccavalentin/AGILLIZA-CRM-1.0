@@ -73,6 +73,7 @@ import { Route as AuthenticatedCrmClientesRouteImport } from './routes/_authenti
 import { Route as AuthenticatedCrmChatRouteImport } from './routes/_authenticated/crm.chat'
 import { Route as AuthenticatedContaSegurancaRouteImport } from './routes/_authenticated/conta.seguranca'
 import { Route as AuthenticatedContaPerfilRouteImport } from './routes/_authenticated/conta.perfil'
+import { Route as AuthenticatedContaNotificacoesRouteImport } from './routes/_authenticated/conta.notificacoes'
 import { Route as AuthenticatedAdminSlaRouteImport } from './routes/_authenticated/admin.sla'
 import { Route as AuthenticatedAdminRegrasModulosRouteImport } from './routes/_authenticated/admin.regras-modulos'
 import { Route as AuthenticatedAdminPessoasRouteImport } from './routes/_authenticated/admin.pessoas'
@@ -458,6 +459,12 @@ const AuthenticatedContaPerfilRoute =
     path: '/conta/perfil',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedContaNotificacoesRoute =
+  AuthenticatedContaNotificacoesRouteImport.update({
+    id: '/conta/notificacoes',
+    path: '/conta/notificacoes',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAdminSlaRoute = AuthenticatedAdminSlaRouteImport.update({
   id: '/admin/sla',
   path: '/admin/sla',
@@ -651,6 +658,7 @@ export interface FileRoutesByFullPath {
   '/admin/pessoas': typeof AuthenticatedAdminPessoasRoute
   '/admin/regras-modulos': typeof AuthenticatedAdminRegrasModulosRoute
   '/admin/sla': typeof AuthenticatedAdminSlaRoute
+  '/conta/notificacoes': typeof AuthenticatedContaNotificacoesRoute
   '/conta/perfil': typeof AuthenticatedContaPerfilRoute
   '/conta/seguranca': typeof AuthenticatedContaSegurancaRoute
   '/crm/chat': typeof AuthenticatedCrmChatRoute
@@ -740,6 +748,7 @@ export interface FileRoutesByTo {
   '/admin/pessoas': typeof AuthenticatedAdminPessoasRoute
   '/admin/regras-modulos': typeof AuthenticatedAdminRegrasModulosRoute
   '/admin/sla': typeof AuthenticatedAdminSlaRoute
+  '/conta/notificacoes': typeof AuthenticatedContaNotificacoesRoute
   '/conta/perfil': typeof AuthenticatedContaPerfilRoute
   '/conta/seguranca': typeof AuthenticatedContaSegurancaRoute
   '/crm/chat': typeof AuthenticatedCrmChatRoute
@@ -833,6 +842,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/pessoas': typeof AuthenticatedAdminPessoasRoute
   '/_authenticated/admin/regras-modulos': typeof AuthenticatedAdminRegrasModulosRoute
   '/_authenticated/admin/sla': typeof AuthenticatedAdminSlaRoute
+  '/_authenticated/conta/notificacoes': typeof AuthenticatedContaNotificacoesRoute
   '/_authenticated/conta/perfil': typeof AuthenticatedContaPerfilRoute
   '/_authenticated/conta/seguranca': typeof AuthenticatedContaSegurancaRoute
   '/_authenticated/crm/chat': typeof AuthenticatedCrmChatRoute
@@ -926,6 +936,7 @@ export interface FileRouteTypes {
     | '/admin/pessoas'
     | '/admin/regras-modulos'
     | '/admin/sla'
+    | '/conta/notificacoes'
     | '/conta/perfil'
     | '/conta/seguranca'
     | '/crm/chat'
@@ -1015,6 +1026,7 @@ export interface FileRouteTypes {
     | '/admin/pessoas'
     | '/admin/regras-modulos'
     | '/admin/sla'
+    | '/conta/notificacoes'
     | '/conta/perfil'
     | '/conta/seguranca'
     | '/crm/chat'
@@ -1107,6 +1119,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/pessoas'
     | '/_authenticated/admin/regras-modulos'
     | '/_authenticated/admin/sla'
+    | '/_authenticated/conta/notificacoes'
     | '/_authenticated/conta/perfil'
     | '/_authenticated/conta/seguranca'
     | '/_authenticated/crm/chat'
@@ -1623,6 +1636,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedContaPerfilRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/conta/notificacoes': {
+      id: '/_authenticated/conta/notificacoes'
+      path: '/conta/notificacoes'
+      fullPath: '/conta/notificacoes'
+      preLoaderRoute: typeof AuthenticatedContaNotificacoesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/admin/sla': {
       id: '/_authenticated/admin/sla'
       path: '/admin/sla'
@@ -1904,6 +1924,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminPessoasRoute: typeof AuthenticatedAdminPessoasRoute
   AuthenticatedAdminRegrasModulosRoute: typeof AuthenticatedAdminRegrasModulosRoute
   AuthenticatedAdminSlaRoute: typeof AuthenticatedAdminSlaRoute
+  AuthenticatedContaNotificacoesRoute: typeof AuthenticatedContaNotificacoesRoute
   AuthenticatedContaPerfilRoute: typeof AuthenticatedContaPerfilRoute
   AuthenticatedContaSegurancaRoute: typeof AuthenticatedContaSegurancaRoute
   AuthenticatedCrmChatRoute: typeof AuthenticatedCrmChatRoute
@@ -1961,6 +1982,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminPessoasRoute: AuthenticatedAdminPessoasRoute,
   AuthenticatedAdminRegrasModulosRoute: AuthenticatedAdminRegrasModulosRoute,
   AuthenticatedAdminSlaRoute: AuthenticatedAdminSlaRoute,
+  AuthenticatedContaNotificacoesRoute: AuthenticatedContaNotificacoesRoute,
   AuthenticatedContaPerfilRoute: AuthenticatedContaPerfilRoute,
   AuthenticatedContaSegurancaRoute: AuthenticatedContaSegurancaRoute,
   AuthenticatedCrmChatRoute: AuthenticatedCrmChatRoute,
