@@ -106,7 +106,36 @@ export function DocumentosChecklist({ clienteId }: { clienteId: string }) {
   const custom: { id: string; label: string }[] = Array.isArray(check.__custom)
     ? check.__custom
     : [];
+  const labels: Record<string, string> =
+    check.__labels && typeof check.__labels === "object" ? check.__labels : {};
   const [novoItem, setNovoItem] = useState("");
+  const [editKey, setEditKey] = useState<string | null>(null);
+  const [editText, setEditText] = useState("");
+
+  function startEdit(itemKey: string, current: string) {
+    setEditKey(itemKey);
+    setEditText(current);
+  }
+
+  function saveEdit(itemKey: string) {
+    const texto = editText.trim();
+    setEditKey(null);
+    if (!texto) return;
+    setCheck((prev) => {
+      const l = prev.__labels && typeof prev.__labels === "object" ? prev.__labels : {};
+      const next = { ...prev, __labels: { ...l, [itemKey]: texto } };
+      // custom items store the label on the entry too
+      if (Array.isArray(prev.__custom) && itemKey.startsWith("custom_")) {
+        const id = itemKey.slice("custom_".length);
+        next.__custom = prev.__custom.map((x: { id: string; label: string }) =>
+          x.id === id ? { ...x, label: texto } : x,
+        );
+      }
+      persistir(next);
+      return next;
+    });
+  }
+
 
   function hideItem(key: string) {
     setCheck((prev) => {
