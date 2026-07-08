@@ -11,6 +11,8 @@ export interface ArquivoNo {
   content_type: string | null;
   tamanho: number | null;
   created_at: string;
+  criado_por: string | null;
+  criado_por_nome: string | null;
 }
 
 export interface Migalha {
@@ -37,6 +39,24 @@ async function correspondenteDoUsuario(
   return data?.correspondente_id ?? null;
 }
 
+/** Resolve nomes de exibição de usuários (profiles) a partir de seus ids. */
+async function nomesDeUsuarios(
+  supabase: { from: (t: string) => any },
+  ids: (string | null | undefined)[],
+): Promise<Map<string, string>> {
+  const unicos = Array.from(new Set(ids.filter((v): v is string => !!v)));
+  const mapa = new Map<string, string>();
+  if (unicos.length === 0) return mapa;
+  const { data } = await supabase
+    .from("profiles")
+    .select("id, nome")
+    .in("id", unicos);
+  for (const p of (data ?? []) as { id: string; nome: string | null }[]) {
+    if (p.nome) mapa.set(p.id, p.nome);
+  }
+  return mapa;
+}
+
 /** Lista pastas e arquivos de um nível (parent_id null = raiz). */
 export const listarNos = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -50,7 +70,7 @@ export const listarNos = createServerFn({ method: "GET" })
 
     let query = supabase
       .from("arquivos_nos")
-      .select("id, parent_id, tipo, nome, storage_path, content_type, tamanho, created_at")
+      .select("id, parent_id, tipo, nome, storage_path, content_type, tamanho, created_at, criado_por")
       .eq("correspondente_id", corr);
 
     query = data.parent_id ? query.eq("parent_id", data.parent_id) : query.is("parent_id", null);
@@ -59,7 +79,13 @@ export const listarNos = createServerFn({ method: "GET" })
       .order("tipo", { ascending: true })
       .order("nome", { ascending: true });
     if (error) throw new Error(error.message);
-    return (rows ?? []) as ArquivoNo[];
+
+    const lista = (rows ?? []) as any[];
+    const nomes = await nomesDeUsuarios(supabase, lista.map((r) => r.criado_por));
+    return lista.map((r) => ({
+      ...r,
+      criado_por_nome: r.criado_por ? (nomes.get(r.criado_por) ?? null) : null,
+    })) as ArquivoNo[];
   });
 
 /** Lista apenas as pastas da raiz (para exibir como submenus no menu Documentos). */

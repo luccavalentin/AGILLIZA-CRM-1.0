@@ -25,6 +25,22 @@ export interface DocumentoPasta {
   ordem: number;
   is_sistema: boolean;
   total_documentos: number;
+  criado_por: string | null;
+  criado_por_nome: string | null;
+}
+
+async function nomesDeUsuarios(
+  supabase: any,
+  ids: (string | null | undefined)[],
+): Promise<Map<string, string>> {
+  const unicos = Array.from(new Set(ids.filter((v): v is string => !!v)));
+  const mapa = new Map<string, string>();
+  if (unicos.length === 0) return mapa;
+  const { data } = await supabase.from("profiles").select("id, nome").in("id", unicos);
+  for (const p of (data ?? []) as { id: string; nome: string | null }[]) {
+    if (p.nome) mapa.set(p.id, p.nome);
+  }
+  return mapa;
 }
 
 async function correspondenteDoUsuario(supabase: any, userId: string): Promise<string | null> {
@@ -65,7 +81,7 @@ export const listarPastasDocumentos = createServerFn({ method: "GET" })
 
     let { data: pastas } = await supabase
       .from("cliente_documento_pastas")
-      .select("id, nome, slug, ordem")
+      .select("id, nome, slug, ordem, criado_por")
       .eq("cliente_id", data.cliente_id)
       .order("ordem", { ascending: true })
       .order("created_at", { ascending: true });
@@ -84,7 +100,7 @@ export const listarPastasDocumentos = createServerFn({ method: "GET" })
         );
         const novo = await supabase
           .from("cliente_documento_pastas")
-          .select("id, nome, slug, ordem")
+          .select("id, nome, slug, ordem, criado_por")
           .eq("cliente_id", data.cliente_id)
           .order("ordem", { ascending: true })
           .order("created_at", { ascending: true });
@@ -99,6 +115,8 @@ export const listarPastasDocumentos = createServerFn({ method: "GET" })
       .select("pasta_id, categoria")
       .eq("cliente_id", data.cliente_id);
 
+    const nomes = await nomesDeUsuarios(supabase, (pastas ?? []).map((p: any) => p.criado_por));
+
     return (pastas ?? []).map((p: any) => ({
       id: p.id,
       nome: p.nome,
@@ -106,6 +124,8 @@ export const listarPastasDocumentos = createServerFn({ method: "GET" })
       ordem: p.ordem,
       is_sistema: Boolean(p.slug),
       total_documentos: (docs ?? []).filter((d: any) => documentoNaPasta(d, p)).length,
+      criado_por: p.criado_por ?? null,
+      criado_por_nome: p.criado_por ? (nomes.get(p.criado_por) ?? null) : null,
     }));
   });
 
@@ -137,6 +157,7 @@ export const criarPastaDocumentos = createServerFn({ method: "POST" })
         nome: data.nome,
         slug: null,
         ordem: (max?.ordem ?? 0) + 1,
+        criado_por: userId,
       })
       .select("id")
       .single();
