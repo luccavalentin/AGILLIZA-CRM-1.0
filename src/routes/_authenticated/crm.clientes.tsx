@@ -66,13 +66,29 @@ function Pagina() {
   };
 
   return (
-    <div className="space-y-5 p-4 sm:p-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Clientes</h1>
-          <p className="text-sm text-muted-foreground">Gestão de clientes do seu ecossistema.</p>
+    <div className="space-y-6 p-4 sm:p-6">
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4 sm:flex sm:flex-wrap sm:items-center sm:justify-between">
+        <div className="flex min-w-0 items-center gap-3.5">
+          <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-primary to-primary/70 text-primary-foreground shadow-sm ring-1 ring-primary/20">
+            <Users className="size-5" />
+          </span>
+          <div className="min-w-0 space-y-0.5">
+            <div className="flex items-center gap-2">
+              <h1 className="truncate text-2xl font-semibold tracking-tight text-foreground">
+                Clientes
+              </h1>
+              {(data?.total ?? 0) > 0 && (
+                <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-semibold tabular-nums text-muted-foreground">
+                  {data?.total}
+                </span>
+              )}
+            </div>
+            <p className="truncate text-sm text-muted-foreground">
+              Gestão de clientes do seu ecossistema.
+            </p>
+          </div>
         </div>
-        <Button asChild className="shadow-sm">
+        <Button asChild className="shrink-0 shadow-sm">
           <Link to="/crm/clientes/novo">
             <Plus className="size-4" /> Novo cliente
           </Link>
@@ -87,21 +103,22 @@ function Pagina() {
           setBusca(q);
         }}
       >
-        <div className="relative flex-1 max-w-md">
+        <div className="relative flex-1 sm:max-w-md">
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            className="pl-9"
+            className="h-11 rounded-xl pl-9 shadow-sm"
             placeholder="Nome, documento ou e-mail"
             value={q}
             onChange={(e) => setQ(e.target.value)}
           />
         </div>
-        <Button type="submit" variant="outline">
+        <Button type="submit" variant="outline" className="h-11 rounded-xl">
           Buscar
         </Button>
       </form>
 
-      <Card className="overflow-hidden shadow-sm">
+
+      <Card className="overflow-hidden rounded-2xl border-border/60 shadow-sm">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
@@ -159,14 +176,14 @@ function Pagina() {
                     className="group cursor-pointer border-border/50 transition-colors hover:bg-muted/50"
                     onClick={() => navigate({ to: "/crm/clientes/$id", params: { id: c.id } })}
                   >
-                    <TableCell>
+                    <TableCell className="py-3.5">
                       <span className="rounded-md bg-muted px-2 py-1 font-mono text-[11px] font-medium text-muted-foreground">
                         {c.numero_cliente}
                       </span>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="py-3.5">
                       <div className="flex items-center gap-3">
-                        <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[11px] font-semibold text-primary">
+                        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/70 text-[11px] font-semibold text-primary-foreground shadow-sm ring-1 ring-primary/20 transition-transform group-hover:scale-105">
                           {iniciais(c.nome)}
                         </span>
                         <span className="font-medium text-foreground transition-colors group-hover:text-primary">
@@ -174,6 +191,7 @@ function Pagina() {
                         </span>
                       </div>
                     </TableCell>
+
                     <TableCell className="text-sm text-muted-foreground">
                       {c.documento_masc
                         ? mascararDocumento(c.documento)

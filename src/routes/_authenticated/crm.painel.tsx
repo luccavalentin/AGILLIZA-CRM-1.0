@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
-import { ChevronRight, GripVertical, CalendarClock } from "lucide-react";
+import { ChevronRight, GripVertical, CalendarClock, Workflow, Users } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -116,39 +116,58 @@ function Pagina() {
   }
 
 
+  const totalClientes = (data ?? []).reduce((acc, s) => acc + s.clientes.length, 0);
+  const etapasAtivas = (data ?? []).filter((s) => s.clientes.length > 0).length;
+
   return (
-    <div className="space-y-4 p-4 sm:p-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-semibold text-foreground">Painel da esteira</h1>
-          <p className="text-sm text-muted-foreground">
-            Visão das 12 etapas. A esteira avança automaticamente — ou arraste um cliente para
-            mover manualmente.
-          </p>
+    <div className="space-y-6 p-4 sm:p-6">
+      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+        <div className="flex min-w-0 items-center gap-3.5">
+          <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-primary to-primary/70 text-primary-foreground shadow-sm ring-1 ring-primary/20">
+            <Workflow className="size-5" />
+          </span>
+          <div className="min-w-0 space-y-0.5">
+            <h1 className="truncate text-2xl font-semibold tracking-tight text-foreground">
+              Painel da esteira
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              Visão das 12 etapas — arraste um cliente para mover manualmente.
+            </p>
+          </div>
         </div>
         <div className="flex flex-wrap items-end gap-3">
+          <div className="hidden items-center gap-2 rounded-xl border border-border/60 bg-card px-3 py-2 shadow-sm sm:flex">
+            <Users className="size-4 text-primary" />
+            <span className="text-sm font-semibold tabular-nums text-foreground">
+              {totalClientes}
+            </span>
+            <span className="text-xs text-muted-foreground">
+              em {etapasAtivas} de 12 etapas
+            </span>
+          </div>
           <div className="space-y-1">
-            <label className="text-xs text-muted-foreground">De</label>
+            <label className="text-xs font-medium text-muted-foreground">De</label>
             <Input
               type="date"
               value={desde}
               onChange={(e) => setDesde(e.target.value)}
-              className="w-40"
+              className="h-10 w-40 rounded-xl shadow-sm"
             />
           </div>
           <div className="space-y-1">
-            <label className="text-xs text-muted-foreground">Até</label>
+            <label className="text-xs font-medium text-muted-foreground">Até</label>
             <Input
               type="date"
               value={ate}
               onChange={(e) => setAte(e.target.value)}
-              className="w-40"
+              className="h-10 w-40 rounded-xl shadow-sm"
             />
           </div>
           {(desde || ate) && (
             <Button
               variant="ghost"
               size="sm"
+              className="h-10"
               onClick={() => {
                 setDesde("");
                 setAte("");
@@ -159,6 +178,7 @@ function Pagina() {
           )}
         </div>
       </div>
+
 
       {isLoading ? (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -188,7 +208,7 @@ function Pagina() {
                   e.preventDefault();
                   moverPara(stage.codigo);
                 }}
-                className={`group relative flex min-w-0 flex-col overflow-hidden rounded-xl border bg-card shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-lg ${
+                className={`group relative flex min-w-0 flex-col overflow-hidden rounded-2xl border bg-card shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-lg ${
                   ehAlvo ? "border-primary ring-2 ring-primary/40" : "border-border"
                 }`}
               >
