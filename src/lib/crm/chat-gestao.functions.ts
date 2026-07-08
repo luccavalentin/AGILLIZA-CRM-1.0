@@ -13,6 +13,8 @@ export interface ChatMeta {
   sla_atualizacao_horas: number;
   lembrete_em: string | null;
   lembrete_nota: string | null;
+  arquivado: boolean;
+  arquivado_em: string | null;
 }
 
 async function correspondenteDoUsuario(
