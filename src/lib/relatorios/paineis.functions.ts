@@ -146,6 +146,11 @@ export const getPanelDados = createServerFn({ method: "POST" })
     const ateFim = `${ate}T23:59:59`;
     const buckets = construirBuckets(de, ate);
 
+    // Um contrato entra no período pela data de emissão (contrato_emitido_em),
+    // não pela data de criação da proposta (que pode ser de meses antes).
+    const dentroPeriodo = (iso?: string | null) =>
+      !!iso && iso.slice(0, 10) >= de && iso.slice(0, 10) <= ate;
+
     const escopoEq = (q: any, col: string) => (data.escopo === "minha" ? q.eq(col, userId) : q);
 
     if (data.modulo === "visao-geral") {
@@ -162,9 +167,12 @@ export const getPanelDados = createServerFn({ method: "POST" })
         escopoEq(
           supabase
             .from("propostas")
-            .select("status,valor_financiamento_aprovado,valor_financiamento,nome_banco,created_at")
-            .gte("created_at", de)
-            .lte("created_at", ateFim)
+            .select(
+              "status,valor_financiamento_aprovado,valor_financiamento,nome_banco,created_at,contrato_emitido_em",
+            )
+            .or(
+              `and(created_at.gte.${de},created_at.lte.${ateFim}),and(contrato_emitido_em.gte.${de},contrato_emitido_em.lte.${ateFim})`,
+            )
             .limit(5000),
           "usuario_responsavel_id",
         ),
@@ -174,13 +182,18 @@ export const getPanelDados = createServerFn({ method: "POST" })
 
       const simRows = (sims.data ?? []) as any[];
       const simCount = simRows.length;
-      const rows = (props.data ?? []) as any[];
+      const rowsBrutas = (props.data ?? []) as any[];
+      // Propostas cujo movimento (criação) ocorre no período.
+      const rows = rowsBrutas.filter((p) => dentroPeriodo(p.created_at));
       const enviadas = rows.filter((p) => p.status !== "rascunho");
       const aprovadas = enviadas.filter((p) =>
         ["credito_aprovado", "contrato_emitido", "registrado"].includes(p.status),
       );
-      const contratos = enviadas.filter((p) =>
-        ["contrato_emitido", "registrado"].includes(p.status),
+      // Contratos entram pela DATA DE EMISSÃO no período (independe da criação).
+      const contratos = rowsBrutas.filter(
+        (p) =>
+          ["contrato_emitido", "registrado"].includes(p.status) &&
+          dentroPeriodo(p.contrato_emitido_em),
       );
       const simConcluidas = simRows.filter((s) =>
         ["simulada", "parcialmente_simulada", "promovida"].includes(s.status),
@@ -232,7 +245,10 @@ export const getPanelDados = createServerFn({ method: "POST" })
 
       // Evolução — propostas x contratos ao longo do tempo
       const propBucket = contarPorBucket(enviadas, buckets);
-      const contratoBucket = contarPorBucket(contratos, buckets);
+      const contratoBucket = contarPorBucket(
+        contratos.map((p) => ({ created_at: p.contrato_emitido_em })),
+        buckets,
+      );
       const evoDados: PanelSerie[] = buckets.chaves.map((k) => ({
         label: buckets.rotulo(k),
         valor: propBucket.get(k) ?? 0,
@@ -244,9 +260,11 @@ export const getPanelDados = createServerFn({ method: "POST" })
           { label: "Simulações", valor: int(simCount), hint: brlCompacto(volumeSimulado), tone: "neutral" },
           { label: "Propostas enviadas", valor: int(enviadas.length), tone: "brand" },
           { label: "Taxa de aprovação", valor: pct(taxa), hint: `${aprovadas.length} aprovadas`, tone: "success" },
-          { label: "Contratos", valor: int(contratos.length), hint: brlCompacto(volume), tone: "success" },
+          { label: "Contratos emitidos", valor: int(contratos.length), hint: brlCompacto(volume), tone: "success" },
         ],
         minis: [
+          { label: "Contratos emitidos", valor: int(contratos.length), tone: "success" },
+          { label: "Volume contratado", valor: brlCompacto(volume), tone: "success" },
           { label: "Volume simulado", valor: brlCompacto(volumeSimulado), tone: "neutral" },
           { label: "Volume aprovado", valor: brlCompacto(volumeAprovado), tone: "success" },
           { label: "Ticket médio", valor: brlCompacto(ticket), tone: "brand" },
@@ -314,9 +332,12 @@ export const getPanelDados = createServerFn({ method: "POST" })
       escopoEq(
         supabase
           .from("propostas")
-          .select("status,valor_financiamento_aprovado,valor_financiamento,nome_banco,created_at")
-          .gte("created_at", de)
-          .lte("created_at", ateFim)
+          .select(
+            "status,valor_financiamento_aprovado,valor_financiamento,nome_banco,created_at,contrato_emitido_em",
+          )
+          .or(
+            `and(created_at.gte.${de},created_at.lte.${ateFim}),and(contrato_emitido_em.gte.${de},contrato_emitido_em.lte.${ateFim})`,
+          )
           .limit(5000),
         "usuario_responsavel_id",
       ),
@@ -332,7 +353,9 @@ export const getPanelDados = createServerFn({ method: "POST" })
     if (tk.error) throw new Error(tk.error.message);
 
     const simRows = (sims.data ?? []) as any[];
-    const propRows = (props.data ?? []) as any[];
+    const propRowsBrutas = (props.data ?? []) as any[];
+    // Propostas criadas no período (base das métricas por criação).
+    const propRows = propRowsBrutas.filter((p) => dentroPeriodo(p.created_at));
     const demRows = (dem.data ?? []) as any[];
     const tkRows = (tk.data ?? []) as any[];
     const agora = new Date();
@@ -344,8 +367,11 @@ export const getPanelDados = createServerFn({ method: "POST" })
     const aprovadas = propRows.filter((p) =>
       ["credito_aprovado", "contrato_emitido", "registrado"].includes(p.status),
     ).length;
-    const contratosRows = propRows.filter((p) =>
-      ["contrato_emitido", "registrado"].includes(p.status),
+    // Contratos entram pela DATA DE EMISSÃO no período (independe da criação).
+    const contratosRows = propRowsBrutas.filter(
+      (p) =>
+        ["contrato_emitido", "registrado"].includes(p.status) &&
+        dentroPeriodo(p.contrato_emitido_em),
     );
     const contratos = contratosRows.length;
     const volumeContratos = contratosRows.reduce(
@@ -429,7 +455,7 @@ export const getPanelDados = createServerFn({ method: "POST" })
         { label: "Simulações", valor: int(simRows.length), tone: "neutral" },
         { label: "Propostas", valor: int(enviadas.length), tone: "brand" },
         { label: "Taxa de aprovação", valor: pct(taxa), hint: `${aprovadas} aprovadas`, tone: "success" },
-        { label: "Contratos", valor: int(contratos), hint: brlCompacto(volumeContratos), tone: "success" },
+        { label: "Contratos emitidos", valor: int(contratos), hint: brlCompacto(volumeContratos), tone: "success" },
       ],
       minis: [
         { label: "Volume contratado", valor: brlCompacto(volumeContratos), tone: "success" },
