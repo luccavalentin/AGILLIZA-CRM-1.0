@@ -92,11 +92,21 @@ export function LandingFx({ className }: { className?: string }) {
       const rect = canvas.getBoundingClientRect();
       mx = (e.clientX - rect.left) / rect.width;
       my = (e.clientY - rect.top) / rect.height;
+      // Só ativa o efeito quando o ponteiro está sobre a área do canvas.
+      const dentro =
+        e.clientX >= rect.left &&
+        e.clientX <= rect.right &&
+        e.clientY >= rect.top &&
+        e.clientY <= rect.bottom;
+      targetIntensity = dentro ? 1 : 0;
       // Cria ondas esparsas para não sobrecarregar.
-      if (!reduce && Math.random() < 0.3) {
+      if (dentro && !reduce && Math.random() < 0.3) {
         ripples.push({ x: mx, y: my, t: 0 });
         if (ripples.length > 14) ripples.shift();
       }
+    };
+    const onLeave = () => {
+      targetIntensity = 0;
     };
 
     let start = performance.now();
