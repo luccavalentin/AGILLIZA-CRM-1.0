@@ -422,7 +422,7 @@ function AbaMensagens() {
       />
 
       <form
-        className="sticky bottom-0 mt-3 flex items-end gap-1.5 bg-background pt-2"
+        className="sticky bottom-0 flex items-end gap-1.5 border-t border-border/70 bg-background/95 p-3 backdrop-blur supports-[backdrop-filter]:bg-background/80"
         onSubmit={(e) => {
           e.preventDefault();
           const v = texto.trim();
