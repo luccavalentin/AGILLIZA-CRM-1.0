@@ -795,6 +795,7 @@ function TabResumo({
             ))}
           </TableBody>
         </Table>
+        </div>
       </div>
 
       <div className="grid gap-3 rounded-lg border border-border bg-card p-5 sm:grid-cols-2 md:grid-cols-3">
