@@ -49,19 +49,19 @@ export const explorarDocumentosGerais = createServerFn({ method: "GET" })
     const { supabase, userId } = context;
     const { data: corr } = await supabase.rpc("correspondente_do_usuario", { _user_id: userId });
 
-    // Todos os comerciais cadastrados na base (para criar a pasta mesmo sem clientes).
+    // Todos os usuários "Comercial Agilliza" (profiles.tipo_pessoa = 'comercial'),
+    // para criar uma pasta por comercial mesmo sem clientes vinculados.
     const ordenarNome = (a: DGOpcaoFiltro, b: DGOpcaoFiltro) =>
       a.nome.localeCompare(b.nome, "pt-BR");
     let comerciaisQuery = supabase
-      .from("user_roles")
-      .select("user_id, profiles!inner(id, nome, correspondente_id)")
-      .eq("role", "comercial");
-    if (corr) comerciaisQuery = comerciaisQuery.eq("profiles.correspondente_id", corr);
+      .from("profiles")
+      .select("id, nome, correspondente_id")
+      .eq("tipo_pessoa", "comercial");
+    if (corr) comerciaisQuery = comerciaisQuery.eq("correspondente_id", corr);
     const { data: comerciaisRows } = await comerciaisQuery;
     const comerciaisMap = new Map<string, string>();
-    for (const r of comerciaisRows ?? []) {
-      const p = (r as any).profiles;
-      if (p?.id) comerciaisMap.set(p.id, p.nome ?? "—");
+    for (const p of comerciaisRows ?? []) {
+      if ((p as any)?.id) comerciaisMap.set((p as any).id, (p as any).nome ?? "—");
     }
     const comerciais = Array.from(comerciaisMap, ([id, nome]) => ({ id, nome })).sort(ordenarNome);
 
@@ -113,11 +113,15 @@ export const explorarDocumentosGerais = createServerFn({ method: "GET" })
       totalDocs.set(d.cliente_id, (totalDocs.get(d.cliente_id) ?? 0) + 1);
     }
 
-    // Índice: cliente_id -> { imobiliaria, corretor } (primeiro vínculo de cada tipo).
+    // Índice: cliente_id -> { comercial, imobiliaria, corretor } (primeiro vínculo de cada tipo).
+    const comercialPorCliente = new Map<string, string>();
     const imobPorCliente = new Map<string, string>();
     const corrPorCliente = new Map<string, string>();
     for (const v of vinculos ?? []) {
       if (!v.parceiro_id) continue;
+      if (v.tipo_vinculo === "comercial_agilliza" && !comercialPorCliente.has(v.cliente_id)) {
+        comercialPorCliente.set(v.cliente_id, v.parceiro_id);
+      }
       if (v.tipo_vinculo === "imobiliaria" && !imobPorCliente.has(v.cliente_id)) {
         imobPorCliente.set(v.cliente_id, v.parceiro_id);
       }
@@ -134,7 +138,7 @@ export const explorarDocumentosGerais = createServerFn({ method: "GET" })
       const corrId = corrPorCliente.get(c.id) ?? null;
       const imobNome = imobId ? nomesParceiros.get(imobId) ?? "—" : null;
       const corrNome = corrId ? nomesParceiros.get(corrId) ?? "—" : null;
-      const comId = c.responsavel_id ?? null;
+      const comId = comercialPorCliente.get(c.id) ?? null;
       const comNome = comId ? nomesParceiros.get(comId) ?? "—" : null;
       const anaId = c.criador_id ?? null;
       const anaNome = anaId ? nomesParceiros.get(anaId) ?? "—" : null;
