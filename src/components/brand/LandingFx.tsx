@@ -145,8 +145,8 @@ export function LandingFx({ className }: { className?: string }) {
         const radius = o.r * minDim;
 
         const g = ctx.createRadialGradient(px, py, 0, px, py, radius);
-        g.addColorStop(0, `hsla(${o.hue}, ${o.sat}%, 60%, 0.42)`);
-        g.addColorStop(0.4, `hsla(${o.hue}, ${o.sat}%, 48%, 0.20)`);
+        g.addColorStop(0, `hsla(${o.hue}, ${o.sat}%, 60%, ${0.42 * intensity})`);
+        g.addColorStop(0.4, `hsla(${o.hue}, ${o.sat}%, 48%, ${0.2 * intensity})`);
         g.addColorStop(1, `hsla(${o.hue}, ${o.sat}%, 42%, 0)`);
         ctx.fillStyle = g;
         ctx.beginPath();
