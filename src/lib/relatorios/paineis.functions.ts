@@ -61,7 +61,8 @@ const brlCompacto = (v: number) => {
   return brl(n);
 };
 const int = (v: number) => (v || 0).toLocaleString("pt-BR");
-const pct = (v: number) => `${v.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`;
+const pct = (v: number) =>
+  `${Math.min(100, Math.max(0, v || 0)).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`;
 
 function topItens(map: Map<string, number>, limite = 8) {
   return [...map.entries()]
@@ -186,8 +187,13 @@ export const getPanelDados = createServerFn({ method: "POST" })
       // Propostas cujo movimento (criação) ocorre no período.
       const rows = rowsBrutas.filter((p) => dentroPeriodo(p.created_at));
       const enviadas = rows.filter((p) => p.status !== "rascunho");
-      const aprovadas = enviadas.filter((p) =>
-        ["credito_aprovado", "contrato_emitido", "registrado"].includes(p.status),
+      // Aprovadas: crédito aprovado (pela criação) + contratos (pela emissão),
+      // mantendo o funil monotônico (aprovadas >= contratos) e sem base mista.
+      const aprovadas = rowsBrutas.filter(
+        (p) =>
+          (p.status === "credito_aprovado" && dentroPeriodo(p.created_at)) ||
+          (["contrato_emitido", "registrado"].includes(p.status) &&
+            dentroPeriodo(p.contrato_emitido_em)),
       );
       // Contratos entram pela DATA DE EMISSÃO no período (independe da criação).
       const contratos = rowsBrutas.filter(
@@ -263,7 +269,6 @@ export const getPanelDados = createServerFn({ method: "POST" })
           { label: "Contratos emitidos", valor: int(contratos.length), hint: brlCompacto(volume), tone: "success" },
         ],
         minis: [
-          { label: "Contratos emitidos", valor: int(contratos.length), tone: "success" },
           { label: "Volume contratado", valor: brlCompacto(volume), tone: "success" },
           { label: "Volume simulado", valor: brlCompacto(volumeSimulado), tone: "neutral" },
           { label: "Volume aprovado", valor: brlCompacto(volumeAprovado), tone: "success" },
@@ -342,10 +347,23 @@ export const getPanelDados = createServerFn({ method: "POST" })
         "usuario_responsavel_id",
       ),
       escopoEq(
-        supabase.from("demandas").select("status,prazo_sla,titulo,id").limit(5000),
+        supabase
+          .from("demandas")
+          .select("status,prazo_sla,titulo,id")
+          .gte("created_at", de)
+          .lte("created_at", ateFim)
+          .limit(5000),
         "responsavel_id",
       ),
-      escopoEq(supabase.from("tasks").select("status,prazo,id").limit(5000), "responsavel_id"),
+      escopoEq(
+        supabase
+          .from("tasks")
+          .select("status,prazo,id")
+          .gte("created_at", de)
+          .lte("created_at", ateFim)
+          .limit(5000),
+        "responsavel_id",
+      ),
     ]);
     if (sims.error) throw new Error(sims.error.message);
     if (props.error) throw new Error(props.error.message);
@@ -364,8 +382,11 @@ export const getPanelDados = createServerFn({ method: "POST" })
       ["simulada", "parcialmente_simulada", "promovida"].includes(s.status),
     ).length;
     const simErro = simRows.filter((s) => s.status === "erro_banco").length;
-    const aprovadas = propRows.filter((p) =>
-      ["credito_aprovado", "contrato_emitido", "registrado"].includes(p.status),
+    const aprovadas = propRowsBrutas.filter(
+      (p) =>
+        (p.status === "credito_aprovado" && dentroPeriodo(p.created_at)) ||
+        (["contrato_emitido", "registrado"].includes(p.status) &&
+          dentroPeriodo(p.contrato_emitido_em)),
     ).length;
     // Contratos entram pela DATA DE EMISSÃO no período (independe da criação).
     const contratosRows = propRowsBrutas.filter(
