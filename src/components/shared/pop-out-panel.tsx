@@ -83,6 +83,7 @@ function FloatingWindow({
     x: Math.max(16, (typeof window !== "undefined" ? window.innerWidth : 1024) - 460),
     y: 88,
   }));
+  const [minimized, setMinimized] = useState(false);
   const dragRef = useRef<{ dx: number; dy: number } | null>(null);
 
   const onPointerMove = useCallback((e: PointerEvent) => {
@@ -92,7 +93,7 @@ function FloatingWindow({
       Math.max(8, e.clientX - dragRef.current.dx),
       window.innerWidth - Math.min(width, 160),
     );
-    const y = Math.min(Math.max(8, e.clientY - dragRef.current.dy), window.innerHeight - 80);
+    const y = Math.min(Math.max(8, e.clientY - dragRef.current.dy), window.innerHeight - 60);
     setPos({ x, y });
   }, []);
 
@@ -123,25 +124,45 @@ function FloatingWindow({
       role="dialog"
       aria-label={title}
       style={{ left: pos.x, top: pos.y }}
-      className="fixed z-[60] flex max-h-[85vh] min-h-[20rem] w-[92vw] min-w-[18rem] max-w-[32rem] resize flex-col overflow-hidden rounded-xl border border-border bg-background shadow-2xl"
+      className={cn(
+        "fixed z-[60] flex w-[92vw] min-w-[18rem] max-w-[32rem] flex-col overflow-hidden rounded-xl border border-border bg-background shadow-2xl",
+        minimized
+          ? "h-auto"
+          : "max-h-[85vh] min-h-[20rem] resize",
+      )}
     >
       <div
         onPointerDown={startDrag}
+        onDoubleClick={() => setMinimized((v) => !v)}
         className="flex shrink-0 cursor-grab items-center justify-between gap-2 border-b bg-muted/50 px-3 py-2 active:cursor-grabbing select-none"
       >
         <p className="truncate text-xs font-semibold text-foreground">{title}</p>
-        <button
-          type="button"
-          onClick={onClose}
-          title="Reacoplar"
-          aria-label="Reacoplar"
-          className="flex size-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-        >
-          <X className="size-3.5" />
-        </button>
+        <div className="flex items-center gap-0.5">
+          <button
+            type="button"
+            onClick={() => setMinimized((v) => !v)}
+            title={minimized ? "Expandir" : "Minimizar"}
+            aria-label={minimized ? "Expandir" : "Minimizar"}
+            className="flex size-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          >
+            {minimized ? <Maximize2 className="size-3.5" /> : <Minus className="size-3.5" />}
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            title="Reacoplar"
+            aria-label="Reacoplar"
+            className="flex size-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          >
+            <X className="size-3.5" />
+          </button>
+        </div>
       </div>
-      <div className="min-h-0 flex-1 overflow-hidden">{children}</div>
+      {!minimized && (
+        <div className="min-h-0 flex-1 overflow-hidden">{children}</div>
+      )}
     </div>,
     document.body,
   );
 }
+
