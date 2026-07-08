@@ -405,6 +405,46 @@ export function DocumentosChecklist({ clienteId }: { clienteId: string }) {
           </div>
         </CardContent>
       </Card>
+
+      {/* ITENS PERSONALIZADOS */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Itens personalizados</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-1">
+          {custom.length === 0 && (
+            <p className="text-sm text-muted-foreground">
+              Adicione itens próprios ao checklist deste cliente.
+            </p>
+          )}
+          {custom.map((item) => (
+            <DocItem
+              key={item.id}
+              itemKey={`custom_${item.id}`}
+              label={item.label}
+              cat="outros"
+              onRemove={() => removeCustom(item.id)}
+            />
+          ))}
+          <div className="mt-3 flex items-center gap-2">
+            <Input
+              value={novoItem}
+              placeholder="Novo item do checklist…"
+              onChange={(e) => setNovoItem(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  addCustom(novoItem);
+                }
+              }}
+            />
+            <Button type="button" variant="secondary" onClick={() => addCustom(novoItem)}>
+              <Plus className="size-4" /> Incluir
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
+
   );
 }
