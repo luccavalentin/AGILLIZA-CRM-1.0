@@ -178,6 +178,31 @@ function Pagina() {
     }
   }
 
+  async function arquivarContratoEmitido(clienteId: string) {
+    const anterior = qc.getQueryData<PainelStage[]>(queryKey);
+    if (anterior) {
+      qc.setQueryData(
+        queryKey,
+        anterior.map((s) => ({
+          ...s,
+          clientes: s.clientes.filter((c) => c.id !== clienteId),
+        })),
+      );
+    }
+    try {
+      await arquivarContratoFn({ data: { cliente_id: clienteId, arquivar: true } });
+      toast.success("Contrato arquivado na pasta de contratos emitidos.");
+      qc.invalidateQueries({ queryKey: ["crm-contratos-emitidos"] });
+    } catch (e) {
+      if (anterior) qc.setQueryData(queryKey, anterior);
+      toast.error(e instanceof Error ? e.message : "Falha ao arquivar o contrato.");
+    } finally {
+      qc.invalidateQueries({ queryKey: ["crm-painel"] });
+    }
+  }
+
+
+
 
 
 
