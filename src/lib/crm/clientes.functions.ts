@@ -1350,6 +1350,7 @@ export interface ContratoEmitido {
   nome_banco: string | null;
   valor_financiamento: number | null;
   contrato_emitido_em: string | null;
+  contrato_arquivado_em: string | null;
 }
 
 /**
