@@ -5,8 +5,6 @@ import { useServerFn } from "@tanstack/react-start";
 import {
   Search,
   Calculator,
-  Zap,
-  FileText,
   MoreHorizontal,
   Eye,
   Copy,
