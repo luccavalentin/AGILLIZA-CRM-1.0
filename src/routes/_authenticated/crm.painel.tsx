@@ -138,9 +138,13 @@ function Pagina() {
   }));
   const totalClientes = dadosFiltrados.reduce((acc, s) => acc + s.clientes.length, 0);
   const etapasAtivas = dadosFiltrados.filter((s) => s.clientes.length > 0).length;
-  const stageDialog = dialogStage
-    ? dadosFiltrados.find((s) => s.codigo === dialogStage)
-    : null;
+  const verTodos = dialogStage === "__todos__";
+  const stageDialog =
+    dialogStage && !verTodos ? dadosFiltrados.find((s) => s.codigo === dialogStage) : null;
+  const clientesDialog = verTodos
+    ? dadosFiltrados.flatMap((s) => s.clientes.map((c) => ({ ...c, etapaNome: s.nome })))
+    : (stageDialog?.clientes.map((c) => ({ ...c, etapaNome: stageDialog.nome })) ?? []);
+  const tituloDialog = verTodos ? "Todos os clientes" : (stageDialog?.nome ?? "Etapa");
 
   return (
     <div className="space-y-6 p-4 sm:p-6">
@@ -159,7 +163,17 @@ function Pagina() {
           </div>
         </div>
         <div className="flex flex-wrap items-end gap-3">
-          <div className="hidden items-center gap-2 rounded-xl border border-border/60 bg-card px-3 py-2 shadow-sm sm:flex">
+          <button
+            type="button"
+            onClick={() => totalClientes > 0 && setDialogStage("__todos__")}
+            disabled={totalClientes === 0}
+            title={totalClientes > 0 ? "Ver todos os clientes" : undefined}
+            className={`hidden items-center gap-2 rounded-xl border border-border/60 bg-card px-3 py-2 shadow-sm transition-all sm:flex ${
+              totalClientes > 0
+                ? "cursor-pointer hover:border-primary/50 hover:shadow-md"
+                : "cursor-default"
+            }`}
+          >
             <Users className="size-4 text-primary" />
             <span className="text-sm font-semibold tabular-nums text-foreground">
               {totalClientes}
@@ -167,7 +181,7 @@ function Pagina() {
             <span className="text-xs text-muted-foreground">
               em {etapasAtivas} de 12 etapas
             </span>
-          </div>
+          </button>
           <div className="relative w-full sm:w-64">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -387,15 +401,14 @@ function Pagina() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Users className="size-4 text-primary" />
-              {stageDialog?.nome ?? "Etapa"}
+              {tituloDialog}
             </DialogTitle>
             <DialogDescription>
-              {stageDialog?.clientes.length ?? 0} cliente(s) nesta etapa. Clique para abrir o
-              cadastro.
+              {clientesDialog.length} cliente(s). Clique para abrir o cadastro.
             </DialogDescription>
           </DialogHeader>
           <div className="max-h-[60vh] space-y-2 overflow-y-auto pr-1">
-            {(stageDialog?.clientes ?? []).map((c) => (
+            {clientesDialog.map((c) => (
               <button
                 key={c.id}
                 type="button"
@@ -412,14 +425,20 @@ function Pagina() {
                   <span className="block truncate text-sm font-medium text-foreground transition-colors group-hover:text-primary">
                     {c.nome}
                   </span>
-                  <span className="block font-mono text-[11px] text-muted-foreground">
+                  <span className="flex items-center gap-1.5 font-mono text-[11px] text-muted-foreground">
                     {c.numero_cliente}
+                    {verTodos && (
+                      <span className="truncate rounded-full bg-muted px-1.5 py-0.5 font-sans text-[10px] font-medium text-muted-foreground">
+                        {c.etapaNome}
+                      </span>
+                    )}
                   </span>
                 </span>
                 <ChevronRight className="size-4 shrink-0 text-primary opacity-0 transition-opacity group-hover:opacity-100" />
               </button>
             ))}
           </div>
+
         </DialogContent>
       </Dialog>
     </div>
