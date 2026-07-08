@@ -406,7 +406,10 @@ function AbaMensagens() {
         onSubmit={(e) => {
           e.preventDefault();
           const v = texto.trim();
-          if (v) enviar.mutate(v);
+          if (v) {
+            notifyStop();
+            enviar.mutate(v);
+          }
         }}
       >
         <Button
@@ -433,7 +436,10 @@ function AbaMensagens() {
         </Button>
         <Textarea
           value={texto}
-          onChange={(e) => setTexto(e.target.value)}
+          onChange={(e) => {
+            setTexto(e.target.value);
+            if (e.target.value.trim()) notifyTyping();
+          }}
           placeholder="Escreva sua mensagem…"
           rows={1}
           className="min-h-11 resize-none"
