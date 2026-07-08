@@ -62,6 +62,7 @@ function Pagina() {
   const mover = useServerFn(definirEtapa);
   const salvarDatas = useServerFn(definirDatasVistoria);
   const salvarContratoData = useServerFn(definirDataContratoEmitido);
+  const arquivarContratoFn = useServerFn(arquivarContrato);
   const listarContratos = useServerFn(listarContratosEmitidos);
   const [desde, setDesde] = useState("");
   const [ate, setAte] = useState("");
