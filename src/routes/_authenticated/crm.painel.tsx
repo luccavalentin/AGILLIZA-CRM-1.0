@@ -312,20 +312,34 @@ function Pagina() {
                         {stage.nome}
                       </span>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => temClientes && setDialogStage(stage.codigo)}
-                      disabled={!temClientes}
-                      title={temClientes ? "Ver clientes desta etapa" : undefined}
-                      className={`flex h-6 min-w-6 shrink-0 items-center justify-center gap-1 rounded-full px-2 text-xs font-bold tabular-nums transition-all duration-300 ${
-                        temClientes
-                          ? "cursor-pointer bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 hover:ring-2 hover:ring-primary/40"
-                          : "cursor-default bg-muted text-muted-foreground"
-                      }`}
-                    >
-                      <Users className="size-3" />
-                      {stage.clientes.length}
-                    </button>
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      {stage.codigo === "contrato_emitido" && (
+                        <button
+                          type="button"
+                          onClick={() => setArquivoAberto(true)}
+                          title="Abrir arquivo de contratos emitidos"
+                          className="flex h-6 items-center gap-1 rounded-full border border-primary/30 bg-primary/5 px-2 text-[11px] font-semibold text-primary shadow-sm transition-all hover:border-primary/60 hover:bg-primary/10"
+                        >
+                          <FolderClosed className="size-3.5" />
+                          Arquivo
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => temClientes && setDialogStage(stage.codigo)}
+                        disabled={!temClientes}
+                        title={temClientes ? "Ver clientes desta etapa" : undefined}
+                        className={`flex h-6 min-w-6 items-center justify-center gap-1 rounded-full px-2 text-xs font-bold tabular-nums transition-all duration-300 ${
+                          temClientes
+                            ? "cursor-pointer bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 hover:ring-2 hover:ring-primary/40"
+                            : "cursor-default bg-muted text-muted-foreground"
+                        }`}
+                      >
+                        <Users className="size-3" />
+                        {stage.clientes.length}
+                      </button>
+                    </div>
+
                   </div>
                   <div className="space-y-2">
                     {!temClientes ? (
