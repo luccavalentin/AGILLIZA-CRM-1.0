@@ -106,9 +106,19 @@ export function AppShell({
             <div className="flex h-16 items-center border-b border-sidebar-border px-4">
               <Logo variant="light" className="h-7" />
             </div>
-            <div className="sidebar-scroll h-[calc(100dvh-4rem)] overflow-y-auto">
+            <div className="sidebar-scroll h-[calc(100dvh-8rem)] overflow-y-auto">
               <SidebarNav nav={nav} onNavigate={() => setMobileOpen(false)} />
             </div>
+            <div className="border-t border-sidebar-border p-2">
+              <SidebarSignOut
+                collapsed={false}
+                onSignOut={() => {
+                  setMobileOpen(false);
+                  onSignOut();
+                }}
+              />
+            </div>
+
           </SheetContent>
         </Sheet>
 
