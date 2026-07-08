@@ -79,19 +79,23 @@ function FloatingWindow({
   onClose: () => void;
   children: ReactNode;
 }) {
-  const [pos, setPos] = useState(() => ({
-    x: Math.max(16, (typeof window !== "undefined" ? window.innerWidth : 1024) - 460),
-    y: 88,
-  }));
+  const WIDTH = 416;
+  const [pos, setPos] = useState(() => {
+    const vw = typeof window !== "undefined" ? window.innerWidth : 1024;
+    const vh = typeof window !== "undefined" ? window.innerHeight : 768;
+    return {
+      x: Math.max(16, Math.round((vw - WIDTH) / 2)),
+      y: Math.max(72, Math.round(vh * 0.12)),
+    };
+  });
   const [minimized, setMinimized] = useState(false);
   const dragRef = useRef<{ dx: number; dy: number } | null>(null);
 
   const onPointerMove = useCallback((e: PointerEvent) => {
     if (!dragRef.current) return;
-    const width = 440;
     const x = Math.min(
       Math.max(8, e.clientX - dragRef.current.dx),
-      window.innerWidth - Math.min(width, 160),
+      Math.max(8, window.innerWidth - WIDTH - 8),
     );
     const y = Math.min(Math.max(8, e.clientY - dragRef.current.dy), window.innerHeight - 60);
     setPos({ x, y });
