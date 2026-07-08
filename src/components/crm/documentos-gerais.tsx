@@ -373,6 +373,21 @@ export function DocumentosGerais() {
               />
             </div>
             <div className="w-full sm:w-52">
+              <Select value={filtroComercial} onValueChange={setFiltroComercial}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Comercial Agilliza" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos os comerciais</SelectItem>
+                  {comerciaisBase.map((cm) => (
+                    <SelectItem key={cm.id} value={cm.id}>
+                      {titulo(cm.nome)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="w-full sm:w-52">
               <Select value={filtroImob} onValueChange={setFiltroImob}>
                 <SelectTrigger>
                   <SelectValue placeholder="Imobiliária" />
