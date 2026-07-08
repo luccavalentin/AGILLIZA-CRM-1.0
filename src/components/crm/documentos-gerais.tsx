@@ -143,65 +143,47 @@ export function DocumentosGerais() {
     });
   }, [clientes, busca, filtroImob, filtroCorr]);
 
-  // Árvore de pastas:
-  //   Imobiliária → Corretor → Cliente
-  //   Avulso (mãe) → Comercial → Corretor → Cliente  (clientes sem imobiliária)
+  // Árvore de pastas (hierarquia oficial):
+  //   Comercial Agilliza → Imobiliária → Corretor → Cliente
+  // Todo comercial tem a sua pasta; dentro dela ficam as imobiliárias com que
+  // trabalha (uma mesma imobiliária pode aparecer em vários comerciais), e cada
+  // imobiliária lista os corretores e, por fim, os clientes.
   const raizes = useMemo<PastaNode[]>(() => {
-    const imobs = new Map<string, PastaNode>();
-    let avulso: PastaNode | null = null;
+    const comerciais = new Map<string, PastaNode>();
 
     for (const c of clientes) {
+      const comKey = c.comercial_id ? `com:${c.comercial_id}` : SEM_COMERCIAL_KEY;
+      const comNome = c.comercial_id ? titulo(c.comercial_nome) : SEM_COMERCIAL_LABEL;
+      let com = comerciais.get(comKey);
+      if (!com) {
+        com = {
+          key: comKey,
+          nome: comNome,
+          tipo: "comercial",
+          subpastas: [],
+          clientes: [],
+          total_clientes: 0,
+        };
+        comerciais.set(comKey, com);
+      }
+
+      const imobKey = c.imobiliaria_id ? `imob:${c.imobiliaria_id}` : SEM_IMOB_KEY;
+      const imobNome = c.imobiliaria_id ? titulo(c.imobiliaria_nome) : SEM_IMOB;
+      const imob = garantirFilho(com, imobKey, imobNome, "imob");
+
       const corrKey = c.corretor_id ?? SEM_CORRETOR_KEY;
       const corrNome = c.corretor_id ? titulo(c.corretor_nome) : SEM_CORRETOR;
-
-      if (c.imobiliaria_id) {
-        const imobKey = `imob:${c.imobiliaria_id}`;
-        let imob = imobs.get(imobKey);
-        if (!imob) {
-          imob = {
-            key: imobKey,
-            nome: titulo(c.imobiliaria_nome),
-            tipo: "imob",
-            subpastas: [],
-            clientes: [],
-            total_clientes: 0,
-          };
-          imobs.set(imobKey, imob);
-        }
-        const corr = garantirFilho(imob, corrKey, corrNome, "corretor");
-        corr.clientes.push(c);
-      } else {
-        if (!avulso) {
-          avulso = {
-            key: AVULSO_KEY,
-            nome: AVULSO_LABEL,
-            tipo: "avulso",
-            subpastas: [],
-            clientes: [],
-            total_clientes: 0,
-          };
-        }
-        const comKey = c.comercial_id ? `com:${c.comercial_id}` : SEM_COMERCIAL_KEY;
-        const comNome = c.comercial_id ? titulo(c.comercial_nome) : SEM_COMERCIAL_LABEL;
-        const com = garantirFilho(avulso, comKey, comNome, "comercial");
-        // Marca o analista que criou o cadastro como etiqueta da pasta comercial.
-        if (c.analista_id) {
-          if (!com.analistas) com.analistas = new Map();
-          com.analistas.set(c.analista_id, titulo(c.analista_nome));
-        }
-        const corr = garantirFilho(com, corrKey, corrNome, "corretor");
-        corr.clientes.push(c);
-      }
+      const corr = garantirFilho(imob, corrKey, corrNome, "corretor");
+      corr.clientes.push(c);
     }
 
-    const lista = Array.from(imobs.values());
-    if (avulso) lista.push(avulso);
+    const lista = Array.from(comerciais.values());
     for (const r of lista) finalizar(r);
-    // Imobiliárias em ordem alfabética; "Avulso" por último.
+    // Comerciais em ordem alfabética; "Sem comercial" por último.
     return lista.sort((a, b) => {
-      const aAvulso = a.tipo === "avulso";
-      const bAvulso = b.tipo === "avulso";
-      if (aAvulso !== bAvulso) return aAvulso ? 1 : -1;
+      const aSem = a.key === SEM_COMERCIAL_KEY;
+      const bSem = b.key === SEM_COMERCIAL_KEY;
+      if (aSem !== bSem) return aSem ? 1 : -1;
       return a.nome.localeCompare(b.nome, "pt-BR");
     });
   }, [clientes]);
