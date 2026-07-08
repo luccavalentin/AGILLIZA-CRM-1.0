@@ -566,7 +566,11 @@ export function ChatClienteConversa({ clienteId, info }: { clienteId: string; in
             );
           })
         )}
+        {peerTyping && (
+          <TypingIndicator lado="cliente" nome={info?.nome?.trim() || "Cliente"} className="mt-2" />
+        )}
         <div ref={fimRef} />
+
       </div>
 
       {/* Barra de resposta/edição acima do composer */}
