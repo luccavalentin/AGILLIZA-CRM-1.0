@@ -687,7 +687,7 @@ function MsgAcoes({
   onDelete?: () => void;
 }) {
   return (
-    <DropdownMenu>
+    <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
         <button
           type="button"
@@ -700,7 +700,14 @@ function MsgAcoes({
           <MoreVertical className="size-4" />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align={lado === "time" ? "end" : "start"} className="z-[80] w-40">
+      <DropdownMenuContent
+        align={lado === "time" ? "end" : "start"}
+        side={lado === "time" ? "left" : "right"}
+        sideOffset={8}
+        collisionPadding={16}
+        className="z-[140] w-40 shadow-xl"
+        style={{ zIndex: 140 }}
+      >
 
         {onReply && (
           <DropdownMenuItem onClick={onReply}>
