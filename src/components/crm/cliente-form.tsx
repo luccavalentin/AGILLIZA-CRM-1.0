@@ -1260,7 +1260,10 @@ export function ClienteForm({
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Dados bancários</CardTitle>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Landmark className="size-4 text-primary" /> Dados bancários
+          </CardTitle>
+
           <p className="text-sm text-muted-foreground">
             Conta usada para crédito e débito das parcelas do financiamento.
           </p>
