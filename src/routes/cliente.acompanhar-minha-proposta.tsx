@@ -374,7 +374,9 @@ function AbaMensagens() {
             <Loader2 className="h-3.5 w-3.5 animate-spin" /> Enviando anexo…
           </div>
         )}
+        {peerTyping && <TypingIndicator lado="time" nome="O time" className="mt-1" />}
         <div ref={fimRef} />
+
       </div>
 
       <input
