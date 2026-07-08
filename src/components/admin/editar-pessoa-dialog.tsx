@@ -23,6 +23,7 @@ import {
 import { listarNiveisAcesso } from "@/lib/admin/regras-modulos.functions";
 import { atualizarPessoa, type PessoaLista } from "@/lib/admin/pessoas.functions";
 import { listarTiposPessoa } from "@/lib/admin/tipos-pessoa.functions";
+import { PermissoesResumo } from "@/components/admin/permissoes-resumo";
 
 export function EditarPessoaDialog({
   pessoa,
@@ -89,9 +90,11 @@ export function EditarPessoaDialog({
     salvar.mutate();
   }
 
+  const nivelSelecionado = (niveis ?? []).find((n) => n.id === nivelId);
+
   return (
     <Dialog open={!!pessoa} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Editar pessoa</DialogTitle>
         </DialogHeader>
@@ -160,6 +163,20 @@ export function EditarPessoaDialog({
               </SelectContent>
             </Select>
           </div>
+          {nivelSelecionado && (
+            <div className="space-y-2 rounded-lg border p-4">
+              <div>
+                <p className="text-sm font-medium">
+                  Permissões de acesso — o que esta pessoa pode ver e editar
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Vinculadas ao nível “{nivelSelecionado.nome}”. Alterar as regras em “Papéis &amp;
+                  Permissões” vale imediatamente para todas as pessoas deste nível.
+                </p>
+              </div>
+              <PermissoesResumo nivel={nivelSelecionado} />
+            </div>
+          )}
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>
               Cancelar
