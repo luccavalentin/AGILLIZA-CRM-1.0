@@ -24,6 +24,12 @@ import { formatBRL } from "@/lib/simulacao/format";
  *   valor ajustado = 250.000 / 0,8 = 312.500 (arredonda p/ 313.000)
  *   entrada de fachada = 313.000 - 250.000 = 63.000
  *   financiamento liberado = 250.000
+ *
+ * Com "incluir custas" o divisor é reduzido pelo percentual de custas, inflando
+ * mais o compra e venda para cobrir despesas de cartório/ITBI.
+ *   Ex.: imóvel R$ 300 mil, sem entrada, LTV 80%, custas 5% → divisor 0,75.
+ *   valor ajustado = 300.000 / 0,75 = 400.000
+ *   entrada de fachada = 400.000 - 300.000 = 100.000 | financiado 300.000
  */
 export function JogadaNumerosDialog({
   valorImovelAtual,
