@@ -382,8 +382,11 @@ export const getPanelDados = createServerFn({ method: "POST" })
       ["simulada", "parcialmente_simulada", "promovida"].includes(s.status),
     ).length;
     const simErro = simRows.filter((s) => s.status === "erro_banco").length;
-    const aprovadas = propRows.filter((p) =>
-      ["credito_aprovado", "contrato_emitido", "registrado"].includes(p.status),
+    const aprovadas = propRowsBrutas.filter(
+      (p) =>
+        (p.status === "credito_aprovado" && dentroPeriodo(p.created_at)) ||
+        (["contrato_emitido", "registrado"].includes(p.status) &&
+          dentroPeriodo(p.contrato_emitido_em)),
     ).length;
     // Contratos entram pela DATA DE EMISSÃO no período (independe da criação).
     const contratosRows = propRowsBrutas.filter(
