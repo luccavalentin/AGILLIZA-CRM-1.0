@@ -13,6 +13,11 @@ export interface ChatMensagem {
   anexo_is_imagem: boolean;
   lida_em: string | null;
   criada_em: string;
+  editada_em: string | null;
+  excluida_em: string | null;
+  responde_a: string | null;
+  /** Prévia da mensagem citada (quando responde_a aponta para outra mensagem). */
+  citacao: { autor: string; texto: string } | null;
 }
 
 const IMG_EXT = /\.(png|jpe?g|gif|webp|bmp|heic|heif|svg)$/i;
@@ -179,15 +184,17 @@ export const listarChatCliente = createServerFn({ method: "GET" })
     const { supabase } = context;
     const { data: rows, error } = await supabase
       .from("cliente_app_mensagens")
-      .select("id, remetente_tipo, remetente_id, mensagem, anexo_url, lida_em, criada_em")
+      .select(
+        "id, remetente_tipo, remetente_id, mensagem, anexo_url, lida_em, criada_em, editada_em, excluida_em, responde_a",
+      )
       .eq("cliente_id", data.cliente_id)
       .order("criada_em", { ascending: true })
       .limit(500);
     if (error) throw new Error(error.message);
-    const lista = (rows ?? []) as Omit<
+    const lista = (rows ?? []) as (Omit<
       ChatMensagem,
-      "remetente_nome" | "anexo_nome" | "anexo_is_imagem"
-    >[];
+      "remetente_nome" | "anexo_nome" | "anexo_is_imagem" | "citacao"
+    >)[];
 
     // Nome completo dos membros da equipe que enviaram mensagens
     const idsTime = Array.from(
@@ -203,28 +210,49 @@ export const listarChatCliente = createServerFn({ method: "GET" })
       for (const p of perfis ?? []) nomes.set(p.id, p.nome ?? "");
     }
 
+    // Mapa id -> mensagem (para prévia de citações/respostas).
+    const porId = new Map<string, (typeof lista)[number]>();
+    for (const m of lista) porId.set(m.id, m);
+    function autorDe(m: (typeof lista)[number]): string {
+      if (m.remetente_tipo === "time") return nomes.get(m.remetente_id ?? "") || "Equipe";
+      return "Cliente";
+    }
+
     const comAnexo = await resolverAnexosChat(supabase, lista);
-    return comAnexo.map((m) => ({
-      ...m,
-      remetente_nome:
-        m.remetente_tipo === "time" ? (nomes.get(m.remetente_id ?? "") ?? null) : null,
-    }));
+    return comAnexo.map((m) => {
+      const alvo = m.responde_a ? porId.get(m.responde_a) : null;
+      return {
+        ...m,
+        remetente_nome:
+          m.remetente_tipo === "time" ? (nomes.get(m.remetente_id ?? "") ?? null) : null,
+        citacao: alvo
+          ? {
+              autor: autorDe(alvo),
+              texto: alvo.excluida_em
+                ? "Mensagem excluída"
+                : (alvo.mensagem?.trim() || "Anexo"),
+            }
+          : null,
+      };
+    });
   });
 
 /** Envia uma mensagem ao cliente como time e notifica o cliente no App. */
 export const responderChatCliente = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { cliente_id: string; mensagem?: string; anexo_path?: string }) =>
-    z
-      .object({
-        cliente_id: z.string().uuid(),
-        mensagem: z.string().trim().max(4000).optional(),
-        anexo_path: z.string().trim().max(1000).optional(),
-      })
-      .refine((v) => (v.mensagem?.trim()?.length ?? 0) > 0 || !!v.anexo_path, {
-        message: "Escreva uma mensagem ou anexe um arquivo.",
-      })
-      .parse(d),
+  .inputValidator(
+    (d: { cliente_id: string; mensagem?: string; anexo_path?: string; responde_a?: string }) =>
+      z
+        .object({
+          cliente_id: z.string().uuid(),
+          mensagem: z.string().trim().max(4000).optional(),
+          anexo_path: z.string().trim().max(1000).optional(),
+          responde_a: z.string().uuid().optional(),
+        })
+        .refine((v) => (v.mensagem?.trim()?.length ?? 0) > 0 || !!v.anexo_path, {
+          message: "Escreva uma mensagem ou anexe um arquivo.",
+        })
+        .parse(d),
   )
   .handler(async ({ data, context }): Promise<ChatMensagem> => {
     const { supabase } = context;
@@ -235,10 +263,51 @@ export const responderChatCliente = createServerFn({ method: "POST" })
       _anexo: (data.anexo_path ?? null) as unknown as string,
     });
     if (error) throw new Error(error.message);
-    const [resolvida] = await resolverAnexosChat(supabase, [
-      nova as unknown as { anexo_url: string | null },
-    ]);
+    const criada = nova as unknown as { id: string; anexo_url: string | null };
+    // Vincula a resposta/citação após a criação (a RPC não recebe esse campo).
+    if (data.responde_a && criada?.id) {
+      await supabase
+        .from("cliente_app_mensagens")
+        .update({ responde_a: data.responde_a })
+        .eq("id", criada.id);
+    }
+    const [resolvida] = await resolverAnexosChat(supabase, [criada]);
     return resolvida as unknown as ChatMensagem;
+  });
+
+/** Edita o texto de uma mensagem enviada pela equipe. */
+export const editarChatCliente = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { id: string; mensagem: string }) =>
+    z
+      .object({ id: z.string().uuid(), mensagem: z.string().trim().min(1).max(4000) })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { error } = await supabase
+      .from("cliente_app_mensagens")
+      .update({ mensagem: data.mensagem.trim(), editada_em: new Date().toISOString() })
+      .eq("id", data.id)
+      .eq("remetente_tipo", "time")
+      .is("excluida_em", null);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+/** Exclui (soft delete) uma mensagem enviada pela equipe. */
+export const excluirChatCliente = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { error } = await supabase
+      .from("cliente_app_mensagens")
+      .update({ excluida_em: new Date().toISOString() })
+      .eq("id", data.id)
+      .eq("remetente_tipo", "time");
+    if (error) throw new Error(error.message);
+    return { ok: true };
   });
 
 /** Marca como lidas as mensagens enviadas pelo cliente. */

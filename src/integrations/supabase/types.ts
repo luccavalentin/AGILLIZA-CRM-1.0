@@ -336,36 +336,45 @@ export type Database = {
           cliente_id: string
           correspondente_id: string | null
           criada_em: string
+          editada_em: string | null
+          excluida_em: string | null
           id: string
           lida_em: string | null
           mensagem: string
           proposta_id: string | null
           remetente_id: string | null
           remetente_tipo: string
+          responde_a: string | null
         }
         Insert: {
           anexo_url?: string | null
           cliente_id: string
           correspondente_id?: string | null
           criada_em?: string
+          editada_em?: string | null
+          excluida_em?: string | null
           id?: string
           lida_em?: string | null
           mensagem: string
           proposta_id?: string | null
           remetente_id?: string | null
           remetente_tipo: string
+          responde_a?: string | null
         }
         Update: {
           anexo_url?: string | null
           cliente_id?: string
           correspondente_id?: string | null
           criada_em?: string
+          editada_em?: string | null
+          excluida_em?: string | null
           id?: string
           lida_em?: string | null
           mensagem?: string
           proposta_id?: string | null
           remetente_id?: string | null
           remetente_tipo?: string
+          responde_a?: string | null
         }
         Relationships: [
           {
@@ -380,6 +389,13 @@ export type Database = {
             columns: ["proposta_id"]
             isOneToOne: false
             referencedRelation: "propostas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cliente_app_mensagens_responde_a_fkey"
+            columns: ["responde_a"]
+            isOneToOne: false
+            referencedRelation: "cliente_app_mensagens"
             referencedColumns: ["id"]
           },
         ]

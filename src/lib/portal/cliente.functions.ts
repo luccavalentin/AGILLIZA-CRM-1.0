@@ -60,6 +60,8 @@ export interface MensagemCliente {
   anexo_is_imagem: boolean;
   lida_em: string | null;
   criada_em: string;
+  editada_em: string | null;
+  excluida_em: string | null;
 }
 
 export interface NotificacaoCliente {
@@ -348,6 +350,8 @@ async function resolverAnexos(
         anexo_is_imagem: anexoUrl ? IMG_EXT.test(anexoUrl.split("?")[0]) : false,
         lida_em: m.lida_em ?? null,
         criada_em: m.criada_em,
+        editada_em: m.editada_em ?? null,
+        excluida_em: m.excluida_em ?? null,
       } as MensagemCliente;
     }),
   );
