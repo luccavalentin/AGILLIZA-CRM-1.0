@@ -629,7 +629,10 @@ export function ChatClienteConversa({ clienteId, info }: { clienteId: string; in
         <Textarea
           ref={textareaRef}
           value={texto}
-          onChange={(e) => setTexto(e.target.value)}
+          onChange={(e) => {
+            setTexto(e.target.value);
+            if (e.target.value.trim()) notifyTyping();
+          }}
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();
