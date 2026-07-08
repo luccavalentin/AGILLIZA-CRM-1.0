@@ -49,6 +49,7 @@ function atrasada(d: any): boolean {
 function Pagina() {
   const [escopo, setEscopo] = useState<"minhas" | "equipe">("equipe");
   const [q, setQ] = useState("");
+  const navigate = useNavigate();
   const escalarFn = useServerFn(escalarDemanda);
   const excluir = useServerFn(excluirDemanda);
 
