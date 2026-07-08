@@ -69,6 +69,9 @@ function Pagina() {
   const [busca, setBusca] = useState("");
   const [dialogStage, setDialogStage] = useState<string | null>(null);
   const [arquivoAberto, setArquivoAberto] = useState(false);
+  const [contratoBusca, setContratoBusca] = useState("");
+  const [contratoDesde, setContratoDesde] = useState("");
+  const [contratoAte, setContratoAte] = useState("");
   const [arrasto, setArrasto] = useState<Arrasto | null>(null);
   const [alvo, setAlvo] = useState<string | null>(null);
   const arrastouRef = useRef(false);
