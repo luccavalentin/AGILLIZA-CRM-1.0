@@ -56,8 +56,12 @@ export interface PanelDados {
 const brl = (v: number) => (v || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 const brlCompacto = (v: number) => {
   const n = v || 0;
-  if (n >= 1_000_000) return `R$ ${(n / 1_000_000).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}mi`;
-  if (n >= 1_000) return `R$ ${(n / 1_000).toLocaleString("pt-BR", { maximumFractionDigits: 0 })}mil`;
+  // Mantém uma casa decimal em milhares/milhões para não distorcer o valor
+  // real (ex.: R$ 615.300 vira "R$ 615,3 mil", não "R$ 615 mil").
+  if (Math.abs(n) >= 1_000_000)
+    return `R$ ${(n / 1_000_000).toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 2 })} mi`;
+  if (Math.abs(n) >= 1_000)
+    return `R$ ${(n / 1_000).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} mil`;
   return brl(n);
 };
 const int = (v: number) => (v || 0).toLocaleString("pt-BR");
@@ -201,15 +205,21 @@ export const getPanelDados = createServerFn({ method: "POST" })
           ["contrato_emitido", "registrado"].includes(p.status) &&
           dentroPeriodo(p.contrato_emitido_em),
       );
-      const simConcluidas = simRows.filter((s) =>
+      const simConcluidasRows = simRows.filter((s) =>
         ["simulada", "parcialmente_simulada", "promovida"].includes(s.status),
-      ).length;
+      );
+      const simConcluidas = simConcluidasRows.length;
       const simErro = simRows.filter((s) => s.status === "erro_banco").length;
       const volume = contratos.reduce(
         (s, p) => s + (p.valor_financiamento_aprovado ?? p.valor_financiamento ?? 0),
         0,
       );
-      const volumeSimulado = simRows.reduce((s, r) => s + (r.valor_financiamento ?? 0), 0);
+      // Volume simulado considera apenas simulações que efetivamente foram
+      // simuladas (com retorno), ignorando rascunhos, erros e cancelamentos.
+      const volumeSimulado = simConcluidasRows.reduce(
+        (s, r) => s + (r.valor_financiamento ?? 0),
+        0,
+      );
       const volumeAprovado = aprovadas.reduce(
         (s, p) => s + (p.valor_financiamento_aprovado ?? p.valor_financiamento ?? 0),
         0,
@@ -378,9 +388,10 @@ export const getPanelDados = createServerFn({ method: "POST" })
     const tkRows = (tk.data ?? []) as any[];
     const agora = new Date();
     const enviadas = propRows.filter((p) => p.status !== "rascunho");
-    const simConcluidas = simRows.filter((s) =>
+    const simConcluidasRows = simRows.filter((s) =>
       ["simulada", "parcialmente_simulada", "promovida"].includes(s.status),
-    ).length;
+    );
+    const simConcluidas = simConcluidasRows.length;
     const simErro = simRows.filter((s) => s.status === "erro_banco").length;
     const aprovadas = propRowsBrutas.filter(
       (p) =>
@@ -413,7 +424,11 @@ export const getPanelDados = createServerFn({ method: "POST" })
     ).length;
     const recusadas = propRows.filter((p) => p.status === "credito_recusado").length;
     const rascunhos = propRows.length - enviadas.length;
-    const volumeSimulado = simRows.reduce((s, r) => s + (r.valor_financiamento ?? 0), 0);
+    // Volume simulado: apenas simulações efetivamente simuladas (com retorno).
+    const volumeSimulado = simConcluidasRows.reduce(
+      (s, r) => s + (r.valor_financiamento ?? 0),
+      0,
+    );
     const ticket = contratos ? volumeContratos / contratos : 0;
     const convSimProp = simRows.length ? (enviadas.length / simRows.length) * 100 : 0;
     const convPropContrato = enviadas.length ? (contratos / enviadas.length) * 100 : 0;
