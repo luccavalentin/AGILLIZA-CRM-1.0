@@ -151,6 +151,9 @@ export function AppShell({
           </main>
         </div>
       </div>
+      <Suspense fallback={null}>
+        <FloatingChatHost />
+      </Suspense>
     </TooltipProvider>
   );
 }
