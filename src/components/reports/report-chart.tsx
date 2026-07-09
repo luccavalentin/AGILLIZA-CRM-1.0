@@ -18,6 +18,7 @@ import type { ReportChart } from "@/lib/relatorios/shared";
 import { formatBRL } from "@/lib/simulacao/format";
 import { corDoBanco } from "@/lib/bancos/cores";
 import { logoUrlDoBanco } from "@/components/bancos/banco-logo";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 // Tokens do tema são valores HEX (não canais HSL), então referencie-os
 // diretamente com var(--x) — envolver em hsl() produziria cor inválida.
@@ -86,6 +87,56 @@ const tooltipStyle = {
 const tooltipLabelStyle = { color: "var(--muted-foreground)", fontWeight: 500, marginBottom: 2 };
 const tooltipItemStyle = { color: "var(--foreground)", fontWeight: 600 };
 
+function MobileBarList({
+  chart,
+  colorByBank,
+  fmt,
+}: {
+  chart: ReportChart;
+  colorByBank: boolean;
+  fmt: (v: number) => string;
+}) {
+  const maxValor = Math.max(1, ...chart.dados.map((d) => Number(d.valor) || 0));
+  return (
+    <div className="flex h-full min-h-[8rem] flex-col justify-center gap-3 overflow-hidden py-1">
+      {chart.dados.map((d) => {
+        const valor = Number(d.valor) || 0;
+        const logo = colorByBank ? logoUrlDoBanco(d.label) : undefined;
+        const cor = colorByBank
+          ? corDoBanco(d.label)
+          : "linear-gradient(90deg, color-mix(in oklab, var(--primary) 55%, transparent), var(--primary))";
+        return (
+          <div key={d.label} className="min-w-0 space-y-1.5">
+            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 text-xs">
+              <span className="flex min-w-0 items-center gap-2 font-medium text-foreground">
+                {logo && (
+                  <img
+                    src={logo}
+                    alt=""
+                    aria-hidden="true"
+                    className="h-5 w-5 shrink-0 object-contain"
+                    loading="lazy"
+                  />
+                )}
+                <span className="truncate">{d.label}</span>
+              </span>
+              <span className="shrink-0 font-mono font-semibold tabular-nums text-foreground">
+                {fmt(valor)}
+              </span>
+            </div>
+            <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+              <div
+                className="h-full rounded-full transition-all duration-500"
+                style={{ width: `${Math.max(4, (valor / maxValor) * 100)}%`, background: cor }}
+              />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 /** Renderiza um gráfico de relatório/painel conforme o tipo. */
 export function ReportChartView({
   chart,
@@ -95,6 +146,7 @@ export function ReportChartView({
   /** Colore cada barra com a cor de marca do banco correspondente ao rótulo. */
   colorByBank?: boolean;
 }) {
+  const isMobile = useIsMobile();
   const fmt = chart.moeda
     ? (v: number) => formatBRL(Number(v))
     : (v: number) => Number(v).toLocaleString("pt-BR");
@@ -231,6 +283,10 @@ export function ReportChartView({
   }
 
   if (chart.tipo === "barh" || chart.tipo === "funnel") {
+    if (isMobile) {
+      return <MobileBarList chart={chart} colorByBank={colorByBank} fmt={fmt} />;
+    }
+
     const maxValor = Math.max(0, ...chart.dados.map((d) => Number(d.valor) || 0));
     const intTicks = !allowDecimals ? niceIntTicks(maxValor) : undefined;
     return (
