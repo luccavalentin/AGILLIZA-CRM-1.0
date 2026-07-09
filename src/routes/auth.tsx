@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { getMinhaSessao } from "@/lib/session.functions";
+import { getMinhasPermissoes } from "@/lib/permissions.functions";
 import { ERRO_CREDENCIAIS, portaEntradaDeRoles, destinoPosLogin } from "@/lib/auth-routing";
 
 export const Route = createFileRoute("/auth")({
