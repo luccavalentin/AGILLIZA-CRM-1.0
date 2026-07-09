@@ -68,27 +68,27 @@ export function PanelHeader({
   actions?: ReactNode;
 }) {
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-border bg-card p-5 md:p-6">
+    <div className="relative overflow-hidden rounded-xl border border-border bg-card p-4 md:p-6">
       {/* Halo de marca no canto */}
       <span
         aria-hidden
         className="pointer-events-none absolute -right-24 -top-24 h-56 w-56 rounded-full opacity-70 blur-2xl"
         style={{ background: "color-mix(in oklab, var(--primary) 12%, transparent)" }}
       />
-      <div className="relative flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+      <div className="relative grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
         <div className="min-w-0">
-          <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
-            <span className="inline-block h-1 w-6 rounded-full bg-primary" />
-            {eyebrow}
+          <p className="flex min-w-0 items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-primary sm:text-[11px] sm:tracking-[0.18em]">
+            <span className="inline-block h-1 w-5 shrink-0 rounded-full bg-primary sm:w-6" />
+            <span className="truncate">{eyebrow}</span>
           </p>
-          <h1 className="mt-2 text-[28px] font-semibold leading-tight tracking-tight text-foreground">
+          <h1 className="mt-2 text-2xl font-semibold leading-tight tracking-tight text-foreground sm:text-[28px]">
             {titulo}
           </h1>
           <p className="mt-1.5 max-w-xl text-sm text-muted-foreground">{descricao}</p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="grid min-w-0 grid-cols-1 gap-2 sm:flex sm:flex-wrap sm:items-center sm:justify-end">
           {atualizadoEm && (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background/60 px-3 py-1 text-[11px] tabular-nums text-muted-foreground">
+            <span className="inline-flex min-w-0 items-center justify-center gap-1.5 rounded-full border border-border bg-background/60 px-3 py-1 text-[11px] tabular-nums text-muted-foreground sm:justify-start">
               <span className="relative flex h-1.5 w-1.5">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-60" />
                 <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-success" />
@@ -116,8 +116,8 @@ export function PanelToolbar({ children }: { children: ReactNode }) {
 /** Separador entre grupos de seções. */
 export function SectionTitle({ children }: { children: ReactNode }) {
   return (
-    <div className="flex items-center gap-3">
-      <h2 className="text-[11px] font-semibold uppercase tracking-[0.16em] text-foreground/70">
+    <div className="flex min-w-0 items-center gap-3 overflow-hidden">
+      <h2 className="shrink-0 text-[11px] font-semibold uppercase tracking-[0.08em] text-foreground/70 sm:tracking-[0.16em]">
         {children}
       </h2>
       <span className="h-px flex-1 bg-gradient-to-r from-border to-transparent" />
@@ -144,7 +144,7 @@ export function HeroMetric({
   const conteudo = (
     <Card
       className={cn(
-        "group relative h-full overflow-hidden p-4 pl-5 transition-all duration-200",
+        "group relative h-full min-w-0 overflow-hidden p-3 pl-4 transition-all duration-200 sm:p-4 sm:pl-5",
         to &&
           "cursor-pointer hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5",
       )}
@@ -154,8 +154,8 @@ export function HeroMetric({
         className={cn("absolute left-0 top-0 h-full w-[3px]", toneBar[tone])}
         style={{ boxShadow: `0 0 12px ${toneGlow[tone]}` }}
       />
-      <div className="flex items-center justify-between">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
+        <p className="min-w-0 truncate text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground sm:text-[11px] sm:tracking-[0.12em]">
           {label}
         </p>
         {Icon ? (
@@ -172,7 +172,7 @@ export function HeroMetric({
           <ArrowUpRight className="h-4 w-4 text-muted-foreground/40 transition-all group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-primary" />
         ) : null}
       </div>
-      <p className="mt-3 font-mono text-[32px] font-semibold leading-none tabular-nums text-foreground">
+       <p className="mt-3 min-w-0 truncate font-mono text-[clamp(1.25rem,8vw,2rem)] font-semibold leading-none tabular-nums text-foreground sm:text-[32px]">
         {valor}
       </p>
       {hint && <p className="mt-2 truncate text-xs text-muted-foreground">{hint}</p>}
@@ -205,16 +205,16 @@ export function MiniMetric({
   const conteudo = (
     <Card
       className={cn(
-        "group relative h-full overflow-hidden p-3 pl-4 transition-all duration-200",
+        "group relative h-full min-w-0 overflow-hidden p-3 pl-4 transition-all duration-200",
         to &&
           "cursor-pointer hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md hover:shadow-primary/5",
       )}
     >
       <span className={cn("absolute left-0 top-0 h-full w-[2px]", toneBar[tone])} />
-      <p className="truncate text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+      <p className="truncate text-[10px] font-semibold uppercase tracking-[0.06em] text-muted-foreground sm:tracking-[0.1em]">
         {label}
       </p>
-      <p className="mt-1.5 font-mono text-xl font-semibold tabular-nums text-foreground">{valor}</p>
+      <p className="mt-1.5 min-w-0 truncate font-mono text-[clamp(1rem,6vw,1.25rem)] font-semibold tabular-nums text-foreground sm:text-xl">{valor}</p>
     </Card>
   );
   return to ? (
@@ -242,12 +242,12 @@ export function PanelCard({
   children: ReactNode;
 }) {
   return (
-    <Card className="flex h-full flex-col p-5">
-      <div className="mb-4 flex items-start justify-between gap-2">
+    <Card className="flex h-full min-w-0 flex-col overflow-hidden p-4 sm:p-5">
+      <div className="mb-4 grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
         <div className="min-w-0">
-          <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-            <span className="inline-block h-3.5 w-1 rounded-full bg-primary" />
-            {titulo}
+          <h3 className="flex min-w-0 items-center gap-2 text-sm font-semibold text-foreground">
+            <span className="inline-block h-3.5 w-1 shrink-0 rounded-full bg-primary" />
+            <span className="truncate">{titulo}</span>
           </h3>
           {subtitulo && <p className="mt-1 pl-3 text-xs text-muted-foreground">{subtitulo}</p>}
         </div>
@@ -284,7 +284,7 @@ export function MetricList({
         const cor = colorByBank ? corDoBanco(i.label) : undefined;
         return (
           <li key={i.label}>
-            <div className="flex items-center justify-between text-sm">
+            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 text-sm">
               <span className="flex min-w-0 items-center gap-2 text-foreground">
                 {colorByBank ? (
                   <BancoLogo nome={i.label} size="xs" />
@@ -295,7 +295,7 @@ export function MetricList({
                 )}
                 <span className="truncate font-medium">{i.label}</span>
               </span>
-              <span className="ml-2 font-mono tabular-nums text-foreground">
+              <span className="shrink-0 font-mono tabular-nums text-foreground">
                 {i.display ?? i.valor.toLocaleString("pt-BR")}
               </span>
             </div>
@@ -333,13 +333,13 @@ export function AlertRow({
 }) {
   const conteudo = (
     <div
-      className="flex items-center gap-3 rounded-lg border border-border px-3 py-2.5 transition-colors"
+      className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-3 rounded-lg border border-border px-3 py-2.5 transition-colors"
       style={{ background: toneWash[tone] }}
     >
-      <span className={cn("h-2 w-2 shrink-0 rounded-full", toneDot[tone])} />
+      <span className={cn("mt-1.5 h-2 w-2 shrink-0 rounded-full", toneDot[tone])} />
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-foreground">{titulo}</p>
-        {descricao && <p className="truncate text-xs text-muted-foreground">{descricao}</p>}
+        <p className="break-words text-sm font-medium leading-snug text-foreground">{titulo}</p>
+        {descricao && <p className="mt-0.5 break-words text-xs leading-snug text-muted-foreground">{descricao}</p>}
       </div>
       {contador != null && (
         <span
