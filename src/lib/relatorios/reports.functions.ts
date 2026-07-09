@@ -913,10 +913,14 @@ export const runReport = createServerFn({ method: "POST" })
       const completas = sims.filter((s) => s.tipo_simulacao === "completa").length;
       const erro = sims.filter((s) => s.status === "erro_banco").length;
       const promovidas = sims.filter((s) => s.status === "promovida").length;
+      // Simulações que efetivamente foram simuladas (com retorno) — base para
+      // volume e ticket médio simulado.
+      const simuladas = sims.filter((s) =>
+        ["simulada", "parcialmente_simulada", "promovida"].includes(s.status),
+      );
       const conv = sims.length ? (promovidas / sims.length) * 100 : 0;
-      const ticket = sims.length
-        ? sims.reduce((s, x) => s + (x.valor_financiamento ?? 0), 0) / sims.length
-        : 0;
+      const volumeSimulado = simuladas.reduce((s, x) => s + (x.valor_financiamento ?? 0), 0);
+      const ticket = simuladas.length ? volumeSimulado / simuladas.length : 0;
       const statusMap = new Map<string, number>();
       sims.forEach((s) => statusMap.set(s.status, (statusMap.get(s.status) ?? 0) + 1));
       return {
@@ -928,6 +932,7 @@ export const runReport = createServerFn({ method: "POST" })
           { label: "Rápidas", valor: int(rapidas), tone: "neutral" },
           { label: "Completas", valor: int(completas), tone: "brand" },
           { label: "Com erro", valor: int(erro), tone: "danger" },
+          { label: "Volume simulado", valor: brl(volumeSimulado), tone: "success" },
           { label: "Conversão sim→prop", valor: pct(conv), tone: "success" },
           { label: "Ticket médio", valor: brl(ticket), tone: "brand" },
         ],
