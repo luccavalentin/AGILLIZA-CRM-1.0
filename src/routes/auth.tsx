@@ -39,7 +39,14 @@ function AuthPage() {
         toast.error(ERRO_CREDENCIAIS);
         return;
       }
-      const sessao = await getMinhaSessao();
+      // Busca sessão e permissões em paralelo já no login. Assim o shell
+      // interno encontra os dados prontos no cache e não refaz as consultas,
+      // eliminando o round-trip extra que deixava a entrada lenta.
+      const queryClient = router.options.context.queryClient;
+      const [sessao, permissoes] = await Promise.all([
+        getMinhaSessao(),
+        getMinhasPermissoes().catch(() => null),
+      ]);
 
       if (!sessao.profile?.ativo || sessao.profile?.bloqueado_em) {
         await supabase.auth.signOut();
@@ -60,6 +67,11 @@ function AuthPage() {
         navigate({ to: "/parceiro" });
         return;
       }
+
+      // Semeia o cache para o shell interno abrir instantaneamente.
+      queryClient.setQueryData(["minha-sessao"], sessao);
+      if (permissoes) queryClient.setQueryData(["minhas-permissoes"], permissoes);
+
       router.invalidate();
       navigate({ to: destinoPosLogin("sistema") });
     } catch {
