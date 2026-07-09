@@ -118,7 +118,7 @@ export function PainelView({
     : undefined;
 
   return (
-    <div className="mx-auto w-full max-w-[1600px] space-y-8 p-4 md:p-6">
+    <div className="mx-auto w-full max-w-[1600px] space-y-6 p-3 sm:p-4 md:space-y-8 md:p-6">
       <PanelHeader
         eyebrow={eyebrow}
         titulo={titulo}
@@ -134,7 +134,7 @@ export function PainelView({
               podeGeral={perms?.podeGeral ?? false}
             />
             <Select value={periodo} onValueChange={(v) => setPeriodo(v as Periodo)}>
-              <SelectTrigger className="h-9 w-40">
+              <SelectTrigger className="h-9 w-full sm:w-40">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -157,7 +157,7 @@ export function PainelView({
         </Card>
       ) : isLoading || !data ? (
         <div className="space-y-6">
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {Array.from({ length: 4 }).map((_, i) => (
               <Skeleton key={i} className="h-24" />
             ))}
@@ -167,7 +167,7 @@ export function PainelView({
       ) : (
         <>
           <SectionTitle>Indicadores executivos</SectionTitle>
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {data.heros.map((h) => (
               <HeroMetric
                 key={h.label}
@@ -267,9 +267,11 @@ export function PainelView({
 
           <SectionTitle>Alertas</SectionTitle>
           {data.alertas.length === 0 ? (
-            <Card className="flex items-center gap-3 p-4">
-              <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-              <p className="text-sm text-muted-foreground">Operação sem alertas críticos.</p>
+            <Card className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-3 p-4">
+              <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-success" />
+              <p className="min-w-0 text-sm leading-snug text-muted-foreground">
+                Operação sem alertas críticos.
+              </p>
             </Card>
           ) : (
             <div className="space-y-2">
