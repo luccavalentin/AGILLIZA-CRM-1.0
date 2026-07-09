@@ -70,10 +70,11 @@ export function GlobalSearch() {
     <>
       <Button
         variant="outline"
-        className="h-9 w-full max-w-xs justify-start gap-2 text-muted-foreground"
+        className="h-10 w-10 shrink-0 justify-center gap-2 px-0 text-muted-foreground sm:h-9 sm:w-64 sm:max-w-xs sm:justify-start sm:px-3"
         onClick={() => setOpen(true)}
+        aria-label="Buscar"
       >
-        <Search className="h-4 w-4" />
+        <Search className="h-4 w-4 shrink-0" />
         <span className="hidden sm:inline">Buscar…</span>
         <kbd className="pointer-events-none ml-auto hidden select-none items-center gap-0.5 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium sm:inline-flex">
           ⌘K
