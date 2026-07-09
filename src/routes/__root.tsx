@@ -8,20 +8,11 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { Suspense, lazy, useEffect, type ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import { THEME_INIT_SCRIPT } from "@/lib/theme";
 
 import appCss from "../styles.css?url";
 import { reportError } from "../lib/error-reporting";
-
-// A conversa flutuante arrasta toda a feature de chat do CRM. Carregada de
-// forma preguiçosa para não pesar no bundle inicial da tela de login e dos
-// portais públicos (onde ela nunca aparece).
-const FloatingChatHost = lazy(() =>
-  import("@/components/shared/floating-chat-host").then((m) => ({
-    default: m.FloatingChatHost,
-  })),
-);
 
 function NotFoundComponent() {
   return (
