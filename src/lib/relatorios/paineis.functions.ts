@@ -388,9 +388,10 @@ export const getPanelDados = createServerFn({ method: "POST" })
     const tkRows = (tk.data ?? []) as any[];
     const agora = new Date();
     const enviadas = propRows.filter((p) => p.status !== "rascunho");
-    const simConcluidas = simRows.filter((s) =>
+    const simConcluidasRows = simRows.filter((s) =>
       ["simulada", "parcialmente_simulada", "promovida"].includes(s.status),
-    ).length;
+    );
+    const simConcluidas = simConcluidasRows.length;
     const simErro = simRows.filter((s) => s.status === "erro_banco").length;
     const aprovadas = propRowsBrutas.filter(
       (p) =>
