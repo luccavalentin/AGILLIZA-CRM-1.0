@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { Suspense, lazy, useEffect, useState, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { LogOut } from "lucide-react";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
@@ -10,6 +10,15 @@ import { SidebarNav, SidebarRail } from "./sidebar-nav";
 import { Topbar, type ShellUser } from "./topbar";
 import { ChatAlertWatcher } from "@/components/shared/chat-alert-watcher";
 import type { NavGroup } from "./nav-config";
+
+// A conversa flutuante arrasta toda a feature de chat do CRM. Carregada de
+// forma preguiçosa e apenas dentro do shell interno, para não pesar no bundle
+// inicial da tela de login e dos portais públicos (onde ela nunca aparece).
+const FloatingChatHost = lazy(() =>
+  import("@/components/shared/floating-chat-host").then((m) => ({
+    default: m.FloatingChatHost,
+  })),
+);
 
 const STORAGE_KEY = "agilliza-sidebar-collapsed";
 
