@@ -205,15 +205,21 @@ export const getPanelDados = createServerFn({ method: "POST" })
           ["contrato_emitido", "registrado"].includes(p.status) &&
           dentroPeriodo(p.contrato_emitido_em),
       );
-      const simConcluidas = simRows.filter((s) =>
+      const simConcluidasRows = simRows.filter((s) =>
         ["simulada", "parcialmente_simulada", "promovida"].includes(s.status),
-      ).length;
+      );
+      const simConcluidas = simConcluidasRows.length;
       const simErro = simRows.filter((s) => s.status === "erro_banco").length;
       const volume = contratos.reduce(
         (s, p) => s + (p.valor_financiamento_aprovado ?? p.valor_financiamento ?? 0),
         0,
       );
-      const volumeSimulado = simRows.reduce((s, r) => s + (r.valor_financiamento ?? 0), 0);
+      // Volume simulado considera apenas simulações que efetivamente foram
+      // simuladas (com retorno), ignorando rascunhos, erros e cancelamentos.
+      const volumeSimulado = simConcluidasRows.reduce(
+        (s, r) => s + (r.valor_financiamento ?? 0),
+        0,
+      );
       const volumeAprovado = aprovadas.reduce(
         (s, p) => s + (p.valor_financiamento_aprovado ?? p.valor_financiamento ?? 0),
         0,
