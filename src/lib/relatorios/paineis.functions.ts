@@ -56,8 +56,12 @@ export interface PanelDados {
 const brl = (v: number) => (v || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 const brlCompacto = (v: number) => {
   const n = v || 0;
-  if (n >= 1_000_000) return `R$ ${(n / 1_000_000).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}mi`;
-  if (n >= 1_000) return `R$ ${(n / 1_000).toLocaleString("pt-BR", { maximumFractionDigits: 0 })}mil`;
+  // Mantém uma casa decimal em milhares/milhões para não distorcer o valor
+  // real (ex.: R$ 615.300 vira "R$ 615,3 mil", não "R$ 615 mil").
+  if (Math.abs(n) >= 1_000_000)
+    return `R$ ${(n / 1_000_000).toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 2 })} mi`;
+  if (Math.abs(n) >= 1_000)
+    return `R$ ${(n / 1_000).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} mil`;
   return brl(n);
 };
 const int = (v: number) => (v || 0).toLocaleString("pt-BR");
