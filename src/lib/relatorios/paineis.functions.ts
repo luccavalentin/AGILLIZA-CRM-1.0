@@ -424,7 +424,11 @@ export const getPanelDados = createServerFn({ method: "POST" })
     ).length;
     const recusadas = propRows.filter((p) => p.status === "credito_recusado").length;
     const rascunhos = propRows.length - enviadas.length;
-    const volumeSimulado = simRows.reduce((s, r) => s + (r.valor_financiamento ?? 0), 0);
+    // Volume simulado: apenas simulações efetivamente simuladas (com retorno).
+    const volumeSimulado = simConcluidasRows.reduce(
+      (s, r) => s + (r.valor_financiamento ?? 0),
+      0,
+    );
     const ticket = contratos ? volumeContratos / contratos : 0;
     const convSimProp = simRows.length ? (enviadas.length / simRows.length) * 100 : 0;
     const convPropContrato = enviadas.length ? (contratos / enviadas.length) * 100 : 0;
