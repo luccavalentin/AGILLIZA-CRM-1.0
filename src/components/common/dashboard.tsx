@@ -242,7 +242,7 @@ export function PanelCard({
   children: ReactNode;
 }) {
   return (
-    <Card className="flex h-full min-w-0 flex-col overflow-hidden p-4 sm:p-5">
+    <Card className="flex h-full min-w-0 flex-col p-4 sm:p-5">
       <div className="mb-4 grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
         <div className="min-w-0">
           <h3 className="flex min-w-0 items-center gap-2 text-sm font-semibold text-foreground">
