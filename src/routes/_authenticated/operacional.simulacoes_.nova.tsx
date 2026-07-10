@@ -200,10 +200,8 @@ function Pagina() {
       </div>
 
       <div className="flex flex-col gap-4">
-        {/* Seção: Produto e valores */}
         <Card className="overflow-hidden">
-          <SecaoCabecalho icone={<Home className="h-4 w-4" />} titulo="Imóvel e crédito" />
-          <div className="space-y-5 p-5">
+          <div className="space-y-5 p-5 md:p-6">
         <div className="space-y-1.5">
           <Label>Produto</Label>
           <Select
