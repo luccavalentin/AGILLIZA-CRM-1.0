@@ -41,7 +41,7 @@ function Pagina() {
   const { router, modoProposta, f, enviando, concluidos, mostraConjuge, confirmRenda, setConfirmRenda, enviar, executarEnvio } = ctx;
 
   return (
-    <div className="mx-auto w-full max-w-4xl space-y-5 p-4 md:p-8">
+    <div className="mx-auto w-full max-w-4xl space-y-4 p-4 md:p-8">
       <Button
         variant="ghost"
         size="sm"
@@ -59,7 +59,7 @@ function Pagina() {
         <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/20">
           <FileText className="h-6 w-6" />
         </span>
-        <div>
+        <div className="min-w-0">
           <h1 className="text-lg font-semibold tracking-tight text-foreground">
             {modoProposta ? "Nova Proposta" : "Solicitar Simulação Completa"}
           </h1>
@@ -71,27 +71,64 @@ function Pagina() {
         </div>
       </div>
 
-      <Card className="p-5 md:p-6">
-        <SecaoOperacaoImovel ctx={ctx} />
+      <Card className="overflow-hidden">
+        <SecaoCabecalho
+          icone={<Home className="h-4 w-4" />}
+          titulo="Operação e imóvel"
+          descricao="Produto, características e valores"
+        />
+        <div className="p-4 sm:p-5 md:p-6">
+          <SecaoOperacaoImovel ctx={ctx} />
+        </div>
       </Card>
 
-      <Card className="p-5 md:p-6">
-        <SecaoTitular ctx={ctx} />
+      <Card className="overflow-hidden">
+        <SecaoCabecalho
+          icone={<User className="h-4 w-4" />}
+          titulo="Titular"
+          descricao="Dados do proponente principal"
+        />
+        <div className="p-4 sm:p-5 md:p-6">
+          <SecaoTitular ctx={ctx} />
+        </div>
       </Card>
 
       {mostraConjuge && (
-        <Card className="p-5 md:p-6">
-          <SecaoConjuge ctx={ctx} />
+        <Card className="overflow-hidden">
+          <SecaoCabecalho
+            icone={<Users className="h-4 w-4" />}
+            titulo="Cônjuge / coobrigado"
+            descricao="Composição de renda"
+          />
+          <div className="p-4 sm:p-5 md:p-6">
+            <SecaoConjuge ctx={ctx} />
+          </div>
         </Card>
       )}
 
-      <Card className="p-5 md:p-6">
-        <SecaoBancos ctx={ctx} />
+      <Card className="overflow-hidden">
+        <SecaoCabecalho
+          icone={<Landmark className="h-4 w-4" />}
+          titulo="Bancos"
+          descricao="Selecione as instituições para consultar"
+        />
+        <div className="p-4 sm:p-5 md:p-6">
+          <SecaoBancos ctx={ctx} />
+        </div>
       </Card>
 
-      <Card className="p-5 md:p-6">
-        <SecaoConsentimentos ctx={ctx} />
+      <Card className="overflow-hidden">
+        <SecaoCabecalho
+          icone={<ShieldCheck className="h-4 w-4" />}
+          titulo="Consentimentos"
+          descricao="Autorizações necessárias"
+        />
+        <div className="p-4 sm:p-5 md:p-6">
+          <SecaoConsentimentos ctx={ctx} />
+        </div>
       </Card>
+
+
 
       <div className="flex justify-end pt-1">
         <Button className="h-11 gap-2 px-8" onClick={enviar} disabled={enviando}>
