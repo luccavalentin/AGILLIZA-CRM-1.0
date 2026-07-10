@@ -38,13 +38,13 @@ export function VisionSelector({
     ...(podeGeral ? (["geral"] as Escopo[]) : []),
   ];
   return (
-    <div className="inline-flex rounded-md border border-border bg-card p-0.5">
+    <div className="inline-flex rounded-lg border border-border bg-card p-0.5 shadow-[var(--shadow-card)]">
       {opts.map((o) => (
         <button
           key={o}
           type="button"
           onClick={() => onChange(o)}
-          className={`rounded px-2.5 py-1 text-xs font-medium transition-colors ${escopo === o ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+          className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${escopo === o ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
         >
           {ESCOPO_LABEL[o]}
         </button>
