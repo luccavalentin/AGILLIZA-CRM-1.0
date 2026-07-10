@@ -636,8 +636,8 @@ function ResumoCelula({
 
 function Item({ termo, desc }: { termo: string; desc: string }) {
   return (
-    <div className="flex items-center justify-between gap-3 bg-card px-4 py-3 transition-colors hover:bg-muted/40">
-      <dt className="text-sm text-muted-foreground">{termo}</dt>
+    <div className="flex items-center justify-between gap-3 bg-card px-4 py-3.5 transition-colors hover:bg-muted/40">
+      <dt className="text-[13px] text-muted-foreground">{termo}</dt>
       <dd className="text-right text-sm font-semibold text-foreground tabular-nums">{desc}</dd>
     </div>
   );
