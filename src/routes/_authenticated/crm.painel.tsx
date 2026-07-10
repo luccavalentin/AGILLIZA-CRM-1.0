@@ -211,28 +211,42 @@ function Pagina() {
 
   const termo = busca.trim().toLowerCase();
   const termoContrato = contratoBusca.trim().toLowerCase();
-  const contratosFiltrados = (contratos ?? []).filter((ct) => {
-    if (termoContrato) {
-      const alvo = `${ct.nome_cliente ?? ""} ${ct.numero_cliente ?? ""} ${ct.numero_proposta ?? ""} ${ct.nome_banco ?? ""}`.toLowerCase();
-      if (!alvo.includes(termoContrato)) return false;
-    }
-    const dia = ct.contrato_emitido_em ?? null;
-    if (contratoDesde && (!dia || dia < contratoDesde)) return false;
-    if (contratoAte && (!dia || dia > contratoAte)) return false;
-    return true;
-  });
-  const dadosFiltrados = (data ?? []).map((s) => ({
-    ...s,
-    clientes: termo
-      ? s.clientes.filter(
-          (c) =>
-            c.nome.toLowerCase().includes(termo) ||
-            (c.numero_cliente ?? "").toLowerCase().includes(termo),
-        )
-      : s.clientes,
-  }));
-  const totalClientes = dadosFiltrados.reduce((acc, s) => acc + s.clientes.length, 0);
-  const etapasAtivas = dadosFiltrados.filter((s) => s.clientes.length > 0).length;
+  const contratosFiltrados = useMemo(
+    () =>
+      (contratos ?? []).filter((ct) => {
+        if (termoContrato) {
+          const alvo = `${ct.nome_cliente ?? ""} ${ct.numero_cliente ?? ""} ${ct.numero_proposta ?? ""} ${ct.nome_banco ?? ""}`.toLowerCase();
+          if (!alvo.includes(termoContrato)) return false;
+        }
+        const dia = ct.contrato_emitido_em ?? null;
+        if (contratoDesde && (!dia || dia < contratoDesde)) return false;
+        if (contratoAte && (!dia || dia > contratoAte)) return false;
+        return true;
+      }),
+    [contratos, termoContrato, contratoDesde, contratoAte],
+  );
+  const dadosFiltrados = useMemo(
+    () =>
+      (data ?? []).map((s) => ({
+        ...s,
+        clientes: termo
+          ? s.clientes.filter(
+              (c) =>
+                c.nome.toLowerCase().includes(termo) ||
+                (c.numero_cliente ?? "").toLowerCase().includes(termo),
+            )
+          : s.clientes,
+      })),
+    [data, termo],
+  );
+  const totalClientes = useMemo(
+    () => dadosFiltrados.reduce((acc, s) => acc + s.clientes.length, 0),
+    [dadosFiltrados],
+  );
+  const etapasAtivas = useMemo(
+    () => dadosFiltrados.filter((s) => s.clientes.length > 0).length,
+    [dadosFiltrados],
+  );
   const verTodos = dialogStage === "__todos__";
   const stageDialog =
     dialogStage && !verTodos ? dadosFiltrados.find((s) => s.codigo === dialogStage) : null;
