@@ -20,25 +20,25 @@ export function TrilhaNavegacao({
   onBuscaChange,
 }: TrilhaNavegacaoProps) {
   return (
-    <div className="flex flex-col gap-3 rounded-xl border border-border/60 bg-card/60 p-3 sm:flex-row sm:items-center sm:justify-between">
-      <div className="flex flex-wrap items-center gap-1 text-sm">
+    <div className="flex flex-col gap-3 rounded-xl border border-border/60 bg-card/70 p-2.5 shadow-sm backdrop-blur-sm sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+      <div className="-mx-0.5 flex min-w-0 flex-1 items-center gap-1 overflow-x-auto px-0.5 text-sm [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <button
           className={cn(
-            "flex items-center gap-1 rounded-md px-2 py-1 transition-colors",
+            "flex shrink-0 items-center gap-1 rounded-lg px-2 py-1 transition-colors",
             pasta
               ? "text-muted-foreground hover:bg-muted hover:text-foreground"
               : "bg-primary/10 font-medium text-primary",
           )}
           onClick={() => onNavegar(null)}
         >
-          <Home className="h-4 w-4" /> Início
+          <Home className="h-4 w-4" /> <span className="whitespace-nowrap">Início</span>
         </button>
         {trilha.map((m, i, arr) => (
-          <span key={m.id} className="flex items-center gap-1">
-            <ChevronRight className="h-4 w-4 text-muted-foreground/60" />
+          <span key={m.id} className="flex shrink-0 items-center gap-1">
+            <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/50" />
             <button
               className={cn(
-                "rounded-md px-2 py-1 transition-colors",
+                "max-w-[10rem] truncate rounded-lg px-2 py-1 transition-colors",
                 i === arr.length - 1
                   ? "bg-primary/10 font-medium text-primary"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -50,7 +50,7 @@ export function TrilhaNavegacao({
           </span>
         ))}
       </div>
-      <div className="relative sm:w-72">
+      <div className="relative w-full shrink-0 sm:w-72">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           value={busca}
