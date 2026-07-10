@@ -11,7 +11,8 @@ import {
   transicaoTarefaPermitida,
   type TarefaStatus,
 } from "@/lib/operacional/tarefas.functions";
-import { PRIORIDADE, statusTarefa, TONE_BAR } from "@/components/operacional/status";
+import { statusTarefa, TONE_BAR } from "@/components/operacional/status";
+import { PriorityChip, OpAvatar } from "@/components/operacional/ui";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -55,55 +56,75 @@ function Pagina() {
   const itens = data ?? [];
 
   return (
-    <div className="space-y-4 p-4 md:p-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold text-foreground">Kanban de Tarefas</h1>
-          <p className="text-sm text-muted-foreground">Arraste os cards entre etapas permitidas.</p>
+    <div className="space-y-5 p-4 md:p-6">
+      <div className="op-hero grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 p-5">
+        <div className="min-w-0">
+          <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary/80">
+            Operacional
+          </span>
+          <h1 className="truncate text-xl font-bold tracking-tight text-foreground">
+            Kanban de Tarefas
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Arraste os cards entre etapas permitidas.
+          </p>
         </div>
-        <Button asChild variant="ghost" size="sm">
+        <Button asChild variant="outline" size="sm" className="bg-card/60 backdrop-blur">
           <Link to="/operacional/tarefas">
             <ArrowLeft className="mr-1 h-4 w-4" /> Lista
           </Link>
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {COLUNAS.map((col) => {
           const cfg = statusTarefa(col);
           const doStatus = itens.filter((t) => t.status === col);
+          const alvo = arrastando && transicaoTarefaPermitida(arrastando.status, col);
           return (
             <div
               key={col}
               onDragOver={(e) => e.preventDefault()}
               onDrop={() => soltar(col)}
-              className="rounded-lg border border-border bg-muted/30"
+              className={cn(
+                "op-kcol flex flex-col transition-shadow",
+                alvo && "ring-2 ring-primary/40",
+              )}
             >
-              <div className={cn("h-[3px] rounded-t-lg", TONE_BAR[cfg.tone])} />
-              <div className="flex items-center justify-between px-3 py-2">
-                <span className="text-sm font-medium text-foreground">{cfg.label}</span>
-                <span className="text-xs text-muted-foreground tabular-nums">
+              <div className="flex items-center justify-between gap-2 px-3.5 pb-2 pt-3">
+                <span className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                  <span className={cn("size-2 rounded-full", TONE_BAR[cfg.tone])} />
+                  {cfg.label}
+                </span>
+                <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground tabular-nums">
                   {doStatus.length}
                 </span>
               </div>
-              <div className="space-y-2 p-2">
+              <div className="brand-scroll flex-1 space-y-2.5 p-2.5">
+                {doStatus.length === 0 && (
+                  <p className="px-2 py-6 text-center text-xs text-muted-foreground/70">
+                    Sem tarefas
+                  </p>
+                )}
                 {doStatus.map((t) => (
                   <div
                     key={t.id}
                     draggable
                     onDragStart={() => setArrastando({ id: t.id, status: t.status })}
                     onDragEnd={() => setArrastando(null)}
-                    className="overflow-hidden rounded-lg border border-border bg-card"
+                    className="op-kcard cursor-grab overflow-hidden p-3 active:cursor-grabbing"
+                    style={{ ["--op-accent" as string]: "var(--primary)" }}
                   >
-                    <div className={cn("h-[2px]", PRIORIDADE[t.prioridade].bar)} />
-                    <div className="p-3">
-                      <p className="text-sm font-medium text-foreground">{t.titulo}</p>
-                      {t.nome_cliente && (
-                        <p className="text-xs text-muted-foreground">{t.nome_cliente}</p>
-                      )}
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {t.nome_responsavel ?? "—"}
-                      </p>
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="line-clamp-2 text-sm font-medium text-foreground">{t.titulo}</p>
+                      <PriorityChip prioridade={t.prioridade} />
+                    </div>
+                    {t.nome_cliente && (
+                      <p className="mt-1 truncate text-xs text-muted-foreground">{t.nome_cliente}</p>
+                    )}
+                    <div className="mt-2.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <OpAvatar nome={t.nome_responsavel} className="size-5 text-[9px]" />
+                      <span className="truncate">{t.nome_responsavel ?? "—"}</span>
                     </div>
                   </div>
                 ))}
@@ -115,3 +136,4 @@ function Pagina() {
     </div>
   );
 }
+
