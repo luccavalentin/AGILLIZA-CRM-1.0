@@ -145,6 +145,22 @@ function Pagina() {
 
   const itens = data?.itens ?? [];
 
+  // Agrupa uma única vez por coluna, em vez de refiltrar a lista inteira
+  // (até 500 itens) para cada uma das colunas a cada render.
+  const cardsPorColuna = useMemo(() => {
+    const mapa = new Map<string, typeof itens>();
+    for (const col of COLUNAS) mapa.set(col.destino, []);
+    for (const item of itens) {
+      for (const col of COLUNAS) {
+        if (col.agrega.includes(item.status as PropostaStatus)) {
+          mapa.get(col.destino)!.push(item);
+          break;
+        }
+      }
+    }
+    return mapa;
+  }, [itens]);
+
   return (
     <div className="min-h-[calc(100dvh-var(--app-header,4rem))] space-y-4 p-3 sm:space-y-6 sm:p-4 lg:p-6">
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 sm:items-center">
@@ -220,7 +236,7 @@ function Pagina() {
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
         {COLUNAS.map((col) => {
           const cfg = statusProposta(col.destino);
-          const cards = itens.filter((i) => col.agrega.includes(i.status as PropostaStatus));
+          const cards = cardsPorColuna.get(col.destino) ?? [];
           return (
             <div
               key={col.destino}

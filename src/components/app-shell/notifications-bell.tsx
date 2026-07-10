@@ -42,6 +42,9 @@ export function NotificationsBell({ userId }: NotificationsBellProps) {
   const { data } = useQuery({
     queryKey: ["notificacoes"],
     queryFn: () => listarNotificacoes(),
+    // A frescor é mantida pela subscription realtime (com debounce), então
+    // evitamos refetches por "stale"/remontagem: só recarrega via realtime.
+    staleTime: 5 * 60_000,
   });
 
   // Toca som para notificações novas conforme as preferências por tipo.
