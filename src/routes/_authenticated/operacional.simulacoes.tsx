@@ -522,24 +522,28 @@ function Pagina() {
             {data?.itens.map((s) => (
               <TableRow
                 key={s.id}
-                className="cursor-pointer border-border/50 transition-colors hover:bg-primary/5"
+                className="group cursor-pointer border-border/50 transition-colors odd:bg-muted/[0.18] hover:bg-primary/[0.06]"
                 onClick={() =>
                   router.navigate({ to: "/operacional/simulacoes/$id", params: { id: s.id } })
                 }
               >
-                <TableCell className="font-mono font-semibold text-primary">{s.numero_simulacao}</TableCell>
+                <TableCell className="py-3.5">
+                  <span className="inline-flex items-center rounded-md bg-primary/5 px-2 py-0.5 font-mono text-[13px] font-semibold text-primary ring-1 ring-inset ring-primary/10 transition-colors group-hover:bg-primary/10">
+                    {s.numero_simulacao}
+                  </span>
+                </TableCell>
 
-                <TableCell className="font-medium text-foreground">{s.nome_cliente ?? "—"}</TableCell>
-                <TableCell>
+                <TableCell className="py-3.5 font-medium text-foreground">{s.nome_cliente ?? "—"}</TableCell>
+                <TableCell className="py-3.5">
                   <ProdutoBadge produto={s.produto} />
                 </TableCell>
-                <TableCell>
+                <TableCell className="py-3.5">
                   <BancosSimulados bancos={s.bancos} />
                 </TableCell>
-                <TableCell className="text-right font-semibold tabular-nums text-foreground">
+                <TableCell className="py-3.5 text-right font-semibold tabular-nums text-foreground">
                   {formatBRL(s.valor_imovel)}
                 </TableCell>
-                <TableCell className="text-right tabular-nums text-muted-foreground">
+                <TableCell className="py-3.5 text-right tabular-nums text-muted-foreground">
                   {s.prazo ? `${s.prazo} meses` : "—"}
                 </TableCell>
                 <TableCell>
