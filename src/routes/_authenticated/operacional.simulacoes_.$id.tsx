@@ -533,44 +533,51 @@ function Pagina() {
           )}
         </TabsContent>
 
-        <TabsContent value="dados" className="mt-4 space-y-5">
-          <SecaoDados titulo="Imóvel e financiamento" icone={<Home className="h-4 w-4" />}>
-            <Campo termo="Valor do imóvel" desc={formatBRL(s.valor_imovel)} />
-            <Campo termo="Entrada" desc={formatBRL(s.valor_entrada)} />
-            <Campo termo="Valor financiado" desc={formatBRL(s.valor_financiamento)} />
-            <Campo
-              termo="Financiar despesas"
-              desc={s.fg_financiar_despesas ? "Sim" : "Não"}
-            />
-            {s.fg_financiar_despesas && (
-              <>
-                <Campo
-                  termo="Despesas financiadas"
-                  desc={formatBRL(s.valor_despesas_financiadas)}
-                />
-                <Campo
-                  termo="Total financiado"
-                  destaque
-                  desc={formatBRL(
-                    (Number(s.valor_financiamento) || 0) +
-                      (Number(s.valor_despesas_financiadas) || 0),
-                  )}
-                />
-              </>
-            )}
-          </SecaoDados>
+        <TabsContent value="dados" className="mt-4">
+          <section className="overflow-hidden rounded-xl border border-border/60 bg-card shadow-sm">
+            <GrupoDados titulo="Imóvel e financiamento" icone={<Home className="h-4 w-4" />}>
+              <Campo termo="Valor do imóvel" desc={formatBRL(s.valor_imovel)} />
+              <Campo termo="Entrada" desc={formatBRL(s.valor_entrada)} />
+              <Campo termo="Valor financiado" desc={formatBRL(s.valor_financiamento)} />
+              <Campo
+                termo="Financiar despesas"
+                desc={s.fg_financiar_despesas ? "Sim" : "Não"}
+              />
+              {s.fg_financiar_despesas && (
+                <>
+                  <Campo
+                    termo="Despesas financiadas"
+                    desc={formatBRL(s.valor_despesas_financiadas)}
+                  />
+                  <Campo
+                    termo="Total financiado"
+                    destaque
+                    desc={formatBRL(
+                      (Number(s.valor_financiamento) || 0) +
+                        (Number(s.valor_despesas_financiadas) || 0),
+                    )}
+                  />
+                </>
+              )}
+            </GrupoDados>
 
-          <SecaoDados titulo="Condições" icone={<Landmark className="h-4 w-4" />}>
-            <Campo termo="Prazo" desc={s.prazo ? `${s.prazo} meses` : "—"} />
-            <Campo termo="Sistema" desc={s.sistema_amortizacao === "P" ? "PRICE" : "SAC"} />
-            <Campo termo="Utiliza FGTS" desc={s.utiliza_fgts === "S" ? "Sim" : "Não"} />
-          </SecaoDados>
+            <GrupoDados titulo="Condições" icone={<Landmark className="h-4 w-4" />}>
+              <Campo termo="Prazo" desc={s.prazo ? `${s.prazo} meses` : "—"} />
+              <Campo termo="Sistema" desc={s.sistema_amortizacao === "P" ? "PRICE" : "SAC"} />
+              <Campo termo="Utiliza FGTS" desc={s.utiliza_fgts === "S" ? "Sim" : "Não"} />
+            </GrupoDados>
 
-          <SecaoDados titulo="Perfil do cliente" icone={<UserRound className="h-4 w-4" />}>
-            <Campo termo="Estado civil" desc={estadoCivilLabel(s.estado_civil)} />
-            <Campo termo="UF" desc={s.uf ?? "—"} />
-          </SecaoDados>
+            <GrupoDados
+              titulo="Perfil do cliente"
+              icone={<UserRound className="h-4 w-4" />}
+              ultimo
+            >
+              <Campo termo="Estado civil" desc={estadoCivilLabel(s.estado_civil)} />
+              <Campo termo="UF" desc={s.uf ?? "—"} />
+            </GrupoDados>
+          </section>
         </TabsContent>
+
 
         <TabsContent value="historico" className="mt-4">
           <Card className="overflow-hidden">
@@ -723,18 +730,20 @@ function estadoCivilLabel(v?: string | null): string {
   return ESTADO_CIVIL_LABELS[v.toUpperCase()] ?? v;
 }
 
-function SecaoDados({
+function GrupoDados({
   titulo,
   icone,
   children,
+  ultimo,
 }: {
   titulo: string;
   icone: ReactNode;
   children: ReactNode;
+  ultimo?: boolean;
 }) {
   return (
-    <section className="overflow-hidden rounded-xl border border-border/60 bg-card shadow-sm">
-      <div className="flex items-center gap-2 border-b border-border/60 bg-muted/30 px-4 py-2.5">
+    <div className={cn(!ultimo && "border-b border-border/60")}>
+      <div className="flex items-center gap-2 bg-muted/30 px-4 py-2.5">
         <span className="grid h-6 w-6 place-items-center rounded-md bg-primary/10 text-primary">
           {icone}
         </span>
@@ -742,10 +751,8 @@ function SecaoDados({
           {titulo}
         </h3>
       </div>
-      <dl className="grid grid-cols-2 gap-px bg-border/60 sm:grid-cols-3 lg:grid-cols-4">
-        {children}
-      </dl>
-    </section>
+      <dl className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">{children}</dl>
+    </div>
   );
 }
 
@@ -759,7 +766,12 @@ function Campo({
   destaque?: boolean;
 }) {
   return (
-    <div className={cn("bg-card px-4 py-3", destaque && "bg-primary/5")}>
+    <div
+      className={cn(
+        "border-b border-r border-border/40 px-4 py-3 last:border-r",
+        destaque ? "bg-primary/5" : "bg-card",
+      )}
+    >
       <dt className="text-[11px] font-medium uppercase tracking-[0.06em] text-muted-foreground">
         {termo}
       </dt>
@@ -774,6 +786,7 @@ function Campo({
     </div>
   );
 }
+
 
 function MobileStat({ rotulo, valor }: { rotulo: string; valor: string }) {
   return (
