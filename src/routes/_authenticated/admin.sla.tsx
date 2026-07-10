@@ -1,3 +1,4 @@
+import { AdminHero } from "@/components/admin/admin-hero";
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
