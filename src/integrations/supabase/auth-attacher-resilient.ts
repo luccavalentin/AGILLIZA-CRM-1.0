@@ -11,16 +11,35 @@ import { supabase } from "./client";
  * "Unauthorized: No authorization header provided" ao enviar mensagens no chat
  * ou executar qualquer ação após o token expirar.
  */
+// Compartilha uma única renovação de sessão entre chamadas simultâneas.
+// No F5, várias server functions disparam em paralelo; sem isso, cada uma
+// chamaria refreshSession() ao mesmo tempo, o refresh token rotacionaria e as
+// concorrentes falhariam com "refresh token already used" — anexando um token
+// inválido e travando a tela no esqueleto de carregamento.
+let renovacaoEmAndamento: Promise<string | undefined> | null = null;
+
+function renovarSessao(fallback?: string): Promise<string | undefined> {
+  if (!renovacaoEmAndamento) {
+    renovacaoEmAndamento = supabase.auth
+      .refreshSession()
+      .then(({ data }) => data.session?.access_token ?? fallback)
+      .catch(() => fallback)
+      .finally(() => {
+        renovacaoEmAndamento = null;
+      });
+  }
+  return renovacaoEmAndamento;
+}
+
 async function obterToken(): Promise<string | undefined> {
   const { data } = await supabase.auth.getSession();
   const token = data.session?.access_token;
   const expiraEm = data.session?.expires_at; // epoch em segundos
   const agora = Math.floor(Date.now() / 1000);
 
-  // Token ausente ou prestes a expirar (margem de 60s) -> tenta renovar.
+  // Token ausente ou prestes a expirar (margem de 60s) -> renova (deduplicado).
   if (!token || (expiraEm != null && expiraEm - agora < 60)) {
-    const { data: renovada } = await supabase.auth.refreshSession();
-    return renovada.session?.access_token ?? token;
+    return renovarSessao(token);
   }
 
   return token;
