@@ -78,7 +78,7 @@ function Pagina() {
   const criar = useServerFn(criarProposta);
 
   const obter = useServerFn(obterSimulacao);
-  const [escopo, setEscopo] = useState<"todas" | "minhas">("todas");
+  const [escopo, setEscopo] = useState<"todas" | "minhas">("minhas");
   const [q, setQ] = useState("");
   const [busca, setBusca] = useState("");
   const [desde, setDesde] = useState("");

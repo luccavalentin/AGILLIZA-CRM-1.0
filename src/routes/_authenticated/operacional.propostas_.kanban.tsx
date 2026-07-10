@@ -88,7 +88,7 @@ function Pagina() {
   const [arrastando, setArrastando] = useState<{ id: string; status: PropostaStatus } | null>(null);
 
   const padrao = useMemo(() => intervaloMesAtual(), []);
-  const [escopo, setEscopo] = useState<"todas" | "minhas">("todas");
+  const [escopo, setEscopo] = useState<"todas" | "minhas">("minhas");
   const [q, setQ] = useState("");
   const [busca, setBusca] = useState("");
   const [dataInicio, setDataInicio] = useState(padrao.inicio);
