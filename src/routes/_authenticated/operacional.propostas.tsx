@@ -131,17 +131,23 @@ function Pagina() {
           </div>
         </div>
         <div className="col-span-2 flex gap-2 sm:col-auto">
-          <Button asChild variant="outline" className="h-10 flex-1 rounded-lg sm:flex-none">
+          <Button
+            asChild
+            variant="outline"
+            className="group h-10 flex-1 rounded-lg border-border/70 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md hover:shadow-primary/5 active:translate-y-0 sm:flex-none"
+          >
             <Link to="/operacional/propostas/kanban">
-              <KanbanSquare className="mr-1.5 h-4 w-4" /> Kanban
+              <KanbanSquare className="mr-1.5 h-4 w-4 transition-transform duration-200 group-hover:scale-110" />{" "}
+              Kanban
             </Link>
           </Button>
           <Button
             asChild
-            className="h-10 flex-1 rounded-lg font-medium shadow-sm sm:flex-none"
+            className="group h-10 flex-1 rounded-lg font-medium shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/25 active:translate-y-0 sm:flex-none"
           >
             <Link to="/operacional/propostas/enviar">
-              <Plus className="mr-1.5 h-4 w-4" /> Nova proposta
+              <Plus className="mr-1.5 h-4 w-4 transition-transform duration-200 group-hover:rotate-90" />{" "}
+              Nova proposta
             </Link>
           </Button>
         </div>
@@ -149,9 +155,9 @@ function Pagina() {
       </div>
 
       {/* Resumo */}
-      <div className="grid grid-cols-2 divide-x divide-border/60 overflow-hidden rounded-xl border border-border/60 bg-card shadow-sm">
-        <div className="flex items-center gap-3 px-4 py-3.5 sm:px-5">
-          <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-primary/8 text-primary ring-1 ring-inset ring-primary/10">
+      <div className="grid grid-cols-2 divide-x divide-border/60 overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-card to-primary/[0.02] shadow-sm">
+        <div className="group flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-primary/[0.02] sm:px-5">
+          <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-primary/8 text-primary ring-1 ring-inset ring-primary/10 transition-all duration-200 group-hover:bg-primary/12 group-hover:ring-primary/20">
             <Layers className="h-4 w-4" />
           </span>
           <div className="min-w-0">
@@ -167,8 +173,8 @@ function Pagina() {
             )}
           </div>
         </div>
-        <div className="flex items-center gap-3 px-4 py-3.5 sm:px-5">
-          <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-primary/8 text-primary ring-1 ring-inset ring-primary/10">
+        <div className="group flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-primary/[0.02] sm:px-5">
+          <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-primary/8 text-primary ring-1 ring-inset ring-primary/10 transition-all duration-200 group-hover:bg-primary/12 group-hover:ring-primary/20">
             <Wallet className="h-4 w-4" />
           </span>
           <div className="min-w-0">
@@ -228,8 +234,13 @@ function Pagina() {
               className="h-11 w-[9.5rem] rounded-xl"
             />
           </div>
-          <Button variant="ghost" className="h-11 rounded-xl" onClick={limparFiltros}>
-            <RotateCcw className="mr-1 h-4 w-4" /> Limpar
+          <Button
+            variant="ghost"
+            className="group h-11 rounded-xl transition-colors hover:bg-primary/5 hover:text-primary"
+            onClick={limparFiltros}
+          >
+            <RotateCcw className="mr-1 h-4 w-4 transition-transform duration-300 group-hover:-rotate-180" />{" "}
+            Limpar
           </Button>
         </div>
       </Card>
@@ -369,13 +380,14 @@ function Pagina() {
               itens.map((p) => (
                 <TableRow
                   key={p.id}
-                  className="group cursor-pointer"
+                  className="group relative cursor-pointer transition-colors hover:bg-primary/[0.03]"
                   onClick={() =>
                     router.navigate({ to: "/operacional/propostas/$id", params: { id: p.id } })
                   }
                 >
-                  <TableCell>
-                    <div className="font-medium tabular-nums text-foreground">
+                  <TableCell className="relative">
+                    <span className="absolute inset-y-0 left-0 w-[3px] origin-top scale-y-0 rounded-r-full bg-primary transition-transform duration-200 group-hover:scale-y-100" />
+                    <div className="font-medium tabular-nums text-foreground transition-colors group-hover:text-primary">
                       {p.numero_proposta_banco ?? p.numero_proposta}
                     </div>
                     {p.numero_proposta_banco && (
