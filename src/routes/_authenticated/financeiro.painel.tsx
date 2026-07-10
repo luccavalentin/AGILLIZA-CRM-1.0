@@ -35,15 +35,22 @@ function mesLabel(iso: string) {
 }
 
 function Pagina() {
-  const [de, setDe] = useState("");
-  const [ate, setAte] = useState("");
+  const padrao = useMemo(() => {
+    const hoje = new Date();
+    const iso = (d: Date) =>
+      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    return { de: iso(new Date(hoje.getFullYear(), hoje.getMonth(), 1)), ate: iso(hoje) };
+  }, []);
+  const [de, setDe] = useState(padrao.de);
+  const [ate, setAte] = useState(padrao.ate);
   const { data, isLoading } = useQuery({
     queryKey: ["fin-kpis", de, ate],
     queryFn: () => obterKpisFinanceiros({ data: { de: de || undefined, ate: ate || undefined } }),
   });
 
   const mensal = (data?.receitaDespesaMensal ?? []).map((r) => ({ ...r, label: mesLabel(r.mes) }));
-  const periodoLabel = de || ate ? "no período" : "30d";
+  const alterado = de !== padrao.de || ate !== padrao.ate;
+  const periodoLabel = alterado ? "no período" : "este mês";
 
   return (
     <div className="mx-auto w-full max-w-[1600px] space-y-6 p-4 md:p-6">
