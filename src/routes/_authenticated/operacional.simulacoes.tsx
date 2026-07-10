@@ -682,7 +682,64 @@ function Pagina() {
   );
 }
 
-function ProdutoBadge({ produto }: { produto: string | null | undefined }) {
+const STATUS_LABELS: Record<string, string> = {
+  rascunho: "Rascunho",
+  simulada: "Simulada",
+  parcialmente_simulada: "Parcialmente simulada",
+  em_simulacao: "Em simulação",
+  erro: "Com erro",
+  enviada: "Enviada",
+  cancelada: "Cancelada",
+};
+
+function statusLabel(status: string): string {
+  return STATUS_LABELS[status] ?? status.replace(/_/g, " ");
+}
+
+function KpiDetalhe({
+  descricao,
+  linhas,
+  total,
+}: {
+  descricao: string;
+  linhas: { rotulo: string; valor: string }[];
+  total?: { rotulo: string; valor: string };
+}) {
+  return (
+    <div className="space-y-3">
+      <p className="text-sm text-muted-foreground">{descricao}</p>
+      {linhas.length === 0 ? (
+        <p className="rounded-lg border border-dashed border-border px-3 py-6 text-center text-sm text-muted-foreground">
+          Nenhum dado no filtro atual.
+        </p>
+      ) : (
+        <ul className="divide-y divide-border rounded-lg border border-border">
+          {linhas.map((l, i) => (
+            <li
+              key={`${l.rotulo}-${i}`}
+              className="flex items-center justify-between gap-3 px-3 py-2"
+            >
+              <span className="min-w-0 truncate text-sm text-foreground">{l.rotulo}</span>
+              <span className="shrink-0 font-mono text-sm font-semibold tabular-nums text-foreground">
+                {l.valor}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+      {total && (
+        <div className="flex items-center justify-between gap-3 rounded-lg bg-primary/5 px-3 py-2">
+          <span className="text-sm font-medium text-foreground">{total.rotulo}</span>
+          <span className="font-mono text-sm font-bold tabular-nums text-primary">
+            {total.valor}
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
   if (produto === "home_equity") {
     return (
       <span className="inline-flex items-center rounded-full border border-warning/30 bg-warning/10 px-2 py-0.5 text-xs font-medium text-warning">
