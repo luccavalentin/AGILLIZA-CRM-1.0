@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { TrendingUp, Wallet, LineChart as LineChartIcon, AlertTriangle } from "lucide-react";
 import {
@@ -35,19 +35,26 @@ function mesLabel(iso: string) {
 }
 
 function Pagina() {
-  const [de, setDe] = useState("");
-  const [ate, setAte] = useState("");
+  const padrao = useMemo(() => {
+    const hoje = new Date();
+    const iso = (d: Date) =>
+      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    return { de: iso(new Date(hoje.getFullYear(), hoje.getMonth(), 1)), ate: iso(hoje) };
+  }, []);
+  const [de, setDe] = useState(padrao.de);
+  const [ate, setAte] = useState(padrao.ate);
   const { data, isLoading } = useQuery({
     queryKey: ["fin-kpis", de, ate],
     queryFn: () => obterKpisFinanceiros({ data: { de: de || undefined, ate: ate || undefined } }),
   });
 
   const mensal = (data?.receitaDespesaMensal ?? []).map((r) => ({ ...r, label: mesLabel(r.mes) }));
-  const periodoLabel = de || ate ? "no período" : "30d";
+  const alterado = de !== padrao.de || ate !== padrao.ate;
+  const periodoLabel = alterado ? "no período" : "este mês";
 
   return (
     <div className="mx-auto w-full max-w-[1600px] space-y-6 p-4 md:p-6">
-      <div className="op-hero flex flex-wrap items-end justify-between gap-3 p-4 md:p-6">
+      <div className="op-hero flex flex-col gap-4 p-4 md:flex-row md:flex-wrap md:items-end md:justify-between md:p-6">
         <div className="relative min-w-0">
           <p className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-primary sm:text-[11px]">
             <span className="inline-block h-1 w-5 shrink-0 rounded-full bg-primary" />
@@ -60,34 +67,43 @@ function Pagina() {
             Visão geral de recebimentos, pagamentos e caixa projetado.
           </p>
         </div>
-        <div className="relative flex items-center gap-2">
-          <label className="flex items-center gap-1 text-xs text-muted-foreground">
-            De
-            <Input type="date" className="w-40" value={de} onChange={(e) => setDe(e.target.value)} />
-          </label>
-          <label className="flex items-center gap-1 text-xs text-muted-foreground">
-            até
-            <Input
-              type="date"
-              className="w-40"
-              value={ate}
-              onChange={(e) => setAte(e.target.value)}
-            />
-          </label>
-          {(de || ate) && (
+        <div className="relative flex w-full flex-col gap-2 sm:w-auto">
+          <div className="flex flex-wrap items-end gap-2">
+            <label className="flex min-w-0 flex-1 flex-col gap-1 text-xs text-muted-foreground sm:flex-none">
+              De
+              <Input
+                type="date"
+                className="h-10 w-full sm:w-40"
+                value={de}
+                onChange={(e) => setDe(e.target.value)}
+              />
+            </label>
+            <label className="flex min-w-0 flex-1 flex-col gap-1 text-xs text-muted-foreground sm:flex-none">
+              Até
+              <Input
+                type="date"
+                className="h-10 w-full sm:w-40"
+                value={ate}
+                onChange={(e) => setAte(e.target.value)}
+              />
+            </label>
+          </div>
+          {alterado && (
             <Button
               variant="ghost"
               size="sm"
+              className="self-start"
               onClick={() => {
-                setDe("");
-                setAte("");
+                setDe(padrao.de);
+                setAte(padrao.ate);
               }}
             >
-              Limpar
+              Restaurar mês atual
             </Button>
           )}
         </div>
       </div>
+
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <ReportKpiCard
