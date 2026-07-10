@@ -259,7 +259,7 @@ function Pagina() {
           )}
         </div>
 
-        <div className="space-y-1.5">
+        <div className="space-y-1.5 lg:col-span-2">
           <Label>
             Valor do crédito que precisa <span className="text-destructive">*</span>
           </Label>
