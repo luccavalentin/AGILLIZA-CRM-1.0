@@ -320,8 +320,8 @@ export const getPanelDados = createServerFn({ method: "POST" })
         heros: [
           { label: "Simulações", valor: int(simCount), hint: brlCompacto(volumeSimulado), tone: "neutral" },
           { label: "Propostas enviadas", valor: int(enviadas.length), tone: "brand" },
-          { label: "Taxa de aprovação", valor: pct(taxa), hint: `${aprovadas.length} aprovadas`, tone: "success" },
-          { label: "Contratos emitidos", valor: int(contratos.length), hint: brlCompacto(volume), tone: "success" },
+          { label: "Taxa de aprovação", valor: pct(taxa), hint: `${aprovadasCount} aprovadas`, tone: "success" },
+          { label: "Contratos emitidos", valor: int(contratosCount), hint: brlCompacto(volume), tone: "success" },
         ],
         minis: [
           { label: "Volume contratado", valor: brlCompacto(volume), tone: "success" },
