@@ -1,4 +1,4 @@
-import { X } from "lucide-react";
+import { X, SlidersHorizontal } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -38,13 +38,13 @@ export function VisionSelector({
     ...(podeGeral ? (["geral"] as Escopo[]) : []),
   ];
   return (
-    <div className="inline-flex rounded-md border border-border bg-card p-0.5">
+    <div className="inline-flex rounded-lg border border-border bg-card p-0.5 shadow-[var(--shadow-card)]">
       {opts.map((o) => (
         <button
           key={o}
           type="button"
           onClick={() => onChange(o)}
-          className={`rounded px-2.5 py-1 text-xs font-medium transition-colors ${escopo === o ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+          className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${escopo === o ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
         >
           {ESCOPO_LABEL[o]}
         </button>
@@ -100,8 +100,13 @@ export function ReportFiltersBar({
     (filtros.imobiliarias?.length ?? 0) > 0;
 
   return (
-    <div className="space-y-2 rounded-lg border border-border bg-card p-3">
+    <div className="space-y-2.5 rounded-xl border border-border bg-card p-3.5 shadow-[var(--shadow-card)]">
+      <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+        <SlidersHorizontal className="h-3.5 w-3.5 text-primary" />
+        Filtros de pesquisa
+      </div>
       <div className="flex flex-wrap items-center gap-2">
+
         <Select value={filtros.periodo} onValueChange={(v) => set({ periodo: v as Periodo })}>
           <SelectTrigger className="h-9 w-44">
             <SelectValue />

@@ -153,11 +153,21 @@ export function exportPDF(
     });
     y += boxH + 18;
   } else {
+    // Faixa de metadados (Período · Escopo · Registros) — pílulas discretas.
+    const stripX = 32;
+    const stripW = pageW - 64;
+    const stripH = 26;
+    doc.setFillColor(P.card);
+    doc.setDrawColor(P.borda);
+    doc.setLineWidth(0.75);
+    doc.roundedRect(stripX, y - 4, stripW, stripH, 5, 5, "FD");
+    doc.setFillColor(P.coral);
+    doc.rect(stripX, y - 4 + 7, 3, stripH - 14, "F");
     doc.setTextColor(P.texto);
     doc.setFontSize(8);
     doc.setFont("helvetica", "normal");
-    doc.text(meta.join("   ·   "), 32, y);
-    y += 20;
+    doc.text(meta.join("      ·      "), stripX + 14, y + 11);
+    y += stripH + 14;
   }
 
   // KPIs em cartões (com quebra em linhas quando não cabem lado a lado)

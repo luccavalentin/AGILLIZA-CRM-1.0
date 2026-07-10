@@ -40,7 +40,19 @@ export function ExportButtons({
     setBusy(true);
     try {
       const { exportPDF } = await import("@/lib/relatorios/report-pdf");
-      exportPDF(result.titulo, result.descricao, meta, result.kpis, result.columns, result.rows);
+      exportPDF(
+        result.titulo,
+        result.descricao,
+        meta,
+        result.kpis,
+        result.columns,
+        result.rows,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        "portrait",
+      );
       await log("pdf");
     } catch {
       toast.error("Falha ao gerar PDF.");
