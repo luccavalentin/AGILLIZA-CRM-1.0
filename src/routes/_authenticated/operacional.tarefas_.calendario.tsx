@@ -116,7 +116,7 @@ function Pagina() {
         </div>
       </div>
 
-      <div className="grid grid-cols-7 gap-px overflow-hidden rounded-lg border border-border bg-border">
+      <div className="grid grid-cols-7 gap-px overflow-hidden rounded-2xl border border-border/70 bg-border shadow-card">
         {DIAS.map((d) => (
           <div
             key={d}
