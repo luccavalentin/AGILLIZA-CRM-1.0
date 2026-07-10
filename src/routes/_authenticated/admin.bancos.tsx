@@ -66,15 +66,11 @@ function Pagina() {
 
   return (
     <div className="space-y-6 p-4 md:p-6">
-      <header className="flex items-start gap-3">
-        <Landmark className="size-6 shrink-0 text-primary" />
-        <div className="min-w-0">
-          <h1 className="text-xl font-semibold text-foreground">Bancos parceiros</h1>
-          <p className="text-sm text-muted-foreground">
-            Ative bancos, defina o padrão e configure as credenciais de integração.
-          </p>
-        </div>
-      </header>
+      <AdminHero
+        icon={<Landmark className="h-5 w-5" />}
+        titulo="Bancos parceiros"
+        descricao="Ative bancos, defina o padrão e configure as credenciais de integração."
+      />
 
       {/* Mobile: cartões */}
       <div className="grid gap-3 md:hidden">
