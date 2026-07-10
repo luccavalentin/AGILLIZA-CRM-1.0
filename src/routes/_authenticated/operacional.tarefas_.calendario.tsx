@@ -66,18 +66,24 @@ function Pagina() {
   const hojeK = chaveDia(hoje);
 
   return (
-    <div className="space-y-4 p-4 md:p-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-semibold text-foreground">Calendário de Tarefas</h1>
+    <div className="space-y-5 p-4 md:p-6">
+      <div className="op-hero grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 p-5">
+        <div className="min-w-0">
+          <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary/80">
+            Operacional
+          </span>
+          <h1 className="truncate text-xl font-bold tracking-tight text-foreground">
+            Calendário de Tarefas
+          </h1>
           <p className="text-sm text-muted-foreground">Tarefas organizadas pela data de prazo.</p>
         </div>
-        <Button asChild variant="ghost" size="sm">
+        <Button asChild variant="outline" size="sm" className="bg-card/60 backdrop-blur">
           <Link to="/operacional/tarefas">
             <ArrowLeft className="mr-1 h-4 w-4" /> Lista
           </Link>
         </Button>
       </div>
+
 
       <div className="flex items-center justify-between">
         <h2 className="text-base font-medium text-foreground">
