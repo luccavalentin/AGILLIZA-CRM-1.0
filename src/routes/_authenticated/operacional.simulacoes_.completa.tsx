@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, FileText, Send } from "lucide-react";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
+import { Card } from "@/components/ui/card";
 import {
   AlertDialog,
   AlertDialogAction,
