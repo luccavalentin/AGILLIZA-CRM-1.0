@@ -189,7 +189,7 @@ function Pagina() {
 
 
       {/* Filtros */}
-      <Card className="rounded-2xl border-border/60 p-3 shadow-sm sm:p-4">
+      <Card className="rounded-xl border-border/60 p-3 shadow-sm sm:p-4">
         <div className="flex flex-wrap items-end gap-3">
           <Tabs value={escopo} onValueChange={(v) => setEscopo(v as "todas" | "minhas")}>
             <TabsList className="h-11 rounded-xl">
@@ -316,7 +316,7 @@ function Pagina() {
       </div>
 
       {/* Tabela desktop */}
-      <Card className="hidden overflow-hidden rounded-2xl border-border/60 shadow-sm md:block">
+      <Card className="hidden overflow-hidden rounded-xl border-border/60 shadow-sm md:block">
         <Table>
           <TableHeader>
             <TableRow className="border-border/60 bg-muted/40 hover:bg-muted/40">
