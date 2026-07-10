@@ -316,15 +316,24 @@ export const getPanelDados = createServerFn({ method: "POST" })
         valor2: contratoBucket.get(k) ?? 0,
       }));
 
+      const recusadasCount = enviadas.filter(
+        (p) => p.status === "credito_recusado",
+      ).length;
       return {
         heros: [
           { label: "Simulações", valor: int(simCount), hint: brlCompacto(volumeSimulado), tone: "neutral" },
           { label: "Propostas enviadas", valor: int(enviadas.length), tone: "brand" },
           {
-            label: "Taxa de aprovação",
-            valor: pct(taxa),
-            hint: `${aprovadasCount} aprovadas`,
+            label: "Aprovadas",
+            valor: int(aprovadasCount),
+            hint: `${pct(taxa)} de aprovação`,
             tone: aprovadasCount ? "success" : "neutral",
+          },
+          {
+            label: "Reprovadas",
+            valor: int(recusadasCount),
+            hint: `${enviadas.length ? pct((recusadasCount / enviadas.length) * 100) : pct(0)} de reprovação`,
+            tone: recusadasCount ? "danger" : "neutral",
           },
           { label: "Contratos emitidos", valor: int(contratosCount), hint: brlCompacto(volume), tone: "success" },
         ],
