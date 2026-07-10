@@ -301,45 +301,34 @@ function Pagina() {
             </div>
           ) : (
             <>
-              <div className="mb-4 flex flex-wrap items-center gap-x-6 gap-y-2 rounded-lg border border-border bg-muted/30 p-3 text-sm">
-                <span className="text-muted-foreground">
-                  Valor do imóvel:{" "}
-                  <span className="font-medium text-foreground tabular-nums">
-                    {formatBRL(s.valor_imovel)}
-                  </span>
-                </span>
-                <span className="text-muted-foreground">
-                  Valor financiado:{" "}
-                  <span className="font-medium text-foreground tabular-nums">
-                    {formatBRL(s.valor_financiamento)}
-                  </span>
-                </span>
-                <span className="text-muted-foreground">
-                  Financiar despesas:{" "}
-                  <span className="font-medium text-foreground">
-                    {s.fg_financiar_despesas ? "Sim" : "Não"}
-                  </span>
-                </span>
+              <div className="mb-4 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-border/60 bg-border/60 shadow-sm sm:grid-cols-3 lg:grid-cols-5">
+                <ResumoCelula rotulo="Valor do imóvel" valor={formatBRL(s.valor_imovel)} />
+                <ResumoCelula
+                  rotulo="Valor financiado"
+                  valor={formatBRL(s.valor_financiamento)}
+                />
+                <ResumoCelula
+                  rotulo="Financiar despesas"
+                  valor={s.fg_financiar_despesas ? "Sim" : "Não"}
+                />
                 {s.fg_financiar_despesas && (
                   <>
-                    <span className="text-muted-foreground">
-                      Despesas financiadas:{" "}
-                      <span className="font-medium text-foreground tabular-nums">
-                        {formatBRL(s.valor_despesas_financiadas)}
-                      </span>
-                    </span>
-                    <span className="text-muted-foreground">
-                      Total financiado:{" "}
-                      <span className="font-medium text-foreground tabular-nums">
-                        {formatBRL(
-                          (Number(s.valor_financiamento) || 0) +
-                            (Number(s.valor_despesas_financiadas) || 0),
-                        )}
-                      </span>
-                    </span>
+                    <ResumoCelula
+                      rotulo="Despesas financiadas"
+                      valor={formatBRL(s.valor_despesas_financiadas)}
+                    />
+                    <ResumoCelula
+                      rotulo="Total financiado"
+                      destaque
+                      valor={formatBRL(
+                        (Number(s.valor_financiamento) || 0) +
+                          (Number(s.valor_despesas_financiadas) || 0),
+                      )}
+                    />
                   </>
                 )}
               </div>
+
 
               {/* Mobile: cartões */}
               <div className="grid gap-3 lg:hidden">
