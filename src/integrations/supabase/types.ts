@@ -5185,6 +5185,7 @@ export type Database = {
       }
       correspondente_do_usuario: { Args: { _user_id: string }; Returns: string }
       demanda_escalar_vencidas: { Args: { _corr: string }; Returns: number }
+      domingo_de_pascoa: { Args: { ano: number }; Returns: string }
       emitir_notificacao: {
         Args: {
           _corpo: string
@@ -5194,6 +5195,10 @@ export type Database = {
           _titulo: string
           _user_id: string
         }
+        Returns: undefined
+      }
+      garantir_feriados_nacionais: {
+        Args: { ano_fim: number; ano_inicio: number }
         Returns: undefined
       }
       has_any_role: {
