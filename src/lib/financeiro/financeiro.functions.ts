@@ -892,3 +892,248 @@ export const excluirConta = createServerFn({ method: "POST" })
     if (error) throw error;
     return { ok: true };
   });
+
+/** ===== Fluxo de caixa analítico (ERP) ===== */
+export interface FluxoPontoAnalitico {
+  periodo: string;
+  label: string;
+  entradaReal: number;
+  saidaReal: number;
+  entradaProj: number;
+  saidaProj: number;
+  entrada: number;
+  saida: number;
+  resultado: number;
+  saldoAcum: number;
+  futuro: boolean;
+}
+
+export interface FluxoResumo {
+  saldoRealizado: number;
+  totalEntradaReal: number;
+  totalSaidaReal: number;
+  totalEntradaProj: number;
+  totalSaidaProj: number;
+  resultadoProj: number;
+  saldoFinalProj: number;
+  mediaEntrada: number;
+  mediaSaida: number;
+  melhorPeriodo: { label: string; valor: number } | null;
+  piorPeriodo: { label: string; valor: number } | null;
+  coberturaPct: number;
+  runwayMeses: number | null;
+}
+
+export interface FluxoAnalitico {
+  granularidade: "dia" | "semana" | "mes";
+  pontos: FluxoPontoAnalitico[];
+  resumo: FluxoResumo;
+  entradasPorCategoria: { nome: string; valor: number }[];
+  saidasPorCategoria: { nome: string; valor: number }[];
+  proximosVencimentos: {
+    tipo: ContaTipo;
+    descricao: string;
+    contraparte: string | null;
+    vencimento: string;
+    valor: number;
+  }[];
+}
+
+export const obterFluxoCaixaAnalitico = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z
+      .object({ granularidade: z.enum(["dia", "semana", "mes"]).default("mes") })
+      .parse(data ?? {}),
+  )
+  .handler(async ({ context, data }): Promise<FluxoAnalitico> => {
+    const { supabase } = context;
+    const abertos = ["aberta", "parcial"] as any;
+    const hojeStr = new Date().toLocaleDateString("sv", { timeZone: "America/Sao_Paulo" });
+
+    const [rec, pay, realiz] = await Promise.all([
+      supabase
+        .from("financial_receivables")
+        .select("valor, valor_pago, vencimento, descricao, pagador, banco_nome")
+        .in("status", abertos),
+      supabase
+        .from("financial_payables")
+        .select("valor, valor_pago, vencimento, descricao, fornecedor, categoria:financial_categories(nome)")
+        .in("status", abertos),
+      supabase
+        .from("fluxo_caixa")
+        .select("data, tipo, valor")
+        .eq("realizado", true),
+    ]);
+
+    const recRows = rec.data ?? [];
+    const payRows = pay.data ?? [];
+    const realizRows = realiz.data ?? [];
+    const saldoAberto = (r: any) => Number(r.valor) - Number(r.valor_pago);
+
+    const chave = (iso: string): string => {
+      const d = new Date(iso + "T00:00:00");
+      if (data.granularidade === "mes")
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      if (data.granularidade === "semana") {
+        const onejan = new Date(d.getFullYear(), 0, 1);
+        const week = Math.ceil(
+          ((d.getTime() - onejan.getTime()) / 86400000 + onejan.getDay() + 1) / 7,
+        );
+        return `${d.getFullYear()}-S${String(week).padStart(2, "0")}`;
+      }
+      return iso;
+    };
+    const rotulo = (periodo: string): string => {
+      if (data.granularidade === "mes") {
+        const [y, m] = periodo.split("-");
+        return `${m}/${y.slice(2)}`;
+      }
+      if (data.granularidade === "semana") return periodo.replace("-", " ");
+      const [, m, d] = periodo.split("-");
+      return `${d}/${m}`;
+    };
+
+    type Bucket = {
+      entradaReal: number;
+      saidaReal: number;
+      entradaProj: number;
+      saidaProj: number;
+    };
+    const mapa: Record<string, Bucket> = {};
+    const get = (k: string): Bucket =>
+      (mapa[k] ??= { entradaReal: 0, saidaReal: 0, entradaProj: 0, saidaProj: 0 });
+
+    realizRows.forEach((r: any) => {
+      if (!r.data) return;
+      const b = get(chave(r.data));
+      if (r.tipo === "entrada") b.entradaReal += Number(r.valor);
+      else b.saidaReal += Number(r.valor);
+    });
+    recRows.forEach((r: any) => {
+      if (!r.vencimento) return;
+      get(chave(r.vencimento)).entradaProj += saldoAberto(r);
+    });
+    payRows.forEach((r: any) => {
+      if (!r.vencimento) return;
+      get(chave(r.vencimento)).saidaProj += saldoAberto(r);
+    });
+
+    const chaveHoje = chave(hojeStr);
+    let saldoAcum = 0;
+    const pontos: FluxoPontoAnalitico[] = Object.keys(mapa)
+      .sort((a, b) => a.localeCompare(b))
+      .map((periodo) => {
+        const b = mapa[periodo];
+        const entrada = b.entradaReal + b.entradaProj;
+        const saida = b.saidaReal + b.saidaProj;
+        const resultado = entrada - saida;
+        saldoAcum += resultado;
+        return {
+          periodo,
+          label: rotulo(periodo),
+          entradaReal: b.entradaReal,
+          saidaReal: b.saidaReal,
+          entradaProj: b.entradaProj,
+          saidaProj: b.saidaProj,
+          entrada,
+          saida,
+          resultado,
+          saldoAcum,
+          futuro: periodo >= chaveHoje,
+        };
+      });
+
+    const totalEntradaReal = pontos.reduce((s, p) => s + p.entradaReal, 0);
+    const totalSaidaReal = pontos.reduce((s, p) => s + p.saidaReal, 0);
+    const totalEntradaProj = pontos.reduce((s, p) => s + p.entradaProj, 0);
+    const totalSaidaProj = pontos.reduce((s, p) => s + p.saidaProj, 0);
+    const saldoRealizado = totalEntradaReal - totalSaidaReal;
+    const resultadoProj = totalEntradaProj - totalSaidaProj;
+    const saldoFinalProj = saldoRealizado + resultadoProj;
+    const n = pontos.length || 1;
+    const mediaEntrada = (totalEntradaReal + totalEntradaProj) / n;
+    const mediaSaida = (totalSaidaReal + totalSaidaProj) / n;
+
+    let melhorPeriodo: { label: string; valor: number } | null = null;
+    let piorPeriodo: { label: string; valor: number } | null = null;
+    pontos.forEach((p) => {
+      if (!melhorPeriodo || p.resultado > melhorPeriodo.valor)
+        melhorPeriodo = { label: p.label, valor: p.resultado };
+      if (!piorPeriodo || p.resultado < piorPeriodo.valor)
+        piorPeriodo = { label: p.label, valor: p.resultado };
+    });
+
+    const coberturaPct = totalSaidaProj > 0 ? (totalEntradaProj / totalSaidaProj) * 100 : 0;
+    const runwayMeses = mediaSaida > 0 ? saldoFinalProj / mediaSaida : null;
+
+    // Distribuição projetada
+    const bancoMap: Record<string, number> = {};
+    recRows.forEach((r: any) => {
+      const k = r.banco_nome ?? "Outras receitas";
+      bancoMap[k] = (bancoMap[k] ?? 0) + saldoAberto(r);
+    });
+    const entradasPorCategoria = Object.entries(bancoMap)
+      .map(([nome, valor]) => ({ nome, valor }))
+      .sort((a, b) => b.valor - a.valor)
+      .slice(0, 8);
+
+    const catMap: Record<string, number> = {};
+    payRows.forEach((r: any) => {
+      const k = r.categoria?.nome ?? "Sem categoria";
+      catMap[k] = (catMap[k] ?? 0) + saldoAberto(r);
+    });
+    const saidasPorCategoria = Object.entries(catMap)
+      .map(([nome, valor]) => ({ nome, valor }))
+      .sort((a, b) => b.valor - a.valor)
+      .slice(0, 8);
+
+    // Próximos vencimentos (a partir de hoje)
+    const proximos: FluxoAnalitico["proximosVencimentos"] = [];
+    recRows
+      .filter((r: any) => r.vencimento >= hojeStr)
+      .forEach((r: any) =>
+        proximos.push({
+          tipo: "receber",
+          descricao: r.descricao,
+          contraparte: r.pagador ?? r.banco_nome ?? null,
+          vencimento: r.vencimento,
+          valor: saldoAberto(r),
+        }),
+      );
+    payRows
+      .filter((r: any) => r.vencimento >= hojeStr)
+      .forEach((r: any) =>
+        proximos.push({
+          tipo: "pagar",
+          descricao: r.descricao,
+          contraparte: r.fornecedor ?? null,
+          vencimento: r.vencimento,
+          valor: saldoAberto(r),
+        }),
+      );
+    proximos.sort((a, b) => a.vencimento.localeCompare(b.vencimento));
+
+    return {
+      granularidade: data.granularidade,
+      pontos,
+      resumo: {
+        saldoRealizado,
+        totalEntradaReal,
+        totalSaidaReal,
+        totalEntradaProj,
+        totalSaidaProj,
+        resultadoProj,
+        saldoFinalProj,
+        mediaEntrada,
+        mediaSaida,
+        melhorPeriodo,
+        piorPeriodo,
+        coberturaPct,
+        runwayMeses,
+      },
+      entradasPorCategoria,
+      saidasPorCategoria,
+      proximosVencimentos: proximos.slice(0, 10),
+    };
+  });
