@@ -480,15 +480,15 @@ function Pagina() {
       <div className="hidden overflow-hidden rounded-lg border border-border/60 bg-card md:block">
         <Table>
           <TableHeader>
-            <TableRow className="border-border/60 bg-muted/40 hover:bg-muted/40">
-              <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Número</TableHead>
-              <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Cliente</TableHead>
-              <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Produto</TableHead>
-              <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Bancos simulados</TableHead>
-              <TableHead className="text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">Valor imóvel</TableHead>
-              <TableHead className="text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">Prazo</TableHead>
-              <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Status</TableHead>
-              <TableHead className="w-12 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">Ações</TableHead>
+            <TableRow className="border-border/60 bg-muted/50 hover:bg-muted/50">
+              <TableHead className="h-10 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Número</TableHead>
+              <TableHead className="h-10 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Cliente</TableHead>
+              <TableHead className="h-10 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Produto</TableHead>
+              <TableHead className="h-10 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Bancos simulados</TableHead>
+              <TableHead className="h-10 text-right text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Valor imóvel</TableHead>
+              <TableHead className="h-10 text-right text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Prazo</TableHead>
+              <TableHead className="h-10 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Status</TableHead>
+              <TableHead className="h-10 w-12 text-right text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Ações</TableHead>
             </TableRow>
           </TableHeader>
 
