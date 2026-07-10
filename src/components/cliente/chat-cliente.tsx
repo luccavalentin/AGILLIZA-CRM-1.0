@@ -129,7 +129,6 @@ export function ChatCliente({ altura = "h-[62dvh]" }: { altura?: string }) {
 
   useIncomingChatSound(
     mensagens?.map((m) => ({ id: m.id, mine: m.remetente_tipo === "cliente" })),
-    propostaId ?? null,
   );
 
   useEffect(() => {
