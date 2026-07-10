@@ -83,6 +83,7 @@ function Pagina() {
   const [busca, setBusca] = useState("");
   const [desde, setDesde] = useState("");
   const [ate, setAte] = useState("");
+  const [kpiAberto, setKpiAberto] = useState<string | null>(null);
 
   // Envio de proposta: diálogo para escolher UM banco por vez.
   const [envio, setEnvio] = useState<{
