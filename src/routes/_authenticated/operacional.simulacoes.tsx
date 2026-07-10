@@ -202,7 +202,7 @@ function Pagina() {
 
   const itens = data?.itens ?? [];
   const kpiTotal = data?.total ?? itens.length;
-  const kpiValor = itens.reduce((acc, s) => acc + (Number(s.valor_imovel) || 0), 0);
+  const kpiValor = itens.reduce((acc, s) => acc + (Number(s.valor_financiamento) || 0), 0);
   const kpiBancos = itens.reduce(
     (acc, s) => acc + (Array.isArray(s.bancos) ? s.bancos.length : 0),
     0,
