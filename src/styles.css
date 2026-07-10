@@ -386,7 +386,7 @@
   top: 0;
   bottom: 0;
   width: 3px;
-  background: var(--brand-azul-profundo);
+  background: var(--op-accent, var(--brand-azul-profundo));
 }
 
 /* Card de KPI sóbrio com fina régua de acento. */
