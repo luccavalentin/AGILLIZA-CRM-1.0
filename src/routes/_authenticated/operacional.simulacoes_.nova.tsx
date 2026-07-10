@@ -272,27 +272,46 @@ function Pagina() {
           />
         </div>
 
+          </div>
+        </Card>
+
+        {/* Seção: Perfil e prazo */}
+        <Card className="overflow-hidden">
+          <SecaoCabecalho icone={<CalendarDays className="h-4 w-4" />} titulo="Perfil e prazo" />
+          <div className="space-y-5 p-5">
         <div className="space-y-2">
           <Label>Você já possui o imóvel escolhido?</Label>
           <RadioGroup
-            className="flex flex-col gap-2 sm:flex-row sm:gap-6"
+            className="grid grid-cols-1 gap-2 sm:grid-cols-2"
             value={
               w.possui_imovel_escolhido == null ? "" : w.possui_imovel_escolhido ? "sim" : "nao"
             }
             onValueChange={(v) => set("possui_imovel_escolhido", v === "sim")}
           >
-            <div className="flex items-center gap-2">
+            <label
+              htmlFor="pie-sim"
+              className={cn(
+                "flex cursor-pointer items-center gap-2.5 rounded-lg border p-3 text-sm transition-colors",
+                w.possui_imovel_escolhido === true
+                  ? "border-primary/50 bg-primary/5"
+                  : "border-border hover:bg-muted/40",
+              )}
+            >
               <RadioGroupItem value="sim" id="pie-sim" />
-              <Label htmlFor="pie-sim" className="font-normal">
-                Sim, já tenho um imóvel escolhido
-              </Label>
-            </div>
-            <div className="flex items-center gap-2">
+              <span className="font-normal">Sim, já tenho um imóvel escolhido</span>
+            </label>
+            <label
+              htmlFor="pie-nao"
+              className={cn(
+                "flex cursor-pointer items-center gap-2.5 rounded-lg border p-3 text-sm transition-colors",
+                w.possui_imovel_escolhido === false
+                  ? "border-primary/50 bg-primary/5"
+                  : "border-border hover:bg-muted/40",
+              )}
+            >
               <RadioGroupItem value="nao" id="pie-nao" />
-              <Label htmlFor="pie-nao" className="font-normal">
-                Não, ainda estou pesquisando
-              </Label>
-            </div>
+              <span className="font-normal">Não, ainda estou pesquisando</span>
+            </label>
           </RadioGroup>
         </div>
 
@@ -344,6 +363,9 @@ function Pagina() {
             Informe para verificarmos se atende à renda mínima exigida.
           </p>
         </div>
+          </div>
+        </Card>
+
 
         {w.valor_financiamento > 0 && w.prazo_meses >= PRAZO_MIN && (
           <DicaRendaMinima
