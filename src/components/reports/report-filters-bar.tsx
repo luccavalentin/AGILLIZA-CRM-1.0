@@ -32,9 +32,9 @@ export function VisionSelector({
   podeEquipe: boolean;
   podeGeral: boolean;
 }) {
+  // Escopo "Equipe" foi removido do produto — mantém apenas Minha e Geral.
   const opts: Escopo[] = [
     "minha",
-    ...(podeEquipe ? (["equipe"] as Escopo[]) : []),
     ...(podeGeral ? (["geral"] as Escopo[]) : []),
   ];
   return (
