@@ -246,12 +246,13 @@ export const getPanelDados = createServerFn({ method: "POST" })
       // fonte de verdade da operação e da pasta de arquivados.
       const contratosCount = contratosInfo.count;
       const volume = contratosInfo.volume;
-      // Aprovadas (funil monotônico: aprovadas >= contratos): crédito aprovado
-      // nas propostas + os contratos efetivamente emitidos.
+      // Aprovação é somente crédito aprovado na proposta/simulação bancária.
+      // Contrato emitido é uma métrica operacional separada e não pode inflar
+      // taxa, volume aprovado ou quantidade de aprovadas.
       const aprovadasProp = rowsBrutas.filter(
         (p) => p.status === "credito_aprovado" && dentroPeriodo(p.created_at),
       );
-      const aprovadasCount = aprovadasProp.length + contratosCount;
+      const aprovadasCount = aprovadasProp.length;
       const simConcluidasRows = simRows.filter((s) =>
         ["simulada", "parcialmente_simulada", "promovida"].includes(s.status),
       );
@@ -263,11 +264,10 @@ export const getPanelDados = createServerFn({ method: "POST" })
         (s, r) => s + (r.valor_financiamento ?? 0),
         0,
       );
-      const volumeAprovado =
-        aprovadasProp.reduce(
-          (s, p) => s + (p.valor_financiamento_aprovado ?? p.valor_financiamento ?? 0),
-          0,
-        ) + volume;
+      const volumeAprovado = aprovadasProp.reduce(
+        (s, p) => s + (p.valor_financiamento_aprovado ?? p.valor_financiamento ?? 0),
+        0,
+      );
       const ticket = contratosCount ? volume / contratosCount : 0;
       const taxa = enviadas.length ? (aprovadasCount / enviadas.length) * 100 : 0;
       const conversao = simCount ? (contratosCount / simCount) * 100 : 0;
@@ -442,11 +442,11 @@ export const getPanelDados = createServerFn({ method: "POST" })
     // Contratos emitidos vêm da ficha do cliente (contrato_emitido_em).
     const contratos = contratosInfo.count;
     const volumeContratos = contratosInfo.volume;
-    // Aprovadas (funil monotônico): crédito aprovado nas propostas + contratos.
-    const aprovadas =
-      propRowsBrutas.filter(
-        (p) => p.status === "credito_aprovado" && dentroPeriodo(p.created_at),
-      ).length + contratos;
+    // Aprovação é somente crédito aprovado na proposta/simulação bancária.
+    // Contrato emitido permanece separado para não gerar taxa falsa de 100%.
+    const aprovadas = propRowsBrutas.filter(
+      (p) => p.status === "credito_aprovado" && dentroPeriodo(p.created_at),
+    ).length;
 
     const demAbertas = demRows.filter((d) => !["concluida", "cancelada"].includes(d.status));
     const demVencidas = demAbertas.filter((d) => d.prazo_sla && new Date(d.prazo_sla) < agora);
