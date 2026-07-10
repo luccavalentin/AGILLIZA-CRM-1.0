@@ -1,7 +1,7 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Calculator, Home, Wallet, CalendarDays, TrendingUp, Zap, FileText, Check, Award } from "lucide-react";
+import { ArrowLeft, Calculator, Home, CalendarDays, TrendingUp, Zap, FileText, Award } from "lucide-react";
 import { assertModuloPermitido } from "@/lib/route-guards";
 
 import { Button } from "@/components/ui/button";
@@ -19,7 +19,6 @@ import {
 } from "@/components/ui/select";
 import { CurrencyInput } from "@/components/simulacao/currency-input";
 import { DicaRendaMinima } from "@/components/simulacao/dica-renda-minima";
-import { ToneBadge } from "@/components/crm/tone-badge";
 import { PRODUTOS } from "@/lib/simulacao/schemas";
 import { formatBRL, formatPercent } from "@/lib/simulacao/format";
 import { listarBancosAtivos } from "@/lib/simulacao/simulacoes.functions";
