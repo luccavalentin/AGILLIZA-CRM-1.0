@@ -27,6 +27,8 @@ export interface PropostaListaItem {
   valor_financiamento: number | null;
   status: string;
   created_at: string;
+  responsavel_id: string | null;
+  nome_responsavel: string | null;
   bancos: PropostaBancoResumo[];
 }
 
