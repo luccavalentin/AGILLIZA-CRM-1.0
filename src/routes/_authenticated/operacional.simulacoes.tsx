@@ -632,6 +632,12 @@ function Pagina() {
               <div className="min-w-0">
                 <p className="font-mono font-semibold text-primary">{s.numero_simulacao}</p>
                 <p className="truncate text-sm font-medium text-foreground">{s.nome_cliente ?? "—"}</p>
+                {escopo === "todas" && s.nome_responsavel && (
+                  <p className="mt-0.5 flex items-center gap-1 text-[11px] text-muted-foreground">
+                    <UserIcon className="h-3 w-3 shrink-0" />
+                    <span className="truncate">{s.nome_responsavel}</span>
+                  </p>
+                )}
               </div>
               <div className="flex shrink-0 items-center gap-1" onClick={(e) => e.stopPropagation()}>
                 <SimulacaoStatusBadge status={s.status} />
