@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { ArrowLeft, Search, RotateCcw } from "lucide-react";
+import { ArrowLeft, Search, RotateCcw, KanbanSquare } from "lucide-react";
 import { BancoLogo } from "@/components/bancos/banco-logo";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { listarPropostas, moverStatusProposta } from "@/lib/propostas/propostas.functions";
