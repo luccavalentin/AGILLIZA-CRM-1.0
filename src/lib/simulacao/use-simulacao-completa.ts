@@ -372,19 +372,26 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
 
   function puxarConjugeDoCRM() {
     if (!crmVinculado) return;
-    setF((prev) => ({
-      ...prev,
-      possui_conjuge: true,
-      compoe_renda: prev.compoe_renda || Number(crmVinculado.conjuge_renda) > 0,
-      nome_conjuge: crmVinculado.conjuge_nome ?? "",
-      cpf_conjuge: crmVinculado.conjuge_cpf ? maskCpfCnpj(crmVinculado.conjuge_cpf) : "",
-      renda_conjuge: crmVinculado.conjuge_renda ?? 0,
-      data_nascimento_conjuge: crmVinculado.conjuge_data_nascimento ?? "",
-      email_conjuge: crmVinculado.conjuge_email ?? "",
-      celular_conjuge: crmVinculado.conjuge_celular
-        ? maskCelular(crmVinculado.conjuge_celular)
-        : "",
-    }));
+    setF((prev) => {
+      // Se o titular está com estado civil de casal, mantém; senão assume casado.
+      const ecTitular =
+        prev.estado_civil === "CA" || prev.estado_civil === "UE" ? prev.estado_civil : "CA";
+      return {
+        ...prev,
+        possui_conjuge: true,
+        compoe_renda: prev.compoe_renda || Number(crmVinculado.conjuge_renda) > 0,
+        estado_civil: ecTitular,
+        estado_civil_conjuge: ecTitular,
+        nome_conjuge: crmVinculado.conjuge_nome ?? "",
+        cpf_conjuge: crmVinculado.conjuge_cpf ? maskCpfCnpj(crmVinculado.conjuge_cpf) : "",
+        renda_conjuge: crmVinculado.conjuge_renda ?? 0,
+        data_nascimento_conjuge: crmVinculado.conjuge_data_nascimento ?? "",
+        email_conjuge: crmVinculado.conjuge_email ?? "",
+        celular_conjuge: crmVinculado.conjuge_celular
+          ? maskCelular(crmVinculado.conjuge_celular)
+          : "",
+      };
+    });
     toast.success("Dados do cônjuge puxados do cadastro do CRM.");
   }
 
