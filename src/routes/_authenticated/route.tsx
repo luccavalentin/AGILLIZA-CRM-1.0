@@ -12,6 +12,7 @@ import { filterNavByPermissions, permsToSet } from "@/components/app-shell/filte
 import { SidebarSkeleton } from "@/components/app-shell/sidebar-nav";
 import { getMinhaSessao } from "@/lib/session.functions";
 import { getMinhasPermissoes } from "@/lib/permissions.functions";
+import { limparCachePermissoes } from "@/lib/route-guards";
 import { listarPastasRaiz } from "@/lib/documentos/arquivos.functions";
 
 export const Route = createFileRoute("/_authenticated")({
