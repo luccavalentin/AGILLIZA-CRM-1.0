@@ -210,11 +210,99 @@ function Pagina() {
   const kpiPrazo = prazos.length
     ? Math.round(prazos.reduce((a, b) => a + b, 0) / prazos.length)
     : 0;
-  const kpis = [
-    { label: "Simulações", valor: String(kpiTotal), icon: ListChecks },
-    { label: "Volume em imóveis", valor: formatBRL(kpiValor), icon: Wallet },
-    { label: "Cotações em bancos", valor: String(kpiBancos), icon: Building2 },
-    { label: "Prazo médio", valor: kpiPrazo ? `${kpiPrazo} meses` : "—", icon: Clock },
+
+  // Agregações para o detalhamento dos KPIs (o que cada card "guarda").
+  const porStatus = itens.reduce<Record<string, number>>((acc, s) => {
+    const st = (s as any).status ?? "—";
+    acc[st] = (acc[st] ?? 0) + 1;
+    return acc;
+  }, {});
+  const porBanco = itens.reduce<Record<string, number>>((acc, s) => {
+    (Array.isArray(s.bancos) ? s.bancos : []).forEach((b: any) => {
+      const nome = b.nome ?? b.banco_nome ?? b.banco_id ?? "Banco";
+      acc[nome] = (acc[nome] ?? 0) + 1;
+    });
+    return acc;
+  }, {});
+  const prazoMin = prazos.length ? Math.min(...prazos) : 0;
+  const prazoMax = prazos.length ? Math.max(...prazos) : 0;
+
+  const kpis: {
+    id: string;
+    label: string;
+    valor: string;
+    icon: typeof ListChecks;
+    detalhe: React.ReactNode;
+  }[] = [
+    {
+      id: "simulacoes",
+      label: "Simulações",
+      valor: String(kpiTotal),
+      icon: ListChecks,
+      detalhe: (
+        <KpiDetalhe
+          descricao="Total de simulações no filtro atual, agrupadas por status."
+          linhas={Object.entries(porStatus)
+            .sort((a, b) => b[1] - a[1])
+            .map(([status, qtd]) => ({
+              rotulo: statusLabel(status),
+              valor: String(qtd),
+            }))}
+          total={{ rotulo: "Total", valor: String(kpiTotal) }}
+        />
+      ),
+    },
+    {
+      id: "volume",
+      label: "Volume em imóveis",
+      valor: formatBRL(kpiValor),
+      icon: Wallet,
+      detalhe: (
+        <KpiDetalhe
+          descricao="Soma dos valores de imóvel de cada simulação."
+          linhas={itens
+            .slice()
+            .sort((a, b) => (Number(b.valor_imovel) || 0) - (Number(a.valor_imovel) || 0))
+            .map((s) => ({
+              rotulo: `${s.numero} · ${s.cliente_nome ?? "—"}`,
+              valor: formatBRL(Number(s.valor_imovel) || 0),
+            }))}
+          total={{ rotulo: "Volume total", valor: formatBRL(kpiValor) }}
+        />
+      ),
+    },
+    {
+      id: "bancos",
+      label: "Cotações em bancos",
+      valor: String(kpiBancos),
+      icon: Building2,
+      detalhe: (
+        <KpiDetalhe
+          descricao="Quantidade de cotações por banco no filtro atual."
+          linhas={Object.entries(porBanco)
+            .sort((a, b) => b[1] - a[1])
+            .map(([nome, qtd]) => ({ rotulo: nome, valor: String(qtd) }))}
+          total={{ rotulo: "Total de cotações", valor: String(kpiBancos) }}
+        />
+      ),
+    },
+    {
+      id: "prazo",
+      label: "Prazo médio",
+      valor: kpiPrazo ? `${kpiPrazo} meses` : "—",
+      icon: Clock,
+      detalhe: (
+        <KpiDetalhe
+          descricao="Distribuição dos prazos das simulações."
+          linhas={[
+            { rotulo: "Prazo mínimo", valor: prazoMin ? `${prazoMin} meses` : "—" },
+            { rotulo: "Prazo médio", valor: kpiPrazo ? `${kpiPrazo} meses` : "—" },
+            { rotulo: "Prazo máximo", valor: prazoMax ? `${prazoMax} meses` : "—" },
+          ]}
+          total={{ rotulo: "Simulações com prazo", valor: String(prazos.length) }}
+        />
+      ),
+    },
   ];
 
   return (
