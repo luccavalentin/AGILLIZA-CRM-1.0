@@ -20,7 +20,7 @@ import { StatusBadge, ToneBadge } from "@/components/crm/tone-badge";
 import { ConfirmDelete } from "@/components/shared/confirm-delete";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { listarClientes, excluirCliente } from "@/lib/crm/clientes.functions";
-import { formatarDocumento, mascararDocumento, formatarCelular } from "@/lib/crm/documento";
+import { formatarDocumento, formatarCelular } from "@/lib/crm/documento";
 import { usePipelineRealtime } from "@/hooks/use-pipeline-realtime";
 
 export const Route = createFileRoute("/_authenticated/crm/clientes")({
