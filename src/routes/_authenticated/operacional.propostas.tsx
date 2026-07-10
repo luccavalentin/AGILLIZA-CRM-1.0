@@ -302,11 +302,13 @@ function Pagina() {
                   "--banco-ring": `${corBanco}59`,
                 } as React.CSSProperties
               }
-              className="cursor-pointer rounded-2xl border-border/60 p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--banco-ring)] hover:bg-[var(--banco-tint)] hover:shadow-lg"
+              className="group relative cursor-pointer overflow-hidden rounded-2xl border-border/60 bg-[var(--banco-tint)] p-4 pl-5 shadow-sm ring-1 ring-inset ring-[var(--banco-ring)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:scale-[0.99] active:shadow-md"
               onClick={() =>
                 router.navigate({ to: "/operacional/propostas/$id", params: { id: p.id } })
               }
             >
+              <span className="absolute inset-y-0 left-0 w-1.5 rounded-r-full bg-[var(--banco)]" />
+
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
