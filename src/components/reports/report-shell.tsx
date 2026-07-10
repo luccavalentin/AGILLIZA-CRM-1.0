@@ -39,16 +39,17 @@ export function ReportShell({
               </h1>
 
               
-              <div className="flex flex-wrap gap-1.5 pt-1">
+              <div className="flex flex-wrap gap-1.5 pt-0.5">
                 {metaChips.map((m) => (
                   <span
                     key={m}
-                    className="inline-flex items-center rounded-full border border-border/70 bg-card/70 px-2.5 py-0.5 text-[11px] font-medium tabular-nums text-muted-foreground backdrop-blur-sm"
+                    className="inline-flex items-center rounded-full border border-border/70 bg-muted/40 px-2 py-0.5 text-[10px] font-medium tabular-nums text-muted-foreground"
                   >
                     {m}
                   </span>
                 ))}
               </div>
+
             </div>
           </div>
           <div className="print:hidden flex flex-wrap items-center gap-2 lg:justify-end">
