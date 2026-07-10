@@ -203,10 +203,13 @@ function Pagina() {
   const itens = data?.itens ?? [];
   const kpiTotal = data?.total ?? itens.length;
   const kpiValor = itens.reduce((acc, s) => acc + (Number(s.valor_financiamento) || 0), 0);
-  const kpiBancos = itens.reduce(
-    (acc, s) => acc + (Array.isArray(s.bancos) ? s.bancos.length : 0),
-    0,
-  );
+  const bancosUnicos = new Set<string>();
+  itens.forEach((s) => {
+    (Array.isArray(s.bancos) ? s.bancos : []).forEach((b: any) => {
+      bancosUnicos.add(String(b.nome ?? b.banco_nome ?? b.banco_id ?? "Banco"));
+    });
+  });
+  const kpiBancos = bancosUnicos.size;
   const prazos = itens.map((s) => Number(s.prazo)).filter((n) => n > 0);
   const kpiPrazo = prazos.length
     ? Math.round(prazos.reduce((a, b) => a + b, 0) / prazos.length)
