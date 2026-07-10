@@ -388,24 +388,20 @@ function Pagina() {
                   router.navigate({ to: "/operacional/simulacoes/$id", params: { id: s.id } })
                 }
               >
-                <TableCell className="font-semibold text-primary">{s.numero_simulacao}</TableCell>
+                <TableCell className="font-mono font-semibold text-primary">{s.numero_simulacao}</TableCell>
 
-                <TableCell>{s.nome_cliente ?? "—"}</TableCell>
+                <TableCell className="font-medium text-foreground">{s.nome_cliente ?? "—"}</TableCell>
                 <TableCell>
-                  {s.produto === "home_equity"
-                    ? "Home Equity"
-                    : s.produto === "financiamento_imobiliario"
-                      ? "Financiamento"
-                      : "—"}
+                  <ProdutoBadge produto={s.produto} />
                 </TableCell>
                 <TableCell>
                   <BancosSimulados bancos={s.bancos} />
                 </TableCell>
-                <TableCell className="text-right tabular-nums">
+                <TableCell className="text-right font-semibold tabular-nums text-foreground">
                   {formatBRL(s.valor_imovel)}
                 </TableCell>
-                <TableCell className="text-right tabular-nums">
-                  {s.prazo ? `${s.prazo}m` : "—"}
+                <TableCell className="text-right tabular-nums text-muted-foreground">
+                  {s.prazo ? `${s.prazo} meses` : "—"}
                 </TableCell>
                 <TableCell>
                   <SimulacaoStatusBadge status={s.status} />
