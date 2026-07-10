@@ -789,3 +789,19 @@ div[style*="Edit with Lovable"],
 .chat-dot-red { background: hsl(0 75% 55%); }
 .chat-dot-purple { background: hsl(270 65% 58%); }
 .chat-dot-slate { background: hsl(215 20% 55%); }
+
+/* ── Ícones institucionais ──
+   Traço mais fino e refinado para um aspecto profissional/institucional.
+   A propriedade CSS stroke-width sobrepõe o atributo SVG dos ícones Lucide. */
+.lucide {
+  stroke-width: 1.5px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+/* Ícones pequenos ganham traço levemente maior para manter legibilidade */
+.lucide.h-3,
+.lucide.h-3\.5,
+.lucide.w-3,
+.lucide.w-3\.5 {
+  stroke-width: 1.75px;
+}
