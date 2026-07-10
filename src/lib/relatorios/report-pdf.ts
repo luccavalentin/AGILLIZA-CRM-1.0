@@ -63,12 +63,21 @@ export function drawBrandHeader(
   doc.setTextColor("#FFFFFF");
   doc.setFontSize(15);
   doc.setFont("helvetica", "bold");
-  doc.text(titulo, textoX, centroY - 3);
+  // Largura disponível para o texto (evita que título/descrição sejam cortados na borda direita)
+  const dispW = pageW - textoX - 32;
+  const tituloLinha = String(doc.splitTextToSize(titulo, dispW)[0] ?? titulo);
+  doc.text(tituloLinha, textoX, centroY - 3);
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(P.subHead);
-  doc.text(descricao, textoX, centroY + 13);
-}
+  // Ajusta a descrição à largura disponível; adiciona reticências quando excede uma linha.
+  const descLinhas = doc.splitTextToSize(descricao, dispW) as string[];
+  let descLinha = descLinhas[0] ?? descricao;
+  if (descLinhas.length > 1) {
+    descLinha = descLinha.replace(/[\s,.;:]+$/, "") + "…";
+  }
+  doc.text(descLinha, textoX, centroY + 13);
+
 
 /** Desenha o rodapé institucional com paginação. */
 function drawFooter(doc: jsPDF, pageW: number, pageH: number, pageNum: number, total: number) {
