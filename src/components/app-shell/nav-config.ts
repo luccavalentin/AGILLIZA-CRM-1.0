@@ -309,8 +309,8 @@ export const navInterno: NavGroup[] = [
         perm: { modulo: "relatorios.geral" },
         children: [
           { label: "Relatório gerencial", icon: LayoutDashboard, to: "/relatorios/gerencial" },
-          { label: "Personalizados", icon: SlidersHorizontal, to: "/relatorios/personalizados" },
         ],
+
       },
     ],
   },
