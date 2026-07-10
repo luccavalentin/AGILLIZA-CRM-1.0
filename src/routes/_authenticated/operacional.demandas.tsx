@@ -23,7 +23,8 @@ import { NovaDemandaDialog } from "@/components/operacional/nova-demanda-dialog"
 import { SlaCountdown } from "@/components/operacional/sla-countdown";
 import { ToneBadge } from "@/components/crm/tone-badge";
 import { ConfirmDelete } from "@/components/shared/confirm-delete";
-import { PRIORIDADE, statusDemanda } from "@/components/operacional/status";
+import { statusDemanda, type Prioridade } from "@/components/operacional/status";
+import { OpHero, OpStat, PriorityChip, OpAvatar } from "@/components/operacional/ui";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -35,13 +36,7 @@ export const Route = createFileRoute("/_authenticated/operacional/demandas")({
   component: Pagina,
 });
 
-function iniciais(nome?: string | null): string {
-  if (!nome) return "—";
-  const p = nome.trim().split(/\s+/);
-  return ((p[0]?.[0] ?? "") + (p.length > 1 ? p[p.length - 1][0] : "")).toUpperCase();
-}
-
-function atrasada(d: any): boolean {
+function atrasada(d: { status: string; prazo_sla: string | null }): boolean {
   if (d.status === "concluida" || d.status === "cancelada" || !d.prazo_sla) return false;
   return new Date(d.prazo_sla).getTime() < Date.now();
 }
@@ -60,14 +55,15 @@ function Pagina() {
 
   const itens = data ?? [];
 
-  const stats = useMemo(() => {
-    return {
+  const stats = useMemo(
+    () => ({
       total: itens.length,
-      andamento: itens.filter((d: any) => d.status === "em_andamento").length,
+      andamento: itens.filter((d) => d.status === "em_andamento").length,
       atrasadas: itens.filter(atrasada).length,
-      concluidas: itens.filter((d: any) => d.status === "concluida").length,
-    };
-  }, [itens]);
+      concluidas: itens.filter((d) => d.status === "concluida").length,
+    }),
+    [itens],
+  );
 
   async function verificarSla() {
     try {
@@ -95,62 +91,67 @@ function Pagina() {
 
   return (
     <div className="space-y-6 p-4 md:p-6">
-      {/* Cabeçalho */}
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Demandas</h1>
-          <p className="text-sm text-muted-foreground">
-            Solicitações formais entre equipes, com SLA e escalonamento.
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" size="sm" onClick={verificarSla}>
-            <AlertTriangle className="mr-1.5 h-4 w-4" /> Verificar SLA
-          </Button>
-          <Button asChild variant="outline" size="sm">
-            <Link to="/operacional/demandas/kanban">
-              <KanbanSquare className="mr-1.5 h-4 w-4" /> Kanban
-            </Link>
-          </Button>
-          <NovaDemandaDialog onCriada={refetch} />
-        </div>
-      </div>
+      <OpHero
+        icon={<Inbox className="h-6 w-6" />}
+        eyebrow="Operacional"
+        titulo="Demandas"
+        descricao="Solicitações formais entre equipes, com SLA e escalonamento."
+        acoes={
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={verificarSla}
+              className="bg-card/60 backdrop-blur"
+            >
+              <AlertTriangle className="mr-1.5 h-4 w-4" /> Verificar SLA
+            </Button>
+            <Button asChild variant="outline" size="sm" className="bg-card/60 backdrop-blur">
+              <Link to="/operacional/demandas/kanban">
+                <KanbanSquare className="mr-1.5 h-4 w-4" /> Kanban
+              </Link>
+            </Button>
+            <NovaDemandaDialog onCriada={refetch} />
+          </>
+        }
+      />
 
-      {/* KPIs */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatCard
+        <OpStat
           label="Total"
           value={stats.total}
-          icon={<Inbox className="h-4 w-4" />}
-          tint="text-primary bg-primary/10"
+          icon={<Inbox className="h-5 w-5" />}
+          tint="bg-primary/10 text-primary"
         />
-        <StatCard
+        <OpStat
           label="Em andamento"
           value={stats.andamento}
-          icon={<Loader2 className="h-4 w-4" />}
-          tint="text-sky-600 bg-sky-500/10 dark:text-sky-400"
+          icon={<Loader2 className="h-5 w-5" />}
+          tint="bg-warning/15 text-warning-foreground"
+          accent="var(--warning)"
         />
-        <StatCard
+        <OpStat
           label="Atrasadas"
           value={stats.atrasadas}
-          icon={<Flame className="h-4 w-4" />}
-          tint="text-destructive bg-destructive/10"
+          icon={<Flame className="h-5 w-5" />}
+          tint="bg-destructive/10 text-destructive"
+          accent="var(--destructive)"
           alerta={stats.atrasadas > 0}
         />
-        <StatCard
+        <OpStat
           label="Concluídas"
           value={stats.concluidas}
-          icon={<CheckCircle2 className="h-4 w-4" />}
-          tint="text-emerald-600 bg-emerald-500/10 dark:text-emerald-400"
+          icon={<CheckCircle2 className="h-5 w-5" />}
+          tint="bg-success/10 text-success"
+          accent="var(--success)"
         />
       </div>
 
-      {/* Filtros */}
       <div className="flex flex-wrap items-center gap-3">
-        <Tabs value={escopo} onValueChange={(v) => setEscopo(v as any)}>
+        <Tabs value={escopo} onValueChange={(v) => setEscopo(v as "minhas" | "equipe")}>
           <TabsList>
             <TabsTrigger value="minhas">Minhas</TabsTrigger>
-            <TabsTrigger value="equipe">Equipe</TabsTrigger>
+            <TabsTrigger value="equipe">Todas</TabsTrigger>
           </TabsList>
         </Tabs>
         <div className="relative max-w-xs flex-1">
@@ -164,17 +165,16 @@ function Pagina() {
         </div>
       </div>
 
-      {/* Lista */}
-      <div className="overflow-hidden rounded-xl border border-border/70 bg-card shadow-sm">
+      <div className="overflow-hidden rounded-2xl border border-border/70 bg-card shadow-card">
         {isLoading ? (
           <div className="space-y-2 p-4">
             {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="h-12 animate-pulse rounded-lg bg-muted/60" />
+              <div key={i} className="h-14 animate-pulse rounded-xl bg-muted/60" />
             ))}
           </div>
         ) : itens.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-3 p-14 text-center">
-            <div className="flex size-14 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <div className="grid size-14 place-items-center rounded-full bg-primary/10 text-primary">
               <Inbox className="h-7 w-7" />
             </div>
             <p className="text-sm font-medium text-foreground">Nenhuma demanda encontrada</p>
@@ -183,134 +183,140 @@ function Pagina() {
             </p>
           </div>
         ) : (
-          <table className="w-full text-sm">
-            <thead className="border-b border-border/70 bg-muted/40 text-left text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-              <tr>
-                <th className="px-4 py-3">Nº</th>
-                <th className="px-4 py-3">Título</th>
-                <th className="hidden px-4 py-3 md:table-cell">Cliente</th>
-                <th className="hidden px-4 py-3 lg:table-cell">Responsável</th>
-                <th className="px-4 py-3">SLA</th>
-                <th className="hidden px-4 py-3 sm:table-cell">Prioridade</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3 text-right">Ações</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border/60">
+          <>
+            {/* Desktop */}
+            <table className="hidden w-full text-sm md:table">
+              <thead className="border-b border-border/70 bg-muted/40 text-left text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                <tr>
+                  <th className="px-4 py-3">Nº</th>
+                  <th className="px-4 py-3">Título</th>
+                  <th className="hidden px-4 py-3 md:table-cell">Cliente</th>
+                  <th className="hidden px-4 py-3 lg:table-cell">Responsável</th>
+                  <th className="px-4 py-3">SLA</th>
+                  <th className="hidden px-4 py-3 sm:table-cell">Prioridade</th>
+                  <th className="px-4 py-3">Status</th>
+                  <th className="px-4 py-3 text-right">Ações</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/60">
+                {itens.map((d) => {
+                  const late = atrasada(d);
+                  return (
+                    <tr
+                      key={d.id}
+                      onClick={() =>
+                        navigate({ to: "/operacional/demandas/$id", params: { id: d.id } })
+                      }
+                      className={cn(
+                        "op-row group cursor-pointer hover:bg-accent/40",
+                        late && "bg-destructive/[0.04]",
+                      )}
+                      style={{
+                        ["--op-accent" as string]: late
+                          ? "var(--destructive)"
+                          : "var(--primary)",
+                      }}
+                    >
+                      <td className="px-4 py-3 align-middle tabular-nums text-muted-foreground">
+                        {d.numero}
+                      </td>
+                      <td className="px-4 py-3 align-middle">
+                        <span className="flex items-center gap-1.5 font-medium text-foreground">
+                          <span className="line-clamp-1">{d.titulo}</span>
+                          <ArrowUpRight className="h-3.5 w-3.5 shrink-0 opacity-0 transition-opacity group-hover:opacity-100" />
+                        </span>
+                      </td>
+                      <td className="hidden px-4 py-3 align-middle text-muted-foreground md:table-cell">
+                        {d.nome_cliente ?? "—"}
+                      </td>
+                      <td className="hidden px-4 py-3 align-middle lg:table-cell">
+                        <div className="flex items-center gap-2">
+                          <OpAvatar nome={d.nome_responsavel} />
+                          <span className="truncate text-muted-foreground">
+                            {d.nome_responsavel ?? "—"}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 align-middle">
+                        <SlaCountdown
+                          inicio={d.sla_inicio}
+                          prazo={d.prazo_sla}
+                          concluida={d.status === "concluida"}
+                          concluidaEm={d.concluida_em}
+                        />
+                      </td>
+                      <td className="hidden px-4 py-3 align-middle sm:table-cell">
+                        <PriorityChip prioridade={d.prioridade as Prioridade} />
+                      </td>
+                      <td className="px-4 py-3 align-middle">
+                        <ToneBadge tone={statusDemanda(d.status).tone}>
+                          {statusDemanda(d.status).label}
+                        </ToneBadge>
+                      </td>
+                      <td
+                        className="px-4 py-3 text-right align-middle"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <ConfirmDelete
+                          titulo="Excluir demanda"
+                          descricao={`A demanda ${d.numero} será removida permanentemente.`}
+                          onConfirm={() => handleExcluir(d.id)}
+                        />
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+
+            {/* Mobile */}
+            <ul className="divide-y divide-border/60 md:hidden">
               {itens.map((d) => {
-                const p = PRIORIDADE[d.prioridade];
                 const late = atrasada(d);
                 return (
-                  <tr
-                    key={d.id}
-                    onClick={() =>
-                      navigate({ to: "/operacional/demandas/$id", params: { id: d.id } })
-                    }
-                    className={cn(
-                      "group cursor-pointer transition-colors hover:bg-accent/40",
-                      late && "bg-destructive/[0.04]",
-                    )}
-                  >
-                    <td className="px-4 py-3 align-middle">
-                      <Link
-                        to="/operacional/demandas/$id"
-                        params={{ id: d.id }}
-                        className="tabular-nums text-muted-foreground hover:text-foreground"
-                      >
-                        {d.numero}
-                      </Link>
-                    </td>
-                    <td className="px-4 py-3 align-middle">
-                      <Link
-                        to="/operacional/demandas/$id"
-                        params={{ id: d.id }}
-                        className="flex items-center gap-1.5 font-medium text-foreground hover:text-primary"
-                      >
-                        <span className="line-clamp-1">{d.titulo}</span>
-                        <ArrowUpRight className="h-3.5 w-3.5 shrink-0 opacity-0 transition-opacity group-hover:opacity-100" />
-                      </Link>
-                    </td>
-                    <td className="hidden px-4 py-3 align-middle text-muted-foreground md:table-cell">
-                      {d.nome_cliente ?? "—"}
-                    </td>
-                    <td className="hidden px-4 py-3 align-middle lg:table-cell">
-                      <div className="flex items-center gap-2">
-                        <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary/80 to-primary/50 text-[10px] font-semibold text-primary-foreground">
-                          {iniciais(d.nome_responsavel)}
-                        </span>
-                        <span className="truncate text-muted-foreground">
-                          {d.nome_responsavel ?? "—"}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 align-middle">
-                      <SlaCountdown
-                        inicio={d.sla_inicio}
-                        prazo={d.prazo_sla}
-                        concluida={d.status === "concluida"}
-                        concluidaEm={d.concluida_em}
-                      />
-                    </td>
-                    <td className="hidden px-4 py-3 align-middle sm:table-cell">
-                      <span className="inline-flex items-center gap-2">
-                        <span className={cn("inline-block h-1.5 w-8 rounded-full", p.bar)} />
-                        <span className="text-xs text-muted-foreground">{p.label}</span>
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 align-middle">
-                      <ToneBadge tone={statusDemanda(d.status).tone}>
-                        {statusDemanda(d.status).label}
-                      </ToneBadge>
-                    </td>
-                    <td
-                      className="px-4 py-3 text-right align-middle"
-                      onClick={(e) => e.stopPropagation()}
+                  <li key={d.id}>
+                    <Link
+                      to="/operacional/demandas/$id"
+                      params={{ id: d.id }}
+                      className={cn(
+                        "op-row flex flex-col gap-2 p-4 active:bg-accent/40",
+                        late && "bg-destructive/[0.04]",
+                      )}
+                      style={{
+                        ["--op-accent" as string]: late
+                          ? "var(--destructive)"
+                          : "var(--primary)",
+                      }}
                     >
-                      <ConfirmDelete
-                        titulo="Excluir demanda"
-                        descricao={`A demanda ${d.numero} será removida permanentemente.`}
-                        onConfirm={() => handleExcluir(d.id)}
-                      />
-                    </td>
-                  </tr>
+                      <div className="flex items-start justify-between gap-2">
+                        <span className="line-clamp-2 font-medium text-foreground">{d.titulo}</span>
+                        <ToneBadge tone={statusDemanda(d.status).tone}>
+                          {statusDemanda(d.status).label}
+                        </ToneBadge>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-muted-foreground">
+                        <span className="tabular-nums">{d.numero}</span>
+                        <PriorityChip prioridade={d.prioridade as Prioridade} />
+                        <SlaCountdown
+                          inicio={d.sla_inicio}
+                          prazo={d.prazo_sla}
+                          concluida={d.status === "concluida"}
+                          concluidaEm={d.concluida_em}
+                        />
+                      </div>
+                      {d.nome_responsavel && (
+                        <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                          <OpAvatar nome={d.nome_responsavel} className="size-5 text-[9px]" />
+                          {d.nome_responsavel}
+                        </span>
+                      )}
+                    </Link>
+                  </li>
                 );
               })}
-            </tbody>
-          </table>
+            </ul>
+          </>
         )}
-      </div>
-    </div>
-  );
-}
-
-function StatCard({
-  label,
-  value,
-  icon,
-  tint,
-  alerta,
-}: {
-  label: string;
-  value: number;
-  icon: React.ReactNode;
-  tint: string;
-  alerta?: boolean;
-}) {
-  return (
-    <div
-      className={cn(
-        "flex items-center gap-3 rounded-xl border border-border/70 bg-card p-4 shadow-sm",
-        alerta && "border-destructive/40",
-      )}
-    >
-      <span className={cn("flex size-10 shrink-0 items-center justify-center rounded-lg", tint)}>
-        {icon}
-      </span>
-      <div className="min-w-0">
-        <p className="text-2xl font-semibold leading-none tracking-tight text-foreground">
-          {value}
-        </p>
-        <p className="mt-1 truncate text-xs text-muted-foreground">{label}</p>
       </div>
     </div>
   );
