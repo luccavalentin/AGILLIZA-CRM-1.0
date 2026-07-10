@@ -2,7 +2,7 @@ import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ArrowLeft, RefreshCw, Copy, Download, ChevronDown, Pencil, Trash2, Calculator, Home, Landmark, UserRound } from "lucide-react";
+import { ArrowLeft, RefreshCw, Copy, Download, ChevronDown, Pencil, Trash2, Calculator, Home, Landmark, UserRound, History, CheckCircle2, XCircle, Send, Plus, CircleDot } from "lucide-react";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { supabase } from "@/integrations/supabase/client";
 import { ConfirmDelete } from "@/components/shared/confirm-delete";
