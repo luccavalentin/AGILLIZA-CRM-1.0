@@ -2,7 +2,7 @@ import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ArrowLeft, RefreshCw, Copy, Download, ChevronDown, Pencil, Trash2 } from "lucide-react";
+import { ArrowLeft, RefreshCw, Copy, Download, ChevronDown, Pencil, Trash2, Calculator } from "lucide-react";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { supabase } from "@/integrations/supabase/client";
 import { ConfirmDelete } from "@/components/shared/confirm-delete";
@@ -192,7 +192,7 @@ function Pagina() {
 
   return (
     <div className="mx-auto w-full max-w-[1600px] space-y-5 p-4 md:p-6">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/60 bg-gradient-to-br from-card to-muted/30 p-4 shadow-sm md:p-5">
         <div className="flex min-w-0 items-center gap-3">
           <Button
             variant="ghost"
@@ -202,14 +202,17 @@ function Pagina() {
           >
             <ArrowLeft className="h-4 w-4" />
           </Button>
+          <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/15">
+            <Calculator className="h-5 w-5" />
+          </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <h1 className="truncate text-lg font-semibold tracking-tight text-foreground">
+              <h1 className="truncate text-lg font-semibold tracking-tight text-foreground md:text-xl">
                 {s.numero_simulacao}
               </h1>
               <SimulacaoStatusBadge status={s.status} />
             </div>
-            <p className="truncate text-sm text-muted-foreground">
+            <p className="mt-0.5 truncate text-sm text-muted-foreground">
               {s.nome_cliente ?? "—"} ·{" "}
               {s.produto === "home_equity" ? "Home Equity" : "Financiamento"}
             </p>
@@ -447,7 +450,11 @@ function Pagina() {
                     {bancos.map((b: any) => (
                       <TableRow
                         key={b.id}
-                        className="border-border/50 transition-colors odd:bg-card even:bg-muted/20 hover:bg-primary/5"
+                        className={cn(
+                          "border-border/50 transition-colors odd:bg-card even:bg-muted/20 hover:bg-primary/5",
+                          b.id === melhorId &&
+                            "bg-success/5 even:bg-success/5 hover:bg-success/10 [box-shadow:inset_3px_0_0_var(--success)]",
+                        )}
                       >
                         <TableCell className="py-3 text-sm font-semibold">
                           <div className="flex items-center gap-2.5">
@@ -603,13 +610,21 @@ function ResumoCelula({
   destaque?: boolean;
 }) {
   return (
-    <div className={cn("bg-card p-3", destaque && "bg-primary/5")}>
-      <dt className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+    <div
+      className={cn(
+        "relative bg-card p-3.5 transition-colors",
+        destaque && "bg-primary/5",
+      )}
+    >
+      {destaque && (
+        <span className="absolute inset-y-0 left-0 w-0.5 bg-primary" aria-hidden />
+      )}
+      <dt className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
         {rotulo}
       </dt>
       <dd
         className={cn(
-          "mt-1 text-sm font-semibold tabular-nums",
+          "mt-1.5 text-[15px] font-semibold tabular-nums",
           destaque ? "text-primary" : "text-foreground",
         )}
       >
@@ -621,8 +636,8 @@ function ResumoCelula({
 
 function Item({ termo, desc }: { termo: string; desc: string }) {
   return (
-    <div className="flex items-center justify-between gap-3 bg-card px-4 py-3 transition-colors hover:bg-muted/40">
-      <dt className="text-sm text-muted-foreground">{termo}</dt>
+    <div className="flex items-center justify-between gap-3 bg-card px-4 py-3.5 transition-colors hover:bg-muted/40">
+      <dt className="text-[13px] text-muted-foreground">{termo}</dt>
       <dd className="text-right text-sm font-semibold text-foreground tabular-nums">{desc}</dd>
     </div>
   );
