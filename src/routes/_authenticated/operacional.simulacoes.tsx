@@ -264,7 +264,7 @@ function Pagina() {
             .slice()
             .sort((a, b) => (Number(b.valor_imovel) || 0) - (Number(a.valor_imovel) || 0))
             .map((s) => ({
-              rotulo: `${s.numero} · ${s.cliente_nome ?? "—"}`,
+              rotulo: `${s.numero_simulacao} · ${s.nome_cliente ?? "—"}`,
               valor: formatBRL(Number(s.valor_imovel) || 0),
             }))}
           total={{ rotulo: "Volume total", valor: formatBRL(kpiValor) }}
