@@ -506,7 +506,7 @@ function StatusCard({
     <button
       type="button"
       onClick={onClick}
-      className={`group relative overflow-hidden rounded-xl border bg-card p-3 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md sm:p-4 ${
+      className={`group relative overflow-hidden rounded-xl border bg-card p-3 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:scale-[0.98] sm:p-4 ${
         ativo ? "border-primary/50 ring-1 ring-primary/30" : "border-border/60 hover:border-primary/30"
       }`}
     >
