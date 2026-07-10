@@ -70,7 +70,16 @@ export function NotificationsBell({ userId }: NotificationsBellProps) {
 
 
   // Subscription realtime: revalida a lista a cada novo evento.
+  // Eventos em rajada (ex.: várias notificações criadas de uma vez) são
+  // coalescidos num único invalidate para não sobrecarregar a query.
   useEffect(() => {
+    let debounce: ReturnType<typeof setTimeout> | null = null;
+    const agendarInvalidacao = () => {
+      if (debounce) clearTimeout(debounce);
+      debounce = setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ["notificacoes"] });
+      }, 400);
+    };
     const canal = supabase
       .channel(`notif:${userId}`)
       .on(
@@ -81,13 +90,12 @@ export function NotificationsBell({ userId }: NotificationsBellProps) {
           table: "notificacoes",
           filter: `user_id=eq.${userId}`,
         },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ["notificacoes"] });
-        },
+        agendarInvalidacao,
       )
       .subscribe();
 
     return () => {
+      if (debounce) clearTimeout(debounce);
       supabase.removeChannel(canal);
     };
   }, [userId, queryClient]);
