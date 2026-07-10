@@ -15,7 +15,7 @@ import {
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { obterKpisFinanceiros } from "@/lib/financeiro/financeiro.functions";
 import { ReportKpiCard } from "@/components/financeiro/kpi-card";
-import { Card } from "@/components/ui/card";
+import { PanelHeader, SectionTitle, PanelCard } from "@/components/common/dashboard";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { formatBRL } from "@/lib/financeiro/format";
@@ -43,7 +43,7 @@ function Pagina() {
   }, []);
   const [de, setDe] = useState(padrao.de);
   const [ate, setAte] = useState(padrao.ate);
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, dataUpdatedAt } = useQuery({
     queryKey: ["fin-kpis", de, ate],
     queryFn: () => obterKpisFinanceiros({ data: { de: de || undefined, ate: ate || undefined } }),
   });
@@ -51,67 +51,63 @@ function Pagina() {
   const mensal = (data?.receitaDespesaMensal ?? []).map((r) => ({ ...r, label: mesLabel(r.mes) }));
   const alterado = de !== padrao.de || ate !== padrao.ate;
   const periodoLabel = alterado ? "no período" : "este mês";
+  const atualizado = dataUpdatedAt
+    ? new Date(dataUpdatedAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+    : undefined;
 
   return (
-    <div className="mx-auto w-full max-w-[1600px] space-y-6 p-4 md:p-6">
-      <div className="op-hero flex flex-col gap-4 p-4 md:flex-row md:flex-wrap md:items-end md:justify-between md:p-6">
-        <div className="relative min-w-0">
-          <p className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-primary sm:text-[11px]">
-            <span className="inline-block h-1 w-5 shrink-0 rounded-full bg-primary" />
-            Financeiro · Painel
-          </p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground sm:text-[28px]">
-            Painel financeiro
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Visão geral de recebimentos, pagamentos e caixa projetado.
-          </p>
-        </div>
-        <div className="relative flex w-full flex-col gap-2 sm:w-auto">
-          <div className="flex flex-wrap items-end gap-2">
-            <label className="flex min-w-0 flex-1 flex-col gap-1 text-xs text-muted-foreground sm:flex-none">
+    <div className="mx-auto w-full max-w-[1600px] space-y-6 p-3 sm:p-4 md:space-y-8 md:p-6">
+      <PanelHeader
+        eyebrow="Financeiro · Painel"
+        titulo="Painel financeiro"
+        descricao="Visão geral de recebimentos, pagamentos e caixa projetado."
+        atualizadoEm={atualizado}
+        actions={
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-end">
+            <label className="flex min-w-0 flex-col gap-1 text-[11px] text-muted-foreground">
               De
               <Input
                 type="date"
-                className="h-10 w-full sm:w-40"
+                className="h-9 w-full sm:w-40"
                 value={de}
                 onChange={(e) => setDe(e.target.value)}
               />
             </label>
-            <label className="flex min-w-0 flex-1 flex-col gap-1 text-xs text-muted-foreground sm:flex-none">
+            <label className="flex min-w-0 flex-col gap-1 text-[11px] text-muted-foreground">
               Até
               <Input
                 type="date"
-                className="h-10 w-full sm:w-40"
+                className="h-9 w-full sm:w-40"
                 value={ate}
                 onChange={(e) => setAte(e.target.value)}
               />
             </label>
+            {alterado && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="col-span-2 h-9 sm:col-span-1"
+                onClick={() => {
+                  setDe(padrao.de);
+                  setAte(padrao.ate);
+                }}
+              >
+                Restaurar mês atual
+              </Button>
+            )}
           </div>
-          {alterado && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="self-start"
-              onClick={() => {
-                setDe(padrao.de);
-                setAte(padrao.ate);
-              }}
-            >
-              Restaurar mês atual
-            </Button>
-          )}
-        </div>
-      </div>
+        }
+      />
 
-
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <SectionTitle>Indicadores executivos</SectionTitle>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <ReportKpiCard
           titulo={`A receber (${periodoLabel})`}
           valor={formatBRL(data?.aReceber30d ?? 0)}
           icon={TrendingUp}
           tone="success"
           sub={`Hoje: ${formatBRL(data?.aReceberHoje ?? 0)}`}
+          to="/financeiro/contas-a-receber"
         />
         <ReportKpiCard
           titulo={`A pagar (${periodoLabel})`}
@@ -119,12 +115,14 @@ function Pagina() {
           icon={Wallet}
           tone="warning"
           sub={`Hoje: ${formatBRL(data?.aPagarHoje ?? 0)}`}
+          to="/financeiro/contas-a-pagar"
         />
         <ReportKpiCard
           titulo="Saldo projetado"
           valor={formatBRL(data?.saldoProjetado ?? 0)}
           icon={LineChartIcon}
           tone="brand"
+          to="/financeiro/fluxo-de-caixa"
         />
         <ReportKpiCard
           titulo="Inadimplência"
@@ -132,11 +130,16 @@ function Pagina() {
           icon={AlertTriangle}
           tone="danger"
           sub="Vencido há +10 dias"
+          to="/financeiro/contas-a-receber"
         />
       </div>
 
-      <Card className="p-4">
-        <h2 className="mb-4 text-sm font-medium text-foreground">Receita vs. despesa (12 meses)</h2>
+      <SectionTitle>Evolução</SectionTitle>
+      <PanelCard
+        titulo="Receita vs. despesa"
+        subtitulo="Últimos 12 meses"
+        abrirTo="/financeiro/fluxo-de-caixa"
+      >
         <div className="h-72 w-full">
           {isLoading ? (
             <p className="text-sm text-muted-foreground">Carregando…</p>
@@ -170,13 +173,15 @@ function Pagina() {
             </ResponsiveContainer>
           )}
         </div>
-      </Card>
+      </PanelCard>
 
+      <SectionTitle>Distribuição</SectionTitle>
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <Card className="p-4">
-          <h2 className="mb-4 text-sm font-medium text-foreground">
-            Receita por banco (em aberto)
-          </h2>
+        <PanelCard
+          titulo="Receita por banco"
+          subtitulo="Em aberto"
+          abrirTo="/financeiro/contas-a-receber"
+        >
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={data?.receitaPorBanco ?? []} layout="vertical">
@@ -206,12 +211,13 @@ function Pagina() {
               </BarChart>
             </ResponsiveContainer>
           </div>
-        </Card>
+        </PanelCard>
 
-        <Card className="p-4">
-          <h2 className="mb-4 text-sm font-medium text-foreground">
-            Despesa por categoria (em aberto)
-          </h2>
+        <PanelCard
+          titulo="Despesa por categoria"
+          subtitulo="Em aberto"
+          abrirTo="/financeiro/contas-a-pagar"
+        >
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={data?.despesaPorCategoria ?? []} layout="vertical">
@@ -241,7 +247,7 @@ function Pagina() {
               </BarChart>
             </ResponsiveContainer>
           </div>
-        </Card>
+        </PanelCard>
       </div>
     </div>
   );
