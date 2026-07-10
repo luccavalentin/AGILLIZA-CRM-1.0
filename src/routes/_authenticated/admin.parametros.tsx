@@ -192,15 +192,11 @@ function Pagina() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 p-4 md:p-6">
-      <header className="flex items-center gap-3">
-        <Building2 className="size-6 text-primary" />
-        <div>
-          <h1 className="text-xl font-semibold text-foreground">Cadastro da Empresa</h1>
-          <p className="text-sm text-muted-foreground">
-            Dados completos do correspondente: identificação, endereço e contatos.
-          </p>
-        </div>
-      </header>
+      <AdminHero
+        icon={<Building2 className="h-5 w-5" />}
+        titulo="Cadastro da Empresa"
+        descricao="Dados completos do correspondente: identificação, endereço e contatos."
+      />
 
       <form
         className="space-y-6"
