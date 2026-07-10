@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ArrowLeft, FileText, Send } from "lucide-react";
+import { ArrowLeft, FileText, Send, Home, User, Users, Landmark, ShieldCheck } from "lucide-react";
+import { SecaoCabecalho } from "@/components/simulacao/secao-cabecalho";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
