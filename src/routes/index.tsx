@@ -31,7 +31,6 @@ const CARDS: AcessoCard[] = [
     titulo: "Cliente",
     subtitulo: "Portal do processo",
     icon: UserRound,
-    destaque: true,
   },
   {
     to: "/parceiro",
