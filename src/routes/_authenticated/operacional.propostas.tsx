@@ -234,8 +234,13 @@ function Pagina() {
               className="h-11 w-[9.5rem] rounded-xl"
             />
           </div>
-          <Button variant="ghost" className="h-11 rounded-xl" onClick={limparFiltros}>
-            <RotateCcw className="mr-1 h-4 w-4" /> Limpar
+          <Button
+            variant="ghost"
+            className="group h-11 rounded-xl transition-colors hover:bg-primary/5 hover:text-primary"
+            onClick={limparFiltros}
+          >
+            <RotateCcw className="mr-1 h-4 w-4 transition-transform duration-300 group-hover:-rotate-180" />{" "}
+            Limpar
           </Button>
         </div>
       </Card>
