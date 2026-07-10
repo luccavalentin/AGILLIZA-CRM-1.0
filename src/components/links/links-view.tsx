@@ -77,22 +77,37 @@ export function LinksView() {
     onError: (e: any) => toast.error(e?.message ?? "Falha ao excluir."),
   });
 
+  const totalLinks = (data ?? []).length;
+  const totalCategorias = new Set((data ?? []).map((l) => l.categoria).filter(Boolean)).size;
+
   return (
     <div className="mx-auto w-full max-w-5xl space-y-5 p-4 md:p-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <LinkIcon className="h-5 w-5 text-muted-foreground" />
-          <div>
-            <h1 className="text-xl font-semibold text-foreground">Links</h1>
-            <p className="text-sm text-muted-foreground">
-              Repositório de links úteis. Busque e clique para abrir.
-            </p>
-          </div>
-        </div>
-        <Button onClick={() => setCriando(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Novo link
-        </Button>
+      <OpHero
+        icon={<LinkIcon className="h-5 w-5" />}
+        eyebrow="Documentos"
+        titulo="Links úteis"
+        descricao="Repositório central de links. Busque e clique para abrir em nova aba."
+        acoes={
+          <Button onClick={() => setCriando(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Novo link
+          </Button>
+        }
+      />
+
+      <div className="grid grid-cols-2 gap-3">
+        <OpStat
+          label="Links cadastrados"
+          value={totalLinks}
+          icon={<LinkIcon className="h-5 w-5 text-primary" />}
+          tint="bg-primary/10 text-primary"
+        />
+        <OpStat
+          label="Categorias"
+          value={totalCategorias}
+          icon={<Search className="h-5 w-5 text-primary" />}
+          tint="bg-primary/10 text-primary"
+        />
       </div>
 
       <div className="relative">
@@ -105,32 +120,37 @@ export function LinksView() {
         />
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-2.5">
         {isLoading ? (
           Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-16 w-full" />)
         ) : filtrados.length === 0 ? (
           <Card>
-            <CardContent className="py-12 text-center text-sm text-muted-foreground">
-              {busca ? "Nenhum link encontrado para a busca." : "Nenhum link cadastrado ainda."}
+            <CardContent className="py-14 text-center">
+              <span className="mx-auto mb-3 grid size-12 place-items-center rounded-2xl bg-muted text-muted-foreground">
+                <LinkIcon className="h-6 w-6" />
+              </span>
+              <p className="text-sm text-muted-foreground">
+                {busca ? "Nenhum link encontrado para a busca." : "Nenhum link cadastrado ainda."}
+              </p>
             </CardContent>
           </Card>
         ) : (
           filtrados.map((l) => (
             <div
               key={l.id}
-              className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card p-4"
+              className="group flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card p-4 transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-[0_10px_30px_-15px_hsl(var(--primary)/0.5)]"
             >
               <a
                 href={l.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group flex min-w-0 flex-1 items-center gap-3"
+                className="flex min-w-0 flex-1 items-center gap-3"
               >
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+                <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/20 transition-transform group-hover:scale-105">
                   <ExternalLink className="h-4 w-4" />
                 </span>
                 <div className="min-w-0">
-                  <p className="flex items-center gap-2 truncate font-medium text-foreground group-hover:underline">
+                  <p className="flex items-center gap-2 truncate font-semibold text-foreground group-hover:text-primary">
                     {l.titulo}
                     {l.categoria && (
                       <Badge variant="secondary" className="shrink-0 font-normal">
