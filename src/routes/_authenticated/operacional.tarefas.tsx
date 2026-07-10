@@ -264,7 +264,7 @@ function Pagina() {
                       <li key={t.id}>
                         <div
                           className={cn(
-                            "op-row group flex items-center gap-3 rounded-2xl border border-border/70 bg-card p-3 pr-3 shadow-card transition-all hover:-translate-y-0.5 hover:shadow-lg md:gap-4 md:p-3.5",
+                            "op-row group flex items-center gap-3 rounded-xl border border-border bg-card p-3 pr-3 shadow-card transition-colors hover:border-primary/30 hover:bg-accent/30 md:gap-4 md:p-3.5",
                             late && "ring-1 ring-destructive/30",
                           )}
                           style={{ ["--op-accent" as string]: g.accent }}
