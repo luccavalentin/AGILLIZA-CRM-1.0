@@ -144,66 +144,76 @@ function Pagina() {
   const itens = data?.itens ?? [];
 
   return (
-    <div className="min-h-[calc(100dvh-var(--app-header,4rem))] space-y-4 p-3 sm:p-4 lg:p-6">
-      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
-        <div className="min-w-0">
-          <h1 className="truncate text-lg font-semibold text-foreground sm:text-xl">
-            Kanban de Propostas
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Arraste os cards entre etapas permitidas.
-          </p>
+    <div className="min-h-[calc(100dvh-var(--app-header,4rem))] space-y-4 p-3 sm:space-y-6 sm:p-4 lg:p-6">
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 sm:items-center">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-primary to-primary/70 text-primary-foreground shadow-sm ring-1 ring-primary/20">
+            <KanbanSquare className="h-5 w-5" />
+          </span>
+          <div className="min-w-0 space-y-0.5">
+            <h1 className="truncate text-lg font-semibold tracking-tight text-foreground sm:text-xl">
+              Kanban de Propostas
+            </h1>
+            <p className="truncate text-sm text-muted-foreground">
+              Arraste os cards entre as etapas permitidas.
+            </p>
+          </div>
         </div>
-        <Button asChild variant="ghost" size="sm">
+        <Button asChild variant="secondary" size="sm" className="h-11 rounded-xl">
           <Link to="/operacional/propostas">
-            <ArrowLeft className="mr-1 h-4 w-4" /> Lista
+            <ArrowLeft className="mr-1.5 h-4 w-4" /> Lista
           </Link>
         </Button>
       </div>
 
       {/* Filtros */}
-      <div className="flex flex-wrap items-end gap-3 rounded-lg border border-border bg-card p-3 shadow-sm">
-        <Tabs value={escopo} onValueChange={(v) => setEscopo(v as "todas" | "minhas")}>
-          <TabsList>
-            <TabsTrigger value="todas">Todas</TabsTrigger>
-            <TabsTrigger value="minhas">Meu kanban</TabsTrigger>
-          </TabsList>
-        </Tabs>
+      <Card className="rounded-2xl border-border/60 p-3 shadow-sm sm:p-4">
+        <div className="flex flex-wrap items-end gap-3">
+          <Tabs value={escopo} onValueChange={(v) => setEscopo(v as "todas" | "minhas")}>
+            <TabsList className="h-11 rounded-xl">
+              <TabsTrigger value="todas" className="rounded-lg">
+                Todas
+              </TabsTrigger>
+              <TabsTrigger value="minhas" className="rounded-lg">
+                Meu kanban
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
 
-        <div className="flex flex-1 items-center gap-2 min-w-[220px]">
-          <div className="relative flex-1">
+          <div className="relative min-w-[220px] flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              className="pl-9"
+              className="h-11 rounded-xl pl-9 shadow-sm"
               placeholder="Cliente, CPF/CNPJ ou nº da proposta"
               value={q}
               onChange={(e) => setQ(e.target.value)}
             />
           </div>
-        </div>
 
-        <div className="flex flex-col gap-1">
-          <Label className="text-xs text-muted-foreground">De</Label>
-          <Input
-            type="date"
-            value={dataInicio}
-            onChange={(e) => setDataInicio(e.target.value)}
-            className="w-[9.5rem]"
-          />
+          <div className="flex flex-col gap-1">
+            <Label className="text-xs text-muted-foreground">De</Label>
+            <Input
+              type="date"
+              value={dataInicio}
+              onChange={(e) => setDataInicio(e.target.value)}
+              className="h-11 w-[9.5rem] rounded-xl"
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <Label className="text-xs text-muted-foreground">Até</Label>
+            <Input
+              type="date"
+              value={dataFim}
+              onChange={(e) => setDataFim(e.target.value)}
+              className="h-11 w-[9.5rem] rounded-xl"
+            />
+          </div>
+          <Button variant="ghost" className="h-11 rounded-xl" onClick={limparFiltros}>
+            <RotateCcw className="mr-1 h-4 w-4" /> Limpar
+          </Button>
         </div>
-        <div className="flex flex-col gap-1">
-          <Label className="text-xs text-muted-foreground">Até</Label>
-          <Input
-            type="date"
-            value={dataFim}
-            onChange={(e) => setDataFim(e.target.value)}
-            className="w-[9.5rem]"
-          />
-        </div>
-        <Button variant="ghost" size="sm" onClick={limparFiltros}>
-          <RotateCcw className="mr-1 h-4 w-4" /> Limpar
-        </Button>
-      </div>
+      </Card>
+
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
         {COLUNAS.map((col) => {
