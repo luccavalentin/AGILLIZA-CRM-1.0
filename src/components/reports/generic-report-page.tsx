@@ -37,11 +37,10 @@ export function GenericReportPage({
     staleTime: 60_000,
   });
 
-  const meta = `Período: ${PERIODO_LABEL[filtros.periodo]} · Escopo: ${ESCOPO_LABEL[filtros.escopo]} · Registros: ${data?.rows.length ?? 0}`;
   const metaArr = [
     `Período: ${PERIODO_LABEL[filtros.periodo]}`,
     `Escopo: ${ESCOPO_LABEL[filtros.escopo]}`,
-    `Registros: ${data?.rows.length ?? 0}`,
+    `Registros: ${(data?.rows.length ?? 0).toLocaleString("pt-BR")}`,
   ];
 
   // Opções completas de filtro vindas do servidor (todos os bancos/produtos/status cadastrados);
