@@ -22,7 +22,7 @@ export function OpHero({
   return (
     <div
       className="op-hero p-5 md:p-6"
-      style={accent ? ({ ["--op-accent" as string]: accent } as React.CSSProperties) : undefined}
+      style={accent ? { ["--op-accent" as string]: accent } : undefined}
     >
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4 sm:flex sm:flex-wrap sm:justify-between">
         <div className="flex min-w-0 items-start gap-3.5">
