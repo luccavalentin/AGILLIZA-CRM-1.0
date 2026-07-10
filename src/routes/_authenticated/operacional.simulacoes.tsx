@@ -202,7 +202,7 @@ function Pagina() {
 
   const itens = data?.itens ?? [];
   const kpiTotal = data?.total ?? itens.length;
-  const kpiValor = itens.reduce((acc, s) => acc + (Number(s.valor_imovel) || 0), 0);
+  const kpiValor = itens.reduce((acc, s) => acc + (Number(s.valor_financiamento) || 0), 0);
   const kpiBancos = itens.reduce(
     (acc, s) => acc + (Array.isArray(s.bancos) ? s.bancos.length : 0),
     0,
@@ -255,18 +255,18 @@ function Pagina() {
     },
     {
       id: "volume",
-      label: "Volume em imóveis",
+      label: "Volume simulado",
       valor: formatBRL(kpiValor),
       icon: Wallet,
       detalhe: (
         <KpiDetalhe
-          descricao="Soma dos valores de imóvel de cada simulação."
+          descricao="Soma do valor de financiamento de cada simulação."
           linhas={itens
             .slice()
-            .sort((a, b) => (Number(b.valor_imovel) || 0) - (Number(a.valor_imovel) || 0))
+            .sort((a, b) => (Number(b.valor_financiamento) || 0) - (Number(a.valor_financiamento) || 0))
             .map((s) => ({
               rotulo: `${s.numero_simulacao} · ${s.nome_cliente ?? "—"}`,
-              valor: formatBRL(Number(s.valor_imovel) || 0),
+              valor: formatBRL(Number(s.valor_financiamento) || 0),
             }))}
           total={{ rotulo: "Volume total", valor: formatBRL(kpiValor) }}
         />
