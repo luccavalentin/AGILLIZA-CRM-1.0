@@ -40,8 +40,14 @@ function Pagina() {
   const ctx = useSimulacaoCompleta({ duplicar, modoProposta: origemFluxo === "proposta" });
   const { router, modoProposta, f, enviando, concluidos, mostraConjuge, confirmRenda, setConfirmRenda, enviar, executarEnvio } = ctx;
 
+  const resumoEtapas = [
+    { label: "Titular", ok: !!f.nome_cliente },
+    { label: "Operação e imóvel", ok: (Number(f.valor_financiamento) || 0) > 0 },
+    { label: "Bancos", ok: f.bancos_ids.length > 0 },
+  ];
+
   return (
-    <div className="mx-auto w-full max-w-4xl space-y-4 p-4 md:p-8">
+    <div className="mx-auto w-full max-w-6xl space-y-4 p-4 md:p-8">
       <Button
         variant="ghost"
         size="sm"
@@ -71,74 +77,130 @@ function Pagina() {
         </div>
       </div>
 
-      <Card className="overflow-hidden">
-        <SecaoCabecalho
-          icone={<User className="h-4 w-4" />}
-          titulo="Titular"
-          descricao="Dados do proponente principal"
-        />
-        <div className="p-4 sm:p-5 md:p-6">
-          <SecaoTitular ctx={ctx} />
-        </div>
-      </Card>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
+        {/* Coluna principal — formulário */}
+        <div className="min-w-0 space-y-4">
+          <Card className="overflow-hidden">
+            <SecaoCabecalho
+              icone={<User className="h-4 w-4" />}
+              titulo="Titular"
+              descricao="Dados do proponente principal"
+            />
+            <div className="p-4 sm:p-5 md:p-6">
+              <SecaoTitular ctx={ctx} />
+            </div>
+          </Card>
 
-      {mostraConjuge && (
-        <Card className="overflow-hidden">
-          <SecaoCabecalho
-            icone={<Users className="h-4 w-4" />}
-            titulo="Cônjuge / coobrigado"
-            descricao="Composição de renda"
-          />
-          <div className="p-4 sm:p-5 md:p-6">
-            <SecaoConjuge ctx={ctx} />
+          {mostraConjuge && (
+            <Card className="overflow-hidden">
+              <SecaoCabecalho
+                icone={<Users className="h-4 w-4" />}
+                titulo="Cônjuge / coobrigado"
+                descricao="Composição de renda"
+              />
+              <div className="p-4 sm:p-5 md:p-6">
+                <SecaoConjuge ctx={ctx} />
+              </div>
+            </Card>
+          )}
+
+          <Card className="overflow-hidden">
+            <SecaoCabecalho
+              icone={<Home className="h-4 w-4" />}
+              titulo="Operação e imóvel"
+              descricao="Produto, características e valores"
+            />
+            <div className="p-4 sm:p-5 md:p-6">
+              <SecaoOperacaoImovel ctx={ctx} />
+            </div>
+          </Card>
+
+          <Card className="overflow-hidden">
+            <SecaoCabecalho
+              icone={<Landmark className="h-4 w-4" />}
+              titulo="Bancos"
+              descricao="Selecione as instituições para consultar"
+            />
+            <div className="p-4 sm:p-5 md:p-6">
+              <SecaoBancos ctx={ctx} />
+            </div>
+          </Card>
+
+          <Card className="overflow-hidden">
+            <SecaoCabecalho
+              icone={<ShieldCheck className="h-4 w-4" />}
+              titulo="Consentimentos"
+              descricao="Autorizações necessárias"
+            />
+            <div className="p-4 sm:p-5 md:p-6">
+              <SecaoConsentimentos ctx={ctx} />
+            </div>
+          </Card>
+
+          {/* Ação no mobile/tablet (a coluna lateral some abaixo de lg) */}
+          <div className="flex justify-end pt-1 lg:hidden">
+            <Button className="h-11 w-full gap-2 sm:w-auto sm:px-8" onClick={enviar} disabled={enviando}>
+              <Send className="h-4 w-4" /> Gerar Simulação
+            </Button>
           </div>
-        </Card>
-      )}
-
-      <Card className="overflow-hidden">
-        <SecaoCabecalho
-          icone={<Home className="h-4 w-4" />}
-          titulo="Operação e imóvel"
-          descricao="Produto, características e valores"
-        />
-        <div className="p-4 sm:p-5 md:p-6">
-          <SecaoOperacaoImovel ctx={ctx} />
         </div>
-      </Card>
 
-      <Card className="overflow-hidden">
-        <SecaoCabecalho
-          icone={<Landmark className="h-4 w-4" />}
-          titulo="Bancos"
-          descricao="Selecione as instituições para consultar"
-        />
-        <div className="p-4 sm:p-5 md:p-6">
-          <SecaoBancos ctx={ctx} />
-        </div>
-      </Card>
+        {/* Coluna lateral — resumo fixo (apenas em telas grandes) */}
+        <aside className="hidden lg:block">
+          <Card className="sticky top-6 overflow-hidden">
+            <div className="border-b border-border/60 bg-muted/30 px-5 py-3.5">
+              <h2 className="text-sm font-semibold text-foreground">Resumo</h2>
+              <p className="text-xs text-muted-foreground">Acompanhe o preenchimento</p>
+            </div>
+            <div className="space-y-4 p-5">
+              <ul className="space-y-2.5">
+                {resumoEtapas.map((e) => (
+                  <li key={e.label} className="flex items-center gap-2.5 text-sm">
+                    <span
+                      className={
+                        e.ok
+                          ? "flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary"
+                          : "flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground"
+                      }
+                    >
+                      <ShieldCheck className="h-3 w-3" />
+                    </span>
+                    <span className={e.ok ? "text-foreground" : "text-muted-foreground"}>
+                      {e.label}
+                    </span>
+                  </li>
+                ))}
+              </ul>
 
+              <div className="space-y-2 rounded-lg bg-muted/40 p-3">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Financiamento</span>
+                  <span className="font-semibold tabular-nums text-foreground">
+                    {formatBRL(Number(f.valor_financiamento) || 0)}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Prazo</span>
+                  <span className="font-medium tabular-nums text-foreground">{f.prazo} meses</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Bancos</span>
+                  <span className="font-medium tabular-nums text-foreground">
+                    {f.bancos_ids.length}
+                  </span>
+                </div>
+              </div>
 
-      <Card className="overflow-hidden">
-        <SecaoCabecalho
-          icone={<ShieldCheck className="h-4 w-4" />}
-          titulo="Consentimentos"
-          descricao="Autorizações necessárias"
-        />
-        <div className="p-4 sm:p-5 md:p-6">
-          <SecaoConsentimentos ctx={ctx} />
-        </div>
-      </Card>
-
-
-
-      <div className="flex justify-end pt-1">
-        <Button className="h-11 gap-2 px-8" onClick={enviar} disabled={enviando}>
-          <Send className="h-4 w-4" /> Gerar Simulação
-        </Button>
+              <Button className="h-11 w-full gap-2" onClick={enviar} disabled={enviando}>
+                <Send className="h-4 w-4" /> Gerar Simulação
+              </Button>
+            </div>
+          </Card>
+        </aside>
       </div>
 
-
       <ConsultandoOverlay aberto={enviando} total={f.bancos_ids.length} concluidos={concluidos} />
+
 
       <AlertDialog open={!!confirmRenda} onOpenChange={(o) => !o && setConfirmRenda(null)}>
         <AlertDialogContent>
