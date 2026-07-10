@@ -129,6 +129,7 @@ function Pagina() {
     setDataInicio(padrao.inicio);
     setDataFim(padrao.fim);
     setEscopo("minhas");
+    setGrupo(null);
   }
 
   async function handleExcluir(id: string) {
