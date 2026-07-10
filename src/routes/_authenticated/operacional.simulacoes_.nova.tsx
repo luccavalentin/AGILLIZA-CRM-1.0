@@ -201,8 +201,8 @@ function Pagina() {
 
       <div className="flex flex-col gap-4">
         <Card className="overflow-hidden">
-          <div className="space-y-5 p-5 md:p-6">
-        <div className="space-y-1.5">
+          <div className="grid grid-cols-1 gap-5 p-5 md:p-6 lg:grid-cols-2">
+        <div className="space-y-1.5 lg:col-span-2">
           <Label>Produto</Label>
           <Select
             value={w.produto}
