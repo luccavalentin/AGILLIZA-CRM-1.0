@@ -730,18 +730,20 @@ function estadoCivilLabel(v?: string | null): string {
   return ESTADO_CIVIL_LABELS[v.toUpperCase()] ?? v;
 }
 
-function SecaoDados({
+function GrupoDados({
   titulo,
   icone,
   children,
+  ultimo,
 }: {
   titulo: string;
   icone: ReactNode;
   children: ReactNode;
+  ultimo?: boolean;
 }) {
   return (
-    <section className="overflow-hidden rounded-xl border border-border/60 bg-card shadow-sm">
-      <div className="flex items-center gap-2 border-b border-border/60 bg-muted/30 px-4 py-2.5">
+    <div className={cn(!ultimo && "border-b border-border/60")}>
+      <div className="flex items-center gap-2 bg-muted/30 px-4 py-2.5">
         <span className="grid h-6 w-6 place-items-center rounded-md bg-primary/10 text-primary">
           {icone}
         </span>
@@ -749,10 +751,8 @@ function SecaoDados({
           {titulo}
         </h3>
       </div>
-      <dl className="grid grid-cols-2 gap-px bg-border/60 sm:grid-cols-3 lg:grid-cols-4">
-        {children}
-      </dl>
-    </section>
+      <dl className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">{children}</dl>
+    </div>
   );
 }
 
@@ -766,7 +766,12 @@ function Campo({
   destaque?: boolean;
 }) {
   return (
-    <div className={cn("bg-card px-4 py-3", destaque && "bg-primary/5")}>
+    <div
+      className={cn(
+        "border-b border-r border-border/40 px-4 py-3 last:border-r",
+        destaque ? "bg-primary/5" : "bg-card",
+      )}
+    >
       <dt className="text-[11px] font-medium uppercase tracking-[0.06em] text-muted-foreground">
         {termo}
       </dt>
@@ -781,6 +786,7 @@ function Campo({
     </div>
   );
 }
+
 
 function MobileStat({ rotulo, valor }: { rotulo: string; valor: string }) {
   return (
