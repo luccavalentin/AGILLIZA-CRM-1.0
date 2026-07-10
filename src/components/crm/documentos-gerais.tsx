@@ -275,6 +275,7 @@ export function DocumentosGerais() {
 
   function IconePasta({ tipo, aberta }: { tipo: PastaTipo; aberta?: boolean }) {
     const conf: Record<PastaTipo, { Icon: typeof Folder; classe: string }> = {
+      raiz: { Icon: FolderKanban, classe: "from-primary/20 to-primary/5 text-primary" },
       comercial: { Icon: Briefcase, classe: "from-primary/20 to-primary/5 text-primary" },
       imob: { Icon: Building2, classe: "from-primary/20 to-primary/5 text-primary" },
       corretor: { Icon: IdCard, classe: "from-primary/20 to-primary/5 text-primary" },
