@@ -379,64 +379,96 @@ function Pagina() {
         )}
 
 
-        <div className="grid grid-cols-1 gap-3 pt-2 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 pt-1 sm:grid-cols-2">
           <Button
             variant="default"
-            className="h-12"
+            className="h-12 gap-2 text-sm font-semibold"
             disabled={!valido}
             onClick={() => setMostrarRapida(true)}
           >
-            Simulação rápida
+            <Zap className="h-4 w-4" /> Simulação rápida
           </Button>
           <Button
             variant="secondary"
-            className="h-12"
+            className="h-12 gap-2 text-sm font-semibold"
             disabled={!valido}
             onClick={() => irParaCompleta()}
           >
-            Simulação completa
+            <FileText className="h-4 w-4" /> Simulação completa
           </Button>
         </div>
 
         {mostrarRapida && (
-          <div className="space-y-3 rounded-lg border border-border p-4">
-            <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-foreground">Comparativo estimado</h3>
-              <span className="text-xs text-muted-foreground">
-                Sistema SAC · {w.prazo_meses} meses
+          <Card className="overflow-hidden">
+            <div className="flex items-center justify-between border-b border-border/60 bg-muted/30 px-5 py-3.5">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 text-primary" />
+                <h3 className="text-sm font-semibold text-foreground">Comparativo estimado</h3>
+              </div>
+              <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
+                SAC · {w.prazo_meses} meses
               </span>
             </div>
-            {comparativo.length === 0 && (
-              <p className="text-sm text-muted-foreground">
-                Nenhum banco habilitado. Ative bancos em Configurações → Bancos.
-              </p>
-            )}
-            <div className="space-y-2">
-              {comparativo.map((c, i) => (
-                <div
-                  key={c.banco_id}
-                  className="flex items-center justify-between rounded-md border border-border bg-card p-3"
-                >
-                  <div>
-                    <p className="font-medium text-card-foreground">{c.nome_banco}</p>
-                    <p className="text-xs text-muted-foreground">
-                      Taxa {formatPercent(c.taxa_ano)} a.a.
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="tabular-nums font-semibold text-card-foreground">
-                      {formatBRL(c.resultado.primeira_parcela)}
-                    </p>
-                    {i === 0 && comparativo.length > 1 && (
-                      <ToneBadge tone="success">Melhor taxa</ToneBadge>
-                    )}
-                  </div>
+            <div className="p-5">
+              {comparativo.length === 0 ? (
+                <p className="py-4 text-center text-sm text-muted-foreground">
+                  Nenhum banco habilitado. Ative bancos em Configurações → Bancos.
+                </p>
+              ) : (
+                <div className="space-y-2.5">
+                  {comparativo.map((c, i) => {
+                    const melhor = i === 0 && comparativo.length > 1;
+                    return (
+                      <div
+                        key={c.banco_id}
+                        className={cn(
+                          "flex items-center justify-between rounded-lg border p-3.5 transition-colors",
+                          melhor
+                            ? "border-emerald-500/30 bg-emerald-500/5"
+                            : "border-border bg-card hover:bg-muted/30",
+                        )}
+                      >
+                        <div className="flex items-center gap-3">
+                          <span
+                            className={cn(
+                              "flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold tabular-nums",
+                              melhor
+                                ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                                : "bg-muted text-muted-foreground",
+                            )}
+                          >
+                            {i + 1}
+                          </span>
+                          <div>
+                            <div className="flex items-center gap-1.5">
+                              <p className="font-medium text-card-foreground">{c.nome_banco}</p>
+                              {melhor && (
+                                <Award className="h-3.5 w-3.5 text-emerald-500" />
+                              )}
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              Taxa {formatPercent(c.taxa_ano)} a.a.
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[10.5px] font-medium uppercase tracking-wide text-muted-foreground">
+                            1ª parcela
+                          </p>
+                          <p className="tabular-nums text-base font-semibold text-card-foreground">
+                            {formatBRL(c.resultado.primeira_parcela)}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              ))}
+              )}
             </div>
-          </div>
+          </Card>
         )}
       </div>
     </div>
+
   );
 }
