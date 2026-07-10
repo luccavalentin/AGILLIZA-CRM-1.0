@@ -547,7 +547,15 @@ function Pagina() {
                   </span>
                 </TableCell>
 
-                <TableCell className="py-3.5 font-medium text-foreground">{s.nome_cliente ?? "—"}</TableCell>
+                <TableCell className="py-3.5 font-medium text-foreground">
+                  {s.nome_cliente ?? "—"}
+                  {escopo === "todas" && s.nome_responsavel && (
+                    <span className="mt-0.5 flex items-center gap-1 text-[11px] font-normal text-muted-foreground">
+                      <UserIcon className="h-3 w-3 shrink-0" />
+                      <span className="truncate">{s.nome_responsavel}</span>
+                    </span>
+                  )}
+                </TableCell>
                 <TableCell className="py-3.5">
                   <ProdutoBadge produto={s.produto} />
                 </TableCell>
