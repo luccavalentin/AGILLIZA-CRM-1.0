@@ -194,7 +194,11 @@ function Pagina() {
           <>
           <Button disabled={baixando} onClick={baixarExcel}>
             <FileSpreadsheet className="mr-2 h-4 w-4" />
-            {baixando ? "Gerando Excel…" : "Baixar backup completo (Excel)"}
+            {baixando ? "Gerando Excel…" : "Baixar em Excel (planilha)"}
+          </Button>
+          <Button variant="secondary" disabled={baixandoSql} onClick={baixarSQL}>
+            <Database className="mr-2 h-4 w-4" />
+            {baixandoSql ? "Gerando SQL…" : "Baixar em SQL (banco de dados)"}
           </Button>
           <Button variant="secondary" disabled={baixandoDocs} onClick={baixarDocumentos}>
             <FolderArchive className="mr-2 h-4 w-4" />
