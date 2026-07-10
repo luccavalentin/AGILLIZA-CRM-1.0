@@ -36,6 +36,11 @@ import { BancosProposta } from "@/components/proposta/bancos-proposta";
 import { StatusBancosProposta } from "@/components/proposta/status-bancos-proposta";
 import { ConfirmDelete } from "@/components/shared/confirm-delete";
 import { formatBRL } from "@/lib/simulacao/format";
+import {
+  GRUPOS_PROPOSTA,
+  grupoDoStatus,
+  type GrupoProposta,
+} from "@/lib/propostas/status-grupos";
 
 /** Primeiro e último dia do mês atual como intervalo ISO (para o filtro padrão). */
 function intervaloMesAtual(): { inicio: string; fim: string } {
@@ -62,6 +67,7 @@ function Pagina() {
   const excluir = useServerFn(excluirProposta);
   const padrao = useMemo(() => intervaloMesAtual(), []);
   const [escopo, setEscopo] = useState<"todas" | "minhas">("minhas");
+  const [grupo, setGrupo] = useState<GrupoProposta | null>(null);
   const [q, setQ] = useState("");
   const [busca, setBusca] = useState("");
   const [dataInicio, setDataInicio] = useState(padrao.inicio);
@@ -88,7 +94,29 @@ function Pagina() {
       }),
   });
 
-  const itens = data?.itens ?? [];
+  const todosItens = data?.itens ?? [];
+
+  // Contagem e volume por grupo de status (sobre todo o conjunto carregado).
+  const estatisticasGrupo = useMemo(() => {
+    const base: Record<GrupoProposta, { count: number; volume: number }> = {
+      rascunho: { count: 0, volume: 0 },
+      enviadas: { count: 0, volume: 0 },
+      andamento: { count: 0, volume: 0 },
+      contrato: { count: 0, volume: 0 },
+      encerradas: { count: 0, volume: 0 },
+    };
+    for (const p of todosItens) {
+      const g = grupoDoStatus(p.status);
+      base[g].count += 1;
+      base[g].volume += p.valor_financiamento ?? 0;
+    }
+    return base;
+  }, [todosItens]);
+
+  const itens = useMemo(
+    () => (grupo ? todosItens.filter((p) => grupoDoStatus(p.status) === grupo) : todosItens),
+    [todosItens, grupo],
+  );
   const totalItens = itens.length;
   const volumeTotal = useMemo(
     () => itens.reduce((acc, p) => acc + (p.valor_financiamento ?? 0), 0),
@@ -101,6 +129,7 @@ function Pagina() {
     setDataInicio(padrao.inicio);
     setDataFim(padrao.fim);
     setEscopo("minhas");
+    setGrupo(null);
   }
 
   async function handleExcluir(id: string) {
@@ -191,6 +220,33 @@ function Pagina() {
           </div>
         </div>
       </div>
+
+      {/* Cards por status (clicáveis para filtrar) */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        <StatusCard
+          ativo={grupo === null}
+          label="Todas"
+          count={todosItens.length}
+          volume={todosItens.reduce((a, p) => a + (p.valor_financiamento ?? 0), 0)}
+          tone="info"
+          loading={isLoading}
+          onClick={() => setGrupo(null)}
+        />
+        {GRUPOS_PROPOSTA.map((g) => (
+          <StatusCard
+            key={g.id}
+            ativo={grupo === g.id}
+            label={g.label}
+            count={estatisticasGrupo[g.id].count}
+            volume={estatisticasGrupo[g.id].volume}
+            tone={g.tone}
+            loading={isLoading}
+            onClick={() => setGrupo((cur) => (cur === g.id ? null : g.id))}
+          />
+        ))}
+      </div>
+
+
 
 
 
@@ -427,5 +483,67 @@ function Pagina() {
         </Table>
       </Card>
     </div>
+  );
+}
+
+const CARD_TONE: Record<
+  "muted" | "info" | "warning" | "success" | "danger",
+  { bar: string; dot: string; text: string }
+> = {
+  info: { bar: "bg-primary", dot: "bg-primary", text: "text-primary" },
+  muted: { bar: "bg-muted-foreground/40", dot: "bg-muted-foreground/50", text: "text-muted-foreground" },
+  warning: { bar: "bg-warning", dot: "bg-warning", text: "text-warning-foreground" },
+  success: { bar: "bg-success", dot: "bg-success", text: "text-success" },
+  danger: { bar: "bg-destructive", dot: "bg-destructive", text: "text-destructive" },
+};
+
+function StatusCard({
+  ativo,
+  label,
+  count,
+  volume,
+  tone,
+  loading,
+  onClick,
+}: {
+  ativo: boolean;
+  label: string;
+  count: number;
+  volume: number;
+  tone: "muted" | "info" | "warning" | "success" | "danger";
+  loading: boolean;
+  onClick: () => void;
+}) {
+  const t = CARD_TONE[tone];
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`group relative overflow-hidden rounded-xl border bg-card p-3 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md sm:p-4 ${
+        ativo ? "border-primary/50 ring-1 ring-primary/30" : "border-border/60 hover:border-primary/30"
+      }`}
+    >
+      <span className={`absolute inset-y-0 left-0 w-1 ${t.bar} ${ativo ? "opacity-100" : "opacity-60"}`} />
+      <div className="flex items-center gap-1.5">
+        <span className={`inline-block size-2 shrink-0 rounded-full ${t.dot}`} />
+        <p className="truncate text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+          {label}
+        </p>
+      </div>
+      {loading ? (
+        <Skeleton className="mt-2 h-6 w-10" />
+      ) : (
+        <p className="mt-1.5 text-2xl font-semibold tabular-nums leading-none text-foreground">
+          {count}
+        </p>
+      )}
+      {loading ? (
+        <Skeleton className="mt-2 h-3 w-16" />
+      ) : (
+        <p className="mt-1.5 truncate text-[11px] tabular-nums text-muted-foreground">
+          {formatBRL(volume)}
+        </p>
+      )}
+    </button>
   );
 }
