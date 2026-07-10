@@ -77,6 +77,8 @@ export function drawBrandHeader(
     descLinha = descLinha.replace(/[\s,.;:]+$/, "") + "…";
   }
   doc.text(descLinha, textoX, centroY + 13);
+}
+
 
 
 /** Desenha o rodapé institucional com paginação. */
