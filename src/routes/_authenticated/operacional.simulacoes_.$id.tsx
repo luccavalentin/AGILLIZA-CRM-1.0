@@ -453,7 +453,7 @@ function Pagina() {
                         className={cn(
                           "border-border/50 transition-colors odd:bg-card even:bg-muted/20 hover:bg-primary/5",
                           b.id === melhorId &&
-                            "bg-success/5 even:bg-success/5 hover:bg-success/10 [box-shadow:inset_3px_0_0_hsl(var(--success))]",
+                            "bg-success/5 even:bg-success/5 hover:bg-success/10 [box-shadow:inset_3px_0_0_var(--success)]",
                         )}
                       >
                         <TableCell className="py-3 text-sm font-semibold">
