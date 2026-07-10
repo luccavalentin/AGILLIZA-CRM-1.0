@@ -248,7 +248,7 @@ function drawInfoFinanciamento(
 
   const gap = 8;
   const cardW = (w - gap * (cols - 1)) / cols;
-  const cardH = 34;
+  const cardH = 38;
   itens.forEach((it, i) => {
     const col = i % cols;
     const rowIdx = Math.floor(i / cols);
@@ -261,12 +261,17 @@ function drawInfoFinanciamento(
     doc.setTextColor(P.cinza);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(6);
-    doc.text(it.label.toUpperCase(), x + 8, cy + 12, { maxWidth: cardW - 14 });
+    doc.text(it.label.toUpperCase(), x + 8, cy + 10, {
+      maxWidth: cardW - 14,
+      lineHeightFactor: 1.3,
+    });
+    // Valor ancorado na base do card, evitando colisão com rótulos de 2 linhas.
     doc.setTextColor(P.destaque);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(10);
-    doc.text(it.valor, x + 8, cy + 27, { maxWidth: cardW - 14 });
+    doc.text(it.valor, x + 8, cy + cardH - 8, { maxWidth: cardW - 14 });
   });
+
   const linhas = Math.ceil(itens.length / cols);
   return y + linhas * (cardH + gap) + 8;
 }
