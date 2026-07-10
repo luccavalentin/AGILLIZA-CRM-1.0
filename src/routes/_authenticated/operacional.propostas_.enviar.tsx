@@ -409,14 +409,14 @@ function AbaSimulacoes({ escopo, busca, dataInicio, dataFim }: FiltroProps) {
               key={b.id}
               size="sm"
               variant="secondary"
-              className="rounded-lg"
+              className="group/btn rounded-lg border border-border/60 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:bg-primary hover:text-primary-foreground hover:shadow-md active:translate-y-0"
               disabled={convertendo !== null}
               onClick={() => converter(s.id, b.banco_id)}
             >
               {convertendo === chave ? (
                 <Loader2 className="mr-1 h-4 w-4 animate-spin" />
               ) : (
-                <Send className="mr-1 h-4 w-4" />
+                <Send className="mr-1 h-4 w-4 transition-transform duration-200 group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5" />
               )}
               {b.nome_banco ?? "Banco"}
             </Button>
