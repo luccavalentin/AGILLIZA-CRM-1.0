@@ -439,23 +439,15 @@ export const getPanelDados = createServerFn({ method: "POST" })
     );
     const simConcluidas = simConcluidasRows.length;
     const simErro = simRows.filter((s) => s.status === "erro_banco").length;
-    const aprovadas = propRowsBrutas.filter(
-      (p) =>
-        (p.status === "credito_aprovado" && dentroPeriodo(p.created_at)) ||
-        (["contrato_emitido", "registrado"].includes(p.status) &&
-          dentroPeriodo(p.contrato_emitido_em)),
-    ).length;
-    // Contratos entram pela DATA DE EMISSÃO no período (independe da criação).
-    const contratosRows = propRowsBrutas.filter(
-      (p) =>
-        ["contrato_emitido", "registrado"].includes(p.status) &&
-        dentroPeriodo(p.contrato_emitido_em),
-    );
-    const contratos = contratosRows.length;
-    const volumeContratos = contratosRows.reduce(
-      (s, p) => s + (p.valor_financiamento_aprovado ?? p.valor_financiamento ?? 0),
-      0,
-    );
+    // Contratos emitidos vêm da ficha do cliente (contrato_emitido_em).
+    const contratos = contratosInfo.count;
+    const volumeContratos = contratosInfo.volume;
+    // Aprovadas (funil monotônico): crédito aprovado nas propostas + contratos.
+    const aprovadas =
+      propRowsBrutas.filter(
+        (p) => p.status === "credito_aprovado" && dentroPeriodo(p.created_at),
+      ).length + contratos;
+
     const demAbertas = demRows.filter((d) => !["concluida", "cancelada"].includes(d.status));
     const demVencidas = demAbertas.filter((d) => d.prazo_sla && new Date(d.prazo_sla) < agora);
     const tkAbertas = tkRows.filter((t) => !["concluida", "cancelada"].includes(t.status));
