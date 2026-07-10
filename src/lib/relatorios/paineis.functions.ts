@@ -246,12 +246,13 @@ export const getPanelDados = createServerFn({ method: "POST" })
       // fonte de verdade da operação e da pasta de arquivados.
       const contratosCount = contratosInfo.count;
       const volume = contratosInfo.volume;
-      // Aprovadas (funil monotônico: aprovadas >= contratos): crédito aprovado
-      // nas propostas + os contratos efetivamente emitidos.
+      // Aprovação é somente crédito aprovado na proposta/simulação bancária.
+      // Contrato emitido é uma métrica operacional separada e não pode inflar
+      // taxa, volume aprovado ou quantidade de aprovadas.
       const aprovadasProp = rowsBrutas.filter(
         (p) => p.status === "credito_aprovado" && dentroPeriodo(p.created_at),
       );
-      const aprovadasCount = aprovadasProp.length + contratosCount;
+      const aprovadasCount = aprovadasProp.length;
       const simConcluidasRows = simRows.filter((s) =>
         ["simulada", "parcialmente_simulada", "promovida"].includes(s.status),
       );
@@ -263,11 +264,10 @@ export const getPanelDados = createServerFn({ method: "POST" })
         (s, r) => s + (r.valor_financiamento ?? 0),
         0,
       );
-      const volumeAprovado =
-        aprovadasProp.reduce(
-          (s, p) => s + (p.valor_financiamento_aprovado ?? p.valor_financiamento ?? 0),
-          0,
-        ) + volume;
+      const volumeAprovado = aprovadasProp.reduce(
+        (s, p) => s + (p.valor_financiamento_aprovado ?? p.valor_financiamento ?? 0),
+        0,
+      );
       const ticket = contratosCount ? volume / contratosCount : 0;
       const taxa = enviadas.length ? (aprovadasCount / enviadas.length) * 100 : 0;
       const conversao = simCount ? (contratosCount / simCount) * 100 : 0;
@@ -320,18 +320,23 @@ export const getPanelDados = createServerFn({ method: "POST" })
         heros: [
           { label: "Simulações", valor: int(simCount), hint: brlCompacto(volumeSimulado), tone: "neutral" },
           { label: "Propostas enviadas", valor: int(enviadas.length), tone: "brand" },
-          { label: "Taxa de aprovação", valor: pct(taxa), hint: `${aprovadasCount} aprovadas`, tone: "success" },
+          {
+            label: "Taxa de aprovação",
+            valor: pct(taxa),
+            hint: `${aprovadasCount} aprovadas`,
+            tone: aprovadasCount ? "success" : "neutral",
+          },
           { label: "Contratos emitidos", valor: int(contratosCount), hint: brlCompacto(volume), tone: "success" },
         ],
         minis: [
           { label: "Volume contratado", valor: brlCompacto(volume), tone: "success" },
           { label: "Volume simulado", valor: brlCompacto(volumeSimulado), tone: "neutral" },
-          { label: "Volume aprovado", valor: brlCompacto(volumeAprovado), tone: "success" },
+          { label: "Volume aprovado", valor: brlCompacto(volumeAprovado), tone: aprovadasCount ? "success" : "neutral" },
           { label: "Ticket médio", valor: brlCompacto(ticket), tone: "brand" },
           { label: "Conversão sim→contrato", valor: pct(conversao), tone: "success" },
           { label: "Simulações concluídas", valor: int(simConcluidas), tone: "success" },
           { label: "Simulações com erro", valor: int(simErro), tone: simErro ? "danger" : "neutral" },
-          { label: "Aprovadas", valor: int(aprovadasCount), tone: "success" },
+          { label: "Aprovadas", valor: int(aprovadasCount), tone: aprovadasCount ? "success" : "neutral" },
           {
             label: "Em análise",
             valor: int(
@@ -442,11 +447,11 @@ export const getPanelDados = createServerFn({ method: "POST" })
     // Contratos emitidos vêm da ficha do cliente (contrato_emitido_em).
     const contratos = contratosInfo.count;
     const volumeContratos = contratosInfo.volume;
-    // Aprovadas (funil monotônico): crédito aprovado nas propostas + contratos.
-    const aprovadas =
-      propRowsBrutas.filter(
-        (p) => p.status === "credito_aprovado" && dentroPeriodo(p.created_at),
-      ).length + contratos;
+    // Aprovação é somente crédito aprovado na proposta/simulação bancária.
+    // Contrato emitido permanece separado para não gerar taxa falsa de 100%.
+    const aprovadas = propRowsBrutas.filter(
+      (p) => p.status === "credito_aprovado" && dentroPeriodo(p.created_at),
+    ).length;
 
     const demAbertas = demRows.filter((d) => !["concluida", "cancelada"].includes(d.status));
     const demVencidas = demAbertas.filter((d) => d.prazo_sla && new Date(d.prazo_sla) < agora);
@@ -559,7 +564,7 @@ export const getPanelDados = createServerFn({ method: "POST" })
           label: "Taxa de aprovação",
           valor: pct(taxa),
           hint: `${aprovadas} aprovadas · ${recusadas} recusadas`,
-          tone: "success",
+          tone: aprovadas ? "success" : "neutral",
         },
         {
           label: "Contratos emitidos",
