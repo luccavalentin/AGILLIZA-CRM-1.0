@@ -144,10 +144,12 @@ function PixBanner() {
   }
 
   return (
-    <Card className="overflow-hidden border-0 bg-primary p-0 text-primary-foreground">
-      <div className="flex flex-wrap items-center justify-between gap-3 p-4">
+    <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-primary to-primary/80 p-0 text-primary-foreground shadow-lg">
+      <div className="pointer-events-none absolute -right-10 -top-16 h-48 w-48 rounded-full bg-primary-foreground/10 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-16 left-1/3 h-40 w-40 rounded-full bg-primary-foreground/10 blur-3xl" />
+      <div className="relative flex flex-wrap items-center justify-between gap-3 p-5">
         <div className="flex items-center gap-3">
-          <div className="rounded-lg bg-primary-foreground/15 p-2">
+          <div className="rounded-xl bg-primary-foreground/15 p-2.5 ring-1 ring-primary-foreground/20">
             <Landmark className="h-5 w-5" />
           </div>
           <div>
