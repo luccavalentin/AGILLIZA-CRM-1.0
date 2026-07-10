@@ -228,6 +228,11 @@ function Pagina() {
   const prazoMin = prazos.length ? Math.min(...prazos) : 0;
   const prazoMax = prazos.length ? Math.max(...prazos) : 0;
 
+  function irParaSimulacao(id: string) {
+    setKpiAberto(null);
+    router.navigate({ to: "/operacional/simulacoes/$id", params: { id } });
+  }
+
   const kpis: {
     id: string;
     label: string;
@@ -241,15 +246,14 @@ function Pagina() {
       valor: String(kpiTotal),
       icon: ListChecks,
       detalhe: (
-        <KpiDetalhe
-          descricao="Total de simulações no filtro atual, agrupadas por status."
-          linhas={Object.entries(porStatus)
+        <DetalheSimulacoes
+          descricao="Todas as simulações do filtro atual."
+          resumo={Object.entries(porStatus)
             .sort((a, b) => b[1] - a[1])
-            .map(([status, qtd]) => ({
-              rotulo: statusLabel(status),
-              valor: String(qtd),
-            }))}
-          total={{ rotulo: "Total", valor: String(kpiTotal) }}
+            .map(([status, qtd]) => ({ rotulo: statusLabel(status), valor: String(qtd) }))}
+          itens={itens}
+          destaque="status"
+          onAbrir={irParaSimulacao}
         />
       ),
     },
@@ -259,16 +263,17 @@ function Pagina() {
       valor: formatBRL(kpiValor),
       icon: Wallet,
       detalhe: (
-        <KpiDetalhe
-          descricao="Soma do valor de financiamento de cada simulação."
-          linhas={itens
+        <DetalheSimulacoes
+          descricao="Valor de financiamento de cada simulação."
+          resumo={[{ rotulo: "Volume total", valor: formatBRL(kpiValor) }]}
+          itens={itens
             .slice()
-            .sort((a, b) => (Number(b.valor_financiamento) || 0) - (Number(a.valor_financiamento) || 0))
-            .map((s) => ({
-              rotulo: `${s.numero_simulacao} · ${s.nome_cliente ?? "—"}`,
-              valor: formatBRL(Number(s.valor_financiamento) || 0),
-            }))}
-          total={{ rotulo: "Volume total", valor: formatBRL(kpiValor) }}
+            .sort(
+              (a, b) =>
+                (Number(b.valor_financiamento) || 0) - (Number(a.valor_financiamento) || 0),
+            )}
+          destaque="financiamento"
+          onAbrir={irParaSimulacao}
         />
       ),
     },
@@ -278,12 +283,14 @@ function Pagina() {
       valor: String(kpiBancos),
       icon: Building2,
       detalhe: (
-        <KpiDetalhe
-          descricao="Quantidade de cotações por banco no filtro atual."
-          linhas={Object.entries(porBanco)
+        <DetalheSimulacoes
+          descricao="Bancos cotados em cada simulação."
+          resumo={Object.entries(porBanco)
             .sort((a, b) => b[1] - a[1])
             .map(([nome, qtd]) => ({ rotulo: nome, valor: String(qtd) }))}
-          total={{ rotulo: "Total de cotações", valor: String(kpiBancos) }}
+          itens={itens.filter((s) => Array.isArray(s.bancos) && s.bancos.length > 0)}
+          destaque="bancos"
+          onAbrir={irParaSimulacao}
         />
       ),
     },
@@ -293,14 +300,18 @@ function Pagina() {
       valor: kpiPrazo ? `${kpiPrazo} meses` : "—",
       icon: Clock,
       detalhe: (
-        <KpiDetalhe
-          descricao="Distribuição dos prazos das simulações."
-          linhas={[
+        <DetalheSimulacoes
+          descricao="Prazo contratado em cada simulação."
+          resumo={[
             { rotulo: "Prazo mínimo", valor: prazoMin ? `${prazoMin} meses` : "—" },
             { rotulo: "Prazo médio", valor: kpiPrazo ? `${kpiPrazo} meses` : "—" },
             { rotulo: "Prazo máximo", valor: prazoMax ? `${prazoMax} meses` : "—" },
           ]}
-          total={{ rotulo: "Simulações com prazo", valor: String(prazos.length) }}
+          itens={itens
+            .slice()
+            .sort((a, b) => (Number(b.prazo) || 0) - (Number(a.prazo) || 0))}
+          destaque="prazo"
+          onAbrir={irParaSimulacao}
         />
       ),
     },
@@ -733,44 +744,94 @@ function statusLabel(status: string): string {
   return STATUS_LABELS[status] ?? status.replace(/_/g, " ");
 }
 
-function KpiDetalhe({
+function DetalheSimulacoes({
   descricao,
-  linhas,
-  total,
+  resumo,
+  itens,
+  destaque,
+  onAbrir,
 }: {
   descricao: string;
-  linhas: { rotulo: string; valor: string }[];
-  total?: { rotulo: string; valor: string };
+  resumo: { rotulo: string; valor: string }[];
+  itens: any[];
+  destaque: "status" | "financiamento" | "bancos" | "prazo";
+  onAbrir: (id: string) => void;
 }) {
+  function valorDestaque(s: any): string {
+    switch (destaque) {
+      case "financiamento":
+        return formatBRL(Number(s.valor_financiamento) || 0);
+      case "bancos":
+        return `${Array.isArray(s.bancos) ? s.bancos.length : 0} banco(s)`;
+      case "prazo":
+        return s.prazo ? `${s.prazo} meses` : "—";
+      default:
+        return statusLabel(s.status ?? "—");
+    }
+  }
+
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <p className="text-sm text-muted-foreground">{descricao}</p>
-      {linhas.length === 0 ? (
+
+      {resumo.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {resumo.map((r, i) => (
+            <span
+              key={`${r.rotulo}-${i}`}
+              className="inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-muted/50 px-2.5 py-1 text-xs text-foreground"
+            >
+              <span className="text-muted-foreground">{r.rotulo}</span>
+              <span className="font-mono font-semibold tabular-nums">{r.valor}</span>
+            </span>
+          ))}
+        </div>
+      )}
+
+      {itens.length === 0 ? (
         <p className="rounded-lg border border-dashed border-border px-3 py-6 text-center text-sm text-muted-foreground">
-          Nenhum dado no filtro atual.
+          Nenhuma simulação no filtro atual.
         </p>
       ) : (
-        <ul className="divide-y divide-border rounded-lg border border-border">
-          {linhas.map((l, i) => (
-            <li
-              key={`${l.rotulo}-${i}`}
-              className="flex items-center justify-between gap-3 px-3 py-2"
-            >
-              <span className="min-w-0 truncate text-sm text-foreground">{l.rotulo}</span>
-              <span className="shrink-0 font-mono text-sm font-semibold tabular-nums text-foreground">
-                {l.valor}
-              </span>
+        <ul className="space-y-2">
+          {itens.map((s) => (
+            <li key={s.id}>
+              <button
+                type="button"
+                onClick={() => onAbrir(s.id)}
+                className="group flex w-full items-center gap-3 rounded-lg border border-border/60 bg-card p-3 text-left transition-colors hover:border-primary/30 hover:bg-primary/[0.04] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center rounded-md bg-primary/5 px-1.5 py-0.5 font-mono text-xs font-semibold text-primary ring-1 ring-inset ring-primary/10">
+                      {s.numero_simulacao}
+                    </span>
+                    <ProdutoBadge produto={s.produto} />
+                  </div>
+                  <p className="mt-1 truncate text-sm font-medium text-foreground">
+                    {s.nome_cliente ?? "—"}
+                  </p>
+                  <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
+                    <span>Imóvel {formatBRL(s.valor_imovel)}</span>
+                    <span>Financ. {formatBRL(Number(s.valor_financiamento) || 0)}</span>
+                    <span>{s.prazo ? `${s.prazo} meses` : "—"}</span>
+                    {Array.isArray(s.bancos) && s.bancos.length > 0 && (
+                      <span>
+                        {s.bancos.length} banco{s.bancos.length > 1 ? "s" : ""}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="flex shrink-0 flex-col items-end gap-1">
+                  <span className="font-mono text-sm font-semibold tabular-nums text-foreground">
+                    {valorDestaque(s)}
+                  </span>
+                  <SimulacaoStatusBadge status={s.status} />
+                </div>
+              </button>
             </li>
           ))}
         </ul>
-      )}
-      {total && (
-        <div className="flex items-center justify-between gap-3 rounded-lg bg-primary/5 px-3 py-2">
-          <span className="text-sm font-medium text-foreground">{total.rotulo}</span>
-          <span className="font-mono text-sm font-bold tabular-nums text-primary">
-            {total.valor}
-          </span>
-        </div>
       )}
     </div>
   );
