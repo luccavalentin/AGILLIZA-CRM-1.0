@@ -559,24 +559,6 @@ function Pagina() {
             )}
           </div>
 
-function ProdutoBadge({ produto }: { produto: string | null | undefined }) {
-  if (produto === "home_equity") {
-    return (
-      <span className="inline-flex items-center rounded-full border border-warning/30 bg-warning/10 px-2 py-0.5 text-xs font-medium text-warning">
-        Home Equity
-      </span>
-    );
-  }
-  if (produto === "financiamento_imobiliario") {
-    return (
-      <span className="inline-flex items-center rounded-full border border-primary/25 bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-        Financiamento
-      </span>
-    );
-  }
-  return <span className="text-sm text-muted-foreground">—</span>;
-}
-
           <DialogFooter>
             <Button variant="outline" onClick={() => setEnvio(null)} disabled={enviando}>
               Cancelar
