@@ -24,32 +24,31 @@ export function ReportShell({
 }) {
   return (
     <div className="mx-auto w-full max-w-7xl space-y-4 p-4 md:p-6">
-      <header className="rounded-xl border border-border bg-card p-4 shadow-[var(--shadow-card)]">
+      <header className="op-hero px-4 py-3 md:px-5">
         <div className="relative flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex min-w-0 items-center gap-3">
-            <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary md:size-10">
-              <BarChart3 className="h-5 w-5" />
+            <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-primary/12 text-primary ring-1 ring-primary/20">
+              <BarChart3 className="h-4.5 w-4.5" />
             </span>
-            <div className="min-w-0 space-y-0.5">
-              <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-primary/80">
-                Relatórios · {modulo}
-              </span>
-              <h1 className="truncate text-lg font-bold tracking-tight text-foreground md:text-xl">
-                {titulo}
-              </h1>
-
-              
-              <div className="flex flex-wrap gap-1.5 pt-0.5">
+            <div className="min-w-0 space-y-1">
+              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-primary/80">
+                  Relatórios · {modulo}
+                </span>
+                <h1 className="truncate text-base font-bold tracking-tight text-foreground md:text-lg">
+                  {titulo}
+                </h1>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
                 {metaChips.map((m) => (
                   <span
                     key={m}
-                    className="inline-flex items-center rounded-full border border-border/70 bg-muted/40 px-2 py-0.5 text-[10px] font-medium tabular-nums text-muted-foreground"
+                    className="inline-flex items-center rounded-full border border-border/60 bg-background/60 px-2 py-0.5 text-[10px] font-medium tabular-nums text-muted-foreground backdrop-blur-sm"
                   >
                     {m}
                   </span>
                 ))}
               </div>
-
             </div>
           </div>
           <div className="print:hidden flex flex-wrap items-center gap-2 lg:justify-end">
