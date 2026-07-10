@@ -73,17 +73,6 @@ function Pagina() {
 
       <Card className="overflow-hidden">
         <SecaoCabecalho
-          icone={<Home className="h-4 w-4" />}
-          titulo="Operação e imóvel"
-          descricao="Produto, características e valores"
-        />
-        <div className="p-4 sm:p-5 md:p-6">
-          <SecaoOperacaoImovel ctx={ctx} />
-        </div>
-      </Card>
-
-      <Card className="overflow-hidden">
-        <SecaoCabecalho
           icone={<User className="h-4 w-4" />}
           titulo="Titular"
           descricao="Dados do proponente principal"
@@ -108,6 +97,17 @@ function Pagina() {
 
       <Card className="overflow-hidden">
         <SecaoCabecalho
+          icone={<Home className="h-4 w-4" />}
+          titulo="Operação e imóvel"
+          descricao="Produto, características e valores"
+        />
+        <div className="p-4 sm:p-5 md:p-6">
+          <SecaoOperacaoImovel ctx={ctx} />
+        </div>
+      </Card>
+
+      <Card className="overflow-hidden">
+        <SecaoCabecalho
           icone={<Landmark className="h-4 w-4" />}
           titulo="Bancos"
           descricao="Selecione as instituições para consultar"
@@ -116,6 +116,7 @@ function Pagina() {
           <SecaoBancos ctx={ctx} />
         </div>
       </Card>
+
 
       <Card className="overflow-hidden">
         <SecaoCabecalho
