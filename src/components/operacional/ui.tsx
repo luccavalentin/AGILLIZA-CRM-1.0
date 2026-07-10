@@ -76,7 +76,12 @@ export function OpStat({
           <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
             {label}
           </p>
-          <p className="mt-2 text-[1.75rem] font-semibold leading-none tracking-tight text-foreground tabular-nums">
+          <p
+            className={cn(
+              "mt-2 truncate font-semibold leading-none tracking-tight text-foreground tabular-nums",
+              typeof value === "string" ? "text-lg" : "text-2xl",
+            )}
+          >
             {value}
           </p>
         </div>
