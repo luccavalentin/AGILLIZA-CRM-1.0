@@ -65,6 +65,7 @@ function Pagina() {
     celulas.push(d);
   }
   const hojeK = chaveDia(hoje);
+  const feriados = mapaFeriados([ref.getFullYear() - 1, ref.getFullYear(), ref.getFullYear() + 1]);
 
   return (
     <div className="space-y-5 p-4 md:p-6">
