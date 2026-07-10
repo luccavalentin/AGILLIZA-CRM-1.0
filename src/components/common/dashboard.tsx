@@ -213,16 +213,16 @@ export function MiniMetric({
   const conteudo = (
     <Card
       className={cn(
-        "group relative h-full min-w-0 overflow-hidden p-3 pl-4 transition-all duration-200",
+        "group relative h-full min-w-0 overflow-hidden p-3 pl-4 transition-all duration-300",
         to &&
           "cursor-pointer hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md hover:shadow-primary/5",
       )}
     >
-      <span className={cn("absolute left-0 top-0 h-full w-[2px]", toneBar[tone])} />
+      <span className={cn("absolute left-0 top-0 h-full w-[2px] rounded-r transition-all group-hover:w-[3px]", toneBar[tone])} />
       <p className="truncate text-[10px] font-semibold uppercase tracking-[0.06em] text-muted-foreground sm:tracking-[0.1em]">
         {label}
       </p>
-      <p className="mt-1.5 min-w-0 truncate font-mono text-[clamp(1rem,6vw,1.25rem)] font-semibold tabular-nums text-foreground sm:text-xl">{valor}</p>
+      <p className="mt-1.5 min-w-0 truncate font-mono text-[clamp(1rem,6vw,1.25rem)] font-semibold tracking-tight tabular-nums text-foreground sm:text-xl">{valor}</p>
     </Card>
   );
   return to ? (
