@@ -352,7 +352,7 @@ function Pagina() {
                     <TableCell className="px-4">
                       <span className="block truncate font-mono text-[12px] tabular-nums text-foreground/80">
                         {c.documento_masc
-                          ? mascararDocumento(c.documento)
+                          ? c.documento
                           : formatarDocumento(c.documento)}
                       </span>
                     </TableCell>
