@@ -658,8 +658,8 @@ function SecaoDados({
   children,
 }: {
   titulo: string;
-  icone: React.ReactNode;
-  children: React.ReactNode;
+  icone: ReactNode;
+  children: ReactNode;
 }) {
   return (
     <section className="overflow-hidden rounded-xl border border-border/60 bg-card shadow-sm">
