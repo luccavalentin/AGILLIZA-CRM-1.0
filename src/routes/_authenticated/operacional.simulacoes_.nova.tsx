@@ -170,7 +170,7 @@ function Pagina() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-3xl p-4 md:p-8">
+    <div className="mx-auto w-full max-w-5xl p-4 md:p-8">
       <Button
         variant="ghost"
         size="sm"
@@ -201,8 +201,8 @@ function Pagina() {
 
       <div className="flex flex-col gap-4">
         <Card className="overflow-hidden">
-          <div className="space-y-5 p-5 md:p-6">
-        <div className="space-y-1.5">
+          <div className="grid grid-cols-1 gap-5 p-5 md:p-6 lg:grid-cols-2">
+        <div className="space-y-1.5 lg:col-span-2">
           <Label>Produto</Label>
           <Select
             value={w.produto}
@@ -259,7 +259,7 @@ function Pagina() {
           )}
         </div>
 
-        <div className="space-y-1.5">
+        <div className="space-y-1.5 lg:col-span-2">
           <Label>
             Valor do crédito que precisa <span className="text-destructive">*</span>
           </Label>
@@ -271,7 +271,7 @@ function Pagina() {
         </div>
 
 
-        <div className="space-y-2">
+        <div className="space-y-2 lg:col-span-2">
           <Label>Você já possui o imóvel escolhido?</Label>
           <RadioGroup
             className="grid grid-cols-1 gap-2 sm:grid-cols-2"
@@ -307,7 +307,7 @@ function Pagina() {
           </RadioGroup>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:col-span-2">
           <div className="space-y-1.5">
             <Label>
               Informe sua data de nascimento <span className="text-destructive">*</span>
@@ -344,7 +344,7 @@ function Pagina() {
           </div>
         </div>
 
-        <div className="space-y-1.5">
+        <div className="space-y-1.5 lg:col-span-2">
           <Label>Renda familiar mensal (opcional)</Label>
           <CurrencyInput
             value={w.renda_familiar}
