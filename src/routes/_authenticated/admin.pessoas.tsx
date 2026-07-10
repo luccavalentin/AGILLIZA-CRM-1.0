@@ -4,7 +4,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Plus, Copy, Search, MoreHorizontal, Pencil, KeyRound, Ban, CheckCircle2, Trash2, LogIn } from "lucide-react";
+import { Plus, Copy, Search, MoreHorizontal, Pencil, KeyRound, Ban, CheckCircle2, Trash2, LogIn, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
