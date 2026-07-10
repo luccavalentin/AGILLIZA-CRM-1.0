@@ -446,15 +446,15 @@ function Pagina() {
         {data?.itens.map((s) => (
           <div
             key={s.id}
-            className="cursor-pointer rounded-lg border border-border p-4"
+            className="cursor-pointer rounded-xl border border-border/60 bg-card p-4 shadow-sm transition-all active:scale-[0.99]"
             onClick={() =>
               router.navigate({ to: "/operacional/simulacoes/$id", params: { id: s.id } })
             }
           >
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <p className="font-medium text-foreground">{s.numero_simulacao}</p>
-                <p className="truncate text-sm text-muted-foreground">{s.nome_cliente ?? "—"}</p>
+                <p className="font-mono font-semibold text-primary">{s.numero_simulacao}</p>
+                <p className="truncate text-sm font-medium text-foreground">{s.nome_cliente ?? "—"}</p>
               </div>
               <div className="flex shrink-0 items-center gap-1" onClick={(e) => e.stopPropagation()}>
                 <SimulacaoStatusBadge status={s.status} />
@@ -475,32 +475,25 @@ function Pagina() {
                 />
               </div>
             </div>
-            <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-              <div>
-                <dt className="text-xs text-muted-foreground">Produto</dt>
-                <dd className="text-foreground">
-                  {s.produto === "home_equity"
-                    ? "Home Equity"
-                    : s.produto === "financiamento_imobiliario"
-                      ? "Financiamento"
-                      : "—"}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-xs text-muted-foreground">Prazo</dt>
-                <dd className="tabular-nums text-foreground">{s.prazo ? `${s.prazo}m` : "—"}</dd>
-              </div>
-              <div className="col-span-2">
-                <dt className="text-xs text-muted-foreground">Valor do imóvel</dt>
-                <dd className="tabular-nums text-foreground">{formatBRL(s.valor_imovel)}</dd>
-              </div>
-              <div className="col-span-2">
-                <dt className="mb-1 text-xs text-muted-foreground">Bancos simulados</dt>
-                <dd>
-                  <BancosSimulados bancos={s.bancos} />
-                </dd>
-              </div>
-            </dl>
+
+            <div className="mt-3 flex items-center gap-2">
+              <ProdutoBadge produto={s.produto} />
+              <span className="text-xs tabular-nums text-muted-foreground">
+                {s.prazo ? `${s.prazo} meses` : "—"}
+              </span>
+            </div>
+
+            <div className="mt-3 rounded-lg bg-muted/40 px-3 py-2">
+              <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Valor do imóvel</p>
+              <p className="font-mono text-lg font-semibold tabular-nums text-foreground">
+                {formatBRL(s.valor_imovel)}
+              </p>
+            </div>
+
+            <div className="mt-3">
+              <p className="mb-1 text-[11px] uppercase tracking-wide text-muted-foreground">Bancos simulados</p>
+              <BancosSimulados bancos={s.bancos} />
+            </div>
           </div>
         ))}
       </div>
