@@ -403,6 +403,7 @@ function Pagina() {
                       ) : (
                         <Button
                           size="sm"
+                          className="bg-gradient-to-b from-primary to-primary/90 shadow-sm transition-all duration-200 hover:-translate-y-px hover:shadow-md hover:brightness-105 active:translate-y-0 active:scale-[0.98]"
                           disabled={b.status_banco !== "simulada" || criandoBanco !== null}
                           onClick={() => criar(b.banco_id)}
                         >
@@ -507,6 +508,7 @@ function Pagina() {
                             ) : (
                               <Button
                                 size="sm"
+                                className="bg-gradient-to-b from-primary to-primary/90 shadow-sm transition-all duration-200 hover:-translate-y-px hover:shadow-md hover:brightness-105 active:translate-y-0 active:scale-[0.98]"
                                 disabled={b.status_banco !== "simulada" || criandoBanco !== null}
                                 onClick={() => criar(b.banco_id)}
                               >
@@ -603,10 +605,10 @@ function Pagina() {
                   const ev = classificarEvento(h.descricao);
                   const dt = new Date(h.created_at);
                   return (
-                    <li key={h.id} className="relative flex gap-4 py-2.5">
+                    <li key={h.id} className="group relative -mx-2 flex gap-4 rounded-lg px-2 py-2.5 transition-colors hover:bg-muted/40">
                       <span
                         className={cn(
-                          "relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border shadow-sm",
+                          "relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border shadow-sm transition-transform duration-200 group-hover:scale-110",
                           ev.classe,
                         )}
                       >
@@ -742,16 +744,18 @@ function GrupoDados({
   ultimo?: boolean;
 }) {
   return (
-    <div className={cn(!ultimo && "border-b border-border/60")}>
-      <div className="flex items-center gap-2 bg-muted/30 px-4 py-2.5">
-        <span className="grid h-6 w-6 place-items-center rounded-md bg-primary/10 text-primary">
+    <div className={cn(!ultimo && "border-b border-border/50")}>
+      <div className="flex items-center gap-2.5 border-b border-border/40 bg-gradient-to-r from-muted/50 to-transparent px-4 py-3">
+        <span className="grid h-7 w-7 place-items-center rounded-lg bg-primary/10 text-primary ring-1 ring-inset ring-primary/15">
           {icone}
         </span>
-        <h3 className="text-[13px] font-semibold tracking-tight text-foreground">
+        <h3 className="text-[13px] font-semibold uppercase tracking-[0.06em] text-foreground/90">
           {titulo}
         </h3>
       </div>
-      <dl className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">{children}</dl>
+      <dl className="grid grid-cols-2 gap-px bg-border/40 sm:grid-cols-3 lg:grid-cols-4">
+        {children}
+      </dl>
     </div>
   );
 }
@@ -768,16 +772,19 @@ function Campo({
   return (
     <div
       className={cn(
-        "border-b border-r border-border/40 px-4 py-3 last:border-r",
-        destaque ? "bg-primary/5" : "bg-card",
+        "group relative px-4 py-3 transition-colors duration-200",
+        destaque ? "bg-primary/5" : "bg-card hover:bg-muted/40",
       )}
     >
-      <dt className="text-[11px] font-medium uppercase tracking-[0.06em] text-muted-foreground">
+      {destaque && (
+        <span className="absolute inset-y-2 left-0 w-0.5 rounded-full bg-primary" aria-hidden />
+      )}
+      <dt className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
         {termo}
       </dt>
       <dd
         className={cn(
-          "mt-1 text-sm font-semibold tabular-nums",
+          "mt-1 text-[15px] font-semibold tabular-nums leading-tight",
           destaque ? "text-primary" : "text-foreground",
         )}
       >
