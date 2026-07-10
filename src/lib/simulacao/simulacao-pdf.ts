@@ -233,10 +233,11 @@ function drawInfoFinanciamento(
   // Valor padrão fixo aplicado a todos os bancos.
   if (d?.tarifaAvaliacao != null) {
     itens.splice(2, 0, {
-      label: "Tarifa de av. de garantia (valor padrão · não financiada)",
+      label: "Tarifa de avaliação (não financiada)",
       valor: brlOuTraco(d.tarifaAvaliacao),
     });
   }
+
 
 
   doc.setTextColor(P.destaque);
