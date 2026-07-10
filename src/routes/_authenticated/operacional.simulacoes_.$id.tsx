@@ -242,7 +242,7 @@ function Pagina() {
                 onClick={() => setPdfDialogAberto(true)}
                 disabled={bancos.length === 0}
               >
-                Comparativo consolidado (interno)
+                Consolidado comparativo entre bancos
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
