@@ -1,4 +1,4 @@
-import { X } from "lucide-react";
+import { X, SlidersHorizontal } from "lucide-react";
 import {
   Select,
   SelectContent,
