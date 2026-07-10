@@ -379,7 +379,7 @@ export const getPanelDados = createServerFn({ method: "POST" })
     }
 
     // operacional
-    const [sims, props, dem, tk] = await Promise.all([
+    const [sims, props, dem, tk, contratosInfo] = await Promise.all([
       escopoEq(
         supabase
           .from("simulacoes")
