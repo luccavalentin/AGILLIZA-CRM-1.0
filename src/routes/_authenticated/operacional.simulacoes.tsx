@@ -221,29 +221,39 @@ function Pagina() {
 
     <div className="mx-auto w-full max-w-[1600px] space-y-5 p-4 md:p-6">
       {/* Cabeçalho */}
-      <div className="flex flex-wrap items-end justify-between gap-4 border-b border-border/60 pb-4">
-        <div className="min-w-0">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-primary/70">
-            Consultar simulações
-          </p>
-          <h1 className="mt-1 text-xl font-semibold tracking-tight text-foreground">Simulações</h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">
-            Financiamento imobiliário e home equity, em um só lugar.
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button asChild variant="outline" size="sm" className="h-9 gap-1.5">
-            <Link to="/operacional/simulacoes/nova" search={{ modo: "rapida" }}>
-              <Calculator className="h-4 w-4" />
-              Simulação rápida
-            </Link>
-          </Button>
-          <Button asChild size="sm" className="h-9 gap-1.5">
-            <Link to="/operacional/simulacoes/completa">
-              <Send className="h-4 w-4" />
-              Simulação completa
-            </Link>
-          </Button>
+      <div className="relative overflow-hidden rounded-xl border border-border bg-card p-4 md:p-6">
+        <span
+          aria-hidden
+          className="pointer-events-none absolute -right-24 -top-24 h-56 w-56 rounded-full opacity-70 blur-2xl"
+          style={{ background: "color-mix(in oklab, var(--primary) 12%, transparent)" }}
+        />
+        <div className="relative grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
+          <div className="min-w-0">
+            <p className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-primary sm:text-[11px] sm:tracking-[0.18em]">
+              <span className="inline-block h-1 w-5 shrink-0 rounded-full bg-primary sm:w-6" />
+              Consultar simulações
+            </p>
+            <h1 className="mt-2 text-2xl font-semibold leading-tight tracking-tight text-foreground sm:text-[28px]">
+              Simulações
+            </h1>
+            <p className="mt-1.5 max-w-xl text-sm text-muted-foreground">
+              Financiamento imobiliário e home equity, em um só lugar.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap sm:items-center sm:justify-end">
+            <Button asChild variant="outline" size="sm" className="h-9 gap-1.5">
+              <Link to="/operacional/simulacoes/nova" search={{ modo: "rapida" }}>
+                <Calculator className="h-4 w-4" />
+                Simulação rápida
+              </Link>
+            </Button>
+            <Button asChild size="sm" className="h-9 gap-1.5">
+              <Link to="/operacional/simulacoes/completa">
+                <Send className="h-4 w-4" />
+                Simulação completa
+              </Link>
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -252,14 +262,15 @@ function Pagina() {
         {kpis.map((k) => (
           <div
             key={k.label}
-            className="flex items-center gap-2.5 rounded-lg border border-border/60 bg-card px-3.5 py-3"
+            className="group relative flex items-center gap-3 overflow-hidden rounded-xl border border-border/60 bg-card px-3.5 py-3 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md"
           >
-            <div className="grid size-8 shrink-0 place-items-center rounded-md bg-primary/10 text-primary">
+            <span className="absolute left-0 top-0 h-full w-[3px] rounded-r bg-primary/60" />
+            <div className="grid size-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary ring-1 ring-inset ring-primary/15">
               <k.icon className="size-4" />
             </div>
             <div className="min-w-0">
-              <p className="truncate text-base font-semibold tabular-nums text-foreground">{k.valor}</p>
-              <p className="truncate text-[11px] text-muted-foreground">{k.label}</p>
+              <p className="truncate font-mono text-lg font-semibold tracking-tight tabular-nums text-foreground">{k.valor}</p>
+              <p className="truncate text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{k.label}</p>
             </div>
           </div>
         ))}
