@@ -384,6 +384,12 @@ function Pagina() {
                   </TableCell>
                   <TableCell className="font-medium text-foreground">
                     {p.nome_cliente ?? "—"}
+                    {escopo === "todas" && p.nome_responsavel && (
+                      <span className="mt-0.5 flex items-center gap-1 text-[11px] font-normal text-muted-foreground">
+                        <User className="h-3 w-3 shrink-0" />
+                        <span className="truncate">{p.nome_responsavel}</span>
+                      </span>
+                    )}
                   </TableCell>
                   <TableCell>
                     <BancosProposta bancos={p.bancos} />
