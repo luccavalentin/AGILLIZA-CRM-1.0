@@ -184,6 +184,26 @@ export function DocumentosGerais() {
     });
   }, [clientes, busca, filtroComercial, filtroImob, filtroCorr]);
 
+  // Visão geral (KPIs) — sempre sobre a base completa, para dar contexto no topo.
+  const resumo = useMemo(() => {
+    const imobs = new Set<string>();
+    const corrs = new Set<string>();
+    let documentos = 0;
+    for (const c of clientes) {
+      if (c.imobiliaria_id) imobs.add(c.imobiliaria_id);
+      if (c.corretor_id) corrs.add(c.corretor_id);
+      documentos += c.total_documentos ?? 0;
+    }
+    return {
+      comerciais: comerciaisBase.length,
+      imobiliarias: imobs.size,
+      corretores: corrs.size,
+      clientes: clientes.length,
+      documentos,
+    };
+  }, [clientes, comerciaisBase]);
+
+
   // Árvore de pastas (hierarquia oficial):
   //   Comercial Agilliza → Imobiliária → Corretor → Cliente
   // Todo comercial tem a sua pasta; dentro dela ficam as imobiliárias com que
