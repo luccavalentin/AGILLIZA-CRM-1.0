@@ -184,6 +184,26 @@ export function DocumentosGerais() {
     });
   }, [clientes, busca, filtroComercial, filtroImob, filtroCorr]);
 
+  // Visão geral (KPIs) — sempre sobre a base completa, para dar contexto no topo.
+  const resumo = useMemo(() => {
+    const imobs = new Set<string>();
+    const corrs = new Set<string>();
+    let documentos = 0;
+    for (const c of clientes) {
+      if (c.imobiliaria_id) imobs.add(c.imobiliaria_id);
+      if (c.corretor_id) corrs.add(c.corretor_id);
+      documentos += c.total_documentos ?? 0;
+    }
+    return {
+      comerciais: comerciaisBase.length,
+      imobiliarias: imobs.size,
+      corretores: corrs.size,
+      clientes: clientes.length,
+      documentos,
+    };
+  }, [clientes, comerciaisBase]);
+
+
   // Árvore de pastas (hierarquia oficial):
   //   Comercial Agilliza → Imobiliária → Corretor → Cliente
   // Todo comercial tem a sua pasta; dentro dela ficam as imobiliárias com que
@@ -464,6 +484,41 @@ export function DocumentosGerais() {
           </CardContent>
         </Card>
       )}
+
+      {/* Visão geral — KPIs da estrutura documental (apenas na raiz) */}
+      {caminho.length === 0 && !filtrando && !isLoading && raizes.length > 0 && (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+          {[
+            { Icon: Briefcase, label: "Comerciais", valor: resumo.comerciais },
+            { Icon: Building2, label: "Imobiliárias", valor: resumo.imobiliarias },
+            { Icon: IdCard, label: "Corretores", valor: resumo.corretores },
+            { Icon: Users, label: "Clientes", valor: resumo.clientes },
+            { Icon: FileText, label: "Documentos", valor: resumo.documentos },
+          ].map(({ Icon, label, valor }) => (
+            <div
+              key={label}
+              className="group relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-card to-primary/[0.03] p-3.5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
+            >
+              <span className="pointer-events-none absolute -right-6 -top-6 size-16 rounded-full bg-primary/5 blur-2xl transition-opacity group-hover:opacity-100" />
+              <div className="relative flex items-center gap-3">
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary ring-1 ring-inset ring-primary/15">
+                  <Icon className="h-[18px] w-[18px]" />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-lg font-semibold leading-none tracking-tight text-foreground tabular-nums">
+                    {valor.toLocaleString("pt-BR")}
+                  </p>
+                  <p className="mt-1 truncate text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                    {label}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+
 
       {isLoading ? (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
