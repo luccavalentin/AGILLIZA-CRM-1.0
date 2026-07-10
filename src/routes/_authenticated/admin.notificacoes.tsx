@@ -167,8 +167,9 @@ function Pagina() {
               </AlertDialogContent>
             </AlertDialog>
           )}
-        </div>
-      </div>
+          </>
+        }
+      />
 
 
       {isLoading ? (
