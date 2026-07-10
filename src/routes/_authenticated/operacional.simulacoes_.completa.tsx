@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, FileText, Send } from "lucide-react";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
+import { Card } from "@/components/ui/card";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -40,7 +40,7 @@ function Pagina() {
   const { router, modoProposta, f, enviando, concluidos, mostraConjuge, confirmRenda, setConfirmRenda, enviar, executarEnvio } = ctx;
 
   return (
-    <div className="mx-auto w-full max-w-4xl space-y-6 p-4 md:p-8">
+    <div className="mx-auto w-full max-w-4xl space-y-5 p-4 md:p-8">
       <Button
         variant="ghost"
         size="sm"
@@ -53,42 +53,51 @@ function Pagina() {
       >
         <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
       </Button>
-      <div>
-        <h1 className="text-xl font-semibold text-primary">
-          {modoProposta ? "Nova Proposta" : "Solicitar Simulação Completa"}
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          {modoProposta
-            ? "Preencha a simulação completa e envie direto ao banco — a proposta é criada automaticamente."
-            : "Preencha os dados para enviar aos bancos parceiros."}
-        </p>
+
+      <div className="flex items-center gap-4 rounded-xl border border-border/60 bg-gradient-to-br from-primary/5 via-card to-card p-5">
+        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/20">
+          <FileText className="h-6 w-6" />
+        </span>
+        <div>
+          <h1 className="text-lg font-semibold tracking-tight text-foreground">
+            {modoProposta ? "Nova Proposta" : "Solicitar Simulação Completa"}
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            {modoProposta
+              ? "Preencha a simulação completa e envie direto ao banco — a proposta é criada automaticamente."
+              : "Preencha os dados para enviar aos bancos parceiros."}
+          </p>
+        </div>
       </div>
 
-      <SecaoOperacaoImovel ctx={ctx} />
+      <Card className="p-5 md:p-6">
+        <SecaoOperacaoImovel ctx={ctx} />
+      </Card>
 
-      <Separator className="border-border/60" />
-      <SecaoTitular ctx={ctx} />
+      <Card className="p-5 md:p-6">
+        <SecaoTitular ctx={ctx} />
+      </Card>
 
       {mostraConjuge && (
-        <>
-          <Separator className="border-border/60" />
+        <Card className="p-5 md:p-6">
           <SecaoConjuge ctx={ctx} />
-        </>
+        </Card>
       )}
 
-      <Separator className="border-border/60" />
-      <SecaoBancos ctx={ctx} />
+      <Card className="p-5 md:p-6">
+        <SecaoBancos ctx={ctx} />
+      </Card>
 
-      <Separator className="border-border/60" />
-      <SecaoConsentimentos ctx={ctx} />
+      <Card className="p-5 md:p-6">
+        <SecaoConsentimentos ctx={ctx} />
+      </Card>
 
-      <Separator className="border-border/60" />
-
-      <div className="flex justify-end pt-2">
-        <Button className="h-11 px-8" onClick={enviar} disabled={enviando}>
-          Gerar Simulação
+      <div className="flex justify-end pt-1">
+        <Button className="h-11 gap-2 px-8" onClick={enviar} disabled={enviando}>
+          <Send className="h-4 w-4" /> Gerar Simulação
         </Button>
       </div>
+
 
       <ConsultandoOverlay aberto={enviando} total={f.bancos_ids.length} concluidos={concluidos} />
 

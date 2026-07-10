@@ -1,10 +1,12 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Calculator, Home, CalendarDays, TrendingUp, Zap, FileText, Award } from "lucide-react";
 import { assertModuloPermitido } from "@/lib/route-guards";
 
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -17,7 +19,6 @@ import {
 } from "@/components/ui/select";
 import { CurrencyInput } from "@/components/simulacao/currency-input";
 import { DicaRendaMinima } from "@/components/simulacao/dica-renda-minima";
-import { ToneBadge } from "@/components/crm/tone-badge";
 import { PRODUTOS } from "@/lib/simulacao/schemas";
 import { formatBRL, formatPercent } from "@/lib/simulacao/format";
 import { listarBancosAtivos } from "@/lib/simulacao/simulacoes.functions";
@@ -168,24 +169,40 @@ function Pagina() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-3xl p-6 md:p-10">
-      {/* Wizard */}
-      <div className="flex flex-col gap-5">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="-ml-2 w-fit text-muted-foreground"
-          onClick={() =>
-            router.history.canGoBack()
-              ? router.history.back()
-              : router.navigate({ to: "/operacional/simulacoes" })
-          }
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
-        </Button>
-        <h1 className="text-lg font-semibold text-foreground">Simular financiamento</h1>
+    <div className="mx-auto w-full max-w-3xl p-4 md:p-8">
+      <Button
+        variant="ghost"
+        size="sm"
+        className="-ml-2 mb-4 w-fit text-muted-foreground"
+        onClick={() =>
+          router.history.canGoBack()
+            ? router.history.back()
+            : router.navigate({ to: "/operacional/simulacoes" })
+        }
+      >
+        <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
+      </Button>
 
+      {/* Cabeçalho */}
+      <div className="mb-5 flex items-center gap-4 rounded-xl border border-border/60 bg-gradient-to-br from-primary/5 via-card to-card p-5">
+        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/20">
+          <Calculator className="h-6 w-6" />
+        </span>
+        <div>
+          <h1 className="text-lg font-semibold tracking-tight text-foreground">
+            Simular financiamento
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Informe os dados abaixo para estimar as condições entre os bancos parceiros.
+          </p>
+        </div>
+      </div>
 
+      <div className="flex flex-col gap-4">
+        {/* Seção: Produto e valores */}
+        <Card className="overflow-hidden">
+          <SecaoCabecalho icone={<Home className="h-4 w-4" />} titulo="Imóvel e crédito" />
+          <div className="space-y-5 p-5">
         <div className="space-y-1.5">
           <Label>Produto</Label>
           <Select
@@ -204,6 +221,7 @@ function Pagina() {
             </SelectContent>
           </Select>
         </div>
+
 
         <div className="space-y-1.5">
           <Label>
@@ -253,27 +271,46 @@ function Pagina() {
           />
         </div>
 
+          </div>
+        </Card>
+
+        {/* Seção: Perfil e prazo */}
+        <Card className="overflow-hidden">
+          <SecaoCabecalho icone={<CalendarDays className="h-4 w-4" />} titulo="Perfil e prazo" />
+          <div className="space-y-5 p-5">
         <div className="space-y-2">
           <Label>Você já possui o imóvel escolhido?</Label>
           <RadioGroup
-            className="flex flex-col gap-2 sm:flex-row sm:gap-6"
+            className="grid grid-cols-1 gap-2 sm:grid-cols-2"
             value={
               w.possui_imovel_escolhido == null ? "" : w.possui_imovel_escolhido ? "sim" : "nao"
             }
             onValueChange={(v) => set("possui_imovel_escolhido", v === "sim")}
           >
-            <div className="flex items-center gap-2">
+            <label
+              htmlFor="pie-sim"
+              className={cn(
+                "flex cursor-pointer items-center gap-2.5 rounded-lg border p-3 text-sm transition-colors",
+                w.possui_imovel_escolhido === true
+                  ? "border-primary/50 bg-primary/5"
+                  : "border-border hover:bg-muted/40",
+              )}
+            >
               <RadioGroupItem value="sim" id="pie-sim" />
-              <Label htmlFor="pie-sim" className="font-normal">
-                Sim, já tenho um imóvel escolhido
-              </Label>
-            </div>
-            <div className="flex items-center gap-2">
+              <span className="font-normal">Sim, já tenho um imóvel escolhido</span>
+            </label>
+            <label
+              htmlFor="pie-nao"
+              className={cn(
+                "flex cursor-pointer items-center gap-2.5 rounded-lg border p-3 text-sm transition-colors",
+                w.possui_imovel_escolhido === false
+                  ? "border-primary/50 bg-primary/5"
+                  : "border-border hover:bg-muted/40",
+              )}
+            >
               <RadioGroupItem value="nao" id="pie-nao" />
-              <Label htmlFor="pie-nao" className="font-normal">
-                Não, ainda estou pesquisando
-              </Label>
-            </div>
+              <span className="font-normal">Não, ainda estou pesquisando</span>
+            </label>
           </RadioGroup>
         </div>
 
@@ -325,6 +362,9 @@ function Pagina() {
             Informe para verificarmos se atende à renda mínima exigida.
           </p>
         </div>
+          </div>
+        </Card>
+
 
         {w.valor_financiamento > 0 && w.prazo_meses >= PRAZO_MIN && (
           <DicaRendaMinima
@@ -338,64 +378,108 @@ function Pagina() {
         )}
 
 
-        <div className="grid grid-cols-1 gap-3 pt-2 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 pt-1 sm:grid-cols-2">
           <Button
             variant="default"
-            className="h-12"
+            className="h-12 gap-2 text-sm font-semibold"
             disabled={!valido}
             onClick={() => setMostrarRapida(true)}
           >
-            Simulação rápida
+            <Zap className="h-4 w-4" /> Simulação rápida
           </Button>
           <Button
             variant="secondary"
-            className="h-12"
+            className="h-12 gap-2 text-sm font-semibold"
             disabled={!valido}
             onClick={() => irParaCompleta()}
           >
-            Simulação completa
+            <FileText className="h-4 w-4" /> Simulação completa
           </Button>
         </div>
 
         {mostrarRapida && (
-          <div className="space-y-3 rounded-lg border border-border p-4">
-            <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-foreground">Comparativo estimado</h3>
-              <span className="text-xs text-muted-foreground">
-                Sistema SAC · {w.prazo_meses} meses
+          <Card className="overflow-hidden">
+            <div className="flex items-center justify-between border-b border-border/60 bg-muted/30 px-5 py-3.5">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 text-primary" />
+                <h3 className="text-sm font-semibold text-foreground">Comparativo estimado</h3>
+              </div>
+              <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
+                SAC · {w.prazo_meses} meses
               </span>
             </div>
-            {comparativo.length === 0 && (
-              <p className="text-sm text-muted-foreground">
-                Nenhum banco habilitado. Ative bancos em Configurações → Bancos.
-              </p>
-            )}
-            <div className="space-y-2">
-              {comparativo.map((c, i) => (
-                <div
-                  key={c.banco_id}
-                  className="flex items-center justify-between rounded-md border border-border bg-card p-3"
-                >
-                  <div>
-                    <p className="font-medium text-card-foreground">{c.nome_banco}</p>
-                    <p className="text-xs text-muted-foreground">
-                      Taxa {formatPercent(c.taxa_ano)} a.a.
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="tabular-nums font-semibold text-card-foreground">
-                      {formatBRL(c.resultado.primeira_parcela)}
-                    </p>
-                    {i === 0 && comparativo.length > 1 && (
-                      <ToneBadge tone="success">Melhor taxa</ToneBadge>
-                    )}
-                  </div>
+            <div className="p-5">
+              {comparativo.length === 0 ? (
+                <p className="py-4 text-center text-sm text-muted-foreground">
+                  Nenhum banco habilitado. Ative bancos em Configurações → Bancos.
+                </p>
+              ) : (
+                <div className="space-y-2.5">
+                  {comparativo.map((c, i) => {
+                    const melhor = i === 0 && comparativo.length > 1;
+                    return (
+                      <div
+                        key={c.banco_id}
+                        className={cn(
+                          "flex items-center justify-between rounded-lg border p-3.5 transition-colors",
+                          melhor
+                            ? "border-emerald-500/30 bg-emerald-500/5"
+                            : "border-border bg-card hover:bg-muted/30",
+                        )}
+                      >
+                        <div className="flex items-center gap-3">
+                          <span
+                            className={cn(
+                              "flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold tabular-nums",
+                              melhor
+                                ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                                : "bg-muted text-muted-foreground",
+                            )}
+                          >
+                            {i + 1}
+                          </span>
+                          <div>
+                            <div className="flex items-center gap-1.5">
+                              <p className="font-medium text-card-foreground">{c.nome_banco}</p>
+                              {melhor && (
+                                <Award className="h-3.5 w-3.5 text-emerald-500" />
+                              )}
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              Taxa {formatPercent(c.taxa_ano)} a.a.
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[10.5px] font-medium uppercase tracking-wide text-muted-foreground">
+                            1ª parcela
+                          </p>
+                          <p className="tabular-nums text-base font-semibold text-card-foreground">
+                            {formatBRL(c.resultado.primeira_parcela)}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              ))}
+              )}
             </div>
-          </div>
+          </Card>
         )}
       </div>
     </div>
+
   );
 }
+
+function SecaoCabecalho({ icone, titulo }: { icone: ReactNode; titulo: string }) {
+  return (
+    <div className="flex items-center gap-2 border-b border-border/60 bg-muted/30 px-5 py-3.5">
+      <span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10 text-primary">
+        {icone}
+      </span>
+      <h2 className="text-sm font-semibold text-foreground">{titulo}</h2>
+    </div>
+  );
+}
+
