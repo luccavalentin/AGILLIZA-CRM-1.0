@@ -639,6 +639,43 @@ function Pagina() {
   );
 }
 
+function classificarEvento(descricao: string): {
+  icone: typeof CircleDot;
+  classe: string;
+} {
+  const d = (descricao ?? "").toLowerCase();
+  if (d.includes("falha") || d.includes("erro") || d.includes("reprov")) {
+    return {
+      icone: XCircle,
+      classe: "border-destructive/30 bg-destructive/10 text-destructive",
+    };
+  }
+  if (d.includes("retorno") || d.includes("recebid") || d.includes("aprov") || d.includes("conclu")) {
+    return {
+      icone: CheckCircle2,
+      classe: "border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
+    };
+  }
+  if (d.includes("enviad") || d.includes("envio")) {
+    return {
+      icone: Send,
+      classe: "border-primary/30 bg-primary/10 text-primary",
+    };
+  }
+  if (d.includes("criad") || d.includes("nova") || d.includes("criou")) {
+    return {
+      icone: Plus,
+      classe: "border-primary/30 bg-primary/10 text-primary",
+    };
+  }
+  return {
+    icone: CircleDot,
+    classe: "border-border bg-muted text-muted-foreground",
+  };
+}
+
+
+
 function ResumoCelula({
   rotulo,
   valor,
