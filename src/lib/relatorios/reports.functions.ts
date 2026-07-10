@@ -1277,44 +1277,179 @@ export const runReport = createServerFn({ method: "POST" })
             .limit(5000),
         ).then((r: any) => r.data ?? []),
       ]);
-      const hojeStr = new Date().toISOString().slice(0, 10);
-      const aReceber = rec
-        .filter((r: any) => ["aberta", "parcial"].includes(r.status))
-        .reduce((s: number, r: any) => s + (r.valor ?? 0), 0);
-      const aPagar = pag
-        .filter((r: any) => ["aberta", "parcial"].includes(r.status))
-        .reduce((s: number, r: any) => s + (r.valor ?? 0), 0);
+      const hoje = new Date();
+      const hojeStr = hoje.toISOString().slice(0, 10);
+      const abertas = (r: any) => ["aberta", "parcial"].includes(r.status);
+      const somaValor = (arr: any[]) => arr.reduce((s: number, r: any) => s + (r.valor ?? 0), 0);
+
+      const recAbertas = rec.filter(abertas);
+      const pagAbertas = pag.filter(abertas);
+      const aReceber = somaValor(recAbertas);
+      const aPagar = somaValor(pagAbertas);
       const pago = pag.reduce((s: number, r: any) => s + (r.valor_pago ?? 0), 0);
       const recebido = rec.reduce((s: number, r: any) => s + (r.valor_recebido ?? 0), 0);
-      const vencido = [...pag, ...rec]
-        .filter(
-          (r: any) =>
-            ["aberta", "parcial"].includes(r.status) && r.vencimento && r.vencimento < hojeStr,
-        )
-        .reduce((s: number, r: any) => s + (r.valor ?? 0), 0);
+      const vencidas = [...pag, ...rec].filter(
+        (r: any) => abertas(r) && r.vencimento && r.vencimento < hojeStr,
+      );
+      const vencido = somaValor(vencidas);
+      const saldoRealizado = recebido - pago;
+      const saldoPrevisto = aReceber - aPagar;
+      const cobertura = aPagar > 0 ? (aReceber / aPagar) * 100 : 0;
+      const inadimplencia =
+        aReceber > 0
+          ? (somaValor(
+              recAbertas.filter((r: any) => r.vencimento && r.vencimento < hojeStr),
+            ) /
+              aReceber) *
+            100
+          : 0;
+
+      // Composição por status (somente lançamentos em aberto/parcial).
+      const composicao = (arr: any[]) => {
+        const m = new Map<string, number>();
+        arr.forEach((r: any) => m.set(r.status, (m.get(r.status) ?? 0) + (r.valor ?? 0)));
+        return [...m.entries()]
+          .sort((a, b) => b[1] - a[1])
+          .map(([k, v]) => ({ label: STATUS_FINANCEIRO_LABEL[k] ?? k, valor: v }));
+      };
+
+      // Aging de vencidos por faixa de atraso.
+      const faixas = [
+        { label: "1–15 dias", min: 1, max: 15 },
+        { label: "16–30 dias", min: 16, max: 30 },
+        { label: "31–60 dias", min: 31, max: 60 },
+        { label: "60+ dias", min: 61, max: Infinity },
+      ];
+      const diasAtraso = (v: string) =>
+        Math.floor((hoje.getTime() - new Date(v + "T00:00:00").getTime()) / 86400000);
+      const aging = faixas.map((f) => ({
+        label: f.label,
+        valor: vencidas
+          .filter((r: any) => {
+            const d = diasAtraso(r.vencimento);
+            return d >= f.min && d <= f.max;
+          })
+          .reduce((s: number, r: any) => s + (r.valor ?? 0), 0),
+      }));
+
+      const charts: ReportChart[] = [
+        {
+          titulo: "Fluxo mensal realizado",
+          subtitulo: "Recebido x pago por mês",
+          tipo: "line",
+          moeda: true,
+          serie1: "Recebido",
+          serie2: "Pago",
+          dados: fluxoMensal(rec, pag),
+        },
+      ];
+      if (recAbertas.length > 0) {
+        charts.push({
+          titulo: "A receber por status",
+          subtitulo: "Composição dos recebíveis em aberto",
+          tipo: "donut",
+          moeda: true,
+          dados: composicao(recAbertas),
+        });
+      }
+      if (pagAbertas.length > 0) {
+        charts.push({
+          titulo: "A pagar por status",
+          subtitulo: "Composição das contas a pagar em aberto",
+          tipo: "donut",
+          moeda: true,
+          dados: composicao(pagAbertas),
+        });
+      }
+      if (aging.some((a) => a.valor > 0)) {
+        charts.push({
+          titulo: "Aging de vencidos",
+          subtitulo: "Valores em atraso por faixa de dias",
+          tipo: "barh",
+          moeda: true,
+          dados: aging,
+        });
+      }
+
+      const proximos = [...pag, ...rec]
+        .filter((r: any) => abertas(r) && r.vencimento && r.vencimento >= hojeStr)
+        .sort((a: any, b: any) => a.vencimento.localeCompare(b.vencimento))
+        .slice(0, 10);
+
       return {
         titulo: "Relatório financeiro",
-        descricao: "Fluxo de recebimentos, pagamentos e saldo.",
+        descricao: "Posição de caixa, recebimentos, pagamentos e inadimplência.",
         modulo: "Financeiro",
         kpis: [
-          { label: "A receber", valor: brl(aReceber), tone: "success" },
-          { label: "A pagar", valor: brl(aPagar), tone: "warning" },
-          { label: "Recebido", valor: brl(recebido), tone: "success" },
-          { label: "Pago", valor: brl(pago), tone: "neutral" },
-          { label: "Saldo previsto", valor: brl(aReceber - aPagar), tone: "brand" },
-          { label: "Vencido", valor: brl(vencido), tone: "danger" },
-        ],
-        charts: [
           {
-            titulo: "Fluxo mensal",
-            subtitulo: "Recebido x pago",
-            tipo: "line",
-            moeda: true,
-            serie1: "Recebido",
-            serie2: "Pago",
-            dados: fluxoMensal(rec, pag),
+            label: "A receber",
+            valor: brl(aReceber),
+            tone: "success",
+            hint: `${recAbertas.length} lançamento(s) em aberto`,
+          },
+          {
+            label: "A pagar",
+            valor: brl(aPagar),
+            tone: "warning",
+            hint: `${pagAbertas.length} lançamento(s) em aberto`,
+          },
+          {
+            label: "Saldo previsto",
+            valor: brl(saldoPrevisto),
+            tone: saldoPrevisto >= 0 ? "brand" : "danger",
+            hint: "A receber − a pagar",
+          },
+          {
+            label: "Saldo realizado",
+            valor: brl(saldoRealizado),
+            tone: saldoRealizado >= 0 ? "success" : "danger",
+            hint: "Recebido − pago",
+          },
+          {
+            label: "Vencido",
+            valor: brl(vencido),
+            tone: "danger",
+            hint: `${vencidas.length} título(s) em atraso`,
+          },
+          {
+            label: "Cobertura",
+            valor: `${cobertura.toFixed(0)}%`,
+            tone: cobertura >= 100 ? "success" : "warning",
+            hint: `Inadimplência ${inadimplencia.toFixed(1)}%`,
           },
         ],
+        charts,
+        tabelas:
+          proximos.length > 0
+            ? [
+                {
+                  titulo: "Agenda de caixa",
+                  descricao: "Próximos vencimentos em aberto.",
+                  tabelas: [
+                    {
+                      titulo: "Próximos 10 vencimentos",
+                      columns: [
+                        { key: "tipo", label: "Tipo" },
+                        { key: "descricao", label: "Descrição" },
+                        { key: "vencimento", label: "Vencimento", format: "date" as const },
+                        {
+                          key: "valor",
+                          label: "Valor",
+                          align: "right" as const,
+                          format: "brl" as const,
+                        },
+                      ],
+                      rows: proximos.map((r: any) => ({
+                        tipo: rec.includes(r) ? "Receber" : "Pagar",
+                        descricao: r.descricao ?? "—",
+                        vencimento: r.vencimento,
+                        valor: r.valor ?? 0,
+                      })),
+                    },
+                  ],
+                },
+              ]
+            : undefined,
         columns: [
           { key: "tipo", label: "Tipo" },
           { key: "descricao", label: "Descrição" },
@@ -1326,14 +1461,14 @@ export const runReport = createServerFn({ method: "POST" })
           ...rec.map((r: any) => ({
             tipo: "Receber",
             descricao: r.descricao ?? "—",
-            status: r.status,
+            status: STATUS_FINANCEIRO_LABEL[r.status] ?? r.status,
             vencimento: r.vencimento,
             valor: r.valor ?? 0,
           })),
           ...pag.map((r: any) => ({
             tipo: "Pagar",
             descricao: r.descricao ?? "—",
-            status: r.status,
+            status: STATUS_FINANCEIRO_LABEL[r.status] ?? r.status,
             vencimento: r.vencimento,
             valor: r.valor ?? 0,
           })),
