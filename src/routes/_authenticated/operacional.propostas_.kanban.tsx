@@ -120,7 +120,7 @@ function Pagina() {
     setBusca("");
     setDataInicio(padrao.inicio);
     setDataFim(padrao.fim);
-    setEscopo("todas");
+    setEscopo("minhas");
   }
 
   async function soltar(coluna: PropostaStatus) {

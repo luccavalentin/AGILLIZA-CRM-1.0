@@ -63,7 +63,7 @@ function Pagina() {
   const router = useRouter();
   const padrao = useMemo(() => intervaloMesAtual(), []);
   const [aba, setAba] = useState<"propostas" | "simulacoes">("propostas");
-  const [escopo, setEscopo] = useState<"todas" | "minhas">("todas");
+  const [escopo, setEscopo] = useState<"todas" | "minhas">("minhas");
   const [q, setQ] = useState("");
   const [busca, setBusca] = useState("");
   const [dataInicio, setDataInicio] = useState(padrao.inicio);
@@ -80,7 +80,7 @@ function Pagina() {
     setBusca("");
     setDataInicio(padrao.inicio);
     setDataFim(padrao.fim);
-    setEscopo("todas");
+    setEscopo("minhas");
   }
 
   return (
