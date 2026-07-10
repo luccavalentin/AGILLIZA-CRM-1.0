@@ -331,7 +331,7 @@ export const getPanelDados = createServerFn({ method: "POST" })
           { label: "Conversão sim→contrato", valor: pct(conversao), tone: "success" },
           { label: "Simulações concluídas", valor: int(simConcluidas), tone: "success" },
           { label: "Simulações com erro", valor: int(simErro), tone: simErro ? "danger" : "neutral" },
-          { label: "Aprovadas", valor: int(aprovadas.length), tone: "success" },
+          { label: "Aprovadas", valor: int(aprovadasCount), tone: "success" },
           {
             label: "Em análise",
             valor: int(
