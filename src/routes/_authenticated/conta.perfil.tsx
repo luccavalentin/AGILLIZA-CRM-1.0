@@ -115,10 +115,13 @@ function Pagina() {
 
   return (
     <div className="mx-auto w-full max-w-2xl space-y-6 p-4 md:p-6">
-      <div className="flex items-center gap-2">
-        <UserRound className="h-5 w-5 text-muted-foreground" />
-        <h1 className="text-xl font-semibold text-foreground">Meu perfil</h1>
-      </div>
+      <AdminHero
+        secao="Minha conta"
+        icon={<UserRound className="h-5 w-5" />}
+        titulo="Meu perfil"
+        descricao="Dados pessoais, foto, senha e preferências de som."
+      />
+
 
       <Card>
         <CardHeader className="pb-2">
