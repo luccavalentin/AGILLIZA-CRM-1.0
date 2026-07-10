@@ -606,13 +606,21 @@ function ResumoCelula({
   destaque?: boolean;
 }) {
   return (
-    <div className={cn("bg-card p-3", destaque && "bg-primary/5")}>
-      <dt className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+    <div
+      className={cn(
+        "relative bg-card p-3.5 transition-colors",
+        destaque && "bg-primary/5",
+      )}
+    >
+      {destaque && (
+        <span className="absolute inset-y-0 left-0 w-0.5 bg-primary" aria-hidden />
+      )}
+      <dt className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
         {rotulo}
       </dt>
       <dd
         className={cn(
-          "mt-1 text-sm font-semibold tabular-nums",
+          "mt-1.5 text-[15px] font-semibold tabular-nums",
           destaque ? "text-primary" : "text-foreground",
         )}
       >
