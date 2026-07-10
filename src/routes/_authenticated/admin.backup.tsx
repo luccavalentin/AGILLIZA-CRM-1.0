@@ -165,18 +165,12 @@ function Pagina() {
 
   return (
     <div className="space-y-6 p-4 md:p-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <DatabaseBackup className="h-6 w-6 text-primary" />
-          <div>
-            <h1 className="text-xl font-semibold">Backup</h1>
-            <p className="text-sm text-muted-foreground">
-              Baixe os dados do sistema em uma planilha Excel profissional e formatada, ou todos
-              os documentos em ZIP organizado por pastas.
-            </p>
-          </div>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
+      <AdminHero
+        icon={<DatabaseBackup className="h-5 w-5" />}
+        titulo="Backup"
+        descricao="Baixe os dados do sistema em uma planilha Excel profissional e formatada, ou todos os documentos em ZIP organizado por pastas."
+        acoes={
+          <>
           <Button disabled={baixando} onClick={baixarExcel}>
             <FileSpreadsheet className="mr-2 h-4 w-4" />
             {baixando ? "Gerando Excel…" : "Baixar backup completo (Excel)"}
@@ -196,8 +190,9 @@ function Pagina() {
               <Settings className="h-4 w-4" />
             </Button>
           ) : null}
-        </div>
-      </div>
+          </>
+        }
+      />
 
 
       {baixandoDocs && progresso ? (
