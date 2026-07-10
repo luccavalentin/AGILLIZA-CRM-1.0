@@ -61,15 +61,11 @@ function Pagina() {
 
   return (
     <div className="space-y-6 p-4 md:p-6">
-      <header className="flex items-center gap-3">
-        <Plug className="size-6 text-primary" />
-        <div>
-          <h1 className="text-xl font-semibold text-foreground">Integrações</h1>
-          <p className="text-sm text-muted-foreground">
-            Credenciais bancárias, APIs e monitor de conectividade.
-          </p>
-        </div>
-      </header>
+      <AdminHero
+        icon={<Plug className="h-5 w-5" />}
+        titulo="Integrações"
+        descricao="Credenciais bancárias, APIs e monitor de conectividade."
+      />
 
       <Tabs defaultValue="bancos">
         <TabsList>
