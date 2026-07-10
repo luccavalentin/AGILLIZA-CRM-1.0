@@ -310,5 +310,3 @@ function Pagina() {
   );
 }
 
-// Mantém TONE_BAR importado disponível para futuras variações de status.
-void TONE_BAR;
