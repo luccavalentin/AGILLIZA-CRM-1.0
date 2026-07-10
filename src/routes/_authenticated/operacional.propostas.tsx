@@ -8,7 +8,7 @@ import {
   FileText,
   KanbanSquare,
   RotateCcw,
-  Layers,
+  
   Wallet,
   ChevronRight,
   User,
@@ -183,45 +183,7 @@ function Pagina() {
 
       </div>
 
-      {/* Resumo */}
-      <div className="grid grid-cols-2 divide-x divide-border/60 overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-card to-primary/[0.02] shadow-sm">
-        <div className="group flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-primary/[0.02] sm:px-5">
-          <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-primary/8 text-primary ring-1 ring-inset ring-primary/10 transition-all duration-200 group-hover:bg-primary/12 group-hover:ring-primary/20">
-            <Layers className="h-4 w-4" />
-          </span>
-          <div className="min-w-0">
-            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-              Propostas
-            </p>
-            {isLoading ? (
-              <Skeleton className="mt-1 h-6 w-10" />
-            ) : (
-              <p className="text-xl font-semibold tabular-nums leading-tight text-foreground">
-                {totalItens}
-              </p>
-            )}
-          </div>
-        </div>
-        <div className="group flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-primary/[0.02] sm:px-5">
-          <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-primary/8 text-primary ring-1 ring-inset ring-primary/10 transition-all duration-200 group-hover:bg-primary/12 group-hover:ring-primary/20">
-            <Wallet className="h-4 w-4" />
-          </span>
-          <div className="min-w-0">
-            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-              Volume financiado
-            </p>
-            {isLoading ? (
-              <Skeleton className="mt-1 h-6 w-24" />
-            ) : (
-              <p className="truncate text-xl font-semibold tabular-nums leading-tight text-foreground">
-                {formatBRL(volumeTotal)}
-              </p>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Cards por status (clicáveis para filtrar) */}
+      {/* Cards por status (clicáveis para filtrar) + volume financiado */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         <StatusCard
           ativo={grupo === null}
@@ -244,7 +206,9 @@ function Pagina() {
             onClick={() => setGrupo((cur) => (cur === g.id ? null : g.id))}
           />
         ))}
+        <VolumeCard volume={volumeTotal} loading={isLoading} />
       </div>
+
 
 
 
@@ -545,5 +509,26 @@ function StatusCard({
         </p>
       )}
     </button>
+  );
+}
+
+function VolumeCard({ volume, loading }: { volume: number; loading: boolean }) {
+  return (
+    <div className="group relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-card to-primary/[0.03] p-3 shadow-sm sm:p-4">
+      <span className="absolute inset-y-0 left-0 w-1 bg-primary opacity-60" />
+      <div className="flex items-center gap-1.5">
+        <Wallet className="h-3.5 w-3.5 shrink-0 text-primary" />
+        <p className="truncate text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+          Volume financiado
+        </p>
+      </div>
+      {loading ? (
+        <Skeleton className="mt-2 h-6 w-24" />
+      ) : (
+        <p className="mt-1.5 truncate text-xl font-semibold tabular-nums leading-tight text-foreground">
+          {formatBRL(volume)}
+        </p>
+      )}
+    </div>
   );
 }
