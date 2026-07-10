@@ -639,11 +639,67 @@ function ResumoCelula({
   );
 }
 
-function Item({ termo, desc }: { termo: string; desc: string }) {
+const ESTADO_CIVIL_LABELS: Record<string, string> = {
+  S: "Solteiro(a)",
+  C: "Casado(a)",
+  D: "Divorciado(a)",
+  V: "Viúvo(a)",
+  U: "União estável",
+};
+
+function estadoCivilLabel(v?: string | null): string {
+  if (!v) return "—";
+  return ESTADO_CIVIL_LABELS[v.toUpperCase()] ?? v;
+}
+
+function SecaoDados({
+  titulo,
+  icone,
+  children,
+}: {
+  titulo: string;
+  icone: React.ReactNode;
+  children: React.ReactNode;
+}) {
   return (
-    <div className="flex items-center justify-between gap-3 bg-card px-4 py-3.5 transition-colors hover:bg-muted/40">
-      <dt className="text-[13px] text-muted-foreground">{termo}</dt>
-      <dd className="text-right text-sm font-semibold text-foreground tabular-nums">{desc}</dd>
+    <section className="overflow-hidden rounded-xl border border-border/60 bg-card shadow-sm">
+      <div className="flex items-center gap-2 border-b border-border/60 bg-muted/30 px-4 py-2.5">
+        <span className="grid h-6 w-6 place-items-center rounded-md bg-primary/10 text-primary">
+          {icone}
+        </span>
+        <h3 className="text-[13px] font-semibold tracking-tight text-foreground">
+          {titulo}
+        </h3>
+      </div>
+      <dl className="grid grid-cols-2 gap-px bg-border/60 sm:grid-cols-3 lg:grid-cols-4">
+        {children}
+      </dl>
+    </section>
+  );
+}
+
+function Campo({
+  termo,
+  desc,
+  destaque,
+}: {
+  termo: string;
+  desc: string;
+  destaque?: boolean;
+}) {
+  return (
+    <div className={cn("bg-card px-4 py-3", destaque && "bg-primary/5")}>
+      <dt className="text-[11px] font-medium uppercase tracking-[0.06em] text-muted-foreground">
+        {termo}
+      </dt>
+      <dd
+        className={cn(
+          "mt-1 text-sm font-semibold tabular-nums",
+          destaque ? "text-primary" : "text-foreground",
+        )}
+      >
+        {desc}
+      </dd>
     </div>
   );
 }
