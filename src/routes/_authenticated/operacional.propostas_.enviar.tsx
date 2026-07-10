@@ -98,41 +98,48 @@ function Pagina() {
         <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
       </Button>
 
-      {/* Cabeçalho + ação principal */}
-      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 sm:flex sm:items-center sm:justify-between">
-        <div className="flex min-w-0 items-center gap-3">
-          <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-primary to-primary/70 text-primary-foreground shadow-sm ring-1 ring-primary/20">
-            <Plus className="h-5 w-5" />
-          </span>
-          <div className="min-w-0 space-y-0.5">
-            <h1 className="truncate text-lg font-semibold tracking-tight text-foreground sm:text-xl">
-              Nova Proposta
-            </h1>
-            <p className="truncate text-sm text-muted-foreground">
-              Envie ao banco a partir de uma simulação ou origine uma nova.
-            </p>
+      {/* Hero */}
+      <div className="relative overflow-hidden rounded-3xl border border-border/60 bg-gradient-to-br from-primary/[0.06] via-card to-card p-5 shadow-sm sm:p-6">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-primary/10 blur-3xl"
+        />
+        <div className="relative grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4 sm:flex sm:items-center sm:justify-between">
+          <div className="flex min-w-0 items-center gap-4">
+            <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-primary to-primary/70 text-primary-foreground shadow-md ring-1 ring-primary/25 transition-transform duration-300 hover:scale-105">
+              <Plus className="h-5 w-5" />
+            </span>
+            <div className="min-w-0 space-y-1">
+              <h1 className="truncate text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+                Nova Proposta
+              </h1>
+              <p className="truncate text-sm text-muted-foreground">
+                Envie ao banco a partir de uma simulação ou origine uma nova.
+              </p>
+            </div>
           </div>
+          <Button
+            onClick={() =>
+              router.navigate({
+                to: "/operacional/simulacoes/completa",
+                search: { origem: "proposta" },
+              })
+            }
+            className="group col-span-2 h-11 rounded-xl bg-gradient-to-br from-primary to-primary/80 font-semibold shadow-md ring-1 ring-primary/25 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/25 hover:brightness-105 active:translate-y-0 sm:col-auto"
+          >
+            <Plus className="mr-1.5 h-4 w-4 transition-transform duration-200 group-hover:rotate-90" />{" "}
+            Gerar Nova Proposta
+          </Button>
         </div>
-        <Button
-          onClick={() =>
-            router.navigate({
-              to: "/operacional/simulacoes/completa",
-              search: { origem: "proposta" },
-            })
-          }
-          className="col-span-2 h-11 rounded-xl bg-gradient-to-br from-primary to-primary/80 font-semibold shadow-md ring-1 ring-primary/20 transition-all hover:shadow-lg hover:brightness-105 sm:col-auto"
-        >
-          <Plus className="mr-1.5 h-4 w-4" /> Gerar Nova Proposta
-        </Button>
       </div>
 
       {/* Abas Propostas / Simulações */}
       <Tabs value={aba} onValueChange={(v) => setAba(v as typeof aba)} className="space-y-4">
         <TabsList className="h-11 rounded-xl">
-          <TabsTrigger value="propostas" className="rounded-lg">
+          <TabsTrigger value="propostas" className="rounded-lg transition-all data-[state=active]:shadow-sm">
             <FileText className="mr-1.5 h-4 w-4" /> Propostas
           </TabsTrigger>
-          <TabsTrigger value="simulacoes" className="rounded-lg">
+          <TabsTrigger value="simulacoes" className="rounded-lg transition-all data-[state=active]:shadow-sm">
             <Calculator className="mr-1.5 h-4 w-4" /> Simulações
           </TabsTrigger>
         </TabsList>
