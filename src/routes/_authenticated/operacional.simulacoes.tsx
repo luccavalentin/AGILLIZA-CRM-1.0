@@ -228,6 +228,11 @@ function Pagina() {
   const prazoMin = prazos.length ? Math.min(...prazos) : 0;
   const prazoMax = prazos.length ? Math.max(...prazos) : 0;
 
+  function irParaSimulacao(id: string) {
+    setKpiAberto(null);
+    router.navigate({ to: "/operacional/simulacoes/$id", params: { id } });
+  }
+
   const kpis: {
     id: string;
     label: string;
@@ -241,15 +246,14 @@ function Pagina() {
       valor: String(kpiTotal),
       icon: ListChecks,
       detalhe: (
-        <KpiDetalhe
-          descricao="Total de simulações no filtro atual, agrupadas por status."
-          linhas={Object.entries(porStatus)
+        <DetalheSimulacoes
+          descricao="Todas as simulações do filtro atual."
+          resumo={Object.entries(porStatus)
             .sort((a, b) => b[1] - a[1])
-            .map(([status, qtd]) => ({
-              rotulo: statusLabel(status),
-              valor: String(qtd),
-            }))}
-          total={{ rotulo: "Total", valor: String(kpiTotal) }}
+            .map(([status, qtd]) => ({ rotulo: statusLabel(status), valor: String(qtd) }))}
+          itens={itens}
+          destaque="status"
+          onAbrir={irParaSimulacao}
         />
       ),
     },
@@ -259,16 +263,17 @@ function Pagina() {
       valor: formatBRL(kpiValor),
       icon: Wallet,
       detalhe: (
-        <KpiDetalhe
-          descricao="Soma do valor de financiamento de cada simulação."
-          linhas={itens
+        <DetalheSimulacoes
+          descricao="Valor de financiamento de cada simulação."
+          resumo={[{ rotulo: "Volume total", valor: formatBRL(kpiValor) }]}
+          itens={itens
             .slice()
-            .sort((a, b) => (Number(b.valor_financiamento) || 0) - (Number(a.valor_financiamento) || 0))
-            .map((s) => ({
-              rotulo: `${s.numero_simulacao} · ${s.nome_cliente ?? "—"}`,
-              valor: formatBRL(Number(s.valor_financiamento) || 0),
-            }))}
-          total={{ rotulo: "Volume total", valor: formatBRL(kpiValor) }}
+            .sort(
+              (a, b) =>
+                (Number(b.valor_financiamento) || 0) - (Number(a.valor_financiamento) || 0),
+            )}
+          destaque="financiamento"
+          onAbrir={irParaSimulacao}
         />
       ),
     },
@@ -278,12 +283,14 @@ function Pagina() {
       valor: String(kpiBancos),
       icon: Building2,
       detalhe: (
-        <KpiDetalhe
-          descricao="Quantidade de cotações por banco no filtro atual."
-          linhas={Object.entries(porBanco)
+        <DetalheSimulacoes
+          descricao="Bancos cotados em cada simulação."
+          resumo={Object.entries(porBanco)
             .sort((a, b) => b[1] - a[1])
             .map(([nome, qtd]) => ({ rotulo: nome, valor: String(qtd) }))}
-          total={{ rotulo: "Total de cotações", valor: String(kpiBancos) }}
+          itens={itens.filter((s) => Array.isArray(s.bancos) && s.bancos.length > 0)}
+          destaque="bancos"
+          onAbrir={irParaSimulacao}
         />
       ),
     },
@@ -293,14 +300,18 @@ function Pagina() {
       valor: kpiPrazo ? `${kpiPrazo} meses` : "—",
       icon: Clock,
       detalhe: (
-        <KpiDetalhe
-          descricao="Distribuição dos prazos das simulações."
-          linhas={[
+        <DetalheSimulacoes
+          descricao="Prazo contratado em cada simulação."
+          resumo={[
             { rotulo: "Prazo mínimo", valor: prazoMin ? `${prazoMin} meses` : "—" },
             { rotulo: "Prazo médio", valor: kpiPrazo ? `${kpiPrazo} meses` : "—" },
             { rotulo: "Prazo máximo", valor: prazoMax ? `${prazoMax} meses` : "—" },
           ]}
-          total={{ rotulo: "Simulações com prazo", valor: String(prazos.length) }}
+          itens={itens
+            .slice()
+            .sort((a, b) => (Number(b.prazo) || 0) - (Number(a.prazo) || 0))}
+          destaque="prazo"
+          onAbrir={irParaSimulacao}
         />
       ),
     },
