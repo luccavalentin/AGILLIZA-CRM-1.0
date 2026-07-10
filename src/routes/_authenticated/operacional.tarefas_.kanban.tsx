@@ -11,7 +11,8 @@ import {
   transicaoTarefaPermitida,
   type TarefaStatus,
 } from "@/lib/operacional/tarefas.functions";
-import { PRIORIDADE, statusTarefa, TONE_BAR } from "@/components/operacional/status";
+import { statusTarefa, TONE_BAR } from "@/components/operacional/status";
+import { PriorityChip, OpAvatar } from "@/components/operacional/ui";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
