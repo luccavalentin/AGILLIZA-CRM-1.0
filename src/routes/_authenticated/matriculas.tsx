@@ -12,7 +12,9 @@ import {
   TrendingDown,
   Coins,
   Landmark,
+  GraduationCap,
 } from "lucide-react";
+import { OpHero, OpStat } from "@/components/operacional/ui";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
