@@ -1,7 +1,7 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Calculator, Home, Wallet, CalendarDays, TrendingUp, Zap, FileText, Check, Award } from "lucide-react";
 import { assertModuloPermitido } from "@/lib/route-guards";
 
 import { Button } from "@/components/ui/button";
