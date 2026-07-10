@@ -686,7 +686,111 @@ function TabResumo({
             ? "Banco enviado nesta proposta"
             : "Bancos / Simulações vinculadas — envie somente o banco escolhido nesta proposta"}
         </div>
-        <div className="overflow-x-auto">
+
+        {/* Mobile: cards responsivos (sem scroll horizontal) */}
+        <div className="divide-y divide-border md:hidden">
+          {bancosVisiveis.length === 0 && (
+            <p className="px-4 py-8 text-center text-sm text-muted-foreground">
+              Nenhum banco vinculado.
+            </p>
+          )}
+          {bancosVisiveis.map((b) => (
+            <div
+              key={b.id}
+              className={cn("space-y-3 p-4 transition-colors", b.selecionado && "bg-accent/40")}
+            >
+              <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3">
+                <Checkbox
+                  checked={b.selecionado}
+                  disabled={bancoJaEnviado(b)}
+                  onCheckedChange={() => selecionar(b.id)}
+                  aria-label={`Selecionar ${b.nome_banco}`}
+                  className="shrink-0"
+                />
+                <span className="flex min-w-0 items-center gap-2">
+                  <BancoLogo nome={b.nome_banco} size="md" className="shrink-0" />
+                  <span
+                    className="truncate text-sm font-semibold"
+                    style={{ color: corDoBanco(b.nome_banco) }}
+                  >
+                    {b.nome_banco}
+                  </span>
+                </span>
+                <ToneBadge tone={statusBancoConfig(b.status_banco).tone}>
+                  {statusBancoConfig(b.status_banco).label}
+                </ToneBadge>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <MetricaBanco label="R$ Financiamento" valor={formatBRL(b.valor_financiamento_max)} />
+                <MetricaBanco label="Parcela" valor={formatBRL(b.valor_parcela)} />
+                <MetricaBanco label="Prazo" valor={String(b.prazo_pagamento_max ?? "—")} />
+                <MetricaBanco
+                  label="Taxa/ano"
+                  valor={b.taxa_juros_ano != null ? `${b.taxa_juros_ano}%` : "—"}
+                />
+              </div>
+              {b.numero_proposta_banco && (
+                <p className="text-xs tabular-nums text-muted-foreground">
+                  Nº banco: {b.numero_proposta_banco}
+                </p>
+              )}
+
+              <div>
+                <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                  Situação de crédito
+                </Label>
+                <Select
+                  value={(b.situacao_banco as SituacaoBanco) ?? "nao_enviado"}
+                  onValueChange={(v) => mudarSituacao(b.id, v as SituacaoBanco)}
+                >
+                  <SelectTrigger className="mt-1 h-9 w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SITUACOES_BANCO.map((s) => (
+                      <SelectItem key={s} value={s}>
+                        {SITUACAO_BANCO_LABEL[s]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-9 flex-1"
+                  onClick={() => setDetalheBanco(b)}
+                >
+                  <Info className="mr-1 h-4 w-4" /> Detalhamento
+                </Button>
+                {bancoJaEnviado(b) ? (
+                  <span className="flex-1 text-center text-xs text-muted-foreground">Enviado</span>
+                ) : podeEnviarBanco ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-9 flex-1"
+                    onClick={() => enviarBanco(b.id)}
+                    disabled={enviandoId !== null}
+                  >
+                    {enviandoId === b.id ? (
+                      <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Send className="mr-1 h-4 w-4" />
+                    )}
+                    {b.status_banco === "erro" ? "Reenviar" : "Enviar"}
+                  </Button>
+                ) : null}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Desktop: tabela */}
+        <div className="hidden overflow-x-auto md:block">
         <Table className="min-w-[880px]">
           <TableHeader>
             <TableRow>
