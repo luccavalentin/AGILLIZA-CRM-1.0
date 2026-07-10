@@ -11,6 +11,8 @@ import {
   Layers,
   Wallet,
   ChevronRight,
+  User,
+
 } from "lucide-react";
 import { toast } from "sonner";
 import { assertModuloPermitido } from "@/lib/route-guards";
