@@ -115,6 +115,7 @@ function InternalLayout() {
   async function sair() {
     await queryClient.cancelQueries();
     queryClient.clear();
+    limparCachePermissoes();
     await supabase.auth.signOut();
     navigate({ to: "/auth", replace: true });
   }
