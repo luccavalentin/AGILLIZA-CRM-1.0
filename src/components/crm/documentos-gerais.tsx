@@ -83,10 +83,17 @@ function primeiroNome(s: string | null | undefined): string {
   return t === "—" ? "" : t.split(" ")[0];
 }
 
-type PastaTipo = "comercial" | "imob" | "corretor";
+type PastaTipo = "raiz" | "comercial" | "imob" | "corretor";
+
+const RAIZ_KEY = "__raiz_principal__";
+const RAIZ_NOME = "Pasta Comercial e documentos de clientes";
 
 /** Rótulo e cor da etiqueta que identifica o nível da pasta. */
 const PASTA_BADGE: Record<PastaTipo, { label: string; classe: string }> = {
+  raiz: {
+    label: "Pasta principal",
+    classe: "border-primary/25 bg-primary/10 text-primary",
+  },
   comercial: {
     label: "Comercial Agilliza",
     classe: "border-primary/25 bg-primary/10 text-primary",
