@@ -131,20 +131,45 @@ function Pagina() {
           const k = chaveDia(d);
           const doDia = porDia.get(k) ?? [];
           const foraMes = d.getMonth() !== ref.getMonth();
+          const feriado = feriados.get(k);
           return (
-            <div key={k} className={cn("min-h-[92px] bg-card p-1.5", foraMes && "bg-muted/30")}>
-              <div
-                className={cn(
-                  "mb-1 inline-flex h-5 w-5 items-center justify-center rounded-full text-xs tabular-nums",
-                  k === hojeK
-                    ? "bg-primary text-primary-foreground"
-                    : foraMes
-                      ? "text-muted-foreground"
-                      : "text-foreground",
-                )}
-              >
-                {d.getDate()}
+            <div
+              key={k}
+              className={cn(
+                "min-h-[92px] bg-card p-1.5",
+                foraMes && "bg-muted/30",
+                feriado && !feriado.facultativo && "bg-destructive/5",
+              )}
+            >
+              <div className="mb-1 flex items-center gap-1">
+                <span
+                  className={cn(
+                    "inline-flex h-5 w-5 items-center justify-center rounded-full text-xs tabular-nums",
+                    k === hojeK
+                      ? "bg-primary text-primary-foreground"
+                      : feriado && !feriado.facultativo
+                        ? "font-semibold text-destructive"
+                        : foraMes
+                          ? "text-muted-foreground"
+                          : "text-foreground",
+                  )}
+                >
+                  {d.getDate()}
+                </span>
               </div>
+              {feriado && (
+                <div
+                  className={cn(
+                    "mb-1 truncate rounded px-1 py-0.5 text-[10px] font-medium",
+                    feriado.facultativo
+                      ? "bg-muted text-muted-foreground"
+                      : "bg-destructive/10 text-destructive",
+                  )}
+                  title={feriado.descricao + (feriado.facultativo ? " (facultativo)" : "")}
+                >
+                  {feriado.descricao}
+                </div>
+              )}
               <div className="space-y-1">
                 {doDia.slice(0, 3).map((t) => (
                   <button
