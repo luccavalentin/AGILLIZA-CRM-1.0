@@ -16,6 +16,8 @@ import {
   Building2,
   Clock,
   Wallet,
+  User as UserIcon,
+
 } from "lucide-react";
 import { toast } from "sonner";
 import { assertModuloPermitido } from "@/lib/route-guards";
