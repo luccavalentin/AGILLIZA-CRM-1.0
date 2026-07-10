@@ -37,7 +37,7 @@ export function ReportShell({
               <h1 className="truncate text-xl font-bold tracking-tight text-foreground md:text-2xl">
                 {titulo}
               </h1>
-              <p className="max-w-2xl text-sm text-muted-foreground">{descricao}</p>
+              
               <div className="flex flex-wrap gap-1.5 pt-1">
                 {metaChips.map((m) => (
                   <span
