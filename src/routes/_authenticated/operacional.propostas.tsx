@@ -94,7 +94,29 @@ function Pagina() {
       }),
   });
 
-  const itens = data?.itens ?? [];
+  const todosItens = data?.itens ?? [];
+
+  // Contagem e volume por grupo de status (sobre todo o conjunto carregado).
+  const estatisticasGrupo = useMemo(() => {
+    const base: Record<GrupoProposta, { count: number; volume: number }> = {
+      rascunho: { count: 0, volume: 0 },
+      enviadas: { count: 0, volume: 0 },
+      andamento: { count: 0, volume: 0 },
+      contrato: { count: 0, volume: 0 },
+      encerradas: { count: 0, volume: 0 },
+    };
+    for (const p of todosItens) {
+      const g = grupoDoStatus(p.status);
+      base[g].count += 1;
+      base[g].volume += p.valor_financiamento ?? 0;
+    }
+    return base;
+  }, [todosItens]);
+
+  const itens = useMemo(
+    () => (grupo ? todosItens.filter((p) => grupoDoStatus(p.status) === grupo) : todosItens),
+    [todosItens, grupo],
+  );
   const totalItens = itens.length;
   const volumeTotal = useMemo(
     () => itens.reduce((acc, p) => acc + (p.valor_financiamento ?? 0), 0),
