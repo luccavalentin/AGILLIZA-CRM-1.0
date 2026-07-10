@@ -250,11 +250,11 @@ export function PanelCard({
   children: ReactNode;
 }) {
   return (
-    <Card className="flex h-full min-w-0 flex-col p-4 sm:p-5">
+    <Card className="flex h-full min-w-0 flex-col p-4 shadow-sm transition-shadow duration-300 hover:shadow-md sm:p-5">
       <div className="mb-4 grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
         <div className="min-w-0">
-          <h3 className="flex min-w-0 items-center gap-2 text-sm font-semibold text-foreground">
-            <span className="inline-block h-3.5 w-1 shrink-0 rounded-full bg-primary" />
+          <h3 className="flex min-w-0 items-center gap-2 text-sm font-semibold tracking-tight text-foreground">
+            <span className="inline-block h-4 w-1 shrink-0 rounded-full bg-gradient-to-b from-primary to-primary/50" />
             <span className="truncate">{titulo}</span>
           </h3>
           {subtitulo && <p className="mt-1 pl-3 text-xs text-muted-foreground">{subtitulo}</p>}
