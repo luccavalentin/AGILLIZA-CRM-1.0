@@ -114,7 +114,7 @@ export const listarClientes = createServerFn({ method: "GET" })
           id: r.id,
           numero_cliente: r.numero_cliente,
           nome: r.nome,
-          documento: r.documento,
+          documento: podePii ? r.documento : mascararDocumento(r.documento ?? ""),
           documento_masc: !podePii,
           telefone_celular: r.telefone_celular,
           email: r.email,
