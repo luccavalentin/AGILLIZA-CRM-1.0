@@ -353,7 +353,8 @@ function Pagina() {
                 <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
               </div>
             </Card>
-          ))}
+            );
+          })}
       </div>
 
       {/* Tabela desktop */}
