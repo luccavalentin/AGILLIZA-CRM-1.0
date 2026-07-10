@@ -282,12 +282,12 @@ function Pagina() {
     },
     {
       id: "bancos",
-      label: "Cotações em bancos",
+      label: "Bancos cotados",
       valor: String(kpiBancos),
       icon: Building2,
       detalhe: (
         <DetalheSimulacoes
-          descricao="Bancos cotados em cada simulação."
+          descricao="Bancos distintos cotados no filtro atual (com o total de cotações de cada um)."
           resumo={Object.entries(porBanco)
             .sort((a, b) => b[1] - a[1])
             .map(([nome, qtd]) => ({ rotulo: nome, valor: String(qtd) }))}
