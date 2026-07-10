@@ -2,7 +2,17 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { FileText, Folder, FolderOpen, FolderPlus, Upload, UploadCloud } from "lucide-react";
+import {
+  FileText,
+  Folder,
+  FolderOpen,
+  FolderPlus,
+  HardDrive,
+  LayoutGrid,
+  List,
+  Upload,
+  UploadCloud,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -21,7 +31,7 @@ import {
   type ArquivoNo,
 } from "@/lib/documentos/arquivos.functions";
 import { VisualizadorArquivo } from "@/components/comum/visualizador-arquivo";
-import { sanitizePath } from "./gerenciador/arquivo-utils";
+import { sanitizePath, formatBytes } from "./gerenciador/arquivo-utils";
 import { NoCard } from "./gerenciador/no-card";
 import { TrilhaNavegacao } from "./gerenciador/trilha-navegacao";
 import { MoverDialog } from "./gerenciador/mover-dialog";
