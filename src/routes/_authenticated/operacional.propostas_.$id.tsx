@@ -391,6 +391,15 @@ function Kpi({ label, valor }: { label: string; valor: React.ReactNode }) {
   );
 }
 
+function MetricaBanco({ label, valor }: { label: string; valor: string }) {
+  return (
+    <div className="rounded-lg border border-border bg-muted/30 px-3 py-2">
+      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className="mt-0.5 text-sm font-semibold tabular-nums text-foreground">{valor}</p>
+    </div>
+  );
+}
+
 /* ===== Ações do topo ===== */
 function AcoesTopo({
   proposta,
