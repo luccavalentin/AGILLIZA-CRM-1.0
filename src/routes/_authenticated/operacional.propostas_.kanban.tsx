@@ -254,8 +254,11 @@ function Pagina() {
                       onClick={() =>
                         router.navigate({ to: "/operacional/propostas/$id", params: { id: c.id } })
                       }
+                      style={{ "--banco": corDoBanco(c.nome_banco) } as React.CSSProperties}
                       className={cn(
-                        "group min-w-0 rounded-xl border border-border bg-card p-3 text-sm shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md",
+                        "group relative min-w-0 overflow-hidden rounded-xl border border-border bg-card p-3 pl-3.5 text-sm shadow-sm transition hover:-translate-y-0.5 hover:shadow-md",
+                        "before:absolute before:inset-y-0 before:left-0 before:w-1 before:bg-[var(--banco)] before:opacity-0 before:transition-opacity hover:before:opacity-100",
+                        "hover:border-[color-mix(in_oklab,var(--banco)_45%,transparent)]",
                         terminal ? "cursor-pointer" : "cursor-grab active:cursor-grabbing",
                       )}
                     >
