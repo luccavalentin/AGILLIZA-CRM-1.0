@@ -6,6 +6,7 @@ import {
   type ReportFiltros,
   type ReportResult,
   type ChartSerie,
+  type ReportChart,
   type ComparativoMensal,
 } from "@/lib/relatorios/shared";
 import { mascararDocumento } from "@/lib/crm/documento";
