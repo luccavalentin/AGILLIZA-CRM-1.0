@@ -858,7 +858,7 @@ async function sincronizarEnvolvidoParaCliente(
     CA: "casado",
     VI: "viuvo",
     DI: "divorciado",
-    SL: "divorciado",
+    SL: "separado",
     UE: "uniao_estavel",
   };
   const REGIME_MAP: Record<string, string> = {
@@ -866,7 +866,7 @@ async function sincronizarEnvolvidoParaCliente(
     CU: "comunhao_universal",
     PA: "participacao_final",
     SC: "separacao_total",
-    SO: "separacao_total",
+    SO: "separacao_obrigatoria",
   };
   const has = (k: string) => dados[k] !== undefined && dados[k] !== null && dados[k] !== "";
   const patch: Record<string, unknown> = {};
