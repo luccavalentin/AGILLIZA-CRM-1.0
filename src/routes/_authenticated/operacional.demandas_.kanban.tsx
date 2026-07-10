@@ -54,7 +54,15 @@ function Pagina() {
     }
   }
 
-  const itens = data ?? [];
+  const itens = useMemo(() => data ?? [], [data]);
+  // Agrupa uma única vez por status, em vez de refiltrar a lista inteira
+  // para cada coluna a cada render (inclusive durante o arraste).
+  const porStatus = useMemo(() => {
+    const mapa = new Map<DemandaStatus, typeof itens>();
+    for (const col of COLUNAS) mapa.set(col, []);
+    for (const d of itens) mapa.get(d.status as DemandaStatus)?.push(d);
+    return mapa;
+  }, [itens]);
 
   return (
     <div className="space-y-5 p-4 md:p-6">
