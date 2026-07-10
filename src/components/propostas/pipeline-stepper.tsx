@@ -113,9 +113,9 @@ export function PipelineStepper({
                         "bg-primary text-primary-foreground shadow-sm ring-1 ring-primary/20",
                       isAtual &&
                         !recusadaAtual &&
-                        "bg-primary/10 text-primary ring-2 ring-primary shadow-[0_0_0_4px_hsl(var(--primary)/0.08)]",
+                        "bg-primary/10 text-primary ring-2 ring-primary shadow-[0_0_0_4px_color-mix(in_oklab,var(--primary)_10%,transparent)]",
                       recusadaAtual &&
-                        "bg-destructive/10 text-destructive ring-2 ring-destructive shadow-[0_0_0_4px_hsl(var(--destructive)/0.10)]",
+                        "bg-destructive/10 text-destructive ring-2 ring-destructive shadow-[0_0_0_4px_color-mix(in_oklab,var(--destructive)_12%,transparent)]",
                       !concluida && !isAtual && "bg-muted text-muted-foreground ring-1 ring-border",
                     )}
                   >
