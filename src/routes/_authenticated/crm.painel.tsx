@@ -334,6 +334,8 @@ function Pagina() {
           )}
         </div>
       </div>
+      </div>
+
 
 
       {isLoading ? (
