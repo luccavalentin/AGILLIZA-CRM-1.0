@@ -7,7 +7,6 @@ export function SecaoConsentimentos({ ctx }: { ctx: SimulacaoCompletaCtx }) {
 
   return (
     <section className="space-y-3">
-      <h2 className="text-sm font-semibold text-foreground">Consentimentos</h2>
       <label className="flex items-start gap-2 text-sm">
         <Checkbox
           checked={f.consentimento_lgpd}

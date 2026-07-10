@@ -45,7 +45,6 @@ export function SecaoOperacaoImovel({ ctx }: { ctx: SimulacaoCompletaCtx }) {
 
   return (
     <section className="space-y-4">
-      <h2 className="text-sm font-semibold text-foreground">Operação e imóvel</h2>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <Campo label={<>Produto <Ast /></>}>
           <Select value={f.produto} onValueChange={(v) => set("produto", v)}>
