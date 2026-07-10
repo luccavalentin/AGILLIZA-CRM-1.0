@@ -38,6 +38,7 @@ import {
   urlFormulario,
 } from "@/lib/formularios/formularios.functions";
 import { DpsView } from "@/components/formularios/dps-view";
+import { OpHero, OpStat } from "@/components/operacional/ui";
 
 export const CATEGORIA_LABEL: Record<BancoFormulario, string> = {
   itau: "Itaú",
