@@ -141,8 +141,9 @@ function Pagina() {
               </Button>
             </DialogFooter>
           </DialogContent>
-        </Dialog>
-      </header>
+          </Dialog>
+        }
+      />
 
       <div className="rounded-lg border border-border">
         <Table>
