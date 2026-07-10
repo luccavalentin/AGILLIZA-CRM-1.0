@@ -209,7 +209,7 @@ export const getPanelDados = createServerFn({ method: "POST" })
     const escopoEq = (q: any, col: string) => (data.escopo === "minha" ? q.eq(col, userId) : q);
 
     if (data.modulo === "visao-geral") {
-      const [sims, props] = await Promise.all([
+      const [sims, props, contratosInfo] = await Promise.all([
         escopoEq(
           supabase
             .from("simulacoes")
@@ -231,6 +231,7 @@ export const getPanelDados = createServerFn({ method: "POST" })
             .limit(5000),
           "usuario_responsavel_id",
         ),
+        carregarContratosCliente(supabase, escopoEq, de, ate),
       ]);
       if (sims.error) throw new Error(sims.error.message);
       if (props.error) throw new Error(props.error.message);
@@ -241,42 +242,36 @@ export const getPanelDados = createServerFn({ method: "POST" })
       // Propostas cujo movimento (criação) ocorre no período.
       const rows = rowsBrutas.filter((p) => dentroPeriodo(p.created_at));
       const enviadas = rows.filter((p) => p.status !== "rascunho");
-      // Aprovadas: crédito aprovado (pela criação) + contratos (pela emissão),
-      // mantendo o funil monotônico (aprovadas >= contratos) e sem base mista.
-      const aprovadas = rowsBrutas.filter(
-        (p) =>
-          (p.status === "credito_aprovado" && dentroPeriodo(p.created_at)) ||
-          (["contrato_emitido", "registrado"].includes(p.status) &&
-            dentroPeriodo(p.contrato_emitido_em)),
+      // Contratos emitidos vêm da ficha do cliente (contrato_emitido_em) —
+      // fonte de verdade da operação e da pasta de arquivados.
+      const contratosCount = contratosInfo.count;
+      const volume = contratosInfo.volume;
+      // Aprovadas (funil monotônico: aprovadas >= contratos): crédito aprovado
+      // nas propostas + os contratos efetivamente emitidos.
+      const aprovadasProp = rowsBrutas.filter(
+        (p) => p.status === "credito_aprovado" && dentroPeriodo(p.created_at),
       );
-      // Contratos entram pela DATA DE EMISSÃO no período (independe da criação).
-      const contratos = rowsBrutas.filter(
-        (p) =>
-          ["contrato_emitido", "registrado"].includes(p.status) &&
-          dentroPeriodo(p.contrato_emitido_em),
-      );
+      const aprovadasCount = aprovadasProp.length + contratosCount;
       const simConcluidasRows = simRows.filter((s) =>
         ["simulada", "parcialmente_simulada", "promovida"].includes(s.status),
       );
       const simConcluidas = simConcluidasRows.length;
       const simErro = simRows.filter((s) => s.status === "erro_banco").length;
-      const volume = contratos.reduce(
-        (s, p) => s + (p.valor_financiamento_aprovado ?? p.valor_financiamento ?? 0),
-        0,
-      );
       // Volume simulado considera apenas simulações que efetivamente foram
       // simuladas (com retorno), ignorando rascunhos, erros e cancelamentos.
       const volumeSimulado = simConcluidasRows.reduce(
         (s, r) => s + (r.valor_financiamento ?? 0),
         0,
       );
-      const volumeAprovado = aprovadas.reduce(
-        (s, p) => s + (p.valor_financiamento_aprovado ?? p.valor_financiamento ?? 0),
-        0,
-      );
-      const ticket = contratos.length ? volume / contratos.length : 0;
-      const taxa = enviadas.length ? (aprovadas.length / enviadas.length) * 100 : 0;
-      const conversao = simCount ? (contratos.length / simCount) * 100 : 0;
+      const volumeAprovado =
+        aprovadasProp.reduce(
+          (s, p) => s + (p.valor_financiamento_aprovado ?? p.valor_financiamento ?? 0),
+          0,
+        ) + volume;
+      const ticket = contratosCount ? volume / contratosCount : 0;
+      const taxa = enviadas.length ? (aprovadasCount / enviadas.length) * 100 : 0;
+      const conversao = simCount ? (contratosCount / simCount) * 100 : 0;
+
 
       const bancoMap = new Map<string, number>();
       enviadas.forEach((p) =>
