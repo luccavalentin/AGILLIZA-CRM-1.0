@@ -1,15 +1,23 @@
 import { AdminHero } from "@/components/admin/admin-hero";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Building2, Save } from "lucide-react";
+import {
+  Building2,
+  Save,
+  MapPin,
+  Contact,
+  ShieldCheck,
+  CheckCircle2,
+  Circle,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import {
   obterParametros,
@@ -100,6 +108,42 @@ const VAZIO: Form = {
   email_dpo: "",
 };
 
+function Secao({
+  numero,
+  icon,
+  titulo,
+  descricao,
+  children,
+}: {
+  numero: string;
+  icon: ReactNode;
+  titulo: string;
+  descricao: string;
+  children: ReactNode;
+}) {
+  return (
+    <Card className="overflow-hidden border-border/60 shadow-sm">
+      <div className="flex items-center gap-3 border-b border-border/60 bg-muted/30 px-5 py-4">
+        <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/15">
+          {icon}
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-bold tracking-[0.18em] text-primary/70">
+              {numero}
+            </span>
+            <h2 className="truncate text-sm font-semibold tracking-tight text-foreground">
+              {titulo}
+            </h2>
+          </div>
+          <p className="truncate text-xs text-muted-foreground">{descricao}</p>
+        </div>
+      </div>
+      <CardContent className="p-5">{children}</CardContent>
+    </Card>
+  );
+}
+
 function Campo({
   id,
   label,
@@ -121,7 +165,9 @@ function Campo({
 }) {
   return (
     <div className={`space-y-1.5 ${className ?? ""}`}>
-      <Label htmlFor={id}>{label}</Label>
+      <Label htmlFor={id} className="text-xs font-medium text-muted-foreground">
+        {label}
+      </Label>
       <Input
         id={id}
         type={type}
@@ -141,10 +187,11 @@ function Pagina() {
     queryFn: () => obterParametros(),
   });
   const [form, setForm] = useState<Form>(VAZIO);
+  const [salvo, setSalvo] = useState<Form>(VAZIO);
 
   useEffect(() => {
     if (q.data) {
-      setForm({
+      const carregado: Form = {
         nome_empresa: q.data.nome_empresa ?? "",
         razao_social: q.data.razao_social ?? "",
         nome_fantasia: q.data.nome_fantasia ?? "",
@@ -167,7 +214,9 @@ function Pagina() {
         politica_lgpd: q.data.politica_lgpd || POLITICA_LGPD_PADRAO,
         politica_privacidade: q.data.politica_privacidade || POLITICA_PRIVACIDADE_PADRAO,
         email_dpo: q.data.email_dpo ?? "",
-      });
+      };
+      setForm(carregado);
+      setSalvo(carregado);
     }
   }, [q.data]);
 
@@ -175,6 +224,7 @@ function Pagina() {
     mutationFn: () => salvarParametros({ data: form }),
     onSuccess: () => {
       toast.success("Cadastro da empresa salvo.");
+      setSalvo(form);
       qc.invalidateQueries({ queryKey: ["admin-parametros"] });
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Falha ao salvar."),
@@ -182,21 +232,55 @@ function Pagina() {
 
   const set = (k: keyof Form) => (v: string) => setForm((f) => ({ ...f, [k]: v }));
 
+  const alterado = useMemo(
+    () => JSON.stringify(form) !== JSON.stringify(salvo),
+    [form, salvo],
+  );
+
+  const completude = useMemo(() => {
+    const essenciais: (keyof Form)[] = [
+      "razao_social",
+      "nome_fantasia",
+      "nome_empresa",
+      "cnpj",
+      "cep",
+      "logradouro",
+      "cidade",
+      "uf",
+      "email_empresa",
+      "telefone_empresa",
+    ];
+    const preenchidos = essenciais.filter((k) => (form[k] ?? "").toString().trim() !== "").length;
+    return Math.round((preenchidos / essenciais.length) * 100);
+  }, [form]);
+
   if (q.isLoading) {
     return (
-      <div className="space-y-4 p-4 md:p-6">
-        <Skeleton className="h-8 w-64" />
-        <Skeleton className="h-64 w-full" />
+      <div className="mx-auto max-w-4xl space-y-4 p-4 md:p-6">
+        <Skeleton className="h-16 w-full" />
+        <Skeleton className="h-56 w-full" />
+        <Skeleton className="h-56 w-full" />
       </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6 p-4 md:p-6">
+    <div className="mx-auto max-w-4xl space-y-6 p-4 pb-28 md:p-6">
       <AdminHero
         icon={<Building2 className="h-5 w-5" />}
         titulo="Cadastro da Empresa"
-        descricao="Dados completos do correspondente: identificação, endereço e contatos."
+        descricao="Dados institucionais do correspondente: identificação, endereço, contatos e políticas."
+        acoes={
+          <div className="flex items-center gap-2 rounded-full border border-border/60 bg-card/60 px-3 py-1.5">
+            {completude === 100 ? (
+              <CheckCircle2 className="size-4 text-emerald-500" />
+            ) : (
+              <Circle className="size-4 text-primary/60" />
+            )}
+            <span className="text-xs font-semibold text-foreground">{completude}%</span>
+            <span className="text-[11px] text-muted-foreground">preenchido</span>
+          </div>
+        }
       />
 
       <form
@@ -206,11 +290,13 @@ function Pagina() {
           salvar.mutate();
         }}
       >
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Identificação</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-4 sm:grid-cols-2">
+        <Secao
+          numero="01"
+          icon={<Building2 className="size-5" />}
+          titulo="Identificação"
+          descricao="Razão social, nome fantasia e inscrições fiscais."
+        >
+          <div className="grid gap-4 sm:grid-cols-2">
             <Campo
               id="razao_social"
               label="Razão social"
@@ -249,14 +335,16 @@ function Pagina() {
               value={form.inscricao_municipal ?? ""}
               onChange={set("inscricao_municipal")}
             />
-          </CardContent>
-        </Card>
+          </div>
+        </Secao>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Endereço</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-4 sm:grid-cols-6">
+        <Secao
+          numero="02"
+          icon={<MapPin className="size-5" />}
+          titulo="Endereço"
+          descricao="Localização fiscal e sede do correspondente."
+        >
+          <div className="grid gap-4 sm:grid-cols-6">
             <Campo
               id="cep"
               label="CEP"
@@ -308,14 +396,16 @@ function Pagina() {
               className="sm:col-span-1"
               maxLength={2}
             />
-          </CardContent>
-        </Card>
+          </div>
+        </Secao>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Contatos</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-4 sm:grid-cols-2">
+        <Secao
+          numero="03"
+          icon={<Contact className="size-5" />}
+          titulo="Contatos"
+          descricao="Responsável e canais oficiais de atendimento."
+        >
+          <div className="grid gap-4 sm:grid-cols-2">
             <Campo
               id="responsavel_nome"
               label="Responsável"
@@ -342,42 +432,65 @@ function Pagina() {
               onChange={set("site")}
               placeholder="https://"
             />
-          </CardContent>
-        </Card>
+          </div>
+        </Secao>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Políticas exibidas aos clientes</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <Secao
+          numero="04"
+          icon={<ShieldCheck className="size-5" />}
+          titulo="Políticas exibidas aos clientes"
+          descricao="Textos legais apresentados no portal do cliente."
+        >
+          <div className="space-y-4">
             <div className="space-y-1.5">
-              <Label htmlFor="politica_lgpd">Política de LGPD</Label>
+              <Label htmlFor="politica_lgpd" className="text-xs font-medium text-muted-foreground">
+                Política de LGPD
+              </Label>
               <Textarea
                 id="politica_lgpd"
                 rows={6}
+                className="font-mono text-xs leading-relaxed"
                 value={form.politica_lgpd ?? ""}
                 onChange={(e) => set("politica_lgpd")(e.target.value)}
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="politica_privacidade">Política de privacidade</Label>
+              <Label
+                htmlFor="politica_privacidade"
+                className="text-xs font-medium text-muted-foreground"
+              >
+                Política de privacidade
+              </Label>
               <Textarea
                 id="politica_privacidade"
                 rows={6}
+                className="font-mono text-xs leading-relaxed"
                 value={form.politica_privacidade ?? ""}
                 onChange={(e) => set("politica_privacidade")(e.target.value)}
               />
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </Secao>
+      </form>
 
-        <div className="flex justify-end">
-          <Button type="submit" disabled={salvar.isPending}>
+      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-border/60 bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/70">
+        <div className="mx-auto flex max-w-4xl items-center justify-between gap-3 px-4 py-3 md:px-6">
+          <span className="flex items-center gap-2 text-xs text-muted-foreground">
+            <span
+              className={`size-2 rounded-full ${alterado ? "bg-amber-500" : "bg-emerald-500"}`}
+            />
+            {alterado ? "Alterações não salvas" : "Tudo salvo"}
+          </span>
+          <Button
+            type="button"
+            onClick={() => salvar.mutate()}
+            disabled={salvar.isPending || !alterado}
+          >
             <Save className="mr-2 size-4" />
-            {salvar.isPending ? "Salvando…" : "Salvar"}
+            {salvar.isPending ? "Salvando…" : "Salvar cadastro"}
           </Button>
         </div>
-      </form>
+      </div>
     </div>
   );
 }
