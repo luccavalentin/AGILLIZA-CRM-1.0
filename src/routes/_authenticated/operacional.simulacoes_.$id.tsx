@@ -192,7 +192,7 @@ function Pagina() {
 
   return (
     <div className="mx-auto w-full max-w-[1600px] space-y-5 p-4 md:p-6">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/60 bg-gradient-to-br from-card to-muted/30 p-4 shadow-sm md:p-5">
         <div className="flex min-w-0 items-center gap-3">
           <Button
             variant="ghost"
@@ -202,14 +202,17 @@ function Pagina() {
           >
             <ArrowLeft className="h-4 w-4" />
           </Button>
+          <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/15">
+            <Calculator className="h-5 w-5" />
+          </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <h1 className="truncate text-lg font-semibold tracking-tight text-foreground">
+              <h1 className="truncate text-lg font-semibold tracking-tight text-foreground md:text-xl">
                 {s.numero_simulacao}
               </h1>
               <SimulacaoStatusBadge status={s.status} />
             </div>
-            <p className="truncate text-sm text-muted-foreground">
+            <p className="mt-0.5 truncate text-sm text-muted-foreground">
               {s.nome_cliente ?? "—"} ·{" "}
               {s.produto === "home_equity" ? "Home Equity" : "Financiamento"}
             </p>
