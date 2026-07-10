@@ -221,6 +221,33 @@ function Pagina() {
         </div>
       </div>
 
+      {/* Cards por status (clicáveis para filtrar) */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        <StatusCard
+          ativo={grupo === null}
+          label="Todas"
+          count={todosItens.length}
+          volume={todosItens.reduce((a, p) => a + (p.valor_financiamento ?? 0), 0)}
+          tone="info"
+          loading={isLoading}
+          onClick={() => setGrupo(null)}
+        />
+        {GRUPOS_PROPOSTA.map((g) => (
+          <StatusCard
+            key={g.id}
+            ativo={grupo === g.id}
+            label={g.label}
+            count={estatisticasGrupo[g.id].count}
+            volume={estatisticasGrupo[g.id].volume}
+            tone={g.tone}
+            loading={isLoading}
+            onClick={() => setGrupo((cur) => (cur === g.id ? null : g.id))}
+          />
+        ))}
+      </div>
+
+
+
 
 
       {/* Filtros */}
