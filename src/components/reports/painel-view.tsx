@@ -278,6 +278,7 @@ export function PainelView({
                   titulo={a.titulo}
                   descricao={a.descricao}
                   contador={a.contador}
+                  to={linkParaMetrica(a.titulo)}
                 />
               ))}
             </div>
