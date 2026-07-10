@@ -526,13 +526,16 @@ function AbaSimulacoes({ escopo, busca, dataInicio, dataFim }: FiltroProps) {
               itens.map((s) => (
                 <TableRow
                   key={s.id}
-                  className="cursor-pointer"
+                  className="group relative cursor-pointer transition-colors hover:bg-primary/[0.03]"
                   onClick={() =>
                     router.navigate({ to: "/operacional/simulacoes/$id", params: { id: s.id } })
                   }
                 >
-                  <TableCell className="font-medium tabular-nums text-foreground">
-                    {s.numero_simulacao}
+                  <TableCell className="relative font-medium tabular-nums text-foreground">
+                    <span className="absolute inset-y-0 left-0 w-[3px] origin-top scale-y-0 rounded-r-full bg-primary transition-transform duration-200 group-hover:scale-y-100" />
+                    <span className="transition-colors group-hover:text-primary">
+                      {s.numero_simulacao}
+                    </span>
                   </TableCell>
                   <TableCell className="font-medium text-foreground">
                     {s.nome_cliente ?? "—"}
