@@ -11,7 +11,8 @@ import {
   transicaoDemandaPermitida,
   type DemandaStatus,
 } from "@/lib/operacional/demandas.functions";
-import { PRIORIDADE, statusDemanda, TONE_BAR } from "@/components/operacional/status";
+import { statusDemanda, TONE_BAR } from "@/components/operacional/status";
+import { PriorityChip, OpAvatar } from "@/components/operacional/ui";
 import { SlaCountdown } from "@/components/operacional/sla-countdown";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
