@@ -47,6 +47,10 @@ export function NotificationsBell({ userId }: NotificationsBellProps) {
   // Toca som para notificações novas conforme as preferências por tipo.
   // (Mensagens de chat têm alerta próprio e são ignoradas aqui p/ evitar duplicidade.)
   const notifVistas = useRef<Set<string> | null>(null);
+  // Reseta ao trocar de usuário para não herdar o estado "visto" da conta anterior.
+  useEffect(() => {
+    notifVistas.current = null;
+  }, [userId]);
   useEffect(() => {
     const itens = data?.itens ?? [];
     if (notifVistas.current === null) {

@@ -647,14 +647,8 @@ export const replicarProposta = createServerFn({ method: "POST" })
     snapshot.usuario_criador_id = userId;
     snapshot.usuario_responsavel_id = userId;
 
-    const { data: inserted, error: insErr } = await supabase
-      .from("propostas")
-      .insert(snapshot as any)
-      .select("id, numero_proposta")
-      .single();
-    if (insErr) throw new Error(insErr.message);
-
-    // Bancos selecionados (default: todos os da origem).
+    // Bancos selecionados (default: todos os da origem). Calculado antes do
+    // insert para garantir que o banco marcado exista entre os replicados.
     const { data: bancosOrigem } = await supabase
       .from("proposta_bancos")
       .select("*")
@@ -662,6 +656,21 @@ export const replicarProposta = createServerFn({ method: "POST" })
     const filtrados = (bancosOrigem ?? []).filter((b: any) =>
       data.banco_ids.length ? data.banco_ids.includes(b.banco_id) : true,
     );
+
+    // Se o banco selecionado da origem não estiver entre os replicados,
+    // adota o primeiro banco filtrado como selecionado.
+    const bancoSelecionado =
+      filtrados.find((b: any) => b.banco_id === snapshot.banco_id) ?? filtrados[0] ?? null;
+    snapshot.banco_id = bancoSelecionado?.banco_id ?? null;
+    snapshot.nome_banco = bancoSelecionado?.nome_banco ?? null;
+
+    const { data: inserted, error: insErr } = await supabase
+      .from("propostas")
+      .insert(snapshot as any)
+      .select("id, numero_proposta")
+      .single();
+    if (insErr) throw new Error(insErr.message);
+
     if (filtrados.length > 0) {
       const linhas = filtrados.map((b: any) => ({
         proposta_id: inserted.id,
@@ -671,7 +680,7 @@ export const replicarProposta = createServerFn({ method: "POST" })
         nome_banco: b.nome_banco,
         simulacao_banco_id: b.simulacao_banco_id,
         homefin_id_simulacao_banco: b.homefin_id_simulacao_banco,
-        selecionado: b.banco_id === snapshot.banco_id,
+        selecionado: bancoSelecionado != null && b.banco_id === bancoSelecionado.banco_id,
         status_banco: "aguardando",
         valor_parcela: b.valor_parcela,
         taxa_juros_ano: b.taxa_juros_ano,
@@ -858,7 +867,7 @@ async function sincronizarEnvolvidoParaCliente(
     CA: "casado",
     VI: "viuvo",
     DI: "divorciado",
-    SL: "divorciado",
+    SL: "separado",
     UE: "uniao_estavel",
   };
   const REGIME_MAP: Record<string, string> = {
@@ -866,7 +875,7 @@ async function sincronizarEnvolvidoParaCliente(
     CU: "comunhao_universal",
     PA: "participacao_final",
     SC: "separacao_total",
-    SO: "separacao_total",
+    SO: "separacao_obrigatoria",
   };
   const has = (k: string) => dados[k] !== undefined && dados[k] !== null && dados[k] !== "";
   const patch: Record<string, unknown> = {};

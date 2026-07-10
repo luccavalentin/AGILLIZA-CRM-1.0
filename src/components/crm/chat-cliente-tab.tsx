@@ -119,6 +119,7 @@ export function ChatClienteConversa({
 
   useIncomingChatSound(
     mensagens?.map((m) => ({ id: m.id, mine: m.remetente_tipo === "time" })),
+    clienteId,
   );
 
   const { peerTyping, notifyTyping, notifyStop } = useChatTyping(clienteId, "time");

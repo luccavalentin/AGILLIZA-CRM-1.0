@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Database } from "@/integrations/supabase/types";
+import { mascararDocumento } from "@/lib/crm/documento";
 
 type TipoPessoa = Database["public"]["Enums"]["tipo_pessoa"];
 type EstadoCivil = Database["public"]["Enums"]["cliente_estado_civil"];
@@ -113,7 +114,7 @@ export const listarClientes = createServerFn({ method: "GET" })
           id: r.id,
           numero_cliente: r.numero_cliente,
           nome: r.nome,
-          documento: r.documento,
+          documento: podePii ? r.documento : mascararDocumento(r.documento ?? ""),
           documento_masc: !podePii,
           telefone_celular: r.telefone_celular,
           email: r.email,
@@ -386,6 +387,12 @@ export const getCliente = createServerFn({ method: "GET" })
       .maybeSingle();
     if (error) throw error;
     if (!cliente) throw new Error("Cliente não encontrado.");
+    if (!podePii) {
+      const c = cliente as any;
+      if (c.documento) c.documento = mascararDocumento(c.documento);
+      if (c.documento_secundario)
+        c.documento_secundario = mascararDocumento(c.documento_secundario);
+    }
     return {
       cliente: cliente as any,
       podePii,

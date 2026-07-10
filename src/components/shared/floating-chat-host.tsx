@@ -19,7 +19,11 @@ export function FloatingChatHost() {
       onClose={fecharChatFlutuante}
     >
       <div className="h-full min-h-[24rem]">
-        <ChatClienteConversa clienteId={flutuante.clienteId} info={flutuante.info} />
+        <ChatClienteConversa
+          key={flutuante.clienteId}
+          clienteId={flutuante.clienteId}
+          info={flutuante.info}
+        />
       </div>
     </FloatingWindow>
   );

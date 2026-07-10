@@ -20,7 +20,7 @@ import { StatusBadge, ToneBadge } from "@/components/crm/tone-badge";
 import { ConfirmDelete } from "@/components/shared/confirm-delete";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { listarClientes, excluirCliente } from "@/lib/crm/clientes.functions";
-import { formatarDocumento, mascararDocumento, formatarCelular } from "@/lib/crm/documento";
+import { formatarDocumento, formatarCelular } from "@/lib/crm/documento";
 import { usePipelineRealtime } from "@/hooks/use-pipeline-realtime";
 
 export const Route = createFileRoute("/_authenticated/crm/clientes")({
@@ -177,7 +177,7 @@ function Pagina() {
                     <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
                       <span className="font-mono tabular-nums">{c.numero_cliente}</span>
                       <span className="max-w-full truncate font-mono tabular-nums">
-                        {c.documento_masc ? mascararDocumento(c.documento) : formatarDocumento(c.documento)}
+                        {c.documento_masc ? c.documento : formatarDocumento(c.documento)}
                       </span>
                     </div>
                   </div>
@@ -352,7 +352,7 @@ function Pagina() {
                     <TableCell className="px-4">
                       <span className="block truncate font-mono text-[12px] tabular-nums text-foreground/80">
                         {c.documento_masc
-                          ? mascararDocumento(c.documento)
+                          ? c.documento
                           : formatarDocumento(c.documento)}
                       </span>
                     </TableCell>
