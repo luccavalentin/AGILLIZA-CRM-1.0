@@ -411,25 +411,43 @@ function Pagina() {
               </div>
 
               {/* Desktop: tabela */}
-              <div className="hidden overflow-x-auto rounded-lg border border-border lg:block">
+              <div className="hidden overflow-x-auto rounded-xl border border-border/60 shadow-sm lg:block">
                 <Table>
                   <TableHeader>
-                    <TableRow>
-                      <TableHead className="text-sm">Banco</TableHead>
-                      <TableHead className="text-sm">Situação</TableHead>
-                      <TableHead className="text-right text-sm">Parcela</TableHead>
-                      <TableHead className="text-right text-sm">Taxa a.a.</TableHead>
-                      <TableHead className="text-right text-sm">Prazo máx</TableHead>
-                      <TableHead className="text-right text-sm">Financ. máx</TableHead>
-                      <TableHead className="text-right text-sm">Total financiado</TableHead>
-                      <TableHead className="text-right text-sm">IOF</TableHead>
-
+                    <TableRow className="border-border/60 bg-muted/50 hover:bg-muted/50">
+                      <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        Banco
+                      </TableHead>
+                      <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        Situação
+                      </TableHead>
+                      <TableHead className="text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        Parcela
+                      </TableHead>
+                      <TableHead className="text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        Taxa a.a.
+                      </TableHead>
+                      <TableHead className="text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        Prazo máx
+                      </TableHead>
+                      <TableHead className="text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        Financ. máx
+                      </TableHead>
+                      <TableHead className="text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        Total financiado
+                      </TableHead>
+                      <TableHead className="text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        IOF
+                      </TableHead>
                       <TableHead></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {bancos.map((b: any) => (
-                      <TableRow key={b.id}>
+                      <TableRow
+                        key={b.id}
+                        className="border-border/50 transition-colors odd:bg-card even:bg-muted/20 hover:bg-primary/5"
+                      >
                         <TableCell className="py-3 text-sm font-semibold">
                           <div className="flex items-center gap-2.5">
                             <BancoLogo nome={b.nome_banco} size="lg" />
@@ -462,7 +480,6 @@ function Pagina() {
                         <TableCell className="py-3 text-right text-sm font-semibold tabular-nums whitespace-nowrap">
                           {formatBRL(totalFinanciado(b))}
                         </TableCell>
-
                         <TableCell className="py-3 text-right text-sm tabular-nums whitespace-nowrap">
                           {formatBRL(b.valor_iof)}
                         </TableCell>
@@ -495,6 +512,7 @@ function Pagina() {
                   </TableBody>
                 </Table>
               </div>
+
             </>
           )}
           {bancos.length > 0 && (
