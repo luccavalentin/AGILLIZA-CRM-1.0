@@ -77,7 +77,7 @@ export function ReportView({
   const escopoInformadoNaUrl = ESCOPOS.includes(search.escopo as Escopo);
   const filtrosEfetivos: ReportFiltros =
     !escopoInformadoNaUrl && escopo
-      ? { ...filtros, escopo: escopo.podeGeral ? "geral" : escopo.podeEquipe ? "equipe" : "minha" }
+      ? { ...filtros, escopo: escopo.podeGeral ? "geral" : "minha" }
       : filtros;
 
   const onFiltros = (f: ReportFiltros) => {

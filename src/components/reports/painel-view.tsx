@@ -79,11 +79,11 @@ export function PainelView({
     staleTime: 5 * 60_000,
   });
 
-  // Amplia o escopo automaticamente para quem pode ver equipe/geral (até o usuário mudar manualmente).
+  // Amplia o escopo automaticamente para quem pode ver geral (até o usuário mudar manualmente).
+  // O escopo "equipe" foi removido do produto.
   useEffect(() => {
     if (escopoTocado.current || !perms) return;
     if (perms.podeGeral) setEscopo("geral");
-    else if (perms.podeEquipe) setEscopo("equipe");
   }, [perms]);
 
   const mudarEscopo = (e: Escopo) => {
