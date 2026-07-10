@@ -11,24 +11,33 @@ interface Crumb {
 /** Deriva as migalhas de pão a partir do caminho atual e da navegação. */
 function derivarCrumbs(nav: NavGroup[], pathname: string): Crumb[] {
   for (const group of nav) {
+    // Primeira rota disponível do grupo (para tornar o grupo clicável).
+    const rotaDoGrupo =
+      group.items.find((it) => it.to)?.to ??
+      group.items.flatMap((it) => it.children ?? []).find((c) => c.to)?.to;
+
     for (const item of group.items) {
       const filhos = item.children ?? [];
       for (const child of filhos) {
         if (child.to && (pathname === child.to || pathname.startsWith(child.to + "/"))) {
           return [
-            { label: group.label },
-            { label: item.label },
+            { label: group.label, to: rotaDoGrupo },
+            { label: item.label, to: item.to ?? child.to },
             { label: child.label, to: child.to },
           ];
         }
       }
       if (item.to && (pathname === item.to || pathname.startsWith(item.to + "/"))) {
-        return [{ label: group.label }, { label: item.label, to: item.to }];
+        return [
+          { label: group.label, to: rotaDoGrupo },
+          { label: item.label, to: item.to },
+        ];
       }
     }
   }
-  return [{ label: "Início" }];
+  return [{ label: "Início", to: "/" }];
 }
+
 
 export function AppBreadcrumbs({ nav }: { nav: NavGroup[] }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
