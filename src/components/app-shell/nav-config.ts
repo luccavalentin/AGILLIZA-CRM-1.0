@@ -33,7 +33,7 @@ import {
   MessagesSquare,
   Timer,
   Landmark,
-  Sparkles,
+  Cpu,
   ClipboardList,
   Link as LinkIcon,
 } from "lucide-react";
