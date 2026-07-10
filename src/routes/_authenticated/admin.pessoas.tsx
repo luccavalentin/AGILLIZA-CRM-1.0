@@ -176,7 +176,12 @@ function PessoasPage() {
 
   return (
     <>
-      <div className="mx-auto max-w-5xl">
+      <div className="mx-auto max-w-5xl space-y-6">
+        <AdminHero
+          icon={<Users className="h-5 w-5" />}
+          titulo="Pessoas & Acessos"
+          descricao="Equipe interna, parceiros, papéis e tipos de pessoa."
+        />
         <Tabs value={aba} onValueChange={(v) => setAba(v as typeof aba)}>
           <TabsList className="mb-6">
             <TabsTrigger value="pessoas">Pessoas</TabsTrigger>
@@ -187,9 +192,9 @@ function PessoasPage() {
           <TabsContent value="pessoas">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <h1 className="text-2xl font-semibold text-foreground">
+                <h2 className="text-lg font-semibold text-foreground">
                   Pessoas do meu ecossistema
-                </h1>
+                </h2>
                 <p className="text-sm text-muted-foreground">
                   Equipe interna e parceiros em uma única lista.
                 </p>
