@@ -74,7 +74,7 @@ export function GenericReportPage({
       modulo={data?.modulo ?? "—"}
       titulo={data?.titulo ?? "Relatório"}
       descricao={data?.descricao ?? "Carregando…"}
-      meta={meta}
+      metaChips={metaArr}
       scopeSelector={
         <VisionSelector
           escopo={filtros.escopo}
