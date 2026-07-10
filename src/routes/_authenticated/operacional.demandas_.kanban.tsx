@@ -88,7 +88,7 @@ function Pagina() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
         {COLUNAS.map((col) => {
           const cfg = statusDemanda(col);
-          const doStatus = itens.filter((d) => d.status === col);
+          const doStatus = porStatus.get(col) ?? [];
           const alvo = arrastando && transicaoDemandaPermitida(arrastando.status, col);
           return (
             <div
