@@ -88,9 +88,9 @@ export function NoCard({
       )}
     >
       {no.tipo === "pasta" ? (
-        <Folder className={variante === "lista" ? "h-4.5 w-4.5" : "h-5 w-5"} />
+        <Folder className={variante === "lista" ? "h-5 w-5" : "h-5 w-5"} />
       ) : (
-        Icon && <Icon className={variante === "lista" ? "h-4.5 w-4.5" : "h-5 w-5"} />
+        Icon && <Icon className={variante === "lista" ? "h-5 w-5" : "h-5 w-5"} />
       )}
     </span>
   );
