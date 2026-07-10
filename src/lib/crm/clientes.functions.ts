@@ -387,6 +387,12 @@ export const getCliente = createServerFn({ method: "GET" })
       .maybeSingle();
     if (error) throw error;
     if (!cliente) throw new Error("Cliente não encontrado.");
+    if (!podePii) {
+      const c = cliente as any;
+      if (c.documento) c.documento = mascararDocumento(c.documento);
+      if (c.documento_secundario)
+        c.documento_secundario = mascararDocumento(c.documento_secundario);
+    }
     return {
       cliente: cliente as any,
       podePii,
