@@ -118,7 +118,7 @@ function Pagina() {
       {/* Cabeçalho */}
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 sm:flex sm:items-center sm:justify-between">
         <div className="flex min-w-0 items-center gap-3">
-          <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-primary to-primary/70 text-primary-foreground shadow-sm ring-1 ring-primary/20">
+          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/8 text-primary ring-1 ring-inset ring-primary/12">
             <FileText className="h-5 w-5" />
           </span>
           <div className="min-w-0 space-y-0.5">
@@ -131,63 +131,65 @@ function Pagina() {
           </div>
         </div>
         <div className="col-span-2 flex gap-2 sm:col-auto">
-          <Button asChild variant="secondary" className="h-11 flex-1 rounded-xl sm:flex-none">
+          <Button asChild variant="outline" className="h-10 flex-1 rounded-lg sm:flex-none">
             <Link to="/operacional/propostas/kanban">
               <KanbanSquare className="mr-1.5 h-4 w-4" /> Kanban
             </Link>
           </Button>
           <Button
             asChild
-            className="h-11 flex-1 rounded-xl bg-gradient-to-br from-primary to-primary/80 font-semibold shadow-md ring-1 ring-primary/20 transition-all hover:shadow-lg hover:brightness-105 sm:flex-none"
+            className="h-10 flex-1 rounded-lg font-medium shadow-sm sm:flex-none"
           >
             <Link to="/operacional/propostas/enviar">
               <Plus className="mr-1.5 h-4 w-4" /> Nova proposta
             </Link>
           </Button>
         </div>
+
       </div>
 
       {/* Resumo */}
-      <div className="grid grid-cols-2 gap-3 sm:gap-4">
-        <Card className="relative flex items-center gap-3 overflow-hidden rounded-2xl border-border/60 p-4 shadow-sm">
-          <span className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-primary to-primary/40" />
-          <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/15">
-            <Layers className="h-5 w-5" />
+      <div className="grid grid-cols-2 divide-x divide-border/60 overflow-hidden rounded-xl border border-border/60 bg-card shadow-sm">
+        <div className="flex items-center gap-3 px-4 py-3.5 sm:px-5">
+          <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-primary/8 text-primary ring-1 ring-inset ring-primary/10">
+            <Layers className="h-4 w-4" />
           </span>
           <div className="min-w-0">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
               Propostas
             </p>
             {isLoading ? (
-              <Skeleton className="mt-1 h-7 w-12" />
+              <Skeleton className="mt-1 h-6 w-10" />
             ) : (
-              <p className="text-2xl font-semibold tabular-nums text-foreground">{totalItens}</p>
+              <p className="text-xl font-semibold tabular-nums leading-tight text-foreground">
+                {totalItens}
+              </p>
             )}
           </div>
-        </Card>
-        <Card className="relative flex items-center gap-3 overflow-hidden rounded-2xl border-border/60 p-4 shadow-sm">
-          <span className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-primary to-primary/40" />
-          <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-accent text-accent-foreground ring-1 ring-inset ring-primary/15">
-            <Wallet className="h-5 w-5" />
+        </div>
+        <div className="flex items-center gap-3 px-4 py-3.5 sm:px-5">
+          <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-primary/8 text-primary ring-1 ring-inset ring-primary/10">
+            <Wallet className="h-4 w-4" />
           </span>
           <div className="min-w-0">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
               Volume financiado
             </p>
             {isLoading ? (
-              <Skeleton className="mt-1 h-7 w-24" />
+              <Skeleton className="mt-1 h-6 w-24" />
             ) : (
-              <p className="truncate text-2xl font-semibold tabular-nums text-foreground">
+              <p className="truncate text-xl font-semibold tabular-nums leading-tight text-foreground">
                 {formatBRL(volumeTotal)}
               </p>
             )}
           </div>
-        </Card>
+        </div>
       </div>
 
 
+
       {/* Filtros */}
-      <Card className="rounded-2xl border-border/60 p-3 shadow-sm sm:p-4">
+      <Card className="rounded-xl border-border/60 p-3 shadow-sm sm:p-4">
         <div className="flex flex-wrap items-end gap-3">
           <Tabs value={escopo} onValueChange={(v) => setEscopo(v as "todas" | "minhas")}>
             <TabsList className="h-11 rounded-xl">
@@ -314,7 +316,7 @@ function Pagina() {
       </div>
 
       {/* Tabela desktop */}
-      <Card className="hidden overflow-hidden rounded-2xl border-border/60 shadow-sm md:block">
+      <Card className="hidden overflow-hidden rounded-xl border-border/60 shadow-sm md:block">
         <Table>
           <TableHeader>
             <TableRow className="border-border/60 bg-muted/40 hover:bg-muted/40">
