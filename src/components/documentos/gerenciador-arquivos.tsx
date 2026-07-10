@@ -277,15 +277,27 @@ export function GerenciadorArquivos({
     <div className="flex flex-wrap items-center gap-2">
       <Button
         size="sm"
-        className="bg-gradient-to-r from-primary to-primary/85 text-primary-foreground shadow-sm"
+        className="flex-1 bg-gradient-to-r from-primary to-primary/85 text-primary-foreground shadow-sm sm:flex-none"
         onClick={() => setNovaPastaAberta(true)}
       >
         <FolderPlus className="mr-2 h-4 w-4" /> Nova pasta
       </Button>
-      <Button variant="outline" size="sm" disabled={!!enviando} onClick={() => inputArquivos.current?.click()}>
+      <Button
+        variant="outline"
+        size="sm"
+        className="flex-1 sm:flex-none"
+        disabled={!!enviando}
+        onClick={() => inputArquivos.current?.click()}
+      >
         <Upload className="mr-2 h-4 w-4" /> Enviar arquivos
       </Button>
-      <Button variant="outline" size="sm" disabled={!!enviando} onClick={() => inputPasta.current?.click()}>
+      <Button
+        variant="outline"
+        size="sm"
+        className="flex-1 sm:flex-none"
+        disabled={!!enviando}
+        onClick={() => inputPasta.current?.click()}
+      >
         <UploadCloud className="mr-2 h-4 w-4" /> Enviar pasta
       </Button>
     </div>
@@ -294,20 +306,23 @@ export function GerenciadorArquivos({
   return (
     <div className={cn("space-y-4", className)}>
       {mostrarCabecalho ? (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/60 bg-gradient-to-r from-primary/8 via-card to-card p-5 shadow-sm">
-          <div className="flex items-center gap-4">
-            <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-primary/12 text-primary shadow-inner">
+        <div className="relative overflow-hidden rounded-2xl border border-border/60 bg-gradient-to-br from-primary/10 via-card to-card p-5 shadow-sm sm:p-6">
+          <div className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-primary/10 blur-3xl" />
+          <div className="relative grid grid-cols-[auto_minmax(0,1fr)] items-start gap-4 lg:grid-cols-[auto_minmax(0,1fr)_auto]">
+            <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-primary/15 text-primary shadow-inner ring-1 ring-inset ring-primary/20">
               <FolderOpen className="h-6 w-6" />
             </span>
-            <div>
-              <h1 className="text-xl font-semibold tracking-tight text-foreground">{titulo}</h1>
+            <div className="min-w-0">
+              <h1 className="truncate text-lg font-semibold tracking-tight text-foreground sm:text-xl">
+                {titulo}
+              </h1>
               <p className="text-sm text-muted-foreground">{descricao}</p>
             </div>
+            <div className="col-span-2 lg:col-span-1 lg:justify-self-end">{acoes}</div>
           </div>
-          {acoes}
         </div>
       ) : (
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-muted-foreground">
             Organize pastas e arquivos livremente — crie, envie, renomeie e mova.
           </p>
@@ -349,16 +364,51 @@ export function GerenciadorArquivos({
         onBuscaChange={setBusca}
       />
 
-      {(totais.pastas > 0 || totais.arquivos > 0) && (
-        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+      <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+        <div className="flex flex-wrap items-center gap-2">
           <span className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-muted/40 px-2.5 py-1">
             <Folder className="h-3.5 w-3.5 text-primary" /> {totais.pastas} pasta(s)
           </span>
           <span className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-muted/40 px-2.5 py-1">
             <FileText className="h-3.5 w-3.5" /> {totais.arquivos} arquivo(s)
           </span>
+          {totais.tamanho > 0 && (
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-muted/40 px-2.5 py-1">
+              <HardDrive className="h-3.5 w-3.5" /> {formatBytes(totais.tamanho)}
+            </span>
+          )}
         </div>
-      )}
+        <div className="inline-flex rounded-lg border border-border/60 bg-card p-0.5 shadow-sm">
+          <button
+            type="button"
+            aria-label="Ver em grade"
+            aria-pressed={vista === "grade"}
+            onClick={() => setVista("grade")}
+            className={cn(
+              "flex h-7 w-7 items-center justify-center rounded-md transition-colors",
+              vista === "grade"
+                ? "bg-primary/10 text-primary"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            <LayoutGrid className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            aria-label="Ver em lista"
+            aria-pressed={vista === "lista"}
+            onClick={() => setVista("lista")}
+            className={cn(
+              "flex h-7 w-7 items-center justify-center rounded-md transition-colors",
+              vista === "lista"
+                ? "bg-primary/10 text-primary"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            <List className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
 
       {enviando ? (
         <div className="flex items-center gap-3 rounded-lg border border-primary/30 bg-primary/5 px-4 py-2 text-sm text-foreground">
@@ -399,11 +449,18 @@ export function GerenciadorArquivos({
             </CardContent>
           </Card>
         ) : (
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div
+            className={cn(
+              vista === "grade"
+                ? "grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+                : "flex flex-col gap-2",
+            )}
+          >
             {filtrados.map((n) => (
               <NoCard
                 key={n.id}
                 no={n}
+                variante={vista}
                 onAbrir={abrirNo}
                 onRenomear={setRenomeando}
                 onMover={setMovendo}
