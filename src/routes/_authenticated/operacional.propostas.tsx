@@ -8,7 +8,7 @@ import {
   FileText,
   KanbanSquare,
   RotateCcw,
-  Layers,
+  
   Wallet,
   ChevronRight,
   User,
