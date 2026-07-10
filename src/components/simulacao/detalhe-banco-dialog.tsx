@@ -1,7 +1,15 @@
 import { useMemo } from "react";
 import { corDoBanco } from "@/lib/bancos/cores";
 import { BancoLogo } from "@/components/bancos/banco-logo";
-import { FileText, Download, AlertTriangle } from "lucide-react";
+import {
+  FileText,
+  Download,
+  AlertTriangle,
+  Percent,
+  Wallet,
+  CalendarClock,
+  Layers,
+} from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -27,11 +35,56 @@ function pct(v: number | null | undefined): string {
   return `${v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 4 })}% a.a.`;
 }
 
-function InfoCard({ rotulo, valor }: { rotulo: string; valor: string }) {
+/** Métrica de destaque no topo do detalhamento. */
+function Destaque({
+  icone,
+  rotulo,
+  valor,
+  sub,
+  cor,
+}: {
+  icone: React.ReactNode;
+  rotulo: string;
+  valor: string;
+  sub?: string;
+  cor?: string;
+}) {
   return (
-    <div className="rounded-lg border border-border bg-muted/40 p-3">
-      <p className="text-xs uppercase tracking-wide text-muted-foreground">{rotulo}</p>
-      <p className="mt-1 text-sm font-semibold text-foreground tabular-nums">{valor}</p>
+    <div className="relative overflow-hidden rounded-xl border border-border/60 bg-card p-4">
+      <span
+        className="absolute inset-y-0 left-0 w-1"
+        style={{ backgroundColor: cor ?? "hsl(var(--primary))" }}
+        aria-hidden
+      />
+      <div className="flex items-center gap-2 text-muted-foreground">
+        <span className="text-muted-foreground/70">{icone}</span>
+        <p className="text-[11px] font-medium uppercase tracking-wider">{rotulo}</p>
+      </div>
+      <p className="mt-2 text-xl font-semibold tracking-tight text-foreground tabular-nums">
+        {valor}
+      </p>
+      {sub && <p className="mt-0.5 text-xs text-muted-foreground">{sub}</p>}
+    </div>
+  );
+}
+
+/** Linha de definição rótulo → valor dentro de um grupo. */
+function Linha({ rotulo, valor }: { rotulo: string; valor: string }) {
+  return (
+    <div className="flex items-baseline justify-between gap-4 py-2">
+      <span className="text-sm text-muted-foreground">{rotulo}</span>
+      <span className="text-right text-sm font-medium text-foreground tabular-nums">{valor}</span>
+    </div>
+  );
+}
+
+function Grupo({ titulo, children }: { titulo: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-xl border border-border/60 bg-card p-4">
+      <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        {titulo}
+      </p>
+      <div className="divide-y divide-border/50">{children}</div>
     </div>
   );
 }
@@ -48,6 +101,7 @@ export function DetalheBancoDialog({
 }) {
   const detalhe = useMemo(() => extrairDetalheBanco(banco?.raw_response), [banco]);
   const temDetalhe = !!detalhe && detalhe.parcelas.length > 0;
+  const cor = corDoBanco(banco?.nome_banco);
 
   // Alerta quando a simulação pediu para financiar despesas mas ESTE banco não
   // as incorporou ao financiamento (limite de LTV/política do banco). Sem isto,
@@ -56,9 +110,6 @@ export function DetalheBancoDialog({
     Boolean(simulacao?.fg_financiar_despesas) &&
     Number(simulacao?.valor_despesas_financiadas ?? 0) > 0;
   const despesasFinanciadasBanco = Number(detalhe?.despesasFinanciadas ?? 0);
-  // Só sinalizamos quando ESTE banco de fato respondeu (tem detalhe) e, mesmo
-  // assim, não incorporou as despesas. Sem o retorno do banco (pendente/erro)
-  // não dá para afirmar que ele recusou — evita falso positivo.
   const bancoNaoFinanciouDespesas =
     despesasSolicitadas && !!detalhe && !(despesasFinanciadasBanco > 0);
 
@@ -73,19 +124,33 @@ export function DetalheBancoDialog({
   }
 
   return (
-
     <Dialog>
       <DialogTrigger asChild>
         <Button variant="ghost" size="sm">
           <FileText className="mr-1 h-4 w-4" /> Detalhes
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-h-[90vh] max-w-4xl overflow-hidden p-0">
-        <DialogHeader className="border-b border-border p-4">
-          <div className="flex items-center justify-between gap-2 pr-8">
-            <DialogTitle className="flex items-center gap-2">
-              <BancoLogo nome={banco?.nome_banco} size="lg" />
-              <span style={{ color: corDoBanco(banco?.nome_banco) }}>{banco?.nome_banco ?? "Banco"}</span>
+      <DialogContent className="max-h-[92vh] max-w-4xl overflow-hidden p-0">
+        {/* Barra de cor do banco */}
+        <div className="h-1 w-full shrink-0" style={{ backgroundColor: cor }} aria-hidden />
+
+        <DialogHeader className="border-b border-border/60 px-5 py-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 pr-8">
+            <DialogTitle className="flex items-center gap-3">
+              <span className="flex h-11 w-11 items-center justify-center rounded-xl border border-border/60 bg-muted/40">
+                <BancoLogo nome={banco?.nome_banco} size="lg" />
+              </span>
+              <span className="flex flex-col">
+                <span
+                  className="text-base font-semibold leading-tight"
+                  style={{ color: cor }}
+                >
+                  {banco?.nome_banco ?? "Banco"}
+                </span>
+                <span className="text-xs font-normal text-muted-foreground">
+                  Detalhamento da simulação
+                </span>
+              </span>
               <BancoStatusBadge status={banco?.status_banco} />
             </DialogTitle>
             {temDetalhe && (
@@ -96,10 +161,9 @@ export function DetalheBancoDialog({
           </div>
         </DialogHeader>
 
-
-        <div className="max-h-[calc(90vh-4rem)] space-y-6 overflow-y-auto p-4">
+        <div className="max-h-[calc(92vh-5rem)] space-y-5 overflow-y-auto bg-muted/20 p-5">
           {bancoNaoFinanciouDespesas && (
-            <div className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3">
+            <div className="flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
               <div className="text-sm text-foreground">
                 <p className="font-semibold">Este banco não financiou as despesas solicitadas</p>
@@ -114,63 +178,103 @@ export function DetalheBancoDialog({
             </div>
           )}
           {!temDetalhe ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">
+            <p className="py-10 text-center text-sm text-muted-foreground">
               Detalhamento de parcelas indisponível para esta simulação.
             </p>
           ) : (
             <>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                <InfoCard rotulo="Taxa de juros" valor={pct(detalhe!.taxaJurosAno)} />
-                <InfoCard rotulo="CET" valor={pct(detalhe!.cet)} />
-                <InfoCard
-                  rotulo="Taxa mensal"
-                  valor={
+              {/* Destaques */}
+              <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                <Destaque
+                  icone={<Percent className="h-4 w-4" />}
+                  rotulo="Taxa de juros"
+                  valor={pct(detalhe!.taxaJurosAno)}
+                  sub={
                     detalhe!.taxaJurosMes != null
                       ? `${detalhe!.taxaJurosMes.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 4 })}% a.m.`
-                      : "—"
+                      : undefined
                   }
+                  cor={cor}
                 />
-                <InfoCard rotulo="Valor de compra e venda" valor={formatBRL(detalhe!.valorImovel)} />
-                <InfoCard rotulo="Despesas financiadas" valor={formatBRL(detalhe!.despesasFinanciadas)} />
-                <InfoCard rotulo="Tarifa de av. de garantia (não financiada)" valor={formatBRL(detalhe!.tarifaAvaliacao)} />
-                <InfoCard
-                  rotulo="Financiamento total"
-                  valor={formatBRL(detalhe!.financiamentoTotal ?? detalhe!.valorFinanciamento)}
+                <Destaque
+                  icone={<Percent className="h-4 w-4" />}
+                  rotulo="CET"
+                  valor={pct(detalhe!.cet)}
+                  cor={cor}
                 />
-                <InfoCard rotulo="Entrada" valor={formatBRL(detalhe!.valorEntrada)} />
-                <InfoCard rotulo="IOF crédito" valor={formatBRL(detalhe!.iof)} />
-                <InfoCard rotulo="Tipo da parcela" valor={detalhe!.tipoParcela ?? detalhe!.indexador ?? "—"} />
-                <InfoCard
-                  rotulo="Prazo total"
+                <Destaque
+                  icone={<Wallet className="h-4 w-4" />}
+                  rotulo="1ª parcela"
+                  valor={formatBRL(detalhe!.primeiraParcela)}
+                  sub={`Última ${formatBRL(detalhe!.ultimaParcela)}`}
+                  cor={cor}
+                />
+                <Destaque
+                  icone={<CalendarClock className="h-4 w-4" />}
+                  rotulo="Prazo"
                   valor={detalhe!.prazoMeses != null ? `${detalhe!.prazoMeses} meses` : "—"}
+                  sub={normalizarSistemaAmortizacao(detalhe!.sistemaAmortizacao)}
+                  cor={cor}
                 />
-                <InfoCard rotulo="Sistema" valor={normalizarSistemaAmortizacao(detalhe!.sistemaAmortizacao)} />
-                <InfoCard rotulo="1ª parcela" valor={formatBRL(detalhe!.primeiraParcela)} />
-                <InfoCard rotulo="Última parcela" valor={formatBRL(detalhe!.ultimaParcela)} />
-                <InfoCard
-                  rotulo="Somatório das parcelas"
-                  valor={formatBRL(detalhe!.somatorioParcelas)}
-                />
-                
               </div>
 
+              {/* Grupos de informação */}
+              <div className="grid gap-3 md:grid-cols-2">
+                <Grupo titulo="Financiamento">
+                  <Linha rotulo="Valor de compra e venda" valor={formatBRL(detalhe!.valorImovel)} />
+                  <Linha
+                    rotulo="Financiamento total"
+                    valor={formatBRL(detalhe!.financiamentoTotal ?? detalhe!.valorFinanciamento)}
+                  />
+                  <Linha rotulo="Entrada" valor={formatBRL(detalhe!.valorEntrada)} />
+                  <Linha
+                    rotulo="Despesas financiadas"
+                    valor={formatBRL(detalhe!.despesasFinanciadas)}
+                  />
+                </Grupo>
 
-              <div>
-                <h3 className="mb-1 text-sm font-semibold text-foreground">
-                  Plano de pagamento ({detalhe!.parcelas.length} parcelas)
-                </h3>
-                {detalhe!.parcelasEstimadas && (
-                  <p className="mb-2 text-xs text-muted-foreground">
-                    Projeção calculada a partir da taxa e do sistema informados pelo banco (1ª e
-                    última parcela reais).
-                  </p>
-                )}
+                <Grupo titulo="Custos e condições">
+                  <Linha
+                    rotulo="Tarifa de av. de garantia (não financiada)"
+                    valor={formatBRL(detalhe!.tarifaAvaliacao)}
+                  />
+                  <Linha rotulo="IOF crédito" valor={formatBRL(detalhe!.iof)} />
+                  <Linha
+                    rotulo="Tipo da parcela"
+                    valor={detalhe!.tipoParcela ?? detalhe!.indexador ?? "—"}
+                  />
+                  <Linha
+                    rotulo="Somatório das parcelas"
+                    valor={formatBRL(detalhe!.somatorioParcelas)}
+                  />
+                </Grupo>
+              </div>
 
-                <div className="overflow-x-auto rounded-lg border border-border">
+              {/* Plano de pagamento */}
+              <div className="rounded-xl border border-border/60 bg-card p-4">
+                <div className="mb-3 flex items-center gap-2">
+                  <Layers className="h-4 w-4 text-muted-foreground" />
+                  <div>
+                    <h3 className="text-sm font-semibold text-foreground">
+                      Plano de pagamento
+                      <span className="ml-1.5 font-normal text-muted-foreground">
+                        ({detalhe!.parcelas.length} parcelas)
+                      </span>
+                    </h3>
+                    {detalhe!.parcelasEstimadas && (
+                      <p className="text-xs text-muted-foreground">
+                        Projeção calculada a partir da taxa e do sistema informados pelo banco (1ª e
+                        última parcela reais).
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="overflow-x-auto rounded-lg border border-border/60">
                   <Table>
                     <TableHeader>
-                      <TableRow>
-                        <TableHead>Parcela</TableHead>
+                      <TableRow className="bg-muted/50 hover:bg-muted/50">
+                        <TableHead className="w-16">Parcela</TableHead>
                         <TableHead>Data</TableHead>
                         <TableHead className="text-right">Amortização</TableHead>
                         <TableHead className="text-right">Juros</TableHead>
@@ -180,8 +284,10 @@ export function DetalheBancoDialog({
                     </TableHeader>
                     <TableBody>
                       {detalhe!.parcelas.map((p) => (
-                        <TableRow key={p.numero}>
-                          <TableCell className="tabular-nums">{p.numero}</TableCell>
+                        <TableRow key={p.numero} className="even:bg-muted/20">
+                          <TableCell className="font-medium tabular-nums text-muted-foreground">
+                            {p.numero}
+                          </TableCell>
                           <TableCell className="tabular-nums text-muted-foreground">
                             {p.data ?? "—"}
                           </TableCell>
@@ -191,10 +297,10 @@ export function DetalheBancoDialog({
                           <TableCell className="text-right tabular-nums">
                             {formatBRL(p.juros)}
                           </TableCell>
-                          <TableCell className="text-right font-medium tabular-nums">
+                          <TableCell className="text-right font-semibold tabular-nums text-foreground">
                             {formatBRL(p.parcela)}
                           </TableCell>
-                          <TableCell className="text-right tabular-nums">
+                          <TableCell className="text-right tabular-nums text-muted-foreground">
                             {formatBRL(p.saldoDevedor)}
                           </TableCell>
                         </TableRow>
