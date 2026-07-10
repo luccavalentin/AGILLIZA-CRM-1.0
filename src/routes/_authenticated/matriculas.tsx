@@ -12,7 +12,9 @@ import {
   TrendingDown,
   Coins,
   Landmark,
+  GraduationCap,
 } from "lucide-react";
+import { OpHero, OpStat } from "@/components/operacional/ui";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -79,39 +81,44 @@ function Pagina() {
 
   return (
     <div className="mx-auto w-full max-w-[1600px] space-y-6 p-4 md:p-6">
-      <div>
-        <h1 className="text-xl font-semibold text-foreground">
-          Controle de Solicitação de Matrículas
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Matrículas tiradas e pagas pela Agilliza a pedido dos corretores — para posterior
-          reembolso.
-        </p>
-      </div>
+      <OpHero
+        icon={<GraduationCap className="h-6 w-6" />}
+        eyebrow="Documentos"
+        titulo="Controle de Matrículas"
+        descricao="Matrículas tiradas e pagas pela Agilliza a pedido dos corretores — para posterior reembolso."
+      />
 
       <PixBanner />
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Kpi
-          icon={<Coins className="h-4 w-4" />}
-          rotulo="Créditos comprados"
-          valor={formatBRL(data.total_creditos)}
+        <OpStat
+          icon={<Coins className="h-5 w-5" />}
+          label="Créditos comprados"
+          value={formatBRL(data.total_creditos)}
+          accent="var(--primary)"
+          tint="bg-primary/10 text-primary"
         />
-        <Kpi
-          icon={<TrendingDown className="h-4 w-4" />}
-          rotulo="Total gasto"
-          valor={formatBRL(data.total_gasto)}
+        <OpStat
+          icon={<TrendingDown className="h-5 w-5" />}
+          label="Total gasto"
+          value={formatBRL(data.total_gasto)}
+          accent="var(--muted-foreground)"
+          tint="bg-muted text-muted-foreground"
         />
-        <Kpi
-          icon={<Clock className="h-4 w-4" />}
-          rotulo="A reembolsar"
-          valor={formatBRL(data.total_a_reembolsar)}
-          destaque
+        <OpStat
+          icon={<Clock className="h-5 w-5" />}
+          label="A reembolsar"
+          value={formatBRL(data.total_a_reembolsar)}
+          accent="var(--destructive)"
+          tint="bg-destructive/10 text-destructive"
+          alerta={data.total_a_reembolsar > 0}
         />
-        <Kpi
-          icon={<Wallet className="h-4 w-4" />}
-          rotulo="Saldo de crédito"
-          valor={formatBRL(data.saldo)}
+        <OpStat
+          icon={<Wallet className="h-5 w-5" />}
+          label="Saldo de crédito"
+          value={formatBRL(data.saldo)}
+          accent="var(--primary)"
+          tint="bg-primary/10 text-primary"
         />
       </div>
 
@@ -125,31 +132,6 @@ function Pagina() {
   );
 }
 
-function Kpi({
-  icon,
-  rotulo,
-  valor,
-  destaque,
-}: {
-  icon: React.ReactNode;
-  rotulo: string;
-  valor: string;
-  destaque?: boolean;
-}) {
-  return (
-    <Card className="p-4">
-      <div className="flex items-center gap-2 text-muted-foreground">
-        {icon}
-        <span className="text-xs uppercase tracking-wide">{rotulo}</span>
-      </div>
-      <p
-        className={`mt-1 text-lg font-semibold tabular-nums ${destaque ? "text-primary" : "text-foreground"}`}
-      >
-        {valor}
-      </p>
-    </Card>
-  );
-}
 
 /** Chave Pix fixa da Agilliza (CNPJ), exposta para copiar e colar. */
 const PIX_AGILLIZA = "51.306.419/0001-07";
@@ -162,10 +144,12 @@ function PixBanner() {
   }
 
   return (
-    <Card className="overflow-hidden border-0 bg-primary p-0 text-primary-foreground">
-      <div className="flex flex-wrap items-center justify-between gap-3 p-4">
+    <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-primary to-primary/80 p-0 text-primary-foreground shadow-lg">
+      <div className="pointer-events-none absolute -right-10 -top-16 h-48 w-48 rounded-full bg-primary-foreground/10 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-16 left-1/3 h-40 w-40 rounded-full bg-primary-foreground/10 blur-3xl" />
+      <div className="relative flex flex-wrap items-center justify-between gap-3 p-5">
         <div className="flex items-center gap-3">
-          <div className="rounded-lg bg-primary-foreground/15 p-2">
+          <div className="rounded-xl bg-primary-foreground/15 p-2.5 ring-1 ring-primary-foreground/20">
             <Landmark className="h-5 w-5" />
           </div>
           <div>
