@@ -12,6 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getMinhaSessao, atualizarMeuPerfil } from "@/lib/session.functions";
 import { supabase } from "@/integrations/supabase/client";
+import { AdminHero } from "@/components/admin/admin-hero";
 import { ChatSoundSetting } from "@/components/shared/chat-sound-setting";
 
 // URL assinada de longa duração (~10 anos) para exibir a foto de um bucket privado.
