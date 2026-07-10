@@ -10,8 +10,14 @@ import { signalIncomingChat } from "@/components/shared/chat-alert-store";
  */
 export function useIncomingChatSound(
   items: { id: string; mine: boolean }[] | undefined | null,
+  conversaId?: string | null,
 ): void {
   const seen = useRef<Set<string> | null>(null);
+  // Reseta o histórico de "vistas" ao trocar de conversa para não tocar som
+  // (nem piscar) para mensagens antigas de outra conversa reaproveitada.
+  useEffect(() => {
+    seen.current = null;
+  }, [conversaId]);
   useEffect(() => {
     if (!items) return;
     if (seen.current === null) {
