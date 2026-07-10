@@ -82,6 +82,7 @@ export function GerenciadorArquivos({
   const [movendo, setMovendo] = useState<ArquivoNo | null>(null);
   const [dragging, setDragging] = useState(false);
   const [visualizando, setVisualizando] = useState<{ url: string; nome: string } | null>(null);
+  const [vista, setVista] = useState<"grade" | "lista">("grade");
 
   const inputArquivos = useRef<HTMLInputElement>(null);
   const inputPasta = useRef<HTMLInputElement>(null);
