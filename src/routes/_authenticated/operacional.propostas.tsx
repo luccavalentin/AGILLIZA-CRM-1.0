@@ -309,15 +309,28 @@ function Pagina() {
       <Card className="hidden overflow-hidden rounded-2xl border-border/60 shadow-sm md:block">
         <Table>
           <TableHeader>
-            <TableRow className="hover:bg-transparent">
-              <TableHead>Número</TableHead>
-              <TableHead>Cliente</TableHead>
-              <TableHead>Bancos</TableHead>
-              <TableHead className="text-right">R$ Financiamento</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="w-12 text-right">Ações</TableHead>
+            <TableRow className="border-border/60 bg-muted/40 hover:bg-muted/40">
+              <TableHead className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                Número
+              </TableHead>
+              <TableHead className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                Cliente
+              </TableHead>
+              <TableHead className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                Bancos
+              </TableHead>
+              <TableHead className="text-right text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                R$ Financiamento
+              </TableHead>
+              <TableHead className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                Status
+              </TableHead>
+              <TableHead className="w-12 text-right text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                Ações
+              </TableHead>
             </TableRow>
           </TableHeader>
+
           <TableBody>
             {isLoading &&
               Array.from({ length: 5 }).map((_, i) => (
