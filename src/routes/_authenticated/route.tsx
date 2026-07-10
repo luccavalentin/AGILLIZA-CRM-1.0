@@ -41,13 +41,15 @@ function InternalLayout() {
   const sessaoQuery = useQuery({
     queryKey: ["minha-sessao"],
     queryFn: () => getMinhaSessao(),
-    retry: 1,
+    retry: 2,
+    retryDelay: (n) => Math.min(1000 * 2 ** n, 4000),
     staleTime: 5 * 60_000,
   });
   const permsQuery = useQuery({
     queryKey: ["minhas-permissoes"],
     queryFn: () => getMinhasPermissoes(),
-    retry: 1,
+    retry: 2,
+    retryDelay: (n) => Math.min(1000 * 2 ** n, 4000),
     staleTime: 5 * 60_000,
   });
 
