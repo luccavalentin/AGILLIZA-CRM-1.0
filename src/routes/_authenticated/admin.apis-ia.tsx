@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Sparkles, KeyRound } from "lucide-react";
+import { Cpu, KeyRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -107,7 +107,7 @@ function Pagina() {
   return (
     <div className="mx-auto w-full max-w-2xl space-y-6 p-4 md:p-6">
       <header className="flex items-center gap-3">
-        <Sparkles className="size-6 text-primary" />
+        <Cpu className="size-6 text-primary" />
         <div>
           <h1 className="text-xl font-semibold text-foreground">APIs de IA</h1>
           <p className="text-sm text-muted-foreground">

@@ -350,7 +350,7 @@ export const navInterno: NavGroup[] = [
           },
           {
             label: "APIs de IA",
-            icon: Sparkles,
+            icon: Cpu,
             to: "/admin/apis-ia",
             perm: { modulo: "admin.integracoes" },
           },
