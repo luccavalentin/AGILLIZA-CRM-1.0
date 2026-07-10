@@ -177,7 +177,7 @@ function Pagina() {
                     <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
                       <span className="font-mono tabular-nums">{c.numero_cliente}</span>
                       <span className="max-w-full truncate font-mono tabular-nums">
-                        {c.documento_masc ? mascararDocumento(c.documento) : formatarDocumento(c.documento)}
+                        {c.documento_masc ? c.documento : formatarDocumento(c.documento)}
                       </span>
                     </div>
                   </div>
