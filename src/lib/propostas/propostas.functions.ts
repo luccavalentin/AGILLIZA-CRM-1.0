@@ -27,6 +27,8 @@ export interface PropostaListaItem {
   valor_financiamento: number | null;
   status: string;
   created_at: string;
+  responsavel_id: string | null;
+  nome_responsavel: string | null;
   bancos: PropostaBancoResumo[];
 }
 
@@ -80,7 +82,7 @@ export const listarPropostas = createServerFn({ method: "GET" })
     let query = supabase
       .from("propostas")
       .select(
-        "id, numero_proposta, numero_proposta_banco, nome_cliente, cpf_cnpj, nome_banco, produto, valor_financiamento, status, created_at",
+        "id, numero_proposta, numero_proposta_banco, nome_cliente, cpf_cnpj, nome_banco, produto, valor_financiamento, status, created_at, usuario_responsavel_id, usuario_criador_id",
         { count: "exact" },
       );
 
@@ -119,7 +121,32 @@ export const listarPropostas = createServerFn({ method: "GET" })
       }
     }
 
-    const lista = rows.map((r) => ({ ...r, bancos: bancosPorProp.get(r.id) ?? [] }));
+    // Resolve nomes dos responsáveis (para exibir o "dono" no escopo Todas).
+    const donoIds = Array.from(
+      new Set(
+        rows
+          .map((r) => r.usuario_responsavel_id ?? r.usuario_criador_id)
+          .filter((v): v is string => Boolean(v)),
+      ),
+    );
+    const nomesDono = new Map<string, string>();
+    if (donoIds.length) {
+      const { data: perfis } = await supabase
+        .from("profiles")
+        .select("id, nome")
+        .in("id", donoIds);
+      for (const p of perfis ?? []) nomesDono.set((p as any).id, (p as any).nome ?? "");
+    }
+
+    const lista = rows.map((r) => {
+      const responsavel_id = r.usuario_responsavel_id ?? r.usuario_criador_id ?? null;
+      return {
+        ...r,
+        responsavel_id,
+        nome_responsavel: responsavel_id ? (nomesDono.get(responsavel_id) ?? null) : null,
+        bancos: bancosPorProp.get(r.id) ?? [],
+      };
+    });
     return { itens: lista as PropostaListaItem[], total: count ?? 0 };
   });
 

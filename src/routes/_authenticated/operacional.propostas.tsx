@@ -11,6 +11,8 @@ import {
   Layers,
   Wallet,
   ChevronRight,
+  User,
+
 } from "lucide-react";
 import { toast } from "sonner";
 import { assertModuloPermitido } from "@/lib/route-guards";
@@ -59,7 +61,7 @@ function Pagina() {
   const queryClient = useQueryClient();
   const excluir = useServerFn(excluirProposta);
   const padrao = useMemo(() => intervaloMesAtual(), []);
-  const [escopo, setEscopo] = useState<"todas" | "minhas">("todas");
+  const [escopo, setEscopo] = useState<"todas" | "minhas">("minhas");
   const [q, setQ] = useState("");
   const [busca, setBusca] = useState("");
   const [dataInicio, setDataInicio] = useState(padrao.inicio);
@@ -277,6 +279,12 @@ function Pagina() {
                   <p className="mt-0.5 truncate text-sm text-muted-foreground">
                     {p.nome_cliente ?? "—"}
                   </p>
+                  {escopo === "todas" && p.nome_responsavel && (
+                    <p className="mt-1 flex items-center gap-1 text-[11px] text-muted-foreground">
+                      <User className="h-3 w-3 shrink-0" />
+                      <span className="truncate">{p.nome_responsavel}</span>
+                    </p>
+                  )}
                 </div>
                 <div onClick={(e) => e.stopPropagation()}>
                   <ConfirmDelete
@@ -376,6 +384,12 @@ function Pagina() {
                   </TableCell>
                   <TableCell className="font-medium text-foreground">
                     {p.nome_cliente ?? "—"}
+                    {escopo === "todas" && p.nome_responsavel && (
+                      <span className="mt-0.5 flex items-center gap-1 text-[11px] font-normal text-muted-foreground">
+                        <User className="h-3 w-3 shrink-0" />
+                        <span className="truncate">{p.nome_responsavel}</span>
+                      </span>
+                    )}
                   </TableCell>
                   <TableCell>
                     <BancosProposta bancos={p.bancos} />

@@ -16,6 +16,8 @@ import {
   Building2,
   Clock,
   Wallet,
+  User as UserIcon,
+
 } from "lucide-react";
 import { toast } from "sonner";
 import { assertModuloPermitido } from "@/lib/route-guards";
@@ -78,7 +80,7 @@ function Pagina() {
   const criar = useServerFn(criarProposta);
 
   const obter = useServerFn(obterSimulacao);
-  const [escopo, setEscopo] = useState<"todas" | "minhas">("todas");
+  const [escopo, setEscopo] = useState<"todas" | "minhas">("minhas");
   const [q, setQ] = useState("");
   const [busca, setBusca] = useState("");
   const [desde, setDesde] = useState("");
@@ -547,7 +549,15 @@ function Pagina() {
                   </span>
                 </TableCell>
 
-                <TableCell className="py-3.5 font-medium text-foreground">{s.nome_cliente ?? "—"}</TableCell>
+                <TableCell className="py-3.5 font-medium text-foreground">
+                  {s.nome_cliente ?? "—"}
+                  {escopo === "todas" && s.nome_responsavel && (
+                    <span className="mt-0.5 flex items-center gap-1 text-[11px] font-normal text-muted-foreground">
+                      <UserIcon className="h-3 w-3 shrink-0" />
+                      <span className="truncate">{s.nome_responsavel}</span>
+                    </span>
+                  )}
+                </TableCell>
                 <TableCell className="py-3.5">
                   <ProdutoBadge produto={s.produto} />
                 </TableCell>
@@ -622,6 +632,12 @@ function Pagina() {
               <div className="min-w-0">
                 <p className="font-mono font-semibold text-primary">{s.numero_simulacao}</p>
                 <p className="truncate text-sm font-medium text-foreground">{s.nome_cliente ?? "—"}</p>
+                {escopo === "todas" && s.nome_responsavel && (
+                  <p className="mt-0.5 flex items-center gap-1 text-[11px] text-muted-foreground">
+                    <UserIcon className="h-3 w-3 shrink-0" />
+                    <span className="truncate">{s.nome_responsavel}</span>
+                  </p>
+                )}
               </div>
               <div className="flex shrink-0 items-center gap-1" onClick={(e) => e.stopPropagation()}>
                 <SimulacaoStatusBadge status={s.status} />

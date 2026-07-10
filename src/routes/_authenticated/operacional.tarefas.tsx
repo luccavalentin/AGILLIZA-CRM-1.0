@@ -33,7 +33,7 @@ function fmtData(iso: string | null): string {
 }
 
 function Pagina() {
-  const [escopo, setEscopo] = useState<"todas" | "minhas">("todas");
+  const [escopo, setEscopo] = useState<"todas" | "minhas">("minhas");
   const [q, setQ] = useState("");
   const [sel, setSel] = useState<string | null>(null);
   const excluir = useServerFn(excluirTarefa);

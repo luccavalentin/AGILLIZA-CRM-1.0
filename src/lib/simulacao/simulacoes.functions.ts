@@ -48,6 +48,8 @@ export interface SimulacaoListaItem {
   prazo: number | null;
   status: string;
   created_at: string;
+  responsavel_id: string | null;
+  nome_responsavel: string | null;
   bancos: SimulacaoBancoResumo[];
 }
 
@@ -411,7 +413,7 @@ export const listarSimulacoes = createServerFn({ method: "GET" })
     let query = supabase
       .from("simulacoes")
       .select(
-        "id, numero_simulacao, nome_cliente, produto, valor_imovel, valor_financiamento, prazo, status, created_at",
+        "id, numero_simulacao, nome_cliente, produto, valor_imovel, valor_financiamento, prazo, status, created_at, usuario_criador_id",
         { count: "exact" },
       )
       .order("created_at", { ascending: false })
@@ -451,8 +453,23 @@ export const listarSimulacoes = createServerFn({ method: "GET" })
       }
     }
 
+    // Resolve nomes dos criadores (para exibir o "dono" no escopo Todas).
+    const donoIds = Array.from(
+      new Set((rows ?? []).map((r: any) => r.usuario_criador_id).filter(Boolean)),
+    ) as string[];
+    const nomesDono = new Map<string, string>();
+    if (donoIds.length) {
+      const { data: perfis } = await supabase
+        .from("profiles")
+        .select("id, nome")
+        .in("id", donoIds);
+      for (const p of perfis ?? []) nomesDono.set((p as any).id, (p as any).nome ?? "");
+    }
+
     const itens = (rows ?? []).map((r: any) => ({
       ...r,
+      responsavel_id: r.usuario_criador_id ?? null,
+      nome_responsavel: r.usuario_criador_id ? (nomesDono.get(r.usuario_criador_id) ?? null) : null,
       bancos: bancosPorSim.get(r.id) ?? [],
     })) as SimulacaoListaItem[];
     return { itens, total: count ?? 0 };

@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { ArrowLeft, Search, RotateCcw, KanbanSquare } from "lucide-react";
+import { ArrowLeft, Search, RotateCcw, KanbanSquare, User } from "lucide-react";
 import { BancoLogo } from "@/components/bancos/banco-logo";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { listarPropostas, moverStatusProposta } from "@/lib/propostas/propostas.functions";
@@ -88,7 +88,7 @@ function Pagina() {
   const [arrastando, setArrastando] = useState<{ id: string; status: PropostaStatus } | null>(null);
 
   const padrao = useMemo(() => intervaloMesAtual(), []);
-  const [escopo, setEscopo] = useState<"todas" | "minhas">("todas");
+  const [escopo, setEscopo] = useState<"todas" | "minhas">("minhas");
   const [q, setQ] = useState("");
   const [busca, setBusca] = useState("");
   const [dataInicio, setDataInicio] = useState(padrao.inicio);
@@ -296,6 +296,13 @@ function Pagina() {
                           <span className="tabular-nums">Interno {c.numero_proposta}</span>
                         )}
                       </div>
+
+                      {escopo === "todas" && c.nome_responsavel && (
+                        <div className="mt-2 flex items-center gap-1 text-[11px] text-muted-foreground">
+                          <User className="h-3 w-3 shrink-0" />
+                          <span className="truncate">{c.nome_responsavel}</span>
+                        </div>
+                      )}
 
                       {/* Banco + valor */}
                       <div className="mt-2.5 flex flex-wrap items-center justify-between gap-x-2 gap-y-1 border-t border-border/60 pt-2.5">
