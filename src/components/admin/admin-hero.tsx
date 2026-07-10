@@ -1,16 +1,18 @@
 import type { ReactNode } from "react";
 
-/** Cabeçalho hero unificado do módulo Administrativo (fundo da marca, compacto). */
+/** Cabeçalho hero unificado (fundo da marca, compacto). */
 export function AdminHero({
   icon,
   titulo,
   descricao,
   acoes,
+  secao = "Administrativo",
 }: {
   icon: ReactNode;
   titulo: string;
   descricao?: string;
   acoes?: ReactNode;
+  secao?: string;
 }) {
   return (
     <div className="op-hero px-4 py-3.5 md:px-5 md:py-4">
@@ -21,7 +23,7 @@ export function AdminHero({
           </span>
           <div className="min-w-0 space-y-0.5">
             <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-primary/80">
-              Administrativo
+              {secao}
             </span>
             <h1 className="truncate text-base font-bold tracking-tight text-foreground md:text-lg">
               {titulo}
