@@ -450,7 +450,11 @@ function Pagina() {
                     {bancos.map((b: any) => (
                       <TableRow
                         key={b.id}
-                        className="border-border/50 transition-colors odd:bg-card even:bg-muted/20 hover:bg-primary/5"
+                        className={cn(
+                          "border-border/50 transition-colors odd:bg-card even:bg-muted/20 hover:bg-primary/5",
+                          b.id === melhorId &&
+                            "bg-success/5 even:bg-success/5 hover:bg-success/10 [box-shadow:inset_3px_0_0_hsl(var(--success))]",
+                        )}
                       >
                         <TableCell className="py-3 text-sm font-semibold">
                           <div className="flex items-center gap-2.5">
