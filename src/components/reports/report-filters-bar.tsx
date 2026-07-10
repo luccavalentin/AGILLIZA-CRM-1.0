@@ -100,8 +100,13 @@ export function ReportFiltersBar({
     (filtros.imobiliarias?.length ?? 0) > 0;
 
   return (
-    <div className="space-y-2 rounded-lg border border-border bg-card p-3">
+    <div className="space-y-2.5 rounded-xl border border-border bg-card p-3.5 shadow-[var(--shadow-card)]">
+      <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+        <SlidersHorizontal className="h-3.5 w-3.5 text-primary" />
+        Filtros de pesquisa
+      </div>
       <div className="flex flex-wrap items-center gap-2">
+
         <Select value={filtros.periodo} onValueChange={(v) => set({ periodo: v as Periodo })}>
           <SelectTrigger className="h-9 w-44">
             <SelectValue />
