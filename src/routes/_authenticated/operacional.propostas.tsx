@@ -148,42 +148,43 @@ function Pagina() {
       </div>
 
       {/* Resumo */}
-      <div className="grid grid-cols-2 gap-3 sm:gap-4">
-        <Card className="relative flex items-center gap-3 overflow-hidden rounded-2xl border-border/60 p-4 shadow-sm">
-          <span className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-primary to-primary/40" />
-          <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/15">
-            <Layers className="h-5 w-5" />
+      <div className="grid grid-cols-2 divide-x divide-border/60 overflow-hidden rounded-xl border border-border/60 bg-card shadow-sm">
+        <div className="flex items-center gap-3 px-4 py-3.5 sm:px-5">
+          <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-primary/8 text-primary ring-1 ring-inset ring-primary/10">
+            <Layers className="h-4 w-4" />
           </span>
           <div className="min-w-0">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
               Propostas
             </p>
             {isLoading ? (
-              <Skeleton className="mt-1 h-7 w-12" />
+              <Skeleton className="mt-1 h-6 w-10" />
             ) : (
-              <p className="text-2xl font-semibold tabular-nums text-foreground">{totalItens}</p>
+              <p className="text-xl font-semibold tabular-nums leading-tight text-foreground">
+                {totalItens}
+              </p>
             )}
           </div>
-        </Card>
-        <Card className="relative flex items-center gap-3 overflow-hidden rounded-2xl border-border/60 p-4 shadow-sm">
-          <span className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-primary to-primary/40" />
-          <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-accent text-accent-foreground ring-1 ring-inset ring-primary/15">
-            <Wallet className="h-5 w-5" />
+        </div>
+        <div className="flex items-center gap-3 px-4 py-3.5 sm:px-5">
+          <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-primary/8 text-primary ring-1 ring-inset ring-primary/10">
+            <Wallet className="h-4 w-4" />
           </span>
           <div className="min-w-0">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
               Volume financiado
             </p>
             {isLoading ? (
-              <Skeleton className="mt-1 h-7 w-24" />
+              <Skeleton className="mt-1 h-6 w-24" />
             ) : (
-              <p className="truncate text-2xl font-semibold tabular-nums text-foreground">
+              <p className="truncate text-xl font-semibold tabular-nums leading-tight text-foreground">
                 {formatBRL(volumeTotal)}
               </p>
             )}
           </div>
-        </Card>
+        </div>
       </div>
+
 
 
       {/* Filtros */}
