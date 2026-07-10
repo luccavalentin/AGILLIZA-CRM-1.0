@@ -402,7 +402,7 @@ export const estornarConta = createServerFn({ method: "POST" })
         descricao: `Estorno — ${(conta as any).descricao}`,
         [data.tipo === "pagar" ? "fornecedor" : "pagador"]:
           (conta as any)[data.tipo === "pagar" ? "fornecedor" : "pagador"] ?? null,
-        valor: (conta as any).valor,
+        valor: Number(conta.valor_pago) || (conta as any).valor,
         vencimento: (conta as any).vencimento,
         status: "estornada",
         estornada: true,
