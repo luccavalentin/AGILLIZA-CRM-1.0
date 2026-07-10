@@ -378,7 +378,7 @@ function Pagina() {
             disabled={!valido}
             onClick={() => setMostrarRapida(true)}
           >
-            <Zap className="h-4 w-4" /> Simulação rápida
+            Simulação rápida
           </Button>
           <Button
             variant="secondary"
