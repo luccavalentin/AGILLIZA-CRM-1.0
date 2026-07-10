@@ -170,7 +170,7 @@ function Pagina() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-5xl p-4 md:p-8">
+    <div className="mx-auto w-full max-w-3xl p-4 md:p-8">
       <Button
         variant="ghost"
         size="sm"
@@ -184,23 +184,23 @@ function Pagina() {
         <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
       </Button>
 
-      {/* Cabeçalho */}
-      <div className="mb-5 flex items-center gap-4 rounded-xl border border-border/60 bg-gradient-to-br from-primary/5 via-card to-card p-5">
-        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/20">
-          <Calculator className="h-6 w-6" />
-        </span>
-        <div>
-          <h1 className="text-lg font-semibold tracking-tight text-foreground">
-            Simular financiamento
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Informe os dados abaixo para estimar as condições entre os bancos parceiros.
-          </p>
-        </div>
-      </div>
-
       <div className="flex flex-col gap-4">
         <Card className="overflow-hidden">
+          {/* Cabeçalho integrado ao cartão */}
+          <div className="flex items-center gap-4 border-b border-border/60 bg-gradient-to-br from-primary/5 via-card to-card p-5 md:p-6">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/20">
+              <Calculator className="h-6 w-6" />
+            </span>
+            <div className="min-w-0">
+              <h1 className="text-lg font-semibold tracking-tight text-foreground">
+                Simular financiamento
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                Informe os dados abaixo para estimar as condições entre os bancos parceiros.
+              </p>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 gap-5 p-5 md:p-6 lg:grid-cols-2">
         <div className="space-y-1.5 lg:col-span-2">
           <Label>Produto</Label>
