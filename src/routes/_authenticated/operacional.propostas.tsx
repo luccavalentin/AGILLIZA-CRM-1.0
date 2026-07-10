@@ -67,6 +67,7 @@ function Pagina() {
   const excluir = useServerFn(excluirProposta);
   const padrao = useMemo(() => intervaloMesAtual(), []);
   const [escopo, setEscopo] = useState<"todas" | "minhas">("minhas");
+  const [grupo, setGrupo] = useState<GrupoProposta | null>(null);
   const [q, setQ] = useState("");
   const [busca, setBusca] = useState("");
   const [dataInicio, setDataInicio] = useState(padrao.inicio);
