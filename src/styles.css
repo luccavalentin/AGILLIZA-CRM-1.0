@@ -336,6 +336,39 @@
   background-color: rgba(255, 255, 255, 0.45);
 }
 
+/* Scrollbar azul da marca — trilho do stepper, refinada e sofisticada. */
+.brand-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklab, var(--primary) 55%, transparent) transparent;
+}
+.brand-scroll::-webkit-scrollbar {
+  height: 8px;
+}
+.brand-scroll::-webkit-scrollbar-track {
+  background: color-mix(in oklab, var(--primary) 8%, transparent);
+  border-radius: 9999px;
+  margin: 0 4px;
+}
+.brand-scroll::-webkit-scrollbar-thumb {
+  border-radius: 9999px;
+  background: linear-gradient(
+    90deg,
+    color-mix(in oklab, var(--primary) 65%, transparent),
+    var(--primary)
+  );
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  transition: background 0.2s ease;
+}
+.brand-scroll::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(
+    90deg,
+    color-mix(in oklab, var(--primary) 80%, transparent),
+    var(--primary)
+  );
+  background-clip: padding-box;
+}
+
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
