@@ -279,6 +279,12 @@ function Pagina() {
                   <p className="mt-0.5 truncate text-sm text-muted-foreground">
                     {p.nome_cliente ?? "—"}
                   </p>
+                  {escopo === "todas" && p.nome_responsavel && (
+                    <p className="mt-1 flex items-center gap-1 text-[11px] text-muted-foreground">
+                      <User className="h-3 w-3 shrink-0" />
+                      <span className="truncate">{p.nome_responsavel}</span>
+                    </p>
+                  )}
                 </div>
                 <div onClick={(e) => e.stopPropagation()}>
                   <ConfirmDelete
