@@ -270,13 +270,7 @@ function Pagina() {
           />
         </div>
 
-          </div>
-        </Card>
 
-        {/* Seção: Perfil e prazo */}
-        <Card className="overflow-hidden">
-          <SecaoCabecalho icone={<CalendarDays className="h-4 w-4" />} titulo="Perfil e prazo" />
-          <div className="space-y-5 p-5">
         <div className="space-y-2">
           <Label>Você já possui o imóvel escolhido?</Label>
           <RadioGroup
