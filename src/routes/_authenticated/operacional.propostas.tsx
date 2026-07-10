@@ -118,7 +118,7 @@ function Pagina() {
       {/* Cabeçalho */}
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 sm:flex sm:items-center sm:justify-between">
         <div className="flex min-w-0 items-center gap-3">
-          <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-primary to-primary/70 text-primary-foreground shadow-sm ring-1 ring-primary/20">
+          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/8 text-primary ring-1 ring-inset ring-primary/12">
             <FileText className="h-5 w-5" />
           </span>
           <div className="min-w-0 space-y-0.5">
@@ -131,20 +131,21 @@ function Pagina() {
           </div>
         </div>
         <div className="col-span-2 flex gap-2 sm:col-auto">
-          <Button asChild variant="secondary" className="h-11 flex-1 rounded-xl sm:flex-none">
+          <Button asChild variant="outline" className="h-10 flex-1 rounded-lg sm:flex-none">
             <Link to="/operacional/propostas/kanban">
               <KanbanSquare className="mr-1.5 h-4 w-4" /> Kanban
             </Link>
           </Button>
           <Button
             asChild
-            className="h-11 flex-1 rounded-xl bg-gradient-to-br from-primary to-primary/80 font-semibold shadow-md ring-1 ring-primary/20 transition-all hover:shadow-lg hover:brightness-105 sm:flex-none"
+            className="h-10 flex-1 rounded-lg font-medium shadow-sm sm:flex-none"
           >
             <Link to="/operacional/propostas/enviar">
               <Plus className="mr-1.5 h-4 w-4" /> Nova proposta
             </Link>
           </Button>
         </div>
+
       </div>
 
       {/* Resumo */}
