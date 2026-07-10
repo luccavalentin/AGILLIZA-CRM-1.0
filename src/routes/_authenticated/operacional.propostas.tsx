@@ -380,13 +380,14 @@ function Pagina() {
               itens.map((p) => (
                 <TableRow
                   key={p.id}
-                  className="group cursor-pointer"
+                  className="group relative cursor-pointer transition-colors hover:bg-primary/[0.03]"
                   onClick={() =>
                     router.navigate({ to: "/operacional/propostas/$id", params: { id: p.id } })
                   }
                 >
-                  <TableCell>
-                    <div className="font-medium tabular-nums text-foreground">
+                  <TableCell className="relative">
+                    <span className="absolute inset-y-0 left-0 w-[3px] origin-top scale-y-0 rounded-r-full bg-primary transition-transform duration-200 group-hover:scale-y-100" />
+                    <div className="font-medium tabular-nums text-foreground transition-colors group-hover:text-primary">
                       {p.numero_proposta_banco ?? p.numero_proposta}
                     </div>
                     {p.numero_proposta_banco && (
