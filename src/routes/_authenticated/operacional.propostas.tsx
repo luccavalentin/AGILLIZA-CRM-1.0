@@ -290,10 +290,19 @@ function Pagina() {
           </Card>
         )}
         {!isLoading &&
-          itens.map((p) => (
+          itens.map((p) => {
+            const corBanco = corDoBanco(p.bancos?.[0]?.nome_banco);
+            return (
             <Card
               key={p.id}
-              className="cursor-pointer rounded-2xl border-border/60 p-4 shadow-sm transition-colors hover:border-primary/30 hover:bg-primary/[0.025]"
+              style={
+                {
+                  "--banco": corBanco,
+                  "--banco-tint": `${corBanco}12`,
+                  "--banco-ring": `${corBanco}59`,
+                } as React.CSSProperties
+              }
+              className="cursor-pointer rounded-2xl border-border/60 p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--banco-ring)] hover:bg-[var(--banco-tint)] hover:shadow-lg"
               onClick={() =>
                 router.navigate({ to: "/operacional/propostas/$id", params: { id: p.id } })
               }
