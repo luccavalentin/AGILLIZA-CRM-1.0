@@ -570,9 +570,19 @@ function Pagina() {
 
       {/* Cartões (telas pequenas) */}
       <div className="space-y-3 md:hidden">
-        {isLoading && (
-          <p className="py-10 text-center text-sm text-muted-foreground">Carregando…</p>
-        )}
+        {isLoading &&
+          Array.from({ length: 4 }).map((_, i) => (
+            <div key={`skm-${i}`} className="rounded-xl border border-border/60 bg-card p-4 shadow-sm">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1 space-y-2">
+                  <div className="h-4 w-24 animate-pulse rounded bg-muted" />
+                  <div className="h-3 w-40 animate-pulse rounded bg-muted/70" />
+                </div>
+                <div className="h-6 w-20 animate-pulse rounded-full bg-muted" />
+              </div>
+              <div className="mt-4 h-14 animate-pulse rounded-lg bg-muted/50" />
+            </div>
+          ))}
         {!isLoading && (data?.itens.length ?? 0) === 0 && (
           <div className="flex flex-col items-center gap-3 rounded-lg border border-border py-12 text-center">
             <Calculator className="h-8 w-8 text-muted-foreground" />
