@@ -1,3 +1,4 @@
+import { AdminHero } from "@/components/admin/admin-hero";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -106,15 +107,11 @@ function Pagina() {
 
   return (
     <div className="mx-auto w-full max-w-2xl space-y-6 p-4 md:p-6">
-      <header className="flex items-center gap-3">
-        <Cpu className="size-6 text-primary" />
-        <div>
-          <h1 className="text-xl font-semibold text-foreground">APIs de IA</h1>
-          <p className="text-sm text-muted-foreground">
-            Provedor de IA usado pelo Scan IA (extração de campos de documentos).
-          </p>
-        </div>
-      </header>
+      <AdminHero
+        icon={<Cpu className="h-5 w-5" />}
+        titulo="APIs de IA"
+        descricao="Provedor de IA usado pelo Scan IA (extração de campos de documentos)."
+      />
 
       <div className="space-y-5 rounded-lg border border-border p-4 md:p-6">
         <div className="flex items-center justify-between rounded-md border border-border p-3">

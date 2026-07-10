@@ -1,9 +1,10 @@
+import { AdminHero } from "@/components/admin/admin-hero";
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Plus, Copy, Search, MoreHorizontal, Pencil, KeyRound, Ban, CheckCircle2, Trash2, LogIn } from "lucide-react";
+import { Plus, Copy, Search, MoreHorizontal, Pencil, KeyRound, Ban, CheckCircle2, Trash2, LogIn, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -175,7 +176,12 @@ function PessoasPage() {
 
   return (
     <>
-      <div className="mx-auto max-w-5xl">
+      <div className="mx-auto max-w-5xl space-y-6">
+        <AdminHero
+          icon={<Users className="h-5 w-5" />}
+          titulo="Pessoas & Acessos"
+          descricao="Equipe interna, parceiros, papéis e tipos de pessoa."
+        />
         <Tabs value={aba} onValueChange={(v) => setAba(v as typeof aba)}>
           <TabsList className="mb-6">
             <TabsTrigger value="pessoas">Pessoas</TabsTrigger>
@@ -186,9 +192,9 @@ function PessoasPage() {
           <TabsContent value="pessoas">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <h1 className="text-2xl font-semibold text-foreground">
+                <h2 className="text-lg font-semibold text-foreground">
                   Pessoas do meu ecossistema
-                </h1>
+                </h2>
                 <p className="text-sm text-muted-foreground">
                   Equipe interna e parceiros em uma única lista.
                 </p>

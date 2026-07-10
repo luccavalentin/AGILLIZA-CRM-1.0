@@ -1,3 +1,4 @@
+import { AdminHero } from "@/components/admin/admin-hero";
 import { useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -54,15 +55,11 @@ function Pagina() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 p-4 md:p-6">
-      <header className="flex items-center gap-3">
-        <SlidersHorizontal className="size-6 text-primary" />
-        <div>
-          <h1 className="text-xl font-semibold text-foreground">Configurações Gerais</h1>
-          <p className="text-sm text-muted-foreground">
-            Ajuste o comportamento de cada módulo do sistema.
-          </p>
-        </div>
-      </header>
+      <AdminHero
+        icon={<SlidersHorizontal className="h-5 w-5" />}
+        titulo="Configurações Gerais"
+        descricao="Ajuste o comportamento de cada módulo do sistema."
+      />
 
       <Tabs defaultValue={MODULOS_CONFIG[0]?.id}>
         <TabsList className="flex h-auto flex-wrap justify-start">

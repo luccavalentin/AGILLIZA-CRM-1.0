@@ -1,3 +1,4 @@
+import { AdminHero } from "@/components/admin/admin-hero";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -95,15 +96,11 @@ function Pagina() {
 
   return (
     <div className="space-y-6 p-4 md:p-6">
-      <header className="flex items-center gap-3">
-        <ShieldCheck className="size-6 text-primary" />
-        <div>
-          <h1 className="text-xl font-semibold text-foreground">Auditoria</h1>
-          <p className="text-sm text-muted-foreground">
-            Registro de ações administrativas do seu ecossistema.
-          </p>
-        </div>
-      </header>
+      <AdminHero
+        icon={<ShieldCheck className="h-5 w-5" />}
+        titulo="Auditoria"
+        descricao="Registro de ações administrativas do seu ecossistema."
+      />
 
       <div className="rounded-lg border border-border bg-card p-4">
         <div className="mb-3 flex items-center gap-2 text-sm font-medium text-foreground">

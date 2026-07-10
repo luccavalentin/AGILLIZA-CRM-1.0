@@ -1,3 +1,4 @@
+import { AdminHero } from "@/components/admin/admin-hero";
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -67,15 +68,11 @@ function produtoLabel(v: string | null) {
 function Pagina() {
   return (
     <div className="mx-auto w-full max-w-5xl space-y-6 p-4 md:p-6">
-      <div className="flex items-center gap-2">
-        <Percent className="h-5 w-5 text-muted-foreground" />
-        <div>
-          <h1 className="text-xl font-semibold text-foreground">Comissões</h1>
-          <p className="text-sm text-muted-foreground">
-            Regras de comissão por banco, produto e faixa, com divisão parceiro × interno.
-          </p>
-        </div>
-      </div>
+      <AdminHero
+        icon={<Percent className="h-5 w-5" />}
+        titulo="Comissões"
+        descricao="Regras de comissão por banco, produto e faixa, com divisão parceiro × interno."
+      />
       <SecaoRegras />
       <SecaoSimulador />
     </div>

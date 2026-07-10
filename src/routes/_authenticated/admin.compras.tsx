@@ -1,3 +1,4 @@
+import { AdminHero } from "@/components/admin/admin-hero";
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -87,20 +88,17 @@ function Pagina() {
 
   return (
     <div className="space-y-6 p-4 md:p-6">
-      <header className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <ShoppingCart className="size-6 text-primary" />
-          <div>
-            <h1 className="text-xl font-semibold text-foreground">Compras</h1>
-            <p className="text-sm text-muted-foreground">Solicitações e aprovações de compra.</p>
-          </div>
-        </div>
-        <Dialog open={aberto} onOpenChange={setAberto}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 size-4" /> Nova solicitação
-            </Button>
-          </DialogTrigger>
+      <AdminHero
+        icon={<ShoppingCart className="h-5 w-5" />}
+        titulo="Compras"
+        descricao="Solicitações e aprovações de compra."
+        acoes={
+          <Dialog open={aberto} onOpenChange={setAberto}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="mr-2 size-4" /> Nova solicitação
+              </Button>
+            </DialogTrigger>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Nova solicitação de compra</DialogTitle>
@@ -143,8 +141,9 @@ function Pagina() {
               </Button>
             </DialogFooter>
           </DialogContent>
-        </Dialog>
-      </header>
+          </Dialog>
+        }
+      />
 
       <div className="rounded-lg border border-border">
         <Table>
