@@ -526,8 +526,8 @@ function Pagina() {
         </TabsContent>
 
         <TabsContent value="dados" className="mt-4">
-          <Card className="p-4">
-            <dl className="grid grid-cols-1 gap-x-8 gap-y-3 text-sm sm:grid-cols-2">
+          <div className="overflow-hidden rounded-xl border border-border/60 bg-border/60 shadow-sm">
+            <dl className="grid grid-cols-1 gap-px sm:grid-cols-2">
               <Item termo="Valor do imóvel" desc={formatBRL(s.valor_imovel)} />
               <Item termo="Valor financiado" desc={formatBRL(s.valor_financiamento)} />
               <Item termo="Entrada" desc={formatBRL(s.valor_entrada)} />
@@ -556,27 +556,35 @@ function Pagina() {
               <Item termo="Estado civil" desc={s.estado_civil ?? "—"} />
               <Item termo="UF" desc={s.uf ?? "—"} />
             </dl>
-          </Card>
+          </div>
         </TabsContent>
 
         <TabsContent value="historico" className="mt-4">
-          <Card className="divide-y divide-border p-0">
-            {data.historico.length === 0 && (
-              <p className="p-4 text-sm text-muted-foreground">Sem histórico.</p>
+          <Card className="p-5">
+            {data.historico.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Sem histórico.</p>
+            ) : (
+              <ol className="relative space-y-5 before:absolute before:left-[7px] before:top-1.5 before:bottom-1.5 before:w-px before:bg-border">
+                {data.historico.map((h: any) => (
+                  <li key={h.id} className="relative flex gap-4 pl-6">
+                    <span className="absolute left-0 top-1 flex h-3.5 w-3.5 items-center justify-center rounded-full border-2 border-primary/40 bg-background">
+                      <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                    </span>
+                    <div className="flex flex-1 flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-between">
+                      <p className="text-sm text-foreground">
+                        <span className="font-medium">{h.descricao}</span>
+                        {h.ator_nome && (
+                          <span className="text-muted-foreground"> · por {h.ator_nome}</span>
+                        )}
+                      </p>
+                      <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                        {new Date(h.created_at).toLocaleString("pt-BR")}
+                      </span>
+                    </div>
+                  </li>
+                ))}
+              </ol>
             )}
-            {data.historico.map((h: any) => (
-              <div key={h.id} className="flex items-center justify-between gap-3 p-4 text-sm">
-                <div>
-                  <span>{h.descricao}</span>
-                  {h.ator_nome && (
-                    <span className="text-muted-foreground"> · por {h.ator_nome}</span>
-                  )}
-                </div>
-                <span className="shrink-0 text-xs text-muted-foreground">
-                  {new Date(h.created_at).toLocaleString("pt-BR")}
-                </span>
-              </div>
-            ))}
           </Card>
         </TabsContent>
       </Tabs>
@@ -584,11 +592,37 @@ function Pagina() {
   );
 }
 
+function ResumoCelula({
+  rotulo,
+  valor,
+  destaque,
+}: {
+  rotulo: string;
+  valor: string;
+  destaque?: boolean;
+}) {
+  return (
+    <div className={cn("bg-card p-3", destaque && "bg-primary/5")}>
+      <dt className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+        {rotulo}
+      </dt>
+      <dd
+        className={cn(
+          "mt-1 text-sm font-semibold tabular-nums",
+          destaque ? "text-primary" : "text-foreground",
+        )}
+      >
+        {valor}
+      </dd>
+    </div>
+  );
+}
+
 function Item({ termo, desc }: { termo: string; desc: string }) {
   return (
-    <div className="flex justify-between border-b border-border/40 pb-2">
-      <dt className="text-muted-foreground">{termo}</dt>
-      <dd className="font-medium text-foreground tabular-nums">{desc}</dd>
+    <div className="flex items-center justify-between gap-3 bg-card px-4 py-3 transition-colors hover:bg-muted/40">
+      <dt className="text-sm text-muted-foreground">{termo}</dt>
+      <dd className="text-right text-sm font-semibold text-foreground tabular-nums">{desc}</dd>
     </div>
   );
 }
