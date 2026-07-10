@@ -348,23 +348,40 @@ function Pagina() {
 
       {/* KPIs */}
       <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
-        {kpis.map((k) => (
-          <button
-            key={k.label}
-            type="button"
-            onClick={() => setKpiAberto(k.id)}
-            className="group relative flex items-center gap-3 overflow-hidden rounded-xl border border-border/60 bg-card px-3.5 py-3 text-left shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-          >
-            <span className="absolute left-0 top-0 h-full w-[3px] rounded-r bg-primary/60" />
-            <div className="grid size-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary ring-1 ring-inset ring-primary/15">
-              <k.icon className="size-4" />
-            </div>
-            <div className="min-w-0">
-              <p className="truncate font-mono text-lg font-semibold tracking-tight tabular-nums text-foreground">{k.valor}</p>
-              <p className="truncate text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{k.label}</p>
-            </div>
-          </button>
-        ))}
+        {isLoading
+          ? Array.from({ length: 4 }).map((_, i) => (
+              <div
+                key={i}
+                className="flex items-center gap-3 rounded-xl border border-border/60 bg-card px-3.5 py-3.5 shadow-sm"
+              >
+                <div className="size-10 shrink-0 animate-pulse rounded-xl bg-muted" />
+                <div className="min-w-0 flex-1 space-y-2">
+                  <div className="h-4 w-2/3 animate-pulse rounded bg-muted" />
+                  <div className="h-2.5 w-1/2 animate-pulse rounded bg-muted/70" />
+                </div>
+              </div>
+            ))
+          : kpis.map((k) => (
+              <button
+                key={k.label}
+                type="button"
+                onClick={() => setKpiAberto(k.id)}
+                className="group relative flex items-center gap-3 overflow-hidden rounded-xl border border-border/60 bg-card px-3.5 py-3.5 text-left shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+              >
+                <span className="absolute inset-x-0 top-0 h-0.5 origin-left scale-x-0 bg-gradient-to-r from-primary to-primary/40 transition-transform duration-300 group-hover:scale-x-100" />
+                <span className="absolute left-0 top-0 h-full w-[3px] rounded-r bg-primary/60" />
+                <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/15 transition-colors group-hover:bg-primary/15">
+                  <k.icon className="size-4" />
+                </div>
+                <div className="min-w-0">
+                  <p className="truncate font-mono text-lg font-semibold tracking-tight tabular-nums text-foreground sm:text-xl">{k.valor}</p>
+                  <p className="truncate text-[10.5px] font-medium uppercase tracking-wide text-muted-foreground">{k.label}</p>
+                </div>
+                <span className="ml-auto hidden shrink-0 text-[10px] font-medium text-primary/0 transition-colors group-hover:text-primary/70 sm:block">
+                  ver detalhes
+                </span>
+              </button>
+            ))}
       </div>
 
       {/* Detalhe do KPI clicado */}
@@ -463,26 +480,32 @@ function Pagina() {
       <div className="hidden overflow-hidden rounded-lg border border-border/60 bg-card md:block">
         <Table>
           <TableHeader>
-            <TableRow className="border-border/60 bg-muted/40 hover:bg-muted/40">
-              <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Número</TableHead>
-              <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Cliente</TableHead>
-              <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Produto</TableHead>
-              <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Bancos simulados</TableHead>
-              <TableHead className="text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">Valor imóvel</TableHead>
-              <TableHead className="text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">Prazo</TableHead>
-              <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Status</TableHead>
-              <TableHead className="w-12 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">Ações</TableHead>
+            <TableRow className="border-border/60 bg-muted/50 hover:bg-muted/50">
+              <TableHead className="h-10 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Número</TableHead>
+              <TableHead className="h-10 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Cliente</TableHead>
+              <TableHead className="h-10 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Produto</TableHead>
+              <TableHead className="h-10 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Bancos simulados</TableHead>
+              <TableHead className="h-10 text-right text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Valor imóvel</TableHead>
+              <TableHead className="h-10 text-right text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Prazo</TableHead>
+              <TableHead className="h-10 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Status</TableHead>
+              <TableHead className="h-10 w-12 text-right text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Ações</TableHead>
             </TableRow>
           </TableHeader>
 
           <TableBody>
-            {isLoading && (
-              <TableRow>
-                <TableCell colSpan={8} className="py-10 text-center text-sm text-muted-foreground">
-                  Carregando…
-                </TableCell>
-              </TableRow>
-            )}
+            {isLoading &&
+              Array.from({ length: 6 }).map((_, i) => (
+                <TableRow key={`sk-${i}`} className="border-border/50">
+                  {Array.from({ length: 8 }).map((__, j) => (
+                    <TableCell key={j} className="py-3.5">
+                      <div
+                        className="h-4 animate-pulse rounded bg-muted"
+                        style={{ width: `${[60, 80, 55, 70, 65, 45, 55, 30][j]}%` }}
+                      />
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))}
             {!isLoading && (data?.itens.length ?? 0) === 0 && (
               <TableRow>
                 <TableCell colSpan={8}>
@@ -499,24 +522,28 @@ function Pagina() {
             {data?.itens.map((s) => (
               <TableRow
                 key={s.id}
-                className="cursor-pointer border-border/50 transition-colors hover:bg-primary/5"
+                className="group cursor-pointer border-border/50 transition-colors odd:bg-muted/[0.18] hover:bg-primary/[0.06]"
                 onClick={() =>
                   router.navigate({ to: "/operacional/simulacoes/$id", params: { id: s.id } })
                 }
               >
-                <TableCell className="font-mono font-semibold text-primary">{s.numero_simulacao}</TableCell>
+                <TableCell className="py-3.5">
+                  <span className="inline-flex items-center rounded-md bg-primary/5 px-2 py-0.5 font-mono text-[13px] font-semibold text-primary ring-1 ring-inset ring-primary/10 transition-colors group-hover:bg-primary/10">
+                    {s.numero_simulacao}
+                  </span>
+                </TableCell>
 
-                <TableCell className="font-medium text-foreground">{s.nome_cliente ?? "—"}</TableCell>
-                <TableCell>
+                <TableCell className="py-3.5 font-medium text-foreground">{s.nome_cliente ?? "—"}</TableCell>
+                <TableCell className="py-3.5">
                   <ProdutoBadge produto={s.produto} />
                 </TableCell>
-                <TableCell>
+                <TableCell className="py-3.5">
                   <BancosSimulados bancos={s.bancos} />
                 </TableCell>
-                <TableCell className="text-right font-semibold tabular-nums text-foreground">
+                <TableCell className="py-3.5 text-right font-semibold tabular-nums text-foreground">
                   {formatBRL(s.valor_imovel)}
                 </TableCell>
-                <TableCell className="text-right tabular-nums text-muted-foreground">
+                <TableCell className="py-3.5 text-right tabular-nums text-muted-foreground">
                   {s.prazo ? `${s.prazo} meses` : "—"}
                 </TableCell>
                 <TableCell>
@@ -547,9 +574,19 @@ function Pagina() {
 
       {/* Cartões (telas pequenas) */}
       <div className="space-y-3 md:hidden">
-        {isLoading && (
-          <p className="py-10 text-center text-sm text-muted-foreground">Carregando…</p>
-        )}
+        {isLoading &&
+          Array.from({ length: 4 }).map((_, i) => (
+            <div key={`skm-${i}`} className="rounded-xl border border-border/60 bg-card p-4 shadow-sm">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1 space-y-2">
+                  <div className="h-4 w-24 animate-pulse rounded bg-muted" />
+                  <div className="h-3 w-40 animate-pulse rounded bg-muted/70" />
+                </div>
+                <div className="h-6 w-20 animate-pulse rounded-full bg-muted" />
+              </div>
+              <div className="mt-4 h-14 animate-pulse rounded-lg bg-muted/50" />
+            </div>
+          ))}
         {!isLoading && (data?.itens.length ?? 0) === 0 && (
           <div className="flex flex-col items-center gap-3 rounded-lg border border-border py-12 text-center">
             <Calculator className="h-8 w-8 text-muted-foreground" />
