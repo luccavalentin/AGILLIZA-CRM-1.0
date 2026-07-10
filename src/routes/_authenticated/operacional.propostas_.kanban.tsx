@@ -297,6 +297,13 @@ function Pagina() {
                         )}
                       </div>
 
+                      {escopo === "todas" && c.nome_responsavel && (
+                        <div className="mt-2 flex items-center gap-1 text-[11px] text-muted-foreground">
+                          <User className="h-3 w-3 shrink-0" />
+                          <span className="truncate">{c.nome_responsavel}</span>
+                        </div>
+                      )}
+
                       {/* Banco + valor */}
                       <div className="mt-2.5 flex flex-wrap items-center justify-between gap-x-2 gap-y-1 border-t border-border/60 pt-2.5">
                         <span className="flex min-w-0 items-center gap-1.5 text-xs font-medium text-foreground">
