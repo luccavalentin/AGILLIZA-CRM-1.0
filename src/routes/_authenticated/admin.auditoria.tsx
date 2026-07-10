@@ -151,15 +151,14 @@ function isHoje(iso: string): boolean {
 }
 
 function Kpi({
-  icon,
+  icon: Icone,
   valor,
   rotulo,
 }: {
-  icon: ReactNodeIcon;
+  icon: LucideIcon;
   valor: string | number;
   rotulo: string;
 }) {
-  const Icone = icon;
   return (
     <div className="rounded-xl border border-border bg-card p-4">
       <div className="flex items-center gap-3">
@@ -176,7 +175,7 @@ function Kpi({
     </div>
   );
 }
-type ReactNodeIcon = LucideIcon;
+
 
 function Pagina() {
   const [rascunho, setRascunho] = useState<Filtros>(FILTROS_VAZIOS);
