@@ -452,7 +452,8 @@ function Pagina() {
                     />
                   </TableCell>
                 </TableRow>
-              ))}
+                );
+              })}
           </TableBody>
         </Table>
       </Card>
