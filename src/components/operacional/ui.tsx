@@ -9,15 +9,21 @@ export function OpHero({
   titulo,
   descricao,
   acoes,
+  accent,
 }: {
   icon: ReactNode;
   eyebrow: string;
   titulo: string;
   descricao: string;
   acoes?: ReactNode;
+  /** Cor de acento (ex.: cor de marca do banco). Padrão: azul da marca. */
+  accent?: string;
 }) {
   return (
-    <div className="op-hero p-5 md:p-6">
+    <div
+      className="op-hero p-5 md:p-6"
+      style={accent ? { ["--op-accent" as string]: accent } : undefined}
+    >
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4 sm:flex sm:flex-wrap sm:justify-between">
         <div className="flex min-w-0 items-start gap-3.5">
           <span className="grid size-10 shrink-0 place-items-center rounded-xl border border-border bg-background text-primary md:size-11">
@@ -42,6 +48,7 @@ export function OpHero({
     </div>
   );
 }
+
 
 /** KPI sóbrio com fina régua de acento à esquerda. */
 export function OpStat({
