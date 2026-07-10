@@ -190,7 +190,7 @@ function Pagina() {
       <AdminHero
         icon={<DatabaseBackup className="h-5 w-5" />}
         titulo="Backup"
-        descricao="Baixe os dados do sistema em uma planilha Excel profissional e formatada, ou todos os documentos em ZIP organizado por pastas."
+        descricao="Baixe todo o sistema em uma planilha Excel simples e legível (sem códigos técnicos) ou em arquivo SQL para restauração do banco de dados. Também é possível baixar todos os documentos em ZIP."
         acoes={
           <>
           <Button disabled={baixando} onClick={baixarExcel}>
