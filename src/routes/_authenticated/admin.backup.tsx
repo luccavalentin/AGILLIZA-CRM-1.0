@@ -124,8 +124,12 @@ function Pagina() {
     setBaixando(true);
     try {
       const dados = await exportarBackupCompleto();
-      const { exportarBackupXLSX } = await import("@/lib/admin/backup-xlsx");
-      exportarBackupXLSX(dados);
+      const [{ exportarBackupXLSX }, { humanizarBackup }] = await Promise.all([
+        import("@/lib/admin/backup-xlsx"),
+        import("@/lib/admin/backup-labels"),
+      ]);
+      // Humaniza: esconde códigos/IDs e traduz colunas e valores para leigos.
+      exportarBackupXLSX(humanizarBackup(dados));
       toast.success("Backup completo exportado em Excel.");
       qc.invalidateQueries({ queryKey: ["admin-backups"] });
 
@@ -133,6 +137,22 @@ function Pagina() {
       toast.error(e?.message ?? "Falha ao exportar backup.");
     } finally {
       setBaixando(false);
+    }
+  }
+
+  async function baixarSQL() {
+    setBaixandoSql(true);
+    try {
+      const dados = await exportarBackupCompleto();
+      const { exportarBackupSQL } = await import("@/lib/admin/backup-sql");
+      // SQL preserva códigos/IDs reais para restauração do banco de dados.
+      exportarBackupSQL(dados);
+      toast.success("Backup completo exportado em SQL.");
+      qc.invalidateQueries({ queryKey: ["admin-backups"] });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha ao exportar backup SQL.");
+    } finally {
+      setBaixandoSql(false);
     }
   }
 
