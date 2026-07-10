@@ -36,6 +36,7 @@ import { BancosProposta } from "@/components/proposta/bancos-proposta";
 import { StatusBancosProposta } from "@/components/proposta/status-bancos-proposta";
 import { ConfirmDelete } from "@/components/shared/confirm-delete";
 import { formatBRL } from "@/lib/simulacao/format";
+import { corDoBanco } from "@/lib/bancos/cores";
 import {
   GRUPOS_PROPOSTA,
   grupoDoStatus,
