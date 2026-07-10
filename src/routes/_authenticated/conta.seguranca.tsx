@@ -39,10 +39,13 @@ function Pagina() {
 
   return (
     <div className="mx-auto w-full max-w-2xl space-y-6 p-4 md:p-6">
-      <div className="flex items-center gap-2">
-        <Lock className="h-5 w-5 text-muted-foreground" />
-        <h1 className="text-xl font-semibold text-foreground">Segurança</h1>
-      </div>
+      <AdminHero
+        secao="Minha conta"
+        icon={<Lock className="h-5 w-5" />}
+        titulo="Segurança"
+        descricao="Gerencie a senha de acesso à sua conta."
+      />
+
 
       <Card>
         <CardHeader className="pb-2">
