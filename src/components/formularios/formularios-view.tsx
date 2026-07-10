@@ -108,16 +108,25 @@ function FormulariosLista({ banco }: { banco: BancoFormulario }) {
   });
 
   const label = CATEGORIA_LABEL[banco];
+  const ehBanco =
+    banco === "itau" || banco === "bradesco" || banco === "santander" || banco === "inter";
+  const accent = ehBanco ? corDoBanco(label) : undefined;
 
   return (
     <div className="mx-auto w-full max-w-5xl space-y-5 p-4 md:p-6">
       <OpHero
-        icon={<FileText className="h-5 w-5" />}
+        icon={
+          ehBanco ? <BancoLogo nome={label} size="lg" /> : <FileText className="h-5 w-5" />
+        }
+        accent={accent}
         eyebrow="Documentos · Formulários"
         titulo={label}
         descricao={`Modelos de formulários em PDF da categoria ${label}.`}
         acoes={
-          <Button onClick={() => setUploadOpen(true)}>
+          <Button
+            onClick={() => setUploadOpen(true)}
+            style={accent ? { backgroundColor: accent, borderColor: accent } : undefined}
+          >
             <Upload className="mr-2 h-4 w-4" />
             Enviar formulário
           </Button>
@@ -128,16 +137,19 @@ function FormulariosLista({ banco }: { banco: BancoFormulario }) {
         <OpStat
           label="Formulários"
           value={itens.length}
-          icon={<FileText className="h-5 w-5 text-primary" />}
-          tint="bg-primary/10 text-primary"
+          icon={<FileText className="h-5 w-5" />}
+          accent={accent}
         />
         <OpStat
           label="Categoria"
           value={label}
-          icon={<FileText className="h-5 w-5 text-primary" />}
-          tint="bg-primary/10 text-primary"
+          icon={
+            ehBanco ? <BancoLogo nome={label} size="md" /> : <FileText className="h-5 w-5" />
+          }
+          accent={accent}
         />
       </div>
+
 
       <div className="space-y-2.5">
         {isLoading ? (
