@@ -502,7 +502,7 @@ export function DocumentosGerais() {
               <span className="pointer-events-none absolute -right-6 -top-6 size-16 rounded-full bg-primary/5 blur-2xl transition-opacity group-hover:opacity-100" />
               <div className="relative flex items-center gap-3">
                 <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary ring-1 ring-inset ring-primary/15">
-                  <Icon className="h-4.5 w-4.5" />
+                  <Icon className="h-[18px] w-[18px]" />
                 </span>
                 <div className="min-w-0">
                   <p className="text-lg font-semibold leading-none tracking-tight text-foreground tabular-nums">
