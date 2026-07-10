@@ -94,16 +94,11 @@ function Pagina() {
 
   return (
     <div className="mx-auto w-full max-w-5xl space-y-6 p-4 md:p-6">
-      <div className="flex items-center gap-2">
-        <Timer className="h-5 w-5 text-muted-foreground" />
-        <div>
-          <h1 className="text-xl font-semibold text-foreground">SLA & Feriados</h1>
-          <p className="text-sm text-muted-foreground">
-            Prazos por tipo de demanda e prioridade (horas úteis), catálogos configuráveis e
-            calendário de feriados.
-          </p>
-        </div>
-      </div>
+      <AdminHero
+        icon={<Timer className="h-5 w-5" />}
+        titulo="SLA & Feriados"
+        descricao="Prazos por tipo de demanda e prioridade (horas úteis), catálogos configuráveis e calendário de feriados."
+      />
 
       <SecaoSla tipos={tipos.data} prioridades={prioridades.data} canais={canais.data} />
 
