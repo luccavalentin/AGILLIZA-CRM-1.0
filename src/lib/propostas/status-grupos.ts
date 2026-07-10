@@ -5,11 +5,10 @@
 import type { PropostaStatus } from "./state-machine";
 
 export type GrupoProposta =
-  | "rascunho"
   | "enviadas"
-  | "andamento"
-  | "contrato"
-  | "encerradas";
+  | "aprovadas"
+  | "recusadas"
+  | "canceladas";
 
 /** Config de cada grupo (rótulo + tom para o card). */
 export const GRUPOS_PROPOSTA: Array<{
@@ -17,23 +16,21 @@ export const GRUPOS_PROPOSTA: Array<{
   label: string;
   tone: "muted" | "info" | "warning" | "success" | "danger";
 }> = [
-  { id: "rascunho", label: "Em rascunho", tone: "muted" },
-  { id: "enviadas", label: "Em análise", tone: "info" },
-  { id: "andamento", label: "Em andamento", tone: "warning" },
-  { id: "contrato", label: "Contrato emitido", tone: "success" },
-  { id: "encerradas", label: "Canceladas / recusadas", tone: "danger" },
+  { id: "enviadas", label: "Enviadas", tone: "info" },
+  { id: "aprovadas", label: "Aprovadas", tone: "success" },
+  { id: "recusadas", label: "Recusadas", tone: "warning" },
+  { id: "canceladas", label: "Canceladas", tone: "danger" },
 ];
 
-/** Mapa status -> grupo. */
-export function grupoDoStatus(status: string | null | undefined): GrupoProposta {
+/** Mapa status -> grupo. Retorna null para status que não se encaixam. */
+export function grupoDoStatus(status: string | null | undefined): GrupoProposta | null {
   const s = (status ?? "") as PropostaStatus;
   switch (s) {
-    case "rascunho":
-    case "erro_envio":
-      return "rascunho";
+    // Enviadas ao banco (em trânsito / em análise, ainda sem decisão).
     case "enviada_banco":
     case "em_analise_credito":
       return "enviadas";
+    // Aprovadas (crédito aprovado em diante, incluindo contrato).
     case "credito_aprovado":
     case "checklist_documentacao":
     case "cadastro_complementar":
@@ -43,17 +40,21 @@ export function grupoDoStatus(status: string | null | undefined): GrupoProposta 
     case "vistoria_agendamento":
     case "vistoria_concluida":
     case "emissao_contrato":
+    case "contrato_emitido":
     case "aguardando_documentos":
     case "engenharia_vistoria":
     case "analise_juridica":
-      return "andamento";
-    case "contrato_emitido":
     case "registrado":
-      return "contrato";
-    case "cancelada":
+      return "aprovadas";
+    // Recusadas pelo banco.
     case "credito_recusado":
-      return "encerradas";
+      return "recusadas";
+    // Canceladas.
+    case "cancelada":
+      return "canceladas";
+    // rascunho / erro_envio não entram em nenhum grupo.
     default:
-      return "andamento";
+      return null;
   }
 }
+
