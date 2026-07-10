@@ -20,7 +20,7 @@ import { NovaTarefaDialog } from "@/components/operacional/nova-tarefa-dialog";
 import { TarefaDrawer } from "@/components/operacional/tarefa-drawer";
 import { ToneBadge } from "@/components/crm/tone-badge";
 import { ConfirmDelete } from "@/components/shared/confirm-delete";
-import { statusTarefa, TONE_BAR, type Prioridade } from "@/components/operacional/status";
+import { statusTarefa, type Prioridade } from "@/components/operacional/status";
 import { OpHero, OpStat, PriorityChip, OpAvatar } from "@/components/operacional/ui";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
