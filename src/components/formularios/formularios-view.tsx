@@ -38,6 +38,7 @@ import {
   urlFormulario,
 } from "@/lib/formularios/formularios.functions";
 import { DpsView } from "@/components/formularios/dps-view";
+import { OpHero, OpStat } from "@/components/operacional/ui";
 
 export const CATEGORIA_LABEL: Record<BancoFormulario, string> = {
   itau: "Itaú",
@@ -108,41 +109,60 @@ function FormulariosLista({ banco }: { banco: BancoFormulario }) {
 
   return (
     <div className="mx-auto w-full max-w-5xl space-y-5 p-4 md:p-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <FileText className="h-5 w-5 text-muted-foreground" />
-          <div>
-            <h1 className="text-xl font-semibold text-foreground">Formulários · {label}</h1>
-            <p className="text-sm text-muted-foreground">
-              Modelos de formulários em PDF da categoria {label}.
-            </p>
-          </div>
-        </div>
-        <Button onClick={() => setUploadOpen(true)}>
-          <Upload className="mr-2 h-4 w-4" />
-          Enviar formulário
-        </Button>
+      <OpHero
+        icon={<FileText className="h-5 w-5" />}
+        eyebrow="Documentos · Formulários"
+        titulo={label}
+        descricao={`Modelos de formulários em PDF da categoria ${label}.`}
+        acoes={
+          <Button onClick={() => setUploadOpen(true)}>
+            <Upload className="mr-2 h-4 w-4" />
+            Enviar formulário
+          </Button>
+        }
+      />
+
+      <div className="grid grid-cols-2 gap-3">
+        <OpStat
+          label="Formulários"
+          value={itens.length}
+          icon={<FileText className="h-5 w-5 text-primary" />}
+          tint="bg-primary/10 text-primary"
+        />
+        <OpStat
+          label="Categoria"
+          value={label}
+          icon={<FileText className="h-5 w-5 text-primary" />}
+          tint="bg-primary/10 text-primary"
+        />
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-2.5">
         {isLoading ? (
           Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-16 w-full" />)
         ) : itens.length === 0 ? (
           <Card>
-            <CardContent className="py-12 text-center text-sm text-muted-foreground">
-              Nenhum formulário de {label} cadastrado ainda.
+            <CardContent className="py-14 text-center">
+              <span className="mx-auto mb-3 grid size-12 place-items-center rounded-2xl bg-muted text-muted-foreground">
+                <FileText className="h-6 w-6" />
+              </span>
+              <p className="text-sm text-muted-foreground">
+                Nenhum formulário de {label} cadastrado ainda.
+              </p>
             </CardContent>
           </Card>
         ) : (
           itens.map((f) => (
             <div
               key={f.id}
-              className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card p-4"
+              className="group flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card p-4 transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-[0_10px_30px_-15px_hsl(var(--primary)/0.5)]"
             >
               <div className="flex min-w-0 items-center gap-3">
-                <FileText className="h-5 w-5 shrink-0 text-primary" />
+                <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/20 transition-transform group-hover:scale-105">
+                  <FileText className="h-4 w-4" />
+                </span>
                 <div className="min-w-0">
-                  <p className="truncate font-medium text-foreground">{f.nome}</p>
+                  <p className="truncate font-semibold text-foreground group-hover:text-primary">{f.nome}</p>
                   <p className="truncate text-xs text-muted-foreground">
                     {f.descricao ? `${f.descricao} · ` : ""}
                     {formatBytes(f.tamanho)}
