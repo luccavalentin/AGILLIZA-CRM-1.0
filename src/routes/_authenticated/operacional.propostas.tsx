@@ -36,6 +36,11 @@ import { BancosProposta } from "@/components/proposta/bancos-proposta";
 import { StatusBancosProposta } from "@/components/proposta/status-bancos-proposta";
 import { ConfirmDelete } from "@/components/shared/confirm-delete";
 import { formatBRL } from "@/lib/simulacao/format";
+import {
+  GRUPOS_PROPOSTA,
+  grupoDoStatus,
+  type GrupoProposta,
+} from "@/lib/propostas/status-grupos";
 
 /** Primeiro e último dia do mês atual como intervalo ISO (para o filtro padrão). */
 function intervaloMesAtual(): { inicio: string; fim: string } {
