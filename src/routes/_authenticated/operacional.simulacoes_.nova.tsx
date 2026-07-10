@@ -1,8 +1,8 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { SecaoCabecalho } from "@/components/simulacao/secao-cabecalho";
+
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Calculator, Home, CalendarDays, TrendingUp, Zap, FileText, Award } from "lucide-react";
+import { ArrowLeft, Calculator, TrendingUp, FileText, Award } from "lucide-react";
 import { assertModuloPermitido } from "@/lib/route-guards";
 
 import { Button } from "@/components/ui/button";
@@ -200,10 +200,8 @@ function Pagina() {
       </div>
 
       <div className="flex flex-col gap-4">
-        {/* Seção: Produto e valores */}
         <Card className="overflow-hidden">
-          <SecaoCabecalho icone={<Home className="h-4 w-4" />} titulo="Imóvel e crédito" />
-          <div className="space-y-5 p-5">
+          <div className="space-y-5 p-5 md:p-6">
         <div className="space-y-1.5">
           <Label>Produto</Label>
           <Select
@@ -272,13 +270,7 @@ function Pagina() {
           />
         </div>
 
-          </div>
-        </Card>
 
-        {/* Seção: Perfil e prazo */}
-        <Card className="overflow-hidden">
-          <SecaoCabecalho icone={<CalendarDays className="h-4 w-4" />} titulo="Perfil e prazo" />
-          <div className="space-y-5 p-5">
         <div className="space-y-2">
           <Label>Você já possui o imóvel escolhido?</Label>
           <RadioGroup
@@ -386,7 +378,7 @@ function Pagina() {
             disabled={!valido}
             onClick={() => setMostrarRapida(true)}
           >
-            <Zap className="h-4 w-4" /> Simulação rápida
+            Simulação rápida
           </Button>
           <Button
             variant="secondary"

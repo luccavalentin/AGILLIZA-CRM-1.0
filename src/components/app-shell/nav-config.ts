@@ -33,7 +33,7 @@ import {
   MessagesSquare,
   Timer,
   Landmark,
-  Sparkles,
+  Cpu,
   ClipboardList,
   Link as LinkIcon,
 } from "lucide-react";
@@ -350,7 +350,7 @@ export const navInterno: NavGroup[] = [
           },
           {
             label: "APIs de IA",
-            icon: Sparkles,
+            icon: Cpu,
             to: "/admin/apis-ia",
             perm: { modulo: "admin.integracoes" },
           },

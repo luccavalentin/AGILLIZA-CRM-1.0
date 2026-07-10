@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Pencil, Plus, Trash2, Zap } from "lucide-react";
+import { Pencil, Plus, Trash2, MessageSquareText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -107,7 +107,7 @@ export function RespostasRapidas({
           className="h-11 w-11 shrink-0 rounded-xl"
           title="Respostas rápidas"
         >
-          <Zap className="h-4 w-4" />
+          <MessageSquareText className="h-4 w-4" />
         </Button>
       </PopoverTrigger>
       <PopoverContent
@@ -119,7 +119,7 @@ export function RespostasRapidas({
         <div className="flex items-center justify-between border-b bg-gradient-to-r from-primary/10 via-card to-card px-3 py-2.5">
           <div className="flex items-center gap-2">
             <span className="flex size-7 items-center justify-center rounded-lg bg-primary/15 text-primary">
-              <Zap className="size-3.5" />
+              <MessageSquareText className="size-3.5" />
             </span>
             <div className="leading-tight">
               <span className="block text-sm font-semibold text-foreground">
