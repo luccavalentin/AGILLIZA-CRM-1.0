@@ -605,10 +605,10 @@ function Pagina() {
                   const ev = classificarEvento(h.descricao);
                   const dt = new Date(h.created_at);
                   return (
-                    <li key={h.id} className="relative flex gap-4 py-2.5">
+                    <li key={h.id} className="group relative -mx-2 flex gap-4 rounded-lg px-2 py-2.5 transition-colors hover:bg-muted/40">
                       <span
                         className={cn(
-                          "relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border shadow-sm",
+                          "relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border shadow-sm transition-transform duration-200 group-hover:scale-110",
                           ev.classe,
                         )}
                       >
