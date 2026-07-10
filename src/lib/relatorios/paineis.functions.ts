@@ -320,18 +320,23 @@ export const getPanelDados = createServerFn({ method: "POST" })
         heros: [
           { label: "Simulações", valor: int(simCount), hint: brlCompacto(volumeSimulado), tone: "neutral" },
           { label: "Propostas enviadas", valor: int(enviadas.length), tone: "brand" },
-          { label: "Taxa de aprovação", valor: pct(taxa), hint: `${aprovadasCount} aprovadas`, tone: "success" },
+          {
+            label: "Taxa de aprovação",
+            valor: pct(taxa),
+            hint: `${aprovadasCount} aprovadas`,
+            tone: aprovadasCount ? "success" : "neutral",
+          },
           { label: "Contratos emitidos", valor: int(contratosCount), hint: brlCompacto(volume), tone: "success" },
         ],
         minis: [
           { label: "Volume contratado", valor: brlCompacto(volume), tone: "success" },
           { label: "Volume simulado", valor: brlCompacto(volumeSimulado), tone: "neutral" },
-          { label: "Volume aprovado", valor: brlCompacto(volumeAprovado), tone: "success" },
+          { label: "Volume aprovado", valor: brlCompacto(volumeAprovado), tone: aprovadasCount ? "success" : "neutral" },
           { label: "Ticket médio", valor: brlCompacto(ticket), tone: "brand" },
           { label: "Conversão sim→contrato", valor: pct(conversao), tone: "success" },
           { label: "Simulações concluídas", valor: int(simConcluidas), tone: "success" },
           { label: "Simulações com erro", valor: int(simErro), tone: simErro ? "danger" : "neutral" },
-          { label: "Aprovadas", valor: int(aprovadasCount), tone: "success" },
+          { label: "Aprovadas", valor: int(aprovadasCount), tone: aprovadasCount ? "success" : "neutral" },
           {
             label: "Em análise",
             valor: int(
@@ -559,7 +564,7 @@ export const getPanelDados = createServerFn({ method: "POST" })
           label: "Taxa de aprovação",
           valor: pct(taxa),
           hint: `${aprovadas} aprovadas · ${recusadas} recusadas`,
-          tone: "success",
+          tone: aprovadas ? "success" : "neutral",
         },
         {
           label: "Contratos emitidos",
