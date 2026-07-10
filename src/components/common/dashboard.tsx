@@ -144,15 +144,23 @@ export function HeroMetric({
   const conteudo = (
     <Card
       className={cn(
-        "group relative h-full min-w-0 overflow-hidden p-3 pl-4 transition-all duration-200 sm:p-4 sm:pl-5",
+        "group relative h-full min-w-0 overflow-hidden p-3 pl-4 transition-all duration-300 sm:p-4 sm:pl-5",
         to &&
-          "cursor-pointer hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5",
+          "cursor-pointer hover:-translate-y-1 hover:border-primary/40 hover:shadow-xl hover:shadow-primary/10",
       )}
-      style={{ background: `linear-gradient(135deg, ${toneWash[tone]}, transparent 60%)` }}
+      style={{ background: `linear-gradient(135deg, ${toneWash[tone]}, transparent 62%)` }}
     >
+      {/* Realce superior no hover */}
       <span
-        className={cn("absolute left-0 top-0 h-full w-[3px]", toneBar[tone])}
-        style={{ boxShadow: `0 0 12px ${toneGlow[tone]}` }}
+        aria-hidden
+        className={cn(
+          "pointer-events-none absolute inset-x-0 top-0 h-px scale-x-0 bg-gradient-to-r from-transparent via-current to-transparent opacity-0 transition-all duration-300 group-hover:scale-x-100 group-hover:opacity-60",
+          toneText[tone],
+        )}
+      />
+      <span
+        className={cn("absolute left-0 top-0 h-full w-[3px] rounded-r", toneBar[tone])}
+        style={{ boxShadow: `0 0 14px ${toneGlow[tone]}` }}
       />
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
         <p className="min-w-0 truncate text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground sm:text-[11px] sm:tracking-[0.12em]">
@@ -161,7 +169,7 @@ export function HeroMetric({
         {Icon ? (
           <span
             className={cn(
-              "flex h-6 w-6 items-center justify-center rounded-md",
+              "flex h-7 w-7 items-center justify-center rounded-lg ring-1 ring-inset ring-border/50",
               toneText[tone],
             )}
             style={{ background: toneWash[tone] }}
@@ -172,7 +180,7 @@ export function HeroMetric({
           <ArrowUpRight className="h-4 w-4 text-muted-foreground/40 transition-all group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-primary" />
         ) : null}
       </div>
-       <p className="mt-3 min-w-0 truncate font-mono text-[clamp(1.25rem,8vw,2rem)] font-semibold leading-none tabular-nums text-foreground sm:text-[32px]">
+       <p className="mt-3 min-w-0 truncate font-mono text-[clamp(1.25rem,8vw,2rem)] font-semibold leading-none tracking-tight tabular-nums text-foreground sm:text-[32px]">
         {valor}
       </p>
       {hint && <p className="mt-2 truncate text-xs text-muted-foreground">{hint}</p>}
