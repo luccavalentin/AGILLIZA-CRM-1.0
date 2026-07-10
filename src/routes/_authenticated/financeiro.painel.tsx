@@ -60,7 +60,7 @@ function Pagina() {
             Visão geral de recebimentos, pagamentos e caixa projetado.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="relative flex items-center gap-2">
           <label className="flex items-center gap-1 text-xs text-muted-foreground">
             De
             <Input type="date" className="w-40" value={de} onChange={(e) => setDe(e.target.value)} />
