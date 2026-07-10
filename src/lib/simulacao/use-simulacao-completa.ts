@@ -372,19 +372,26 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
 
   function puxarConjugeDoCRM() {
     if (!crmVinculado) return;
-    setF((prev) => ({
-      ...prev,
-      possui_conjuge: true,
-      compoe_renda: prev.compoe_renda || Number(crmVinculado.conjuge_renda) > 0,
-      nome_conjuge: crmVinculado.conjuge_nome ?? "",
-      cpf_conjuge: crmVinculado.conjuge_cpf ? maskCpfCnpj(crmVinculado.conjuge_cpf) : "",
-      renda_conjuge: crmVinculado.conjuge_renda ?? 0,
-      data_nascimento_conjuge: crmVinculado.conjuge_data_nascimento ?? "",
-      email_conjuge: crmVinculado.conjuge_email ?? "",
-      celular_conjuge: crmVinculado.conjuge_celular
-        ? maskCelular(crmVinculado.conjuge_celular)
-        : "",
-    }));
+    setF((prev) => {
+      // Se o titular está com estado civil de casal, mantém; senão assume casado.
+      const ecTitular =
+        prev.estado_civil === "CA" || prev.estado_civil === "UE" ? prev.estado_civil : "CA";
+      return {
+        ...prev,
+        possui_conjuge: true,
+        compoe_renda: prev.compoe_renda || Number(crmVinculado.conjuge_renda) > 0,
+        estado_civil: ecTitular,
+        estado_civil_conjuge: ecTitular,
+        nome_conjuge: crmVinculado.conjuge_nome ?? "",
+        cpf_conjuge: crmVinculado.conjuge_cpf ? maskCpfCnpj(crmVinculado.conjuge_cpf) : "",
+        renda_conjuge: crmVinculado.conjuge_renda ?? 0,
+        data_nascimento_conjuge: crmVinculado.conjuge_data_nascimento ?? "",
+        email_conjuge: crmVinculado.conjuge_email ?? "",
+        celular_conjuge: crmVinculado.conjuge_celular
+          ? maskCelular(crmVinculado.conjuge_celular)
+          : "",
+      };
+    });
     toast.success("Dados do cônjuge puxados do cadastro do CRM.");
   }
 
@@ -423,9 +430,16 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
 
   /** Seleciona o titular a partir de um cliente do CRM. */
   function selecionarClienteCRM(c: any) {
-    const ec = estadoCivilCrmParaCodigo(c.estado_civil);
-    const temConjuge = ec === "CA" || ec === "UE";
+    const ecOriginal = estadoCivilCrmParaCodigo(c.estado_civil);
     const conjugePreenchido = Boolean(c.conjuge_nome || c.conjuge_cpf || c.conjuge_renda);
+    // Se há cônjuge cadastrado, o titular é considerado casado (mantém CA/UE se já for de casal).
+    const ec =
+      ecOriginal === "CA" || ecOriginal === "UE"
+        ? ecOriginal
+        : conjugePreenchido
+          ? "CA"
+          : ecOriginal;
+    const temConjuge = ec === "CA" || ec === "UE";
     setF((prev) => ({
       ...prev,
       cliente_id: c.id,
@@ -444,6 +458,8 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
       data_nascimento_conjuge: c.conjuge_data_nascimento ?? "",
       email_conjuge: c.conjuge_email ?? "",
       celular_conjuge: c.conjuge_celular ? maskCelular(c.conjuge_celular) : "",
+      // O cônjuge herda o mesmo estado civil de casal do titular.
+      estado_civil_conjuge: temConjuge ? ec : (prev.estado_civil_conjuge ?? ""),
     }));
     setCadastroNome(c.nome ?? "");
     setInvertido(false);
