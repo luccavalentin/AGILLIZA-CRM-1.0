@@ -83,6 +83,7 @@ function Pagina() {
   const [busca, setBusca] = useState("");
   const [desde, setDesde] = useState("");
   const [ate, setAte] = useState("");
+  const [kpiAberto, setKpiAberto] = useState<string | null>(null);
 
   // Envio de proposta: diálogo para escolher UM banco por vez.
   const [envio, setEnvio] = useState<{
@@ -210,11 +211,99 @@ function Pagina() {
   const kpiPrazo = prazos.length
     ? Math.round(prazos.reduce((a, b) => a + b, 0) / prazos.length)
     : 0;
-  const kpis = [
-    { label: "Simulações", valor: String(kpiTotal), icon: ListChecks },
-    { label: "Volume em imóveis", valor: formatBRL(kpiValor), icon: Wallet },
-    { label: "Cotações em bancos", valor: String(kpiBancos), icon: Building2 },
-    { label: "Prazo médio", valor: kpiPrazo ? `${kpiPrazo} meses` : "—", icon: Clock },
+
+  // Agregações para o detalhamento dos KPIs (o que cada card "guarda").
+  const porStatus = itens.reduce<Record<string, number>>((acc, s) => {
+    const st = (s as any).status ?? "—";
+    acc[st] = (acc[st] ?? 0) + 1;
+    return acc;
+  }, {});
+  const porBanco = itens.reduce<Record<string, number>>((acc, s) => {
+    (Array.isArray(s.bancos) ? s.bancos : []).forEach((b: any) => {
+      const nome = b.nome ?? b.banco_nome ?? b.banco_id ?? "Banco";
+      acc[nome] = (acc[nome] ?? 0) + 1;
+    });
+    return acc;
+  }, {});
+  const prazoMin = prazos.length ? Math.min(...prazos) : 0;
+  const prazoMax = prazos.length ? Math.max(...prazos) : 0;
+
+  const kpis: {
+    id: string;
+    label: string;
+    valor: string;
+    icon: typeof ListChecks;
+    detalhe: React.ReactNode;
+  }[] = [
+    {
+      id: "simulacoes",
+      label: "Simulações",
+      valor: String(kpiTotal),
+      icon: ListChecks,
+      detalhe: (
+        <KpiDetalhe
+          descricao="Total de simulações no filtro atual, agrupadas por status."
+          linhas={Object.entries(porStatus)
+            .sort((a, b) => b[1] - a[1])
+            .map(([status, qtd]) => ({
+              rotulo: statusLabel(status),
+              valor: String(qtd),
+            }))}
+          total={{ rotulo: "Total", valor: String(kpiTotal) }}
+        />
+      ),
+    },
+    {
+      id: "volume",
+      label: "Volume em imóveis",
+      valor: formatBRL(kpiValor),
+      icon: Wallet,
+      detalhe: (
+        <KpiDetalhe
+          descricao="Soma dos valores de imóvel de cada simulação."
+          linhas={itens
+            .slice()
+            .sort((a, b) => (Number(b.valor_imovel) || 0) - (Number(a.valor_imovel) || 0))
+            .map((s) => ({
+              rotulo: `${s.numero_simulacao} · ${s.nome_cliente ?? "—"}`,
+              valor: formatBRL(Number(s.valor_imovel) || 0),
+            }))}
+          total={{ rotulo: "Volume total", valor: formatBRL(kpiValor) }}
+        />
+      ),
+    },
+    {
+      id: "bancos",
+      label: "Cotações em bancos",
+      valor: String(kpiBancos),
+      icon: Building2,
+      detalhe: (
+        <KpiDetalhe
+          descricao="Quantidade de cotações por banco no filtro atual."
+          linhas={Object.entries(porBanco)
+            .sort((a, b) => b[1] - a[1])
+            .map(([nome, qtd]) => ({ rotulo: nome, valor: String(qtd) }))}
+          total={{ rotulo: "Total de cotações", valor: String(kpiBancos) }}
+        />
+      ),
+    },
+    {
+      id: "prazo",
+      label: "Prazo médio",
+      valor: kpiPrazo ? `${kpiPrazo} meses` : "—",
+      icon: Clock,
+      detalhe: (
+        <KpiDetalhe
+          descricao="Distribuição dos prazos das simulações."
+          linhas={[
+            { rotulo: "Prazo mínimo", valor: prazoMin ? `${prazoMin} meses` : "—" },
+            { rotulo: "Prazo médio", valor: kpiPrazo ? `${kpiPrazo} meses` : "—" },
+            { rotulo: "Prazo máximo", valor: prazoMax ? `${prazoMax} meses` : "—" },
+          ]}
+          total={{ rotulo: "Simulações com prazo", valor: String(prazos.length) }}
+        />
+      ),
+    },
   ];
 
   return (
@@ -260,9 +349,11 @@ function Pagina() {
       {/* KPIs */}
       <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
         {kpis.map((k) => (
-          <div
+          <button
             key={k.label}
-            className="group relative flex items-center gap-3 overflow-hidden rounded-xl border border-border/60 bg-card px-3.5 py-3 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md"
+            type="button"
+            onClick={() => setKpiAberto(k.id)}
+            className="group relative flex items-center gap-3 overflow-hidden rounded-xl border border-border/60 bg-card px-3.5 py-3 text-left shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
           >
             <span className="absolute left-0 top-0 h-full w-[3px] rounded-r bg-primary/60" />
             <div className="grid size-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary ring-1 ring-inset ring-primary/15">
@@ -272,9 +363,34 @@ function Pagina() {
               <p className="truncate font-mono text-lg font-semibold tracking-tight tabular-nums text-foreground">{k.valor}</p>
               <p className="truncate text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{k.label}</p>
             </div>
-          </div>
+          </button>
         ))}
       </div>
+
+      {/* Detalhe do KPI clicado */}
+      <Dialog open={!!kpiAberto} onOpenChange={(o) => !o && setKpiAberto(null)}>
+        <DialogContent className="max-h-[85vh] overflow-hidden sm:max-w-lg">
+          {(() => {
+            const k = kpis.find((x) => x.id === kpiAberto);
+            if (!k) return null;
+            return (
+              <>
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <span className="grid size-8 place-items-center rounded-lg bg-primary/10 text-primary ring-1 ring-inset ring-primary/15">
+                      <k.icon className="size-4" />
+                    </span>
+                    {k.label}
+                  </DialogTitle>
+                  <DialogDescription>Valor atual: {k.valor}</DialogDescription>
+                </DialogHeader>
+                <div className="overflow-y-auto pr-1">{k.detalhe}</div>
+              </>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
+
 
       {/* Barra de filtros */}
       <div className="flex flex-col gap-3 rounded-xl border border-border/60 bg-card p-3 lg:flex-row lg:items-center lg:justify-between">
@@ -566,6 +682,62 @@ function Pagina() {
   );
 }
 
+const STATUS_LABELS: Record<string, string> = {
+  rascunho: "Rascunho",
+  simulada: "Simulada",
+  parcialmente_simulada: "Parcialmente simulada",
+  em_simulacao: "Em simulação",
+  erro: "Com erro",
+  enviada: "Enviada",
+  cancelada: "Cancelada",
+};
+
+function statusLabel(status: string): string {
+  return STATUS_LABELS[status] ?? status.replace(/_/g, " ");
+}
+
+function KpiDetalhe({
+  descricao,
+  linhas,
+  total,
+}: {
+  descricao: string;
+  linhas: { rotulo: string; valor: string }[];
+  total?: { rotulo: string; valor: string };
+}) {
+  return (
+    <div className="space-y-3">
+      <p className="text-sm text-muted-foreground">{descricao}</p>
+      {linhas.length === 0 ? (
+        <p className="rounded-lg border border-dashed border-border px-3 py-6 text-center text-sm text-muted-foreground">
+          Nenhum dado no filtro atual.
+        </p>
+      ) : (
+        <ul className="divide-y divide-border rounded-lg border border-border">
+          {linhas.map((l, i) => (
+            <li
+              key={`${l.rotulo}-${i}`}
+              className="flex items-center justify-between gap-3 px-3 py-2"
+            >
+              <span className="min-w-0 truncate text-sm text-foreground">{l.rotulo}</span>
+              <span className="shrink-0 font-mono text-sm font-semibold tabular-nums text-foreground">
+                {l.valor}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+      {total && (
+        <div className="flex items-center justify-between gap-3 rounded-lg bg-primary/5 px-3 py-2">
+          <span className="text-sm font-medium text-foreground">{total.rotulo}</span>
+          <span className="font-mono text-sm font-bold tabular-nums text-primary">
+            {total.valor}
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
 function ProdutoBadge({ produto }: { produto: string | null | undefined }) {
   if (produto === "home_equity") {
     return (
