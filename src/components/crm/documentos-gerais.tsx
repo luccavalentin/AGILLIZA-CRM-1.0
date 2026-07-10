@@ -83,10 +83,17 @@ function primeiroNome(s: string | null | undefined): string {
   return t === "—" ? "" : t.split(" ")[0];
 }
 
-type PastaTipo = "comercial" | "imob" | "corretor";
+type PastaTipo = "raiz" | "comercial" | "imob" | "corretor";
+
+const RAIZ_KEY = "__raiz_principal__";
+const RAIZ_NOME = "Pasta Comercial e documentos de clientes";
 
 /** Rótulo e cor da etiqueta que identifica o nível da pasta. */
 const PASTA_BADGE: Record<PastaTipo, { label: string; classe: string }> = {
+  raiz: {
+    label: "Pasta principal",
+    classe: "border-primary/25 bg-primary/10 text-primary",
+  },
   comercial: {
     label: "Comercial Agilliza",
     classe: "border-primary/25 bg-primary/10 text-primary",
@@ -228,12 +235,23 @@ export function DocumentosGerais() {
     const lista = Array.from(comerciais.values());
     for (const r of lista) finalizar(r);
     // Comerciais em ordem alfabética; "Sem comercial" por último.
-    return lista.sort((a, b) => {
+    lista.sort((a, b) => {
       const aSem = a.key === SEM_COMERCIAL_KEY;
       const bSem = b.key === SEM_COMERCIAL_KEY;
       if (aSem !== bSem) return aSem ? 1 : -1;
       return a.nome.localeCompare(b.nome, "pt-BR");
     });
+
+    // Todos os comerciais ficam dentro de uma única pasta raiz.
+    const raiz: PastaNode = {
+      key: RAIZ_KEY,
+      nome: RAIZ_NOME,
+      tipo: "raiz",
+      subpastas: lista,
+      clientes: [],
+      total_clientes: lista.reduce((acc, n) => acc + n.total_clientes, 0),
+    };
+    return [raiz];
   }, [clientes, comerciaisBase]);
 
 
@@ -268,6 +286,7 @@ export function DocumentosGerais() {
 
   function IconePasta({ tipo, aberta }: { tipo: PastaTipo; aberta?: boolean }) {
     const conf: Record<PastaTipo, { Icon: typeof Folder; classe: string }> = {
+      raiz: { Icon: FolderKanban, classe: "from-primary/20 to-primary/5 text-primary" },
       comercial: { Icon: Briefcase, classe: "from-primary/20 to-primary/5 text-primary" },
       imob: { Icon: Building2, classe: "from-primary/20 to-primary/5 text-primary" },
       corretor: { Icon: IdCard, classe: "from-primary/20 to-primary/5 text-primary" },
