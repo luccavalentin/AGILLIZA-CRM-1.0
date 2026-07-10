@@ -8,6 +8,7 @@ import { TarefaDrawer } from "@/components/operacional/tarefa-drawer";
 import { statusTarefa, PRIORIDADE, TONE_BAR } from "@/components/operacional/status";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { mapaFeriados } from "@/lib/feriados-br";
 
 export const Route = createFileRoute("/_authenticated/operacional/tarefas_/calendario")({
   head: () => ({ meta: [{ title: "Calendário de Tarefas — Agilliza" }] }),
