@@ -1,8 +1,8 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ArrowLeft, RefreshCw, Copy, Download, ChevronDown, Pencil, Trash2, Calculator } from "lucide-react";
+import { ArrowLeft, RefreshCw, Copy, Download, ChevronDown, Pencil, Trash2, Calculator, Home, Landmark, UserRound } from "lucide-react";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { supabase } from "@/integrations/supabase/client";
 import { ConfirmDelete } from "@/components/shared/confirm-delete";
@@ -533,38 +533,43 @@ function Pagina() {
           )}
         </TabsContent>
 
-        <TabsContent value="dados" className="mt-4">
-          <div className="overflow-hidden rounded-xl border border-border/60 bg-border/60 shadow-sm">
-            <dl className="grid grid-cols-1 gap-px sm:grid-cols-2">
-              <Item termo="Valor do imóvel" desc={formatBRL(s.valor_imovel)} />
-              <Item termo="Valor financiado" desc={formatBRL(s.valor_financiamento)} />
-              <Item termo="Entrada" desc={formatBRL(s.valor_entrada)} />
-              <Item
-                termo="Financiar despesas"
-                desc={s.fg_financiar_despesas ? "Sim" : "Não"}
-              />
-              {s.fg_financiar_despesas && (
-                <>
-                  <Item
-                    termo="Despesas financiadas"
-                    desc={formatBRL(s.valor_despesas_financiadas)}
-                  />
-                  <Item
-                    termo="Total financiado"
-                    desc={formatBRL(
-                      (Number(s.valor_financiamento) || 0) +
-                        (Number(s.valor_despesas_financiadas) || 0),
-                    )}
-                  />
-                </>
-              )}
-              <Item termo="Prazo" desc={s.prazo ? `${s.prazo} meses` : "—"} />
-              <Item termo="Sistema" desc={s.sistema_amortizacao === "P" ? "PRICE" : "SAC"} />
-              <Item termo="Utiliza FGTS" desc={s.utiliza_fgts === "S" ? "Sim" : "Não"} />
-              <Item termo="Estado civil" desc={s.estado_civil ?? "—"} />
-              <Item termo="UF" desc={s.uf ?? "—"} />
-            </dl>
-          </div>
+        <TabsContent value="dados" className="mt-4 space-y-5">
+          <SecaoDados titulo="Imóvel e financiamento" icone={<Home className="h-4 w-4" />}>
+            <Campo termo="Valor do imóvel" desc={formatBRL(s.valor_imovel)} />
+            <Campo termo="Entrada" desc={formatBRL(s.valor_entrada)} />
+            <Campo termo="Valor financiado" desc={formatBRL(s.valor_financiamento)} />
+            <Campo
+              termo="Financiar despesas"
+              desc={s.fg_financiar_despesas ? "Sim" : "Não"}
+            />
+            {s.fg_financiar_despesas && (
+              <>
+                <Campo
+                  termo="Despesas financiadas"
+                  desc={formatBRL(s.valor_despesas_financiadas)}
+                />
+                <Campo
+                  termo="Total financiado"
+                  destaque
+                  desc={formatBRL(
+                    (Number(s.valor_financiamento) || 0) +
+                      (Number(s.valor_despesas_financiadas) || 0),
+                  )}
+                />
+              </>
+            )}
+          </SecaoDados>
+
+          <SecaoDados titulo="Condições" icone={<Landmark className="h-4 w-4" />}>
+            <Campo termo="Prazo" desc={s.prazo ? `${s.prazo} meses` : "—"} />
+            <Campo termo="Sistema" desc={s.sistema_amortizacao === "P" ? "PRICE" : "SAC"} />
+            <Campo termo="Utiliza FGTS" desc={s.utiliza_fgts === "S" ? "Sim" : "Não"} />
+          </SecaoDados>
+
+          <SecaoDados titulo="Perfil do cliente" icone={<UserRound className="h-4 w-4" />}>
+            <Campo termo="Estado civil" desc={estadoCivilLabel(s.estado_civil)} />
+            <Campo termo="UF" desc={s.uf ?? "—"} />
+          </SecaoDados>
         </TabsContent>
 
         <TabsContent value="historico" className="mt-4">
@@ -634,11 +639,67 @@ function ResumoCelula({
   );
 }
 
-function Item({ termo, desc }: { termo: string; desc: string }) {
+const ESTADO_CIVIL_LABELS: Record<string, string> = {
+  S: "Solteiro(a)",
+  C: "Casado(a)",
+  D: "Divorciado(a)",
+  V: "Viúvo(a)",
+  U: "União estável",
+};
+
+function estadoCivilLabel(v?: string | null): string {
+  if (!v) return "—";
+  return ESTADO_CIVIL_LABELS[v.toUpperCase()] ?? v;
+}
+
+function SecaoDados({
+  titulo,
+  icone,
+  children,
+}: {
+  titulo: string;
+  icone: ReactNode;
+  children: ReactNode;
+}) {
   return (
-    <div className="flex items-center justify-between gap-3 bg-card px-4 py-3.5 transition-colors hover:bg-muted/40">
-      <dt className="text-[13px] text-muted-foreground">{termo}</dt>
-      <dd className="text-right text-sm font-semibold text-foreground tabular-nums">{desc}</dd>
+    <section className="overflow-hidden rounded-xl border border-border/60 bg-card shadow-sm">
+      <div className="flex items-center gap-2 border-b border-border/60 bg-muted/30 px-4 py-2.5">
+        <span className="grid h-6 w-6 place-items-center rounded-md bg-primary/10 text-primary">
+          {icone}
+        </span>
+        <h3 className="text-[13px] font-semibold tracking-tight text-foreground">
+          {titulo}
+        </h3>
+      </div>
+      <dl className="grid grid-cols-2 gap-px bg-border/60 sm:grid-cols-3 lg:grid-cols-4">
+        {children}
+      </dl>
+    </section>
+  );
+}
+
+function Campo({
+  termo,
+  desc,
+  destaque,
+}: {
+  termo: string;
+  desc: string;
+  destaque?: boolean;
+}) {
+  return (
+    <div className={cn("bg-card px-4 py-3", destaque && "bg-primary/5")}>
+      <dt className="text-[11px] font-medium uppercase tracking-[0.06em] text-muted-foreground">
+        {termo}
+      </dt>
+      <dd
+        className={cn(
+          "mt-1 text-sm font-semibold tabular-nums",
+          destaque ? "text-primary" : "text-foreground",
+        )}
+      >
+        {desc}
+      </dd>
     </div>
   );
 }
