@@ -245,15 +245,12 @@ function Pagina() {
               <section key={g.id} className="space-y-2.5">
                 <div className="flex items-center gap-2 px-1">
                   <span
-                    className="grid size-6 place-items-center rounded-md"
-                    style={{
-                      background: `color-mix(in oklab, ${g.accent} 14%, transparent)`,
-                      color: g.accent,
-                    }}
-                  >
-                    <g.icon className="h-3.5 w-3.5" />
-                  </span>
-                  <h2 className="text-sm font-semibold text-foreground">{g.titulo}</h2>
+                    className="h-3.5 w-1 rounded-full"
+                    style={{ background: g.accent }}
+                  />
+                  <h2 className="text-[13px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    {g.titulo}
+                  </h2>
                   <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-semibold tabular-nums text-muted-foreground">
                     {g.tarefas.length}
                   </span>
