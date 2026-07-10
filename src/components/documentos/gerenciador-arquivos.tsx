@@ -118,6 +118,7 @@ export function GerenciadorArquivos({
     return {
       pastas: lista.filter((n) => n.tipo === "pasta").length,
       arquivos: lista.filter((n) => n.tipo === "arquivo").length,
+      tamanho: lista.reduce((s, n) => s + (n.tipo === "arquivo" ? n.tamanho ?? 0 : 0), 0),
     };
   }, [nos.data]);
 
