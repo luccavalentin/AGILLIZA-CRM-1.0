@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   DatabaseBackup,
+  Database,
   RefreshCw,
   HardDrive,
   FileSpreadsheet,
@@ -87,6 +88,7 @@ function Pagina() {
   const backups = useQuery({ queryKey: ["admin-backups"], queryFn: () => listarBackups() });
   const config = useQuery({ queryKey: ["admin-backup-config"], queryFn: () => obterConfigBackup() });
   const [baixando, setBaixando] = useState(false);
+  const [baixandoSql, setBaixandoSql] = useState(false);
   const [baixandoDocs, setBaixandoDocs] = useState(false);
   const [progresso, setProgresso] = useState<ProgressoBackup | null>(null);
   const [configAberta, setConfigAberta] = useState(false);
@@ -124,8 +126,12 @@ function Pagina() {
     setBaixando(true);
     try {
       const dados = await exportarBackupCompleto();
-      const { exportarBackupXLSX } = await import("@/lib/admin/backup-xlsx");
-      exportarBackupXLSX(dados);
+      const [{ exportarBackupXLSX }, { humanizarBackup }] = await Promise.all([
+        import("@/lib/admin/backup-xlsx"),
+        import("@/lib/admin/backup-labels"),
+      ]);
+      // Humaniza: esconde códigos/IDs e traduz colunas e valores para leigos.
+      exportarBackupXLSX(humanizarBackup(dados));
       toast.success("Backup completo exportado em Excel.");
       qc.invalidateQueries({ queryKey: ["admin-backups"] });
 
@@ -133,6 +139,22 @@ function Pagina() {
       toast.error(e?.message ?? "Falha ao exportar backup.");
     } finally {
       setBaixando(false);
+    }
+  }
+
+  async function baixarSQL() {
+    setBaixandoSql(true);
+    try {
+      const dados = await exportarBackupCompleto();
+      const { exportarBackupSQL } = await import("@/lib/admin/backup-sql");
+      // SQL preserva códigos/IDs reais para restauração do banco de dados.
+      exportarBackupSQL(dados);
+      toast.success("Backup completo exportado em SQL.");
+      qc.invalidateQueries({ queryKey: ["admin-backups"] });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha ao exportar backup SQL.");
+    } finally {
+      setBaixandoSql(false);
     }
   }
 
@@ -168,12 +190,16 @@ function Pagina() {
       <AdminHero
         icon={<DatabaseBackup className="h-5 w-5" />}
         titulo="Backup"
-        descricao="Baixe os dados do sistema em uma planilha Excel profissional e formatada, ou todos os documentos em ZIP organizado por pastas."
+        descricao="Baixe todo o sistema em uma planilha Excel simples e legível (sem códigos técnicos) ou em arquivo SQL para restauração do banco de dados. Também é possível baixar todos os documentos em ZIP."
         acoes={
           <>
           <Button disabled={baixando} onClick={baixarExcel}>
             <FileSpreadsheet className="mr-2 h-4 w-4" />
-            {baixando ? "Gerando Excel…" : "Baixar backup completo (Excel)"}
+            {baixando ? "Gerando Excel…" : "Baixar em Excel (planilha)"}
+          </Button>
+          <Button variant="secondary" disabled={baixandoSql} onClick={baixarSQL}>
+            <Database className="mr-2 h-4 w-4" />
+            {baixandoSql ? "Gerando SQL…" : "Baixar em SQL (banco de dados)"}
           </Button>
           <Button variant="secondary" disabled={baixandoDocs} onClick={baixarDocumentos}>
             <FolderArchive className="mr-2 h-4 w-4" />
