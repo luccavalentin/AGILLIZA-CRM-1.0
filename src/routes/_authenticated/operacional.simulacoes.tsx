@@ -738,8 +738,7 @@ function KpiDetalhe({
     </div>
   );
 }
-
-
+function ProdutoBadge({ produto }: { produto: string | null | undefined }) {
   if (produto === "home_equity") {
     return (
       <span className="inline-flex items-center rounded-full border border-warning/30 bg-warning/10 px-2 py-0.5 text-xs font-medium text-warning">
