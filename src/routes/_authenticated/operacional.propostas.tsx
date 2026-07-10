@@ -511,3 +511,24 @@ function StatusCard({
     </button>
   );
 }
+
+function VolumeCard({ volume, loading }: { volume: number; loading: boolean }) {
+  return (
+    <div className="group relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-card to-primary/[0.03] p-3 shadow-sm sm:p-4">
+      <span className="absolute inset-y-0 left-0 w-1 bg-primary opacity-60" />
+      <div className="flex items-center gap-1.5">
+        <Wallet className="h-3.5 w-3.5 shrink-0 text-primary" />
+        <p className="truncate text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+          Volume financiado
+        </p>
+      </div>
+      {loading ? (
+        <Skeleton className="mt-2 h-6 w-24" />
+      ) : (
+        <p className="mt-1.5 truncate text-xl font-semibold tabular-nums leading-tight text-foreground">
+          {formatBRL(volume)}
+        </p>
+      )}
+    </div>
+  );
+}
