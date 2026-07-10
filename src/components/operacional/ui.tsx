@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { PRIORIDADE, type Prioridade } from "@/components/operacional/status";
 
-/** Cabeçalho hero refinado para os hubs de Tarefas e Demandas. */
+/** Cabeçalho sóbrio para os hubs de Tarefas e Demandas. */
 export function OpHero({
   icon,
   eyebrow,
@@ -17,17 +17,17 @@ export function OpHero({
   acoes?: ReactNode;
 }) {
   return (
-    <div className="op-hero p-5 md:p-7">
-      <div className="relative grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4 sm:flex sm:flex-wrap sm:justify-between">
-        <div className="flex min-w-0 items-start gap-3.5 md:gap-4">
-          <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-primary/10 text-primary ring-1 ring-primary/20 md:size-12">
+    <div className="op-hero p-5 md:p-6">
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4 sm:flex sm:flex-wrap sm:justify-between">
+        <div className="flex min-w-0 items-start gap-3.5">
+          <span className="grid size-10 shrink-0 place-items-center rounded-xl border border-border bg-background text-primary md:size-11">
             {icon}
           </span>
-          <div className="min-w-0 space-y-1">
-            <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary/80">
+          <div className="min-w-0 space-y-0.5">
+            <span className="text-[10.5px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
               {eyebrow}
             </span>
-            <h1 className="truncate text-xl font-bold tracking-tight text-foreground md:text-2xl">
+            <h1 className="truncate text-xl font-semibold tracking-tight text-foreground md:text-[1.6rem]">
               {titulo}
             </h1>
             <p className="max-w-xl text-sm text-muted-foreground">{descricao}</p>
@@ -43,48 +43,50 @@ export function OpHero({
   );
 }
 
-/** KPI animado com acento colorido. */
+/** KPI sóbrio com fina régua de acento à esquerda. */
 export function OpStat({
   label,
   value,
   icon,
   accent = "var(--primary)",
-  tint,
   alerta,
 }: {
   label: string;
   value: number | string;
   icon: ReactNode;
   accent?: string;
-  tint: string;
+  /** mantido por compatibilidade; não usado no novo layout sóbrio. */
+  tint?: string;
   alerta?: boolean;
 }) {
   return (
     <div
-      className={cn("op-stat p-4", alerta && "ring-1 ring-destructive/40")}
+      className={cn("op-stat p-4", alerta && "op-stat--alerta")}
       style={{ ["--op-accent" as string]: accent }}
     >
-      <div className="flex items-center gap-3">
-        <span className={cn("grid size-10 shrink-0 place-items-center rounded-xl", tint)}>
-          {icon}
-        </span>
+      <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className="text-2xl font-bold leading-none tracking-tight text-foreground tabular-nums">
+          <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+            {label}
+          </p>
+          <p className="mt-2 text-[1.75rem] font-semibold leading-none tracking-tight text-foreground tabular-nums">
             {value}
           </p>
-          <p className="mt-1.5 truncate text-xs font-medium text-muted-foreground">{label}</p>
         </div>
+        <span className="grid size-8 shrink-0 place-items-center rounded-lg border border-border bg-muted/40 text-muted-foreground">
+          {icon}
+        </span>
       </div>
     </div>
   );
 }
 
-/** Chip de prioridade compacto e legível. */
+/** Chip de prioridade discreto. */
 export function PriorityChip({ prioridade }: { prioridade: Prioridade }) {
   const p = PRIORIDADE[prioridade];
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/40 px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">
-      <span className={cn("size-1.5 rounded-full", p.bar)} />
+    <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
+      <span className={cn("size-1.5 rounded-[2px]", p.bar)} />
       {p.label}
     </span>
   );
@@ -97,12 +99,12 @@ export function iniciais(nome?: string | null): string {
   return ((p[0]?.[0] ?? "") + (p.length > 1 ? p[p.length - 1][0] : "")).toUpperCase();
 }
 
-/** Avatar circular com gradiente da marca. */
+/** Avatar circular sóbrio. */
 export function OpAvatar({ nome, className }: { nome?: string | null; className?: string }) {
   return (
     <span
       className={cn(
-        "grid size-7 shrink-0 place-items-center rounded-full bg-gradient-to-br from-primary/80 to-primary/50 text-[10px] font-semibold text-primary-foreground shadow-sm",
+        "grid size-7 shrink-0 place-items-center rounded-full border border-border bg-muted text-[10px] font-semibold text-foreground/80",
         className,
       )}
     >
