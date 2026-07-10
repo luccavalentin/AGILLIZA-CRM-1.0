@@ -271,7 +271,7 @@ function Pagina() {
         </div>
 
 
-        <div className="space-y-2">
+        <div className="space-y-2 lg:col-span-2">
           <Label>Você já possui o imóvel escolhido?</Label>
           <RadioGroup
             className="grid grid-cols-1 gap-2 sm:grid-cols-2"
