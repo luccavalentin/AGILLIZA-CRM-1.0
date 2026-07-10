@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { corDoBanco } from "@/lib/bancos/cores";
+import { cn } from "@/lib/utils";
 import { BancoLogo } from "@/components/bancos/banco-logo";
 import {
   DropdownMenu,
@@ -301,45 +302,34 @@ function Pagina() {
             </div>
           ) : (
             <>
-              <div className="mb-4 flex flex-wrap items-center gap-x-6 gap-y-2 rounded-lg border border-border bg-muted/30 p-3 text-sm">
-                <span className="text-muted-foreground">
-                  Valor do imóvel:{" "}
-                  <span className="font-medium text-foreground tabular-nums">
-                    {formatBRL(s.valor_imovel)}
-                  </span>
-                </span>
-                <span className="text-muted-foreground">
-                  Valor financiado:{" "}
-                  <span className="font-medium text-foreground tabular-nums">
-                    {formatBRL(s.valor_financiamento)}
-                  </span>
-                </span>
-                <span className="text-muted-foreground">
-                  Financiar despesas:{" "}
-                  <span className="font-medium text-foreground">
-                    {s.fg_financiar_despesas ? "Sim" : "Não"}
-                  </span>
-                </span>
+              <div className="mb-4 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-border/60 bg-border/60 shadow-sm sm:grid-cols-3 lg:grid-cols-5">
+                <ResumoCelula rotulo="Valor do imóvel" valor={formatBRL(s.valor_imovel)} />
+                <ResumoCelula
+                  rotulo="Valor financiado"
+                  valor={formatBRL(s.valor_financiamento)}
+                />
+                <ResumoCelula
+                  rotulo="Financiar despesas"
+                  valor={s.fg_financiar_despesas ? "Sim" : "Não"}
+                />
                 {s.fg_financiar_despesas && (
                   <>
-                    <span className="text-muted-foreground">
-                      Despesas financiadas:{" "}
-                      <span className="font-medium text-foreground tabular-nums">
-                        {formatBRL(s.valor_despesas_financiadas)}
-                      </span>
-                    </span>
-                    <span className="text-muted-foreground">
-                      Total financiado:{" "}
-                      <span className="font-medium text-foreground tabular-nums">
-                        {formatBRL(
-                          (Number(s.valor_financiamento) || 0) +
-                            (Number(s.valor_despesas_financiadas) || 0),
-                        )}
-                      </span>
-                    </span>
+                    <ResumoCelula
+                      rotulo="Despesas financiadas"
+                      valor={formatBRL(s.valor_despesas_financiadas)}
+                    />
+                    <ResumoCelula
+                      rotulo="Total financiado"
+                      destaque
+                      valor={formatBRL(
+                        (Number(s.valor_financiamento) || 0) +
+                          (Number(s.valor_despesas_financiadas) || 0),
+                      )}
+                    />
                   </>
                 )}
               </div>
+
 
               {/* Mobile: cartões */}
               <div className="grid gap-3 lg:hidden">
@@ -422,25 +412,43 @@ function Pagina() {
               </div>
 
               {/* Desktop: tabela */}
-              <div className="hidden overflow-x-auto rounded-lg border border-border lg:block">
+              <div className="hidden overflow-x-auto rounded-xl border border-border/60 shadow-sm lg:block">
                 <Table>
                   <TableHeader>
-                    <TableRow>
-                      <TableHead className="text-sm">Banco</TableHead>
-                      <TableHead className="text-sm">Situação</TableHead>
-                      <TableHead className="text-right text-sm">Parcela</TableHead>
-                      <TableHead className="text-right text-sm">Taxa a.a.</TableHead>
-                      <TableHead className="text-right text-sm">Prazo máx</TableHead>
-                      <TableHead className="text-right text-sm">Financ. máx</TableHead>
-                      <TableHead className="text-right text-sm">Total financiado</TableHead>
-                      <TableHead className="text-right text-sm">IOF</TableHead>
-
+                    <TableRow className="border-border/60 bg-muted/50 hover:bg-muted/50">
+                      <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        Banco
+                      </TableHead>
+                      <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        Situação
+                      </TableHead>
+                      <TableHead className="text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        Parcela
+                      </TableHead>
+                      <TableHead className="text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        Taxa a.a.
+                      </TableHead>
+                      <TableHead className="text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        Prazo máx
+                      </TableHead>
+                      <TableHead className="text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        Financ. máx
+                      </TableHead>
+                      <TableHead className="text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        Total financiado
+                      </TableHead>
+                      <TableHead className="text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        IOF
+                      </TableHead>
                       <TableHead></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {bancos.map((b: any) => (
-                      <TableRow key={b.id}>
+                      <TableRow
+                        key={b.id}
+                        className="border-border/50 transition-colors odd:bg-card even:bg-muted/20 hover:bg-primary/5"
+                      >
                         <TableCell className="py-3 text-sm font-semibold">
                           <div className="flex items-center gap-2.5">
                             <BancoLogo nome={b.nome_banco} size="lg" />
@@ -473,7 +481,6 @@ function Pagina() {
                         <TableCell className="py-3 text-right text-sm font-semibold tabular-nums whitespace-nowrap">
                           {formatBRL(totalFinanciado(b))}
                         </TableCell>
-
                         <TableCell className="py-3 text-right text-sm tabular-nums whitespace-nowrap">
                           {formatBRL(b.valor_iof)}
                         </TableCell>
@@ -506,6 +513,7 @@ function Pagina() {
                   </TableBody>
                 </Table>
               </div>
+
             </>
           )}
           {bancos.length > 0 && (
@@ -519,8 +527,8 @@ function Pagina() {
         </TabsContent>
 
         <TabsContent value="dados" className="mt-4">
-          <Card className="p-4">
-            <dl className="grid grid-cols-1 gap-x-8 gap-y-3 text-sm sm:grid-cols-2">
+          <div className="overflow-hidden rounded-xl border border-border/60 bg-border/60 shadow-sm">
+            <dl className="grid grid-cols-1 gap-px sm:grid-cols-2">
               <Item termo="Valor do imóvel" desc={formatBRL(s.valor_imovel)} />
               <Item termo="Valor financiado" desc={formatBRL(s.valor_financiamento)} />
               <Item termo="Entrada" desc={formatBRL(s.valor_entrada)} />
@@ -549,27 +557,35 @@ function Pagina() {
               <Item termo="Estado civil" desc={s.estado_civil ?? "—"} />
               <Item termo="UF" desc={s.uf ?? "—"} />
             </dl>
-          </Card>
+          </div>
         </TabsContent>
 
         <TabsContent value="historico" className="mt-4">
-          <Card className="divide-y divide-border p-0">
-            {data.historico.length === 0 && (
-              <p className="p-4 text-sm text-muted-foreground">Sem histórico.</p>
+          <Card className="p-5">
+            {data.historico.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Sem histórico.</p>
+            ) : (
+              <ol className="relative space-y-5 before:absolute before:left-[7px] before:top-1.5 before:bottom-1.5 before:w-px before:bg-border">
+                {data.historico.map((h: any) => (
+                  <li key={h.id} className="relative flex gap-4 pl-6">
+                    <span className="absolute left-0 top-1 flex h-3.5 w-3.5 items-center justify-center rounded-full border-2 border-primary/40 bg-background">
+                      <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                    </span>
+                    <div className="flex flex-1 flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-between">
+                      <p className="text-sm text-foreground">
+                        <span className="font-medium">{h.descricao}</span>
+                        {h.ator_nome && (
+                          <span className="text-muted-foreground"> · por {h.ator_nome}</span>
+                        )}
+                      </p>
+                      <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                        {new Date(h.created_at).toLocaleString("pt-BR")}
+                      </span>
+                    </div>
+                  </li>
+                ))}
+              </ol>
             )}
-            {data.historico.map((h: any) => (
-              <div key={h.id} className="flex items-center justify-between gap-3 p-4 text-sm">
-                <div>
-                  <span>{h.descricao}</span>
-                  {h.ator_nome && (
-                    <span className="text-muted-foreground"> · por {h.ator_nome}</span>
-                  )}
-                </div>
-                <span className="shrink-0 text-xs text-muted-foreground">
-                  {new Date(h.created_at).toLocaleString("pt-BR")}
-                </span>
-              </div>
-            ))}
           </Card>
         </TabsContent>
       </Tabs>
@@ -577,11 +593,37 @@ function Pagina() {
   );
 }
 
+function ResumoCelula({
+  rotulo,
+  valor,
+  destaque,
+}: {
+  rotulo: string;
+  valor: string;
+  destaque?: boolean;
+}) {
+  return (
+    <div className={cn("bg-card p-3", destaque && "bg-primary/5")}>
+      <dt className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+        {rotulo}
+      </dt>
+      <dd
+        className={cn(
+          "mt-1 text-sm font-semibold tabular-nums",
+          destaque ? "text-primary" : "text-foreground",
+        )}
+      >
+        {valor}
+      </dd>
+    </div>
+  );
+}
+
 function Item({ termo, desc }: { termo: string; desc: string }) {
   return (
-    <div className="flex justify-between border-b border-border/40 pb-2">
-      <dt className="text-muted-foreground">{termo}</dt>
-      <dd className="font-medium text-foreground tabular-nums">{desc}</dd>
+    <div className="flex items-center justify-between gap-3 bg-card px-4 py-3 transition-colors hover:bg-muted/40">
+      <dt className="text-sm text-muted-foreground">{termo}</dt>
+      <dd className="text-right text-sm font-semibold text-foreground tabular-nums">{desc}</dd>
     </div>
   );
 }
