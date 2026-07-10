@@ -102,7 +102,7 @@ function Pagina() {
   }
 
   const c = det.cliente;
-  const docExib = det.podePii ? formatarDocumento(c.documento) : mascararDocumento(c.documento);
+  const docExib = det.podePii ? formatarDocumento(c.documento) : c.documento;
 
   const iniciais = (c.nome ?? "?")
     .trim()
