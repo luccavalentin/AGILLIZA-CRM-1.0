@@ -338,7 +338,7 @@ function Pagina() {
             </Button>
             <Button asChild size="sm" className="h-9 gap-1.5">
               <Link to="/operacional/simulacoes/completa">
-                <Send className="h-4 w-4" />
+                <Calculator className="h-4 w-4" />
                 Simulação completa
               </Link>
             </Button>
