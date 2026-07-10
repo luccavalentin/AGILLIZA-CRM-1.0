@@ -204,7 +204,7 @@ function NotificacoesBell() {
   const { data: notificacoes } = useQuery({
     queryKey: ["cliente", "notificacoes"],
     queryFn: () => clienteListarNotificacoes(),
-    refetchInterval: (q: any) => (q.state.status === "error" ? false : 10000),
+    refetchInterval: (q: any) => (q.state.status === "error" ? false : 20000),
   });
   const naoLidas = (notificacoes ?? []).filter((n) => !n.lida).length;
 
