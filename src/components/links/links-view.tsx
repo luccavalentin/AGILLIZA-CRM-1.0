@@ -35,6 +35,7 @@ import {
   atualizarLink,
   excluirLink,
 } from "@/lib/links/links.functions";
+import { OpHero, OpStat } from "@/components/operacional/ui";
 
 function hostname(url: string): string {
   try {
