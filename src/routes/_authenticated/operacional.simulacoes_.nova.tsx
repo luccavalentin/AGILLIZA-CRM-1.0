@@ -344,7 +344,7 @@ function Pagina() {
           </div>
         </div>
 
-        <div className="space-y-1.5">
+        <div className="space-y-1.5 lg:col-span-2">
           <Label>Renda familiar mensal (opcional)</Label>
           <CurrencyInput
             value={w.renda_familiar}
