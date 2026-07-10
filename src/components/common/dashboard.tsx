@@ -68,14 +68,9 @@ export function PanelHeader({
   actions?: ReactNode;
 }) {
   return (
-    <div className="relative overflow-hidden rounded-xl border border-border bg-card p-4 md:p-6">
-      {/* Halo de marca no canto */}
-      <span
-        aria-hidden
-        className="pointer-events-none absolute -right-24 -top-24 h-56 w-56 rounded-full opacity-70 blur-2xl"
-        style={{ background: "color-mix(in oklab, var(--primary) 12%, transparent)" }}
-      />
+    <div className="op-hero p-4 md:p-6">
       <div className="relative grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
+
         <div className="min-w-0">
           <p className="flex min-w-0 items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-primary sm:text-[11px] sm:tracking-[0.18em]">
             <span className="inline-block h-1 w-5 shrink-0 rounded-full bg-primary sm:w-6" />

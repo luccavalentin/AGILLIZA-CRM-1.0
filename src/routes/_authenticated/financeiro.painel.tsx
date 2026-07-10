@@ -47,14 +47,20 @@ function Pagina() {
 
   return (
     <div className="mx-auto w-full max-w-[1600px] space-y-6 p-4 md:p-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-semibold text-foreground">Painel financeiro</h1>
+      <div className="op-hero flex flex-wrap items-end justify-between gap-3 p-4 md:p-6">
+        <div className="relative min-w-0">
+          <p className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-primary sm:text-[11px]">
+            <span className="inline-block h-1 w-5 shrink-0 rounded-full bg-primary" />
+            Financeiro · Painel
+          </p>
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground sm:text-[28px]">
+            Painel financeiro
+          </h1>
           <p className="text-sm text-muted-foreground">
             Visão geral de recebimentos, pagamentos e caixa projetado.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="relative flex items-center gap-2">
           <label className="flex items-center gap-1 text-xs text-muted-foreground">
             De
             <Input type="date" className="w-40" value={de} onChange={(e) => setDe(e.target.value)} />

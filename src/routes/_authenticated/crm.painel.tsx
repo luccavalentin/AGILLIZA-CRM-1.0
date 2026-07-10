@@ -243,12 +243,17 @@ function Pagina() {
 
   return (
     <div className="space-y-6 p-4 sm:p-6">
-      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+      <div className="op-hero p-4 md:p-6">
+      <div className="relative grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
         <div className="flex min-w-0 items-center gap-3.5">
           <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-primary to-primary/70 text-primary-foreground shadow-sm ring-1 ring-primary/20">
             <Workflow className="size-5" />
           </span>
           <div className="min-w-0 space-y-0.5">
+            <p className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-primary sm:text-[11px]">
+              <span className="inline-block h-1 w-5 shrink-0 rounded-full bg-primary" />
+              CRM · Painel
+            </p>
             <h1 className="truncate text-2xl font-semibold tracking-tight text-foreground">
               Painel da esteira
             </h1>
@@ -329,6 +334,8 @@ function Pagina() {
           )}
         </div>
       </div>
+      </div>
+
 
 
       {isLoading ? (
