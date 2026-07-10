@@ -98,41 +98,48 @@ function Pagina() {
         <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
       </Button>
 
-      {/* Cabeçalho + ação principal */}
-      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 sm:flex sm:items-center sm:justify-between">
-        <div className="flex min-w-0 items-center gap-3">
-          <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-primary to-primary/70 text-primary-foreground shadow-sm ring-1 ring-primary/20">
-            <Plus className="h-5 w-5" />
-          </span>
-          <div className="min-w-0 space-y-0.5">
-            <h1 className="truncate text-lg font-semibold tracking-tight text-foreground sm:text-xl">
-              Nova Proposta
-            </h1>
-            <p className="truncate text-sm text-muted-foreground">
-              Envie ao banco a partir de uma simulação ou origine uma nova.
-            </p>
+      {/* Hero */}
+      <div className="relative overflow-hidden rounded-3xl border border-border/60 bg-gradient-to-br from-primary/[0.06] via-card to-card p-5 shadow-sm sm:p-6">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-primary/10 blur-3xl"
+        />
+        <div className="relative grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4 sm:flex sm:items-center sm:justify-between">
+          <div className="flex min-w-0 items-center gap-4">
+            <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-primary to-primary/70 text-primary-foreground shadow-md ring-1 ring-primary/25 transition-transform duration-300 hover:scale-105">
+              <Plus className="h-5 w-5" />
+            </span>
+            <div className="min-w-0 space-y-1">
+              <h1 className="truncate text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+                Nova Proposta
+              </h1>
+              <p className="truncate text-sm text-muted-foreground">
+                Envie ao banco a partir de uma simulação ou origine uma nova.
+              </p>
+            </div>
           </div>
+          <Button
+            onClick={() =>
+              router.navigate({
+                to: "/operacional/simulacoes/completa",
+                search: { origem: "proposta" },
+              })
+            }
+            className="group col-span-2 h-11 rounded-xl bg-gradient-to-br from-primary to-primary/80 font-semibold shadow-md ring-1 ring-primary/25 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/25 hover:brightness-105 active:translate-y-0 sm:col-auto"
+          >
+            <Plus className="mr-1.5 h-4 w-4 transition-transform duration-200 group-hover:rotate-90" />{" "}
+            Gerar Nova Proposta
+          </Button>
         </div>
-        <Button
-          onClick={() =>
-            router.navigate({
-              to: "/operacional/simulacoes/completa",
-              search: { origem: "proposta" },
-            })
-          }
-          className="col-span-2 h-11 rounded-xl bg-gradient-to-br from-primary to-primary/80 font-semibold shadow-md ring-1 ring-primary/20 transition-all hover:shadow-lg hover:brightness-105 sm:col-auto"
-        >
-          <Plus className="mr-1.5 h-4 w-4" /> Gerar Nova Proposta
-        </Button>
       </div>
 
       {/* Abas Propostas / Simulações */}
       <Tabs value={aba} onValueChange={(v) => setAba(v as typeof aba)} className="space-y-4">
         <TabsList className="h-11 rounded-xl">
-          <TabsTrigger value="propostas" className="rounded-lg">
+          <TabsTrigger value="propostas" className="rounded-lg transition-all data-[state=active]:shadow-sm">
             <FileText className="mr-1.5 h-4 w-4" /> Propostas
           </TabsTrigger>
-          <TabsTrigger value="simulacoes" className="rounded-lg">
+          <TabsTrigger value="simulacoes" className="rounded-lg transition-all data-[state=active]:shadow-sm">
             <Calculator className="mr-1.5 h-4 w-4" /> Simulações
           </TabsTrigger>
         </TabsList>
@@ -305,13 +312,14 @@ function AbaPropostas({ escopo, busca, dataInicio, dataFim }: FiltroProps) {
               itens.map((p) => (
                 <TableRow
                   key={p.id}
-                  className="cursor-pointer"
+                  className="group relative cursor-pointer transition-colors hover:bg-primary/[0.03]"
                   onClick={() =>
                     router.navigate({ to: "/operacional/propostas/$id", params: { id: p.id } })
                   }
                 >
-                  <TableCell>
-                    <div className="font-medium tabular-nums text-foreground">
+                  <TableCell className="relative">
+                    <span className="absolute inset-y-0 left-0 w-[3px] origin-top scale-y-0 rounded-r-full bg-primary transition-transform duration-200 group-hover:scale-y-100" />
+                    <div className="font-medium tabular-nums text-foreground transition-colors group-hover:text-primary">
                       {p.numero_proposta_banco ?? p.numero_proposta}
                     </div>
                     {p.numero_proposta_banco && (
@@ -401,14 +409,14 @@ function AbaSimulacoes({ escopo, busca, dataInicio, dataFim }: FiltroProps) {
               key={b.id}
               size="sm"
               variant="secondary"
-              className="rounded-lg"
+              className="group/btn rounded-lg border border-border/60 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:bg-primary hover:text-primary-foreground hover:shadow-md active:translate-y-0"
               disabled={convertendo !== null}
               onClick={() => converter(s.id, b.banco_id)}
             >
               {convertendo === chave ? (
                 <Loader2 className="mr-1 h-4 w-4 animate-spin" />
               ) : (
-                <Send className="mr-1 h-4 w-4" />
+                <Send className="mr-1 h-4 w-4 transition-transform duration-200 group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5" />
               )}
               {b.nome_banco ?? "Banco"}
             </Button>
@@ -518,13 +526,16 @@ function AbaSimulacoes({ escopo, busca, dataInicio, dataFim }: FiltroProps) {
               itens.map((s) => (
                 <TableRow
                   key={s.id}
-                  className="cursor-pointer"
+                  className="group relative cursor-pointer transition-colors hover:bg-primary/[0.03]"
                   onClick={() =>
                     router.navigate({ to: "/operacional/simulacoes/$id", params: { id: s.id } })
                   }
                 >
-                  <TableCell className="font-medium tabular-nums text-foreground">
-                    {s.numero_simulacao}
+                  <TableCell className="relative font-medium tabular-nums text-foreground">
+                    <span className="absolute inset-y-0 left-0 w-[3px] origin-top scale-y-0 rounded-r-full bg-primary transition-transform duration-200 group-hover:scale-y-100" />
+                    <span className="transition-colors group-hover:text-primary">
+                      {s.numero_simulacao}
+                    </span>
                   </TableCell>
                   <TableCell className="font-medium text-foreground">
                     {s.nome_cliente ?? "—"}
