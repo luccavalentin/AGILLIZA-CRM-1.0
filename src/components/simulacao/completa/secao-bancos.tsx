@@ -10,14 +10,11 @@ export function SecaoBancos({ ctx }: { ctx: SimulacaoCompletaCtx }) {
 
   return (
     <section className="space-y-4">
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="text-sm font-semibold text-foreground">Bancos</h2>
-        {bancos && bancos.length > 0 && (
-          <span className="text-xs text-muted-foreground">
-            {f.bancos_ids.length} de {bancos.length} selecionados
-          </span>
-        )}
-      </div>
+      {bancos && bancos.length > 0 && (
+        <p className="text-xs text-muted-foreground">
+          {f.bancos_ids.length} de {bancos.length} banco(s) selecionado(s)
+        </p>
+      )}
 
       {f.sistema_amortizacao === "P" && (
         <div className="rounded-lg border border-border bg-muted p-3 text-sm text-muted-foreground">

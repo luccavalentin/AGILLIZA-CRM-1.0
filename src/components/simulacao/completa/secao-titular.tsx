@@ -36,27 +36,24 @@ export function SecaoTitular({ ctx }: { ctx: SimulacaoCompletaCtx }) {
 
   return (
     <section className="space-y-4">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="text-sm font-semibold text-foreground">Titular</h2>
-        <div className="flex w-full items-center gap-2 sm:w-auto">
-          <div className="w-full sm:w-72">
-            <ClienteCRMPicker
-              selecionado={f.cliente_id ? f.nome_cliente : null}
-              onSelect={selecionarClienteCRM}
-            />
-          </div>
-          {f.cliente_id && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="shrink-0"
-              onClick={limparTitular}
-            >
-              Limpar
-            </Button>
-          )}
+      <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center">
+        <div className="w-full sm:w-72">
+          <ClienteCRMPicker
+            selecionado={f.cliente_id ? f.nome_cliente : null}
+            onSelect={selecionarClienteCRM}
+          />
         </div>
+        {f.cliente_id && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="shrink-0"
+            onClick={limparTitular}
+          >
+            Limpar
+          </Button>
+        )}
       </div>
       {(cadastroNome || invertido) && (
         <div className="flex flex-wrap items-center gap-2">

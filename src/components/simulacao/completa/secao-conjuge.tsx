@@ -19,26 +19,23 @@ export function SecaoConjuge({ ctx }: { ctx: SimulacaoCompletaCtx }) {
 
   return (
     <section className="space-y-4">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="text-sm font-semibold text-foreground">Cônjuge / coobrigado</h2>
-        <div className="flex flex-col items-start gap-1 sm:items-end">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="gap-2"
-            disabled={!podeInverter}
-            onClick={inverterPrincipal}
-          >
-            <ArrowLeftRight className="h-4 w-4" />
-            Inverter principal
-          </Button>
-          {!podeInverter && (
-            <p className="text-xs text-muted-foreground">
-              Preencha nome, CPF e data de nascimento do cônjuge para inverter.
-            </p>
-          )}
-        </div>
+      <div className="flex flex-col items-start gap-1">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="gap-2"
+          disabled={!podeInverter}
+          onClick={inverterPrincipal}
+        >
+          <ArrowLeftRight className="h-4 w-4" />
+          Inverter principal
+        </Button>
+        {!podeInverter && (
+          <p className="text-xs text-muted-foreground">
+            Preencha nome, CPF e data de nascimento do cônjuge para inverter.
+          </p>
+        )}
       </div>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <Campo label="Nome">

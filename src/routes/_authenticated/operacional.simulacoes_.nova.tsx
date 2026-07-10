@@ -1,5 +1,6 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { SecaoCabecalho } from "@/components/simulacao/secao-cabecalho";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Calculator, Home, CalendarDays, TrendingUp, Zap, FileText, Award } from "lucide-react";
 import { assertModuloPermitido } from "@/lib/route-guards";
@@ -472,14 +473,4 @@ function Pagina() {
   );
 }
 
-function SecaoCabecalho({ icone, titulo }: { icone: ReactNode; titulo: string }) {
-  return (
-    <div className="flex items-center gap-2 border-b border-border/60 bg-muted/30 px-5 py-3.5">
-      <span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10 text-primary">
-        {icone}
-      </span>
-      <h2 className="text-sm font-semibold text-foreground">{titulo}</h2>
-    </div>
-  );
-}
 
