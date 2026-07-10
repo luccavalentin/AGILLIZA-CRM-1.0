@@ -132,12 +132,12 @@ function Pagina() {
 
   return (
     <div className="mx-auto w-full max-w-3xl space-y-6 p-4 md:p-6">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <Bell className="h-5 w-5 text-muted-foreground" />
-          <h1 className="text-xl font-semibold text-foreground">Notificações</h1>
-        </div>
-        <div className="flex items-center gap-2">
+      <AdminHero
+        icon={<Bell className="h-5 w-5" />}
+        titulo="Notificações"
+        descricao="Central de avisos do sistema."
+        acoes={
+          <>
           {naoLidas.length > 0 && (
             <Button variant="outline" size="sm" onClick={() => marcarTodas.mutate()}>
               <CheckCheck className="mr-1 h-4 w-4" /> Marcar todas como lidas
