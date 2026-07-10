@@ -1,6 +1,6 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { SecaoCabecalho } from "@/components/simulacao/secao-cabecalho";
+
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Calculator, TrendingUp, FileText, Award } from "lucide-react";
 import { assertModuloPermitido } from "@/lib/route-guards";
