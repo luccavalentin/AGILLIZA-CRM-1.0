@@ -71,14 +71,17 @@ function Pagina() {
     queryFn: () => obterSimulacao({ data: { id } }),
     // Enquanto a simulação/algum banco ainda está processando, faz polling
     // para garantir que os retornos apareçam mesmo se o realtime falhar.
+    // O realtime (abaixo) é o canal primário de atualização. O polling é apenas
+    // um fallback, ativado somente enquanto algo está processando, com intervalo
+    // mais espaçado para não duplicar o realtime nem sobrecarregar o backend.
     refetchInterval: (query) => {
       const d = query.state.data as any;
-      if (!d) return 2000;
+      if (!d) return 3000;
       const simProcessando = ["enviando", "rascunho"].includes(d.simulacao?.status);
       const bancoProcessando = (d.bancos ?? []).some(
         (b: any) => b.status_banco === "aguardando" || b.status_banco === "enviando",
       );
-      return simProcessando || bancoProcessando ? 3000 : false;
+      return simProcessando || bancoProcessando ? 6000 : false;
     },
   });
 
