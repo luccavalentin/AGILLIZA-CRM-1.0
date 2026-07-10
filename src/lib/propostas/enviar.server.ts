@@ -1055,9 +1055,13 @@ export async function sincronizarPropostaImpl({
     const candidatos = [statusBancos, statusAtividade.status, statusEtapa].filter(
       Boolean,
     ) as PropostaStatus[];
+    let melhorIdx = atual;
     for (const c of candidatos) {
       const idx = ORDEM_STATUS.indexOf(c);
-      if (idx > atual) novoStatus = c;
+      if (idx > melhorIdx) {
+        melhorIdx = idx;
+        novoStatus = c;
+      }
     }
     // Desfecho terminal de crédito recusado quando não houve avanço no funil.
     if (!novoStatus && statusBancos === "credito_recusado" && prop.status !== "credito_recusado") {
