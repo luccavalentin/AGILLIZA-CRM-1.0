@@ -235,12 +235,23 @@ export function DocumentosGerais() {
     const lista = Array.from(comerciais.values());
     for (const r of lista) finalizar(r);
     // Comerciais em ordem alfabética; "Sem comercial" por último.
-    return lista.sort((a, b) => {
+    lista.sort((a, b) => {
       const aSem = a.key === SEM_COMERCIAL_KEY;
       const bSem = b.key === SEM_COMERCIAL_KEY;
       if (aSem !== bSem) return aSem ? 1 : -1;
       return a.nome.localeCompare(b.nome, "pt-BR");
     });
+
+    // Todos os comerciais ficam dentro de uma única pasta raiz.
+    const raiz: PastaNode = {
+      key: RAIZ_KEY,
+      nome: RAIZ_NOME,
+      tipo: "raiz",
+      subpastas: lista,
+      clientes: [],
+      total_clientes: lista.reduce((acc, n) => acc + n.total_clientes, 0),
+    };
+    return [raiz];
   }, [clientes, comerciaisBase]);
 
 
