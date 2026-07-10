@@ -141,6 +141,56 @@ function contarPorBucket(rows: { created_at?: string | null }[], buckets: Return
   return m;
 }
 
+/**
+ * Contratos emitidos são a fonte de verdade da operação: ficam registrados na
+ * ficha do cliente (clientes.contrato_emitido_em), que é o mesmo campo que
+ * alimenta a pasta de contratos arquivados. Aqui contamos os contratos cuja
+ * DATA DE EMISSÃO cai no período e estimamos o volume pelo valor do imóvel ou,
+ * na ausência dele, pela maior simulação vinculada ao cliente.
+ */
+async function carregarContratosCliente(
+  supabase: any,
+  escopoEq: (q: any, col: string) => any,
+  de: string,
+  ate: string,
+) {
+  const cliRes = await escopoEq(
+    supabase
+      .from("clientes")
+      .select("id,contrato_emitido_em,imovel_valor")
+      .not("contrato_emitido_em", "is", null)
+      .gte("contrato_emitido_em", de)
+      .lte("contrato_emitido_em", ate)
+      .limit(5000),
+    "responsavel_id",
+  );
+  if (cliRes.error) throw new Error(cliRes.error.message);
+  const cliRows = (cliRes.data ?? []) as any[];
+  if (!cliRows.length) return { rows: [] as { contrato_emitido_em: string; valor: number }[], volume: 0, count: 0 };
+
+  const semValor = cliRows.filter((c) => !c.imovel_valor).map((c) => c.id);
+  const simMap = new Map<string, number>();
+  if (semValor.length) {
+    const simRes = await supabase
+      .from("simulacoes")
+      .select("cliente_id,valor_financiamento,valor_imovel")
+      .in("cliente_id", semValor)
+      .limit(5000);
+    for (const s of (simRes.data ?? []) as any[]) {
+      const v = Number(s.valor_financiamento ?? s.valor_imovel ?? 0) || 0;
+      if (v > (simMap.get(s.cliente_id) ?? 0)) simMap.set(s.cliente_id, v);
+    }
+  }
+
+  const rows = cliRows.map((c) => ({
+    contrato_emitido_em: c.contrato_emitido_em as string,
+    valor: Number(c.imovel_valor ?? simMap.get(c.id) ?? 0) || 0,
+  }));
+  const volume = rows.reduce((s, r) => s + r.valor, 0);
+  return { rows, volume, count: rows.length };
+}
+
+
 export const getPanelDados = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: z.infer<typeof schema>) => schema.parse(d))
