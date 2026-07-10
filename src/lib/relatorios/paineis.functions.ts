@@ -419,6 +419,7 @@ export const getPanelDados = createServerFn({ method: "POST" })
           .limit(5000),
         "responsavel_id",
       ),
+      carregarContratosCliente(supabase, escopoEq, de, ate),
     ]);
     if (sims.error) throw new Error(sims.error.message);
     if (props.error) throw new Error(props.error.message);
