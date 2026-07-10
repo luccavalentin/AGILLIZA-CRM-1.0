@@ -348,9 +348,11 @@ function Pagina() {
       {/* KPIs */}
       <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
         {kpis.map((k) => (
-          <div
+          <button
             key={k.label}
-            className="group relative flex items-center gap-3 overflow-hidden rounded-xl border border-border/60 bg-card px-3.5 py-3 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md"
+            type="button"
+            onClick={() => setKpiAberto(k.id)}
+            className="group relative flex items-center gap-3 overflow-hidden rounded-xl border border-border/60 bg-card px-3.5 py-3 text-left shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
           >
             <span className="absolute left-0 top-0 h-full w-[3px] rounded-r bg-primary/60" />
             <div className="grid size-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary ring-1 ring-inset ring-primary/15">
@@ -360,9 +362,34 @@ function Pagina() {
               <p className="truncate font-mono text-lg font-semibold tracking-tight tabular-nums text-foreground">{k.valor}</p>
               <p className="truncate text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{k.label}</p>
             </div>
-          </div>
+          </button>
         ))}
       </div>
+
+      {/* Detalhe do KPI clicado */}
+      <Dialog open={!!kpiAberto} onOpenChange={(o) => !o && setKpiAberto(null)}>
+        <DialogContent className="max-h-[85vh] overflow-hidden sm:max-w-lg">
+          {(() => {
+            const k = kpis.find((x) => x.id === kpiAberto);
+            if (!k) return null;
+            return (
+              <>
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <span className="grid size-8 place-items-center rounded-lg bg-primary/10 text-primary ring-1 ring-inset ring-primary/15">
+                      <k.icon className="size-4" />
+                    </span>
+                    {k.label}
+                  </DialogTitle>
+                  <DialogDescription>Valor atual: {k.valor}</DialogDescription>
+                </DialogHeader>
+                <div className="overflow-y-auto pr-1">{k.detalhe}</div>
+              </>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
+
 
       {/* Barra de filtros */}
       <div className="flex flex-col gap-3 rounded-xl border border-border/60 bg-card p-3 lg:flex-row lg:items-center lg:justify-between">
