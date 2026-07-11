@@ -2,7 +2,8 @@ import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Calculator, TrendingUp, FileText, Award } from "lucide-react";
+import { ArrowLeft, Calculator, TrendingUp, FileText, Award, Download } from "lucide-react";
+import { BancoLogo } from "@/components/bancos/banco-logo";
 import { assertModuloPermitido } from "@/lib/route-guards";
 
 import { Button } from "@/components/ui/button";
@@ -167,6 +168,41 @@ function Pagina() {
   function irParaCompleta() {
     sessionStorage.setItem("simulacao_wizard", JSON.stringify({ ...w, prazo: w.prazo_meses }));
     router.navigate({ to: "/operacional/simulacoes/completa" });
+  }
+
+  const [baixando, setBaixando] = useState(false);
+
+  async function baixarSimulacao() {
+    if (comparativo.length === 0) return;
+    setBaixando(true);
+    try {
+      const { baixarSimulacaoPDF } = await import("@/lib/simulacao/simulacao-pdf");
+      baixarSimulacaoPDF({
+        simulacao: {
+          numero_simulacao: null,
+          nome_cliente: null,
+          produto: w.produto,
+          valor_imovel: w.valor_imovel,
+          valor_financiamento: w.valor_financiamento,
+          valor_entrada: w.valor_entrada,
+          prazo: w.prazo_meses,
+          sistema_amortizacao: "S",
+          created_at: new Date().toISOString(),
+        },
+        bancos: comparativo.map((c) => ({
+          nome_banco: c.nome_banco,
+          status_banco: "simulada",
+          valor_parcela: c.resultado.primeira_parcela,
+          taxa_juros_ano: c.taxa_ano * 100,
+          prazo_pagamento_max: w.prazo_meses,
+          valor_financiamento_max: w.valor_financiamento,
+        })),
+      });
+    } catch {
+      toast.error("Não foi possível gerar o PDF da simulação.");
+    } finally {
+      setBaixando(false);
+    }
   }
 
   return (
@@ -392,14 +428,26 @@ function Pagina() {
 
         {mostrarRapida && (
           <Card className="overflow-hidden">
-            <div className="flex items-center justify-between border-b border-border/60 bg-muted/30 px-5 py-3.5">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 bg-muted/30 px-5 py-3.5">
               <div className="flex items-center gap-2">
                 <TrendingUp className="h-4 w-4 text-primary" />
                 <h3 className="text-sm font-semibold text-foreground">Comparativo estimado</h3>
+                <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
+                  SAC · {w.prazo_meses} meses
+                </span>
               </div>
-              <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
-                SAC · {w.prazo_meses} meses
-              </span>
+              {comparativo.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 gap-1.5"
+                  onClick={baixarSimulacao}
+                  disabled={baixando}
+                >
+                  <Download className="h-3.5 w-3.5" />
+                  {baixando ? "Gerando…" : "Baixar simulação"}
+                </Button>
+              )}
             </div>
             <div className="p-5">
               {comparativo.length === 0 ? (
@@ -414,28 +462,35 @@ function Pagina() {
                       <div
                         key={c.banco_id}
                         className={cn(
-                          "flex items-center justify-between rounded-lg border p-3.5 transition-colors",
+                          "flex items-center justify-between gap-3 rounded-xl border p-3.5 transition-colors",
                           melhor
-                            ? "border-emerald-500/30 bg-emerald-500/5"
+                            ? "border-primary/30 bg-primary/5"
                             : "border-border bg-card hover:bg-muted/30",
                         )}
                       >
-                        <div className="flex items-center gap-3">
-                          <span
-                            className={cn(
-                              "flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold tabular-nums",
-                              melhor
-                                ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
-                                : "bg-muted text-muted-foreground",
-                            )}
-                          >
-                            {i + 1}
+                        <div className="flex min-w-0 items-center gap-3">
+                          <span className="relative shrink-0">
+                            <BancoLogo nome={c.nome_banco} size="xl" />
+                            <span
+                              className={cn(
+                                "absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold tabular-nums ring-2 ring-card",
+                                melhor
+                                  ? "bg-primary text-primary-foreground"
+                                  : "bg-muted text-muted-foreground",
+                              )}
+                            >
+                              {i + 1}
+                            </span>
                           </span>
-                          <div>
+                          <div className="min-w-0">
                             <div className="flex items-center gap-1.5">
-                              <p className="font-medium text-card-foreground">{c.nome_banco}</p>
+                              <p className="truncate font-semibold text-card-foreground">
+                                {c.nome_banco}
+                              </p>
                               {melhor && (
-                                <Award className="h-3.5 w-3.5 text-emerald-500" />
+                                <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
+                                  <Award className="h-3 w-3" /> Melhor taxa
+                                </span>
                               )}
                             </div>
                             <p className="text-xs text-muted-foreground">
@@ -443,7 +498,7 @@ function Pagina() {
                             </p>
                           </div>
                         </div>
-                        <div className="text-right">
+                        <div className="shrink-0 text-right">
                           <p className="text-[10.5px] font-medium uppercase tracking-wide text-muted-foreground">
                             1ª parcela
                           </p>
