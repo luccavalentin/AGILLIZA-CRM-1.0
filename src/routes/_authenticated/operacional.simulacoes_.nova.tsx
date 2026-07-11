@@ -428,14 +428,26 @@ function Pagina() {
 
         {mostrarRapida && (
           <Card className="overflow-hidden">
-            <div className="flex items-center justify-between border-b border-border/60 bg-muted/30 px-5 py-3.5">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 bg-muted/30 px-5 py-3.5">
               <div className="flex items-center gap-2">
                 <TrendingUp className="h-4 w-4 text-primary" />
                 <h3 className="text-sm font-semibold text-foreground">Comparativo estimado</h3>
+                <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
+                  SAC · {w.prazo_meses} meses
+                </span>
               </div>
-              <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
-                SAC · {w.prazo_meses} meses
-              </span>
+              {comparativo.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 gap-1.5"
+                  onClick={baixarSimulacao}
+                  disabled={baixando}
+                >
+                  <Download className="h-3.5 w-3.5" />
+                  {baixando ? "Gerando…" : "Baixar simulação"}
+                </Button>
+              )}
             </div>
             <div className="p-5">
               {comparativo.length === 0 ? (
