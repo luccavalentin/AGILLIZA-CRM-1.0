@@ -239,7 +239,7 @@ export function PainelView({
                   titulo={data.distribuicao.titulo}
                   subtitulo={data.distribuicao.subtitulo}
                 >
-                  <div className="h-[240px] w-full">
+                  <div className="h-[240px] w-full overflow-hidden">
                     <ReportChartView
                       chart={{
                         titulo: data.distribuicao.titulo,
