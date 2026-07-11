@@ -57,9 +57,9 @@ export function VinculosSection({
         {TIPOS_VINCULO.map((tipo) => {
           const desteTipo = vinculos.filter((x) => x.tipo_vinculo === tipo.valor);
           const idsTipo = new Set(desteTipo.map((x) => x.parceiro_id));
-          const tipoPessoa = TIPO_VINCULO_PESSOA[tipo.valor];
+          const tiposPessoa = TIPO_VINCULO_PESSOA[tipo.valor];
           const opcoesParceiros = parceiros.filter(
-            (p) => !idsTipo.has(p.id) && p.tipo_pessoa === tipoPessoa,
+            (p) => !idsTipo.has(p.id) && tiposPessoa.includes(p.tipo_pessoa ?? ""),
           );
           const sel = vinculoSel[tipo.valor] ?? "";
           return (
