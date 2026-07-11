@@ -169,11 +169,11 @@ function Pagina() {
               <span className="pointer-events-none absolute inset-y-0 left-0 w-0.5 bg-gradient-to-b from-primary/70 to-primary/20 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
               <div className="p-4">
                 <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-3">
-                  <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/70 text-xs font-semibold text-primary-foreground shadow-sm ring-1 ring-primary/20">
+                  <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/70 text-xs font-semibold text-primary-foreground shadow-sm ring-1 ring-primary/20 transition-transform duration-300 group-hover:scale-105 group-hover:ring-primary/40">
                     {iniciais(c.nome)}
                   </span>
                   <div className="min-w-0">
-                    <h2 className="truncate text-base font-semibold leading-tight text-foreground group-hover:text-primary">
+                    <h2 className="truncate text-base font-semibold leading-tight text-foreground transition-colors group-hover:text-primary">
                       {c.nome}
                     </h2>
                     <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
