@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { listarTarefas } from "@/lib/operacional/tarefas.functions";
 import { TarefaDrawer } from "@/components/operacional/tarefa-drawer";
