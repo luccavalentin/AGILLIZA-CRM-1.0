@@ -620,8 +620,15 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
               className="flex items-center gap-3 rounded-lg border border-border bg-card p-3"
             >
               <FileText className="size-5 shrink-0 text-muted-foreground" />
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-foreground">{d.nome_arquivo}</p>
+              <button
+                type="button"
+                onClick={() => baixar(d.storage_path, d.nome_arquivo)}
+                title="Visualizar documento"
+                className="min-w-0 flex-1 cursor-pointer text-left transition-colors hover:opacity-80"
+              >
+                <p className="truncate text-sm font-medium text-foreground underline-offset-2 hover:underline">
+                  {d.nome_arquivo}
+                </p>
                 <p className="text-xs text-muted-foreground">
                   {CATEGORIA_LABEL[d.categoria as Categoria]} · {d.tipo_documento} · v{d.versao}
                 </p>
@@ -631,7 +638,7 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
                     <span className="truncate">Enviado por {d.enviado_por_nome}</span>
                   </span>
                 ) : null}
-              </div>
+              </button>
 
               <ToneBadge tone={statusTone[d.status] ?? "muted"}>{d.status}</ToneBadge>
               <Button
