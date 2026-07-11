@@ -61,7 +61,7 @@ export function SecaoBancos({ ctx }: { ctx: SimulacaoCompletaCtx }) {
                 <BancoLogo nome={b.nome_banco} size="xl" className="shrink-0" />
 
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-semibold text-foreground">
+                  <span className="block break-words text-sm font-semibold leading-tight text-foreground">
                     {b.nome_banco}
                   </span>
                   <span className="block text-xs text-muted-foreground">
