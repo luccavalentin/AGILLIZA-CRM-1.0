@@ -638,7 +638,7 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
                     <span className="truncate">Enviado por {d.enviado_por_nome}</span>
                   </span>
                 ) : null}
-              </div>
+              </button>
 
               <ToneBadge tone={statusTone[d.status] ?? "muted"}>{d.status}</ToneBadge>
               <Button
