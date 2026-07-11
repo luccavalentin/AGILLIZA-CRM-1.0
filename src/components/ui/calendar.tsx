@@ -63,6 +63,13 @@ function Calendar({
         className,
       )}
       captionLayout={captionLayout}
+      modifiers={{ ...feriadoModifiers, ...modifiers }}
+      modifiersClassNames={{
+        feriado: "text-destructive font-semibold aria-selected:text-primary-foreground",
+        feriadoFacultativo:
+          "text-amber-600 dark:text-amber-400 aria-selected:text-primary-foreground",
+        ...modifiersClassNames,
+      }}
       formatters={{
         formatMonthDropdown: (date) => date.toLocaleString("default", { month: "short" }),
         ...formatters,
