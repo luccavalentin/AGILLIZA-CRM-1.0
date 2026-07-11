@@ -184,8 +184,9 @@ function CalendarDayButton({
   className,
   day,
   modifiers,
+  feriado,
   ...props
-}: React.ComponentProps<typeof DayButton>) {
+}: React.ComponentProps<typeof DayButton> & { feriado?: FeriadoBR }) {
   const defaultClassNames = getDefaultClassNames();
 
   const ref = React.useRef<HTMLButtonElement>(null);
