@@ -2,7 +2,8 @@ import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Calculator, TrendingUp, FileText, Award } from "lucide-react";
+import { ArrowLeft, Calculator, TrendingUp, FileText, Award, Download } from "lucide-react";
+import { BancoLogo } from "@/components/bancos/banco-logo";
 import { assertModuloPermitido } from "@/lib/route-guards";
 
 import { Button } from "@/components/ui/button";
