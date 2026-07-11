@@ -623,7 +623,10 @@ export const getPanelDados = createServerFn({ method: "POST" })
         : undefined,
       ranking: {
         titulo: statusMap.size ? "Status de propostas" : "Status de simulações",
-        itens: statusMap.size ? topItens(statusMap, 6) : topItens(simStatusMap, 6),
+        itens: (statusMap.size ? topItens(statusMap, 6) : topItens(simStatusMap, 6)).map((i) => ({
+          ...i,
+          label: rotularStatus(i.label, statusMap.size ? PROP_LABEL : SIM_LABEL),
+        })),
       },
       recusadasPorBanco: recusadasBancoMap.size
         ? { titulo: "Recusadas por banco", itens: topItens(recusadasBancoMap, 8) }
