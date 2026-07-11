@@ -12,6 +12,7 @@ import {
 import {
   TIPOS_VINCULO,
   TIPO_VINCULO_PESSOA,
+  parceiroAtendeTipos,
   type TipoVinculo,
 } from "@/lib/crm/clientes.functions";
 
@@ -20,6 +21,7 @@ interface Parceiro {
   nome?: string | null;
   email?: string | null;
   tipo_pessoa?: string;
+  tipos_pessoa?: string[] | null;
 }
 
 export function VinculosSection({
@@ -59,7 +61,7 @@ export function VinculosSection({
           const idsTipo = new Set(desteTipo.map((x) => x.parceiro_id));
           const tiposPessoa = TIPO_VINCULO_PESSOA[tipo.valor];
           const opcoesParceiros = parceiros.filter(
-            (p) => !idsTipo.has(p.id) && tiposPessoa.includes(p.tipo_pessoa ?? ""),
+            (p) => !idsTipo.has(p.id) && parceiroAtendeTipos(p, tiposPessoa),
           );
           const sel = vinculoSel[tipo.valor] ?? "";
           return (

@@ -1146,6 +1146,22 @@ export const TIPO_VINCULO_PESSOA: Record<TipoVinculo, string[]> = {
   comercial_agilliza: ["comercial"],
 };
 
+/**
+ * Verifica se um usuário/parceiro pertence a algum dos tipos aceitos por um
+ * campo de vínculo. Considera tanto o tipo principal (`tipo_pessoa`) quanto os
+ * tipos adicionais marcados na pessoa (`tipos_pessoa`), pois uma pessoa pode ter
+ * mais de um tipo (ex.: Gestão + Comercial).
+ */
+export function parceiroAtendeTipos(
+  parceiro: { tipo_pessoa?: string | null; tipos_pessoa?: string[] | null },
+  tiposAceitos: string[],
+): boolean {
+  const seus = new Set<string>();
+  if (parceiro.tipo_pessoa) seus.add(parceiro.tipo_pessoa);
+  for (const t of parceiro.tipos_pessoa ?? []) if (t) seus.add(t);
+  return tiposAceitos.some((t) => seus.has(t));
+}
+
 /** Lista os parceiros/usuários vinculados a um cliente. */
 export const listarVinculosCliente = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -1183,17 +1199,27 @@ export const listarParceirosDisponiveis = createServerFn({ method: "GET" })
     async ({
       context,
     }): Promise<
-      { id: string; nome: string | null; email: string | null; tipo_pessoa: string | null }[]
+      {
+        id: string;
+        nome: string | null;
+        email: string | null;
+        tipo_pessoa: string | null;
+        tipos_pessoa: string[] | null;
+      }[]
     > => {
       const { supabase, userId } = context;
       const { data: corr } = await supabase.rpc("correspondente_do_usuario", { _user_id: userId });
-      let query = supabase.from("profiles").select("id, nome, email, tipo_pessoa").order("nome");
+      let query = supabase
+        .from("profiles")
+        .select("id, nome, email, tipo_pessoa, tipos_pessoa")
+        .order("nome");
       if (corr) query = query.eq("correspondente_id", corr);
       const { data, error } = await query.limit(500);
       if (error) throw error;
       return (data ?? []) as any;
     },
   );
+
 
 /** Cria um vínculo de atendimento entre o cliente e um usuário/parceiro. */
 export const vincularParceiro = createServerFn({ method: "POST" })

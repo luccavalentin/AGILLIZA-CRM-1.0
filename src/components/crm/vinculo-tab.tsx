@@ -20,6 +20,7 @@ import {
   desvincularParceiro,
   TIPOS_VINCULO,
   TIPO_VINCULO_PESSOA,
+  parceiroAtendeTipos,
   type TipoVinculo,
 } from "@/lib/crm/clientes.functions";
 
@@ -88,7 +89,7 @@ export function VinculoTab({
           const jaVinculados = new Set(desteTipo.map((v) => v.parceiro_id));
           const tiposPessoa = TIPO_VINCULO_PESSOA[tipo.valor];
           const opcoes = (disponiveis.data ?? []).filter(
-            (p) => !jaVinculados.has(p.id) && tiposPessoa.includes(p.tipo_pessoa ?? ""),
+            (p) => !jaVinculados.has(p.id) && parceiroAtendeTipos(p, tiposPessoa),
           );
           const sel = selecao[tipo.valor] ?? "";
           return (
