@@ -454,6 +454,25 @@ export const listarPainel = createServerFn({ method: "GET" })
       if (ate && t > ate) return false;
       return true;
     });
+    // Proposta mais recente por cliente (para comunicar com o kanban de propostas).
+    const idsClientes = filtradas.map((r: any) => r.id);
+    const propostaPorCliente = new Map<string, { numero_proposta: string | null; status: string | null }>();
+    if (idsClientes.length > 0) {
+      const { data: props } = await supabase
+        .from("propostas")
+        .select("cliente_id, numero_proposta, status, created_at")
+        .in("cliente_id", idsClientes)
+        .order("created_at", { ascending: false });
+      for (const p of props ?? []) {
+        const cid = (p as any).cliente_id as string | null;
+        if (cid && !propostaPorCliente.has(cid)) {
+          propostaPorCliente.set(cid, {
+            numero_proposta: (p as any).numero_proposta ?? null,
+            status: (p as any).status ?? null,
+          });
+        }
+      }
+    }
     return (stages ?? []).map((s) => ({
       codigo: s.codigo,
       nome: s.nome,
@@ -468,8 +487,8 @@ export const listarPainel = createServerFn({ method: "GET" })
           vistoria_concluida_em: r.vistoria_concluida_em ?? null,
           pipeline_atualizado_em: r.cliente_pipeline?.ultima_atualizacao_em ?? null,
           contrato_emitido_em: r.contrato_emitido_em ?? null,
-
-
+          numero_proposta: propostaPorCliente.get(r.id)?.numero_proposta ?? null,
+          proposta_status: propostaPorCliente.get(r.id)?.status ?? null,
         })),
     }));
   });
