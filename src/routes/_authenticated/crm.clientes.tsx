@@ -235,7 +235,7 @@ function Pagina() {
                     <a
                       href={`mailto:${c.email}`}
                       onClick={(e) => e.stopPropagation()}
-                      className="flex min-w-0 items-center gap-2 rounded-lg bg-muted px-2.5 py-2 text-xs text-muted-foreground ring-1 ring-border/50"
+                      className="flex min-w-0 items-center gap-2 rounded-lg bg-muted px-2.5 py-2 text-xs text-muted-foreground ring-1 ring-border/50 transition-all duration-200 hover:bg-muted/80 hover:text-foreground hover:ring-border active:scale-[0.98]"
                     >
                       <Mail className="size-3.5 shrink-0" />
                       <span className="truncate">{c.email}</span>
