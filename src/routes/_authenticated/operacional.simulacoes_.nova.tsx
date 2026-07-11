@@ -207,6 +207,25 @@ function Pagina() {
     }
   }
 
+  /** Dispara a simulação rápida: exibe, rola até o resultado e baixa o PDF automaticamente. */
+  function simularRapida() {
+    jaBaixou.current = false;
+    setMostrarRapida(true);
+  }
+
+  // Ao gerar o comparativo, rola até o resultado e baixa a simulação automaticamente.
+  useEffect(() => {
+    if (!mostrarRapida || comparativo.length === 0 || jaBaixou.current) return;
+    jaBaixou.current = true;
+    const t = setTimeout(() => {
+      resultadoRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      void baixarSimulacao();
+    }, 150);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mostrarRapida, comparativo.length]);
+
+
   return (
     <div className="mx-auto w-full max-w-3xl p-4 md:p-8">
       <Button
