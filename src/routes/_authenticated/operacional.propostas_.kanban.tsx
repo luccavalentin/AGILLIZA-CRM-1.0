@@ -25,6 +25,9 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/_authenticated/operacional/propostas_/kanban")({
   head: () => ({ meta: [{ title: "Kanban de Propostas — Agilliza" }] }),
   beforeLoad: () => assertModuloPermitido("operacional.propostas"),
+  validateSearch: (search: Record<string, unknown>) => ({
+    q: typeof search.q === "string" ? search.q : undefined,
+  }),
   component: Pagina,
 });
 
