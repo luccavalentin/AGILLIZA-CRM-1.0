@@ -382,20 +382,21 @@ function Pagina() {
                 key={k.label}
                 type="button"
                 onClick={() => setKpiAberto(k.id)}
-                className="group relative flex items-center gap-3 overflow-hidden rounded-xl border border-border/60 bg-card px-3.5 py-3.5 text-left shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                className="group relative flex flex-col items-start gap-2.5 overflow-hidden rounded-xl border border-border/60 bg-card px-3.5 py-3.5 text-left shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 sm:flex-row sm:items-center sm:gap-3"
               >
                 <span className="absolute inset-x-0 top-0 h-0.5 origin-left scale-x-0 bg-gradient-to-r from-primary to-primary/40 transition-transform duration-300 group-hover:scale-x-100" />
                 <span className="absolute left-0 top-0 h-full w-[3px] rounded-r bg-primary/60" />
                 <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/15 transition-colors group-hover:bg-primary/15">
                   <k.icon className="size-4" />
                 </div>
-                <div className="min-w-0">
-                  <p className="truncate font-mono text-lg font-semibold tracking-tight tabular-nums text-foreground sm:text-xl">{k.valor}</p>
-                  <p className="truncate text-[10.5px] font-medium uppercase tracking-wide text-muted-foreground">{k.label}</p>
+                <div className="min-w-0 flex-1">
+                  <p className="font-mono text-base font-semibold leading-tight tracking-tight tabular-nums text-foreground sm:text-xl">{k.valor}</p>
+                  <p className="mt-0.5 text-[10.5px] font-medium uppercase leading-tight tracking-wide text-muted-foreground">{k.label}</p>
                 </div>
                 <span className="ml-auto hidden shrink-0 text-[10px] font-medium text-primary/0 transition-colors group-hover:text-primary/70 sm:block">
                   ver detalhes
                 </span>
+
               </button>
             ))}
       </div>
