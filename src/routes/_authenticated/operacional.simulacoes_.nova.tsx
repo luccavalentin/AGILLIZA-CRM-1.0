@@ -71,6 +71,8 @@ function Pagina() {
   });
   const [mostrarRapida, setMostrarRapida] = useState(false);
   const [entradaTocada, setEntradaTocada] = useState(false);
+  const resultadoRef = useRef<HTMLDivElement>(null);
+  const jaBaixou = useRef(false);
 
 
   const { data: bancos } = useQuery({
