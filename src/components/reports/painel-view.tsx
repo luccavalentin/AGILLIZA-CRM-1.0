@@ -217,13 +217,14 @@ export function PainelView({
                 abrirTo={abrirTo}
               >
                 <div
-                  className="w-full"
+                  className="w-full overflow-hidden"
                   style={{
                     height: Math.min(
                       420,
                       Math.max(168, data.chart.dados.length * 52 + 44),
                     ),
                   }}
+
                 >
                   <ReportChartView
                     chart={{ titulo: data.chart.titulo, tipo: "barh", dados: data.chart.dados }}
