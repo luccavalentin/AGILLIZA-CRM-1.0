@@ -1146,6 +1146,22 @@ export const TIPO_VINCULO_PESSOA: Record<TipoVinculo, string[]> = {
   comercial_agilliza: ["comercial"],
 };
 
+/**
+ * Verifica se um usuário/parceiro pertence a algum dos tipos aceitos por um
+ * campo de vínculo. Considera tanto o tipo principal (`tipo_pessoa`) quanto os
+ * tipos adicionais marcados na pessoa (`tipos_pessoa`), pois uma pessoa pode ter
+ * mais de um tipo (ex.: Gestão + Comercial).
+ */
+export function parceiroAtendeTipos(
+  parceiro: { tipo_pessoa?: string | null; tipos_pessoa?: string[] | null },
+  tiposAceitos: string[],
+): boolean {
+  const seus = new Set<string>();
+  if (parceiro.tipo_pessoa) seus.add(parceiro.tipo_pessoa);
+  for (const t of parceiro.tipos_pessoa ?? []) if (t) seus.add(t);
+  return tiposAceitos.some((t) => seus.has(t));
+}
+
 /** Lista os parceiros/usuários vinculados a um cliente. */
 export const listarVinculosCliente = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
