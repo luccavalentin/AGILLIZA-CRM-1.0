@@ -1140,10 +1140,10 @@ export type TipoVinculo = (typeof TIPOS_VINCULO)[number]["valor"];
 export const TIPO_VINCULO_PESSOA: Record<TipoVinculo, string[]> = {
   imobiliaria: ["imobiliaria"],
   corretor: ["corretor"],
-  // "Comercial Agilliza" é a equipe interna do correspondente — inclui todos
-  // os tipos internos (comercial, gestão, usuário), não só quem está marcado
-  // como "comercial". Só ficam de fora os parceiros externos (imobiliária/corretor).
-  comercial_agilliza: ["comercial", "gestao", "usuario"],
+  // "Comercial Agilliza" lista somente os usuários marcados com o tipo de
+  // pessoa "comercial" — não a equipe interna inteira. Parceiros externos
+  // (imobiliária/corretor) continuam nos seus próprios campos.
+  comercial_agilliza: ["comercial"],
 };
 
 /** Lista os parceiros/usuários vinculados a um cliente. */
