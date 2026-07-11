@@ -448,7 +448,7 @@ function Pagina() {
         </div>
 
         {mostrarRapida && (
-          <Card className="overflow-hidden">
+          <Card ref={resultadoRef} className="scroll-mt-4 overflow-hidden">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 bg-muted/30 px-5 py-3.5">
               <div className="flex items-center gap-2">
                 <TrendingUp className="h-4 w-4 text-primary" />
