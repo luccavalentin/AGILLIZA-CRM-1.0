@@ -1,6 +1,6 @@
 import { statusTarefa, PRIORIDADE, TONE_BAR } from "@/components/operacional/status";
 import { cn } from "@/lib/utils";
-import type { Feriado } from "@/lib/feriados-br";
+import type { FeriadoBR } from "@/lib/feriados-br";
 
 // Estrutura mínima consumida pela célula (evita acoplar ao tipo completo da tarefa).
 export interface TarefaCelula {
@@ -16,7 +16,7 @@ interface CelulaDiaProps {
   tarefas: TarefaCelula[];
   foraMes: boolean;
   hoje: boolean;
-  feriado?: Feriado;
+  feriado?: FeriadoBR;
   onSelecionar: (id: string) => void;
 }
 
