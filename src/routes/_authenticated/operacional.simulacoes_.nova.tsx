@@ -433,7 +433,7 @@ function Pagina() {
             variant="default"
             className="h-12 gap-2 text-sm font-semibold"
             disabled={!valido}
-            onClick={() => setMostrarRapida(true)}
+            onClick={simularRapida}
           >
             Simulação rápida
           </Button>
