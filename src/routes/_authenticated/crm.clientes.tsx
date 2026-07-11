@@ -246,8 +246,11 @@ function Pagina() {
                   )}
                 </div>
               </div>
-              <div className="flex items-center justify-between border-t border-border/60 bg-muted/20 px-4 py-2.5">
-                <span className="text-xs text-muted-foreground">Abrir ficha do cliente</span>
+              <div className="flex items-center justify-between border-t border-border/60 bg-muted/20 px-4 py-2.5 transition-colors duration-300 group-hover:bg-primary/[0.04]">
+                <span className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors group-hover:text-primary">
+                  Abrir ficha do cliente
+                  <ChevronRight className="size-3.5 transition-transform duration-300 group-hover:translate-x-0.5" />
+                </span>
                 <div onClick={(e) => e.stopPropagation()}>
                   <ConfirmDelete
                     titulo="Excluir cliente"
