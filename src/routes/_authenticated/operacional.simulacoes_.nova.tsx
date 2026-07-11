@@ -1,5 +1,5 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Calculator, TrendingUp, FileText, Award, Download } from "lucide-react";
@@ -71,6 +71,8 @@ function Pagina() {
   });
   const [mostrarRapida, setMostrarRapida] = useState(false);
   const [entradaTocada, setEntradaTocada] = useState(false);
+  const resultadoRef = useRef<HTMLDivElement>(null);
+  const jaBaixou = useRef(false);
 
 
   const { data: bancos } = useQuery({
@@ -204,6 +206,25 @@ function Pagina() {
       setBaixando(false);
     }
   }
+
+  /** Dispara a simulação rápida: exibe, rola até o resultado e baixa o PDF automaticamente. */
+  function simularRapida() {
+    jaBaixou.current = false;
+    setMostrarRapida(true);
+  }
+
+  // Ao gerar o comparativo, rola até o resultado e baixa a simulação automaticamente.
+  useEffect(() => {
+    if (!mostrarRapida || comparativo.length === 0 || jaBaixou.current) return;
+    jaBaixou.current = true;
+    const t = setTimeout(() => {
+      resultadoRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      void baixarSimulacao();
+    }, 150);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mostrarRapida, comparativo.length]);
+
 
   return (
     <div className="mx-auto w-full max-w-3xl p-4 md:p-8">
@@ -412,7 +433,7 @@ function Pagina() {
             variant="default"
             className="h-12 gap-2 text-sm font-semibold"
             disabled={!valido}
-            onClick={() => setMostrarRapida(true)}
+            onClick={simularRapida}
           >
             Simulação rápida
           </Button>
@@ -427,7 +448,7 @@ function Pagina() {
         </div>
 
         {mostrarRapida && (
-          <Card className="overflow-hidden">
+          <Card ref={resultadoRef} className="scroll-mt-4 overflow-hidden">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 bg-muted/30 px-5 py-3.5">
               <div className="flex items-center gap-2">
                 <TrendingUp className="h-4 w-4 text-primary" />
@@ -484,7 +505,7 @@ function Pagina() {
                           </span>
                           <div className="min-w-0">
                             <div className="flex items-center gap-1.5">
-                              <p className="truncate font-semibold text-card-foreground">
+                              <p className="font-semibold leading-tight text-card-foreground break-words">
                                 {c.nome_banco}
                               </p>
                               {melhor && (
