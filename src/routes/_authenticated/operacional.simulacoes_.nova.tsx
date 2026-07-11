@@ -170,6 +170,41 @@ function Pagina() {
     router.navigate({ to: "/operacional/simulacoes/completa" });
   }
 
+  const [baixando, setBaixando] = useState(false);
+
+  async function baixarSimulacao() {
+    if (comparativo.length === 0) return;
+    setBaixando(true);
+    try {
+      const { baixarSimulacaoPDF } = await import("@/lib/simulacao/simulacao-pdf");
+      baixarSimulacaoPDF({
+        simulacao: {
+          numero_simulacao: null,
+          nome_cliente: null,
+          produto: w.produto,
+          valor_imovel: w.valor_imovel,
+          valor_financiamento: w.valor_financiamento,
+          valor_entrada: w.valor_entrada,
+          prazo: w.prazo_meses,
+          sistema_amortizacao: "S",
+          created_at: new Date().toISOString(),
+        },
+        bancos: comparativo.map((c) => ({
+          nome_banco: c.nome_banco,
+          status_banco: "simulada",
+          valor_parcela: c.resultado.primeira_parcela,
+          taxa_juros_ano: c.taxa_ano * 100,
+          prazo_pagamento_max: w.prazo_meses,
+          valor_financiamento_max: w.valor_financiamento,
+        })),
+      });
+    } catch {
+      toast.error("Não foi possível gerar o PDF da simulação.");
+    } finally {
+      setBaixando(false);
+    }
+  }
+
   return (
     <div className="mx-auto w-full max-w-3xl p-4 md:p-8">
       <Button
