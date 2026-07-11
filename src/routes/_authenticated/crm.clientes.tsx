@@ -151,12 +151,13 @@ function Pagina() {
             </Button>
           </Card>
         ) : (
-          data!.itens.map((c) => (
+          data!.itens.map((c, idx) => (
             <Card
               key={c.id}
               role="button"
               tabIndex={0}
-              className="group overflow-hidden rounded-2xl border-border/60 shadow-sm transition-colors hover:border-primary/30 hover:bg-primary/[0.025]"
+              style={{ animationDelay: `${Math.min(idx, 8) * 55}ms` }}
+              className="group relative animate-fade-in overflow-hidden rounded-2xl border-border/60 shadow-sm transition-all duration-300 ease-out hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-[0_12px_30px_-14px_hsl(var(--primary)/0.45)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 active:translate-y-0 active:shadow-sm"
               onClick={() => navigate({ to: "/crm/clientes/$id", params: { id: c.id } })}
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {
@@ -165,6 +166,7 @@ function Pagina() {
                 }
               }}
             >
+              <span className="pointer-events-none absolute inset-y-0 left-0 w-0.5 bg-gradient-to-b from-primary/70 to-primary/20 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
               <div className="p-4">
                 <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-3">
                   <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/70 text-xs font-semibold text-primary-foreground shadow-sm ring-1 ring-primary/20">
