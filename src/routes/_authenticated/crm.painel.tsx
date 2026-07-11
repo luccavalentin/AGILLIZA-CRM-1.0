@@ -13,6 +13,7 @@ import {
   FileText,
   Building2,
   Workflow,
+  KanbanSquare,
   Users,
   Search,
   Archive,
