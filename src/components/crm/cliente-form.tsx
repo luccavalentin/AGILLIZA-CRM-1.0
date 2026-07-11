@@ -335,7 +335,7 @@ export function ClienteForm({
           onOpenChange={(open) => {
             if (!open) setCriarTipo(null);
           }}
-          tipoPessoa={TIPO_VINCULO_PESSOA[criarTipo]}
+          tipoPessoa={TIPO_VINCULO_PESSOA[criarTipo][0]}
           rotuloTipo={TIPOS_VINCULO.find((t) => t.valor === criarTipo)?.rotulo ?? ""}
           onCriado={(id) => {
             const tipo = criarTipo;
