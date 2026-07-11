@@ -498,7 +498,7 @@ function Pagina() {
                             </p>
                           </div>
                         </div>
-                        <div className="text-right">
+                        <div className="shrink-0 text-right">
                           <p className="text-[10.5px] font-medium uppercase tracking-wide text-muted-foreground">
                             1ª parcela
                           </p>
