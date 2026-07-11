@@ -475,13 +475,13 @@ function Pagina() {
 
 const CARD_TONE: Record<
   "muted" | "info" | "warning" | "success" | "danger",
-  { bar: string; dot: string; text: string }
+  { dot: string; value: string }
 > = {
-  info: { bar: "bg-primary", dot: "bg-primary", text: "text-primary" },
-  muted: { bar: "bg-muted-foreground/40", dot: "bg-muted-foreground/50", text: "text-muted-foreground" },
-  warning: { bar: "bg-warning", dot: "bg-warning", text: "text-warning-foreground" },
-  success: { bar: "bg-success", dot: "bg-success", text: "text-success" },
-  danger: { bar: "bg-destructive", dot: "bg-destructive", text: "text-destructive" },
+  info: { dot: "bg-primary", value: "text-foreground" },
+  muted: { dot: "bg-muted-foreground/50", value: "text-foreground" },
+  warning: { dot: "bg-amber-500/80", value: "text-foreground" },
+  success: { dot: "bg-emerald-600/80", value: "text-foreground" },
+  danger: { dot: "bg-rose-600/70", value: "text-foreground" },
 };
 
 function StatusCard({
@@ -506,28 +506,29 @@ function StatusCard({
     <button
       type="button"
       onClick={onClick}
-      className={`group relative overflow-hidden rounded-xl border bg-card p-3 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:scale-[0.98] sm:p-4 ${
-        ativo ? "border-primary/50 ring-1 ring-primary/30" : "border-border/60 hover:border-primary/30"
+      className={`group relative overflow-hidden rounded-xl border bg-card p-4 text-left transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 ${
+        ativo
+          ? "border-primary/40 bg-primary/[0.03] ring-1 ring-primary/20 shadow-sm"
+          : "border-border/60 hover:border-primary/25 hover:shadow-sm"
       }`}
     >
-      <span className={`absolute inset-y-0 left-0 w-1 ${t.bar} ${ativo ? "opacity-100" : "opacity-60"}`} />
-      <div className="flex items-center gap-1.5">
-        <span className={`inline-block size-2 shrink-0 rounded-full ${t.dot}`} />
-        <p className="truncate text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+      <div className="flex items-center gap-2">
+        <span className={`inline-block size-1.5 shrink-0 rounded-full ${t.dot}`} />
+        <p className="truncate text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
           {label}
         </p>
       </div>
       {loading ? (
-        <Skeleton className="mt-2 h-6 w-10" />
+        <Skeleton className="mt-3 h-7 w-10" />
       ) : (
-        <p className="mt-1.5 text-2xl font-semibold tabular-nums leading-none text-foreground">
+        <p className={`mt-2 text-2xl font-semibold tabular-nums leading-none ${t.value}`}>
           {count}
         </p>
       )}
       {loading ? (
-        <Skeleton className="mt-2 h-3 w-16" />
+        <Skeleton className="mt-2.5 h-3 w-16" />
       ) : (
-        <p className="mt-1.5 truncate text-[11px] tabular-nums text-muted-foreground">
+        <p className="mt-2 truncate text-[11px] tabular-nums text-muted-foreground">
           {formatBRL(volume)}
         </p>
       )}
@@ -537,18 +538,17 @@ function StatusCard({
 
 function VolumeCard({ volume, loading }: { volume: number; loading: boolean }) {
   return (
-    <div className="group relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-card to-primary/[0.03] p-3 shadow-sm sm:p-4">
-      <span className="absolute inset-y-0 left-0 w-1 bg-primary opacity-60" />
-      <div className="flex items-center gap-1.5">
-        <Wallet className="h-3.5 w-3.5 shrink-0 text-primary" />
-        <p className="truncate text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+    <div className="group relative overflow-hidden rounded-xl border border-primary/25 bg-primary p-4 text-primary-foreground shadow-sm">
+      <div className="flex items-center gap-2">
+        <Wallet className="h-3.5 w-3.5 shrink-0 text-primary-foreground/80" />
+        <p className="truncate text-[11px] font-medium uppercase tracking-wider text-primary-foreground/80">
           Volume financiado
         </p>
       </div>
       {loading ? (
-        <Skeleton className="mt-2 h-6 w-24" />
+        <Skeleton className="mt-3 h-6 w-24 bg-primary-foreground/20" />
       ) : (
-        <p className="mt-1.5 truncate text-xl font-semibold tabular-nums leading-tight text-foreground">
+        <p className="mt-2 truncate text-xl font-semibold tabular-nums leading-tight">
           {formatBRL(volume)}
         </p>
       )}
