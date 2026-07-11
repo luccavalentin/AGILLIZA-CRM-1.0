@@ -193,7 +193,7 @@ export function PainelView({
             <>
               <SectionTitle>Evolução</SectionTitle>
               <PanelCard titulo={data.evolucao.titulo} subtitulo={data.evolucao.subtitulo}>
-                <div className="h-[280px] w-full">
+                <div className="h-[280px] w-full overflow-hidden">
                   <ReportChartView
                     chart={{
                       titulo: data.evolucao.titulo,
@@ -217,13 +217,14 @@ export function PainelView({
                 abrirTo={abrirTo}
               >
                 <div
-                  className="w-full"
+                  className="w-full overflow-hidden"
                   style={{
                     height: Math.min(
                       420,
                       Math.max(168, data.chart.dados.length * 52 + 44),
                     ),
                   }}
+
                 >
                   <ReportChartView
                     chart={{ titulo: data.chart.titulo, tipo: "barh", dados: data.chart.dados }}
@@ -238,7 +239,7 @@ export function PainelView({
                   titulo={data.distribuicao.titulo}
                   subtitulo={data.distribuicao.subtitulo}
                 >
-                  <div className="h-[240px] w-full">
+                  <div className="h-[240px] w-full overflow-hidden">
                     <ReportChartView
                       chart={{
                         titulo: data.distribuicao.titulo,

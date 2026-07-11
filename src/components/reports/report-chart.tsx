@@ -174,13 +174,13 @@ export function ReportChartView({
     const total = chart.dados.reduce((s, d) => s + (Number(d.valor) || 0), 0);
     return (
       <ResponsiveContainer width="100%" height="100%">
-        <PieChart>
+        <PieChart margin={{ top: 4, right: 4, bottom: isMobile ? 4 : 4, left: 4 }}>
           <Pie
             data={chart.dados}
             dataKey="valor"
             nameKey="label"
             cx="50%"
-            cy="50%"
+            cy={isMobile ? "42%" : "50%"}
             innerRadius="58%"
             outerRadius="86%"
             paddingAngle={2}
@@ -211,13 +211,14 @@ export function ReportChartView({
           <Legend
             wrapperStyle={{ fontSize: 12 }}
             iconType="circle"
-            layout="vertical"
-            align="right"
-            verticalAlign="middle"
+            layout={isMobile ? "horizontal" : "vertical"}
+            align={isMobile ? "center" : "right"}
+            verticalAlign={isMobile ? "bottom" : "middle"}
           />
         </PieChart>
       </ResponsiveContainer>
     );
+
   }
 
 
