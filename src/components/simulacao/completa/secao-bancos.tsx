@@ -28,7 +28,7 @@ export function SecaoBancos({ ctx }: { ctx: SimulacaoCompletaCtx }) {
           Nenhum banco habilitado — abra Configurações → Bancos para ativar.
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {bancos.map((b) => {
             const bloqueado = f.sistema_amortizacao === "P" && !ehBradesco(b);
             const selecionado = f.bancos_ids.includes(b.id);
@@ -61,7 +61,7 @@ export function SecaoBancos({ ctx }: { ctx: SimulacaoCompletaCtx }) {
                 <BancoLogo nome={b.nome_banco} size="xl" className="shrink-0" />
 
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-semibold text-foreground">
+                  <span className="block break-words text-sm font-semibold leading-tight text-foreground">
                     {b.nome_banco}
                   </span>
                   <span className="block text-xs text-muted-foreground">
