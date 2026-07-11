@@ -6,6 +6,13 @@ import { DayButton, DayPicker, getDefaultClassNames } from "react-day-picker";
 
 import { cn } from "@/lib/utils";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { mapaFeriados, type FeriadoBR } from "@/lib/feriados-br";
+
+function chaveFeriado(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+    d.getDate(),
+  ).padStart(2, "0")}`;
+}
 
 function Calendar({
   className,
@@ -13,13 +20,38 @@ function Calendar({
   showOutsideDays = true,
   captionLayout = "label",
   buttonVariant = "ghost",
+  showFeriados = true,
   formatters,
   components,
+  modifiers,
+  modifiersClassNames,
   ...props
 }: React.ComponentProps<typeof DayPicker> & {
   buttonVariant?: React.ComponentProps<typeof Button>["variant"];
+  /** Destaca feriados nacionais brasileiros (padrão: true). */
+  showFeriados?: boolean;
 }) {
   const defaultClassNames = getDefaultClassNames();
+
+  // Mapa de feriados nacionais cobrindo uma faixa ampla de anos ao redor de hoje,
+  // para que qualquer calendário do sistema já destaque os feriados.
+  const feriadosMap = React.useMemo(() => {
+    const y = new Date().getFullYear();
+    return mapaFeriados([y - 3, y - 2, y - 1, y, y + 1, y + 2, y + 3, y + 4, y + 5]);
+  }, []);
+
+  const feriadoModifiers = showFeriados
+    ? {
+        feriado: (date: Date) => {
+          const f = feriadosMap.get(chaveFeriado(date));
+          return !!f && !f.facultativo;
+        },
+        feriadoFacultativo: (date: Date) => {
+          const f = feriadosMap.get(chaveFeriado(date));
+          return !!f && !!f.facultativo;
+        },
+      }
+    : {};
 
   return (
     <DayPicker
