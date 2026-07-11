@@ -25,6 +25,9 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/_authenticated/operacional/propostas_/kanban")({
   head: () => ({ meta: [{ title: "Kanban de Propostas — Agilliza" }] }),
   beforeLoad: () => assertModuloPermitido("operacional.propostas"),
+  validateSearch: (search: Record<string, unknown>) => ({
+    q: typeof search.q === "string" ? search.q : undefined,
+  }),
   component: Pagina,
 });
 
@@ -85,15 +88,16 @@ function intervaloMesAtual(): { inicio: string; fim: string } {
 function Pagina() {
   const router = useRouter();
   const qc = useQueryClient();
+  const { q: qInicial } = Route.useSearch();
   const moverFn = useServerFn(moverStatusProposta);
   const [arrastando, setArrastando] = useState<{ id: string; status: PropostaStatus } | null>(null);
 
   const padrao = useMemo(() => intervaloMesAtual(), []);
-  const [escopo, setEscopo] = useState<"todas" | "minhas">("minhas");
-  const [q, setQ] = useState("");
-  const [busca, setBusca] = useState("");
-  const [dataInicio, setDataInicio] = useState(padrao.inicio);
-  const [dataFim, setDataFim] = useState(padrao.fim);
+  const [escopo, setEscopo] = useState<"todas" | "minhas">(qInicial ? "todas" : "minhas");
+  const [q, setQ] = useState(qInicial ?? "");
+  const [busca, setBusca] = useState(qInicial ?? "");
+  const [dataInicio, setDataInicio] = useState(qInicial ? "" : padrao.inicio);
+  const [dataFim, setDataFim] = useState(qInicial ? "" : padrao.fim);
 
   // Busca ao vivo: filtra conforme o usuário digita (com debounce).
   useEffect(() => {
