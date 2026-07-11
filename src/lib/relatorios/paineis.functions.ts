@@ -372,7 +372,10 @@ export const getPanelDados = createServerFn({ method: "POST" })
           : undefined,
         ranking: {
           titulo: chartPorBanco ? "Bancos" : "Status das simulações",
-          itens: chartDados.slice(0, 6),
+          itens: chartDados.slice(0, 6).map((i) => ({
+            ...i,
+            label: chartPorBanco ? i.label : rotularStatus(i.label, SIM_LABEL),
+          })),
         },
         recusadasPorBanco: recusadasBancoMap.size
           ? { titulo: "Recusadas por banco", itens: topItens(recusadasBancoMap, 8) }
