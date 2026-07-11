@@ -21,6 +21,7 @@ interface Parceiro {
   nome?: string | null;
   email?: string | null;
   tipo_pessoa?: string;
+  tipos_pessoa?: string[] | null;
 }
 
 export function VinculosSection({
