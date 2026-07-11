@@ -193,7 +193,7 @@ export function PainelView({
             <>
               <SectionTitle>Evolução</SectionTitle>
               <PanelCard titulo={data.evolucao.titulo} subtitulo={data.evolucao.subtitulo}>
-                <div className="h-[280px] w-full">
+                <div className="h-[280px] w-full overflow-hidden">
                   <ReportChartView
                     chart={{
                       titulo: data.evolucao.titulo,
