@@ -1,12 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { listarTarefas } from "@/lib/operacional/tarefas.functions";
 import { TarefaDrawer } from "@/components/operacional/tarefa-drawer";
 import { statusTarefa, PRIORIDADE, TONE_BAR } from "@/components/operacional/status";
 import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { mapaFeriados } from "@/lib/feriados-br";
 
@@ -88,9 +89,51 @@ function Pagina() {
 
 
       <div className="flex items-center justify-between">
-        <h2 className="text-base font-medium text-foreground">
-          {MESES[ref.getMonth()]} {ref.getFullYear()}
-        </h2>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="ghost"
+              className="h-auto gap-2 px-2 py-1 text-base font-medium text-foreground hover:bg-accent"
+            >
+              {MESES[ref.getMonth()]} {ref.getFullYear()}
+              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent align="start" className="w-72 space-y-3 p-3">
+            <div className="flex items-center justify-between">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={() => setRef(new Date(ref.getFullYear() - 1, ref.getMonth(), 1))}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="text-sm font-semibold tabular-nums">{ref.getFullYear()}</span>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={() => setRef(new Date(ref.getFullYear() + 1, ref.getMonth(), 1))}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="grid grid-cols-3 gap-1.5">
+              {MESES.map((m, i) => (
+                <Button
+                  key={m}
+                  variant={i === ref.getMonth() ? "default" : "ghost"}
+                  size="sm"
+                  className="h-8 text-xs"
+                  onClick={() => setRef(new Date(ref.getFullYear(), i, 1))}
+                >
+                  {m.slice(0, 3)}
+                </Button>
+              ))}
+            </div>
+          </PopoverContent>
+        </Popover>
         <div className="flex items-center gap-1">
           <Button
             variant="outline"
