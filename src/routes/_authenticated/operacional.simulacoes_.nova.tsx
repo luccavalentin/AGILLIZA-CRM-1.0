@@ -462,28 +462,35 @@ function Pagina() {
                       <div
                         key={c.banco_id}
                         className={cn(
-                          "flex items-center justify-between rounded-lg border p-3.5 transition-colors",
+                          "flex items-center justify-between gap-3 rounded-xl border p-3.5 transition-colors",
                           melhor
-                            ? "border-emerald-500/30 bg-emerald-500/5"
+                            ? "border-primary/30 bg-primary/5"
                             : "border-border bg-card hover:bg-muted/30",
                         )}
                       >
-                        <div className="flex items-center gap-3">
-                          <span
-                            className={cn(
-                              "flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold tabular-nums",
-                              melhor
-                                ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
-                                : "bg-muted text-muted-foreground",
-                            )}
-                          >
-                            {i + 1}
+                        <div className="flex min-w-0 items-center gap-3">
+                          <span className="relative shrink-0">
+                            <BancoLogo nome={c.nome_banco} size="xl" />
+                            <span
+                              className={cn(
+                                "absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold tabular-nums ring-2 ring-card",
+                                melhor
+                                  ? "bg-primary text-primary-foreground"
+                                  : "bg-muted text-muted-foreground",
+                              )}
+                            >
+                              {i + 1}
+                            </span>
                           </span>
-                          <div>
+                          <div className="min-w-0">
                             <div className="flex items-center gap-1.5">
-                              <p className="font-medium text-card-foreground">{c.nome_banco}</p>
+                              <p className="truncate font-semibold text-card-foreground">
+                                {c.nome_banco}
+                              </p>
                               {melhor && (
-                                <Award className="h-3.5 w-3.5 text-emerald-500" />
+                                <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
+                                  <Award className="h-3 w-3" /> Melhor taxa
+                                </span>
                               )}
                             </div>
                             <p className="text-xs text-muted-foreground">
