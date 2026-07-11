@@ -505,7 +505,7 @@ function Pagina() {
                           </span>
                           <div className="min-w-0">
                             <div className="flex items-center gap-1.5">
-                              <p className="truncate font-semibold text-card-foreground">
+                              <p className="font-semibold leading-tight text-card-foreground break-words">
                                 {c.nome_banco}
                               </p>
                               {melhor && (
