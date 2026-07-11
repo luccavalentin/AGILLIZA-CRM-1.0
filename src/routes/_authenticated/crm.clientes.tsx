@@ -190,7 +190,7 @@ function Pagina() {
                 </div>
 
                 <div className="mt-4 grid grid-cols-1 gap-2 min-[420px]:grid-cols-2">
-                  <div className="min-w-0 rounded-xl bg-muted/40 p-3 ring-1 ring-border/50">
+                  <div className="min-w-0 rounded-xl bg-muted/40 p-3 ring-1 ring-border/50 transition-colors duration-300 group-hover:bg-muted/60 group-hover:ring-border">
                     <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                       Etapa
                     </p>
