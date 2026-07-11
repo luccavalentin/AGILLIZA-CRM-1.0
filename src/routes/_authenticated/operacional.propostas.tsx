@@ -291,47 +291,37 @@ function Pagina() {
         )}
         {!isLoading &&
           itens.map((p) => {
-            const corBanco = corDoBanco(p.bancos?.[0]?.nome_banco);
+            const bancoPrincipal = p.bancos?.[0]?.nome_banco ?? null;
+            const corBanco = corDoBanco(bancoPrincipal);
             return (
             <Card
               key={p.id}
               style={
                 {
                   "--banco": corBanco,
-                  "--banco-tint": `${corBanco}12`,
-                  "--banco-ring": `${corBanco}59`,
+                  "--banco-tint": `${corBanco}0f`,
+                  "--banco-ring": `${corBanco}26`,
                 } as React.CSSProperties
               }
-              className="group relative cursor-pointer overflow-hidden rounded-2xl border-border/60 bg-[var(--banco-tint)] p-4 pl-5 shadow-sm ring-1 ring-inset ring-[var(--banco-ring)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:scale-[0.99] active:shadow-md"
+              className="group relative cursor-pointer overflow-hidden rounded-2xl border-border/60 bg-card p-0 shadow-sm ring-1 ring-inset ring-[var(--banco-ring)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:scale-[0.99] active:shadow-md"
               onClick={() =>
                 router.navigate({ to: "/operacional/propostas/$id", params: { id: p.id } })
               }
             >
-              <span className="absolute inset-y-0 left-0 w-1.5 rounded-r-full bg-[var(--banco)]" />
+              <span className="absolute inset-y-0 left-0 w-1 bg-[var(--banco)]" />
 
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold tabular-nums text-foreground">
-                      {p.numero_proposta_banco ?? p.numero_proposta}
-                    </span>
-                    {p.numero_proposta_banco && (
-                      <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-                        Interno {p.numero_proposta}
-                      </span>
-                    )}
-                  </div>
-                  <p className="mt-0.5 truncate text-sm text-muted-foreground">
-                    {p.nome_cliente ?? "—"}
-                  </p>
-                  {escopo === "todas" && p.nome_responsavel && (
-                    <p className="mt-1 flex items-center gap-1 text-[11px] text-muted-foreground">
-                      <User className="h-3 w-3 shrink-0" />
-                      <span className="truncate">{p.nome_responsavel}</span>
-                    </p>
-                  )}
-                </div>
-                <div onClick={(e) => e.stopPropagation()}>
+              {/* Faixa de identidade do banco */}
+              <div className="flex items-center justify-between gap-2 bg-[var(--banco-tint)] px-4 py-2.5 pl-5">
+                <span className="inline-flex items-center gap-2 min-w-0">
+                  <BancoLogo nome={bancoPrincipal} size="sm" />
+                  <span
+                    className="truncate text-xs font-semibold tracking-tight"
+                    style={{ color: corBanco }}
+                  >
+                    {bancoPrincipal ?? "Sem banco"}
+                  </span>
+                </span>
+                <div onClick={(e) => e.stopPropagation()} className="shrink-0">
                   <ConfirmDelete
                     titulo="Excluir proposta"
                     descricao={`A proposta ${p.numero_proposta} será removida permanentemente. Um registro completo será mantido nos Logs de auditoria.`}
@@ -339,25 +329,49 @@ function Pagina() {
                   />
                 </div>
               </div>
-              <div className="mt-3 flex items-center justify-between gap-3 rounded-xl bg-muted/40 p-3 ring-1 ring-border/50">
-                <div className="min-w-0">
-                  <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                    Financiamento
-                  </p>
-                  <p className="truncate text-sm font-semibold tabular-nums text-foreground">
-                    {formatBRL(p.valor_financiamento)}
-                  </p>
+
+              <div className="px-4 py-3 pl-5">
+                <div className="flex items-center gap-2">
+                  <span className="text-base font-semibold tabular-nums tracking-tight text-foreground">
+                    {p.numero_proposta_banco ?? p.numero_proposta}
+                  </span>
+                  {p.numero_proposta_banco && (
+                    <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                      Interno {p.numero_proposta}
+                    </span>
+                  )}
                 </div>
-                <BancosProposta bancos={p.bancos} />
-              </div>
-              <div className="mt-3 flex items-center justify-between gap-2">
-                <StatusBancosProposta bancos={p.bancos} fallbackStatus={p.status} />
-                <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+                <p className="mt-0.5 truncate text-sm text-muted-foreground">
+                  {p.nome_cliente ?? "—"}
+                </p>
+                {escopo === "todas" && p.nome_responsavel && (
+                  <p className="mt-1 flex items-center gap-1 text-[11px] text-muted-foreground">
+                    <User className="h-3 w-3 shrink-0" />
+                    <span className="truncate">{p.nome_responsavel}</span>
+                  </p>
+                )}
+
+                <div className="mt-3 flex items-end justify-between gap-3 border-t border-border/50 pt-3">
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                      Financiamento
+                    </p>
+                    <p className="truncate text-lg font-semibold tabular-nums text-foreground">
+                      {formatBRL(p.valor_financiamento)}
+                    </p>
+                  </div>
+                  <ChevronRight className="mb-1 h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+                </div>
+
+                <div className="mt-3">
+                  <StatusBancosProposta bancos={p.bancos} fallbackStatus={p.status} />
+                </div>
               </div>
             </Card>
             );
           })}
       </div>
+
 
       {/* Tabela desktop */}
       <Card className="hidden overflow-hidden rounded-xl border-border/60 shadow-sm md:block">
