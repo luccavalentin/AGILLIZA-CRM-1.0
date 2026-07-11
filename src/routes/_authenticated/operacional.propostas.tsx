@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/table";
 
 import { BancosProposta } from "@/components/proposta/bancos-proposta";
+import { BancoLogo } from "@/components/bancos/banco-logo";
 import { StatusBancosProposta } from "@/components/proposta/status-bancos-proposta";
 import { ConfirmDelete } from "@/components/shared/confirm-delete";
 import { formatBRL } from "@/lib/simulacao/format";
