@@ -158,7 +158,12 @@ function Calendar({
 
           return <ChevronDownIcon className={cn("size-4", className)} {...props} />;
         },
-        DayButton: CalendarDayButton,
+        DayButton: (dayProps) => (
+          <CalendarDayButton
+            {...dayProps}
+            feriado={showFeriados ? feriadosMap.get(chaveFeriado(dayProps.day.date)) : undefined}
+          />
+        ),
         WeekNumber: ({ children, ...props }) => {
           return (
             <td {...props}>
