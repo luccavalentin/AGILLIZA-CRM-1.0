@@ -86,9 +86,9 @@ export function VinculoTab({
             (v) => v.tipo_vinculo === tipo.valor,
           );
           const jaVinculados = new Set(desteTipo.map((v) => v.parceiro_id));
-          const tipoPessoa = TIPO_VINCULO_PESSOA[tipo.valor];
+          const tiposPessoa = TIPO_VINCULO_PESSOA[tipo.valor];
           const opcoes = (disponiveis.data ?? []).filter(
-            (p) => !jaVinculados.has(p.id) && p.tipo_pessoa === tipoPessoa,
+            (p) => !jaVinculados.has(p.id) && tiposPessoa.includes(p.tipo_pessoa ?? ""),
           );
           const sel = selecao[tipo.valor] ?? "";
           return (
