@@ -225,7 +225,7 @@ function Pagina() {
                     <a
                       href={`tel:${c.telefone_celular.replace(/\D/g, "")}`}
                       onClick={(e) => e.stopPropagation()}
-                      className="flex min-w-0 items-center gap-2 rounded-lg bg-primary/10 px-2.5 py-2 text-sm font-medium text-primary ring-1 ring-primary/10"
+                      className="flex min-w-0 items-center gap-2 rounded-lg bg-primary/10 px-2.5 py-2 text-sm font-medium text-primary ring-1 ring-primary/10 transition-all duration-200 hover:bg-primary/15 hover:ring-primary/25 active:scale-[0.98]"
                     >
                       <Phone className="size-3.5 shrink-0" />
                       <span className="truncate tabular-nums">{formatarCelular(c.telefone_celular)}</span>
