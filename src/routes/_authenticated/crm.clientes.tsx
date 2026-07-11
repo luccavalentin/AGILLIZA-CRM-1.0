@@ -203,7 +203,7 @@ function Pagina() {
                       <span className="text-sm text-muted-foreground">—</span>
                     )}
                   </div>
-                  <div className="min-w-0 rounded-xl bg-muted/40 p-3 ring-1 ring-border/50">
+                  <div className="min-w-0 rounded-xl bg-muted/40 p-3 ring-1 ring-border/50 transition-colors duration-300 group-hover:bg-muted/60 group-hover:ring-border">
                     <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                       Responsável
                     </p>
