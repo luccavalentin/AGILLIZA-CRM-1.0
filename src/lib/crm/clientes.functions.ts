@@ -413,6 +413,8 @@ export interface PainelStage {
     vistoria_concluida_em: string | null;
     pipeline_atualizado_em: string | null;
     contrato_emitido_em: string | null;
+    numero_proposta: string | null;
+    proposta_status: string | null;
   }[];
 }
 
