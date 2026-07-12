@@ -1146,3 +1146,194 @@ export async function sincronizarPropostaImpl({
 
   return { status: novoStatus ?? prop.status, etapa: nomeEtapa, atualizado: mudouStatus };
 }
+
+/** ===== Envio de documentos ao banco (upload + inclusão na integração) ===== */
+
+export interface EnviarDocumentosArgs {
+  propostaId: string;
+  userId: string;
+  supabase: SupabaseClient<any, any, any>;
+  /** IDs de cliente_documentos selecionados para envio (opcional = todos os PDFs). */
+  documentoIds?: string[];
+}
+
+export interface EnviarDocumentosResultado {
+  enviados: number;
+  total: number;
+  sucesso: { nome: string; participante?: string | null }[];
+  erros: { nome: string; motivo: string }[];
+}
+
+/** Normaliza texto para comparação (sem acento, minúsculo). */
+function normTexto(v: unknown): string {
+  return String(v ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+export async function enviarDocumentosBancoImpl({
+  propostaId,
+  userId,
+  supabase,
+  documentoIds,
+}: EnviarDocumentosArgs): Promise<EnviarDocumentosResultado> {
+  const { chamarIntegracao, enviarArquivoIntegracao, sanitizarMensagemErro } = await import(
+    "@/lib/simulacao/homefin.server"
+  );
+
+  const { data: prop, error } = await supabase
+    .from("propostas")
+    .select("id, cliente_id, correspondente_id, homefin_id_oportunidade, homefin_id_simulacao")
+    .eq("id", propostaId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!prop) throw new Error("Proposta não encontrada.");
+  if (!prop.homefin_id_oportunidade) {
+    throw new Error(
+      "Proposta sem oportunidade vinculada. Envie a proposta ao banco antes de enviar os documentos.",
+    );
+  }
+
+  // idSimulacao = banco escolhido/enviado (homefin_id_simulacao_banco).
+  const { data: bancos } = await supabase
+    .from("proposta_bancos")
+    .select("homefin_id_simulacao_banco, selecionado")
+    .eq("proposta_id", propostaId);
+  const idSimulacao =
+    (bancos ?? []).find((b: any) => b.selecionado && b.homefin_id_simulacao_banco)
+      ?.homefin_id_simulacao_banco ??
+    (bancos ?? []).find((b: any) => b.homefin_id_simulacao_banco)?.homefin_id_simulacao_banco ??
+    prop.homefin_id_simulacao;
+  if (!idSimulacao) {
+    throw new Error(
+      "Nenhuma simulação bancária vinculada. Selecione e envie um banco antes de enviar os documentos.",
+    );
+  }
+
+  // Documentos locais (do cadastro do cliente) — só PDFs.
+  let q = supabase
+    .from("cliente_documentos")
+    .select("id, nome_arquivo, tipo_documento, categoria, storage_path, mime_type")
+    .eq("cliente_id", prop.cliente_id);
+  if (documentoIds && documentoIds.length > 0) q = q.in("id", documentoIds);
+  const { data: docsRaw, error: docsErr } = await q;
+  if (docsErr) throw new Error(docsErr.message);
+  const docs = (docsRaw ?? []).filter((d: any) => {
+    const isPdf =
+      (d.mime_type && String(d.mime_type).includes("pdf")) ||
+      String(d.nome_arquivo ?? "").toLowerCase().endsWith(".pdf");
+    return isPdf && d.storage_path;
+  });
+  if (docs.length === 0) {
+    throw new Error("Nenhum documento em PDF disponível para enviar ao banco.");
+  }
+
+  const ctx = {
+    proposta_id: propostaId,
+    correspondente_id: prop.correspondente_id,
+  };
+
+  // 1) Obtém o checklist de documentos esperados pelo banco.
+  //    A chamada de inclusão retorna a lista de slots (sucesso/error) com seus ids.
+  const checklist = await chamarIntegracao<any>(
+    `/oportunidade/${prop.homefin_id_oportunidade}/incluir-documentos-integracao`,
+    "POST",
+    { idSimulacao: Number(idSimulacao) },
+    ctx,
+  );
+  const slots: any[] = [
+    ...(Array.isArray(checklist?.sucesso) ? checklist.sucesso : []),
+    ...(Array.isArray(checklist?.error) ? checklist.error : []),
+  ];
+
+  const sucesso: EnviarDocumentosResultado["sucesso"] = [];
+  const erros: EnviarDocumentosResultado["erros"] = [];
+
+  // 2) Faz upload de cada documento local, casando com o slot correspondente
+  //    por semelhança de nome do documento.
+  const usados = new Set<string>();
+  for (const doc of docs) {
+    const alvo = normTexto(`${doc.tipo_documento} ${doc.nome_arquivo}`);
+    const slot = slots.find((s) => {
+      if (s?.id == null || usados.has(String(s.id))) return false;
+      const nomeSlot = normTexto(s.nomeDocumento);
+      if (!nomeSlot) return false;
+      return (
+        alvo.includes(nomeSlot) ||
+        nomeSlot.includes(normTexto(doc.tipo_documento)) ||
+        nomeSlot
+          .split(" ")
+          .some((p) => p.length > 3 && alvo.includes(p))
+      );
+    });
+    if (!slot) {
+      erros.push({
+        nome: doc.nome_arquivo,
+        motivo: "Sem correspondência no checklist do banco para este documento.",
+      });
+      continue;
+    }
+    usados.add(String(slot.id));
+
+    // Baixa o arquivo do storage.
+    const { data: blob, error: dlErr } = await supabase.storage
+      .from("cliente-documentos")
+      .download(doc.storage_path);
+    if (dlErr || !blob) {
+      erros.push({ nome: doc.nome_arquivo, motivo: "Falha ao ler o arquivo armazenado." });
+      continue;
+    }
+    const bytes = new Uint8Array(await blob.arrayBuffer());
+
+    try {
+      await enviarArquivoIntegracao(
+        `/documento/${slot.id}/upload`,
+        { bytes, nome: doc.nome_arquivo, mime: doc.mime_type ?? "application/pdf" },
+        false,
+        ctx,
+      );
+      sucesso.push({ nome: doc.nome_arquivo, participante: slot.nomeParticipante ?? null });
+    } catch (e: any) {
+      erros.push({
+        nome: doc.nome_arquivo,
+        motivo: sanitizarMensagemErro(e?.message) || "Erro ao enviar o documento.",
+      });
+    }
+  }
+
+  // 3) Finaliza a inclusão dos documentos enviados na integração do banco.
+  if (sucesso.length > 0) {
+    try {
+      await chamarIntegracao<any>(
+        `/oportunidade/${prop.homefin_id_oportunidade}/incluir-documentos-integracao`,
+        "POST",
+        { idSimulacao: Number(idSimulacao) },
+        ctx,
+      );
+    } catch {
+      /* a inclusão final é best-effort; os uploads já foram registrados */
+    }
+  }
+
+  // Auditoria.
+  try {
+    const { registrarAuditoria } = await import("@/lib/admin/audit.server");
+    await registrarAuditoria({
+      supabase,
+      userId,
+      correspondenteId: prop.correspondente_id,
+      acao: "proposta.documentos_enviados",
+      entidade: "propostas",
+      entidadeId: propostaId,
+      descricao: `enviou ${sucesso.length} documento(s) ao banco`,
+      payloadNovo: { enviados: sucesso.length, erros: erros.length },
+    });
+  } catch {
+    /* auditoria é best-effort */
+  }
+
+  return { enviados: sucesso.length, total: docs.length, sucesso, erros };
+}
