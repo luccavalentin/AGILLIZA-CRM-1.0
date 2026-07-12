@@ -114,15 +114,6 @@ function Pagina() {
             icon={<Building2 className="h-4 w-4 text-muted-foreground" />}
           />
         </TabsContent>
-        <TabsContent value="formas" className="mt-4">
-          <SecaoSimples
-            entidade="forma"
-            titulo="Formas de pagamento"
-            descricao="Meios utilizados nas baixas de contas a pagar e a receber."
-            singular="forma de pagamento"
-            icon={<CreditCard className="h-4 w-4 text-muted-foreground" />}
-          />
-        </TabsContent>
         <TabsContent value="comissoes" className="mt-4 space-y-6">
           <SecaoRegrasComissao />
           <SimuladorComissao />
