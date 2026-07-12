@@ -266,6 +266,59 @@ export async function chamarIntegracao<T = unknown>(
 }
 
 /**
+ * Envia um arquivo binário (multipart/form-data) para a integração bancária.
+ * Usado no upload de documentos: `POST /documento/{id}/upload`.
+ * `arquivo` é o conteúdo do PDF; `documentoAprovado` marca se já revisado.
+ */
+export async function enviarArquivoIntegracao<T = unknown>(
+  endpoint: string,
+  arquivo: { bytes: Uint8Array; nome: string; mime: string },
+  documentoAprovado: boolean,
+  ctx: HomefinRequestCtx = {},
+): Promise<T> {
+  const { base } = config();
+  const { token } = await obterToken();
+  const url = `${base}${endpoint}`;
+
+  const form = new FormData();
+  form.append(
+    "arquivo",
+    new Blob([arquivo.bytes as any], { type: arquivo.mime || "application/pdf" }),
+    arquivo.nome,
+  );
+  form.append("documentoAprovado", String(documentoAprovado));
+
+  let resp: Response;
+  try {
+    resp = await fetch(url, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: form,
+      signal: AbortSignal.timeout(60_000),
+    });
+  } catch (e) {
+    await registrarLog({ ...ctx, endpoint, metodo: "POST", erro: String(e) });
+    throw new IntegracaoBancariaError("O banco não respondeu no tempo esperado. Tente reenviar.");
+  }
+
+  const json = (await resp.json().catch(() => null)) as T;
+  await registrarLog({
+    ...ctx,
+    endpoint,
+    metodo: "POST",
+    status_http: resp.status,
+    request: { arquivo: arquivo.nome, documentoAprovado },
+    response: json as any,
+    erro: resp.ok ? undefined : `HTTP ${resp.status}`,
+  });
+
+  if (!resp.ok) {
+    throw new IntegracaoBancariaError(extrairMensagemErroBanco(json, resp.status), resp.status);
+  }
+  return json;
+}
+
+/**
  * Extrai a mensagem de erro mais útil retornada pela integração/banco.
  * Muitos bancos retornam o motivo real (prazo inválido, renda insuficiente, etc.)
  * no corpo da resposta; sem isso o usuário só via um "erro (404)" genérico e
