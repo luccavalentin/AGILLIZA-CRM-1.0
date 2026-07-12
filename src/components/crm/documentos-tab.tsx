@@ -366,7 +366,9 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
     if (!novaPastaNome.trim()) return toast.error("Informe o nome da pasta.");
     setSalvandoPasta(true);
     try {
-      await criarPasta({ data: { cliente_id: clienteId, nome: novaPastaNome.trim() } });
+      await criarPasta({
+        data: { cliente_id: clienteId, nome: novaPastaNome.trim(), parent_id: pastaId },
+      });
       toast.success("Pasta criada.");
       setNovaPastaOpen(false);
       setNovaPastaNome("");
