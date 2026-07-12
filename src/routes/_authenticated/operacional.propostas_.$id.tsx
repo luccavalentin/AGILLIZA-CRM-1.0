@@ -102,6 +102,7 @@ import {
   type ParticipanteForm,
 } from "@/components/proposta/participante-form";
 import { ClienteSecao } from "@/components/proposta/cliente-secoes";
+import { AbaEnviarBanco } from "@/components/proposta/aba-enviar-banco";
 
 type SituacaoBanco = (typeof SITUACOES_BANCO)[number];
 
