@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "@tanstack/react-router";
 import { Download, X, Share, Plus } from "lucide-react";
-import { Logo } from "@/components/brand/Logo";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
