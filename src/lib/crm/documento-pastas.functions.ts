@@ -22,6 +22,7 @@ export interface DocumentoPasta {
   id: string;
   nome: string;
   slug: string | null;
+  parent_id: string | null;
   ordem: number;
   is_sistema: boolean;
   total_documentos: number;
@@ -81,7 +82,7 @@ export const listarPastasDocumentos = createServerFn({ method: "GET" })
 
     let { data: pastas } = await supabase
       .from("cliente_documento_pastas")
-      .select("id, nome, slug, ordem, criado_por")
+      .select("id, nome, slug, ordem, criado_por, parent_id")
       .eq("cliente_id", data.cliente_id)
       .order("ordem", { ascending: true })
       .order("created_at", { ascending: true });
@@ -100,7 +101,7 @@ export const listarPastasDocumentos = createServerFn({ method: "GET" })
         );
         const novo = await supabase
           .from("cliente_documento_pastas")
-          .select("id, nome, slug, ordem, criado_por")
+          .select("id, nome, slug, ordem, criado_por, parent_id")
           .eq("cliente_id", data.cliente_id)
           .order("ordem", { ascending: true })
           .order("created_at", { ascending: true });
@@ -121,6 +122,7 @@ export const listarPastasDocumentos = createServerFn({ method: "GET" })
       id: p.id,
       nome: p.nome,
       slug: p.slug,
+      parent_id: p.parent_id ?? null,
       ordem: p.ordem,
       is_sistema: Boolean(p.slug),
       total_documentos: (docs ?? []).filter((d: any) => documentoNaPasta(d, p)).length,
@@ -133,7 +135,13 @@ export const listarPastasDocumentos = createServerFn({ method: "GET" })
 export const criarPastaDocumentos = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
-    z.object({ cliente_id: z.string().uuid(), nome: z.string().trim().min(1).max(120) }).parse(d),
+    z
+      .object({
+        cliente_id: z.string().uuid(),
+        nome: z.string().trim().min(1).max(120),
+        parent_id: z.string().uuid().nullable().optional(),
+      })
+      .parse(d),
   )
   .handler(async ({ data, context }): Promise<{ id: string }> => {
     const { supabase, userId } = context;
@@ -156,6 +164,7 @@ export const criarPastaDocumentos = createServerFn({ method: "POST" })
         correspondente_id: corr,
         nome: data.nome,
         slug: null,
+        parent_id: data.parent_id ?? null,
         ordem: (max?.ordem ?? 0) + 1,
         criado_por: userId,
       })

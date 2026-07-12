@@ -453,6 +453,7 @@ export type Database = {
           id: string
           nome: string
           ordem: number
+          parent_id: string | null
           slug: string | null
           updated_at: string
         }
@@ -464,6 +465,7 @@ export type Database = {
           id?: string
           nome: string
           ordem?: number
+          parent_id?: string | null
           slug?: string | null
           updated_at?: string
         }
@@ -475,6 +477,7 @@ export type Database = {
           id?: string
           nome?: string
           ordem?: number
+          parent_id?: string | null
           slug?: string | null
           updated_at?: string
         }
@@ -491,6 +494,13 @@ export type Database = {
             columns: ["criado_por"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cliente_documento_pastas_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "cliente_documento_pastas"
             referencedColumns: ["id"]
           },
         ]

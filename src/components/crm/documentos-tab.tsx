@@ -162,6 +162,27 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
     [docs, pasta],
   );
 
+  // Subpastas do nível atual (pastaId = null → raiz).
+  const subpastas = useMemo(
+    () => (pastas ?? []).filter((p) => (p.parent_id ?? null) === pastaId),
+    [pastas, pastaId],
+  );
+
+  // Trilha (breadcrumb) da pasta atual até a raiz.
+  const trilhaPastas = useMemo(() => {
+    if (!pastaId) return [] as DocumentoPasta[];
+    const porId = new Map((pastas ?? []).map((p) => [p.id, p]));
+    const cadeia: DocumentoPasta[] = [];
+    let atual = porId.get(pastaId) ?? null;
+    let guarda = 0;
+    while (atual && guarda++ < 20) {
+      cadeia.unshift(atual);
+      atual = atual.parent_id ? (porId.get(atual.parent_id) ?? null) : null;
+    }
+    return cadeia;
+  }, [pastas, pastaId]);
+
+
   const tiposCategoria = useMemo(() => tiposParaCategorias([categoria]), [categoria]);
   const tiposEditCategoria = useMemo(
     () => tiposParaCategorias([editCategoria]),
@@ -179,38 +200,106 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
     qc.invalidateQueries({ queryKey: ["cliente-doc-pastas", clienteId] });
   }
 
+  /** Envia um único arquivo já dentro de uma pasta. */
+  async function enviarUm(file: File, pastaDestinoId: string, cat: Categoria, tipoDoc: string) {
+    const path = `${clienteId}/${crypto.randomUUID()}-${file.name}`;
+    const { error: upErr } = await supabase.storage.from("cliente-documentos").upload(path, file);
+    if (upErr) throw upErr;
+    await anexar({
+      data: {
+        cliente_id: clienteId,
+        categoria: cat,
+        pasta_id: pastaDestinoId,
+        tipo_documento: tipoDoc,
+        nome_arquivo: file.name,
+        storage_path: path,
+        mime_type: file.type,
+        tamanho_bytes: file.size,
+      },
+    });
+  }
+
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
+    const files = Array.from(e.target.files ?? []);
     e.target.value = "";
-    if (!file || !pasta) return;
-    if (file.size > 10 * 1024 * 1024) return toast.error("Arquivo acima de 10 MB.");
+    if (files.length === 0 || !pasta) return;
+    if (files.some((f) => f.size > 10 * 1024 * 1024))
+      return toast.error("Cada arquivo deve ter no máximo 10 MB.");
     if (!tipo.trim()) return toast.error("Informe o tipo do documento.");
     setEnviando(true);
-    try {
-      const path = `${clienteId}/${crypto.randomUUID()}-${file.name}`;
-      const { error: upErr } = await supabase.storage.from("cliente-documentos").upload(path, file);
-      if (upErr) throw upErr;
-      await anexar({
-        data: {
-          cliente_id: clienteId,
-          categoria,
-          pasta_id: pasta.id,
-          tipo_documento: tipo.trim(),
-          nome_arquivo: file.name,
-          storage_path: path,
-          mime_type: file.type,
-          tamanho_bytes: file.size,
-        },
-      });
-      toast.success("Documento anexado.");
-      setTipo("");
-      recarregar();
-    } catch (err: any) {
-      toast.error(err?.message ?? "Falha no upload.");
-    } finally {
-      setEnviando(false);
+    let ok = 0;
+    let falhas = 0;
+    for (const file of files) {
+      try {
+        await enviarUm(file, pasta.id, categoria, tipo.trim());
+        ok++;
+      } catch {
+        falhas++;
+      }
     }
+    if (falhas > 0) toast.warning(`${ok} enviado(s), ${falhas} com falha.`);
+    else toast.success(`${ok} documento(s) anexado(s).`);
+    setTipo("");
+    recarregar();
+    setEnviando(false);
   }
+
+  /** Garante a cadeia de subpastas a partir de um pai, criando o que faltar. */
+  async function garantirSubpastas(
+    partes: string[],
+    paiInicial: string,
+    cache: Map<string, string>,
+  ): Promise<string> {
+    let pai = paiInicial;
+    let chave = paiInicial;
+    for (const parte of partes) {
+      chave = `${chave}/${parte}`;
+      const existente = cache.get(chave);
+      if (existente) {
+        pai = existente;
+        continue;
+      }
+      const { id } = await criarPasta({
+        data: { cliente_id: clienteId, nome: parte, parent_id: pai },
+      });
+      cache.set(chave, id);
+      pai = id;
+    }
+    return pai;
+  }
+
+  /** Envia uma pasta inteira (com subpastas) para dentro da pasta atual. */
+  async function onFolder(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = "";
+    if (files.length === 0 || !pasta) return;
+    if (files.some((f) => f.size > 10 * 1024 * 1024))
+      return toast.error("Cada arquivo deve ter no máximo 10 MB.");
+    setEnviando(true);
+    const cache = new Map<string, string>();
+    let ok = 0;
+    let falhas = 0;
+    for (const file of files) {
+      try {
+        const rel = (file as any).webkitRelativePath as string | undefined;
+        let destino = pasta.id;
+        if (rel && rel.includes("/")) {
+          const partes = rel.split("/");
+          partes.pop();
+          destino = await garantirSubpastas(partes, pasta.id, cache);
+        }
+        await enviarUm(file, destino, categoria, file.name);
+        ok++;
+      } catch {
+        falhas++;
+      }
+    }
+    if (falhas > 0) toast.warning(`${ok} enviado(s), ${falhas} com falha.`);
+    else toast.success(`Pasta enviada — ${ok} arquivo(s).`);
+    recarregar();
+    setEnviando(false);
+  }
+
 
   async function baixar(storage_path: string, nome: string) {
     try {
@@ -277,7 +366,9 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
     if (!novaPastaNome.trim()) return toast.error("Informe o nome da pasta.");
     setSalvandoPasta(true);
     try {
-      await criarPasta({ data: { cliente_id: clienteId, nome: novaPastaNome.trim() } });
+      await criarPasta({
+        data: { cliente_id: clienteId, nome: novaPastaNome.trim(), parent_id: pastaId },
+      });
       toast.success("Pasta criada.");
       setNovaPastaOpen(false);
       setNovaPastaNome("");
@@ -378,7 +469,7 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
           </Button>
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
-          {(pastas ?? []).map((p) => (
+          {subpastas.map((p) => (
             <div
               key={p.id}
               className="group relative flex items-center gap-3 overflow-hidden rounded-xl border border-border/70 bg-card p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
@@ -519,13 +610,86 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
   // Visão dentro de uma pasta
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <Button variant="ghost" size="sm" onClick={() => setPastaId(null)}>
-          <ChevronLeft className="size-4" />
-          Pastas
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-1.5 text-sm">
+          <Button variant="ghost" size="sm" onClick={() => setPastaId(null)}>
+            <ChevronLeft className="size-4" />
+            Pastas
+          </Button>
+          {trilhaPastas.map((p, idx) => (
+            <span key={p.id} className="flex items-center gap-1.5">
+              <span className="text-muted-foreground">/</span>
+              {idx === trilhaPastas.length - 1 ? (
+                <span className="font-medium text-foreground">{p.nome}</span>
+              ) : (
+                <button
+                  type="button"
+                  className="text-muted-foreground hover:text-foreground"
+                  onClick={() => setPastaId(p.id)}
+                >
+                  {p.nome}
+                </button>
+              )}
+            </span>
+          ))}
+        </div>
+        <Button size="sm" variant="outline" onClick={() => setNovaPastaOpen(true)}>
+          <FolderPlus className="size-4" />
+          Nova subpasta
         </Button>
-        <span className="text-sm font-medium text-foreground">{pasta.nome}</span>
       </div>
+
+      {subpastas.length > 0 && (
+        <div className="grid gap-3 sm:grid-cols-2">
+          {subpastas.map((p) => (
+            <div
+              key={p.id}
+              className="group relative flex items-center gap-3 overflow-hidden rounded-xl border border-border/70 bg-card p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
+            >
+              <span className="pointer-events-none absolute inset-x-0 top-0 h-0.5 scale-x-0 bg-gradient-to-r from-primary/60 to-primary/10 transition-transform group-hover:scale-x-100" />
+              <button
+                type="button"
+                onClick={() => abrirPasta(p)}
+                className="flex min-w-0 flex-1 items-center gap-3 text-left"
+              >
+                <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 text-primary shadow-inner ring-1 ring-inset ring-border/40">
+                  <Folder className="size-5" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-foreground">{p.nome}</p>
+                  <p className="mt-0.5 inline-flex items-center gap-1 text-xs text-muted-foreground">
+                    <FileText className="size-3" /> {p.total_documentos} documento(s)
+                  </p>
+                </div>
+              </button>
+              <div className="flex shrink-0 items-center gap-0.5 opacity-70 transition-opacity group-hover:opacity-100">
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="size-8"
+                  title="Renomear pasta"
+                  onClick={() => {
+                    setRenomearAlvo(p);
+                    setRenomearNome(p.nome);
+                  }}
+                >
+                  <Pencil className="size-4" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="size-8 hover:bg-destructive/10"
+                  title="Excluir pasta"
+                  onClick={() => setDelPasta(p)}
+                >
+                  <Trash2 className="size-4 text-destructive" />
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
 
       <Card>
         <CardContent className="flex flex-wrap items-end gap-3 pt-6">
@@ -595,16 +759,34 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
               ) : (
                 <Upload className="size-4" />
               )}
-              Enviar arquivo
+              Enviar arquivos
               <input
                 type="file"
                 accept=".pdf,.jpg,.jpeg,.png"
+                multiple
                 className="sr-only"
                 onChange={onFile}
                 disabled={enviando}
               />
             </label>
           </Button>
+          <Button asChild variant="outline" disabled={enviando} className="relative">
+            <label>
+              <FolderPlus className="size-4" />
+              Enviar pasta
+              <input
+                type="file"
+                className="sr-only"
+                // @ts-expect-error atributos não-padrão para upload de pasta
+                webkitdirectory=""
+                directory=""
+                multiple
+                onChange={onFolder}
+                disabled={enviando}
+              />
+            </label>
+          </Button>
+
         </CardContent>
       </Card>
 
@@ -782,6 +964,85 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Nova subpasta */}
+      <Dialog open={novaPastaOpen} onOpenChange={(o) => !o && setNovaPastaOpen(false)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Nova subpasta</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-1.5">
+            <label className="text-xs text-muted-foreground">Nome da pasta</label>
+            <Input
+              value={novaPastaNome}
+              onChange={(e) => setNovaPastaNome(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && confirmarNovaPasta()}
+              placeholder="Ex.: Certidões, Comprovantes…"
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setNovaPastaOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={confirmarNovaPasta} disabled={salvandoPasta}>
+              {salvandoPasta ? "Criando…" : "Criar pasta"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Renomear pasta */}
+      <Dialog open={!!renomearAlvo} onOpenChange={(o) => !o && setRenomearAlvo(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Renomear pasta</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-1.5">
+            <label className="text-xs text-muted-foreground">Nome da pasta</label>
+            <Input
+              value={renomearNome}
+              onChange={(e) => setRenomearNome(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && confirmarRenomear()}
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRenomearAlvo(null)}>
+              Cancelar
+            </Button>
+            <Button onClick={confirmarRenomear} disabled={salvandoPasta}>
+              {salvandoPasta ? "Salvando…" : "Salvar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Excluir pasta */}
+      <AlertDialog open={!!delPasta} onOpenChange={(o) => !o && setDelPasta(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir pasta?</AlertDialogTitle>
+            <AlertDialogDescription>
+              A pasta "{delPasta?.nome}" e suas subpastas serão removidas. Os documentos dentro
+              dela serão movidos para "Outros". Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                confirmarExclusaoPasta();
+              }}
+              disabled={excluindoPasta}
+            >
+              {excluindoPasta ? "Excluindo…" : "Excluir"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
 
       <VisualizadorArquivo
         arquivo={visualizando}
