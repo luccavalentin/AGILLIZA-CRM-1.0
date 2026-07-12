@@ -361,3 +361,90 @@ export function integracaoConfigurada(): boolean {
     process.env.HOMEFIN_BASE_URL && process.env.HOMEFIN_SECRET_ID && process.env.HOMEFIN_SECRET_KEY,
   );
 }
+
+/* ===================================================================
+ * Domínios dinâmicos (bancos e operações) da integração bancária.
+ * A API expõe os catálogos oficiais em GET /dominios/bancos e
+ * GET /dominios/operacoes. Sincronizamos esses valores nas tabelas de
+ * referência (homefin_bancos / homefin_operacoes) para que simulações e
+ * propostas usem sempre os códigos aceitos pelo provedor, sem seed manual.
+ * =================================================================== */
+
+interface DominioBancoApi {
+  idBanco?: number;
+  codigoBanco?: number;
+  nomeBanco?: string;
+  flagSimulacao?: string;
+}
+
+interface DominioOperacaoApi {
+  idOperacao?: number;
+  nomeOperacao?: string;
+}
+
+/** Busca a lista oficial de bancos no provedor de integração. */
+export async function buscarBancosDominio(): Promise<DominioBancoApi[]> {
+  const arr = await chamarIntegracao<DominioBancoApi[]>("/dominios/bancos", "GET", undefined);
+  return Array.isArray(arr) ? arr : [];
+}
+
+/** Busca a lista oficial de operações/produtos no provedor de integração. */
+export async function buscarOperacoesDominio(): Promise<DominioOperacaoApi[]> {
+  const arr = await chamarIntegracao<DominioOperacaoApi[]>("/dominios/operacoes", "GET", undefined);
+  return Array.isArray(arr) ? arr : [];
+}
+
+export interface ResultadoSincronizacaoDominios {
+  bancos: number;
+  operacoes: number;
+}
+
+/**
+ * Sincroniza bancos e operações do provedor para as tabelas de referência.
+ * Faz upsert idempotente por id (idBanco / idOperacao) sem apagar registros
+ * já existentes — apenas atualiza nome/código/flag e insere novos.
+ */
+export async function sincronizarDominiosIntegracao(): Promise<ResultadoSincronizacaoDominios> {
+  const [bancosApi, operacoesApi] = await Promise.all([
+    buscarBancosDominio(),
+    buscarOperacoesDominio(),
+  ]);
+
+  let bancosSync = 0;
+  for (const b of bancosApi) {
+    if (b.idBanco == null) continue;
+    const nome = (b.nomeBanco ?? "").trim();
+    const { error } = await supabaseAdmin.from("homefin_bancos").upsert(
+      {
+        id_banco: b.idBanco,
+        codigo_banco: b.codigoBanco ?? null,
+        nome_banco: nome || `Banco ${b.idBanco}`,
+        flag_simulacao: (b.flagSimulacao ?? "").trim() || null,
+        ativo: true,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "id_banco" },
+    );
+    if (!error) bancosSync++;
+    else console.error("[integracao] upsert banco falhou", error.message);
+  }
+
+  let operacoesSync = 0;
+  for (const o of operacoesApi) {
+    if (o.idOperacao == null) continue;
+    const nome = (o.nomeOperacao ?? "").trim();
+    const { error } = await supabaseAdmin.from("homefin_operacoes").upsert(
+      {
+        id_operacao: o.idOperacao,
+        nome_operacao: nome || `Operação ${o.idOperacao}`,
+        ativo: true,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "id_operacao" },
+    );
+    if (!error) operacoesSync++;
+    else console.error("[integracao] upsert operação falhou", error.message);
+  }
+
+  return { bancos: bancosSync, operacoes: operacoesSync };
+}
