@@ -55,15 +55,33 @@ function Pagina() {
 
   const itens = data ?? [];
 
-  const stats = useMemo(
-    () => ({
+  const stats = useMemo(() => {
+    const abertasList = itens.filter(
+      (d) => d.status !== "concluida" && d.status !== "cancelada",
+    );
+    const agora = Date.now();
+    const em24h = agora + 24 * 3600_000;
+    const vencendo = abertasList.filter(
+      (d) => !atrasada(d) && d.prazo_sla && new Date(d.prazo_sla).getTime() <= em24h,
+    ).length;
+    const criticas = abertasList.filter((d) =>
+      ["alta", "urgente", "critica"].includes((d.prioridade ?? "").toLowerCase()),
+    ).length;
+    const emDia = abertasList.length
+      ? Math.round(((abertasList.length - abertasList.filter(atrasada).length) / abertasList.length) * 100)
+      : 100;
+    return {
       total: itens.length,
+      abertas: abertasList.length,
       andamento: itens.filter((d) => d.status === "em_andamento").length,
+      vencendo,
+      criticas,
       atrasadas: itens.filter(atrasada).length,
       concluidas: itens.filter((d) => d.status === "concluida").length,
-    }),
-    [itens],
-  );
+      slaEmDia: emDia,
+    };
+  }, [itens]);
+
 
   async function verificarSla() {
     try {
