@@ -504,9 +504,11 @@ export function DocumentosGerais() {
             { Icon: Users, label: "Clientes", valor: resumo.clientes },
             { Icon: FileText, label: "Documentos", valor: resumo.documentos },
           ].map(({ Icon, label, valor }) => (
-            <div
+            <button
               key={label}
-              className="group relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-card to-primary/[0.03] p-3.5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
+              type="button"
+              onClick={() => raizes[0] && setCaminho([raizes[0].key])}
+              className="group relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-card to-primary/[0.03] p-3.5 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
             >
               <span className="pointer-events-none absolute -right-6 -top-6 size-16 rounded-full bg-primary/5 blur-2xl transition-opacity group-hover:opacity-100" />
               <div className="relative flex items-center gap-3">
@@ -522,8 +524,9 @@ export function DocumentosGerais() {
                   </p>
                 </div>
               </div>
-            </div>
+            </button>
           ))}
+
         </div>
       )}
 
