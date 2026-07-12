@@ -294,7 +294,7 @@ function Pagina() {
               {totalClientes}
             </span>
             <span className="text-xs text-muted-foreground">
-              em {etapasAtivas} de 12 etapas
+              em {etapasAtivas} de {dadosFiltrados.length} etapas
             </span>
           </button>
           <div className="relative w-full sm:w-64">
