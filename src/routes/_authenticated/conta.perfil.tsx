@@ -344,7 +344,7 @@ function Pagina() {
 
 
       <Secao
-        numero="02"
+        numero="03"
         icon={<Lock className="size-5" />}
         titulo="Segurança"
         descricao="Defina uma nova senha de acesso."
