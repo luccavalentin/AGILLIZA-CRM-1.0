@@ -284,9 +284,9 @@ function Pagina() {
                 <Label htmlFor="email" className="text-xs font-medium text-muted-foreground">
                   E-mail
                 </Label>
-                <Input id="email" value={sessao?.profile?.email ?? ""} disabled />
+                <Input id="email" value={emailAtual} disabled />
                 <p className="text-[11px] text-muted-foreground">
-                  O e-mail de acesso não pode ser alterado por aqui.
+                  Para trocar o e-mail de acesso, use a seção "E-mail de acesso" abaixo.
                 </p>
               </div>
 
