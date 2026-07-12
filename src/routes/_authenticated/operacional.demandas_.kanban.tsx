@@ -85,7 +85,7 @@ function Pagina() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="flex gap-4 overflow-x-auto pb-2">
         {COLUNAS.map((col) => {
           const cfg = statusDemanda(col);
           const doStatus = porStatus.get(col) ?? [];
@@ -96,7 +96,7 @@ function Pagina() {
               onDragOver={(e) => e.preventDefault()}
               onDrop={() => soltar(col)}
               className={cn(
-                "op-kcol flex flex-col transition-shadow",
+                "op-kcol flex w-[280px] shrink-0 flex-col transition-shadow",
                 alvo && "ring-2 ring-primary/40",
               )}
             >
