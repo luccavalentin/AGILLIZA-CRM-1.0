@@ -792,7 +792,7 @@ function Pagina() {
                             setArquivoAberto(false);
                             navigate({
                               to: "/operacional/propostas/kanban",
-                              search: { banco: ct.nome_banco! },
+                              search: { q: ct.nome_banco! },
                             });
                           }}
                           className="inline-flex items-center gap-1 text-primary underline-offset-2 transition-colors hover:underline"
