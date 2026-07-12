@@ -97,9 +97,6 @@ function Pagina() {
           <TabsTrigger value="centros" className="gap-1.5">
             <Building2 className="h-4 w-4" /> Centros de custo
           </TabsTrigger>
-          <TabsTrigger value="formas" className="gap-1.5">
-            <CreditCard className="h-4 w-4" /> Formas de pagamento
-          </TabsTrigger>
           <TabsTrigger value="comissoes" className="gap-1.5">
             <Percent className="h-4 w-4" /> Comissões
           </TabsTrigger>
