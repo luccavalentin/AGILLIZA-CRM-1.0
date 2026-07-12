@@ -719,7 +719,7 @@ export const atualizarConfig = createServerFn({ method: "POST" })
     if (data.entidade === "categoria" && data.tipo !== undefined) patch.tipo = data.tipo;
     if (Object.keys(patch).length === 0) return { ok: true };
     const { error } = await supabase
-      .from(CONFIG_TABELA[data.entidade])
+      .from(CONFIG_TABELA[data.entidade] as any)
       .update(patch as any)
       .eq("id", data.id);
     if (error) throw new Error(error.message);
@@ -738,7 +738,7 @@ export const excluirConfig = createServerFn({ method: "POST" })
   )
   .handler(async ({ context, data }): Promise<{ ok: true; desativado: boolean }> => {
     const { supabase } = context;
-    const tabela = CONFIG_TABELA[data.entidade];
+    const tabela = CONFIG_TABELA[data.entidade] as any;
     // Tenta excluir; se houver vínculos (FK), apenas desativa para preservar histórico.
     const { error } = await supabase.from(tabela).delete().eq("id", data.id);
     if (error) {
