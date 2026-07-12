@@ -133,7 +133,7 @@ function FormulariosLista({ banco }: { banco: BancoFormulario }) {
         }
       />
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <OpStat
           label="Formulários"
           value={itens.length}
@@ -315,7 +315,7 @@ function UploadDialog({
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent>
+      <DialogContent className="w-[calc(100%-2rem)] max-w-lg">
         <DialogHeader>
           <DialogTitle>Enviar formulário · {CATEGORIA_LABEL[banco]}</DialogTitle>
           <DialogDescription>Adicione um modelo de formulário em PDF.</DialogDescription>
@@ -439,7 +439,7 @@ function EditarDialog({
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent>
+      <DialogContent className="w-[calc(100%-2rem)] max-w-lg">
         <DialogHeader>
           <DialogTitle>Editar formulário</DialogTitle>
           <DialogDescription>Atualize os dados ou substitua o arquivo PDF.</DialogDescription>

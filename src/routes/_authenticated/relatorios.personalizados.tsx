@@ -184,7 +184,7 @@ function Pagina() {
         ) : (
           <div className="space-y-2">
             {salvos.map((s: any) => (
-              <Card key={s.id} className="flex items-center justify-between gap-3 p-3">
+              <Card key={s.id} className="flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium text-foreground">{s.nome}</p>
                   <p className="truncate text-xs text-muted-foreground">
@@ -192,7 +192,7 @@ function Pagina() {
                     {PERIODO_LABEL[(s.filtros?.periodo as Periodo) ?? "mes"]}
                   </p>
                 </div>
-                <div className="flex shrink-0 items-center gap-2">
+                <div className="flex flex-wrap shrink-0 items-center gap-2">
                   <Badge variant="secondary">
                     {s.visibilidade === "shared_team" ? "Equipe" : "Privado"}
                   </Badge>

@@ -112,7 +112,7 @@ function Pagina() {
                   onChange={(e) => setDescricao(e.target.value)}
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5">
                   <Label htmlFor="c-valor">Valor (R$)</Label>
                   <Input
@@ -145,7 +145,7 @@ function Pagina() {
         }
       />
 
-      <div className="rounded-lg border border-border">
+      <div className="overflow-x-auto rounded-lg border border-border">
         <Table>
           <TableHeader>
             <TableRow>

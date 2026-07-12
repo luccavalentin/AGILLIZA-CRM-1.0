@@ -87,7 +87,7 @@ export function NovaTarefaDialog({ onCriada }: { onCriada: () => void }) {
           <Plus className="mr-1 h-4 w-4" /> Nova tarefa
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+      <DialogContent className="w-[calc(100%-2rem)] max-h-[90vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Nova tarefa</DialogTitle>
         </DialogHeader>
@@ -104,7 +104,7 @@ export function NovaTarefaDialog({ onCriada }: { onCriada: () => void }) {
             <Label>Descrição</Label>
             <Textarea value={descricao} onChange={(e) => setDescricao(e.target.value)} rows={2} />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label>Prioridade</Label>
               <Select value={prioridade} onValueChange={(v) => setPrioridade(v as any)}>
@@ -127,7 +127,7 @@ export function NovaTarefaDialog({ onCriada }: { onCriada: () => void }) {
               />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label>Responsável</Label>
               <Select value={responsavel} onValueChange={setResponsavel}>

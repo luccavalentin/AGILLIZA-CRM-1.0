@@ -259,7 +259,7 @@ function EditarBancoDialog({ banco, onClose }: { banco: BancoAdmin; onClose: () 
           <DialogTitle>Configurar {banco.nome_banco}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label>Agência padrão</Label>
               <Input value={agencia} onChange={(e) => setAgencia(e.target.value)} />
@@ -302,7 +302,7 @@ function EditarBancoDialog({ banco, onClose }: { banco: BancoAdmin; onClose: () 
                 placeholder="https://api.banco.com.br"
               />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label>Secret Client ID</Label>
                 <Input

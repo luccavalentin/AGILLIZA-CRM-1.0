@@ -73,12 +73,12 @@ export const Route = createFileRoute("/_authenticated/financeiro/configuracoes")
 
 function Pagina() {
   return (
-    <div className="mx-auto w-full max-w-5xl space-y-6 p-4 md:p-6">
+    <div className="mx-auto w-full max-w-5xl space-y-6 p-3 sm:p-4 md:p-6">
       <header className="flex items-start gap-3">
         <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
           <SlidersHorizontal className="h-5 w-5" />
         </div>
-        <div>
+        <div className="min-w-0">
           <h1 className="text-xl font-semibold tracking-tight text-foreground">
             Configurações financeiras
           </h1>
@@ -275,7 +275,7 @@ function SecaoCategorias() {
       </CardContent>
 
       <Dialog open={aberto} onOpenChange={setAberto}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="w-[calc(100%-2rem)] p-4 sm:max-w-md md:p-6">
           <DialogHeader>
             <DialogTitle>{editId ? "Editar" : "Nova"} categoria</DialogTitle>
           </DialogHeader>
@@ -444,7 +444,7 @@ function SecaoSimples({
       </CardContent>
 
       <Dialog open={aberto} onOpenChange={setAberto}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="w-[calc(100%-2rem)] p-4 sm:max-w-md md:p-6">
           <DialogHeader>
             <DialogTitle>
               {editId ? "Editar" : "Novo"} {singular}

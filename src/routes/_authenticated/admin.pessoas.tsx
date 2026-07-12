@@ -238,7 +238,7 @@ function PessoasPage() {
               </div>
             </div>
 
-            <div className="mt-4 rounded-lg border bg-background">
+            <div className="mt-4 overflow-x-auto rounded-lg border bg-background">
               <Table>
                 <TableHeader>
                   <TableRow>

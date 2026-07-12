@@ -242,7 +242,7 @@ function Pagina() {
 
 
       <div className="rounded-lg border border-border bg-card">
-        <div className="flex items-center justify-between border-b border-border p-4">
+        <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-sm font-semibold">Histórico</h2>
             <p className="text-xs text-muted-foreground">
@@ -272,6 +272,7 @@ function Pagina() {
             <p className="text-sm">Nenhum backup gerado ainda.</p>
           </div>
         ) : (
+          <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -339,6 +340,7 @@ function Pagina() {
               })}
             </TableBody>
           </Table>
+          </div>
         )}
       </div>
 

@@ -90,7 +90,7 @@ function Pagina() {
 
       <PixBanner />
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <OpStat
           icon={<Coins className="h-5 w-5" />}
           label="Créditos comprados"
@@ -236,7 +236,7 @@ function Solicitacoes({
 
   return (
     <Card className="p-0">
-      <div className="flex items-center justify-between gap-3 border-b border-border p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border p-4">
         <h2 className="text-sm font-semibold text-foreground">Solicitações ({filtrada.length})</h2>
         <SolicitacaoDialog onMudou={onMudou} />
       </div>
@@ -463,12 +463,12 @@ function SolicitacaoDialog({
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="w-[calc(100%-2rem)] max-w-lg">
         <DialogHeader>
           <DialogTitle>{inicial ? "Editar solicitação" : "Nova solicitação"}</DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-1">
               <Label>Data da solicitação</Label>
               <Input type="date" value={data} onChange={(e) => setData(e.target.value)} />
@@ -493,7 +493,7 @@ function SolicitacaoDialog({
               searchPlaceholder="Buscar solicitante…"
             />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-1">
               <Label>Comercial</Label>
               <Combobox
@@ -565,7 +565,7 @@ function Creditos({
   const total = useMemo(() => lista.reduce((s, c) => s + Number(c.valor), 0), [lista]);
   return (
     <Card className="p-0">
-      <div className="flex items-center justify-between gap-3 border-b border-border p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border p-4">
         <div>
           <h2 className="text-sm font-semibold text-foreground">Compras de crédito</h2>
           <p className="text-xs text-muted-foreground">Total: {formatBRL(total)}</p>
@@ -648,12 +648,12 @@ function CreditoDialog({ onMudou }: { onMudou: () => void }) {
           <Plus className="mr-1 h-4 w-4" /> Adicionar crédito
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="w-[calc(100%-2rem)] max-w-md">
         <DialogHeader>
           <DialogTitle>Compra de crédito</DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-1">
               <Label>Data</Label>
               <Input type="date" value={data} onChange={(e) => setData(e.target.value)} />

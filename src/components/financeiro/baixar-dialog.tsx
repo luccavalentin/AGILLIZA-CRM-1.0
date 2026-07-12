@@ -88,7 +88,7 @@ export function BaixarDialog({ tipo, conta, open, onOpenChange }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="w-[calc(100%-2rem)] p-4 sm:max-w-md md:p-6">
         <DialogHeader>
           <DialogTitle>{tipo === "pagar" ? "Baixar conta" : "Confirmar recebimento"}</DialogTitle>
         </DialogHeader>
@@ -100,7 +100,7 @@ export function BaixarDialog({ tipo, conta, open, onOpenChange }: Props) {
                 {formatBRL(restante)}
               </span>
             </p>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label>Valor</Label>
                 <CurrencyInput value={valor || restante} onChange={setValor} />

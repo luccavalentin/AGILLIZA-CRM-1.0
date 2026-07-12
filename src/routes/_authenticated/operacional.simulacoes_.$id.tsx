@@ -295,11 +295,13 @@ function Pagina() {
       )}
 
       <Tabs defaultValue="bancos">
-        <TabsList>
-          <TabsTrigger value="bancos">Comparativo</TabsTrigger>
-          <TabsTrigger value="dados">Dados enviados</TabsTrigger>
-          <TabsTrigger value="historico">Histórico</TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto">
+          <TabsList className="w-max">
+            <TabsTrigger value="bancos" className="shrink-0">Comparativo</TabsTrigger>
+            <TabsTrigger value="dados" className="shrink-0">Dados enviados</TabsTrigger>
+            <TabsTrigger value="historico" className="shrink-0">Histórico</TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="bancos" className="mt-4">
           {bancos.length === 0 ? (
