@@ -327,7 +327,7 @@ function Pagina() {
                       </div>
 
                       {/* Status */}
-                      <div className="mt-2">
+                      <div className="mt-2 flex flex-wrap items-center gap-1.5">
                         <span
                           className={cn(
                             "inline-block rounded-full px-2 py-0.5 text-[10px] font-medium",
@@ -336,7 +336,14 @@ function Pagina() {
                         >
                           {cfg.label}
                         </span>
+                        {!terminal && c.status_atualizado_em && (
+                          <span className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground">
+                            <Clock className="h-2.5 w-2.5" />
+                            {tempoNaEtapa(c.status_atualizado_em)}
+                          </span>
+                        )}
                       </div>
+
 
                       {/* Nº da proposta */}
                       <div className="mt-2.5 flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
