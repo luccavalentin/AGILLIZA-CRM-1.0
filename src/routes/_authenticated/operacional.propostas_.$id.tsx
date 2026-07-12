@@ -101,6 +101,7 @@ import {
   participanteCompleto,
   type ParticipanteForm,
 } from "@/components/proposta/participante-form";
+import { ClienteSecao } from "@/components/proposta/cliente-secoes";
 
 type SituacaoBanco = (typeof SITUACOES_BANCO)[number];
 
@@ -355,34 +356,14 @@ function Pagina() {
       </div>
 
       {tab === "RESUMO" && <TabResumo proposta={p} bancos={data.bancos} propostaId={id} />}
-      {tab === "COMPRADORES" && (
-        <TabEnvolvidos
-          tipo="CO"
-          propostaId={id}
-          envolvidos={data.envolvidos}
-          autoAbrir={autoAbrir}
-          onAutoAbriu={() => {
-            setAutoAbrir(false);
-            router.navigate({
-              to: "/operacional/propostas/$id",
-              params: { id },
-              search: {},
-              replace: true,
-            });
-          }}
-          onFechouAposSalvar={enviarAposComplementar}
-        />
-
-
-      )}
-      {tab === "VENDEDORES" && (
-        <TabEnvolvidos tipo="VD" propostaId={id} envolvidos={data.envolvidos} />
-      )}
-      {tab === "IQ" && <TabIq proposta={p} propostaId={id} />}
-      {tab === "IMÓVEL" && <TabImovel proposta={p} propostaId={id} />}
-      {tab === "DOCUMENTOS" && <TabDocumentos propostaId={id} documentos={data.documentos} />}
+      {tab === "COMPRADORES" && <ClienteSecao clienteId={p.cliente_id} secao="comprador" />}
+      {tab === "VENDEDORES" && <ClienteSecao clienteId={p.cliente_id} secao="vendedores" />}
+      {tab === "IQ" && <ClienteSecao clienteId={p.cliente_id} secao="iq" />}
+      {tab === "IMÓVEL" && <ClienteSecao clienteId={p.cliente_id} secao="imovel" />}
+      {tab === "DOCUMENTOS" && <ClienteSecao clienteId={p.cliente_id} secao="documentos" />}
       {tab === "ATIVIDADES" && <TabAtividades historico={data.historico} />}
       {tab === "FUP" && <TabFup propostaId={id} followups={data.followups} />}
+
     </div>
   );
 }
