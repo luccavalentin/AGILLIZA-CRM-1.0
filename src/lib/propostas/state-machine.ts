@@ -71,14 +71,9 @@ export const ORDEM_STATUS: PropostaStatus[] = [
   "enviada_banco",
   "em_analise_credito",
   "credito_aprovado",
-  "checklist_documentacao",
-  "cadastro_complementar",
-  "dossie_completo",
-  "formularios",
-  "envio_documentos_banco",
-  "vistoria_agendamento",
-  "vistoria_concluida",
-  "emissao_contrato",
+  "aguardando_documentos",
+  "engenharia_vistoria",
+  "analise_juridica",
   "contrato_emitido",
 ];
 
@@ -89,8 +84,6 @@ export function transicaoPermitida(de: PropostaStatus, para: PropostaStatus): bo
 /** Status que ainda aceitam edição dos dados da proposta. */
 export const STATUS_EDITAVEIS: PropostaStatus[] = [
   "rascunho",
-  "checklist_documentacao",
-  "cadastro_complementar",
   "aguardando_documentos",
 ];
 
