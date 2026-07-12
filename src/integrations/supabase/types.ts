@@ -5185,6 +5185,10 @@ export type Database = {
       }
       can_view_global_reports: { Args: { _user_id: string }; Returns: boolean }
       can_view_team_reports: { Args: { _user_id: string }; Returns: boolean }
+      cliente_cadastro_esta_completo: {
+        Args: { _cliente_id: string }
+        Returns: boolean
+      }
       cliente_pipeline_avancar_para: {
         Args: {
           _acao?: string
