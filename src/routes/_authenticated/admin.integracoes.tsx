@@ -21,6 +21,7 @@ import {
   listarApiIntegracoes,
   listarHealthChecks,
   testarConectividade,
+  sincronizarDominios,
 } from "@/lib/admin/integracoes.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/integracoes")({
