@@ -17,14 +17,9 @@ const ORDEM_STATUS: PropostaStatus[] = [
   "enviada_banco",
   "em_analise_credito",
   "credito_aprovado",
-  "checklist_documentacao",
-  "cadastro_complementar",
-  "dossie_completo",
-  "formularios",
-  "envio_documentos_banco",
-  "vistoria_agendamento",
-  "vistoria_concluida",
-  "emissao_contrato",
+  "aguardando_documentos",
+  "engenharia_vistoria",
+  "analise_juridica",
   "contrato_emitido",
 ];
 
@@ -33,10 +28,11 @@ function statusDaEtapa(nomeEtapa: string | null): PropostaStatus | null {
   if (!nomeEtapa) return null;
   const n = nomeEtapa.toLowerCase();
   if (n.includes("contrato") || n.includes("registr")) return "contrato_emitido";
-  if (n.includes("emiss")) return "emissao_contrato";
+  if (n.includes("juríd") || n.includes("jurid") || n.includes("emiss"))
+    return "analise_juridica";
   if (n.includes("vistoria") || n.includes("engenharia") || n.includes("avaliaç"))
-    return "vistoria_agendamento";
-  if (n.includes("document")) return "envio_documentos_banco";
+    return "engenharia_vistoria";
+  if (n.includes("document")) return "aguardando_documentos";
   if (n.includes("aprov")) return "credito_aprovado";
   if (
     n.includes("análise") ||
