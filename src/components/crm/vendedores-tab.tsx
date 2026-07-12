@@ -233,8 +233,9 @@ export function VendedoresTab({ clienteId }: { clienteId: string }) {
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">
-          Cadastre os vendedores do imóvel. Eles são puxados automaticamente ao criar uma proposta.
+          Cadastre os vendedores do imóvel.
         </p>
+
         <Button size="sm" onClick={novo}>
           <Plus className="mr-1 size-4" /> Adicionar vendedor
         </Button>
