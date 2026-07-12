@@ -1281,6 +1281,30 @@ export const sincronizarProposta = createServerFn({ method: "POST" })
     return sincronizarPropostaImpl({ propostaId: data.proposta_id, userId, supabase });
   });
 
+/** ===== Enviar documentos do cadastro ao banco (upload + inclusão) ===== */
+export const enviarDocumentosBanco = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z
+      .object({
+        proposta_id: z.string().uuid(),
+        documento_ids: z.array(z.string().uuid()).optional(),
+      })
+      .parse(data),
+  )
+  .handler(async ({ context, data }) => {
+    const { supabase, userId } = context;
+    const { enviarDocumentosBancoImpl } = await import("./enviar.server");
+    return enviarDocumentosBancoImpl({
+      propostaId: data.proposta_id,
+      userId,
+      supabase,
+      documentoIds: data.documento_ids,
+    });
+  });
+
+
+
 /** Exclui uma proposta (e registros dependentes via cascata). Registra um
  * snapshot completo na auditoria antes de apagar — nada se perde nos Logs. */
 export const excluirProposta = createServerFn({ method: "POST" })
