@@ -248,6 +248,32 @@ function Pagina() {
 
   const set = (k: keyof Form) => (v: string) => setForm((f) => ({ ...f, [k]: v }));
 
+  const [buscandoCep, setBuscandoCep] = useState(false);
+
+  async function buscarCepEmpresa(cepRaw: string) {
+    if (!cepValido(cepRaw)) return;
+    setBuscandoCep(true);
+    try {
+      const end = await consultarCep(cepRaw);
+      if (!end) {
+        toast.error("CEP não encontrado.");
+        return;
+      }
+      setForm((f) => ({
+        ...f,
+        logradouro: end.logradouro || f.logradouro,
+        bairro: end.bairro || f.bairro,
+        cidade: end.cidade || f.cidade,
+        uf: end.uf || f.uf,
+      }));
+    } catch {
+      toast.error("Não foi possível consultar o CEP.");
+    } finally {
+      setBuscandoCep(false);
+    }
+  }
+
+
   const alterado = useMemo(
     () => JSON.stringify(form) !== JSON.stringify(salvo),
     [form, salvo],
