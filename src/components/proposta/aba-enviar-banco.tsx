@@ -1,0 +1,432 @@
+import { useMemo, useRef, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { toast } from "sonner";
+import {
+  Upload,
+  FileText,
+  Download,
+  Eye,
+  Trash2,
+  Loader2,
+  Send,
+  AlertTriangle,
+  CheckCircle2,
+  XCircle,
+  Users,
+  Home,
+  UserCheck,
+  FolderOpen,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  listarDocumentos,
+  anexarDocumento,
+  urlDocumento,
+  excluirDocumento,
+} from "@/lib/crm/clientes.functions";
+import { enviarDocumentosBanco } from "@/lib/propostas/propostas.functions";
+import { VisualizadorArquivo } from "@/components/comum/visualizador-arquivo";
+
+type Categoria = "comprador" | "conjuge" | "vendedor" | "vendedor_conjuge" | "imovel" | "outros";
+
+interface Grupo {
+  chave: string;
+  titulo: string;
+  icone: typeof Users;
+  categorias: Categoria[];
+  categoriaUpload: Categoria;
+}
+
+const GRUPOS: Grupo[] = [
+  {
+    chave: "comprador",
+    titulo: "Documentação do comprador",
+    icone: Users,
+    categorias: ["comprador", "conjuge"],
+    categoriaUpload: "comprador",
+  },
+  {
+    chave: "vendedor",
+    titulo: "Documentação do vendedor",
+    icone: UserCheck,
+    categorias: ["vendedor", "vendedor_conjuge"],
+    categoriaUpload: "vendedor",
+  },
+  {
+    chave: "imovel",
+    titulo: "Documentação do imóvel",
+    icone: Home,
+    categorias: ["imovel"],
+    categoriaUpload: "imovel",
+  },
+  {
+    chave: "outros",
+    titulo: "Outros documentos",
+    icone: FolderOpen,
+    categorias: ["outros"],
+    categoriaUpload: "outros",
+  },
+];
+
+function ehPdf(d: { mime_type?: string | null; nome_arquivo?: string | null }): boolean {
+  return (
+    (d.mime_type ? d.mime_type.includes("pdf") : false) ||
+    String(d.nome_arquivo ?? "")
+      .toLowerCase()
+      .endsWith(".pdf")
+  );
+}
+
+export function AbaEnviarBanco({
+  clienteId,
+  propostaId,
+}: {
+  clienteId: string | null | undefined;
+  propostaId: string;
+}) {
+  const qc = useQueryClient();
+  const listar = useServerFn(listarDocumentos);
+  const anexar = useServerFn(anexarDocumento);
+  const gerarUrl = useServerFn(urlDocumento);
+  const excluir = useServerFn(excluirDocumento);
+  const enviar = useServerFn(enviarDocumentosBanco);
+
+  const [visualizando, setVisualizando] = useState<{ url: string; nome: string } | null>(null);
+  const [excluindo, setExcluindo] = useState<{ id: string; nome: string } | null>(null);
+  const [enviando, setEnviando] = useState(false);
+  const [uploadCat, setUploadCat] = useState<Categoria | null>(null);
+  const [resultado, setResultado] = useState<{
+    enviados: number;
+    total: number;
+    sucesso: { nome: string; participante?: string | null }[];
+    erros: { nome: string; motivo: string }[];
+  } | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const { data: docs, isLoading } = useQuery({
+    queryKey: ["cliente-docs", clienteId],
+    queryFn: () => listar({ data: { cliente_id: clienteId as string } }),
+    enabled: Boolean(clienteId),
+  });
+
+  const porGrupo = useMemo(() => {
+    const lista = (docs ?? []) as any[];
+    return GRUPOS.map((g) => ({
+      ...g,
+      itens: lista.filter((d) => g.categorias.includes(d.categoria)),
+    }));
+  }, [docs]);
+
+  const totalPdfs = useMemo(
+    () => ((docs ?? []) as any[]).filter((d) => ehPdf(d)).length,
+    [docs],
+  );
+
+  function recarregar() {
+    qc.invalidateQueries({ queryKey: ["cliente-docs", clienteId] });
+  }
+
+  async function visualizar(storage_path: string, nome: string) {
+    try {
+      const { url } = await gerarUrl({ data: { storage_path } });
+      setVisualizando({ url, nome });
+    } catch {
+      toast.error("Falha ao abrir o documento.");
+    }
+  }
+
+  async function baixar(storage_path: string, nome: string) {
+    try {
+      const { url } = await gerarUrl({ data: { storage_path } });
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = nome;
+      a.target = "_blank";
+      a.click();
+    } catch {
+      toast.error("Falha ao gerar link.");
+    }
+  }
+
+  function abrirUpload(cat: Categoria) {
+    setUploadCat(cat);
+    inputRef.current?.click();
+  }
+
+  async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = "";
+    const cat = uploadCat;
+    setUploadCat(null);
+    if (files.length === 0 || !cat || !clienteId) return;
+    if (files.some((f) => f.size > 10 * 1024 * 1024))
+      return toast.error("Cada arquivo deve ter no máximo 10 MB.");
+    let ok = 0;
+    let falhas = 0;
+    for (const file of files) {
+      try {
+        const path = `${clienteId}/${crypto.randomUUID()}-${file.name}`;
+        const { error } = await supabase.storage.from("cliente-documentos").upload(path, file);
+        if (error) throw error;
+        await anexar({
+          data: {
+            cliente_id: clienteId,
+            categoria: cat,
+            tipo_documento: file.name.replace(/\.[^.]+$/, ""),
+            nome_arquivo: file.name,
+            storage_path: path,
+            mime_type: file.type,
+            tamanho_bytes: file.size,
+          },
+        });
+        ok++;
+      } catch {
+        falhas++;
+      }
+    }
+    if (falhas > 0) toast.warning(`${ok} enviado(s), ${falhas} com falha.`);
+    else toast.success(`${ok} documento(s) anexado(s).`);
+    recarregar();
+  }
+
+  async function confirmarExclusao() {
+    if (!excluindo) return;
+    try {
+      await excluir({ data: { id: excluindo.id } });
+      toast.success("Documento excluído.");
+      recarregar();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao excluir.");
+    } finally {
+      setExcluindo(null);
+    }
+  }
+
+  async function enviarAoBanco() {
+    setEnviando(true);
+    setResultado(null);
+    try {
+      const r = await enviar({ data: { proposta_id: propostaId } });
+      setResultado(r);
+      if (r.enviados > 0)
+        toast.success(`${r.enviados} documento(s) enviado(s) ao banco.`);
+      if (r.erros.length > 0)
+        toast.warning(`${r.erros.length} documento(s) não puderam ser enviados.`);
+      if (r.enviados === 0 && r.erros.length === 0)
+        toast.info("Nenhum documento foi enviado.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao enviar ao banco.");
+    } finally {
+      setEnviando(false);
+    }
+  }
+
+  if (!clienteId) {
+    return (
+      <div className="rounded-lg border border-dashed border-border bg-card p-8 text-center text-sm text-muted-foreground">
+        Vincule um cliente à proposta para enviar os documentos ao banco.
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-5">
+      <input ref={inputRef} type="file" multiple className="hidden" onChange={onFile} />
+
+      {/* Disclaimer PDF */}
+      <div className="flex items-start gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-4">
+        <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
+        <div className="text-sm">
+          <p className="font-medium text-foreground">
+            Todos os documentos devem estar em formato PDF.
+          </p>
+          <p className="mt-0.5 text-muted-foreground">
+            Apenas arquivos PDF serão enviados ao banco. Converta imagens e outros formatos
+            antes do envio para evitar recusa na integração.
+          </p>
+        </div>
+      </div>
+
+      {/* Ação de envio */}
+      <Card className="border-primary/20">
+        <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="text-sm">
+            <p className="font-medium text-foreground">Enviar documentos ao banco</p>
+            <p className="text-muted-foreground">
+              {totalPdfs > 0
+                ? `${totalPdfs} documento(s) em PDF prontos para envio.`
+                : "Nenhum documento em PDF disponível ainda."}
+            </p>
+          </div>
+          <Button onClick={enviarAoBanco} disabled={enviando || totalPdfs === 0} className="gap-2">
+            {enviando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            {enviando ? "Enviando…" : "Enviar ao banco"}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Resultado do último envio */}
+      {resultado && (
+        <Card>
+          <CardContent className="space-y-2 p-4 text-sm">
+            <p className="font-medium text-foreground">
+              Resultado do envio — {resultado.enviados}/{resultado.total} enviado(s)
+            </p>
+            {resultado.sucesso.map((s, i) => (
+              <div key={`s-${i}`} className="flex items-center gap-2 text-muted-foreground">
+                <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                <span className="truncate">
+                  {s.nome}
+                  {s.participante ? ` — ${s.participante}` : ""}
+                </span>
+              </div>
+            ))}
+            {resultado.erros.map((er, i) => (
+              <div key={`e-${i}`} className="flex items-start gap-2 text-muted-foreground">
+                <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+                <span>
+                  <span className="text-foreground">{er.nome}</span> — {er.motivo}
+                </span>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Documentos consolidados por tipo */}
+      {isLoading ? (
+        <div className="flex items-center justify-center rounded-lg border border-border bg-card p-10 text-sm text-muted-foreground">
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Carregando documentos…
+        </div>
+      ) : (
+        porGrupo.map((g) => {
+          const Icone = g.icone;
+          return (
+            <Card key={g.chave}>
+              <CardContent className="p-4">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <Icone className="h-4 w-4 text-primary" />
+                    <h3 className="text-sm font-semibold text-foreground">{g.titulo}</h3>
+                    <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                      {g.itens.length}
+                    </span>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="gap-1.5"
+                    onClick={() => abrirUpload(g.categoriaUpload)}
+                  >
+                    <Upload className="h-3.5 w-3.5" /> Enviar
+                  </Button>
+                </div>
+
+                {g.itens.length === 0 ? (
+                  <p className="py-3 text-center text-xs text-muted-foreground">
+                    Nenhum documento nesta categoria.
+                  </p>
+                ) : (
+                  <ul className="divide-y divide-border">
+                    {g.itens.map((d: any) => {
+                      const pdf = ehPdf(d);
+                      return (
+                        <li
+                          key={d.id}
+                          className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0"
+                        >
+                          <FileText
+                            className={`h-4 w-4 shrink-0 ${pdf ? "text-primary" : "text-muted-foreground"}`}
+                          />
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm text-foreground">{d.nome_arquivo}</p>
+                            <p className="truncate text-xs text-muted-foreground">
+                              {d.tipo_documento}
+                              {!pdf && (
+                                <span className="ml-2 rounded bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-medium text-amber-600 dark:text-amber-400">
+                                  não é PDF
+                                </span>
+                              )}
+                            </p>
+                          </div>
+                          <div className="flex shrink-0 items-center gap-1">
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-8 w-8"
+                              title="Visualizar"
+                              onClick={() => visualizar(d.storage_path, d.nome_arquivo)}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-8 w-8"
+                              title="Baixar"
+                              onClick={() => baixar(d.storage_path, d.nome_arquivo)}
+                            >
+                              <Download className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-8 w-8 text-destructive hover:text-destructive"
+                              title="Excluir"
+                              onClick={() => setExcluindo({ id: d.id, nome: d.nome_arquivo })}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })
+      )}
+
+      <VisualizadorArquivo
+        arquivo={visualizando}
+        open={!!visualizando}
+        onOpenChange={(o) => !o && setVisualizando(null)}
+      />
+
+      <AlertDialog open={!!excluindo} onOpenChange={(o) => !o && setExcluindo(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir documento?</AlertDialogTitle>
+            <AlertDialogDescription>
+              O documento “{excluindo?.nome}” será removido definitivamente do cadastro.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmarExclusao}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}

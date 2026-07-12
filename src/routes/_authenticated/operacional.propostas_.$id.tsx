@@ -102,6 +102,7 @@ import {
   type ParticipanteForm,
 } from "@/components/proposta/participante-form";
 import { ClienteSecao } from "@/components/proposta/cliente-secoes";
+import { AbaEnviarBanco } from "@/components/proposta/aba-enviar-banco";
 
 type SituacaoBanco = (typeof SITUACOES_BANCO)[number];
 
@@ -144,12 +145,14 @@ const TABS = [
   "IQ",
   "IMÓVEL",
   "DOCUMENTOS",
+  "ENVIAR_BANCO",
   "ATIVIDADES",
   "FUP",
 ] as const;
 type Tab = (typeof TABS)[number];
 
 const TAB_LABELS: Partial<Record<Tab, string>> = {
+  ENVIAR_BANCO: "Enviar documentos para o banco",
   FUP: "Follow-up de acompanhamento",
 };
 
@@ -397,6 +400,7 @@ function Pagina() {
       {tab === "IQ" && <ClienteSecao clienteId={p.cliente_id} secao="iq" />}
       {tab === "IMÓVEL" && <ClienteSecao clienteId={p.cliente_id} secao="imovel" />}
       {tab === "DOCUMENTOS" && <ClienteSecao clienteId={p.cliente_id} secao="documentos" />}
+      {tab === "ENVIAR_BANCO" && <AbaEnviarBanco clienteId={p.cliente_id} propostaId={id} />}
       {tab === "ATIVIDADES" && <TabAtividades historico={data.historico} />}
       {tab === "FUP" && <TabFup propostaId={id} followups={data.followups} />}
 
