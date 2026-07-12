@@ -273,7 +273,7 @@ function Pagina() {
               Painel da esteira
             </h1>
             <p className="text-sm text-muted-foreground">
-              Visão das 12 etapas — arraste um cliente para mover manualmente.
+              Visão das {dadosFiltrados.length} etapas — arraste um cliente para mover manualmente.
             </p>
           </div>
         </div>
