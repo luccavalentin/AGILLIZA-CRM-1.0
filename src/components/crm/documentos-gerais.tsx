@@ -5,6 +5,7 @@ import {
   Building2,
   Folder,
   FolderOpen,
+  ChevronLeft,
   ChevronRight,
   User,
   Users,
@@ -401,6 +402,14 @@ export function DocumentosGerais() {
       <TabsContent value="clientes" className="mt-0 space-y-4">
       {/* Breadcrumb */}
       <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+        {caminho.length > 0 && (
+          <button
+            className="flex items-center gap-1 rounded-lg border border-border/60 bg-muted/50 px-2.5 py-1 font-medium text-foreground transition-colors hover:bg-muted"
+            onClick={() => setCaminho(caminho.slice(0, -1))}
+          >
+            <ChevronLeft className="h-4 w-4" /> Voltar
+          </button>
+        )}
         <button className="hover:text-foreground" onClick={() => setCaminho([])}>
           Documentos Gerais
         </button>
