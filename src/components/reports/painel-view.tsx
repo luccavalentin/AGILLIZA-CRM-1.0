@@ -171,6 +171,7 @@ export function PainelView({
                 valor={h.valor}
                 hint={h.hint}
                 tone={h.tone}
+                delta={h.delta}
                 to={linkParaMetrica(h.label)}
               />
             ))}
