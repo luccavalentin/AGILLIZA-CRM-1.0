@@ -160,6 +160,42 @@ function Pagina() {
     }
   }
 
+  const emailAtual = sessao?.profile?.email ?? "";
+  const [novoEmail, setNovoEmail] = useState("");
+  const [salvandoEmail, setSalvandoEmail] = useState(false);
+  const sincronizarEmailFn = useServerFn(atualizarMeuEmail);
+  const emailValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(novoEmail.trim());
+  const podeSalvarEmail =
+    emailValido && novoEmail.trim().toLowerCase() !== emailAtual.toLowerCase();
+
+  useEffect(() => {
+    setNovoEmail(emailAtual);
+  }, [emailAtual]);
+
+  async function alterarEmail() {
+    if (!podeSalvarEmail) return;
+    setSalvandoEmail(true);
+    try {
+      const alvo = novoEmail.trim();
+      const { error } = await supabase.auth.updateUser(
+        { email: alvo },
+        { emailRedirectTo: window.location.origin + "/conta/perfil" },
+      );
+      if (error) throw error;
+      await sincronizarEmailFn({ data: { email: alvo } });
+      qc.invalidateQueries({ queryKey: ["minha-sessao"] });
+      toast.success(
+        "Enviamos um link de confirmação para o novo e-mail. Confirme para concluir a alteração.",
+      );
+    } catch (e) {
+      toast.error(
+        e instanceof Error ? e.message : "Não foi possível alterar o e-mail.",
+      );
+    } finally {
+      setSalvandoEmail(false);
+    }
+  }
+
   const iniciais = (nome || "?").slice(0, 2).toUpperCase();
 
   return (
