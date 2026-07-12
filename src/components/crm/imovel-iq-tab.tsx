@@ -52,6 +52,32 @@ export function ImovelTab({ clienteId, cliente }: { clienteId: string; cliente: 
     setF((p) => ({ ...p, [k]: v }));
   }
 
+  const [buscandoCep, setBuscandoCep] = useState(false);
+
+  async function buscarCepImovel(cepRaw: string) {
+    if (!cepValido(cepRaw)) return;
+    setBuscandoCep(true);
+    try {
+      const end = await consultarCep(cepRaw);
+      if (!end) {
+        toast.error("CEP não encontrado.");
+        return;
+      }
+      setF((p) => ({
+        ...p,
+        imovel_logradouro: end.logradouro || p.imovel_logradouro,
+        imovel_bairro: end.bairro || p.imovel_bairro,
+        imovel_cidade: end.cidade || p.imovel_cidade,
+        imovel_uf: end.uf || p.imovel_uf,
+      }));
+    } catch {
+      toast.error("Não foi possível consultar o CEP.");
+    } finally {
+      setBuscandoCep(false);
+    }
+  }
+
+
   async function onSalvar() {
     setSalvando(true);
     try {
