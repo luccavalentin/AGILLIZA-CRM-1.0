@@ -13,12 +13,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Loader2 } from "lucide-react";
 import { salvarImovelIq } from "@/lib/crm/clientes.functions";
 import {
   TIPOS_IMOVEL,
   USOS_IMOVEL,
   SITUACOES_IMOVEL,
 } from "@/lib/simulacao/schemas";
+import { mascararCep, cepValido, consultarCep } from "@/lib/cep";
 
 const UFS = [
   "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS",
@@ -49,6 +51,32 @@ export function ImovelTab({ clienteId, cliente }: { clienteId: string; cliente: 
   function set<K extends keyof typeof f>(k: K, v: string) {
     setF((p) => ({ ...p, [k]: v }));
   }
+
+  const [buscandoCep, setBuscandoCep] = useState(false);
+
+  async function buscarCepImovel(cepRaw: string) {
+    if (!cepValido(cepRaw)) return;
+    setBuscandoCep(true);
+    try {
+      const end = await consultarCep(cepRaw);
+      if (!end) {
+        toast.error("CEP não encontrado.");
+        return;
+      }
+      setF((p) => ({
+        ...p,
+        imovel_logradouro: end.logradouro || p.imovel_logradouro,
+        imovel_bairro: end.bairro || p.imovel_bairro,
+        imovel_cidade: end.cidade || p.imovel_cidade,
+        imovel_uf: end.uf || p.imovel_uf,
+      }));
+    } catch {
+      toast.error("Não foi possível consultar o CEP.");
+    } finally {
+      setBuscandoCep(false);
+    }
+  }
+
 
   async function onSalvar() {
     setSalvando(true);
@@ -140,7 +168,22 @@ export function ImovelTab({ clienteId, cliente }: { clienteId: string; cliente: 
         </div>
         <div>
           <Label>CEP</Label>
-          <Input value={f.imovel_cep} onChange={(e) => set("imovel_cep", e.target.value)} />
+          <div className="relative">
+            <Input
+              value={f.imovel_cep}
+              inputMode="numeric"
+              placeholder="00000-000"
+              onChange={(e) => {
+                const m = mascararCep(e.target.value);
+                set("imovel_cep", m);
+                if (cepValido(m)) buscarCepImovel(m);
+              }}
+              onBlur={(e) => buscarCepImovel(e.target.value)}
+            />
+            {buscandoCep && (
+              <Loader2 className="absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+            )}
+          </div>
         </div>
         <div>
           <Label>UF</Label>

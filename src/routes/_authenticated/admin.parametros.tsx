@@ -11,6 +11,7 @@ import {
   ShieldCheck,
   CheckCircle2,
   Circle,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +25,8 @@ import {
   salvarParametros,
   type ParametrosGlobais,
 } from "@/lib/admin/parametros.functions";
+import { mascararCep, cepValido, consultarCep } from "@/lib/cep";
+
 
 export const Route = createFileRoute("/_authenticated/admin/parametros")({
   head: () => ({ meta: [{ title: "Cadastro da Empresa — Agilliza" }] }),
@@ -149,33 +152,46 @@ function Campo({
   label,
   value,
   onChange,
+  onBlur,
+  busy,
   type,
   className,
   placeholder,
   maxLength,
+  inputMode,
 }: {
   id: string;
   label: string;
   value: string;
   onChange: (v: string) => void;
+  onBlur?: (v: string) => void;
+  busy?: boolean;
   type?: string;
   className?: string;
   placeholder?: string;
   maxLength?: number;
+  inputMode?: "text" | "numeric";
 }) {
   return (
     <div className={`space-y-1.5 ${className ?? ""}`}>
       <Label htmlFor={id} className="text-xs font-medium text-muted-foreground">
         {label}
       </Label>
-      <Input
-        id={id}
-        type={type}
-        value={value}
-        maxLength={maxLength}
-        placeholder={placeholder}
-        onChange={(e) => onChange(e.target.value)}
-      />
+      <div className="relative">
+        <Input
+          id={id}
+          type={type}
+          value={value}
+          maxLength={maxLength}
+          placeholder={placeholder}
+          inputMode={inputMode}
+          onChange={(e) => onChange(e.target.value)}
+          onBlur={(e) => onBlur?.(e.target.value)}
+        />
+        {busy && (
+          <Loader2 className="absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+        )}
+      </div>
     </div>
   );
 }
@@ -231,6 +247,32 @@ function Pagina() {
   });
 
   const set = (k: keyof Form) => (v: string) => setForm((f) => ({ ...f, [k]: v }));
+
+  const [buscandoCep, setBuscandoCep] = useState(false);
+
+  async function buscarCepEmpresa(cepRaw: string) {
+    if (!cepValido(cepRaw)) return;
+    setBuscandoCep(true);
+    try {
+      const end = await consultarCep(cepRaw);
+      if (!end) {
+        toast.error("CEP não encontrado.");
+        return;
+      }
+      setForm((f) => ({
+        ...f,
+        logradouro: end.logradouro || f.logradouro,
+        bairro: end.bairro || f.bairro,
+        cidade: end.cidade || f.cidade,
+        uf: end.uf || f.uf,
+      }));
+    } catch {
+      toast.error("Não foi possível consultar o CEP.");
+    } finally {
+      setBuscandoCep(false);
+    }
+  }
+
 
   const alterado = useMemo(
     () => JSON.stringify(form) !== JSON.stringify(salvo),
@@ -349,7 +391,14 @@ function Pagina() {
               id="cep"
               label="CEP"
               value={form.cep ?? ""}
-              onChange={set("cep")}
+              onChange={(v) => {
+                const m = mascararCep(v);
+                set("cep")(m);
+                if (cepValido(m)) buscarCepEmpresa(m);
+              }}
+              onBlur={buscarCepEmpresa}
+              busy={buscandoCep}
+              inputMode="numeric"
               className="sm:col-span-2"
               placeholder="00000-000"
             />
