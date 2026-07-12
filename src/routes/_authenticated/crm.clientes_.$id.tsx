@@ -274,7 +274,21 @@ function Pagina() {
               <CardTitle className="text-sm">Dados pessoais</CardTitle>
             </CardHeader>
             <CardContent className="space-y-1 text-sm">
-              <Linha rotulo="Documento" valor={docExib} />
+              <Linha rotulo="CPF" valor={docExib} />
+              <Linha
+                rotulo="RG"
+                valor={
+                  (c as any).numero_documento
+                    ? `${(c as any).numero_documento}${(c as any).orgao_expedidor ? " · " + (c as any).orgao_expedidor : ""}${(c as any).uf_expedicao ? "/" + (c as any).uf_expedicao : ""}`
+                    : "—"
+                }
+              />
+              <Linha
+                rotulo="RG - data de emissão"
+                valor={
+                  (c as any).data_expedicao ? formatarDataCivil((c as any).data_expedicao) : "—"
+                }
+              />
               <Linha rotulo="E-mail" valor={c.email ?? "—"} />
               <Linha
                 rotulo="Celular"
