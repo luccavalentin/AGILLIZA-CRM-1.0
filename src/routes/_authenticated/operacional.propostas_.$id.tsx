@@ -148,6 +148,10 @@ const TABS = [
 ] as const;
 type Tab = (typeof TABS)[number];
 
+const TAB_LABELS: Partial<Record<Tab, string>> = {
+  FUP: "Follow-up de acompanhamento",
+};
+
 function Pagina() {
   const { id } = Route.useParams();
   const { complementar } = Route.useSearch();
@@ -345,7 +349,7 @@ function Pagina() {
                 : "border-transparent text-muted-foreground hover:text-foreground",
             )}
           >
-            {t}
+            {TAB_LABELS[t] ?? t}
           </button>
         ))}
       </div>
