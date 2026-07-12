@@ -610,13 +610,86 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
   // Visão dentro de uma pasta
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <Button variant="ghost" size="sm" onClick={() => setPastaId(null)}>
-          <ChevronLeft className="size-4" />
-          Pastas
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-1.5 text-sm">
+          <Button variant="ghost" size="sm" onClick={() => setPastaId(null)}>
+            <ChevronLeft className="size-4" />
+            Pastas
+          </Button>
+          {trilhaPastas.map((p, idx) => (
+            <span key={p.id} className="flex items-center gap-1.5">
+              <span className="text-muted-foreground">/</span>
+              {idx === trilhaPastas.length - 1 ? (
+                <span className="font-medium text-foreground">{p.nome}</span>
+              ) : (
+                <button
+                  type="button"
+                  className="text-muted-foreground hover:text-foreground"
+                  onClick={() => setPastaId(p.id)}
+                >
+                  {p.nome}
+                </button>
+              )}
+            </span>
+          ))}
+        </div>
+        <Button size="sm" variant="outline" onClick={() => setNovaPastaOpen(true)}>
+          <FolderPlus className="size-4" />
+          Nova subpasta
         </Button>
-        <span className="text-sm font-medium text-foreground">{pasta.nome}</span>
       </div>
+
+      {subpastas.length > 0 && (
+        <div className="grid gap-3 sm:grid-cols-2">
+          {subpastas.map((p) => (
+            <div
+              key={p.id}
+              className="group relative flex items-center gap-3 overflow-hidden rounded-xl border border-border/70 bg-card p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
+            >
+              <span className="pointer-events-none absolute inset-x-0 top-0 h-0.5 scale-x-0 bg-gradient-to-r from-primary/60 to-primary/10 transition-transform group-hover:scale-x-100" />
+              <button
+                type="button"
+                onClick={() => abrirPasta(p)}
+                className="flex min-w-0 flex-1 items-center gap-3 text-left"
+              >
+                <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 text-primary shadow-inner ring-1 ring-inset ring-border/40">
+                  <Folder className="size-5" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-foreground">{p.nome}</p>
+                  <p className="mt-0.5 inline-flex items-center gap-1 text-xs text-muted-foreground">
+                    <FileText className="size-3" /> {p.total_documentos} documento(s)
+                  </p>
+                </div>
+              </button>
+              <div className="flex shrink-0 items-center gap-0.5 opacity-70 transition-opacity group-hover:opacity-100">
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="size-8"
+                  title="Renomear pasta"
+                  onClick={() => {
+                    setRenomearAlvo(p);
+                    setRenomearNome(p.nome);
+                  }}
+                >
+                  <Pencil className="size-4" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="size-8 hover:bg-destructive/10"
+                  title="Excluir pasta"
+                  onClick={() => setDelPasta(p)}
+                >
+                  <Trash2 className="size-4 text-destructive" />
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
 
       <Card>
         <CardContent className="flex flex-wrap items-end gap-3 pt-6">
