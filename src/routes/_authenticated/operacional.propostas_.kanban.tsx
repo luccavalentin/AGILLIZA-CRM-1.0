@@ -129,6 +129,24 @@ function Pagina() {
       }),
   });
 
+  // Comunicação em tempo real com a proposta: qualquer mudança de status/etapa
+  // (via ficha, sincronização com o banco ou outro usuário) atualiza o Kanban.
+  useEffect(() => {
+    const canal = supabase
+      .channel("kanban:propostas")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "propostas" },
+        () => qc.invalidateQueries({ queryKey: ["propostas"] }),
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(canal);
+    };
+  }, [qc]);
+
+
+
   function limparFiltros() {
     setQ("");
     setBusca("");
