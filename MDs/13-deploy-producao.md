@@ -32,10 +32,12 @@ Isso é importante:
 
 ## 2. Variáveis de ambiente
 
-As variáveis abaixo precisam existir no ambiente de produção.
+As variáveis abaixo precisam existir no ambiente de produção (na Vercel:
+**Settings → Environment Variables**, ambiente **Production** — e **Preview**
+se quiser testar deploys de branch).
 
 ### Públicas (client) — prefixo `VITE_`
-Podem ficar no build/hospedagem. São públicas por natureza.
+Vão para o bundle do navegador. São públicas por natureza.
 
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_PUBLISHABLE_KEY`
@@ -44,15 +46,24 @@ Podem ficar no build/hospedagem. São públicas por natureza.
 ### Secretas (servidor) — **nunca** com prefixo `VITE_`
 Só ficam no servidor. Nunca exponha no front nem versione no repositório.
 
-- `CLIENTE_APP_SESSION_SECRET` — segredo para selar a sessão do app do cliente.
-- `HOMEFIN_*` — credenciais da integração bancária (usuário, senha, base URL).
-- Chave da IA (ex.: `GEMINI_API_KEY` / `OPENAI_API_KEY`) — usada nos
-  recursos de IA.
-- Demais segredos configurados no projeto.
+- `SUPABASE_URL` — mesma URL do projeto Supabase (sem prefixo, uso server-side).
+- `SUPABASE_ANON_KEY` — chave anônima (uso server-side).
+- `SUPABASE_PUBLISHABLE_KEY` — chave publicável (uso server-side).
+- `SUPABASE_SERVICE_ROLE_KEY` — service role (admin; **bypassa RLS**).
+- `ADMIN_SERVICE_ROLE_KEY` — service role usado pelo cliente admin.
+- `CLIENTE_APP_SESSION_SECRET` — segredo que sela a sessão do app do cliente.
+- `HOMEFIN_BASE_URL`, `HOMEFIN_SECRET_ID`, `HOMEFIN_SECRET_KEY` — integração bancária.
+- `GEMINI_API_KEY` — recursos de IA.
+- `CRON_SECRET` — protege o disparo do job de sincronização.
+
+> Copie os valores exatos do painel de segredos do projeto atual (mesmos que
+> já rodam hoje). Não invente valores novos, senão a comunicação com o banco e
+> a API bancária quebra.
 
 > **Regra de ouro:** segredos são lidos apenas dentro de server functions
 > (`createServerFn`) / server routes, via `process.env.*`. Nunca em código de
 > cliente.
+
 
 ---
 
