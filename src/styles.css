@@ -532,12 +532,51 @@
     border-color: var(--color-border);
   }
 
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
+
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
+    /* Renderização de texto mais nítida e moderna. */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    font-feature-settings: "cv11", "ss01";
+    letter-spacing: -0.006em;
+  }
+
+  /* Acessibilidade: foco de teclado consistente e visível em todos os portais.
+     Não afeta o clique do mouse (usa :focus-visible), só navegação por teclado. */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
+
+  /* Títulos com espaçamento levemente mais apertado (aspecto profissional). */
+  h1,
+  h2,
+  h3 {
+    letter-spacing: -0.018em;
+  }
+
+  /* Respeita usuários que preferem menos movimento (WCAG 2.3.3). */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }
+
 
 /* font-mono agora usa Inter (marca) — mantém dígitos tabulares p/ alinhar números e códigos */
 .font-mono {
