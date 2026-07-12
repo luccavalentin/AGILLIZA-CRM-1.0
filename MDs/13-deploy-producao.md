@@ -32,10 +32,12 @@ Isso é importante:
 
 ## 2. Variáveis de ambiente
 
-As variáveis abaixo precisam existir no ambiente de produção.
+As variáveis abaixo precisam existir no ambiente de produção (na Vercel:
+**Settings → Environment Variables**, ambiente **Production** — e **Preview**
+se quiser testar deploys de branch).
 
 ### Públicas (client) — prefixo `VITE_`
-Podem ficar no build/hospedagem. São públicas por natureza.
+Vão para o bundle do navegador. São públicas por natureza.
 
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_PUBLISHABLE_KEY`
@@ -44,15 +46,24 @@ Podem ficar no build/hospedagem. São públicas por natureza.
 ### Secretas (servidor) — **nunca** com prefixo `VITE_`
 Só ficam no servidor. Nunca exponha no front nem versione no repositório.
 
-- `CLIENTE_APP_SESSION_SECRET` — segredo para selar a sessão do app do cliente.
-- `HOMEFIN_*` — credenciais da integração bancária (usuário, senha, base URL).
-- Chave da IA (ex.: `GEMINI_API_KEY` / `OPENAI_API_KEY`) — usada nos
-  recursos de IA.
-- Demais segredos configurados no projeto.
+- `SUPABASE_URL` — mesma URL do projeto Supabase (sem prefixo, uso server-side).
+- `SUPABASE_ANON_KEY` — chave anônima (uso server-side).
+- `SUPABASE_PUBLISHABLE_KEY` — chave publicável (uso server-side).
+- `SUPABASE_SERVICE_ROLE_KEY` — service role (admin; **bypassa RLS**).
+- `ADMIN_SERVICE_ROLE_KEY` — service role usado pelo cliente admin.
+- `CLIENTE_APP_SESSION_SECRET` — segredo que sela a sessão do app do cliente.
+- `HOMEFIN_BASE_URL`, `HOMEFIN_SECRET_ID`, `HOMEFIN_SECRET_KEY` — integração bancária.
+- `GEMINI_API_KEY` — recursos de IA.
+- `CRON_SECRET` — protege o disparo do job de sincronização.
+
+> Copie os valores exatos do painel de segredos do projeto atual (mesmos que
+> já rodam hoje). Não invente valores novos, senão a comunicação com o banco e
+> a API bancária quebra.
 
 > **Regra de ouro:** segredos são lidos apenas dentro de server functions
 > (`createServerFn`) / server routes, via `process.env.*`. Nunca em código de
 > cliente.
+
 
 ---
 
@@ -96,23 +107,40 @@ um domínio personalizado.
    No editor Lovable: menu **(+) → GitHub → Connect project** e crie o
    repositório. A partir daí o código sincroniza automaticamente.
 
-2. **Ajustar o preset do Nitro para Vercel**
-   Em `vite.config.ts`, informe o alvo `vercel` para o Nitro (o build precisa
-   gerar a saída no formato que a Vercel entende).
+2. **Preset do Nitro — nada a fazer**
+   O build detecta a Vercel automaticamente (a Vercel define `VERCEL=1`) e o
+   Nitro seleciona o alvo `vercel` sozinho. **Não é preciso editar
+   `vite.config.ts`.** Se quiser forçar explicitamente, defina a variável de
+   ambiente `NITRO_PRESET=vercel` na Vercel.
 
-3. **Importar na Vercel**
-   No painel da Vercel: **Add New → Project** e selecione o repositório.
+3. **Importar na Vercel** (tela que você já está vendo)
+   - **Framework Preset:** TanStack Start (já detectado ✅).
+   - **Root Directory:** `./` ✅.
+   - **Build / Output / Install Command:** deixe os toggles **desligados**
+     (usar os padrões). **Não** force o Output Directory para `dist` — no
+     preset TanStack Start a saída SSR é montada pelo Nitro (`.vercel/output`),
+     não é uma pasta `dist` estática. Sobrescrever quebra o deploy.
 
 4. **Configurar variáveis de ambiente**
-   Em **Settings → Environment Variables**, adicione todas as variáveis da
-   seção 2 (públicas e secretas), no ambiente **Production**.
+   Em **Environment Variables**, adicione **todas** as variáveis da seção 2
+   (públicas e secretas). Use **Import .env** para colar de uma vez, ou
+   **Add More** para uma a uma. Ambiente: **Production** (e Preview se usar).
 
 5. **Deploy**
-   A Vercel roda `npm run build` automaticamente. Cada push no repositório
-   dispara um novo deploy.
+   Clique em **Deploy**. A Vercel roda `npm run build`. Cada push no
+   repositório dispara um novo deploy automático.
 
-6. **Pós-deploy**
-   Adicione a URL da Vercel nas **Redirect URLs** do Supabase Auth.
+6. **Pós-deploy — ligar a comunicação**
+   - **Supabase Auth:** em **Authentication → URL Configuration**, adicione a
+     URL da Vercel em **Site URL** e **Redirect URLs** (senão o login não
+     redireciona).
+   - **Job de sincronização (`/api/public/sync-propostas`):** se você usa
+     `pg_cron`/agendador chamando a URL do app, atualize-o para a nova URL da
+     Vercel, mantendo o header `apikey` com a anon key. A API bancária é por
+     polling, então esse job é o que faz as propostas avançarem sozinhas.
+   - **Realtime e server functions** passam a funcionar direto pela URL da
+     Vercel assim que as variáveis acima estiverem preenchidas.
+
 
 ---
 
