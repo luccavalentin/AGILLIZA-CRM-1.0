@@ -149,33 +149,46 @@ function Campo({
   label,
   value,
   onChange,
+  onBlur,
+  busy,
   type,
   className,
   placeholder,
   maxLength,
+  inputMode,
 }: {
   id: string;
   label: string;
   value: string;
   onChange: (v: string) => void;
+  onBlur?: (v: string) => void;
+  busy?: boolean;
   type?: string;
   className?: string;
   placeholder?: string;
   maxLength?: number;
+  inputMode?: "text" | "numeric";
 }) {
   return (
     <div className={`space-y-1.5 ${className ?? ""}`}>
       <Label htmlFor={id} className="text-xs font-medium text-muted-foreground">
         {label}
       </Label>
-      <Input
-        id={id}
-        type={type}
-        value={value}
-        maxLength={maxLength}
-        placeholder={placeholder}
-        onChange={(e) => onChange(e.target.value)}
-      />
+      <div className="relative">
+        <Input
+          id={id}
+          type={type}
+          value={value}
+          maxLength={maxLength}
+          placeholder={placeholder}
+          inputMode={inputMode}
+          onChange={(e) => onChange(e.target.value)}
+          onBlur={(e) => onBlur?.(e.target.value)}
+        />
+        {busy && (
+          <Loader2 className="absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+        )}
+      </div>
     </div>
   );
 }
