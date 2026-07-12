@@ -440,12 +440,7 @@ function Pagina() {
                       </p>
                     ) : (
                       stage.clientes.map((c) => {
-                        const campoVistoria =
-                          stage.codigo === "vistoria_agenda"
-                            ? "vistoria_agendada_em"
-                            : stage.codigo === "vistoria_ok"
-                              ? "vistoria_concluida_em"
-                              : null;
+                        const ehVistoria = stage.codigo === "engenharia_vistoria";
                         return (
                           <div
                             key={c.id}
