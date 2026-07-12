@@ -469,7 +469,7 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
           </Button>
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
-          {(pastas ?? []).map((p) => (
+          {subpastas.map((p) => (
             <div
               key={p.id}
               className="group relative flex items-center gap-3 overflow-hidden rounded-xl border border-border/70 bg-card p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
