@@ -6,15 +6,15 @@
  *  1  Simulação                          -> rascunho / erro_envio
  *  2  Enviado para aprovação de crédito  -> enviada_banco / em_analise_credito   (AUTOMÁTICO via API)
  *  3  Crédito aprovado (banco)           -> credito_aprovado                      (AUTOMÁTICO via retorno da API)
- *  4  Checklist de documentação          -> checklist_documentacao                (manual)
- *  5  Cadastro complementar              -> cadastro_complementar                 (manual)
- *  6  Dossiê de documentação completa    -> dossie_completo                       (manual)
- *  7  Formulários                        -> formularios                          (manual)
- *  8  Envio de documentos ao banco       -> envio_documentos_banco               (manual)
- *  10 Vistoria — agendamento             -> vistoria_agendamento                 (manual)
- *  11 Vistoria concluída                 -> vistoria_concluida                   (manual)
- *  12 Emissão de contrato                -> emissao_contrato                     (manual)
- *  13 Contrato emitido                   -> contrato_emitido                     (manual)
+ *  4  Coleta de documentos               -> aguardando_documentos                 (manual)
+ *  5  Engenharia / vistoria              -> engenharia_vistoria                   (manual)
+ *  6  Análise jurídica                   -> analise_juridica                      (manual)
+ *  7  Contrato emitido                   -> contrato_emitido                      (manual)
+ *
+ * Status granulares antigos (checklist_documentacao, cadastro_complementar,
+ * dossie_completo, formularios, envio_documentos_banco, vistoria_agendamento,
+ * vistoria_concluida, emissao_contrato, registrado) foram descontinuados e são
+ * mantidos apenas como LEGADOS: encaminham para o fluxo novo, sem aparecer na UI.
  */
 export type PropostaStatus =
   | "rascunho"
