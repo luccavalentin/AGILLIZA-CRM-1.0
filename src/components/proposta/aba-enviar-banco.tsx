@@ -326,20 +326,24 @@ export function AbaEnviarBanco({
         porGrupo.map((g) => {
           const Icone = g.icone;
           return (
-            <Card key={g.chave}>
+            <Card key={g.chave} className="overflow-hidden transition-shadow hover:shadow-sm">
               <CardContent className="p-4">
                 <div className="mb-3 flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2">
-                    <Icone className="h-4 w-4 text-primary" />
-                    <h3 className="text-sm font-semibold text-foreground">{g.titulo}</h3>
-                    <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-2.5">
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary ring-1 ring-primary/10">
+                      <Icone className="h-4 w-4" />
+                    </span>
+                    <h3 className="text-sm font-semibold tracking-tight text-foreground">
+                      {g.titulo}
+                    </h3>
+                    <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
                       {g.itens.length}
                     </span>
                   </div>
                   <Button
                     size="sm"
                     variant="outline"
-                    className="gap-1.5"
+                    className="gap-1.5 rounded-lg"
                     onClick={() => abrirUpload(g.categoriaUpload)}
                   >
                     <Upload className="h-3.5 w-3.5" /> Enviar
