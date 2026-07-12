@@ -799,67 +799,72 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
           {docsPasta.map((d: any) => (
             <div
               key={d.id}
-              className="flex items-center gap-3 rounded-lg border border-border bg-card p-3"
+              className="flex flex-col gap-3 rounded-lg border border-border bg-card p-3 sm:flex-row sm:items-center"
             >
-              <FileText className="size-5 shrink-0 text-muted-foreground" />
               <button
                 type="button"
                 onClick={() => baixar(d.storage_path, d.nome_arquivo)}
                 title="Visualizar documento"
-                className="min-w-0 flex-1 cursor-pointer text-left transition-colors hover:opacity-80"
+                className="flex min-w-0 flex-1 cursor-pointer items-start gap-3 text-left transition-colors hover:opacity-80"
               >
-                <p className="truncate text-sm font-medium text-foreground underline-offset-2 hover:underline">
-                  {d.nome_arquivo}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {CATEGORIA_LABEL[d.categoria as Categoria]} · {d.tipo_documento} · v{d.versao}
-                </p>
-                {d.enviado_por_nome ? (
-                  <span className="mt-1 inline-flex max-w-full items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
-                    <User className="size-3 shrink-0" />
-                    <span className="truncate">Enviado por {d.enviado_por_nome}</span>
-                  </span>
-                ) : null}
+                <FileText className="mt-0.5 size-5 shrink-0 text-muted-foreground" />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-foreground underline-offset-2 hover:underline">
+                    {d.nome_arquivo}
+                  </p>
+                  <p className="truncate text-xs text-muted-foreground">
+                    {CATEGORIA_LABEL[d.categoria as Categoria]} · {d.tipo_documento} · v{d.versao}
+                  </p>
+                  {d.enviado_por_nome ? (
+                    <span className="mt-1 inline-flex max-w-full items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+                      <User className="size-3 shrink-0" />
+                      <span className="truncate">Enviado por {d.enviado_por_nome}</span>
+                    </span>
+                  ) : null}
+                </div>
               </button>
 
-              <ToneBadge tone={statusTone[d.status] ?? "muted"}>{d.status}</ToneBadge>
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={() => baixar(d.storage_path, d.nome_arquivo)}
-                title="Visualizar / baixar"
-              >
-                <Download className="size-4" />
-              </Button>
-              <Button size="icon" variant="ghost" onClick={() => abrirEdicao(d)} title="Editar">
-                <Pencil className="size-4" />
-              </Button>
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={() => marcar(d.id, "aprovado")}
-                title="Aprovar"
-              >
-                <Check className="size-4 text-success" />
-              </Button>
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={() => marcar(d.id, "reprovado")}
-                title="Reprovar"
-              >
-                <X className="size-4 text-destructive" />
-              </Button>
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={() => setDelDoc(d)}
-                title="Excluir"
-              >
-                <Trash2 className="size-4 text-destructive" />
-              </Button>
+              <div className="flex shrink-0 items-center justify-end gap-0.5 border-t border-border/60 pt-2 sm:border-0 sm:pt-0">
+                <ToneBadge tone={statusTone[d.status] ?? "muted"}>{d.status}</ToneBadge>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => baixar(d.storage_path, d.nome_arquivo)}
+                  title="Visualizar / baixar"
+                >
+                  <Download className="size-4" />
+                </Button>
+                <Button size="icon" variant="ghost" onClick={() => abrirEdicao(d)} title="Editar">
+                  <Pencil className="size-4" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => marcar(d.id, "aprovado")}
+                  title="Aprovar"
+                >
+                  <Check className="size-4 text-success" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => marcar(d.id, "reprovado")}
+                  title="Reprovar"
+                >
+                  <X className="size-4 text-destructive" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => setDelDoc(d)}
+                  title="Excluir"
+                >
+                  <Trash2 className="size-4 text-destructive" />
+                </Button>
+              </div>
             </div>
           ))}
+
         </div>
       )}
 
