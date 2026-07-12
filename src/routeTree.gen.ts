@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as PortalRouteImport } from './routes/portal'
+import { Route as PoliticaDePrivacidadeRouteImport } from './routes/politica-de-privacidade'
 import { Route as ParceiroRouteImport } from './routes/parceiro'
 import { Route as ClienteConsentimentoRouteImport } from './routes/cliente-consentimento'
 import { Route as ClienteRouteImport } from './routes/cliente'
@@ -103,6 +104,11 @@ import { Route as AuthenticatedCrmClientesIdRouteImport } from './routes/_authen
 const PortalRoute = PortalRouteImport.update({
   id: '/portal',
   path: '/portal',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PoliticaDePrivacidadeRoute = PoliticaDePrivacidadeRouteImport.update({
+  id: '/politica-de-privacidade',
+  path: '/politica-de-privacidade',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ParceiroRoute = ParceiroRouteImport.update({
@@ -620,6 +626,7 @@ export interface FileRoutesByFullPath {
   '/cliente': typeof ClienteRouteWithChildren
   '/cliente-consentimento': typeof ClienteConsentimentoRoute
   '/parceiro': typeof ParceiroRouteWithChildren
+  '/politica-de-privacidade': typeof PoliticaDePrivacidadeRoute
   '/portal': typeof PortalRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/documentos': typeof AuthenticatedDocumentosRoute
@@ -711,6 +718,7 @@ export interface FileRoutesByTo {
   '/cliente': typeof ClienteRouteWithChildren
   '/cliente-consentimento': typeof ClienteConsentimentoRoute
   '/parceiro': typeof ParceiroRouteWithChildren
+  '/politica-de-privacidade': typeof PoliticaDePrivacidadeRoute
   '/portal': typeof PortalRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/documentos': typeof AuthenticatedDocumentosRoute
@@ -802,6 +810,7 @@ export interface FileRoutesById {
   '/cliente': typeof ClienteRouteWithChildren
   '/cliente-consentimento': typeof ClienteConsentimentoRoute
   '/parceiro': typeof ParceiroRouteWithChildren
+  '/politica-de-privacidade': typeof PoliticaDePrivacidadeRoute
   '/portal': typeof PortalRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/documentos': typeof AuthenticatedDocumentosRoute
@@ -895,6 +904,7 @@ export interface FileRouteTypes {
     | '/cliente'
     | '/cliente-consentimento'
     | '/parceiro'
+    | '/politica-de-privacidade'
     | '/portal'
     | '/dashboard'
     | '/documentos'
@@ -986,6 +996,7 @@ export interface FileRouteTypes {
     | '/cliente'
     | '/cliente-consentimento'
     | '/parceiro'
+    | '/politica-de-privacidade'
     | '/portal'
     | '/dashboard'
     | '/documentos'
@@ -1076,6 +1087,7 @@ export interface FileRouteTypes {
     | '/cliente'
     | '/cliente-consentimento'
     | '/parceiro'
+    | '/politica-de-privacidade'
     | '/portal'
     | '/_authenticated/dashboard'
     | '/_authenticated/documentos'
@@ -1169,6 +1181,7 @@ export interface RootRouteChildren {
   ClienteRoute: typeof ClienteRouteWithChildren
   ClienteConsentimentoRoute: typeof ClienteConsentimentoRoute
   ParceiroRoute: typeof ParceiroRouteWithChildren
+  PoliticaDePrivacidadeRoute: typeof PoliticaDePrivacidadeRoute
   PortalRoute: typeof PortalRoute
   ApiPublicSyncPropostasRoute: typeof ApiPublicSyncPropostasRoute
 }
@@ -1180,6 +1193,13 @@ declare module '@tanstack/react-router' {
       path: '/portal'
       fullPath: '/portal'
       preLoaderRoute: typeof PortalRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/politica-de-privacidade': {
+      id: '/politica-de-privacidade'
+      path: '/politica-de-privacidade'
+      fullPath: '/politica-de-privacidade'
+      preLoaderRoute: typeof PoliticaDePrivacidadeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/parceiro': {
@@ -2058,6 +2078,7 @@ const rootRouteChildren: RootRouteChildren = {
   ClienteRoute: ClienteRouteWithChildren,
   ClienteConsentimentoRoute: ClienteConsentimentoRoute,
   ParceiroRoute: ParceiroRouteWithChildren,
+  PoliticaDePrivacidadeRoute: PoliticaDePrivacidadeRoute,
   PortalRoute: PortalRoute,
   ApiPublicSyncPropostasRoute: ApiPublicSyncPropostasRoute,
 }

@@ -10,6 +10,7 @@ import {
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 import { THEME_INIT_SCRIPT } from "@/lib/theme";
+import { CookieConsent } from "@/components/legal/cookie-consent";
 
 import appCss from "../styles.css?url";
 import { reportError } from "../lib/error-reporting";
@@ -133,6 +134,7 @@ function RootComponent() {
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
       <Toaster richColors position="top-right" />
+      <CookieConsent />
 
     </QueryClientProvider>
   );
