@@ -21,6 +21,7 @@ import {
   listarApiIntegracoes,
   listarHealthChecks,
   testarConectividade,
+  sincronizarDominios,
 } from "@/lib/admin/integracoes.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/integracoes")({
@@ -59,13 +60,34 @@ function Pagina() {
     onError: (e) => toast.error(e instanceof Error ? e.message : "Falha no teste."),
   });
 
+  const sincronizar = useMutation({
+    mutationFn: () => sincronizarDominios(),
+    onSuccess: (r) => {
+      toast.success(`Domínios sincronizados: ${r.bancos} banco(s) e ${r.operacoes} operação(ões).`);
+      qc.invalidateQueries({ queryKey: ["admin-banco-cred"] });
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Falha ao sincronizar domínios."),
+  });
+
   return (
     <div className="space-y-6 p-4 md:p-6">
       <AdminHero
         icon={<Plug className="h-5 w-5" />}
         titulo="Integrações"
         descricao="Credenciais bancárias, APIs e monitor de conectividade."
+        acoes={
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={sincronizar.isPending}
+            onClick={() => sincronizar.mutate()}
+          >
+            <RefreshCw className={`mr-2 size-4 ${sincronizar.isPending ? "animate-spin" : ""}`} />
+            Sincronizar domínios
+          </Button>
+        }
       />
+
 
       <Tabs defaultValue="bancos">
         <TabsList>

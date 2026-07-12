@@ -157,3 +157,26 @@ export const testarConectividade = createServerFn({ method: "POST" })
     if (error) throw error;
     return inserted;
   });
+
+/**
+ * Sincroniza os catálogos de bancos e operações a partir do provedor de
+ * integração (domínios oficiais). Restrito a administradores/gestores.
+ */
+export const sincronizarDominios = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<{ bancos: number; operacoes: number }> => {
+    const { supabase, userId } = context;
+    const { data: pode } = await supabase.rpc("usuario_pode_admin", { _user_id: userId });
+    if (!pode) throw new Error("Você não tem permissão para sincronizar domínios.");
+
+    const { integracaoConfigurada, sincronizarDominiosIntegracao, sanitizarMensagemErro } =
+      await import("@/lib/simulacao/homefin.server");
+    if (!integracaoConfigurada()) {
+      throw new Error("Integração bancária não configurada. Cadastre as credenciais primeiro.");
+    }
+    try {
+      return await sincronizarDominiosIntegracao();
+    } catch (e) {
+      throw new Error(sanitizarMensagemErro(e instanceof Error ? e.message : null));
+    }
+  });
