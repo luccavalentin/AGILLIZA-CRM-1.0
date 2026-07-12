@@ -1161,6 +1161,61 @@ export async function sincronizarPropostaImpl({
     }
   }
 
+  // ---- Importa as atividades (follow-ups) do banco na aba Follow-up ----
+  // A API não expõe comentários livres do banco, mas as atividades da
+  // oportunidade (`atividadesOportunidade`) são o acompanhamento oficial do
+  // banco. Espelhamos essas atividades como comentários de origem "banco"
+  // para que apareçam junto aos follow-ups internos/externos. Idempotente:
+  // substitui o espelho atual a cada sincronização.
+  try {
+    const atvBanco = atividades
+      .map((a: any) => {
+        const nome = String(a?.atividade?.nomeAtividade ?? a?.nomeAtividade ?? "").trim();
+        if (!nome) return null;
+        const sit = String(a?.tipoSituacao ?? "").toUpperCase().charAt(0);
+        const rotuloSit =
+          sit === "C" ? "Concluída" : sit === "E" ? "Em andamento" : "Não iniciada";
+        const etapaNome = String(a?.etapa?.nomeEtapa ?? "").trim();
+        const dt =
+          a?.dataHoraConclusao ??
+          a?.dataHoraAtuacao ??
+          a?.dataHoraCriacao ??
+          a?.dataInclusao ??
+          null;
+        const partes: string[] = [];
+        if (etapaNome) partes.push(`Etapa: ${etapaNome}`);
+        partes.push(`Situação: ${rotuloSit}`);
+        if (a?.dataPrevisaoConclusao) partes.push(`Previsão: ${a.dataPrevisaoConclusao}`);
+        let iso = new Date().toISOString();
+        if (dt) {
+          const d = new Date(String(dt).replace(" ", "T"));
+          if (!Number.isNaN(d.getTime())) iso = d.toISOString();
+        }
+        return { titulo: nome, comentario: partes.join(" · "), created_at: iso };
+      })
+      .filter(Boolean) as { titulo: string; comentario: string; created_at: string }[];
+
+    if (atvBanco.length > 0) {
+      await supabase
+        .from("proposta_followups")
+        .delete()
+        .eq("proposta_id", propostaId)
+        .eq("tipo", "banco");
+      await supabase.from("proposta_followups").insert(
+        atvBanco.map((a) => ({
+          proposta_id: propostaId,
+          tipo: "banco",
+          titulo: a.titulo,
+          comentario: a.comentario,
+          homefin_enviado: true,
+          created_at: a.created_at,
+        })) as any,
+      );
+    }
+  } catch (e) {
+    console.error("[proposta] importação de follow-ups do banco falhou", e);
+  }
+
   return { status: novoStatus ?? prop.status, etapa: nomeEtapa, atualizado: mudouStatus };
 }
 
