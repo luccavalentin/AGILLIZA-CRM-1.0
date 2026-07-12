@@ -25,6 +25,8 @@ import {
   salvarParametros,
   type ParametrosGlobais,
 } from "@/lib/admin/parametros.functions";
+import { mascararCep, cepValido, consultarCep } from "@/lib/cep";
+
 
 export const Route = createFileRoute("/_authenticated/admin/parametros")({
   head: () => ({ meta: [{ title: "Cadastro da Empresa — Agilliza" }] }),
