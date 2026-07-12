@@ -759,16 +759,34 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
               ) : (
                 <Upload className="size-4" />
               )}
-              Enviar arquivo
+              Enviar arquivos
               <input
                 type="file"
                 accept=".pdf,.jpg,.jpeg,.png"
+                multiple
                 className="sr-only"
                 onChange={onFile}
                 disabled={enviando}
               />
             </label>
           </Button>
+          <Button asChild variant="outline" disabled={enviando} className="relative">
+            <label>
+              <FolderPlus className="size-4" />
+              Enviar pasta
+              <input
+                type="file"
+                className="sr-only"
+                // @ts-expect-error atributos não-padrão para upload de pasta
+                webkitdirectory=""
+                directory=""
+                multiple
+                onChange={onFolder}
+                disabled={enviando}
+              />
+            </label>
+          </Button>
+
         </CardContent>
       </Card>
 
