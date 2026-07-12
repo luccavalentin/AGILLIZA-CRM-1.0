@@ -387,6 +387,21 @@ export const navInterno: NavGroup[] = [
   },
 
   {
+    id: "diversos",
+    label: "Diversos",
+    items: [
+      {
+        label: "Compras",
+        icon: ShoppingCart,
+        to: "/admin/compras",
+        perm: { modulo: "admin.compras" },
+      },
+    ],
+  },
+
+
+
+  {
     id: "conta",
     label: "Conta",
     items: [
