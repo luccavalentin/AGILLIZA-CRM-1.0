@@ -3660,6 +3660,7 @@ export type Database = {
           endereco_imovel: string | null
           enviada_em: string | null
           estado_civil: string | null
+          etapas_banco: Json
           financia_despesas_cartorarias: boolean | null
           homefin_id_oportunidade: string | null
           homefin_id_simulacao: string | null
@@ -3738,6 +3739,7 @@ export type Database = {
           endereco_imovel?: string | null
           enviada_em?: string | null
           estado_civil?: string | null
+          etapas_banco?: Json
           financia_despesas_cartorarias?: boolean | null
           homefin_id_oportunidade?: string | null
           homefin_id_simulacao?: string | null
@@ -3816,6 +3818,7 @@ export type Database = {
           endereco_imovel?: string | null
           enviada_em?: string | null
           estado_civil?: string | null
+          etapas_banco?: Json
           financia_despesas_cartorarias?: boolean | null
           homefin_id_oportunidade?: string | null
           homefin_id_simulacao?: string | null

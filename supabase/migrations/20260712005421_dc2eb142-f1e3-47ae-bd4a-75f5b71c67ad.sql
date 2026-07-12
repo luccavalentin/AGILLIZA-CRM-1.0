@@ -1,0 +1,1 @@
+ALTER TABLE public.propostas ADD COLUMN IF NOT EXISTS etapas_banco jsonb NOT NULL DEFAULT '[]'::jsonb;

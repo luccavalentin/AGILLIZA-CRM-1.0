@@ -72,6 +72,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { PipelineStepper } from "@/components/propostas/pipeline-stepper";
+import { FunilBancoTimeline } from "@/components/propostas/funil-banco-timeline";
 import { PropostaStatusBadge } from "@/components/propostas/status-badge";
 import { statusBancoConfig, bancoJaEnviado } from "@/components/proposta/status-bancos-proposta";
 import { BradescoRetornoTimer, isBradesco } from "@/components/proposta/bradesco-timer";
@@ -689,6 +690,8 @@ function TabResumo({
 
   return (
     <div className="space-y-5">
+      <FunilBancoTimeline etapas={proposta.etapas_banco} />
+
       <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
         <div className="border-b border-border px-4 py-3 text-sm font-medium text-muted-foreground">
           {houveEnvio

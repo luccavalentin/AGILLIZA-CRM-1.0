@@ -1066,6 +1066,22 @@ export async function sincronizarPropostaImpl({
   }
 
   const patch: Record<string, unknown> = { detalhe_status_atual: statusAtividade.detalhe ?? nomeEtapa };
+
+  // Funil COMPLETO da oportunidade retornado pelo banco (pós-aprovação e demais
+  // etapas). Persistido integralmente para exibir o andamento real sem cortar
+  // nenhuma etapa da integração. Rótulos neutros — nenhum provedor citado.
+  const funilBanco = etapas
+    .map((e) => ({
+      id: e?.idEtapa ?? null,
+      nome: e?.nomeEtapa ?? null,
+      ordem: Number(e?.ordemEtapa ?? 0),
+      ativa: Boolean(e?.active),
+      concluida: Boolean(e?.completed),
+      atualizada_em: e?.dataHoraAlteracao ?? e?.dataHoraCriacao ?? null,
+    }))
+    .filter((e) => e.nome)
+    .sort((a, b) => a.ordem - b.ordem);
+  if (funilBanco.length > 0) patch.etapas_banco = funilBanco;
   const escolhida = simEscolhida ?? {};
   if (numeroPropostaBanco) patch.numero_proposta_banco = numeroPropostaBanco;
   if (op?.codigoOportunidadeBanco || escolhida.codigoOportunidadeBanco || numeroPropostaBanco)
