@@ -417,9 +417,9 @@ export async function sincronizarDominiosIntegracao(): Promise<ResultadoSincroni
     const { error } = await supabaseAdmin.from("homefin_bancos").upsert(
       {
         id_banco: b.idBanco,
-        codigo_banco: b.codigoBanco ?? null,
+        codigo_banco: b.codigoBanco ?? b.idBanco,
         nome_banco: nome || `Banco ${b.idBanco}`,
-        flag_simulacao: (b.flagSimulacao ?? "").trim() || null,
+        flag_simulacao: (b.flagSimulacao ?? "").trim() || undefined,
         ativo: true,
         updated_at: new Date().toISOString(),
       },
