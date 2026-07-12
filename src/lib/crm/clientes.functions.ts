@@ -1403,6 +1403,7 @@ export interface ContratoEmitido {
   cliente_id: string;
   numero_cliente: string | null;
   nome_cliente: string | null;
+  proposta_id: string | null;
   numero_proposta: string | null;
   nome_banco: string | null;
   valor_financiamento: number | null;
