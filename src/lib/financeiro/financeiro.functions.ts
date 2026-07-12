@@ -657,6 +657,102 @@ export const criarConfig = createServerFn({ method: "POST" })
     return { id: ins.id };
   });
 
+/** ===== Configurações (CRUD completo) ===== */
+export type ConfigEntidade = "categoria" | "centro" | "forma";
+
+const CONFIG_TABELA: Record<ConfigEntidade, string> = {
+  categoria: "financial_categories",
+  centro: "financial_cost_centers",
+  forma: "financial_payment_methods",
+};
+
+export interface ConfigItem {
+  id: string;
+  nome: string;
+  tipo?: string | null;
+  ativo: boolean;
+}
+
+/** Lista completa (inclui inativos) para as telas de gestão. */
+export const listarConfigsGestao = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(
+    async ({
+      context,
+    }): Promise<{
+      categorias: ConfigItem[];
+      centrosCusto: ConfigItem[];
+      formasPagamento: ConfigItem[];
+    }> => {
+      const { supabase } = context;
+      const [cats, ccs, pms] = await Promise.all([
+        supabase.from("financial_categories").select("id, nome, tipo, ativo").order("nome"),
+        supabase.from("financial_cost_centers").select("id, nome, ativo").order("nome"),
+        supabase.from("financial_payment_methods").select("id, nome, ativo").order("nome"),
+      ]);
+      return {
+        categorias: (cats.data ?? []) as ConfigItem[],
+        centrosCusto: (ccs.data ?? []) as ConfigItem[],
+        formasPagamento: (pms.data ?? []) as ConfigItem[],
+      };
+    },
+  );
+
+export const atualizarConfig = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z
+      .object({
+        entidade: z.enum(["categoria", "centro", "forma"]),
+        id: z.string().uuid(),
+        nome: z.string().min(1).optional(),
+        tipo: z.enum(["despesa", "receita"]).optional(),
+        ativo: z.boolean().optional(),
+      })
+      .parse(data),
+  )
+  .handler(async ({ context, data }): Promise<{ ok: true }> => {
+    const { supabase } = context;
+    const patch: Record<string, unknown> = {};
+    if (data.nome !== undefined) patch.nome = data.nome;
+    if (data.ativo !== undefined) patch.ativo = data.ativo;
+    if (data.entidade === "categoria" && data.tipo !== undefined) patch.tipo = data.tipo;
+    if (Object.keys(patch).length === 0) return { ok: true };
+    const { error } = await supabase
+      .from(CONFIG_TABELA[data.entidade] as any)
+      .update(patch as any)
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const excluirConfig = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z
+      .object({
+        entidade: z.enum(["categoria", "centro", "forma"]),
+        id: z.string().uuid(),
+      })
+      .parse(data),
+  )
+  .handler(async ({ context, data }): Promise<{ ok: true; desativado: boolean }> => {
+    const { supabase } = context;
+    const tabela = CONFIG_TABELA[data.entidade] as any;
+    // Tenta excluir; se houver vínculos (FK), apenas desativa para preservar histórico.
+    const { error } = await supabase.from(tabela).delete().eq("id", data.id);
+    if (error) {
+      const { error: err2 } = await supabase
+        .from(tabela)
+        .update({ ativo: false } as any)
+        .eq("id", data.id);
+      if (err2) throw new Error(err2.message);
+      return { ok: true, desativado: true };
+    }
+    return { ok: true, desativado: false };
+  });
+
+
 /** ===== Regras de comissão ===== */
 export const listarRegrasComissao = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])

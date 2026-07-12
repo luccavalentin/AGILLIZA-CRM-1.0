@@ -296,8 +296,15 @@ export const navInterno: NavGroup[] = [
         to: "/financeiro/fluxo-de-caixa",
         perm: { modulo: "financeiro.fluxo_caixa" },
       },
+      {
+        label: "Configurações",
+        icon: SlidersHorizontal,
+        to: "/financeiro/configuracoes",
+        perm: { modulo: "financeiro.painel" },
+      },
     ],
   },
+
   {
     id: "relatorios",
     label: "Relatórios gerenciais",
