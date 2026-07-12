@@ -10,7 +10,7 @@ import {
   Trash2,
   Tags,
   Building2,
-  CreditCard,
+  
   Percent,
   TrendingUp,
   TrendingDown,
@@ -84,7 +84,7 @@ function Pagina() {
           </h1>
           <p className="text-sm text-muted-foreground">
             Centralize aqui os parâmetros do módulo financeiro: plano de contas, centros de
-            custo, formas de pagamento e regras de comissão.
+            custo e regras de comissão.
           </p>
         </div>
       </header>
@@ -96,9 +96,6 @@ function Pagina() {
           </TabsTrigger>
           <TabsTrigger value="centros" className="gap-1.5">
             <Building2 className="h-4 w-4" /> Centros de custo
-          </TabsTrigger>
-          <TabsTrigger value="formas" className="gap-1.5">
-            <CreditCard className="h-4 w-4" /> Formas de pagamento
           </TabsTrigger>
           <TabsTrigger value="comissoes" className="gap-1.5">
             <Percent className="h-4 w-4" /> Comissões
@@ -115,15 +112,6 @@ function Pagina() {
             descricao="Agrupe lançamentos por unidade, equipe ou projeto para análises gerenciais."
             singular="centro de custo"
             icon={<Building2 className="h-4 w-4 text-muted-foreground" />}
-          />
-        </TabsContent>
-        <TabsContent value="formas" className="mt-4">
-          <SecaoSimples
-            entidade="forma"
-            titulo="Formas de pagamento"
-            descricao="Meios utilizados nas baixas de contas a pagar e a receber."
-            singular="forma de pagamento"
-            icon={<CreditCard className="h-4 w-4 text-muted-foreground" />}
           />
         </TabsContent>
         <TabsContent value="comissoes" className="mt-4 space-y-6">
