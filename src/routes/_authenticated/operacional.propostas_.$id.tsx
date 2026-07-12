@@ -689,6 +689,8 @@ function TabResumo({
 
   return (
     <div className="space-y-5">
+      <FunilBancoTimeline etapas={proposta.etapas_banco} />
+
       <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
         <div className="border-b border-border px-4 py-3 text-sm font-medium text-muted-foreground">
           {houveEnvio
