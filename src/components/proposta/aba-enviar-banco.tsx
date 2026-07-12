@@ -265,7 +265,7 @@ export function AbaEnviarBanco({
         <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-start gap-3">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/15">
-              <Send className="h-5 w-5" />
+              <Landmark className="h-5 w-5" />
             </span>
             <div className="text-sm">
               <p className="font-semibold tracking-tight text-foreground">
@@ -283,7 +283,7 @@ export function AbaEnviarBanco({
             disabled={enviando || totalPdfs === 0}
             className="h-11 w-full gap-2 rounded-xl px-6 font-semibold shadow-md shadow-primary/20 transition-all hover:shadow-lg hover:shadow-primary/25 active:scale-[0.98] disabled:shadow-none sm:w-auto"
           >
-            {enviando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            {enviando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Landmark className="h-4 w-4" />}
             {enviando ? "Enviando…" : "Enviar ao banco"}
           </Button>
         </CardContent>
