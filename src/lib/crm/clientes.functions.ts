@@ -1493,6 +1493,7 @@ export const listarContratosEmitidos = createServerFn({ method: "GET" })
         cliente_id: c.id,
         numero_cliente: c.numero_cliente ?? null,
         nome_cliente: c.nome ?? null,
+        proposta_id: p?.id ?? null,
         numero_proposta: p?.numero_proposta ?? null,
         nome_banco: p?.nome_banco ?? null,
         valor_financiamento: p?.valor_financiamento ?? null,
