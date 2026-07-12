@@ -1272,6 +1272,24 @@ export async function enviarDocumentosBancoImpl({
   // 2) Faz upload de cada documento local, casando com o slot correspondente
   //    por semelhança de nome do documento.
   const usados = new Set<string>();
+  const marcarDoc = async (
+    id: string,
+    situacao: "enviado" | "erro",
+    erro: string | null,
+  ) => {
+    try {
+      await supabase
+        .from("cliente_documentos")
+        .update({
+          situacao_integracao: situacao,
+          integrado_em: situacao === "enviado" ? new Date().toISOString() : null,
+          erro_integracao: erro,
+        } as any)
+        .eq("id", id);
+    } catch {
+      /* marcação de status é best-effort */
+    }
+  };
   for (const doc of docs) {
     const alvo = normTexto(`${doc.tipo_documento} ${doc.nome_arquivo}`);
     const slot = slots.find((s) => {
@@ -1287,10 +1305,9 @@ export async function enviarDocumentosBancoImpl({
       );
     });
     if (!slot) {
-      erros.push({
-        nome: doc.nome_arquivo,
-        motivo: "Sem correspondência no checklist do banco para este documento.",
-      });
+      const motivo = "Sem correspondência no checklist do banco para este documento.";
+      erros.push({ nome: doc.nome_arquivo, motivo });
+      await marcarDoc(doc.id, "erro", motivo);
       continue;
     }
     usados.add(String(slot.id));
@@ -1300,7 +1317,9 @@ export async function enviarDocumentosBancoImpl({
       .from("cliente-documentos")
       .download(doc.storage_path);
     if (dlErr || !blob) {
-      erros.push({ nome: doc.nome_arquivo, motivo: "Falha ao ler o arquivo armazenado." });
+      const motivo = "Falha ao ler o arquivo armazenado.";
+      erros.push({ nome: doc.nome_arquivo, motivo });
+      await marcarDoc(doc.id, "erro", motivo);
       continue;
     }
     const bytes = new Uint8Array(await blob.arrayBuffer());
@@ -1313,13 +1332,14 @@ export async function enviarDocumentosBancoImpl({
         ctx,
       );
       sucesso.push({ nome: doc.nome_arquivo, participante: slot.nomeParticipante ?? null });
+      await marcarDoc(doc.id, "enviado", null);
     } catch (e: any) {
-      erros.push({
-        nome: doc.nome_arquivo,
-        motivo: sanitizarMensagemErro(e?.message) || "Erro ao enviar o documento.",
-      });
+      const motivo = sanitizarMensagemErro(e?.message) || "Erro ao enviar o documento.";
+      erros.push({ nome: doc.nome_arquivo, motivo });
+      await marcarDoc(doc.id, "erro", motivo);
     }
   }
+
 
   // 3) Finaliza a inclusão dos documentos enviados na integração do banco.
   if (sucesso.length > 0) {
