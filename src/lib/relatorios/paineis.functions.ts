@@ -11,11 +11,19 @@ const schema = z.object({
   ate: z.string().optional(),
 });
 
+export interface PanelDelta {
+  /** Variação percentual absoluta vs. período anterior equivalente. */
+  pct: number;
+  dir: "up" | "down" | "flat";
+  /** Se true, subir é positivo (verde); se false, subir é negativo (vermelho). */
+  bom: boolean;
+}
 export interface PanelMetric {
   label: string;
   valor: string;
   hint?: string;
   tone?: "brand" | "success" | "warning" | "danger" | "neutral";
+  delta?: PanelDelta;
 }
 export interface PanelSerie {
   label: string;
@@ -190,6 +198,92 @@ async function carregarContratosCliente(
   return { rows, volume, count: rows.length };
 }
 
+/** Calcula o período imediatamente anterior de igual duração. */
+function intervaloAnterior(deISO: string, ateISO: string) {
+  const de = new Date(`${deISO}T00:00:00`);
+  const ate = new Date(`${ateISO}T00:00:00`);
+  const dias = Math.max(0, Math.round((ate.getTime() - de.getTime()) / 86_400_000));
+  const prevAte = new Date(de);
+  prevAte.setDate(prevAte.getDate() - 1);
+  const prevDe = new Date(prevAte);
+  prevDe.setDate(prevDe.getDate() - dias);
+  const iso = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  return { de: iso(prevDe), ate: iso(prevAte) };
+}
+
+interface AnteriorTotais {
+  simCount: number;
+  enviadas: number;
+  aprovadas: number;
+  recusadas: number;
+  contratos: number;
+  volumeContratos: number;
+  volumeSimulado: number;
+  taxa: number;
+}
+
+/** Totais do período anterior equivalente, para calcular tendências (deltas). */
+async function carregarAnterior(
+  supabase: any,
+  escopoEq: (q: any, col: string) => any,
+  deAtual: string,
+  ateAtual: string,
+): Promise<AnteriorTotais> {
+  const { de, ate } = intervaloAnterior(deAtual, ateAtual);
+  const ateFim = `${ate}T23:59:59`;
+  const [sims, props, contratosInfo] = await Promise.all([
+    escopoEq(
+      supabase
+        .from("simulacoes")
+        .select("status,valor_financiamento,created_at")
+        .gte("created_at", de)
+        .lte("created_at", ateFim)
+        .limit(5000),
+      "usuario_responsavel_id",
+    ),
+    escopoEq(
+      supabase
+        .from("propostas")
+        .select("status,created_at")
+        .gte("created_at", de)
+        .lte("created_at", ateFim)
+        .limit(5000),
+      "usuario_responsavel_id",
+    ),
+    carregarContratosCliente(supabase, escopoEq, de, ate),
+  ]);
+  const simRows = (sims.data ?? []) as any[];
+  const propRows = (props.data ?? []) as any[];
+  const enviadas = propRows.filter((p) => p.status !== "rascunho");
+  const aprovadas = enviadas.filter((p) => p.status === "credito_aprovado").length;
+  const recusadas = enviadas.filter((p) => p.status === "credito_recusado").length;
+  const simConcl = simRows.filter((s) =>
+    ["simulada", "parcialmente_simulada", "promovida"].includes(s.status),
+  );
+  return {
+    simCount: simRows.length,
+    enviadas: enviadas.length,
+    aprovadas,
+    recusadas,
+    contratos: contratosInfo.count,
+    volumeContratos: contratosInfo.volume,
+    volumeSimulado: simConcl.reduce((s, r) => s + (r.valor_financiamento ?? 0), 0),
+    taxa: enviadas.length ? (aprovadas / enviadas.length) * 100 : 0,
+  };
+}
+
+/** Constrói o objeto de tendência comparando valor atual vs. anterior. */
+function mkDelta(cur: number, prev: number, bom = true): PanelDelta | undefined {
+  if (!prev && !cur) return undefined;
+  if (!prev) return { pct: 100, dir: cur > 0 ? "up" : "flat", bom };
+  const diff = ((cur - prev) / prev) * 100;
+  const dir = diff > 0.5 ? "up" : diff < -0.5 ? "down" : "flat";
+  return { pct: Math.abs(diff), dir, bom };
+}
+
+
+
 
 export const getPanelDados = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -209,7 +303,7 @@ export const getPanelDados = createServerFn({ method: "POST" })
     const escopoEq = (q: any, col: string) => (data.escopo === "minha" ? q.eq(col, userId) : q);
 
     if (data.modulo === "visao-geral") {
-      const [sims, props, contratosInfo] = await Promise.all([
+      const [sims, props, contratosInfo, ant] = await Promise.all([
         escopoEq(
           supabase
             .from("simulacoes")
@@ -232,9 +326,11 @@ export const getPanelDados = createServerFn({ method: "POST" })
           "usuario_responsavel_id",
         ),
         carregarContratosCliente(supabase, escopoEq, de, ate),
+        carregarAnterior(supabase, escopoEq, de, ate),
       ]);
       if (sims.error) throw new Error(sims.error.message);
       if (props.error) throw new Error(props.error.message);
+
 
       const simRows = (sims.data ?? []) as any[];
       const simCount = simRows.length;
@@ -319,21 +415,23 @@ export const getPanelDados = createServerFn({ method: "POST" })
       ).length;
       return {
         heros: [
-          { label: "Simulações", valor: int(simCount), hint: brlCompacto(volumeSimulado), tone: "neutral" },
-          { label: "Propostas enviadas", valor: int(enviadas.length), tone: "brand" },
+          { label: "Simulações", valor: int(simCount), hint: brlCompacto(volumeSimulado), tone: "neutral", delta: mkDelta(simCount, ant.simCount) },
+          { label: "Propostas enviadas", valor: int(enviadas.length), tone: "brand", delta: mkDelta(enviadas.length, ant.enviadas) },
           {
             label: "Aprovadas",
             valor: int(aprovadasCount),
             hint: `${pct(taxa)} de aprovação`,
             tone: aprovadasCount ? "success" : "neutral",
+            delta: mkDelta(aprovadasCount, ant.aprovadas),
           },
           {
             label: "Reprovadas",
             valor: int(recusadasCount),
             hint: `${enviadas.length ? pct((recusadasCount / enviadas.length) * 100) : pct(0)} de reprovação`,
             tone: recusadasCount ? "danger" : "neutral",
+            delta: mkDelta(recusadasCount, ant.recusadas, false),
           },
-          { label: "Contratos emitidos", valor: int(contratosCount), hint: brlCompacto(volume), tone: "success" },
+          { label: "Contratos emitidos", valor: int(contratosCount), hint: brlCompacto(volume), tone: "success", delta: mkDelta(contratosCount, ant.contratos) },
         ],
         minis: [
           { label: "Volume contratado", valor: brlCompacto(volume), tone: "success" },
@@ -394,7 +492,7 @@ export const getPanelDados = createServerFn({ method: "POST" })
     }
 
     // operacional
-    const [sims, props, dem, tk, contratosInfo] = await Promise.all([
+    const [sims, props, dem, tk, contratosInfo, ant] = await Promise.all([
       escopoEq(
         supabase
           .from("simulacoes")
@@ -435,6 +533,7 @@ export const getPanelDados = createServerFn({ method: "POST" })
         "responsavel_id",
       ),
       carregarContratosCliente(supabase, escopoEq, de, ate),
+      carregarAnterior(supabase, escopoEq, de, ate),
     ]);
     if (sims.error) throw new Error(sims.error.message);
     if (props.error) throw new Error(props.error.message);
@@ -563,24 +662,28 @@ export const getPanelDados = createServerFn({ method: "POST" })
           valor: int(simRows.length),
           hint: `${int(simConcluidas)} concluídas · ${brlCompacto(volumeSimulado)}`,
           tone: "neutral",
+          delta: mkDelta(simRows.length, ant.simCount),
         },
         {
           label: "Propostas ativas",
           valor: int(enviadas.length),
           hint: `${int(emAnalise)} em análise`,
           tone: "brand",
+          delta: mkDelta(enviadas.length, ant.enviadas),
         },
         {
           label: "Taxa de aprovação",
           valor: pct(taxa),
           hint: `${aprovadas} aprovadas · ${recusadas} recusadas`,
           tone: aprovadas ? "success" : "neutral",
+          delta: mkDelta(taxa, ant.taxa),
         },
         {
           label: "Contratos emitidos",
           valor: int(contratos),
           hint: `${brlCompacto(volumeContratos)} · ticket ${brlCompacto(ticket)}`,
           tone: "success",
+          delta: mkDelta(contratos, ant.contratos),
         },
       ],
       minis: [

@@ -55,15 +55,33 @@ function Pagina() {
 
   const itens = data ?? [];
 
-  const stats = useMemo(
-    () => ({
+  const stats = useMemo(() => {
+    const abertasList = itens.filter(
+      (d) => d.status !== "concluida" && d.status !== "cancelada",
+    );
+    const agora = Date.now();
+    const em24h = agora + 24 * 3600_000;
+    const vencendo = abertasList.filter(
+      (d) => !atrasada(d) && d.prazo_sla && new Date(d.prazo_sla).getTime() <= em24h,
+    ).length;
+    const criticas = abertasList.filter((d) =>
+      ["alta", "urgente", "critica"].includes((d.prioridade ?? "").toLowerCase()),
+    ).length;
+    const emDia = abertasList.length
+      ? Math.round(((abertasList.length - abertasList.filter(atrasada).length) / abertasList.length) * 100)
+      : 100;
+    return {
       total: itens.length,
+      abertas: abertasList.length,
       andamento: itens.filter((d) => d.status === "em_andamento").length,
+      vencendo,
+      criticas,
       atrasadas: itens.filter(atrasada).length,
       concluidas: itens.filter((d) => d.status === "concluida").length,
-    }),
-    [itens],
-  );
+      slaEmDia: emDia,
+    };
+  }, [itens]);
+
 
   async function verificarSla() {
     try {
@@ -116,36 +134,51 @@ function Pagina() {
         }
       />
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-6">
         <OpStat
           label="Total"
           value={stats.total}
+          hint={`${stats.abertas} em aberto`}
           icon={<Inbox className="h-5 w-5" />}
-          tint="bg-primary/10 text-primary"
         />
         <OpStat
           label="Em andamento"
           value={stats.andamento}
           icon={<Loader2 className="h-5 w-5" />}
-          tint="bg-warning/15 text-warning-foreground"
           accent="var(--warning)"
+        />
+        <OpStat
+          label="Vencendo em 24h"
+          value={stats.vencendo}
+          hint="Prazo se aproximando"
+          icon={<AlertTriangle className="h-5 w-5" />}
+          accent="var(--warning)"
+          alerta={stats.vencendo > 0}
+        />
+        <OpStat
+          label="Alta prioridade"
+          value={stats.criticas}
+          hint="Em aberto"
+          icon={<Flame className="h-5 w-5" />}
+          accent="var(--primary)"
         />
         <OpStat
           label="Atrasadas"
           value={stats.atrasadas}
+          hint="SLA vencido"
           icon={<Flame className="h-5 w-5" />}
-          tint="bg-destructive/10 text-destructive"
           accent="var(--destructive)"
           alerta={stats.atrasadas > 0}
         />
         <OpStat
-          label="Concluídas"
-          value={stats.concluidas}
+          label="SLA em dia"
+          value={`${stats.slaEmDia}%`}
+          hint={`${stats.concluidas} concluídas`}
           icon={<CheckCircle2 className="h-5 w-5" />}
-          tint="bg-success/10 text-success"
           accent="var(--success)"
         />
       </div>
+
 
       <div className="flex flex-wrap items-center gap-3">
         <Tabs value={escopo} onValueChange={(v) => setEscopo(v as "minhas" | "equipe")}>

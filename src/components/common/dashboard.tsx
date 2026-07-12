@@ -1,12 +1,45 @@
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
-import { RefreshCw, ArrowUpRight } from "lucide-react";
+import { RefreshCw, ArrowUpRight, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { corDoBanco } from "@/lib/bancos/cores";
 import { BancoLogo } from "@/components/bancos/banco-logo";
+
+/** Tendência vs. período anterior equivalente. */
+export interface MetricDelta {
+  pct: number;
+  dir: "up" | "down" | "flat";
+  bom: boolean;
+}
+
+/** Badge de tendência percentual comparando com o período anterior. */
+function DeltaBadge({ delta }: { delta: MetricDelta }) {
+  const Icon = delta.dir === "up" ? TrendingUp : delta.dir === "down" ? TrendingDown : Minus;
+  // Cor semântica: "bom" indica se subir é positivo (ex.: contratos) ou não (ex.: recusadas).
+  const positivo = delta.dir === "flat" ? null : (delta.dir === "up") === delta.bom;
+  const cor =
+    positivo === null
+      ? "text-muted-foreground bg-muted/60"
+      : positivo
+        ? "text-success bg-[color-mix(in_oklab,var(--success)_12%,transparent)]"
+        : "text-destructive bg-[color-mix(in_oklab,var(--destructive)_12%,transparent)]";
+  const sinal = delta.dir === "up" ? "+" : delta.dir === "down" ? "−" : "";
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[10px] font-semibold tabular-nums",
+        cor,
+      )}
+      title="Comparado ao período anterior equivalente"
+    >
+      <Icon className="h-3 w-3" />
+      {delta.dir === "flat" ? "estável" : `${sinal}${delta.pct.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}%`}
+    </span>
+  );
+}
 
 type Tone = "brand" | "success" | "warning" | "danger" | "neutral";
 
@@ -128,6 +161,7 @@ export function HeroMetric({
   tone = "neutral",
   icon: Icon,
   to,
+  delta,
 }: {
   label: string;
   valor: string;
@@ -135,6 +169,7 @@ export function HeroMetric({
   tone?: Tone;
   icon?: LucideIcon;
   to?: string;
+  delta?: MetricDelta;
 }) {
   const conteudo = (
     <Card
@@ -178,7 +213,10 @@ export function HeroMetric({
        <p className="mt-3 min-w-0 truncate font-mono text-[clamp(1.25rem,8vw,2rem)] font-semibold leading-none tracking-tight tabular-nums text-foreground sm:text-[32px]">
         {valor}
       </p>
-      {hint && <p className="mt-2 truncate text-xs text-muted-foreground">{hint}</p>}
+      <div className="mt-2 flex min-w-0 items-center gap-2">
+        {delta && <DeltaBadge delta={delta} />}
+        {hint && <p className="min-w-0 truncate text-xs text-muted-foreground">{hint}</p>}
+      </div>
     </Card>
   );
   return to ? (

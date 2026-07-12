@@ -101,15 +101,28 @@ function Pagina() {
 
   const itens = data ?? [];
 
-  const stats = useMemo(
-    () => ({
+  const stats = useMemo(() => {
+    const agora = new Date();
+    const fimHoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate(), 23, 59, 59).getTime();
+    const abertasList = itens.filter(
+      (t) => t.status !== "concluida" && t.status !== "cancelada",
+    );
+    const vencidas = itens.filter((t) => vencida(t.prazo, t.status)).length;
+    const hoje = abertasList.filter(
+      (t) => t.prazo && !vencida(t.prazo, t.status) && new Date(t.prazo).getTime() <= fimHoje,
+    ).length;
+    const concluidas = itens.filter((t) => t.status === "concluida").length;
+    return {
       total: itens.length,
       abertas: itens.filter((t) => t.status === "aberta").length,
       andamento: itens.filter((t) => t.status === "em_andamento").length,
-      concluidas: itens.filter((t) => t.status === "concluida").length,
-    }),
-    [itens],
-  );
+      hoje,
+      vencidas,
+      concluidas,
+      taxaConclusao: itens.length ? Math.round((concluidas / itens.length) * 100) : 0,
+    };
+  }, [itens]);
+
 
   const grupos = useMemo(
     () =>
@@ -174,35 +187,50 @@ function Pagina() {
         }
       />
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-6">
         <OpStat
           label="Total"
           value={stats.total}
+          hint={`${stats.abertas + stats.andamento} em aberto`}
           icon={<ListChecks className="h-5 w-5" />}
-          tint="bg-primary/10 text-primary"
         />
         <OpStat
           label="A fazer"
           value={stats.abertas}
           icon={<CircleDot className="h-5 w-5" />}
-          tint="bg-sky-500/10 text-sky-600 dark:text-sky-400"
           accent="var(--primary)"
         />
         <OpStat
           label="Em andamento"
           value={stats.andamento}
           icon={<Loader2 className="h-5 w-5" />}
-          tint="bg-warning/15 text-warning-foreground"
           accent="var(--warning)"
         />
         <OpStat
-          label="Concluídas"
-          value={stats.concluidas}
+          label="Para hoje"
+          value={stats.hoje}
+          hint="Prazo até o fim do dia"
+          icon={<Clock className="h-5 w-5" />}
+          accent="var(--warning)"
+          alerta={stats.hoje > 0}
+        />
+        <OpStat
+          label="Vencidas"
+          value={stats.vencidas}
+          hint="Prazo ultrapassado"
+          icon={<Clock className="h-5 w-5" />}
+          accent="var(--destructive)"
+          alerta={stats.vencidas > 0}
+        />
+        <OpStat
+          label="Conclusão"
+          value={`${stats.taxaConclusao}%`}
+          hint={`${stats.concluidas} concluídas`}
           icon={<CheckCircle2 className="h-5 w-5" />}
-          tint="bg-success/10 text-success"
           accent="var(--success)"
         />
       </div>
+
 
       <div className="flex flex-wrap items-center gap-3">
         <Tabs value={escopo} onValueChange={(v) => setEscopo(v as "todas" | "minhas")}>
