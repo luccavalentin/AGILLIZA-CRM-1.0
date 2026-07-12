@@ -303,7 +303,7 @@ export const getPanelDados = createServerFn({ method: "POST" })
     const escopoEq = (q: any, col: string) => (data.escopo === "minha" ? q.eq(col, userId) : q);
 
     if (data.modulo === "visao-geral") {
-      const [sims, props, contratosInfo] = await Promise.all([
+      const [sims, props, contratosInfo, ant] = await Promise.all([
         escopoEq(
           supabase
             .from("simulacoes")
@@ -326,9 +326,11 @@ export const getPanelDados = createServerFn({ method: "POST" })
           "usuario_responsavel_id",
         ),
         carregarContratosCliente(supabase, escopoEq, de, ate),
+        carregarAnterior(supabase, escopoEq, de, ate),
       ]);
       if (sims.error) throw new Error(sims.error.message);
       if (props.error) throw new Error(props.error.message);
+
 
       const simRows = (sims.data ?? []) as any[];
       const simCount = simRows.length;
