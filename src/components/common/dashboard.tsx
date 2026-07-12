@@ -213,7 +213,10 @@ export function HeroMetric({
        <p className="mt-3 min-w-0 truncate font-mono text-[clamp(1.25rem,8vw,2rem)] font-semibold leading-none tracking-tight tabular-nums text-foreground sm:text-[32px]">
         {valor}
       </p>
-      {hint && <p className="mt-2 truncate text-xs text-muted-foreground">{hint}</p>}
+      <div className="mt-2 flex min-w-0 items-center gap-2">
+        {delta && <DeltaBadge delta={delta} />}
+        {hint && <p className="min-w-0 truncate text-xs text-muted-foreground">{hint}</p>}
+      </div>
     </Card>
   );
   return to ? (
