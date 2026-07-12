@@ -1478,7 +1478,7 @@ export const listarContratosEmitidos = createServerFn({ method: "GET" })
     const ids = lista.map((c) => c.id);
     const { data: propostas } = await supabase
       .from("propostas")
-      .select("cliente_id, numero_proposta, nome_banco, valor_financiamento, created_at")
+      .select("id, cliente_id, numero_proposta, nome_banco, valor_financiamento, created_at")
       .in("cliente_id", ids)
       .order("created_at", { ascending: false });
     const propostasLista = propostas ?? [];
