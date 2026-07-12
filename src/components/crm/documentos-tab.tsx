@@ -162,6 +162,27 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
     [docs, pasta],
   );
 
+  // Subpastas do nível atual (pastaId = null → raiz).
+  const subpastas = useMemo(
+    () => (pastas ?? []).filter((p) => (p.parent_id ?? null) === pastaId),
+    [pastas, pastaId],
+  );
+
+  // Trilha (breadcrumb) da pasta atual até a raiz.
+  const trilhaPastas = useMemo(() => {
+    if (!pastaId) return [] as DocumentoPasta[];
+    const porId = new Map((pastas ?? []).map((p) => [p.id, p]));
+    const cadeia: DocumentoPasta[] = [];
+    let atual = porId.get(pastaId) ?? null;
+    let guarda = 0;
+    while (atual && guarda++ < 20) {
+      cadeia.unshift(atual);
+      atual = atual.parent_id ? (porId.get(atual.parent_id) ?? null) : null;
+    }
+    return cadeia;
+  }, [pastas, pastaId]);
+
+
   const tiposCategoria = useMemo(() => tiposParaCategorias([categoria]), [categoria]);
   const tiposEditCategoria = useMemo(
     () => tiposParaCategorias([editCategoria]),
