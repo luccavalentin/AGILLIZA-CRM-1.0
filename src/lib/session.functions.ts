@@ -76,3 +76,19 @@ export const atualizarMeuPerfil = createServerFn({ method: "POST" })
     if (error) throw new Error("Não foi possível salvar o perfil.");
     return { ok: true };
   });
+
+/** Sincroniza o e-mail exibido no perfil após a alteração no login. */
+export const atualizarMeuEmail = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { email: string }) =>
+    z.object({ email: z.string().trim().email().max(255) }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { error } = await supabase
+      .from("profiles")
+      .update({ email: data.email })
+      .eq("id", userId);
+    if (error) throw new Error("Não foi possível salvar o e-mail.");
+    return { ok: true };
+  });

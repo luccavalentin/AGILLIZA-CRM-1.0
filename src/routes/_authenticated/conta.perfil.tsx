@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { UserRound, Loader2, Lock, Upload, ShieldCheck, Save } from "lucide-react";
+import { UserRound, Loader2, Lock, Upload, ShieldCheck, Save, Mail } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { getMinhaSessao, atualizarMeuPerfil } from "@/lib/session.functions";
+import { getMinhaSessao, atualizarMeuPerfil, atualizarMeuEmail } from "@/lib/session.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminHero } from "@/components/admin/admin-hero";
 import { ChatSoundSetting } from "@/components/shared/chat-sound-setting";
@@ -160,6 +160,42 @@ function Pagina() {
     }
   }
 
+  const emailAtual = sessao?.profile?.email ?? "";
+  const [novoEmail, setNovoEmail] = useState("");
+  const [salvandoEmail, setSalvandoEmail] = useState(false);
+  const sincronizarEmailFn = useServerFn(atualizarMeuEmail);
+  const emailValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(novoEmail.trim());
+  const podeSalvarEmail =
+    emailValido && novoEmail.trim().toLowerCase() !== emailAtual.toLowerCase();
+
+  useEffect(() => {
+    setNovoEmail(emailAtual);
+  }, [emailAtual]);
+
+  async function alterarEmail() {
+    if (!podeSalvarEmail) return;
+    setSalvandoEmail(true);
+    try {
+      const alvo = novoEmail.trim();
+      const { error } = await supabase.auth.updateUser(
+        { email: alvo },
+        { emailRedirectTo: window.location.origin + "/conta/perfil" },
+      );
+      if (error) throw error;
+      await sincronizarEmailFn({ data: { email: alvo } });
+      qc.invalidateQueries({ queryKey: ["minha-sessao"] });
+      toast.success(
+        "Enviamos um link de confirmação para o novo e-mail. Confirme para concluir a alteração.",
+      );
+    } catch (e) {
+      toast.error(
+        e instanceof Error ? e.message : "Não foi possível alterar o e-mail.",
+      );
+    } finally {
+      setSalvandoEmail(false);
+    }
+  }
+
   const iniciais = (nome || "?").slice(0, 2).toUpperCase();
 
   return (
@@ -248,9 +284,9 @@ function Pagina() {
                 <Label htmlFor="email" className="text-xs font-medium text-muted-foreground">
                   E-mail
                 </Label>
-                <Input id="email" value={sessao?.profile?.email ?? ""} disabled />
+                <Input id="email" value={emailAtual} disabled />
                 <p className="text-[11px] text-muted-foreground">
-                  O e-mail de acesso não pode ser alterado por aqui.
+                  Para trocar o e-mail de acesso, use a seção "E-mail de acesso" abaixo.
                 </p>
               </div>
 
@@ -272,6 +308,43 @@ function Pagina() {
 
       <Secao
         numero="02"
+        icon={<Mail className="size-5" />}
+        titulo="E-mail de acesso"
+        descricao="Altere o e-mail usado para entrar no sistema."
+      >
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="novo-email" className="text-xs font-medium text-muted-foreground">
+              Novo e-mail
+            </Label>
+            <Input
+              id="novo-email"
+              type="email"
+              value={novoEmail}
+              onChange={(e) => setNovoEmail(e.target.value)}
+              placeholder="voce@exemplo.com"
+            />
+            {novoEmail.trim().length > 0 && !emailValido && (
+              <p className="text-xs text-destructive">Informe um e-mail válido.</p>
+            )}
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <p className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+              <ShieldCheck className="size-3.5" />
+              Você receberá um link de confirmação no novo endereço.
+            </p>
+            <Button onClick={alterarEmail} disabled={!podeSalvarEmail || salvandoEmail}>
+              {salvandoEmail && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Alterar e-mail
+            </Button>
+          </div>
+        </div>
+      </Secao>
+
+
+
+      <Secao
+        numero="03"
         icon={<Lock className="size-5" />}
         titulo="Segurança"
         descricao="Defina uma nova senha de acesso."
