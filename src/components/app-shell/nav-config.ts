@@ -319,13 +319,8 @@ export const navInterno: NavGroup[] = [
     label: "Administração",
     items: [
       {
-        label: "Compras",
-        icon: ShoppingCart,
-        to: "/admin/compras",
-        perm: { modulo: "admin.compras" },
-      },
-      {
         label: "Configurações gerais",
+
         icon: SlidersHorizontal,
         to: "/admin/configuracoes",
         perm: { modulo: "admin.parametros" },
