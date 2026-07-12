@@ -9,7 +9,7 @@ import {
   Eye,
   Trash2,
   Loader2,
-  Send,
+  Landmark,
   AlertTriangle,
   CheckCircle2,
   XCircle,
