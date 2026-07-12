@@ -3,7 +3,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { ArrowLeft, Search, RotateCcw, KanbanSquare, User } from "lucide-react";
+import { ArrowLeft, Search, RotateCcw, KanbanSquare, User, Clock } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { BancoLogo } from "@/components/bancos/banco-logo";
 import { corDoBanco } from "@/lib/bancos/cores";
 import { assertModuloPermitido } from "@/lib/route-guards";
@@ -93,6 +94,20 @@ function intervaloMesAtual(): { inicio: string; fim: string } {
   return { inicio: iso(primeiro), fim: iso(ultimo) };
 }
 
+/** Há quanto tempo a proposta está na etapa atual (ex.: "hoje", "3d", "2sem"). */
+function tempoNaEtapa(iso: string): string {
+  const d = new Date(iso.includes("T") ? iso : iso.replace(" ", "T"));
+  if (isNaN(d.getTime())) return "";
+  const dias = Math.floor((Date.now() - d.getTime()) / 86_400_000);
+  if (dias <= 0) return "hoje";
+  if (dias === 1) return "ontem";
+  if (dias < 14) return `${dias}d`;
+  if (dias < 60) return `${Math.floor(dias / 7)}sem`;
+  return `${Math.floor(dias / 30)}m`;
+}
+
+
+
 function Pagina() {
   const router = useRouter();
   const qc = useQueryClient();
@@ -127,6 +142,24 @@ function Pagina() {
         },
       }),
   });
+
+  // Comunicação em tempo real com a proposta: qualquer mudança de status/etapa
+  // (via ficha, sincronização com o banco ou outro usuário) atualiza o Kanban.
+  useEffect(() => {
+    const canal = supabase
+      .channel("kanban:propostas")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "propostas" },
+        () => qc.invalidateQueries({ queryKey: ["propostas"] }),
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(canal);
+    };
+  }, [qc]);
+
+
 
   function limparFiltros() {
     setQ("");
@@ -308,7 +341,7 @@ function Pagina() {
                       </div>
 
                       {/* Status */}
-                      <div className="mt-2">
+                      <div className="mt-2 flex flex-wrap items-center gap-1.5">
                         <span
                           className={cn(
                             "inline-block rounded-full px-2 py-0.5 text-[10px] font-medium",
@@ -317,7 +350,14 @@ function Pagina() {
                         >
                           {cfg.label}
                         </span>
+                        {!terminal && c.status_atualizado_em && (
+                          <span className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground">
+                            <Clock className="h-2.5 w-2.5" />
+                            {tempoNaEtapa(c.status_atualizado_em)}
+                          </span>
+                        )}
                       </div>
+
 
                       {/* Nº da proposta */}
                       <div className="mt-2.5 flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">

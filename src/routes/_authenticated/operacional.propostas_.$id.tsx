@@ -85,7 +85,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Clock, Check } from "lucide-react";
 import {
   baixarPropostaSimplificadaPDF,
   baixarPropostaDetalhadaPDF,
@@ -152,6 +152,21 @@ type Tab = (typeof TABS)[number];
 const TAB_LABELS: Partial<Record<Tab, string>> = {
   FUP: "Follow-up de acompanhamento",
 };
+
+/** Formata data/hora em pt-BR (ex.: "12/07/2026 14:30"). */
+function formatarDataHora(iso: string): string {
+  const d = new Date(iso.includes("T") ? iso : iso.replace(" ", "T"));
+  if (isNaN(d.getTime())) return "—";
+  return d.toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+
 
 function Pagina() {
   const { id } = Route.useParams();
@@ -334,7 +349,28 @@ function Pagina() {
 
         <div className="p-5">
           <PipelineStepper status={status} detalheStatus={p.detalhe_status_atual} />
+          <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-border/60 pt-3 text-[11px] text-muted-foreground">
+            {p.status_atualizado_em && (
+              <span className="inline-flex items-center gap-1">
+                <Clock className="h-3 w-3" />
+                Nesta etapa desde {formatarDataHora(p.status_atualizado_em)}
+              </span>
+            )}
+            {p.ultima_sincronizacao_em && (
+              <span className="inline-flex items-center gap-1">
+                <RefreshCw className="h-3 w-3" />
+                Última leitura do banco: {formatarDataHora(p.ultima_sincronizacao_em)}
+              </span>
+            )}
+            {p.contrato_emitido_em && (
+              <span className="inline-flex items-center gap-1 font-medium text-success">
+                <Check className="h-3 w-3" />
+                Contrato emitido em {formatarDataHora(p.contrato_emitido_em)}
+              </span>
+            )}
+          </div>
         </div>
+
       </div>
 
       {/* Tabs */}

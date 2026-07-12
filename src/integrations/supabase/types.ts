@@ -3689,9 +3689,11 @@ export type Database = {
           sistema_amortizacao_aprovado: string | null
           situacao_imovel: string | null
           status: Database["public"]["Enums"]["proposta_status"]
+          status_atualizado_em: string | null
           taxa_juros_ano_aprovado: number | null
           tipo_imovel: string | null
           uf: string | null
+          ultima_sincronizacao_em: string | null
           ultimo_erro: string | null
           updated_at: string
           uso_imovel: string | null
@@ -3768,9 +3770,11 @@ export type Database = {
           sistema_amortizacao_aprovado?: string | null
           situacao_imovel?: string | null
           status?: Database["public"]["Enums"]["proposta_status"]
+          status_atualizado_em?: string | null
           taxa_juros_ano_aprovado?: number | null
           tipo_imovel?: string | null
           uf?: string | null
+          ultima_sincronizacao_em?: string | null
           ultimo_erro?: string | null
           updated_at?: string
           uso_imovel?: string | null
@@ -3847,9 +3851,11 @@ export type Database = {
           sistema_amortizacao_aprovado?: string | null
           situacao_imovel?: string | null
           status?: Database["public"]["Enums"]["proposta_status"]
+          status_atualizado_em?: string | null
           taxa_juros_ano_aprovado?: number | null
           tipo_imovel?: string | null
           uf?: string | null
+          ultima_sincronizacao_em?: string | null
           ultimo_erro?: string | null
           updated_at?: string
           uso_imovel?: string | null
