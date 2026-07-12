@@ -1065,10 +1065,27 @@ export async function sincronizarPropostaImpl({
     }
   }
 
+  // Detalhe coerente com o desfecho: a atividade real do banco tem prioridade;
+  // quando há um desfecho de crédito (recusado/aprovado/análise) ou situação
+  // terminal, nunca exibimos uma etapa anterior do funil (ex.: "Simulação"),
+  // que contradiz o status e confunde o usuário.
+  const statusEfetivo = (novoStatus ?? prop.status) as PropostaStatus;
+  const ROTULO_DETALHE: Partial<Record<PropostaStatus, string>> = {
+    credito_recusado: "Crédito recusado",
+    credito_aprovado: "Crédito aprovado",
+    em_analise_credito: "Em análise de crédito",
+    aguardando_documentos: "Coleta de documentos",
+    engenharia_vistoria: "Engenharia / vistoria",
+    analise_juridica: "Análise jurídica",
+    contrato_emitido: "Contrato emitido",
+    cancelada: "Cancelada",
+  };
   const patch: Record<string, unknown> = {
-    detalhe_status_atual: statusAtividade.detalhe ?? nomeEtapa,
+    detalhe_status_atual:
+      statusAtividade.detalhe ?? ROTULO_DETALHE[statusEfetivo] ?? nomeEtapa,
     ultima_sincronizacao_em: new Date().toISOString(),
   };
+
 
   // Funil COMPLETO da oportunidade retornado pelo banco (pós-aprovação e demais
   // etapas). Persistido integralmente para exibir o andamento real sem cortar
