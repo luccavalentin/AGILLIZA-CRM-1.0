@@ -736,7 +736,10 @@ function TabResumo({
           {bancosVisiveis.map((b) => (
             <div
               key={b.id}
-              className={cn("space-y-3 p-4 transition-colors", b.selecionado && "bg-accent/40")}
+              className={cn(
+                "space-y-4 p-4 transition-colors",
+                b.selecionado && "bg-accent/30",
+              )}
             >
               <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3">
                 <Checkbox
@@ -746,13 +749,20 @@ function TabResumo({
                   aria-label={`Selecionar ${b.nome_banco}`}
                   className="shrink-0"
                 />
-                <span className="flex min-w-0 items-center gap-2">
+                <span className="flex min-w-0 items-center gap-2.5">
                   <BancoLogo nome={b.nome_banco} size="md" className="shrink-0" />
-                  <span
-                    className="truncate text-sm font-semibold"
-                    style={{ color: corDoBanco(b.nome_banco) }}
-                  >
-                    {b.nome_banco}
+                  <span className="flex min-w-0 flex-col">
+                    <span
+                      className="truncate text-sm font-semibold leading-tight"
+                      style={{ color: corDoBanco(b.nome_banco) }}
+                    >
+                      {b.nome_banco}
+                    </span>
+                    {b.numero_proposta_banco && (
+                      <span className="truncate text-[11px] tabular-nums text-muted-foreground">
+                        Nº {b.numero_proposta_banco}
+                      </span>
+                    )}
                   </span>
                 </span>
                 <ToneBadge tone={statusBancoConfig(b.status_banco).tone}>
@@ -760,7 +770,7 @@ function TabResumo({
                 </ToneBadge>
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-2.5">
                 <MetricaBanco label="R$ Financiamento" valor={formatBRL(b.valor_financiamento_max)} />
                 <MetricaBanco label="Parcela" valor={formatBRL(b.valor_parcela)} />
                 <MetricaBanco label="Prazo" valor={String(b.prazo_pagamento_max ?? "—")} />
@@ -769,21 +779,16 @@ function TabResumo({
                   valor={b.taxa_juros_ano != null ? `${b.taxa_juros_ano}%` : "—"}
                 />
               </div>
-              {b.numero_proposta_banco && (
-                <p className="text-xs tabular-nums text-muted-foreground">
-                  Nº banco: {b.numero_proposta_banco}
-                </p>
-              )}
 
-              <div>
-                <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">
+              <div className="border-t border-border/60 pt-3">
+                <Label className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
                   Situação de crédito
                 </Label>
                 <Select
                   value={(b.situacao_banco as SituacaoBanco) ?? "nao_enviado"}
                   onValueChange={(v) => mudarSituacao(b.id, v as SituacaoBanco)}
                 >
-                  <SelectTrigger className="mt-1 h-9 w-full">
+                  <SelectTrigger className="mt-1.5 h-9 w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -795,6 +800,7 @@ function TabResumo({
                   </SelectContent>
                 </Select>
               </div>
+
 
               <div className="flex flex-wrap items-center gap-2">
                 <Button
