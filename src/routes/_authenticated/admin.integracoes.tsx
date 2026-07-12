@@ -60,6 +60,15 @@ function Pagina() {
     onError: (e) => toast.error(e instanceof Error ? e.message : "Falha no teste."),
   });
 
+  const sincronizar = useMutation({
+    mutationFn: () => sincronizarDominios(),
+    onSuccess: (r) => {
+      toast.success(`Domínios sincronizados: ${r.bancos} banco(s) e ${r.operacoes} operação(ões).`);
+      qc.invalidateQueries({ queryKey: ["admin-banco-cred"] });
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Falha ao sincronizar domínios."),
+  });
+
   return (
     <div className="space-y-6 p-4 md:p-6">
       <AdminHero
