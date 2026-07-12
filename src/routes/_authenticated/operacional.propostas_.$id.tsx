@@ -153,6 +153,21 @@ const TAB_LABELS: Partial<Record<Tab, string>> = {
   FUP: "Follow-up de acompanhamento",
 };
 
+/** Formata data/hora em pt-BR (ex.: "12/07/2026 14:30"). */
+function formatarDataHora(iso: string): string {
+  const d = new Date(iso.includes("T") ? iso : iso.replace(" ", "T"));
+  if (isNaN(d.getTime())) return "—";
+  return d.toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+
+
 function Pagina() {
   const { id } = Route.useParams();
   const { complementar } = Route.useSearch();
