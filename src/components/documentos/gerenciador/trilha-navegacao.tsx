@@ -1,4 +1,4 @@
-import { ChevronRight, Home, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, Home, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import type { Migalha } from "@/lib/documentos/arquivos.functions";
