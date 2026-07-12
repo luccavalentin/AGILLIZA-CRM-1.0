@@ -419,12 +419,17 @@ function Kpi({ label, valor }: { label: string; valor: React.ReactNode }) {
 
 function MetricaBanco({ label, valor }: { label: string; valor: string }) {
   return (
-    <div className="rounded-lg border border-border bg-muted/30 px-3 py-2">
-      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className="mt-0.5 text-sm font-semibold tabular-nums text-foreground">{valor}</p>
+    <div className="rounded-xl border border-border/70 bg-gradient-to-b from-muted/40 to-muted/10 px-3.5 py-2.5 transition-colors">
+      <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
+        {label}
+      </p>
+      <p className="mt-1 text-[15px] font-semibold tabular-nums leading-tight text-foreground">
+        {valor}
+      </p>
     </div>
   );
 }
+
 
 /* ===== Ações do topo ===== */
 function AcoesTopo({
@@ -681,11 +686,8 @@ function TabResumo({
   const podeEnviarBanco =
     Boolean(proposta.homefin_id_oportunidade) &&
     !["cancelada", "registrado", "credito_recusado", "contrato_emitido"].includes(status);
-  const campos: [string, string][] = [
-    ["Operação", proposta.produto ?? "—"],
-    ["Nº interno", proposta.numero_proposta],
-    ["Nº da proposta no banco", proposta.numero_proposta_banco ?? "—"],
-  ];
+
+
 
   async function selecionar(pbId: string) {
     try {
@@ -734,7 +736,10 @@ function TabResumo({
           {bancosVisiveis.map((b) => (
             <div
               key={b.id}
-              className={cn("space-y-3 p-4 transition-colors", b.selecionado && "bg-accent/40")}
+              className={cn(
+                "space-y-4 p-4 transition-colors",
+                b.selecionado && "bg-accent/30",
+              )}
             >
               <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3">
                 <Checkbox
@@ -744,13 +749,20 @@ function TabResumo({
                   aria-label={`Selecionar ${b.nome_banco}`}
                   className="shrink-0"
                 />
-                <span className="flex min-w-0 items-center gap-2">
+                <span className="flex min-w-0 items-center gap-2.5">
                   <BancoLogo nome={b.nome_banco} size="md" className="shrink-0" />
-                  <span
-                    className="truncate text-sm font-semibold"
-                    style={{ color: corDoBanco(b.nome_banco) }}
-                  >
-                    {b.nome_banco}
+                  <span className="flex min-w-0 flex-col">
+                    <span
+                      className="truncate text-sm font-semibold leading-tight"
+                      style={{ color: corDoBanco(b.nome_banco) }}
+                    >
+                      {b.nome_banco}
+                    </span>
+                    {b.numero_proposta_banco && (
+                      <span className="truncate text-[11px] tabular-nums text-muted-foreground">
+                        Nº {b.numero_proposta_banco}
+                      </span>
+                    )}
                   </span>
                 </span>
                 <ToneBadge tone={statusBancoConfig(b.status_banco).tone}>
@@ -758,7 +770,7 @@ function TabResumo({
                 </ToneBadge>
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-2.5">
                 <MetricaBanco label="R$ Financiamento" valor={formatBRL(b.valor_financiamento_max)} />
                 <MetricaBanco label="Parcela" valor={formatBRL(b.valor_parcela)} />
                 <MetricaBanco label="Prazo" valor={String(b.prazo_pagamento_max ?? "—")} />
@@ -767,21 +779,16 @@ function TabResumo({
                   valor={b.taxa_juros_ano != null ? `${b.taxa_juros_ano}%` : "—"}
                 />
               </div>
-              {b.numero_proposta_banco && (
-                <p className="text-xs tabular-nums text-muted-foreground">
-                  Nº banco: {b.numero_proposta_banco}
-                </p>
-              )}
 
-              <div>
-                <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">
+              <div className="border-t border-border/60 pt-3">
+                <Label className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
                   Situação de crédito
                 </Label>
                 <Select
                   value={(b.situacao_banco as SituacaoBanco) ?? "nao_enviado"}
                   onValueChange={(v) => mudarSituacao(b.id, v as SituacaoBanco)}
                 >
-                  <SelectTrigger className="mt-1 h-9 w-full">
+                  <SelectTrigger className="mt-1.5 h-9 w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -794,7 +801,8 @@ function TabResumo({
                 </Select>
               </div>
 
-              <div className="flex flex-wrap items-center gap-2">
+
+              <div className="flex flex-wrap items-center gap-2 border-t border-border/60 pt-3">
                 <Button
                   size="sm"
                   variant="ghost"
@@ -804,7 +812,10 @@ function TabResumo({
                   <Info className="mr-1 h-4 w-4" /> Detalhamento
                 </Button>
                 {bancoJaEnviado(b) ? (
-                  <span className="flex-1 text-center text-xs text-muted-foreground">Enviado</span>
+                  <span className="flex-1 rounded-md bg-emerald-500/10 py-2 text-center text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                    Enviado
+                  </span>
+
                 ) : podeEnviarBanco ? (
                   <Button
                     size="sm"
@@ -946,16 +957,7 @@ function TabResumo({
         </div>
       </div>
 
-      <div className="grid gap-3 rounded-lg border border-border bg-card p-5 sm:grid-cols-2 md:grid-cols-3">
-        {campos.map(([label, valor]) => (
-          <div key={label}>
-            <Label className="text-xs text-muted-foreground">{label}</Label>
-            <div className="mt-1 rounded-md border border-border bg-muted/40 px-3 py-2 text-sm text-foreground">
-              {valor}
-            </div>
-          </div>
-        ))}
-      </div>
+
 
       <EnvioResultadoDialog
         resultado={resultadoEnvio}
