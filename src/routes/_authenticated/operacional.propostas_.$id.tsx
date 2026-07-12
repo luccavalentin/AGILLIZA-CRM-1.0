@@ -72,6 +72,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { PipelineStepper } from "@/components/propostas/pipeline-stepper";
+import { FunilBancoTimeline } from "@/components/propostas/funil-banco-timeline";
 import { PropostaStatusBadge } from "@/components/propostas/status-badge";
 import { statusBancoConfig, bancoJaEnviado } from "@/components/proposta/status-bancos-proposta";
 import { BradescoRetornoTimer, isBradesco } from "@/components/proposta/bradesco-timer";
