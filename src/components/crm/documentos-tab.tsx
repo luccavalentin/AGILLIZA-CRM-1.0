@@ -965,6 +965,85 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Nova subpasta */}
+      <Dialog open={novaPastaOpen} onOpenChange={(o) => !o && setNovaPastaOpen(false)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Nova subpasta</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-1.5">
+            <label className="text-xs text-muted-foreground">Nome da pasta</label>
+            <Input
+              value={novaPastaNome}
+              onChange={(e) => setNovaPastaNome(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && confirmarNovaPasta()}
+              placeholder="Ex.: Certidões, Comprovantes…"
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setNovaPastaOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={confirmarNovaPasta} disabled={salvandoPasta}>
+              {salvandoPasta ? "Criando…" : "Criar pasta"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Renomear pasta */}
+      <Dialog open={!!renomearAlvo} onOpenChange={(o) => !o && setRenomearAlvo(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Renomear pasta</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-1.5">
+            <label className="text-xs text-muted-foreground">Nome da pasta</label>
+            <Input
+              value={renomearNome}
+              onChange={(e) => setRenomearNome(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && confirmarRenomear()}
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRenomearAlvo(null)}>
+              Cancelar
+            </Button>
+            <Button onClick={confirmarRenomear} disabled={salvandoPasta}>
+              {salvandoPasta ? "Salvando…" : "Salvar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Excluir pasta */}
+      <AlertDialog open={!!delPasta} onOpenChange={(o) => !o && setDelPasta(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir pasta?</AlertDialogTitle>
+            <AlertDialogDescription>
+              A pasta "{delPasta?.nome}" e suas subpastas serão removidas. Os documentos dentro
+              dela serão movidos para "Outros". Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                confirmarExclusaoPasta();
+              }}
+              disabled={excluindoPasta}
+            >
+              {excluindoPasta ? "Excluindo…" : "Excluir"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+
       <VisualizadorArquivo
         arquivo={visualizando}
         open={!!visualizando}
