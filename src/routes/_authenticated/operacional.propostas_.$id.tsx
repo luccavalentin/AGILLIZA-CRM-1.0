@@ -802,7 +802,7 @@ function TabResumo({
               </div>
 
 
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2 border-t border-border/60 pt-3">
                 <Button
                   size="sm"
                   variant="ghost"
@@ -812,7 +812,10 @@ function TabResumo({
                   <Info className="mr-1 h-4 w-4" /> Detalhamento
                 </Button>
                 {bancoJaEnviado(b) ? (
-                  <span className="flex-1 text-center text-xs text-muted-foreground">Enviado</span>
+                  <span className="flex-1 rounded-md bg-emerald-500/10 py-2 text-center text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                    Enviado
+                  </span>
+
                 ) : podeEnviarBanco ? (
                   <Button
                     size="sm"
