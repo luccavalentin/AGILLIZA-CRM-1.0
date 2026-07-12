@@ -308,6 +308,43 @@ function Pagina() {
 
       <Secao
         numero="02"
+        icon={<Mail className="size-5" />}
+        titulo="E-mail de acesso"
+        descricao="Altere o e-mail usado para entrar no sistema."
+      >
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="novo-email" className="text-xs font-medium text-muted-foreground">
+              Novo e-mail
+            </Label>
+            <Input
+              id="novo-email"
+              type="email"
+              value={novoEmail}
+              onChange={(e) => setNovoEmail(e.target.value)}
+              placeholder="voce@exemplo.com"
+            />
+            {novoEmail.trim().length > 0 && !emailValido && (
+              <p className="text-xs text-destructive">Informe um e-mail válido.</p>
+            )}
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <p className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+              <ShieldCheck className="size-3.5" />
+              Você receberá um link de confirmação no novo endereço.
+            </p>
+            <Button onClick={alterarEmail} disabled={!podeSalvarEmail || salvandoEmail}>
+              {salvandoEmail && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Alterar e-mail
+            </Button>
+          </div>
+        </div>
+      </Secao>
+
+
+
+      <Secao
+        numero="02"
         icon={<Lock className="size-5" />}
         titulo="Segurança"
         descricao="Defina uma nova senha de acesso."
