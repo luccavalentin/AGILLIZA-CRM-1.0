@@ -415,21 +415,23 @@ export const getPanelDados = createServerFn({ method: "POST" })
       ).length;
       return {
         heros: [
-          { label: "Simulações", valor: int(simCount), hint: brlCompacto(volumeSimulado), tone: "neutral" },
-          { label: "Propostas enviadas", valor: int(enviadas.length), tone: "brand" },
+          { label: "Simulações", valor: int(simCount), hint: brlCompacto(volumeSimulado), tone: "neutral", delta: mkDelta(simCount, ant.simCount) },
+          { label: "Propostas enviadas", valor: int(enviadas.length), tone: "brand", delta: mkDelta(enviadas.length, ant.enviadas) },
           {
             label: "Aprovadas",
             valor: int(aprovadasCount),
             hint: `${pct(taxa)} de aprovação`,
             tone: aprovadasCount ? "success" : "neutral",
+            delta: mkDelta(aprovadasCount, ant.aprovadas),
           },
           {
             label: "Reprovadas",
             valor: int(recusadasCount),
             hint: `${enviadas.length ? pct((recusadasCount / enviadas.length) * 100) : pct(0)} de reprovação`,
             tone: recusadasCount ? "danger" : "neutral",
+            delta: mkDelta(recusadasCount, ant.recusadas, false),
           },
-          { label: "Contratos emitidos", valor: int(contratosCount), hint: brlCompacto(volume), tone: "success" },
+          { label: "Contratos emitidos", valor: int(contratosCount), hint: brlCompacto(volume), tone: "success", delta: mkDelta(contratosCount, ant.contratos) },
         ],
         minis: [
           { label: "Volume contratado", valor: brlCompacto(volume), tone: "success" },
