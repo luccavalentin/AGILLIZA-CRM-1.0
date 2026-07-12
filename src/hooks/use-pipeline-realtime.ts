@@ -31,7 +31,17 @@ export function usePipelineRealtime() {
         { event: "*", schema: "public", table: "cliente_pipeline" },
         invalidar,
       )
+      // O painel/ficha do CRM mostram o status da proposta lido de `propostas`.
+      // O polling do banco atualiza `propostas.status` sem necessariamente mudar
+      // a macro-etapa em `cliente_pipeline`, então ouvimos as duas tabelas para
+      // que o painel reflita o banco em tempo real sem refetch manual.
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "propostas" },
+        invalidar,
+      )
       .subscribe();
+
 
     return () => {
       supabase.removeChannel(channel);
