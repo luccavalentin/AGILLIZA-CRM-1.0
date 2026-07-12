@@ -505,22 +505,36 @@ function Pagina() {
                                 <ChevronRight className="size-3 shrink-0 -translate-x-0.5 opacity-0 transition-all duration-200 group-hover/kb:translate-x-0 group-hover/kb:opacity-100" />
                               </Link>
                             </div>
-                            {campoVistoria && (
-                              <div className="flex items-center gap-2 border-t border-border/70 px-2.5 py-2">
-                                <CalendarClock className="size-3.5 shrink-0 text-muted-foreground" />
-                                <label className="shrink-0 text-[11px] font-medium text-muted-foreground">
-                                  {stage.codigo === "vistoria_agenda"
-                                    ? "Agendada"
-                                    : "Concluída"}
-                                </label>
-                                <Input
-                                  type="date"
-                                  value={c[campoVistoria] ?? ""}
-                                  onChange={(e) =>
-                                    salvarDataVistoria(c.id, campoVistoria, e.target.value)
-                                  }
-                                  className="h-7 flex-1 px-2 text-xs"
-                                />
+                            {ehVistoria && (
+                              <div className="space-y-2 border-t border-border/70 px-2.5 py-2">
+                                <div className="flex items-center gap-2">
+                                  <CalendarClock className="size-3.5 shrink-0 text-muted-foreground" />
+                                  <label className="w-16 shrink-0 text-[11px] font-medium text-muted-foreground">
+                                    Agendada
+                                  </label>
+                                  <Input
+                                    type="date"
+                                    value={c.vistoria_agendada_em ?? ""}
+                                    onChange={(e) =>
+                                      salvarDataVistoria(c.id, "vistoria_agendada_em", e.target.value)
+                                    }
+                                    className="h-7 flex-1 px-2 text-xs"
+                                  />
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <CalendarCheck className="size-3.5 shrink-0 text-primary" />
+                                  <label className="w-16 shrink-0 text-[11px] font-medium text-muted-foreground">
+                                    Concluída
+                                  </label>
+                                  <Input
+                                    type="date"
+                                    value={c.vistoria_concluida_em ?? ""}
+                                    onChange={(e) =>
+                                      salvarDataVistoria(c.id, "vistoria_concluida_em", e.target.value)
+                                    }
+                                    className="h-7 flex-1 px-2 text-xs"
+                                  />
+                                </div>
                               </div>
                             )}
                             {stage.codigo === "contrato_emitido" && (
