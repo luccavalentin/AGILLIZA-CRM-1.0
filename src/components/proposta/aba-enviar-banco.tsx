@@ -261,17 +261,28 @@ export function AbaEnviarBanco({
       </div>
 
       {/* Ação de envio */}
-      <Card className="border-primary/20">
-        <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="text-sm">
-            <p className="font-medium text-foreground">Enviar documentos ao banco</p>
-            <p className="text-muted-foreground">
-              {totalPdfs > 0
-                ? `${totalPdfs} documento(s) em PDF prontos para envio.`
-                : "Nenhum documento em PDF disponível ainda."}
-            </p>
+      <Card className="overflow-hidden border-primary/20 bg-gradient-to-br from-primary/[0.07] via-card to-card shadow-sm">
+        <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/15">
+              <Send className="h-5 w-5" />
+            </span>
+            <div className="text-sm">
+              <p className="font-semibold tracking-tight text-foreground">
+                Enviar documentos ao banco
+              </p>
+              <p className="text-muted-foreground">
+                {totalPdfs > 0
+                  ? `${totalPdfs} documento(s) em PDF prontos para envio.`
+                  : "Nenhum documento em PDF disponível ainda."}
+              </p>
+            </div>
           </div>
-          <Button onClick={enviarAoBanco} disabled={enviando || totalPdfs === 0} className="gap-2">
+          <Button
+            onClick={enviarAoBanco}
+            disabled={enviando || totalPdfs === 0}
+            className="h-11 w-full gap-2 rounded-xl px-6 font-semibold shadow-md shadow-primary/20 transition-all hover:shadow-lg hover:shadow-primary/25 active:scale-[0.98] disabled:shadow-none sm:w-auto"
+          >
             {enviando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             {enviando ? "Enviando…" : "Enviar ao banco"}
           </Button>
@@ -315,20 +326,24 @@ export function AbaEnviarBanco({
         porGrupo.map((g) => {
           const Icone = g.icone;
           return (
-            <Card key={g.chave}>
+            <Card key={g.chave} className="overflow-hidden transition-shadow hover:shadow-sm">
               <CardContent className="p-4">
                 <div className="mb-3 flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2">
-                    <Icone className="h-4 w-4 text-primary" />
-                    <h3 className="text-sm font-semibold text-foreground">{g.titulo}</h3>
-                    <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-2.5">
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary ring-1 ring-primary/10">
+                      <Icone className="h-4 w-4" />
+                    </span>
+                    <h3 className="text-sm font-semibold tracking-tight text-foreground">
+                      {g.titulo}
+                    </h3>
+                    <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
                       {g.itens.length}
                     </span>
                   </div>
                   <Button
                     size="sm"
                     variant="outline"
-                    className="gap-1.5"
+                    className="gap-1.5 rounded-lg"
                     onClick={() => abrirUpload(g.categoriaUpload)}
                   >
                     <Upload className="h-3.5 w-3.5" /> Enviar
