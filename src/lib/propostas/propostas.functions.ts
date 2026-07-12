@@ -26,6 +26,9 @@ export interface PropostaListaItem {
   produto: string | null;
   valor_financiamento: number | null;
   status: string;
+  detalhe_status_atual: string | null;
+  status_atualizado_em: string | null;
+  ultima_sincronizacao_em: string | null;
   created_at: string;
   responsavel_id: string | null;
   nome_responsavel: string | null;
