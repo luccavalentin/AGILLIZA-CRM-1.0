@@ -101,6 +101,7 @@ import {
   participanteCompleto,
   type ParticipanteForm,
 } from "@/components/proposta/participante-form";
+import { ClienteSecao } from "@/components/proposta/cliente-secoes";
 
 type SituacaoBanco = (typeof SITUACOES_BANCO)[number];
 
