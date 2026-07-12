@@ -75,7 +75,19 @@ function Pagina() {
         icon={<Plug className="h-5 w-5" />}
         titulo="Integrações"
         descricao="Credenciais bancárias, APIs e monitor de conectividade."
+        acoes={
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={sincronizar.isPending}
+            onClick={() => sincronizar.mutate()}
+          >
+            <RefreshCw className={`mr-2 size-4 ${sincronizar.isPending ? "animate-spin" : ""}`} />
+            Sincronizar domínios
+          </Button>
+        }
       />
+
 
       <Tabs defaultValue="bancos">
         <TabsList>
