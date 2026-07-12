@@ -1741,18 +1741,24 @@ function TabFup({ propostaId, followups }: { propostaId: string; followups: any[
           {followups.length === 0 && (
             <p className="text-sm text-muted-foreground">Nenhum comentário.</p>
           )}
-          {followups.map((f) => (
-            <div key={f.id} className="rounded-md border border-border p-3">
-              <div className="flex items-center justify-between">
-                <ToneBadge tone={f.tipo === "externo" ? "info" : "muted"}>{f.tipo}</ToneBadge>
-                <span className="text-xs text-muted-foreground">
-                  {new Date(f.created_at).toLocaleString("pt-BR")}
-                </span>
+          {followups.map((f) => {
+            const rotulo =
+              f.tipo === "banco" ? "Banco" : f.tipo === "externo" ? "Externo" : "Interno";
+            const tone =
+              f.tipo === "banco" ? "success" : f.tipo === "externo" ? "info" : "muted";
+            return (
+              <div key={f.id} className="rounded-md border border-border p-3">
+                <div className="flex items-center justify-between">
+                  <ToneBadge tone={tone as any}>{rotulo}</ToneBadge>
+                  <span className="text-xs text-muted-foreground">
+                    {new Date(f.created_at).toLocaleString("pt-BR")}
+                  </span>
+                </div>
+                {f.titulo && <p className="mt-2 font-medium text-foreground">{f.titulo}</p>}
+                <p className="text-sm text-muted-foreground">{f.comentario}</p>
               </div>
-              {f.titulo && <p className="mt-2 font-medium text-foreground">{f.titulo}</p>}
-              <p className="text-sm text-muted-foreground">{f.comentario}</p>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>
