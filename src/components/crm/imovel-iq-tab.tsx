@@ -168,7 +168,22 @@ export function ImovelTab({ clienteId, cliente }: { clienteId: string; cliente: 
         </div>
         <div>
           <Label>CEP</Label>
-          <Input value={f.imovel_cep} onChange={(e) => set("imovel_cep", e.target.value)} />
+          <div className="relative">
+            <Input
+              value={f.imovel_cep}
+              inputMode="numeric"
+              placeholder="00000-000"
+              onChange={(e) => {
+                const m = mascararCep(e.target.value);
+                set("imovel_cep", m);
+                if (cepValido(m)) buscarCepImovel(m);
+              }}
+              onBlur={(e) => buscarCepImovel(e.target.value)}
+            />
+            {buscandoCep && (
+              <Loader2 className="absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+            )}
+          </div>
         </div>
         <div>
           <Label>UF</Label>
