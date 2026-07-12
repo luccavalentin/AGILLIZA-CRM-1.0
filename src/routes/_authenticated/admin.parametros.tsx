@@ -391,7 +391,14 @@ function Pagina() {
               id="cep"
               label="CEP"
               value={form.cep ?? ""}
-              onChange={set("cep")}
+              onChange={(v) => {
+                const m = mascararCep(v);
+                set("cep")(m);
+                if (cepValido(m)) buscarCepEmpresa(m);
+              }}
+              onBlur={buscarCepEmpresa}
+              busy={buscandoCep}
+              inputMode="numeric"
               className="sm:col-span-2"
               placeholder="00000-000"
             />
