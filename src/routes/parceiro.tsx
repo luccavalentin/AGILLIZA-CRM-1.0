@@ -12,7 +12,17 @@ import { ERRO_CREDENCIAIS, ehPapelParceiro } from "@/lib/auth-routing";
 
 export const Route = createFileRoute("/parceiro")({
   head: () => ({
-    meta: [{ title: "Portal do Parceiro — Agilliza" }, { name: "robots", content: "noindex" }],
+    meta: [
+      { title: "Portal do Parceiro — Agilliza" },
+      { name: "robots", content: "noindex" },
+      { name: "apple-mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
+      { name: "apple-mobile-web-app-title", content: "Agilliza" },
+    ],
+    links: [
+      { rel: "manifest", href: "/manifest.webmanifest" },
+      { rel: "apple-touch-icon", href: "/icons/app/apple-touch-icon.png" },
+    ],
   }),
   component: PortalParceiro,
 });

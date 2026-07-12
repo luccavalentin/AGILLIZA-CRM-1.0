@@ -6,7 +6,17 @@ import { Card } from "@/components/ui/card";
 
 export const Route = createFileRoute("/")({
   head: () => ({
-    meta: [{ title: "Agilliza — Escolha seu acesso" }, { name: "robots", content: "noindex" }],
+    meta: [
+      { title: "Agilliza — Escolha seu acesso" },
+      { name: "robots", content: "noindex" },
+      { name: "apple-mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
+      { name: "apple-mobile-web-app-title", content: "Agilliza" },
+    ],
+    links: [
+      { rel: "manifest", href: "/manifest.webmanifest" },
+      { rel: "apple-touch-icon", href: "/icons/app/apple-touch-icon.png" },
+    ],
   }),
   component: Landing,
 });

@@ -17,6 +17,17 @@ import { listarPastasRaiz } from "@/lib/documentos/arquivos.functions";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
+  head: () => ({
+    meta: [
+      { name: "apple-mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
+      { name: "apple-mobile-web-app-title", content: "Agilliza" },
+    ],
+    links: [
+      { rel: "manifest", href: "/manifest.webmanifest" },
+      { rel: "apple-touch-icon", href: "/icons/app/apple-touch-icon.png" },
+    ],
+  }),
   beforeLoad: async () => {
     // getSession() lê a sessão localmente (sem round-trip de rede a cada
     // navegação), evitando lag ao trocar de tela. getUser() só valida no
