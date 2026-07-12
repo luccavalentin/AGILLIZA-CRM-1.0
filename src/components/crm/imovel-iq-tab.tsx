@@ -81,7 +81,7 @@ export function ImovelTab({ clienteId, cliente }: { clienteId: string; cliente: 
   return (
     <div className="rounded-lg border border-border bg-card p-5 space-y-4">
       <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-        Dados do imóvel (exigidos pela integração bancária)
+        Dados do imóvel
       </p>
       <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
         <div>
