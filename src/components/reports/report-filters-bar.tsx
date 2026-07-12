@@ -121,13 +121,13 @@ export function ReportFiltersBar({
         </Select>
 
         {/* Intervalo de datas sempre disponível; ao editar, o período vira personalizado. */}
-        <div className="flex items-center gap-1">
+        <div className="flex flex-wrap items-center gap-1">
           <Input
             type="date"
             aria-label="Data inicial"
             value={filtros.de ?? ""}
             onChange={(e) => set({ periodo: "custom", de: e.target.value || undefined })}
-            className="h-9 w-40"
+            className="h-9 w-[calc(50%-1.25rem)] min-w-[140px] sm:w-40"
           />
           <span className="text-xs text-muted-foreground">até</span>
           <Input
@@ -135,7 +135,7 @@ export function ReportFiltersBar({
             aria-label="Data final"
             value={filtros.ate ?? ""}
             onChange={(e) => set({ periodo: "custom", ate: e.target.value || undefined })}
-            className="h-9 w-40"
+            className="h-9 w-[calc(50%-1.25rem)] min-w-[140px] sm:w-40"
           />
         </div>
 

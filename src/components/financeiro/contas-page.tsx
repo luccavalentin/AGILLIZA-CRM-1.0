@@ -102,22 +102,24 @@ export function ContasPage({ tipo }: { tipo: ContaTipo }) {
   });
 
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-6 p-4 md:p-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-semibold text-foreground">{titulo}</h1>
+    <div className="mx-auto w-full max-w-6xl space-y-6 p-3 sm:p-4 md:p-6">
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 sm:flex sm:flex-wrap sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="truncate text-xl font-semibold text-foreground">{titulo}</h1>
           <p className="text-sm text-muted-foreground">
             {tipo === "pagar"
               ? "Fornecedores, parceiros, impostos e despesas."
               : "Comissões, taxas e outros recebimentos."}
           </p>
         </div>
-        <NovaContaDialog tipo={tipo} />
+        <div className="shrink-0">
+          <NovaContaDialog tipo={tipo} />
+        </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
         <Select value={status || "all"} onValueChange={(v) => setStatus(v === "all" ? "" : v)}>
-          <SelectTrigger className="w-40">
+          <SelectTrigger className="w-full sm:w-40">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
@@ -133,7 +135,7 @@ export function ContasPage({ tipo }: { tipo: ContaTipo }) {
           value={categoriaId || "all"}
           onValueChange={(v) => setCategoriaId(v === "all" ? "" : v)}
         >
-          <SelectTrigger className="w-44">
+          <SelectTrigger className="w-full sm:w-44">
             <SelectValue placeholder="Categoria" />
           </SelectTrigger>
           <SelectContent>
@@ -145,12 +147,12 @@ export function ContasPage({ tipo }: { tipo: ContaTipo }) {
             ))}
           </SelectContent>
         </Select>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <label className="flex items-center gap-1 text-xs text-muted-foreground">
             Venc. de
             <Input
               type="date"
-              className="w-40"
+              className="w-36 sm:w-40"
               value={de}
               onChange={(e) => setDe(e.target.value)}
             />
@@ -159,21 +161,21 @@ export function ContasPage({ tipo }: { tipo: ContaTipo }) {
             até
             <Input
               type="date"
-              className="w-40"
+              className="w-36 sm:w-40"
               value={ate}
               onChange={(e) => setAte(e.target.value)}
             />
           </label>
         </div>
         <form
-          className="flex items-center gap-2"
+          className="flex w-full flex-wrap items-center gap-2 sm:w-auto"
           onSubmit={(e) => {
             e.preventDefault();
             setBusca(contraparte);
           }}
         >
           <Input
-            className="w-56"
+            className="w-full sm:w-56"
             placeholder={tipo === "pagar" ? "Fornecedor" : "Pagador"}
             value={contraparte}
             onChange={(e) => setContraparte(e.target.value)}

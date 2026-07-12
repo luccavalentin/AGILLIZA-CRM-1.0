@@ -21,7 +21,8 @@ export function GradeCalendario({
   const celulas = montarCelulas(ref);
 
   return (
-    <div className="grid grid-cols-7 gap-px overflow-hidden rounded-2xl border border-border/70 bg-border shadow-card">
+    <div className="overflow-x-auto rounded-2xl border border-border/70 bg-border shadow-card">
+      <div className="grid min-w-[560px] grid-cols-7 gap-px overflow-hidden">
       {DIAS.map((d) => (
         <div
           key={d}
@@ -45,6 +46,7 @@ export function GradeCalendario({
           />
         );
       })}
+      </div>
     </div>
   );
 }

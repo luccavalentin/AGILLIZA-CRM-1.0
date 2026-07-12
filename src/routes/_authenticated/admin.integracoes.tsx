@@ -81,7 +81,7 @@ function Pagina() {
         </TabsList>
 
         <TabsContent value="bancos" className="mt-4">
-          <div className="rounded-lg border border-border">
+          <div className="overflow-x-auto rounded-lg border border-border">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -152,7 +152,7 @@ function Pagina() {
         </TabsContent>
 
         <TabsContent value="apis" className="mt-4">
-          <div className="rounded-lg border border-border">
+          <div className="overflow-x-auto rounded-lg border border-border">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -216,7 +216,7 @@ function Pagina() {
         </TabsContent>
 
         <TabsContent value="health" className="mt-4">
-          <div className="rounded-lg border border-border">
+          <div className="overflow-x-auto rounded-lg border border-border">
             <Table>
               <TableHeader>
                 <TableRow>

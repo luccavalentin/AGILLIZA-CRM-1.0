@@ -169,7 +169,7 @@ export function SecaoRegrasComissao() {
 
   return (
     <Card>
-      <CardHeader className="flex-row items-center justify-between space-y-0">
+      <CardHeader className="flex-row flex-wrap items-center justify-between gap-2 space-y-0">
         <CardTitle className="text-base">Regras de comissão</CardTitle>
         <Button size="sm" onClick={novo}>
           <Plus className="mr-1 h-4 w-4" /> Nova regra
@@ -253,12 +253,12 @@ export function SecaoRegrasComissao() {
       </CardContent>
 
       <Dialog open={aberto} onOpenChange={setAberto}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="w-[calc(100%-2rem)] p-4 sm:max-w-lg md:p-6">
           <DialogHeader>
             <DialogTitle>{form.id ? "Editar" : "Nova"} regra de comissão</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label>Banco</Label>
                 <Select value={form.banco_codigo || TODOS_BANCOS} onValueChange={selecionarBanco}>
@@ -294,7 +294,7 @@ export function SecaoRegrasComissao() {
                 </Select>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label>Faixa mínima (R$)</Label>
                 <Input
@@ -322,7 +322,7 @@ export function SecaoRegrasComissao() {
                 />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label>Tipo</Label>
                 <Select
@@ -349,7 +349,7 @@ export function SecaoRegrasComissao() {
                 />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label>% Parceiro</Label>
                 <Input
@@ -379,7 +379,7 @@ export function SecaoRegrasComissao() {
                 />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label>Vigência início</Label>
                 <Input

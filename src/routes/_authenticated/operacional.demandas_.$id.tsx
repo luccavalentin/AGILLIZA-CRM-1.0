@@ -175,13 +175,13 @@ function Pagina() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 p-4 md:p-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <Button asChild variant="ghost" size="sm">
           <Link to="/operacional/demandas">
             <ArrowLeft className="mr-1 h-4 w-4" /> Demandas
           </Link>
         </Button>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <TransferirDialog demandaId={id} onTransferida={invalidar} />
           <Select
             value={d.status}
@@ -435,7 +435,7 @@ function Pagina() {
 
       {/* Anexos */}
       <div className="space-y-3">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-sm font-semibold text-foreground">Anexos</h2>
           <input ref={fileRef} type="file" className="hidden" onChange={handleUpload} />
           <Button
@@ -454,11 +454,11 @@ function Pagina() {
             (data?.anexos ?? []).map((a: any) => (
               <div
                 key={a.id}
-                className="flex items-center gap-2 rounded-md border border-border bg-card p-2 text-sm"
+                className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-card p-2 text-sm"
               >
                 <Paperclip className="h-4 w-4 shrink-0 text-muted-foreground" />
-                <span className="flex-1 truncate text-foreground">{a.nome}</span>
-                <span className="text-xs text-muted-foreground">{a.nome_autor ?? "—"}</span>
+                <span className="min-w-0 flex-1 truncate text-foreground">{a.nome}</span>
+                <span className="shrink-0 text-xs text-muted-foreground">{a.nome_autor ?? "—"}</span>
                 <Button
                   variant="ghost"
                   size="icon"

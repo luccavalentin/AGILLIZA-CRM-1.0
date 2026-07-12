@@ -46,7 +46,7 @@ export function EstornarDialog({ tipo, acao, contaId, open, onOpenChange }: Prop
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="w-[calc(100%-2rem)] p-4 sm:max-w-md md:p-6">
         <DialogHeader>
           <DialogTitle>{acao === "estornar" ? "Estornar conta" : "Cancelar conta"}</DialogTitle>
         </DialogHeader>

@@ -11,7 +11,7 @@ interface NavegacaoCalendarioProps {
 /** Cabeçalho de navegação: seletor de mês/ano + botões anterior/hoje/próximo. */
 export function NavegacaoCalendario({ ref, hoje, onChange }: NavegacaoCalendarioProps) {
   return (
-    <div className="flex items-center justify-between">
+    <div className="flex flex-wrap items-center justify-between gap-2">
       <SeletorMesAno ref={ref} onChange={onChange} />
       <div className="flex items-center gap-1">
         <Button

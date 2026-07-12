@@ -149,11 +149,11 @@ function CampoLinha({
 }) {
   if (campo.tipo === "boolean") {
     return (
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <Label className="text-foreground">{campo.label}</Label>
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <Label className="truncate text-foreground">{campo.label}</Label>
           {campo.descricao && (
-            <p className="text-xs text-muted-foreground">{campo.descricao}</p>
+            <p className="truncate text-xs text-muted-foreground">{campo.descricao}</p>
           )}
         </div>
         <Switch

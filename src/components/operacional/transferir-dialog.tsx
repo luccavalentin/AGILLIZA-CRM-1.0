@@ -66,7 +66,7 @@ export function TransferirDialog({
           Transferir
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="w-[calc(100%-2rem)] sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Transferir demanda</DialogTitle>
         </DialogHeader>

@@ -96,7 +96,7 @@ export function LinksView() {
         }
       />
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <OpStat
           label="Links cadastrados"
           value={totalLinks}
@@ -279,7 +279,7 @@ function LinkDialog({
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent>
+      <DialogContent className="w-[calc(100%-2rem)] max-w-lg">
         <DialogHeader>
           <DialogTitle>{link ? "Editar link" : "Novo link"}</DialogTitle>
           <DialogDescription>

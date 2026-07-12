@@ -60,9 +60,9 @@ function Pagina() {
   });
 
   return (
-    <div className="mx-auto w-full max-w-[1600px] space-y-6 p-4 md:p-6">
-      <div>
-        <h1 className="text-xl font-semibold text-foreground">Comissões</h1>
+    <div className="mx-auto w-full max-w-[1600px] space-y-6 p-3 sm:p-4 md:p-6">
+      <div className="min-w-0">
+        <h1 className="truncate text-xl font-semibold text-foreground">Comissões</h1>
         <p className="text-sm text-muted-foreground">
           Comissões calculadas a partir de contratos emitidos.
         </p>
@@ -81,11 +81,11 @@ function Pagina() {
       <div className="flex flex-wrap items-center gap-2">
         <label className="flex items-center gap-1 text-xs text-muted-foreground">
           De
-          <Input type="date" className="w-40" value={de} onChange={(e) => setDe(e.target.value)} />
+          <Input type="date" className="w-36 sm:w-40" value={de} onChange={(e) => setDe(e.target.value)} />
         </label>
         <label className="flex items-center gap-1 text-xs text-muted-foreground">
           até
-          <Input type="date" className="w-40" value={ate} onChange={(e) => setAte(e.target.value)} />
+          <Input type="date" className="w-36 sm:w-40" value={ate} onChange={(e) => setAte(e.target.value)} />
         </label>
         {(de || ate) && (
           <Button
