@@ -681,11 +681,8 @@ function TabResumo({
   const podeEnviarBanco =
     Boolean(proposta.homefin_id_oportunidade) &&
     !["cancelada", "registrado", "credito_recusado", "contrato_emitido"].includes(status);
-  const campos: [string, string][] = [
-    ["Operação", proposta.produto ?? "—"],
-    ["Nº interno", proposta.numero_proposta],
-    ["Nº da proposta no banco", proposta.numero_proposta_banco ?? "—"],
-  ];
+
+
 
   async function selecionar(pbId: string) {
     try {
