@@ -4,21 +4,15 @@ import type { PropostaStatus } from "@/lib/propostas/state-machine";
  * Etapas fixas do stepper da ficha da proposta (ciclo da oportunidade).
  * `auto` = etapa que avança automaticamente pela integração bancária (API).
  * As demais são concluídas/movidas manualmente pelo usuário.
- * `numero` = rótulo exibido (segue a numeração de negócio, que pula o 9).
  */
 export const ETAPAS_STEPPER = [
   { codigo: "simulacao", numero: 1, label: "Simulação", auto: false },
   { codigo: "credito_enviado", numero: 2, label: "Enviado p/ aprovação de crédito", auto: true },
   { codigo: "credito_aprovado", numero: 3, label: "Crédito aprovado", auto: true },
-  { codigo: "checklist", numero: 4, label: "Checklist de documentação", auto: false },
-  { codigo: "cadastro_complementar", numero: 5, label: "Cadastro complementar", auto: false },
-  { codigo: "dossie", numero: 6, label: "Dossiê de documentação", auto: false },
-  { codigo: "formularios", numero: 7, label: "Formulários", auto: false },
-  { codigo: "envio_docs", numero: 8, label: "Envio de docs. ao banco", auto: false },
-  { codigo: "vistoria_agenda", numero: 10, label: "Vistoria — agendamento", auto: false },
-  { codigo: "vistoria_ok", numero: 11, label: "Vistoria concluída", auto: false },
-  { codigo: "emissao_contrato", numero: 12, label: "Emissão de contrato", auto: false },
-  { codigo: "contrato", numero: 13, label: "Contrato emitido", auto: false },
+  { codigo: "coleta_documentos", numero: 4, label: "Coleta de documentos", auto: false },
+  { codigo: "engenharia_vistoria", numero: 5, label: "Engenharia / vistoria", auto: false },
+  { codigo: "analise_juridica", numero: 6, label: "Análise jurídica", auto: false },
+  { codigo: "contrato", numero: 7, label: "Contrato emitido", auto: false },
 ] as const;
 
 export type StepperCodigo = (typeof ETAPAS_STEPPER)[number]["codigo"];
@@ -32,21 +26,22 @@ const MAPA: Record<PropostaStatus, StepperCodigo> = {
   em_analise_credito: "credito_enviado",
   credito_aprovado: "credito_aprovado",
   credito_recusado: "credito_enviado",
-  checklist_documentacao: "checklist",
-  cadastro_complementar: "cadastro_complementar",
-  dossie_completo: "dossie",
-  formularios: "formularios",
-  envio_documentos_banco: "envio_docs",
-  vistoria_agendamento: "vistoria_agenda",
-  vistoria_concluida: "vistoria_ok",
-  emissao_contrato: "emissao_contrato",
+  aguardando_documentos: "coleta_documentos",
+  engenharia_vistoria: "engenharia_vistoria",
+  analise_juridica: "analise_juridica",
   contrato_emitido: "contrato",
-  // Legados.
-  aguardando_documentos: "checklist",
-  engenharia_vistoria: "vistoria_agenda",
-  analise_juridica: "emissao_contrato",
+  // Legados granulares -> mapeiam para as macro-etapas do fluxo novo.
+  checklist_documentacao: "coleta_documentos",
+  cadastro_complementar: "coleta_documentos",
+  dossie_completo: "coleta_documentos",
+  formularios: "coleta_documentos",
+  envio_documentos_banco: "coleta_documentos",
+  vistoria_agendamento: "engenharia_vistoria",
+  vistoria_concluida: "engenharia_vistoria",
+  emissao_contrato: "analise_juridica",
   registrado: "contrato",
 };
+
 
 export function etapaDoStatus(status: string): StepperCodigo {
   return MAPA[status as PropostaStatus] ?? "simulacao";

@@ -6,15 +6,15 @@
  *  1  Simulação                          -> rascunho / erro_envio
  *  2  Enviado para aprovação de crédito  -> enviada_banco / em_analise_credito   (AUTOMÁTICO via API)
  *  3  Crédito aprovado (banco)           -> credito_aprovado                      (AUTOMÁTICO via retorno da API)
- *  4  Checklist de documentação          -> checklist_documentacao                (manual)
- *  5  Cadastro complementar              -> cadastro_complementar                 (manual)
- *  6  Dossiê de documentação completa    -> dossie_completo                       (manual)
- *  7  Formulários                        -> formularios                          (manual)
- *  8  Envio de documentos ao banco       -> envio_documentos_banco               (manual)
- *  10 Vistoria — agendamento             -> vistoria_agendamento                 (manual)
- *  11 Vistoria concluída                 -> vistoria_concluida                   (manual)
- *  12 Emissão de contrato                -> emissao_contrato                     (manual)
- *  13 Contrato emitido                   -> contrato_emitido                     (manual)
+ *  4  Coleta de documentos               -> aguardando_documentos                 (manual)
+ *  5  Engenharia / vistoria              -> engenharia_vistoria                   (manual)
+ *  6  Análise jurídica                   -> analise_juridica                      (manual)
+ *  7  Contrato emitido                   -> contrato_emitido                      (manual)
+ *
+ * Status granulares antigos (checklist_documentacao, cadastro_complementar,
+ * dossie_completo, formularios, envio_documentos_banco, vistoria_agendamento,
+ * vistoria_concluida, emissao_contrato, registrado) foram descontinuados e são
+ * mantidos apenas como LEGADOS: encaminham para o fluxo novo, sem aparecer na UI.
  */
 export type PropostaStatus =
   | "rascunho"
@@ -45,22 +45,22 @@ export const TRANSICOES: Record<PropostaStatus, PropostaStatus[]> = {
   erro_envio: ["enviada_banco", "cancelada"],
   enviada_banco: ["em_analise_credito", "credito_aprovado", "credito_recusado", "erro_envio", "cancelada"],
   em_analise_credito: ["credito_aprovado", "credito_recusado", "cancelada"],
-  credito_aprovado: ["checklist_documentacao", "cancelada"],
-  checklist_documentacao: ["cadastro_complementar", "cancelada"],
-  cadastro_complementar: ["dossie_completo", "cancelada"],
-  dossie_completo: ["formularios", "cancelada"],
-  formularios: ["envio_documentos_banco", "cancelada"],
-  envio_documentos_banco: ["vistoria_agendamento", "cancelada"],
-  vistoria_agendamento: ["vistoria_concluida", "cancelada"],
-  vistoria_concluida: ["emissao_contrato", "cancelada"],
-  emissao_contrato: ["contrato_emitido", "cancelada"],
+  credito_aprovado: ["aguardando_documentos", "cancelada"],
+  aguardando_documentos: ["engenharia_vistoria", "cancelada"],
+  engenharia_vistoria: ["analise_juridica", "cancelada"],
+  analise_juridica: ["contrato_emitido", "cancelada"],
   contrato_emitido: [],
   credito_recusado: [],
   cancelada: [],
-  // Legados -> encaminham para o fluxo novo.
-  aguardando_documentos: ["checklist_documentacao", "cancelada"],
-  engenharia_vistoria: ["vistoria_concluida", "cancelada"],
-  analise_juridica: ["emissao_contrato", "cancelada"],
+  // Legados granulares -> encaminham para o fluxo novo simplificado.
+  checklist_documentacao: ["aguardando_documentos", "cancelada"],
+  cadastro_complementar: ["aguardando_documentos", "cancelada"],
+  dossie_completo: ["aguardando_documentos", "cancelada"],
+  formularios: ["aguardando_documentos", "cancelada"],
+  envio_documentos_banco: ["engenharia_vistoria", "cancelada"],
+  vistoria_agendamento: ["analise_juridica", "cancelada"],
+  vistoria_concluida: ["analise_juridica", "cancelada"],
+  emissao_contrato: ["contrato_emitido", "cancelada"],
   registrado: [],
 };
 
@@ -71,14 +71,9 @@ export const ORDEM_STATUS: PropostaStatus[] = [
   "enviada_banco",
   "em_analise_credito",
   "credito_aprovado",
-  "checklist_documentacao",
-  "cadastro_complementar",
-  "dossie_completo",
-  "formularios",
-  "envio_documentos_banco",
-  "vistoria_agendamento",
-  "vistoria_concluida",
-  "emissao_contrato",
+  "aguardando_documentos",
+  "engenharia_vistoria",
+  "analise_juridica",
   "contrato_emitido",
 ];
 
@@ -89,8 +84,6 @@ export function transicaoPermitida(de: PropostaStatus, para: PropostaStatus): bo
 /** Status que ainda aceitam edição dos dados da proposta. */
 export const STATUS_EDITAVEIS: PropostaStatus[] = [
   "rascunho",
-  "checklist_documentacao",
-  "cadastro_complementar",
   "aguardando_documentos",
 ];
 
