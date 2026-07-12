@@ -1065,7 +1065,10 @@ export async function sincronizarPropostaImpl({
     }
   }
 
-  const patch: Record<string, unknown> = { detalhe_status_atual: statusAtividade.detalhe ?? nomeEtapa };
+  const patch: Record<string, unknown> = {
+    detalhe_status_atual: statusAtividade.detalhe ?? nomeEtapa,
+    ultima_sincronizacao_em: new Date().toISOString(),
+  };
 
   // Funil COMPLETO da oportunidade retornado pelo banco (pós-aprovação e demais
   // etapas). Persistido integralmente para exibir o andamento real sem cortar
