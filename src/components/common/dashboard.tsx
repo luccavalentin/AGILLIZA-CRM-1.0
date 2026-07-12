@@ -161,6 +161,7 @@ export function HeroMetric({
   tone = "neutral",
   icon: Icon,
   to,
+  delta,
 }: {
   label: string;
   valor: string;
@@ -168,6 +169,7 @@ export function HeroMetric({
   tone?: Tone;
   icon?: LucideIcon;
   to?: string;
+  delta?: MetricDelta;
 }) {
   const conteudo = (
     <Card
