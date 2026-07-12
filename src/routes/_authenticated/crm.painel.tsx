@@ -737,27 +737,48 @@ function Pagina() {
               </div>
             ) : (
               contratosFiltrados.map((ct) => (
-                <button
+                <div
                   key={ct.cliente_id}
-                  type="button"
-                  onClick={() => {
-                    setArquivoAberto(false);
-                    navigate({ to: "/crm/clientes/$id", params: { id: ct.cliente_id } });
-                  }}
-                  className="group flex w-full items-start gap-3 rounded-lg border border-border bg-background p-3 text-left transition-all hover:border-primary/50 hover:bg-primary/5 hover:shadow-sm disabled:cursor-default disabled:hover:border-border disabled:hover:bg-background"
+                  className="group flex items-start gap-3 rounded-lg border border-border bg-background p-3 transition-all hover:border-primary/50 hover:bg-primary/5 hover:shadow-sm"
                 >
                   <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
                     <FileText className="size-4" />
                   </span>
                   <span className="min-w-0 flex-1 space-y-1">
-                    <span className="block truncate text-sm font-medium text-foreground transition-colors group-hover:text-primary">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setArquivoAberto(false);
+                        navigate({ to: "/crm/clientes/$id", params: { id: ct.cliente_id } });
+                      }}
+                      className="block max-w-full truncate text-left text-sm font-medium text-foreground underline-offset-2 transition-colors hover:text-primary hover:underline"
+                      title="Abrir cadastro do cliente"
+                    >
                       {ct.nome_cliente ?? "Cliente"}
-                    </span>
+                    </button>
                     <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
-                      <span className="inline-flex items-center gap-1 font-mono">
-                        <FileText className="size-3" />
-                        {ct.numero_proposta ?? "—"}
-                      </span>
+                      {ct.proposta_id ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setArquivoAberto(false);
+                            navigate({
+                              to: "/operacional/propostas/$id",
+                              params: { id: ct.proposta_id! },
+                            });
+                          }}
+                          className="inline-flex items-center gap-1 font-mono text-primary underline-offset-2 transition-colors hover:underline"
+                          title="Abrir proposta"
+                        >
+                          <FileText className="size-3" />
+                          {ct.numero_proposta ?? "Ver proposta"}
+                        </button>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 font-mono">
+                          <FileText className="size-3" />
+                          {ct.numero_proposta ?? "—"}
+                        </span>
+                      )}
                       <span className="inline-flex items-center gap-1">
                         <CalendarCheck className="size-3" />
                         {ct.contrato_emitido_em
@@ -765,10 +786,21 @@ function Pagina() {
                           : "—"}
                       </span>
                       {ct.nome_banco && (
-                        <span className="inline-flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setArquivoAberto(false);
+                            navigate({
+                              to: "/operacional/propostas/kanban",
+                              search: { banco: ct.nome_banco! },
+                            });
+                          }}
+                          className="inline-flex items-center gap-1 text-primary underline-offset-2 transition-colors hover:underline"
+                          title="Ver propostas deste banco"
+                        >
                           <Building2 className="size-3" />
                           {ct.nome_banco}
-                        </span>
+                        </button>
                       )}
                     </span>
                   </span>
@@ -777,7 +809,7 @@ function Pagina() {
                       {`R$ ${Number(ct.valor_financiamento).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`}
                     </span>
                   )}
-                </button>
+                </div>
               ))
             )}
           </div>
