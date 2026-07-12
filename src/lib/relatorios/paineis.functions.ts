@@ -662,24 +662,28 @@ export const getPanelDados = createServerFn({ method: "POST" })
           valor: int(simRows.length),
           hint: `${int(simConcluidas)} concluídas · ${brlCompacto(volumeSimulado)}`,
           tone: "neutral",
+          delta: mkDelta(simRows.length, ant.simCount),
         },
         {
           label: "Propostas ativas",
           valor: int(enviadas.length),
           hint: `${int(emAnalise)} em análise`,
           tone: "brand",
+          delta: mkDelta(enviadas.length, ant.enviadas),
         },
         {
           label: "Taxa de aprovação",
           valor: pct(taxa),
           hint: `${aprovadas} aprovadas · ${recusadas} recusadas`,
           tone: aprovadas ? "success" : "neutral",
+          delta: mkDelta(taxa, ant.taxa),
         },
         {
           label: "Contratos emitidos",
           valor: int(contratos),
           hint: `${brlCompacto(volumeContratos)} · ticket ${brlCompacto(ticket)}`,
           tone: "success",
+          delta: mkDelta(contratos, ant.contratos),
         },
       ],
       minis: [
