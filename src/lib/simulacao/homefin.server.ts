@@ -432,19 +432,31 @@ export async function sincronizarDominiosIntegracao(): Promise<ResultadoSincroni
   let operacoesSync = 0;
   for (const o of operacoesApi) {
     if (o.idOperacao == null) continue;
-    const nome = (o.nomeOperacao ?? "").trim();
-    const { error } = await supabaseAdmin.from("homefin_operacoes").upsert(
-      {
+    const nome = (o.nomeOperacao ?? "").trim() || `Operação ${o.idOperacao}`;
+    // Atualiza os já existentes preservando produto_sistema; insere os novos.
+    const { data: existente } = await supabaseAdmin
+      .from("homefin_operacoes")
+      .select("id")
+      .eq("id_operacao", o.idOperacao)
+      .maybeSingle();
+    let error;
+    if (existente) {
+      ({ error } = await supabaseAdmin
+        .from("homefin_operacoes")
+        .update({ nome_operacao: nome, ativo: true, updated_at: new Date().toISOString() })
+        .eq("id_operacao", o.idOperacao));
+    } else {
+      ({ error } = await supabaseAdmin.from("homefin_operacoes").insert({
         id_operacao: o.idOperacao,
-        nome_operacao: nome || `Operação ${o.idOperacao}`,
+        nome_operacao: nome,
+        produto_sistema: "PRICE",
         ativo: true,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "id_operacao" },
-    );
+      }));
+    }
     if (!error) operacoesSync++;
-    else console.error("[integracao] upsert operação falhou", error.message);
+    else console.error("[integracao] sync operação falhou", error.message);
   }
+
 
   return { bancos: bancosSync, operacoes: operacoesSync };
 }
