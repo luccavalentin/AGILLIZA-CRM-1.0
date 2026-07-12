@@ -220,6 +220,14 @@ function AuthPage() {
           </form>
         </TabsContent>
       </Tabs>
+      <p className="mt-6 text-center text-xs text-muted-foreground">
+        <Link
+          to="/politica-de-privacidade"
+          className="underline underline-offset-2 hover:text-foreground"
+        >
+          Política de Privacidade
+        </Link>
+      </p>
     </AuthSplitLayout>
   );
 }
