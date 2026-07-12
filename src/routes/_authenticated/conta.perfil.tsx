@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { getMinhaSessao, atualizarMeuPerfil } from "@/lib/session.functions";
+import { getMinhaSessao, atualizarMeuPerfil, atualizarMeuEmail } from "@/lib/session.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminHero } from "@/components/admin/admin-hero";
 import { ChatSoundSetting } from "@/components/shared/chat-sound-setting";
