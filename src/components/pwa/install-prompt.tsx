@@ -108,9 +108,11 @@ export function InstallPrompt() {
     <div className="fixed inset-x-0 bottom-0 z-[60] flex justify-center px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:bottom-4 sm:px-4">
       <div className="w-full max-w-md overflow-hidden rounded-2xl border border-border bg-card shadow-2xl">
         <div className="flex items-start gap-3 p-4">
-          <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-primary">
-            <Logo variant="light" symbolOnly className="h-7 w-7" />
-          </div>
+          <img
+            src="/icons/app/icon-192.png"
+            alt="Agilliza"
+            className="h-12 w-12 shrink-0 rounded-xl"
+          />
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold text-foreground">Instalar o app Agilliza</p>
             <p className="mt-0.5 text-xs text-muted-foreground">
