@@ -134,36 +134,51 @@ function Pagina() {
         }
       />
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-6">
         <OpStat
           label="Total"
           value={stats.total}
+          hint={`${stats.abertas} em aberto`}
           icon={<Inbox className="h-5 w-5" />}
-          tint="bg-primary/10 text-primary"
         />
         <OpStat
           label="Em andamento"
           value={stats.andamento}
           icon={<Loader2 className="h-5 w-5" />}
-          tint="bg-warning/15 text-warning-foreground"
           accent="var(--warning)"
+        />
+        <OpStat
+          label="Vencendo em 24h"
+          value={stats.vencendo}
+          hint="Prazo se aproximando"
+          icon={<AlertTriangle className="h-5 w-5" />}
+          accent="var(--warning)"
+          alerta={stats.vencendo > 0}
+        />
+        <OpStat
+          label="Alta prioridade"
+          value={stats.criticas}
+          hint="Em aberto"
+          icon={<Flame className="h-5 w-5" />}
+          accent="var(--primary)"
         />
         <OpStat
           label="Atrasadas"
           value={stats.atrasadas}
+          hint="SLA vencido"
           icon={<Flame className="h-5 w-5" />}
-          tint="bg-destructive/10 text-destructive"
           accent="var(--destructive)"
           alerta={stats.atrasadas > 0}
         />
         <OpStat
-          label="Concluídas"
-          value={stats.concluidas}
+          label="SLA em dia"
+          value={`${stats.slaEmDia}%`}
+          hint={`${stats.concluidas} concluídas`}
           icon={<CheckCircle2 className="h-5 w-5" />}
-          tint="bg-success/10 text-success"
           accent="var(--success)"
         />
       </div>
+
 
       <div className="flex flex-wrap items-center gap-3">
         <Tabs value={escopo} onValueChange={(v) => setEscopo(v as "minhas" | "equipe")}>
