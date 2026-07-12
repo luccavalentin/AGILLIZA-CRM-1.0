@@ -101,15 +101,28 @@ function Pagina() {
 
   const itens = data ?? [];
 
-  const stats = useMemo(
-    () => ({
+  const stats = useMemo(() => {
+    const agora = new Date();
+    const fimHoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate(), 23, 59, 59).getTime();
+    const abertasList = itens.filter(
+      (t) => t.status !== "concluida" && t.status !== "cancelada",
+    );
+    const vencidas = itens.filter((t) => vencida(t.prazo, t.status)).length;
+    const hoje = abertasList.filter(
+      (t) => t.prazo && !vencida(t.prazo, t.status) && new Date(t.prazo).getTime() <= fimHoje,
+    ).length;
+    const concluidas = itens.filter((t) => t.status === "concluida").length;
+    return {
       total: itens.length,
       abertas: itens.filter((t) => t.status === "aberta").length,
       andamento: itens.filter((t) => t.status === "em_andamento").length,
-      concluidas: itens.filter((t) => t.status === "concluida").length,
-    }),
-    [itens],
-  );
+      hoje,
+      vencidas,
+      concluidas,
+      taxaConclusao: itens.length ? Math.round((concluidas / itens.length) * 100) : 0,
+    };
+  }, [itens]);
+
 
   const grupos = useMemo(
     () =>
