@@ -10,7 +10,7 @@ import {
   Trash2,
   Tags,
   Building2,
-  CreditCard,
+  
   Percent,
   TrendingUp,
   TrendingDown,
