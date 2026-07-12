@@ -368,15 +368,34 @@ export function AbaEnviarBanco({
                           />
                           <div className="min-w-0 flex-1">
                             <p className="truncate text-sm text-foreground">{d.nome_arquivo}</p>
-                            <p className="truncate text-xs text-muted-foreground">
-                              {d.tipo_documento}
+                            <p className="flex flex-wrap items-center gap-2 truncate text-xs text-muted-foreground">
+                              <span>{d.tipo_documento}</span>
                               {!pdf && (
-                                <span className="ml-2 rounded bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-medium text-amber-600 dark:text-amber-400">
+                                <span className="rounded bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-medium text-amber-600 dark:text-amber-400">
                                   não é PDF
+                                </span>
+                              )}
+                              {d.situacao_integracao === "enviado" && (
+                                <span className="rounded bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
+                                  enviado ao banco
+                                </span>
+                              )}
+                              {d.situacao_integracao === "erro" && (
+                                <span
+                                  className="rounded bg-destructive/15 px-1.5 py-0.5 text-[10px] font-medium text-destructive"
+                                  title={d.erro_integracao ?? undefined}
+                                >
+                                  falha no envio
+                                </span>
+                              )}
+                              {!d.situacao_integracao && pdf && (
+                                <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                                  aguardando envio
                                 </span>
                               )}
                             </p>
                           </div>
+
                           <div className="flex shrink-0 items-center gap-1">
                             <Button
                               size="icon"
