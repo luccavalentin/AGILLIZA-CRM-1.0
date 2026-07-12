@@ -5,6 +5,7 @@ import {
   Building2,
   Folder,
   FolderOpen,
+  ChevronLeft,
   ChevronRight,
   User,
   Users,
