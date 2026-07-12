@@ -13,12 +13,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Loader2 } from "lucide-react";
 import { salvarImovelIq } from "@/lib/crm/clientes.functions";
 import {
   TIPOS_IMOVEL,
   USOS_IMOVEL,
   SITUACOES_IMOVEL,
 } from "@/lib/simulacao/schemas";
+import { mascararCep, cepValido, consultarCep } from "@/lib/cep";
 
 const UFS = [
   "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS",
