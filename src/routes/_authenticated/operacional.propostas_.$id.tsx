@@ -349,7 +349,7 @@ function Pagina() {
                 : "border-transparent text-muted-foreground hover:text-foreground",
             )}
           >
-            {t}
+            {TAB_LABELS[t] ?? t}
           </button>
         ))}
       </div>
