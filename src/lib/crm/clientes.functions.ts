@@ -1403,6 +1403,7 @@ export interface ContratoEmitido {
   cliente_id: string;
   numero_cliente: string | null;
   nome_cliente: string | null;
+  proposta_id: string | null;
   numero_proposta: string | null;
   nome_banco: string | null;
   valor_financiamento: number | null;
@@ -1477,7 +1478,7 @@ export const listarContratosEmitidos = createServerFn({ method: "GET" })
     const ids = lista.map((c) => c.id);
     const { data: propostas } = await supabase
       .from("propostas")
-      .select("cliente_id, numero_proposta, nome_banco, valor_financiamento, created_at")
+      .select("id, cliente_id, numero_proposta, nome_banco, valor_financiamento, created_at")
       .in("cliente_id", ids)
       .order("created_at", { ascending: false });
     const propostasLista = propostas ?? [];
@@ -1492,6 +1493,7 @@ export const listarContratosEmitidos = createServerFn({ method: "GET" })
         cliente_id: c.id,
         numero_cliente: c.numero_cliente ?? null,
         nome_cliente: c.nome ?? null,
+        proposta_id: p?.id ?? null,
         numero_proposta: p?.numero_proposta ?? null,
         nome_banco: p?.nome_banco ?? null,
         valor_financiamento: p?.valor_financiamento ?? null,
