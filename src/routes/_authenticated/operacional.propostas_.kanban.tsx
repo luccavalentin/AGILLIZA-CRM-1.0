@@ -94,6 +94,20 @@ function intervaloMesAtual(): { inicio: string; fim: string } {
   return { inicio: iso(primeiro), fim: iso(ultimo) };
 }
 
+/** Há quanto tempo a proposta está na etapa atual (ex.: "hoje", "3d", "2sem"). */
+function tempoNaEtapa(iso: string): string {
+  const d = new Date(iso.includes("T") ? iso : iso.replace(" ", "T"));
+  if (isNaN(d.getTime())) return "";
+  const dias = Math.floor((Date.now() - d.getTime()) / 86_400_000);
+  if (dias <= 0) return "hoje";
+  if (dias === 1) return "ontem";
+  if (dias < 14) return `${dias}d`;
+  if (dias < 60) return `${Math.floor(dias / 7)}sem`;
+  return `${Math.floor(dias / 30)}m`;
+}
+
+
+
 function Pagina() {
   const router = useRouter();
   const qc = useQueryClient();
