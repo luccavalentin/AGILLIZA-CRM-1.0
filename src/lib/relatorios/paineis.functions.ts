@@ -198,6 +198,92 @@ async function carregarContratosCliente(
   return { rows, volume, count: rows.length };
 }
 
+/** Calcula o período imediatamente anterior de igual duração. */
+function intervaloAnterior(deISO: string, ateISO: string) {
+  const de = new Date(`${deISO}T00:00:00`);
+  const ate = new Date(`${ateISO}T00:00:00`);
+  const dias = Math.max(0, Math.round((ate.getTime() - de.getTime()) / 86_400_000));
+  const prevAte = new Date(de);
+  prevAte.setDate(prevAte.getDate() - 1);
+  const prevDe = new Date(prevAte);
+  prevDe.setDate(prevDe.getDate() - dias);
+  const iso = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  return { de: iso(prevDe), ate: iso(prevAte) };
+}
+
+interface AnteriorTotais {
+  simCount: number;
+  enviadas: number;
+  aprovadas: number;
+  recusadas: number;
+  contratos: number;
+  volumeContratos: number;
+  volumeSimulado: number;
+  taxa: number;
+}
+
+/** Totais do período anterior equivalente, para calcular tendências (deltas). */
+async function carregarAnterior(
+  supabase: any,
+  escopoEq: (q: any, col: string) => any,
+  deAtual: string,
+  ateAtual: string,
+): Promise<AnteriorTotais> {
+  const { de, ate } = intervaloAnterior(deAtual, ateAtual);
+  const ateFim = `${ate}T23:59:59`;
+  const [sims, props, contratosInfo] = await Promise.all([
+    escopoEq(
+      supabase
+        .from("simulacoes")
+        .select("status,valor_financiamento,created_at")
+        .gte("created_at", de)
+        .lte("created_at", ateFim)
+        .limit(5000),
+      "usuario_responsavel_id",
+    ),
+    escopoEq(
+      supabase
+        .from("propostas")
+        .select("status,created_at")
+        .gte("created_at", de)
+        .lte("created_at", ateFim)
+        .limit(5000),
+      "usuario_responsavel_id",
+    ),
+    carregarContratosCliente(supabase, escopoEq, de, ate),
+  ]);
+  const simRows = (sims.data ?? []) as any[];
+  const propRows = (props.data ?? []) as any[];
+  const enviadas = propRows.filter((p) => p.status !== "rascunho");
+  const aprovadas = enviadas.filter((p) => p.status === "credito_aprovado").length;
+  const recusadas = enviadas.filter((p) => p.status === "credito_recusado").length;
+  const simConcl = simRows.filter((s) =>
+    ["simulada", "parcialmente_simulada", "promovida"].includes(s.status),
+  );
+  return {
+    simCount: simRows.length,
+    enviadas: enviadas.length,
+    aprovadas,
+    recusadas,
+    contratos: contratosInfo.count,
+    volumeContratos: contratosInfo.volume,
+    volumeSimulado: simConcl.reduce((s, r) => s + (r.valor_financiamento ?? 0), 0),
+    taxa: enviadas.length ? (aprovadas / enviadas.length) * 100 : 0,
+  };
+}
+
+/** Constrói o objeto de tendência comparando valor atual vs. anterior. */
+function mkDelta(cur: number, prev: number, bom = true): PanelDelta | undefined {
+  if (!prev && !cur) return undefined;
+  if (!prev) return { pct: 100, dir: cur > 0 ? "up" : "flat", bom };
+  const diff = ((cur - prev) / prev) * 100;
+  const dir = diff > 0.5 ? "up" : diff < -0.5 ? "down" : "flat";
+  return { pct: Math.abs(diff), dir, bom };
+}
+
+
+
 
 export const getPanelDados = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
