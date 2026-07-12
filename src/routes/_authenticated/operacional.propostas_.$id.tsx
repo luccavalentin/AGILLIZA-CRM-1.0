@@ -144,12 +144,14 @@ const TABS = [
   "IQ",
   "IMÓVEL",
   "DOCUMENTOS",
+  "ENVIAR_BANCO",
   "ATIVIDADES",
   "FUP",
 ] as const;
 type Tab = (typeof TABS)[number];
 
 const TAB_LABELS: Partial<Record<Tab, string>> = {
+  ENVIAR_BANCO: "Enviar documentos para o banco",
   FUP: "Follow-up de acompanhamento",
 };
 
