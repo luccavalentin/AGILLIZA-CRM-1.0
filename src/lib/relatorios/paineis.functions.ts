@@ -11,11 +11,19 @@ const schema = z.object({
   ate: z.string().optional(),
 });
 
+export interface PanelDelta {
+  /** Variação percentual absoluta vs. período anterior equivalente. */
+  pct: number;
+  dir: "up" | "down" | "flat";
+  /** Se true, subir é positivo (verde); se false, subir é negativo (vermelho). */
+  bom: boolean;
+}
 export interface PanelMetric {
   label: string;
   valor: string;
   hint?: string;
   tone?: "brand" | "success" | "warning" | "danger" | "neutral";
+  delta?: PanelDelta;
 }
 export interface PanelSerie {
   label: string;
