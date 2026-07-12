@@ -200,38 +200,106 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
     qc.invalidateQueries({ queryKey: ["cliente-doc-pastas", clienteId] });
   }
 
+  /** Envia um único arquivo já dentro de uma pasta. */
+  async function enviarUm(file: File, pastaDestinoId: string, cat: Categoria, tipoDoc: string) {
+    const path = `${clienteId}/${crypto.randomUUID()}-${file.name}`;
+    const { error: upErr } = await supabase.storage.from("cliente-documentos").upload(path, file);
+    if (upErr) throw upErr;
+    await anexar({
+      data: {
+        cliente_id: clienteId,
+        categoria: cat,
+        pasta_id: pastaDestinoId,
+        tipo_documento: tipoDoc,
+        nome_arquivo: file.name,
+        storage_path: path,
+        mime_type: file.type,
+        tamanho_bytes: file.size,
+      },
+    });
+  }
+
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
+    const files = Array.from(e.target.files ?? []);
     e.target.value = "";
-    if (!file || !pasta) return;
-    if (file.size > 10 * 1024 * 1024) return toast.error("Arquivo acima de 10 MB.");
+    if (files.length === 0 || !pasta) return;
+    if (files.some((f) => f.size > 10 * 1024 * 1024))
+      return toast.error("Cada arquivo deve ter no máximo 10 MB.");
     if (!tipo.trim()) return toast.error("Informe o tipo do documento.");
     setEnviando(true);
-    try {
-      const path = `${clienteId}/${crypto.randomUUID()}-${file.name}`;
-      const { error: upErr } = await supabase.storage.from("cliente-documentos").upload(path, file);
-      if (upErr) throw upErr;
-      await anexar({
-        data: {
-          cliente_id: clienteId,
-          categoria,
-          pasta_id: pasta.id,
-          tipo_documento: tipo.trim(),
-          nome_arquivo: file.name,
-          storage_path: path,
-          mime_type: file.type,
-          tamanho_bytes: file.size,
-        },
-      });
-      toast.success("Documento anexado.");
-      setTipo("");
-      recarregar();
-    } catch (err: any) {
-      toast.error(err?.message ?? "Falha no upload.");
-    } finally {
-      setEnviando(false);
+    let ok = 0;
+    let falhas = 0;
+    for (const file of files) {
+      try {
+        await enviarUm(file, pasta.id, categoria, tipo.trim());
+        ok++;
+      } catch {
+        falhas++;
+      }
     }
+    if (falhas > 0) toast.warning(`${ok} enviado(s), ${falhas} com falha.`);
+    else toast.success(`${ok} documento(s) anexado(s).`);
+    setTipo("");
+    recarregar();
+    setEnviando(false);
   }
+
+  /** Garante a cadeia de subpastas a partir de um pai, criando o que faltar. */
+  async function garantirSubpastas(
+    partes: string[],
+    paiInicial: string,
+    cache: Map<string, string>,
+  ): Promise<string> {
+    let pai = paiInicial;
+    let chave = paiInicial;
+    for (const parte of partes) {
+      chave = `${chave}/${parte}`;
+      const existente = cache.get(chave);
+      if (existente) {
+        pai = existente;
+        continue;
+      }
+      const { id } = await criarPasta({
+        data: { cliente_id: clienteId, nome: parte, parent_id: pai },
+      });
+      cache.set(chave, id);
+      pai = id;
+    }
+    return pai;
+  }
+
+  /** Envia uma pasta inteira (com subpastas) para dentro da pasta atual. */
+  async function onFolder(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = "";
+    if (files.length === 0 || !pasta) return;
+    if (files.some((f) => f.size > 10 * 1024 * 1024))
+      return toast.error("Cada arquivo deve ter no máximo 10 MB.");
+    setEnviando(true);
+    const cache = new Map<string, string>();
+    let ok = 0;
+    let falhas = 0;
+    for (const file of files) {
+      try {
+        const rel = (file as any).webkitRelativePath as string | undefined;
+        let destino = pasta.id;
+        if (rel && rel.includes("/")) {
+          const partes = rel.split("/");
+          partes.pop();
+          destino = await garantirSubpastas(partes, pasta.id, cache);
+        }
+        await enviarUm(file, destino, categoria, file.name);
+        ok++;
+      } catch {
+        falhas++;
+      }
+    }
+    if (falhas > 0) toast.warning(`${ok} enviado(s), ${falhas} com falha.`);
+    else toast.success(`Pasta enviada — ${ok} arquivo(s).`);
+    recarregar();
+    setEnviando(false);
+  }
+
 
   async function baixar(storage_path: string, nome: string) {
     try {
