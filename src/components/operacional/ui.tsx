@@ -57,6 +57,7 @@ export function OpStat({
   icon,
   accent = "var(--primary)",
   alerta,
+  hint,
 }: {
   label: string;
   value: number | string;
@@ -65,6 +66,8 @@ export function OpStat({
   /** mantido por compatibilidade; não usado no novo layout sóbrio. */
   tint?: string;
   alerta?: boolean;
+  /** Texto de apoio abaixo do valor (contexto extra). */
+  hint?: string;
 }) {
   return (
     <div
@@ -84,6 +87,7 @@ export function OpStat({
           >
             {value}
           </p>
+          {hint && <p className="mt-1.5 truncate text-[11px] text-muted-foreground">{hint}</p>}
         </div>
         <span className="grid size-8 shrink-0 place-items-center rounded-lg border border-border bg-muted/40 text-muted-foreground">
           {icon}
@@ -92,6 +96,7 @@ export function OpStat({
     </div>
   );
 }
+
 
 /** Chip de prioridade discreto. */
 export function PriorityChip({ prioridade }: { prioridade: Prioridade }) {
