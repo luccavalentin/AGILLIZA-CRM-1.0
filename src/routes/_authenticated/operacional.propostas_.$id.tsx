@@ -399,6 +399,7 @@ function Pagina() {
       {tab === "IQ" && <ClienteSecao clienteId={p.cliente_id} secao="iq" />}
       {tab === "IMÓVEL" && <ClienteSecao clienteId={p.cliente_id} secao="imovel" />}
       {tab === "DOCUMENTOS" && <ClienteSecao clienteId={p.cliente_id} secao="documentos" />}
+      {tab === "ENVIAR_BANCO" && <AbaEnviarBanco clienteId={p.cliente_id} propostaId={id} />}
       {tab === "ATIVIDADES" && <TabAtividades historico={data.historico} />}
       {tab === "FUP" && <TabFup propostaId={id} followups={data.followups} />}
 
