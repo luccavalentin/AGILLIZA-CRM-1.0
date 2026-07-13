@@ -287,6 +287,24 @@ function Pagina() {
     }
   }
 
+  async function adicionarClienteNaEtapa(clienteId: string) {
+    if (!adicionarStage) return;
+    setAdicionando(true);
+    try {
+      await mover({ data: { cliente_id: clienteId, codigo_destino: adicionarStage.codigo } });
+      toast.success(`Cliente adicionado em ${adicionarStage.nome}.`);
+      setAdicionarStage(null);
+      setAdicionarBusca("");
+      qc.invalidateQueries({ queryKey: ["crm-painel"] });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao adicionar o cliente.");
+    } finally {
+      setAdicionando(false);
+    }
+  }
+
+
+
 
 
 
