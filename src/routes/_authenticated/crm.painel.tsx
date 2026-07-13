@@ -764,43 +764,89 @@ function Pagina() {
                         return (
                           <div
                             key={c.id}
-                            className="rounded-lg border border-border bg-background transition-all duration-200 hover:border-primary/50 hover:shadow-md"
+                            draggable
+                            onDragStart={(e) => {
+                              arrastouRef.current = true;
+                              e.dataTransfer.effectAllowed = "move";
+                              e.dataTransfer.setData("text/plain", c.id);
+                              setArrasto({ clienteId: c.id, origem: stage.codigo });
+                            }}
+                            onDragEnd={() => {
+                              setArrasto(null);
+                              setAlvo(null);
+                              setTimeout(() => {
+                                arrastouRef.current = false;
+                              }, 0);
+                            }}
+                            className="cursor-grab rounded-xl border border-border bg-card transition-all duration-200 hover:border-primary/40 hover:shadow-sm active:cursor-grabbing"
                           >
-                            <button
-                              draggable
-                              onDragStart={(e) => {
-                                arrastouRef.current = true;
-                                e.dataTransfer.effectAllowed = "move";
-                                e.dataTransfer.setData("text/plain", c.id);
-                                setArrasto({ clienteId: c.id, origem: stage.codigo });
-                              }}
-                              onDragEnd={() => {
-                                setArrasto(null);
-                                setAlvo(null);
-                                setTimeout(() => {
-                                  arrastouRef.current = false;
-                                }, 0);
-                              }}
-                              onClick={() => {
-                                if (arrastouRef.current) return;
-                                navigate({ to: "/crm/clientes/$id", params: { id: c.id } });
-                              }}
-                              className="group/card flex w-full cursor-grab items-center gap-2 rounded-lg p-2.5 text-left transition-colors hover:bg-primary/5 active:scale-[0.98] active:cursor-grabbing"
-                            >
-                              <GripVertical className="size-4 shrink-0 text-muted-foreground/60" />
-                              <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary transition-all duration-200 group-hover/card:scale-110 group-hover/card:bg-primary group-hover/card:text-primary-foreground">
-                                {c.nome.trim().charAt(0).toUpperCase()}
-                              </span>
-                              <span className="min-w-0 flex-1">
-                                <span className="block truncate text-sm font-medium text-foreground transition-colors group-hover/card:text-primary">
-                                  {c.nome}
-                                </span>
-                                <span className="block font-mono text-[11px] text-muted-foreground">
-                                  {c.numero_cliente}
-                                </span>
-                              </span>
-                              <ChevronRight className="size-4 shrink-0 -translate-x-1 text-primary opacity-0 transition-all duration-200 group-hover/card:translate-x-0 group-hover/card:opacity-100" />
-                            </button>
+                            <div className="p-3">
+                              <div className="flex items-start gap-2.5">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (arrastouRef.current) return;
+                                    navigate({ to: "/crm/clientes/$id", params: { id: c.id } });
+                                  }}
+                                  className="group/card flex min-w-0 flex-1 items-start gap-2.5 text-left"
+                                >
+                                  <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary transition-colors group-hover/card:bg-primary group-hover/card:text-primary-foreground">
+                                    {c.nome.trim().charAt(0).toUpperCase()}
+                                  </span>
+                                  <span className="min-w-0 flex-1">
+                                    <span className="block truncate text-sm font-semibold text-foreground transition-colors group-hover/card:text-primary">
+                                      {c.nome}
+                                    </span>
+                                    <span className="block font-mono text-[11px] text-muted-foreground">
+                                      {c.numero_cliente}
+                                    </span>
+                                  </span>
+                                </button>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <button
+                                      type="button"
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="grid size-7 shrink-0 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                                      title="Ações do cliente"
+                                    >
+                                      <MoreHorizontal className="size-4" />
+                                    </button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem
+                                      onClick={() =>
+                                        navigate({ to: "/crm/clientes/$id", params: { id: c.id } })
+                                      }
+                                    >
+                                      <ExternalLink className="mr-2 size-4" /> Abrir cadastro
+                                    </DropdownMenuItem>
+                                    {c.numero_proposta && (
+                                      <DropdownMenuItem asChild>
+                                        <Link
+                                          to="/operacional/propostas/kanban"
+                                          search={{ q: c.numero_proposta }}
+                                        >
+                                          <KanbanSquare className="mr-2 size-4" /> Ver proposta
+                                        </Link>
+                                      </DropdownMenuItem>
+                                    )}
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
+                              <div className="mt-2.5 space-y-1">
+                                <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                                  <User className="size-3 shrink-0" />
+                                  <span className="truncate">
+                                    {c.responsavel_nome ?? "Sem responsável"}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                                  <Clock className="size-3 shrink-0" />
+                                  Atualizado {tempoRelativo(c.pipeline_atualizado_em)}
+                                </div>
+                              </div>
+                            </div>
                             {(() => {
                               const dependente = [
                                 "simulacao",
