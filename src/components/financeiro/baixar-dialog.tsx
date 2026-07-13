@@ -37,14 +37,18 @@ export function BaixarDialog({ tipo, conta, open, onOpenChange }: Props) {
   const restante = conta ? conta.valor - conta.valor_pago : 0;
   const [valor, setValor] = useState(0);
   const [data, setData] = useState(hojeISO());
+  const [formaId, setFormaId] = useState<string>("");
   const [file, setFile] = useState<File | null>(null);
   const [enviando, setEnviando] = useState(false);
+
+  const { data: cfg } = useQuery({ queryKey: ["fin-configs"], queryFn: () => listarConfigs() });
 
   // Reseta o formulário sempre que abrir ou trocar de conta (evita usar valor residual).
   useEffect(() => {
     if (open) {
       setValor(0);
       setData(hojeISO());
+      setFormaId("");
       setFile(null);
     }
   }, [open, conta?.id]);
@@ -57,6 +61,7 @@ export function BaixarDialog({ tipo, conta, open, onOpenChange }: Props) {
           id: conta!.id,
           valor: args.valorFinal,
           data_pagamento: data,
+          payment_method_id: formaId || undefined,
           comprovante_path: args.comprovante_path,
         },
       }),
