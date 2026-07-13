@@ -484,26 +484,27 @@ function SolicitacaoDialog({
             </div>
           </div>
           <div className="space-y-1">
-            <Label>Solicitante</Label>
+            <Label>Operador</Label>
             <Combobox
               value={solicitante}
               onValueChange={setSolicitante}
               options={nomesUsuarios}
-              placeholder="Quem pediu (equipe Agilliza)"
-              searchPlaceholder="Buscar solicitante…"
+              placeholder="Selecione o operador"
+              searchPlaceholder="Buscar operador…"
             />
           </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-1">
-              <Label>Comercial</Label>
+              <Label>Solicitante</Label>
               <Combobox
                 value={corretor}
                 onValueChange={setCorretor}
                 options={nomesUsuarios}
-                placeholder="Nome do comercial"
-                searchPlaceholder="Buscar comercial…"
+                placeholder="Nome do solicitante"
+                searchPlaceholder="Buscar solicitante…"
               />
             </div>
+
 
             <div className="space-y-1">
               <Label>Nº da matrícula</Label>
