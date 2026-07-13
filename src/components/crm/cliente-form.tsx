@@ -334,6 +334,7 @@ export function ClienteForm({
         // Embutido na ficha da proposta: apenas atualiza os dados e permanece na tela atual.
         await qc.invalidateQueries({ queryKey: ["cliente", id] });
         toast.success("Cadastro salvo.");
+        onSalvoEmbutido?.();
         return;
       }
       toast.success("Cliente salvo.");
