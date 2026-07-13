@@ -33,7 +33,6 @@ export function aplicarVariaveis(texto: string, ctx?: ContextoResposta): string 
   // Defaults amigáveis para quando um dado ainda não existe, evitando frases
   // quebradas como "está em análise no." quando o banco não foi definido.
   const PADROES: Record<string, string> = {
-    primeiro_nome: "tudo bem",
     nome_banco: "o banco",
     etapa: "em andamento",
   };
