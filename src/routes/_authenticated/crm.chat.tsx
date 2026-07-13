@@ -378,7 +378,31 @@ function Pagina() {
             selecionado ? "hidden" : "flex",
           )}
         >
+          <div className="flex items-center justify-between gap-2 border-b bg-card px-3 py-3">
+            <h2 className="text-sm font-semibold text-foreground">Conversas</h2>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setVerTodos((v) => !v);
+                  setSelecionado(null);
+                  setAtendenteSel(null);
+                }}
+                title="Alterna entre as suas conversas e a visão de todos os atendentes (apenas gestores)."
+                className={cn(
+                  "flex size-8 items-center justify-center rounded-lg border transition-colors",
+                  verTodos
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border bg-background text-muted-foreground hover:bg-muted",
+                )}
+              >
+                <Users className="h-4 w-4" />
+              </button>
+              <ChatConfigSheet />
+            </div>
+          </div>
           <div className="space-y-2 border-b bg-muted/30 p-3">
+
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
