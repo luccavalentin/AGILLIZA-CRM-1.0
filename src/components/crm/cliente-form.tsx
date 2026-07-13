@@ -50,6 +50,7 @@ export function ClienteForm({
   portalAtivo,
   enderecoInicial,
   vincularPropostaId,
+  embutido,
 }: {
   inicial?: Partial<ClienteFormValues>;
   portalAtivo?: boolean;
