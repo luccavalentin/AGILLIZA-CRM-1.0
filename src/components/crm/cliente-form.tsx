@@ -15,6 +15,7 @@ import {
   TIPO_VINCULO_PESSOA,
   type TipoVinculo,
 } from "@/lib/crm/clientes.functions";
+import { vincularClienteAProposta } from "@/lib/propostas/propostas.functions";
 import {
   validarDocumento,
   validarCPF,
