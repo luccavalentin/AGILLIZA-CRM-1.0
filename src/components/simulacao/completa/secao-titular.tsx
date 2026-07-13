@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/select";
 import { CurrencyInput } from "@/components/simulacao/currency-input";
 import { ClienteCRMPicker } from "@/components/simulacao/cliente-crm-picker";
+import { DateInput } from "@/components/shared/date-input";
 import { DicaRendaMinima } from "@/components/simulacao/dica-renda-minima";
 import { Campo, Ast, Erro } from "@/components/simulacao/completa/campo";
 import { maskCpfCnpj, maskCelular } from "@/lib/simulacao/format";
