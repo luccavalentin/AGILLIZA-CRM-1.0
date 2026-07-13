@@ -309,6 +309,7 @@ export function ChatClienteConversa({
     <Card className="flex h-full flex-col overflow-hidden border-border/60 shadow-sm">
       <ChatClienteHeader
         info={info}
+        clienteId={clienteId}
         buscaAberta={buscaAberta}
         toggleBusca={() => {
           setBuscaAberta((v) => !v);
