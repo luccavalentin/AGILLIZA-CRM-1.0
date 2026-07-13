@@ -487,6 +487,15 @@ export const getPanelDados = createServerFn({ method: "POST" })
           serie2: "Contratos",
           dados: evoDados,
         },
+        funil: {
+          titulo: "Funil de conversão",
+          etapas: [
+            { label: "Simulações", valor: simCount },
+            { label: "Propostas enviadas", valor: enviadas.length },
+            { label: "Aprovações", valor: aprovadasCount },
+            { label: "Contratos emitidos", valor: contratosCount },
+          ],
+        },
         chart: {
           titulo: chartPorBanco ? "Ranking de bancos" : "Simulações por status",
           subtitulo: chartPorBanco ? "Propostas enviadas" : "Movimento das simulações",
