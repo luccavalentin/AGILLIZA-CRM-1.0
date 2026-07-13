@@ -282,14 +282,14 @@ export const criarCliente = createServerFn({ method: "POST" })
     // Se já existe um cliente com o mesmo documento neste ecossistema, reaproveita
     // o cadastro existente (evita violar a constraint clientes_doc_unico e efetivamente
     // "vincula" o cliente já cadastrado, atualizando os campos informados).
-    const { data: existente } = await supabase
+    const { data: existente } = await supabaseAdmin
       .from("clientes")
       .select("id")
       .eq("correspondente_id", me.correspondente_id)
       .eq("documento", data.documento)
       .maybeSingle();
     if (existente?.id) {
-      const { error: upErr } = await supabase
+      const { error: upErr } = await supabaseAdmin
         .from("clientes")
         .update(campos)
         .eq("id", existente.id);
@@ -297,7 +297,7 @@ export const criarCliente = createServerFn({ method: "POST" })
       return { id: existente.id };
     }
 
-    const { data: novo, error } = await supabase
+    const { data: novo, error } = await supabaseAdmin
       .from("clientes")
       .insert({
         correspondente_id: me.correspondente_id,
