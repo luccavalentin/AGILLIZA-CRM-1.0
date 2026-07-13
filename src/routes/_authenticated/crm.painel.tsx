@@ -862,12 +862,79 @@ function Pagina() {
                         </button>
                       )}
                     </span>
+                    {editandoContrato === ct.cliente_id && (
+                      <div className="mt-2 flex items-center gap-2">
+                        <DateInput
+                          value={ct.contrato_emitido_em ?? ""}
+                          onChange={(v) => salvarDataContrato(ct.cliente_id, v)}
+                          className="h-8 flex-1"
+                        />
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className="h-8"
+                          onClick={() => setEditandoContrato(null)}
+                        >
+                          Concluir
+                        </Button>
+                      </div>
+                    )}
                   </span>
                   {ct.valor_financiamento != null && (
                     <span className="shrink-0 text-xs font-semibold tabular-nums text-foreground">
                       {`R$ ${Number(ct.valor_financiamento).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`}
                     </span>
                   )}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="size-8 shrink-0 text-muted-foreground"
+                        title="Ações do contrato"
+                      >
+                        <MoreVertical className="size-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem
+                        onClick={() => {
+                          setArquivoAberto(false);
+                          navigate({ to: "/crm/clientes/$id", params: { id: ct.cliente_id } });
+                        }}
+                      >
+                        <ExternalLink className="mr-2 size-4" /> Abrir cadastro
+                      </DropdownMenuItem>
+                      {ct.proposta_id && (
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setArquivoAberto(false);
+                            navigate({
+                              to: "/operacional/propostas/$id",
+                              params: { id: ct.proposta_id! },
+                            });
+                          }}
+                        >
+                          <FileText className="mr-2 size-4" /> Visualizar proposta
+                        </DropdownMenuItem>
+                      )}
+                      <DropdownMenuItem onClick={() => setEditandoContrato(ct.cliente_id)}>
+                        <Pencil className="mr-2 size-4" /> Editar data de emissão
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => desarquivarContrato(ct.cliente_id)}>
+                        <Undo2 className="mr-2 size-4" /> Mover para a esteira
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        className="text-destructive focus:text-destructive"
+                        onClick={() => setExcluindoContrato(ct.cliente_id)}
+                      >
+                        <Trash2 className="mr-2 size-4" /> Excluir
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               ))
             )}
