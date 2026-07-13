@@ -1647,6 +1647,41 @@ export type Database = {
         }
         Relationships: []
       }
+      crm_chat_participantes: {
+        Row: {
+          atendente_id: string
+          cliente_id: string
+          created_at: string
+          criado_por: string | null
+          id: string
+          usuario_id: string
+        }
+        Insert: {
+          atendente_id: string
+          cliente_id: string
+          created_at?: string
+          criado_por?: string | null
+          id?: string
+          usuario_id: string
+        }
+        Update: {
+          atendente_id?: string
+          cliente_id?: string
+          created_at?: string
+          criado_por?: string | null
+          id?: string
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_chat_participantes_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       demanda_anexos: {
         Row: {
           autor_id: string | null
@@ -5343,6 +5378,10 @@ export type Database = {
         Args: { _anexo: string; _cid: string; _msg: string }
         Returns: Json
       }
+      portal_time_responder_thread: {
+        Args: { _anexo: string; _atendente: string; _cid: string; _msg: string }
+        Returns: Json
+      }
       portal_visao_geral: { Args: { _cid: string }; Returns: Json }
       purgar_conversas_pos_contrato: { Args: never; Returns: number }
       registrar_auditoria:
@@ -5377,6 +5416,10 @@ export type Database = {
       }
       usuario_escopo_inclui_dono: {
         Args: { _modulo: string; _owner_id: string; _user_id: string }
+        Returns: boolean
+      }
+      usuario_participa_chat: {
+        Args: { _atendente_id: string; _cliente_id: string; _uid: string }
         Returns: boolean
       }
       usuario_pode_admin: { Args: { _user_id: string }; Returns: boolean }
