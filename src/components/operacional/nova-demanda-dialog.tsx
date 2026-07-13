@@ -22,6 +22,86 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Check, ChevronsUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { criarDemanda } from "@/lib/operacional/demandas.functions";
+import { listarColegas, buscarClientesOpcoes } from "@/lib/operacional/shared.functions";
+
+interface OpcaoId {
+  id: string;
+  label: string;
+}
+
+function ComboSelect({
+  value,
+  onValueChange,
+  options,
+  placeholder,
+  emptyText,
+}: {
+  value: string;
+  onValueChange: (v: string) => void;
+  options: OpcaoId[];
+  placeholder: string;
+  emptyText: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const selecionado = options.find((o) => o.id === value);
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className={cn(
+            "w-full justify-between font-normal",
+            !selecionado && "text-muted-foreground",
+          )}
+        >
+          <span className="truncate">{selecionado ? selecionado.label : placeholder}</span>
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+        <Command>
+          <CommandInput placeholder="Buscar…" />
+          <CommandList>
+            <CommandEmpty>{emptyText}</CommandEmpty>
+            <CommandGroup>
+              {options.map((o) => (
+                <CommandItem
+                  key={o.id}
+                  value={o.label}
+                  onSelect={() => {
+                    onValueChange(o.id === value ? "" : o.id);
+                    setOpen(false);
+                  }}
+                >
+                  <Check
+                    className={cn("h-4 w-4", value === o.id ? "opacity-100" : "opacity-0")}
+                  />
+                  {o.label}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
 import { criarDemanda } from "@/lib/operacional/demandas.functions";
 import { listarColegas, buscarClientesOpcoes } from "@/lib/operacional/shared.functions";
 
