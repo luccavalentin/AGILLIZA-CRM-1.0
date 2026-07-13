@@ -333,7 +333,7 @@ function Pagina() {
         <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
           <MessagesSquare className="h-5 w-5" />
         </div>
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <h1 className="text-xl font-semibold tracking-tight text-foreground">
             Chat e Follow-up Cliente
           </h1>
@@ -342,6 +342,7 @@ function Pagina() {
             lembrete de cada cliente.
           </p>
         </div>
+        <ConfiguracoesChat />
       </div>
 
       {/* Gestão da conversa — barra horizontal no topo (acima das colunas) */}
