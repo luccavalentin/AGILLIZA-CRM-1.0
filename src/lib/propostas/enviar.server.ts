@@ -1037,13 +1037,16 @@ export async function sincronizarPropostaImpl({
       mensagem_banco: erroMsg ? sanitizarMensagemErro(erroMsg) : null,
       raw_response: sim,
     };
-    // Mantém o protocolo do banco na linha (usado para saber que já foi enviada).
-    const protoSim = protocoloBanco(sim);
-    if (protoSim) {
-      patchBanco.numero_proposta_banco = protoSim;
+    // Salva apenas o número REAL da proposta no banco. Códigos de oportunidade
+    // ou simulação são referências técnicas e não devem aparecer como “Nº banco”.
+    const numeroReal = numeroPropostaBancoReal(sim);
+    if (numeroReal) {
+      patchBanco.numero_proposta_banco = numeroReal;
       if (!numeroPropostaBanco || sim.bancoEscolhido === "S" || mapa.proposta === "credito_aprovado") {
-        numeroPropostaBanco = protoSim;
+        numeroPropostaBanco = numeroReal;
       }
+    } else if (numeroAtualEhReferenciaTecnica(pb, sim)) {
+      patchBanco.numero_proposta_banco = null;
     }
     if (sim.valorParcelaBanco != null) patchBanco.valor_parcela = sim.valorParcelaBanco;
     if (sim.taxaJurosAnoBanco != null) patchBanco.taxa_juros_ano = sim.taxaJurosAnoBanco;
