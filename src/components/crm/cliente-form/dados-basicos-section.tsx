@@ -72,26 +72,29 @@ export function DadosBasicosSection({
             onChange={(e) => set("documento", mascararDocumentoTipo(e.target.value, v.tipo_pessoa))}
             inputMode="numeric"
             placeholder={v.tipo_pessoa === "PF" ? "000.000.000-00" : "00.000.000/0000-00"}
+            className={cls("documento")}
           />
         </div>
         <div className="space-y-1.5 sm:col-span-2">
           <Label>{v.tipo_pessoa === "PF" ? "Nome completo *" : "Razão social *"}</Label>
-          <Input value={v.nome} onChange={(e) => set("nome", e.target.value)} />
+          <Input value={v.nome} onChange={(e) => set("nome", e.target.value)} className={cls("nome")} />
         </div>
         <div className="space-y-1.5">
           <Label>{v.tipo_pessoa === "PF" ? "Data de nascimento *" : "Data de abertura *"}</Label>
           <DateInput
             value={v.data_nascimento}
             onChange={(val) => set("data_nascimento", val)}
+            className={cls("data_nascimento")}
           />
         </div>
         {v.tipo_pessoa === "PF" && (
           <div className="space-y-1.5">
             <Label>Estado civil *</Label>
             <Select value={v.estado_civil} onValueChange={(x) => set("estado_civil", x)}>
-              <SelectTrigger>
+              <SelectTrigger className={cls("estado_civil")}>
                 <SelectValue />
               </SelectTrigger>
+
               <SelectContent>
                 {ESTADOS_CIVIS.map((o) => (
                   <SelectItem key={o.v} value={o.v}>
