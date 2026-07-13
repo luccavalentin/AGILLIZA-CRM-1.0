@@ -16,19 +16,25 @@ import {
   REGIMES,
   OPCOES_UF,
   mascararMoedaBR,
+  CLASSE_ERRO,
   type ClienteFormValues,
   type SetCampo,
 } from "./constants";
+import { cn } from "@/lib/utils";
 
 export function DadosBasicosSection({
   v,
   set,
   setV,
+  erros,
 }: {
   v: ClienteFormValues;
   set: SetCampo;
   setV: React.Dispatch<React.SetStateAction<ClienteFormValues>>;
+  erros?: Set<string>;
 }) {
+  const cls = (k: string) => (erros?.has(k) ? CLASSE_ERRO : undefined);
+
   return (
     <Card>
       <CardHeader>
