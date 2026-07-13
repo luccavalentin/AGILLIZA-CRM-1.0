@@ -33,7 +33,7 @@ import { ClienteForm } from "@/components/crm/cliente-form";
 import { DocumentosTab } from "@/components/crm/documentos-tab";
 import { InteracoesTab } from "@/components/crm/interacoes-tab";
 import { VinculoTab } from "@/components/crm/vinculo-tab";
-import { ChatClienteTab } from "@/components/crm/chat-cliente-tab";
+import { ChatClienteInstagram } from "@/components/crm/chat-cliente-instagram";
 import { VendedoresTab } from "@/components/crm/vendedores-tab";
 import { ImovelTab, IqTab } from "@/components/crm/imovel-iq-tab";
 import { StatusBadge } from "@/components/crm/tone-badge";
