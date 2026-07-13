@@ -137,6 +137,7 @@ function InfoCell({
 function Pagina() {
   const { id } = useParams({ from: "/_authenticated/operacional/demandas_/$id" });
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const [corpo, setCorpo] = useState("");
   const [visivelCliente] = useState(false);
   const comentarFn = useServerFn(comentarDemanda);
@@ -145,6 +146,8 @@ function Pagina() {
   const registrarAnexoFn = useServerFn(registrarAnexoDemanda);
   const removerAnexoFn = useServerFn(removerAnexoDemanda);
   const urlAnexoFn = useServerFn(urlAnexoDemanda);
+  const excluirFn = useServerFn(excluirDemanda);
+  const [excluindo, setExcluindo] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const chatFileRef = useRef<HTMLInputElement>(null);
   const [enviando, setEnviando] = useState(false);
