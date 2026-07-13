@@ -36,10 +36,13 @@ export function ConjugeSection({ v, set }: { v: ClienteFormValues; set: SetCampo
         </p>
       </CardHeader>
       <CardContent className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-1.5 sm:col-span-2">
+        {/* 1. Nome completo */}
+        <div className="space-y-1.5">
           <Label>Nome completo do cônjuge *</Label>
           <Input value={v.conjuge_nome} onChange={(e) => set("conjuge_nome", e.target.value)} />
         </div>
+
+        {/* 2. CPF */}
         <div className="space-y-1.5">
           <Label>CPF do cônjuge</Label>
           <Input
@@ -49,6 +52,17 @@ export function ConjugeSection({ v, set }: { v: ClienteFormValues; set: SetCampo
             placeholder="000.000.000-00"
           />
         </div>
+
+        {/* 3. Número do documento (RG) */}
+        <div className="space-y-1.5">
+          <Label>Número do documento</Label>
+          <Input
+            value={v.conjuge_numero_documento}
+            onChange={(e) => set("conjuge_numero_documento", e.target.value)}
+          />
+        </div>
+
+        {/* 4. Data de nascimento */}
         <div className="space-y-1.5">
           <Label>Data de nascimento</Label>
           <DateInput
@@ -56,41 +70,8 @@ export function ConjugeSection({ v, set }: { v: ClienteFormValues; set: SetCampo
             onChange={(val) => set("conjuge_data_nascimento", val)}
           />
         </div>
-        <div className="space-y-1.5">
-          <Label>Sexo</Label>
-          <Select
-            value={v.conjuge_sexo || undefined}
-            onValueChange={(x) => set("conjuge_sexo", x)}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Selecione" />
-            </SelectTrigger>
-            <SelectContent>
-              {OPCOES_SEXO.map((o) => (
-                <SelectItem key={o.v} value={o.v}>
-                  {o.l}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-1.5">
-          <Label>Nacionalidade</Label>
-          <Combobox
-            value={v.conjuge_nacionalidade}
-            onValueChange={(x) => set("conjuge_nacionalidade", x)}
-            options={OPCOES_NACIONALIDADE}
-            placeholder="Selecione"
-            searchPlaceholder="Buscar nacionalidade…"
-          />
-        </div>
-        <div className="space-y-1.5 sm:col-span-2">
-          <Label>Nome da mãe do cônjuge</Label>
-          <Input
-            value={v.conjuge_nome_mae}
-            onChange={(e) => set("conjuge_nome_mae", e.target.value)}
-          />
-        </div>
+
+        {/* 5. Tipo de documento */}
         <div className="space-y-1.5">
           <Label>Tipo de documento</Label>
           <Combobox
@@ -101,13 +82,8 @@ export function ConjugeSection({ v, set }: { v: ClienteFormValues; set: SetCampo
             searchPlaceholder="Buscar tipo…"
           />
         </div>
-        <div className="space-y-1.5">
-          <Label>Número do documento</Label>
-          <Input
-            value={v.conjuge_numero_documento}
-            onChange={(e) => set("conjuge_numero_documento", e.target.value)}
-          />
-        </div>
+
+        {/* 6. Órgão expedidor */}
         <div className="space-y-1.5">
           <Label>Órgão expedidor</Label>
           <Combobox
@@ -118,6 +94,8 @@ export function ConjugeSection({ v, set }: { v: ClienteFormValues; set: SetCampo
             searchPlaceholder="Buscar órgão…"
           />
         </div>
+
+        {/* 7. UF de expedição */}
         <div className="space-y-1.5">
           <Label>UF de expedição</Label>
           <Select
@@ -136,6 +114,8 @@ export function ConjugeSection({ v, set }: { v: ClienteFormValues; set: SetCampo
             </SelectContent>
           </Select>
         </div>
+
+        {/* 8. Data de expedição */}
         <div className="space-y-1.5">
           <Label>Data de expedição</Label>
           <Input
@@ -144,6 +124,49 @@ export function ConjugeSection({ v, set }: { v: ClienteFormValues; set: SetCampo
             onChange={(e) => set("conjuge_data_expedicao", e.target.value)}
           />
         </div>
+
+        {/* 9. Nome da mãe */}
+        <div className="space-y-1.5">
+          <Label>Nome da mãe do cônjuge</Label>
+          <Input
+            value={v.conjuge_nome_mae}
+            onChange={(e) => set("conjuge_nome_mae", e.target.value)}
+          />
+        </div>
+
+        {/* 10. Sexo */}
+        <div className="space-y-1.5">
+          <Label>Sexo</Label>
+          <Select
+            value={v.conjuge_sexo || undefined}
+            onValueChange={(x) => set("conjuge_sexo", x)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Selecione" />
+            </SelectTrigger>
+            <SelectContent>
+              {OPCOES_SEXO.map((o) => (
+                <SelectItem key={o.v} value={o.v}>
+                  {o.l}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* 11. Nacionalidade */}
+        <div className="space-y-1.5">
+          <Label>Nacionalidade</Label>
+          <Combobox
+            value={v.conjuge_nacionalidade}
+            onValueChange={(x) => set("conjuge_nacionalidade", x)}
+            options={OPCOES_NACIONALIDADE}
+            placeholder="Selecione"
+            searchPlaceholder="Buscar nacionalidade…"
+          />
+        </div>
+
+        {/* 12. Profissão */}
         <div className="space-y-1.5">
           <Label>Profissão</Label>
           <Input
@@ -151,6 +174,8 @@ export function ConjugeSection({ v, set }: { v: ClienteFormValues; set: SetCampo
             onChange={(e) => set("conjuge_profissao", e.target.value)}
           />
         </div>
+
+        {/* 13. Empresa */}
         <div className="space-y-1.5">
           <Label>Empresa</Label>
           <Input
@@ -158,6 +183,29 @@ export function ConjugeSection({ v, set }: { v: ClienteFormValues; set: SetCampo
             onChange={(e) => set("conjuge_empresa", e.target.value)}
           />
         </div>
+
+        {/* 14. E-mail */}
+        <div className="space-y-1.5">
+          <Label>E-mail do cônjuge</Label>
+          <Input
+            type="email"
+            value={v.conjuge_email}
+            onChange={(e) => set("conjuge_email", e.target.value)}
+          />
+        </div>
+
+        {/* 15. Celular */}
+        <div className="space-y-1.5">
+          <Label>Celular do cônjuge</Label>
+          <Input
+            value={v.conjuge_celular}
+            onChange={(e) => set("conjuge_celular", mascararTelefone(e.target.value))}
+            inputMode="numeric"
+            placeholder="(11) 99999-9999"
+          />
+        </div>
+
+        {/* 16. Renda declarada */}
         <div className="space-y-1.5">
           <Label>Renda declarada (R$)</Label>
           <div className="relative">
@@ -173,24 +221,8 @@ export function ConjugeSection({ v, set }: { v: ClienteFormValues; set: SetCampo
             />
           </div>
         </div>
-        <div className="space-y-1.5">
-          <Label>E-mail do cônjuge</Label>
-          <Input
-            type="email"
-            value={v.conjuge_email}
-            onChange={(e) => set("conjuge_email", e.target.value)}
-          />
-        </div>
-        <div className="space-y-1.5">
-          <Label>Celular do cônjuge</Label>
-          <Input
-            value={v.conjuge_celular}
-            onChange={(e) => set("conjuge_celular", mascararTelefone(e.target.value))}
-            inputMode="numeric"
-            placeholder="(11) 99999-9999"
-          />
-        </div>
       </CardContent>
+
     </Card>
   );
 }
