@@ -19,13 +19,15 @@ export interface MetricDelta {
 
 /** Badge de tendência percentual comparando com o período anterior. */
 function DeltaBadge({ delta }: { delta: MetricDelta }) {
-  const Icon = delta.novo
-    ? TrendingUp
-    : delta.dir === "up"
+  // Sem base anterior para comparar → não há % significativa: não exibe nada.
+  if (delta.novo) return null;
+  const Icon =
+    delta.dir === "up"
       ? TrendingUp
       : delta.dir === "down"
         ? TrendingDown
         : Minus;
+
   // Cor semântica: "bom" indica se subir é positivo (ex.: contratos) ou não (ex.: recusadas).
   const positivo = delta.dir === "flat" ? null : (delta.dir === "up") === delta.bom;
   const cor =
@@ -41,14 +43,13 @@ function DeltaBadge({ delta }: { delta: MetricDelta }) {
         "inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[10px] font-semibold tabular-nums",
         cor,
       )}
-      title={delta.novo ? "Sem período anterior para comparar" : "Comparado ao período anterior equivalente"}
+      title="Comparado ao período anterior equivalente"
     >
       <Icon className="h-3 w-3" />
-      {delta.novo
-        ? "novo"
-        : delta.dir === "flat"
-          ? "estável"
-          : `${sinal}${delta.pct.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}%`}
+      {delta.dir === "flat"
+        ? "estável"
+        : `${sinal}${delta.pct.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}%`}
+
     </span>
   );
 }
