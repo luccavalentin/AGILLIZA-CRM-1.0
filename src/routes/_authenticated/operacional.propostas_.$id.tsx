@@ -185,7 +185,10 @@ function Pagina() {
   const enviarAutoFn = useServerFn(enviarPropostaHomeFin);
   const onCadastroIncompleto = () => {
     setTab("COMPRADORES");
-    setDestacarObrigatorios(true);
+    // Reinicia o destaque para forçar novo scroll até o primeiro campo pendente,
+    // mesmo quando o usuário já estava com o destaque ativo.
+    setDestacarObrigatorios(false);
+    requestAnimationFrame(() => setDestacarObrigatorios(true));
   };
 
 
