@@ -941,6 +941,32 @@ function Pagina() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog
+        open={!!excluindoContrato}
+        onOpenChange={(o) => !o && setExcluindoContrato(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir contrato emitido?</AlertDialogTitle>
+            <AlertDialogDescription>
+              O registro de contrato emitido será removido e o cliente voltará para a esteira. Esta
+              ação pode ser refeita definindo novamente a data de emissão.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (excluindoContrato) excluirContratoEmitido(excluindoContrato);
+                setExcluindoContrato(null);
+              }}
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
 
   );
