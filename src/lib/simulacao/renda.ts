@@ -37,11 +37,14 @@ export function rendaMinimaParaParcela(
 }
 
 /**
- * Avalia a renda mínima necessária para financiar o IMÓVEL informado.
+ * Avalia a renda mínima necessária para financiar o imóvel informado.
  *
- * A base do cálculo é o valor do imóvel (quanto de renda a pessoa precisaria
- * ter para financiar aquele imóvel). Quando o valor do imóvel não é informado,
- * cai para o valor de financiamento como aproximação.
+ * A parcela — e, portanto, a renda mínima — incide SOBRE O VALOR FINANCIADO
+ * (preço do imóvel menos entrada + FGTS), nunca sobre o valor cheio do imóvel.
+ * Usar o valor do imóvel como base superestima a parcela e a renda exigida.
+ *
+ * O valor do imóvel é usado apenas como fallback quando o valor financiado
+ * não foi informado, pois não há como calcular a parcela sem uma base de crédito.
  */
 export function avaliarRendaMinima(params: {
   valor_financiamento: number;
@@ -49,17 +52,20 @@ export function avaliarRendaMinima(params: {
   taxa_ano: number;
   sistema: SistemaAmortizacao;
   renda_informada?: number | null;
-  /** Valor do imóvel — base preferencial para a renda mínima. */
+  /** Valor do imóvel — usado apenas como fallback se não houver valor financiado. */
   valor_imovel?: number | null;
 }): AvaliacaoRenda | null {
   const { valor_financiamento, prazo_meses, taxa_ano, sistema, renda_informada, valor_imovel } =
     params;
 
-  // Base do cálculo: valor do imóvel (preferencial) ou valor financiado.
+  // Base do cálculo: valor financiado (correto). Cai para o valor do imóvel
+  // apenas quando o financiado não foi informado.
   const base =
-    Number.isFinite(valor_imovel) && (valor_imovel ?? 0) > 0
-      ? (valor_imovel as number)
-      : valor_financiamento;
+    Number.isFinite(valor_financiamento) && valor_financiamento > 0
+      ? valor_financiamento
+      : Number.isFinite(valor_imovel) && (valor_imovel ?? 0) > 0
+        ? (valor_imovel as number)
+        : 0;
 
   if (
     !Number.isFinite(base) ||
