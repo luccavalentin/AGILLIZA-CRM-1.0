@@ -680,6 +680,38 @@ function Pagina() {
   );
 }
 
+function MaisAcoesGestao(props: {
+  clienteId: string;
+  nome: string;
+  documento?: string | null;
+  contexto?: string | null;
+  etiquetas: ChatEtiqueta[];
+}) {
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="shrink-0 gap-1.5 rounded-lg"
+        >
+          Mais ações
+          <ChevronDown className="size-4 opacity-70" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent
+        align="end"
+        className="w-[22rem] max-w-[calc(100vw-2rem)] p-0"
+      >
+        <BarraGestao {...props} />
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+
+
 function BarraGestao({
   clienteId,
   nome,
