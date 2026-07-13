@@ -500,6 +500,7 @@ export interface PainelStage {
     numero_proposta: string | null;
     proposta_status: string | null;
     nome_banco: string | null;
+    responsavel_nome: string | null;
   }[];
 }
 
