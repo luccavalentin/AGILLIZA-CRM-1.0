@@ -286,6 +286,32 @@ export function PainelView({
             </>
           )}
 
+          {data.funil && data.funil.etapas.some((e) => e.valor > 0) && (
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+              <PanelCard titulo={data.funil.titulo} subtitulo="Da simulação ao contrato">
+                <ConversionFunnel etapas={data.funil.etapas} />
+              </PanelCard>
+              {data.distribuicao && data.distribuicao.dados.length > 0 && (
+                <PanelCard
+                  titulo={data.distribuicao.titulo}
+                  subtitulo={data.distribuicao.subtitulo}
+                >
+                  <div className="h-[240px] w-full overflow-hidden">
+                    <ReportChartView
+                      chart={{
+                        titulo: data.distribuicao.titulo,
+                        tipo: "donut",
+                        dados: data.distribuicao.dados,
+                      }}
+                      colorByBank={data.distribuicao.porBanco}
+                    />
+                  </div>
+                </PanelCard>
+              )}
+            </div>
+          )}
+
+
           <SectionTitle>Operação</SectionTitle>
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
             <div className="lg:col-span-2">
