@@ -313,6 +313,7 @@ export function ChatClienteConversa({
       <ChatClienteHeader
         info={info}
         clienteId={clienteId}
+        acoes={acoes}
         buscaAberta={buscaAberta}
         toggleBusca={() => {
           setBuscaAberta((v) => !v);
