@@ -350,11 +350,11 @@ function UploadDialog({
             <Button
               type="button"
               variant="outline"
-              className="w-full"
+              className="w-full justify-start"
               onClick={() => inputRef.current?.click()}
             >
-              <Upload className="mr-2 h-4 w-4" />
-              {file ? file.name : "Selecionar PDF"}
+              <Upload className="mr-2 h-4 w-4 shrink-0" />
+              <span className="min-w-0 truncate">{file ? file.name : "Selecionar PDF"}</span>
             </Button>
           </div>
         </div>
@@ -462,17 +462,17 @@ function EditarDialog({
               className="hidden"
               onChange={(e) => escolher(e.target.files?.[0] ?? null)}
             />
-            <div className="flex gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row">
               <Button
                 type="button"
                 variant="outline"
-                className="flex-1"
+                className="min-w-0 flex-1 justify-start"
                 onClick={() => inputRef.current?.click()}
               >
-                <Upload className="mr-2 h-4 w-4" />
-                {file ? file.name : "Escolher novo PDF"}
+                <Upload className="mr-2 h-4 w-4 shrink-0" />
+                <span className="min-w-0 truncate">{file ? file.name : "Escolher novo PDF"}</span>
               </Button>
-              <Button type="button" variant="outline" onClick={abrir}>
+              <Button type="button" variant="outline" className="shrink-0" onClick={abrir}>
                 <Download className="mr-2 h-4 w-4" />
                 Ver atual
               </Button>
