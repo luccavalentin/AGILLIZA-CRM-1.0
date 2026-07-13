@@ -135,7 +135,15 @@ function Pagina() {
     queryFn: () => listar({ data: { desde: desde || undefined, ate: ate || undefined } }),
   });
 
+  const termoAdicionar = adicionarBusca.trim();
+  const { data: resultadosAdicionar, isFetching: buscandoAdicionar } = useQuery({
+    queryKey: ["crm-painel-buscar-cliente", termoAdicionar],
+    queryFn: () => buscarClientes({ data: { q: termoAdicionar } }),
+    enabled: !!adicionarStage && termoAdicionar.length >= 2,
+  });
+
   async function moverPara(codigoDestino: string) {
+
     const info = arrasto;
     setArrasto(null);
     setAlvo(null);
