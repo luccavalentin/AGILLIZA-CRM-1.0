@@ -353,7 +353,7 @@ export const getPanelDados = createServerFn({ method: "POST" })
       // Aprovação é somente crédito aprovado na proposta/simulação bancária.
       // Contrato emitido é uma métrica operacional separada e não pode inflar
       // taxa, volume aprovado ou quantidade de aprovadas.
-      const aprovadasProp = rows.filter((p) => p.status === "credito_aprovado");
+      const aprovadasProp = rows.filter((p) => foiAprovada(p.status));
       const aprovadasCount = aprovadasProp.length;
       const simConcluidasRows = simRows.filter((s) =>
         ["simulada", "parcialmente_simulada", "promovida"].includes(s.status),
