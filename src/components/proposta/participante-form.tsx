@@ -232,35 +232,7 @@ function camposFaltantes(f: ParticipanteForm): Set<string> {
   return faltando;
 }
 
-function validar(f: ParticipanteForm): string | null {
-  const pf = f.tipo_pessoa === "F";
-  if (!f.nome.trim()) return "Informe o nome / razão social.";
-  if (!apenasDigitos(f.cpf_cnpj)) return "Informe o CPF/CNPJ.";
-  if (!validarCpfCnpj(f.cpf_cnpj)) return "CPF/CNPJ inválido.";
-  if (pf) {
-    if (!f.data_nascimento) return "Informe a data de nascimento.";
-    if (!f.nome_mae.trim()) return "Informe o nome da mãe.";
-    if (!f.tipo_sexo) return "Informe o sexo.";
-    if (!f.estado_civil) return "Informe o estado civil.";
-  }
-  if (!f.tipo_documento_identidade) return "Informe o tipo de documento.";
-  if (!f.numero_documento.trim()) return "Informe o número do documento.";
-  if (!f.orgao_expedidor.trim()) return "Informe o órgão expedidor.";
-  if (!f.uf_expedicao) return "Informe a UF de expedição.";
-  if (!f.profissao.trim()) return "Informe a profissão.";
-  if (!f.renda || f.renda <= 0) return "Informe a renda.";
-  if (!f.email.trim() || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(f.email.trim()))
-    return "Informe um e-mail válido.";
-  if (apenasDigitos(f.celular).length < 10) return "Informe um celular válido.";
-  if (!apenasDigitos(f.cep)) return "Informe o CEP.";
-  if (!f.logradouro.trim()) return "Informe o logradouro.";
-  if (!f.numero_logradouro.trim()) return "Informe o número.";
-  if (!f.bairro.trim()) return "Informe o bairro.";
-  if (!f.municipio.trim()) return "Informe o município.";
-  if (!f.uf) return "Informe a UF.";
-  if (!f.fg_autorizacao_dados) return "É necessário a autorização de consulta de dados.";
-  return null;
-}
+
 
 
 function mascararCep(raw: string) {
