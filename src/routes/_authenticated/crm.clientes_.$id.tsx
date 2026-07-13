@@ -522,10 +522,8 @@ function Pagina() {
         </TabsContent>
 
         <TabsContent value="mensagens" className="mt-4">
-          <div className="h-[60dvh] max-h-[560px] min-h-[340px]">
-
-
-            <ChatClienteTab
+          <div className="h-[68dvh] max-h-[680px] min-h-[420px]">
+            <ChatClienteInstagram
               clienteId={id}
               info={{
                 nome: c.nome,
@@ -544,6 +542,7 @@ function Pagina() {
             />
           </div>
         </TabsContent>
+
 
 
         <TabsContent value="interacoes" className="mt-4">
