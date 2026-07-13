@@ -415,6 +415,7 @@ export interface PainelStage {
     contrato_emitido_em: string | null;
     numero_proposta: string | null;
     proposta_status: string | null;
+    nome_banco: string | null;
   }[];
 }
 
