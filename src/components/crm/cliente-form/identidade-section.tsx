@@ -42,49 +42,7 @@ export function IdentidadeSection({
         </p>
       </CardHeader>
       <CardContent className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-1.5">
-          <Label>Número do documento</Label>
-          <Input
-            value={v.numero_documento}
-            onChange={(e) => set("numero_documento", e.target.value)}
-            className={cls("numero_documento")}
-          />
-        </div>
-        <div className="space-y-1.5">
-          <Label>Órgão expedidor</Label>
-          <Combobox
-            value={v.orgao_expedidor}
-            onValueChange={(x) => set("orgao_expedidor", x)}
-            options={OPCOES_ORGAO_EXPEDIDOR}
-            placeholder="Selecione"
-            searchPlaceholder="Buscar órgão…"
-            className={clsBox("orgao_expedidor")}
-          />
-        </div>
-        <div className="space-y-1.5">
-          <Label>UF de expedição</Label>
-          <Select value={v.uf_expedicao} onValueChange={(x) => set("uf_expedicao", x)}>
-            <SelectTrigger className={cls("uf_expedicao")}>
-              <SelectValue placeholder="Selecione" />
-            </SelectTrigger>
-            <SelectContent>
-              {OPCOES_UF.map((uf) => (
-                <SelectItem key={uf} value={uf}>
-                  {uf}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
 
-        <div className="space-y-1.5">
-          <Label>Data de expedição</Label>
-          <Input
-            type="date"
-            value={v.data_expedicao}
-            onChange={(e) => set("data_expedicao", e.target.value)}
-          />
-        </div>
         <div className="space-y-1.5">
           <Label>Profissão</Label>
           <Input
