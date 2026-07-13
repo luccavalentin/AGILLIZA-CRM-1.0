@@ -81,11 +81,11 @@ export function AppShell({
         Pular para o conteúdo
       </a>
 
-      <div className="flex h-[100dvh] w-full overflow-hidden bg-muted/40">
+      <div className="flex min-h-[100dvh] w-full bg-muted/40">
         {/* Sidebar desktop */}
         <aside
           className={cn(
-            "app-sidebar hidden h-full shrink-0 flex-col border-r border-sidebar-border text-sidebar-foreground transition-[width] duration-200 lg:flex",
+            "app-sidebar sticky top-0 hidden h-[100dvh] shrink-0 flex-col border-r border-sidebar-border text-sidebar-foreground transition-[width] duration-200 lg:flex",
             larguraDesktop,
           )}
         >
@@ -135,7 +135,7 @@ export function AppShell({
         </Sheet>
 
         {/* Coluna principal */}
-        <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+        <div className="flex min-w-0 flex-1 flex-col">
           <Topbar
             nav={nav}
             user={user}
@@ -146,7 +146,7 @@ export function AppShell({
             onToggleCollapse={toggleCollapse}
             onSignOut={onSignOut}
           />
-          <main id="conteudo-principal" className="flex-1 overflow-y-auto p-4 sm:p-6">
+          <main id="conteudo-principal" className="flex-1 p-4 sm:p-6">
             {children}
           </main>
         </div>
