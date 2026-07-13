@@ -351,30 +351,34 @@ export function ParticipanteDialog({
   }
 
   async function submit() {
-    const erro = validar(f);
-    if (erro) {
-      toast.error(erro);
+    setTentouEnviar(true);
+    const faltando = camposFaltantes(f);
+    setErros(faltando);
+
+    const c: ParticipanteForm | null = precisaConjuge
+      ? {
+          ...conjuge,
+          tipo_qualificacao: "TI",
+          tipo_pessoa: "F",
+          estado_civil: f.estado_civil,
+          regime_casamento: f.regime_casamento,
+        }
+      : null;
+    const faltandoC = c ? camposFaltantes(c) : new Set<string>();
+    setErrosC(faltandoC);
+
+    if (faltando.size > 0 || faltandoC.size > 0) {
+      const total = faltando.size + faltandoC.size;
+      toast.error(
+        `Preencha ${total} campo${total > 1 ? "s" : ""} obrigatório${total > 1 ? "s" : ""} destacado${total > 1 ? "s" : ""} em vermelho.`,
+      );
       return;
     }
-    let conjugePayload: ReturnType<typeof formParaEnvolvido> | null = null;
-    if (precisaConjuge) {
-      // O cônjuge herda estado civil e regime do titular.
-      const c: ParticipanteForm = {
-        ...conjuge,
-        tipo_qualificacao: "TI",
-        tipo_pessoa: "F",
-        estado_civil: f.estado_civil,
-        regime_casamento: f.regime_casamento,
-      };
-      const erroC = validar(c);
-      if (erroC) {
-        toast.error(`Cônjuge: ${erroC}`);
-        return;
-      }
-      conjugePayload = formParaEnvolvido(c);
-    }
+
+    const conjugePayload = c ? formParaEnvolvido(c) : null;
     await onSalvar(formParaEnvolvido(f), conjugePayload);
   }
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
