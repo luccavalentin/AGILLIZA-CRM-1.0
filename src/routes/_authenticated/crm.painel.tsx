@@ -489,89 +489,161 @@ function Pagina() {
 
   return (
     <div className="space-y-6 p-4 sm:p-6">
-      <div className="op-hero p-4 md:p-6">
-      <div className="relative flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-        <div className="flex min-w-0 items-center gap-3.5">
-          <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-primary to-primary/70 text-primary-foreground shadow-sm ring-1 ring-primary/20">
-            <Workflow className="size-5" />
-          </span>
-          <div className="min-w-0 space-y-0.5">
-            <p className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-primary sm:text-[11px]">
-              <span className="inline-block h-1 w-5 shrink-0 rounded-full bg-primary" />
-              CRM · Painel
-            </p>
-            <h1 className="truncate text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
-              Painel da esteira
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              Visão das {dadosFiltrados.length} etapas — arraste um cliente para mover manualmente.
-            </p>
+      {/* Cabeçalho */}
+      <div className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-6">
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 sm:flex sm:justify-between">
+          <div className="flex min-w-0 items-center gap-3.5">
+            <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-sm">
+              <Workflow className="size-5" />
+            </span>
+            <div className="min-w-0">
+              <h1 className="truncate text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+                Painel da Esteira
+              </h1>
+              <p className="truncate text-sm text-muted-foreground">
+                Acompanhe o fluxo dos clientes em cada etapa do processo.
+              </p>
+            </div>
+          </div>
+          <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+            <span className="hidden items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground md:inline-flex">
+              <span className="size-2 animate-pulse rounded-full bg-success" />
+              Atualizado agora
+            </span>
+            <div className="inline-flex items-center rounded-full border border-border bg-background p-1">
+              {(["minhas", "geral"] as const).map((op) => (
+                <button
+                  key={op}
+                  type="button"
+                  onClick={() => setEscopo(op)}
+                  className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all ${
+                    escopo === op
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {op === "minhas" ? "Minhas esteiras" : "Geral"}
+                </button>
+              ))}
+            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="size-9 shrink-0 rounded-full"
+                  title="Mais ações"
+                >
+                  <MoreHorizontal className="size-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setArquivoAberto(true)}>
+                  <FolderClosed className="mr-2 size-4" /> Contratos emitidos
+                  {totalArquivados > 0 && (
+                    <span className="ml-auto rounded-full bg-primary/10 px-1.5 text-[10px] font-bold text-primary">
+                      {totalArquivados}
+                    </span>
+                  )}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => totalClientes > 0 && setDialogStage("__todos__")}
+                  disabled={totalClientes === 0}
+                >
+                  <Users className="mr-2 size-4" /> Ver todos os clientes
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={limparTodosFiltros}>
+                  <Filter className="mr-2 size-4" /> Limpar filtros
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
-        <div className="flex flex-wrap items-end gap-3">
-          <button
-            type="button"
-            onClick={() => totalClientes > 0 && setDialogStage("__todos__")}
-            disabled={totalClientes === 0}
-            title={totalClientes > 0 ? "Ver todos os clientes" : undefined}
-            className={`hidden items-center gap-2 rounded-xl border border-border/60 bg-card px-3 py-2 shadow-sm transition-all sm:flex ${
-              totalClientes > 0
-                ? "cursor-pointer hover:border-primary/50 hover:shadow-md"
-                : "cursor-default"
-            }`}
-          >
-            <Users className="size-4 text-primary" />
-            <span className="text-sm font-semibold tabular-nums text-foreground">
-              {totalClientes}
+      </div>
+
+      {/* Barra de filtros */}
+      <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+        <div className="flex flex-wrap items-end gap-x-5 gap-y-4">
+          <div className="flex items-center gap-3 sm:border-r sm:border-border sm:pr-5">
+            <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+              <Users className="size-5" />
             </span>
-            <span className="text-xs text-muted-foreground">
-              em {etapasAtivas} de {dadosFiltrados.length} etapas
-            </span>
-          </button>
-          <div className="inline-flex h-10 shrink-0 items-center rounded-xl border border-primary/30 bg-primary/5 p-1 shadow-sm ring-1 ring-primary/10">
-            {(["minhas", "geral"] as const).map((op) => (
-              <button
-                key={op}
-                type="button"
-                onClick={() => setEscopo(op)}
-                className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
-                  escopo === op
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "text-primary hover:bg-primary/10"
-                }`}
-              >
-                {op === "minhas" ? <Users className="size-3.5" /> : <Workflow className="size-3.5" />}
-                {op === "minhas" ? "Minhas" : "Geral"}
-              </button>
-            ))}
+            <div>
+              <p className="text-2xl font-bold leading-none tabular-nums text-foreground">
+                {totalClientes}
+              </p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                de {dadosFiltrados.length} etapas
+              </p>
+            </div>
           </div>
 
-          <div className="relative w-full sm:w-64">
-
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={busca}
-              onChange={(e) => setBusca(e.target.value)}
-              placeholder="Buscar cliente ou nº..."
-              className="h-10 rounded-xl pl-9 pr-9 shadow-sm"
-            />
-            {busca && (
-              <button
-                type="button"
-                onClick={() => setBusca("")}
-                className="absolute right-2 top-1/2 grid size-6 -translate-y-1/2 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                aria-label="Limpar busca"
-              >
-                <X className="size-3.5" />
-              </button>
-            )}
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-muted-foreground">Período</label>
+            <select
+              value={periodo}
+              onChange={(e) => aplicarPeriodo(e.target.value)}
+              className="h-10 w-40 rounded-xl border border-input bg-background px-3 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <option value="todos">Todos</option>
+              <option value="mes">Este mês</option>
+              <option value="7d">Últimos 7 dias</option>
+              <option value="30d">Últimos 30 dias</option>
+              <option value="ano">Este ano</option>
+              <option value="custom">Personalizado</option>
+            </select>
           </div>
+
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-muted-foreground">Responsável</label>
+            <select
+              value={respFiltro}
+              onChange={(e) => setRespFiltro(e.target.value)}
+              className="h-10 w-44 rounded-xl border border-input bg-background px-3 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <option value="todos">Todos</option>
+              {responsaveis.map((r) => (
+                <option key={r} value={r}>
+                  {r}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="relative w-full space-y-1 sm:w-60">
+            <label className="text-xs font-medium text-muted-foreground">Buscar</label>
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={busca}
+                onChange={(e) => setBusca(e.target.value)}
+                placeholder="Cliente ou nº..."
+                className="h-10 rounded-xl pl-9 pr-9 shadow-sm"
+              />
+              {busca && (
+                <button
+                  type="button"
+                  onClick={() => setBusca("")}
+                  className="absolute right-2 top-1/2 grid size-6 -translate-y-1/2 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                  aria-label="Limpar busca"
+                >
+                  <X className="size-3.5" />
+                </button>
+              )}
+            </div>
+          </div>
+
           <div className="space-y-1">
             <label className="text-xs font-medium text-muted-foreground">De</label>
             <Input
               type="date"
               value={desde}
-              onChange={(e) => setDesde(e.target.value)}
+              onChange={(e) => {
+                setDesde(e.target.value);
+                setPeriodo("custom");
+              }}
               className="h-10 w-40 rounded-xl shadow-sm"
             />
           </div>
@@ -580,25 +652,23 @@ function Pagina() {
             <Input
               type="date"
               value={ate}
-              onChange={(e) => setAte(e.target.value)}
+              onChange={(e) => {
+                setAte(e.target.value);
+                setPeriodo("custom");
+              }}
               className="h-10 w-40 rounded-xl shadow-sm"
             />
           </div>
-          {(desde || ate) && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-10"
-              onClick={() => {
-                setDesde("");
-                setAte("");
-              }}
-            >
-              Limpar
-            </Button>
-          )}
+
+          <Button
+            variant="ghost"
+            className="ml-auto h-10 gap-2 text-primary hover:bg-primary/5 hover:text-primary"
+            onClick={limparTodosFiltros}
+          >
+            Limpar filtros
+            <Filter className="size-4" />
+          </Button>
         </div>
-      </div>
       </div>
 
 
