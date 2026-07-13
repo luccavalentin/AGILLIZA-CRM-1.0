@@ -389,6 +389,15 @@ function Pagina() {
                 </Button>
               </CollapsibleTrigger>
             </Collapsible>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => exportarCsv(registros)}
+              disabled={registros.length === 0}
+            >
+              <Download className="mr-2 size-4" />
+              Exportar
+            </Button>
           </div>
         </div>
 
