@@ -99,12 +99,14 @@ function Pagina() {
   }, [q]);
 
   const { data, isLoading } = useQuery({
-    queryKey: ["propostas", escopo, busca, dataInicio, dataFim],
+    queryKey: ["propostas", escopo, busca, dataInicio, dataFim, responsavel],
     queryFn: () =>
       listarPropostas({
         data: {
           escopo,
           q: busca || undefined,
+          responsavel:
+            escopo === "todas" && responsavel !== "todos" ? responsavel : undefined,
           data_inicio: dataInicio ? `${dataInicio}T00:00:00` : undefined,
           data_fim: dataFim ? `${dataFim}T23:59:59` : undefined,
           pagina: 1,
