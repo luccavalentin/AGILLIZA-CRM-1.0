@@ -27,6 +27,7 @@ const COLUNAS: DemandaStatus[] = ["aberta", "em_andamento", "aguardando", "concl
 
 function Pagina() {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const moverFn = useServerFn(moverStatusDemanda);
   const [arrastando, setArrastando] = useState<{ id: string; status: DemandaStatus } | null>(null);
 
