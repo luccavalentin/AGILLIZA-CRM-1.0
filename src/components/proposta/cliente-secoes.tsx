@@ -22,11 +22,14 @@ export function ClienteSecao({
   clienteId,
   secao,
   propostaId,
+  destacarObrigatorios,
 }: {
   clienteId: string | null | undefined;
   secao: SecaoCliente;
   propostaId?: string;
+  destacarObrigatorios?: boolean;
 }) {
+
   const getCli = useServerFn(getCliente);
   const getEnd = useServerFn(getEndereco);
 
