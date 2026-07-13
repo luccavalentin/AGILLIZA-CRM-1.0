@@ -44,6 +44,7 @@ import { cn } from "@/lib/utils";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { supabase } from "@/integrations/supabase/client";
 import { ChatClienteTab } from "@/components/crm/chat-cliente-tab";
+import { ChatParticipantes } from "@/components/crm/chat-participantes";
 import {
   listarConversasCliente,
   buscarClientesApp,
