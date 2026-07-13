@@ -367,8 +367,9 @@ function Pagina() {
     ) : null;
 
   return (
-    <div className="flex h-[calc(100dvh-3.5rem)] w-full flex-col p-3 md:p-4">
-      <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[20rem_1fr] xl:grid-cols-[22rem_1fr_20rem]">
+    <div className="flex h-[calc(100dvh-3.5rem)] w-full flex-col p-2 sm:p-3 md:p-4">
+      <div className="grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)] gap-3 md:gap-4 lg:grid-cols-[18rem_1fr] xl:grid-cols-[20rem_1fr_20rem]">
+
 
 
         {/* Lista de conversas — no mobile some quando uma conversa é aberta */}
