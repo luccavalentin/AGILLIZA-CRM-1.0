@@ -285,19 +285,15 @@ export function DadosBasicosSection({
         </div>
         <div className="space-y-1.5">
           <Label>UF de interesse</Label>
-          <Select value={v.uf_interesse} onValueChange={(x) => set("uf_interesse", x)}>
-            <SelectTrigger>
-              <SelectValue placeholder="Selecione" />
-            </SelectTrigger>
-            <SelectContent>
-              {OPCOES_UF.map((uf) => (
-                <SelectItem key={uf} value={uf}>
-                  {uf}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Combobox
+            value={v.uf_interesse}
+            onValueChange={(x) => set("uf_interesse", x)}
+            options={OPCOES_UF}
+            placeholder="UF"
+            searchPlaceholder="Buscar UF…"
+          />
         </div>
+
       </CardContent>
     </Card>
   );
