@@ -114,7 +114,23 @@ export function ContasPage({ tipo }: { tipo: ContaTipo }) {
       }),
   });
 
-  return (
+  const { data: resumo } = useQuery({
+    queryKey: ["fin-contas-resumo", tipo, status, categoriaId, busca, de, ate],
+    queryFn: () =>
+      resumoContas({
+        data: {
+          tipo,
+          status: status || undefined,
+          categoria_id: categoriaId || undefined,
+          contraparte: busca || undefined,
+          de: de || undefined,
+          ate: ate || undefined,
+        },
+      }),
+  });
+
+  const temFiltro = !!(de || ate || status || categoriaId || busca);
+
     <div className="mx-auto w-full max-w-6xl space-y-6 p-3 sm:p-4 md:p-6">
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 sm:flex sm:flex-wrap sm:justify-between">
         <div className="min-w-0">
