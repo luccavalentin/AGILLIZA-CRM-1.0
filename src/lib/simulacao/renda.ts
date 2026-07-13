@@ -97,13 +97,20 @@ export function avaliarRendaMinima(params: {
     sistema,
   });
 
-  const rendaMinima = rendaMinimaParaParcela(primeira_parcela);
+  // Encargos obrigatórios inclusos pelos bancos no comprometimento de renda.
+  const valorImovelBase =
+    Number.isFinite(valor_imovel) && (valor_imovel ?? 0) > 0 ? (valor_imovel as number) : base;
+  const seguroMIP = base * TAXA_MIP_MES; // sobre o saldo devedor inicial (= valor financiado)
+  const seguroDFI = valorImovelBase * TAXA_DFI_MES;
+  const prestacaoTotal = primeira_parcela + seguroMIP + seguroDFI + TAXA_ADMIN_MES;
+
+  const rendaMinima = rendaMinimaParaParcela(prestacaoTotal);
   const renda = renda_informada && renda_informada > 0 ? renda_informada : null;
 
   return {
-    primeiraParcela: primeira_parcela,
+    primeiraParcela: prestacaoTotal,
     rendaMinima,
-    comprometimento: renda ? primeira_parcela / renda : null,
+    comprometimento: renda ? prestacaoTotal / renda : null,
     suficiente: renda == null ? null : renda >= rendaMinima,
   };
 }
