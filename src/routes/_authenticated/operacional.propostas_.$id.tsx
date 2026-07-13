@@ -443,10 +443,12 @@ function AcoesTopo({
   proposta,
   propostaId,
   bancos,
+  onCadastroIncompleto,
 }: {
   proposta: any;
   propostaId: string;
   bancos: any[];
+  onCadastroIncompleto?: () => void;
 }) {
   const qc = useQueryClient();
   const [busy, setBusy] = useState(false);
@@ -466,11 +468,16 @@ function AcoesTopo({
       toast.success(`Proposta enviada (${r.status}).`);
       qc.invalidateQueries({ queryKey: ["proposta", propostaId] });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Falha ao enviar.");
+      const msg = e instanceof Error ? e.message : "Falha ao enviar.";
+      toast.error(msg);
+      if (/cadastro complementar|cadastro incompleto|obrigat/i.test(msg)) {
+        onCadastroIncompleto?.();
+      }
     } finally {
       setBusy(false);
     }
   }
+
 
   async function sincronizar() {
     setBusy(true);
