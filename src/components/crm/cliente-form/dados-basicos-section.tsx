@@ -124,8 +124,8 @@ export function DadosBasicosSection({
             </div>
           )}
         <div className="space-y-1.5">
-          <Label>Nome da mãe</Label>
-          <Input value={v.mae} onChange={(e) => set("mae", e.target.value)} />
+          <Label>Nome da mãe {v.tipo_pessoa === "PF" && "*"}</Label>
+          <Input value={v.mae} onChange={(e) => set("mae", e.target.value)} className={cls("mae")} />
         </div>
         <div className="space-y-1.5">
           <Label>Nome do pai</Label>
@@ -133,7 +133,7 @@ export function DadosBasicosSection({
         </div>
         <div className="space-y-1.5">
           <Label>E-mail *</Label>
-          <Input type="email" value={v.email} onChange={(e) => set("email", e.target.value)} />
+          <Input type="email" value={v.email} onChange={(e) => set("email", e.target.value)} className={cls("email")} />
         </div>
         <div className="space-y-1.5">
           <Label>Celular *</Label>
@@ -142,6 +142,7 @@ export function DadosBasicosSection({
             onChange={(e) => set("telefone_celular", mascararTelefone(e.target.value))}
             inputMode="numeric"
             placeholder="(11) 99999-9999"
+            className={cls("telefone_celular")}
           />
         </div>
         <div className="space-y-1.5">
@@ -152,12 +153,13 @@ export function DadosBasicosSection({
             </span>
             <Input
               inputMode="numeric"
-              className="pl-9"
+              className={cn("pl-9", cls("renda_total_declarada"))}
               value={v.renda_total_declarada}
               onChange={(e) => set("renda_total_declarada", mascararMoedaBR(e.target.value))}
               placeholder="0,00"
             />
           </div>
+
         </div>
         <div className="space-y-1.5">
           <Label>UF de interesse</Label>
