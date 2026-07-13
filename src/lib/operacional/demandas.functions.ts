@@ -75,7 +75,9 @@ export const listarDemandas = createServerFn({ method: "GET" })
       .order("created_at", { ascending: false })
       .limit(300);
     if (data.escopo === "minhas") {
-      query = query.or(`responsavel_id.eq.${userId},criador_id.eq.${userId}`);
+      // "Minhas" = demandas sob minha responsabilidade atual.
+      // Ao transferir, a demanda sai da caixa do responsável anterior.
+      query = query.eq("responsavel_id", userId);
     }
     if (data.status) query = query.eq("status", data.status as any);
     if (data.q) query = query.ilike("titulo", `%${data.q.trim()}%`);
