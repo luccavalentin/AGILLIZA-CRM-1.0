@@ -98,7 +98,11 @@ export function ChatParticipantes({
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-80 space-y-3">
+      <PopoverContent
+        align="end"
+        collisionPadding={12}
+        className="w-[min(20rem,calc(100vw-1.5rem))] space-y-3"
+      >
         <div>
           <p className="text-sm font-medium text-foreground">Participantes da conversa</p>
           <p className="text-xs text-muted-foreground">
