@@ -18,8 +18,21 @@ import {
   Activity,
   CalendarClock,
   ChevronDown,
+  Download,
+  Monitor,
+  Fingerprint,
+  Clock,
+  User as UserIcon,
   type LucideIcon,
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Select,
   SelectContent,
