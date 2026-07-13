@@ -5,12 +5,20 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 export type DemandaStatus = "aberta" | "em_andamento" | "aguardando" | "concluida" | "cancelada";
 export type Prioridade = "p1" | "p2" | "p3";
 
+const TODOS_STATUS: DemandaStatus[] = [
+  "aberta",
+  "em_andamento",
+  "aguardando",
+  "concluida",
+  "cancelada",
+];
+
 const TRANSICOES: Record<DemandaStatus, DemandaStatus[]> = {
-  aberta: ["em_andamento", "aguardando", "cancelada"],
-  em_andamento: ["aguardando", "concluida", "cancelada"],
-  aguardando: ["em_andamento", "concluida", "cancelada"],
-  concluida: ["em_andamento"],
-  cancelada: ["aberta"],
+  aberta: TODOS_STATUS,
+  em_andamento: TODOS_STATUS,
+  aguardando: TODOS_STATUS,
+  concluida: TODOS_STATUS,
+  cancelada: TODOS_STATUS,
 };
 
 export function transicaoDemandaPermitida(de: DemandaStatus, para: DemandaStatus): boolean {
