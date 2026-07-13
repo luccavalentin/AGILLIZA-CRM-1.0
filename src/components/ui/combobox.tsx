@@ -48,9 +48,11 @@ export function Combobox({
   const isLarge = uniqueOptions.length > 200;
   const renderedOptions = React.useMemo(() => {
     if (!isLarge) return uniqueOptions;
-    const term = search.trim().toLowerCase();
+    const norm = (s: string) =>
+      s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    const term = norm(search.trim());
     const base = term
-      ? uniqueOptions.filter((o) => o.toLowerCase().includes(term))
+      ? uniqueOptions.filter((o) => norm(o).includes(term))
       : uniqueOptions;
     return base.slice(0, 100);
   }, [uniqueOptions, isLarge, search]);
