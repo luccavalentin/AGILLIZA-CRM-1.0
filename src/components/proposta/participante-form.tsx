@@ -34,6 +34,8 @@ import {
   ESTADO_CIVIL_COM_REGIME,
 } from "@/lib/propostas/dominios";
 import { maskCpfCnpj, maskCelular, apenasDigitos, validarCpfCnpj, UFS } from "@/lib/simulacao/format";
+import { cn } from "@/lib/utils";
+
 
 export type ParticipanteForm = {
   tipo_situacao: string;
