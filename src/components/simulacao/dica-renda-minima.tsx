@@ -85,7 +85,7 @@ export function DicaRendaMinima({
         </div>
 
         <p className="text-xs leading-relaxed text-muted-foreground">
-          Renda necessária para financiar o imóvel, com parcela inicial de{" "}
+          Renda necessária para o valor financiado, com parcela inicial de{" "}
           <span className="font-medium text-foreground/80">
             {formatBRL(av.primeiraParcela)}
           </span>{" "}
