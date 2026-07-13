@@ -50,6 +50,7 @@ export function ClienteForm({
   portalAtivo,
   enderecoInicial,
   vincularPropostaId,
+  embutido,
 }: {
   inicial?: Partial<ClienteFormValues>;
   portalAtivo?: boolean;
@@ -63,6 +64,8 @@ export function ClienteForm({
   } | null;
   /** Quando presente, ao criar o cliente ele é vinculado a esta proposta e o usuário volta para a ficha. */
   vincularPropostaId?: string;
+  /** Quando true, o formulário é renderizado embutido (ex.: ficha da proposta). Ao salvar, não navega — mantém o usuário na tela atual. */
+  embutido?: boolean;
 }) {
   const navigate = useNavigate();
   const qc = useQueryClient();
@@ -319,6 +322,12 @@ export function ClienteForm({
         } catch (e: any) {
           toast.error(e?.message ?? "Cliente salvo, mas falhou ao vincular à proposta.");
         }
+      }
+      if (embutido) {
+        // Embutido na ficha da proposta: apenas atualiza os dados e permanece na tela atual.
+        await qc.invalidateQueries({ queryKey: ["cliente", id] });
+        toast.success("Cadastro salvo.");
+        return;
       }
       toast.success("Cliente salvo.");
       navigate({ to: "/crm/clientes/$id", params: { id: id! } });

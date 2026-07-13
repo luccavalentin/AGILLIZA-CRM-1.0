@@ -90,6 +90,7 @@ export function ClienteSecao({
   // comprador
   return (
     <ClienteForm
+      embutido
       portalAtivo={c.portal_acesso_ativo}
       enderecoInicial={endereco as any}
       inicial={{
