@@ -426,20 +426,22 @@ export function ClienteForm({
         alternarPortal={alternarPortal}
       />
 
-      <DadosBasicosSection v={v} set={set} setV={setV} />
+      <DadosBasicosSection v={v} set={set} setV={setV} erros={erros} />
 
       {casadoPF && <ConjugeSection v={v} set={set} />}
 
-      <IdentidadeSection v={v} set={set} />
+      <IdentidadeSection v={v} set={set} erros={erros} />
 
       <EnderecoSection
         end={end}
         setEnd={setEnd}
         buscandoCep={buscandoCep}
         buscarCep={buscarCep}
+        erros={erros}
       />
 
-      <FgtsSection v={v} set={set} />
+      <FgtsSection v={v} set={set} erros={erros} />
+
 
       <BancariosSection v={v} set={set} />
 
