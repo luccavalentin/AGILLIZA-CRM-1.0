@@ -256,8 +256,13 @@ function AbaPropostas({ escopo, busca, dataInicio, dataFim }: FiltroProps) {
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <span className="font-semibold tabular-nums text-foreground">
-                    {p.numero_proposta_banco ?? p.numero_proposta}
+                    {p.numero_proposta}
                   </span>
+                  {p.numero_proposta_banco && (
+                    <p className="mt-0.5 truncate text-xs tabular-nums text-muted-foreground">
+                      Nº banco {p.numero_proposta_banco}
+                    </p>
+                  )}
                   <p className="mt-0.5 truncate text-sm text-muted-foreground">
                     {p.nome_cliente ?? "—"}
                   </p>
@@ -320,11 +325,11 @@ function AbaPropostas({ escopo, busca, dataInicio, dataFim }: FiltroProps) {
                   <TableCell className="relative">
                     <span className="absolute inset-y-0 left-0 w-[3px] origin-top scale-y-0 rounded-r-full bg-primary transition-transform duration-200 group-hover:scale-y-100" />
                     <div className="font-medium tabular-nums text-foreground transition-colors group-hover:text-primary">
-                      {p.numero_proposta_banco ?? p.numero_proposta}
+                      {p.numero_proposta}
                     </div>
                     {p.numero_proposta_banco && (
                       <div className="text-[11px] text-muted-foreground">
-                        Interno {p.numero_proposta}
+                        Nº banco {p.numero_proposta_banco}
                       </div>
                     )}
                   </TableCell>
