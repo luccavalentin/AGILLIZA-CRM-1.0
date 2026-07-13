@@ -1,12 +1,23 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { MoreHorizontal, Wallet } from "lucide-react";
+import {
+  MoreHorizontal,
+  Wallet,
+  ArrowDownCircle,
+  ArrowUpCircle,
+  Clock,
+  AlertTriangle,
+  CheckCircle2,
+  Search,
+  SlidersHorizontal,
+} from "lucide-react";
 import { toast } from "sonner";
 import {
   listarContas,
   listarConfigs,
   excluirConta,
+  resumoContas,
   type ContaTipo,
 } from "@/lib/financeiro/financeiro.functions";
 import {
@@ -26,6 +37,7 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -48,6 +60,7 @@ import { BaixarDialog } from "@/components/financeiro/baixar-dialog";
 import { EstornarDialog } from "@/components/financeiro/estornar-dialog";
 import { ContaDrawer } from "@/components/financeiro/conta-drawer";
 import { formatBRL, formatData } from "@/lib/financeiro/format";
+
 
 const STATUS_OPCOES = ["aberta", "parcial", "paga", "atrasada", "cancelada", "estornada"];
 
