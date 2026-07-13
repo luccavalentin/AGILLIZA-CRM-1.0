@@ -50,10 +50,9 @@ export function ConjugeSection({ v, set }: { v: ClienteFormValues; set: SetCampo
         </div>
         <div className="space-y-1.5">
           <Label>Data de nascimento</Label>
-          <Input
-            type="date"
+          <DateInput
             value={v.conjuge_data_nascimento}
-            onChange={(e) => set("conjuge_data_nascimento", e.target.value)}
+            onChange={(val) => set("conjuge_data_nascimento", val)}
           />
         </div>
         <div className="space-y-1.5">
