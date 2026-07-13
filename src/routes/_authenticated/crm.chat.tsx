@@ -348,7 +348,7 @@ function Pagina() {
             lembrete de cada cliente.
           </p>
         </div>
-        <ConfiguracoesChat />
+        <ChatConfigSheet />
       </div>
 
       {/* Gestão da conversa — barra horizontal no topo (acima das colunas) */}
