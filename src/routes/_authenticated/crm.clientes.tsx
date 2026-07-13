@@ -265,8 +265,8 @@ function Pagina() {
       </div>
 
       <Card className="hidden overflow-hidden rounded-2xl border-border/60 shadow-sm md:block">
-        <div className="w-full">
-          <Table className="w-full table-fixed">
+        <div className="w-full overflow-x-auto">
+          <Table className="w-full min-w-[860px] table-fixed">
             <TableHeader>
               <TableRow className="border-b border-border/60 bg-muted/30 hover:bg-muted/30">
                 {[
