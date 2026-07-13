@@ -123,6 +123,42 @@ function Pagina() {
   const [arrasto, setArrasto] = useState<Arrasto | null>(null);
   const [alvo, setAlvo] = useState<string | null>(null);
   const arrastouRef = useRef(false);
+  const [periodo, setPeriodo] = useState("todos");
+  const [respFiltro, setRespFiltro] = useState("todos");
+
+  function aplicarPeriodo(p: string) {
+    setPeriodo(p);
+    const hoje = new Date();
+    const fmt = (dt: Date) => dt.toISOString().slice(0, 10);
+    if (p === "todos") {
+      setDesde("");
+      setAte("");
+    } else if (p === "mes") {
+      setDesde(fmt(new Date(hoje.getFullYear(), hoje.getMonth(), 1)));
+      setAte(fmt(new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0)));
+    } else if (p === "7d") {
+      const i = new Date(hoje);
+      i.setDate(i.getDate() - 7);
+      setDesde(fmt(i));
+      setAte(fmt(hoje));
+    } else if (p === "30d") {
+      const i = new Date(hoje);
+      i.setDate(i.getDate() - 30);
+      setDesde(fmt(i));
+      setAte(fmt(hoje));
+    } else if (p === "ano") {
+      setDesde(fmt(new Date(hoje.getFullYear(), 0, 1)));
+      setAte(fmt(new Date(hoje.getFullYear(), 11, 31)));
+    }
+  }
+
+  function limparTodosFiltros() {
+    setPeriodo("todos");
+    setRespFiltro("todos");
+    setDesde("");
+    setAte("");
+    setBusca("");
+  }
 
   const { data: contratos, isLoading: carregandoContratos } = useQuery({
     queryKey: ["crm-contratos-emitidos"],
