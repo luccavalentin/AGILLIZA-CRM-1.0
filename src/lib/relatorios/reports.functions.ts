@@ -621,7 +621,9 @@ export const runReport = createServerFn({ method: "POST" })
         "engenharia_vistoria",
         "analise_juridica",
       ];
-      const aprovado = ["credito_aprovado", "contrato_emitido", "registrado"];
+      // Crédito aprovado é diferente de contrato emitido: propostas já
+      // contratadas saem de "aprovadas" e contam apenas em "contratos".
+      const aprovado = ["credito_aprovado"];
       const contrato = ["contrato_emitido", "registrado"];
 
       const dentro = (iso?: string) => !!iso && iso.slice(0, 10) >= de && iso.slice(0, 10) <= ate;
