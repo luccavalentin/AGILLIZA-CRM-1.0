@@ -33,7 +33,7 @@ import { ClienteForm } from "@/components/crm/cliente-form";
 import { DocumentosTab } from "@/components/crm/documentos-tab";
 import { InteracoesTab } from "@/components/crm/interacoes-tab";
 import { VinculoTab } from "@/components/crm/vinculo-tab";
-import { ChatClienteTab } from "@/components/crm/chat-cliente-tab";
+import { ChatClienteInstagram } from "@/components/crm/chat-cliente-instagram";
 import { VendedoresTab } from "@/components/crm/vendedores-tab";
 import { ImovelTab, IqTab } from "@/components/crm/imovel-iq-tab";
 import { StatusBadge } from "@/components/crm/tone-badge";
@@ -522,10 +522,8 @@ function Pagina() {
         </TabsContent>
 
         <TabsContent value="mensagens" className="mt-4">
-          <div className="h-[60dvh] max-h-[560px] min-h-[340px]">
-
-
-            <ChatClienteTab
+          <div className="h-[68dvh] max-h-[680px] min-h-[420px]">
+            <ChatClienteInstagram
               clienteId={id}
               info={{
                 nome: c.nome,
@@ -544,6 +542,7 @@ function Pagina() {
             />
           </div>
         </TabsContent>
+
 
 
         <TabsContent value="interacoes" className="mt-4">

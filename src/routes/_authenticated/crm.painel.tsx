@@ -111,6 +111,7 @@ function Pagina() {
 
   const [desde, setDesde] = useState("");
   const [ate, setAte] = useState("");
+  const [escopo, setEscopo] = useState<"minhas" | "geral">("minhas");
   const [busca, setBusca] = useState("");
   const [dialogStage, setDialogStage] = useState<string | null>(null);
   const [arquivoAberto, setArquivoAberto] = useState(false);
@@ -129,10 +130,11 @@ function Pagina() {
   });
   const totalArquivados = contratos?.length ?? 0;
 
-  const queryKey = ["crm-painel", desde, ate];
+  const queryKey = ["crm-painel", desde, ate, escopo];
   const { data, isLoading } = useQuery({
     queryKey,
-    queryFn: () => listar({ data: { desde: desde || undefined, ate: ate || undefined } }),
+    queryFn: () =>
+      listar({ data: { desde: desde || undefined, ate: ate || undefined, escopo } }),
   });
 
   const termoAdicionar = adicionarBusca.trim();
@@ -408,7 +410,25 @@ function Pagina() {
               em {etapasAtivas} de {dadosFiltrados.length} etapas
             </span>
           </button>
+          <div className="inline-flex h-10 shrink-0 items-center rounded-xl border border-border/60 bg-muted/40 p-1 shadow-sm">
+            {(["minhas", "geral"] as const).map((op) => (
+              <button
+                key={op}
+                type="button"
+                onClick={() => setEscopo(op)}
+                className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
+                  escopo === op
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {op === "minhas" ? <Users className="size-3.5" /> : <Workflow className="size-3.5" />}
+                {op === "minhas" ? "Minhas" : "Geral"}
+              </button>
+            ))}
+          </div>
           <div className="relative w-full sm:w-64">
+
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={busca}

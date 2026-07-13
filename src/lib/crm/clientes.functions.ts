@@ -425,27 +425,36 @@ export const listarPainel = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator(
     (d: unknown) =>
-      z.object({ desde: z.string().optional(), ate: z.string().optional() }).optional().parse(d) ??
-      {},
+      z
+        .object({
+          desde: z.string().optional(),
+          ate: z.string().optional(),
+          escopo: z.enum(["minhas", "geral"]).optional(),
+        })
+        .optional()
+        .parse(d) ?? {},
   )
   .handler(async ({ data, context }): Promise<PainelStage[]> => {
-    const { supabase } = context;
+    const { supabase, userId } = context;
     const desde = data?.desde ? new Date(data.desde).getTime() : null;
     const ate = data?.ate ? new Date(`${data.ate}T23:59:59.999`).getTime() : null;
+    const soMinhas = data?.escopo === "minhas";
     const { data: stages, error: e1 } = await supabase
       .from("pipeline_stages")
       .select("codigo, nome, ordem")
       .order("ordem");
     if (e1) throw e1;
-    const { data: rows, error: e2 } = await supabase
+    let q = supabase
       .from("clientes")
       .select(
-        "id, nome, numero_cliente, vistoria_agendada_em, vistoria_concluida_em, contrato_emitido_em, cliente_pipeline(ultima_atualizacao_em, pipeline_stages(codigo))",
+        "id, nome, numero_cliente, responsavel_id, vistoria_agendada_em, vistoria_concluida_em, contrato_emitido_em, cliente_pipeline(ultima_atualizacao_em, pipeline_stages(codigo))",
       )
       .eq("ativo", true)
-      .is("contrato_arquivado_em", null)
-      .order("nome");
+      .is("contrato_arquivado_em", null);
+    if (soMinhas) q = q.eq("responsavel_id", userId);
+    const { data: rows, error: e2 } = await q.order("nome");
     if (e2) throw e2;
+
     const filtradas = (rows ?? []).filter((r: any) => {
       if (!desde && !ate) return true;
       const atualizado = r.cliente_pipeline?.ultima_atualizacao_em;
