@@ -412,8 +412,10 @@ export function ParticipanteDialog({
                 <CamposParticipante
                   f={conjuge}
                   set={setC}
+                  erros={errosC}
                   buscandoCep={buscandoCepC}
                   onBuscarCep={(m) => buscarCep(m, setC, conjuge, setBuscandoCepC)}
+
                   mostrarQualificacao={false}
                   mostrarEstadoCivil={false}
                   mostrarIdentificacaoExtra={false}
