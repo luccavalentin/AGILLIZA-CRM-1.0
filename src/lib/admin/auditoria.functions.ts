@@ -97,7 +97,7 @@ export const listarAuditoria = createServerFn({ method: "GET" })
 
     let query = supabase
       .from("admin_audit_logs")
-      .select("id, acao, descricao, entidade, entidade_id, ip, user_id, created_at")
+      .select("id, acao, descricao, entidade, entidade_id, ip, user_agent, payload_anterior, payload_novo, user_id, created_at")
       .eq("correspondente_id", corr);
 
     if (data?.dataInicio) query = query.gte("created_at", data.dataInicio);
