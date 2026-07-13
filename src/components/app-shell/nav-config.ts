@@ -112,15 +112,15 @@ export const navInterno: NavGroup[] = [
             perm: { modulo: "operacional.simulacoes" },
           },
           {
-            label: "Simulação rápida",
-            icon: Gauge,
-            to: "/operacional/simulacoes/nova",
-            perm: { modulo: "operacional.simulacoes" },
-          },
-          {
             label: "Simulação completa",
             icon: FileText,
             to: "/operacional/simulacoes/completa",
+            perm: { modulo: "operacional.simulacoes" },
+          },
+          {
+            label: "Simulação rápida",
+            icon: Gauge,
+            to: "/operacional/simulacoes/nova",
             perm: { modulo: "operacional.simulacoes" },
           },
         ],
