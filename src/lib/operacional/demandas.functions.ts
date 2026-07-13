@@ -154,8 +154,25 @@ export const obterDemanda = createServerFn({ method: "GET" })
     ];
     const nomes = await nomesPorId(supabase, uids);
     const nm = (id: string | null | undefined) => (id ? (nomes.get(id) ?? null) : null);
+
+    const meuId = context.userId;
+    const souCriador = demanda.data?.criador_id === meuId;
+    const souResponsavel = demanda.data?.responsavel_id === meuId;
+    const souParticipante = (participantes.data ?? []).some((p: any) => p.user_id === meuId);
+    const permissoes = {
+      // Quem envia (criador) pode editar e excluir. Quem recebe (responsável) pode editar e transferir.
+      pode_editar: souCriador || souResponsavel,
+      pode_excluir: souCriador,
+      pode_transferir: souResponsavel || souCriador,
+      pode_mover_status: souCriador || souResponsavel || souParticipante,
+      sou_criador: souCriador,
+      sou_responsavel: souResponsavel,
+    };
+
     return {
       demanda: demanda.data,
+      permissoes,
+      nome_criador: nm(demanda.data?.criador_id),
       nome_responsavel: nm(demanda.data?.responsavel_id),
       historico: (historico.data ?? []).map((h: any) => ({
         ...h,
