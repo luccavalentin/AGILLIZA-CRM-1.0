@@ -105,6 +105,7 @@ export function PanelHeader({
   atualizadoEm,
   onRefresh,
   actions,
+  variant = "light",
 }: {
   eyebrow: string;
   titulo: string;
@@ -112,24 +113,50 @@ export function PanelHeader({
   atualizadoEm?: string;
   onRefresh?: () => void;
   actions?: ReactNode;
+  variant?: "light" | "dark";
 }) {
+  const dark = variant === "dark";
   return (
-    <div className="op-hero p-4 md:p-6">
+    <div className={cn(dark ? "op-hero-dark" : "op-hero", "p-4 md:p-6")}>
       <div className="relative grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
 
         <div className="min-w-0">
-          <p className="flex min-w-0 items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-primary sm:text-[11px] sm:tracking-[0.18em]">
-            <span className="inline-block h-1 w-5 shrink-0 rounded-full bg-primary sm:w-6" />
+          <p
+            className={cn(
+              "flex min-w-0 items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.12em] sm:text-[11px] sm:tracking-[0.18em]",
+              dark ? "text-white/70" : "text-primary",
+            )}
+          >
+            <span
+              className={cn(
+                "inline-block h-1 w-5 shrink-0 rounded-full sm:w-6",
+                dark ? "bg-white/80" : "bg-primary",
+              )}
+            />
             <span className="truncate">{eyebrow}</span>
           </p>
-          <h1 className="mt-2 text-2xl font-semibold leading-tight tracking-tight text-foreground sm:text-[28px]">
+          <h1
+            className={cn(
+              "mt-2 text-2xl font-semibold leading-tight tracking-tight sm:text-[28px]",
+              dark ? "text-white" : "text-foreground",
+            )}
+          >
             {titulo}
           </h1>
-          <p className="mt-1.5 max-w-xl text-sm text-muted-foreground">{descricao}</p>
+          <p className={cn("mt-1.5 max-w-xl text-sm", dark ? "text-white/70" : "text-muted-foreground")}>
+            {descricao}
+          </p>
         </div>
         <div className="grid min-w-0 grid-cols-1 gap-2 sm:flex sm:flex-wrap sm:items-center sm:justify-end">
           {atualizadoEm && (
-            <span className="inline-flex min-w-0 items-center justify-center gap-1.5 rounded-full border border-border bg-background/60 px-3 py-1 text-[11px] tabular-nums text-muted-foreground sm:justify-start">
+            <span
+              className={cn(
+                "inline-flex min-w-0 items-center justify-center gap-1.5 rounded-full border px-3 py-1 text-[11px] tabular-nums sm:justify-start",
+                dark
+                  ? "border-white/20 bg-white/10 text-white/80"
+                  : "border-border bg-background/60 text-muted-foreground",
+              )}
+            >
               <span className="relative flex h-1.5 w-1.5">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-60" />
                 <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-success" />
@@ -139,12 +166,55 @@ export function PanelHeader({
           )}
           {actions}
           {onRefresh && (
-            <Button variant="outline" size="icon" onClick={onRefresh} aria-label="Atualizar">
+            <Button
+              variant={dark ? "secondary" : "outline"}
+              size="icon"
+              onClick={onRefresh}
+              aria-label="Atualizar"
+            >
               <RefreshCw className="h-3.5 w-3.5 opacity-70" />
             </Button>
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+/** Funil de conversão vertical (etapas com largura proporcional). */
+export function ConversionFunnel({ etapas }: { etapas: { label: string; valor: number }[] }) {
+  const base = Math.max(1, etapas[0]?.valor ?? 1);
+  const tons: Tone[] = ["brand", "brand", "success", "success"];
+  return (
+    <div className="space-y-2.5">
+      {etapas.map((e, idx) => {
+        const pctBase = (e.valor / base) * 100;
+        const largura = Math.max(24, pctBase);
+        const tone = tons[idx] ?? "brand";
+        return (
+          <div key={e.label} className="flex items-center gap-3">
+            <div className="flex-1">
+              <div className="mb-1 flex items-center justify-between gap-2">
+                <span className="truncate text-xs font-medium text-foreground">{e.label}</span>
+                <span className="shrink-0 font-mono text-xs tabular-nums text-muted-foreground">
+                  {pctBase.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}%
+                </span>
+              </div>
+              <div className="flex h-9 items-center">
+                <div
+                  className={cn(
+                    "flex h-full items-center justify-end rounded-md px-3 text-sm font-semibold tabular-nums text-white transition-all duration-500",
+                    toneBar[tone],
+                  )}
+                  style={{ width: `${largura}%` }}
+                >
+                  {e.valor.toLocaleString("pt-BR")}
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

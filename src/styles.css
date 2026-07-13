@@ -389,6 +389,30 @@
   background: var(--op-accent, var(--brand-azul-profundo));
 }
 
+/* Cabeçalho de destaque escuro (Produção comercial) com gradiente da marca. */
+.op-hero-dark {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-2xl);
+  border: 1px solid color-mix(in oklab, var(--brand-azul-profundo) 40%, transparent);
+  background: linear-gradient(135deg, #000f9f 0%, #000a70 55%, #00052e 100%);
+  box-shadow: 0 24px 60px -30px color-mix(in oklab, var(--brand-azul-profundo) 60%, transparent);
+  color: #fff;
+}
+.op-hero-dark::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(
+    circle at 1px 1px,
+    rgba(255, 255, 255, 0.08) 1px,
+    transparent 0
+  );
+  background-size: 22px 22px;
+  opacity: 0.6;
+  pointer-events: none;
+}
+
 /* Card de KPI sóbrio com fina régua de acento. */
 .op-stat {
   position: relative;

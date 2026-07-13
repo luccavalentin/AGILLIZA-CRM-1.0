@@ -10,7 +10,15 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card } from "@/components/ui/card";
-import { CheckCircle2 } from "lucide-react";
+import {
+  CheckCircle2,
+  FlaskConical,
+  Send,
+  BadgeCheck,
+  XCircle,
+  FileSignature,
+  type LucideIcon,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   PanelHeader,
@@ -20,6 +28,7 @@ import {
   PanelCard,
   MetricList,
   AlertRow,
+  ConversionFunnel,
 } from "@/components/common/dashboard";
 import { ReportChartView } from "@/components/reports/report-chart";
 import { VisionSelector } from "@/components/reports/report-filters-bar";
@@ -49,6 +58,17 @@ function linkParaMetrica(label: string): string | undefined {
     l.includes("rascunho")
   )
     return "/operacional/propostas";
+  return undefined;
+}
+
+/** Ícone ilustrativo por rótulo de indicador executivo. */
+function iconeParaMetrica(label: string): LucideIcon | undefined {
+  const l = label.toLowerCase();
+  if (l.includes("simula")) return FlaskConical;
+  if (l.includes("propost")) return Send;
+  if (l.includes("aprovad")) return BadgeCheck;
+  if (l.includes("reprovad") || l.includes("recusad")) return XCircle;
+  if (l.includes("contrato")) return FileSignature;
   return undefined;
 }
 
@@ -145,6 +165,7 @@ export function PainelView({
   return (
     <div className="mx-auto w-full max-w-[1600px] space-y-6 p-3 sm:p-4 md:space-y-8 md:p-6">
       <PanelHeader
+        variant={modulo === "visao-geral" ? "dark" : "light"}
         eyebrow={eyebrow}
         titulo={titulo}
         descricao={descricao}
@@ -227,6 +248,7 @@ export function PainelView({
                 hint={h.hint}
                 tone={h.tone}
                 delta={h.delta}
+                icon={iconeParaMetrica(h.label)}
                 to={linkParaMetrica(h.label)}
               />
             ))}
@@ -263,6 +285,17 @@ export function PainelView({
               </PanelCard>
             </>
           )}
+
+          {data.funil && data.funil.etapas.some((e) => e.valor > 0) && (
+            <>
+              <SectionTitle>Funil de conversão</SectionTitle>
+              <PanelCard titulo={data.funil.titulo} subtitulo="Da simulação ao contrato">
+                <ConversionFunnel etapas={data.funil.etapas} />
+              </PanelCard>
+            </>
+          )}
+
+
 
           <SectionTitle>Operação</SectionTitle>
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
