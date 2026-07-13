@@ -98,8 +98,48 @@ function Pagina() {
   const removerAnexoFn = useServerFn(removerAnexoDemanda);
   const urlAnexoFn = useServerFn(urlAnexoDemanda);
   const fileRef = useRef<HTMLInputElement>(null);
+  const chatFileRef = useRef<HTMLInputElement>(null);
   const [enviando, setEnviando] = useState(false);
+  const [enviandoMsg, setEnviandoMsg] = useState(false);
+  const [arquivoChat, setArquivoChat] = useState<File | null>(null);
   const [visualizando, setVisualizando] = useState<{ url: string; nome: string } | null>(null);
+
+  async function enviarMensagem() {
+    const texto = corpo.trim();
+    if (!texto && !arquivoChat) return;
+    setEnviandoMsg(true);
+    try {
+      let anexo_path: string | undefined;
+      let anexo_nome: string | undefined;
+      let anexo_tamanho: number | undefined;
+      if (arquivoChat) {
+        const path = `${id}/chat/${Date.now()}-${arquivoChat.name.replace(/[^\w.\-]/g, "_")}`;
+        const { error } = await supabase.storage.from("demanda-anexos").upload(path, arquivoChat);
+        if (error) throw error;
+        anexo_path = path;
+        anexo_nome = arquivoChat.name;
+        anexo_tamanho = arquivoChat.size;
+      }
+      await comentarFn({
+        data: {
+          demanda_id: id,
+          corpo: texto,
+          visivel_cliente: visivelCliente,
+          anexo_path,
+          anexo_nome,
+          anexo_tamanho,
+        },
+      });
+      setCorpo("");
+      setArquivoChat(null);
+      invalidar();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Falha ao enviar mensagem.");
+    } finally {
+      setEnviandoMsg(false);
+    }
+  }
+
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
