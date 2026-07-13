@@ -101,8 +101,6 @@ function ComboSelect({
     </Popover>
   );
 }
-import { criarDemanda } from "@/lib/operacional/demandas.functions";
-import { listarColegas, buscarClientesOpcoes } from "@/lib/operacional/shared.functions";
 
 const TIPOS = [
   { v: "analise_documento", l: "Análise de documento" },
