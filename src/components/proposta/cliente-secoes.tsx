@@ -23,12 +23,31 @@ export type SecaoCliente = "comprador" | "vendedores" | "imovel" | "iq" | "docum
 export function ClienteSecao({
   clienteId,
   secao,
+  propostaId,
 }: {
   clienteId: string | null | undefined;
   secao: SecaoCliente;
+  propostaId?: string;
 }) {
   const getCli = useServerFn(getCliente);
   const getEnd = useServerFn(getEndereco);
+  const cadastrarFn = useServerFn(cadastrarClienteDaProposta);
+  const qc = useQueryClient();
+  const [cadastrando, setCadastrando] = useState(false);
+
+  async function cadastrarCliente() {
+    if (!propostaId) return;
+    setCadastrando(true);
+    try {
+      await cadastrarFn({ data: { proposta_id: propostaId } });
+      toast.success("Cliente cadastrado e vinculado à proposta.");
+      await qc.invalidateQueries({ queryKey: ["proposta", propostaId] });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao cadastrar o cliente.");
+    } finally {
+      setCadastrando(false);
+    }
+  }
 
   const { data: det, isLoading } = useQuery({
     queryKey: ["cliente", clienteId],
