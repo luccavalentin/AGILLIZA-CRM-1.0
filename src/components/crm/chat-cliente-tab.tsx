@@ -278,11 +278,13 @@ export function ChatClienteConversa({
       await responder({
         data: {
           cliente_id: clienteId,
+          atendente_id: atendenteId,
           mensagem: texto.trim() || undefined,
           anexo_path: path,
           responde_a: respondendo?.id,
         },
       });
+
       setTexto("");
       setRespondendo(null);
       qc.invalidateQueries({ queryKey });
