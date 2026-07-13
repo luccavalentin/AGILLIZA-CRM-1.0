@@ -17,6 +17,8 @@ export interface PanelDelta {
   dir: "up" | "down" | "flat";
   /** Se true, subir é positivo (verde); se false, subir é negativo (vermelho). */
   bom: boolean;
+  /** Sem base anterior para comparar (período anterior zerado): exibe "novo". */
+  novo?: boolean;
 }
 export interface PanelMetric {
   label: string;
