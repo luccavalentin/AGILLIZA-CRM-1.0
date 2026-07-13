@@ -180,7 +180,14 @@ function Pagina() {
   const [autoAbrir, setAutoAbrir] = useState(false);
   const [autoEnviar, setAutoEnviar] = useState(false);
   const [enviandoAuto, setEnviandoAuto] = useState(false);
+  // Quando o envio falha por cadastro incompleto, destaca os campos obrigatórios pendentes.
+  const [destacarObrigatorios, setDestacarObrigatorios] = useState(false);
   const enviarAutoFn = useServerFn(enviarPropostaHomeFin);
+  const onCadastroIncompleto = () => {
+    setTab("COMPRADORES");
+    setDestacarObrigatorios(true);
+  };
+
 
   const { data, isLoading } = useQuery({
     queryKey: ["proposta", id],
