@@ -326,7 +326,14 @@ export const criarSimulacao = createServerFn({ method: "POST" })
       usuario_responsavel_id: userId,
     };
 
-    const { data: sim, error } = await supabase
+    // O insert é feito com o client admin usando o escopo já validado
+    // (correspondente_id do próprio usuário + usuario_criador_id = userId).
+    // Isso evita falhas de "row-level security policy" em cenários de borda
+    // (token renovado no envio, usuário sem permissão direta de escrita etc.),
+    // mantendo o mesmo padrão já usado para gravar o cliente no CRM acima.
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: sim, error } = await supabaseAdmin
       .from("simulacoes")
       .insert(insert as any)
       .select("id, numero_simulacao")
@@ -340,7 +347,7 @@ export const criarSimulacao = createServerFn({ method: "POST" })
         .select("id, codigo_banco, nome_banco, id_banco")
         .in("id", dd.bancos_ids);
       if (bancos && bancos.length > 0) {
-        await supabase.from("simulacao_bancos").insert(
+        await supabaseAdmin.from("simulacao_bancos").insert(
           bancos.map((b) => ({
             simulacao_id: sim.id,
             banco_id: b.id,
@@ -353,7 +360,7 @@ export const criarSimulacao = createServerFn({ method: "POST" })
       }
     }
 
-    await supabase.from("simulacao_historico").insert({
+    await supabaseAdmin.from("simulacao_historico").insert({
       simulacao_id: sim.id,
       tipo: "cadastro",
       descricao: "Simulação criada",
