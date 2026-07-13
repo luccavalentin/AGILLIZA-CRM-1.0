@@ -99,6 +99,27 @@ const STATUS_OPCOES: DemandaStatus[] = [
   "cancelada",
 ];
 
+function InfoCell({
+  icon: Icon,
+  rotulo,
+  valor,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  rotulo: string;
+  valor: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-start gap-2.5 bg-card px-4 py-3">
+      <Icon className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+      <div className="min-w-0">
+        <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{rotulo}</p>
+        <p className="mt-0.5 truncate text-sm font-medium text-foreground">{valor}</p>
+      </div>
+    </div>
+  );
+}
+
+
 function Pagina() {
   const { id } = useParams({ from: "/_authenticated/operacional/demandas_/$id" });
   const qc = useQueryClient();
