@@ -256,7 +256,7 @@ function Pagina() {
   }, {});
   const porBanco = itens.reduce<Record<string, number>>((acc, s) => {
     (Array.isArray(s.bancos) ? s.bancos : []).forEach((b: any) => {
-      const nome = b.nome ?? b.banco_nome ?? b.banco_id ?? "Banco";
+      const nome = b.nome_banco ?? b.nome ?? b.banco_nome ?? "Banco";
       acc[nome] = (acc[nome] ?? 0) + 1;
     });
     return acc;
