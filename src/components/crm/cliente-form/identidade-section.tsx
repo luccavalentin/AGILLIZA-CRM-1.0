@@ -17,11 +17,23 @@ import {
   OPCOES_TIPO_DOCUMENTO,
   OPCOES_ORGAO_EXPEDIDOR,
   OPCOES_UF,
+  CLASSE_ERRO,
   type ClienteFormValues,
   type SetCampo,
 } from "./constants";
 
-export function IdentidadeSection({ v, set }: { v: ClienteFormValues; set: SetCampo }) {
+export function IdentidadeSection({
+  v,
+  set,
+  erros,
+}: {
+  v: ClienteFormValues;
+  set: SetCampo;
+  erros?: Set<string>;
+}) {
+  const cls = (k: string) => (erros?.has(k) ? CLASSE_ERRO : undefined);
+  const clsBox = (k: string) => (erros?.has(k) ? "rounded-md ring-1 ring-destructive" : undefined);
+
   return (
     <Card>
       <CardHeader>
@@ -37,7 +49,7 @@ export function IdentidadeSection({ v, set }: { v: ClienteFormValues; set: SetCa
         <div className="space-y-1.5">
           <Label>Sexo</Label>
           <Select value={v.sexo || undefined} onValueChange={(x) => set("sexo", x)}>
-            <SelectTrigger>
+            <SelectTrigger className={cls("sexo")}>
               <SelectValue placeholder="Selecione" />
             </SelectTrigger>
             <SelectContent>
@@ -49,6 +61,7 @@ export function IdentidadeSection({ v, set }: { v: ClienteFormValues; set: SetCa
             </SelectContent>
           </Select>
         </div>
+
         <div className="space-y-1.5">
           <Label>Nacionalidade</Label>
           <Combobox
@@ -78,6 +91,7 @@ export function IdentidadeSection({ v, set }: { v: ClienteFormValues; set: SetCa
             options={OPCOES_TIPO_DOCUMENTO}
             placeholder="Selecione"
             searchPlaceholder="Buscar tipo…"
+            className={clsBox("tipo_documento_identidade")}
           />
         </div>
         <div className="space-y-1.5">
@@ -85,6 +99,7 @@ export function IdentidadeSection({ v, set }: { v: ClienteFormValues; set: SetCa
           <Input
             value={v.numero_documento}
             onChange={(e) => set("numero_documento", e.target.value)}
+            className={cls("numero_documento")}
           />
         </div>
         <div className="space-y-1.5">
@@ -95,12 +110,13 @@ export function IdentidadeSection({ v, set }: { v: ClienteFormValues; set: SetCa
             options={OPCOES_ORGAO_EXPEDIDOR}
             placeholder="Selecione"
             searchPlaceholder="Buscar órgão…"
+            className={clsBox("orgao_expedidor")}
           />
         </div>
         <div className="space-y-1.5">
           <Label>UF de expedição</Label>
           <Select value={v.uf_expedicao} onValueChange={(x) => set("uf_expedicao", x)}>
-            <SelectTrigger>
+            <SelectTrigger className={cls("uf_expedicao")}>
               <SelectValue placeholder="Selecione" />
             </SelectTrigger>
             <SelectContent>
@@ -112,6 +128,7 @@ export function IdentidadeSection({ v, set }: { v: ClienteFormValues; set: SetCa
             </SelectContent>
           </Select>
         </div>
+
         <div className="space-y-1.5">
           <Label>Data de expedição</Label>
           <Input
@@ -126,7 +143,9 @@ export function IdentidadeSection({ v, set }: { v: ClienteFormValues; set: SetCa
             value={v.profissao}
             onChange={(e) => set("profissao", e.target.value)}
             placeholder="Digite a profissão"
+            className={cls("profissao")}
           />
+
         </div>
         <div className="space-y-1.5">
           <Label>Empresa onde trabalha</Label>

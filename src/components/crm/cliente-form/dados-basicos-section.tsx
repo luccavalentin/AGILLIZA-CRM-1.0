@@ -16,19 +16,25 @@ import {
   REGIMES,
   OPCOES_UF,
   mascararMoedaBR,
+  CLASSE_ERRO,
   type ClienteFormValues,
   type SetCampo,
 } from "./constants";
+import { cn } from "@/lib/utils";
 
 export function DadosBasicosSection({
   v,
   set,
   setV,
+  erros,
 }: {
   v: ClienteFormValues;
   set: SetCampo;
   setV: React.Dispatch<React.SetStateAction<ClienteFormValues>>;
+  erros?: Set<string>;
 }) {
+  const cls = (k: string) => (erros?.has(k) ? CLASSE_ERRO : undefined);
+
   return (
     <Card>
       <CardHeader>
@@ -66,26 +72,29 @@ export function DadosBasicosSection({
             onChange={(e) => set("documento", mascararDocumentoTipo(e.target.value, v.tipo_pessoa))}
             inputMode="numeric"
             placeholder={v.tipo_pessoa === "PF" ? "000.000.000-00" : "00.000.000/0000-00"}
+            className={cls("documento")}
           />
         </div>
         <div className="space-y-1.5 sm:col-span-2">
           <Label>{v.tipo_pessoa === "PF" ? "Nome completo *" : "Razão social *"}</Label>
-          <Input value={v.nome} onChange={(e) => set("nome", e.target.value)} />
+          <Input value={v.nome} onChange={(e) => set("nome", e.target.value)} className={cls("nome")} />
         </div>
         <div className="space-y-1.5">
           <Label>{v.tipo_pessoa === "PF" ? "Data de nascimento *" : "Data de abertura *"}</Label>
           <DateInput
             value={v.data_nascimento}
             onChange={(val) => set("data_nascimento", val)}
+            className={cls("data_nascimento")}
           />
         </div>
         {v.tipo_pessoa === "PF" && (
           <div className="space-y-1.5">
             <Label>Estado civil *</Label>
             <Select value={v.estado_civil} onValueChange={(x) => set("estado_civil", x)}>
-              <SelectTrigger>
+              <SelectTrigger className={cls("estado_civil")}>
                 <SelectValue />
               </SelectTrigger>
+
               <SelectContent>
                 {ESTADOS_CIVIS.map((o) => (
                   <SelectItem key={o.v} value={o.v}>
@@ -115,8 +124,8 @@ export function DadosBasicosSection({
             </div>
           )}
         <div className="space-y-1.5">
-          <Label>Nome da mãe</Label>
-          <Input value={v.mae} onChange={(e) => set("mae", e.target.value)} />
+          <Label>Nome da mãe {v.tipo_pessoa === "PF" && "*"}</Label>
+          <Input value={v.mae} onChange={(e) => set("mae", e.target.value)} className={cls("mae")} />
         </div>
         <div className="space-y-1.5">
           <Label>Nome do pai</Label>
@@ -124,7 +133,7 @@ export function DadosBasicosSection({
         </div>
         <div className="space-y-1.5">
           <Label>E-mail *</Label>
-          <Input type="email" value={v.email} onChange={(e) => set("email", e.target.value)} />
+          <Input type="email" value={v.email} onChange={(e) => set("email", e.target.value)} className={cls("email")} />
         </div>
         <div className="space-y-1.5">
           <Label>Celular *</Label>
@@ -133,6 +142,7 @@ export function DadosBasicosSection({
             onChange={(e) => set("telefone_celular", mascararTelefone(e.target.value))}
             inputMode="numeric"
             placeholder="(11) 99999-9999"
+            className={cls("telefone_celular")}
           />
         </div>
         <div className="space-y-1.5">
@@ -143,12 +153,13 @@ export function DadosBasicosSection({
             </span>
             <Input
               inputMode="numeric"
-              className="pl-9"
+              className={cn("pl-9", cls("renda_total_declarada"))}
               value={v.renda_total_declarada}
               onChange={(e) => set("renda_total_declarada", mascararMoedaBR(e.target.value))}
               placeholder="0,00"
             />
           </div>
+
         </div>
         <div className="space-y-1.5">
           <Label>UF de interesse</Label>

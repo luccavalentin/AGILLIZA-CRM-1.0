@@ -180,7 +180,14 @@ function Pagina() {
   const [autoAbrir, setAutoAbrir] = useState(false);
   const [autoEnviar, setAutoEnviar] = useState(false);
   const [enviandoAuto, setEnviandoAuto] = useState(false);
+  // Quando o envio falha por cadastro incompleto, destaca os campos obrigatórios pendentes.
+  const [destacarObrigatorios, setDestacarObrigatorios] = useState(false);
   const enviarAutoFn = useServerFn(enviarPropostaHomeFin);
+  const onCadastroIncompleto = () => {
+    setTab("COMPRADORES");
+    setDestacarObrigatorios(true);
+  };
+
 
   const { data, isLoading } = useQuery({
     queryKey: ["proposta", id],
@@ -281,7 +288,7 @@ function Pagina() {
                 : `Ativa há ${diasDesde} dia(s)`}
             </p>
           </div>
-          <AcoesTopo proposta={p} propostaId={id} bancos={data.bancos} />
+          <AcoesTopo proposta={p} propostaId={id} bancos={data.bancos} onCadastroIncompleto={onCadastroIncompleto} />
         </div>
 
         {/* KPIs */}
@@ -395,7 +402,7 @@ function Pagina() {
       </div>
 
       {tab === "RESUMO" && <TabResumo proposta={p} bancos={data.bancos} propostaId={id} />}
-      {tab === "COMPRADORES" && <ClienteSecao clienteId={p.cliente_id} propostaId={id} secao="comprador" />}
+      {tab === "COMPRADORES" && <ClienteSecao clienteId={p.cliente_id} propostaId={id} secao="comprador" destacarObrigatorios={destacarObrigatorios} />}
       {tab === "VENDEDORES" && <ClienteSecao clienteId={p.cliente_id} propostaId={id} secao="vendedores" />}
       {tab === "IQ" && <ClienteSecao clienteId={p.cliente_id} propostaId={id} secao="iq" />}
       {tab === "IMÓVEL" && <ClienteSecao clienteId={p.cliente_id} propostaId={id} secao="imovel" />}
@@ -436,10 +443,12 @@ function AcoesTopo({
   proposta,
   propostaId,
   bancos,
+  onCadastroIncompleto,
 }: {
   proposta: any;
   propostaId: string;
   bancos: any[];
+  onCadastroIncompleto?: () => void;
 }) {
   const qc = useQueryClient();
   const [busy, setBusy] = useState(false);
@@ -459,11 +468,16 @@ function AcoesTopo({
       toast.success(`Proposta enviada (${r.status}).`);
       qc.invalidateQueries({ queryKey: ["proposta", propostaId] });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Falha ao enviar.");
+      const msg = e instanceof Error ? e.message : "Falha ao enviar.";
+      toast.error(msg);
+      if (/cadastro complementar|cadastro incompleto|obrigat/i.test(msg)) {
+        onCadastroIncompleto?.();
+      }
     } finally {
       setBusy(false);
     }
   }
+
 
   async function sincronizar() {
     setBusy(true);

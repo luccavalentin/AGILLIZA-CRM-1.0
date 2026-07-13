@@ -22,11 +22,14 @@ export function ClienteSecao({
   clienteId,
   secao,
   propostaId,
+  destacarObrigatorios,
 }: {
   clienteId: string | null | undefined;
   secao: SecaoCliente;
   propostaId?: string;
+  destacarObrigatorios?: boolean;
 }) {
+
   const getCli = useServerFn(getCliente);
   const getEnd = useServerFn(getEndereco);
 
@@ -91,7 +94,9 @@ export function ClienteSecao({
   return (
     <ClienteForm
       embutido
+      destacarObrigatorios={destacarObrigatorios}
       portalAtivo={c.portal_acesso_ativo}
+
       enderecoInicial={endereco as any}
       inicial={{
         id: c.id,

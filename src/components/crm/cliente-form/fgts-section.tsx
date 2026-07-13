@@ -5,7 +5,17 @@ import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { type ClienteFormValues, type SetCampo } from "./constants";
 
-export function FgtsSection({ v, set }: { v: ClienteFormValues; set: SetCampo }) {
+export function FgtsSection({
+  v,
+  set,
+  erros,
+}: {
+  v: ClienteFormValues;
+  set: SetCampo;
+  erros?: Set<string>;
+}) {
+  const destaque = erros?.has("fg_autorizacao_dados");
+
   return (
     <Card>
       <CardHeader>
@@ -32,7 +42,13 @@ export function FgtsSection({ v, set }: { v: ClienteFormValues; set: SetCampo })
             onCheckedChange={(x) => set("utiliza_fgts", x)}
           />
         </div>
-        <div className="flex items-start gap-3 rounded-lg border border-border p-3">
+        <div
+          className={
+            "flex items-start gap-3 rounded-lg border p-3 " +
+            (destaque ? "border-destructive ring-1 ring-destructive/40" : "border-border")
+          }
+        >
+
           <Checkbox
             id="fg_autorizacao_dados"
             checked={v.fg_autorizacao_dados}

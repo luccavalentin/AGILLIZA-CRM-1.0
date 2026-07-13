@@ -67,6 +67,12 @@ export type SetCampo = <K extends keyof ClienteFormValues>(
   val: ClienteFormValues[K],
 ) => void;
 
+/** Classe aplicada a um campo obrigatório pendente (destaque em vermelho). */
+export const CLASSE_ERRO =
+  "border-destructive ring-1 ring-destructive/40 focus-visible:ring-destructive";
+
+
+
 export const ESTADOS_CIVIS = [
   { v: "solteiro", l: "Solteiro(a)" },
   { v: "casado", l: "Casado(a)" },
