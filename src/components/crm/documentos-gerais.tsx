@@ -86,6 +86,9 @@ function primeiroNome(s: string | null | undefined): string {
 
 type PastaTipo = "raiz" | "comercial" | "imob" | "corretor";
 
+/** Modo de navegação: hierarquia completa ou visão agregada por dimensão. */
+type Visao = "hierarquia" | "imobiliarias" | "corretores" | "clientes";
+
 const RAIZ_KEY = "__raiz_principal__";
 const RAIZ_NOME = "Pasta Comercial e documentos de clientes";
 
