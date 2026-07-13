@@ -157,6 +157,8 @@ function Pagina() {
       await excluirSimulacao({ data: { id } });
       toast.success("Simulação excluída.");
       qc.invalidateQueries({ queryKey: ["simulacoes"] });
+      qc.invalidateQueries({ queryKey: ["crm-painel"] });
+      qc.invalidateQueries({ queryKey: ["clientes"] });
       router.navigate({ to: "/operacional/simulacoes" });
     } catch {
       toast.error("Não foi possível excluir a simulação.");
