@@ -443,12 +443,12 @@ export async function enviarPropostaImpl({
         resp?.codigoSituacaoBanco,
         false,
       );
-      const protocolo =
-        resp?.codigoOportunidadeBanco ??
-        resp?.codigoOportunidadeBancoInterno ??
-        resp?.codigoSimulacaoBanco ??
-        null;
-      if (protocolo) patchOk.numero_proposta_banco = String(protocolo);
+      const numeroBanco = numeroPropostaBancoReal(resp);
+      const referenciaBanco = referenciaIntegracaoBanco(resp);
+      if (numeroBanco) patchOk.numero_proposta_banco = numeroBanco;
+      else if (referenciaBanco && numeroAtualEhReferenciaTecnica(b, resp)) {
+        patchOk.numero_proposta_banco = null;
+      }
       if (resp?.valorParcelaBanco != null) patchOk.valor_parcela = resp.valorParcelaBanco;
       if (resp?.taxaJurosAnoBanco != null) patchOk.taxa_juros_ano = resp.taxaJurosAnoBanco;
       if (resp?.prazoPagamentoBancoMax != null)
@@ -470,17 +470,17 @@ export async function enviarPropostaImpl({
         // Logamos para não perder o rastro — o polling reconcilia em seguida.
         console.error("[proposta] falha ao gravar retorno do banco", upErr.message);
       }
-      if (protocolo) {
+      if (numeroBanco) {
         await supabase
           .from("propostas")
-          .update({ numero_proposta_banco: String(protocolo) } as any)
+          .update({ numero_proposta_banco: numeroBanco } as any)
           .eq("id", propostaId);
       }
       return {
         banco_id: b.banco_id,
         nome_banco: b.nome_banco,
         status: String(patchOk.status_banco),
-        numero_proposta_banco: protocolo ? String(protocolo) : null,
+        numero_proposta_banco: numeroBanco,
       };
     } catch (e) {
       const msg = sanitizarMensagemErro(
@@ -833,6 +833,42 @@ function nomeBancoNormalizado(v: unknown): string {
     .trim();
 }
 
+/**
+ * Número real da proposta no banco. Não usar códigos de oportunidade/simulação
+ * como se fossem número de proposta: alguns bancos não reconhecem esses códigos
+ * no portal externo, pois são apenas referências técnicas da integração.
+ */
+function numeroPropostaBancoReal(sim: any): string | null {
+  const numero =
+    sim?.numeroPropostaBanco ??
+    sim?.numeroProposta ??
+    sim?.proposalNumber ??
+    sim?.codigoPropostaBanco ??
+    null;
+  return numero == null || numero === "" ? null : String(numero);
+}
+
+function referenciaIntegracaoBanco(sim: any): string | null {
+  const referencia =
+    sim?.codigoOportunidadeBanco ??
+    sim?.codigoOportunidadeBancoInterno ??
+    sim?.codigoSimulacaoBanco ??
+    null;
+  return referencia == null || referencia === "" ? null : String(referencia);
+}
+
+function numeroAtualEhReferenciaTecnica(pb: any, sim: any): boolean {
+  const atual = String(pb?.numero_proposta_banco ?? "").trim();
+  if (!atual) return false;
+  return [
+    sim?.codigoOportunidadeBanco,
+    sim?.codigoOportunidadeBancoInterno,
+    sim?.codigoSimulacaoBanco,
+  ]
+    .filter((v) => v != null && v !== "")
+    .some((v) => String(v).trim() === atual);
+}
+
 function mesmoBanco(pb: any, sim: any): boolean {
   const codigoPb = codigoBancoDe(pb);
   const codigoSim = codigoBancoDe(sim);
@@ -843,15 +879,7 @@ function mesmoBanco(pb: any, sim: any): boolean {
 }
 
 function protocoloBanco(sim: any): string | null {
-  const proto =
-    sim?.codigoOportunidadeBanco ??
-    sim?.codigoOportunidadeBancoInterno ??
-    sim?.codigoSimulacaoBanco ??
-    sim?.numeroPropostaBanco ??
-    sim?.numeroProposta ??
-    sim?.proposalNumber ??
-    null;
-  return proto == null || proto === "" ? null : String(proto);
+  return numeroPropostaBancoReal(sim) ?? referenciaIntegracaoBanco(sim);
 }
 
 function prioridadeSimulacao(sim: any, exata: boolean): number {
@@ -1012,13 +1040,16 @@ export async function sincronizarPropostaImpl({
       mensagem_banco: erroMsg ? sanitizarMensagemErro(erroMsg) : null,
       raw_response: sim,
     };
-    // Mantém o protocolo do banco na linha (usado para saber que já foi enviada).
-    const protoSim = protocoloBanco(sim);
-    if (protoSim) {
-      patchBanco.numero_proposta_banco = protoSim;
+    // Salva apenas o número REAL da proposta no banco. Códigos de oportunidade
+    // ou simulação são referências técnicas e não devem aparecer como “Nº banco”.
+    const numeroReal = numeroPropostaBancoReal(sim);
+    if (numeroReal) {
+      patchBanco.numero_proposta_banco = numeroReal;
       if (!numeroPropostaBanco || sim.bancoEscolhido === "S" || mapa.proposta === "credito_aprovado") {
-        numeroPropostaBanco = protoSim;
+        numeroPropostaBanco = numeroReal;
       }
+    } else if (numeroAtualEhReferenciaTecnica(pb, sim)) {
+      patchBanco.numero_proposta_banco = null;
     }
     if (sim.valorParcelaBanco != null) patchBanco.valor_parcela = sim.valorParcelaBanco;
     if (sim.taxaJurosAnoBanco != null) patchBanco.taxa_juros_ano = sim.taxaJurosAnoBanco;
@@ -1124,6 +1155,9 @@ export async function sincronizarPropostaImpl({
   if (funilBanco.length > 0) patch.etapas_banco = funilBanco;
   const escolhida = simEscolhida ?? {};
   if (numeroPropostaBanco) patch.numero_proposta_banco = numeroPropostaBanco;
+  else if (numeroAtualEhReferenciaTecnica({ numero_proposta_banco: prop.numero_proposta_banco }, escolhida)) {
+    patch.numero_proposta_banco = null;
+  }
   if (op?.codigoOportunidadeBanco || escolhida.codigoOportunidadeBanco || numeroPropostaBanco)
     patch.codigo_oportunidade_homefin =
       op?.codigoOportunidadeBanco ?? escolhida.codigoOportunidadeBanco ?? numeroPropostaBanco;

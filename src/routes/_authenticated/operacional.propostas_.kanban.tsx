@@ -303,7 +303,6 @@ function Pagina() {
               <div className="flex flex-1 flex-col gap-2 overflow-y-auto p-2 [scrollbar-width:thin]">
                 {cards.map((c) => {
                   const terminal = STATUS_TERMINAIS.includes(c.status as PropostaStatus);
-                  const numeroBanco = c.numero_proposta_banco ?? c.numero_proposta;
                   return (
                     <div
                       key={c.id}
@@ -362,10 +361,10 @@ function Pagina() {
                       {/* Nº da proposta */}
                       <div className="mt-2.5 flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
                         <span className="rounded bg-muted px-1.5 py-0.5 font-medium tabular-nums text-foreground">
-                          #{numeroBanco}
+                          #{c.numero_proposta}
                         </span>
                         {c.numero_proposta_banco && (
-                          <span className="tabular-nums">Interno {c.numero_proposta}</span>
+                          <span className="tabular-nums">Nº banco {c.numero_proposta_banco}</span>
                         )}
                       </div>
 
