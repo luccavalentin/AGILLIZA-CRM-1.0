@@ -227,6 +227,28 @@ function Pagina() {
     queryFn: () => obterDemanda({ data: { id } }),
   });
 
+  // Pilha de demandas (navegação lateral)
+  const [escopoPilha, setEscopoPilha] = useState<"minhas" | "equipe">("equipe");
+  const { data: pilha } = useQuery({
+    queryKey: ["demandas", "pilha", escopoPilha],
+    queryFn: () => listarDemandas({ data: { escopo: escopoPilha } }),
+  });
+
+  async function excluir() {
+    setExcluindo(true);
+    try {
+      await excluirFn({ data: { id } });
+      toast.success("Demanda excluída.");
+      qc.invalidateQueries({ queryKey: ["demandas"] });
+      navigate({ to: "/operacional/demandas" });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao excluir.");
+    } finally {
+      setExcluindo(false);
+    }
+  }
+
+
   useEffect(() => {
     lidaFn({ data: { demanda_id: id } }).catch(() => {});
   }, [id, lidaFn]);
