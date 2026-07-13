@@ -66,6 +66,8 @@ import {
   type ChatEtiqueta,
 } from "@/lib/crm/chat-gestao.functions";
 import { ChatConfigSheet } from "@/components/shared/chat-config-sheet";
+import { PainelChatCliente } from "@/components/crm/chat-cliente/painel-cliente";
+
 
 
 export const Route = createFileRoute("/_authenticated/crm/chat")({
