@@ -180,7 +180,8 @@ function calcularPlano(
 /** Extrai o detalhamento (parcelas, CET, taxas...) do raw_response de um banco. */
 export function extrairDetalheBanco(raw: unknown): DetalheBanco | null {
   if (!raw || typeof raw !== "object") return null;
-  const r = raw as Record<string, any>;
+  const base = raw as Record<string, any>;
+  const r = (base.simulacao ?? base.data ?? base.resultado ?? base) as Record<string, any>;
   const desc = (r.descricaoRespostaBanco ?? {}) as Record<string, any>;
   if ((!desc || typeof desc !== "object") && typeof r !== "object") return null;
 
