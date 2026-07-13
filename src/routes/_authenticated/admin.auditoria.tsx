@@ -541,9 +541,11 @@ function Pagina() {
                   const { tom, Icone } = classificar(r.acao);
                   const c = TOM_CLASSES[tom];
                   return (
-                    <div
+                    <button
+                      type="button"
                       key={r.id}
-                      className="relative flex items-start gap-3 rounded-xl border border-border bg-card p-3 transition-colors hover:border-primary/30 hover:bg-accent/40"
+                      onClick={() => setSelecionado(r)}
+                      className="relative flex w-full items-start gap-3 rounded-xl border border-border bg-card p-3 text-left transition-colors hover:border-primary/30 hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
                       <span
                         className={cn(
