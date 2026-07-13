@@ -10,7 +10,16 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card } from "@/components/ui/card";
-import { CheckCircle2 } from "lucide-react";
+import {
+  CheckCircle2,
+  FlaskConical,
+  Send,
+  BadgeCheck,
+  XCircle,
+  FileСheck,
+  FileSignature,
+  type LucideIcon,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   PanelHeader,
@@ -20,6 +29,7 @@ import {
   PanelCard,
   MetricList,
   AlertRow,
+  ConversionFunnel,
 } from "@/components/common/dashboard";
 import { ReportChartView } from "@/components/reports/report-chart";
 import { VisionSelector } from "@/components/reports/report-filters-bar";
