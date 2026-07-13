@@ -1152,6 +1152,9 @@ export async function sincronizarPropostaImpl({
   if (funilBanco.length > 0) patch.etapas_banco = funilBanco;
   const escolhida = simEscolhida ?? {};
   if (numeroPropostaBanco) patch.numero_proposta_banco = numeroPropostaBanco;
+  else if (numeroAtualEhReferenciaTecnica({ numero_proposta_banco: prop.numero_proposta_banco }, escolhida)) {
+    patch.numero_proposta_banco = null;
+  }
   if (op?.codigoOportunidadeBanco || escolhida.codigoOportunidadeBanco || numeroPropostaBanco)
     patch.codigo_oportunidade_homefin =
       op?.codigoOportunidadeBanco ?? escolhida.codigoOportunidadeBanco ?? numeroPropostaBanco;
