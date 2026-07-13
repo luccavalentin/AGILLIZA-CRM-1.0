@@ -1,35 +1,52 @@
-# Reestruturação de Acessos (Papéis + Tipos de Pessoa)
+## Objetivo
 
-Tela única `/admin/pessoas` com três abas: **Pessoas**, **Papéis** e **Tipos de Pessoa**. Papel guarda a matriz de permissões (como hoje); Tipo de Pessoa vira cadastro editável; login continua por pessoa.
+Hoje o chat com o cliente (`cliente_app_mensagens`) é **um só por cliente**: toda a equipe vê e responde as mesmas mensagens. Vamos torná-lo **individual por atendente** — cada usuário tem sua própria conversa com o cliente, e o cliente vê **uma conversa separada por atendente**.
 
-## 1. Banco de dados (migração)
+## Arquitetura escolhida
 
-**Nova tabela `tipos_pessoa`** (o "target" que marca o usuário, editável por correspondente):
-- `nome`, `descricao`, `acesso_tipo` (`sistema` = Interno Correspondente | `portal_parceiro` = Parceiro), `login_padrao` (bool, sugestão), `ativo`, `is_padrao`, `correspondente_id`.
-- GRANTs para `authenticated`/`service_role`; RLS por `correspondente_id` (gerenciável por quem tem `pode_gerenciar_pessoas`).
-- Seed dos três atuais (Usuário/Interno, Imobiliária, Corretor) por correspondente.
+Uma conversa = par **(cliente, atendente)**. Adicionamos `atendente_id` na mensagem:
 
-**Escopo Personalizado**:
-- Adicionar valor `personalizado` ao enum `escopo_dados`.
-- Nova tabela `permission_escopo_alvos` para guardar, por `permissions.id`, os alvos escolhidos: `alvo_tipo` (`usuario` | `papel` | `tipo_pessoa`) + `alvo_id`/`alvo_valor`.
-- Atualizar `usuario_escopo_dados` e as funções `usuario_tem_acesso_*` para, quando o escopo for `personalizado`, liberar registros cujos donos estejam nos alvos (por usuário, por papel ou por tipo de pessoa).
+```text
+cliente_app_mensagens
+  cliente_id ─┐
+  atendente_id ┤─ definem a thread
+  remetente_tipo = 'time' | 'cliente'
+```
 
-**Profiles**: `tipo_pessoa` passa a referenciar `tipos_pessoa` (mantém coluna texto por compatibilidade, resolvida pelo nome/slug).
+- Mensagem da equipe (`time`): `atendente_id = quem enviou`.
+- Mensagem do cliente (`cliente`): `atendente_id = atendente da thread onde ele respondeu`.
 
-## 2. Server functions
+**Visibilidade (regra que proponho para gestores):**
+- Atendente comum → vê e responde **somente a sua própria** conversa com cada cliente.
+- Admin/Correspondente → mantêm uma **visão supervisora** opcional ("Ver todos os atendimentos") para acompanhar as conversas de todos os atendentes (necessário para auditoria/gestão), mas por padrão também abrem só a sua. Ninguém edita/exclui mensagem de outro usuário.
 
-- `tipos-pessoa.functions.ts`: `listarTiposPessoa`, `criarTipoPessoa`, `atualizarTipoPessoa`, `excluirTipoPessoa` (bloqueia exclusão se houver pessoas vinculadas; exige `pode_gerenciar_pessoas`).
-- `regras-modulos.functions.ts`: estender `salvarPermissoes` para persistir alvos do escopo `personalizado`; `listarNiveisAcesso` retorna os alvos.
-- `pessoas.functions.ts`: campo `tipo_pessoa` passa a aceitar id de `tipos_pessoa`; login por pessoa (com login → e-mail obrigatório, senha provisória = e-mail; sem login → e-mail opcional) permanece.
+## Mudanças no banco (migração)
 
-## 3. UI (`/admin/pessoas`)
+1. `ALTER TABLE cliente_app_mensagens ADD COLUMN atendente_id uuid` + índice `(cliente_id, atendente_id, criada_em)`.
+2. Backfill:
+   - `time` → `atendente_id = remetente_id`.
+   - `cliente` → atendente da mensagem `time` mais próxima no tempo; fallback = `clientes.responsavel_id`.
+3. Ajustar funções `SECURITY DEFINER`:
+   - `portal_time_responder` → grava `atendente_id = auth.uid()`.
+   - `portal_time_marcar_lidas` → só marca lidas da thread `atendente_id = auth.uid()`.
+   - `portal_enviar_mensagem` → novo parâmetro `_atendente` (thread escolhida pelo cliente).
+   - `portal_listar_mensagens` → novo parâmetro `_atendente` (lista a thread específica).
+   - Nova `portal_listar_atendentes(_cid)` → lista atendentes com quem o cliente conversa (nome, última mensagem, não lidas).
 
-- Abas: **Pessoas** (lista atual) · **Papéis** (painel de regras/matriz existente, renomeado) · **Tipos de Pessoa** (novo CRUD: nome, tipo de acesso Parceiro/Interno, login padrão, ativo).
-- No formulário de pessoa, o seletor de Tipo de Pessoa passa a ler de `tipos_pessoa`.
-- Na matriz de permissões, ao escolher escopo **Personalizado**, abrir seletor de alvos (usuários, papéis e/ou tipos de pessoa).
+## Lado da equipe (`src/lib/crm/chat-cliente.functions.ts` + UI)
 
-## Notas técnicas
+- `listarConversasCliente`: agrupa por (cliente, atendente); filtra `atendente_id = userId` (gestor com toggle vê todas, mostrando o nome do atendente em cada conversa).
+- `listarChatCliente`: passa a aceitar `atendente_id` (default = usuário atual).
+- `editarChatCliente` / `excluirChatCliente`: restringir a `remetente_id = userId` (corrige vazamento atual de editar mensagem alheia).
+- UI `crm.chat.tsx` / `chat-cliente-tab.tsx`: cada conversa carrega a thread do usuário; para gestores, badge com o nome do atendente e o toggle de visão geral.
 
-- Alteração de enum e de funções `SECURITY DEFINER` em uma única migração; funções recriadas com `CREATE OR REPLACE`.
-- Exclusão de papel/tipo protegida por verificação de vínculos.
-- Tudo respeita RLS por `correspondente_id` e `pode_gerenciar_pessoas`.
+## Lado do cliente (PWA `src/lib/portal/cliente.functions.ts` + `cliente.chat.tsx`)
+
+- Nova listagem de **threads por atendente** (usa `portal_listar_atendentes`).
+- `listar/enviar/marcar` passam a receber `atendente_id` da thread aberta.
+- UI: o cliente escolhe com qual atendente falar (lista de conversas), cada uma isolada.
+
+## Verificação
+
+- Typecheck (`tsgo`).
+- Playwright: logar como dois usuários diferentes, conversar com o mesmo cliente e confirmar que cada um vê só a sua thread; no app do cliente, confirmar as conversas separadas por atendente.

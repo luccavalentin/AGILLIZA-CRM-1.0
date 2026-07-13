@@ -19,6 +19,7 @@ import {
   GitBranch,
   Archive,
   ArchiveRestore,
+  Users,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
@@ -141,11 +142,20 @@ function Pagina() {
   const [filtro, setFiltro] = useState<FiltroChat>("todas");
   const [etiquetaFiltro, setEtiquetaFiltro] = useState<string>("all");
   const [selecionado, setSelecionado] = useState<string | null>(null);
+  const [atendenteSel, setAtendenteSel] = useState<string | null>(null);
+  // Visão supervisora: quando ligada, gestores veem também as conversas dos
+  // demais atendentes (o back-end ignora para quem não é gestor).
+  const [verTodos, setVerTodos] = useState(false);
 
-  const queryKey = ["conversas-cliente"];
+  function abrirConversa(clienteId: string, atendenteId: string | null) {
+    setSelecionado(clienteId);
+    setAtendenteSel(atendenteId);
+  }
+
+  const queryKey = ["conversas-cliente", verTodos];
   const { data: conversas, isLoading } = useQuery({
     queryKey,
-    queryFn: () => listar(),
+    queryFn: () => listar({ data: { ver_todos: verTodos } }),
   });
 
   const { data: etiquetas } = useQuery({
@@ -277,7 +287,9 @@ function Pagina() {
   }, [clientesApp, conversas, termoBusca]);
 
   const conversaAtual = (conversas ?? []).find(
-    (c) => c.cliente_id === selecionado,
+    (c) =>
+      c.cliente_id === selecionado &&
+      (atendenteSel == null || c.atendente_id === atendenteSel),
   );
   const clienteAppAtual = (clientesApp ?? []).find(
     (c) => c.cliente_id === selecionado,
@@ -288,6 +300,9 @@ function Pagina() {
         nome: conversaAtual.nome,
         documento: conversaAtual.documento,
         etapa_nome: conversaAtual.etapa_nome ?? null,
+        atendente_id: conversaAtual.atendente_id,
+        atendente_nome: conversaAtual.atendente_nome,
+        minha: conversaAtual.minha,
       }
     : clienteAppAtual
       ? {
@@ -295,6 +310,9 @@ function Pagina() {
           nome: clienteAppAtual.nome,
           documento: clienteAppAtual.documento,
           etapa_nome: clienteAppAtual.etapa_nome,
+          atendente_id: null as string | null,
+          atendente_nome: null as string | null,
+          minha: true,
         }
       : null;
 
@@ -305,7 +323,7 @@ function Pagina() {
       typeof window !== "undefined" &&
       window.matchMedia("(min-width: 1024px)").matches;
     if (ehDesktop && !selecionado && (conversas?.length ?? 0) > 0) {
-      setSelecionado(conversas![0].cliente_id);
+      abrirConversa(conversas![0].cliente_id, conversas![0].atendente_id);
     }
   }, [conversas, selecionado]);
 
@@ -347,6 +365,24 @@ function Pagina() {
             lembrete de cada cliente.
           </p>
         </div>
+        <button
+          type="button"
+          onClick={() => {
+            setVerTodos((v) => !v);
+            setSelecionado(null);
+            setAtendenteSel(null);
+          }}
+          title="Alterna entre as suas conversas e a visão de todos os atendentes (apenas gestores)."
+          className={cn(
+            "hidden shrink-0 items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-medium transition-colors sm:inline-flex",
+            verTodos
+              ? "border-primary bg-primary text-primary-foreground"
+              : "border-border bg-background text-muted-foreground hover:bg-muted",
+          )}
+        >
+          <Users className="h-3.5 w-3.5" />
+          {verTodos ? "Todos os atendentes" : "Minhas conversas"}
+        </button>
         <ChatConfigSheet />
       </div>
 
@@ -460,11 +496,12 @@ function Pagina() {
                   const lembrete = lembreteDevido(c.cliente_id);
                   return (
                     <button
-                      key={c.cliente_id}
-                      onClick={() => setSelecionado(c.cliente_id)}
+                      key={`${c.cliente_id}::${c.atendente_id ?? ""}`}
+                      onClick={() => abrirConversa(c.cliente_id, c.atendente_id)}
                       className={cn(
                         "flex w-full items-start gap-3 border-b border-border/50 px-3 py-3 text-left transition-colors hover:bg-muted/50",
                         selecionado === c.cliente_id &&
+                          (atendenteSel == null || atendenteSel === c.atendente_id) &&
                           "bg-primary/5 shadow-[inset_3px_0_0_0_hsl(var(--primary))]",
                       )}
                     >
@@ -480,6 +517,11 @@ function Pagina() {
                             {formatarHora(c.ultima_em)}
                           </span>
                         </div>
+                        {verTodos && !c.minha && c.atendente_nome && (
+                          <span className="mt-0.5 inline-flex items-center gap-1 text-[10px] font-medium text-primary/80">
+                            <Users className="h-3 w-3" /> {c.atendente_nome}
+                          </span>
+                        )}
                         <div className="flex items-center justify-between gap-2">
                           <span className="truncate text-xs text-muted-foreground">
                             {c.ultimo_remetente === "time" ? "Você: " : ""}
@@ -521,7 +563,7 @@ function Pagina() {
                     {novosClientes.map((c) => (
                       <button
                         key={c.cliente_id}
-                        onClick={() => setSelecionado(c.cliente_id)}
+                        onClick={() => abrirConversa(c.cliente_id, null)}
                         className={cn(
                           "flex w-full items-start gap-3 border-b border-border/50 px-3 py-3 text-left transition-colors hover:bg-muted/50",
                           selecionado === c.cliente_id &&
@@ -579,8 +621,11 @@ function Pagina() {
           {alvoAtual ? (
             <div className="min-h-0 flex-1">
               <ChatClienteTab
-                key={alvoAtual.cliente_id}
+                key={`${alvoAtual.cliente_id}::${alvoAtual.atendente_id ?? ""}`}
                 clienteId={alvoAtual.cliente_id}
+                atendenteId={alvoAtual.atendente_id ?? undefined}
+                somenteLeitura={!alvoAtual.minha}
+                atendenteNome={alvoAtual.atendente_nome ?? undefined}
                 info={{
                   nome: alvoAtual.nome,
                   documento: alvoAtual.documento,
