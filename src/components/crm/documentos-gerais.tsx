@@ -146,6 +146,7 @@ export function DocumentosGerais() {
   const [filtroImob, setFiltroImob] = useState<string>("todas");
   const [filtroCorr, setFiltroCorr] = useState<string>("todos");
   const [caminho, setCaminho] = useState<string[]>([]);
+  const [visao, setVisao] = useState<Visao>("hierarquia");
   const [cliente, setCliente] = useState<DGCliente | null>(null);
   const [fichaAberta, setFichaAberta] = useState(false);
 
