@@ -4,7 +4,7 @@ import { exportPDF, drawBrandHeader } from "@/lib/relatorios/report-pdf";
 import { formatBRL, formatPercent } from "@/lib/simulacao/format";
 import type { ReportColumn, ReportKpi, ReportRow } from "@/lib/relatorios/shared";
 import { extrairDetalheBanco, normalizarSistemaAmortizacao, calcularCET, type DetalheBanco } from "@/lib/simulacao/detalhe-banco";
-import { avaliarRendaMinima } from "@/lib/simulacao/renda";
+import { avaliarRendaMinima, rendaMinimaPelosBancos } from "@/lib/simulacao/renda";
 import { AGILLIZA_LOGO_LIGHT, AGILLIZA_LOGO_RATIO } from "@/lib/relatorios/brand-logo";
 import { resolveBancoBrand } from "@/lib/relatorios/banco-brand";
 
@@ -797,13 +797,15 @@ function tabelaLabel(s: any, bancos: any[]): string {
 }
 
 /**
- * Renda familiar estimada: MESMA regra exibida na tela de simulação
- * ("Renda familiar estimada"). Base = valor do imóvel (ou financiado),
- * prazo e sistema da simulação, usando a MENOR taxa anual entre os bancos.
- * Sem recalcular por banco — evita divergência com o valor mostrado ao usuário.
+ * Renda familiar estimada: usa primeiro o retorno real dos bancos e, havendo
+ * divergência, considera a maior renda exigida. Sem retorno bancário, usa uma
+ * estimativa local conservadora.
  */
 function rendaNecessaria(s: any, bancos: any[]): number | null {
-  // Menor taxa anual (fração, ex.: 0,1199) entre os bancos com taxa informada.
+  const rendaApi = rendaMinimaPelosBancos(bancos);
+  if (rendaApi) return rendaApi.rendaMinima;
+
+  // Maior taxa anual (fração, ex.: 0,1199) entre os bancos com taxa informada.
   const taxas = (bancos ?? [])
     .map((b) => {
       const d = extrairDetalheBanco(b?.raw_response);
@@ -811,7 +813,7 @@ function rendaNecessaria(s: any, bancos: any[]): number | null {
       return typeof pct === "number" && pct > 0 ? pct / 100 : null;
     })
     .filter((t): t is number => t != null);
-  const taxaAno = taxas.length ? Math.min(...taxas) : 0.1199;
+  const taxaAno = taxas.length ? Math.max(...taxas) : 0.1199;
 
   const av = avaliarRendaMinima({
     valor_imovel: Number(s.valor_imovel) || 0,

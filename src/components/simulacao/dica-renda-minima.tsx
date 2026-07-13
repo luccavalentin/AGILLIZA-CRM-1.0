@@ -4,7 +4,7 @@
  */
 import { CheckCircle2, Info, AlertTriangle } from "lucide-react";
 import { formatBRL } from "@/lib/simulacao/format";
-import { avaliarRendaMinima } from "@/lib/simulacao/renda";
+import { avaliarRendaMinima, rendaMinimaPelosBancos, type BancoRendaApi } from "@/lib/simulacao/renda";
 import type { SistemaAmortizacao } from "@/lib/simulacao/simulacao-rapida";
 import { cn } from "@/lib/utils";
 
@@ -15,6 +15,7 @@ export function DicaRendaMinima({
   taxaAno,
   sistema,
   rendaInformada,
+  bancos,
 }: {
   valorFinanciamento: number;
   valorImovel?: number | null;
@@ -22,15 +23,18 @@ export function DicaRendaMinima({
   taxaAno: number;
   sistema: SistemaAmortizacao;
   rendaInformada?: number | null;
+  bancos?: BancoRendaApi[] | null;
 }) {
-  const av = avaliarRendaMinima({
-    valor_financiamento: valorFinanciamento,
-    valor_imovel: valorImovel,
-    prazo_meses: prazoMeses,
-    taxa_ano: taxaAno,
-    sistema,
-    renda_informada: rendaInformada,
-  });
+  const av =
+    rendaMinimaPelosBancos(bancos, rendaInformada) ??
+    avaliarRendaMinima({
+      valor_financiamento: valorFinanciamento,
+      valor_imovel: valorImovel,
+      prazo_meses: prazoMeses,
+      taxa_ano: taxaAno,
+      sistema,
+      renda_informada: rendaInformada,
+    });
 
   if (!av) return null;
 
@@ -85,16 +89,14 @@ export function DicaRendaMinima({
         </div>
 
         <p className="text-xs leading-relaxed text-muted-foreground">
-          Renda necessária para o valor financiado, com prestação inicial de{" "}
+          {av.fonte === "api_banco"
+            ? "Renda exigida pelo retorno bancário mais conservador"
+            : "Renda necessária para o valor financiado"}
+          {av.bancoNome ? ` (${av.bancoNome})` : ""}, com prestação inicial de{" "}
           <span className="font-medium text-foreground/80">
             {formatBRL(av.primeiraParcela)}
           </span>{" "}
-          pelo sistema{" "}
-          <span className="font-medium text-foreground/80">
-            {sistema === "P" ? "PRICE" : "SAC"}
-          </span>{" "}
-          (já incluídos seguros e taxa de administração) e no teto de 30% de
-          comprometimento de renda.
+          e no teto de 30% de comprometimento de renda.
         </p>
 
 

@@ -14,6 +14,7 @@
  */
 
 
+import { extrairDetalheBanco } from "./detalhe-banco";
 import { calcularSimulacao, type SistemaAmortizacao } from "./simulacao-rapida";
 
 /** Percentual máximo da renda que pode ser comprometido com a parcela. */
@@ -42,6 +43,76 @@ export interface AvaliacaoRenda {
   comprometimento: number | null;
   /** true = renda suficiente, false = insuficiente, null = renda não informada. */
   suficiente: boolean | null;
+  /** Banco usado quando o cálculo vem do retorno real da integração bancária. */
+  bancoNome?: string | null;
+  /** Origem do cálculo exibido. */
+  fonte?: "api_banco" | "estimativa_local";
+}
+
+export interface BancoRendaApi {
+  nome_banco?: string | null;
+  status_banco?: string | null;
+  valor_parcela?: number | null;
+  raw_response?: unknown;
+}
+
+function numeroPositivo(v: unknown): number | null {
+  const n = Number(v);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+function unwrapApiResponse(raw: unknown): Record<string, any> | null {
+  if (!raw || typeof raw !== "object") return null;
+  const r = raw as Record<string, any>;
+  return (r.simulacao ?? r.data ?? r.resultado ?? r) as Record<string, any>;
+}
+
+/** Parcela que a integração retornou para o banco, já com os encargos do banco. */
+export function parcelaExigidaPeloBanco(banco: BancoRendaApi): number | null {
+  const raw = unwrapApiResponse(banco.raw_response);
+  const detalhe = extrairDetalheBanco(raw ?? banco.raw_response);
+  return (
+    numeroPositivo(detalhe?.primeiraParcela) ??
+    numeroPositivo(banco.valor_parcela) ??
+    numeroPositivo(raw?.valorParcelaBanco) ??
+    numeroPositivo(raw?.valorParcelaSimulacao) ??
+    numeroPositivo(raw?.descricaoRespostaBanco?.installmentValue)
+  );
+}
+
+/**
+ * Renda exigida a partir dos retornos reais dos bancos.
+ * Quando houver divergência entre instituições, usa a maior renda exigida.
+ */
+export function rendaMinimaPelosBancos(
+  bancos: BancoRendaApi[] | null | undefined,
+  rendaInformada?: number | null,
+): AvaliacaoRenda | null {
+  const candidatos = (bancos ?? [])
+    .filter((b) => !b.status_banco || b.status_banco === "simulada")
+    .map((b) => {
+      const parcela = parcelaExigidaPeloBanco(b);
+      if (!parcela) return null;
+      return {
+        bancoNome: b.nome_banco ?? null,
+        primeiraParcela: parcela,
+        rendaMinima: rendaMinimaParaParcela(parcela),
+      };
+    })
+    .filter((v): v is { bancoNome: string | null; primeiraParcela: number; rendaMinima: number } =>
+      Boolean(v),
+    )
+    .sort((a, b) => b.rendaMinima - a.rendaMinima);
+
+  const maior = candidatos[0];
+  if (!maior) return null;
+  const renda = rendaInformada && rendaInformada > 0 ? rendaInformada : null;
+  return {
+    ...maior,
+    comprometimento: renda ? maior.primeiraParcela / renda : null,
+    suficiente: renda == null ? null : renda >= maior.rendaMinima,
+    fonte: "api_banco",
+  };
 }
 
 /** Renda mínima a partir de uma parcela conhecida. */
@@ -115,5 +186,6 @@ export function avaliarRendaMinima(params: {
     rendaMinima,
     comprometimento: renda ? prestacaoTotal / renda : null,
     suficiente: renda == null ? null : renda >= rendaMinima,
+    fonte: "estimativa_local",
   };
 }
