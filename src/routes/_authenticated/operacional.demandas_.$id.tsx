@@ -382,9 +382,29 @@ function Pagina() {
                               </ToneBadge>
                             </div>
                           )}
-                          <p className="whitespace-pre-wrap break-words leading-relaxed">
-                            {m.corpo}
-                          </p>
+                          {m.corpo && (
+                            <p className="whitespace-pre-wrap break-words leading-relaxed">
+                              {m.corpo}
+                            </p>
+                          )}
+                          {m.anexo_path && (
+                            <button
+                              type="button"
+                              onClick={() => baixarAnexo(m.anexo_path, m.anexo_nome ?? "arquivo")}
+                              className={cn(
+                                "mt-1.5 flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs transition-colors",
+                                meu
+                                  ? "bg-primary-foreground/15 hover:bg-primary-foreground/25"
+                                  : "bg-muted hover:bg-muted/70",
+                              )}
+                            >
+                              <Paperclip className="h-4 w-4 shrink-0" />
+                              <span className="min-w-0 flex-1 truncate font-medium">
+                                {m.anexo_nome ?? "arquivo"}
+                              </span>
+                              <Download className="h-3.5 w-3.5 shrink-0" />
+                            </button>
+                          )}
                           <p
                             className={cn(
                               "mt-1 text-right text-[10px]",
