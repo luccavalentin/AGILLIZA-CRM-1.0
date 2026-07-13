@@ -109,7 +109,7 @@ export function DateInput({
         autoComplete="off"
         autoCorrect="off"
         spellCheck={false}
-        name={id ? `dt_${id}_${Math.random().toString(36).slice(2, 8)}` : undefined}
+        name={nomeAntiAutofill.current}
         data-lpignore="true"
         data-form-type="other"
         data-1p-ignore="true"
