@@ -48,6 +48,7 @@ export function ClienteForm({
   inicial,
   portalAtivo,
   enderecoInicial,
+  vincularPropostaId,
 }: {
   inicial?: Partial<ClienteFormValues>;
   portalAtivo?: boolean;
@@ -59,6 +60,8 @@ export function ClienteForm({
     cidade?: string;
     uf?: string;
   } | null;
+  /** Quando presente, ao criar o cliente ele é vinculado a esta proposta e o usuário volta para a ficha. */
+  vincularPropostaId?: string;
 }) {
   const navigate = useNavigate();
   const qc = useQueryClient();
@@ -68,6 +71,8 @@ export function ClienteForm({
   const definirPortal = useServerFn(definirAcessoPortal);
   const listarParceiros = useServerFn(listarParceirosDisponiveis);
   const vincular = useServerFn(vincularParceiro);
+  const vincularProposta = useServerFn(vincularClienteAProposta);
+
 
   const [v, setV] = useState<ClienteFormValues>(() => {
     const base = { ...emptyValues, ...inicial };
