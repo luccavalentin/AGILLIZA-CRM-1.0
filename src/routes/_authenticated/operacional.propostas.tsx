@@ -258,6 +258,24 @@ function Pagina() {
               onChange={(e) => setQ(e.target.value)}
             />
           </div>
+          {escopo === "todas" && (
+            <div className="flex flex-col gap-1">
+              <Label className="text-xs text-muted-foreground">Analista</Label>
+              <Select value={responsavel} onValueChange={setResponsavel}>
+                <SelectTrigger className="h-11 w-48 rounded-xl" aria-label="Analista">
+                  <SelectValue placeholder="Analista" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos os analistas</SelectItem>
+                  {(colegas ?? []).map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.nome ?? c.email ?? "—"}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <div className="flex flex-col gap-1">
             <Label className="text-xs text-muted-foreground">De</Label>
             <Input
