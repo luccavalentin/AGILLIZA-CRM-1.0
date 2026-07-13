@@ -11,7 +11,7 @@ export const Route = createFileRoute("/cliente/chat")({
 
 function ChatPage() {
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <CabecalhoPagina
         icon={MessageCircle}
         titulo="Conversar com o time"
