@@ -197,6 +197,39 @@ export function participanteCompleto(e: any): boolean {
   return Boolean(base && pessoais);
 }
 
+/**
+ * Retorna a lista de chaves de campos obrigatórios que ainda estão vazios/invalidos.
+ * Usada para destacar os campos em vermelho.
+ */
+function camposFaltantes(f: ParticipanteForm): Set<string> {
+  const pf = f.tipo_pessoa === "F";
+  const faltando = new Set<string>();
+  if (!f.nome.trim()) faltando.add("nome");
+  if (!apenasDigitos(f.cpf_cnpj) || !validarCpfCnpj(f.cpf_cnpj)) faltando.add("cpf_cnpj");
+  if (pf) {
+    if (!f.data_nascimento) faltando.add("data_nascimento");
+    if (!f.nome_mae.trim()) faltando.add("nome_mae");
+    if (!f.tipo_sexo) faltando.add("tipo_sexo");
+    if (!f.estado_civil) faltando.add("estado_civil");
+  }
+  if (!f.tipo_documento_identidade) faltando.add("tipo_documento_identidade");
+  if (!f.numero_documento.trim()) faltando.add("numero_documento");
+  if (!f.orgao_expedidor.trim()) faltando.add("orgao_expedidor");
+  if (!f.uf_expedicao) faltando.add("uf_expedicao");
+  if (!f.profissao.trim()) faltando.add("profissao");
+  if (!f.renda || f.renda <= 0) faltando.add("renda");
+  if (!f.email.trim() || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(f.email.trim())) faltando.add("email");
+  if (apenasDigitos(f.celular).length < 10) faltando.add("celular");
+  if (!apenasDigitos(f.cep)) faltando.add("cep");
+  if (!f.logradouro.trim()) faltando.add("logradouro");
+  if (!f.numero_logradouro.trim()) faltando.add("numero_logradouro");
+  if (!f.bairro.trim()) faltando.add("bairro");
+  if (!f.municipio.trim()) faltando.add("municipio");
+  if (!f.uf) faltando.add("uf");
+  if (!f.fg_autorizacao_dados) faltando.add("fg_autorizacao_dados");
+  return faltando;
+}
+
 function validar(f: ParticipanteForm): string | null {
   const pf = f.tipo_pessoa === "F";
   if (!f.nome.trim()) return "Informe o nome / razão social.";
@@ -226,6 +259,7 @@ function validar(f: ParticipanteForm): string | null {
   if (!f.fg_autorizacao_dados) return "É necessário a autorização de consulta de dados.";
   return null;
 }
+
 
 function mascararCep(raw: string) {
   const d = raw.replace(/\D/g, "").slice(0, 8);
