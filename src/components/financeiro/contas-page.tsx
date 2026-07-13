@@ -64,6 +64,58 @@ import { formatBRL, formatData } from "@/lib/financeiro/format";
 
 const STATUS_OPCOES = ["aberta", "parcial", "paga", "atrasada", "cancelada", "estornada"];
 
+function AcoesMenu({
+  conta,
+  tipo,
+  onDetalhe,
+  onBaixar,
+  onEstornar,
+  onCancelar,
+  onExcluir,
+}: {
+  conta: any;
+  tipo: ContaTipo;
+  onDetalhe: () => void;
+  onBaixar: () => void;
+  onEstornar: () => void;
+  onCancelar: () => void;
+  onExcluir: () => void;
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" className="h-8 w-8">
+          <MoreHorizontal className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={onDetalhe}>Ver detalhes</DropdownMenuItem>
+        {conta.status !== "paga" &&
+          conta.status !== "cancelada" &&
+          conta.status !== "estornada" && (
+            <DropdownMenuItem onClick={onBaixar}>
+              {tipo === "pagar" ? "Baixar" : "Confirmar recebimento"}
+            </DropdownMenuItem>
+          )}
+        {conta.status !== "estornada" && conta.valor_pago > 0 && (
+          <DropdownMenuItem className="text-destructive" onClick={onEstornar}>
+            Estornar
+          </DropdownMenuItem>
+        )}
+        {conta.status !== "cancelada" && conta.status !== "estornada" && (
+          <DropdownMenuItem className="text-destructive" onClick={onCancelar}>
+            Cancelar
+          </DropdownMenuItem>
+        )}
+        <DropdownMenuItem className="text-destructive" onClick={onExcluir}>
+          Excluir
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+
 export function ContasPage({ tipo }: { tipo: ContaTipo }) {
   const titulo = tipo === "pagar" ? "Contas a pagar" : "Contas a receber";
   const [status, setStatus] = useState<string>("");
