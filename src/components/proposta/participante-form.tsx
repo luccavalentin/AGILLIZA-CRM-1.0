@@ -431,7 +431,7 @@ function CamposParticipante({
         <Secao titulo="Dados pessoais">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Campo label="Data de nascimento">
-              <Input type="date" value={f.data_nascimento} onChange={(e) => set({ data_nascimento: e.target.value })} />
+              <DateInput value={f.data_nascimento} onChange={(v) => set({ data_nascimento: v })} />
             </Campo>
             <Campo label="Nome da mãe">
               <Input value={f.nome_mae} onChange={(e) => set({ nome_mae: e.target.value })} />
