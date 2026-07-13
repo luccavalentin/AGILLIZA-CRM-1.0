@@ -286,8 +286,84 @@ function Pagina() {
   const d = data?.demanda;
   if (!d) return <div className="p-6 text-sm text-muted-foreground">Carregando…</div>;
 
+  const perm = data?.permissoes;
+
   return (
-    <div className="mx-auto max-w-4xl space-y-6 p-4 md:p-6">
+    <div className="mx-auto max-w-[1400px] p-4 md:p-6">
+      <div className="grid gap-6 lg:grid-cols-[300px_minmax(0,1fr)]">
+        {/* Pilha de demandas */}
+        <aside className="flex flex-col rounded-2xl border border-border/70 bg-card shadow-sm lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)]">
+          <div className="flex items-center justify-between gap-2 border-b border-border/60 px-4 py-3">
+            <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+              <Layers className="h-4 w-4 text-muted-foreground" /> Demandas
+            </h2>
+            <div className="flex rounded-lg border border-border/60 p-0.5">
+              {(["equipe", "minhas"] as const).map((op) => (
+                <button
+                  key={op}
+                  type="button"
+                  onClick={() => setEscopoPilha(op)}
+                  className={cn(
+                    "rounded-md px-2 py-0.5 text-[11px] font-medium capitalize transition-colors",
+                    escopoPilha === op
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {op === "equipe" ? "Geral" : "Minhas"}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="flex-1 space-y-1.5 overflow-y-auto p-2">
+            {(pilha ?? []).length === 0 ? (
+              <p className="px-2 py-6 text-center text-xs text-muted-foreground">
+                Nenhuma demanda.
+              </p>
+            ) : (
+              (pilha ?? []).map((item) => {
+                const ativo = item.id === id;
+                return (
+                  <Link
+                    key={item.id}
+                    to="/operacional/demandas/$id"
+                    params={{ id: item.id }}
+                    className={cn(
+                      "block rounded-xl border px-3 py-2.5 transition-colors",
+                      ativo
+                        ? "border-primary/50 bg-primary/[0.06] ring-1 ring-primary/20"
+                        : "border-border/60 bg-background hover:border-primary/40 hover:bg-muted/40",
+                    )}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={cn(
+                          "inline-block h-1.5 w-4 shrink-0 rounded-full",
+                          PRIORIDADE[item.prioridade as "p1"].bar,
+                        )}
+                      />
+                      <span className="truncate font-mono text-[10px] text-muted-foreground">
+                        {item.numero}
+                      </span>
+                      <ToneBadge tone={statusDemanda(item.status).tone}>
+                        {statusDemanda(item.status).label}
+                      </ToneBadge>
+                    </div>
+                    <p className="mt-1 truncate text-sm font-medium text-foreground">
+                      {item.titulo}
+                    </p>
+                    <p className="truncate text-xs text-muted-foreground">
+                      {item.nome_responsavel ?? "Sem responsável"}
+                    </p>
+                  </Link>
+                );
+              })
+            )}
+          </div>
+        </aside>
+
+        {/* Conteúdo da demanda */}
+        <div className="min-w-0 space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Button asChild variant="ghost" size="sm">
           <Link to="/operacional/demandas">
@@ -295,7 +371,49 @@ function Pagina() {
           </Link>
         </Button>
         <div className="flex flex-wrap items-center gap-2">
-          <TransferirDialog demandaId={id} onTransferida={invalidar} />
+          {perm?.pode_editar && (
+            <EditarDemandaDialog
+              demanda={{
+                id: d.id,
+                titulo: d.titulo,
+                descricao: d.descricao ?? null,
+                prioridade: d.prioridade,
+                sla_horas: d.sla_horas ?? null,
+              }}
+              onSalva={invalidar}
+            />
+          )}
+          {perm?.pode_transferir && (
+            <TransferirDialog demandaId={id} onTransferida={invalidar} />
+          )}
+          {perm?.pode_excluir && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" size="sm" className="text-destructive hover:text-destructive">
+                  <Trash2 className="mr-1 h-3.5 w-3.5" /> Excluir
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Excluir demanda?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Esta ação não pode ser desfeita. A demanda {d.numero} e seu histórico serão
+                    removidos.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={excluir}
+                    disabled={excluindo}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    {excluindo ? "Excluindo…" : "Excluir"}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
           <Select
             value={d.status}
             onValueChange={async (v) => {
@@ -303,6 +421,7 @@ function Pagina() {
               invalidar();
               toast.success("Status atualizado.");
             }}
+            disabled={!perm?.pode_mover_status}
           >
             <SelectTrigger className="w-40">
               <SelectValue />
@@ -317,6 +436,7 @@ function Pagina() {
           </Select>
         </div>
       </div>
+
 
       <div className="overflow-hidden rounded-2xl border border-border/70 bg-card shadow-sm">
         <div className="border-b border-border/60 bg-muted/30 px-5 py-4">
