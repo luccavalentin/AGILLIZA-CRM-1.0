@@ -66,6 +66,8 @@ import {
   type ChatEtiqueta,
 } from "@/lib/crm/chat-gestao.functions";
 import { ChatConfigSheet } from "@/components/shared/chat-config-sheet";
+import { PainelChatCliente } from "@/components/crm/chat-cliente/painel-cliente";
+
 
 
 export const Route = createFileRoute("/_authenticated/crm/chat")({
@@ -401,7 +403,7 @@ function Pagina() {
         </div>
       )}
 
-      <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[22rem_1fr] xl:grid-cols-[24rem_1fr]">
+      <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[20rem_1fr] xl:grid-cols-[22rem_1fr_20rem]">
 
         {/* Lista de conversas — no mobile some quando uma conversa é aberta */}
         <Card
@@ -668,7 +670,19 @@ function Pagina() {
           )}
         </div>
 
+        {/* Painel do cliente — 3ª coluna (somente desktop largo) */}
+        {alvoAtual && (
+          <div className="hidden min-h-0 xl:block">
+            <PainelChatCliente
+              key={alvoAtual.cliente_id}
+              clienteId={alvoAtual.cliente_id}
+              etiquetas={etiquetasCliente.get(alvoAtual.cliente_id) ?? []}
+            />
+          </div>
+        )}
+
       </div>
+
 
     </div>
   );
