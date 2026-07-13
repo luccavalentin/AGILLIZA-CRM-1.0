@@ -443,12 +443,9 @@ export async function enviarPropostaImpl({
         resp?.codigoSituacaoBanco,
         false,
       );
-      const protocolo =
-        resp?.codigoOportunidadeBanco ??
-        resp?.codigoOportunidadeBancoInterno ??
-        resp?.codigoSimulacaoBanco ??
-        null;
-      if (protocolo) patchOk.numero_proposta_banco = String(protocolo);
+      const numeroBanco = numeroPropostaBancoReal(resp);
+      const referenciaBanco = referenciaIntegracaoBanco(resp);
+      if (numeroBanco || referenciaBanco) patchOk.numero_proposta_banco = numeroBanco;
       if (resp?.valorParcelaBanco != null) patchOk.valor_parcela = resp.valorParcelaBanco;
       if (resp?.taxaJurosAnoBanco != null) patchOk.taxa_juros_ano = resp.taxaJurosAnoBanco;
       if (resp?.prazoPagamentoBancoMax != null)
@@ -470,17 +467,17 @@ export async function enviarPropostaImpl({
         // Logamos para não perder o rastro — o polling reconcilia em seguida.
         console.error("[proposta] falha ao gravar retorno do banco", upErr.message);
       }
-      if (protocolo) {
+      if (numeroBanco) {
         await supabase
           .from("propostas")
-          .update({ numero_proposta_banco: String(protocolo) } as any)
+          .update({ numero_proposta_banco: numeroBanco } as any)
           .eq("id", propostaId);
       }
       return {
         banco_id: b.banco_id,
         nome_banco: b.nome_banco,
         status: String(patchOk.status_banco),
-        numero_proposta_banco: protocolo ? String(protocolo) : null,
+        numero_proposta_banco: numeroBanco,
       };
     } catch (e) {
       const msg = sanitizarMensagemErro(
