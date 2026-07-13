@@ -472,23 +472,23 @@ function Pagina() {
             </div>
 
 
-            <div className="space-y-2 border-t bg-muted/30 p-3">
+            <div className="space-y-2.5 border-t border-border/60 bg-gradient-to-b from-muted/20 to-muted/40 p-3.5">
               {arquivoChat && (
-                <div className="flex items-center gap-2 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs">
-                  <Paperclip className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                <div className="flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-2.5 py-1.5 text-xs">
+                  <Paperclip className="h-3.5 w-3.5 shrink-0 text-primary" />
                   <span className="min-w-0 flex-1 truncate font-medium text-foreground">
                     {arquivoChat.name}
                   </span>
                   <button
                     type="button"
                     onClick={() => setArquivoChat(null)}
-                    className="text-muted-foreground hover:text-destructive"
+                    className="text-muted-foreground transition-colors hover:text-destructive"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
                 </div>
               )}
-              <div className="flex items-end gap-2">
+              <div className="flex items-end gap-2 rounded-2xl border border-border/70 bg-background p-1.5 shadow-sm transition-colors focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/10">
                 <input
                   ref={chatFileRef}
                   type="file"
@@ -501,8 +501,8 @@ function Pagina() {
                 />
                 <Button
                   size="icon"
-                  variant="outline"
-                  className="h-11 w-11 shrink-0 rounded-xl"
+                  variant="ghost"
+                  className="h-10 w-10 shrink-0 rounded-xl text-muted-foreground hover:bg-primary/10 hover:text-primary"
                   onClick={() => chatFileRef.current?.click()}
                   title="Anexar arquivo"
                 >
@@ -518,23 +518,16 @@ function Pagina() {
                     }
                   }}
                   placeholder="Escreva uma mensagem…"
-                  className="min-h-[44px] max-h-32 resize-none rounded-xl bg-background"
+                  className="min-h-[40px] max-h-32 resize-none border-0 bg-transparent px-1 shadow-none focus-visible:ring-0"
                 />
                 <Button
                   size="icon"
-                  className="h-11 w-11 shrink-0 rounded-xl shadow-sm"
+                  className="h-10 w-10 shrink-0 rounded-xl shadow-sm"
                   disabled={(!corpo.trim() && !arquivoChat) || enviandoMsg}
                   onClick={enviarMensagem}
                 >
                   <Send className="h-4 w-4" />
                 </Button>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Switch id="vis" checked={visivelCliente} onCheckedChange={setVisivelCliente} />
-                <Label htmlFor="vis" className="text-xs text-muted-foreground">
-                  Visível ao cliente
-                </Label>
               </div>
             </div>
           </Card>
