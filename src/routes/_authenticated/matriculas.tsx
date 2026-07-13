@@ -85,42 +85,47 @@ function Pagina() {
         icon={<GraduationCap className="h-6 w-6" />}
         eyebrow="Documentos"
         titulo="Controle de Matrículas"
-        descricao="Matrículas tiradas e pagas pela Agilliza a pedido dos corretores — para posterior reembolso."
+        descricao="A Agilliza tira e paga as matrículas a pedido dos corretores — e recebe o reembolso deles depois."
       />
 
       <PixBanner />
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <OpStat
           icon={<Coins className="h-5 w-5" />}
           label="Créditos comprados"
           value={formatBRL(data.total_creditos)}
           accent="var(--primary)"
-          tint="bg-primary/10 text-primary"
         />
         <OpStat
           icon={<TrendingDown className="h-5 w-5" />}
-          label="Total gasto"
+          label="Total pago em matrículas"
           value={formatBRL(data.total_gasto)}
           accent="var(--muted-foreground)"
-          tint="bg-muted text-muted-foreground"
+        />
+        <OpStat
+          icon={<CheckCircle2 className="h-5 w-5" />}
+          label="Reembolso recebido"
+          value={formatBRL(data.total_reembolsado)}
+          accent="var(--primary)"
+          hint="Já ressarcido pelos corretores"
         />
         <OpStat
           icon={<Clock className="h-5 w-5" />}
-          label="A reembolsar"
+          label="Reembolso pendente"
           value={formatBRL(data.total_a_reembolsar)}
           accent="var(--destructive)"
-          tint="bg-destructive/10 text-destructive"
           alerta={data.total_a_reembolsar > 0}
+          hint="A receber dos corretores"
         />
         <OpStat
           icon={<Wallet className="h-5 w-5" />}
           label="Saldo de crédito"
           value={formatBRL(data.saldo)}
           accent="var(--primary)"
-          tint="bg-primary/10 text-primary"
         />
       </div>
+
 
       <Solicitacoes
         lista={data.solicitacoes}
@@ -158,7 +163,7 @@ function PixBanner() {
             </p>
             <p className="text-lg font-semibold tabular-nums">{PIX_AGILLIZA}</p>
             <p className="text-xs opacity-80">
-              Chave CNPJ — use para reembolsar as matrículas.
+              Chave CNPJ — os corretores usam para reembolsar a Agilliza.
             </p>
           </div>
         </div>
@@ -266,7 +271,7 @@ function Solicitacoes({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="todos">Todos</SelectItem>
-              <SelectItem value="sim">Reembolsados</SelectItem>
+              <SelectItem value="sim">Recebidos</SelectItem>
               <SelectItem value="nao">Pendentes</SelectItem>
             </SelectContent>
           </Select>
@@ -290,8 +295,8 @@ function Solicitacoes({
               <TableHead>Cliente</TableHead>
               <TableHead>Nº da matrícula</TableHead>
               <TableHead className="text-right">Valor</TableHead>
-              <TableHead>Reembolso</TableHead>
-              <TableHead>Data pagto reembolso</TableHead>
+              <TableHead>Reembolso recebido</TableHead>
+              <TableHead>Data do reembolso</TableHead>
               <TableHead className="text-right">Saldo</TableHead>
               <TableHead></TableHead>
             </TableRow>
@@ -323,11 +328,11 @@ function Solicitacoes({
                     <Switch checked={s.reembolsado} onCheckedChange={(v) => toggle(s.id, v)} />
                     {s.reembolsado ? (
                       <Badge variant="secondary" className="gap-1">
-                        <CheckCircle2 className="h-3 w-3" /> Sim
+                        <CheckCircle2 className="h-3 w-3" /> Recebido
                       </Badge>
                     ) : (
                       <Badge variant="outline" className="gap-1">
-                        <Clock className="h-3 w-3" /> Não
+                        <Clock className="h-3 w-3" /> Pendente
                       </Badge>
                     )}
                   </div>
@@ -530,15 +535,15 @@ function SolicitacaoDialog({
             <Label>Observação</Label>
             <Input value={obs} onChange={(e) => setObs(e.target.value)} placeholder="Opcional" />
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/30 p-3">
             <Switch checked={reembolsado} onCheckedChange={setReembolsado} />
             <Label className="cursor-pointer" onClick={() => setReembolsado((v) => !v)}>
-              Reembolsado
+              Reembolso recebido do corretor
             </Label>
           </div>
           {reembolsado && (
             <div className="space-y-1">
-              <Label>Data pagto reembolso</Label>
+              <Label>Data do reembolso</Label>
               <Input type="date" value={dataPagto} onChange={(e) => setDataPagto(e.target.value)} />
             </div>
           )}
