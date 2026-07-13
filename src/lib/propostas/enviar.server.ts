@@ -1072,7 +1072,15 @@ export async function sincronizarPropostaImpl({
       }
     }
     // Desfecho terminal de crédito recusado quando não houve avanço no funil.
-    if (!novoStatus && statusBancos === "credito_recusado" && prop.status !== "credito_recusado") {
+    // credito_recusado não faz parte da ORDEM_STATUS (não é progressão), então o
+    // laço acima nunca o seleciona — precisa ser tratado explicitamente aqui a
+    // partir de QUALQUER sinal (bancos, etapa do funil ou atividade), senão a
+    // proposta fica presa em "em_analise_credito" e o polling roda para sempre.
+    const houveRecusa =
+      statusBancos === "credito_recusado" ||
+      statusEtapa === "credito_recusado" ||
+      statusAtividade.status === "credito_recusado";
+    if (!novoStatus && houveRecusa && prop.status !== "credito_recusado") {
       novoStatus = "credito_recusado";
     }
   }
