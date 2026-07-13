@@ -430,7 +430,9 @@ function Pagina() {
 
                     {/* Portal */}
                     <TableCell className="px-4">
-                      <StatusBadge status={c.portal_acesso_ativo ? "ativo" : "inativo"} />
+                      <ToneBadge tone={c.portal_acesso_ativo ? "success" : "muted"}>
+                        {c.portal_acesso_ativo ? "App ativo" : "App inativo"}
+                      </ToneBadge>
                     </TableCell>
 
                     {/* Ações */}
