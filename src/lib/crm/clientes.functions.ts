@@ -1018,6 +1018,65 @@ export const definirEtapa = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+/**
+ * Reseta a etapa do cliente para o cadastro base quando ele NÃO possui mais
+ * simulações nem propostas. Usado após excluir simulação/proposta para que o
+ * cliente não fique "preso" numa etapa avançada exibindo um vínculo inexistente.
+ */
+export async function recuarEsteiraSeOrfao(
+  supabase: any,
+  clienteId: string | null | undefined,
+): Promise<void> {
+  if (!clienteId) return;
+  const [{ count: sims }, { count: props }] = await Promise.all([
+    supabase
+      .from("simulacoes")
+      .select("id", { count: "exact", head: true })
+      .eq("cliente_id", clienteId),
+    supabase
+      .from("propostas")
+      .select("id", { count: "exact", head: true })
+      .eq("cliente_id", clienteId),
+  ]);
+  if ((sims ?? 0) > 0 || (props ?? 0) > 0) return;
+  const { data: atual } = await supabase
+    .from("cliente_pipeline")
+    .select("pipeline_stages(codigo)")
+    .eq("cliente_id", clienteId)
+    .maybeSingle();
+  const codigo = (atual as any)?.pipeline_stages?.codigo as string | undefined;
+  const dependentes = new Set(["simulacao", "credito_enviado", "credito_aprovado"]);
+  if (!codigo || !dependentes.has(codigo)) return;
+  await supabase.rpc("cliente_pipeline_definir", {
+    _cliente_id: clienteId,
+    _codigo_destino: "cadastro_completo",
+    _obs: "Retorno automático: simulação/proposta vinculada foi excluída.",
+  });
+}
+
+/**
+ * Remove, direto do painel, o vínculo de simulação/aprovação de um cliente que
+ * aparece numa etapa avançada apontando para registros já excluídos. Apaga as
+ * simulações e propostas restantes do cliente e recua a esteira para o cadastro.
+ */
+export const limparVinculoEsteira = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ cliente_id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }): Promise<{ ok: true }> => {
+    const { supabase } = context;
+    await supabase.from("propostas").delete().eq("cliente_id", data.cliente_id);
+    await supabase.from("simulacoes").delete().eq("cliente_id", data.cliente_id);
+    const { error } = await supabase.rpc("cliente_pipeline_definir", {
+      _cliente_id: data.cliente_id,
+      _codigo_destino: "cadastro_completo",
+      _obs: "Vínculo de simulação/aprovação removido manualmente pelo painel.",
+    });
+    if (error) throw error;
+    return { ok: true };
+  });
+
+
+
 
 /**
  * Define as datas de vistoria (agendamento e/ou conclusão) da operação do

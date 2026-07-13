@@ -1398,7 +1398,17 @@ export const excluirProposta = createServerFn({ method: "POST" })
         .eq("correspondente_id", correspondente);
       if (errAdmin) throw errAdmin;
     }
+
+    // Se o cliente ficou sem simulações/propostas, recua a esteira para o
+    // cadastro para não deixar um vínculo inexistente no painel/kanban.
+    try {
+      const { recuarEsteiraSeOrfao } = await import("@/lib/crm/clientes.functions");
+      await recuarEsteiraSeOrfao(supabase, (prop as any).cliente_id);
+    } catch {
+      /* não bloqueia a exclusão */
+    }
     return { ok: true };
+
   });
 
 /** ===== Cadastrar cliente (CRM) a partir dos dados da proposta =====
