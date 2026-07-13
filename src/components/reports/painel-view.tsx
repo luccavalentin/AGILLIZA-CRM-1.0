@@ -74,11 +74,23 @@ export function PainelView({
 
   const [periodo, setPeriodo] = useState<Periodo>("mes");
   const [escopo, setEscopo] = useState<Escopo>("minha");
+  const [de, setDe] = useState<string>("");
+  const [ate, setAte] = useState<string>("");
+  const [responsavel, setResponsavel] = useState<string>("todos");
   const escopoTocado = useRef(false);
 
   const { data: perms } = useQuery({
     queryKey: ["report-escopo"],
     queryFn: () => escopoFn(),
+    staleTime: 5 * 60_000,
+  });
+
+  const podeFiltrarUsuario = (perms?.podeEquipe ?? false) || (perms?.podeGeral ?? false);
+  const listarColegasFn = useServerFn(listarColegas);
+  const { data: colegas } = useQuery({
+    queryKey: ["panel-colegas"],
+    queryFn: () => listarColegasFn(),
+    enabled: podeFiltrarUsuario,
     staleTime: 5 * 60_000,
   });
 
@@ -90,10 +102,24 @@ export function PainelView({
     setEscopo(e);
   };
 
-  const queryKey = ["panel", modulo, periodo, escopo];
+  // Só envia o intervalo personalizado quando ambas as datas estão preenchidas.
+  const customPronto = periodo !== "custom" || (!!de && !!ate);
+  const responsavelId = responsavel !== "todos" ? responsavel : undefined;
+
+  const queryKey = ["panel", modulo, periodo, escopo, de, ate, responsavel];
   const { data, isLoading, error, dataUpdatedAt } = useQuery({
     queryKey,
-    queryFn: () => dadosFn({ data: { modulo, periodo, escopo } }),
+    queryFn: () =>
+      dadosFn({
+        data: {
+          modulo,
+          periodo,
+          escopo,
+          ...(periodo === "custom" ? { de, ate } : {}),
+          ...(responsavelId ? { responsavel: responsavelId } : {}),
+        },
+      }),
+    enabled: customPronto,
     staleTime: 30_000,
   });
 
