@@ -350,11 +350,11 @@ function UploadDialog({
             <Button
               type="button"
               variant="outline"
-              className="w-full"
+              className="w-full justify-start"
               onClick={() => inputRef.current?.click()}
             >
-              <Upload className="mr-2 h-4 w-4" />
-              {file ? file.name : "Selecionar PDF"}
+              <Upload className="mr-2 h-4 w-4 shrink-0" />
+              <span className="min-w-0 truncate">{file ? file.name : "Selecionar PDF"}</span>
             </Button>
           </div>
         </div>
