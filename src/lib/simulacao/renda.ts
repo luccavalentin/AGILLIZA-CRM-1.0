@@ -1,15 +1,18 @@
 /**
  * Regra de renda mínima do financiamento habitacional (vigente em 2026).
  *
- * Bancos e a regra do SFH limitam o comprometimento de renda: o valor da
- * parcela não pode ultrapassar ~30% da renda familiar bruta mensal. Portanto,
- * a renda mínima exigida para um determinado valor de crédito é derivada da
- * primeira (maior) parcela do financiamento:
+ * Bancos e a regra do SFH limitam o comprometimento de renda: a PRESTAÇÃO
+ * mensal não pode ultrapassar ~30% da renda familiar bruta. A prestação usada
+ * na análise é a primeira (maior) parcela do financiamento MAIS os encargos
+ * obrigatórios (seguro MIP, seguro DFI e taxa de administração):
  *
- *   renda_minima = primeira_parcela / 0,30
+ *   prestacao_total = primeira_parcela + MIP + DFI + taxa_admin
+ *   renda_minima    = prestacao_total / 0,30
  *
- * As APIs dos bancos aplicam o mesmo teto ao aprovar/reprovar a operação.
+ * A parcela incide sobre o VALOR FINANCIADO (preço − entrada − FGTS), nunca
+ * sobre o valor cheio do imóvel. As APIs dos bancos aplicam o mesmo teto.
  */
+
 
 import { calcularSimulacao, type SistemaAmortizacao } from "./simulacao-rapida";
 
