@@ -459,7 +459,7 @@ function CamposParticipante({
           </Campo>
           <SelUf label="UF de expedição" value={f.uf_expedicao} onChange={(v) => set({ uf_expedicao: v })} />
           <Campo label="Data de expedição">
-            <Input type="date" value={f.data_expedicao} onChange={(e) => set({ data_expedicao: e.target.value })} />
+            <DateInput value={f.data_expedicao} onChange={(v) => set({ data_expedicao: v })} />
           </Campo>
         </div>
       </Secao>
