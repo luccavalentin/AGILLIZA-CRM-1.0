@@ -492,12 +492,16 @@ export function DocumentosGerais() {
         {caminho.length > 0 && (
           <button
             className="flex items-center gap-1 rounded-lg border border-border/60 bg-muted/50 px-2.5 py-1 font-medium text-foreground transition-colors hover:bg-muted"
-            onClick={() => setCaminho(caminho.slice(0, -1))}
+            onClick={() => {
+              const next = caminho.slice(0, -1);
+              if (next.length === 0) irParaRaiz();
+              else setCaminho(next);
+            }}
           >
             <ChevronLeft className="h-4 w-4" /> Voltar
           </button>
         )}
-        <button className="hover:text-foreground" onClick={() => setCaminho([])}>
+        <button className="hover:text-foreground" onClick={irParaRaiz}>
           Documentos Gerais
         </button>
         {trilha.map((node, idx) => (
