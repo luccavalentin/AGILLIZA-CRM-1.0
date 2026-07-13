@@ -580,6 +580,8 @@ function Pagina() {
           ))}
         </div>
       )}
+
+      <DetalheAuditoria registro={selecionado} onClose={() => setSelecionado(null)} />
     </div>
   );
 }
