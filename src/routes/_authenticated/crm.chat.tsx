@@ -44,6 +44,7 @@ import { cn } from "@/lib/utils";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { supabase } from "@/integrations/supabase/client";
 import { ChatClienteTab } from "@/components/crm/chat-cliente-tab";
+import { ChatParticipantes } from "@/components/crm/chat-participantes";
 import {
   listarConversasCliente,
   buscarClientesApp,
@@ -619,21 +620,43 @@ function Pagina() {
             Voltar às conversas
           </button>
           {alvoAtual ? (
-            <div className="min-h-0 flex-1">
-              <ChatClienteTab
-                key={`${alvoAtual.cliente_id}::${alvoAtual.atendente_id ?? ""}`}
-                clienteId={alvoAtual.cliente_id}
-                atendenteId={alvoAtual.atendente_id ?? undefined}
-                somenteLeitura={!alvoAtual.minha}
-                atendenteNome={alvoAtual.atendente_nome ?? undefined}
-                info={{
-                  nome: alvoAtual.nome,
-                  documento: alvoAtual.documento,
-                  contexto: alvoAtual.etapa_nome ?? undefined,
-                }}
-              />
+            <div className="flex min-h-0 flex-1 flex-col gap-2">
+              {(() => {
+                // Só é leitura quando um gestor abre a thread de outro atendente
+                // (modo "Todos os atendentes"). Participantes convidados — que
+                // aparecem na lista mesmo fora do modo gestor — podem responder.
+                const somenteLeitura = !alvoAtual.minha && verTodos;
+                const podeGerir = !somenteLeitura && !!alvoAtual.atendente_id;
+                return (
+                  <>
+                    {podeGerir && (
+                      <div className="flex shrink-0 justify-end">
+                        <ChatParticipantes
+                          clienteId={alvoAtual.cliente_id}
+                          atendenteId={alvoAtual.atendente_id!}
+                        />
+                      </div>
+                    )}
+                    <div className="min-h-0 flex-1">
+                      <ChatClienteTab
+                        key={`${alvoAtual.cliente_id}::${alvoAtual.atendente_id ?? ""}`}
+                        clienteId={alvoAtual.cliente_id}
+                        atendenteId={alvoAtual.atendente_id ?? undefined}
+                        somenteLeitura={somenteLeitura}
+                        atendenteNome={alvoAtual.atendente_nome ?? undefined}
+                        info={{
+                          nome: alvoAtual.nome,
+                          documento: alvoAtual.documento,
+                          contexto: alvoAtual.etapa_nome ?? undefined,
+                        }}
+                      />
+                    </div>
+                  </>
+                );
+              })()}
             </div>
           ) : (
+
             <Card className="flex h-full min-h-0 flex-1 flex-col items-center justify-center gap-3 border-dashed border-border/60 text-center shadow-sm">
               <div className="flex size-14 items-center justify-center rounded-full bg-primary/10 text-primary">
                 <MessagesSquare className="h-6 w-6" />

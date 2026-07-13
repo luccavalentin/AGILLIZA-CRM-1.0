@@ -141,8 +141,14 @@ export function ChatClienteConversa({
   const enviar = useMutation({
     mutationFn: (payload: { mensagem: string; responde_a?: string }) =>
       responder({
-        data: { cliente_id: clienteId, mensagem: payload.mensagem, responde_a: payload.responde_a },
+        data: {
+          cliente_id: clienteId,
+          atendente_id: atendenteId,
+          mensagem: payload.mensagem,
+          responde_a: payload.responde_a,
+        },
       }),
+
     onMutate: async (payload) => {
       await qc.cancelQueries({ queryKey });
       const anterior = qc.getQueryData<ChatMensagem[]>(queryKey);
@@ -272,11 +278,13 @@ export function ChatClienteConversa({
       await responder({
         data: {
           cliente_id: clienteId,
+          atendente_id: atendenteId,
           mensagem: texto.trim() || undefined,
           anexo_path: path,
           responde_a: respondendo?.id,
         },
       });
+
       setTexto("");
       setRespondendo(null);
       qc.invalidateQueries({ queryKey });

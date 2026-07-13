@@ -1189,8 +1189,57 @@ export const excluirCliente = createServerFn({ method: "POST" })
     if (!(await podeAcao(supabase, userId, "crm.clientes", "delete"))) {
       throw new Error("Você não tem permissão para excluir clientes.");
     }
-    const { error } = await supabase.from("clientes").delete().eq("id", data.id);
+
+    // Usa o cliente administrativo: a política de exclusão no banco exige papel
+    // admin/correspondente do MESMO correspondente, então uma exclusão via RLS
+    // podia afetar 0 linhas silenciosamente (o cliente "continuava lá"). Aqui
+    // removemos o cliente e todos os registros dependentes de fato.
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const cid = data.id;
+
+    // Propostas do cliente -> limpa comissões/recebíveis vinculados antes.
+    const { data: props } = await supabaseAdmin
+      .from("propostas")
+      .select("id")
+      .eq("cliente_id", cid);
+    const propIds = (props ?? []).map((p: any) => p.id);
+    if (propIds.length > 0) {
+      await supabaseAdmin.from("comissoes").delete().in("proposta_id", propIds);
+      await supabaseAdmin.from("financial_receivables").delete().in("proposta_id", propIds);
+    }
+
+    // Remove todos os registros dependentes que referenciam este cliente.
+    const tabelasDependentes = [
+      "cliente_app_acessos",
+      "cliente_app_mensagens",
+      "cliente_app_notificacoes",
+      "cliente_documento_pastas",
+      "cliente_documentos",
+      "cliente_enderecos",
+      "cliente_historico",
+      "cliente_imoveis",
+      "cliente_interacoes",
+      "cliente_parceiros",
+      "cliente_pipeline",
+      "cliente_pipeline_historico",
+      "cliente_portal_acessos",
+      "cliente_vendedores",
+      "crm_chat_cliente_etiquetas",
+      "crm_chat_meta",
+      "demandas",
+      "proposta_envolvidos",
+      "propostas",
+      "scan_ia_leituras",
+      "simulacoes",
+      "tasks",
+    ] as const;
+    for (const tabela of tabelasDependentes) {
+      await supabaseAdmin.from(tabela as any).delete().eq("cliente_id", cid);
+    }
+
+    const { error } = await supabaseAdmin.from("clientes").delete().eq("id", cid);
     if (error) throw error;
+
     const { data: corr } = await supabase.rpc("correspondente_do_usuario", { _user_id: userId });
     const { registrarAuditoria } = await import("@/lib/admin/audit.server");
     await registrarAuditoria({

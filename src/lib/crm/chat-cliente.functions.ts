@@ -89,15 +89,49 @@ export const listarConversasCliente = createServerFn({ method: "GET" })
     const { supabase, userId } = context;
     const gestor = data.ver_todos ? await ehGestor(supabase, userId) : false;
 
-    let query = supabase
-      .from("cliente_app_mensagens")
-      .select("cliente_id, atendente_id, mensagem, remetente_tipo, lida_em, criada_em")
-      .order("criada_em", { ascending: false })
-      .limit(3000);
-    if (!gestor) query = query.eq("atendente_id", userId);
+    const colunas =
+      "cliente_id, atendente_id, mensagem, remetente_tipo, lida_em, criada_em";
 
-    const { data: rows, error } = await query;
-    if (error) throw new Error(error.message);
+    let rows: any[] = [];
+    if (gestor) {
+      const { data: r, error } = await supabase
+        .from("cliente_app_mensagens")
+        .select(colunas)
+        .order("criada_em", { ascending: false })
+        .limit(3000);
+      if (error) throw new Error(error.message);
+      rows = r ?? [];
+    } else {
+      // Threads próprias (dono) + threads compartilhadas (participante convidado).
+      const { data: minhas, error: e1 } = await supabase
+        .from("cliente_app_mensagens")
+        .select(colunas)
+        .eq("atendente_id", userId)
+        .order("criada_em", { ascending: false })
+        .limit(3000);
+      if (e1) throw new Error(e1.message);
+      rows = minhas ?? [];
+
+      const { data: participa } = await supabase
+        .from("crm_chat_participantes")
+        .select("cliente_id, atendente_id")
+        .eq("usuario_id", userId);
+      const threadsCompart = (participa ?? []) as {
+        cliente_id: string;
+        atendente_id: string;
+      }[];
+      for (const t of threadsCompart) {
+        const { data: r } = await supabase
+          .from("cliente_app_mensagens")
+          .select(colunas)
+          .eq("cliente_id", t.cliente_id)
+          .eq("atendente_id", t.atendente_id)
+          .order("criada_em", { ascending: false })
+          .limit(3000);
+        rows = rows.concat(r ?? []);
+      }
+    }
+
 
     // Agrupa por thread (cliente + atendente).
     const agrupado = new Map<
@@ -229,11 +263,19 @@ export const listarChatCliente = createServerFn({ method: "GET" })
   )
   .handler(async ({ data, context }): Promise<ChatMensagem[]> => {
     const { supabase, userId } = context;
-    // Atendente comum só vê a própria thread; gestor pode abrir a de outro atendente.
+    // Atendente comum só vê a própria thread; gestores e participantes
+    // convidados podem abrir a thread de outro atendente.
     let atendente = userId;
     if (data.atendente_id && data.atendente_id !== userId) {
-      atendente = (await ehGestor(supabase, userId)) ? data.atendente_id : userId;
+      const { data: participa } = await supabase.rpc("usuario_participa_chat", {
+        _uid: userId,
+        _cliente_id: data.cliente_id,
+        _atendente_id: data.atendente_id,
+      });
+      const permitido = Boolean(participa) || (await ehGestor(supabase, userId));
+      atendente = permitido ? data.atendente_id : userId;
     }
+
     const { data: rows, error } = await supabase
       .from("cliente_app_mensagens")
       .select(
@@ -294,13 +336,20 @@ export const listarChatCliente = createServerFn({ method: "GET" })
 export const responderChatCliente = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator(
-    (d: { cliente_id: string; mensagem?: string; anexo_path?: string; responde_a?: string }) =>
+    (d: {
+      cliente_id: string;
+      mensagem?: string;
+      anexo_path?: string;
+      responde_a?: string;
+      atendente_id?: string;
+    }) =>
       z
         .object({
           cliente_id: z.string().uuid(),
           mensagem: z.string().trim().max(4000).optional(),
           anexo_path: z.string().trim().max(1000).optional(),
           responde_a: z.string().uuid().optional(),
+          atendente_id: z.string().uuid().optional(),
         })
         .refine((v) => (v.mensagem?.trim()?.length ?? 0) > 0 || !!v.anexo_path, {
           message: "Escreva uma mensagem ou anexe um arquivo.",
@@ -308,14 +357,28 @@ export const responderChatCliente = createServerFn({ method: "POST" })
         .parse(d),
   )
   .handler(async ({ data, context }): Promise<ChatMensagem> => {
-    const { supabase } = context;
+    const { supabase, userId } = context;
     const nomeAnexo = data.anexo_path?.split("/").pop() ?? null;
-    const { data: nova, error } = await supabase.rpc("portal_time_responder", {
-      _cid: data.cliente_id,
-      _msg: data.mensagem?.trim() || nomeAnexo || "Arquivo",
-      _anexo: (data.anexo_path ?? null) as unknown as string,
-    });
+    const msg = data.mensagem?.trim() || nomeAnexo || "Arquivo";
+    const anexo = (data.anexo_path ?? null) as unknown as string;
+
+    // Se a conversa é compartilhada (thread de outro atendente), publica na
+    // mesma thread para que dono e participantes vejam o mesmo histórico.
+    const usarThread = data.atendente_id && data.atendente_id !== userId;
+    const { data: nova, error } = usarThread
+      ? await supabase.rpc("portal_time_responder_thread", {
+          _cid: data.cliente_id,
+          _atendente: data.atendente_id!,
+          _msg: msg,
+          _anexo: anexo,
+        })
+      : await supabase.rpc("portal_time_responder", {
+          _cid: data.cliente_id,
+          _msg: msg,
+          _anexo: anexo,
+        });
     if (error) throw new Error(error.message);
+
     const criada = nova as unknown as { id: string; anexo_url: string | null };
     // Vincula a resposta/citação após a criação (a RPC não recebe esse campo).
     if (data.responde_a && criada?.id) {
@@ -461,3 +524,90 @@ export const obterContextoChatCliente = createServerFn({ method: "GET" })
         (cliente as any)?.cliente_pipeline?.pipeline_stages?.nome ?? null,
     };
   });
+
+export interface ParticipanteChat {
+  usuario_id: string;
+  nome: string;
+}
+
+/** Lista os usuários convidados para uma conversa (thread cliente + atendente). */
+export const listarParticipantesChat = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { cliente_id: string; atendente_id: string }) =>
+    z
+      .object({ cliente_id: z.string().uuid(), atendente_id: z.string().uuid() })
+      .parse(d),
+  )
+  .handler(async ({ data, context }): Promise<ParticipanteChat[]> => {
+    const { supabase } = context;
+    const { data: rows, error } = await supabase
+      .from("crm_chat_participantes")
+      .select("usuario_id")
+      .eq("cliente_id", data.cliente_id)
+      .eq("atendente_id", data.atendente_id);
+    if (error) throw new Error(error.message);
+    const ids = (rows ?? []).map((r: any) => r.usuario_id);
+    if (ids.length === 0) return [];
+    const { data: perfis } = await supabase
+      .from("profiles")
+      .select("id, nome")
+      .in("id", ids);
+    const nomes = new Map<string, string>();
+    for (const p of perfis ?? []) nomes.set(p.id, p.nome ?? "");
+    return ids.map((id: string) => ({
+      usuario_id: id,
+      nome: nomes.get(id) ?? "Usuário",
+    }));
+  });
+
+/** Adiciona um usuário da equipe à conversa, dando acesso ao histórico. */
+export const adicionarParticipanteChat = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { cliente_id: string; atendente_id: string; usuario_id: string }) =>
+    z
+      .object({
+        cliente_id: z.string().uuid(),
+        atendente_id: z.string().uuid(),
+        usuario_id: z.string().uuid(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }): Promise<{ ok: true }> => {
+    const { supabase, userId } = context;
+    const { error } = await supabase.from("crm_chat_participantes").upsert(
+      {
+        cliente_id: data.cliente_id,
+        atendente_id: data.atendente_id,
+        usuario_id: data.usuario_id,
+        criado_por: userId,
+      },
+      { onConflict: "cliente_id,atendente_id,usuario_id" },
+    );
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+/** Remove um usuário convidado da conversa. */
+export const removerParticipanteChat = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { cliente_id: string; atendente_id: string; usuario_id: string }) =>
+    z
+      .object({
+        cliente_id: z.string().uuid(),
+        atendente_id: z.string().uuid(),
+        usuario_id: z.string().uuid(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }): Promise<{ ok: true }> => {
+    const { supabase } = context;
+    const { error } = await supabase
+      .from("crm_chat_participantes")
+      .delete()
+      .eq("cliente_id", data.cliente_id)
+      .eq("atendente_id", data.atendente_id)
+      .eq("usuario_id", data.usuario_id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
