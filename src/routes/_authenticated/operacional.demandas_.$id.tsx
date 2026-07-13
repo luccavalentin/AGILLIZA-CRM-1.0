@@ -3,7 +3,20 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { ArrowLeft, Paperclip, Download, Trash2, Send, MessageCircle } from "lucide-react";
+import {
+  ArrowLeft,
+  Paperclip,
+  Download,
+  Trash2,
+  Send,
+  MessageCircle,
+  User,
+  Users,
+  Tag,
+  Clock,
+  History,
+  FileText,
+} from "lucide-react";
 import { getMinhaSessao } from "@/lib/session.functions";
 import { PopOutPanel } from "@/components/shared/pop-out-panel";
 import { Card } from "@/components/ui/card";
