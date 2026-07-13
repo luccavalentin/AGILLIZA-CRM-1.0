@@ -572,7 +572,7 @@ function Pagina() {
                       <span className="shrink-0 whitespace-nowrap text-xs font-medium tabular-nums text-muted-foreground">
                         {fmtHora(r.created_at)}
                       </span>
-                    </div>
+                    </button>
                   );
                 })}
               </div>
