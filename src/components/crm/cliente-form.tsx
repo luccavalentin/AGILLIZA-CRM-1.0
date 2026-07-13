@@ -322,6 +322,12 @@ export function ClienteForm({
           toast.error(e?.message ?? "Cliente salvo, mas falhou ao vincular à proposta.");
         }
       }
+      if (embutido) {
+        // Embutido na ficha da proposta: apenas atualiza os dados e permanece na tela atual.
+        await qc.invalidateQueries({ queryKey: ["cliente", id] });
+        toast.success("Cadastro salvo.");
+        return;
+      }
       toast.success("Cliente salvo.");
       navigate({ to: "/crm/clientes/$id", params: { id: id! } });
 
