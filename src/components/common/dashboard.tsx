@@ -13,6 +13,8 @@ export interface MetricDelta {
   pct: number;
   dir: "up" | "down" | "flat";
   bom: boolean;
+  /** Sem base anterior para comparar: exibe "novo" em vez de percentual. */
+  novo?: boolean;
 }
 
 /** Badge de tendência percentual comparando com o período anterior. */
