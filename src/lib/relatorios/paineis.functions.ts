@@ -567,7 +567,7 @@ export const getPanelDados = createServerFn({ method: "POST" })
     // Aprovação é somente crédito aprovado na proposta/simulação bancária.
     // Contrato emitido permanece separado para não gerar taxa falsa de 100%.
     const aprovadas = propRowsBrutas.filter(
-      (p) => p.status === "credito_aprovado" && dentroPeriodo(p.created_at),
+      (p) => foiAprovada(p.status) && dentroPeriodo(p.created_at),
     ).length;
 
     const demAbertas = demRows.filter((d) => !["concluida", "cancelada"].includes(d.status));
