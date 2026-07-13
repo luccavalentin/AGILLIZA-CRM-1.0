@@ -239,7 +239,7 @@ function Pagina() {
   const bancosUnicos = new Set<string>();
   itens.forEach((s) => {
     (Array.isArray(s.bancos) ? s.bancos : []).forEach((b: any) => {
-      bancosUnicos.add(String(b.nome ?? b.banco_nome ?? b.banco_id ?? "Banco"));
+      bancosUnicos.add(String(b.nome_banco ?? b.nome ?? b.banco_nome ?? "Banco"));
     });
   });
   const kpiBancos = bancosUnicos.size;
