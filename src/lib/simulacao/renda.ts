@@ -1,20 +1,37 @@
 /**
  * Regra de renda mínima do financiamento habitacional (vigente em 2026).
  *
- * Bancos e a regra do SFH limitam o comprometimento de renda: o valor da
- * parcela não pode ultrapassar ~30% da renda familiar bruta mensal. Portanto,
- * a renda mínima exigida para um determinado valor de crédito é derivada da
- * primeira (maior) parcela do financiamento:
+ * Bancos e a regra do SFH limitam o comprometimento de renda: a PRESTAÇÃO
+ * mensal não pode ultrapassar ~30% da renda familiar bruta. A prestação usada
+ * na análise é a primeira (maior) parcela do financiamento MAIS os encargos
+ * obrigatórios (seguro MIP, seguro DFI e taxa de administração):
  *
- *   renda_minima = primeira_parcela / 0,30
+ *   prestacao_total = primeira_parcela + MIP + DFI + taxa_admin
+ *   renda_minima    = prestacao_total / 0,30
  *
- * As APIs dos bancos aplicam o mesmo teto ao aprovar/reprovar a operação.
+ * A parcela incide sobre o VALOR FINANCIADO (preço − entrada − FGTS), nunca
+ * sobre o valor cheio do imóvel. As APIs dos bancos aplicam o mesmo teto.
  */
+
 
 import { calcularSimulacao, type SistemaAmortizacao } from "./simulacao-rapida";
 
 /** Percentual máximo da renda que pode ser comprometido com a parcela. */
 export const COMPROMETIMENTO_MAX = 0.3;
+
+/**
+ * Encargos mensais obrigatórios que os bancos SOMAM à parcela ao verificar o
+ * comprometimento de renda (estimativas de mercado):
+ *  - Seguro MIP (morte/invalidez): incide sobre o saldo devedor.
+ *  - Seguro DFI (danos ao imóvel): incide sobre o valor do imóvel.
+ *  - Taxa de administração mensal fixa.
+ * A parcela "seca" (amortização + juros) subestima a renda exigida; os bancos
+ * qualificam a renda contra a PRESTAÇÃO TOTAL, com estes encargos incluídos.
+ */
+export const TAXA_MIP_MES = 0.00028; // ~0,028% do saldo devedor/mês
+export const TAXA_DFI_MES = 0.0001; // ~0,010% do valor do imóvel/mês
+export const TAXA_ADMIN_MES = 25; // R$/mês
+
 
 export interface AvaliacaoRenda {
   /** Primeira (maior) parcela estimada. */
@@ -83,13 +100,20 @@ export function avaliarRendaMinima(params: {
     sistema,
   });
 
-  const rendaMinima = rendaMinimaParaParcela(primeira_parcela);
+  // Encargos obrigatórios inclusos pelos bancos no comprometimento de renda.
+  const valorImovelBase =
+    Number.isFinite(valor_imovel) && (valor_imovel ?? 0) > 0 ? (valor_imovel as number) : base;
+  const seguroMIP = base * TAXA_MIP_MES; // sobre o saldo devedor inicial (= valor financiado)
+  const seguroDFI = valorImovelBase * TAXA_DFI_MES;
+  const prestacaoTotal = primeira_parcela + seguroMIP + seguroDFI + TAXA_ADMIN_MES;
+
+  const rendaMinima = rendaMinimaParaParcela(prestacaoTotal);
   const renda = renda_informada && renda_informada > 0 ? renda_informada : null;
 
   return {
-    primeiraParcela: primeira_parcela,
+    primeiraParcela: prestacaoTotal,
     rendaMinima,
-    comprometimento: renda ? primeira_parcela / renda : null,
+    comprometimento: renda ? prestacaoTotal / renda : null,
     suficiente: renda == null ? null : renda >= rendaMinima,
   };
 }
