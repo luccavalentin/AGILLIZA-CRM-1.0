@@ -857,7 +857,7 @@ export function RegrasModulosPanel() {
             <div className="space-y-5">
               <div className="space-y-2">
                 <p className="text-sm font-semibold text-foreground">Por papel</p>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                   {PAPEIS_ALVO.map((p) => (
                     <label key={p.value} className="flex items-center gap-2 text-sm">
                       <Checkbox

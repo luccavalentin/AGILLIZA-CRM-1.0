@@ -693,7 +693,7 @@ function DetalheAuditoria({
                     <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                       Alterações registradas
                     </p>
-                    <div className="overflow-hidden rounded-lg border border-border">
+                    <div className="overflow-x-auto rounded-lg border border-border">
                       <table className="w-full text-xs">
                         <thead className="bg-muted/50 text-muted-foreground">
                           <tr>
