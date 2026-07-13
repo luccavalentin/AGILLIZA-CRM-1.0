@@ -103,6 +103,13 @@ export function DateInput({
         inputMode="numeric"
         maxLength={10}
         placeholder={placeholder}
+        autoComplete="off"
+        autoCorrect="off"
+        spellCheck={false}
+        name={id ? `dt_${id}_${Math.random().toString(36).slice(2, 8)}` : undefined}
+        data-lpignore="true"
+        data-form-type="other"
+        data-1p-ignore="true"
         disabled={disabled}
         aria-invalid={rest["aria-invalid"]}
         className={cn("pr-10", className)}
