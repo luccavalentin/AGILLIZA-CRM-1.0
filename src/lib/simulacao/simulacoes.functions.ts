@@ -573,7 +573,20 @@ export const excluirSimulacao = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
-    const { error } = await context.supabase.from("simulacoes").delete().eq("id", data.id);
+    const { supabase } = context;
+    const { data: sim } = await supabase
+      .from("simulacoes")
+      .select("cliente_id")
+      .eq("id", data.id)
+      .maybeSingle();
+    const { error } = await supabase.from("simulacoes").delete().eq("id", data.id);
     if (error) throw error;
+    try {
+      const { recuarEsteiraSeOrfao } = await import("@/lib/crm/clientes.functions");
+      await recuarEsteiraSeOrfao(supabase, (sim as any)?.cliente_id);
+    } catch {
+      /* não bloqueia a exclusão */
+    }
     return { ok: true };
   });
+
