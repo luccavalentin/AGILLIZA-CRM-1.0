@@ -16,7 +16,6 @@ import {
   Send,
   BadgeCheck,
   XCircle,
-  FileСheck,
   FileSignature,
   type LucideIcon,
 } from "lucide-react";
