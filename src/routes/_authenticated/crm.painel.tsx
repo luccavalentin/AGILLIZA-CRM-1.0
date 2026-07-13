@@ -67,7 +67,7 @@ import {
 import { usePipelineRealtime } from "@/hooks/use-pipeline-realtime";
 import { BancoLogo } from "@/components/bancos/banco-logo";
 import { corDoBanco } from "@/lib/bancos/cores";
-import { statusBancoConfig } from "@/components/proposta/status-bancos-proposta";
+import { statusProposta } from "@/components/propostas/status";
 
 export const Route = createFileRoute("/_authenticated/crm/painel")({
   head: () => ({ meta: [{ title: "Painel da esteira — Agilliza" }] }),
