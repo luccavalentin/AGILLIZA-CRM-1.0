@@ -535,15 +535,15 @@ function SolicitacaoDialog({
             <Label>Observação</Label>
             <Input value={obs} onChange={(e) => setObs(e.target.value)} placeholder="Opcional" />
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/30 p-3">
             <Switch checked={reembolsado} onCheckedChange={setReembolsado} />
             <Label className="cursor-pointer" onClick={() => setReembolsado((v) => !v)}>
-              Reembolsado
+              Reembolso recebido do corretor
             </Label>
           </div>
           {reembolsado && (
             <div className="space-y-1">
-              <Label>Data pagto reembolso</Label>
+              <Label>Data do reembolso</Label>
               <Input type="date" value={dataPagto} onChange={(e) => setDataPagto(e.target.value)} />
             </div>
           )}
