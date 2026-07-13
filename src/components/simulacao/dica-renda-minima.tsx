@@ -77,7 +77,7 @@ export function DicaRendaMinima({
       <div className="min-w-0 flex-1 space-y-2">
         <div className="flex flex-wrap items-baseline gap-x-2">
           <span className="text-sm font-medium text-foreground">
-            Renda familiar mínima estimada
+            Renda familiar estimada
           </span>
           <span className="text-base font-bold text-foreground">
             {formatBRL(av.rendaMinima)}
