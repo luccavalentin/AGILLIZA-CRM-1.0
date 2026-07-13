@@ -1,12 +1,17 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, IdCard, MapPin, ShieldCheck, UserPlus, Users } from "lucide-react";
+import { z } from "zod";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { ArrowLeft, IdCard, Loader2, MapPin, ShieldCheck, UserPlus, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ClienteForm } from "@/components/crm/cliente-form";
+import { getPrefillCadastroProposta } from "@/lib/propostas/propostas.functions";
 import { assertModuloPermitido } from "@/lib/route-guards";
 
 export const Route = createFileRoute("/_authenticated/crm/clientes_/novo")({
   head: () => ({ meta: [{ title: "Novo cliente — Agilliza" }] }),
+  validateSearch: z.object({ proposta: z.string().uuid().optional() }),
   beforeLoad: () => assertModuloPermitido("crm.clientes"),
   component: Pagina,
 });
@@ -35,12 +40,22 @@ const DICAS = [
 ];
 
 function Pagina() {
+  const { proposta } = Route.useSearch();
+  const getPrefill = useServerFn(getPrefillCadastroProposta);
+  const prefill = useQuery({
+    queryKey: ["prefill-cadastro-proposta", proposta],
+    queryFn: () => getPrefill({ data: { proposta_id: proposta as string } }),
+    enabled: Boolean(proposta),
+  });
+
+  const carregandoPrefill = Boolean(proposta) && prefill.isLoading;
+
   return (
     <div className="mx-auto w-full max-w-[1600px] space-y-6 p-4 sm:p-6">
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 sm:flex sm:justify-between">
         <div className="flex min-w-0 items-center gap-3">
           <Button asChild variant="ghost" size="icon" className="shrink-0">
-            <Link to="/crm/clientes">
+            <Link to={proposta ? "/operacional/propostas/$id" : "/crm/clientes"} params={proposta ? { id: proposta } : undefined as never}>
               <ArrowLeft className="size-4" />
             </Link>
           </Button>
@@ -49,7 +64,9 @@ function Pagina() {
               Novo cliente
             </h1>
             <p className="truncate text-sm text-muted-foreground">
-              Cadastre um novo cliente no CRM
+              {proposta
+                ? "Complete o cadastro com os dados da proposta e vincule-o automaticamente"
+                : "Cadastre um novo cliente no CRM"}
             </p>
           </div>
         </div>
@@ -57,6 +74,7 @@ function Pagina() {
           <UserPlus className="size-5" />
         </div>
       </div>
+
 
       <div className="grid gap-6 lg:grid-cols-[300px_minmax(0,1fr)]">
         <aside className="order-last space-y-4 lg:order-first lg:sticky lg:top-6 lg:self-start">
@@ -84,8 +102,18 @@ function Pagina() {
         </aside>
 
         <div className="min-w-0">
-          <ClienteForm />
+          {carregandoPrefill ? (
+            <div className="flex items-center justify-center rounded-lg border border-border bg-card p-10 text-sm text-muted-foreground">
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Carregando dados da proposta…
+            </div>
+          ) : (
+            <ClienteForm
+              inicial={proposta ? (prefill.data?.valores as any) : undefined}
+              vincularPropostaId={proposta}
+            />
+          )}
         </div>
+
       </div>
     </div>
   );

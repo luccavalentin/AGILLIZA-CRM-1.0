@@ -15,6 +15,7 @@ import {
   TIPO_VINCULO_PESSOA,
   type TipoVinculo,
 } from "@/lib/crm/clientes.functions";
+import { vincularClienteAProposta } from "@/lib/propostas/propostas.functions";
 import {
   validarDocumento,
   validarCPF,
@@ -48,6 +49,7 @@ export function ClienteForm({
   inicial,
   portalAtivo,
   enderecoInicial,
+  vincularPropostaId,
 }: {
   inicial?: Partial<ClienteFormValues>;
   portalAtivo?: boolean;
@@ -59,6 +61,8 @@ export function ClienteForm({
     cidade?: string;
     uf?: string;
   } | null;
+  /** Quando presente, ao criar o cliente ele é vinculado a esta proposta e o usuário volta para a ficha. */
+  vincularPropostaId?: string;
 }) {
   const navigate = useNavigate();
   const qc = useQueryClient();
@@ -68,6 +72,8 @@ export function ClienteForm({
   const definirPortal = useServerFn(definirAcessoPortal);
   const listarParceiros = useServerFn(listarParceirosDisponiveis);
   const vincular = useServerFn(vincularParceiro);
+  const vincularProposta = useServerFn(vincularClienteAProposta);
+
 
   const [v, setV] = useState<ClienteFormValues>(() => {
     const base = { ...emptyValues, ...inicial };
@@ -302,8 +308,21 @@ export function ClienteForm({
       if (id && (end.cep || end.logradouro)) {
         await salvarEnd({ data: { cliente_id: id, ...end } });
       }
+      // Cadastro criado a partir de uma proposta direta: vincula e volta à ficha.
+      if (id && !v.id && vincularPropostaId) {
+        try {
+          await vincularProposta({ data: { proposta_id: vincularPropostaId, cliente_id: id } });
+          await qc.invalidateQueries({ queryKey: ["proposta", vincularPropostaId] });
+          toast.success("Cliente cadastrado e vinculado à proposta.");
+          navigate({ to: "/operacional/propostas/$id", params: { id: vincularPropostaId } });
+          return;
+        } catch (e: any) {
+          toast.error(e?.message ?? "Cliente salvo, mas falhou ao vincular à proposta.");
+        }
+      }
       toast.success("Cliente salvo.");
       navigate({ to: "/crm/clientes/$id", params: { id: id! } });
+
     } catch (err: any) {
       toast.error(err?.message ?? "Falha ao salvar.");
     } finally {
