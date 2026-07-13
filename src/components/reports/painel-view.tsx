@@ -208,6 +208,12 @@ export function PainelView({
             Não foi possível carregar os indicadores. Tente atualizar.
           </p>
         </Card>
+      ) : !customPronto ? (
+        <Card className="flex items-center gap-3 p-4">
+          <p className="text-sm text-muted-foreground">
+            Selecione a data inicial e a data final para ver o período personalizado.
+          </p>
+        </Card>
       ) : isLoading || !data ? (
         <div className="space-y-6">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
