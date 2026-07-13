@@ -181,11 +181,17 @@ export function NovaContaDialog({ tipo }: { tipo: ContaTipo }) {
                   <SelectValue placeholder="—" />
                 </SelectTrigger>
                 <SelectContent>
-                  {(cfg?.categorias ?? []).map((c: any) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.nome}
-                    </SelectItem>
-                  ))}
+                  {(cfg?.categorias ?? [])
+                    .filter(
+                      (c: any) =>
+                        !c.tipo ||
+                        c.tipo === (tipo === "pagar" ? "despesa" : "receita"),
+                    )
+                    .map((c: any) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.nome}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </div>

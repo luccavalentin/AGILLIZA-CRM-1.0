@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { getMinhaSessao } from "@/lib/session.functions";
-import { baixarConta, type ContaTipo } from "@/lib/financeiro/financeiro.functions";
+import { baixarConta, listarConfigs, type ContaTipo } from "@/lib/financeiro/financeiro.functions";
 import {
   Dialog,
   DialogContent,
@@ -14,6 +14,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { CurrencyInput } from "@/components/simulacao/currency-input";
 import { Paperclip } from "lucide-react";
 import { hojeISO, formatBRL } from "@/lib/financeiro/format";
@@ -30,14 +37,18 @@ export function BaixarDialog({ tipo, conta, open, onOpenChange }: Props) {
   const restante = conta ? conta.valor - conta.valor_pago : 0;
   const [valor, setValor] = useState(0);
   const [data, setData] = useState(hojeISO());
+  const [formaId, setFormaId] = useState<string>("");
   const [file, setFile] = useState<File | null>(null);
   const [enviando, setEnviando] = useState(false);
+
+  const { data: cfg } = useQuery({ queryKey: ["fin-configs"], queryFn: () => listarConfigs() });
 
   // Reseta o formulário sempre que abrir ou trocar de conta (evita usar valor residual).
   useEffect(() => {
     if (open) {
       setValor(0);
       setData(hojeISO());
+      setFormaId("");
       setFile(null);
     }
   }, [open, conta?.id]);
@@ -50,6 +61,7 @@ export function BaixarDialog({ tipo, conta, open, onOpenChange }: Props) {
           id: conta!.id,
           valor: args.valorFinal,
           data_pagamento: data,
+          payment_method_id: formaId || undefined,
           comprovante_path: args.comprovante_path,
         },
       }),
@@ -109,6 +121,21 @@ export function BaixarDialog({ tipo, conta, open, onOpenChange }: Props) {
                 <Label>Data</Label>
                 <Input type="date" value={data} onChange={(e) => setData(e.target.value)} />
               </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Forma de pagamento</Label>
+              <Select value={formaId} onValueChange={setFormaId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="—" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(cfg?.formasPagamento ?? []).map((f: any) => (
+                    <SelectItem key={f.id} value={f.id}>
+                      {f.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-1.5">
               <Label>Comprovante (opcional)</Label>
