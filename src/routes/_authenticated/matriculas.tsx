@@ -271,7 +271,7 @@ function Solicitacoes({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="todos">Todos</SelectItem>
-              <SelectItem value="sim">Reembolsados</SelectItem>
+              <SelectItem value="sim">Recebidos</SelectItem>
               <SelectItem value="nao">Pendentes</SelectItem>
             </SelectContent>
           </Select>
