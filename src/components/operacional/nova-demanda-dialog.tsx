@@ -22,8 +22,85 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Check, ChevronsUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { criarDemanda } from "@/lib/operacional/demandas.functions";
 import { listarColegas, buscarClientesOpcoes } from "@/lib/operacional/shared.functions";
+
+interface OpcaoId {
+  id: string;
+  label: string;
+}
+
+function ComboSelect({
+  value,
+  onValueChange,
+  options,
+  placeholder,
+  emptyText,
+}: {
+  value: string;
+  onValueChange: (v: string) => void;
+  options: OpcaoId[];
+  placeholder: string;
+  emptyText: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const selecionado = options.find((o) => o.id === value);
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className={cn(
+            "w-full justify-between font-normal",
+            !selecionado && "text-muted-foreground",
+          )}
+        >
+          <span className="truncate">{selecionado ? selecionado.label : placeholder}</span>
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+        <Command>
+          <CommandInput placeholder="Buscar…" />
+          <CommandList>
+            <CommandEmpty>{emptyText}</CommandEmpty>
+            <CommandGroup>
+              {options.map((o) => (
+                <CommandItem
+                  key={o.id}
+                  value={o.label}
+                  onSelect={() => {
+                    onValueChange(o.id === value ? "" : o.id);
+                    setOpen(false);
+                  }}
+                >
+                  <Check
+                    className={cn("h-4 w-4", value === o.id ? "opacity-100" : "opacity-0")}
+                  />
+                  {o.label}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 const TIPOS = [
   { v: "analise_documento", l: "Análise de documento" },
@@ -141,34 +218,31 @@ export function NovaDemandaDialog({ onCriada }: { onCriada: () => void }) {
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label>Responsável (destinatário)</Label>
-              <Select value={responsavel} onValueChange={setResponsavel}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione" />
-                </SelectTrigger>
-                <SelectContent>
-                  {(colegas ?? []).map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.nome ?? c.email}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <ComboSelect
+                value={responsavel}
+                onValueChange={setResponsavel}
+                options={(colegas ?? []).map((c) => ({
+                  id: c.id,
+                  label: c.nome ?? c.email ?? "",
+                }))}
+                placeholder="Selecione"
+                emptyText="Nenhum responsável encontrado."
+              />
             </div>
             <div className="space-y-1.5">
               <Label>Cliente-alvo (opcional)</Label>
-              <Select value={cliente} onValueChange={setCliente}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Nenhum" />
-                </SelectTrigger>
-                <SelectContent>
-                  {(clientes ?? []).map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.nome ?? c.numero_cliente}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <ComboSelect
+                value={cliente}
+                onValueChange={setCliente}
+                options={(clientes ?? []).map((c) => ({
+                  id: c.id,
+                  label: c.nome ?? c.numero_cliente ?? "",
+                }))}
+                placeholder="Nenhum"
+                emptyText="Nenhum cliente encontrado."
+              />
             </div>
+
           </div>
           <p className="text-xs text-muted-foreground">
             O prazo (SLA) é calculado automaticamente em horas úteis conforme o tipo e a prioridade.
