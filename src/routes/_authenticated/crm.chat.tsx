@@ -19,6 +19,7 @@ import {
   GitBranch,
   Archive,
   ArchiveRestore,
+  Settings2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
@@ -63,6 +64,18 @@ import {
   definirArquivamentoConversa,
   type ChatEtiqueta,
 } from "@/lib/crm/chat-gestao.functions";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { ChatSoundSetting } from "@/components/shared/chat-sound-setting";
+import { NotificationSettings } from "@/components/shared/notification-settings";
+
 
 export const Route = createFileRoute("/_authenticated/crm/chat")({
   head: () => ({ meta: [{ title: "Chat e Follow-up Cliente — Agilliza" }] }),
@@ -124,6 +137,47 @@ function TagChip({
     </span>
   );
 }
+
+/**
+ * Painel de configurações do usuário acessível diretamente do módulo de chat.
+ * Reúne som de mensagens e preferências de notificação num Sheet lateral,
+ * evitando que o usuário precise sair para a tela de perfil.
+ */
+function ConfiguracoesChat() {
+  return (
+    <Sheet>
+      <SheetTrigger asChild>
+        <Button
+          variant="outline"
+          size="sm"
+          className="shrink-0 gap-2 rounded-xl border-border/70 bg-background/60 backdrop-blur"
+        >
+          <Settings2 className="h-4 w-4" />
+          <span className="hidden sm:inline">Configurações</span>
+        </Button>
+      </SheetTrigger>
+      <SheetContent className="flex w-full flex-col gap-0 p-0 sm:max-w-md">
+        <SheetHeader className="border-b bg-muted/30 p-5 text-left">
+          <SheetTitle className="flex items-center gap-2 text-base">
+            <Settings2 className="h-4 w-4 text-primary" />
+            Configurações do chat
+          </SheetTitle>
+          <SheetDescription>
+            Ajuste o som das mensagens e como você recebe os alertas. As
+            preferências ficam salvas neste dispositivo.
+          </SheetDescription>
+        </SheetHeader>
+        <ScrollArea className="flex-1">
+          <div className="space-y-6 p-5">
+            <ChatSoundSetting />
+            <NotificationSettings />
+          </div>
+        </ScrollArea>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
 
 function Pagina() {
   const qc = useQueryClient();
@@ -333,7 +387,7 @@ function Pagina() {
         <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
           <MessagesSquare className="h-5 w-5" />
         </div>
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <h1 className="text-xl font-semibold tracking-tight text-foreground">
             Chat e Follow-up Cliente
           </h1>
@@ -342,6 +396,7 @@ function Pagina() {
             lembrete de cada cliente.
           </p>
         </div>
+        <ConfiguracoesChat />
       </div>
 
       {/* Gestão da conversa — barra horizontal no topo (acima das colunas) */}
