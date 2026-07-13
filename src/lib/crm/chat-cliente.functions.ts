@@ -525,6 +525,74 @@ export const obterContextoChatCliente = createServerFn({ method: "GET" })
     };
   });
 
+export interface PainelChatCliente {
+  cliente_id: string;
+  nome: string | null;
+  documento: string | null;
+  celular: string | null;
+  email: string | null;
+  etapa_nome: string | null;
+  responsavel_nome: string | null;
+  proposta: {
+    id: string;
+    numero: string | null;
+    status: string | null;
+    banco: string | null;
+    produto: string | null;
+    valor: number | null;
+  } | null;
+}
+
+/**
+ * Dados completos do cliente para o painel lateral do chat: contato, etapa,
+ * responsável e a proposta mais recente (número, banco, produto, valor, status).
+ */
+export const obterPainelChatCliente = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { cliente_id: string }) =>
+    z.object({ cliente_id: z.string().uuid() }).parse(d),
+  )
+  .handler(async ({ data, context }): Promise<PainelChatCliente> => {
+    const { supabase } = context;
+    const { data: cliente } = await supabase
+      .from("clientes")
+      .select(
+        "id, nome, documento, telefone_celular, email, responsavel:profiles!clientes_responsavel_id_fkey(nome), cliente_pipeline(pipeline_stages(nome))",
+      )
+      .eq("id", data.cliente_id)
+      .maybeSingle();
+
+    const { data: proposta } = await supabase
+      .from("propostas")
+      .select("id, numero_proposta, status, nome_banco, produto, valor_financiamento")
+      .eq("cliente_id", data.cliente_id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    return {
+      cliente_id: data.cliente_id,
+      nome: (cliente as any)?.nome ?? null,
+      documento: (cliente as any)?.documento ?? null,
+      celular: (cliente as any)?.telefone_celular ?? null,
+      email: (cliente as any)?.email ?? null,
+      etapa_nome:
+        (cliente as any)?.cliente_pipeline?.pipeline_stages?.nome ?? null,
+      responsavel_nome: (cliente as any)?.responsavel?.nome ?? null,
+      proposta: proposta
+        ? {
+            id: (proposta as any).id,
+            numero: (proposta as any).numero_proposta ?? null,
+            status: (proposta as any).status ?? null,
+            banco: (proposta as any).nome_banco ?? null,
+            produto: (proposta as any).produto ?? null,
+            valor: (proposta as any).valor_financiamento ?? null,
+          }
+        : null,
+    };
+  });
+
+
 export interface ParticipanteChat {
   usuario_id: string;
   nome: string;
