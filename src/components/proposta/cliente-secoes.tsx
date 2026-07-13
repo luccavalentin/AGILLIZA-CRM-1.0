@@ -1,9 +1,12 @@
 import { Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
+import { toast } from "sonner";
 import { Loader2, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getCliente, getEndereco } from "@/lib/crm/clientes.functions";
+import { cadastrarClienteDaProposta } from "@/lib/propostas/propostas.functions";
 import { ClienteForm } from "@/components/crm/cliente-form";
 import { VendedoresTab } from "@/components/crm/vendedores-tab";
 import { ImovelTab, IqTab } from "@/components/crm/imovel-iq-tab";
