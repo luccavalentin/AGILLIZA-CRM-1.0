@@ -8,6 +8,7 @@ import { ClienteForm } from "@/components/crm/cliente-form";
 import { VendedoresTab } from "@/components/crm/vendedores-tab";
 import { ImovelTab, IqTab } from "@/components/crm/imovel-iq-tab";
 import { DocumentosTab } from "@/components/crm/documentos-tab";
+import { VincularClienteDialog } from "@/components/proposta/vincular-cliente-dialog";
 
 export type SecaoCliente = "comprador" | "vendedores" | "imovel" | "iq" | "documentos";
 
