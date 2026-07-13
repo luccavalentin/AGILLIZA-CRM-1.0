@@ -11,6 +11,9 @@ export interface AuditoriaLinha {
   entidade: string | null;
   entidade_id: string | null;
   ip: string | null;
+  user_agent: string | null;
+  payload_anterior: Record<string, unknown> | null;
+  payload_novo: Record<string, unknown> | null;
   user_id: string | null;
   ator_nome: string | null;
   created_at: string;
