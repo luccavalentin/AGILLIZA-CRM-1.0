@@ -123,6 +123,21 @@ export function BaixarDialog({ tipo, conta, open, onOpenChange }: Props) {
               </div>
             </div>
             <div className="space-y-1.5">
+              <Label>Forma de pagamento</Label>
+              <Select value={formaId} onValueChange={setFormaId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="—" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(cfg?.formasPagamento ?? []).map((f: any) => (
+                    <SelectItem key={f.id} value={f.id}>
+                      {f.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
               <Label>Comprovante (opcional)</Label>
               <label className="flex cursor-pointer items-center gap-2 rounded-md border border-dashed border-border p-3 text-sm text-muted-foreground hover:bg-muted/50">
                 <Paperclip className="h-4 w-4" />
