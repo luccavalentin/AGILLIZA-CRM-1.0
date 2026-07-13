@@ -147,6 +147,7 @@ function Pagina() {
   function limparFiltros() {
     setQ("");
     setBusca("");
+    setResponsavel("todos");
     setDataInicio(padrao.inicio);
     setDataFim(padrao.fim);
     setEscopo("minhas");
