@@ -89,15 +89,49 @@ export const listarConversasCliente = createServerFn({ method: "GET" })
     const { supabase, userId } = context;
     const gestor = data.ver_todos ? await ehGestor(supabase, userId) : false;
 
-    let query = supabase
-      .from("cliente_app_mensagens")
-      .select("cliente_id, atendente_id, mensagem, remetente_tipo, lida_em, criada_em")
-      .order("criada_em", { ascending: false })
-      .limit(3000);
-    if (!gestor) query = query.eq("atendente_id", userId);
+    const colunas =
+      "cliente_id, atendente_id, mensagem, remetente_tipo, lida_em, criada_em";
 
-    const { data: rows, error } = await query;
-    if (error) throw new Error(error.message);
+    let rows: any[] = [];
+    if (gestor) {
+      const { data: r, error } = await supabase
+        .from("cliente_app_mensagens")
+        .select(colunas)
+        .order("criada_em", { ascending: false })
+        .limit(3000);
+      if (error) throw new Error(error.message);
+      rows = r ?? [];
+    } else {
+      // Threads próprias (dono) + threads compartilhadas (participante convidado).
+      const { data: minhas, error: e1 } = await supabase
+        .from("cliente_app_mensagens")
+        .select(colunas)
+        .eq("atendente_id", userId)
+        .order("criada_em", { ascending: false })
+        .limit(3000);
+      if (e1) throw new Error(e1.message);
+      rows = minhas ?? [];
+
+      const { data: participa } = await supabase
+        .from("crm_chat_participantes")
+        .select("cliente_id, atendente_id")
+        .eq("usuario_id", userId);
+      const threadsCompart = (participa ?? []) as {
+        cliente_id: string;
+        atendente_id: string;
+      }[];
+      for (const t of threadsCompart) {
+        const { data: r } = await supabase
+          .from("cliente_app_mensagens")
+          .select(colunas)
+          .eq("cliente_id", t.cliente_id)
+          .eq("atendente_id", t.atendente_id)
+          .order("criada_em", { ascending: false })
+          .limit(3000);
+        rows = rows.concat(r ?? []);
+      }
+    }
+
 
     // Agrupa por thread (cliente + atendente).
     const agrupado = new Map<
