@@ -278,7 +278,8 @@ async function carregarAnterior(
 /** Constrói o objeto de tendência comparando valor atual vs. anterior. */
 function mkDelta(cur: number, prev: number, bom = true): PanelDelta | undefined {
   if (!prev && !cur) return undefined;
-  if (!prev) return { pct: 100, dir: cur > 0 ? "up" : "flat", bom };
+  // Sem base anterior: não há variação percentual real — sinaliza como "novo".
+  if (!prev) return { pct: 0, dir: cur > 0 ? "up" : "flat", bom, novo: cur > 0 };
   const diff = ((cur - prev) / prev) * 100;
   const dir = diff > 0.5 ? "up" : diff < -0.5 ? "down" : "flat";
   return { pct: Math.abs(diff), dir, bom };
