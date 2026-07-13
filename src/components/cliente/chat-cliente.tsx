@@ -335,7 +335,7 @@ function ThreadChat({
               <div key={m.id} className={cn("flex flex-col", doCliente ? "items-end" : "items-start")}>
                 <div
                   className={cn(
-                    "max-w-[82%] overflow-hidden rounded-2xl text-sm shadow-sm",
+                    "chat-bubble max-w-[82%] overflow-hidden rounded-2xl text-sm",
                     doCliente
                       ? "rounded-br-md bg-primary text-primary-foreground"
                       : "rounded-bl-md border border-chat-them-border bg-chat-them text-chat-them-foreground",
