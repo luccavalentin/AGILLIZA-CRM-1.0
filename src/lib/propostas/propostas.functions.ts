@@ -1371,8 +1371,34 @@ export const excluirProposta = createServerFn({ method: "POST" })
       payloadNovo: null,
     });
 
-    const { error } = await supabase.from("propostas").delete().eq("id", data.id);
+    // Exclui e confirma que a linha realmente saiu. Com RLS, um DELETE pode
+    // "passar" sem erro afetando 0 linhas — o que deixava a proposta viva no
+    // painel/kanban mesmo após a mensagem de sucesso. Usamos .select() para
+    // saber quantas linhas foram removidas.
+    const { data: removidas, error } = await supabase
+      .from("propostas")
+      .delete()
+      .eq("id", data.id)
+      .select("id");
     if (error) throw error;
+
+    if (!removidas || removidas.length === 0) {
+      // A política de RLS bloqueou o DELETE (usuário sem papel adequado ou
+      // fora do escopo). Como já validamos que a proposta existe e pertence ao
+      // correspondente do usuário, e a exclusão exige papel admin/correspondente,
+      // reforçamos com o cliente administrativo do servidor.
+      const podeExcluir = correspondente && prop.correspondente_id === correspondente;
+      if (!podeExcluir) {
+        throw new Error("Você não tem permissão para excluir esta proposta.");
+      }
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { error: errAdmin } = await supabaseAdmin
+        .from("propostas")
+        .delete()
+        .eq("id", data.id)
+        .eq("correspondente_id", correspondente);
+      if (errAdmin) throw errAdmin;
+    }
     return { ok: true };
   });
 
