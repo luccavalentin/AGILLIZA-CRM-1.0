@@ -260,6 +260,7 @@ function Pagina() {
   const [rascunho, setRascunho] = useState<Filtros>(FILTROS_VAZIOS);
   const [aplicados, setAplicados] = useState<Filtros>(FILTROS_VAZIOS);
   const [filtrosAbertos, setFiltrosAbertos] = useState(false);
+  const [selecionado, setSelecionado] = useState<AuditoriaLinha | null>(null);
 
   const opcoes = useQuery({
     queryKey: ["admin-auditoria-opcoes"],
