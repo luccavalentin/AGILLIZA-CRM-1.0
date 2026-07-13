@@ -81,7 +81,6 @@ import { Route as AuthenticatedAdminPessoasRouteImport } from './routes/_authent
 import { Route as AuthenticatedAdminParametrosRouteImport } from './routes/_authenticated/admin.parametros'
 import { Route as AuthenticatedAdminNotificacoesRouteImport } from './routes/_authenticated/admin.notificacoes'
 import { Route as AuthenticatedAdminIntegracoesRouteImport } from './routes/_authenticated/admin.integracoes'
-import { Route as AuthenticatedAdminConfiguracoesRouteImport } from './routes/_authenticated/admin.configuracoes'
 import { Route as AuthenticatedAdminComprasRouteImport } from './routes/_authenticated/admin.compras'
 import { Route as AuthenticatedAdminComissoesRouteImport } from './routes/_authenticated/admin.comissoes'
 import { Route as AuthenticatedAdminBancosRouteImport } from './routes/_authenticated/admin.bancos'
@@ -506,12 +505,6 @@ const AuthenticatedAdminIntegracoesRoute =
     path: '/admin/integracoes',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedAdminConfiguracoesRoute =
-  AuthenticatedAdminConfiguracoesRouteImport.update({
-    id: '/admin/configuracoes',
-    path: '/admin/configuracoes',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
 const AuthenticatedAdminComprasRoute =
   AuthenticatedAdminComprasRouteImport.update({
     id: '/admin/compras',
@@ -658,7 +651,6 @@ export interface FileRoutesByFullPath {
   '/admin/bancos': typeof AuthenticatedAdminBancosRoute
   '/admin/comissoes': typeof AuthenticatedAdminComissoesRoute
   '/admin/compras': typeof AuthenticatedAdminComprasRoute
-  '/admin/configuracoes': typeof AuthenticatedAdminConfiguracoesRoute
   '/admin/integracoes': typeof AuthenticatedAdminIntegracoesRoute
   '/admin/notificacoes': typeof AuthenticatedAdminNotificacoesRoute
   '/admin/parametros': typeof AuthenticatedAdminParametrosRoute
@@ -749,7 +741,6 @@ export interface FileRoutesByTo {
   '/admin/bancos': typeof AuthenticatedAdminBancosRoute
   '/admin/comissoes': typeof AuthenticatedAdminComissoesRoute
   '/admin/compras': typeof AuthenticatedAdminComprasRoute
-  '/admin/configuracoes': typeof AuthenticatedAdminConfiguracoesRoute
   '/admin/integracoes': typeof AuthenticatedAdminIntegracoesRoute
   '/admin/notificacoes': typeof AuthenticatedAdminNotificacoesRoute
   '/admin/parametros': typeof AuthenticatedAdminParametrosRoute
@@ -844,7 +835,6 @@ export interface FileRoutesById {
   '/_authenticated/admin/bancos': typeof AuthenticatedAdminBancosRoute
   '/_authenticated/admin/comissoes': typeof AuthenticatedAdminComissoesRoute
   '/_authenticated/admin/compras': typeof AuthenticatedAdminComprasRoute
-  '/_authenticated/admin/configuracoes': typeof AuthenticatedAdminConfiguracoesRoute
   '/_authenticated/admin/integracoes': typeof AuthenticatedAdminIntegracoesRoute
   '/_authenticated/admin/notificacoes': typeof AuthenticatedAdminNotificacoesRoute
   '/_authenticated/admin/parametros': typeof AuthenticatedAdminParametrosRoute
@@ -939,7 +929,6 @@ export interface FileRouteTypes {
     | '/admin/bancos'
     | '/admin/comissoes'
     | '/admin/compras'
-    | '/admin/configuracoes'
     | '/admin/integracoes'
     | '/admin/notificacoes'
     | '/admin/parametros'
@@ -1030,7 +1019,6 @@ export interface FileRouteTypes {
     | '/admin/bancos'
     | '/admin/comissoes'
     | '/admin/compras'
-    | '/admin/configuracoes'
     | '/admin/integracoes'
     | '/admin/notificacoes'
     | '/admin/parametros'
@@ -1124,7 +1112,6 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/bancos'
     | '/_authenticated/admin/comissoes'
     | '/_authenticated/admin/compras'
-    | '/_authenticated/admin/configuracoes'
     | '/_authenticated/admin/integracoes'
     | '/_authenticated/admin/notificacoes'
     | '/_authenticated/admin/parametros'
@@ -1705,13 +1692,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminIntegracoesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/admin/configuracoes': {
-      id: '/_authenticated/admin/configuracoes'
-      path: '/admin/configuracoes'
-      fullPath: '/admin/configuracoes'
-      preLoaderRoute: typeof AuthenticatedAdminConfiguracoesRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/admin/compras': {
       id: '/_authenticated/admin/compras'
       path: '/admin/compras'
@@ -1936,7 +1916,6 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminBancosRoute: typeof AuthenticatedAdminBancosRoute
   AuthenticatedAdminComissoesRoute: typeof AuthenticatedAdminComissoesRoute
   AuthenticatedAdminComprasRoute: typeof AuthenticatedAdminComprasRoute
-  AuthenticatedAdminConfiguracoesRoute: typeof AuthenticatedAdminConfiguracoesRoute
   AuthenticatedAdminIntegracoesRoute: typeof AuthenticatedAdminIntegracoesRoute
   AuthenticatedAdminNotificacoesRoute: typeof AuthenticatedAdminNotificacoesRoute
   AuthenticatedAdminParametrosRoute: typeof AuthenticatedAdminParametrosRoute
@@ -1993,7 +1972,6 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminBancosRoute: AuthenticatedAdminBancosRoute,
   AuthenticatedAdminComissoesRoute: AuthenticatedAdminComissoesRoute,
   AuthenticatedAdminComprasRoute: AuthenticatedAdminComprasRoute,
-  AuthenticatedAdminConfiguracoesRoute: AuthenticatedAdminConfiguracoesRoute,
   AuthenticatedAdminIntegracoesRoute: AuthenticatedAdminIntegracoesRoute,
   AuthenticatedAdminNotificacoesRoute: AuthenticatedAdminNotificacoesRoute,
   AuthenticatedAdminParametrosRoute: AuthenticatedAdminParametrosRoute,
