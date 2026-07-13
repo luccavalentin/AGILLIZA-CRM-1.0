@@ -524,3 +524,90 @@ export const obterContextoChatCliente = createServerFn({ method: "GET" })
         (cliente as any)?.cliente_pipeline?.pipeline_stages?.nome ?? null,
     };
   });
+
+export interface ParticipanteChat {
+  usuario_id: string;
+  nome: string;
+}
+
+/** Lista os usuários convidados para uma conversa (thread cliente + atendente). */
+export const listarParticipantesChat = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { cliente_id: string; atendente_id: string }) =>
+    z
+      .object({ cliente_id: z.string().uuid(), atendente_id: z.string().uuid() })
+      .parse(d),
+  )
+  .handler(async ({ data, context }): Promise<ParticipanteChat[]> => {
+    const { supabase } = context;
+    const { data: rows, error } = await supabase
+      .from("crm_chat_participantes")
+      .select("usuario_id")
+      .eq("cliente_id", data.cliente_id)
+      .eq("atendente_id", data.atendente_id);
+    if (error) throw new Error(error.message);
+    const ids = (rows ?? []).map((r: any) => r.usuario_id);
+    if (ids.length === 0) return [];
+    const { data: perfis } = await supabase
+      .from("profiles")
+      .select("id, nome")
+      .in("id", ids);
+    const nomes = new Map<string, string>();
+    for (const p of perfis ?? []) nomes.set(p.id, p.nome ?? "");
+    return ids.map((id: string) => ({
+      usuario_id: id,
+      nome: nomes.get(id) ?? "Usuário",
+    }));
+  });
+
+/** Adiciona um usuário da equipe à conversa, dando acesso ao histórico. */
+export const adicionarParticipanteChat = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { cliente_id: string; atendente_id: string; usuario_id: string }) =>
+    z
+      .object({
+        cliente_id: z.string().uuid(),
+        atendente_id: z.string().uuid(),
+        usuario_id: z.string().uuid(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }): Promise<{ ok: true }> => {
+    const { supabase, userId } = context;
+    const { error } = await supabase.from("crm_chat_participantes").upsert(
+      {
+        cliente_id: data.cliente_id,
+        atendente_id: data.atendente_id,
+        usuario_id: data.usuario_id,
+        criado_por: userId,
+      },
+      { onConflict: "cliente_id,atendente_id,usuario_id" },
+    );
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+/** Remove um usuário convidado da conversa. */
+export const removerParticipanteChat = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { cliente_id: string; atendente_id: string; usuario_id: string }) =>
+    z
+      .object({
+        cliente_id: z.string().uuid(),
+        atendente_id: z.string().uuid(),
+        usuario_id: z.string().uuid(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }): Promise<{ ok: true }> => {
+    const { supabase } = context;
+    const { error } = await supabase
+      .from("crm_chat_participantes")
+      .delete()
+      .eq("cliente_id", data.cliente_id)
+      .eq("atendente_id", data.atendente_id)
+      .eq("usuario_id", data.usuario_id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
