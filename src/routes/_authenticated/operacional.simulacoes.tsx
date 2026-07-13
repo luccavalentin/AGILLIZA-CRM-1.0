@@ -68,6 +68,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { listarColegas } from "@/lib/operacional/shared.functions";
+import { UsuarioCombobox } from "@/components/operacional/usuario-combobox";
 
 /** Primeiro e último dia do mês atual como intervalo ISO (filtro padrão). */
 function intervaloMesAtual(): { inicio: string; fim: string } {
@@ -487,19 +488,12 @@ function Pagina() {
             </Button>
           </form>
           {escopo === "todas" && (
-            <Select value={responsavel} onValueChange={setResponsavel}>
-              <SelectTrigger className="h-9 w-full sm:w-48" aria-label="Analista">
-                <SelectValue placeholder="Analista" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos os analistas</SelectItem>
-                {(colegas ?? []).map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.nome ?? c.email ?? "—"}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <UsuarioCombobox
+              value={responsavel}
+              onValueChange={setResponsavel}
+              usuarios={colegas ?? []}
+              className="h-9 w-full sm:w-56"
+            />
           )}
           <div className="flex items-center gap-2">
             <Input
