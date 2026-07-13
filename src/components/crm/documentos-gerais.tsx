@@ -279,11 +279,82 @@ export function DocumentosGerais() {
     return [raiz];
   }, [clientes, comerciaisBase]);
 
+  // Árvore agregada conforme a visão escolhida (cards de KPI):
+  //  - "hierarquia": Comercial → Imobiliária → Corretor → Cliente (padrão)
+  //  - "imobiliarias": lista todas as imobiliárias; cada uma abre seus clientes
+  //  - "corretores": lista todos os corretores; cada um abre seus clientes
+  //  - "clientes": lista todos os clientes diretamente
+  const arvore = useMemo<PastaNode[]>(() => {
+    if (visao === "hierarquia") return raizes;
+
+    if (visao === "clientes") {
+      const raiz: PastaNode = {
+        key: RAIZ_KEY,
+        nome: "Todos os clientes",
+        tipo: "raiz",
+        subpastas: [],
+        clientes: [...clientes],
+        total_clientes: clientes.length,
+      };
+      finalizar(raiz);
+      return [raiz];
+    }
+
+    // imobiliarias | corretores → agrupa clientes pela dimensão
+    const porDimensao = visao === "imobiliarias";
+    const map = new Map<string, PastaNode>();
+    const semKey = porDimensao ? SEM_IMOB_KEY : SEM_CORRETOR_KEY;
+    const semNome = porDimensao ? SEM_IMOB : SEM_CORRETOR;
+    const tipo: PastaTipo = porDimensao ? "imob" : "corretor";
+
+    function garantir(key: string, nome: string): PastaNode {
+      let node = map.get(key);
+      if (!node) {
+        node = { key, nome, tipo, subpastas: [], clientes: [], total_clientes: 0 };
+        map.set(key, node);
+      }
+      return node;
+    }
+
+    // Semeia todas as entidades cadastradas (mesmo sem clientes vinculados).
+    if (porDimensao) {
+      for (const i of imobiliariasFiltro) garantir(`imob:${i.id}`, titulo(i.nome));
+    } else {
+      for (const co of corretoresFiltro) garantir(`corr:${co.id}`, titulo(co.nome));
+    }
+
+    for (const c of clientes) {
+      const id = porDimensao ? c.imobiliaria_id : c.corretor_id;
+      const nome = porDimensao ? c.imobiliaria_nome : c.corretor_nome;
+      const key = id ? (porDimensao ? `imob:${id}` : `corr:${id}`) : semKey;
+      const node = garantir(key, id ? titulo(nome) : semNome);
+      node.clientes.push(c);
+    }
+
+    const lista = Array.from(map.values());
+    lista.forEach(finalizar);
+    lista.sort((a, b) => {
+      const aSem = a.key === semKey;
+      const bSem = b.key === semKey;
+      if (aSem !== bSem) return aSem ? 1 : -1;
+      return a.nome.localeCompare(b.nome, "pt-BR");
+    });
+
+    const raiz: PastaNode = {
+      key: RAIZ_KEY,
+      nome: porDimensao ? "Imobiliárias" : "Corretores",
+      tipo: "raiz",
+      subpastas: lista,
+      clientes: [],
+      total_clientes: lista.reduce((acc, n) => acc + n.total_clientes, 0),
+    };
+    return [raiz];
+  }, [visao, raizes, clientes, imobiliariasFiltro, corretoresFiltro]);
 
   // Traça o caminho atual na árvore, coletando as pastas percorridas.
   const trilha = useMemo<PastaNode[]>(() => {
     const nodes: PastaNode[] = [];
-    let nivel = raizes;
+    let nivel = arvore;
     for (const key of caminho) {
       const found = nivel.find((n) => n.key === key);
       if (!found) break;
@@ -291,11 +362,23 @@ export function DocumentosGerais() {
       nivel = found.subpastas;
     }
     return nodes;
-  }, [raizes, caminho]);
+  }, [arvore, caminho]);
 
   const atual = trilha.length > 0 ? trilha[trilha.length - 1] : null;
-  const pastasNivel = atual ? atual.subpastas : raizes;
+  const pastasNivel = atual ? atual.subpastas : arvore;
   const clientesNivel = atual && atual.subpastas.length === 0 ? atual.clientes : [];
+
+  /** Abre uma visão agregada a partir dos cards de KPI. */
+  function abrirVisao(v: Visao) {
+    setVisao(v);
+    setCaminho([RAIZ_KEY]);
+  }
+
+  /** Volta à raiz (cards de KPI) e restaura a visão hierárquica. */
+  function irParaRaiz() {
+    setVisao("hierarquia");
+    setCaminho([]);
+  }
 
   function limparFiltros() {
     setBusca("");
