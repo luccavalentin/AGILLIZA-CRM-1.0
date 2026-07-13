@@ -346,6 +346,43 @@ export function ClienteForm({
   const ehPF = v.tipo_pessoa === "PF";
   const casadoPF = ehPF && (v.estado_civil === "casado" || v.estado_civil === "uniao_estavel");
 
+  // Campos obrigatórios pendentes para envio da proposta ao banco (destaque em vermelho).
+  const erros = useMemo(() => {
+    const s = new Set<string>();
+    if (!destacarObrigatorios) return s;
+    const vazio = (x?: string | null) => !x || !String(x).trim();
+    // Dados básicos / contato
+    if (vazio(v.documento)) s.add("documento");
+    if (vazio(v.nome)) s.add("nome");
+    if (vazio(v.data_nascimento)) s.add("data_nascimento");
+    if (vazio(v.email)) s.add("email");
+    if (vazio(v.telefone_celular)) s.add("telefone_celular");
+    if (vazio(v.renda_total_declarada)) s.add("renda_total_declarada");
+    // Identidade / profissão
+    if (vazio(v.tipo_documento_identidade)) s.add("tipo_documento_identidade");
+    if (vazio(v.numero_documento)) s.add("numero_documento");
+    if (vazio(v.orgao_expedidor)) s.add("orgao_expedidor");
+    if (vazio(v.uf_expedicao)) s.add("uf_expedicao");
+    if (vazio(v.profissao)) s.add("profissao");
+    // Endereço
+    if (vazio(end.cep)) s.add("cep");
+    if (vazio(end.logradouro)) s.add("logradouro");
+    if (vazio(end.numero)) s.add("numero");
+    if (vazio(end.bairro)) s.add("bairro");
+    if (vazio(end.cidade)) s.add("cidade");
+    if (vazio(end.uf)) s.add("uf");
+    // Autorização
+    if (!v.fg_autorizacao_dados) s.add("fg_autorizacao_dados");
+    // Somente PF
+    if (ehPF) {
+      if (vazio(v.estado_civil)) s.add("estado_civil");
+      if (vazio(v.mae)) s.add("mae");
+      if (vazio(v.sexo)) s.add("sexo");
+    }
+    return s;
+  }, [destacarObrigatorios, v, end, ehPF]);
+
+
   return (
     <form onSubmit={submit} className="space-y-6">
       {novoCadastro && (
