@@ -3,7 +3,20 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { ArrowLeft, Paperclip, Download, Trash2, Send, MessageCircle } from "lucide-react";
+import {
+  ArrowLeft,
+  Paperclip,
+  Download,
+  Trash2,
+  Send,
+  MessageCircle,
+  User,
+  Users,
+  Tag,
+  Clock,
+  History,
+  FileText,
+} from "lucide-react";
 import { getMinhaSessao } from "@/lib/session.functions";
 import { PopOutPanel } from "@/components/shared/pop-out-panel";
 import { Card } from "@/components/ui/card";
@@ -85,6 +98,27 @@ const STATUS_OPCOES: DemandaStatus[] = [
   "concluida",
   "cancelada",
 ];
+
+function InfoCell({
+  icon: Icon,
+  rotulo,
+  valor,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  rotulo: string;
+  valor: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-start gap-2.5 bg-card px-4 py-3">
+      <Icon className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+      <div className="min-w-0">
+        <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{rotulo}</p>
+        <p className="mt-0.5 truncate text-sm font-medium text-foreground">{valor}</p>
+      </div>
+    </div>
+  );
+}
+
 
 function Pagina() {
   const { id } = useParams({ from: "/_authenticated/operacional/demandas_/$id" });
@@ -245,57 +279,73 @@ function Pagina() {
         </div>
       </div>
 
-      <div className="rounded-lg border border-border bg-card p-4">
-        <div className="mb-2 flex flex-wrap items-center gap-2">
-          <span className="text-xs text-muted-foreground tabular-nums">{d.numero}</span>
-          <ToneBadge tone={statusDemanda(d.status).tone}>{statusDemanda(d.status).label}</ToneBadge>
-          <span
-            className={cn(
-              "inline-block h-1.5 w-8 rounded-full",
-              PRIORIDADE[d.prioridade as "p1"].bar,
-            )}
+      <div className="overflow-hidden rounded-2xl border border-border/70 bg-card shadow-sm">
+        <div className="border-b border-border/60 bg-muted/30 px-5 py-4">
+          <div className="mb-2 flex flex-wrap items-center gap-2">
+            <span className="rounded-md bg-background px-2 py-0.5 font-mono text-xs text-muted-foreground ring-1 ring-border/60">
+              {d.numero}
+            </span>
+            <ToneBadge tone={statusDemanda(d.status).tone}>
+              {statusDemanda(d.status).label}
+            </ToneBadge>
+            <span className="inline-flex items-center gap-1.5 rounded-md bg-background px-2 py-0.5 text-xs text-muted-foreground ring-1 ring-border/60">
+              <span
+                className={cn(
+                  "inline-block h-1.5 w-5 rounded-full",
+                  PRIORIDADE[d.prioridade as "p1"].bar,
+                )}
+              />
+              {PRIORIDADE[d.prioridade as "p1"].label}
+            </span>
+          </div>
+          <h1 className="text-xl font-semibold tracking-tight text-foreground">{d.titulo}</h1>
+          {d.descricao && (
+            <p className="mt-1.5 whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
+              {d.descricao}
+            </p>
+          )}
+        </div>
+
+        <div className="grid grid-cols-2 gap-px bg-border/60 md:grid-cols-4">
+          <InfoCell icon={User} rotulo="Responsável" valor={data?.nome_responsavel ?? "—"} />
+          <InfoCell icon={Users} rotulo="Cliente" valor={d.clientes?.nome ?? "—"} />
+          <InfoCell
+            icon={Tag}
+            rotulo="Tipo"
+            valor={d.tipo === "simulacao" ? "Simulação" : d.tipo === "diversos" ? "Diversos" : d.tipo}
           />
-          <span className="text-xs text-muted-foreground">
-            {PRIORIDADE[d.prioridade as "p1"].label}
-          </span>
-        </div>
-        <h1 className="text-lg font-semibold text-foreground">{d.titulo}</h1>
-        {d.descricao && (
-          <p className="mt-1 text-sm text-foreground whitespace-pre-wrap">{d.descricao}</p>
-        )}
-        <div className="mt-3 grid grid-cols-2 gap-2 text-sm md:grid-cols-4">
-          <div>
-            <span className="text-muted-foreground">Responsável:</span>{" "}
-            {data?.nome_responsavel ?? "—"}
-          </div>
-          <div>
-            <span className="text-muted-foreground">Cliente:</span> {d.clientes?.nome ?? "—"}
-          </div>
-          <div>
-            <span className="text-muted-foreground">Tipo:</span>{" "}
-            {d.tipo === "simulacao" ? "Simulação" : d.tipo === "diversos" ? "Diversos" : d.tipo}
-          </div>
-          <div>
-            <SlaCountdown
-              inicio={d.sla_inicio}
-              prazo={d.prazo_sla}
-              concluida={d.status === "concluida"}
-              concluidaEm={d.concluida_em}
-            />
+          <div className="flex items-start gap-2.5 bg-card px-4 py-3">
+            <Clock className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+            <div className="min-w-0">
+              <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Prazo (SLA)</p>
+              <div className="mt-0.5 text-sm font-medium text-foreground">
+                <SlaCountdown
+                  inicio={d.sla_inicio}
+                  prazo={d.prazo_sla}
+                  concluida={d.status === "concluida"}
+                  concluidaEm={d.concluida_em}
+                />
+              </div>
+            </div>
           </div>
         </div>
+
         {d.dados_simulacao && (
-          <div className="mt-3 rounded-xl border border-primary/30 bg-primary/[0.04] p-3">
-            <p className="mb-1 text-xs font-semibold text-primary">Dados da simulação</p>
-            <p className="whitespace-pre-wrap text-sm text-foreground">{d.dados_simulacao}</p>
+          <div className="border-t border-border/60 px-5 py-4">
+            <div className="rounded-xl border border-primary/30 bg-primary/[0.04] p-3.5">
+              <p className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-primary">
+                <FileText className="h-3.5 w-3.5" /> Dados da simulação
+              </p>
+              <p className="whitespace-pre-wrap text-sm text-foreground">{d.dados_simulacao}</p>
+            </div>
           </div>
         )}
       </div>
 
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Mensagens */}
-        <PopOutPanel title={`Mensagens · ${d.numero}`} className="h-[32rem]">
+        <PopOutPanel title={`Mensagens · ${d.numero}`} className="h-[32rem] lg:col-span-2">
           <Card className="flex h-full flex-col overflow-hidden border-border/60 shadow-sm">
             <div className="flex items-center gap-2 border-b bg-muted/30 px-4 py-3">
               <div className="flex size-8 items-center justify-center rounded-full bg-primary/10 text-primary">
@@ -491,89 +541,123 @@ function Pagina() {
         </PopOutPanel>
 
 
-        {/* Timeline */}
-        <div className="space-y-3">
-          <h2 className="text-sm font-semibold text-foreground">Histórico</h2>
-          <div className="space-y-3">
-            {(data?.historico ?? []).map((h: any) => (
-              <div key={h.id} className="text-sm">
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>
-                    {h.nome_ator ?? "Sistema"} · {h.acao}
+        {/* Sidebar: Anexos + Histórico de auditoria */}
+        <div className="space-y-6">
+          {/* Anexos */}
+          <div className="rounded-2xl border border-border/70 bg-card shadow-sm">
+            <div className="flex items-center justify-between gap-2 border-b border-border/60 px-4 py-3">
+              <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                <Paperclip className="h-4 w-4 text-muted-foreground" /> Anexos
+                {(data?.anexos ?? []).length > 0 && (
+                  <span className="rounded-full bg-muted px-1.5 text-xs font-medium text-muted-foreground">
+                    {(data?.anexos ?? []).length}
                   </span>
-                  <span>{fmtData(h.created_at)}</span>
-                </div>
-                {h.acao === "transferida" && (
-                  <p className="mt-0.5">
-                    <span className="text-muted-foreground line-through">
-                      {h.nome_anterior ?? "—"}
+                )}
+              </h2>
+              <input ref={fileRef} type="file" className="hidden" onChange={handleUpload} />
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={enviando}
+                onClick={() => fileRef.current?.click()}
+              >
+                <Paperclip className="mr-1 h-3.5 w-3.5" /> {enviando ? "Enviando…" : "Anexar"}
+              </Button>
+            </div>
+            <div className="space-y-2 p-3">
+              {(data?.anexos ?? []).length === 0 ? (
+                <p className="px-1 py-4 text-center text-sm text-muted-foreground">
+                  Nenhum anexo.
+                </p>
+              ) : (
+                (data?.anexos ?? []).map((a: any) => (
+                  <div
+                    key={a.id}
+                    className="group flex items-center gap-2.5 rounded-xl border border-border/60 bg-background p-2.5 text-sm transition-colors hover:border-primary/40"
+                  >
+                    <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                      <FileText className="h-4 w-4" />
                     </span>
-                    {" → "}
-                    <span className="text-primary">{h.nome_novo ?? "—"}</span>
-                  </p>
-                )}
-                {h.motivo && (
-                  <div className="mt-1 rounded-md bg-muted p-3 text-foreground">{h.motivo}</div>
-                )}
-                {h.detalhe && h.acao !== "transferida" && (
-                  <p className="mt-0.5 text-muted-foreground">{h.detalhe}</p>
-                )}
-              </div>
-            ))}
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-medium text-foreground">{a.nome}</p>
+                      <p className="truncate text-xs text-muted-foreground">{a.nome_autor ?? "—"}</p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                      onClick={() => baixarAnexo(a.storage_path, a.nome)}
+                    >
+                      <Download className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-destructive"
+                      onClick={async () => {
+                        await removerAnexoFn({ data: { id: a.id } });
+                        invalidar();
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Histórico (auditoria) */}
+          <div className="rounded-2xl border border-border/70 bg-card shadow-sm">
+            <div className="flex items-center gap-2 border-b border-border/60 px-4 py-3">
+              <History className="h-4 w-4 text-muted-foreground" />
+              <h2 className="text-sm font-semibold text-foreground">Histórico</h2>
+            </div>
+            <div className="max-h-80 overflow-y-auto p-4">
+              {(data?.historico ?? []).length === 0 ? (
+                <p className="text-center text-xs text-muted-foreground">Sem registros.</p>
+              ) : (
+                <ol className="relative space-y-3 border-l border-border/60 pl-4">
+                  {(data?.historico ?? []).map((h: any) => (
+                    <li key={h.id} className="relative">
+                      <span className="absolute -left-[21px] top-1 size-2 rounded-full bg-primary/60 ring-2 ring-card" />
+                      <div className="flex items-baseline justify-between gap-2">
+                        <span className="text-xs font-medium text-foreground">
+                          {h.nome_ator ?? "Sistema"}
+                        </span>
+                        <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground">
+                          {fmtData(h.created_at)}
+                        </span>
+                      </div>
+                      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                        {h.acao}
+                      </p>
+                      {h.acao === "transferida" && (
+                        <p className="mt-0.5 text-xs">
+                          <span className="text-muted-foreground line-through">
+                            {h.nome_anterior ?? "—"}
+                          </span>
+                          {" → "}
+                          <span className="text-primary">{h.nome_novo ?? "—"}</span>
+                        </p>
+                      )}
+                      {h.motivo && (
+                        <p className="mt-1 rounded-md bg-muted/60 px-2 py-1 text-xs text-foreground">
+                          {h.motivo}
+                        </p>
+                      )}
+                      {h.detalhe && h.acao !== "transferida" && (
+                        <p className="mt-0.5 text-xs text-muted-foreground">{h.detalhe}</p>
+                      )}
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Anexos */}
-      <div className="space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-sm font-semibold text-foreground">Anexos</h2>
-          <input ref={fileRef} type="file" className="hidden" onChange={handleUpload} />
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={enviando}
-            onClick={() => fileRef.current?.click()}
-          >
-            <Paperclip className="mr-1 h-3.5 w-3.5" /> {enviando ? "Enviando…" : "Anexar"}
-          </Button>
-        </div>
-        <div className="space-y-2">
-          {(data?.anexos ?? []).length === 0 ? (
-            <p className="text-sm text-muted-foreground">Nenhum anexo.</p>
-          ) : (
-            (data?.anexos ?? []).map((a: any) => (
-              <div
-                key={a.id}
-                className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-card p-2 text-sm"
-              >
-                <Paperclip className="h-4 w-4 shrink-0 text-muted-foreground" />
-                <span className="min-w-0 flex-1 truncate text-foreground">{a.nome}</span>
-                <span className="shrink-0 text-xs text-muted-foreground">{a.nome_autor ?? "—"}</span>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7"
-                  onClick={() => baixarAnexo(a.storage_path, a.nome)}
-                >
-                  <Download className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 text-destructive"
-                  onClick={async () => {
-                    await removerAnexoFn({ data: { id: a.id } });
-                    invalidar();
-                  }}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
       <VisualizadorArquivo
         arquivo={visualizando}
         open={!!visualizando}
