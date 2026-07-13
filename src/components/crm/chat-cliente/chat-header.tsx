@@ -1,16 +1,20 @@
-import { Search } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { Search, Star, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { iniciais, type ChatClienteInfo } from "./utils";
 
 export function ChatClienteHeader({
   info,
+  clienteId,
   buscaAberta,
   toggleBusca,
   buscaMsg,
   setBuscaMsg,
 }: {
   info?: ChatClienteInfo;
+  clienteId?: string;
   buscaAberta: boolean;
   toggleBusca: () => void;
   buscaMsg: string;
@@ -27,11 +31,23 @@ export function ChatClienteHeader({
           <p className="truncate text-sm font-semibold text-foreground">
             {info?.nome ?? "Conversa com o cliente"}
           </p>
-          <p className="truncate text-xs text-muted-foreground">
-            {[info?.documento, info?.celular, info?.email, info?.contexto]
-              .filter(Boolean)
-              .join(" · ") || "App do Cliente"}
-          </p>
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-1 text-xs text-emerald-600">
+              <span className="size-1.5 rounded-full bg-emerald-500" />
+              Ativo agora
+            </span>
+            <Badge
+              variant="secondary"
+              className="h-5 rounded-full px-2 text-[10px] font-medium"
+            >
+              Cliente
+            </Badge>
+            {info?.documento && (
+              <span className="hidden truncate text-xs text-muted-foreground sm:inline">
+                · {info.documento}
+              </span>
+            )}
+          </div>
         </div>
         <Button
           type="button"
@@ -43,6 +59,29 @@ export function ChatClienteHeader({
         >
           <Search className="size-4" />
         </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="size-8 shrink-0 text-muted-foreground"
+          title="Favoritar conversa"
+        >
+          <Star className="size-4" />
+        </Button>
+        {clienteId && (
+          <Button
+            asChild
+            type="button"
+            variant="outline"
+            size="sm"
+            className="hidden shrink-0 gap-1.5 rounded-lg sm:inline-flex"
+          >
+            <Link to="/crm/clientes/$id" params={{ id: clienteId }}>
+              <UserRound className="size-4" />
+              Ver cliente
+            </Link>
+          </Button>
+        )}
       </div>
 
       {buscaAberta && (
