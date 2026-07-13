@@ -188,7 +188,47 @@ export const criarDemanda = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     const { supabase, userId } = context;
     const corr = await correspondenteId(supabase, userId);
-    const { data: nova, error } = await supabase
+
+    // A política de INSERT de `demandas` pode barrar a criação quando há
+    // destinatário/cliente vinculado e a reavaliação de escopo acontece no
+    // contexto da sessão. O correspondente do usuário já foi validado acima;
+    // daqui em diante usamos o cliente administrativo apenas para persistir
+    // a demanda e seus vínculos sem violar a regra de negócio.
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    if (data.responsavel_id) {
+      const { data: responsavel } = await supabaseAdmin
+        .from("profiles")
+        .select("id")
+        .eq("id", data.responsavel_id)
+        .eq("correspondente_id", corr)
+        .maybeSingle();
+      if (!responsavel) throw new Error("Responsável fora do seu ecossistema.");
+    }
+
+    if (data.cliente_id) {
+      const { data: cliente } = await supabaseAdmin
+        .from("clientes")
+        .select("id")
+        .eq("id", data.cliente_id)
+        .eq("correspondente_id", corr)
+        .maybeSingle();
+      if (!cliente) throw new Error("Cliente fora do seu ecossistema.");
+    }
+
+    const participantes = [...new Set(data.participantes ?? [])];
+    if (participantes.length) {
+      const { data: usuarios } = await supabaseAdmin
+        .from("profiles")
+        .select("id")
+        .in("id", participantes)
+        .eq("correspondente_id", corr);
+      if ((usuarios ?? []).length !== participantes.length) {
+        throw new Error("Há participantes fora do seu ecossistema.");
+      }
+    }
+
+    const { data: nova, error } = await supabaseAdmin
       .from("demandas")
       .insert({
         correspondente_id: corr,
@@ -204,10 +244,10 @@ export const criarDemanda = createServerFn({ method: "POST" })
       .select("id")
       .single();
     if (error) throw new Error(error.message);
-    if (data.participantes?.length) {
-      await supabase
+    if (participantes.length) {
+      await supabaseAdmin
         .from("demanda_participantes")
-        .insert(data.participantes.map((u) => ({ demanda_id: nova.id, user_id: u })));
+        .insert(participantes.map((u) => ({ demanda_id: nova.id, user_id: u })));
     }
     return { id: nova.id as string };
   });
