@@ -52,6 +52,7 @@ export function ClienteForm({
   vincularPropostaId,
   embutido,
   destacarObrigatorios,
+  onSalvoEmbutido,
 }: {
   inicial?: Partial<ClienteFormValues>;
   portalAtivo?: boolean;
