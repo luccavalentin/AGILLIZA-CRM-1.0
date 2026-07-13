@@ -421,6 +421,7 @@ export const listarSimulacoes = createServerFn({ method: "GET" })
       .range(from, to);
 
     if (data.escopo === "minhas") query = query.eq("usuario_criador_id", userId);
+    if (data.responsavel) query = query.eq("usuario_criador_id", data.responsavel);
     if (data.status) query = query.eq("status", data.status as any);
     if (data.desde) query = query.gte("created_at", data.desde);
     if (data.ate) query = query.lte("created_at", `${data.ate}T23:59:59.999`);
