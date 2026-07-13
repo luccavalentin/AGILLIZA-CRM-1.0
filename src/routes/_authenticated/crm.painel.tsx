@@ -379,15 +379,19 @@ function Pagina() {
     () =>
       (data ?? []).map((s) => ({
         ...s,
-        clientes: termo
-          ? s.clientes.filter(
-              (c) =>
-                c.nome.toLowerCase().includes(termo) ||
-                (c.numero_cliente ?? "").toLowerCase().includes(termo),
-            )
-          : s.clientes,
+        clientes: s.clientes.filter((c) => {
+          if (
+            termo &&
+            !c.nome.toLowerCase().includes(termo) &&
+            !(c.numero_cliente ?? "").toLowerCase().includes(termo)
+          )
+            return false;
+          if (respFiltro !== "todos" && (c.responsavel_nome ?? "") !== respFiltro)
+            return false;
+          return true;
+        }),
       })),
-    [data, termo],
+    [data, termo, respFiltro],
   );
   const totalClientes = useMemo(
     () => dadosFiltrados.reduce((acc, s) => acc + s.clientes.length, 0),
@@ -397,6 +401,45 @@ function Pagina() {
     () => dadosFiltrados.filter((s) => s.clientes.length > 0).length,
     [dadosFiltrados],
   );
+  const responsaveis = useMemo(() => {
+    const set = new Set<string>();
+    (data ?? []).forEach((s) =>
+      s.clientes.forEach((c) => {
+        if (c.responsavel_nome) set.add(c.responsavel_nome);
+      }),
+    );
+    return Array.from(set).sort((a, b) => a.localeCompare(b, "pt-BR"));
+  }, [data]);
+  const todosClientes = useMemo(
+    () => dadosFiltrados.flatMap((s) => s.clientes),
+    [dadosFiltrados],
+  );
+  const clientesParados = useMemo(
+    () =>
+      todosClientes.filter(
+        (c) =>
+          c.pipeline_atualizado_em &&
+          Date.now() - new Date(c.pipeline_atualizado_em).getTime() > 7 * 864e5,
+      ).length,
+    [todosClientes],
+  );
+  const tempoMedioDias = useMemo(() => {
+    const ds = todosClientes
+      .map((c) =>
+        c.pipeline_atualizado_em
+          ? Math.floor((Date.now() - new Date(c.pipeline_atualizado_em).getTime()) / 864e5)
+          : null,
+      )
+      .filter((x): x is number => x != null);
+    if (!ds.length) return 0;
+    return Math.round(ds.reduce((a, b) => a + b, 0) / ds.length);
+  }, [todosClientes]);
+  const contratosMes = useMemo(() => {
+    const d = new Date();
+    const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    return (contratos ?? []).filter((ct) => (ct.contrato_emitido_em ?? "").startsWith(ym))
+      .length;
+  }, [contratos]);
   const verTodos = dialogStage === "__todos__";
   const stageDialog =
     dialogStage && !verTodos ? dadosFiltrados.find((s) => s.codigo === dialogStage) : null;
