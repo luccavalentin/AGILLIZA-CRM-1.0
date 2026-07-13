@@ -68,18 +68,16 @@ export function ClienteSecao({
           Nenhum cadastro de cliente vinculado a esta proposta.
         </p>
         <p className="mt-1 text-sm text-muted-foreground">
-          Crie o cadastro com os dados desta proposta ou vincule um cliente existente no CRM — os
-          mesmos dados serão usados para comprador, vendedores, imóvel, IQ e documentos.
+          Abra o cadastro do CRM já preenchido com os dados desta proposta para revisar, completar e
+          salvar — o cliente é vinculado automaticamente à proposta.
         </p>
         <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
           {propostaId && (
-            <Button size="sm" onClick={cadastrarCliente} disabled={cadastrando}>
-              {cadastrando ? (
-                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-              ) : (
+            <Button asChild size="sm">
+              <Link to="/crm/clientes/novo" search={{ proposta: propostaId }}>
                 <UserPlus className="mr-1.5 h-4 w-4" />
-              )}
-              Cadastrar cliente
+                Cadastrar cliente
+              </Link>
             </Button>
           )}
           <Button asChild variant="outline" size="sm">
@@ -89,6 +87,7 @@ export function ClienteSecao({
       </div>
     );
   }
+
 
   if (isLoading || !det) {
     return (
