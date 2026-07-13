@@ -246,6 +246,62 @@ export function NovaDemandaDialog({ onCriada }: { onCriada: () => void }) {
             <Label>Descrição</Label>
             <Textarea value={descricao} onChange={(e) => setDescricao(e.target.value)} rows={3} />
           </div>
+
+          {isSimulacao && (
+            <div className="space-y-4 rounded-xl border border-primary/30 bg-primary/[0.04] p-4">
+              <div className="flex items-center gap-2 text-sm font-semibold text-primary">
+                <Calculator className="h-4 w-4" /> Dados da simulação
+              </div>
+              <div className="space-y-1.5">
+                <Label>Digite os dados para o analista realizar</Label>
+                <Textarea
+                  value={dadosSimulacao}
+                  onChange={(e) => setDadosSimulacao(e.target.value)}
+                  rows={4}
+                  placeholder="Ex.: Valor do imóvel, renda, prazo desejado, banco preferido, observações…"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Ou anexe documentos</Label>
+                <input
+                  ref={fileRef}
+                  type="file"
+                  multiple
+                  className="hidden"
+                  onChange={adicionarArquivos}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fileRef.current?.click()}
+                >
+                  <Paperclip className="mr-1.5 h-4 w-4" /> Anexar documentos
+                </Button>
+                {arquivos.length > 0 && (
+                  <ul className="space-y-1.5">
+                    {arquivos.map((f, i) => (
+                      <li
+                        key={i}
+                        className="flex items-center gap-2 rounded-lg border border-border bg-card px-2.5 py-1.5 text-sm"
+                      >
+                        <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
+                        <span className="min-w-0 flex-1 truncate">{f.name}</span>
+                        <button
+                          type="button"
+                          onClick={() => setArquivos((prev) => prev.filter((_, j) => j !== i))}
+                          className="text-muted-foreground hover:text-destructive"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label>Responsável (destinatário)</Label>
