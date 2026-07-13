@@ -72,6 +72,7 @@ export const listarPropostas = createServerFn({ method: "GET" })
       .object({
         escopo: z.enum(["todas", "minhas"]).default("todas"),
         status: z.string().optional(),
+        responsavel: z.string().uuid().optional(),
         q: z.string().optional(),
         data_inicio: z.string().optional(),
         data_fim: z.string().optional(),
