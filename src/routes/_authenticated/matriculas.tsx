@@ -163,7 +163,7 @@ function PixBanner() {
             </p>
             <p className="text-lg font-semibold tabular-nums">{PIX_AGILLIZA}</p>
             <p className="text-xs opacity-80">
-              Chave CNPJ — use para reembolsar as matrículas.
+              Chave CNPJ — os corretores usam para reembolsar a Agilliza.
             </p>
           </div>
         </div>
