@@ -34,7 +34,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { criarDemanda } from "@/lib/operacional/demandas.functions";
+import { criarDemanda, registrarAnexoDemanda } from "@/lib/operacional/demandas.functions";
 import { listarColegas, buscarClientesOpcoes } from "@/lib/operacional/shared.functions";
 
 interface OpcaoId {
