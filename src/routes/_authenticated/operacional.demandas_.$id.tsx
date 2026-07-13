@@ -272,7 +272,8 @@ function Pagina() {
             <span className="text-muted-foreground">Cliente:</span> {d.clientes?.nome ?? "—"}
           </div>
           <div>
-            <span className="text-muted-foreground">Tipo:</span> {d.tipo}
+            <span className="text-muted-foreground">Tipo:</span>{" "}
+            {d.tipo === "simulacao" ? "Simulação" : d.tipo === "diversos" ? "Diversos" : d.tipo}
           </div>
           <div>
             <SlaCountdown
@@ -283,7 +284,14 @@ function Pagina() {
             />
           </div>
         </div>
+        {d.dados_simulacao && (
+          <div className="mt-3 rounded-xl border border-primary/30 bg-primary/[0.04] p-3">
+            <p className="mb-1 text-xs font-semibold text-primary">Dados da simulação</p>
+            <p className="whitespace-pre-wrap text-sm text-foreground">{d.dados_simulacao}</p>
+          </div>
+        )}
       </div>
+
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Mensagens */}
