@@ -138,6 +138,87 @@ export const listarContas = createServerFn({ method: "GET" })
     return { itens, total: count ?? 0 };
   });
 
+/** ===== Resumo/KPIs de contas (respeita filtros) ===== */
+export interface ContasResumo {
+  totalValor: number;
+  totalQtd: number;
+  abertoValor: number;
+  abertoQtd: number;
+  pagoValor: number;
+  pagoQtd: number;
+  atrasadoValor: number;
+  atrasadoQtd: number;
+}
+
+export const resumoContas = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z
+      .object({
+        tipo: z.enum(["pagar", "receber"]),
+        status: z.string().optional(),
+        categoria_id: z.string().uuid().optional(),
+        cost_center_id: z.string().uuid().optional(),
+        contraparte: z.string().optional(),
+        de: z.string().optional(),
+        ate: z.string().optional(),
+      })
+      .parse(data),
+  )
+  .handler(async ({ context, data }): Promise<ContasResumo> => {
+    const { supabase } = context;
+    const contraCol = data.tipo === "pagar" ? "fornecedor" : "pagador";
+    let query = supabase
+      .from(TABELA[data.tipo])
+      .select("vencimento, valor, valor_pago, status");
+
+    if (data.status === "atrasada") {
+      const hojeStr = new Date().toLocaleDateString("sv", { timeZone: "America/Sao_Paulo" });
+      query = query.in("status", ["aberta", "parcial"] as any).lt("vencimento", hojeStr);
+    } else if (data.status) {
+      query = query.eq("status", data.status as any);
+    }
+    if (data.categoria_id) query = query.eq("categoria_id", data.categoria_id);
+    if (data.cost_center_id) query = query.eq("cost_center_id", data.cost_center_id);
+    if (data.contraparte) query = query.ilike(contraCol, `%${data.contraparte}%`);
+    if (data.de) query = query.gte("vencimento", data.de);
+    if (data.ate) query = query.lte("vencimento", data.ate);
+
+    const { data: rows, error } = await query;
+    if (error) throw new Error(error.message);
+
+    const resumo: ContasResumo = {
+      totalValor: 0,
+      totalQtd: 0,
+      abertoValor: 0,
+      abertoQtd: 0,
+      pagoValor: 0,
+      pagoQtd: 0,
+      atrasadoValor: 0,
+      atrasadoQtd: 0,
+    };
+    for (const r of rows ?? []) {
+      const valor = Number(r.valor) || 0;
+      const pago = Number(r.valor_pago) || 0;
+      const ef = statusEfetivo(r.status, r.vencimento);
+      resumo.totalValor += valor;
+      resumo.totalQtd += 1;
+      if (r.status === "paga") {
+        resumo.pagoValor += valor;
+        resumo.pagoQtd += 1;
+      } else if (r.status === "aberta" || r.status === "parcial") {
+        const restante = valor - pago;
+        resumo.abertoValor += restante > 0 ? restante : 0;
+        resumo.abertoQtd += 1;
+        if (ef === "atrasada") {
+          resumo.atrasadoValor += restante > 0 ? restante : 0;
+          resumo.atrasadoQtd += 1;
+        }
+      }
+    }
+    return resumo;
+  });
+
 /** ===== Criar conta ===== */
 export const criarConta = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
