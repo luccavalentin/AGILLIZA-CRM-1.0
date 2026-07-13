@@ -323,118 +323,149 @@ export function ContasPage({ tipo }: { tipo: ContaTipo }) {
       </div>
 
 
-      <div className="overflow-x-auto rounded-lg border border-border">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-muted">
-              <TableHead className="text-xs uppercase tracking-wide text-muted-foreground">
-                Número
-              </TableHead>
-              <TableHead className="text-xs uppercase tracking-wide text-muted-foreground">
-                Descrição
-              </TableHead>
-              <TableHead className="text-xs uppercase tracking-wide text-muted-foreground">
-                {tipo === "pagar" ? "Fornecedor" : "Pagador"}
-              </TableHead>
-              <TableHead className="text-xs uppercase tracking-wide text-muted-foreground">
-                Categoria
-              </TableHead>
-              <TableHead className="text-xs uppercase tracking-wide text-muted-foreground">
-                Vencimento
-              </TableHead>
-              <TableHead className="text-right text-xs uppercase tracking-wide text-muted-foreground">
-                Valor
-              </TableHead>
-              <TableHead className="text-xs uppercase tracking-wide text-muted-foreground">
-                Status
-              </TableHead>
-              <TableHead className="w-10" />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading && (
-              <TableRow>
-                <TableCell colSpan={8} className="py-10 text-center text-sm text-muted-foreground">
-                  Carregando…
-                </TableCell>
+      {/* Tabela (desktop) */}
+      <div className="hidden overflow-hidden rounded-xl border border-border bg-card shadow-sm md:block">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="border-b border-border bg-muted/60 hover:bg-muted/60">
+                <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Número
+                </TableHead>
+                <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Descrição
+                </TableHead>
+                <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  {tipo === "pagar" ? "Fornecedor" : "Pagador"}
+                </TableHead>
+                <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Categoria
+                </TableHead>
+                <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Vencimento
+                </TableHead>
+                <TableHead className="text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Valor
+                </TableHead>
+                <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Status
+                </TableHead>
+                <TableHead className="w-10" />
               </TableRow>
-            )}
-            {!isLoading && (data?.itens.length ?? 0) === 0 && (
-              <TableRow>
-                <TableCell colSpan={8}>
-                  <div className="flex flex-col items-center gap-3 py-12 text-center">
-                    <Wallet className="h-8 w-8 text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground">Nenhuma conta encontrada.</p>
-                  </div>
-                </TableCell>
-              </TableRow>
-            )}
-            {data?.itens.map((c) => (
-              <TableRow key={c.id} className="even:bg-muted/40 dark:even:bg-muted/60">
-                <TableCell
-                  className="cursor-pointer font-medium"
+            </TableHeader>
+            <TableBody>
+              {isLoading &&
+                Array.from({ length: 4 }).map((_, i) => (
+                  <TableRow key={`sk-${i}`}>
+                    <TableCell colSpan={8} className="py-3">
+                      <div className="h-6 w-full animate-pulse rounded bg-muted" />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              {!isLoading && (data?.itens.length ?? 0) === 0 && (
+                <TableRow>
+                  <TableCell colSpan={8}>
+                    <div className="flex flex-col items-center gap-3 py-14 text-center">
+                      <div className="grid h-12 w-12 place-items-center rounded-full bg-muted">
+                        <Wallet className="h-6 w-6 text-muted-foreground" />
+                      </div>
+                      <p className="text-sm font-medium text-foreground">Nenhuma conta encontrada</p>
+                      <p className="text-xs text-muted-foreground">
+                        Ajuste os filtros ou cadastre uma nova conta.
+                      </p>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              )}
+              {data?.itens.map((c) => (
+                <TableRow
+                  key={c.id}
+                  className="cursor-pointer border-b border-border/60 transition-colors hover:bg-primary/[0.04]"
                   onClick={() => setDetalheId(c.id)}
                 >
-                  {c.numero}
-                </TableCell>
-                <TableCell className="cursor-pointer" onClick={() => setDetalheId(c.id)}>
-                  {c.descricao}
-                </TableCell>
-                <TableCell>{c.contraparte ?? "—"}</TableCell>
-                <TableCell>{c.categoria_nome ?? "—"}</TableCell>
-                <TableCell>{formatData(c.vencimento)}</TableCell>
-                <TableCell className="text-right tabular-nums">{formatBRL(c.valor)}</TableCell>
-                <TableCell>
-                  <ContaStatusBadge status={c.status_efetivo} />
-                </TableCell>
-                <TableCell>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => setDetalheId(c.id)}>
-                        Ver detalhes
-                      </DropdownMenuItem>
-                      {c.status !== "paga" &&
-                        c.status !== "cancelada" &&
-                        c.status !== "estornada" && (
-                          <DropdownMenuItem onClick={() => setBaixarConta(c)}>
-                            {tipo === "pagar" ? "Baixar" : "Confirmar recebimento"}
-                          </DropdownMenuItem>
-                        )}
-                      {c.status !== "estornada" && c.valor_pago > 0 && (
-                        <DropdownMenuItem
-                          className="text-destructive"
-                          onClick={() => setEstorno({ id: c.id, acao: "estornar" })}
-                        >
-                          Estornar
-                        </DropdownMenuItem>
-                      )}
-                      {c.status !== "cancelada" && c.status !== "estornada" && (
-                        <DropdownMenuItem
-                          className="text-destructive"
-                          onClick={() => setEstorno({ id: c.id, acao: "cancelar" })}
-                        >
-                          Cancelar
-                        </DropdownMenuItem>
-                      )}
-                      <DropdownMenuItem
-                        className="text-destructive"
-                        onClick={() => setExcluirAlvo({ id: c.id, numero: c.numero ?? "" })}
-                      >
-                        Excluir
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+                  <TableCell className="font-medium tabular-nums text-primary">{c.numero}</TableCell>
+                  <TableCell className="max-w-[220px] truncate">{c.descricao}</TableCell>
+                  <TableCell>{c.contraparte ?? "—"}</TableCell>
+                  <TableCell className="text-muted-foreground">{c.categoria_nome ?? "—"}</TableCell>
+                  <TableCell className="tabular-nums">{formatData(c.vencimento)}</TableCell>
+                  <TableCell className="text-right font-semibold tabular-nums">
+                    {formatBRL(c.valor)}
+                  </TableCell>
+                  <TableCell>
+                    <ContaStatusBadge status={c.status_efetivo} />
+                  </TableCell>
+                  <TableCell onClick={(e) => e.stopPropagation()}>
+                    <AcoesMenu
+                      conta={c}
+                      tipo={tipo}
+                      onDetalhe={() => setDetalheId(c.id)}
+                      onBaixar={() => setBaixarConta(c)}
+                      onEstornar={() => setEstorno({ id: c.id, acao: "estornar" })}
+                      onCancelar={() => setEstorno({ id: c.id, acao: "cancelar" })}
+                      onExcluir={() => setExcluirAlvo({ id: c.id, numero: c.numero ?? "" })}
+                    />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       </div>
+
+      {/* Cartões (mobile) */}
+      <div className="space-y-3 md:hidden">
+        {isLoading &&
+          Array.from({ length: 3 }).map((_, i) => (
+            <div key={`mk-${i}`} className="h-24 animate-pulse rounded-xl border border-border bg-muted/50" />
+          ))}
+        {!isLoading && (data?.itens.length ?? 0) === 0 && (
+          <div className="flex flex-col items-center gap-3 rounded-xl border border-border bg-card py-12 text-center">
+            <div className="grid h-12 w-12 place-items-center rounded-full bg-muted">
+              <Wallet className="h-6 w-6 text-muted-foreground" />
+            </div>
+            <p className="text-sm font-medium text-foreground">Nenhuma conta encontrada</p>
+          </div>
+        )}
+        {data?.itens.map((c) => (
+          <div
+            key={c.id}
+            className="rounded-xl border border-border bg-card p-4 shadow-sm active:bg-primary/[0.04]"
+            onClick={() => setDetalheId(c.id)}
+          >
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-foreground">{c.descricao}</p>
+                <p className="mt-0.5 text-xs tabular-nums text-primary">{c.numero}</p>
+              </div>
+              <div onClick={(e) => e.stopPropagation()}>
+                <AcoesMenu
+                  conta={c}
+                  tipo={tipo}
+                  onDetalhe={() => setDetalheId(c.id)}
+                  onBaixar={() => setBaixarConta(c)}
+                  onEstornar={() => setEstorno({ id: c.id, acao: "estornar" })}
+                  onCancelar={() => setEstorno({ id: c.id, acao: "cancelar" })}
+                  onExcluir={() => setExcluirAlvo({ id: c.id, numero: c.numero ?? "" })}
+                />
+              </div>
+            </div>
+            <div className="mt-3 flex items-center justify-between gap-2">
+              <ContaStatusBadge status={c.status_efetivo} />
+              <span className="text-base font-semibold tabular-nums text-foreground">
+                {formatBRL(c.valor)}
+              </span>
+            </div>
+            <div className="mt-2 flex items-center gap-4 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1">
+                <Clock className="h-3.5 w-3.5" />
+                {formatData(c.vencimento)}
+              </span>
+              {c.contraparte && <span className="truncate">{c.contraparte}</span>}
+            </div>
+          </div>
+        ))}
+      </div>
+
 
       <BaixarDialog
         tipo={tipo}
