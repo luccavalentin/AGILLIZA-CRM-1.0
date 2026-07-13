@@ -396,6 +396,7 @@ const listarSchema = z.object({
   q: z.string().optional(),
   status: z.string().optional(),
   escopo: z.enum(["todas", "minhas"]).default("todas"),
+  responsavel: z.string().uuid().optional(),
   desde: z.string().optional(),
   ate: z.string().optional(),
   pagina: z.number().int().min(1).default(1),
