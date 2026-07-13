@@ -110,14 +110,20 @@ const TIPOS = [
 
 export function NovaDemandaDialog({ onCriada }: { onCriada: () => void }) {
   const [aberto, setAberto] = useState(false);
-  const [tipo, setTipo] = useState("geral");
+  const [tipo, setTipo] = useState("diversos");
   const [titulo, setTitulo] = useState("");
   const [descricao, setDescricao] = useState("");
+  const [dadosSimulacao, setDadosSimulacao] = useState("");
   const [prioridade, setPrioridade] = useState<"p1" | "p2" | "p3">("p2");
   const [responsavel, setResponsavel] = useState("");
   const [cliente, setCliente] = useState("");
+  const [arquivos, setArquivos] = useState<File[]>([]);
   const [salvando, setSalvando] = useState(false);
   const criarFn = useServerFn(criarDemanda);
+  const registrarAnexoFn = useServerFn(registrarAnexoDemanda);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const isSimulacao = tipo === "simulacao";
 
   const { data: colegas } = useQuery({
     queryKey: ["colegas"],
@@ -130,27 +136,53 @@ export function NovaDemandaDialog({ onCriada }: { onCriada: () => void }) {
     enabled: aberto,
   });
 
+  function limpar() {
+    setTipo("diversos");
+    setTitulo("");
+    setDescricao("");
+    setDadosSimulacao("");
+    setPrioridade("p2");
+    setResponsavel("");
+    setCliente("");
+    setArquivos([]);
+  }
+
+  function adicionarArquivos(e: React.ChangeEvent<HTMLInputElement>) {
+    const novos = Array.from(e.target.files ?? []);
+    if (novos.length) setArquivos((prev) => [...prev, ...novos]);
+    if (fileRef.current) fileRef.current.value = "";
+  }
+
   async function salvar() {
     if (titulo.trim().length < 2) return toast.error("Informe um título.");
     if (!responsavel) return toast.error("Selecione o responsável.");
     setSalvando(true);
     try {
-      await criarFn({
+      const { id } = await criarFn({
         data: {
           tipo,
           titulo,
           descricao: descricao || undefined,
+          dados_simulacao: isSimulacao && dadosSimulacao.trim() ? dadosSimulacao : undefined,
           prioridade,
           responsavel_id: responsavel,
           cliente_id: cliente || undefined,
         },
       });
+
+      // Envia os documentos anexados (quando for simulação).
+      for (const file of arquivos) {
+        const path = `${id}/${Date.now()}-${file.name.replace(/[^\w.\-]/g, "_")}`;
+        const { error } = await supabase.storage.from("demanda-anexos").upload(path, file);
+        if (error) throw error;
+        await registrarAnexoFn({
+          data: { demanda_id: id, nome: file.name, storage_path: path, tamanho: file.size },
+        });
+      }
+
       toast.success("Demanda enviada.");
       setAberto(false);
-      setTitulo("");
-      setDescricao("");
-      setResponsavel("");
-      setCliente("");
+      limpar();
       onCriada();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Falha ao criar.");
@@ -158,6 +190,7 @@ export function NovaDemandaDialog({ onCriada }: { onCriada: () => void }) {
       setSalvando(false);
     }
   }
+
 
   return (
     <Dialog open={aberto} onOpenChange={setAberto}>
