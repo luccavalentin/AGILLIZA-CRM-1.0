@@ -294,13 +294,25 @@ export function ParticipanteDialog({
   );
   const [buscandoCep, setBuscandoCep] = useState(false);
   const [buscandoCepC, setBuscandoCepC] = useState(false);
+  const [erros, setErros] = useState<Set<string>>(new Set());
+  const [errosC, setErrosC] = useState<Set<string>>(new Set());
+  const [tentouEnviar, setTentouEnviar] = useState(false);
 
   useEffect(() => {
     if (open) {
       setF(inicial ?? { ...VAZIO, tipo_qualificacao: tipoQualificacaoFixo ?? "CO" });
       setConjuge(conjugeInicial ?? { ...VAZIO, tipo_qualificacao: "TI" });
+      setErros(new Set());
+      setErrosC(new Set());
+      setTentouEnviar(false);
     }
   }, [open, inicial, conjugeInicial, tipoQualificacaoFixo]);
+
+  // Após a primeira tentativa, revalida ao vivo para o vermelho sumir conforme preenche.
+  useEffect(() => {
+    if (tentouEnviar) setErros(camposFaltantes(f));
+  }, [f, tentouEnviar]);
+
 
   const pf = f.tipo_pessoa === "F";
   const permiteConjuge = true;
