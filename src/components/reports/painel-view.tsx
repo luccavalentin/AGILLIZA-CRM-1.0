@@ -245,9 +245,10 @@ export function PainelView({
                 key={h.label}
                 label={h.label}
                 valor={h.valor}
-                hint={"hint" in h ? h.hint : undefined}
+                hint={h.hint}
                 tone={h.tone}
-                delta={"delta" in h ? h.delta : undefined}
+                delta={h.delta}
+
                 icon={iconeParaMetrica(h.label)}
                 to={linkParaMetrica(h.label)}
               />
