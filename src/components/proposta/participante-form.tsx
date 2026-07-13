@@ -394,12 +394,14 @@ export function ParticipanteDialog({
           <CamposParticipante
             f={f}
             set={set}
+            erros={erros}
             buscandoCep={buscandoCep}
             onBuscarCep={(m) => buscarCep(m, set, f, setBuscandoCep)}
             mostrarQualificacao={!tipoQualificacaoFixo}
             mostrarEstadoCivil
             mostrarIdentificacaoExtra
           />
+
 
           {precisaConjuge && (
             <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 sm:p-4">
