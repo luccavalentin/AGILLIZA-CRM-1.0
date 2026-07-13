@@ -747,7 +747,21 @@ function Pagina() {
                       })
 
                     )}
+                    {(stage.codigo === "cadastro_basico" ||
+                      stage.codigo === "cadastro_completo") && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setAdicionarStage({ codigo: stage.codigo, nome: stage.nome })
+                        }
+                        className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-primary/40 px-3 py-2 text-xs font-medium text-primary transition-colors hover:border-primary hover:bg-primary/5"
+                      >
+                        <UserPlus className="size-3.5" />
+                        Adicionar cliente
+                      </button>
+                    )}
                   </div>
+
                 </div>
               </div>
               {stage.codigo === "contrato_emitido" && (
