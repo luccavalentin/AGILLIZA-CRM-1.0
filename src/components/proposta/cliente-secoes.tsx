@@ -94,7 +94,9 @@ export function ClienteSecao({
   return (
     <ClienteForm
       embutido
+      destacarObrigatorios={destacarObrigatorios}
       portalAtivo={c.portal_acesso_ativo}
+
       enderecoInicial={endereco as any}
       inicial={{
         id: c.id,
