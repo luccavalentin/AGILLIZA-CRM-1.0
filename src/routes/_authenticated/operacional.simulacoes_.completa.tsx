@@ -194,8 +194,9 @@ function Pagina() {
               </div>
 
               <Button className="h-11 w-full gap-2" onClick={enviar} disabled={enviando}>
-                <Send className="h-4 w-4" /> Gerar Simulação
+                <Send className="h-4 w-4" /> {modoProposta ? "Gerar Proposta" : "Gerar Simulação"}
               </Button>
+
             </div>
           </Card>
         </aside>
