@@ -47,6 +47,7 @@ export function ChatClienteConversa({
   atendenteId,
   somenteLeitura = false,
   atendenteNome,
+  acoes,
 }: {
   clienteId: string;
   info?: ChatClienteInfo;
@@ -55,6 +56,8 @@ export function ChatClienteConversa({
   /** Quando true, a conversa é de outro atendente: só leitura. */
   somenteLeitura?: boolean;
   atendenteNome?: string;
+  /** Ações extras (ex.: "Mais ações") renderizadas no cabeçalho da conversa. */
+  acoes?: React.ReactNode;
 }) {
   const qc = useQueryClient();
   const listar = useServerFn(listarChatCliente);
