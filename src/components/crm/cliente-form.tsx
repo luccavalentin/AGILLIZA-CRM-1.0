@@ -51,6 +51,7 @@ export function ClienteForm({
   enderecoInicial,
   vincularPropostaId,
   embutido,
+  destacarObrigatorios,
 }: {
   inicial?: Partial<ClienteFormValues>;
   portalAtivo?: boolean;
@@ -66,7 +67,10 @@ export function ClienteForm({
   vincularPropostaId?: string;
   /** Quando true, o formulário é renderizado embutido (ex.: ficha da proposta). Ao salvar, não navega — mantém o usuário na tela atual. */
   embutido?: boolean;
+  /** Quando true, destaca em vermelho os campos obrigatórios ainda pendentes para envio da proposta. */
+  destacarObrigatorios?: boolean;
 }) {
+
   const navigate = useNavigate();
   const qc = useQueryClient();
   const criar = useServerFn(criarCliente);
