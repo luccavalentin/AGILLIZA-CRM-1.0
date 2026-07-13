@@ -16,7 +16,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { StatusBadge, ToneBadge } from "@/components/crm/tone-badge";
+import { ToneBadge } from "@/components/crm/tone-badge";
 import { ConfirmDelete } from "@/components/shared/confirm-delete";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { listarClientes, excluirCliente } from "@/lib/crm/clientes.functions";
