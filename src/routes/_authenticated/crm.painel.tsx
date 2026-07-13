@@ -18,6 +18,11 @@ import {
   Search,
   Archive,
   X,
+  MoreVertical,
+  ExternalLink,
+  Undo2,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
