@@ -142,17 +142,17 @@ export function ChatParticipantes({
             onValueChange={setSelecionado}
             usuarios={disponiveis}
             placeholder="Selecionar pessoa…"
-            className="h-9 flex-1"
+            className="h-9 min-w-0 flex-1"
           />
           <Button
             type="button"
             size="sm"
             disabled={selecionado === "todos" || addMut.isPending}
             onClick={() => addMut.mutate(selecionado)}
-            className="gap-1"
+            className="shrink-0 gap-1"
           >
             <UserPlus className="h-4 w-4" />
-            Add
+            Adicionar
           </Button>
         </div>
       </PopoverContent>
