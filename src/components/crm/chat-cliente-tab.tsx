@@ -44,9 +44,17 @@ export type { ChatClienteInfo } from "./chat-cliente/utils";
 export function ChatClienteConversa({
   clienteId,
   info,
+  atendenteId,
+  somenteLeitura = false,
+  atendenteNome,
 }: {
   clienteId: string;
   info?: ChatClienteInfo;
+  /** Thread do atendente exibido (para a visão supervisora de gestores). */
+  atendenteId?: string;
+  /** Quando true, a conversa é de outro atendente: só leitura. */
+  somenteLeitura?: boolean;
+  atendenteNome?: string;
 }) {
   const qc = useQueryClient();
   const listar = useServerFn(listarChatCliente);
@@ -87,15 +95,17 @@ export function ChatClienteConversa({
   const fimRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const queryKey = ["chat-cliente", clienteId];
+  const queryKey = ["chat-cliente", clienteId, atendenteId ?? "eu"];
   const { data: mensagens, isLoading } = useQuery({
     queryKey,
-    queryFn: () => listar({ data: { cliente_id: clienteId } }),
+    queryFn: () => listar({ data: { cliente_id: clienteId, atendente_id: atendenteId } }),
   });
 
   useEffect(() => {
+    if (somenteLeitura) return; // não marca lida em thread de outro atendente
     marcarLido({ data: { cliente_id: clienteId } }).catch(() => {});
-  }, [clienteId, marcarLido, mensagens?.length]);
+  }, [clienteId, marcarLido, mensagens?.length, somenteLeitura]);
+
 
   useEffect(() => {
     const canal = supabase
@@ -314,32 +324,40 @@ export function ChatClienteConversa({
         onExcluir={setConfirmarExcluir}
       />
 
-      <ChatComposer
-        respondendo={respondendo}
-        editando={editando}
-        cancelarComposer={cancelarComposer}
-        contextoResposta={contextoResposta}
-        onEscolherResposta={(t) => setTexto((prev) => (prev ? `${prev} ${t}` : t))}
-        fileRef={fileRef}
-        onAnexo={handleAnexo}
-        enviandoAnexo={enviandoAnexo}
-        enviarPending={enviar.isPending}
-        salvarEdicaoPending={salvarEdicao.isPending}
-        textareaRef={textareaRef}
-        texto={texto}
-        onChangeTexto={(v) => {
-          setTexto(v);
-          if (v.trim()) notifyTyping();
-        }}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" && !e.shiftKey) {
-            e.preventDefault();
-            submeter();
-          }
-          if (e.key === "Escape") cancelarComposer();
-        }}
-        submeter={submeter}
-      />
+      {somenteLeitura ? (
+        <div className="border-t border-border/60 bg-muted/30 px-4 py-3 text-center text-xs text-muted-foreground">
+          Visualizando a conversa de{" "}
+          <span className="font-medium text-foreground">{atendenteNome ?? "outro atendente"}</span>{" "}
+          — somente leitura. Para falar com este cliente, abra a sua própria conversa.
+        </div>
+      ) : (
+        <ChatComposer
+          respondendo={respondendo}
+          editando={editando}
+          cancelarComposer={cancelarComposer}
+          contextoResposta={contextoResposta}
+          onEscolherResposta={(t) => setTexto((prev) => (prev ? `${prev} ${t}` : t))}
+          fileRef={fileRef}
+          onAnexo={handleAnexo}
+          enviandoAnexo={enviandoAnexo}
+          enviarPending={enviar.isPending}
+          salvarEdicaoPending={salvarEdicao.isPending}
+          textareaRef={textareaRef}
+          texto={texto}
+          onChangeTexto={(v) => {
+            setTexto(v);
+            if (v.trim()) notifyTyping();
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              submeter();
+            }
+            if (e.key === "Escape") cancelarComposer();
+          }}
+          submeter={submeter}
+        />
+      )}
 
       <AlertDialog
         open={!!confirmarExcluir}
@@ -372,9 +390,36 @@ export function ChatClienteConversa({
  * Chat interno com o cliente. Permite "soltar" a conversa em uma janela
  * flutuante GLOBAL, que continua aberta ao navegar entre telas do sistema.
  */
-export function ChatClienteTab({ clienteId, info }: { clienteId: string; info?: ChatClienteInfo }) {
+export function ChatClienteTab({
+  clienteId,
+  info,
+  atendenteId,
+  somenteLeitura = false,
+  atendenteNome,
+}: {
+  clienteId: string;
+  info?: ChatClienteInfo;
+  atendenteId?: string;
+  somenteLeitura?: boolean;
+  atendenteNome?: string;
+}) {
   const flutuante = useFloatingChat();
   const estaFlutuando = flutuante?.clienteId === clienteId;
+
+  // A janela flutuante só vale para a conversa do próprio usuário.
+  if (somenteLeitura) {
+    return (
+      <div className="h-full min-h-[24rem]">
+        <ChatClienteConversa
+          clienteId={clienteId}
+          info={info}
+          atendenteId={atendenteId}
+          somenteLeitura
+          atendenteNome={atendenteNome}
+        />
+      </div>
+    );
+  }
 
   if (estaFlutuando) {
     return (

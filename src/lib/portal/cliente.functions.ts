@@ -360,17 +360,49 @@ async function resolverAnexos(
   );
 }
 
-export const clienteListarMensagens = createServerFn({ method: "GET" }).handler(
-  async (): Promise<MensagemCliente[]> => {
+export interface AtendenteCliente {
+  atendente_id: string;
+  nome: string;
+  foto_url: string | null;
+  ultima_em: string | null;
+  ultima_mensagem: string | null;
+  nao_lidas: number;
+}
+
+/** Lista os atendentes com quem o cliente conversa (uma thread por atendente). */
+export const clienteListarAtendentes = createServerFn({ method: "GET" }).handler(
+  async (): Promise<AtendenteCliente[]> => {
     const sess = requireClienteSession();
     const { portalDb } = await import("./portal-db.server");
-    const db = portalDb();
-    const { data } = await db.rpc("portal_listar_mensagens", { _cid: sess.cid });
-    return resolverAnexos(db, (data as any[]) ?? []);
+    const { data } = await portalDb().rpc("portal_listar_atendentes", { _cid: sess.cid });
+    return ((data as any[]) ?? []).map((a) => ({
+      atendente_id: a.atendente_id,
+      nome: a.nome ?? "Equipe",
+      foto_url: a.foto_url ?? null,
+      ultima_em: a.ultima_em ?? null,
+      ultima_mensagem: a.ultima_mensagem ?? null,
+      nao_lidas: a.nao_lidas ?? 0,
+    }));
   },
 );
 
+const listarMsgSchema = z.object({ atendente_id: z.string().uuid() });
+
+export const clienteListarMensagens = createServerFn({ method: "GET" })
+  .inputValidator((d: unknown) => listarMsgSchema.parse(d))
+  .handler(async ({ data }): Promise<MensagemCliente[]> => {
+    const sess = requireClienteSession();
+    const { portalDb } = await import("./portal-db.server");
+    const db = portalDb();
+    const { data: rows } = await db.rpc("portal_listar_mensagens", {
+      _cid: sess.cid,
+      _atendente: data.atendente_id,
+    });
+    return resolverAnexos(db, (rows as any[]) ?? []);
+  });
+
 const enviarMsgSchema = z.object({
+  atendente_id: z.string().uuid(),
   mensagem: z.string().trim().min(1).max(2000),
   anexo_url: z.string().url().max(1000).optional(),
 });
@@ -384,6 +416,7 @@ export const clienteEnviarMensagem = createServerFn({ method: "POST" })
     const { data: nova, error } = await db.rpc("portal_enviar_mensagem", {
       _cid: sess.cid,
       _corr: sess.corr,
+      _atendente: data.atendente_id,
       _msg: data.mensagem,
       _anexo: data.anexo_url ?? null,
     } as any);
@@ -393,6 +426,7 @@ export const clienteEnviarMensagem = createServerFn({ method: "POST" })
 
 // Enviar mensagem com anexo (foto/documento) — upload em base64
 const enviarAnexoSchema = z.object({
+  atendente_id: z.string().uuid(),
   mensagem: z.string().trim().max(2000).optional(),
   nome_arquivo: z.string().trim().min(1).max(255),
   mime_type: z.string().trim().min(1).max(120),
@@ -419,6 +453,7 @@ export const clienteEnviarMensagemAnexo = createServerFn({ method: "POST" })
     const { data: nova, error } = await db.rpc("portal_enviar_mensagem", {
       _cid: sess.cid,
       _corr: sess.corr,
+      _atendente: data.atendente_id,
       _msg: data.mensagem?.trim() || data.nome_arquivo,
       _anexo: path,
     } as any);

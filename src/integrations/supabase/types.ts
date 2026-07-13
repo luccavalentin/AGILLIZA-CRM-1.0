@@ -333,6 +333,7 @@ export type Database = {
       cliente_app_mensagens: {
         Row: {
           anexo_url: string | null
+          atendente_id: string | null
           cliente_id: string
           correspondente_id: string | null
           criada_em: string
@@ -348,6 +349,7 @@ export type Database = {
         }
         Insert: {
           anexo_url?: string | null
+          atendente_id?: string | null
           cliente_id: string
           correspondente_id?: string | null
           criada_em?: string
@@ -363,6 +365,7 @@ export type Database = {
         }
         Update: {
           anexo_url?: string | null
+          atendente_id?: string | null
           cliente_id?: string
           correspondente_id?: string | null
           criada_em?: string
@@ -5278,11 +5281,21 @@ export type Database = {
       }
       portal_cliente_sessao: { Args: { _cid: string }; Returns: Json }
       portal_enviar_mensagem: {
-        Args: { _anexo: string; _cid: string; _corr: string; _msg: string }
+        Args: {
+          _anexo: string
+          _atendente: string
+          _cid: string
+          _corr: string
+          _msg: string
+        }
         Returns: Json
       }
       portal_excluir_app_cliente: { Args: { _cid: string }; Returns: Json }
-      portal_listar_mensagens: { Args: { _cid: string }; Returns: Json }
+      portal_listar_atendentes: { Args: { _cid: string }; Returns: Json }
+      portal_listar_mensagens: {
+        Args: { _atendente: string; _cid: string }
+        Returns: Json
+      }
       portal_listar_notificacoes: { Args: { _cid: string }; Returns: Json }
       portal_marcar_lida: {
         Args: { _cid: string; _ids: string[] }

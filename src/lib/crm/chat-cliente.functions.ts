@@ -52,6 +52,10 @@ async function resolverAnexosChat<T extends { anexo_url: string | null }>(
 
 export interface ConversaCliente {
   cliente_id: string;
+  atendente_id: string | null;
+  atendente_nome: string | null;
+  /** true quando a conversa é do próprio usuário logado. */
+  minha: boolean;
   nome: string;
   documento: string | null;
   etapa_codigo: string | null;
@@ -62,58 +66,99 @@ export interface ConversaCliente {
   nao_lidas: number;
 }
 
-/** Lista as conversas do App do Cliente (clientes com mensagens), ordenadas pela mais recente. */
+/** Papel amplo (admin/correspondente) — habilita a visão supervisora de todos os atendimentos. */
+async function ehGestor(supabase: any, userId: string): Promise<boolean> {
+  const { data } = await supabase.rpc("has_any_role", {
+    _user_id: userId,
+    _roles: ["admin", "correspondente"],
+  });
+  return Boolean(data);
+}
+
+/**
+ * Lista as conversas do App do Cliente. Cada conversa é individual por atendente
+ * (par cliente + atendente). Por padrão retorna só as conversas do usuário
+ * logado; gestores podem pedir a visão geral (ver_todos) de todos os atendentes.
+ */
 export const listarConversasCliente = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }): Promise<ConversaCliente[]> => {
-    const { supabase } = context;
-    const { data: rows, error } = await supabase
+  .inputValidator((d?: { ver_todos?: boolean }) =>
+    z.object({ ver_todos: z.boolean().optional() }).parse(d ?? {}),
+  )
+  .handler(async ({ data, context }): Promise<ConversaCliente[]> => {
+    const { supabase, userId } = context;
+    const gestor = data.ver_todos ? await ehGestor(supabase, userId) : false;
+
+    let query = supabase
       .from("cliente_app_mensagens")
-      .select("cliente_id, mensagem, remetente_tipo, lida_em, criada_em")
+      .select("cliente_id, atendente_id, mensagem, remetente_tipo, lida_em, criada_em")
       .order("criada_em", { ascending: false })
-      .limit(2000);
+      .limit(3000);
+    if (!gestor) query = query.eq("atendente_id", userId);
+
+    const { data: rows, error } = await query;
     if (error) throw new Error(error.message);
 
+    // Agrupa por thread (cliente + atendente).
     const agrupado = new Map<
       string,
-      { ultima: (typeof rows)[number]; nao_lidas: number }
+      { cliente_id: string; atendente_id: string | null; ultima: any; nao_lidas: number }
     >();
     for (const m of rows ?? []) {
-      const atual = agrupado.get(m.cliente_id);
-      if (!atual) {
-        agrupado.set(m.cliente_id, { ultima: m, nao_lidas: 0 });
+      const chave = `${m.cliente_id}::${m.atendente_id ?? ""}`;
+      if (!agrupado.has(chave)) {
+        agrupado.set(chave, {
+          cliente_id: m.cliente_id,
+          atendente_id: m.atendente_id ?? null,
+          ultima: m,
+          nao_lidas: 0,
+        });
       }
-      const reg = agrupado.get(m.cliente_id)!;
+      const reg = agrupado.get(chave)!;
       if (m.remetente_tipo === "cliente" && !m.lida_em) reg.nao_lidas += 1;
     }
-    const ids = Array.from(agrupado.keys());
-    if (ids.length === 0) return [];
+    const threads = Array.from(agrupado.values());
+    if (threads.length === 0) return [];
 
+    const idsClientes = Array.from(new Set(threads.map((t) => t.cliente_id)));
     const { data: clientes } = await supabase
       .from("clientes")
-      .select(
-        "id, nome, documento, cliente_pipeline(pipeline_stages(codigo, nome))",
-      )
-      .in("id", ids);
+      .select("id, nome, documento, cliente_pipeline(pipeline_stages(codigo, nome))")
+      .in("id", idsClientes);
     const info = new Map<string, any>();
     for (const c of clientes ?? []) info.set(c.id, c);
 
+    // Nome dos atendentes (para a visão supervisora).
+    const idsAtend = Array.from(
+      new Set(threads.map((t) => t.atendente_id).filter(Boolean) as string[]),
+    );
+    const nomesAtend = new Map<string, string>();
+    if (idsAtend.length > 0) {
+      const { data: perfis } = await supabase
+        .from("profiles")
+        .select("id, nome")
+        .in("id", idsAtend);
+      for (const p of perfis ?? []) nomesAtend.set(p.id, p.nome ?? "");
+    }
+
     // Mantém apenas conversas de clientes visíveis pelo escopo (RLS).
-    return ids
-      .filter((id) => info.has(id))
-      .map((id) => {
-        const reg = agrupado.get(id)!;
-        const c = info.get(id);
+    return threads
+      .filter((t) => info.has(t.cliente_id))
+      .map((t) => {
+        const c = info.get(t.cliente_id);
         return {
-          cliente_id: id,
+          cliente_id: t.cliente_id,
+          atendente_id: t.atendente_id,
+          atendente_nome: t.atendente_id ? (nomesAtend.get(t.atendente_id) ?? null) : null,
+          minha: t.atendente_id === userId,
           nome: c?.nome ?? "Cliente",
           documento: c?.documento ?? null,
           etapa_codigo: c?.cliente_pipeline?.pipeline_stages?.codigo ?? null,
           etapa_nome: c?.cliente_pipeline?.pipeline_stages?.nome ?? null,
-          ultima_mensagem: reg.ultima.mensagem,
-          ultima_em: reg.ultima.criada_em,
-          ultimo_remetente: reg.ultima.remetente_tipo,
-          nao_lidas: reg.nao_lidas,
+          ultima_mensagem: t.ultima.mensagem,
+          ultima_em: t.ultima.criada_em,
+          ultimo_remetente: t.ultima.remetente_tipo,
+          nao_lidas: t.nao_lidas,
         };
       })
       .sort((a, b) => (a.ultima_em < b.ultima_em ? 1 : -1));
@@ -177,17 +222,25 @@ export const buscarClientesApp = createServerFn({ method: "GET" })
 
 export const listarChatCliente = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { cliente_id: string }) =>
-    z.object({ cliente_id: z.string().uuid() }).parse(d),
+  .inputValidator((d: { cliente_id: string; atendente_id?: string }) =>
+    z
+      .object({ cliente_id: z.string().uuid(), atendente_id: z.string().uuid().optional() })
+      .parse(d),
   )
   .handler(async ({ data, context }): Promise<ChatMensagem[]> => {
-    const { supabase } = context;
+    const { supabase, userId } = context;
+    // Atendente comum só vê a própria thread; gestor pode abrir a de outro atendente.
+    let atendente = userId;
+    if (data.atendente_id && data.atendente_id !== userId) {
+      atendente = (await ehGestor(supabase, userId)) ? data.atendente_id : userId;
+    }
     const { data: rows, error } = await supabase
       .from("cliente_app_mensagens")
       .select(
         "id, remetente_tipo, remetente_id, mensagem, anexo_url, lida_em, criada_em, editada_em, excluida_em, responde_a",
       )
       .eq("cliente_id", data.cliente_id)
+      .eq("atendente_id", atendente)
       .order("criada_em", { ascending: true })
       .limit(500);
     if (error) throw new Error(error.message);
@@ -284,12 +337,14 @@ export const editarChatCliente = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
-    const { supabase } = context;
+    const { supabase, userId } = context;
+    // Cada usuário só edita as próprias mensagens.
     const { error } = await supabase
       .from("cliente_app_mensagens")
       .update({ mensagem: data.mensagem.trim(), editada_em: new Date().toISOString() })
       .eq("id", data.id)
       .eq("remetente_tipo", "time")
+      .eq("remetente_id", userId)
       .is("excluida_em", null);
     if (error) throw new Error(error.message);
     return { ok: true };
@@ -300,25 +355,33 @@ export const excluirChatCliente = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
-    const { supabase } = context;
+    const { supabase, userId } = context;
+    // Cada usuário só exclui as próprias mensagens.
     const { error } = await supabase
       .from("cliente_app_mensagens")
       .update({ excluida_em: new Date().toISOString() })
       .eq("id", data.id)
-      .eq("remetente_tipo", "time");
+      .eq("remetente_tipo", "time")
+      .eq("remetente_id", userId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
 
-/** Marca como lidas as mensagens enviadas pelo cliente. */
+/** Marca como lidas as mensagens do cliente na thread do usuário logado. */
 export const marcarChatClienteLido = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { cliente_id: string }) =>
     z.object({ cliente_id: z.string().uuid() }).parse(d),
   )
   .handler(async ({ data, context }) => {
-    const { supabase } = context;
-    const { error } = await supabase.rpc("portal_time_marcar_lidas", { _cid: data.cliente_id });
+    const { supabase, userId } = context;
+    const { error } = await supabase
+      .from("cliente_app_mensagens")
+      .update({ lida_em: new Date().toISOString() })
+      .eq("cliente_id", data.cliente_id)
+      .eq("atendente_id", userId)
+      .eq("remetente_tipo", "cliente")
+      .is("lida_em", null);
     if (error) throw new Error(error.message);
     return { ok: true };
   });

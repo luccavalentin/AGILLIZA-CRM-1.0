@@ -30,7 +30,7 @@ import {
 import { ThemeToggle } from "@/components/app-shell/theme-toggle";
 import {
   clienteListarNotificacoes,
-  clienteListarMensagens,
+  clienteListarAtendentes,
 } from "@/lib/portal/cliente.functions";
 import { cn } from "@/lib/utils";
 
@@ -67,16 +67,14 @@ const NAV_CLIENTE: { id: string; label: string; items: NavItemCliente[] }[] = [
   },
 ];
 
-/** Conta mensagens da equipe ainda não lidas pelo cliente. */
+/** Conta mensagens da equipe ainda não lidas pelo cliente (todas as threads). */
 function useChatNaoLidas() {
   const { data } = useQuery({
-    queryKey: ["cliente", "chat-nao-lidas"],
-    queryFn: () => clienteListarMensagens(),
+    queryKey: ["cliente", "atendentes"],
+    queryFn: () => clienteListarAtendentes(),
     refetchInterval: (q: any) => (q.state.status === "error" ? false : 8000),
   });
-  return (data ?? []).filter(
-    (m: any) => (m.remetente_tipo ?? m.ln) === "time" && !m.lida_em,
-  ).length;
+  return (data ?? []).reduce((acc, a) => acc + (a.nao_lidas ?? 0), 0);
 }
 
 
