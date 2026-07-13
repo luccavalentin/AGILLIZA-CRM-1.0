@@ -1375,3 +1375,93 @@ export const excluirProposta = createServerFn({ method: "POST" })
     if (error) throw error;
     return { ok: true };
   });
+
+/** ===== Cadastrar cliente (CRM) a partir dos dados da proposta =====
+ * Usado quando a simulação foi feita "direta" (sem cliente no CRM) e enviada à
+ * aprovação: cria o cadastro do cliente com os dados já preenchidos na proposta
+ * e vincula a proposta (e a simulação de origem) ao novo cliente. */
+export const cadastrarClienteDaProposta = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ proposta_id: z.string().uuid() }).parse(d))
+  .handler(async ({ context, data }): Promise<{ cliente_id: string }> => {
+    const { supabase, userId } = context;
+    const corr = await correspondenteId(supabase, userId);
+
+    const { data: prop, error } = await supabase
+      .from("propostas")
+      .select(
+        "id, cliente_id, simulacao_id, nome_cliente, cpf_cnpj, email, celular, data_nascimento, estado_civil, renda_total, uf, utiliza_fgts",
+      )
+      .eq("id", data.proposta_id)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!prop) throw new Error("Proposta não encontrada.");
+    if (prop.cliente_id) return { cliente_id: prop.cliente_id as string };
+    if (!prop.nome_cliente || !prop.cpf_cnpj) {
+      throw new Error("Faltam nome e documento na proposta para criar o cadastro.");
+    }
+
+    // Mapeia o código de estado civil (swagger) de volta para o valor do CRM.
+    const CODIGO_PARA_CRM: Record<string, string> = {
+      S: "solteiro",
+      CA: "casado",
+      UE: "uniao_estavel",
+      DI: "divorciado",
+      VI: "viuvo",
+      SL: "solteiro",
+    };
+    const civilRaw = (prop.estado_civil ?? "").toString();
+    const estadoCivil =
+      CODIGO_PARA_CRM[civilRaw] ??
+      (["solteiro", "casado", "uniao_estavel", "divorciado", "viuvo"].includes(civilRaw)
+        ? civilRaw
+        : "solteiro");
+
+    const documento = String(prop.cpf_cnpj).replace(/\D/g, "");
+    const tipoPessoa = documento.length > 11 ? "PJ" : "PF";
+
+    const { data: novo, error: insErr } = await supabase
+      .from("clientes")
+      .insert({
+        correspondente_id: corr,
+        numero_cliente: "",
+        tipo_pessoa: tipoPessoa,
+        nome: prop.nome_cliente,
+        documento,
+        data_nascimento: prop.data_nascimento || null,
+        estado_civil: estadoCivil,
+        email: (prop.email ?? "").toString().toLowerCase() || null,
+        telefone_celular: prop.celular ?? null,
+        renda_total_declarada: prop.renda_total ?? null,
+        uf_interesse: prop.uf ?? null,
+        utiliza_fgts: Boolean(prop.utiliza_fgts),
+        origem: "direto",
+        responsavel_id: userId,
+        criador_id: userId,
+      } as any)
+      .select("id")
+      .single();
+    if (insErr) throw new Error(insErr.message);
+
+    // Vincula a proposta e a simulação de origem ao novo cadastro.
+    await supabase.from("propostas").update({ cliente_id: novo.id }).eq("id", prop.id);
+    if (prop.simulacao_id) {
+      await supabase
+        .from("simulacoes")
+        .update({ cliente_id: novo.id })
+        .eq("id", prop.simulacao_id);
+    }
+
+    const { registrarAuditoria } = await import("@/lib/admin/audit.server");
+    await registrarAuditoria({
+      supabase,
+      userId,
+      correspondenteId: corr,
+      acao: "cliente.criar",
+      entidade: "clientes",
+      entidadeId: novo.id,
+      payloadNovo: { nome: prop.nome_cliente, origem: "proposta_direta" },
+    });
+
+    return { cliente_id: novo.id };
+  });

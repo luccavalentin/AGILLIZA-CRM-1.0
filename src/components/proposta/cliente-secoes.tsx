@@ -1,9 +1,12 @@
 import { Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
+import { toast } from "sonner";
 import { Loader2, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getCliente, getEndereco } from "@/lib/crm/clientes.functions";
+import { cadastrarClienteDaProposta } from "@/lib/propostas/propostas.functions";
 import { ClienteForm } from "@/components/crm/cliente-form";
 import { VendedoresTab } from "@/components/crm/vendedores-tab";
 import { ImovelTab, IqTab } from "@/components/crm/imovel-iq-tab";
@@ -20,12 +23,31 @@ export type SecaoCliente = "comprador" | "vendedores" | "imovel" | "iq" | "docum
 export function ClienteSecao({
   clienteId,
   secao,
+  propostaId,
 }: {
   clienteId: string | null | undefined;
   secao: SecaoCliente;
+  propostaId?: string;
 }) {
   const getCli = useServerFn(getCliente);
   const getEnd = useServerFn(getEndereco);
+  const cadastrarFn = useServerFn(cadastrarClienteDaProposta);
+  const qc = useQueryClient();
+  const [cadastrando, setCadastrando] = useState(false);
+
+  async function cadastrarCliente() {
+    if (!propostaId) return;
+    setCadastrando(true);
+    try {
+      await cadastrarFn({ data: { proposta_id: propostaId } });
+      toast.success("Cliente cadastrado e vinculado à proposta.");
+      await qc.invalidateQueries({ queryKey: ["proposta", propostaId] });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao cadastrar o cliente.");
+    } finally {
+      setCadastrando(false);
+    }
+  }
 
   const { data: det, isLoading } = useQuery({
     queryKey: ["cliente", clienteId],
@@ -46,12 +68,24 @@ export function ClienteSecao({
           Nenhum cadastro de cliente vinculado a esta proposta.
         </p>
         <p className="mt-1 text-sm text-muted-foreground">
-          Vincule ou crie o cliente no CRM para preencher comprador, vendedores, imóvel, IQ e
-          documentos — os mesmos dados serão usados aqui.
+          Crie o cadastro com os dados desta proposta ou vincule um cliente existente no CRM — os
+          mesmos dados serão usados para comprador, vendedores, imóvel, IQ e documentos.
         </p>
-        <Button asChild variant="outline" size="sm" className="mt-4">
-          <Link to="/crm/clientes">Abrir CRM de clientes</Link>
-        </Button>
+        <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+          {propostaId && (
+            <Button size="sm" onClick={cadastrarCliente} disabled={cadastrando}>
+              {cadastrando ? (
+                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+              ) : (
+                <UserPlus className="mr-1.5 h-4 w-4" />
+              )}
+              Cadastrar cliente
+            </Button>
+          )}
+          <Button asChild variant="outline" size="sm">
+            <Link to="/crm/clientes">Abrir CRM de clientes</Link>
+          </Button>
+        </div>
       </div>
     );
   }
