@@ -23,6 +23,9 @@ import {
 } from "@/components/common/dashboard";
 import { ReportChartView } from "@/components/reports/report-chart";
 import { VisionSelector } from "@/components/reports/report-filters-bar";
+import { DateInput } from "@/components/shared/date-input";
+import { UsuarioCombobox } from "@/components/operacional/usuario-combobox";
+import { listarColegas } from "@/lib/operacional/shared.functions";
 import { getPanelDados } from "@/lib/relatorios/paineis.functions";
 import { getEscopoRelatorios } from "@/lib/relatorios/reports.functions";
 import { PERIODO_LABEL, type Periodo, type Escopo } from "@/lib/relatorios/shared";
@@ -71,11 +74,23 @@ export function PainelView({
 
   const [periodo, setPeriodo] = useState<Periodo>("mes");
   const [escopo, setEscopo] = useState<Escopo>("minha");
+  const [de, setDe] = useState<string>("");
+  const [ate, setAte] = useState<string>("");
+  const [responsavel, setResponsavel] = useState<string>("todos");
   const escopoTocado = useRef(false);
 
   const { data: perms } = useQuery({
     queryKey: ["report-escopo"],
     queryFn: () => escopoFn(),
+    staleTime: 5 * 60_000,
+  });
+
+  const podeFiltrarUsuario = (perms?.podeEquipe ?? false) || (perms?.podeGeral ?? false);
+  const listarColegasFn = useServerFn(listarColegas);
+  const { data: colegas } = useQuery({
+    queryKey: ["panel-colegas"],
+    queryFn: () => listarColegasFn(),
+    enabled: podeFiltrarUsuario,
     staleTime: 5 * 60_000,
   });
 
@@ -87,10 +102,24 @@ export function PainelView({
     setEscopo(e);
   };
 
-  const queryKey = ["panel", modulo, periodo, escopo];
+  // Só envia o intervalo personalizado quando ambas as datas estão preenchidas.
+  const customPronto = periodo !== "custom" || (!!de && !!ate);
+  const responsavelId = responsavel !== "todos" ? responsavel : undefined;
+
+  const queryKey = ["panel", modulo, periodo, escopo, de, ate, responsavel];
   const { data, isLoading, error, dataUpdatedAt } = useQuery({
     queryKey,
-    queryFn: () => dadosFn({ data: { modulo, periodo, escopo } }),
+    queryFn: () =>
+      dadosFn({
+        data: {
+          modulo,
+          periodo,
+          escopo,
+          ...(periodo === "custom" ? { de, ate } : {}),
+          ...(responsavelId ? { responsavel: responsavelId } : {}),
+        },
+      }),
+    enabled: customPronto,
     staleTime: 30_000,
   });
 
@@ -129,6 +158,15 @@ export function PainelView({
               podeEquipe={perms?.podeEquipe ?? false}
               podeGeral={perms?.podeGeral ?? false}
             />
+            {podeFiltrarUsuario && (
+              <UsuarioCombobox
+                value={responsavel}
+                onValueChange={setResponsavel}
+                usuarios={colegas ?? []}
+                className="h-9 w-full sm:w-52"
+                placeholder="Todos os usuários"
+              />
+            )}
             <Select value={periodo} onValueChange={(v) => setPeriodo(v as Periodo)}>
               <SelectTrigger className="h-9 w-full sm:w-40">
                 <SelectValue />
@@ -141,6 +179,25 @@ export function PainelView({
                 ))}
               </SelectContent>
             </Select>
+            {periodo === "custom" && (
+              <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+                <DateInput
+                  value={de}
+                  onChange={setDe}
+                  aria-invalid={!de}
+                  className="h-9 w-full sm:w-36"
+                  placeholder="Início"
+                />
+                <span className="hidden text-xs text-muted-foreground sm:inline">até</span>
+                <DateInput
+                  value={ate}
+                  onChange={setAte}
+                  aria-invalid={!ate}
+                  className="h-9 w-full sm:w-36"
+                  placeholder="Fim"
+                />
+              </div>
+            )}
           </>
         }
       />
@@ -149,6 +206,12 @@ export function PainelView({
         <Card className="flex items-center gap-3 p-4">
           <p className="text-sm text-muted-foreground">
             Não foi possível carregar os indicadores. Tente atualizar.
+          </p>
+        </Card>
+      ) : !customPronto ? (
+        <Card className="flex items-center gap-3 p-4">
+          <p className="text-sm text-muted-foreground">
+            Selecione a data inicial e a data final para ver o período personalizado.
           </p>
         </Card>
       ) : isLoading || !data ? (
