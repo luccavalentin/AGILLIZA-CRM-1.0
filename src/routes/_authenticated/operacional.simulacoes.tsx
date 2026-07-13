@@ -150,6 +150,8 @@ function Pagina() {
       await excluir({ data: { id } });
       toast.success("Simulação excluída.");
       queryClient.invalidateQueries({ queryKey: ["simulacoes"] });
+      queryClient.invalidateQueries({ queryKey: ["crm-painel"] });
+      queryClient.invalidateQueries({ queryKey: ["clientes"] });
     } catch {
       toast.error("Não foi possível excluir a simulação.");
     }
