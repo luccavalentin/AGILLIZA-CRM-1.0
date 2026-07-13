@@ -1,12 +1,17 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, IdCard, MapPin, ShieldCheck, UserPlus, Users } from "lucide-react";
+import { z } from "zod";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { ArrowLeft, IdCard, Loader2, MapPin, ShieldCheck, UserPlus, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ClienteForm } from "@/components/crm/cliente-form";
+import { getPrefillCadastroProposta } from "@/lib/propostas/propostas.functions";
 import { assertModuloPermitido } from "@/lib/route-guards";
 
 export const Route = createFileRoute("/_authenticated/crm/clientes_/novo")({
   head: () => ({ meta: [{ title: "Novo cliente — Agilliza" }] }),
+  validateSearch: z.object({ proposta: z.string().uuid().optional() }),
   beforeLoad: () => assertModuloPermitido("crm.clientes"),
   component: Pagina,
 });
