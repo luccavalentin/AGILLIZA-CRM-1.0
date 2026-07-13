@@ -552,30 +552,58 @@ function Pagina() {
                               </span>
                               <ChevronRight className="size-4 shrink-0 -translate-x-1 text-primary opacity-0 transition-all duration-200 group-hover/card:translate-x-0 group-hover/card:opacity-100" />
                             </button>
-                            <div className="flex items-center gap-1.5 border-t border-border/70 px-2.5 py-1.5">
-                              <Link
-                                to="/operacional/propostas/kanban"
-                                search={{ q: c.numero_proposta ?? c.nome }}
-                                onClick={(e) => e.stopPropagation()}
-                                title={
-                                  c.numero_proposta
-                                    ? `Ver proposta ${c.numero_proposta} no kanban`
-                                    : "Buscar propostas deste cliente no kanban"
-                                }
-                                className="group/kb inline-flex min-w-0 items-center gap-1.5 rounded-full bg-primary/[0.07] px-2 py-1 text-[11px] font-medium text-primary ring-1 ring-inset ring-primary/15 transition-all duration-200 hover:bg-primary/15 hover:ring-primary/30 active:scale-[0.98]"
-                              >
-                                <KanbanSquare className="size-3 shrink-0" />
-                                <span className="truncate font-mono">
-                                  {c.numero_proposta ?? "Ver no kanban"}
-                                </span>
-                                {c.proposta_status && (
-                                  <span className="hidden shrink-0 rounded-full bg-primary/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide min-[380px]:inline">
-                                    {c.proposta_status.replace(/_/g, " ")}
-                                  </span>
-                                )}
-                                <ChevronRight className="size-3 shrink-0 -translate-x-0.5 opacity-0 transition-all duration-200 group-hover/kb:translate-x-0 group-hover/kb:opacity-100" />
-                              </Link>
-                            </div>
+                            {(() => {
+                              const dependente = [
+                                "simulacao",
+                                "credito_enviado",
+                                "credito_aprovado",
+                              ].includes(stage.codigo);
+                              const temProposta = Boolean(c.numero_proposta);
+                              if (!temProposta && !dependente) return null;
+                              return (
+                                <div className="flex items-center gap-1.5 border-t border-border/70 px-2.5 py-1.5">
+                                  {temProposta ? (
+                                    <Link
+                                      to="/operacional/propostas/kanban"
+                                      search={{ q: c.numero_proposta ?? c.nome }}
+                                      onClick={(e) => e.stopPropagation()}
+                                      title={`Ver proposta ${c.numero_proposta} no kanban`}
+                                      className="group/kb inline-flex min-w-0 flex-1 items-center gap-1.5 rounded-full bg-primary/[0.07] px-2 py-1 text-[11px] font-medium text-primary ring-1 ring-inset ring-primary/15 transition-all duration-200 hover:bg-primary/15 hover:ring-primary/30 active:scale-[0.98]"
+                                    >
+                                      <KanbanSquare className="size-3 shrink-0" />
+                                      <span className="truncate font-mono">
+                                        {c.numero_proposta}
+                                      </span>
+                                      {c.proposta_status && (
+                                        <span className="hidden shrink-0 rounded-full bg-primary/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide min-[380px]:inline">
+                                          {c.proposta_status.replace(/_/g, " ")}
+                                        </span>
+                                      )}
+                                      <ChevronRight className="size-3 shrink-0 -translate-x-0.5 opacity-0 transition-all duration-200 group-hover/kb:translate-x-0 group-hover/kb:opacity-100" />
+                                    </Link>
+                                  ) : (
+                                    <span className="min-w-0 flex-1 truncate text-[11px] text-muted-foreground">
+                                      Sem proposta vinculada
+                                    </span>
+                                  )}
+                                  {dependente && (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setLimpandoVinculo({ id: c.id, nome: c.nome });
+                                      }}
+                                      title="Excluir vínculo de simulação/aprovação e voltar ao cadastro"
+                                      className="inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-1 text-[11px] font-medium text-destructive ring-1 ring-inset ring-destructive/20 transition-colors hover:bg-destructive/10"
+                                    >
+                                      <Trash2 className="size-3 shrink-0" />
+                                      <span className="hidden min-[380px]:inline">Excluir vínculo</span>
+                                    </button>
+                                  )}
+                                </div>
+                              );
+                            })()}
+
                             {ehVistoria && (
                               <div className="space-y-2 border-t border-border/70 px-2.5 py-2">
                                 <div className="flex items-center gap-2">
