@@ -184,7 +184,9 @@ function Pagina() {
                     </div>
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-2">
-                    <StatusBadge status={c.portal_acesso_ativo ? "ativo" : "inativo"} />
+                    <ToneBadge tone={c.portal_acesso_ativo ? "success" : "muted"}>
+                      {c.portal_acesso_ativo ? "App ativo" : "App inativo"}
+                    </ToneBadge>
                     <ChevronRight className="size-4 text-primary/70 transition-transform duration-300 group-hover:translate-x-0.5" />
                   </div>
                 </div>
