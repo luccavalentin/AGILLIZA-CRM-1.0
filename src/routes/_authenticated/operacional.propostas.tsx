@@ -31,6 +31,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { listarColegas } from "@/lib/operacional/shared.functions";
+
 
 import { BancosProposta } from "@/components/proposta/bancos-proposta";
 import { BancoLogo } from "@/components/bancos/banco-logo";
