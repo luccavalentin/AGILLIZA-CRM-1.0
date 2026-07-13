@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useParams } from "@tanstack/react-router";
+import { createFileRoute, Link, useParams, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
@@ -16,6 +16,7 @@ import {
   Clock,
   History,
   FileText,
+  Layers,
 } from "lucide-react";
 import { getMinhaSessao } from "@/lib/session.functions";
 import { PopOutPanel } from "@/components/shared/pop-out-panel";
@@ -29,9 +30,12 @@ import {
   registrarAnexoDemanda,
   removerAnexoDemanda,
   urlAnexoDemanda,
+  excluirDemanda,
+  listarDemandas,
   type DemandaStatus,
 } from "@/lib/operacional/demandas.functions";
 import { TransferirDialog } from "@/components/operacional/transferir-dialog";
+import { EditarDemandaDialog } from "@/components/operacional/editar-demanda-dialog";
 import { SlaCountdown } from "@/components/operacional/sla-countdown";
 import { ToneBadge } from "@/components/crm/tone-badge";
 import { PRIORIDADE, statusDemanda } from "@/components/operacional/status";
@@ -45,9 +49,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useIncomingChatSound } from "@/hooks/use-chat-sound";
 import { cn } from "@/lib/utils";
+
 
 export const Route = createFileRoute("/_authenticated/operacional/demandas_/$id")({
   head: () => ({ meta: [{ title: "Demanda — Agilliza" }] }),
