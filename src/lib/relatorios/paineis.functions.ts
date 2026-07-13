@@ -20,6 +20,7 @@ const schema = z.object({
   escopo: z.enum(["minha", "equipe", "geral"]),
   de: z.string().optional(),
   ate: z.string().optional(),
+  responsavel: z.string().uuid().optional(),
 });
 
 export interface PanelDelta {
