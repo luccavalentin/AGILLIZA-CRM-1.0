@@ -218,7 +218,8 @@ function Pagina() {
         ) : (
           <>
             {/* Desktop */}
-            <table className="hidden w-full text-sm md:table">
+            <div className="hidden overflow-x-auto md:block">
+            <table className="w-full text-sm">
               <thead className="border-b border-border/70 bg-muted/40 text-left text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                 <tr>
                   <th className="px-4 py-3">Nº</th>
@@ -301,6 +302,7 @@ function Pagina() {
                 })}
               </tbody>
             </table>
+            </div>
 
             {/* Mobile */}
             <ul className="divide-y divide-border/60 md:hidden">

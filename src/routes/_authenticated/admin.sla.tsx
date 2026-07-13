@@ -217,6 +217,7 @@ function SecaoSla({
             Nenhuma regra de SLA. Sem regra, o padrão é P1=4h, P2=8h, P3=24h úteis.
           </p>
         ) : (
+          <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -264,6 +265,7 @@ function SecaoSla({
               ))}
             </TableBody>
           </Table>
+          </div>
         )}
       </CardContent>
 
@@ -652,6 +654,7 @@ function SecaoFeriados() {
             Nenhum feriado cadastrado.
           </p>
         ) : (
+          <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -690,6 +693,7 @@ function SecaoFeriados() {
               ))}
             </TableBody>
           </Table>
+          </div>
         )}
       </CardContent>
     </Card>

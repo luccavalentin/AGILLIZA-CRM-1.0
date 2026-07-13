@@ -534,7 +534,7 @@ function Pagina() {
       {(() => null)()}
 
       {/* Tabela (telas médias e maiores) */}
-      <div className="hidden overflow-hidden rounded-lg border border-border/60 bg-card md:block">
+      <div className="hidden overflow-x-auto rounded-lg border border-border/60 bg-card md:block">
         <Table>
           <TableHeader>
             <TableRow className="border-border/60 bg-muted/50 hover:bg-muted/50">

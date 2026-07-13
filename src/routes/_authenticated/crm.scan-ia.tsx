@@ -197,7 +197,8 @@ function Pagina() {
             <p className="text-sm">Nenhuma leitura ainda. Envie um documento para começar.</p>
           </div>
         ) : (
-          <Table>
+          <div className="overflow-x-auto">
+          <Table className="min-w-[760px]">
             <TableHeader>
               <TableRow>
                 <TableHead>Documento</TableHead>
@@ -251,6 +252,7 @@ function Pagina() {
               ))}
             </TableBody>
           </Table>
+          </div>
         )}
       </div>
     </div>
