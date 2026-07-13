@@ -833,6 +833,42 @@ function nomeBancoNormalizado(v: unknown): string {
     .trim();
 }
 
+/**
+ * Número real da proposta no banco. Não usar códigos de oportunidade/simulação
+ * como se fossem número de proposta: alguns bancos não reconhecem esses códigos
+ * no portal externo, pois são apenas referências técnicas da integração.
+ */
+function numeroPropostaBancoReal(sim: any): string | null {
+  const numero =
+    sim?.numeroPropostaBanco ??
+    sim?.numeroProposta ??
+    sim?.proposalNumber ??
+    sim?.codigoPropostaBanco ??
+    null;
+  return numero == null || numero === "" ? null : String(numero);
+}
+
+function referenciaIntegracaoBanco(sim: any): string | null {
+  const referencia =
+    sim?.codigoOportunidadeBanco ??
+    sim?.codigoOportunidadeBancoInterno ??
+    sim?.codigoSimulacaoBanco ??
+    null;
+  return referencia == null || referencia === "" ? null : String(referencia);
+}
+
+function numeroAtualEhReferenciaTecnica(pb: any, sim: any): boolean {
+  const atual = String(pb?.numero_proposta_banco ?? "").trim();
+  if (!atual) return false;
+  return [
+    sim?.codigoOportunidadeBanco,
+    sim?.codigoOportunidadeBancoInterno,
+    sim?.codigoSimulacaoBanco,
+  ]
+    .filter((v) => v != null && v !== "")
+    .some((v) => String(v).trim() === atual);
+}
+
 function mesmoBanco(pb: any, sim: any): boolean {
   const codigoPb = codigoBancoDe(pb);
   const codigoSim = codigoBancoDe(sim);
@@ -843,15 +879,7 @@ function mesmoBanco(pb: any, sim: any): boolean {
 }
 
 function protocoloBanco(sim: any): string | null {
-  const proto =
-    sim?.codigoOportunidadeBanco ??
-    sim?.codigoOportunidadeBancoInterno ??
-    sim?.codigoSimulacaoBanco ??
-    sim?.numeroPropostaBanco ??
-    sim?.numeroProposta ??
-    sim?.proposalNumber ??
-    null;
-  return proto == null || proto === "" ? null : String(proto);
+  return numeroPropostaBancoReal(sim) ?? referenciaIntegracaoBanco(sim);
 }
 
 function prioridadeSimulacao(sim: any, exata: boolean): number {
