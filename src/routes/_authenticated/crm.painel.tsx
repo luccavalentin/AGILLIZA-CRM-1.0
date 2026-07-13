@@ -1016,7 +1016,33 @@ function Pagina() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AlertDialog
+        open={!!limpandoVinculo}
+        onOpenChange={(o) => !o && setLimpandoVinculo(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir vínculo de simulação/aprovação?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Isso remove por completo o vínculo de {limpandoVinculo?.nome} com simulações e
+              propostas (inclusive registros já excluídos) e retorna o cliente para a etapa de
+              cadastro. O cadastro do cliente é mantido. Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmarLimparVinculo}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir vínculo
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
+
 
   );
 }
