@@ -165,6 +165,7 @@ export function PainelView({
   return (
     <div className="mx-auto w-full max-w-[1600px] space-y-6 p-3 sm:p-4 md:space-y-8 md:p-6">
       <PanelHeader
+        variant={modulo === "visao-geral" ? "dark" : "light"}
         eyebrow={eyebrow}
         titulo={titulo}
         descricao={descricao}
