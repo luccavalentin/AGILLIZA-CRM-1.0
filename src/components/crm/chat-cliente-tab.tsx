@@ -409,12 +409,14 @@ export function ChatClienteTab({
   atendenteId,
   somenteLeitura = false,
   atendenteNome,
+  acoes,
 }: {
   clienteId: string;
   info?: ChatClienteInfo;
   atendenteId?: string;
   somenteLeitura?: boolean;
   atendenteNome?: string;
+  acoes?: React.ReactNode;
 }) {
   const flutuante = useFloatingChat();
   const estaFlutuando = flutuante?.clienteId === clienteId;
