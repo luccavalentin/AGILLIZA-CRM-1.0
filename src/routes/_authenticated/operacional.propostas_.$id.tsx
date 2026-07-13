@@ -273,7 +273,7 @@ function Pagina() {
               {p.produto ?? "Operação"}
             </span>
             <h1 className="mt-2 truncate text-2xl font-semibold text-foreground">
-              Proposta {p.numero_proposta_banco || p.codigo_oportunidade_homefin || p.numero_proposta}
+              Proposta {p.numero_proposta}
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
               {status === "cancelada"
@@ -760,7 +760,7 @@ function TabResumo({
                     </span>
                     {b.numero_proposta_banco && (
                       <span className="truncate text-[11px] tabular-nums text-muted-foreground">
-                        Nº {b.numero_proposta_banco}
+                        Nº banco {b.numero_proposta_banco}
                       </span>
                     )}
                   </span>
@@ -881,7 +881,7 @@ function TabResumo({
                   </span>
                 </TableCell>
                 <TableCell className="max-w-44 truncate text-xs tabular-nums text-muted-foreground">
-                  {b.numero_proposta_banco ?? "—"}
+                  {b.numero_proposta_banco ? `Nº banco ${b.numero_proposta_banco}` : "—"}
                 </TableCell>
                 <TableCell className="text-right tabular-nums">
                   {formatBRL(b.valor_financiamento_max)}
@@ -1049,7 +1049,7 @@ function DetalhamentoBancoDialog({
           )}
           {banco?.numero_proposta_banco && (
             <p className="text-xs text-muted-foreground">
-              Nº da proposta no banco: {banco.numero_proposta_banco}
+              Nº oficial da proposta no banco: {banco.numero_proposta_banco}
             </p>
           )}
         </div>
