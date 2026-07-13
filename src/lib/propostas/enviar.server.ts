@@ -1158,9 +1158,10 @@ export async function sincronizarPropostaImpl({
   else if (numeroAtualEhReferenciaTecnica({ numero_proposta_banco: prop.numero_proposta_banco }, escolhida)) {
     patch.numero_proposta_banco = null;
   }
-  if (op?.codigoOportunidadeBanco || escolhida.codigoOportunidadeBanco || numeroPropostaBanco)
+  const referenciaEscolhida = referenciaIntegracaoBanco(escolhida);
+  if (op?.codigoOportunidadeBanco || referenciaEscolhida)
     patch.codigo_oportunidade_homefin =
-      op?.codigoOportunidadeBanco ?? escolhida.codigoOportunidadeBanco ?? numeroPropostaBanco;
+      op?.codigoOportunidadeBanco ?? referenciaEscolhida;
   const vFin = op?.valorFinanciamentoBanco ?? escolhida.valorFinanciamentoBanco;
   const vParc = op?.valorParcelaBanco ?? escolhida.valorParcelaBanco;
   const vPrazo = op?.prazoPagamentoBanco ?? escolhida.prazoPagamentoBanco;
