@@ -64,10 +64,15 @@ export interface PanelEvolucao {
   dados: PanelSerie[];
 }
 
+export interface PanelFunil {
+  titulo: string;
+  etapas: { label: string; valor: number }[];
+}
 export interface PanelDados {
   heros: PanelMetric[];
   minis: PanelMetric[];
   evolucao?: PanelEvolucao;
+  funil?: PanelFunil;
   chart: { titulo: string; subtitulo?: string; dados: PanelSerie[]; porBanco?: boolean };
   distribuicao?: PanelDistribuicao;
   ranking: { titulo: string; itens: { label: string; valor: number }[] };
