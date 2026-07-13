@@ -24,7 +24,7 @@ import {
   PanelHeader,
   SectionTitle,
   HeroMetric,
-  MiniMetric,
+
   PanelCard,
   MetricList,
   AlertRow,
