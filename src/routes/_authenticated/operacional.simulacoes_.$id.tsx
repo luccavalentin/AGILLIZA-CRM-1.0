@@ -170,7 +170,21 @@ function Pagina() {
       const { proposta_id } = await criarProposta({
         data: { simulacao_id: id, banco_id: bancoId },
       });
-      toast.success("Proposta criada.");
+      // Envia a proposta direto ao banco no mesmo clique.
+      try {
+        await enviarPropostaHomeFin({
+          data: { proposta_id, banco_id: bancoId },
+        });
+        toast.success("Proposta enviada ao banco.");
+      } catch (envioErr) {
+        // Proposta criada, mas faltam dados para o envio — leva o usuário
+        // à ficha para completar e reenviar.
+        toast.warning(
+          envioErr instanceof Error
+            ? `Proposta criada. Complete os dados para enviar: ${envioErr.message}`
+            : "Proposta criada. Complete os dados para enviar ao banco.",
+        );
+      }
       router.navigate({
         to: "/operacional/propostas/$id",
         params: { id: proposta_id },
