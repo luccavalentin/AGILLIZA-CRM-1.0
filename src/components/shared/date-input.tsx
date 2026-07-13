@@ -74,6 +74,9 @@ export function DateInput({
 }: DateInputProps) {
   const [texto, setTexto] = useState<string>(() => isoParaBR(value));
   const nativoRef = useRef<HTMLInputElement>(null);
+  const nomeAntiAutofill = useRef(
+    `dt_${id ?? "campo"}_${Math.random().toString(36).slice(2, 8)}`,
+  );
 
   // Sincroniza quando o valor externo muda (ex.: reset do formulário).
   useEffect(() => {
@@ -103,6 +106,13 @@ export function DateInput({
         inputMode="numeric"
         maxLength={10}
         placeholder={placeholder}
+        autoComplete="off"
+        autoCorrect="off"
+        spellCheck={false}
+        name={nomeAntiAutofill.current}
+        data-lpignore="true"
+        data-form-type="other"
+        data-1p-ignore="true"
         disabled={disabled}
         aria-invalid={rest["aria-invalid"]}
         className={cn("pr-10", className)}
