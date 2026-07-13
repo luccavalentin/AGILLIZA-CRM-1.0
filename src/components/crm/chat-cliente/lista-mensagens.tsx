@@ -111,7 +111,7 @@ export function ListaMensagens({
 
                 <div
                   className={cn(
-                    "max-w-[78%] px-3.5 py-2 text-sm shadow-sm",
+                    "chat-bubble max-w-[78%] px-3.5 py-2 text-sm",
                     doTime
                       ? "rounded-2xl rounded-br-md bg-primary text-primary-foreground"
                       : "rounded-2xl rounded-bl-md border border-chat-them-border bg-chat-them text-chat-them-foreground",

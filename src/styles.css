@@ -932,22 +932,55 @@ div[style*="Edit with Lovable"],
 .dark .chat-tag-purple { background: hsl(270 45% 28%); color: hsl(270 85% 85%); }
 .dark .chat-tag-slate  { background: hsl(215 20% 28%); color: hsl(215 30% 82%); }
 
-/* Superfície do chat: fundo sutil com textura pontilhada */
+/* Superfície do chat: fundo com profundidade e textura sutil (estilo mensageiro) */
 .chat-surface {
-  background-color: color-mix(in oklab, var(--muted) 30%, var(--background));
+  background-color: color-mix(in oklab, var(--muted) 22%, var(--background));
   background-image:
     radial-gradient(
-      120% 80% at 50% 0%,
-      color-mix(in oklab, var(--primary) 7%, transparent),
+      130% 90% at 50% -10%,
+      color-mix(in oklab, var(--primary) 9%, transparent),
+      transparent 55%
+    ),
+    radial-gradient(
+      100% 60% at 100% 100%,
+      color-mix(in oklab, var(--primary) 6%, transparent),
       transparent 60%
     ),
-    radial-gradient(color-mix(in oklab, var(--foreground) 5%, transparent) 1px, transparent 1px);
+    radial-gradient(color-mix(in oklab, var(--foreground) 4%, transparent) 1px, transparent 1px);
   background-size:
     100% 100%,
-    20px 20px;
+    100% 100%,
+    22px 22px;
   background-position:
     center top,
+    center bottom,
     center;
+}
+
+/* Balões de mensagem — profundidade e animação de entrada estilo rede social */
+@keyframes chat-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(6px) scale(0.97);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.chat-bubble {
+  animation: chat-pop 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+  box-shadow:
+    0 1px 1px color-mix(in oklab, var(--foreground) 6%, transparent),
+    0 6px 18px -12px color-mix(in oklab, var(--foreground) 45%, transparent);
+  transition:
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+.chat-bubble:hover {
+  box-shadow:
+    0 1px 1px color-mix(in oklab, var(--foreground) 8%, transparent),
+    0 10px 26px -12px color-mix(in oklab, var(--foreground) 55%, transparent);
 }
 .chat-dot-blue { background: hsl(214 80% 50%); }
 .chat-dot-green { background: hsl(142 60% 42%); }
