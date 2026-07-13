@@ -96,7 +96,7 @@ export function DateInput({
   };
 
   return (
-    <div className={cn("relative", className)}>
+    <div className="relative">
       <Input
         id={id}
         value={texto}
@@ -105,7 +105,7 @@ export function DateInput({
         placeholder={placeholder}
         disabled={disabled}
         aria-invalid={rest["aria-invalid"]}
-        className="pr-10"
+        className={cn("pr-10", className)}
         onChange={(e) => aplicar(mascarar(e.target.value))}
         onPaste={(e) => {
           const colado = e.clipboardData.getData("text");
