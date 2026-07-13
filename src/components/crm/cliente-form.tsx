@@ -305,15 +305,20 @@ export function ClienteForm({
         const r = await criar({ data: payload });
         id = r.id;
         // Cria os vínculos de atendimento selecionados no novo cadastro.
+        const falhas: string[] = [];
         for (const vinc of vinculos) {
           try {
             await vincular({
               data: { cliente_id: id, parceiro_id: vinc.parceiro_id, tipo_vinculo: vinc.tipo_vinculo },
             });
-          } catch {
-            /* segue mesmo se um vínculo falhar */
+          } catch (e: any) {
+            falhas.push(`${nomeParceiro(vinc.parceiro_id)}: ${e?.message ?? "falha ao vincular"}`);
           }
         }
+        if (falhas.length) {
+          toast.error(`Não foi possível gravar alguns vínculos:\n${falhas.join("\n")}`);
+        }
+
       }
       if (id && (end.cep || end.logradouro)) {
         await salvarEnd({ data: { cliente_id: id, ...end } });
