@@ -104,11 +104,8 @@ function ComboSelect({
 }
 
 const TIPOS = [
-  { v: "analise_documento", l: "Análise de documento" },
-  { v: "correcao", l: "Correção" },
-  { v: "reenvio_simulacao", l: "Reenvio de simulação" },
-  { v: "renovacao", l: "Renovação" },
-  { v: "geral", l: "Geral" },
+  { v: "diversos", l: "Diversos" },
+  { v: "simulacao", l: "Simulação" },
 ];
 
 export function NovaDemandaDialog({ onCriada }: { onCriada: () => void }) {
