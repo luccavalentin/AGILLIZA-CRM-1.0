@@ -98,8 +98,48 @@ function Pagina() {
   const removerAnexoFn = useServerFn(removerAnexoDemanda);
   const urlAnexoFn = useServerFn(urlAnexoDemanda);
   const fileRef = useRef<HTMLInputElement>(null);
+  const chatFileRef = useRef<HTMLInputElement>(null);
   const [enviando, setEnviando] = useState(false);
+  const [enviandoMsg, setEnviandoMsg] = useState(false);
+  const [arquivoChat, setArquivoChat] = useState<File | null>(null);
   const [visualizando, setVisualizando] = useState<{ url: string; nome: string } | null>(null);
+
+  async function enviarMensagem() {
+    const texto = corpo.trim();
+    if (!texto && !arquivoChat) return;
+    setEnviandoMsg(true);
+    try {
+      let anexo_path: string | undefined;
+      let anexo_nome: string | undefined;
+      let anexo_tamanho: number | undefined;
+      if (arquivoChat) {
+        const path = `${id}/chat/${Date.now()}-${arquivoChat.name.replace(/[^\w.\-]/g, "_")}`;
+        const { error } = await supabase.storage.from("demanda-anexos").upload(path, arquivoChat);
+        if (error) throw error;
+        anexo_path = path;
+        anexo_nome = arquivoChat.name;
+        anexo_tamanho = arquivoChat.size;
+      }
+      await comentarFn({
+        data: {
+          demanda_id: id,
+          corpo: texto,
+          visivel_cliente: visivelCliente,
+          anexo_path,
+          anexo_nome,
+          anexo_tamanho,
+        },
+      });
+      setCorpo("");
+      setArquivoChat(null);
+      invalidar();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Falha ao enviar mensagem.");
+    } finally {
+      setEnviandoMsg(false);
+    }
+  }
+
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -232,7 +272,8 @@ function Pagina() {
             <span className="text-muted-foreground">Cliente:</span> {d.clientes?.nome ?? "—"}
           </div>
           <div>
-            <span className="text-muted-foreground">Tipo:</span> {d.tipo}
+            <span className="text-muted-foreground">Tipo:</span>{" "}
+            {d.tipo === "simulacao" ? "Simulação" : d.tipo === "diversos" ? "Diversos" : d.tipo}
           </div>
           <div>
             <SlaCountdown
@@ -243,7 +284,14 @@ function Pagina() {
             />
           </div>
         </div>
+        {d.dados_simulacao && (
+          <div className="mt-3 rounded-xl border border-primary/30 bg-primary/[0.04] p-3">
+            <p className="mb-1 text-xs font-semibold text-primary">Dados da simulação</p>
+            <p className="whitespace-pre-wrap text-sm text-foreground">{d.dados_simulacao}</p>
+          </div>
+        )}
       </div>
+
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Mensagens */}
@@ -334,9 +382,29 @@ function Pagina() {
                               </ToneBadge>
                             </div>
                           )}
-                          <p className="whitespace-pre-wrap break-words leading-relaxed">
-                            {m.corpo}
-                          </p>
+                          {m.corpo && (
+                            <p className="whitespace-pre-wrap break-words leading-relaxed">
+                              {m.corpo}
+                            </p>
+                          )}
+                          {m.anexo_path && (
+                            <button
+                              type="button"
+                              onClick={() => baixarAnexo(m.anexo_path, m.anexo_nome ?? "arquivo")}
+                              className={cn(
+                                "mt-1.5 flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs transition-colors",
+                                meu
+                                  ? "bg-primary-foreground/15 hover:bg-primary-foreground/25"
+                                  : "bg-muted hover:bg-muted/70",
+                              )}
+                            >
+                              <Paperclip className="h-4 w-4 shrink-0" />
+                              <span className="min-w-0 flex-1 truncate font-medium">
+                                {m.anexo_nome ?? "arquivo"}
+                              </span>
+                              <Download className="h-3.5 w-3.5 shrink-0" />
+                            </button>
+                          )}
                           <p
                             className={cn(
                               "mt-1 text-right text-[10px]",
@@ -355,20 +423,48 @@ function Pagina() {
 
 
             <div className="space-y-2 border-t bg-muted/30 p-3">
+              {arquivoChat && (
+                <div className="flex items-center gap-2 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs">
+                  <Paperclip className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                  <span className="min-w-0 flex-1 truncate font-medium text-foreground">
+                    {arquivoChat.name}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setArquivoChat(null)}
+                    className="text-muted-foreground hover:text-destructive"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              )}
               <div className="flex items-end gap-2">
+                <input
+                  ref={chatFileRef}
+                  type="file"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) setArquivoChat(f);
+                    if (chatFileRef.current) chatFileRef.current.value = "";
+                  }}
+                />
+                <Button
+                  size="icon"
+                  variant="outline"
+                  className="h-11 w-11 shrink-0 rounded-xl"
+                  onClick={() => chatFileRef.current?.click()}
+                  title="Anexar arquivo"
+                >
+                  <Paperclip className="h-4 w-4" />
+                </Button>
                 <Textarea
                   value={corpo}
                   onChange={(e) => setCorpo(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.shiftKey) {
                       e.preventDefault();
-                      if (!corpo.trim()) return;
-                      comentarFn({
-                        data: { demanda_id: id, corpo, visivel_cliente: visivelCliente },
-                      }).then(() => {
-                        setCorpo("");
-                        invalidar();
-                      });
+                      enviarMensagem();
                     }
                   }}
                   placeholder="Escreva uma mensagem…"
@@ -377,18 +473,13 @@ function Pagina() {
                 <Button
                   size="icon"
                   className="h-11 w-11 shrink-0 rounded-xl shadow-sm"
-                  disabled={!corpo.trim()}
-                  onClick={async () => {
-                    await comentarFn({
-                      data: { demanda_id: id, corpo, visivel_cliente: visivelCliente },
-                    });
-                    setCorpo("");
-                    invalidar();
-                  }}
+                  disabled={(!corpo.trim() && !arquivoChat) || enviandoMsg}
+                  onClick={enviarMensagem}
                 >
                   <Send className="h-4 w-4" />
                 </Button>
               </div>
+
               <div className="flex items-center gap-2">
                 <Switch id="vis" checked={visivelCliente} onCheckedChange={setVisivelCliente} />
                 <Label htmlFor="vis" className="text-xs text-muted-foreground">

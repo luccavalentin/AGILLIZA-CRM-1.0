@@ -1,0 +1,2 @@
+ALTER TABLE public.demanda_mensagens ADD COLUMN IF NOT EXISTS anexo_path text, ADD COLUMN IF NOT EXISTS anexo_nome text, ADD COLUMN IF NOT EXISTS anexo_tamanho bigint;
+ALTER TABLE public.demandas ADD COLUMN IF NOT EXISTS dados_simulacao text;

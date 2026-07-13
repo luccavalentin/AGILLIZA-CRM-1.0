@@ -1757,6 +1757,9 @@ export type Database = {
       }
       demanda_mensagens: {
         Row: {
+          anexo_nome: string | null
+          anexo_path: string | null
+          anexo_tamanho: number | null
           autor_id: string
           corpo: string
           created_at: string
@@ -1765,6 +1768,9 @@ export type Database = {
           visivel_cliente: boolean
         }
         Insert: {
+          anexo_nome?: string | null
+          anexo_path?: string | null
+          anexo_tamanho?: number | null
           autor_id: string
           corpo: string
           created_at?: string
@@ -1773,6 +1779,9 @@ export type Database = {
           visivel_cliente?: boolean
         }
         Update: {
+          anexo_nome?: string | null
+          anexo_path?: string | null
+          anexo_tamanho?: number | null
           autor_id?: string
           corpo?: string
           created_at?: string
@@ -1826,6 +1835,7 @@ export type Database = {
           correspondente_id: string
           created_at: string
           criador_id: string | null
+          dados_simulacao: string | null
           descricao: string | null
           escalonada: boolean
           escalonada_em: string | null
@@ -1848,6 +1858,7 @@ export type Database = {
           correspondente_id: string
           created_at?: string
           criador_id?: string | null
+          dados_simulacao?: string | null
           descricao?: string | null
           escalonada?: boolean
           escalonada_em?: string | null
@@ -1870,6 +1881,7 @@ export type Database = {
           correspondente_id?: string
           created_at?: string
           criador_id?: string | null
+          dados_simulacao?: string | null
           descricao?: string | null
           escalonada?: boolean
           escalonada_em?: string | null

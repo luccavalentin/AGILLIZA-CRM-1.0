@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
@@ -27,6 +27,7 @@ const COLUNAS: DemandaStatus[] = ["aberta", "em_andamento", "aguardando", "concl
 
 function Pagina() {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const moverFn = useServerFn(moverStatusDemanda);
   const [arrastando, setArrastando] = useState<{ id: string; status: DemandaStatus } | null>(null);
 
@@ -121,17 +122,16 @@ function Pagina() {
                     draggable
                     onDragStart={() => setArrastando({ id: d.id, status: d.status })}
                     onDragEnd={() => setArrastando(null)}
-                    className="op-kcard cursor-grab overflow-hidden p-3 active:cursor-grabbing"
+                    onClick={() =>
+                      navigate({ to: "/operacional/demandas/$id", params: { id: d.id } })
+                    }
+                    className="op-kcard cursor-pointer overflow-hidden p-3 active:cursor-grabbing"
                     style={{ ["--op-accent" as string]: "var(--primary)" }}
                   >
                     <div className="flex items-start justify-between gap-2">
-                      <Link
-                        to="/operacional/demandas/$id"
-                        params={{ id: d.id }}
-                        className="line-clamp-2 text-sm font-medium text-foreground hover:text-primary"
-                      >
+                      <span className="line-clamp-2 text-sm font-medium text-foreground">
                         {d.titulo}
-                      </Link>
+                      </span>
                       <PriorityChip prioridade={d.prioridade} />
                     </div>
                     {d.nome_cliente && (
