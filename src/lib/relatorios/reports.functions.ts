@@ -279,15 +279,20 @@ export const runReport = createServerFn({ method: "POST" })
       type Opt = { value: string; label: string };
       let q = (supabase as any)
         .from("profiles")
-        .select("id,nome,ativo,tipo_pessoa")
+        .select("id,nome,ativo,tipo_pessoa,tipos_pessoa")
         .order("nome", { ascending: true })
         .limit(1000);
       if (corr) q = q.eq("correspondente_id", corr);
       const { data } = await q;
       const linhas = ((data ?? []) as any[]).filter((p) => p.ativo !== false && p.nome);
       const opt = (p: any): Opt => ({ value: p.id as string, label: p.nome as string });
+      // Uma pessoa pode ter múltiplos tipos (tipos_pessoa); considere todos.
+      const tiposDe = (p: any): string[] => {
+        const arr = Array.isArray(p.tipos_pessoa) ? p.tipos_pessoa.filter(Boolean) : [];
+        return arr.length > 0 ? arr : [p.tipo_pessoa].filter(Boolean);
+      };
       const porTipo = (slug: string) =>
-        linhas.filter((p) => p.tipo_pessoa === slug).map(opt);
+        linhas.filter((p) => tiposDe(p).includes(slug)).map(opt);
       return {
         todos: linhas.map(opt),
         // "usuario" = Analista; "comercial" = Comercial Agilliza (ver tipos_pessoa).
