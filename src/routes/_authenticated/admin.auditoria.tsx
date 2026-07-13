@@ -207,7 +207,7 @@ function Pagina() {
     queryFn: () => listarAuditoria({ data: params }),
   });
 
-  const registros = q.data ?? [];
+  const registros = (q.data ?? []) as AuditoriaLinha[];
   const temFiltro = Object.values(aplicados).some((v) => v);
   const qtdFiltros = Object.values(aplicados).filter((v) => v).length;
 
