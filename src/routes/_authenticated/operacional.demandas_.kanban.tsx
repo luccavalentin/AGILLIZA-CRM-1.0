@@ -189,39 +189,13 @@ function Pagina() {
                   </p>
                 )}
                 {doStatus.map((d) => (
-                  <div
+                  <KanbanCard
                     key={d.id}
-                    draggable
-                    onDragStart={() => setArrastando({ id: d.id, status: d.status })}
-                    onDragEnd={() => setArrastando(null)}
-                    onClick={() =>
-                      navigate({ to: "/operacional/demandas/$id", params: { id: d.id } })
-                    }
-                    className="op-kcard cursor-pointer overflow-hidden p-3 active:cursor-grabbing"
-                    style={{ ["--op-accent" as string]: "var(--primary)" }}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <span className="line-clamp-2 text-sm font-medium text-foreground">
-                        {d.titulo}
-                      </span>
-                      <PriorityChip prioridade={d.prioridade} />
-                    </div>
-                    {d.nome_cliente && (
-                      <p className="mt-1 truncate text-xs text-muted-foreground">{d.nome_cliente}</p>
-                    )}
-                    <div className="mt-2.5 flex items-center gap-1.5 text-xs text-muted-foreground">
-                      <OpAvatar nome={d.nome_responsavel} className="size-5 text-[9px]" />
-                      <span className="truncate">{d.nome_responsavel ?? "—"}</span>
-                    </div>
-                    <div className="mt-2 border-t border-border/60 pt-2">
-                      <SlaCountdown
-                        inicio={d.sla_inicio}
-                        prazo={d.prazo_sla}
-                        concluida={d.status === "concluida"}
-                        concluidaEm={d.concluida_em}
-                      />
-                    </div>
-                  </div>
+                    d={d}
+                    onDragStart={onDragStart}
+                    onDragEnd={onDragEnd}
+                    onOpen={onOpen}
+                  />
                 ))}
               </div>
             </div>
