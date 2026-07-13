@@ -12,6 +12,7 @@ import { useEffect, type ReactNode } from "react";
 import { THEME_INIT_SCRIPT } from "@/lib/theme";
 import { CookieConsent } from "@/components/legal/cookie-consent";
 import { InstallPrompt } from "@/components/pwa/install-prompt";
+import { RealtimeAuthSync } from "@/components/shared/realtime-auth-sync";
 
 import appCss from "../styles.css?url";
 import { reportError } from "../lib/error-reporting";
@@ -138,6 +139,7 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <RealtimeAuthSync />
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
       <Toaster richColors position="top-right" />
