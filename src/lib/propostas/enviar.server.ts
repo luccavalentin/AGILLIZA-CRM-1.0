@@ -27,6 +27,18 @@ const ORDEM_STATUS: PropostaStatus[] = [
 function statusDaEtapa(nomeEtapa: string | null): PropostaStatus | null {
   if (!nomeEtapa) return null;
   const n = nomeEtapa.toLowerCase();
+  // Recusa/negativa de crédito encerra o fluxo — checar ANTES de "aprov"/"análise"
+  // para o status não ficar preso em "em_analise_credito" (polling infinito).
+  if (
+    n.includes("recus") ||
+    n.includes("negad") ||
+    n.includes("negat") ||
+    n.includes("reprov") ||
+    n.includes("indefer") ||
+    n.includes("nao aprov") ||
+    n.includes("não aprov")
+  )
+    return "credito_recusado";
   if (n.includes("contrato") || n.includes("registr")) return "contrato_emitido";
   if (n.includes("juríd") || n.includes("jurid") || n.includes("emiss"))
     return "analise_juridica";
@@ -1060,7 +1072,15 @@ export async function sincronizarPropostaImpl({
       }
     }
     // Desfecho terminal de crédito recusado quando não houve avanço no funil.
-    if (!novoStatus && statusBancos === "credito_recusado" && prop.status !== "credito_recusado") {
+    // credito_recusado não faz parte da ORDEM_STATUS (não é progressão), então o
+    // laço acima nunca o seleciona — precisa ser tratado explicitamente aqui a
+    // partir de QUALQUER sinal (bancos, etapa do funil ou atividade), senão a
+    // proposta fica presa em "em_analise_credito" e o polling roda para sempre.
+    const houveRecusa =
+      statusBancos === "credito_recusado" ||
+      statusEtapa === "credito_recusado" ||
+      statusAtividade.status === "credito_recusado";
+    if (!novoStatus && houveRecusa && prop.status !== "credito_recusado") {
       novoStatus = "credito_recusado";
     }
   }
