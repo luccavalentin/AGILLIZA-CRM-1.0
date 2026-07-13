@@ -64,6 +64,8 @@ import {
   arquivarContrato,
   listarContratosEmitidos,
   limparVinculoEsteira,
+  buscarClientesCRM,
+  definirEtapa as definirEtapaFn,
   type PainelStage,
 } from "@/lib/crm/clientes.functions";
 
