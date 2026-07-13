@@ -131,104 +131,197 @@ export function ContasPage({ tipo }: { tipo: ContaTipo }) {
 
   const temFiltro = !!(de || ate || status || categoriaId || busca);
 
+  const recebe = tipo === "receber";
+  const kpis = [
+    {
+      label: "Total no período",
+      valor: resumo?.totalValor ?? 0,
+      qtd: resumo?.totalQtd ?? 0,
+      icon: Wallet,
+      tint: "text-primary",
+      ring: "bg-primary/10",
+    },
+    {
+      label: recebe ? "A receber" : "A pagar",
+      valor: resumo?.abertoValor ?? 0,
+      qtd: resumo?.abertoQtd ?? 0,
+      icon: recebe ? ArrowDownCircle : ArrowUpCircle,
+      tint: "text-amber-600 dark:text-amber-400",
+      ring: "bg-amber-500/10",
+    },
+    {
+      label: recebe ? "Recebido" : "Pago",
+      valor: resumo?.pagoValor ?? 0,
+      qtd: resumo?.pagoQtd ?? 0,
+      icon: CheckCircle2,
+      tint: "text-emerald-600 dark:text-emerald-400",
+      ring: "bg-emerald-500/10",
+    },
+    {
+      label: "Em atraso",
+      valor: resumo?.atrasadoValor ?? 0,
+      qtd: resumo?.atrasadoQtd ?? 0,
+      icon: AlertTriangle,
+      tint: "text-rose-600 dark:text-rose-400",
+      ring: "bg-rose-500/10",
+    },
+  ];
+
+  return (
     <div className="mx-auto w-full max-w-6xl space-y-6 p-3 sm:p-4 md:p-6">
-      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 sm:flex sm:flex-wrap sm:justify-between">
-        <div className="min-w-0">
-          <h1 className="truncate text-xl font-semibold text-foreground">{titulo}</h1>
-          <p className="text-sm text-muted-foreground">
-            {tipo === "pagar"
-              ? "Fornecedores, parceiros, impostos e despesas."
-              : "Comissões, taxas e outros recebimentos."}
-          </p>
+      {/* Cabeçalho */}
+      <div className="flex flex-col gap-4 rounded-2xl border border-border bg-gradient-to-br from-primary/[0.06] via-card to-card p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+        <div className="flex items-start gap-3">
+          <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+            {recebe ? <ArrowDownCircle className="h-6 w-6" /> : <ArrowUpCircle className="h-6 w-6" />}
+          </div>
+          <div className="min-w-0">
+            <h1 className="truncate text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+              {titulo}
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              {tipo === "pagar"
+                ? "Fornecedores, parceiros, impostos e despesas."
+                : "Comissões, taxas e outros recebimentos."}
+            </p>
+          </div>
         </div>
         <div className="shrink-0">
           <NovaContaDialog tipo={tipo} />
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-3">
-        <Select value={status || "all"} onValueChange={(v) => setStatus(v === "all" ? "" : v)}>
-          <SelectTrigger className="w-full sm:w-40">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos os status</SelectItem>
-            {STATUS_OPCOES.map((s) => (
-              <SelectItem key={s} value={s} className="capitalize">
-                {s}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select
-          value={categoriaId || "all"}
-          onValueChange={(v) => setCategoriaId(v === "all" ? "" : v)}
-        >
-          <SelectTrigger className="w-full sm:w-44">
-            <SelectValue placeholder="Categoria" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todas as categorias</SelectItem>
-            {(cfg?.categorias ?? []).map((c: any) => (
-              <SelectItem key={c.id} value={c.id}>
-                {c.nome}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <div className="flex flex-wrap items-center gap-2">
-          <label className="flex items-center gap-1 text-xs text-muted-foreground">
-            Venc. de
+      {/* KPIs */}
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+        {kpis.map((k) => {
+          const Icon = k.icon;
+          return (
+            <div
+              key={k.label}
+              className="group relative overflow-hidden rounded-xl border border-border bg-card p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
+            >
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                  {k.label}
+                </span>
+                <span className={cn("grid h-8 w-8 place-items-center rounded-lg", k.ring, k.tint)}>
+                  <Icon className="h-4 w-4" />
+                </span>
+              </div>
+              <p className={cn("mt-3 text-lg font-semibold tabular-nums sm:text-xl", k.tint)}>
+                {formatBRL(k.valor)}
+              </p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {k.qtd} {k.qtd === 1 ? "conta" : "contas"}
+              </p>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Filtros */}
+      <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
+        <div className="mb-3 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          <SlidersHorizontal className="h-3.5 w-3.5" />
+          Filtros
+        </div>
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="flex flex-col gap-1">
+            <span className="text-xs text-muted-foreground">Status</span>
+            <Select value={status || "all"} onValueChange={(v) => setStatus(v === "all" ? "" : v)}>
+              <SelectTrigger className="w-full sm:w-40">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os status</SelectItem>
+                {STATUS_OPCOES.map((s) => (
+                  <SelectItem key={s} value={s} className="capitalize">
+                    {s}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex flex-col gap-1">
+            <span className="text-xs text-muted-foreground">Categoria</span>
+            <Select
+              value={categoriaId || "all"}
+              onValueChange={(v) => setCategoriaId(v === "all" ? "" : v)}
+            >
+              <SelectTrigger className="w-full sm:w-44">
+                <SelectValue placeholder="Categoria" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas as categorias</SelectItem>
+                {(cfg?.categorias ?? []).map((c: any) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.nome}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex flex-col gap-1">
+            <span className="text-xs text-muted-foreground">Vencimento de</span>
             <Input
               type="date"
               className="w-36 sm:w-40"
               value={de}
               onChange={(e) => setDe(e.target.value)}
             />
-          </label>
-          <label className="flex items-center gap-1 text-xs text-muted-foreground">
-            até
+          </div>
+          <div className="flex flex-col gap-1">
+            <span className="text-xs text-muted-foreground">até</span>
             <Input
               type="date"
               className="w-36 sm:w-40"
               value={ate}
               onChange={(e) => setAte(e.target.value)}
             />
-          </label>
-        </div>
-        <form
-          className="flex w-full flex-wrap items-center gap-2 sm:w-auto"
-          onSubmit={(e) => {
-            e.preventDefault();
-            setBusca(contraparte);
-          }}
-        >
-          <Input
-            className="w-full sm:w-56"
-            placeholder={tipo === "pagar" ? "Fornecedor" : "Pagador"}
-            value={contraparte}
-            onChange={(e) => setContraparte(e.target.value)}
-          />
-          <Button type="submit" variant="secondary">
-            Filtrar
-          </Button>
-        </form>
-        {(de || ate || status || categoriaId || busca) && (
-          <Button
-            variant="ghost"
-            onClick={() => {
-              setDe("");
-              setAte("");
-              setStatus("");
-              setCategoriaId("");
-              setContraparte("");
-              setBusca("");
+          </div>
+          <form
+            className="flex flex-1 flex-col gap-1"
+            onSubmit={(e) => {
+              e.preventDefault();
+              setBusca(contraparte);
             }}
           >
-            Limpar
-          </Button>
-        )}
+            <span className="text-xs text-muted-foreground">
+              {tipo === "pagar" ? "Fornecedor" : "Pagador"}
+            </span>
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  className="w-full pl-9 sm:w-56"
+                  placeholder={tipo === "pagar" ? "Buscar fornecedor" : "Buscar pagador"}
+                  value={contraparte}
+                  onChange={(e) => setContraparte(e.target.value)}
+                />
+              </div>
+              <Button type="submit" variant="secondary">
+                Filtrar
+              </Button>
+            </div>
+          </form>
+          {temFiltro && (
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setDe("");
+                setAte("");
+                setStatus("");
+                setCategoriaId("");
+                setContraparte("");
+                setBusca("");
+              }}
+            >
+              Limpar
+            </Button>
+          )}
+        </div>
       </div>
+
 
       <div className="overflow-x-auto rounded-lg border border-border">
         <Table>
