@@ -117,14 +117,16 @@ function Pagina() {
                 <p className="mt-2 text-xs text-muted-foreground">{b.produtos.join(", ")}</p>
               )}
 
-              <Button
-                variant="outline"
-                size="sm"
-                className="mt-3 w-full"
-                onClick={() => setEdit(b)}
-              >
-                <Settings2 className="mr-1 size-4" /> Configurar
-              </Button>
+              {!b.ativo && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-3 w-full"
+                  onClick={() => setEdit(b)}
+                >
+                  <Settings2 className="mr-1 size-4" /> Configurar
+                </Button>
+              )}
             </div>
           ))
         )}
@@ -195,10 +197,13 @@ function Pagina() {
                     />
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="sm" onClick={() => setEdit(b)}>
-                      <Settings2 className="mr-1 size-4" /> Configurar
-                    </Button>
+                    {!b.ativo && (
+                      <Button variant="ghost" size="sm" onClick={() => setEdit(b)}>
+                        <Settings2 className="mr-1 size-4" /> Configurar
+                      </Button>
+                    )}
                   </TableCell>
+
                 </TableRow>
               ))
             )}

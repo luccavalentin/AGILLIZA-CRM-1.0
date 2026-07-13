@@ -326,18 +326,12 @@ export const navInterno: NavGroup[] = [
     label: "Administração",
     items: [
       {
-        label: "Configurações gerais",
+        label: "Administração",
 
         icon: SlidersHorizontal,
-        to: "/admin/configuracoes",
-        perm: { modulo: "admin.parametros" },
+        to: "/admin/pessoas",
+        perm: { modulo: "admin.pessoas" },
         children: [
-          {
-            label: "Configurações gerais",
-            icon: SlidersHorizontal,
-            to: "/admin/configuracoes",
-            perm: { modulo: "admin.parametros" },
-          },
           {
             label: "Pessoas",
             icon: UserCog,
