@@ -63,6 +63,8 @@ export function ClienteForm({
   } | null;
   /** Quando presente, ao criar o cliente ele é vinculado a esta proposta e o usuário volta para a ficha. */
   vincularPropostaId?: string;
+  /** Quando true, o formulário é renderizado embutido (ex.: ficha da proposta). Ao salvar, não navega — mantém o usuário na tela atual. */
+  embutido?: boolean;
 }) {
   const navigate = useNavigate();
   const qc = useQueryClient();
