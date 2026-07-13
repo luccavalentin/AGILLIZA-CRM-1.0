@@ -137,12 +137,13 @@ function Pagina() {
             </div>
           </Card>
 
-          {/* Ação no mobile/tablet (a coluna lateral some abaixo de lg) */}
-          <div className="flex justify-end pt-1 lg:hidden">
+          {/* Ação sempre disponível no final do formulário */}
+          <div className="flex justify-end pt-1">
             <Button className="h-11 w-full gap-2 sm:w-auto sm:px-8" onClick={enviar} disabled={enviando}>
               <Send className="h-4 w-4" /> Gerar Simulação
             </Button>
           </div>
+
         </div>
 
         {/* Coluna lateral — resumo fixo (apenas em telas grandes) */}
