@@ -213,6 +213,18 @@ export const criarCliente = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!me?.correspondente_id) throw new Error("Ecossistema não encontrado.");
 
+    // Valida a permissão de criação do usuário (mesma regra usada pelo RLS) e
+    // grava via cliente administrativo, evitando conflitos de política durante
+    // o insert/update. O escopo já está validado pelo correspondente acima.
+    const { data: podeCriar } = await supabase.rpc("usuario_tem_permissao", {
+      _user_id: userId,
+      _modulo: "crm.clientes",
+      _acao: "create",
+    });
+    if (!podeCriar) throw new Error("Você não tem permissão para cadastrar clientes.");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+
     // Campos comuns entre criação e atualização.
     const campos = {
       tipo_pessoa: data.tipo_pessoa,
@@ -270,14 +282,14 @@ export const criarCliente = createServerFn({ method: "POST" })
     // Se já existe um cliente com o mesmo documento neste ecossistema, reaproveita
     // o cadastro existente (evita violar a constraint clientes_doc_unico e efetivamente
     // "vincula" o cliente já cadastrado, atualizando os campos informados).
-    const { data: existente } = await supabase
+    const { data: existente } = await supabaseAdmin
       .from("clientes")
       .select("id")
       .eq("correspondente_id", me.correspondente_id)
       .eq("documento", data.documento)
       .maybeSingle();
     if (existente?.id) {
-      const { error: upErr } = await supabase
+      const { error: upErr } = await supabaseAdmin
         .from("clientes")
         .update(campos)
         .eq("id", existente.id);
@@ -285,7 +297,7 @@ export const criarCliente = createServerFn({ method: "POST" })
       return { id: existente.id };
     }
 
-    const { data: novo, error } = await supabase
+    const { data: novo, error } = await supabaseAdmin
       .from("clientes")
       .insert({
         correspondente_id: me.correspondente_id,

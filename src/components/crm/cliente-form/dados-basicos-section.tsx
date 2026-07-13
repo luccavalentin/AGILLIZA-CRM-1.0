@@ -20,6 +20,7 @@ import {
   OPCOES_SEXO,
   OPCOES_NACIONALIDADE,
   OPCOES_TIPO_DOCUMENTO,
+  OPCOES_ORGAO_EXPEDIDOR,
   OPCOES_NATURALIDADE,
   mascararMoedaBR,
   CLASSE_ERRO,
@@ -118,15 +119,19 @@ export function DadosBasicosSection({
           />
         </div>
 
-        {/* 4. RG (não obrigatório) */}
+        {/* 4. RG (nº do documento — não obrigatório) */}
         <div className="space-y-1.5">
           <Label>RG</Label>
           <Input
             value={v.documento_secundario}
-            onChange={(e) => set("documento_secundario", e.target.value)}
+            onChange={(e) => {
+              set("documento_secundario", e.target.value);
+              set("numero_documento", e.target.value);
+            }}
             placeholder="Opcional"
           />
         </div>
+
 
         {/* 5. Data de nascimento */}
         <div className="space-y-1.5">
@@ -150,6 +155,39 @@ export function DadosBasicosSection({
             className={clsBox("tipo_documento_identidade")}
           />
         </div>
+
+        {/* 6b. Órgão expedidor, UF e data de expedição (referentes ao RG) */}
+        <div className="space-y-1.5">
+          <Label>Órgão expedidor</Label>
+          <Combobox
+            value={v.orgao_expedidor}
+            onValueChange={(x) => set("orgao_expedidor", x)}
+            options={OPCOES_ORGAO_EXPEDIDOR}
+            placeholder="Selecione"
+            searchPlaceholder="Buscar órgão…"
+            className={clsBox("orgao_expedidor")}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label>UF de expedição</Label>
+          <Combobox
+            value={v.uf_expedicao}
+            onValueChange={(x) => set("uf_expedicao", x)}
+            options={OPCOES_UF}
+            placeholder="UF"
+            searchPlaceholder="Buscar UF…"
+            className={clsBox("uf_expedicao")}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label>Data de expedição</Label>
+          <Input
+            type="date"
+            value={v.data_expedicao}
+            onChange={(e) => set("data_expedicao", e.target.value)}
+          />
+        </div>
+
 
         {/* 7. Nome da mãe */}
         <div className="space-y-1.5">
