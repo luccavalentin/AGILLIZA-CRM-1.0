@@ -96,6 +96,8 @@ function Pagina() {
   const [contratoBusca, setContratoBusca] = useState("");
   const [contratoDesde, setContratoDesde] = useState("");
   const [contratoAte, setContratoAte] = useState("");
+  const [editandoContrato, setEditandoContrato] = useState<string | null>(null);
+  const [excluindoContrato, setExcluindoContrato] = useState<string | null>(null);
   const [arrasto, setArrasto] = useState<Arrasto | null>(null);
   const [alvo, setAlvo] = useState<string | null>(null);
   const arrastouRef = useRef(false);
