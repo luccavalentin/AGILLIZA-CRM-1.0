@@ -2,6 +2,11 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { resolverIntervalo, type ReportFiltros } from "@/lib/relatorios/shared";
+import { grupoDoStatus } from "@/lib/propostas/status-grupos";
+
+/** Uma proposta é "aprovada" quando obteve crédito aprovado — inclusive as que
+ * já avançaram (documentos, engenharia, jurídico, contrato emitido). */
+const foiAprovada = (status: string | null | undefined) => grupoDoStatus(status) === "aprovadas";
 
 const schema = z.object({
   modulo: z.enum(["visao-geral", "operacional"]),
@@ -258,7 +263,7 @@ async function carregarAnterior(
   const simRows = (sims.data ?? []) as any[];
   const propRows = (props.data ?? []) as any[];
   const enviadas = propRows.filter((p) => p.status !== "rascunho");
-  const aprovadas = enviadas.filter((p) => p.status === "credito_aprovado").length;
+  const aprovadas = enviadas.filter((p) => foiAprovada(p.status)).length;
   const recusadas = enviadas.filter((p) => p.status === "credito_recusado").length;
   const simConcl = simRows.filter((s) =>
     ["simulada", "parcialmente_simulada", "promovida"].includes(s.status),
@@ -348,7 +353,7 @@ export const getPanelDados = createServerFn({ method: "POST" })
       // Aprovação é somente crédito aprovado na proposta/simulação bancária.
       // Contrato emitido é uma métrica operacional separada e não pode inflar
       // taxa, volume aprovado ou quantidade de aprovadas.
-      const aprovadasProp = rows.filter((p) => p.status === "credito_aprovado");
+      const aprovadasProp = rows.filter((p) => foiAprovada(p.status));
       const aprovadasCount = aprovadasProp.length;
       const simConcluidasRows = simRows.filter((s) =>
         ["simulada", "parcialmente_simulada", "promovida"].includes(s.status),
@@ -562,7 +567,7 @@ export const getPanelDados = createServerFn({ method: "POST" })
     // Aprovação é somente crédito aprovado na proposta/simulação bancária.
     // Contrato emitido permanece separado para não gerar taxa falsa de 100%.
     const aprovadas = propRowsBrutas.filter(
-      (p) => p.status === "credito_aprovado" && dentroPeriodo(p.created_at),
+      (p) => foiAprovada(p.status) && dentroPeriodo(p.created_at),
     ).length;
 
     const demAbertas = demRows.filter((d) => !["concluida", "cancelada"].includes(d.status));
