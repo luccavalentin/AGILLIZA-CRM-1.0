@@ -286,8 +286,14 @@ export const comentarDemanda = createServerFn({ method: "POST" })
     z
       .object({
         demanda_id: z.string().uuid(),
-        corpo: z.string().min(1),
+        corpo: z.string().default(""),
         visivel_cliente: z.boolean().default(false),
+        anexo_path: z.string().optional().nullable(),
+        anexo_nome: z.string().optional().nullable(),
+        anexo_tamanho: z.number().int().nonnegative().optional().nullable(),
+      })
+      .refine((d) => d.corpo.trim().length > 0 || !!d.anexo_path, {
+        message: "Mensagem vazia.",
       })
       .parse(data),
   )
@@ -298,6 +304,9 @@ export const comentarDemanda = createServerFn({ method: "POST" })
       autor_id: userId,
       corpo: data.corpo,
       visivel_cliente: data.visivel_cliente,
+      anexo_path: data.anexo_path ?? null,
+      anexo_nome: data.anexo_nome ?? null,
+      anexo_tamanho: data.anexo_tamanho ?? null,
     });
     if (error) throw new Error(error.message);
 
@@ -311,7 +320,7 @@ export const comentarDemanda = createServerFn({ method: "POST" })
       if (dem?.cliente_id) {
         await supabase.rpc("portal_time_responder", {
           _cid: dem.cliente_id,
-          _msg: data.corpo,
+          _msg: data.corpo || "(arquivo)",
           _anexo: null as unknown as string,
         });
       }
