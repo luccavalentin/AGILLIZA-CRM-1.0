@@ -37,6 +37,11 @@ import { ChatClienteInstagram } from "@/components/crm/chat-cliente-instagram";
 import { VendedoresTab } from "@/components/crm/vendedores-tab";
 import { ImovelTab, IqTab } from "@/components/crm/imovel-iq-tab";
 import { StatusBadge } from "@/components/crm/tone-badge";
+import { SimulacaoStatusBadge } from "@/components/simulacao/status-badge";
+import { PropostaStatusBadge } from "@/components/propostas/status-badge";
+import { BancoLogo } from "@/components/bancos/banco-logo";
+import { corDoBanco } from "@/lib/bancos/cores";
+import { FileText, Building2 } from "lucide-react";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import {
   getCliente,
