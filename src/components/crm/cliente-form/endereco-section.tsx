@@ -49,6 +49,7 @@ export function EnderecoSection({
               onBlur={(e) => buscarCep(e.target.value)}
               placeholder="00000-000"
               maxLength={9}
+              className={cls("cep")}
             />
             {buscandoCep && (
               <Loader2 className="absolute right-3 top-1/2 size-4 -translate-y-1/2 animate-spin text-muted-foreground" />
@@ -60,6 +61,7 @@ export function EnderecoSection({
           <Input
             value={end.logradouro}
             onChange={(e) => setEnd((p) => ({ ...p, logradouro: e.target.value }))}
+            className={cls("logradouro")}
           />
         </div>
         <div className="space-y-1.5">
@@ -67,6 +69,7 @@ export function EnderecoSection({
           <Input
             value={end.numero}
             onChange={(e) => setEnd((p) => ({ ...p, numero: e.target.value }))}
+            className={cls("numero")}
           />
         </div>
         <div className="space-y-1.5">
@@ -74,6 +77,7 @@ export function EnderecoSection({
           <Input
             value={end.bairro}
             onChange={(e) => setEnd((p) => ({ ...p, bairro: e.target.value }))}
+            className={cls("bairro")}
           />
         </div>
         <div className="space-y-1.5">
@@ -81,12 +85,13 @@ export function EnderecoSection({
           <Input
             value={end.cidade}
             onChange={(e) => setEnd((p) => ({ ...p, cidade: e.target.value }))}
+            className={cls("cidade")}
           />
         </div>
         <div className="space-y-1.5">
           <Label>UF</Label>
           <Select value={end.uf} onValueChange={(x) => setEnd((p) => ({ ...p, uf: x }))}>
-            <SelectTrigger>
+            <SelectTrigger className={cls("uf")}>
               <SelectValue placeholder="Selecione" />
             </SelectTrigger>
             <SelectContent>
@@ -98,6 +103,7 @@ export function EnderecoSection({
             </SelectContent>
           </Select>
         </div>
+
       </CardContent>
     </Card>
   );
