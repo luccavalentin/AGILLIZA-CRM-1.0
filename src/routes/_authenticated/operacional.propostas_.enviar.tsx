@@ -278,7 +278,7 @@ function AbaPropostas({ escopo, busca, dataInicio, dataFim }: FiltroProps) {
       </div>
 
       {/* Tabela desktop */}
-      <Card className="hidden overflow-hidden rounded-2xl border-border/60 shadow-sm md:block">
+      <Card className="hidden overflow-x-auto rounded-2xl border-border/60 shadow-sm md:block">
         <Table>
           <TableHeader>
             <TableRow className="border-border/60 bg-muted/40 hover:bg-muted/40">
@@ -484,7 +484,7 @@ function AbaSimulacoes({ escopo, busca, dataInicio, dataFim }: FiltroProps) {
       </div>
 
       {/* Tabela desktop */}
-      <Card className="hidden overflow-hidden rounded-2xl border-border/60 shadow-sm md:block">
+      <Card className="hidden overflow-x-auto rounded-2xl border-border/60 shadow-sm md:block">
         <Table>
           <TableHeader>
             <TableRow className="border-border/60 bg-muted/40 hover:bg-muted/40">

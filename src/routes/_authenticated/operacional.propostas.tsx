@@ -407,7 +407,7 @@ function Pagina() {
 
 
       {/* Tabela desktop */}
-      <Card className="hidden overflow-hidden rounded-xl border-border/60 shadow-sm md:block">
+      <Card className="hidden overflow-x-auto rounded-xl border-border/60 shadow-sm md:block">
         <Table>
           <TableHeader>
             <TableRow className="border-border/60 bg-muted/40 hover:bg-muted/40">
