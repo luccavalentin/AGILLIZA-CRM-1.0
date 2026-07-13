@@ -457,11 +457,11 @@ export const listarPainel = createServerFn({ method: "GET" })
     });
     // Proposta mais recente por cliente (para comunicar com o kanban de propostas).
     const idsClientes = filtradas.map((r: any) => r.id);
-    const propostaPorCliente = new Map<string, { numero_proposta: string | null; status: string | null }>();
+    const propostaPorCliente = new Map<string, { numero_proposta: string | null; status: string | null; nome_banco: string | null }>();
     if (idsClientes.length > 0) {
       const { data: props } = await supabase
         .from("propostas")
-        .select("cliente_id, numero_proposta, status, created_at")
+        .select("cliente_id, numero_proposta, status, nome_banco, created_at")
         .in("cliente_id", idsClientes)
         .order("created_at", { ascending: false });
       for (const p of props ?? []) {
@@ -470,6 +470,7 @@ export const listarPainel = createServerFn({ method: "GET" })
           propostaPorCliente.set(cid, {
             numero_proposta: (p as any).numero_proposta ?? null,
             status: (p as any).status ?? null,
+            nome_banco: (p as any).nome_banco ?? null,
           });
         }
       }
