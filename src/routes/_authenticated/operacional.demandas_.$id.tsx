@@ -520,89 +520,123 @@ function Pagina() {
         </PopOutPanel>
 
 
-        {/* Timeline */}
-        <div className="space-y-3">
-          <h2 className="text-sm font-semibold text-foreground">Histórico</h2>
-          <div className="space-y-3">
-            {(data?.historico ?? []).map((h: any) => (
-              <div key={h.id} className="text-sm">
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>
-                    {h.nome_ator ?? "Sistema"} · {h.acao}
+        {/* Sidebar: Anexos + Histórico de auditoria */}
+        <div className="space-y-6">
+          {/* Anexos */}
+          <div className="rounded-2xl border border-border/70 bg-card shadow-sm">
+            <div className="flex items-center justify-between gap-2 border-b border-border/60 px-4 py-3">
+              <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                <Paperclip className="h-4 w-4 text-muted-foreground" /> Anexos
+                {(data?.anexos ?? []).length > 0 && (
+                  <span className="rounded-full bg-muted px-1.5 text-xs font-medium text-muted-foreground">
+                    {(data?.anexos ?? []).length}
                   </span>
-                  <span>{fmtData(h.created_at)}</span>
-                </div>
-                {h.acao === "transferida" && (
-                  <p className="mt-0.5">
-                    <span className="text-muted-foreground line-through">
-                      {h.nome_anterior ?? "—"}
+                )}
+              </h2>
+              <input ref={fileRef} type="file" className="hidden" onChange={handleUpload} />
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={enviando}
+                onClick={() => fileRef.current?.click()}
+              >
+                <Paperclip className="mr-1 h-3.5 w-3.5" /> {enviando ? "Enviando…" : "Anexar"}
+              </Button>
+            </div>
+            <div className="space-y-2 p-3">
+              {(data?.anexos ?? []).length === 0 ? (
+                <p className="px-1 py-4 text-center text-sm text-muted-foreground">
+                  Nenhum anexo.
+                </p>
+              ) : (
+                (data?.anexos ?? []).map((a: any) => (
+                  <div
+                    key={a.id}
+                    className="group flex items-center gap-2.5 rounded-xl border border-border/60 bg-background p-2.5 text-sm transition-colors hover:border-primary/40"
+                  >
+                    <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                      <FileText className="h-4 w-4" />
                     </span>
-                    {" → "}
-                    <span className="text-primary">{h.nome_novo ?? "—"}</span>
-                  </p>
-                )}
-                {h.motivo && (
-                  <div className="mt-1 rounded-md bg-muted p-3 text-foreground">{h.motivo}</div>
-                )}
-                {h.detalhe && h.acao !== "transferida" && (
-                  <p className="mt-0.5 text-muted-foreground">{h.detalhe}</p>
-                )}
-              </div>
-            ))}
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-medium text-foreground">{a.nome}</p>
+                      <p className="truncate text-xs text-muted-foreground">{a.nome_autor ?? "—"}</p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                      onClick={() => baixarAnexo(a.storage_path, a.nome)}
+                    >
+                      <Download className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-destructive"
+                      onClick={async () => {
+                        await removerAnexoFn({ data: { id: a.id } });
+                        invalidar();
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Histórico (auditoria) */}
+          <div className="rounded-2xl border border-border/70 bg-card shadow-sm">
+            <div className="flex items-center gap-2 border-b border-border/60 px-4 py-3">
+              <History className="h-4 w-4 text-muted-foreground" />
+              <h2 className="text-sm font-semibold text-foreground">Histórico</h2>
+            </div>
+            <div className="max-h-80 overflow-y-auto p-4">
+              {(data?.historico ?? []).length === 0 ? (
+                <p className="text-center text-xs text-muted-foreground">Sem registros.</p>
+              ) : (
+                <ol className="relative space-y-3 border-l border-border/60 pl-4">
+                  {(data?.historico ?? []).map((h: any) => (
+                    <li key={h.id} className="relative">
+                      <span className="absolute -left-[21px] top-1 size-2 rounded-full bg-primary/60 ring-2 ring-card" />
+                      <div className="flex items-baseline justify-between gap-2">
+                        <span className="text-xs font-medium text-foreground">
+                          {h.nome_ator ?? "Sistema"}
+                        </span>
+                        <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground">
+                          {fmtData(h.created_at)}
+                        </span>
+                      </div>
+                      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                        {h.acao}
+                      </p>
+                      {h.acao === "transferida" && (
+                        <p className="mt-0.5 text-xs">
+                          <span className="text-muted-foreground line-through">
+                            {h.nome_anterior ?? "—"}
+                          </span>
+                          {" → "}
+                          <span className="text-primary">{h.nome_novo ?? "—"}</span>
+                        </p>
+                      )}
+                      {h.motivo && (
+                        <p className="mt-1 rounded-md bg-muted/60 px-2 py-1 text-xs text-foreground">
+                          {h.motivo}
+                        </p>
+                      )}
+                      {h.detalhe && h.acao !== "transferida" && (
+                        <p className="mt-0.5 text-xs text-muted-foreground">{h.detalhe}</p>
+                      )}
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Anexos */}
-      <div className="space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-sm font-semibold text-foreground">Anexos</h2>
-          <input ref={fileRef} type="file" className="hidden" onChange={handleUpload} />
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={enviando}
-            onClick={() => fileRef.current?.click()}
-          >
-            <Paperclip className="mr-1 h-3.5 w-3.5" /> {enviando ? "Enviando…" : "Anexar"}
-          </Button>
-        </div>
-        <div className="space-y-2">
-          {(data?.anexos ?? []).length === 0 ? (
-            <p className="text-sm text-muted-foreground">Nenhum anexo.</p>
-          ) : (
-            (data?.anexos ?? []).map((a: any) => (
-              <div
-                key={a.id}
-                className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-card p-2 text-sm"
-              >
-                <Paperclip className="h-4 w-4 shrink-0 text-muted-foreground" />
-                <span className="min-w-0 flex-1 truncate text-foreground">{a.nome}</span>
-                <span className="shrink-0 text-xs text-muted-foreground">{a.nome_autor ?? "—"}</span>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7"
-                  onClick={() => baixarAnexo(a.storage_path, a.nome)}
-                >
-                  <Download className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 text-destructive"
-                  onClick={async () => {
-                    await removerAnexoFn({ data: { id: a.id } });
-                    invalidar();
-                  }}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
       <VisualizadorArquivo
         arquivo={visualizando}
         open={!!visualizando}
