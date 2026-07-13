@@ -57,10 +57,9 @@ export function SecaoConjuge({ ctx }: { ctx: SimulacaoCompletaCtx }) {
           />
         </Campo>
         <Campo label="Data de nascimento">
-          <Input
-            type="date"
+          <DateInput
             value={f.data_nascimento_conjuge ?? ""}
-            onChange={(e) => set("data_nascimento_conjuge", e.target.value)}
+            onChange={(v) => set("data_nascimento_conjuge", v)}
           />
         </Campo>
         <Campo label="Estado civil">
