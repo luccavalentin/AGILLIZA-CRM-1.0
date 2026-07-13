@@ -190,7 +190,7 @@ function Pagina() {
             variant="outline"
             className="group h-10 flex-1 rounded-lg border-border/70 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md hover:shadow-primary/5 active:translate-y-0 sm:flex-none"
           >
-            <Link to="/operacional/propostas/kanban">
+            <Link to="/operacional/propostas/kanban" search={{ q: undefined }}>
               <KanbanSquare className="mr-1.5 h-4 w-4 transition-transform duration-200 group-hover:scale-110" />{" "}
               Kanban
             </Link>
