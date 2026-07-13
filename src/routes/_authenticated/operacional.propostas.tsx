@@ -39,6 +39,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { listarColegas } from "@/lib/operacional/shared.functions";
+import { UsuarioCombobox } from "@/components/operacional/usuario-combobox";
 
 
 import { BancosProposta } from "@/components/proposta/bancos-proposta";
