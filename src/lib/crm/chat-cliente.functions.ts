@@ -336,13 +336,20 @@ export const listarChatCliente = createServerFn({ method: "GET" })
 export const responderChatCliente = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator(
-    (d: { cliente_id: string; mensagem?: string; anexo_path?: string; responde_a?: string }) =>
+    (d: {
+      cliente_id: string;
+      mensagem?: string;
+      anexo_path?: string;
+      responde_a?: string;
+      atendente_id?: string;
+    }) =>
       z
         .object({
           cliente_id: z.string().uuid(),
           mensagem: z.string().trim().max(4000).optional(),
           anexo_path: z.string().trim().max(1000).optional(),
           responde_a: z.string().uuid().optional(),
+          atendente_id: z.string().uuid().optional(),
         })
         .refine((v) => (v.mensagem?.trim()?.length ?? 0) > 0 || !!v.anexo_path, {
           message: "Escreva uma mensagem ou anexe um arquivo.",
@@ -350,14 +357,28 @@ export const responderChatCliente = createServerFn({ method: "POST" })
         .parse(d),
   )
   .handler(async ({ data, context }): Promise<ChatMensagem> => {
-    const { supabase } = context;
+    const { supabase, userId } = context;
     const nomeAnexo = data.anexo_path?.split("/").pop() ?? null;
-    const { data: nova, error } = await supabase.rpc("portal_time_responder", {
-      _cid: data.cliente_id,
-      _msg: data.mensagem?.trim() || nomeAnexo || "Arquivo",
-      _anexo: (data.anexo_path ?? null) as unknown as string,
-    });
+    const msg = data.mensagem?.trim() || nomeAnexo || "Arquivo";
+    const anexo = (data.anexo_path ?? null) as unknown as string;
+
+    // Se a conversa é compartilhada (thread de outro atendente), publica na
+    // mesma thread para que dono e participantes vejam o mesmo histórico.
+    const usarThread = data.atendente_id && data.atendente_id !== userId;
+    const { data: nova, error } = usarThread
+      ? await supabase.rpc("portal_time_responder_thread", {
+          _cid: data.cliente_id,
+          _atendente: data.atendente_id!,
+          _msg: msg,
+          _anexo: anexo,
+        })
+      : await supabase.rpc("portal_time_responder", {
+          _cid: data.cliente_id,
+          _msg: msg,
+          _anexo: anexo,
+        });
     if (error) throw new Error(error.message);
+
     const criada = nova as unknown as { id: string; anexo_url: string | null };
     // Vincula a resposta/citação após a criação (a RPC não recebe esse campo).
     if (data.responde_a && criada?.id) {
