@@ -445,7 +445,10 @@ export async function enviarPropostaImpl({
       );
       const numeroBanco = numeroPropostaBancoReal(resp);
       const referenciaBanco = referenciaIntegracaoBanco(resp);
-      if (numeroBanco || referenciaBanco) patchOk.numero_proposta_banco = numeroBanco;
+      if (numeroBanco) patchOk.numero_proposta_banco = numeroBanco;
+      else if (referenciaBanco && numeroAtualEhReferenciaTecnica(b, resp)) {
+        patchOk.numero_proposta_banco = null;
+      }
       if (resp?.valorParcelaBanco != null) patchOk.valor_parcela = resp.valorParcelaBanco;
       if (resp?.taxaJurosAnoBanco != null) patchOk.taxa_juros_ano = resp.taxaJurosAnoBanco;
       if (resp?.prazoPagamentoBancoMax != null)
