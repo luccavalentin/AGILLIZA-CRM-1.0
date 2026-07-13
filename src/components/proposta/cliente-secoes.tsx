@@ -50,10 +50,11 @@ export function ClienteSecao({
           Nenhum cadastro de cliente vinculado a esta proposta.
         </p>
         <p className="mt-1 text-sm text-muted-foreground">
-          Abra o cadastro do CRM já preenchido com os dados desta proposta para revisar, completar e
-          salvar — o cliente é vinculado automaticamente à proposta.
+          Vincule um cliente já cadastrado no CRM ou abra o cadastro já preenchido com os dados
+          desta proposta — em ambos os casos o cliente fica vinculado automaticamente à proposta.
         </p>
         <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+          {propostaId && <VincularClienteDialog propostaId={propostaId} />}
           {propostaId && (
             <Button asChild size="sm">
               <Link to="/crm/clientes/novo" search={{ proposta: propostaId }}>
@@ -62,7 +63,7 @@ export function ClienteSecao({
               </Link>
             </Button>
           )}
-          <Button asChild variant="outline" size="sm">
+          <Button asChild variant="ghost" size="sm">
             <Link to="/crm/clientes">Abrir CRM de clientes</Link>
           </Button>
         </div>
