@@ -91,6 +91,7 @@ export function IdentidadeSection({
             options={OPCOES_TIPO_DOCUMENTO}
             placeholder="Selecione"
             searchPlaceholder="Buscar tipo…"
+            className={clsBox("tipo_documento_identidade")}
           />
         </div>
         <div className="space-y-1.5">
@@ -98,6 +99,7 @@ export function IdentidadeSection({
           <Input
             value={v.numero_documento}
             onChange={(e) => set("numero_documento", e.target.value)}
+            className={cls("numero_documento")}
           />
         </div>
         <div className="space-y-1.5">
@@ -108,12 +110,13 @@ export function IdentidadeSection({
             options={OPCOES_ORGAO_EXPEDIDOR}
             placeholder="Selecione"
             searchPlaceholder="Buscar órgão…"
+            className={clsBox("orgao_expedidor")}
           />
         </div>
         <div className="space-y-1.5">
           <Label>UF de expedição</Label>
           <Select value={v.uf_expedicao} onValueChange={(x) => set("uf_expedicao", x)}>
-            <SelectTrigger>
+            <SelectTrigger className={cls("uf_expedicao")}>
               <SelectValue placeholder="Selecione" />
             </SelectTrigger>
             <SelectContent>
@@ -125,6 +128,7 @@ export function IdentidadeSection({
             </SelectContent>
           </Select>
         </div>
+
         <div className="space-y-1.5">
           <Label>Data de expedição</Label>
           <Input
