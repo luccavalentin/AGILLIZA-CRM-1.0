@@ -288,7 +288,7 @@ function Pagina() {
                 : `Ativa há ${diasDesde} dia(s)`}
             </p>
           </div>
-          <AcoesTopo proposta={p} propostaId={id} bancos={data.bancos} />
+          <AcoesTopo proposta={p} propostaId={id} bancos={data.bancos} onCadastroIncompleto={onCadastroIncompleto} />
         </div>
 
         {/* KPIs */}
