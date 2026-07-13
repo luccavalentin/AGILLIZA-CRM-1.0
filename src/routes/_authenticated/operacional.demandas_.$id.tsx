@@ -324,7 +324,7 @@ function Pagina() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Mensagens */}
-        <PopOutPanel title={`Mensagens · ${d.numero}`} className="h-[32rem]">
+        <PopOutPanel title={`Mensagens · ${d.numero}`} className="h-[32rem] lg:col-span-2">
           <Card className="flex h-full flex-col overflow-hidden border-border/60 shadow-sm">
             <div className="flex items-center gap-2 border-b bg-muted/30 px-4 py-3">
               <div className="flex size-8 items-center justify-center rounded-full bg-primary/10 text-primary">
