@@ -53,11 +53,19 @@ function Acompanhar() {
         onValueChange={(v) => navigate({ search: { tab: v as typeof tab } })}
         className="w-full"
       >
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="processo">Processo</TabsTrigger>
-          <TabsTrigger value="documentos">Docs</TabsTrigger>
-          <TabsTrigger value="mensagens">Mensagens</TabsTrigger>
-          <TabsTrigger value="propostas">Propostas</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-4 gap-1">
+          <TabsTrigger value="processo" className="truncate px-1 text-xs sm:px-3 sm:text-sm">
+            Processo
+          </TabsTrigger>
+          <TabsTrigger value="documentos" className="truncate px-1 text-xs sm:px-3 sm:text-sm">
+            Docs
+          </TabsTrigger>
+          <TabsTrigger value="mensagens" className="truncate px-1 text-xs sm:px-3 sm:text-sm">
+            Mensagens
+          </TabsTrigger>
+          <TabsTrigger value="propostas" className="truncate px-1 text-xs sm:px-3 sm:text-sm">
+            Propostas
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="processo" className="mt-4">

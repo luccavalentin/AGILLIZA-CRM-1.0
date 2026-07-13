@@ -313,7 +313,7 @@ export function ChatCliente({ altura = "h-[62dvh]" }: { altura?: string }) {
           }}
           placeholder="Escreva sua mensagem…"
           rows={1}
-          className="max-h-32 min-h-11 resize-none"
+          className="max-h-32 min-h-11 min-w-0 flex-1 resize-none"
         />
 
         <Button
