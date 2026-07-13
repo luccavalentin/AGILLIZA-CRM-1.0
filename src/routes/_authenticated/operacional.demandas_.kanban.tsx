@@ -75,6 +75,9 @@ function Pagina() {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const moverFn = useServerFn(moverStatusDemanda);
+  // Fonte do arraste em ref: não dispara re-render ao iniciar o drag (evita a
+  // "trava" do ghost). O estado abaixo só controla o realce da coluna-alvo.
+  const arrastandoRef = useRef<{ id: string; status: DemandaStatus } | null>(null);
   const [arrastando, setArrastando] = useState<{ id: string; status: DemandaStatus } | null>(null);
 
   const { data } = useQuery({
@@ -82,34 +85,57 @@ function Pagina() {
     queryFn: () => listarDemandas({ data: { escopo: "equipe" } }),
   });
 
-  async function soltar(coluna: DemandaStatus) {
-    if (!arrastando) return;
-    const { id, status } = arrastando;
+  const onDragStart = useCallback((id: string, status: DemandaStatus) => {
+    arrastandoRef.current = { id, status };
+    // Adia o realce para depois do navegador capturar a imagem de arraste,
+    // deixando o movimento fluido em vez de "pesado".
+    requestAnimationFrame(() => setArrastando({ id, status }));
+  }, []);
+
+  const onDragEnd = useCallback(() => {
+    arrastandoRef.current = null;
     setArrastando(null);
-    if (status === coluna) return;
-    if (!transicaoDemandaPermitida(status, coluna)) {
-      toast.error(
-        `Transição inválida: ${statusDemanda(status).label} → ${statusDemanda(coluna).label}.`,
-      );
-      return;
-    }
-    try {
-      await moverFn({ data: { id, status: coluna } });
-      qc.invalidateQueries({ queryKey: ["demandas"] });
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Falha ao mover.");
-    }
-  }
+  }, []);
+
+  const onOpen = useCallback(
+    (id: string) => navigate({ to: "/operacional/demandas/$id", params: { id } }),
+    [navigate],
+  );
+
+  const soltar = useCallback(
+    async (coluna: DemandaStatus) => {
+      const origem = arrastandoRef.current;
+      arrastandoRef.current = null;
+      setArrastando(null);
+      if (!origem) return;
+      const { id, status } = origem;
+      if (status === coluna) return;
+      if (!transicaoDemandaPermitida(status, coluna)) {
+        toast.error(
+          `Transição inválida: ${statusDemanda(status).label} → ${statusDemanda(coluna).label}.`,
+        );
+        return;
+      }
+      try {
+        await moverFn({ data: { id, status: coluna } });
+        qc.invalidateQueries({ queryKey: ["demandas"] });
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "Falha ao mover.");
+      }
+    },
+    [moverFn, qc],
+  );
 
   const itens = useMemo(() => data ?? [], [data]);
   // Agrupa uma única vez por status, em vez de refiltrar a lista inteira
   // para cada coluna a cada render (inclusive durante o arraste).
   const porStatus = useMemo(() => {
-    const mapa = new Map<DemandaStatus, typeof itens>();
+    const mapa = new Map<DemandaStatus, DemandaItem[]>();
     for (const col of COLUNAS) mapa.set(col, []);
     for (const d of itens) mapa.get(d.status as DemandaStatus)?.push(d);
     return mapa;
   }, [itens]);
+
 
   return (
     <div className="space-y-5 p-4 md:p-6">
