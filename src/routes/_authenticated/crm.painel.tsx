@@ -98,9 +98,16 @@ function Pagina() {
   const arquivarContratoFn = useServerFn(arquivarContrato);
   const listarContratos = useServerFn(listarContratosEmitidos);
   const limparVinculoFn = useServerFn(limparVinculoEsteira);
+  const buscarClientes = useServerFn(buscarClientesCRM);
   const [limpandoVinculo, setLimpandoVinculo] = useState<{ id: string; nome: string } | null>(
     null,
   );
+  const [adicionarStage, setAdicionarStage] = useState<{ codigo: string; nome: string } | null>(
+    null,
+  );
+  const [adicionarBusca, setAdicionarBusca] = useState("");
+  const [adicionando, setAdicionando] = useState(false);
+
 
   const [desde, setDesde] = useState("");
   const [ate, setAte] = useState("");
