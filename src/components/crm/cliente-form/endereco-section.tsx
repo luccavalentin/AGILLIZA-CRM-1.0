@@ -9,19 +9,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { OPCOES_UF, mascararCep, type EnderecoValues } from "./constants";
+import { OPCOES_UF, mascararCep, CLASSE_ERRO, type EnderecoValues } from "./constants";
+import { cn } from "@/lib/utils";
 
 export function EnderecoSection({
   end,
   setEnd,
   buscandoCep,
   buscarCep,
+  erros,
 }: {
   end: EnderecoValues;
   setEnd: React.Dispatch<React.SetStateAction<EnderecoValues>>;
   buscandoCep: boolean;
   buscarCep: (cepRaw: string) => void;
+  erros?: Set<string>;
 }) {
+  const cls = (k: string) => (erros?.has(k) ? CLASSE_ERRO : undefined);
+
   return (
     <Card>
       <CardHeader>
