@@ -229,37 +229,52 @@ export const criarSimulacao = createServerFn({ method: "POST" })
       // (validação de bloqueio ocorre no enviarSimulacaoBanco)
     }
 
-    // resolve/insere cliente
+    // resolve/insere cliente — grava direto no CRM, mesmo que o usuário não
+    // tenha permissão crm.clientes:create (usa client admin com escopo do correspondente).
     let cliente_id = dd.cliente_id ?? null;
     if (!cliente_id && dd.cpf_cnpj) {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       const digitos = dd.cpf_cnpj.replace(/\D/g, "");
-      const { data: existente } = await supabase
+      const { data: existente } = await supabaseAdmin
         .from("clientes")
         .select("id")
+        .eq("correspondente_id", correspondente_id)
         .eq("documento", digitos)
         .maybeSingle();
-      if (existente) cliente_id = existente.id;
-    }
-    if (!cliente_id && dd.nome_cliente && dd.cpf_cnpj) {
-      const digitos = dd.cpf_cnpj.replace(/\D/g, "");
-      const { data: novo, error: errCli } = await supabase
-        .from("clientes")
-        .insert({
-          correspondente_id,
-          tipo_pessoa: digitos.length > 11 ? "PJ" : "PF",
-          nome: dd.nome_cliente,
-          documento: digitos,
-          email: dd.email ?? null,
-          telefone_celular: dd.celular ?? null,
-          data_nascimento: dd.data_nascimento || null,
-          estado_civil: (dd.estado_civil as any) ?? null,
-          renda_total_declarada: dd.renda_total ?? null,
-          criador_id: userId,
-          responsavel_id: userId,
-        } as any)
-        .select("id")
-        .maybeSingle();
-      if (!errCli && novo) cliente_id = novo.id;
+      if (existente) {
+        cliente_id = existente.id;
+      } else if (dd.nome_cliente) {
+        const casado = Boolean(dd.possui_conjuge);
+        const { data: novo, error: errCli } = await supabaseAdmin
+          .from("clientes")
+          .insert({
+            correspondente_id,
+            numero_cliente: "",
+            tipo_pessoa: digitos.length > 11 ? "PJ" : "PF",
+            nome: dd.nome_cliente,
+            documento: digitos,
+            email: dd.email ?? null,
+            telefone_celular: dd.celular ?? null,
+            data_nascimento: dd.data_nascimento || null,
+            estado_civil: (dd.estado_civil as any) ?? null,
+            regime_casamento: casado ? (dd.regime_casamento ?? null) : null,
+            renda_total_declarada: dd.renda_total ?? null,
+            uf_interesse: dd.uf ?? null,
+            utiliza_fgts: dd.utiliza_fgts ?? false,
+            conjuge_nome: casado ? (dd.nome_conjuge ?? null) : null,
+            conjuge_cpf: casado ? (dd.cpf_conjuge ?? null) : null,
+            conjuge_data_nascimento: casado ? (dd.data_nascimento_conjuge || null) : null,
+            conjuge_email: casado ? (dd.email_conjuge ?? null) : null,
+            conjuge_celular: casado ? (dd.celular_conjuge ?? null) : null,
+            conjuge_renda: casado ? (dd.renda_conjuge ?? null) : null,
+            criador_id: userId,
+            responsavel_id: userId,
+          } as any)
+          .select("id")
+          .maybeSingle();
+        if (errCli) throw new Error(`Falha ao gravar cliente no CRM: ${errCli.message}`);
+        if (novo) cliente_id = novo.id;
+      }
     }
 
     const insert = {
