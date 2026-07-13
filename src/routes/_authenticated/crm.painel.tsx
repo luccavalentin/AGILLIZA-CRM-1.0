@@ -111,6 +111,7 @@ function Pagina() {
 
   const [desde, setDesde] = useState("");
   const [ate, setAte] = useState("");
+  const [escopo, setEscopo] = useState<"minhas" | "geral">("minhas");
   const [busca, setBusca] = useState("");
   const [dialogStage, setDialogStage] = useState<string | null>(null);
   const [arquivoAberto, setArquivoAberto] = useState(false);
