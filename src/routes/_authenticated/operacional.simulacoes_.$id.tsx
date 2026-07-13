@@ -11,7 +11,7 @@ import {
   enviarSimulacaoBanco,
   excluirSimulacao,
 } from "@/lib/simulacao/simulacoes.functions";
-import { criarProposta } from "@/lib/propostas/propostas.functions";
+import { criarProposta, enviarPropostaHomeFin } from "@/lib/propostas/propostas.functions";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
