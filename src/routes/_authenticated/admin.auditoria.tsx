@@ -144,6 +144,72 @@ function fmtHora(iso: string): string {
   return new Date(iso).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 }
 
+function fmtDataHora(iso: string): string {
+  return new Date(iso).toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+}
+
+/** Gera e baixa um CSV com a trilha de auditoria carregada. */
+function exportarCsv(registros: AuditoriaLinha[]): void {
+  const cabecalho = [
+    "Data/Hora",
+    "Usuário",
+    "Ação",
+    "Descrição",
+    "Entidade",
+    "ID Entidade",
+    "IP",
+    "Navegador",
+  ];
+  const escapar = (v: unknown) => {
+    const s = v == null ? "" : String(v);
+    return `"${s.replace(/"/g, '""')}"`;
+  };
+  const linhas = registros.map((r) =>
+    [
+      fmtDataHora(r.created_at),
+      r.ator_nome ?? "",
+      r.acao_label,
+      r.descricao ?? "",
+      r.entidade ?? "",
+      r.entidade_id ?? "",
+      r.ip ?? "",
+      r.user_agent ?? "",
+    ]
+      .map(escapar)
+      .join(","),
+  );
+  const csv = "\ufeff" + [cabecalho.map(escapar).join(","), ...linhas].join("\r\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `auditoria-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+/** Diferença legível entre payload anterior e novo. */
+function diffPayload(
+  anterior: unknown,
+  novo: unknown,
+): { campo: string; de: string; para: string }[] {
+  const a = (anterior && typeof anterior === "object" ? anterior : {}) as Record<string, unknown>;
+  const n = (novo && typeof novo === "object" ? novo : {}) as Record<string, unknown>;
+  const chaves = [...new Set([...Object.keys(a), ...Object.keys(n)])].sort();
+  const fmt = (v: unknown) =>
+    v == null ? "—" : typeof v === "object" ? JSON.stringify(v) : String(v);
+  return chaves
+    .filter((k) => JSON.stringify(a[k]) !== JSON.stringify(n[k]))
+    .map((k) => ({ campo: k, de: fmt(a[k]), para: fmt(n[k]) }));
+}
+
 function chaveDia(iso: string): string {
   return new Date(iso).toLocaleDateString("pt-BR", {
     weekday: "long",
