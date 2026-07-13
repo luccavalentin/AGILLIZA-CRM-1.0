@@ -122,7 +122,7 @@ function Pagina() {
   const { id } = useParams({ from: "/_authenticated/operacional/demandas_/$id" });
   const qc = useQueryClient();
   const [corpo, setCorpo] = useState("");
-  const [visivelCliente, setVisivelCliente] = useState(false);
+  const [visivelCliente] = useState(false);
   const comentarFn = useServerFn(comentarDemanda);
   const moverFn = useServerFn(moverStatusDemanda);
   const lidaFn = useServerFn(marcarDemandaLida);
