@@ -143,7 +143,9 @@ export function IdentidadeSection({
             value={v.profissao}
             onChange={(e) => set("profissao", e.target.value)}
             placeholder="Digite a profissão"
+            className={cls("profissao")}
           />
+
         </div>
         <div className="space-y-1.5">
           <Label>Empresa onde trabalha</Label>
