@@ -128,7 +128,7 @@ function Pagina() {
 
 
   const { data, isLoading } = useQuery({
-    queryKey: ["simulacoes", escopo, busca, desde, ate],
+    queryKey: ["simulacoes", escopo, busca, desde, ate, responsavel],
     queryFn: () =>
       listarSimulacoes({
         data: {
@@ -136,6 +136,8 @@ function Pagina() {
           q: busca || undefined,
           desde: desde || undefined,
           ate: ate || undefined,
+          responsavel:
+            escopo === "todas" && responsavel !== "todos" ? responsavel : undefined,
           pagina: 1,
           porPagina: 30,
         },
