@@ -486,6 +486,21 @@ function Pagina() {
               Buscar
             </Button>
           </form>
+          {escopo === "todas" && (
+            <Select value={responsavel} onValueChange={setResponsavel}>
+              <SelectTrigger className="h-9 w-full sm:w-48" aria-label="Analista">
+                <SelectValue placeholder="Analista" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos os analistas</SelectItem>
+                {(colegas ?? []).map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.nome ?? c.email ?? "—"}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
           <div className="flex items-center gap-2">
             <Input
               type="date"
@@ -502,22 +517,22 @@ function Pagina() {
               onChange={(e) => setAte(e.target.value)}
               className="h-9 w-full sm:w-36"
             />
-            {(desde || ate) && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-9 shrink-0"
-                onClick={() => {
-                  setDesde("");
-                  setAte("");
-                }}
-              >
-                Limpar
-              </Button>
-            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-9 shrink-0"
+              onClick={() => {
+                setDesde(padrao.inicio);
+                setAte(padrao.fim);
+                setResponsavel("todos");
+              }}
+            >
+              Limpar
+            </Button>
           </div>
         </div>
       </div>
+
 
 
 
