@@ -68,6 +68,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { listarColegas } from "@/lib/operacional/shared.functions";
+import { UsuarioCombobox } from "@/components/operacional/usuario-combobox";
 
 /** Primeiro e último dia do mês atual como intervalo ISO (filtro padrão). */
 function intervaloMesAtual(): { inicio: string; fim: string } {
