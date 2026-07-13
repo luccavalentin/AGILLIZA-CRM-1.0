@@ -809,6 +809,8 @@ function Pagina() {
           </div>
         </div>
       </div>
+        </div>
+      </div>
 
       <VisualizadorArquivo
         arquivo={visualizando}
@@ -816,5 +818,6 @@ function Pagina() {
         onOpenChange={(o: boolean) => !o && setVisualizando(null)}
       />
     </div>
+
   );
 }
