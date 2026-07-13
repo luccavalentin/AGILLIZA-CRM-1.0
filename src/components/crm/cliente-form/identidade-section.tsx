@@ -17,11 +17,23 @@ import {
   OPCOES_TIPO_DOCUMENTO,
   OPCOES_ORGAO_EXPEDIDOR,
   OPCOES_UF,
+  CLASSE_ERRO,
   type ClienteFormValues,
   type SetCampo,
 } from "./constants";
 
-export function IdentidadeSection({ v, set }: { v: ClienteFormValues; set: SetCampo }) {
+export function IdentidadeSection({
+  v,
+  set,
+  erros,
+}: {
+  v: ClienteFormValues;
+  set: SetCampo;
+  erros?: Set<string>;
+}) {
+  const cls = (k: string) => (erros?.has(k) ? CLASSE_ERRO : undefined);
+  const clsBox = (k: string) => (erros?.has(k) ? "rounded-md ring-1 ring-destructive" : undefined);
+
   return (
     <Card>
       <CardHeader>
