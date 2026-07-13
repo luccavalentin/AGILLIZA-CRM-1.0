@@ -98,10 +98,9 @@ export function SecaoTitular({ ctx }: { ctx: SimulacaoCompletaCtx }) {
           <Erro erros={erros} campo="renda_total" />
         </Campo>
         <Campo label={<>Data de nascimento <Ast /></>}>
-          <Input
-            type="date"
+          <DateInput
             value={f.data_nascimento}
-            onChange={(e) => set("data_nascimento", e.target.value)}
+            onChange={(v) => set("data_nascimento", v)}
             aria-invalid={!!erros.data_nascimento}
           />
           <Erro erros={erros} campo="data_nascimento" />
