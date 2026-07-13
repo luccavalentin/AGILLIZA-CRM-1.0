@@ -205,6 +205,31 @@ function Pagina() {
     }
   }
 
+  async function desarquivarContrato(clienteId: string) {
+    try {
+      await arquivarContratoFn({ data: { cliente_id: clienteId, arquivar: false } });
+      toast.success("Contrato movido de volta para a esteira.");
+      qc.invalidateQueries({ queryKey: ["crm-contratos-emitidos"] });
+      qc.invalidateQueries({ queryKey: ["crm-painel"] });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao mover o contrato.");
+    }
+  }
+
+  async function excluirContratoEmitido(clienteId: string) {
+    try {
+      await arquivarContratoFn({ data: { cliente_id: clienteId, arquivar: false } });
+      await salvarContratoData({ data: { cliente_id: clienteId, contrato_emitido_em: null } });
+      toast.success("Registro de contrato emitido excluído.");
+      qc.invalidateQueries({ queryKey: ["crm-contratos-emitidos"] });
+      qc.invalidateQueries({ queryKey: ["crm-painel"] });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao excluir o contrato.");
+    }
+  }
+
+
+
 
 
 
