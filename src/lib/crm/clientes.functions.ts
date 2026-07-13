@@ -491,6 +491,7 @@ export const listarPainel = createServerFn({ method: "GET" })
           contrato_emitido_em: r.contrato_emitido_em ?? null,
           numero_proposta: propostaPorCliente.get(r.id)?.numero_proposta ?? null,
           proposta_status: propostaPorCliente.get(r.id)?.status ?? null,
+          nome_banco: propostaPorCliente.get(r.id)?.nome_banco ?? null,
         })),
     }));
   });
