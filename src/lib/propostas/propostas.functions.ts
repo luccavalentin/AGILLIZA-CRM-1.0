@@ -1387,8 +1387,7 @@ export const excluirProposta = createServerFn({ method: "POST" })
       // fora do escopo). Como já validamos que a proposta existe e pertence ao
       // correspondente do usuário, e a exclusão exige papel admin/correspondente,
       // reforçamos com o cliente administrativo do servidor.
-      const podeExcluir = correspondente && prop.correspondente_id === correspondente;
-      if (!podeExcluir) {
+      if (!correspondente || prop.correspondente_id !== correspondente) {
         throw new Error("Você não tem permissão para excluir esta proposta.");
       }
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
