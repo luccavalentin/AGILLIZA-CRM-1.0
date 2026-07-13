@@ -5,7 +5,17 @@ import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { type ClienteFormValues, type SetCampo } from "./constants";
 
-export function FgtsSection({ v, set }: { v: ClienteFormValues; set: SetCampo }) {
+export function FgtsSection({
+  v,
+  set,
+  erros,
+}: {
+  v: ClienteFormValues;
+  set: SetCampo;
+  erros?: Set<string>;
+}) {
+  const destaque = erros?.has("fg_autorizacao_dados");
+
   return (
     <Card>
       <CardHeader>
