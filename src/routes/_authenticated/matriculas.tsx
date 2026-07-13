@@ -85,42 +85,47 @@ function Pagina() {
         icon={<GraduationCap className="h-6 w-6" />}
         eyebrow="Documentos"
         titulo="Controle de Matrículas"
-        descricao="Matrículas tiradas e pagas pela Agilliza a pedido dos corretores — para posterior reembolso."
+        descricao="A Agilliza tira e paga as matrículas a pedido dos corretores — e recebe o reembolso deles depois."
       />
 
       <PixBanner />
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <OpStat
           icon={<Coins className="h-5 w-5" />}
           label="Créditos comprados"
           value={formatBRL(data.total_creditos)}
           accent="var(--primary)"
-          tint="bg-primary/10 text-primary"
         />
         <OpStat
           icon={<TrendingDown className="h-5 w-5" />}
-          label="Total gasto"
+          label="Total pago em matrículas"
           value={formatBRL(data.total_gasto)}
           accent="var(--muted-foreground)"
-          tint="bg-muted text-muted-foreground"
+        />
+        <OpStat
+          icon={<CheckCircle2 className="h-5 w-5" />}
+          label="Reembolso recebido"
+          value={formatBRL(data.total_reembolsado)}
+          accent="var(--primary)"
+          hint="Já ressarcido pelos corretores"
         />
         <OpStat
           icon={<Clock className="h-5 w-5" />}
-          label="A reembolsar"
+          label="Reembolso pendente"
           value={formatBRL(data.total_a_reembolsar)}
           accent="var(--destructive)"
-          tint="bg-destructive/10 text-destructive"
           alerta={data.total_a_reembolsar > 0}
+          hint="A receber dos corretores"
         />
         <OpStat
           icon={<Wallet className="h-5 w-5" />}
           label="Saldo de crédito"
           value={formatBRL(data.saldo)}
           accent="var(--primary)"
-          tint="bg-primary/10 text-primary"
         />
       </div>
+
 
       <Solicitacoes
         lista={data.solicitacoes}
