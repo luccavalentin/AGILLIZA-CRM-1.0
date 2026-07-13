@@ -69,6 +69,8 @@ export function ClienteForm({
   embutido?: boolean;
   /** Quando true, destaca em vermelho os campos obrigatórios ainda pendentes para envio da proposta. */
   destacarObrigatorios?: boolean;
+  /** Chamado após salvar com sucesso no modo embutido (ex.: para direcionar ao envio ao banco). */
+  onSalvoEmbutido?: () => void;
 }) {
 
   const navigate = useNavigate();
