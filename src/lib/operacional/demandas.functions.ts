@@ -487,12 +487,73 @@ export const escalarDemanda = createServerFn({ method: "POST" })
     return { escalonadas: (data as number) ?? 0 };
   });
 
-/** Exclui uma demanda. */
+/** Exclui uma demanda. Apenas quem enviou (criador) pode excluir. */
 export const excluirDemanda = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
-    const { error } = await context.supabase.from("demandas").delete().eq("id", data.id);
+    const { supabase, userId } = context;
+    const atual = await papelNaDemanda(supabase, data.id, userId);
+    if (!atual.souCriador) {
+      throw new Error("Apenas quem enviou a demanda pode excluí-la.");
+    }
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.from("demandas").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+/**
+ * Edita os dados de uma demanda. Quem enviou (criador) e quem recebeu
+ * (responsável) podem editar título, descrição, prioridade e o SLA.
+ */
+export const editarDemanda = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        id: z.string().uuid(),
+        titulo: z.string().min(2),
+        descricao: z.string().optional().nullable(),
+        prioridade: z.enum(["p1", "p2", "p3"]),
+        sla_horas: z.number().positive().max(2000).optional(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }): Promise<{ ok: true }> => {
+    const { supabase, userId } = context;
+    const atual = await papelNaDemanda(supabase, data.id, userId);
+    if (!atual.souCriador && !atual.souResponsavel) {
+      throw new Error("Apenas quem enviou ou recebeu a demanda pode editá-la.");
+    }
+
+    const patch: Record<string, unknown> = {
+      titulo: data.titulo,
+      descricao: data.descricao ?? null,
+      prioridade: data.prioridade,
+    };
+
+    // Reconfiguração do SLA: recalcula o prazo em horas úteis.
+    if (typeof data.sla_horas === "number") {
+      const inicio = new Date().toISOString();
+      const { data: prazo } = await supabase.rpc("add_horas_uteis", {
+        _corr: atual.correspondente_id,
+        _inicio: inicio,
+        _horas: data.sla_horas,
+      });
+      patch.sla_horas = data.sla_horas;
+      patch.sla_inicio = inicio;
+      if (prazo) patch.prazo_sla = prazo;
+    }
+
+    const { error } = await supabase.from("demandas").update(patch as any).eq("id", data.id);
+    if (error) throw new Error(error.message);
+    await supabase.from("demanda_historico").insert({
+      demanda_id: data.id,
+      ator_id: userId,
+      acao: "editada",
+      detalhe: typeof data.sla_horas === "number" ? "Dados e SLA atualizados" : "Dados atualizados",
+    });
+    return { ok: true };
+  });
+
