@@ -106,8 +106,7 @@ export function ChatComposer({
         <Button
           onClick={submeter}
           disabled={enviarPending || salvarEdicaoPending || !texto.trim()}
-          size="icon"
-          className="h-11 w-11 shrink-0 rounded-xl shadow-sm"
+          className="h-11 shrink-0 gap-2 rounded-xl px-4 shadow-sm"
           title={editando ? "Salvar edição" : "Enviar"}
         >
           {enviarPending || salvarEdicaoPending ? (
@@ -117,7 +116,11 @@ export function ChatComposer({
           ) : (
             <Send className="h-4 w-4" />
           )}
+          <span className="hidden sm:inline">
+            {editando ? "Salvar" : "Enviar"}
+          </span>
         </Button>
+
       </div>
     </>
   );
