@@ -81,8 +81,16 @@ function Pagina() {
   const [grupo, setGrupo] = useState<GrupoProposta | null>(null);
   const [q, setQ] = useState("");
   const [busca, setBusca] = useState("");
+  const [responsavel, setResponsavel] = useState<string>("todos");
   const [dataInicio, setDataInicio] = useState(padrao.inicio);
   const [dataFim, setDataFim] = useState(padrao.fim);
+
+  const listarColegasFn = useServerFn(listarColegas);
+  const { data: colegas } = useQuery({
+    queryKey: ["colegas"],
+    queryFn: () => listarColegasFn(),
+    staleTime: 5 * 60_000,
+  });
 
   // Busca ao vivo: filtra conforme o usuário digita (com debounce).
   useEffect(() => {
