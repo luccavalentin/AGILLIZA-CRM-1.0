@@ -410,7 +410,25 @@ function Pagina() {
               em {etapasAtivas} de {dadosFiltrados.length} etapas
             </span>
           </button>
+          <div className="inline-flex h-10 shrink-0 items-center rounded-xl border border-border/60 bg-muted/40 p-1 shadow-sm">
+            {(["minhas", "geral"] as const).map((op) => (
+              <button
+                key={op}
+                type="button"
+                onClick={() => setEscopo(op)}
+                className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
+                  escopo === op
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {op === "minhas" ? <Users className="size-3.5" /> : <Workflow className="size-3.5" />}
+                {op === "minhas" ? "Minhas" : "Geral"}
+              </button>
+            ))}
+          </div>
           <div className="relative w-full sm:w-64">
+
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={busca}
