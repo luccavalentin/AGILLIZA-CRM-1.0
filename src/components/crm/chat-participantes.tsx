@@ -98,7 +98,11 @@ export function ChatParticipantes({
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-80 space-y-3">
+      <PopoverContent
+        align="end"
+        collisionPadding={12}
+        className="w-[min(20rem,calc(100vw-1.5rem))] space-y-3"
+      >
         <div>
           <p className="text-sm font-medium text-foreground">Participantes da conversa</p>
           <p className="text-xs text-muted-foreground">
@@ -138,17 +142,17 @@ export function ChatParticipantes({
             onValueChange={setSelecionado}
             usuarios={disponiveis}
             placeholder="Selecionar pessoa…"
-            className="h-9 flex-1"
+            className="h-9 min-w-0 flex-1"
           />
           <Button
             type="button"
             size="sm"
             disabled={selecionado === "todos" || addMut.isPending}
             onClick={() => addMut.mutate(selecionado)}
-            className="gap-1"
+            className="shrink-0 gap-1"
           >
             <UserPlus className="h-4 w-4" />
-            Add
+            Adicionar
           </Button>
         </div>
       </PopoverContent>
