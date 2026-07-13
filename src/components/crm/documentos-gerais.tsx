@@ -86,6 +86,9 @@ function primeiroNome(s: string | null | undefined): string {
 
 type PastaTipo = "raiz" | "comercial" | "imob" | "corretor";
 
+/** Modo de navegação: hierarquia completa ou visão agregada por dimensão. */
+type Visao = "hierarquia" | "imobiliarias" | "corretores" | "clientes";
+
 const RAIZ_KEY = "__raiz_principal__";
 const RAIZ_NOME = "Pasta Comercial e documentos de clientes";
 
@@ -146,6 +149,7 @@ export function DocumentosGerais() {
   const [filtroImob, setFiltroImob] = useState<string>("todas");
   const [filtroCorr, setFiltroCorr] = useState<string>("todos");
   const [caminho, setCaminho] = useState<string[]>([]);
+  const [visao, setVisao] = useState<Visao>("hierarquia");
   const [cliente, setCliente] = useState<DGCliente | null>(null);
   const [fichaAberta, setFichaAberta] = useState(false);
 
@@ -275,11 +279,82 @@ export function DocumentosGerais() {
     return [raiz];
   }, [clientes, comerciaisBase]);
 
+  // Árvore agregada conforme a visão escolhida (cards de KPI):
+  //  - "hierarquia": Comercial → Imobiliária → Corretor → Cliente (padrão)
+  //  - "imobiliarias": lista todas as imobiliárias; cada uma abre seus clientes
+  //  - "corretores": lista todos os corretores; cada um abre seus clientes
+  //  - "clientes": lista todos os clientes diretamente
+  const arvore = useMemo<PastaNode[]>(() => {
+    if (visao === "hierarquia") return raizes;
+
+    if (visao === "clientes") {
+      const raiz: PastaNode = {
+        key: RAIZ_KEY,
+        nome: "Todos os clientes",
+        tipo: "raiz",
+        subpastas: [],
+        clientes: [...clientes],
+        total_clientes: clientes.length,
+      };
+      finalizar(raiz);
+      return [raiz];
+    }
+
+    // imobiliarias | corretores → agrupa clientes pela dimensão
+    const porDimensao = visao === "imobiliarias";
+    const map = new Map<string, PastaNode>();
+    const semKey = porDimensao ? SEM_IMOB_KEY : SEM_CORRETOR_KEY;
+    const semNome = porDimensao ? SEM_IMOB : SEM_CORRETOR;
+    const tipo: PastaTipo = porDimensao ? "imob" : "corretor";
+
+    function garantir(key: string, nome: string): PastaNode {
+      let node = map.get(key);
+      if (!node) {
+        node = { key, nome, tipo, subpastas: [], clientes: [], total_clientes: 0 };
+        map.set(key, node);
+      }
+      return node;
+    }
+
+    // Semeia todas as entidades cadastradas (mesmo sem clientes vinculados).
+    if (porDimensao) {
+      for (const i of imobiliariasFiltro) garantir(`imob:${i.id}`, titulo(i.nome));
+    } else {
+      for (const co of corretoresFiltro) garantir(`corr:${co.id}`, titulo(co.nome));
+    }
+
+    for (const c of clientes) {
+      const id = porDimensao ? c.imobiliaria_id : c.corretor_id;
+      const nome = porDimensao ? c.imobiliaria_nome : c.corretor_nome;
+      const key = id ? (porDimensao ? `imob:${id}` : `corr:${id}`) : semKey;
+      const node = garantir(key, id ? titulo(nome) : semNome);
+      node.clientes.push(c);
+    }
+
+    const lista = Array.from(map.values());
+    lista.forEach(finalizar);
+    lista.sort((a, b) => {
+      const aSem = a.key === semKey;
+      const bSem = b.key === semKey;
+      if (aSem !== bSem) return aSem ? 1 : -1;
+      return a.nome.localeCompare(b.nome, "pt-BR");
+    });
+
+    const raiz: PastaNode = {
+      key: RAIZ_KEY,
+      nome: porDimensao ? "Imobiliárias" : "Corretores",
+      tipo: "raiz",
+      subpastas: lista,
+      clientes: [],
+      total_clientes: lista.reduce((acc, n) => acc + n.total_clientes, 0),
+    };
+    return [raiz];
+  }, [visao, raizes, clientes, imobiliariasFiltro, corretoresFiltro]);
 
   // Traça o caminho atual na árvore, coletando as pastas percorridas.
   const trilha = useMemo<PastaNode[]>(() => {
     const nodes: PastaNode[] = [];
-    let nivel = raizes;
+    let nivel = arvore;
     for (const key of caminho) {
       const found = nivel.find((n) => n.key === key);
       if (!found) break;
@@ -287,11 +362,23 @@ export function DocumentosGerais() {
       nivel = found.subpastas;
     }
     return nodes;
-  }, [raizes, caminho]);
+  }, [arvore, caminho]);
 
   const atual = trilha.length > 0 ? trilha[trilha.length - 1] : null;
-  const pastasNivel = atual ? atual.subpastas : raizes;
+  const pastasNivel = atual ? atual.subpastas : arvore;
   const clientesNivel = atual && atual.subpastas.length === 0 ? atual.clientes : [];
+
+  /** Abre uma visão agregada a partir dos cards de KPI. */
+  function abrirVisao(v: Visao) {
+    setVisao(v);
+    setCaminho([RAIZ_KEY]);
+  }
+
+  /** Volta à raiz (cards de KPI) e restaura a visão hierárquica. */
+  function irParaRaiz() {
+    setVisao("hierarquia");
+    setCaminho([]);
+  }
 
   function limparFiltros() {
     setBusca("");
@@ -405,12 +492,16 @@ export function DocumentosGerais() {
         {caminho.length > 0 && (
           <button
             className="flex items-center gap-1 rounded-lg border border-border/60 bg-muted/50 px-2.5 py-1 font-medium text-foreground transition-colors hover:bg-muted"
-            onClick={() => setCaminho(caminho.slice(0, -1))}
+            onClick={() => {
+              const next = caminho.slice(0, -1);
+              if (next.length === 0) irParaRaiz();
+              else setCaminho(next);
+            }}
           >
             <ChevronLeft className="h-4 w-4" /> Voltar
           </button>
         )}
-        <button className="hover:text-foreground" onClick={() => setCaminho([])}>
+        <button className="hover:text-foreground" onClick={irParaRaiz}>
           Documentos Gerais
         </button>
         {trilha.map((node, idx) => (
@@ -498,16 +589,41 @@ export function DocumentosGerais() {
       {caminho.length === 0 && !filtrando && !isLoading && raizes.length > 0 && (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
           {[
-            { Icon: Briefcase, label: "Comerciais", valor: resumo.comerciais },
-            { Icon: Building2, label: "Imobiliárias", valor: resumo.imobiliarias },
-            { Icon: IdCard, label: "Corretores", valor: resumo.corretores },
-            { Icon: Users, label: "Clientes", valor: resumo.clientes },
-            { Icon: FileText, label: "Documentos", valor: resumo.documentos },
-          ].map(({ Icon, label, valor }) => (
+            {
+              Icon: Briefcase,
+              label: "Comerciais",
+              valor: resumo.comerciais,
+              acao: () => raizes[0] && setCaminho([raizes[0].key]),
+            },
+            {
+              Icon: Building2,
+              label: "Imobiliárias",
+              valor: resumo.imobiliarias,
+              acao: () => abrirVisao("imobiliarias"),
+            },
+            {
+              Icon: IdCard,
+              label: "Corretores",
+              valor: resumo.corretores,
+              acao: () => abrirVisao("corretores"),
+            },
+            {
+              Icon: Users,
+              label: "Clientes",
+              valor: resumo.clientes,
+              acao: () => abrirVisao("clientes"),
+            },
+            {
+              Icon: FileText,
+              label: "Documentos",
+              valor: resumo.documentos,
+              acao: () => raizes[0] && setCaminho([raizes[0].key]),
+            },
+          ].map(({ Icon, label, valor, acao }) => (
             <button
               key={label}
               type="button"
-              onClick={() => raizes[0] && setCaminho([raizes[0].key])}
+              onClick={acao}
               className="group relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-card to-primary/[0.03] p-3.5 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
             >
               <span className="pointer-events-none absolute -right-6 -top-6 size-16 rounded-full bg-primary/5 blur-2xl transition-opacity group-hover:opacity-100" />
