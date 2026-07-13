@@ -797,31 +797,30 @@ function tabelaLabel(s: any, bancos: any[]): string {
 }
 
 /**
- * Renda mínima ESTIMADA: derivada da parcela estimada localmente pelo sistema
- * de amortização (taxa/prazo/valor financiado), não da parcela informada pelo
- * banco. Usa a maior renda mínima entre os bancos (1ª parcela estimada / 30%).
+ * Renda familiar estimada: MESMA regra exibida na tela de simulação
+ * ("Renda familiar estimada"). Base = valor do imóvel (ou financiado),
+ * prazo e sistema da simulação, usando a MENOR taxa anual entre os bancos.
+ * Sem recalcular por banco — evita divergência com o valor mostrado ao usuário.
  */
 function rendaNecessaria(s: any, bancos: any[]): number | null {
-  let renda: number | null = null;
-  for (const b of bancos) {
-    const d = extrairDetalheBanco(b?.raw_response);
-    if (!d) continue;
-    const av = avaliarRendaMinima({
-      valor_imovel:
-        d.valorImovel ?? (Number(s.valor_imovel) || 0),
-      valor_financiamento:
-        d.financiamentoTotal ?? d.valorFinanciamento ?? (Number(s.valor_financiamento) || 0),
-      prazo_meses: d.prazoMeses ?? (Number(s.prazo) || 0),
-      taxa_ano: d.taxaJurosAno ?? 0,
-      sistema: normalizarSistemaAmortizacao(
-        d.sistemaAmortizacao,
-        s.sistema_amortizacao,
-      ) as any,
-    });
-    const r = av?.rendaMinima ?? null;
-    if (r != null && r > 0 && (renda == null || r > renda)) renda = r;
-  }
-  return renda;
+  // Menor taxa anual (fração, ex.: 0,1199) entre os bancos com taxa informada.
+  const taxas = (bancos ?? [])
+    .map((b) => {
+      const d = extrairDetalheBanco(b?.raw_response);
+      const pct = d?.taxaJurosAno ?? b?.taxa_juros_ano;
+      return typeof pct === "number" && pct > 0 ? pct / 100 : null;
+    })
+    .filter((t): t is number => t != null);
+  const taxaAno = taxas.length ? Math.min(...taxas) : 0.1199;
+
+  const av = avaliarRendaMinima({
+    valor_imovel: Number(s.valor_imovel) || 0,
+    valor_financiamento: Number(s.valor_financiamento) || 0,
+    prazo_meses: Number(s.prazo) || 0,
+    taxa_ano: taxaAno,
+    sistema: (normalizarSistemaAmortizacao(undefined, s.sistema_amortizacao) as any) || "S",
+  });
+  return av?.rendaMinima ?? null;
 }
 
 /**
