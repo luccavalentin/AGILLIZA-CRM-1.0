@@ -671,7 +671,6 @@ export function baixarSimulacaoSimplificadaPDF({
     });
     y += cardH + 20;
 
-    drawDisclaimer(doc, pageW, y);
   });
 
   const total = doc.getNumberOfPages();
