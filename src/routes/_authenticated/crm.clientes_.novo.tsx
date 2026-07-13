@@ -102,8 +102,18 @@ function Pagina() {
         </aside>
 
         <div className="min-w-0">
-          <ClienteForm />
+          {carregandoPrefill ? (
+            <div className="flex items-center justify-center rounded-lg border border-border bg-card p-10 text-sm text-muted-foreground">
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Carregando dados da proposta…
+            </div>
+          ) : (
+            <ClienteForm
+              inicial={proposta ? (prefill.data?.valores as any) : undefined}
+              vincularPropostaId={proposta}
+            />
+          )}
         </div>
+
       </div>
     </div>
   );
