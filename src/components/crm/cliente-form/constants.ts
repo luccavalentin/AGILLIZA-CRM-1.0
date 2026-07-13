@@ -143,22 +143,9 @@ export const OPCOES_UF = [
   "SP", "SE", "TO",
 ];
 
-// Capitais e principais cidades (Cidade/UF) para sugerir na naturalidade.
-export const OPCOES_NATURALIDADE = [
-  "Aracaju/SE", "Belém/PA", "Belo Horizonte/MG", "Boa Vista/RR", "Brasília/DF",
-  "Campo Grande/MS", "Cuiabá/MT", "Curitiba/PR", "Florianópolis/SC", "Fortaleza/CE",
-  "Goiânia/GO", "João Pessoa/PB", "Macapá/AP", "Maceió/AL", "Manaus/AM",
-  "Natal/RN", "Palmas/TO", "Porto Alegre/RS", "Porto Velho/RO", "Recife/PE",
-  "Rio Branco/AC", "Rio de Janeiro/RJ", "Salvador/BA", "São Luís/MA", "São Paulo/SP",
-  "Teresina/PI", "Vitória/ES",
-  "Campinas/SP", "Guarulhos/SP", "Santo André/SP", "São Bernardo do Campo/SP",
-  "Osasco/SP", "Sorocaba/SP", "Ribeirão Preto/SP", "Santos/SP",
-  "Niterói/RJ", "Duque de Caxias/RJ", "São Gonçalo/RJ", "Campos dos Goytacazes/RJ",
-  "Contagem/MG", "Uberlândia/MG", "Juiz de Fora/MG", "Betim/MG",
-  "Londrina/PR", "Maringá/PR", "Foz do Iguaçu/PR",
-  "Joinville/SC", "Blumenau/SC", "Caxias do Sul/RS", "Pelotas/RS", "Canoas/RS",
-  "Feira de Santana/BA", "Jaboatão dos Guararapes/PE", "Caruaru/PE",
-];
+// Todas as cidades do Brasil (Cidade/UF) para a naturalidade — fonte IBGE.
+import { MUNICIPIOS_BR } from "./municipios-br";
+export const OPCOES_NATURALIDADE = MUNICIPIOS_BR;
 
 // Bancos previamente cadastrados para pesquisa/sugestão (conta do cliente).
 export const OPCOES_BANCO = [
