@@ -263,11 +263,19 @@ export const listarChatCliente = createServerFn({ method: "GET" })
   )
   .handler(async ({ data, context }): Promise<ChatMensagem[]> => {
     const { supabase, userId } = context;
-    // Atendente comum só vê a própria thread; gestor pode abrir a de outro atendente.
+    // Atendente comum só vê a própria thread; gestores e participantes
+    // convidados podem abrir a thread de outro atendente.
     let atendente = userId;
     if (data.atendente_id && data.atendente_id !== userId) {
-      atendente = (await ehGestor(supabase, userId)) ? data.atendente_id : userId;
+      const { data: participa } = await supabase.rpc("usuario_participa_chat", {
+        _uid: userId,
+        _cliente_id: data.cliente_id,
+        _atendente_id: data.atendente_id,
+      });
+      const permitido = Boolean(participa) || (await ehGestor(supabase, userId));
+      atendente = permitido ? data.atendente_id : userId;
     }
+
     const { data: rows, error } = await supabase
       .from("cliente_app_mensagens")
       .select(
