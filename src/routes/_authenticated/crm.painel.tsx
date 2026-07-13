@@ -1131,7 +1131,83 @@ function Pagina() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog
+        open={!!adicionarStage}
+        onOpenChange={(o) => {
+          if (!o) {
+            setAdicionarStage(null);
+            setAdicionarBusca("");
+          }
+        }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserPlus className="size-4 text-primary" />
+              Adicionar cliente — {adicionarStage?.nome}
+            </DialogTitle>
+            <DialogDescription>
+              Pesquise por nome, documento ou e-mail e selecione um cliente já cadastrado para
+              inseri-lo nesta etapa. As demais etapas avançam automaticamente conforme a operação.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                autoFocus
+                value={adicionarBusca}
+                onChange={(e) => setAdicionarBusca(e.target.value)}
+                placeholder="Buscar cliente cadastrado..."
+                className="h-10 rounded-xl pl-9"
+              />
+            </div>
+            <div className="max-h-72 space-y-1.5 overflow-y-auto">
+              {termoAdicionar.length < 2 ? (
+                <p className="px-1 py-4 text-center text-xs text-muted-foreground">
+                  Digite ao menos 2 caracteres para buscar.
+                </p>
+              ) : buscandoAdicionar ? (
+                <div className="space-y-1.5">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <Skeleton key={i} className="h-12 w-full rounded-lg" />
+                  ))}
+                </div>
+              ) : (resultadosAdicionar ?? []).length === 0 ? (
+                <p className="px-1 py-4 text-center text-xs text-muted-foreground">
+                  Nenhum cliente encontrado.
+                </p>
+              ) : (
+                (resultadosAdicionar ?? []).map((cli: any) => (
+                  <button
+                    key={cli.id}
+                    type="button"
+                    disabled={adicionando}
+                    onClick={() => adicionarClienteNaEtapa(cli.id)}
+                    className="flex w-full items-center gap-2.5 rounded-lg border border-border p-2.5 text-left transition-colors hover:border-primary/50 hover:bg-primary/5 disabled:opacity-60"
+                  >
+                    <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+                      {(cli.nome ?? "?").trim().charAt(0).toUpperCase()}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-medium text-foreground">
+                        {cli.nome}
+                      </span>
+                      <span className="block truncate text-[11px] text-muted-foreground">
+                        {cli.documento || cli.email || cli.telefone_celular || "—"}
+                      </span>
+                    </span>
+                    <Plus className="size-4 shrink-0 text-primary" />
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
+
 
 
   );
