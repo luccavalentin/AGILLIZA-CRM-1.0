@@ -64,17 +64,7 @@ import {
   definirArquivamentoConversa,
   type ChatEtiqueta,
 } from "@/lib/crm/chat-gestao.functions";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { ChatSoundSetting } from "@/components/shared/chat-sound-setting";
-import { NotificationSettings } from "@/components/shared/notification-settings";
+import { ChatConfigSheet } from "@/components/shared/chat-config-sheet";
 
 
 export const Route = createFileRoute("/_authenticated/crm/chat")({
