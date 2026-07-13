@@ -52,6 +52,7 @@ export function ClienteForm({
   vincularPropostaId,
   embutido,
   destacarObrigatorios,
+  onSalvoEmbutido,
 }: {
   inicial?: Partial<ClienteFormValues>;
   portalAtivo?: boolean;
@@ -69,6 +70,8 @@ export function ClienteForm({
   embutido?: boolean;
   /** Quando true, destaca em vermelho os campos obrigatórios ainda pendentes para envio da proposta. */
   destacarObrigatorios?: boolean;
+  /** Chamado após salvar com sucesso no modo embutido (ex.: para direcionar ao envio ao banco). */
+  onSalvoEmbutido?: () => void;
 }) {
 
   const navigate = useNavigate();
@@ -331,6 +334,7 @@ export function ClienteForm({
         // Embutido na ficha da proposta: apenas atualiza os dados e permanece na tela atual.
         await qc.invalidateQueries({ queryKey: ["cliente", id] });
         toast.success("Cadastro salvo.");
+        onSalvoEmbutido?.();
         return;
       }
       toast.success("Cliente salvo.");

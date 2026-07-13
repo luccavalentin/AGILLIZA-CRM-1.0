@@ -402,7 +402,7 @@ function Pagina() {
       </div>
 
       {tab === "RESUMO" && <TabResumo proposta={p} bancos={data.bancos} propostaId={id} />}
-      {tab === "COMPRADORES" && <ClienteSecao clienteId={p.cliente_id} propostaId={id} secao="comprador" destacarObrigatorios={destacarObrigatorios} />}
+      {tab === "COMPRADORES" && <ClienteSecao clienteId={p.cliente_id} propostaId={id} secao="comprador" destacarObrigatorios={destacarObrigatorios} onSalvoComprador={() => setTab("ENVIAR_BANCO")} />}
       {tab === "VENDEDORES" && <ClienteSecao clienteId={p.cliente_id} propostaId={id} secao="vendedores" />}
       {tab === "IQ" && <ClienteSecao clienteId={p.cliente_id} propostaId={id} secao="iq" />}
       {tab === "IMÓVEL" && <ClienteSecao clienteId={p.cliente_id} propostaId={id} secao="imovel" />}
