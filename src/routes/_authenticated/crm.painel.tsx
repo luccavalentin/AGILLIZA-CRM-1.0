@@ -1014,7 +1014,6 @@ function Pagina() {
                     Adicionar cliente
                   </button>
                 </div>
-                {stage.codigo === "contrato_emitido" && contratoConector}
               {stage.codigo === "contrato_emitido" && (
                 <button
                   type="button"
