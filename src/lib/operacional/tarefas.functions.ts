@@ -177,8 +177,15 @@ export const criarTarefa = createServerFn({ method: "POST" })
   )
   .handler(async ({ context, data }) => {
     const { supabase, userId } = context;
+    // Escopo do usuário autenticado (mesma origem usada pela política de RLS).
     const corr = await correspondenteId(supabase, userId);
-    const { data: nova, error } = await supabase
+
+    // A gravação é feita com o cliente administrativo para evitar o conflito
+    // com a política de INSERT de `tasks` (que reavalia o correspondente no
+    // contexto da sessão). O escopo já foi validado acima a partir do usuário.
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: nova, error } = await supabaseAdmin
       .from("tasks")
       .insert({
         correspondente_id: corr,
@@ -195,16 +202,16 @@ export const criarTarefa = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     const id = nova.id as string;
     if (data.checklist?.length) {
-      await supabase
+      await supabaseAdmin
         .from("task_checklist_items")
         .insert(data.checklist.map((d, i) => ({ task_id: id, descricao: d, ordem: i })));
     }
     if (data.participantes?.length) {
-      await supabase
+      await supabaseAdmin
         .from("task_participants")
         .insert(data.participantes.map((u) => ({ task_id: id, user_id: u })));
     }
-    await supabase
+    await supabaseAdmin
       .from("task_history")
       .insert({ task_id: id, ator_id: userId, acao: "criada", detalhe: data.titulo });
     if (data.responsavel_id && data.responsavel_id !== userId) {
