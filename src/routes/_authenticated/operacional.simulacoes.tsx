@@ -100,12 +100,21 @@ function Pagina() {
   const criar = useServerFn(criarProposta);
 
   const obter = useServerFn(obterSimulacao);
+  const listarColegasFn = useServerFn(listarColegas);
+  const padrao = useMemo(() => intervaloMesAtual(), []);
   const [escopo, setEscopo] = useState<"todas" | "minhas">("minhas");
   const [q, setQ] = useState("");
   const [busca, setBusca] = useState("");
-  const [desde, setDesde] = useState("");
-  const [ate, setAte] = useState("");
+  const [desde, setDesde] = useState(padrao.inicio);
+  const [ate, setAte] = useState(padrao.fim);
+  const [responsavel, setResponsavel] = useState<string>("todos");
   const [kpiAberto, setKpiAberto] = useState<string | null>(null);
+
+  const { data: colegas } = useQuery({
+    queryKey: ["colegas"],
+    queryFn: () => listarColegasFn(),
+    staleTime: 5 * 60_000,
+  });
 
   // Envio de proposta: diálogo para escolher UM banco por vez.
   const [envio, setEnvio] = useState<{
