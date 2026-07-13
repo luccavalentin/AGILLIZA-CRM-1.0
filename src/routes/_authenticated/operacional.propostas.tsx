@@ -31,6 +31,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { listarColegas } from "@/lib/operacional/shared.functions";
+
 
 import { BancosProposta } from "@/components/proposta/bancos-proposta";
 import { BancoLogo } from "@/components/bancos/banco-logo";
@@ -72,8 +81,16 @@ function Pagina() {
   const [grupo, setGrupo] = useState<GrupoProposta | null>(null);
   const [q, setQ] = useState("");
   const [busca, setBusca] = useState("");
+  const [responsavel, setResponsavel] = useState<string>("todos");
   const [dataInicio, setDataInicio] = useState(padrao.inicio);
   const [dataFim, setDataFim] = useState(padrao.fim);
+
+  const listarColegasFn = useServerFn(listarColegas);
+  const { data: colegas } = useQuery({
+    queryKey: ["colegas"],
+    queryFn: () => listarColegasFn(),
+    staleTime: 5 * 60_000,
+  });
 
   // Busca ao vivo: filtra conforme o usuário digita (com debounce).
   useEffect(() => {
@@ -82,12 +99,14 @@ function Pagina() {
   }, [q]);
 
   const { data, isLoading } = useQuery({
-    queryKey: ["propostas", escopo, busca, dataInicio, dataFim],
+    queryKey: ["propostas", escopo, busca, dataInicio, dataFim, responsavel],
     queryFn: () =>
       listarPropostas({
         data: {
           escopo,
           q: busca || undefined,
+          responsavel:
+            escopo === "todas" && responsavel !== "todos" ? responsavel : undefined,
           data_inicio: dataInicio ? `${dataInicio}T00:00:00` : undefined,
           data_fim: dataFim ? `${dataFim}T23:59:59` : undefined,
           pagina: 1,
@@ -128,6 +147,7 @@ function Pagina() {
   function limparFiltros() {
     setQ("");
     setBusca("");
+    setResponsavel("todos");
     setDataInicio(padrao.inicio);
     setDataFim(padrao.fim);
     setEscopo("minhas");
@@ -238,6 +258,24 @@ function Pagina() {
               onChange={(e) => setQ(e.target.value)}
             />
           </div>
+          {escopo === "todas" && (
+            <div className="flex flex-col gap-1">
+              <Label className="text-xs text-muted-foreground">Analista</Label>
+              <Select value={responsavel} onValueChange={setResponsavel}>
+                <SelectTrigger className="h-11 w-48 rounded-xl" aria-label="Analista">
+                  <SelectValue placeholder="Analista" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos os analistas</SelectItem>
+                  {(colegas ?? []).map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.nome ?? c.email ?? "—"}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <div className="flex flex-col gap-1">
             <Label className="text-xs text-muted-foreground">De</Label>
             <Input

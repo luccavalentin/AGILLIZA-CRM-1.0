@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
@@ -60,6 +60,26 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { listarColegas } from "@/lib/operacional/shared.functions";
+
+/** Primeiro e último dia do mês atual como intervalo ISO (filtro padrão). */
+function intervaloMesAtual(): { inicio: string; fim: string } {
+  const agora = new Date();
+  const primeiro = new Date(agora.getFullYear(), agora.getMonth(), 1);
+  const ultimo = new Date(agora.getFullYear(), agora.getMonth() + 1, 0);
+  const iso = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  return { inicio: iso(primeiro), fim: iso(ultimo) };
+}
+
+
 
 
 export const Route = createFileRoute("/_authenticated/operacional/simulacoes")({
@@ -80,12 +100,21 @@ function Pagina() {
   const criar = useServerFn(criarProposta);
 
   const obter = useServerFn(obterSimulacao);
+  const listarColegasFn = useServerFn(listarColegas);
+  const padrao = useMemo(() => intervaloMesAtual(), []);
   const [escopo, setEscopo] = useState<"todas" | "minhas">("minhas");
   const [q, setQ] = useState("");
   const [busca, setBusca] = useState("");
-  const [desde, setDesde] = useState("");
-  const [ate, setAte] = useState("");
+  const [desde, setDesde] = useState(padrao.inicio);
+  const [ate, setAte] = useState(padrao.fim);
+  const [responsavel, setResponsavel] = useState<string>("todos");
   const [kpiAberto, setKpiAberto] = useState<string | null>(null);
+
+  const { data: colegas } = useQuery({
+    queryKey: ["colegas"],
+    queryFn: () => listarColegasFn(),
+    staleTime: 5 * 60_000,
+  });
 
   // Envio de proposta: diálogo para escolher UM banco por vez.
   const [envio, setEnvio] = useState<{
@@ -99,7 +128,7 @@ function Pagina() {
 
 
   const { data, isLoading } = useQuery({
-    queryKey: ["simulacoes", escopo, busca, desde, ate],
+    queryKey: ["simulacoes", escopo, busca, desde, ate, responsavel],
     queryFn: () =>
       listarSimulacoes({
         data: {
@@ -107,6 +136,8 @@ function Pagina() {
           q: busca || undefined,
           desde: desde || undefined,
           ate: ate || undefined,
+          responsavel:
+            escopo === "todas" && responsavel !== "todos" ? responsavel : undefined,
           pagina: 1,
           porPagina: 30,
         },
@@ -455,6 +486,21 @@ function Pagina() {
               Buscar
             </Button>
           </form>
+          {escopo === "todas" && (
+            <Select value={responsavel} onValueChange={setResponsavel}>
+              <SelectTrigger className="h-9 w-full sm:w-48" aria-label="Analista">
+                <SelectValue placeholder="Analista" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos os analistas</SelectItem>
+                {(colegas ?? []).map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.nome ?? c.email ?? "—"}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
           <div className="flex items-center gap-2">
             <Input
               type="date"
@@ -471,22 +517,22 @@ function Pagina() {
               onChange={(e) => setAte(e.target.value)}
               className="h-9 w-full sm:w-36"
             />
-            {(desde || ate) && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-9 shrink-0"
-                onClick={() => {
-                  setDesde("");
-                  setAte("");
-                }}
-              >
-                Limpar
-              </Button>
-            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-9 shrink-0"
+              onClick={() => {
+                setDesde(padrao.inicio);
+                setAte(padrao.fim);
+                setResponsavel("todos");
+              }}
+            >
+              Limpar
+            </Button>
           </div>
         </div>
       </div>
+
 
 
 

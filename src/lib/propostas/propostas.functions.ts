@@ -72,6 +72,7 @@ export const listarPropostas = createServerFn({ method: "GET" })
       .object({
         escopo: z.enum(["todas", "minhas"]).default("todas"),
         status: z.string().optional(),
+        responsavel: z.string().uuid().optional(),
         q: z.string().optional(),
         data_inicio: z.string().optional(),
         data_fim: z.string().optional(),
@@ -91,6 +92,11 @@ export const listarPropostas = createServerFn({ method: "GET" })
 
     if (data.escopo === "minhas") {
       query = query.or(`usuario_responsavel_id.eq.${userId},usuario_criador_id.eq.${userId}`);
+    }
+    if (data.responsavel) {
+      query = query.or(
+        `usuario_responsavel_id.eq.${data.responsavel},usuario_criador_id.eq.${data.responsavel}`,
+      );
     }
     if (data.status) query = query.eq("status", data.status as any);
     if (data.data_inicio) query = query.gte("created_at", data.data_inicio);

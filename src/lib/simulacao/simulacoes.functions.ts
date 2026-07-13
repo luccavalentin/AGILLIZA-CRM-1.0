@@ -396,6 +396,7 @@ const listarSchema = z.object({
   q: z.string().optional(),
   status: z.string().optional(),
   escopo: z.enum(["todas", "minhas"]).default("todas"),
+  responsavel: z.string().uuid().optional(),
   desde: z.string().optional(),
   ate: z.string().optional(),
   pagina: z.number().int().min(1).default(1),
@@ -420,6 +421,7 @@ export const listarSimulacoes = createServerFn({ method: "GET" })
       .range(from, to);
 
     if (data.escopo === "minhas") query = query.eq("usuario_criador_id", userId);
+    if (data.responsavel) query = query.eq("usuario_criador_id", data.responsavel);
     if (data.status) query = query.eq("status", data.status as any);
     if (data.desde) query = query.gte("created_at", data.desde);
     if (data.ate) query = query.lte("created_at", `${data.ate}T23:59:59.999`);
