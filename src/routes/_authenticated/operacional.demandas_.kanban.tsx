@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useMemo, useState } from "react";
+import { memo, useCallback, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ArrowLeft } from "lucide-react";
 import { assertModuloPermitido } from "@/lib/route-guards";
@@ -17,6 +17,52 @@ import { SlaCountdown } from "@/components/operacional/sla-countdown";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
+type DemandaItem = Awaited<ReturnType<typeof listarDemandas>>[number];
+
+const KanbanCard = memo(function KanbanCard({
+  d,
+  onDragStart,
+  onDragEnd,
+  onOpen,
+}: {
+  d: DemandaItem;
+  onDragStart: (id: string, status: DemandaStatus) => void;
+  onDragEnd: () => void;
+  onOpen: (id: string) => void;
+}) {
+  return (
+    <div
+      draggable
+      onDragStart={() => onDragStart(d.id, d.status as DemandaStatus)}
+      onDragEnd={onDragEnd}
+      onClick={() => onOpen(d.id)}
+      className="op-kcard cursor-pointer overflow-hidden p-3 active:cursor-grabbing"
+      style={{ ["--op-accent" as string]: "var(--primary)" }}
+    >
+      <div className="flex items-start justify-between gap-2">
+        <span className="line-clamp-2 text-sm font-medium text-foreground">{d.titulo}</span>
+        <PriorityChip prioridade={d.prioridade} />
+      </div>
+      {d.nome_cliente && (
+        <p className="mt-1 truncate text-xs text-muted-foreground">{d.nome_cliente}</p>
+      )}
+      <div className="mt-2.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+        <OpAvatar nome={d.nome_responsavel} className="size-5 text-[9px]" />
+        <span className="truncate">{d.nome_responsavel ?? "—"}</span>
+      </div>
+      <div className="mt-2 border-t border-border/60 pt-2">
+        <SlaCountdown
+          inicio={d.sla_inicio}
+          prazo={d.prazo_sla}
+          concluida={d.status === "concluida"}
+          concluidaEm={d.concluida_em}
+        />
+      </div>
+    </div>
+  );
+});
+
+
 export const Route = createFileRoute("/_authenticated/operacional/demandas_/kanban")({
   head: () => ({ meta: [{ title: "Kanban de Demandas — Agilliza" }] }),
   beforeLoad: () => assertModuloPermitido("operacional.demandas"),
@@ -29,6 +75,9 @@ function Pagina() {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const moverFn = useServerFn(moverStatusDemanda);
+  // Fonte do arraste em ref: não dispara re-render ao iniciar o drag (evita a
+  // "trava" do ghost). O estado abaixo só controla o realce da coluna-alvo.
+  const arrastandoRef = useRef<{ id: string; status: DemandaStatus } | null>(null);
   const [arrastando, setArrastando] = useState<{ id: string; status: DemandaStatus } | null>(null);
 
   const { data } = useQuery({
@@ -36,34 +85,57 @@ function Pagina() {
     queryFn: () => listarDemandas({ data: { escopo: "equipe" } }),
   });
 
-  async function soltar(coluna: DemandaStatus) {
-    if (!arrastando) return;
-    const { id, status } = arrastando;
+  const onDragStart = useCallback((id: string, status: DemandaStatus) => {
+    arrastandoRef.current = { id, status };
+    // Adia o realce para depois do navegador capturar a imagem de arraste,
+    // deixando o movimento fluido em vez de "pesado".
+    requestAnimationFrame(() => setArrastando({ id, status }));
+  }, []);
+
+  const onDragEnd = useCallback(() => {
+    arrastandoRef.current = null;
     setArrastando(null);
-    if (status === coluna) return;
-    if (!transicaoDemandaPermitida(status, coluna)) {
-      toast.error(
-        `Transição inválida: ${statusDemanda(status).label} → ${statusDemanda(coluna).label}.`,
-      );
-      return;
-    }
-    try {
-      await moverFn({ data: { id, status: coluna } });
-      qc.invalidateQueries({ queryKey: ["demandas"] });
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Falha ao mover.");
-    }
-  }
+  }, []);
+
+  const onOpen = useCallback(
+    (id: string) => navigate({ to: "/operacional/demandas/$id", params: { id } }),
+    [navigate],
+  );
+
+  const soltar = useCallback(
+    async (coluna: DemandaStatus) => {
+      const origem = arrastandoRef.current;
+      arrastandoRef.current = null;
+      setArrastando(null);
+      if (!origem) return;
+      const { id, status } = origem;
+      if (status === coluna) return;
+      if (!transicaoDemandaPermitida(status, coluna)) {
+        toast.error(
+          `Transição inválida: ${statusDemanda(status).label} → ${statusDemanda(coluna).label}.`,
+        );
+        return;
+      }
+      try {
+        await moverFn({ data: { id, status: coluna } });
+        qc.invalidateQueries({ queryKey: ["demandas"] });
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "Falha ao mover.");
+      }
+    },
+    [moverFn, qc],
+  );
 
   const itens = useMemo(() => data ?? [], [data]);
   // Agrupa uma única vez por status, em vez de refiltrar a lista inteira
   // para cada coluna a cada render (inclusive durante o arraste).
   const porStatus = useMemo(() => {
-    const mapa = new Map<DemandaStatus, typeof itens>();
+    const mapa = new Map<DemandaStatus, DemandaItem[]>();
     for (const col of COLUNAS) mapa.set(col, []);
     for (const d of itens) mapa.get(d.status as DemandaStatus)?.push(d);
     return mapa;
   }, [itens]);
+
 
   return (
     <div className="space-y-5 p-4 md:p-6">
@@ -117,39 +189,13 @@ function Pagina() {
                   </p>
                 )}
                 {doStatus.map((d) => (
-                  <div
+                  <KanbanCard
                     key={d.id}
-                    draggable
-                    onDragStart={() => setArrastando({ id: d.id, status: d.status })}
-                    onDragEnd={() => setArrastando(null)}
-                    onClick={() =>
-                      navigate({ to: "/operacional/demandas/$id", params: { id: d.id } })
-                    }
-                    className="op-kcard cursor-pointer overflow-hidden p-3 active:cursor-grabbing"
-                    style={{ ["--op-accent" as string]: "var(--primary)" }}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <span className="line-clamp-2 text-sm font-medium text-foreground">
-                        {d.titulo}
-                      </span>
-                      <PriorityChip prioridade={d.prioridade} />
-                    </div>
-                    {d.nome_cliente && (
-                      <p className="mt-1 truncate text-xs text-muted-foreground">{d.nome_cliente}</p>
-                    )}
-                    <div className="mt-2.5 flex items-center gap-1.5 text-xs text-muted-foreground">
-                      <OpAvatar nome={d.nome_responsavel} className="size-5 text-[9px]" />
-                      <span className="truncate">{d.nome_responsavel ?? "—"}</span>
-                    </div>
-                    <div className="mt-2 border-t border-border/60 pt-2">
-                      <SlaCountdown
-                        inicio={d.sla_inicio}
-                        prazo={d.prazo_sla}
-                        concluida={d.status === "concluida"}
-                        concluidaEm={d.concluida_em}
-                      />
-                    </div>
-                  </div>
+                    d={d}
+                    onDragStart={onDragStart}
+                    onDragEnd={onDragEnd}
+                    onOpen={onOpen}
+                  />
                 ))}
               </div>
             </div>
