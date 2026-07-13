@@ -49,7 +49,7 @@ export function IdentidadeSection({
         <div className="space-y-1.5">
           <Label>Sexo</Label>
           <Select value={v.sexo || undefined} onValueChange={(x) => set("sexo", x)}>
-            <SelectTrigger>
+            <SelectTrigger className={cls("sexo")}>
               <SelectValue placeholder="Selecione" />
             </SelectTrigger>
             <SelectContent>
@@ -61,6 +61,7 @@ export function IdentidadeSection({
             </SelectContent>
           </Select>
         </div>
+
         <div className="space-y-1.5">
           <Label>Nacionalidade</Label>
           <Combobox
