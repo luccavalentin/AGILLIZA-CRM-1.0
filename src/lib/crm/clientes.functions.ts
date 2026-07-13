@@ -1038,21 +1038,39 @@ export async function recuarEsteiraSeOrfao(
       .select("id", { count: "exact", head: true })
       .eq("cliente_id", clienteId),
   ]);
-  if ((sims ?? 0) > 0 || (props ?? 0) > 0) return;
+  const temSims = (sims ?? 0) > 0;
+  const temProps = (props ?? 0) > 0;
+
   const { data: atual } = await supabase
     .from("cliente_pipeline")
     .select("pipeline_stages(codigo)")
     .eq("cliente_id", clienteId)
     .maybeSingle();
   const codigo = (atual as any)?.pipeline_stages?.codigo as string | undefined;
-  const dependentes = new Set(["simulacao", "credito_enviado", "credito_aprovado"]);
-  if (!codigo || !dependentes.has(codigo)) return;
+  if (!codigo) return;
+
+  // Etapas que só fazem sentido enquanto existe uma proposta ativa vinculada.
+  const etapasProposta = new Set(["credito_enviado", "credito_aprovado"]);
+  // Etapa que só faz sentido enquanto existe uma simulação vinculada.
+  const etapaSimulacao = "simulacao";
+
+  let destino: string | null = null;
+  if (etapasProposta.has(codigo) && !temProps) {
+    // A proposta que levou o cliente até aqui foi excluída: recua para a
+    // simulação (se ainda houver) ou para o cadastro.
+    destino = temSims ? "simulacao" : "cadastro_completo";
+  } else if (codigo === etapaSimulacao && !temSims && !temProps) {
+    destino = "cadastro_completo";
+  }
+  if (!destino || destino === codigo) return;
+
   await supabase.rpc("cliente_pipeline_definir", {
     _cliente_id: clienteId,
-    _codigo_destino: "cadastro_completo",
+    _codigo_destino: destino,
     _obs: "Retorno automático: simulação/proposta vinculada foi excluída.",
   });
 }
+
 
 /**
  * Remove, direto do painel, o vínculo de simulação/aprovação de um cliente que

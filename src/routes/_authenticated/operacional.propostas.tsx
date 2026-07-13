@@ -160,6 +160,8 @@ function Pagina() {
       await excluir({ data: { id } });
       toast.success("Proposta excluída.");
       queryClient.invalidateQueries({ queryKey: ["propostas"] });
+      queryClient.invalidateQueries({ queryKey: ["crm-painel"] });
+      queryClient.invalidateQueries({ queryKey: ["clientes"] });
     } catch {
       toast.error("Não foi possível excluir a proposta.");
     }
