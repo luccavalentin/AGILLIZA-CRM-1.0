@@ -248,6 +248,7 @@ export function PainelView({
                 hint={h.hint}
                 tone={h.tone}
                 delta={h.delta}
+                icon={iconeParaMetrica(h.label)}
                 to={linkParaMetrica(h.label)}
               />
             ))}
