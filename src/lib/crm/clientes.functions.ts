@@ -1084,10 +1084,34 @@ export const limparVinculoEsteira = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ cliente_id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
-    const { supabase } = context;
-    await supabase.from("propostas").delete().eq("cliente_id", data.cliente_id);
-    await supabase.from("simulacoes").delete().eq("cliente_id", data.cliente_id);
-    const { error } = await supabase.rpc("cliente_pipeline_definir", {
+    // Usa o cliente administrativo para garantir a exclusão completa mesmo quando
+    // as simulações/propostas foram originadas por outro analista/escopo — o
+    // objetivo é limpar de vez o vínculo da esteira.
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    // Propostas do cliente (para limpar comissões/recebíveis vinculados antes).
+    const { data: props } = await supabaseAdmin
+      .from("propostas")
+      .select("id")
+      .eq("cliente_id", data.cliente_id);
+    const propIds = (props ?? []).map((p: any) => p.id);
+    if (propIds.length > 0) {
+      await supabaseAdmin.from("comissoes").delete().in("proposta_id", propIds);
+      await supabaseAdmin.from("financial_receivables").delete().in("proposta_id", propIds);
+    }
+
+    const { error: eProp } = await supabaseAdmin
+      .from("propostas")
+      .delete()
+      .eq("cliente_id", data.cliente_id);
+    if (eProp) throw eProp;
+    const { error: eSim } = await supabaseAdmin
+      .from("simulacoes")
+      .delete()
+      .eq("cliente_id", data.cliente_id);
+    if (eSim) throw eSim;
+
+    const { error } = await context.supabase.rpc("cliente_pipeline_definir", {
       _cliente_id: data.cliente_id,
       _codigo_destino: "cadastro_completo",
       _obs: "Vínculo de simulação/aprovação removido manualmente pelo painel.",
@@ -1095,6 +1119,7 @@ export const limparVinculoEsteira = createServerFn({ method: "POST" })
     if (error) throw error;
     return { ok: true };
   });
+
 
 
 
