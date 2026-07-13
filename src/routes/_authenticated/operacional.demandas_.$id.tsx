@@ -258,55 +258,71 @@ function Pagina() {
         </div>
       </div>
 
-      <div className="rounded-lg border border-border bg-card p-4">
-        <div className="mb-2 flex flex-wrap items-center gap-2">
-          <span className="text-xs text-muted-foreground tabular-nums">{d.numero}</span>
-          <ToneBadge tone={statusDemanda(d.status).tone}>{statusDemanda(d.status).label}</ToneBadge>
-          <span
-            className={cn(
-              "inline-block h-1.5 w-8 rounded-full",
-              PRIORIDADE[d.prioridade as "p1"].bar,
-            )}
+      <div className="overflow-hidden rounded-2xl border border-border/70 bg-card shadow-sm">
+        <div className="border-b border-border/60 bg-muted/30 px-5 py-4">
+          <div className="mb-2 flex flex-wrap items-center gap-2">
+            <span className="rounded-md bg-background px-2 py-0.5 font-mono text-xs text-muted-foreground ring-1 ring-border/60">
+              {d.numero}
+            </span>
+            <ToneBadge tone={statusDemanda(d.status).tone}>
+              {statusDemanda(d.status).label}
+            </ToneBadge>
+            <span className="inline-flex items-center gap-1.5 rounded-md bg-background px-2 py-0.5 text-xs text-muted-foreground ring-1 ring-border/60">
+              <span
+                className={cn(
+                  "inline-block h-1.5 w-5 rounded-full",
+                  PRIORIDADE[d.prioridade as "p1"].bar,
+                )}
+              />
+              {PRIORIDADE[d.prioridade as "p1"].label}
+            </span>
+          </div>
+          <h1 className="text-xl font-semibold tracking-tight text-foreground">{d.titulo}</h1>
+          {d.descricao && (
+            <p className="mt-1.5 whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
+              {d.descricao}
+            </p>
+          )}
+        </div>
+
+        <div className="grid grid-cols-2 gap-px bg-border/60 md:grid-cols-4">
+          <InfoCell icon={User} rotulo="Responsável" valor={data?.nome_responsavel ?? "—"} />
+          <InfoCell icon={Users} rotulo="Cliente" valor={d.clientes?.nome ?? "—"} />
+          <InfoCell
+            icon={Tag}
+            rotulo="Tipo"
+            valor={d.tipo === "simulacao" ? "Simulação" : d.tipo === "diversos" ? "Diversos" : d.tipo}
           />
-          <span className="text-xs text-muted-foreground">
-            {PRIORIDADE[d.prioridade as "p1"].label}
-          </span>
-        </div>
-        <h1 className="text-lg font-semibold text-foreground">{d.titulo}</h1>
-        {d.descricao && (
-          <p className="mt-1 text-sm text-foreground whitespace-pre-wrap">{d.descricao}</p>
-        )}
-        <div className="mt-3 grid grid-cols-2 gap-2 text-sm md:grid-cols-4">
-          <div>
-            <span className="text-muted-foreground">Responsável:</span>{" "}
-            {data?.nome_responsavel ?? "—"}
-          </div>
-          <div>
-            <span className="text-muted-foreground">Cliente:</span> {d.clientes?.nome ?? "—"}
-          </div>
-          <div>
-            <span className="text-muted-foreground">Tipo:</span>{" "}
-            {d.tipo === "simulacao" ? "Simulação" : d.tipo === "diversos" ? "Diversos" : d.tipo}
-          </div>
-          <div>
-            <SlaCountdown
-              inicio={d.sla_inicio}
-              prazo={d.prazo_sla}
-              concluida={d.status === "concluida"}
-              concluidaEm={d.concluida_em}
-            />
+          <div className="flex items-start gap-2.5 bg-card px-4 py-3">
+            <Clock className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+            <div className="min-w-0">
+              <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Prazo (SLA)</p>
+              <div className="mt-0.5 text-sm font-medium text-foreground">
+                <SlaCountdown
+                  inicio={d.sla_inicio}
+                  prazo={d.prazo_sla}
+                  concluida={d.status === "concluida"}
+                  concluidaEm={d.concluida_em}
+                />
+              </div>
+            </div>
           </div>
         </div>
+
         {d.dados_simulacao && (
-          <div className="mt-3 rounded-xl border border-primary/30 bg-primary/[0.04] p-3">
-            <p className="mb-1 text-xs font-semibold text-primary">Dados da simulação</p>
-            <p className="whitespace-pre-wrap text-sm text-foreground">{d.dados_simulacao}</p>
+          <div className="border-t border-border/60 px-5 py-4">
+            <div className="rounded-xl border border-primary/30 bg-primary/[0.04] p-3.5">
+              <p className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-primary">
+                <FileText className="h-3.5 w-3.5" /> Dados da simulação
+              </p>
+              <p className="whitespace-pre-wrap text-sm text-foreground">{d.dados_simulacao}</p>
+            </div>
           </div>
         )}
       </div>
 
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Mensagens */}
         <PopOutPanel title={`Mensagens · ${d.numero}`} className="h-[32rem]">
           <Card className="flex h-full flex-col overflow-hidden border-border/60 shadow-sm">
