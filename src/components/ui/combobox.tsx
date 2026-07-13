@@ -38,10 +38,22 @@ export function Combobox({
   className,
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false);
+  const [search, setSearch] = React.useState("");
   const uniqueOptions = React.useMemo(
     () => Array.from(new Set(options.filter((o) => o && o.trim().length > 0))),
     [options],
   );
+  // Para listas grandes (ex.: todas as cidades do Brasil), filtramos e limitamos
+  // a quantidade renderizada para manter o dropdown fluido.
+  const isLarge = uniqueOptions.length > 200;
+  const renderedOptions = React.useMemo(() => {
+    if (!isLarge) return uniqueOptions;
+    const term = search.trim().toLowerCase();
+    const base = term
+      ? uniqueOptions.filter((o) => o.toLowerCase().includes(term))
+      : uniqueOptions;
+    return base.slice(0, 100);
+  }, [uniqueOptions, isLarge, search]);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
