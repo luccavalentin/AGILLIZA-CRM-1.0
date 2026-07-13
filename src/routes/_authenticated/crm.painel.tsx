@@ -130,10 +130,11 @@ function Pagina() {
   });
   const totalArquivados = contratos?.length ?? 0;
 
-  const queryKey = ["crm-painel", desde, ate];
+  const queryKey = ["crm-painel", desde, ate, escopo];
   const { data, isLoading } = useQuery({
     queryKey,
-    queryFn: () => listar({ data: { desde: desde || undefined, ate: ate || undefined } }),
+    queryFn: () =>
+      listar({ data: { desde: desde || undefined, ate: ate || undefined, escopo } }),
   });
 
   const termoAdicionar = adicionarBusca.trim();
