@@ -23,7 +23,7 @@ import {
 } from "@/components/common/dashboard";
 import { ReportChartView } from "@/components/reports/report-chart";
 import { VisionSelector } from "@/components/reports/report-filters-bar";
-import { DateInput } from "@/components/shared/date-input";
+import { DateRangePicker } from "@/components/shared/date-range-picker";
 import { UsuarioCombobox } from "@/components/operacional/usuario-combobox";
 import { listarColegas } from "@/lib/operacional/shared.functions";
 import { getPanelDados } from "@/lib/relatorios/paineis.functions";
@@ -180,23 +180,15 @@ export function PainelView({
               </SelectContent>
             </Select>
             {periodo === "custom" && (
-              <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
-                <DateInput
-                  value={de}
-                  onChange={setDe}
-                  aria-invalid={!de}
-                  className="h-9 w-full sm:w-36"
-                  placeholder="Início"
-                />
-                <span className="hidden text-xs text-muted-foreground sm:inline">até</span>
-                <DateInput
-                  value={ate}
-                  onChange={setAte}
-                  aria-invalid={!ate}
-                  className="h-9 w-full sm:w-36"
-                  placeholder="Fim"
-                />
-              </div>
+              <DateRangePicker
+                de={de}
+                ate={ate}
+                onChange={(d, a) => {
+                  setDe(d);
+                  setAte(a);
+                }}
+                className="h-9 w-full sm:w-64"
+              />
             )}
           </>
         }
