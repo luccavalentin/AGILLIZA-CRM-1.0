@@ -23,7 +23,7 @@ import {
 } from "@/components/common/dashboard";
 import { ReportChartView } from "@/components/reports/report-chart";
 import { VisionSelector } from "@/components/reports/report-filters-bar";
-import { DateInput } from "@/components/shared/date-input";
+import { DateRangePicker } from "@/components/shared/date-range-picker";
 import { UsuarioCombobox } from "@/components/operacional/usuario-combobox";
 import { listarColegas } from "@/lib/operacional/shared.functions";
 import { getPanelDados } from "@/lib/relatorios/paineis.functions";
