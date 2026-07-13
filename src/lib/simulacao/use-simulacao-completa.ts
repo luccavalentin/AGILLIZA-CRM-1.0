@@ -17,6 +17,7 @@ import {
   obterSimulacao,
   obterClienteCRM,
 } from "@/lib/simulacao/simulacoes.functions";
+import { criarProposta, enviarPropostaHomeFin } from "@/lib/propostas/propostas.functions";
 
 export type Form = Record<string, any>;
 
