@@ -315,7 +315,15 @@ export const getPanelDados = createServerFn({ method: "POST" })
     const dentroPeriodo = (iso?: string | null) =>
       !!iso && iso.slice(0, 10) >= de && iso.slice(0, 10) <= ate;
 
-    const escopoEq = (q: any, col: string) => (data.escopo === "minha" ? q.eq(col, userId) : q);
+    // Filtro por usuário: quando um responsável específico é escolhido, ele
+    // prevalece sobre o escopo (mesmo em "geral"). Sem responsável, mantém a
+    // regra de escopo: "minha" restringe ao próprio usuário; "geral" abre tudo.
+    const escopoEq = (q: any, col: string) =>
+      data.responsavel
+        ? q.eq(col, data.responsavel)
+        : data.escopo === "minha"
+          ? q.eq(col, userId)
+          : q;
 
     if (data.modulo === "visao-geral") {
       const [sims, props, contratosInfo, ant] = await Promise.all([
