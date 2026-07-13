@@ -387,13 +387,13 @@ function Pagina() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 overflow-x-auto border-b border-border">
+      <div className="-mx-1 flex snap-x snap-mandatory gap-1 overflow-x-auto scroll-px-4 border-b border-border px-1 pb-px [scrollbar-width:thin]">
         {TABS.map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
             className={cn(
-              "whitespace-nowrap border-b-2 px-3 py-2 text-xs font-semibold uppercase tracking-wide transition-colors",
+              "shrink-0 snap-start whitespace-nowrap border-b-2 px-3 py-2 text-xs font-semibold uppercase tracking-wide transition-colors",
               tab === t
                 ? "border-primary text-primary"
                 : "border-transparent text-muted-foreground hover:text-foreground",
@@ -403,6 +403,7 @@ function Pagina() {
           </button>
         ))}
       </div>
+
 
       {tab === "RESUMO" && <TabResumo proposta={p} bancos={data.bancos} propostaId={id} />}
       {tab === "COMPRADORES" && <ClienteSecao clienteId={p.cliente_id} propostaId={id} secao="comprador" destacarObrigatorios={destacarObrigatorios} onSalvoComprador={() => setTab("ENVIAR_BANCO")} />}
