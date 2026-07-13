@@ -386,9 +386,30 @@ export function ClienteForm({
     return s;
   }, [destacarObrigatorios, v, end, ehPF]);
 
+  // Ao acionar o destaque de obrigatórios (envio bloqueado por cadastro
+  // incompleto), rola até o primeiro campo pendente e o foca, para que o
+  // usuário veja imediatamente onde está o problema.
+  const formRef = useRef<HTMLFormElement>(null);
+  useEffect(() => {
+    if (!destacarObrigatorios || erros.size === 0) return;
+    const t = setTimeout(() => {
+      const alvo = formRef.current?.querySelector<HTMLElement>(".border-destructive");
+      if (!alvo) return;
+      alvo.scrollIntoView({ behavior: "smooth", block: "center" });
+      if (typeof alvo.focus === "function") {
+        try {
+          alvo.focus({ preventScroll: true });
+        } catch {
+          /* ignora se o elemento não for focável */
+        }
+      }
+    }, 150);
+    return () => clearTimeout(t);
+  }, [destacarObrigatorios, erros]);
+
 
   return (
-    <form onSubmit={submit} className="space-y-6">
+    <form ref={formRef} onSubmit={submit} className="space-y-6">
       {novoCadastro && (
         <VinculosSection
           parceiros={(parceiros.data ?? []) as any}
