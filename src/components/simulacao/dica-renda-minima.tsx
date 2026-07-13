@@ -85,7 +85,7 @@ export function DicaRendaMinima({
         </div>
 
         <p className="text-xs leading-relaxed text-muted-foreground">
-          Renda necessária para o valor financiado, com parcela inicial de{" "}
+          Renda necessária para o valor financiado, com prestação inicial de{" "}
           <span className="font-medium text-foreground/80">
             {formatBRL(av.primeiraParcela)}
           </span>{" "}
@@ -93,8 +93,10 @@ export function DicaRendaMinima({
           <span className="font-medium text-foreground/80">
             {sistema === "P" ? "PRICE" : "SAC"}
           </span>{" "}
-          e no teto de 30% de comprometimento de renda.
+          (já incluídos seguros e taxa de administração) e no teto de 30% de
+          comprometimento de renda.
         </p>
+
 
 
         {av.suficiente === true && (
