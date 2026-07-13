@@ -260,6 +260,20 @@ function Pagina() {
     }
   }
 
+  async function confirmarLimparVinculo() {
+    if (!limpandoVinculo) return;
+    const { id } = limpandoVinculo;
+    setLimpandoVinculo(null);
+    try {
+      await limparVinculoFn({ data: { cliente_id: id } });
+      toast.success("Vínculo de simulação/aprovação removido. Cliente voltou ao cadastro.");
+      qc.invalidateQueries({ queryKey: ["crm-painel"] });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao remover o vínculo.");
+    }
+  }
+
+
 
 
 
