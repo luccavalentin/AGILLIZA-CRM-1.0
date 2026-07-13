@@ -421,19 +421,42 @@ export const obterContextoChatCliente = createServerFn({ method: "GET" })
       .limit(1)
       .maybeSingle();
 
+    // Fallback para clientes ainda em Simulação (sem proposta): puxa número e
+    // banco da simulação mais recente para preencher as respostas rápidas.
+    let simNumero: string | null = null;
+    let simBanco: string | null = null;
+    if (!proposta) {
+      const { data: sim } = await supabase
+        .from("simulacoes")
+        .select("id, numero_simulacao, simulacao_bancos(nome_banco, status_banco)")
+        .eq("cliente_id", data.cliente_id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      simNumero = (sim as any)?.numero_simulacao ?? null;
+      const bancos = ((sim as any)?.simulacao_bancos ?? []) as Array<{
+        nome_banco: string | null;
+      }>;
+      simBanco = bancos.find((b) => b?.nome_banco)?.nome_banco ?? null;
+    }
+
     const nomeCompleto = (cliente as any)?.nome?.trim() ?? null;
     const primeiroNome = nomeCompleto ? nomeCompleto.split(/\s+/)[0] : null;
     // Número puxado automaticamente: proposta mais recente e, na ausência dela,
-    // o número do cliente — assim a mensagem sempre traz uma referência.
+    // a simulação mais recente e, por fim, o número do cliente — assim a
+    // mensagem sempre traz uma referência.
     const numeroProposta =
-      (proposta as any)?.numero_proposta ?? (cliente as any)?.numero_cliente ?? null;
+      (proposta as any)?.numero_proposta ??
+      simNumero ??
+      (cliente as any)?.numero_cliente ??
+      null;
 
     return {
       cliente_id: data.cliente_id,
       primeiro_nome: primeiroNome,
       numero_proposta: numeroProposta,
       status_proposta: (proposta as any)?.status ?? null,
-      nome_banco: (proposta as any)?.nome_banco ?? null,
+      nome_banco: (proposta as any)?.nome_banco ?? simBanco ?? null,
       etapa_nome:
         (cliente as any)?.cliente_pipeline?.pipeline_stages?.nome ?? null,
     };

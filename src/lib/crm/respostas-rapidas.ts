@@ -30,6 +30,12 @@ export interface ContextoResposta {
 
 /** Substitui placeholders {chave} pelos valores do contexto do cliente. */
 export function aplicarVariaveis(texto: string, ctx?: ContextoResposta): string {
+  // Defaults amigáveis para quando um dado ainda não existe, evitando frases
+  // quebradas como "está em análise no." quando o banco não foi definido.
+  const PADROES: Record<string, string> = {
+    nome_banco: "o banco",
+    etapa: "em andamento",
+  };
   const mapa: Record<string, string | null | undefined> = {
     primeiro_nome: ctx?.primeiro_nome,
     numero_proposta: ctx?.numero_proposta,
@@ -39,9 +45,10 @@ export function aplicarVariaveis(texto: string, ctx?: ContextoResposta): string 
   const substituido = texto.replace(/\{(\w+)\}/g, (bruto, chave: string) => {
     if (!(chave in mapa)) return bruto;
     const valor = mapa[chave];
-    // Placeholder conhecido, porém sem valor: remove o token para não vazar
-    // "{numero_proposta}" cru na mensagem enviada ao cliente.
-    return valor != null && String(valor).trim() ? String(valor) : "";
+    if (valor != null && String(valor).trim()) return String(valor);
+    // Placeholder conhecido, porém sem valor: usa um padrão amigável quando
+    // houver, senão remove o token para não vazar "{numero_proposta}" cru.
+    return PADROES[chave] ?? "";
   });
   // Limpa resíduos de tokens removidos (espaços duplos e espaço antes de pontuação).
   return substituido
