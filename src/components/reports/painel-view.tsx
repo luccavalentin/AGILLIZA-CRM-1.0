@@ -61,6 +61,17 @@ function linkParaMetrica(label: string): string | undefined {
   return undefined;
 }
 
+/** Ícone ilustrativo por rótulo de indicador executivo. */
+function iconeParaMetrica(label: string): LucideIcon | undefined {
+  const l = label.toLowerCase();
+  if (l.includes("simula")) return FlaskConical;
+  if (l.includes("propost")) return Send;
+  if (l.includes("aprovad")) return BadgeCheck;
+  if (l.includes("reprovad") || l.includes("recusad")) return XCircle;
+  if (l.includes("contrato")) return FileSignature;
+  return undefined;
+}
+
 /** Painel de monitoramento reutilizável (visão-geral / operacional). */
 export function PainelView({
   modulo,
