@@ -80,6 +80,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
+      // Segurança: promove automaticamente qualquer recurso http:// para https://,
+      // evitando "conteúdo misto" que faz o navegador exibir o site como "não seguro".
+      {
+        "http-equiv": "Content-Security-Policy",
+        content: "upgrade-insecure-requests",
+      },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
       { title: "Agilliza — Crédito Imobiliário e Home Equity" },
       {
