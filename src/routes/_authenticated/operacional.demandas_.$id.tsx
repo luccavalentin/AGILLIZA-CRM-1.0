@@ -423,20 +423,48 @@ function Pagina() {
 
 
             <div className="space-y-2 border-t bg-muted/30 p-3">
+              {arquivoChat && (
+                <div className="flex items-center gap-2 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs">
+                  <Paperclip className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                  <span className="min-w-0 flex-1 truncate font-medium text-foreground">
+                    {arquivoChat.name}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setArquivoChat(null)}
+                    className="text-muted-foreground hover:text-destructive"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              )}
               <div className="flex items-end gap-2">
+                <input
+                  ref={chatFileRef}
+                  type="file"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) setArquivoChat(f);
+                    if (chatFileRef.current) chatFileRef.current.value = "";
+                  }}
+                />
+                <Button
+                  size="icon"
+                  variant="outline"
+                  className="h-11 w-11 shrink-0 rounded-xl"
+                  onClick={() => chatFileRef.current?.click()}
+                  title="Anexar arquivo"
+                >
+                  <Paperclip className="h-4 w-4" />
+                </Button>
                 <Textarea
                   value={corpo}
                   onChange={(e) => setCorpo(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.shiftKey) {
                       e.preventDefault();
-                      if (!corpo.trim()) return;
-                      comentarFn({
-                        data: { demanda_id: id, corpo, visivel_cliente: visivelCliente },
-                      }).then(() => {
-                        setCorpo("");
-                        invalidar();
-                      });
+                      enviarMensagem();
                     }
                   }}
                   placeholder="Escreva uma mensagem…"
@@ -445,18 +473,13 @@ function Pagina() {
                 <Button
                   size="icon"
                   className="h-11 w-11 shrink-0 rounded-xl shadow-sm"
-                  disabled={!corpo.trim()}
-                  onClick={async () => {
-                    await comentarFn({
-                      data: { demanda_id: id, corpo, visivel_cliente: visivelCliente },
-                    });
-                    setCorpo("");
-                    invalidar();
-                  }}
+                  disabled={(!corpo.trim() && !arquivoChat) || enviandoMsg}
+                  onClick={enviarMensagem}
                 >
                   <Send className="h-4 w-4" />
                 </Button>
               </div>
+
               <div className="flex items-center gap-2">
                 <Switch id="vis" checked={visivelCliente} onCheckedChange={setVisivelCliente} />
                 <Label htmlFor="vis" className="text-xs text-muted-foreground">
