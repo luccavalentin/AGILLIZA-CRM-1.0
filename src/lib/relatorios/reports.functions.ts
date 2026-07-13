@@ -845,7 +845,7 @@ export const runReport = createServerFn({ method: "POST" })
       return {
         titulo: "Relatório gerencial",
         descricao:
-          "Processos em andamento, propostas aprovadas e contratos emitidos com quebras por banco, tipo, analistas, imobiliária/corretor e fase.",
+          "Visão consolidada por banco, tipo, analistas, imobiliária e fase.",
         modulo: "Gerencial",
         kpis: [
           { label: "Em andamento", valor: int(andamento.length), tone: "neutral" },
