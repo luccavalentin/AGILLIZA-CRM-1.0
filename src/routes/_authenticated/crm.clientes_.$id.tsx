@@ -41,7 +41,7 @@ import { SimulacaoStatusBadge } from "@/components/simulacao/status-badge";
 import { PropostaStatusBadge } from "@/components/propostas/status-badge";
 import { BancoLogo } from "@/components/bancos/banco-logo";
 import { corDoBanco } from "@/lib/bancos/cores";
-import { FileText, Building2 } from "lucide-react";
+import { Building2 } from "lucide-react";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import {
   getCliente,
