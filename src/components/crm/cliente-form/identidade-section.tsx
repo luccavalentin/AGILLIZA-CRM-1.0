@@ -11,10 +11,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  OPCOES_SEXO,
-  OPCOES_NACIONALIDADE,
-  OPCOES_NATURALIDADE,
-  OPCOES_TIPO_DOCUMENTO,
   OPCOES_ORGAO_EXPEDIDOR,
   OPCOES_UF,
   CLASSE_ERRO,
@@ -46,54 +42,6 @@ export function IdentidadeSection({
         </p>
       </CardHeader>
       <CardContent className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-1.5">
-          <Label>Sexo</Label>
-          <Select value={v.sexo || undefined} onValueChange={(x) => set("sexo", x)}>
-            <SelectTrigger className={cls("sexo")}>
-              <SelectValue placeholder="Selecione" />
-            </SelectTrigger>
-            <SelectContent>
-              {OPCOES_SEXO.map((o) => (
-                <SelectItem key={o.v} value={o.v}>
-                  {o.l}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-1.5">
-          <Label>Nacionalidade</Label>
-          <Combobox
-            value={v.nacionalidade}
-            onValueChange={(x) => set("nacionalidade", x)}
-            options={OPCOES_NACIONALIDADE}
-            placeholder="Selecione"
-            searchPlaceholder="Buscar nacionalidade…"
-          />
-        </div>
-        <div className="space-y-1.5 sm:col-span-2">
-          <Label>Naturalidade (cidade/UF de nascimento)</Label>
-          <Combobox
-            value={v.naturalidade}
-            onValueChange={(x) => set("naturalidade", x)}
-            options={OPCOES_NATURALIDADE}
-            placeholder="Selecione"
-            searchPlaceholder="Buscar cidade/UF…"
-          />
-        </div>
-
-        <div className="space-y-1.5">
-          <Label>Tipo de documento</Label>
-          <Combobox
-            value={v.tipo_documento_identidade}
-            onValueChange={(x) => set("tipo_documento_identidade", x)}
-            options={OPCOES_TIPO_DOCUMENTO}
-            placeholder="Selecione"
-            searchPlaceholder="Buscar tipo…"
-            className={clsBox("tipo_documento_identidade")}
-          />
-        </div>
         <div className="space-y-1.5">
           <Label>Número do documento</Label>
           <Input
@@ -145,7 +93,6 @@ export function IdentidadeSection({
             placeholder="Digite a profissão"
             className={cls("profissao")}
           />
-
         </div>
         <div className="space-y-1.5">
           <Label>Empresa onde trabalha</Label>
