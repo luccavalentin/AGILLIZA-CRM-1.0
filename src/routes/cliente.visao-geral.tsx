@@ -262,11 +262,10 @@ function VisaoGeral() {
             </ul>
           )}
           <Link
-            to="/cliente/acompanhar-minha-proposta"
-            search={{ tab: "documentos" }}
+            to="/cliente/chat"
             className="mt-3 inline-block text-sm font-medium text-primary underline underline-offset-2"
           >
-            Ver documentos
+            Enviar documentos pelo chat
           </Link>
         </CardContent>
       </Card>
