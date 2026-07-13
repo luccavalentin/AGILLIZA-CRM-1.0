@@ -263,7 +263,7 @@ async function carregarAnterior(
   const simRows = (sims.data ?? []) as any[];
   const propRows = (props.data ?? []) as any[];
   const enviadas = propRows.filter((p) => p.status !== "rascunho");
-  const aprovadas = enviadas.filter((p) => p.status === "credito_aprovado").length;
+  const aprovadas = enviadas.filter((p) => foiAprovada(p.status)).length;
   const recusadas = enviadas.filter((p) => p.status === "credito_recusado").length;
   const simConcl = simRows.filter((s) =>
     ["simulada", "parcialmente_simulada", "promovida"].includes(s.status),
