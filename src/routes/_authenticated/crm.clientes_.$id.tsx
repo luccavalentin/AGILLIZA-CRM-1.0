@@ -55,6 +55,7 @@ function Pagina() {
   const getNeg = useServerFn(getClienteNegocios);
   const setEtapa = useServerFn(definirEtapa);
   const [movendoEtapa, setMovendoEtapa] = useState(false);
+  const [aba, setAba] = useState("resumo");
 
   async function moverParaEtapa(codigo: string) {
     setMovendoEtapa(true);
