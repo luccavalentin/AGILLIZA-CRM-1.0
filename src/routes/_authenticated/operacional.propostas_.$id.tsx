@@ -395,11 +395,11 @@ function Pagina() {
       </div>
 
       {tab === "RESUMO" && <TabResumo proposta={p} bancos={data.bancos} propostaId={id} />}
-      {tab === "COMPRADORES" && <ClienteSecao clienteId={p.cliente_id} secao="comprador" />}
-      {tab === "VENDEDORES" && <ClienteSecao clienteId={p.cliente_id} secao="vendedores" />}
-      {tab === "IQ" && <ClienteSecao clienteId={p.cliente_id} secao="iq" />}
-      {tab === "IMÓVEL" && <ClienteSecao clienteId={p.cliente_id} secao="imovel" />}
-      {tab === "DOCUMENTOS" && <ClienteSecao clienteId={p.cliente_id} secao="documentos" />}
+      {tab === "COMPRADORES" && <ClienteSecao clienteId={p.cliente_id} propostaId={id} secao="comprador" />}
+      {tab === "VENDEDORES" && <ClienteSecao clienteId={p.cliente_id} propostaId={id} secao="vendedores" />}
+      {tab === "IQ" && <ClienteSecao clienteId={p.cliente_id} propostaId={id} secao="iq" />}
+      {tab === "IMÓVEL" && <ClienteSecao clienteId={p.cliente_id} propostaId={id} secao="imovel" />}
+      {tab === "DOCUMENTOS" && <ClienteSecao clienteId={p.cliente_id} propostaId={id} secao="documentos" />}
       {tab === "ENVIAR_BANCO" && <AbaEnviarBanco clienteId={p.cliente_id} propostaId={id} />}
       {tab === "ATIVIDADES" && <TabAtividades historico={data.historico} />}
       {tab === "FUP" && <TabFup propostaId={id} followups={data.followups} />}
