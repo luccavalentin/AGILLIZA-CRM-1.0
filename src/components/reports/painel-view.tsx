@@ -158,6 +158,15 @@ export function PainelView({
               podeEquipe={perms?.podeEquipe ?? false}
               podeGeral={perms?.podeGeral ?? false}
             />
+            {podeFiltrarUsuario && (
+              <UsuarioCombobox
+                value={responsavel}
+                onValueChange={setResponsavel}
+                usuarios={colegas ?? []}
+                className="h-9 w-full sm:w-52"
+                placeholder="Todos os usuários"
+              />
+            )}
             <Select value={periodo} onValueChange={(v) => setPeriodo(v as Periodo)}>
               <SelectTrigger className="h-9 w-full sm:w-40">
                 <SelectValue />
@@ -170,6 +179,25 @@ export function PainelView({
                 ))}
               </SelectContent>
             </Select>
+            {periodo === "custom" && (
+              <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+                <DateInput
+                  value={de}
+                  onChange={setDe}
+                  aria-invalid={!de}
+                  className="h-9 w-full sm:w-36"
+                  placeholder="Início"
+                />
+                <span className="hidden text-xs text-muted-foreground sm:inline">até</span>
+                <DateInput
+                  value={ate}
+                  onChange={setAte}
+                  aria-invalid={!ate}
+                  className="h-9 w-full sm:w-36"
+                  placeholder="Fim"
+                />
+              </div>
+            )}
           </>
         }
       />
