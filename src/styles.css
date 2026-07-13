@@ -412,6 +412,8 @@
   opacity: 0.6;
   pointer-events: none;
 }
+
+/* Card de KPI sóbrio com fina régua de acento. */
 .op-stat {
   position: relative;
   overflow: hidden;
