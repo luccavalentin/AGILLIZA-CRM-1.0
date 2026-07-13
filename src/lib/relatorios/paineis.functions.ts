@@ -2,6 +2,11 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { resolverIntervalo, type ReportFiltros } from "@/lib/relatorios/shared";
+import { grupoDoStatus } from "@/lib/propostas/status-grupos";
+
+/** Uma proposta é "aprovada" quando obteve crédito aprovado — inclusive as que
+ * já avançaram (documentos, engenharia, jurídico, contrato emitido). */
+const foiAprovada = (status: string | null | undefined) => grupoDoStatus(status) === "aprovadas";
 
 const schema = z.object({
   modulo: z.enum(["visao-geral", "operacional"]),
