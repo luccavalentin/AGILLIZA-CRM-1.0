@@ -27,6 +27,18 @@ const ORDEM_STATUS: PropostaStatus[] = [
 function statusDaEtapa(nomeEtapa: string | null): PropostaStatus | null {
   if (!nomeEtapa) return null;
   const n = nomeEtapa.toLowerCase();
+  // Recusa/negativa de crédito encerra o fluxo — checar ANTES de "aprov"/"análise"
+  // para o status não ficar preso em "em_analise_credito" (polling infinito).
+  if (
+    n.includes("recus") ||
+    n.includes("negad") ||
+    n.includes("negat") ||
+    n.includes("reprov") ||
+    n.includes("indefer") ||
+    n.includes("nao aprov") ||
+    n.includes("não aprov")
+  )
+    return "credito_recusado";
   if (n.includes("contrato") || n.includes("registr")) return "contrato_emitido";
   if (n.includes("juríd") || n.includes("jurid") || n.includes("emiss"))
     return "analise_juridica";
