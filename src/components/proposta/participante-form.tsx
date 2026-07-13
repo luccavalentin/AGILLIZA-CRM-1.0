@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DateInput } from "@/components/shared/date-input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -431,7 +432,7 @@ function CamposParticipante({
         <Secao titulo="Dados pessoais">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Campo label="Data de nascimento">
-              <Input type="date" value={f.data_nascimento} onChange={(e) => set({ data_nascimento: e.target.value })} />
+              <DateInput value={f.data_nascimento} onChange={(v) => set({ data_nascimento: v })} />
             </Campo>
             <Campo label="Nome da mãe">
               <Input value={f.nome_mae} onChange={(e) => set({ nome_mae: e.target.value })} />
@@ -459,7 +460,7 @@ function CamposParticipante({
           </Campo>
           <SelUf label="UF de expedição" value={f.uf_expedicao} onChange={(v) => set({ uf_expedicao: v })} />
           <Campo label="Data de expedição">
-            <Input type="date" value={f.data_expedicao} onChange={(e) => set({ data_expedicao: e.target.value })} />
+            <DateInput value={f.data_expedicao} onChange={(v) => set({ data_expedicao: v })} />
           </Campo>
         </div>
       </Secao>

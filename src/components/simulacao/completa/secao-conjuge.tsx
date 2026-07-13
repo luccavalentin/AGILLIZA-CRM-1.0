@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/select";
 import { CurrencyInput } from "@/components/simulacao/currency-input";
 import { Campo } from "@/components/simulacao/completa/campo";
+import { DateInput } from "@/components/shared/date-input";
 import { maskCpfCnpj, maskCelular } from "@/lib/simulacao/format";
 import { ESTADOS_CIVIS } from "@/lib/simulacao/schemas";
 import type { SimulacaoCompletaCtx } from "@/lib/simulacao/use-simulacao-completa";
@@ -57,10 +58,9 @@ export function SecaoConjuge({ ctx }: { ctx: SimulacaoCompletaCtx }) {
           />
         </Campo>
         <Campo label="Data de nascimento">
-          <Input
-            type="date"
+          <DateInput
             value={f.data_nascimento_conjuge ?? ""}
-            onChange={(e) => set("data_nascimento_conjuge", e.target.value)}
+            onChange={(v) => set("data_nascimento_conjuge", v)}
           />
         </Campo>
         <Campo label="Estado civil">

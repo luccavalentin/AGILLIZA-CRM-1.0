@@ -1,5 +1,6 @@
 import { IdCard } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { DateInput } from "@/components/shared/date-input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -73,10 +74,9 @@ export function DadosBasicosSection({
         </div>
         <div className="space-y-1.5">
           <Label>{v.tipo_pessoa === "PF" ? "Data de nascimento *" : "Data de abertura *"}</Label>
-          <Input
-            type="date"
+          <DateInput
             value={v.data_nascimento}
-            onChange={(e) => set("data_nascimento", e.target.value)}
+            onChange={(val) => set("data_nascimento", val)}
           />
         </div>
         {v.tipo_pessoa === "PF" && (

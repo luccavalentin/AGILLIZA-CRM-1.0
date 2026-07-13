@@ -1,6 +1,7 @@
 import { Heart } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Combobox } from "@/components/ui/combobox";
+import { DateInput } from "@/components/shared/date-input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -50,10 +51,9 @@ export function ConjugeSection({ v, set }: { v: ClienteFormValues; set: SetCampo
         </div>
         <div className="space-y-1.5">
           <Label>Data de nascimento</Label>
-          <Input
-            type="date"
+          <DateInput
             value={v.conjuge_data_nascimento}
-            onChange={(e) => set("conjuge_data_nascimento", e.target.value)}
+            onChange={(val) => set("conjuge_data_nascimento", val)}
           />
         </div>
         <div className="space-y-1.5">

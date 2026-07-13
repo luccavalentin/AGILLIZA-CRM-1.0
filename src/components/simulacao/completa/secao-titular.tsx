@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/select";
 import { CurrencyInput } from "@/components/simulacao/currency-input";
 import { ClienteCRMPicker } from "@/components/simulacao/cliente-crm-picker";
+import { DateInput } from "@/components/shared/date-input";
 import { DicaRendaMinima } from "@/components/simulacao/dica-renda-minima";
 import { Campo, Ast, Erro } from "@/components/simulacao/completa/campo";
 import { maskCpfCnpj, maskCelular } from "@/lib/simulacao/format";
@@ -98,10 +99,9 @@ export function SecaoTitular({ ctx }: { ctx: SimulacaoCompletaCtx }) {
           <Erro erros={erros} campo="renda_total" />
         </Campo>
         <Campo label={<>Data de nascimento <Ast /></>}>
-          <Input
-            type="date"
+          <DateInput
             value={f.data_nascimento}
-            onChange={(e) => set("data_nascimento", e.target.value)}
+            onChange={(v) => set("data_nascimento", v)}
             aria-invalid={!!erros.data_nascimento}
           />
           <Erro erros={erros} campo="data_nascimento" />

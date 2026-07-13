@@ -18,6 +18,11 @@ import {
   Search,
   Archive,
   X,
+  MoreVertical,
+  ExternalLink,
+  Undo2,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -29,6 +34,24 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { DateInput } from "@/components/shared/date-input";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import {
   listarPainel,
@@ -73,6 +96,8 @@ function Pagina() {
   const [contratoBusca, setContratoBusca] = useState("");
   const [contratoDesde, setContratoDesde] = useState("");
   const [contratoAte, setContratoAte] = useState("");
+  const [editandoContrato, setEditandoContrato] = useState<string | null>(null);
+  const [excluindoContrato, setExcluindoContrato] = useState<string | null>(null);
   const [arrasto, setArrasto] = useState<Arrasto | null>(null);
   const [alvo, setAlvo] = useState<string | null>(null);
   const arrastouRef = useRef(false);
@@ -204,6 +229,31 @@ function Pagina() {
       qc.invalidateQueries({ queryKey: ["crm-painel"] });
     }
   }
+
+  async function desarquivarContrato(clienteId: string) {
+    try {
+      await arquivarContratoFn({ data: { cliente_id: clienteId, arquivar: false } });
+      toast.success("Contrato movido de volta para a esteira.");
+      qc.invalidateQueries({ queryKey: ["crm-contratos-emitidos"] });
+      qc.invalidateQueries({ queryKey: ["crm-painel"] });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao mover o contrato.");
+    }
+  }
+
+  async function excluirContratoEmitido(clienteId: string) {
+    try {
+      await arquivarContratoFn({ data: { cliente_id: clienteId, arquivar: false } });
+      await salvarContratoData({ data: { cliente_id: clienteId, contrato_emitido_em: null } });
+      toast.success("Registro de contrato emitido excluído.");
+      qc.invalidateQueries({ queryKey: ["crm-contratos-emitidos"] });
+      qc.invalidateQueries({ queryKey: ["crm-painel"] });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao excluir o contrato.");
+    }
+  }
+
+
 
 
 
@@ -812,18 +862,111 @@ function Pagina() {
                         </button>
                       )}
                     </span>
+                    {editandoContrato === ct.cliente_id && (
+                      <div className="mt-2 flex items-center gap-2">
+                        <DateInput
+                          value={ct.contrato_emitido_em ?? ""}
+                          onChange={(v) => salvarDataContrato(ct.cliente_id, v)}
+                          className="h-8 flex-1"
+                        />
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className="h-8"
+                          onClick={() => setEditandoContrato(null)}
+                        >
+                          Concluir
+                        </Button>
+                      </div>
+                    )}
                   </span>
                   {ct.valor_financiamento != null && (
                     <span className="shrink-0 text-xs font-semibold tabular-nums text-foreground">
                       {`R$ ${Number(ct.valor_financiamento).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`}
                     </span>
                   )}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="size-8 shrink-0 text-muted-foreground"
+                        title="Ações do contrato"
+                      >
+                        <MoreVertical className="size-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem
+                        onClick={() => {
+                          setArquivoAberto(false);
+                          navigate({ to: "/crm/clientes/$id", params: { id: ct.cliente_id } });
+                        }}
+                      >
+                        <ExternalLink className="mr-2 size-4" /> Abrir cadastro
+                      </DropdownMenuItem>
+                      {ct.proposta_id && (
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setArquivoAberto(false);
+                            navigate({
+                              to: "/operacional/propostas/$id",
+                              params: { id: ct.proposta_id! },
+                            });
+                          }}
+                        >
+                          <FileText className="mr-2 size-4" /> Visualizar proposta
+                        </DropdownMenuItem>
+                      )}
+                      <DropdownMenuItem onClick={() => setEditandoContrato(ct.cliente_id)}>
+                        <Pencil className="mr-2 size-4" /> Editar data de emissão
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => desarquivarContrato(ct.cliente_id)}>
+                        <Undo2 className="mr-2 size-4" /> Mover para a esteira
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        className="text-destructive focus:text-destructive"
+                        onClick={() => setExcluindoContrato(ct.cliente_id)}
+                      >
+                        <Trash2 className="mr-2 size-4" /> Excluir
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               ))
             )}
           </div>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog
+        open={!!excluindoContrato}
+        onOpenChange={(o) => !o && setExcluindoContrato(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir contrato emitido?</AlertDialogTitle>
+            <AlertDialogDescription>
+              O registro de contrato emitido será removido e o cliente voltará para a esteira. Esta
+              ação pode ser refeita definindo novamente a data de emissão.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (excluindoContrato) excluirContratoEmitido(excluindoContrato);
+                setExcluindoContrato(null);
+              }}
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
 
   );
