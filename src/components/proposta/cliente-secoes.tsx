@@ -96,8 +96,10 @@ export function ClienteSecao({
   return (
     <ClienteForm
       embutido
+      onSalvoEmbutido={onSalvoComprador}
       destacarObrigatorios={destacarObrigatorios}
       portalAtivo={c.portal_acesso_ativo}
+
 
       enderecoInicial={endereco as any}
       inicial={{
