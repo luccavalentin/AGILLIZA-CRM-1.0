@@ -42,7 +42,13 @@ export function FgtsSection({
             onCheckedChange={(x) => set("utiliza_fgts", x)}
           />
         </div>
-        <div className="flex items-start gap-3 rounded-lg border border-border p-3">
+        <div
+          className={
+            "flex items-start gap-3 rounded-lg border p-3 " +
+            (destaque ? "border-destructive ring-1 ring-destructive/40" : "border-border")
+          }
+        >
+
           <Checkbox
             id="fg_autorizacao_dados"
             checked={v.fg_autorizacao_dados}
