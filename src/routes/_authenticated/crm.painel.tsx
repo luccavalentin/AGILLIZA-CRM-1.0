@@ -633,12 +633,7 @@ function Pagina() {
                                         <span
                                           className={`inline-flex shrink-0 items-center rounded-md px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ring-1 ring-inset ${statusClasse}`}
                                         >
-                                          {statusBancoConfig(c.proposta_status).label !== "—" &&
-                                          !statusBancoConfig(c.proposta_status).label.startsWith(
-                                            c.proposta_status,
-                                          )
-                                            ? statusBancoConfig(c.proposta_status).label
-                                            : c.proposta_status.replace(/_/g, " ")}
+                                          {statusProposta(c.proposta_status).label}
                                         </span>
                                       )}
                                     </div>
