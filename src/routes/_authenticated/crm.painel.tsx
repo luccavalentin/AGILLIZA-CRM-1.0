@@ -701,63 +701,50 @@ function Pagina() {
                   e.preventDefault();
                   moverPara(stage.codigo);
                 }}
-                className={`group relative flex min-w-0 flex-col overflow-hidden rounded-2xl border bg-card shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-lg ${
+                className={`group relative flex min-w-0 flex-col rounded-2xl border bg-card shadow-sm transition-all duration-300 hover:shadow-md ${
                   ehAlvo ? "border-primary ring-2 ring-primary/40" : "border-border"
                 }`}
               >
-                <span
-                  className={`absolute inset-x-0 top-0 h-1 origin-left transition-transform duration-300 ${
-                    temClientes
-                      ? "bg-gradient-to-r from-primary to-primary/40"
-                      : "bg-gradient-to-r from-border to-transparent scale-x-100 group-hover:from-primary/40"
-                  }`}
-                />
-                <div className="flex min-w-0 flex-col p-3.5">
-                  <div className="mb-3 flex items-center justify-between gap-2.5 border-b border-border/70 pb-3">
-                    <div className="flex min-w-0 items-center gap-2.5">
-                      <span
-                        className={`flex size-7 shrink-0 items-center justify-center rounded-lg text-[11px] font-bold tabular-nums shadow-sm ring-1 transition-colors duration-300 ${
-                          temClientes
-                            ? "bg-primary/10 text-primary ring-primary/20 group-hover:bg-primary group-hover:text-primary-foreground group-hover:ring-primary"
-                            : "bg-muted text-muted-foreground ring-border"
-                        }`}
-                      >
-                        {idx + 1}
-                      </span>
-                      <span className="min-w-0 truncate text-sm font-semibold tracking-tight text-foreground">
-                        {stage.nome}
-                      </span>
-                    </div>
-                    <div className="flex shrink-0 items-center gap-1.5">
-
-                      <button
-                        type="button"
-                        onClick={() => temClientes && setDialogStage(stage.codigo)}
-                        disabled={!temClientes}
-                        title={temClientes ? "Ver clientes desta etapa" : undefined}
-                        className={`flex h-6 min-w-6 items-center justify-center gap-1 rounded-full px-2 text-xs font-bold tabular-nums transition-all duration-300 ${
-                          temClientes
-                            ? "cursor-pointer bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 hover:ring-2 hover:ring-primary/40"
-                            : "cursor-default bg-muted text-muted-foreground"
-                        }`}
-                      >
-                        <Users className="size-3" />
-                        {stage.clientes.length}
-                      </button>
-                    </div>
-
+                <div className="flex items-center justify-between gap-2 border-b border-border px-3.5 py-3">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <span className="grid size-6 shrink-0 place-items-center rounded-md bg-primary text-[11px] font-bold tabular-nums text-primary-foreground">
+                      {idx + 1}
+                    </span>
+                    <span className="min-w-0 truncate text-sm font-semibold tracking-tight text-foreground">
+                      {stage.nome}
+                    </span>
                   </div>
-                  <div className="space-y-2">
+                  <button
+                    type="button"
+                    onClick={() => temClientes && setDialogStage(stage.codigo)}
+                    disabled={!temClientes}
+                    title={temClientes ? "Ver clientes desta etapa" : undefined}
+                    className={`min-w-6 rounded-full px-2 py-0.5 text-xs font-bold tabular-nums transition-colors ${
+                      temClientes
+                        ? "cursor-pointer bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground"
+                        : "cursor-default text-muted-foreground"
+                    }`}
+                  >
+                    {stage.clientes.length}
+                  </button>
+                </div>
+                <div className="flex flex-1 flex-col gap-2 p-3">
                     {!temClientes ? (
-                      <p
-                        className={`rounded-lg border border-dashed px-3 py-5 text-center text-xs transition-colors ${
+                      <div
+                        className={`flex flex-1 flex-col items-center justify-center gap-2 rounded-lg border border-dashed py-8 text-center transition-colors ${
                           ehAlvo
                             ? "border-primary/60 bg-primary/5 text-primary"
-                            : "border-border text-muted-foreground"
+                            : "border-transparent text-muted-foreground"
                         }`}
                       >
-                        {ehAlvo ? "Solte aqui" : "Nenhum cliente"}
-                      </p>
+                        {(() => {
+                          const Icone = ICONES_ETAPA[stage.codigo] ?? Users;
+                          return <Icone className="size-6 opacity-40" />;
+                        })()}
+                        <span className="text-xs">
+                          {ehAlvo ? "Solte aqui" : "Nenhum cliente nesta etapa"}
+                        </span>
+                      </div>
                     ) : (
                       stage.clientes.map((c) => {
                         const ehVistoria = stage.codigo === "engenharia_vistoria";
