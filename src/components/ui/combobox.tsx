@@ -91,12 +91,16 @@ export function Combobox({
         )}
       </div>
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-        <Command>
-          <CommandInput placeholder={searchPlaceholder} />
+        <Command shouldFilter={!isLarge}>
+          <CommandInput
+            placeholder={searchPlaceholder}
+            value={isLarge ? search : undefined}
+            onValueChange={isLarge ? setSearch : undefined}
+          />
           <CommandList>
             <CommandEmpty>{emptyText}</CommandEmpty>
             <CommandGroup>
-              {uniqueOptions.map((opt) => (
+              {renderedOptions.map((opt) => (
                 <CommandItem
                   key={opt}
                   value={opt}
