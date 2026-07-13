@@ -19,13 +19,52 @@ import {
   Archive,
   X,
   MoreVertical,
+  MoreHorizontal,
   ExternalLink,
   Undo2,
   Pencil,
   Trash2,
   UserPlus,
+  UserCheck,
   Plus,
+  Filter,
+  Clock,
+  User,
+  Send,
+  Star,
+  HardHat,
+  Scale,
+  FileCheck2,
+  Calculator,
+  ArrowRight,
+  TrendingUp,
+  BarChart3,
+  type LucideIcon,
 } from "lucide-react";
+
+const ICONES_ETAPA: Record<string, LucideIcon> = {
+  cadastro_basico: UserPlus,
+  cadastro_completo: UserCheck,
+  simulacao: Calculator,
+  credito_enviado: Send,
+  credito_aprovado: Star,
+  coleta_documentos: FolderClosed,
+  engenharia_vistoria: HardHat,
+  analise_juridica: Scale,
+  contrato_emitido: FileCheck2,
+};
+
+function tempoRelativo(iso: string | null): string {
+  if (!iso) return "sem data";
+  const diff = Date.now() - new Date(iso).getTime();
+  const min = Math.floor(diff / 60000);
+  if (min < 1) return "agora";
+  if (min < 60) return `há ${min}min`;
+  const h = Math.floor(min / 60);
+  if (h < 24) return `há ${h}h`;
+  const d = Math.floor(h / 24);
+  return `há ${d}d`;
+}
 
 
 import { Button } from "@/components/ui/button";
@@ -123,6 +162,42 @@ function Pagina() {
   const [arrasto, setArrasto] = useState<Arrasto | null>(null);
   const [alvo, setAlvo] = useState<string | null>(null);
   const arrastouRef = useRef(false);
+  const [periodo, setPeriodo] = useState("todos");
+  const [respFiltro, setRespFiltro] = useState("todos");
+
+  function aplicarPeriodo(p: string) {
+    setPeriodo(p);
+    const hoje = new Date();
+    const fmt = (dt: Date) => dt.toISOString().slice(0, 10);
+    if (p === "todos") {
+      setDesde("");
+      setAte("");
+    } else if (p === "mes") {
+      setDesde(fmt(new Date(hoje.getFullYear(), hoje.getMonth(), 1)));
+      setAte(fmt(new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0)));
+    } else if (p === "7d") {
+      const i = new Date(hoje);
+      i.setDate(i.getDate() - 7);
+      setDesde(fmt(i));
+      setAte(fmt(hoje));
+    } else if (p === "30d") {
+      const i = new Date(hoje);
+      i.setDate(i.getDate() - 30);
+      setDesde(fmt(i));
+      setAte(fmt(hoje));
+    } else if (p === "ano") {
+      setDesde(fmt(new Date(hoje.getFullYear(), 0, 1)));
+      setAte(fmt(new Date(hoje.getFullYear(), 11, 31)));
+    }
+  }
+
+  function limparTodosFiltros() {
+    setPeriodo("todos");
+    setRespFiltro("todos");
+    setDesde("");
+    setAte("");
+    setBusca("");
+  }
 
   const { data: contratos, isLoading: carregandoContratos } = useQuery({
     queryKey: ["crm-contratos-emitidos"],
@@ -343,15 +418,19 @@ function Pagina() {
     () =>
       (data ?? []).map((s) => ({
         ...s,
-        clientes: termo
-          ? s.clientes.filter(
-              (c) =>
-                c.nome.toLowerCase().includes(termo) ||
-                (c.numero_cliente ?? "").toLowerCase().includes(termo),
-            )
-          : s.clientes,
+        clientes: s.clientes.filter((c) => {
+          if (
+            termo &&
+            !c.nome.toLowerCase().includes(termo) &&
+            !(c.numero_cliente ?? "").toLowerCase().includes(termo)
+          )
+            return false;
+          if (respFiltro !== "todos" && (c.responsavel_nome ?? "") !== respFiltro)
+            return false;
+          return true;
+        }),
       })),
-    [data, termo],
+    [data, termo, respFiltro],
   );
   const totalClientes = useMemo(
     () => dadosFiltrados.reduce((acc, s) => acc + s.clientes.length, 0),
@@ -361,6 +440,45 @@ function Pagina() {
     () => dadosFiltrados.filter((s) => s.clientes.length > 0).length,
     [dadosFiltrados],
   );
+  const responsaveis = useMemo(() => {
+    const set = new Set<string>();
+    (data ?? []).forEach((s) =>
+      s.clientes.forEach((c) => {
+        if (c.responsavel_nome) set.add(c.responsavel_nome);
+      }),
+    );
+    return Array.from(set).sort((a, b) => a.localeCompare(b, "pt-BR"));
+  }, [data]);
+  const todosClientes = useMemo(
+    () => dadosFiltrados.flatMap((s) => s.clientes),
+    [dadosFiltrados],
+  );
+  const clientesParados = useMemo(
+    () =>
+      todosClientes.filter(
+        (c) =>
+          c.pipeline_atualizado_em &&
+          Date.now() - new Date(c.pipeline_atualizado_em).getTime() > 7 * 864e5,
+      ).length,
+    [todosClientes],
+  );
+  const tempoMedioDias = useMemo(() => {
+    const ds = todosClientes
+      .map((c) =>
+        c.pipeline_atualizado_em
+          ? Math.floor((Date.now() - new Date(c.pipeline_atualizado_em).getTime()) / 864e5)
+          : null,
+      )
+      .filter((x): x is number => x != null);
+    if (!ds.length) return 0;
+    return Math.round(ds.reduce((a, b) => a + b, 0) / ds.length);
+  }, [todosClientes]);
+  const contratosMes = useMemo(() => {
+    const d = new Date();
+    const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    return (contratos ?? []).filter((ct) => (ct.contrato_emitido_em ?? "").startsWith(ym))
+      .length;
+  }, [contratos]);
   const verTodos = dialogStage === "__todos__";
   const stageDialog =
     dialogStage && !verTodos ? dadosFiltrados.find((s) => s.codigo === dialogStage) : null;
@@ -371,89 +489,161 @@ function Pagina() {
 
   return (
     <div className="space-y-6 p-4 sm:p-6">
-      <div className="op-hero p-4 md:p-6">
-      <div className="relative flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-        <div className="flex min-w-0 items-center gap-3.5">
-          <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-primary to-primary/70 text-primary-foreground shadow-sm ring-1 ring-primary/20">
-            <Workflow className="size-5" />
-          </span>
-          <div className="min-w-0 space-y-0.5">
-            <p className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-primary sm:text-[11px]">
-              <span className="inline-block h-1 w-5 shrink-0 rounded-full bg-primary" />
-              CRM · Painel
-            </p>
-            <h1 className="truncate text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
-              Painel da esteira
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              Visão das {dadosFiltrados.length} etapas — arraste um cliente para mover manualmente.
-            </p>
+      {/* Cabeçalho */}
+      <div className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-6">
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 sm:flex sm:justify-between">
+          <div className="flex min-w-0 items-center gap-3.5">
+            <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-sm">
+              <Workflow className="size-5" />
+            </span>
+            <div className="min-w-0">
+              <h1 className="truncate text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+                Painel da Esteira
+              </h1>
+              <p className="truncate text-sm text-muted-foreground">
+                Acompanhe o fluxo dos clientes em cada etapa do processo.
+              </p>
+            </div>
+          </div>
+          <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+            <span className="hidden items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground md:inline-flex">
+              <span className="size-2 animate-pulse rounded-full bg-success" />
+              Atualizado agora
+            </span>
+            <div className="inline-flex items-center rounded-full border border-border bg-background p-1">
+              {(["minhas", "geral"] as const).map((op) => (
+                <button
+                  key={op}
+                  type="button"
+                  onClick={() => setEscopo(op)}
+                  className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all ${
+                    escopo === op
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {op === "minhas" ? "Minhas esteiras" : "Geral"}
+                </button>
+              ))}
+            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="size-9 shrink-0 rounded-full"
+                  title="Mais ações"
+                >
+                  <MoreHorizontal className="size-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setArquivoAberto(true)}>
+                  <FolderClosed className="mr-2 size-4" /> Contratos emitidos
+                  {totalArquivados > 0 && (
+                    <span className="ml-auto rounded-full bg-primary/10 px-1.5 text-[10px] font-bold text-primary">
+                      {totalArquivados}
+                    </span>
+                  )}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => totalClientes > 0 && setDialogStage("__todos__")}
+                  disabled={totalClientes === 0}
+                >
+                  <Users className="mr-2 size-4" /> Ver todos os clientes
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={limparTodosFiltros}>
+                  <Filter className="mr-2 size-4" /> Limpar filtros
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
-        <div className="flex flex-wrap items-end gap-3">
-          <button
-            type="button"
-            onClick={() => totalClientes > 0 && setDialogStage("__todos__")}
-            disabled={totalClientes === 0}
-            title={totalClientes > 0 ? "Ver todos os clientes" : undefined}
-            className={`hidden items-center gap-2 rounded-xl border border-border/60 bg-card px-3 py-2 shadow-sm transition-all sm:flex ${
-              totalClientes > 0
-                ? "cursor-pointer hover:border-primary/50 hover:shadow-md"
-                : "cursor-default"
-            }`}
-          >
-            <Users className="size-4 text-primary" />
-            <span className="text-sm font-semibold tabular-nums text-foreground">
-              {totalClientes}
+      </div>
+
+      {/* Barra de filtros */}
+      <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+        <div className="flex flex-wrap items-end gap-x-5 gap-y-4">
+          <div className="flex items-center gap-3 sm:border-r sm:border-border sm:pr-5">
+            <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+              <Users className="size-5" />
             </span>
-            <span className="text-xs text-muted-foreground">
-              em {etapasAtivas} de {dadosFiltrados.length} etapas
-            </span>
-          </button>
-          <div className="inline-flex h-10 shrink-0 items-center rounded-xl border border-primary/30 bg-primary/5 p-1 shadow-sm ring-1 ring-primary/10">
-            {(["minhas", "geral"] as const).map((op) => (
-              <button
-                key={op}
-                type="button"
-                onClick={() => setEscopo(op)}
-                className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
-                  escopo === op
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "text-primary hover:bg-primary/10"
-                }`}
-              >
-                {op === "minhas" ? <Users className="size-3.5" /> : <Workflow className="size-3.5" />}
-                {op === "minhas" ? "Minhas" : "Geral"}
-              </button>
-            ))}
+            <div>
+              <p className="text-2xl font-bold leading-none tabular-nums text-foreground">
+                {totalClientes}
+              </p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                de {dadosFiltrados.length} etapas
+              </p>
+            </div>
           </div>
 
-          <div className="relative w-full sm:w-64">
-
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={busca}
-              onChange={(e) => setBusca(e.target.value)}
-              placeholder="Buscar cliente ou nº..."
-              className="h-10 rounded-xl pl-9 pr-9 shadow-sm"
-            />
-            {busca && (
-              <button
-                type="button"
-                onClick={() => setBusca("")}
-                className="absolute right-2 top-1/2 grid size-6 -translate-y-1/2 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                aria-label="Limpar busca"
-              >
-                <X className="size-3.5" />
-              </button>
-            )}
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-muted-foreground">Período</label>
+            <select
+              value={periodo}
+              onChange={(e) => aplicarPeriodo(e.target.value)}
+              className="h-10 w-40 rounded-xl border border-input bg-background px-3 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <option value="todos">Todos</option>
+              <option value="mes">Este mês</option>
+              <option value="7d">Últimos 7 dias</option>
+              <option value="30d">Últimos 30 dias</option>
+              <option value="ano">Este ano</option>
+              <option value="custom">Personalizado</option>
+            </select>
           </div>
+
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-muted-foreground">Responsável</label>
+            <select
+              value={respFiltro}
+              onChange={(e) => setRespFiltro(e.target.value)}
+              className="h-10 w-44 rounded-xl border border-input bg-background px-3 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <option value="todos">Todos</option>
+              {responsaveis.map((r) => (
+                <option key={r} value={r}>
+                  {r}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="relative w-full space-y-1 sm:w-60">
+            <label className="text-xs font-medium text-muted-foreground">Buscar</label>
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={busca}
+                onChange={(e) => setBusca(e.target.value)}
+                placeholder="Cliente ou nº..."
+                className="h-10 rounded-xl pl-9 pr-9 shadow-sm"
+              />
+              {busca && (
+                <button
+                  type="button"
+                  onClick={() => setBusca("")}
+                  className="absolute right-2 top-1/2 grid size-6 -translate-y-1/2 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                  aria-label="Limpar busca"
+                >
+                  <X className="size-3.5" />
+                </button>
+              )}
+            </div>
+          </div>
+
           <div className="space-y-1">
             <label className="text-xs font-medium text-muted-foreground">De</label>
             <Input
               type="date"
               value={desde}
-              onChange={(e) => setDesde(e.target.value)}
+              onChange={(e) => {
+                setDesde(e.target.value);
+                setPeriodo("custom");
+              }}
               className="h-10 w-40 rounded-xl shadow-sm"
             />
           </div>
@@ -462,25 +652,23 @@ function Pagina() {
             <Input
               type="date"
               value={ate}
-              onChange={(e) => setAte(e.target.value)}
+              onChange={(e) => {
+                setAte(e.target.value);
+                setPeriodo("custom");
+              }}
               className="h-10 w-40 rounded-xl shadow-sm"
             />
           </div>
-          {(desde || ate) && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-10"
-              onClick={() => {
-                setDesde("");
-                setAte("");
-              }}
-            >
-              Limpar
-            </Button>
-          )}
+
+          <Button
+            variant="ghost"
+            className="ml-auto h-10 gap-2 text-primary hover:bg-primary/5 hover:text-primary"
+            onClick={limparTodosFiltros}
+          >
+            Limpar filtros
+            <Filter className="size-4" />
+          </Button>
         </div>
-      </div>
       </div>
 
 
@@ -513,106 +701,139 @@ function Pagina() {
                   e.preventDefault();
                   moverPara(stage.codigo);
                 }}
-                className={`group relative flex min-w-0 flex-col overflow-hidden rounded-2xl border bg-card shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-lg ${
+                className={`group relative flex min-w-0 flex-col rounded-2xl border bg-card shadow-sm transition-all duration-300 hover:shadow-md ${
                   ehAlvo ? "border-primary ring-2 ring-primary/40" : "border-border"
                 }`}
               >
-                <span
-                  className={`absolute inset-x-0 top-0 h-1 origin-left transition-transform duration-300 ${
-                    temClientes
-                      ? "bg-gradient-to-r from-primary to-primary/40"
-                      : "bg-gradient-to-r from-border to-transparent scale-x-100 group-hover:from-primary/40"
-                  }`}
-                />
-                <div className="flex min-w-0 flex-col p-3.5">
-                  <div className="mb-3 flex items-center justify-between gap-2.5 border-b border-border/70 pb-3">
-                    <div className="flex min-w-0 items-center gap-2.5">
-                      <span
-                        className={`flex size-7 shrink-0 items-center justify-center rounded-lg text-[11px] font-bold tabular-nums shadow-sm ring-1 transition-colors duration-300 ${
-                          temClientes
-                            ? "bg-primary/10 text-primary ring-primary/20 group-hover:bg-primary group-hover:text-primary-foreground group-hover:ring-primary"
-                            : "bg-muted text-muted-foreground ring-border"
-                        }`}
-                      >
-                        {idx + 1}
-                      </span>
-                      <span className="min-w-0 truncate text-sm font-semibold tracking-tight text-foreground">
-                        {stage.nome}
-                      </span>
-                    </div>
-                    <div className="flex shrink-0 items-center gap-1.5">
-
-                      <button
-                        type="button"
-                        onClick={() => temClientes && setDialogStage(stage.codigo)}
-                        disabled={!temClientes}
-                        title={temClientes ? "Ver clientes desta etapa" : undefined}
-                        className={`flex h-6 min-w-6 items-center justify-center gap-1 rounded-full px-2 text-xs font-bold tabular-nums transition-all duration-300 ${
-                          temClientes
-                            ? "cursor-pointer bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 hover:ring-2 hover:ring-primary/40"
-                            : "cursor-default bg-muted text-muted-foreground"
-                        }`}
-                      >
-                        <Users className="size-3" />
-                        {stage.clientes.length}
-                      </button>
-                    </div>
-
+                <div className="flex items-center justify-between gap-2 border-b border-border px-3.5 py-3">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <span className="grid size-6 shrink-0 place-items-center rounded-md bg-primary text-[11px] font-bold tabular-nums text-primary-foreground">
+                      {idx + 1}
+                    </span>
+                    <span className="min-w-0 truncate text-sm font-semibold tracking-tight text-foreground">
+                      {stage.nome}
+                    </span>
                   </div>
-                  <div className="space-y-2">
+                  <button
+                    type="button"
+                    onClick={() => temClientes && setDialogStage(stage.codigo)}
+                    disabled={!temClientes}
+                    title={temClientes ? "Ver clientes desta etapa" : undefined}
+                    className={`min-w-6 rounded-full px-2 py-0.5 text-xs font-bold tabular-nums transition-colors ${
+                      temClientes
+                        ? "cursor-pointer bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground"
+                        : "cursor-default text-muted-foreground"
+                    }`}
+                  >
+                    {stage.clientes.length}
+                  </button>
+                </div>
+                <div className="flex flex-1 flex-col gap-2 p-3">
                     {!temClientes ? (
-                      <p
-                        className={`rounded-lg border border-dashed px-3 py-5 text-center text-xs transition-colors ${
+                      <div
+                        className={`flex flex-1 flex-col items-center justify-center gap-2 rounded-lg border border-dashed py-8 text-center transition-colors ${
                           ehAlvo
                             ? "border-primary/60 bg-primary/5 text-primary"
-                            : "border-border text-muted-foreground"
+                            : "border-transparent text-muted-foreground"
                         }`}
                       >
-                        {ehAlvo ? "Solte aqui" : "Nenhum cliente"}
-                      </p>
+                        {(() => {
+                          const Icone = ICONES_ETAPA[stage.codigo] ?? Users;
+                          return <Icone className="size-6 opacity-40" />;
+                        })()}
+                        <span className="text-xs">
+                          {ehAlvo ? "Solte aqui" : "Nenhum cliente nesta etapa"}
+                        </span>
+                      </div>
                     ) : (
                       stage.clientes.map((c) => {
                         const ehVistoria = stage.codigo === "engenharia_vistoria";
                         return (
                           <div
                             key={c.id}
-                            className="rounded-lg border border-border bg-background transition-all duration-200 hover:border-primary/50 hover:shadow-md"
+                            draggable
+                            onDragStart={(e) => {
+                              arrastouRef.current = true;
+                              e.dataTransfer.effectAllowed = "move";
+                              e.dataTransfer.setData("text/plain", c.id);
+                              setArrasto({ clienteId: c.id, origem: stage.codigo });
+                            }}
+                            onDragEnd={() => {
+                              setArrasto(null);
+                              setAlvo(null);
+                              setTimeout(() => {
+                                arrastouRef.current = false;
+                              }, 0);
+                            }}
+                            className="cursor-grab rounded-xl border border-border bg-card transition-all duration-200 hover:border-primary/40 hover:shadow-sm active:cursor-grabbing"
                           >
-                            <button
-                              draggable
-                              onDragStart={(e) => {
-                                arrastouRef.current = true;
-                                e.dataTransfer.effectAllowed = "move";
-                                e.dataTransfer.setData("text/plain", c.id);
-                                setArrasto({ clienteId: c.id, origem: stage.codigo });
-                              }}
-                              onDragEnd={() => {
-                                setArrasto(null);
-                                setAlvo(null);
-                                setTimeout(() => {
-                                  arrastouRef.current = false;
-                                }, 0);
-                              }}
-                              onClick={() => {
-                                if (arrastouRef.current) return;
-                                navigate({ to: "/crm/clientes/$id", params: { id: c.id } });
-                              }}
-                              className="group/card flex w-full cursor-grab items-center gap-2 rounded-lg p-2.5 text-left transition-colors hover:bg-primary/5 active:scale-[0.98] active:cursor-grabbing"
-                            >
-                              <GripVertical className="size-4 shrink-0 text-muted-foreground/60" />
-                              <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary transition-all duration-200 group-hover/card:scale-110 group-hover/card:bg-primary group-hover/card:text-primary-foreground">
-                                {c.nome.trim().charAt(0).toUpperCase()}
-                              </span>
-                              <span className="min-w-0 flex-1">
-                                <span className="block truncate text-sm font-medium text-foreground transition-colors group-hover/card:text-primary">
-                                  {c.nome}
-                                </span>
-                                <span className="block font-mono text-[11px] text-muted-foreground">
-                                  {c.numero_cliente}
-                                </span>
-                              </span>
-                              <ChevronRight className="size-4 shrink-0 -translate-x-1 text-primary opacity-0 transition-all duration-200 group-hover/card:translate-x-0 group-hover/card:opacity-100" />
-                            </button>
+                            <div className="p-3">
+                              <div className="flex items-start gap-2.5">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (arrastouRef.current) return;
+                                    navigate({ to: "/crm/clientes/$id", params: { id: c.id } });
+                                  }}
+                                  className="group/card flex min-w-0 flex-1 items-start gap-2.5 text-left"
+                                >
+                                  <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary transition-colors group-hover/card:bg-primary group-hover/card:text-primary-foreground">
+                                    {c.nome.trim().charAt(0).toUpperCase()}
+                                  </span>
+                                  <span className="min-w-0 flex-1">
+                                    <span className="block truncate text-sm font-semibold text-foreground transition-colors group-hover/card:text-primary">
+                                      {c.nome}
+                                    </span>
+                                    <span className="block font-mono text-[11px] text-muted-foreground">
+                                      {c.numero_cliente}
+                                    </span>
+                                  </span>
+                                </button>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <button
+                                      type="button"
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="grid size-7 shrink-0 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                                      title="Ações do cliente"
+                                    >
+                                      <MoreHorizontal className="size-4" />
+                                    </button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem
+                                      onClick={() =>
+                                        navigate({ to: "/crm/clientes/$id", params: { id: c.id } })
+                                      }
+                                    >
+                                      <ExternalLink className="mr-2 size-4" /> Abrir cadastro
+                                    </DropdownMenuItem>
+                                    {c.numero_proposta && (
+                                      <DropdownMenuItem asChild>
+                                        <Link
+                                          to="/operacional/propostas/kanban"
+                                          search={{ q: c.numero_proposta }}
+                                        >
+                                          <KanbanSquare className="mr-2 size-4" /> Ver proposta
+                                        </Link>
+                                      </DropdownMenuItem>
+                                    )}
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
+                              <div className="mt-2.5 space-y-1">
+                                <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                                  <User className="size-3 shrink-0" />
+                                  <span className="truncate">
+                                    {c.responsavel_nome ?? "Sem responsável"}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                                  <Clock className="size-3 shrink-0" />
+                                  Atualizado {tempoRelativo(c.pipeline_atualizado_em)}
+                                </div>
+                              </div>
+                            </div>
                             {(() => {
                               const dependente = [
                                 "simulacao",
@@ -768,23 +989,18 @@ function Pagina() {
                       })
 
                     )}
-                    {(stage.codigo === "cadastro_basico" ||
-                      stage.codigo === "cadastro_completo") && (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setAdicionarStage({ codigo: stage.codigo, nome: stage.nome })
-                        }
-                        className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-primary/40 px-3 py-2 text-xs font-medium text-primary transition-colors hover:border-primary hover:bg-primary/5"
-                      >
-                        <UserPlus className="size-3.5" />
-                        Adicionar cliente
-                      </button>
-                    )}
                   </div>
-
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setAdicionarStage({ codigo: stage.codigo, nome: stage.nome })
+                    }
+                    className="flex w-full items-center justify-center gap-1.5 border-t border-border px-3 py-2.5 text-xs font-semibold text-primary transition-colors hover:bg-primary/5"
+                  >
+                    <Plus className="size-3.5" />
+                    Adicionar cliente
+                  </button>
                 </div>
-              </div>
               {stage.codigo === "contrato_emitido" && (
                 <button
                   type="button"

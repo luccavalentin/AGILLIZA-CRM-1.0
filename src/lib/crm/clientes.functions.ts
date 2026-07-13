@@ -500,6 +500,7 @@ export interface PainelStage {
     numero_proposta: string | null;
     proposta_status: string | null;
     nome_banco: string | null;
+    responsavel_nome: string | null;
   }[];
 }
 
@@ -531,7 +532,7 @@ export const listarPainel = createServerFn({ method: "GET" })
     let q = supabase
       .from("clientes")
       .select(
-        "id, nome, numero_cliente, responsavel_id, vistoria_agendada_em, vistoria_concluida_em, contrato_emitido_em, cliente_pipeline(ultima_atualizacao_em, pipeline_stages(codigo))",
+        "id, nome, numero_cliente, responsavel_id, responsavel:profiles!clientes_responsavel_id_fkey(nome), vistoria_agendada_em, vistoria_concluida_em, contrato_emitido_em, cliente_pipeline(ultima_atualizacao_em, pipeline_stages(codigo))",
       )
       .eq("ativo", true)
       .is("contrato_arquivado_em", null);
@@ -585,6 +586,7 @@ export const listarPainel = createServerFn({ method: "GET" })
           numero_proposta: propostaPorCliente.get(r.id)?.numero_proposta ?? null,
           proposta_status: propostaPorCliente.get(r.id)?.status ?? null,
           nome_banco: propostaPorCliente.get(r.id)?.nome_banco ?? null,
+          responsavel_nome: r.responsavel?.nome ?? null,
         })),
     }));
   });
