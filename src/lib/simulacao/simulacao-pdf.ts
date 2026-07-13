@@ -631,8 +631,10 @@ export function baixarSimulacaoSimplificadaPDF({
     drawPageBackground(doc, pageW, pageH);
     const d = extrairDetalheBanco(b?.raw_response);
     drawClienteHeader(doc, pageW);
-    let y = HEADER_H + 26;
+    let y = HEADER_H + 20;
+    y = drawDisclaimerTopo(doc, pageW, y);
     y = drawTituloExtrato(doc, pageW, s, y, docLabel, dataLabel);
+
     y = drawFaixaBanco(doc, pageW, b?.nome_banco ?? "Banco", y);
     y = drawDadosCliente(doc, pageW, s, y);
     y = drawInfoFinanciamento(doc, pageW, s, b, d, y);
