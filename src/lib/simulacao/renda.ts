@@ -16,6 +16,20 @@ import { calcularSimulacao, type SistemaAmortizacao } from "./simulacao-rapida";
 /** Percentual máximo da renda que pode ser comprometido com a parcela. */
 export const COMPROMETIMENTO_MAX = 0.3;
 
+/**
+ * Encargos mensais obrigatórios que os bancos SOMAM à parcela ao verificar o
+ * comprometimento de renda (estimativas de mercado):
+ *  - Seguro MIP (morte/invalidez): incide sobre o saldo devedor.
+ *  - Seguro DFI (danos ao imóvel): incide sobre o valor do imóvel.
+ *  - Taxa de administração mensal fixa.
+ * A parcela "seca" (amortização + juros) subestima a renda exigida; os bancos
+ * qualificam a renda contra a PRESTAÇÃO TOTAL, com estes encargos incluídos.
+ */
+export const TAXA_MIP_MES = 0.00028; // ~0,028% do saldo devedor/mês
+export const TAXA_DFI_MES = 0.0001; // ~0,010% do valor do imóvel/mês
+export const TAXA_ADMIN_MES = 25; // R$/mês
+
+
 export interface AvaliacaoRenda {
   /** Primeira (maior) parcela estimada. */
   primeiraParcela: number;
