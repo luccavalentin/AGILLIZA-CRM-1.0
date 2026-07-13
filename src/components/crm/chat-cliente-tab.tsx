@@ -47,6 +47,7 @@ export function ChatClienteConversa({
   atendenteId,
   somenteLeitura = false,
   atendenteNome,
+  acoes,
 }: {
   clienteId: string;
   info?: ChatClienteInfo;
@@ -55,6 +56,8 @@ export function ChatClienteConversa({
   /** Quando true, a conversa é de outro atendente: só leitura. */
   somenteLeitura?: boolean;
   atendenteNome?: string;
+  /** Ações extras (ex.: "Mais ações") renderizadas no cabeçalho da conversa. */
+  acoes?: React.ReactNode;
 }) {
   const qc = useQueryClient();
   const listar = useServerFn(listarChatCliente);
@@ -310,6 +313,7 @@ export function ChatClienteConversa({
       <ChatClienteHeader
         info={info}
         clienteId={clienteId}
+        acoes={acoes}
         buscaAberta={buscaAberta}
         toggleBusca={() => {
           setBuscaAberta((v) => !v);
@@ -405,12 +409,14 @@ export function ChatClienteTab({
   atendenteId,
   somenteLeitura = false,
   atendenteNome,
+  acoes,
 }: {
   clienteId: string;
   info?: ChatClienteInfo;
   atendenteId?: string;
   somenteLeitura?: boolean;
   atendenteNome?: string;
+  acoes?: React.ReactNode;
 }) {
   const flutuante = useFloatingChat();
   const estaFlutuando = flutuante?.clienteId === clienteId;
@@ -464,7 +470,7 @@ export function ChatClienteTab({
       >
         <Maximize2 className="size-3.5" />
       </button>
-      <ChatClienteConversa clienteId={clienteId} info={info} />
+      <ChatClienteConversa clienteId={clienteId} info={info} acoes={acoes} />
     </div>
   );
 }

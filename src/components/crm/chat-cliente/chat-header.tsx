@@ -1,3 +1,4 @@
+import { type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { Search, Star, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -8,6 +9,7 @@ import { iniciais, type ChatClienteInfo } from "./utils";
 export function ChatClienteHeader({
   info,
   clienteId,
+  acoes,
   buscaAberta,
   toggleBusca,
   buscaMsg,
@@ -15,6 +17,7 @@ export function ChatClienteHeader({
 }: {
   info?: ChatClienteInfo;
   clienteId?: string;
+  acoes?: ReactNode;
   buscaAberta: boolean;
   toggleBusca: () => void;
   buscaMsg: string;
@@ -22,7 +25,7 @@ export function ChatClienteHeader({
 }) {
   return (
     <>
-      <div className="flex items-center gap-3 border-b bg-muted/30 px-4 py-3">
+      <div className="flex items-center gap-3 border-b bg-card px-4 py-3">
         <div className="relative flex size-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/70 text-sm font-semibold text-primary-foreground shadow-sm">
           {iniciais(info?.nome)}
           <span className="absolute -bottom-0.5 -right-0.5 size-3 rounded-full border-2 border-background bg-emerald-500" />
@@ -42,18 +45,13 @@ export function ChatClienteHeader({
             >
               Cliente
             </Badge>
-            {info?.documento && (
-              <span className="hidden truncate text-xs text-muted-foreground sm:inline">
-                · {info.documento}
-              </span>
-            )}
           </div>
         </div>
         <Button
           type="button"
           variant="ghost"
           size="icon"
-          className="size-8 shrink-0 text-muted-foreground"
+          className="size-9 shrink-0 rounded-lg text-muted-foreground"
           onClick={toggleBusca}
           title="Buscar na conversa"
         >
@@ -63,7 +61,7 @@ export function ChatClienteHeader({
           type="button"
           variant="ghost"
           size="icon"
-          className="size-8 shrink-0 text-muted-foreground"
+          className="hidden size-9 shrink-0 rounded-lg text-muted-foreground sm:inline-flex"
           title="Favoritar conversa"
         >
           <Star className="size-4" />
@@ -82,6 +80,7 @@ export function ChatClienteHeader({
             </Link>
           </Button>
         )}
+        {acoes}
       </div>
 
       {buscaAberta && (
