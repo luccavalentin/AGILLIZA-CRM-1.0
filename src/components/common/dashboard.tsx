@@ -19,13 +19,15 @@ export interface MetricDelta {
 
 /** Badge de tendência percentual comparando com o período anterior. */
 function DeltaBadge({ delta }: { delta: MetricDelta }) {
-  const Icon = delta.novo
-    ? TrendingUp
-    : delta.dir === "up"
+  // Sem base anterior para comparar → não há % significativa: não exibe nada.
+  if (delta.novo) return null;
+  const Icon =
+    delta.dir === "up"
       ? TrendingUp
       : delta.dir === "down"
         ? TrendingDown
         : Minus;
+
   // Cor semântica: "bom" indica se subir é positivo (ex.: contratos) ou não (ex.: recusadas).
   const positivo = delta.dir === "flat" ? null : (delta.dir === "up") === delta.bom;
   const cor =
