@@ -321,6 +321,27 @@ function drawDisclaimer(doc: jsPDF, pageW: number, y: number) {
   doc.text(DISCLAIMER, MARGIN, y, { maxWidth: pageW - MARGIN * 2, lineHeightFactor: 1.4 });
 }
 
+/**
+ * Aviso legal em destaque no topo do documento (logo abaixo do cabeçalho).
+ * Retorna o novo `y` após o bloco.
+ */
+function drawDisclaimerTopo(doc: jsPDF, pageW: number, y: number): number {
+  const w = pageW - MARGIN * 2;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(7.5);
+  const linhas = doc.splitTextToSize(DISCLAIMER, w - 20) as string[];
+  const lineH = 9.5;
+  const boxH = linhas.length * lineH + 14;
+  doc.setFillColor(P.card);
+  doc.setDrawColor(P.coral);
+  doc.setLineWidth(0.8);
+  doc.roundedRect(MARGIN, y, w, boxH, 3, 3, "FD");
+  doc.setTextColor(P.texto);
+  doc.text(linhas, MARGIN + 10, y + 12, { lineHeightFactor: 1.35 });
+  return y + boxH + 14;
+}
+
+
 
 // ---------------------------------------------------------------------------
 // Consolidado (comparativo entre bancos) — usado na listagem
