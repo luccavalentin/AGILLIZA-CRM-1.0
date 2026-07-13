@@ -670,7 +670,19 @@ function Pagina() {
           )}
         </div>
 
+        {/* Painel do cliente — 3ª coluna (somente desktop largo) */}
+        {alvoAtual && (
+          <div className="hidden min-h-0 xl:block">
+            <PainelChatCliente
+              key={alvoAtual.cliente_id}
+              clienteId={alvoAtual.cliente_id}
+              etiquetas={etiquetasCliente.get(alvoAtual.cliente_id) ?? []}
+            />
+          </div>
+        )}
+
       </div>
+
 
     </div>
   );
