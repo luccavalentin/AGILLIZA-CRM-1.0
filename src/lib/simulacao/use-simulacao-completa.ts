@@ -17,6 +17,7 @@ import {
   obterSimulacao,
   obterClienteCRM,
 } from "@/lib/simulacao/simulacoes.functions";
+import { criarProposta, enviarPropostaHomeFin } from "@/lib/propostas/propostas.functions";
 
 export type Form = Record<string, any>;
 
@@ -609,6 +610,54 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
             );
           }
           setConcluidos(i + 1);
+        }
+      }
+
+      // Fluxo "Nova Proposta": após simular, cria a proposta a partir da
+      // simulação e envia direto ao banco selecionado, indo à ficha da proposta.
+      if (modoProposta) {
+        try {
+          const dadosSim: any = await obterSimulacao({ data: { id } });
+          const simulados = (dadosSim.bancos ?? []).filter(
+            (b: any) => b.status_banco === "simulada",
+          );
+          if (simulados.length === 0) {
+            toast.error(
+              "Nenhum banco retornou simulação válida. Ajuste os dados e tente novamente.",
+            );
+            router.navigate({ to: "/operacional/simulacoes/$id", params: { id } });
+            return;
+          }
+          // Melhor taxa (menor parcela) como banco da proposta.
+          const escolhido = [...simulados].sort(
+            (a: any, b: any) => (a.valor_parcela ?? Infinity) - (b.valor_parcela ?? Infinity),
+          )[0];
+          const bancoId = escolhido.banco_id as string;
+          const { proposta_id } = await criarProposta({
+            data: { simulacao_id: id, banco_id: bancoId },
+          });
+          try {
+            await enviarPropostaHomeFin({ data: { proposta_id, banco_id: bancoId } });
+            toast.success("Proposta criada e enviada ao banco.");
+          } catch (envioErr) {
+            toast.warning(
+              envioErr instanceof Error
+                ? `Proposta criada. Complete os dados para enviar: ${envioErr.message}`
+                : "Proposta criada. Complete os dados para enviar ao banco.",
+            );
+          }
+          router.navigate({
+            to: "/operacional/propostas/$id",
+            params: { id: proposta_id },
+            search: { complementar: 1 },
+          });
+          return;
+        } catch (e) {
+          toast.error(
+            e instanceof Error ? e.message : "Não foi possível criar a proposta.",
+          );
+          router.navigate({ to: "/operacional/simulacoes/$id", params: { id } });
+          return;
         }
       }
 
