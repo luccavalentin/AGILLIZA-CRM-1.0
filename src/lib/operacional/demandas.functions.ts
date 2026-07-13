@@ -296,12 +296,10 @@ export const transferirDemanda = createServerFn({ method: "POST" })
   )
   .handler(async ({ context, data }) => {
     const { supabase, userId } = context;
-    const { data: atual, error: e0 } = await supabase
-      .from("demandas")
-      .select("responsavel_id, correspondente_id, titulo")
-      .eq("id", data.id)
-      .maybeSingle();
-    if (e0 || !atual) throw new Error("Demanda não encontrada.");
+    const atual = await papelNaDemanda(supabase, data.id, userId);
+    if (!atual.souResponsavel && !atual.souCriador) {
+      throw new Error("Apenas quem enviou ou recebeu a demanda pode transferi-la.");
+    }
     const anterior = atual.responsavel_id;
     const { error } = await supabase
       .from("demandas")
