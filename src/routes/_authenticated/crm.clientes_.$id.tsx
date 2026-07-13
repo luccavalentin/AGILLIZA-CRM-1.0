@@ -239,42 +239,71 @@ function Pagina() {
 
 
 
-      <Tabs defaultValue="resumo">
-        <TabsList className="flex w-full flex-nowrap justify-start gap-1 overflow-x-auto rounded-xl bg-muted/60 p-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <TabsTrigger value="vinculo" className="shrink-0 whitespace-nowrap rounded-lg data-[state=active]:shadow-sm">
-            Vínculo de atendimento
-          </TabsTrigger>
-          <TabsTrigger value="dados" className="shrink-0 whitespace-nowrap rounded-lg data-[state=active]:shadow-sm">
-            Dados do comprador
-          </TabsTrigger>
-          <TabsTrigger value="vendedores" className="shrink-0 gap-1.5 whitespace-nowrap rounded-lg data-[state=active]:shadow-sm">
-            <Users className="size-4" /> Vendedores
-          </TabsTrigger>
-          <TabsTrigger value="imovel" className="shrink-0 whitespace-nowrap rounded-lg data-[state=active]:shadow-sm">
-            Imóvel
-          </TabsTrigger>
-          <TabsTrigger value="iq" className="shrink-0 whitespace-nowrap rounded-lg data-[state=active]:shadow-sm">
-            IQ
-          </TabsTrigger>
-          <TabsTrigger value="documentos" className="shrink-0 whitespace-nowrap rounded-lg data-[state=active]:shadow-sm">
-            Documentos
-          </TabsTrigger>
-          <TabsTrigger value="negocios" className="shrink-0 whitespace-nowrap rounded-lg data-[state=active]:shadow-sm">
-            Negócios
-          </TabsTrigger>
-          <TabsTrigger value="mensagens" className="shrink-0 gap-1.5 whitespace-nowrap rounded-lg data-[state=active]:shadow-sm">
-            <MessageCircle className="size-4" /> App cliente
-          </TabsTrigger>
-          <TabsTrigger value="interacoes" className="shrink-0 whitespace-nowrap rounded-lg data-[state=active]:shadow-sm">
-            Registro de interações
-          </TabsTrigger>
-          <TabsTrigger value="historico" className="shrink-0 whitespace-nowrap rounded-lg data-[state=active]:shadow-sm">
-            Histórico
-          </TabsTrigger>
-          <TabsTrigger value="resumo" className="shrink-0 whitespace-nowrap rounded-lg data-[state=active]:shadow-sm">
-            Resumo
-          </TabsTrigger>
-        </TabsList>
+      <Tabs value={aba} onValueChange={setAba}>
+        {(() => {
+          const secoes = [
+            { v: "resumo", label: "Resumo", Icon: LayoutDashboard },
+            { v: "vinculo", label: "Vínculo de atendimento", Icon: UserCog },
+            { v: "dados", label: "Dados do comprador", Icon: ContactRound },
+            { v: "vendedores", label: "Vendedores", Icon: Users },
+            { v: "imovel", label: "Imóvel", Icon: Home },
+            { v: "iq", label: "IQ", Icon: ClipboardCheck },
+            { v: "documentos", label: "Documentos", Icon: FileText },
+            { v: "negocios", label: "Negócios", Icon: Handshake },
+            { v: "mensagens", label: "App cliente", Icon: MessageCircle },
+            { v: "interacoes", label: "Registro de interações", Icon: History },
+            { v: "historico", label: "Histórico", Icon: History },
+          ] as const;
+          const atual = secoes.find((s) => s.v === aba) ?? secoes[0];
+          return (
+            <>
+              {/* Mobile: seletor explícito de seção */}
+              <div className="sm:hidden">
+                <p className="mb-1.5 text-xs font-medium text-muted-foreground">
+                  Seção do cliente
+                </p>
+                <Select value={aba} onValueChange={setAba}>
+                  <SelectTrigger className="w-full">
+                    <span className="flex items-center gap-2">
+                      <atual.Icon className="size-4 text-primary" />
+                      <SelectValue />
+                    </span>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {secoes.map((s) => (
+                      <SelectItem key={s.v} value={s.v}>
+                        <span className="flex items-center gap-2">
+                          <s.Icon className="size-4" /> {s.label}
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Desktop: abas roláveis com dica visual de que há mais */}
+              <div className="relative hidden sm:block">
+                <TabsList className="flex w-full flex-nowrap justify-start gap-1 overflow-x-auto rounded-xl bg-muted/60 p-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                  {secoes.map((s) => (
+                    <TabsTrigger
+                      key={s.v}
+                      value={s.v}
+                      className="shrink-0 gap-1.5 whitespace-nowrap rounded-lg data-[state=active]:shadow-sm"
+                    >
+                      <s.Icon className="size-4" />
+                      {s.label}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+                {/* Degradê à direita indicando que a lista continua */}
+                <div className="pointer-events-none absolute inset-y-1 right-0 w-10 rounded-r-xl bg-gradient-to-l from-muted/90 to-transparent" />
+              </div>
+              <p className="mt-1.5 hidden text-[11px] text-muted-foreground sm:block">
+                Deslize para ver mais seções · clique em uma aba para abrir.
+              </p>
+            </>
+          );
+        })()}
 
         <TabsContent value="vendedores" className="mt-4">
           <VendedoresTab clienteId={id} />
