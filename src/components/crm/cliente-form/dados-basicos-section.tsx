@@ -118,15 +118,19 @@ export function DadosBasicosSection({
           />
         </div>
 
-        {/* 4. RG (não obrigatório) */}
+        {/* 4. RG (nº do documento — não obrigatório) */}
         <div className="space-y-1.5">
           <Label>RG</Label>
           <Input
             value={v.documento_secundario}
-            onChange={(e) => set("documento_secundario", e.target.value)}
+            onChange={(e) => {
+              set("documento_secundario", e.target.value);
+              set("numero_documento", e.target.value);
+            }}
             placeholder="Opcional"
           />
         </div>
+
 
         {/* 5. Data de nascimento */}
         <div className="space-y-1.5">
