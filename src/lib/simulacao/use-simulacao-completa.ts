@@ -668,8 +668,8 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
           (b: any) => (b.status_banco ?? b.n) !== "erro",
         );
         if (bancosValidos.length > 0) {
-          const { baixarSimulacaoPDF } = await import("@/lib/simulacao/simulacao-pdf");
-          baixarSimulacaoPDF({ simulacao: dadosSim.simulacao, bancos: bancosValidos });
+          const { baixarSimulacaoDetalhadaPDF } = await import("@/lib/simulacao/simulacao-pdf");
+          baixarSimulacaoDetalhadaPDF({ simulacao: dadosSim.simulacao, bancos: bancosValidos });
         } else {
           toast.error("Nenhum banco retornou simulação válida. O PDF não foi gerado.");
         }

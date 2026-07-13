@@ -178,8 +178,8 @@ function Pagina() {
     if (comparativo.length === 0) return;
     setBaixando(true);
     try {
-      const { baixarSimulacaoPDF } = await import("@/lib/simulacao/simulacao-pdf");
-      baixarSimulacaoPDF({
+      const { baixarSimulacaoDetalhadaPDF } = await import("@/lib/simulacao/simulacao-pdf");
+      baixarSimulacaoDetalhadaPDF({
         simulacao: {
           numero_simulacao: null,
           nome_cliente: null,
