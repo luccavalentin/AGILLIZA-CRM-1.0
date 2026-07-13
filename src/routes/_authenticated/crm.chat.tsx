@@ -636,11 +636,13 @@ function Pagina() {
                         atendenteId={alvoAtual.atendente_id ?? undefined}
                         somenteLeitura={somenteLeitura}
                         atendenteNome={alvoAtual.atendente_nome ?? undefined}
+                        acoes={acoesGestao}
                         info={{
                           nome: alvoAtual.nome,
                           documento: alvoAtual.documento,
                           contexto: alvoAtual.etapa_nome ?? undefined,
                         }}
+
                       />
                     </div>
                   </>
