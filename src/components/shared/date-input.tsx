@@ -80,9 +80,18 @@ export function DateInput({
     setTexto(isoParaBR(value));
   }, [value]);
 
-  const aplicar = (raw: string) => {
-    setTexto(raw);
-    const iso = textoParaIso(raw);
+  /** Aplica máscara dd/mm/aaaa enquanto digita (somente números, máx. 8 dígitos). */
+  const mascarar = (raw: string) => {
+    const dig = raw.replace(/\D/g, "").slice(0, 8);
+    let out = dig.slice(0, 2);
+    if (dig.length > 2) out += "/" + dig.slice(2, 4);
+    if (dig.length > 4) out += "/" + dig.slice(4, 8);
+    return out;
+  };
+
+  const aplicar = (mascarado: string) => {
+    setTexto(mascarado);
+    const iso = textoParaIso(mascarado);
     if (iso !== null) onChange(iso);
   };
 
@@ -92,20 +101,29 @@ export function DateInput({
         id={id}
         value={texto}
         inputMode="numeric"
+        maxLength={10}
         placeholder={placeholder}
         disabled={disabled}
         aria-invalid={rest["aria-invalid"]}
         className="pr-10"
-        onChange={(e) => aplicar(e.target.value)}
+        onChange={(e) => aplicar(mascarar(e.target.value))}
         onPaste={(e) => {
           const colado = e.clipboardData.getData("text");
           if (colado) {
             e.preventDefault();
-            aplicar(colado);
+            // Colagem aceita formatos livres (ISO, por extenso etc.).
+            const iso = textoParaIso(colado);
+            if (iso) {
+              setTexto(isoParaBR(iso));
+              onChange(iso);
+            } else {
+              aplicar(mascarar(colado));
+            }
           }
         }}
         onBlur={() => setTexto(isoParaBR(value))}
       />
+
       <button
         type="button"
         disabled={disabled}
