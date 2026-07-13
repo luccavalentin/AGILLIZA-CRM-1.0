@@ -4,9 +4,15 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { resolverIntervalo, type ReportFiltros } from "@/lib/relatorios/shared";
 import { grupoDoStatus } from "@/lib/propostas/status-grupos";
 
-/** Uma proposta é "aprovada" quando obteve crédito aprovado — inclusive as que
- * já avançaram (documentos, engenharia, jurídico, contrato emitido). */
-const foiAprovada = (status: string | null | undefined) => grupoDoStatus(status) === "aprovadas";
+/** Status terminais de contrato — a proposta já virou contrato emitido. */
+const CONTRATO_STATUS = new Set(["contrato_emitido", "registrado"]);
+
+/** Uma proposta conta como "Crédito aprovado" quando obteve aprovação de crédito
+ * e AINDA não virou contrato emitido (documentos, engenharia, jurídico).
+ * Crédito aprovado é diferente de contrato emitido: um contrato já emitido sai
+ * da métrica de aprovadas e passa a contar apenas em "Contratos emitidos". */
+const foiAprovada = (status: string | null | undefined) =>
+  grupoDoStatus(status) === "aprovadas" && !CONTRATO_STATUS.has((status ?? "") as string);
 
 const schema = z.object({
   modulo: z.enum(["visao-geral", "operacional"]),
