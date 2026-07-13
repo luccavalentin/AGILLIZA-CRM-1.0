@@ -488,10 +488,10 @@ function Pagina() {
   const tituloDialog = verTodos ? "Todos os clientes" : (stageDialog?.nome ?? "Etapa");
 
   return (
-    <div className="space-y-6 p-4 sm:p-6">
+    <div className="space-y-4 overflow-x-hidden p-3 sm:space-y-6 sm:p-6">
       {/* Cabeçalho */}
-      <div className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-6">
-        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 sm:flex sm:justify-between">
+      <div className="rounded-xl border border-border bg-card p-4 shadow-sm sm:rounded-2xl sm:p-6">
+        <div className="grid grid-cols-1 items-center gap-4 md:grid-cols-[minmax(0,1fr)_auto]">
           <div className="flex min-w-0 items-center gap-3.5">
             <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-sm">
               <Workflow className="size-5" />
@@ -505,18 +505,18 @@ function Pagina() {
               </p>
             </div>
           </div>
-          <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+          <div className="flex min-w-0 flex-wrap items-center justify-between gap-2 md:shrink-0 md:justify-end">
             <span className="hidden items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground md:inline-flex">
               <span className="size-2 animate-pulse rounded-full bg-success" />
               Atualizado agora
             </span>
-            <div className="inline-flex items-center rounded-full border border-border bg-background p-1">
+            <div className="inline-flex min-w-0 flex-1 items-center rounded-full border border-border bg-background p-1 sm:flex-none">
               {(["minhas", "geral"] as const).map((op) => (
                 <button
                   key={op}
                   type="button"
                   onClick={() => setEscopo(op)}
-                  className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all ${
+                  className={`min-w-0 flex-1 rounded-full px-2.5 py-1.5 text-xs font-semibold transition-all sm:flex-none sm:px-3.5 ${
                     escopo === op
                       ? "bg-primary text-primary-foreground shadow-sm"
                       : "text-muted-foreground hover:text-foreground"
@@ -564,9 +564,9 @@ function Pagina() {
       </div>
 
       {/* Barra de filtros */}
-      <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
-        <div className="flex flex-wrap items-end gap-x-5 gap-y-4">
-          <div className="flex items-center gap-3 sm:border-r sm:border-border sm:pr-5">
+      <div className="rounded-xl border border-border bg-card p-3 shadow-sm sm:rounded-2xl sm:p-4">
+        <div className="grid grid-cols-2 items-end gap-3 lg:flex lg:flex-wrap lg:gap-x-5 lg:gap-y-4">
+          <div className="col-span-2 flex min-w-0 items-center gap-3 sm:border-r sm:border-border sm:pr-5 lg:col-span-1">
             <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
               <Users className="size-5" />
             </span>
@@ -580,12 +580,12 @@ function Pagina() {
             </div>
           </div>
 
-          <div className="space-y-1">
+          <div className="min-w-0 space-y-1">
             <label className="text-xs font-medium text-muted-foreground">Período</label>
             <select
               value={periodo}
               onChange={(e) => aplicarPeriodo(e.target.value)}
-              className="h-10 w-40 rounded-xl border border-input bg-background px-3 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring lg:w-40"
             >
               <option value="todos">Todos</option>
               <option value="mes">Este mês</option>
@@ -596,12 +596,12 @@ function Pagina() {
             </select>
           </div>
 
-          <div className="space-y-1">
+          <div className="min-w-0 space-y-1">
             <label className="text-xs font-medium text-muted-foreground">Responsável</label>
             <select
               value={respFiltro}
               onChange={(e) => setRespFiltro(e.target.value)}
-              className="h-10 w-44 rounded-xl border border-input bg-background px-3 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring lg:w-44"
             >
               <option value="todos">Todos</option>
               {responsaveis.map((r) => (
@@ -612,7 +612,7 @@ function Pagina() {
             </select>
           </div>
 
-          <div className="relative w-full space-y-1 sm:w-60">
+          <div className="relative col-span-2 min-w-0 space-y-1 sm:col-span-1 lg:w-60">
             <label className="text-xs font-medium text-muted-foreground">Buscar</label>
             <div className="relative">
               <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -635,7 +635,7 @@ function Pagina() {
             </div>
           </div>
 
-          <div className="space-y-1">
+          <div className="min-w-0 space-y-1">
             <label className="text-xs font-medium text-muted-foreground">De</label>
             <Input
               type="date"
@@ -644,10 +644,10 @@ function Pagina() {
                 setDesde(e.target.value);
                 setPeriodo("custom");
               }}
-              className="h-10 w-40 rounded-xl shadow-sm"
+              className="h-10 w-full rounded-xl shadow-sm lg:w-40"
             />
           </div>
-          <div className="space-y-1">
+          <div className="min-w-0 space-y-1">
             <label className="text-xs font-medium text-muted-foreground">Até</label>
             <Input
               type="date"
@@ -656,13 +656,13 @@ function Pagina() {
                 setAte(e.target.value);
                 setPeriodo("custom");
               }}
-              className="h-10 w-40 rounded-xl shadow-sm"
+              className="h-10 w-full rounded-xl shadow-sm lg:w-40"
             />
           </div>
 
           <Button
             variant="ghost"
-            className="ml-auto h-10 gap-2 text-primary hover:bg-primary/5 hover:text-primary"
+            className="col-span-2 h-10 justify-center gap-2 text-primary hover:bg-primary/5 hover:text-primary lg:ml-auto lg:w-auto"
             onClick={limparTodosFiltros}
           >
             Limpar filtros
@@ -674,13 +674,16 @@ function Pagina() {
 
 
       {isLoading ? (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="-mx-3 overflow-x-auto px-3 pb-4 sm:-mx-6 sm:px-6">
+          <div className="grid grid-flow-col auto-cols-[calc(100vw-1.5rem)] gap-3 sm:auto-cols-[20rem] lg:auto-cols-[21rem]">
           {Array.from({ length: 8 }).map((_, i) => (
-            <Skeleton key={i} className="h-40 w-full" />
+            <Skeleton key={i} className="h-96 w-full rounded-2xl" />
           ))}
+          </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="-mx-3 overflow-x-auto px-3 pb-4 sm:-mx-6 sm:px-6">
+        <div className="grid grid-flow-col auto-cols-[calc(100vw-1.5rem)] gap-3 sm:auto-cols-[20rem] lg:auto-cols-[21rem] lg:gap-4">
           {dadosFiltrados.map((stage, idx) => {
             const temClientes = stage.clientes.length > 0;
             const ehAlvo = alvo === stage.codigo && arrasto?.origem !== stage.codigo;
@@ -701,7 +704,7 @@ function Pagina() {
                   e.preventDefault();
                   moverPara(stage.codigo);
                 }}
-                className={`group relative flex min-w-0 flex-col rounded-2xl border bg-card shadow-sm transition-all duration-300 hover:shadow-md ${
+                className={`group relative flex min-h-[24rem] min-w-0 flex-col rounded-2xl border bg-card shadow-sm transition-all duration-300 hover:shadow-md sm:max-h-[calc(100dvh-18rem)] ${
                   ehAlvo ? "border-primary ring-2 ring-primary/40" : "border-border"
                 }`}
               >
@@ -728,10 +731,10 @@ function Pagina() {
                     {stage.clientes.length}
                   </button>
                 </div>
-                <div className="flex flex-1 flex-col gap-2 p-3">
+                <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overscroll-contain p-3">
                     {!temClientes ? (
                       <div
-                        className={`flex flex-1 flex-col items-center justify-center gap-2 rounded-lg border border-dashed py-8 text-center transition-colors ${
+                        className={`flex min-h-[12rem] flex-1 flex-col items-center justify-center gap-2 rounded-lg border border-dashed py-8 text-center transition-colors ${
                           ehAlvo
                             ? "border-primary/60 bg-primary/5 text-primary"
                             : "border-transparent text-muted-foreground"
@@ -896,7 +899,7 @@ function Pagina() {
                                     <div className="flex flex-wrap items-center gap-1.5">
                                       {c.nome_banco && (
                                         <span
-                                          className="inline-flex min-w-0 items-center gap-1 rounded-md border px-1.5 py-0.5 text-[11px] font-semibold"
+                                          className="inline-flex max-w-full min-w-0 items-center gap-1 rounded-md border px-1.5 py-0.5 text-[11px] font-semibold"
                                           style={{
                                             color: corBanco,
                                             borderColor: `color-mix(in oklab, ${corBanco} 35%, transparent)`,
@@ -935,7 +938,7 @@ function Pagina() {
                                     onChange={(e) =>
                                       salvarDataVistoria(c.id, "vistoria_agendada_em", e.target.value)
                                     }
-                                    className="h-7 flex-1 px-2 text-xs"
+                                    className="h-7 min-w-0 flex-1 px-2 text-xs"
                                   />
                                 </div>
                                 <div className="flex items-center gap-2">
@@ -949,7 +952,7 @@ function Pagina() {
                                     onChange={(e) =>
                                       salvarDataVistoria(c.id, "vistoria_concluida_em", e.target.value)
                                     }
-                                    className="h-7 flex-1 px-2 text-xs"
+                                    className="h-7 min-w-0 flex-1 px-2 text-xs"
                                   />
                                 </div>
                               </div>
@@ -965,7 +968,7 @@ function Pagina() {
                                     type="date"
                                     value={c.contrato_emitido_em ?? ""}
                                     onChange={(e) => salvarDataContrato(c.id, e.target.value)}
-                                    className="h-7 flex-1 px-2 text-xs"
+                                    className="h-7 min-w-0 flex-1 px-2 text-xs"
                                     title="Data de emissão do contrato (definida por você)"
                                   />
                                 </div>
@@ -1006,7 +1009,7 @@ function Pagina() {
                   type="button"
                   onClick={() => setArquivoAberto(true)}
                   title="Abrir arquivo de contratos emitidos"
-                  className="group/arq relative flex min-w-0 flex-col items-center justify-center gap-3 overflow-hidden rounded-2xl border border-primary/25 bg-gradient-to-br from-primary/5 via-card to-primary/10 p-5 text-center shadow-sm ring-1 ring-inset ring-primary/5 transition-all duration-300 hover:-translate-y-1 hover:border-primary/50 hover:shadow-xl hover:ring-primary/20"
+                  className="group/arq relative flex min-h-[18rem] min-w-0 flex-col items-center justify-center gap-3 overflow-hidden rounded-2xl border border-primary/25 bg-gradient-to-br from-primary/5 via-card to-primary/10 p-5 text-center shadow-sm ring-1 ring-inset ring-primary/5 transition-all duration-300 hover:-translate-y-1 hover:border-primary/50 hover:shadow-xl hover:ring-primary/20"
                 >
                   <span className="pointer-events-none absolute -right-6 -top-6 size-20 rounded-full bg-primary/10 blur-2xl transition-opacity duration-300 group-hover/arq:opacity-80" />
                   <span className="relative grid size-12 place-items-center rounded-2xl bg-primary/10 text-primary shadow-inner transition-all duration-300 group-hover/arq:scale-105 group-hover/arq:bg-primary group-hover/arq:text-primary-foreground group-hover/arq:shadow-lg">
@@ -1033,6 +1036,7 @@ function Pagina() {
               </Fragment>
             );
           })}
+        </div>
         </div>
       )}
 
