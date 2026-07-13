@@ -655,9 +655,8 @@ function Pagina() {
                 );
               })()}
             </div>
-
-            </div>
           ) : (
+
             <Card className="flex h-full min-h-0 flex-1 flex-col items-center justify-center gap-3 border-dashed border-border/60 text-center shadow-sm">
               <div className="flex size-14 items-center justify-center rounded-full bg-primary/10 text-primary">
                 <MessagesSquare className="h-6 w-6" />
