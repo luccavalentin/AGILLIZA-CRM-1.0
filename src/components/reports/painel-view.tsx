@@ -238,110 +238,126 @@ export function PainelView({
         </div>
       ) : (
         <>
-          <SectionTitle>Indicadores executivos</SectionTitle>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {data.heros.map((h) => (
+          <SectionTitle>Indicadores</SectionTitle>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+            {[...data.heros, ...data.minis].map((h) => (
               <HeroMetric
                 key={h.label}
                 label={h.label}
                 valor={h.valor}
-                hint={h.hint}
+                hint={"hint" in h ? h.hint : undefined}
                 tone={h.tone}
-                delta={h.delta}
+                delta={"delta" in h ? h.delta : undefined}
                 icon={iconeParaMetrica(h.label)}
                 to={linkParaMetrica(h.label)}
               />
             ))}
           </div>
 
-          <SectionTitle>Volumes</SectionTitle>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-            {data.minis.map((m) => (
-              <MiniMetric
-                key={m.label}
-                label={m.label}
-                valor={m.valor}
-                tone={m.tone}
-                to={linkParaMetrica(m.label)}
-              />
-            ))}
-          </div>
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
+            {data.evolucao && data.evolucao.dados.length > 1 && (
+              <div className="lg:col-span-5">
+                <PanelCard titulo={data.evolucao.titulo} subtitulo={data.evolucao.subtitulo}>
+                  <div className="h-[280px] w-full overflow-hidden">
+                    <ReportChartView
+                      chart={{
+                        titulo: data.evolucao.titulo,
+                        tipo: "line",
+                        dados: data.evolucao.dados,
+                        serie1: data.evolucao.serie1,
+                        serie2: data.evolucao.serie2,
+                      }}
+                    />
+                  </div>
+                </PanelCard>
+              </div>
+            )}
 
-          {data.evolucao && data.evolucao.dados.length > 1 && (
-            <>
-              <SectionTitle>Evolução</SectionTitle>
-              <PanelCard titulo={data.evolucao.titulo} subtitulo={data.evolucao.subtitulo}>
-                <div className="h-[280px] w-full overflow-hidden">
-                  <ReportChartView
-                    chart={{
-                      titulo: data.evolucao.titulo,
-                      tipo: "line",
-                      dados: data.evolucao.dados,
-                      serie1: data.evolucao.serie1,
-                      serie2: data.evolucao.serie2,
-                    }}
-                  />
-                </div>
-              </PanelCard>
-            </>
-          )}
+            {data.funil && data.funil.etapas.some((e) => e.valor > 0) && (
+              <div className="lg:col-span-3">
+                <PanelCard titulo={data.funil.titulo} subtitulo="Da simulação ao contrato">
+                  <ConversionFunnel etapas={data.funil.etapas} />
+                </PanelCard>
+              </div>
+            )}
 
-          {data.funil && data.funil.etapas.some((e) => e.valor > 0) && (
-            <>
-              <SectionTitle>Funil de conversão</SectionTitle>
-              <PanelCard titulo={data.funil.titulo} subtitulo="Da simulação ao contrato">
-                <ConversionFunnel etapas={data.funil.etapas} />
-              </PanelCard>
-            </>
-          )}
-
-
-
-          <SectionTitle>Operação</SectionTitle>
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-            <div className="lg:col-span-2">
+            <div className="lg:col-span-4">
               <PanelCard
                 titulo={data.chart.titulo}
                 subtitulo={data.chart.subtitulo}
                 abrirTo={abrirTo}
               >
-                <div
-                  className="w-full overflow-hidden"
-                  style={{
-                    height: Math.min(
-                      420,
-                      Math.max(168, data.chart.dados.length * 52 + 44),
-                    ),
-                  }}
-
-                >
-                  <ReportChartView
-                    chart={{ titulo: data.chart.titulo, tipo: "barh", dados: data.chart.dados }}
-                    colorByBank={data.chart.porBanco}
+                {data.chart.porBanco ? (
+                  <MetricList
+                    items={data.chart.dados.map((d) => ({ label: d.label, valor: d.valor }))}
+                    colorByBank
                   />
-                </div>
-              </PanelCard>
-            </div>
-            <div className="space-y-4">
-              {data.distribuicao && data.distribuicao.dados.length > 0 && (
-                <PanelCard
-                  titulo={data.distribuicao.titulo}
-                  subtitulo={data.distribuicao.subtitulo}
-                >
-                  <div className="h-[240px] w-full overflow-hidden">
+                ) : (
+                  <div
+                    className="w-full overflow-hidden"
+                    style={{
+                      height: Math.min(420, Math.max(168, data.chart.dados.length * 52 + 44)),
+                    }}
+                  >
                     <ReportChartView
-                      chart={{
-                        titulo: data.distribuicao.titulo,
-                        tipo: "donut",
-                        dados: data.distribuicao.dados,
-                      }}
-                      colorByBank={data.distribuicao.porBanco}
+                      chart={{ titulo: data.chart.titulo, tipo: "barh", dados: data.chart.dados }}
                     />
                   </div>
-                </PanelCard>
-              )}
+                )}
+              </PanelCard>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+            <div className="lg:col-span-1">
               <PanelCard titulo={data.ranking.titulo}>
                 <MetricList items={data.ranking.itens} colorByBank={data.chart.porBanco} />
+              </PanelCard>
+            </div>
+
+            <div className="lg:col-span-2">
+              <PanelCard titulo="Atividades e alertas">
+                {data.alertas.length === 0 ? (
+                  <div className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-3">
+                    <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-success" />
+                    <p className="min-w-0 text-sm leading-snug text-muted-foreground">
+                      Operação sem alertas críticos.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {data.alertas.map((a) => (
+                      <AlertRow
+                        key={a.titulo}
+                        tone={a.tone}
+                        titulo={a.titulo}
+                        descricao={a.descricao}
+                        contador={a.contador}
+                        to={linkParaMetrica(a.titulo)}
+                      />
+                    ))}
+                  </div>
+                )}
+              </PanelCard>
+            </div>
+          </div>
+
+          {data.distribuicao && data.distribuicao.dados.length > 0 && (
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+              <PanelCard
+                titulo={data.distribuicao.titulo}
+                subtitulo={data.distribuicao.subtitulo}
+              >
+                <div className="h-[240px] w-full overflow-hidden">
+                  <ReportChartView
+                    chart={{
+                      titulo: data.distribuicao.titulo,
+                      tipo: "donut",
+                      dados: data.distribuicao.dados,
+                    }}
+                    colorByBank={data.distribuicao.porBanco}
+                  />
+                </div>
               </PanelCard>
               {data.recusadasPorBanco && data.recusadasPorBanco.itens.length > 0 && (
                 <PanelCard titulo={data.recusadasPorBanco.titulo}>
@@ -349,31 +365,9 @@ export function PainelView({
                 </PanelCard>
               )}
             </div>
-          </div>
-
-          <SectionTitle>Alertas</SectionTitle>
-          {data.alertas.length === 0 ? (
-            <Card className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-3 p-4">
-              <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-success" />
-              <p className="min-w-0 text-sm leading-snug text-muted-foreground">
-                Operação sem alertas críticos.
-              </p>
-            </Card>
-          ) : (
-            <div className="space-y-2">
-              {data.alertas.map((a) => (
-                <AlertRow
-                  key={a.titulo}
-                  tone={a.tone}
-                  titulo={a.titulo}
-                  descricao={a.descricao}
-                  contador={a.contador}
-                  to={linkParaMetrica(a.titulo)}
-                />
-              ))}
-            </div>
           )}
         </>
+
       )}
     </div>
   );
