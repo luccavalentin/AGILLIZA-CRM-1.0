@@ -328,11 +328,11 @@ function Solicitacoes({
                     <Switch checked={s.reembolsado} onCheckedChange={(v) => toggle(s.id, v)} />
                     {s.reembolsado ? (
                       <Badge variant="secondary" className="gap-1">
-                        <CheckCircle2 className="h-3 w-3" /> Sim
+                        <CheckCircle2 className="h-3 w-3" /> Recebido
                       </Badge>
                     ) : (
                       <Badge variant="outline" className="gap-1">
-                        <Clock className="h-3 w-3" /> Não
+                        <Clock className="h-3 w-3" /> Pendente
                       </Badge>
                     )}
                   </div>
