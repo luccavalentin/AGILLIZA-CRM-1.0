@@ -229,7 +229,7 @@ export function ClienteForm({
     // Estado civil e cônjuge só se aplicam a Pessoa Física.
     const casado =
       ehPF && (v.estado_civil === "casado" || v.estado_civil === "uniao_estavel");
-    if (casado && !v.conjuge_nome.trim()) return toast.error("Informe o nome do cônjuge.");
+    // Cônjuge é opcional no cadastro: permite salvar mesmo sem os dados preenchidos.
     if (casado && v.conjuge_cpf && !validarCPF(v.conjuge_cpf)) {
       return toast.error("CPF do cônjuge inválido.");
     }
