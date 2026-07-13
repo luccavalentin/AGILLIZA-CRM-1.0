@@ -19,6 +19,7 @@ import {
   GitBranch,
   Archive,
   ArchiveRestore,
+  Settings2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
