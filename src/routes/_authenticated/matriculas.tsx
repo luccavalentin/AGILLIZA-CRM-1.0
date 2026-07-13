@@ -295,8 +295,8 @@ function Solicitacoes({
               <TableHead>Cliente</TableHead>
               <TableHead>Nº da matrícula</TableHead>
               <TableHead className="text-right">Valor</TableHead>
-              <TableHead>Reembolso</TableHead>
-              <TableHead>Data pagto reembolso</TableHead>
+              <TableHead>Reembolso recebido</TableHead>
+              <TableHead>Data do reembolso</TableHead>
               <TableHead className="text-right">Saldo</TableHead>
               <TableHead></TableHead>
             </TableRow>
