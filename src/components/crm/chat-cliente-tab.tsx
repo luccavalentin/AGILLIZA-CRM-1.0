@@ -470,7 +470,7 @@ export function ChatClienteTab({
       >
         <Maximize2 className="size-3.5" />
       </button>
-      <ChatClienteConversa clienteId={clienteId} info={info} />
+      <ChatClienteConversa clienteId={clienteId} info={info} acoes={acoes} />
     </div>
   );
 }
