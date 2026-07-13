@@ -785,14 +785,7 @@ export function baixarSimulacaoDetalhadaPDF({
     }
   });
 
-  // Disclaimer legal na última página, acima do rodapé.
-  const disclaimerY = pageH - 64;
-  const finalY = (doc as any).lastAutoTable?.finalY ?? 0;
-  if (finalY > disclaimerY - 6) {
-    doc.addPage();
-    drawPageBackground(doc, pageW, pageH);
-  }
-  drawDisclaimer(doc, pageW, pageH - 58);
+
 
   const total = doc.getNumberOfPages();
   for (let p = 1; p <= total; p++) {
