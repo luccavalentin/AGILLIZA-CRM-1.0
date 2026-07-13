@@ -532,7 +532,7 @@ export const listarPainel = createServerFn({ method: "GET" })
     let q = supabase
       .from("clientes")
       .select(
-        "id, nome, numero_cliente, responsavel_id, vistoria_agendada_em, vistoria_concluida_em, contrato_emitido_em, cliente_pipeline(ultima_atualizacao_em, pipeline_stages(codigo))",
+        "id, nome, numero_cliente, responsavel_id, responsavel:profiles!clientes_responsavel_id_fkey(nome), vistoria_agendada_em, vistoria_concluida_em, contrato_emitido_em, cliente_pipeline(ultima_atualizacao_em, pipeline_stages(codigo))",
       )
       .eq("ativo", true)
       .is("contrato_arquivado_em", null);
