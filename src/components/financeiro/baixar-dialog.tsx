@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { getMinhaSessao } from "@/lib/session.functions";
-import { baixarConta, type ContaTipo } from "@/lib/financeiro/financeiro.functions";
+import { baixarConta, listarConfigs, type ContaTipo } from "@/lib/financeiro/financeiro.functions";
 import {
   Dialog,
   DialogContent,
@@ -14,6 +14,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { CurrencyInput } from "@/components/simulacao/currency-input";
 import { Paperclip } from "lucide-react";
 import { hojeISO, formatBRL } from "@/lib/financeiro/format";
