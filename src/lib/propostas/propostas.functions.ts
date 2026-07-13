@@ -1465,3 +1465,88 @@ export const cadastrarClienteDaProposta = createServerFn({ method: "POST" })
 
     return { cliente_id: novo.id };
   });
+
+/**
+ * Retorna os dados da proposta mapeados para pré-preencher o formulário de
+ * cadastro do CRM. Usado quando a simulação foi feita direta (sem cliente).
+ */
+export const getPrefillCadastroProposta = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ proposta_id: z.string().uuid() }).parse(d))
+  .handler(async ({ context, data }) => {
+    const { supabase } = context;
+    const { data: prop, error } = await supabase
+      .from("propostas")
+      .select(
+        "id, cliente_id, nome_cliente, cpf_cnpj, email, celular, data_nascimento, estado_civil, renda_total, uf, utiliza_fgts",
+      )
+      .eq("id", data.proposta_id)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!prop) throw new Error("Proposta não encontrada.");
+
+    const CODIGO_PARA_CRM: Record<string, string> = {
+      S: "solteiro",
+      CA: "casado",
+      UE: "uniao_estavel",
+      DI: "divorciado",
+      VI: "viuvo",
+      SL: "solteiro",
+    };
+    const civilRaw = (prop.estado_civil ?? "").toString();
+    const estadoCivil =
+      CODIGO_PARA_CRM[civilRaw] ??
+      (["solteiro", "casado", "uniao_estavel", "divorciado", "viuvo"].includes(civilRaw)
+        ? civilRaw
+        : "solteiro");
+    const documento = String(prop.cpf_cnpj ?? "").replace(/\D/g, "");
+    const tipoPessoa = documento.length > 11 ? "PJ" : "PF";
+
+    return {
+      ja_vinculado: Boolean(prop.cliente_id),
+      cliente_id: (prop.cliente_id as string) ?? null,
+      valores: {
+        tipo_pessoa: tipoPessoa,
+        nome: prop.nome_cliente ?? "",
+        documento,
+        data_nascimento: prop.data_nascimento ?? "",
+        estado_civil: estadoCivil,
+        email: (prop.email ?? "").toString().toLowerCase(),
+        telefone_celular: prop.celular ?? "",
+        renda_total_declarada: prop.renda_total != null ? String(prop.renda_total) : "",
+        uf_interesse: prop.uf ?? "",
+        utiliza_fgts: Boolean(prop.utiliza_fgts),
+        origem: "direto",
+      },
+    };
+  });
+
+/**
+ * Vincula um cliente já cadastrado a uma proposta (e à simulação de origem),
+ * usado após criar o cadastro pela tela do CRM a partir de uma proposta direta.
+ */
+export const vincularClienteAProposta = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z.object({ proposta_id: z.string().uuid(), cliente_id: z.string().uuid() }).parse(d),
+  )
+  .handler(async ({ context, data }): Promise<{ ok: true }> => {
+    const { supabase } = context;
+    const { data: prop, error } = await supabase
+      .from("propostas")
+      .select("id, simulacao_id")
+      .eq("id", data.proposta_id)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!prop) throw new Error("Proposta não encontrada.");
+
+    await supabase.from("propostas").update({ cliente_id: data.cliente_id }).eq("id", prop.id);
+    if (prop.simulacao_id) {
+      await supabase
+        .from("simulacoes")
+        .update({ cliente_id: data.cliente_id })
+        .eq("id", prop.simulacao_id);
+    }
+    return { ok: true };
+  });
+
