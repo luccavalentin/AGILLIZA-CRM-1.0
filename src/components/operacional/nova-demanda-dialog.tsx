@@ -218,34 +218,31 @@ export function NovaDemandaDialog({ onCriada }: { onCriada: () => void }) {
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label>Responsável (destinatário)</Label>
-              <Select value={responsavel} onValueChange={setResponsavel}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione" />
-                </SelectTrigger>
-                <SelectContent>
-                  {(colegas ?? []).map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.nome ?? c.email}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <ComboSelect
+                value={responsavel}
+                onValueChange={setResponsavel}
+                options={(colegas ?? []).map((c) => ({
+                  id: c.id,
+                  label: c.nome ?? c.email ?? "",
+                }))}
+                placeholder="Selecione"
+                emptyText="Nenhum responsável encontrado."
+              />
             </div>
             <div className="space-y-1.5">
               <Label>Cliente-alvo (opcional)</Label>
-              <Select value={cliente} onValueChange={setCliente}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Nenhum" />
-                </SelectTrigger>
-                <SelectContent>
-                  {(clientes ?? []).map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.nome ?? c.numero_cliente}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <ComboSelect
+                value={cliente}
+                onValueChange={setCliente}
+                options={(clientes ?? []).map((c) => ({
+                  id: c.id,
+                  label: c.nome ?? c.numero_cliente ?? "",
+                }))}
+                placeholder="Nenhum"
+                emptyText="Nenhum cliente encontrado."
+              />
             </div>
+
           </div>
           <p className="text-xs text-muted-foreground">
             O prazo (SLA) é calculado automaticamente em horas úteis conforme o tipo e a prioridade.
