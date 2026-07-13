@@ -331,6 +331,7 @@ export async function enviarSimulacaoImpl({
 
 
         const dados = integ ?? simResp;
+        const dadosApi = dados?.simulacao ?? dados?.data ?? dados;
 
         await supabase
           .from("simulacao_bancos")
@@ -339,25 +340,25 @@ export async function enviarSimulacaoImpl({
             status_banco: "simulada",
             raw_response: dados,
             simulado_em: new Date().toISOString(),
-            valor_parcela: dados?.valorParcelaBanco ?? dados?.valorParcelaSimulacao ?? null,
-            taxa_juros_ano: dados?.taxaJurosAnoBanco ?? null,
+            valor_parcela: dadosApi?.valorParcelaBanco ?? dadosApi?.valorParcelaSimulacao ?? null,
+            taxa_juros_ano: dadosApi?.taxaJurosAnoBanco ?? null,
             prazo_pagamento_max:
-              dados?.prazoPagamentoBancoMax ??
-              dados?.prazoPagamentoBanco ??
-              dados?.prazoPagamentoSimulacao ??
+              dadosApi?.prazoPagamentoBancoMax ??
+              dadosApi?.prazoPagamentoBanco ??
+              dadosApi?.prazoPagamentoSimulacao ??
               num(sim.prazo) ??
               null,
             valor_financiamento_max:
-              dados?.valorFinanciamentoBancoMax ??
-              dados?.valorFinanciamentoBanco ??
-              dados?.valorTotalFinanciamento ??
-              dados?.valorFinanciamentoSimulacao ??
+              dadosApi?.valorFinanciamentoBancoMax ??
+              dadosApi?.valorFinanciamentoBanco ??
+              dadosApi?.valorTotalFinanciamento ??
+              dadosApi?.valorFinanciamentoSimulacao ??
               num(sim.valor_financiamento) ??
               null,
-            valor_parcela_max: dados?.valorParcelaBancoMax ?? null,
-            codigo_indexador: dados?.codigoIndexadorBanco ?? null,
-            valor_iof: dados?.valorIofBanco ?? null,
-            sistema_amortizacao_banco: dados?.codigoSistemaAmortizacaoBanco ?? null,
+            valor_parcela_max: dadosApi?.valorParcelaBancoMax ?? null,
+            codigo_indexador: dadosApi?.codigoIndexadorBanco ?? null,
+            valor_iof: dadosApi?.valorIofBanco ?? null,
+            sistema_amortizacao_banco: dadosApi?.codigoSistemaAmortizacaoBanco ?? null,
           })
           .eq("id", b.id);
         return { banco_id: b.banco_id, status: "simulada" as const };

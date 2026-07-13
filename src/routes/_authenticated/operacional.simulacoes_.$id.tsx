@@ -40,6 +40,7 @@ import { DetalheBancoDialog } from "@/components/simulacao/detalhe-banco-dialog"
 import { SelecionarBancosPdfDialog } from "@/components/simulacao/selecionar-bancos-pdf-dialog";
 import { formatBRL, formatPercent } from "@/lib/simulacao/format";
 import { extrairDetalheBanco } from "@/lib/simulacao/detalhe-banco";
+import { rendaMinimaPelosBancos } from "@/lib/simulacao/renda";
 import {
   baixarSimulacaoDetalhadaPDF,
 } from "@/lib/simulacao/simulacao-pdf";
@@ -206,6 +207,9 @@ function Pagina() {
   const bancosComTaxa = bancos
     .filter((b: any) => b.status_banco === "simulada" && b.valor_parcela != null)
     .sort((a: any, b: any) => (a.valor_parcela ?? 0) - (b.valor_parcela ?? 0));
+  const rendaInformada =
+    (Number(s.renda_total) || 0) + (s.compoe_renda ? Number(s.renda_conjuge) || 0 : 0);
+  const rendaBancos = rendaMinimaPelosBancos(bancos, rendaInformada || null);
   // Só destaca "Melhor taxa" quando há mais de um banco para comparar.
   const melhorId = bancosComTaxa.length > 1 ? bancosComTaxa[0]?.id : undefined;
 
@@ -332,6 +336,14 @@ function Pagina() {
                   rotulo="Valor financiado"
                   valor={formatBRL(s.valor_financiamento)}
                 />
+                {rendaBancos && (
+                  <ResumoCelula
+                    rotulo="Renda exigida"
+                    valor={formatBRL(rendaBancos.rendaMinima)}
+                    detalhe={rendaBancos.bancoNome ?? "maior retorno bancário"}
+                    destaque
+                  />
+                )}
                 <ResumoCelula
                   rotulo="Financiar despesas"
                   valor={s.fg_financiar_despesas ? "Sim" : "Não"}
@@ -709,10 +721,12 @@ function classificarEvento(descricao: string): {
 function ResumoCelula({
   rotulo,
   valor,
+  detalhe,
   destaque,
 }: {
   rotulo: string;
   valor: string;
+  detalhe?: string;
   destaque?: boolean;
 }) {
   return (
@@ -736,6 +750,7 @@ function ResumoCelula({
       >
         {valor}
       </dd>
+      {detalhe && <p className="mt-0.5 truncate text-[11px] text-muted-foreground">{detalhe}</p>}
     </div>
   );
 }
