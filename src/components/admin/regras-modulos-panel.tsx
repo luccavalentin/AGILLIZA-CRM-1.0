@@ -881,7 +881,7 @@ export function RegrasModulosPanel() {
 
               <div className="space-y-2">
                 <p className="text-sm font-semibold text-foreground">Por tipo de pessoa</p>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                   {(tiposQuery.data ?? []).map((t) => (
                     <label key={t.id} className="flex items-center gap-2 text-sm">
                       <Checkbox
