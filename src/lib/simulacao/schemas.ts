@@ -85,6 +85,35 @@ export const ESTADOS_CIVIS = [
   { value: "SL", label: "Separado(a)" },
 ] as const;
 
+/** Converte o código de estado civil da simulação (S, CA, UE, DI, VI, SL)
+ * para o enum cliente_estado_civil do CRM. */
+export function mapEstadoCivilEnum(
+  v: string | null | undefined,
+): "solteiro" | "casado" | "uniao_estavel" | "divorciado" | "viuvo" | null {
+  switch (v) {
+    case "S":
+      return "solteiro";
+    case "CA":
+      return "casado";
+    case "UE":
+      return "uniao_estavel";
+    case "DI":
+    case "SL":
+      return "divorciado";
+    case "VI":
+      return "viuvo";
+    // já pode vir no formato do enum
+    case "solteiro":
+    case "casado":
+    case "uniao_estavel":
+    case "divorciado":
+    case "viuvo":
+      return v;
+    default:
+      return null;
+  }
+}
+
 export const TIPOS_IMOVEL = [
   { value: "AP", label: "Apartamento" },
   { value: "CS", label: "Casa" },
