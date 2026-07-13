@@ -90,6 +90,11 @@ function Pagina() {
   const salvarContratoData = useServerFn(definirDataContratoEmitido);
   const arquivarContratoFn = useServerFn(arquivarContrato);
   const listarContratos = useServerFn(listarContratosEmitidos);
+  const limparVinculoFn = useServerFn(limparVinculoEsteira);
+  const [limpandoVinculo, setLimpandoVinculo] = useState<{ id: string; nome: string } | null>(
+    null,
+  );
+
   const [desde, setDesde] = useState("");
   const [ate, setAte] = useState("");
   const [busca, setBusca] = useState("");
