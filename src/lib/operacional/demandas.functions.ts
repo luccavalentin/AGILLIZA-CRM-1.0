@@ -62,6 +62,20 @@ async function correspondenteId(supabase: any, userId: string): Promise<string> 
   return data as string;
 }
 
+async function papelNaDemanda(supabase: any, demandaId: string, userId: string) {
+  const { data, error } = await supabase
+    .from("demandas")
+    .select("criador_id, responsavel_id, correspondente_id, titulo")
+    .eq("id", demandaId)
+    .maybeSingle();
+  if (error || !data) throw new Error("Demanda não encontrada.");
+  return {
+    ...data,
+    souCriador: data.criador_id === userId,
+    souResponsavel: data.responsavel_id === userId,
+  };
+}
+
 export const listarDemandas = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) =>
