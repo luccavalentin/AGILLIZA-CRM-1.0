@@ -353,57 +353,23 @@ function Pagina() {
     { id: "arquivadas", label: "Arquivadas", count: contadores.arquivadas },
   ];
 
+  const somenteLeituraAtual = !!alvoAtual && !alvoAtual.minha && verTodos;
+  const acoesGestao =
+    alvoAtual && !somenteLeituraAtual ? (
+      <MaisAcoesGestao
+        key={alvoAtual.cliente_id}
+        clienteId={alvoAtual.cliente_id}
+        nome={alvoAtual.nome}
+        documento={alvoAtual.documento}
+        contexto={alvoAtual.etapa_nome ?? null}
+        etiquetas={etiquetas ?? []}
+      />
+    ) : null;
+
   return (
-    <div className="flex h-[calc(100dvh-3.5rem)] w-full flex-col gap-4 p-4 md:p-6">
-      <div className="flex shrink-0 items-center gap-3 rounded-2xl border border-border/60 bg-gradient-to-r from-primary/5 via-card to-card p-4 shadow-sm">
-        <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-          <MessagesSquare className="h-5 w-5" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <h1 className="text-xl font-semibold tracking-tight text-foreground">
-            Chat e Follow-up Cliente
-          </h1>
-          <p className="hidden text-sm text-muted-foreground sm:block">
-            Converse, etiquete, filtre e acompanhe os SLAs de atualização e
-            lembrete de cada cliente.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() => {
-            setVerTodos((v) => !v);
-            setSelecionado(null);
-            setAtendenteSel(null);
-          }}
-          title="Alterna entre as suas conversas e a visão de todos os atendentes (apenas gestores)."
-          className={cn(
-            "hidden shrink-0 items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-medium transition-colors sm:inline-flex",
-            verTodos
-              ? "border-primary bg-primary text-primary-foreground"
-              : "border-border bg-background text-muted-foreground hover:bg-muted",
-          )}
-        >
-          <Users className="h-3.5 w-3.5" />
-          {verTodos ? "Todos os atendentes" : "Minhas conversas"}
-        </button>
-        <ChatConfigSheet />
-      </div>
-
-      {/* Gestão da conversa — barra horizontal no topo (acima das colunas) */}
-      {alvoAtual && (
-        <div className="shrink-0">
-          <BarraGestao
-            key={alvoAtual.cliente_id}
-            clienteId={alvoAtual.cliente_id}
-            nome={alvoAtual.nome}
-            documento={alvoAtual.documento}
-            contexto={alvoAtual.etapa_nome ?? null}
-            etiquetas={etiquetas ?? []}
-          />
-        </div>
-      )}
-
+    <div className="flex h-[calc(100dvh-3.5rem)] w-full flex-col p-3 md:p-4">
       <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[20rem_1fr] xl:grid-cols-[22rem_1fr_20rem]">
+
 
         {/* Lista de conversas — no mobile some quando uma conversa é aberta */}
         <Card
