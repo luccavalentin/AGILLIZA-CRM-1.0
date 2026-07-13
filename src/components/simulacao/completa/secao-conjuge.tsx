@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/select";
 import { CurrencyInput } from "@/components/simulacao/currency-input";
 import { Campo } from "@/components/simulacao/completa/campo";
+import { DateInput } from "@/components/shared/date-input";
 import { maskCpfCnpj, maskCelular } from "@/lib/simulacao/format";
 import { ESTADOS_CIVIS } from "@/lib/simulacao/schemas";
 import type { SimulacaoCompletaCtx } from "@/lib/simulacao/use-simulacao-completa";
