@@ -283,6 +283,18 @@ export const criarProposta = createServerFn({ method: "POST" })
   .handler(async ({ context, data }): Promise<{ proposta_id: string; numero_proposta: string }> => {
     const { supabase, userId } = context;
     const corr = await correspondenteId(supabase, userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    if (data.cliente_id) {
+      const { data: clienteValido, error: clienteErr } = await supabase
+        .from("clientes")
+        .select("id")
+        .eq("id", data.cliente_id)
+        .eq("correspondente_id", corr)
+        .maybeSingle();
+      if (clienteErr) throw new Error(clienteErr.message);
+      if (!clienteValido) throw new Error("Cliente não encontrado para este correspondente.");
+    }
 
     let snapshot: Record<string, unknown> = {
       correspondente_id: corr,
@@ -357,7 +369,7 @@ export const criarProposta = createServerFn({ method: "POST" })
       };
     }
 
-    const { data: inserted, error: insErr } = await supabase
+    const { data: inserted, error: insErr } = await supabaseAdmin
       .from("propostas")
       .insert(snapshot as any)
       .select("id, numero_proposta")
@@ -384,7 +396,8 @@ export const criarProposta = createServerFn({ method: "POST" })
         valor_iof: b.valor_iof,
         sistema_amortizacao_banco: b.sistema_amortizacao_banco,
       }));
-      await supabase.from("proposta_bancos").insert(linhas);
+      const { error: bancosErr } = await supabaseAdmin.from("proposta_bancos").insert(linhas);
+      if (bancosErr) throw new Error(bancosErr.message);
     }
 
     // Preenche o participante titular a partir do cadastro completo do cliente,
@@ -392,7 +405,7 @@ export const criarProposta = createServerFn({ method: "POST" })
     const clienteId = snapshot.cliente_id as string | null;
     if (clienteId) {
       const { data: cli } = await supabase
-        .from("clientes")
+          .from("clientes")
         .select("*")
         .eq("id", clienteId)
         .maybeSingle();
@@ -405,7 +418,7 @@ export const criarProposta = createServerFn({ method: "POST" })
           .maybeSingle();
         const c = cli as any;
         const e = (end ?? {}) as any;
-        const { data: insTit } = await supabase.from("proposta_envolvidos").insert({
+        const { data: insTit, error: titularErr } = await supabaseAdmin.from("proposta_envolvidos").insert({
           proposta_id: inserted.id,
           cliente_id: clienteId,
           tipo_qualificacao: "CO",
@@ -441,12 +454,13 @@ export const criarProposta = createServerFn({ method: "POST" })
           fg_autorizacao_dados: c.fg_autorizacao_dados ?? false,
           dados: { pai: c.pai ?? null, nacionalidade: c.nacionalidade ?? null, naturalidade: c.naturalidade ?? null, banco_conta: c.banco_conta ?? null },
         } as any).select("id").maybeSingle();
+        if (titularErr) throw new Error(titularErr.message);
 
         // Cônjuge/coproponente já cadastrado na ficha do cliente entra como
         // envolvido vinculado ao titular (conjuge_de), para o formulário já vir preenchido.
         const ehCasado = ["casado", "uniao_estavel"].includes(String(c.estado_civil ?? ""));
         if (insTit?.id && ehCasado && (c.conjuge_nome || c.conjuge_cpf)) {
-          await supabase.from("proposta_envolvidos").insert({
+          const { error: conjugeErr } = await supabaseAdmin.from("proposta_envolvidos").insert({
             proposta_id: inserted.id,
             conjuge_de: insTit.id,
             tipo_qualificacao: "TI",
@@ -480,6 +494,7 @@ export const criarProposta = createServerFn({ method: "POST" })
             uf: e.uf ?? c.uf_interesse ?? null,
             dados: { nacionalidade: c.conjuge_nacionalidade ?? null, banco_conta: c.conjuge_banco_conta ?? null },
           } as any);
+          if (conjugeErr) throw new Error(conjugeErr.message);
         }
       }
 
@@ -530,19 +545,23 @@ export const criarProposta = createServerFn({ method: "POST" })
             banco_conta: v.banco_conta ?? null,
           },
         }));
-        await supabase.from("proposta_envolvidos").insert(linhasVend as any);
+        const { error: vendedoresErr } = await supabaseAdmin
+          .from("proposta_envolvidos")
+          .insert(linhasVend as any);
+        if (vendedoresErr) throw new Error(vendedoresErr.message);
       }
     }
 
 
 
-    await supabase.from("proposta_historico").insert({
+    const { error: histErr } = await supabaseAdmin.from("proposta_historico").insert({
       proposta_id: inserted.id,
       tipo_evento: "criada",
       descricao: "Proposta criada",
       status_novo: "rascunho",
       ator_id: userId,
     });
+    if (histErr) throw new Error(histErr.message);
 
     return { proposta_id: inserted.id, numero_proposta: inserted.numero_proposta };
   });
