@@ -127,7 +127,10 @@ function Perfil() {
         linha("", "Nenhuma mensagem.");
       } else {
         (dados.mensagens as any[]).forEach((m) => {
-          const quem = m.remetente_tipo === "cliente" ? "Você" : "Time";
+          const quem =
+            m.remetente_tipo === "cliente"
+              ? "Você"
+              : (m.remetente_nome && String(m.remetente_nome).trim()) || "Atendente";
           const quando = m.criada_em ? new Date(m.criada_em).toLocaleString("pt-BR") : "";
           linha(`${quem} (${quando})`, m.mensagem ?? "");
         });
