@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import type { SimulacaoCompletaCtx } from "@/lib/simulacao/use-simulacao-completa";
 
 export function SecaoBancos({ ctx }: { ctx: SimulacaoCompletaCtx }) {
-  const { f, erros, bancos, ehBradesco, toggleBanco } = ctx;
+  const { f, erros, bancos, aceitaPrice, toggleBanco } = ctx;
 
   return (
     <section className="space-y-4">
@@ -30,7 +30,7 @@ export function SecaoBancos({ ctx }: { ctx: SimulacaoCompletaCtx }) {
       ) : (
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
           {bancos.map((b) => {
-            const bloqueado = f.sistema_amortizacao === "P" && !ehBradesco(b);
+            const bloqueado = f.sistema_amortizacao === "P" && !aceitaPrice(b);
             const selecionado = f.bancos_ids.includes(b.id);
             const cor = corDoBanco(b.nome_banco);
             return (
