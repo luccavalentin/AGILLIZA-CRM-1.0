@@ -99,9 +99,8 @@ const opcoes = (m: Record<string, string>) =>
   Object.entries(m).map(([value, label]) => ({ value, label }));
 
 /** Opções de status do filtro por código de relatório. */
-/** Status ocultos no filtro (transientes, técnicos ou redundantes com outros). */
+/** Status ocultos no filtro (transientes/técnicos). Simulação (rascunho) fica visível. */
 const STATUS_PROPOSTA_OCULTOS = new Set([
-  "rascunho",
   "enviada_banco",
   "registrado",
   "erro_envio",
