@@ -314,7 +314,7 @@ function CardResumo({
   selecionado: AtendenteCliente | null;
 }) {
   const contato = visao?.contato ?? null;
-  const responsavelNome = contato?.nome ?? selecionado?.nome ?? "Sua equipe";
+  const responsavelNome = contato?.nome ?? selecionado?.nome ?? "Atendente";
   const responsavelFoto = contato?.foto_url ?? selecionado?.foto_url ?? null;
   const ultima = visao?.processo.ultima_atualizacao ?? null;
   return (
