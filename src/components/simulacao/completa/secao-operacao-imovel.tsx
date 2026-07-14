@@ -35,6 +35,7 @@ export function SecaoOperacaoImovel({ ctx }: { ctx: SimulacaoCompletaCtx }) {
     maxPrazoIdade,
     aplicarEntradaSugerida,
     aplicarPorFinanciamento,
+    aplicarPorParcela,
     aplicarJogadaNumeros,
     definirPrazo,
     setSistemaAmortizacao,
@@ -43,6 +44,7 @@ export function SecaoOperacaoImovel({ ctx }: { ctx: SimulacaoCompletaCtx }) {
     normalizarPctDespesas,
     pctDespesas,
   } = ctx;
+
 
   return (
     <section className="space-y-4">
