@@ -199,7 +199,13 @@ export function PainelView({
               />
             )}
             <Select value={periodo} onValueChange={(v) => setPeriodo(v as Periodo)}>
-              <SelectTrigger className="h-9 w-full sm:w-40">
+              <SelectTrigger
+                className={
+                  modulo === "visao-geral"
+                    ? "h-9 w-full sm:w-40 border-white/20 bg-white/10 text-white [&_svg]:text-white/80 hover:bg-white/15"
+                    : "h-9 w-full sm:w-40"
+                }
+              >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
