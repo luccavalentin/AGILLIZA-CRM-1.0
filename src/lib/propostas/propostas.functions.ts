@@ -138,7 +138,7 @@ export const listarPropostas = createServerFn({ method: "GET" })
       }
     }
 
-    // Resolve nomes dos responsáveis (para exibir o "dono" no escopo Todas).
+    // Resolve nomes dos responsáveis + de quem excluiu (para escopo "Todas" e aba "Excluídas").
     const donoIds = Array.from(
       new Set(
         rows
@@ -146,21 +146,26 @@ export const listarPropostas = createServerFn({ method: "GET" })
           .filter((v): v is string => Boolean(v)),
       ),
     );
-    const nomesDono = new Map<string, string>();
-    if (donoIds.length) {
+    const excluidorIds = Array.from(
+      new Set(rows.map((r: any) => r.deleted_by).filter((v: any): v is string => Boolean(v))),
+    );
+    const perfilIds = Array.from(new Set([...donoIds, ...excluidorIds]));
+    const nomesPerfis = new Map<string, string>();
+    if (perfilIds.length) {
       const { data: perfis } = await supabase
         .from("profiles")
         .select("id, nome")
-        .in("id", donoIds);
-      for (const p of perfis ?? []) nomesDono.set((p as any).id, (p as any).nome ?? "");
+        .in("id", perfilIds);
+      for (const p of perfis ?? []) nomesPerfis.set((p as any).id, (p as any).nome ?? "");
     }
 
-    const lista = rows.map((r) => {
+    const lista = rows.map((r: any) => {
       const responsavel_id = r.usuario_responsavel_id ?? r.usuario_criador_id ?? null;
       return {
         ...r,
         responsavel_id,
-        nome_responsavel: responsavel_id ? (nomesDono.get(responsavel_id) ?? null) : null,
+        nome_responsavel: responsavel_id ? (nomesPerfis.get(responsavel_id) ?? null) : null,
+        nome_excluidor: r.deleted_by ? (nomesPerfis.get(r.deleted_by) ?? null) : null,
         bancos: bancosPorProp.get(r.id) ?? [],
       };
     });
