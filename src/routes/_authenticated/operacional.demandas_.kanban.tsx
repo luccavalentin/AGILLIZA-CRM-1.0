@@ -162,7 +162,22 @@ function Pagina() {
         </Button>
       </div>
 
+      <Tabs
+        value={escopo}
+        onValueChange={(v) => {
+          const val = v as "minhas" | "equipe";
+          setEscopo(val);
+          if (typeof window !== "undefined") localStorage.setItem("demandas:escopo", val);
+        }}
+      >
+        <TabsList className="h-10 rounded-xl">
+          <TabsTrigger value="minhas" className="rounded-lg">Minhas</TabsTrigger>
+          <TabsTrigger value="equipe" className="rounded-lg">Gerais</TabsTrigger>
+        </TabsList>
+      </Tabs>
+
       <div className="flex gap-4 overflow-x-auto pb-2">
+
         {COLUNAS.map((col) => {
           const cfg = statusDemanda(col);
           const doStatus = porStatus.get(col) ?? [];
