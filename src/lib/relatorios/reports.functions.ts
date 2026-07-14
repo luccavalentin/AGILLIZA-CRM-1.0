@@ -188,9 +188,9 @@ function aplicarFiltrosPessoa(query: any, filtros: ReportFiltros, cols: string, 
   return query;
 }
 
-const statusEhFiltroSimulacao = (status?: string) => status === "rascunho";
+const statusEhFiltroSimulacao = (status?: string) => status === "rascunho" || status === "simulacao";
 const statusEhStatusRealDeSimulacao = (status?: string) =>
-  !!status && status !== "rascunho" && Object.prototype.hasOwnProperty.call(STATUS_SIMULACAO_LABEL, status);
+  !!status && !statusEhFiltroSimulacao(status) && Object.prototype.hasOwnProperty.call(STATUS_SIMULACAO_LABEL, status);
 
 function serieMensal(rows: { data: string; valor?: number }[]): ChartSerie[] {
   const map = new Map<string, { valor: number; count: number }>();
@@ -484,6 +484,14 @@ export const runReport = createServerFn({ method: "POST" })
         .select("simulacao_id,nome_banco,status_banco,valor_financiamento_max,valor_parcela")
         .in("simulacao_id", ids)
         .limit(20000);
+      if (bancosRows === null) {
+        const { data: bancoTeste, error: bancoError } = await supabase
+          .from("simulacao_bancos")
+          .select("simulacao_id")
+          .limit(1);
+        if (bancoError) throw new Error(bancoError.message);
+        if (bancoTeste === null) throw new Error("Não foi possível carregar bancos das simulações.");
+      }
       const porSim = new Map<string, any[]>();
       ((bancosRows ?? []) as any[]).forEach((b) => {
         const k = String(b.simulacao_id ?? "");
@@ -494,6 +502,7 @@ export const runReport = createServerFn({ method: "POST" })
       });
 
       const bancosFiltro = [...(filtros.bancos ?? []), filtros.banco].filter(Boolean) as string[];
+      const buscaLc = filtros.busca?.trim().toLowerCase();
       return sims
         .map((s) => {
           const bancos = porSim.get(s.id) ?? [];
@@ -511,6 +520,20 @@ export const runReport = createServerFn({ method: "POST" })
         .filter((s) => {
           if (!bancosFiltro.length) return true;
           return bancosFiltro.some((b) => s.nomes_bancos.includes(b));
+        })
+        .filter((s) => {
+          if (!buscaLc) return true;
+          const alvo = [
+            s.numero_simulacao,
+            s.nome_cliente,
+            s.produto,
+            s.status,
+            s.bancos_label,
+          ]
+            .map((v) => String(v ?? ""))
+            .join(" ")
+            .toLowerCase();
+          return alvo.includes(buscaLc);
         });
     }
 
