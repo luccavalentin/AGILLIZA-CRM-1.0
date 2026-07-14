@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { TypingIndicator } from "@/components/shared/typing-indicator";
 import { type ChatMensagem } from "@/lib/crm/chat-cliente.functions";
 import { MsgAcoes } from "./msg-acoes";
-import { formatarDia, formatarHora, iniciais, type ChatClienteInfo } from "./utils";
+import { formatarDia, formatarHora, type ChatClienteInfo } from "./utils";
 
 export function ListaMensagens({
   filtradas,
@@ -89,15 +89,6 @@ export function ListaMensagens({
                   mesmoAutorAntes ? "mt-0.5" : "mt-2",
                 )}
               >
-                {!doTime &&
-                  (mesmoAutorDepois ? (
-                    <span className="size-7 shrink-0" />
-                  ) : (
-                    <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary/80 to-primary/50 text-[10px] font-semibold text-primary-foreground shadow-sm">
-                      {iniciais(info?.nome)}
-                    </span>
-                  ))}
-
                 {/* Ações (aparecem no hover) — à esquerda das bolhas do time */}
                 {podeGerenciar && (
                   <MsgAcoes
@@ -108,6 +99,7 @@ export function ListaMensagens({
                     onDelete={() => onExcluir(m)}
                   />
                 )}
+
 
                 <div
                   className={cn(

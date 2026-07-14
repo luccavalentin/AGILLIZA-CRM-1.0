@@ -87,12 +87,31 @@ const CORES = [
 
 type FiltroChat = "todas" | "nao_lidas" | "sla" | "lembrete" | "arquivadas";
 
-function formatarHora(iso: string): string {
+function _formatarHoraLegacy(iso: string): string {
   return new Date(iso).toLocaleString("pt-BR", {
     day: "2-digit",
     month: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
+  });
+}
+void _formatarHoraLegacy;
+
+function rotuloDia(iso: string): string {
+  const d = new Date(iso);
+  const hoje = new Date();
+  const ontem = new Date();
+  ontem.setDate(hoje.getDate() - 1);
+  const mesmoDia = (a: Date, b: Date) =>
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate();
+  if (mesmoDia(d, hoje)) return "Hoje";
+  if (mesmoDia(d, ontem)) return "Ontem";
+  return d.toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
   });
 }
 
@@ -480,74 +499,98 @@ function Pagina() {
               </p>
             ) : (
               <>
-                {filtradas.map((c) => {
-                  const tags = etiquetasCliente.get(c.cliente_id) ?? [];
-                  const sla = slaEstourado(
-                    c.cliente_id,
-                    c.ultimo_remetente,
-                    c.ultima_em,
-                  );
-                  const lembrete = lembreteDevido(c.cliente_id);
-                  return (
-                    <button
-                      key={`${c.cliente_id}::${c.atendente_id ?? ""}`}
-                      onClick={() => abrirConversa(c.cliente_id, c.atendente_id)}
-                      className={cn(
-                        "flex w-full items-start gap-3 border-b border-border/50 px-3 py-3 text-left transition-colors hover:bg-muted/50",
-                        selecionado === c.cliente_id &&
-                          (atendenteSel == null || atendenteSel === c.atendente_id) &&
-                          "bg-primary/5 shadow-[inset_3px_0_0_0_hsl(var(--primary))]",
-                      )}
-                    >
-                      <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary/80 to-primary/50 text-xs font-semibold text-primary-foreground">
-                        {iniciais(c.nome)}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="truncate text-sm font-medium text-foreground">
-                            {c.nome}
-                          </span>
-                          <span className="shrink-0 text-[10px] text-muted-foreground">
-                            {formatarHora(c.ultima_em)}
-                          </span>
-                        </div>
-                        {verTodos && !c.minha && c.atendente_nome && (
-                          <span className="mt-0.5 inline-flex items-center gap-1 text-[10px] font-medium text-primary/80">
-                            <Users className="h-3 w-3" /> {c.atendente_nome}
-                          </span>
+                {(() => {
+                  let ultimoDia = "";
+                  const nodes: React.ReactNode[] = [];
+                  for (const c of filtradas) {
+                    const dia = rotuloDia(c.ultima_em);
+                    if (dia !== ultimoDia) {
+                      ultimoDia = dia;
+                      nodes.push(
+                        <div
+                          key={`hdr-${dia}`}
+                          className="sticky top-0 z-[1] bg-card/95 px-3 pb-1 pt-3 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground backdrop-blur"
+                        >
+                          {dia}
+                        </div>,
+                      );
+                    }
+                    const tags = etiquetasCliente.get(c.cliente_id) ?? [];
+                    const sla = slaEstourado(
+                      c.cliente_id,
+                      c.ultimo_remetente,
+                      c.ultima_em,
+                    );
+                    const lembrete = lembreteDevido(c.cliente_id);
+                    const ativo =
+                      selecionado === c.cliente_id &&
+                      (atendenteSel == null || atendenteSel === c.atendente_id);
+                    nodes.push(
+                      <button
+                        key={`${c.cliente_id}::${c.atendente_id ?? ""}`}
+                        onClick={() => abrirConversa(c.cliente_id, c.atendente_id)}
+                        className={cn(
+                          "mx-2 mb-0.5 flex w-[calc(100%-1rem)] items-start gap-3 rounded-xl px-2.5 py-2.5 text-left transition-colors",
+                          ativo
+                            ? "bg-primary/10 ring-1 ring-primary/20"
+                            : "hover:bg-muted/60",
                         )}
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="truncate text-xs text-muted-foreground">
-                            {c.ultimo_remetente === "time" ? "Você: " : ""}
-                            {c.ultima_mensagem}
-                          </span>
-                          {c.nao_lidas > 0 && (
-                            <Badge className="h-5 shrink-0 px-1.5 text-[10px]">
-                              {c.nao_lidas}
-                            </Badge>
+                      >
+                        <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary/80 to-primary/50 text-xs font-semibold text-primary-foreground">
+                          {iniciais(c.nome)}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className={cn(
+                              "truncate text-sm",
+                              ativo ? "font-semibold text-foreground" : "font-medium text-foreground",
+                            )}>
+                              {c.nome}
+                            </span>
+                            <span className="shrink-0 text-[10px] text-muted-foreground">
+                              {new Date(c.ultima_em).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                            </span>
+                          </div>
+                          {verTodos && !c.minha && c.atendente_nome && (
+                            <span className="mt-0.5 inline-flex items-center gap-1 text-[10px] font-medium text-primary/80">
+                              <Users className="h-3 w-3" /> {c.atendente_nome}
+                            </span>
+                          )}
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="truncate text-xs text-muted-foreground">
+                              {c.ultimo_remetente === "time" ? "Você: " : ""}
+                              {c.ultima_mensagem}
+                            </span>
+                            {c.nao_lidas > 0 && (
+                              <Badge className="h-5 shrink-0 px-1.5 text-[10px]">
+                                {c.nao_lidas}
+                              </Badge>
+                            )}
+                          </div>
+                          {(tags.length > 0 || sla || lembrete) && (
+                            <div className="mt-1 flex flex-wrap items-center gap-1">
+                              {sla && (
+                                <span className="chat-tag chat-tag-red">
+                                  <Timer className="h-3 w-3" /> SLA
+                                </span>
+                              )}
+                              {lembrete && (
+                                <span className="chat-tag chat-tag-amber">
+                                  <BellRing className="h-3 w-3" /> Lembrete
+                                </span>
+                              )}
+                              {tags.map((t) => (
+                                <TagChip key={t.id} etiqueta={t} />
+                              ))}
+                            </div>
                           )}
                         </div>
-                        {(tags.length > 0 || sla || lembrete) && (
-                          <div className="mt-1 flex flex-wrap items-center gap-1">
-                            {sla && (
-                              <span className="chat-tag chat-tag-red">
-                                <Timer className="h-3 w-3" /> SLA
-                              </span>
-                            )}
-                            {lembrete && (
-                              <span className="chat-tag chat-tag-amber">
-                                <BellRing className="h-3 w-3" /> Lembrete
-                              </span>
-                            )}
-                            {tags.map((t) => (
-                              <TagChip key={t.id} etiqueta={t} />
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </button>
-                  );
-                })}
+                      </button>,
+                    );
+                  }
+                  return nodes;
+                })()}
+
 
                 {novosClientes.length > 0 && (
                   <>
