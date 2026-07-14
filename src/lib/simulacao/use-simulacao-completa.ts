@@ -346,10 +346,9 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
       }));
       return;
     }
-    // Import local para evitar ciclo — constantes ficam no módulo de renda.
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { TAXA_MIP_MES, TAXA_DFI_MES, TAXA_ADMIN_MES } = require("./renda");
+    // Constantes de encargos vêm do módulo de renda (já importado no topo).
     const taxaAno = melhorTaxaAno || 0.1199;
+
     const i = Math.pow(1 + taxaAno, 1 / 12) - 1;
     const n = Math.max(1, Math.round(Number(f.prazo) || 360));
     const fator =
