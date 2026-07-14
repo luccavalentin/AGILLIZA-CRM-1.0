@@ -433,10 +433,16 @@ function Pagina() {
             return false;
           if (respFiltro !== "todos" && (c.responsavel_nome ?? "") !== respFiltro)
             return false;
+          if (analistaFiltro !== "todos" && (c.analista_nome ?? "") !== analistaFiltro)
+            return false;
+          if (corretorFiltro !== "todos" && (c.corretor_nome ?? "") !== corretorFiltro)
+            return false;
+          if (imobFiltro !== "todos" && (c.imobiliaria_nome ?? "") !== imobFiltro)
+            return false;
           return true;
         }),
       })),
-    [data, termo, respFiltro],
+    [data, termo, respFiltro, analistaFiltro, corretorFiltro, imobFiltro],
   );
   const totalClientes = useMemo(
     () => dadosFiltrados.reduce((acc, s) => acc + s.clientes.length, 0),
@@ -446,15 +452,20 @@ function Pagina() {
     () => dadosFiltrados.filter((s) => s.clientes.length > 0).length,
     [dadosFiltrados],
   );
-  const responsaveis = useMemo(() => {
+  function opcoesDe(campo: "responsavel_nome" | "analista_nome" | "corretor_nome" | "imobiliaria_nome"): string[] {
     const set = new Set<string>();
     (data ?? []).forEach((s) =>
       s.clientes.forEach((c) => {
-        if (c.responsavel_nome) set.add(c.responsavel_nome);
+        const v = c[campo];
+        if (v) set.add(v);
       }),
     );
     return Array.from(set).sort((a, b) => a.localeCompare(b, "pt-BR"));
-  }, [data]);
+  }
+  const responsaveis = useMemo(() => opcoesDe("responsavel_nome"), [data]);
+  const analistas = useMemo(() => opcoesDe("analista_nome"), [data]);
+  const corretores = useMemo(() => opcoesDe("corretor_nome"), [data]);
+  const imobiliarias = useMemo(() => opcoesDe("imobiliaria_nome"), [data]);
   const todosClientes = useMemo(
     () => dadosFiltrados.flatMap((s) => s.clientes),
     [dadosFiltrados],
