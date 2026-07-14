@@ -178,7 +178,7 @@ export const CATALOGO_MODULOS: ModuloCatalogo[] = [
   {
     grupo: "Financeiro",
     modulo: "financeiro.comissoes",
-    label: "Comissões",
+    label: "Repasses",
     acoes: [
       { acao: "view", label: "Ver" },
       { acao: "edit", label: "Editar" },
@@ -251,7 +251,7 @@ export const CATALOGO_MODULOS: ModuloCatalogo[] = [
   {
     grupo: "Administração",
     modulo: "admin.comissoes",
-    label: "Comissões (regras)",
+    label: "Repasses (regras)",
     acoes: [
       { acao: "view", label: "Ver" },
       { acao: "edit", label: "Editar" },

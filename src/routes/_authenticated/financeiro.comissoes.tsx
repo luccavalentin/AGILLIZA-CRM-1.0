@@ -20,21 +20,21 @@ import { ComissaoStatusBadge } from "@/components/financeiro/status-badge";
 import { formatBRL } from "@/lib/financeiro/format";
 
 export const Route = createFileRoute("/_authenticated/financeiro/comissoes")({
-  head: () => ({ meta: [{ title: "Comissões — Agilliza" }] }),
+  head: () => ({ meta: [{ title: "Repasses — Agilliza" }] }),
   beforeLoad: () => assertModuloPermitido("financeiro.comissoes"),
   component: Pagina,
   errorComponent: () => (
-    <div className="p-6 text-sm text-muted-foreground">Não foi possível carregar as comissões.</div>
+    <div className="p-6 text-sm text-muted-foreground">Não foi possível carregar os repasses.</div>
   ),
 });
 
 const STATUS = ["", "a_receber", "recebida", "paga_parceiro", "encerrada"];
 const STATUS_LABEL: Record<string, string> = {
-  "": "Todas",
+  "": "Todos",
   a_receber: "A receber",
-  recebida: "Recebidas",
-  paga_parceiro: "Pagas parceiro",
-  encerrada: "Encerradas",
+  recebida: "Recebidos",
+  paga_parceiro: "Pagos parceiro",
+  encerrada: "Encerrados",
 };
 
 function Pagina() {
@@ -53,7 +53,7 @@ function Pagina() {
   const recalc = useMutation({
     mutationFn: (comissao_id: string) => recalcularComissao({ data: { comissao_id } }),
     onSuccess: () => {
-      toast.success("Comissão recalculada.");
+      toast.success("Repasse recalculado.");
       qc.invalidateQueries({ queryKey: ["fin-comissoes"] });
     },
     onError: (e: any) => toast.error(e?.message ?? "Falha ao recalcular."),
@@ -62,9 +62,9 @@ function Pagina() {
   return (
     <div className="mx-auto w-full max-w-[1600px] space-y-6 p-3 sm:p-4 md:p-6">
       <div className="min-w-0">
-        <h1 className="truncate text-xl font-semibold text-foreground">Comissões</h1>
+        <h1 className="truncate text-xl font-semibold text-foreground">Repasses</h1>
         <p className="text-sm text-muted-foreground">
-          Comissões calculadas a partir de contratos emitidos.
+          Repasses calculados automaticamente a partir dos contratos emitidos, conforme as regras por banco.
         </p>
       </div>
 
@@ -141,7 +141,7 @@ function Pagina() {
                   <div className="flex flex-col items-center gap-3 py-12 text-center">
                     <Percent className="h-8 w-8 text-muted-foreground" />
                     <p className="text-sm text-muted-foreground">
-                      Nenhuma comissão calculada ainda.
+                      Nenhum repasse calculado ainda.
                     </p>
                   </div>
                 </TableCell>

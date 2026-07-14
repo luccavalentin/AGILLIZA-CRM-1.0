@@ -36,6 +36,7 @@ import {
   Cpu,
   ClipboardList,
   Link as LinkIcon,
+  Percent,
 } from "lucide-react";
 
 /** Permissão exigida por um item (chave = `${modulo}:view`). */
@@ -297,6 +298,12 @@ export const navInterno: NavGroup[] = [
         perm: { modulo: "financeiro.fluxo_caixa" },
       },
       {
+        label: "Repasses",
+        icon: Percent,
+        to: "/financeiro/comissoes",
+        perm: { modulo: "financeiro.comissoes" },
+      },
+      {
         label: "Configurações",
         icon: SlidersHorizontal,
         to: "/financeiro/configuracoes",
@@ -349,6 +356,12 @@ export const navInterno: NavGroup[] = [
             icon: Cpu,
             to: "/admin/apis-ia",
             perm: { modulo: "admin.integracoes" },
+          },
+          {
+            label: "Regras de repasse",
+            icon: Percent,
+            to: "/admin/comissoes",
+            perm: { modulo: "admin.comissoes" },
           },
           {
             label: "SLA & Feriados",

@@ -17,9 +17,9 @@ export function ContaStatusBadge({ status }: { status: string }) {
 
 const comissaoMap: Record<string, { tone: Tone; label: string }> = {
   a_receber: { tone: "info", label: "A receber" },
-  recebida: { tone: "success", label: "Recebida" },
-  paga_parceiro: { tone: "warning", label: "Paga parceiro" },
-  encerrada: { tone: "muted", label: "Encerrada" },
+  recebida: { tone: "success", label: "Recebido" },
+  paga_parceiro: { tone: "warning", label: "Pago parceiro" },
+  encerrada: { tone: "muted", label: "Encerrado" },
 };
 
 export function ComissaoStatusBadge({ status }: { status: string }) {
