@@ -795,7 +795,13 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
       // Download automático do extrato removido a pedido do usuário.
       // O PDF continua disponível sob demanda na ficha da simulação.
 
-      router.navigate({ to: "/operacional/simulacoes/$id", params: { id } });
+      // Mantém o usuário na tela do simulador e exibe o resultado inline,
+      // para permitir comparar rapidamente com outro prazo sem precisar
+      // navegar entre telas.
+      setSimulacaoResultadoId(id);
+      setEnviando(false);
+      setConcluidos(0);
+      toast.success("Simulação gerada. Ajuste o prazo e simule novamente se quiser comparar.");
     } catch (e) {
       const msg = e instanceof Error ? e.message : null;
       toast.error(
