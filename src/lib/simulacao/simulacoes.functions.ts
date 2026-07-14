@@ -427,6 +427,7 @@ const listarSchema = z.object({
   ate: z.string().optional(),
   pagina: z.number().int().min(1).default(1),
   porPagina: z.number().int().min(1).max(100).default(20),
+  apenas_excluidas: z.boolean().default(false),
 });
 
 export const listarSimulacoes = createServerFn({ method: "GET" })
