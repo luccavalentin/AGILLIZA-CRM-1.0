@@ -42,7 +42,7 @@ function fileParaBase64(file: File): Promise<string> {
   });
 }
 
-function iniciais(nome: string) {
+export function iniciais(nome: string) {
   return nome
     .trim()
     .split(/\s+/)
