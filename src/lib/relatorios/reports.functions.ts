@@ -1397,9 +1397,22 @@ export const runReport = createServerFn({ method: "POST" })
               rows: breakdown(simulacoesFiltradas, nomeComercial, valorSim),
             },
             {
-              titulo: "Por Imobiliária / Corretor",
-              columns: colsBreak("Imobiliária / Corretor"),
-              rows: breakdown(simulacoesFiltradas, nomeParceiro, valorSim),
+              titulo: "Por Imobiliária",
+              columns: colsBreak("Imobiliária"),
+              rows: breakdown(
+                simulacoesFiltradas.filter((p) => perfilParceiro(p)?.tipo === "imobiliaria"),
+                nomeImobiliaria,
+                valorSim,
+              ),
+            },
+            {
+              titulo: "Por Corretor",
+              columns: colsBreak("Corretor"),
+              rows: breakdown(
+                simulacoesFiltradas.filter((p) => perfilParceiro(p)?.tipo === "corretor"),
+                nomeCorretor,
+                valorSim,
+              ),
             },
           ],
         },
