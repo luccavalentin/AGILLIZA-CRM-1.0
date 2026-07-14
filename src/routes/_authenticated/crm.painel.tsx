@@ -828,7 +828,7 @@ function Pagina() {
                                 arrastouRef.current = false;
                               }, 0);
                             }}
-                            className="cursor-grab rounded-xl border border-border bg-card transition-all duration-200 hover:border-primary/40 hover:shadow-sm active:cursor-grabbing"
+                            className="cursor-grab rounded-xl border border-border bg-card transition-[border-color,box-shadow] duration-150 hover:border-primary/40 hover:shadow-sm active:cursor-grabbing"
                           >
                             <div className="p-3">
                               <div className="flex items-start gap-2.5">
