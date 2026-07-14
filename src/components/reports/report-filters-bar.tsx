@@ -229,6 +229,27 @@ export function ReportFiltersBar({
           className="h-9 w-48"
         />
 
+        <Input
+          value={filtros.valorMin ?? ""}
+          onChange={(e) => {
+            const valor = e.target.value.replace(/\D/g, "");
+            set({ valorMin: valor ? Number(valor) : undefined });
+          }}
+          inputMode="numeric"
+          placeholder="Valor mín."
+          className="h-9 w-32"
+        />
+        <Input
+          value={filtros.valorMax ?? ""}
+          onChange={(e) => {
+            const valor = e.target.value.replace(/\D/g, "");
+            set({ valorMax: valor ? Number(valor) : undefined });
+          }}
+          inputMode="numeric"
+          placeholder="Valor máx."
+          className="h-9 w-32"
+        />
+
         {temAlgum && (
           <Button
             variant="ghost"
