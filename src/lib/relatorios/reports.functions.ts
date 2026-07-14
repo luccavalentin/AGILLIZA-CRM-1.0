@@ -806,25 +806,6 @@ export const runReport = createServerFn({ method: "POST" })
     }
 
     async function relGerencial(): Promise<ReportResult> {
-      if (statusEhFiltroSimulacao(filtros.status)) {
-        const [sims, opcoesOperacionais] = await Promise.all([
-          fetchSimulacoesRelatorio({ rascunhoComoModulo: true }),
-          listarOpcoesOperacionais(),
-        ]);
-        return {
-          ...montarResultadoSimulacoes(sims, {
-            titulo: "Relatório gerencial — simulações",
-            descricao: "Simulações reais filtradas por período, banco, produto e responsáveis.",
-            modulo: "Gerencial",
-            statusComoModulo: true,
-          }),
-          filtrosDisponiveis: {
-            bancos: opcoesOperacionais.bancos,
-            produtos: opcoesOperacionais.produtos,
-            statuses: statusOpcoesPorCodigo("gerencial"),
-          },
-        };
-      }
       const PRODUTO_LABEL = (p?: string) =>
         p === "home_equity"
           ? "Home Equity"
@@ -833,56 +814,154 @@ export const runReport = createServerFn({ method: "POST" })
             : p
               ? p
               : "—";
-      const cols = [
-        "id",
-        "status",
-        "produto",
-        "nome_banco",
-        "valor_financiamento",
-        "valor_financiamento_aprovado",
-        "analista_id",
-        "analista_nome",
-        "comercial_id",
-        "consultor_nome",
-        "parceiro_id",
-        "parceiro_nome",
-        "usuario_responsavel_id",
-        "created_at",
-        "contrato_emitido_em",
-      ].join(",");
+      const statusSimulacao = statusEhFiltroSimulacao(filtros.status);
+      const [simulacoesFiltradas, propostasFiltradas, opcoesOperacionais] = await Promise.all([
+        statusSimulacao || !filtros.status
+          ? fetchSimulacoesRelatorio({ rascunhoComoModulo: true })
+          : Promise.resolve([] as any[]),
+        statusSimulacao ? Promise.resolve([] as any[]) : fetchPropostasGerenciais(),
+        listarOpcoesOperacionais(),
+      ]);
 
-      // Busca por período em created_at OU em contrato_emitido_em (para contratos emitidos no período).
-      let q = (supabase as any)
-        .from("propostas")
-        .select(cols)
-        .or(
-          `and(created_at.gte.${de},created_at.lte.${ateFim}),and(contrato_emitido_em.gte.${de},contrato_emitido_em.lte.${ateFim})`,
-        )
-        .order("created_at", { ascending: false })
-        .limit(10000);
-      q = aplicarEscopo(q, filtros, userId, "usuario_responsavel_id");
-      if (filtros.responsavel) q = q.eq("usuario_responsavel_id", filtros.responsavel);
-      if (filtros.banco) q = q.eq("nome_banco", filtros.banco);
-      if (filtros.produto) q = q.eq("produto", filtros.produto);
-      if (filtros.status) q = q.eq("status", filtros.status);
-      q = aplicarFiltrosPessoa(q, filtros, cols, "usuario_responsavel_id");
-      const { data: rowsRaw, error } = await q;
-      if (error) throw new Error(error.message);
-      const props = (rowsRaw ?? []) as any[];
+      async function fetchPropostasGerenciais() {
+        const cols = [
+          "id",
+          "numero_proposta",
+          "numero_proposta_banco",
+          "nome_cliente",
+          "cpf_cnpj",
+          "status",
+          "produto",
+          "nome_banco",
+          "valor_financiamento",
+          "valor_financiamento_aprovado",
+          "analista_id",
+          "analista_nome",
+          "comercial_id",
+          "consultor_nome",
+          "parceiro_id",
+          "parceiro_nome",
+          "usuario_responsavel_id",
+          "created_at",
+          "contrato_emitido_em",
+        ].join(",");
+
+        // Busca por período em created_at OU em contrato_emitido_em (para contratos emitidos no período).
+        let q = (supabase as any)
+          .from("propostas")
+          .select(cols)
+          .or(
+            `and(created_at.gte.${de},created_at.lte.${ateFim}),and(contrato_emitido_em.gte.${de},contrato_emitido_em.lte.${ateFim})`,
+          )
+          .order("created_at", { ascending: false })
+          .limit(10000);
+        q = aplicarEscopo(q, filtros, userId, "usuario_responsavel_id");
+        if (filtros.responsavel) q = q.eq("usuario_responsavel_id", filtros.responsavel);
+        if (filtros.produto) q = q.eq("produto", filtros.produto);
+        if (filtros.status && !statusSimulacao) q = q.eq("status", filtros.status);
+        // Banco é filtrado após enriquecer com proposta_bancos; aqui removemos só o filtro de banco.
+        const filtrosSemBanco = { ...filtros, banco: undefined, bancos: undefined } as ReportFiltros;
+        q = aplicarFiltrosPessoa(q, filtrosSemBanco, cols, "usuario_responsavel_id");
+        const { data: rowsRaw, error } = await q;
+        if (error) throw new Error(error.message);
+        const propsBase = (rowsRaw ?? []) as any[];
+        if (!propsBase.length) return propsBase;
+
+        const ids = propsBase.map((p) => p.id).filter(Boolean);
+        const { data: bancosRows, error: bancosError } = await supabase
+          .from("proposta_bancos")
+          .select("proposta_id,nome_banco,numero_proposta_banco,status_banco,valor_financiamento_max,valor_parcela")
+          .in("proposta_id", ids)
+          .limit(20000);
+        if (bancosError) throw new Error(bancosError.message);
+
+        const porProposta = new Map<string, any[]>();
+        ((bancosRows ?? []) as any[]).forEach((b) => {
+          const k = String(b.proposta_id ?? "");
+          if (!k) return;
+          const cur = porProposta.get(k) ?? [];
+          cur.push(b);
+          porProposta.set(k, cur);
+        });
+
+        const bancosFiltro = [...(filtros.bancos ?? []), filtros.banco].filter(Boolean) as string[];
+        const buscaLc = filtros.busca?.trim().toLowerCase();
+        const valorProposta = (p: any) => p.valor_financiamento_aprovado ?? p.valor_financiamento ?? 0;
+
+        return propsBase
+          .map((p) => {
+            const bancos = porProposta.get(p.id) ?? [];
+            const nomesBancos = [
+              ...new Set(
+                [p.nome_banco, ...bancos.map((b) => b.nome_banco)]
+                  .map((b) => String(b ?? "").trim())
+                  .filter(Boolean),
+              ),
+            ];
+            const numeroBanco =
+              p.numero_proposta_banco ||
+              bancos.find((b) => b.numero_proposta_banco)?.numero_proposta_banco ||
+              null;
+            return {
+              ...p,
+              bancos,
+              nomes_bancos: nomesBancos,
+              nome_banco: p.nome_banco || nomesBancos[0] || "—",
+              bancos_label: nomesBancos.length ? nomesBancos.join(", ") : "—",
+              numero_proposta_banco: numeroBanco,
+            };
+          })
+          .filter((p) => p.status !== "rascunho")
+          .filter((p) => {
+            if (!bancosFiltro.length) return true;
+            return bancosFiltro.some((b) => p.nomes_bancos.includes(b));
+          })
+          .filter((p) => filtros.valorMin == null || valorProposta(p) >= filtros.valorMin!)
+          .filter((p) => filtros.valorMax == null || valorProposta(p) <= filtros.valorMax!)
+          .filter((p) => {
+            if (!buscaLc) return true;
+            const alvo = [
+              p.numero_proposta,
+              p.numero_proposta_banco,
+              p.nome_cliente,
+              p.cpf_cnpj,
+              p.produto,
+              p.status,
+              rotuloStatus(p.status),
+              p.bancos_label,
+              p.analista_nome,
+              p.consultor_nome,
+              p.parceiro_nome,
+            ]
+              .map((v) => String(v ?? ""))
+              .join(" ")
+              .toLowerCase();
+            return alvo.includes(buscaLc);
+          });
+      }
 
       // Nomes de analistas/comerciais quando só há id (sem nome desnormalizado).
       const idsFaltando = new Set<string>();
-      for (const p of props) {
+      for (const s of simulacoesFiltradas) {
+        if (s.analista_id) idsFaltando.add(s.analista_id);
+        if (s.comercial_id) idsFaltando.add(s.comercial_id);
+        if (s.parceiro_id) idsFaltando.add(s.parceiro_id);
+        if (s.usuario_responsavel_id) idsFaltando.add(s.usuario_responsavel_id);
+      }
+      for (const p of propostasFiltradas) {
         if (!p.analista_nome && p.analista_id) idsFaltando.add(p.analista_id);
         if (!p.consultor_nome && p.comercial_id) idsFaltando.add(p.comercial_id);
+        if (!p.parceiro_nome && p.parceiro_id) idsFaltando.add(p.parceiro_id);
+        if (p.usuario_responsavel_id) idsFaltando.add(p.usuario_responsavel_id);
       }
       const nomes = await nomesUsuarios([...idsFaltando]);
       const nomeAnalista = (p: any) =>
-        p.analista_nome || nomes.get(p.analista_id) || "Não atribuído";
+        p.analista_nome || nomes.get(p.analista_id) || nomes.get(p.usuario_responsavel_id) || "Não atribuído";
       const nomeComercial = (p: any) =>
         p.consultor_nome || nomes.get(p.comercial_id) || "Não atribuído";
-      const nomeParceiro = (p: any) => p.parceiro_nome || "Não atribuído";
+      const nomeParceiro = (p: any) => p.parceiro_nome || nomes.get(p.parceiro_id) || "Não atribuído";
       const valorProc = (p: any) => p.valor_financiamento_aprovado ?? p.valor_financiamento ?? 0;
+      const valorSim = (s: any) => s.valor_financiamento ?? 0;
 
       const emAndamento = [
         "enviada_banco",
@@ -898,9 +977,10 @@ export const runReport = createServerFn({ method: "POST" })
       const contrato = ["contrato_emitido", "registrado"];
 
       const dentro = (iso?: string) => !!iso && iso.slice(0, 10) >= de && iso.slice(0, 10) <= ate;
-      const andamento = props.filter((p) => emAndamento.includes(p.status) && dentro(p.created_at));
-      const aprovadas = props.filter((p) => aprovado.includes(p.status) && dentro(p.created_at));
-      const contratos = props.filter(
+      const andamento = propostasFiltradas.filter((p) => emAndamento.includes(p.status) && dentro(p.created_at));
+      const aprovadas = propostasFiltradas.filter((p) => aprovado.includes(p.status) && dentro(p.created_at));
+      const recusadas = propostasFiltradas.filter((p) => p.status === "credito_recusado" && dentro(p.created_at));
+      const contratos = propostasFiltradas.filter(
         (p) => contrato.includes(p.status) && dentro(p.contrato_emitido_em),
       );
 
@@ -1043,11 +1123,85 @@ export const runReport = createServerFn({ method: "POST" })
         ];
       };
 
+      const totalSim = simulacoesFiltradas.reduce((s, x) => s + valorSim(x), 0);
       const totalAnd = andamento.reduce((s, p) => s + valorProc(p), 0);
       const totalAprov = aprovadas.reduce((s, p) => s + valorProc(p), 0);
       const totalContr = contratos.reduce((s, p) => s + valorProc(p), 0);
+      const bancoGeralMap = new Map<string, number>();
+      simulacoesFiltradas.forEach((s) =>
+        (s.nomes_bancos?.length ? s.nomes_bancos : [s.nome_banco ?? "—"]).forEach((b: string) =>
+          bancoGeralMap.set(b || "—", (bancoGeralMap.get(b || "—") ?? 0) + 1),
+        ),
+      );
+      propostasFiltradas.forEach((p) =>
+        (p.nomes_bancos?.length ? p.nomes_bancos : [p.nome_banco ?? "—"]).forEach((b: string) =>
+          bancoGeralMap.set(b || "—", (bancoGeralMap.get(b || "—") ?? 0) + 1),
+        ),
+      );
 
       const tabelas = [
+        {
+          titulo: "Simulações",
+          descricao: "Simulações do período conectadas aos bancos retornados pela simulação.",
+          tabelas: [
+            {
+              titulo: "Por data",
+              columns: [
+                { key: "k", label: "Data", format: "date" as const },
+                { key: "qtd", label: "Qtd", align: "right" as const, footer: "sum" as const, format: "int" as const },
+                { key: "valor", label: "Valor", align: "right" as const, footer: "sum" as const, format: "brl" as const },
+              ],
+              rows: (() => {
+                const porData = new Map<string, { qtd: number; valor: number }>();
+                for (const s of simulacoesFiltradas) {
+                  const d = String(s.created_at ?? "").slice(0, 10);
+                  if (!d) continue;
+                  const cur = porData.get(d) ?? { qtd: 0, valor: 0 };
+                  cur.qtd += 1;
+                  cur.valor += valorSim(s);
+                  porData.set(d, cur);
+                }
+                return [...porData.entries()]
+                  .sort((a, b) => b[0].localeCompare(a[0]))
+                  .map(([k, v]) => ({ k, qtd: v.qtd, valor: v.valor }));
+              })(),
+            },
+            {
+              titulo: "Por banco",
+              columns: colsBreak("Banco"),
+              rows: breakdown(simulacoesFiltradas, (s) => s.bancos_label ?? s.nome_banco, valorSim),
+            },
+            {
+              titulo: "Por tipo (Financiamento / Home Equity)",
+              columns: colsBreak("Tipo"),
+              rows: breakdown(simulacoesFiltradas, (s) => PRODUTO_LABEL(s.produto), valorSim),
+            },
+            {
+              titulo: "Por status",
+              columns: colsBreak("Status"),
+              rows: breakdown(
+                simulacoesFiltradas,
+                (s) => STATUS_SIMULACAO_LABEL[s.status] ?? s.status,
+                valorSim,
+              ),
+            },
+            {
+              titulo: "Por analista Adm",
+              columns: colsBreak("Analista Adm"),
+              rows: breakdown(simulacoesFiltradas, nomeAnalista, valorSim),
+            },
+            {
+              titulo: "Por analista Comercial",
+              columns: colsBreak("Analista Comercial"),
+              rows: breakdown(simulacoesFiltradas, nomeComercial, valorSim),
+            },
+            {
+              titulo: "Por Imobiliária / Corretor",
+              columns: colsBreak("Imobiliária / Corretor"),
+              rows: breakdown(simulacoesFiltradas, nomeParceiro, valorSim),
+            },
+          ],
+        },
         {
           titulo: "Processos em andamento",
           descricao: "Propostas ativas na esteira dentro do período.",
@@ -1090,6 +1244,11 @@ export const runReport = createServerFn({ method: "POST" })
           tabelas: secaoTabelas(aprovadas, "Por data", (p) => p.created_at, valorProc),
         },
         {
+          titulo: "Crédito recusado",
+          descricao: "Propostas recusadas no período, separadas para análise de perda.",
+          tabelas: secaoTabelas(recusadas, "Por data", (p) => p.created_at, valorProc),
+        },
+        {
           titulo: "Contratos emitidos",
           descricao: "Contratos emitidos por data de emissão no período.",
           tabelas: [
@@ -1114,10 +1273,12 @@ export const runReport = createServerFn({ method: "POST" })
           "Visão consolidada por banco, tipo, analistas, imobiliária e fase.",
         modulo: "Gerencial",
         kpis: [
+          { label: "Simulações", valor: int(simulacoesFiltradas.length), tone: "neutral" },
+          { label: "Volume simulado", valor: brl(totalSim), tone: "brand" },
+          { label: "Propostas", valor: int(propostasFiltradas.length), tone: "neutral" },
           { label: "Em andamento", valor: int(andamento.length), tone: "neutral" },
-          { label: "Valor em andamento", valor: brl(totalAnd), tone: "brand" },
           { label: "Aprovadas", valor: int(aprovadas.length), tone: "success" },
-          { label: "Valor aprovado", valor: brl(totalAprov), tone: "brand" },
+          { label: "Crédito recusado", valor: int(recusadas.length), tone: "danger" },
           { label: "Contratos emitidos", valor: int(contratos.length), tone: "success" },
           { label: "Valor contratado", valor: brl(totalContr), tone: "brand" },
         ],
@@ -1127,10 +1288,19 @@ export const runReport = createServerFn({ method: "POST" })
             subtitulo: "Andamento → Aprovadas → Contratos",
             tipo: "funnel",
             dados: [
+              { label: "Simulações", valor: simulacoesFiltradas.length },
+              { label: "Propostas", valor: propostasFiltradas.length },
               { label: "Em andamento", valor: andamento.length },
               { label: "Aprovadas", valor: aprovadas.length },
+              { label: "Recusadas", valor: recusadas.length },
               { label: "Contratos", valor: contratos.length },
             ],
+          },
+          {
+            titulo: "Distribuição por banco",
+            subtitulo: "Simulações e propostas filtradas",
+            tipo: "barh",
+            dados: topN(bancoGeralMap, 10),
           },
           {
             titulo: "Contratos por banco",
@@ -1142,6 +1312,10 @@ export const runReport = createServerFn({ method: "POST" })
           },
         ],
         columns: [
+          { key: "origem", label: "Origem" },
+          { key: "numero", label: "Número" },
+          { key: "numero_banco", label: "Nº banco" },
+          { key: "cliente", label: "Cliente" },
           { key: "nome_banco", label: "Banco" },
           { key: "produto", label: "Tipo" },
           { key: "status", label: "Fase" },
@@ -1152,21 +1326,32 @@ export const runReport = createServerFn({ method: "POST" })
           { key: "created_at", label: "Criada em", format: "date" },
         ],
         rows: [
-          ...andamento,
-          ...aprovadas.filter((p) => !emAndamento.includes(p.status)),
-          ...contratos.filter((p) => !aprovado.includes(p.status) || contrato.includes(p.status)),
+          ...simulacoesFiltradas.map((s) => ({ ...s, __origem: "Simulação" })),
+          ...propostasFiltradas.map((p) => ({ ...p, __origem: "Proposta" })),
         ]
           .slice(0, 1000)
           .map((p) => ({
-            nome_banco: p.nome_banco ?? "—",
+            origem: p.__origem,
+            numero: p.numero_proposta ?? p.numero_simulacao ?? "—",
+            numero_banco: p.numero_proposta_banco ?? "—",
+            cliente: p.nome_cliente ?? "—",
+            nome_banco: p.bancos_label ?? p.nome_banco ?? "—",
             produto: PRODUTO_LABEL(p.produto),
-            status: rotuloStatus(p.status),
+            status:
+              p.__origem === "Simulação"
+                ? STATUS_SIMULACAO_LABEL[p.status] ?? p.status
+                : rotuloStatus(p.status),
             analista: nomeAnalista(p),
             comercial: nomeComercial(p),
             parceiro: nomeParceiro(p),
-            valor: valorProc(p),
+            valor: p.__origem === "Simulação" ? valorSim(p) : valorProc(p),
             created_at: p.created_at,
           })),
+        filtrosDisponiveis: {
+          bancos: opcoesOperacionais.bancos,
+          produtos: opcoesOperacionais.produtos,
+          statuses: statusOpcoesPorCodigo("gerencial"),
+        },
       };
     }
 
