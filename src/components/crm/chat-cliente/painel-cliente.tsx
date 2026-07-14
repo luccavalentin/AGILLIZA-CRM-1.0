@@ -20,8 +20,14 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { obterPainelChatCliente } from "@/lib/crm/chat-cliente.functions";
+import {
+  listarInteracoes,
+  listarDocumentos,
+  urlDocumento,
+} from "@/lib/crm/clientes.functions";
 import { type ChatEtiqueta } from "@/lib/crm/chat-gestao.functions";
 import { iniciais } from "./utils";
+
 
 const TABS = [
   { id: "cliente", label: "Cliente" },
