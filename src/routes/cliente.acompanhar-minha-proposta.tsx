@@ -246,18 +246,50 @@ function Acompanhar() {
             </ul>
           </ChartCard>
 
-          <ChartCard titulo="Distribuição das etapas">
-            <div className="h-52">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={distribuicao} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <XAxis dataKey="name" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} allowDecimals={false} />
-                  <Bar dataKey="value" radius={[6, 6, 0, 0]}>
-                    {distribuicao.map((d, i) => <Cell key={i} fill={d.fill} />)}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+          <ChartCard titulo="Próximos passos">
+            <ol className="space-y-2.5">
+              {(() => {
+                const proximas = etapas.filter((e) => e.status !== "concluida").slice(0, 4);
+                if (proximas.length === 0) {
+                  return (
+                    <li className="flex items-center gap-2 rounded-lg bg-primary/5 p-3 text-sm text-foreground">
+                      <CheckCircle2 className="h-5 w-5 text-primary" />
+                      Processo concluído. Parabéns!
+                    </li>
+                  );
+                }
+                return proximas.map((e, i) => {
+                  const atual = e.status === "atual";
+                  return (
+                    <li key={e.ordem} className="flex items-start gap-2.5">
+                      <span
+                        className={cn(
+                          "mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ring-2 transition",
+                          atual
+                            ? "bg-primary text-primary-foreground ring-primary/30 animate-pulse"
+                            : "bg-primary/10 text-primary ring-primary/15",
+                        )}
+                      >
+                        {e.ordem}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p
+                          className={cn(
+                            "truncate text-sm leading-tight",
+                            atual ? "font-semibold text-foreground" : "text-foreground/80",
+                          )}
+                        >
+                          {e.nome}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground">
+                          {atual ? "Em andamento agora" : i === 0 ? "Próxima etapa" : `Em ${i + 1}º na fila`}
+                        </p>
+                      </div>
+                    </li>
+                  );
+                });
+              })()}
+            </ol>
           </ChartCard>
 
           <ChartCard titulo="Evolução dos últimos dias">
