@@ -12,7 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Card } from "@/components/ui/card";
 import {
   CheckCircle2,
-  FlaskConical,
+  Calculator,
   Send,
   BadgeCheck,
   XCircle,
@@ -64,7 +64,7 @@ function linkParaMetrica(label: string): string | undefined {
 /** Ícone ilustrativo por rótulo de indicador executivo. */
 function iconeParaMetrica(label: string): LucideIcon | undefined {
   const l = label.toLowerCase();
-  if (l.includes("simula")) return FlaskConical;
+  if (l.includes("simula")) return Calculator;
   if (l.includes("propost")) return Send;
   if (l.includes("aprovad")) return BadgeCheck;
   if (l.includes("reprovad") || l.includes("recusad")) return XCircle;
