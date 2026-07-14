@@ -1707,6 +1707,9 @@ export const vincularClienteAProposta = createServerFn({ method: "POST" })
         profissao: c.conjuge_profissao,
         empresa: c.conjuge_empresa,
         renda: c.conjuge_renda,
+        agencia: c.conjuge_agencia,
+        conta_corrente: c.conjuge_conta_corrente,
+        digito_conta: c.conjuge_digito_conta,
         email: c.conjuge_email,
         celular: c.conjuge_celular,
         cep: e.cep ?? null,
@@ -1718,6 +1721,7 @@ export const vincularClienteAProposta = createServerFn({ method: "POST" })
         uf: e.uf ?? c.uf_interesse ?? null,
         utiliza_fgts: false,
         fg_autorizacao_dados: c.fg_autorizacao_dados ?? false,
+        dados: { nacionalidade: c.conjuge_nacionalidade ?? null, banco_conta: c.conjuge_banco_conta ?? null },
       };
       const { data: conjExistente } = await supabase
         .from("proposta_envolvidos")
