@@ -77,9 +77,11 @@ function Pagina() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const excluir = useServerFn(excluirProposta);
+  const restaurar = useServerFn(restaurarProposta);
   const padrao = useMemo(() => intervaloMesAtual(), []);
   const [escopo, setEscopo] = useState<"todas" | "minhas">("minhas");
   const [grupo, setGrupo] = useState<GrupoProposta | null>(null);
+  const [verExcluidas, setVerExcluidas] = useState(false);
   const [q, setQ] = useState("");
   const [busca, setBusca] = useState("");
   const [responsavel, setResponsavel] = useState<string>("todos");
