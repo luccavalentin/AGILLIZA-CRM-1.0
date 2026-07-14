@@ -795,6 +795,14 @@ function Pagina() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <SelecionarBancosPdfDialog
+        open={!!detalhePdf}
+        onOpenChange={(o) => (!o ? setDetalhePdf(null) : null)}
+        simulacao={detalhePdf?.simulacao}
+        bancos={detalhePdf?.bancos ?? []}
+        modo="detalhada"
+      />
     </div>
   );
 }
