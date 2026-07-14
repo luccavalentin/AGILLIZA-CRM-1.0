@@ -352,8 +352,8 @@ function Acompanhar() {
 function ChartCard({ titulo, children }: { titulo: string; children: React.ReactNode }) {
   return (
     <Card className="border-border/70 shadow-sm">
-      <CardContent className="p-5">
-        <p className="mb-2 text-sm font-semibold text-foreground">{titulo}</p>
+      <CardContent className="p-3 sm:p-4">
+        <p className="mb-2 text-xs font-semibold text-foreground sm:text-sm">{titulo}</p>
         {children}
       </CardContent>
     </Card>
