@@ -428,6 +428,12 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
       fg_financiar_despesas: dados.financiaCustas,
       valor_despesas_financiadas: dados.financiaCustas ? dados.valorCustas : 0,
     }));
+    if (dados.financiaCustas) {
+      const pct = dados.valorImovel > 0
+        ? Math.round((dados.valorCustas / dados.valorImovel) * 1000) / 10
+        : 5;
+      setPctDespesas(pct > 0 ? pct : 5);
+    }
     const msgCustas = dados.financiaCustas
       ? `, custas financiadas ${formatBRL(dados.valorCustas)}`
       : "";
