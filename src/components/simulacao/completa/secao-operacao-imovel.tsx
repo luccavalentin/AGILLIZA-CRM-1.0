@@ -157,35 +157,27 @@ export function SecaoOperacaoImovel({ ctx }: { ctx: SimulacaoCompletaCtx }) {
       </div>
 
 
-      <label className="flex items-start gap-2 rounded-md border border-border/60 bg-muted/30 p-3 text-sm text-foreground">
-        <Checkbox
-          className="mt-0.5"
-          checked={!!f.simular_por_parcela}
-          onCheckedChange={(v) => {
-            const on = v === true;
-            ctx.set("simular_por_parcela", on);
-            if (!on) ctx.set("parcela_alvo", 0);
-          }}
-        />
-        <span>
-          <span className="font-medium">Simular pelo valor da parcela</span>
-          <span className="ml-1 text-xs text-muted-foreground">
-            — informe a parcela desejada e o sistema preenche imóvel, entrada e financiamento.
-          </span>
-        </span>
-      </label>
-
-      {f.simular_por_parcela && (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <Campo label={<>Parcela desejada (R$) <Ast /></>}>
+      <div className="rounded-md border border-primary/20 bg-primary/5 p-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex-1 min-w-[220px]">
+            <p className="text-sm font-medium text-foreground">Simular pelo valor da parcela</p>
+            <p className="text-xs text-muted-foreground">
+              Informe a parcela desejada — o sistema ajusta automaticamente imóvel, entrada e financiamento.
+            </p>
+          </div>
+          <div className="w-full sm:w-56">
             <CurrencyInput
               value={f.parcela_alvo}
-              onChange={(v) => aplicarPorParcela(v)}
+              onChange={(v) => {
+                if (!f.simular_por_parcela) ctx.set("simular_por_parcela", true);
+                aplicarPorParcela(v);
+              }}
               placeholder="Ex: 3.500,00"
             />
-          </Campo>
+          </div>
         </div>
-      )}
+      </div>
+
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
 
