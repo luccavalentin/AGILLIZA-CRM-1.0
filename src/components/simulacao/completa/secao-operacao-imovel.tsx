@@ -127,14 +127,35 @@ export function SecaoOperacaoImovel({ ctx }: { ctx: SimulacaoCompletaCtx }) {
 
       <Separator className="border-border/60" />
 
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm font-medium text-foreground">Valores da operação</p>
-        <JogadaNumerosDialog
-          valorImovelAtual={Number(f.valor_imovel) || 0}
-          ltvMax={ltvMax}
-          onAplicar={aplicarJogadaNumeros}
-        />
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              set("valor_imovel", 0);
+              set("valor_entrada", 0);
+              set("valor_financiamento", 0);
+              set("parcela_alvo", 0);
+              set("fg_financiar_despesas", false);
+              definirPctDespesas(0);
+            }}
+            className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground shadow-sm transition hover:border-destructive/50 hover:bg-destructive/5 hover:text-destructive"
+            title="Zera imóvel, entrada, financiamento e parcela desejada"
+          >
+            <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <path d="M3 6h18" /><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+            </svg>
+            Limpar valores
+          </button>
+          <JogadaNumerosDialog
+            valorImovelAtual={Number(f.valor_imovel) || 0}
+            ltvMax={ltvMax}
+            onAplicar={aplicarJogadaNumeros}
+          />
+        </div>
       </div>
+
 
       <label className="flex items-start gap-2 rounded-md border border-border/60 bg-muted/30 p-3 text-sm text-foreground">
         <Checkbox
