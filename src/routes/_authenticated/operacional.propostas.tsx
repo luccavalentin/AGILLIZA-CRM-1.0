@@ -461,6 +461,16 @@ function Pagina() {
                     <span className="truncate">{p.nome_responsavel}</span>
                   </p>
                 )}
+                {verExcluidas && (
+                  <div className="mt-2 rounded-md border border-destructive/25 bg-destructive/5 px-2 py-1.5 text-[11px] text-destructive">
+                    <div className="font-medium">Excluída por {p.nome_excluidor ?? "—"}</div>
+                    <div className="text-destructive/80">em {formatDataHora(p.deleted_at)}</div>
+                    {p.deleted_motivo && (
+                      <div className="mt-0.5 truncate text-destructive/70">Motivo: {p.deleted_motivo}</div>
+                    )}
+                  </div>
+                )}
+
 
                 <div className="mt-3 flex items-end justify-between gap-3 border-t border-border/50 pt-3">
                   <div className="min-w-0">
