@@ -603,7 +603,7 @@ function AcoesTopo({
             onClick={() => baixarPropostaConsolidadoPDF({ proposta, bancos })}
             disabled={(bancos ?? []).length === 0}
           >
-            Comparativo consolidado (interno)
+            Comparativo consolidado
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

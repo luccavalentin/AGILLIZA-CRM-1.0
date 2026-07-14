@@ -663,22 +663,8 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
         }
       }
 
-
-      // Baixa o extrato imediatamente (detalhado ou comparativo).
-      try {
-        const dadosSim: any = await obterSimulacao({ data: { id } });
-        const bancosValidos = (dadosSim.bancos ?? []).filter(
-          (b: any) => (b.status_banco ?? b.n) !== "erro",
-        );
-        if (bancosValidos.length > 0) {
-          const { baixarSimulacaoDetalhadaPDF } = await import("@/lib/simulacao/simulacao-pdf");
-          baixarSimulacaoDetalhadaPDF({ simulacao: dadosSim.simulacao, bancos: bancosValidos });
-        } else {
-          toast.error("Nenhum banco retornou simulação válida. O PDF não foi gerado.");
-        }
-      } catch {
-        /* download opcional — a simulação já foi criada */
-      }
+      // Download automático do extrato removido a pedido do usuário.
+      // O PDF continua disponível sob demanda na ficha da simulação.
 
       router.navigate({ to: "/operacional/simulacoes/$id", params: { id } });
     } catch (e) {
