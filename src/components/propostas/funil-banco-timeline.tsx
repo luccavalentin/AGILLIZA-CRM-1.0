@@ -93,7 +93,7 @@ export function FunilBancoTimeline({
                     "bg-primary text-primary-foreground ring-primary/20 shadow-sm",
                   !morta && emAndamento &&
                     "bg-primary/10 text-primary ring-primary shadow-[0_0_0_3px_color-mix(in_oklab,var(--primary)_10%,transparent)]",
-                  !morta && !e.concluida && !emAndamento && "bg-muted text-muted-foreground ring-border",
+                  !morta && !e.concluida && !emAndamento && "bg-muted/60 text-muted-foreground/70 ring-dashed ring-border",
                 )}
               >
                 {e.concluida && !morta ? (
@@ -101,7 +101,7 @@ export function FunilBancoTimeline({
                 ) : emAndamento && !morta ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
                 ) : (
-                  <Circle className="h-2 w-2 fill-current" />
+                  <Lock className="h-3 w-3" />
                 )}
               </span>
               <div className="min-w-0 flex-1 pt-0.5">
@@ -114,7 +114,7 @@ export function FunilBancoTimeline({
                         ? "font-semibold text-primary"
                         : e.concluida
                           ? "font-medium text-foreground"
-                          : "text-muted-foreground",
+                          : "text-muted-foreground/70",
                   )}
                 >
                   {e.nome}
@@ -126,7 +126,7 @@ export function FunilBancoTimeline({
                       ? "Em andamento"
                       : e.concluida
                         ? "Concluída"
-                        : "Pendente"}
+                        : "Bloqueada"}
                   {e.atualizada_em && !morta && (e.concluida || emAndamento) && (
                     <span className="ml-1.5 font-normal normal-case tracking-normal">
                       · {formatarData(e.atualizada_em)}
