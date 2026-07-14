@@ -740,9 +740,7 @@ function Pagina() {
           <div
             key={s.id}
             className="cursor-pointer rounded-xl border border-border/60 bg-card p-4 shadow-sm transition-all active:scale-[0.99]"
-            onClick={() =>
-              router.navigate({ to: "/operacional/simulacoes/$id", params: { id: s.id } })
-            }
+            onClick={() => (verExcluidas ? undefined : handleEditar(s.id))}
           >
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
