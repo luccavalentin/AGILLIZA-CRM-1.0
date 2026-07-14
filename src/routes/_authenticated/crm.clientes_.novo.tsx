@@ -11,7 +11,7 @@ import { assertModuloPermitido } from "@/lib/route-guards";
 
 export const Route = createFileRoute("/_authenticated/crm/clientes_/novo")({
   head: () => ({ meta: [{ title: "Novo cliente — Agilliza" }] }),
-  validateSearch: z.object({ proposta: z.string().uuid().optional() }),
+  validateSearch: z.object({ proposta: z.string().uuid().optional(), enviar: z.coerce.number().optional() }),
   beforeLoad: () => assertModuloPermitido("crm.clientes"),
   component: Pagina,
 });
@@ -40,7 +40,7 @@ const DICAS = [
 ];
 
 function Pagina() {
-  const { proposta } = Route.useSearch();
+  const { proposta, enviar } = Route.useSearch();
   const getPrefill = useServerFn(getPrefillCadastroProposta);
   const prefill = useQuery({
     queryKey: ["prefill-cadastro-proposta", proposta],
@@ -110,6 +110,7 @@ function Pagina() {
             <ClienteForm
               inicial={proposta ? (prefill.data?.valores as any) : undefined}
               vincularPropostaId={proposta}
+              enviarBancoAposVincular={enviar === 1}
             />
           )}
         </div>

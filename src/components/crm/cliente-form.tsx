@@ -15,7 +15,7 @@ import {
   TIPO_VINCULO_PESSOA,
   type TipoVinculo,
 } from "@/lib/crm/clientes.functions";
-import { vincularClienteAProposta } from "@/lib/propostas/propostas.functions";
+import { enviarPropostaHomeFin, vincularClienteAProposta } from "@/lib/propostas/propostas.functions";
 import {
   validarDocumento,
   validarCPF,
@@ -52,6 +52,7 @@ export function ClienteForm({
   vincularPropostaId,
   embutido,
   destacarObrigatorios,
+  enviarBancoAposVincular,
   onSalvoEmbutido,
 }: {
   inicial?: Partial<ClienteFormValues>;
@@ -70,6 +71,8 @@ export function ClienteForm({
   embutido?: boolean;
   /** Quando true, destaca em vermelho os campos obrigatórios ainda pendentes para envio da proposta. */
   destacarObrigatorios?: boolean;
+  /** Fluxo de nova proposta direta: após vincular o cliente, envia a proposta ao banco selecionado. */
+  enviarBancoAposVincular?: boolean;
   /** Chamado após salvar com sucesso no modo embutido (ex.: para direcionar ao envio ao banco). */
   onSalvoEmbutido?: () => void;
 }) {
@@ -83,6 +86,7 @@ export function ClienteForm({
   const listarParceiros = useServerFn(listarParceirosDisponiveis);
   const vincular = useServerFn(vincularParceiro);
   const vincularProposta = useServerFn(vincularClienteAProposta);
+  const enviarProposta = useServerFn(enviarPropostaHomeFin);
 
 
   const [v, setV] = useState<ClienteFormValues>(() => {
@@ -328,6 +332,31 @@ export function ClienteForm({
         try {
           await vincularProposta({ data: { proposta_id: vincularPropostaId, cliente_id: id } });
           await qc.invalidateQueries({ queryKey: ["proposta", vincularPropostaId] });
+          if (enviarBancoAposVincular) {
+            const tid = toast.loading("Cliente vinculado. Enviando proposta ao banco…");
+            try {
+              const r: any = await enviarProposta({ data: { proposta_id: vincularPropostaId } });
+              const numero =
+                r?.bancos?.find((x: any) => x?.numero_proposta_banco)?.numero_proposta_banco ?? null;
+              toast.success(
+                numero
+                  ? `Proposta enviada ao banco. Nº do banco: ${numero}`
+                  : "Proposta enviada ao banco. O número será atualizado em instantes.",
+                { id: tid },
+              );
+              await qc.invalidateQueries({ queryKey: ["proposta", vincularPropostaId] });
+              navigate({ to: "/operacional/propostas/$id", params: { id: vincularPropostaId } });
+              return;
+            } catch (envioErr: any) {
+              toast.error(envioErr?.message ?? "Cliente salvo, mas o envio ao banco falhou.", { id: tid });
+              navigate({
+                to: "/operacional/propostas/$id",
+                params: { id: vincularPropostaId },
+                search: { complementar: 1 },
+              });
+              return;
+            }
+          }
           toast.success("Cliente cadastrado e vinculado à proposta.");
           navigate({ to: "/operacional/propostas/$id", params: { id: vincularPropostaId } });
           return;
