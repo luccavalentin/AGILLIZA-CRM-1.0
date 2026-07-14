@@ -338,6 +338,7 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
    */
   function aplicarPorParcela(parcelaAlvo: number) {
     const pmt = Math.max(0, Number(parcelaAlvo) || 0);
+    // Sempre persistir o valor digitado — nunca bloquear a digitação.
     if (pmt <= 0) {
       setEntradaTocada(true);
       setF((prev) => ({
@@ -349,9 +350,7 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
       }));
       return;
     }
-    // Constantes de encargos vêm do módulo de renda (já importado no topo).
     const taxaAno = melhorTaxaAno || 0.1199;
-
     const i = Math.pow(1 + taxaAno, 1 / 12) - 1;
     const n = Math.max(1, Math.round(Number(f.prazo) || 360));
     const fator =
@@ -361,8 +360,9 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
     const k = TAXA_MIP_MES + TAXA_DFI_MES / ltvMax;
     const pmtLiq = pmt - TAXA_ADMIN_MES;
     const pv = pmtLiq > 0 ? pmtLiq / (fator + k) : 0;
+    // Se a parcela ainda é insuficiente (usuário digitando), só guardamos o valor sem toast.
     if (pv <= 0) {
-      toast.warning("Parcela informada é insuficiente para cobrir os encargos do banco.");
+      setF((prev) => ({ ...prev, parcela_alvo: pmt }));
       return;
     }
     const financiamento = Math.round(pv);
