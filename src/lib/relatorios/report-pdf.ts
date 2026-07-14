@@ -228,15 +228,25 @@ export function exportPDF(
     body,
     foot,
     margin: { left: 32, right: 32, top: HEADER_H + 16, bottom: 40 },
+    tableWidth: "auto",
     styles: {
-      fontSize: 7.5,
-      cellPadding: 4,
+      fontSize: orientation === "portrait" ? 6.8 : 7.5,
+      cellPadding: 3,
       textColor: P.texto,
       fillColor: P.pageBg ?? "#FFFFFF",
       lineColor: P.borda,
       lineWidth: 0.25,
+      overflow: "linebreak",
+      valign: "middle",
     },
-    headStyles: { fillColor: P.azul, textColor: P.headText, fontStyle: "bold" },
+    headStyles: {
+      fillColor: P.azul,
+      textColor: P.headText,
+      fontStyle: "bold",
+      fontSize: orientation === "portrait" ? 6.8 : 7.5,
+      cellPadding: 4,
+      halign: "left",
+    },
     footStyles: { fillColor: P.footFill, textColor: P.footText, fontStyle: "bold" },
     alternateRowStyles: { fillColor: P.card },
     columnStyles: columns.reduce(
@@ -249,6 +259,7 @@ export function exportPDF(
       },
       {} as Record<number, any>,
     ),
+
     willDrawPage: (data) => {
       if (data.pageNumber > 1) drawPageBackground(doc, pageW, pageH);
     },
