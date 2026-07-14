@@ -811,6 +811,9 @@ export function bancoJaEnviado(b: {
   status_banco?: string | null;
   numero_proposta_banco?: string | null;
 }): boolean {
+  // Um envio com falha deve poder ser retentado — o número técnico eventual
+  // (ex.: codigoSimulacaoBanco) não caracteriza proposta ativa no banco.
+  if (String(b.status_banco ?? "") === "erro") return false;
   return (
     Boolean(b.numero_proposta_banco) ||
     STATUS_BANCO_JA_ENVIADO.has(String(b.status_banco ?? ""))
