@@ -17,7 +17,7 @@ import {
   obterSimulacao,
   obterClienteCRM,
 } from "@/lib/simulacao/simulacoes.functions";
-import { criarProposta, enviarPropostaHomeFin } from "@/lib/propostas/propostas.functions";
+import { criarProposta } from "@/lib/propostas/propostas.functions";
 
 export type Form = Record<string, any>;
 
@@ -704,7 +704,9 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
       }
 
       // Fluxo "Nova Proposta": após simular, cria a proposta a partir da
-      // simulação e envia direto ao banco selecionado, indo à ficha da proposta.
+      // simulação e direciona ao cadastro antes do envio ao banco. O envio só
+      // acontece depois do cadastro salvo, para evitar proposta sem participante
+      // completo e para não cair na aba de documentos.
       if (modoProposta) {
         try {
           const dadosSim: any = await obterSimulacao({ data: { id } });
@@ -729,31 +731,19 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
           const { proposta_id } = await criarProposta({
             data: { simulacao_id: id, banco_id: bancoId },
           });
-          try {
-            const envio: any = await enviarPropostaHomeFin({
-              data: { proposta_id, banco_id: bancoId },
+          toast.success("Proposta criada. Complete o cadastro para enviar ao banco.");
+          if (f.cliente_id) {
+            router.navigate({
+              to: "/operacional/propostas/$id",
+              params: { id: proposta_id },
+              search: { complementar: 1 },
             });
-            const numero =
-              envio?.bancos?.find((x: any) => x.banco_id === bancoId)?.numero_proposta_banco ??
-              envio?.bancos?.[0]?.numero_proposta_banco ??
-              null;
-            toast.success(
-              numero
-                ? `Proposta enviada ao banco. Nº do banco: ${numero}`
-                : "Proposta enviada ao banco. O número será atualizado em instantes.",
-            );
-          } catch (envioErr) {
-            toast.warning(
-              envioErr instanceof Error
-                ? `Proposta criada. Complete os dados para enviar: ${envioErr.message}`
-                : "Proposta criada. Complete os dados para enviar ao banco.",
-            );
+          } else {
+            router.navigate({
+              to: "/crm/clientes/novo",
+              search: { proposta: proposta_id, enviar: 1 },
+            });
           }
-          router.navigate({
-            to: "/operacional/propostas/$id",
-            params: { id: proposta_id },
-            search: { complementar: 1 },
-          });
           return;
 
         } catch (e) {
