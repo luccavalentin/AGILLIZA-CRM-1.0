@@ -282,12 +282,12 @@ export function AbaEnviarBanco({
             </div>
           </div>
           <Button
-            onClick={enviarAoBanco}
+            onClick={() => enviarAoBanco()}
             disabled={enviando || totalPdfs === 0}
             className="h-11 w-full gap-2 rounded-xl px-6 font-semibold shadow-md shadow-primary/20 transition-all hover:shadow-lg hover:shadow-primary/25 active:scale-[0.98] disabled:shadow-none sm:w-auto"
           >
             {enviando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Landmark className="h-4 w-4" />}
-            {enviando ? "Enviando…" : "Enviar ao banco"}
+            {enviando ? "Enviando…" : "Enviar todos os documentos ao banco"}
           </Button>
         </CardContent>
       </Card>
