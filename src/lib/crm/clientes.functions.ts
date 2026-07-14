@@ -150,6 +150,69 @@ export const listarClientes = createServerFn({ method: "GET" })
     },
   );
 
+/** Estatísticas rápidas de clientes para KPIs (respeita RLS). */
+export const estatisticasClientes = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({ escopo: z.enum(["minhas", "geral"]).optional() }).parse(d ?? {}),
+  )
+  .handler(
+    async ({
+      data,
+      context,
+    }): Promise<{
+      total: number;
+      portal_ativo: number;
+      em_andamento: number;
+      cadastro_completo: number;
+    }> => {
+      const { supabase, userId } = context;
+      const base = () => {
+        let q = supabase
+          .from("clientes")
+          .select(
+            "id, portal_acesso_ativo, cliente_pipeline(pipeline_stages(codigo, ordem))",
+            { count: "exact" },
+          )
+          .eq("ativo", true);
+        if (data?.escopo === "minhas") q = q.eq("responsavel_id", userId);
+        return q;
+      };
+      const { data: rows, count } = await base();
+      const list = (rows ?? []) as any[];
+      const portal_ativo = list.filter((r) => r.portal_acesso_ativo).length;
+      const em_andamento = list.filter((r) => {
+        const cod = r.cliente_pipeline?.pipeline_stages?.codigo;
+        return cod && cod !== "cadastro_basico" && cod !== "contrato_emitido";
+      }).length;
+      const cadastro_completo = list.filter((r) => {
+        const ord = r.cliente_pipeline?.pipeline_stages?.ordem ?? 0;
+        return ord >= 4;
+      }).length;
+      return {
+        total: count ?? list.length,
+        portal_ativo,
+        em_andamento,
+        cadastro_completo,
+      };
+    },
+  );
+
+/** Lista etapas do pipeline para filtros (ordenadas). */
+export const listarEtapasPipeline = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<{ codigo: string; nome: string }[]> => {
+    const { supabase } = context;
+    const { data, error } = await supabase
+      .from("pipeline_stages")
+      .select("codigo, nome, ordem")
+      .order("ordem");
+    if (error) throw error;
+    return (data ?? []).map((r: any) => ({ codigo: r.codigo, nome: r.nome }));
+  });
+
+
+
 const clienteInputSchema = z.object({
   tipo_pessoa: z.enum(["PF", "PJ"]),
   nome: z.string().min(2, "Informe o nome completo."),
