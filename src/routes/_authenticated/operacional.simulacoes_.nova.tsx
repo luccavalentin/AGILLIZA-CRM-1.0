@@ -204,17 +204,17 @@ function Pagina() {
         banco_id: b.id,
         codigo_banco: b.codigo_banco,
         nome_banco: b.nome_banco,
-        taxa_ano: taxaAnoDeBanco(b.codigo_banco),
+        taxa_ano: taxaAnoDeBanco(b.codigo_banco, taxasReais),
       })),
       { valor_financiamento: w.valor_financiamento, prazo_meses: w.prazo_meses, sistema: "S" },
     );
-  }, [bancos, mostrarRapida, w.valor_financiamento, w.prazo_meses]);
+  }, [bancos, taxasReais, mostrarRapida, w.valor_financiamento, w.prazo_meses]);
 
   // Taxa mais conservadora entre os bancos ativos, usada para estimar a maior renda mínima.
   const melhorTaxaAno = useMemo(() => {
-    if (!bancos || bancos.length === 0) return 0.1199;
-    return Math.max(...bancos.map((b) => taxaAnoDeBanco(b.codigo_banco)));
-  }, [bancos]);
+    if (!bancos || bancos.length === 0) return 0.1299;
+    return Math.max(...bancos.map((b) => taxaAnoDeBanco(b.codigo_banco, taxasReais)));
+  }, [bancos, taxasReais]);
 
   /** Aplica o prazo digitado, ajustando automaticamente pela regra de idade. */
   function definirPrazo(valor: number) {
