@@ -366,13 +366,13 @@ function Pagina() {
               </div>
 
               <div className="px-4 py-3 pl-5">
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
                   <span className="text-base font-semibold tabular-nums tracking-tight text-foreground">
-                    {p.numero_proposta}
+                    {p.numero_proposta_banco ? `Nº banco ${p.numero_proposta_banco}` : p.numero_proposta}
                   </span>
                   {p.numero_proposta_banco && (
-                    <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-                      Nº banco {p.numero_proposta_banco}
+                    <span className="text-[10px] font-medium text-muted-foreground">
+                      Interno {p.numero_proposta}
                     </span>
                   )}
                 </div>
