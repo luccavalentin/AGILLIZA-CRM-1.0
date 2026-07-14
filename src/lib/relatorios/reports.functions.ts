@@ -1309,9 +1309,14 @@ export const runReport = createServerFn({ method: "POST" })
             rows: breakdown2(rows, nomeComercial, (p) => p.nome_banco, valFn),
           },
           {
-            titulo: "Por Imobiliária / Corretor",
-            columns: colsBreak("Imobiliária / Corretor"),
-            rows: breakdown(rows, nomeParceiro, valFn),
+            titulo: "Por Imobiliária",
+            columns: colsBreak("Imobiliária"),
+            rows: breakdown(rows.filter((p) => perfilParceiro(p)?.tipo === "imobiliaria"), nomeImobiliaria, valFn),
+          },
+          {
+            titulo: "Por Corretor",
+            columns: colsBreak("Corretor"),
+            rows: breakdown(rows.filter((p) => perfilParceiro(p)?.tipo === "corretor"), nomeCorretor, valFn),
           },
         ];
       };
