@@ -20,6 +20,7 @@ export interface ParcelaDetalhe {
 export interface DetalheBanco {
   taxaJurosAno: number | null;
   taxaJurosMes: number | null;
+  taxaNominalAno: number | null;
   cet: number | null;
   valorImovel: number | null;
   valorFinanciamento: number | null;
@@ -36,6 +37,12 @@ export interface DetalheBanco {
   primeiraParcela: number | null;
   ultimaParcela: number | null;
   somatorioParcelas: number | null;
+  /** Seguro habitacional mensal informado pelo banco (MIP/DFI juntos). */
+  seguroMensal: number | null;
+  /** Taxa de administração mensal informada pelo banco. */
+  taxaAdminMensal: number | null;
+  /** Renda mínima exigida devolvida diretamente pelo banco (quando informada). */
+  rendaMinimaExigida: number | null;
   /** true quando o plano de parcelas foi calculado localmente pelo sistema de amortização. */
   parcelasEstimadas: boolean;
   parcelas: ParcelaDetalhe[];
