@@ -623,9 +623,10 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
           );
           if (simulados.length === 0) {
             toast.error(
-              "Nenhum banco retornou simulação válida. Ajuste os dados e tente novamente.",
+              "Nenhum banco aceitou a proposta. Revise os dados e envie novamente.",
             );
-            router.navigate({ to: "/operacional/simulacoes/$id", params: { id } });
+            setEnviando(false);
+            setConcluidos(0);
             return;
           }
           // Melhor taxa (menor parcela) como banco da proposta.
@@ -656,10 +657,12 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
           toast.error(
             e instanceof Error ? e.message : "Não foi possível criar a proposta.",
           );
-          router.navigate({ to: "/operacional/simulacoes/$id", params: { id } });
+          setEnviando(false);
+          setConcluidos(0);
           return;
         }
       }
+
 
       // Baixa o extrato imediatamente (detalhado ou comparativo).
       try {
@@ -679,11 +682,15 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
 
       router.navigate({ to: "/operacional/simulacoes/$id", params: { id } });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Não foi possível criar a simulação.");
+      const msg = e instanceof Error ? e.message : null;
+      toast.error(
+        msg ?? (modoProposta ? "Não foi possível criar a proposta." : "Não foi possível criar a simulação."),
+      );
       setEnviando(false);
       setConcluidos(0);
     }
   }
+
 
   return {
     router,

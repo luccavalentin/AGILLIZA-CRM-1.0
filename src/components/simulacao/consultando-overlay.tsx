@@ -1,14 +1,18 @@
 import { useEffect, useRef, useState } from "react";
 
-/** Overlay exibido enquanto a simulação consulta os bancos. */
+/** Overlay exibido enquanto a simulação/proposta consulta os bancos. */
 export function ConsultandoOverlay({
   aberto,
   total,
   concluidos,
+  titulo = "Preparando suas simulações",
+  legenda,
 }: {
   aberto: boolean;
   total: number;
   concluidos: number;
+  titulo?: string;
+  legenda?: string;
 }) {
   const temProgresso = total > 0;
 
@@ -114,14 +118,16 @@ export function ConsultandoOverlay({
 
           <div className="space-y-1">
             <p className="text-base font-semibold tracking-tight text-card-foreground">
-              Preparando suas simulações
+              {titulo}
             </p>
             <p className="text-sm text-muted-foreground">
-              {temProgresso
-                ? `${concluidos} de ${total} bancos processados`
-                : "Consultando os bancos parceiros…"}
+              {legenda ??
+                (temProgresso
+                  ? `${concluidos} de ${total} bancos processados`
+                  : "Consultando os bancos parceiros…")}
             </p>
           </div>
+
 
           {/* Indicadores por banco */}
           {temProgresso && (
