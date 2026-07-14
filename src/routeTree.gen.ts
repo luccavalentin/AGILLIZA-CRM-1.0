@@ -92,6 +92,7 @@ import { Route as AuthenticatedOperacionalTarefasCalendarioRouteImport } from '.
 import { Route as AuthenticatedOperacionalSimulacoesNovaRouteImport } from './routes/_authenticated/operacional.simulacoes_.nova'
 import { Route as AuthenticatedOperacionalSimulacoesCompletaRouteImport } from './routes/_authenticated/operacional.simulacoes_.completa'
 import { Route as AuthenticatedOperacionalSimulacoesIdRouteImport } from './routes/_authenticated/operacional.simulacoes_.$id'
+import { Route as AuthenticatedOperacionalPropostasNovaRouteImport } from './routes/_authenticated/operacional.propostas_.nova'
 import { Route as AuthenticatedOperacionalPropostasKanbanRouteImport } from './routes/_authenticated/operacional.propostas_.kanban'
 import { Route as AuthenticatedOperacionalPropostasEnviarRouteImport } from './routes/_authenticated/operacional.propostas_.enviar'
 import { Route as AuthenticatedOperacionalPropostasIdRouteImport } from './routes/_authenticated/operacional.propostas_.$id'
@@ -571,6 +572,12 @@ const AuthenticatedOperacionalSimulacoesIdRoute =
     path: '/operacional/simulacoes/$id',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedOperacionalPropostasNovaRoute =
+  AuthenticatedOperacionalPropostasNovaRouteImport.update({
+    id: '/operacional/propostas_/nova',
+    path: '/operacional/propostas/nova',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedOperacionalPropostasKanbanRoute =
   AuthenticatedOperacionalPropostasKanbanRouteImport.update({
     id: '/operacional/propostas_/kanban',
@@ -706,6 +713,7 @@ export interface FileRoutesByFullPath {
   '/operacional/propostas/$id': typeof AuthenticatedOperacionalPropostasIdRoute
   '/operacional/propostas/enviar': typeof AuthenticatedOperacionalPropostasEnviarRoute
   '/operacional/propostas/kanban': typeof AuthenticatedOperacionalPropostasKanbanRoute
+  '/operacional/propostas/nova': typeof AuthenticatedOperacionalPropostasNovaRoute
   '/operacional/simulacoes/$id': typeof AuthenticatedOperacionalSimulacoesIdRoute
   '/operacional/simulacoes/completa': typeof AuthenticatedOperacionalSimulacoesCompletaRoute
   '/operacional/simulacoes/nova': typeof AuthenticatedOperacionalSimulacoesNovaRoute
@@ -796,6 +804,7 @@ export interface FileRoutesByTo {
   '/operacional/propostas/$id': typeof AuthenticatedOperacionalPropostasIdRoute
   '/operacional/propostas/enviar': typeof AuthenticatedOperacionalPropostasEnviarRoute
   '/operacional/propostas/kanban': typeof AuthenticatedOperacionalPropostasKanbanRoute
+  '/operacional/propostas/nova': typeof AuthenticatedOperacionalPropostasNovaRoute
   '/operacional/simulacoes/$id': typeof AuthenticatedOperacionalSimulacoesIdRoute
   '/operacional/simulacoes/completa': typeof AuthenticatedOperacionalSimulacoesCompletaRoute
   '/operacional/simulacoes/nova': typeof AuthenticatedOperacionalSimulacoesNovaRoute
@@ -890,6 +899,7 @@ export interface FileRoutesById {
   '/_authenticated/operacional/propostas_/$id': typeof AuthenticatedOperacionalPropostasIdRoute
   '/_authenticated/operacional/propostas_/enviar': typeof AuthenticatedOperacionalPropostasEnviarRoute
   '/_authenticated/operacional/propostas_/kanban': typeof AuthenticatedOperacionalPropostasKanbanRoute
+  '/_authenticated/operacional/propostas_/nova': typeof AuthenticatedOperacionalPropostasNovaRoute
   '/_authenticated/operacional/simulacoes_/$id': typeof AuthenticatedOperacionalSimulacoesIdRoute
   '/_authenticated/operacional/simulacoes_/completa': typeof AuthenticatedOperacionalSimulacoesCompletaRoute
   '/_authenticated/operacional/simulacoes_/nova': typeof AuthenticatedOperacionalSimulacoesNovaRoute
@@ -984,6 +994,7 @@ export interface FileRouteTypes {
     | '/operacional/propostas/$id'
     | '/operacional/propostas/enviar'
     | '/operacional/propostas/kanban'
+    | '/operacional/propostas/nova'
     | '/operacional/simulacoes/$id'
     | '/operacional/simulacoes/completa'
     | '/operacional/simulacoes/nova'
@@ -1074,6 +1085,7 @@ export interface FileRouteTypes {
     | '/operacional/propostas/$id'
     | '/operacional/propostas/enviar'
     | '/operacional/propostas/kanban'
+    | '/operacional/propostas/nova'
     | '/operacional/simulacoes/$id'
     | '/operacional/simulacoes/completa'
     | '/operacional/simulacoes/nova'
@@ -1167,6 +1179,7 @@ export interface FileRouteTypes {
     | '/_authenticated/operacional/propostas_/$id'
     | '/_authenticated/operacional/propostas_/enviar'
     | '/_authenticated/operacional/propostas_/kanban'
+    | '/_authenticated/operacional/propostas_/nova'
     | '/_authenticated/operacional/simulacoes_/$id'
     | '/_authenticated/operacional/simulacoes_/completa'
     | '/_authenticated/operacional/simulacoes_/nova'
@@ -1769,6 +1782,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOperacionalSimulacoesIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/operacional/propostas_/nova': {
+      id: '/_authenticated/operacional/propostas_/nova'
+      path: '/operacional/propostas/nova'
+      fullPath: '/operacional/propostas/nova'
+      preLoaderRoute: typeof AuthenticatedOperacionalPropostasNovaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/operacional/propostas_/kanban': {
       id: '/_authenticated/operacional/propostas_/kanban'
       path: '/operacional/propostas/kanban'
@@ -1951,6 +1971,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedOperacionalPropostasIdRoute: typeof AuthenticatedOperacionalPropostasIdRoute
   AuthenticatedOperacionalPropostasEnviarRoute: typeof AuthenticatedOperacionalPropostasEnviarRoute
   AuthenticatedOperacionalPropostasKanbanRoute: typeof AuthenticatedOperacionalPropostasKanbanRoute
+  AuthenticatedOperacionalPropostasNovaRoute: typeof AuthenticatedOperacionalPropostasNovaRoute
   AuthenticatedOperacionalSimulacoesIdRoute: typeof AuthenticatedOperacionalSimulacoesIdRoute
   AuthenticatedOperacionalSimulacoesCompletaRoute: typeof AuthenticatedOperacionalSimulacoesCompletaRoute
   AuthenticatedOperacionalSimulacoesNovaRoute: typeof AuthenticatedOperacionalSimulacoesNovaRoute
@@ -2018,6 +2039,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
     AuthenticatedOperacionalPropostasEnviarRoute,
   AuthenticatedOperacionalPropostasKanbanRoute:
     AuthenticatedOperacionalPropostasKanbanRoute,
+  AuthenticatedOperacionalPropostasNovaRoute:
+    AuthenticatedOperacionalPropostasNovaRoute,
   AuthenticatedOperacionalSimulacoesIdRoute:
     AuthenticatedOperacionalSimulacoesIdRoute,
   AuthenticatedOperacionalSimulacoesCompletaRoute:
@@ -2086,13 +2109,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

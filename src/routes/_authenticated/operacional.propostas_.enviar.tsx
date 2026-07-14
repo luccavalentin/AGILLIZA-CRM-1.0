@@ -119,12 +119,7 @@ function Pagina() {
             </div>
           </div>
           <Button
-            onClick={() =>
-              router.navigate({
-                to: "/operacional/simulacoes/completa",
-                search: { origem: "proposta" },
-              })
-            }
+            onClick={() => router.navigate({ to: "/operacional/propostas/nova" })}
             className="group col-span-2 h-11 rounded-xl bg-gradient-to-br from-primary to-primary/80 font-semibold shadow-md ring-1 ring-primary/25 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/25 hover:brightness-105 active:translate-y-0 sm:col-auto"
           >
             <Plus className="mr-1.5 h-4 w-4 transition-transform duration-200 group-hover:rotate-90" />{" "}
