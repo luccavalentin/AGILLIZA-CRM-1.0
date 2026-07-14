@@ -50,8 +50,10 @@ function totalFinanciado(b: any): number | null {
   return d?.financiamentoTotal ?? d?.valorFinanciamento ?? b?.valor_financiamento_max ?? null;
 }
 
-/** Renda mínima estimada para um único banco a partir da parcela retornada. */
+/** Renda estimada para um único banco: usa o retorno da API quando existir. */
 function rendaMinimaDoBanco(b: any): number | null {
+  const d = extrairDetalheBanco(b?.raw_response);
+  if (d?.rendaMinimaExigida && d.rendaMinimaExigida > 0) return d.rendaMinimaExigida;
   const parcela = parcelaExigidaPeloBanco(b);
   if (!parcela) return null;
   return rendaMinimaParaParcela(parcela);

@@ -20,6 +20,7 @@ export interface ParcelaDetalhe {
 export interface DetalheBanco {
   taxaJurosAno: number | null;
   taxaJurosMes: number | null;
+  taxaNominalAno: number | null;
   cet: number | null;
   valorImovel: number | null;
   valorFinanciamento: number | null;
@@ -36,6 +37,12 @@ export interface DetalheBanco {
   primeiraParcela: number | null;
   ultimaParcela: number | null;
   somatorioParcelas: number | null;
+  /** Seguro habitacional mensal informado pelo banco (MIP/DFI juntos). */
+  seguroMensal: number | null;
+  /** Taxa de administração mensal informada pelo banco. */
+  taxaAdminMensal: number | null;
+  /** Renda mínima exigida devolvida diretamente pelo banco (quando informada). */
+  rendaMinimaExigida: number | null;
   /** true quando o plano de parcelas foi calculado localmente pelo sistema de amortização. */
   parcelasEstimadas: boolean;
   parcelas: ParcelaDetalhe[];
@@ -199,15 +206,47 @@ export function extrairDetalheBanco(raw: unknown): DetalheBanco | null {
     r.codigoSistemaAmortizacaoSimulacao,
   );
 
-  const taxaAno = num(desc.annualRate) ?? num(r.taxaJurosAnoBanco) ?? num(r.taxaJurosAnoSimulacao);
-  const taxaMes = num(desc.monthlyRate) ?? taxaMensalEquivalente(taxaAno);
+  // Bradesco devolve campos em português dentro de descricaoRespostaBanco:
+  //   valorTaxaJurosEfetivoAno, valorTaxaNominal, valorCetAno, prazoFinanciamento,
+  //   valorFinanciamento, valorTotalFinanciamento, valorPrimeiraPrestacaoComSeguroTac,
+  //   valorUltimaPrestacao, valorSeguro, valorTaxaAdministracaoMensal,
+  //   valorRendaLiquidaMinimaExigida.
+  const taxaAno =
+    num(desc.annualRate) ??
+    num(desc.valorTaxaJurosEfetivoAno) ??
+    num(r.taxaJurosAnoBanco) ??
+    num(r.taxaJurosAnoSimulacao);
+  const taxaNominalAno = num(desc.valorTaxaNominal);
+  // Se o banco informa taxa nominal a.a., a taxa mensal é nominal/12 (regime
+  // usado pelos bancos para calcular a parcela SAC/PRICE). Caso contrário,
+  // deriva pela equivalência composta da taxa efetiva anual.
+  const taxaMes =
+    num(desc.monthlyRate) ??
+    (taxaNominalAno != null ? taxaNominalAno / 12 : null) ??
+    taxaMensalEquivalente(taxaAno);
   const prazo =
-    num(desc.period) ?? num(r.prazoPagamentoBanco) ?? num(r.prazoPagamentoSimulacao);
+    num(desc.period) ??
+    num(desc.prazoFinanciamento) ??
+    num(r.prazoPagamentoBanco) ??
+    num(r.prazoPagamentoSimulacao);
   const valorFin =
     num(desc.loanAmount) ??
+    num(desc.valorTotalFinanciamento) ??
+    num(desc.valorFinanciamento) ??
     num(r.valorTotalFinanciamento) ??
     num(r.valorFinanciamentoBanco) ??
     num(r.valorFinanciamentoSimulacao);
+
+  // Valores reais devolvidos pelo banco (quando existirem) — usados como
+  // âncora para primeira/última parcela e para não sobrescrever com estimativa.
+  const primeiraParcelaApi =
+    num(desc.valorPrimeiraPrestacaoComSeguroTac) ??
+    num(desc.valorPrimeiraPrestacaoSemSeguroTac) ??
+    num(r.valorParcelaBanco);
+  const ultimaParcelaApi = num(desc.valorUltimaPrestacao);
+  const seguroMensal = num(desc.valorSeguro);
+  const taxaAdminMensal = num(desc.valorTaxaAdministracaoMensal);
+  const rendaMinimaExigida = num(desc.valorRendaLiquidaMinimaExigida);
 
   const brutas: any[] = Array.isArray(desc.installments) ? desc.installments : [];
   let parcelas: ParcelaDetalhe[] = brutas.map(mapParcela).filter((p) => p.parcela > 0);
@@ -293,6 +332,7 @@ export function extrairDetalheBanco(raw: unknown): DetalheBanco | null {
   return {
     taxaJurosAno: taxaAno,
     taxaJurosMes: taxaMes,
+    taxaNominalAno,
     cet,
     valorImovel: num(desc.propertyPrice) ?? num(r.valorImovel),
     valorFinanciamento: valorFin,
@@ -310,9 +350,15 @@ export function extrairDetalheBanco(raw: unknown): DetalheBanco | null {
       r.codigoIndexadorBanco || desc.indexer
         ? `Atualizável ${(r.codigoIndexadorBanco ?? desc.indexer).toString().toUpperCase()}`
         : null,
-    primeiraParcela: parcelas.length ? parcelas[0].parcela : num(r.valorParcelaBanco),
-    ultimaParcela: parcelas.length ? parcelas[parcelas.length - 1].parcela : null,
+    // Preferir a parcela real informada pelo banco (Bradesco devolve
+    // valorPrimeiraPrestacaoComSeguroTac / valorUltimaPrestacao) sobre a
+    // estimativa local.
+    primeiraParcela: primeiraParcelaApi ?? (parcelas.length ? parcelas[0].parcela : num(r.valorParcelaBanco)),
+    ultimaParcela: ultimaParcelaApi ?? (parcelas.length ? parcelas[parcelas.length - 1].parcela : null),
     somatorioParcelas: somatorio,
+    seguroMensal,
+    taxaAdminMensal,
+    rendaMinimaExigida,
     parcelasEstimadas: estimadas,
     parcelas,
   };
