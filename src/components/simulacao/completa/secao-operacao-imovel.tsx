@@ -158,8 +158,8 @@ export function SecaoOperacaoImovel({ ctx }: { ctx: SimulacaoCompletaCtx }) {
       </div>
 
 
-      <div className="rounded-md border border-primary/20 bg-primary/5 p-3">
       <div className="group relative overflow-hidden rounded-lg border border-primary/15 bg-gradient-to-br from-primary/[0.04] via-primary/[0.02] to-transparent p-4 transition-colors hover:border-primary/25">
+
         <div className="pointer-events-none absolute inset-y-0 left-0 w-0.5 bg-primary/40" />
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex flex-1 min-w-[220px] items-start gap-3">
