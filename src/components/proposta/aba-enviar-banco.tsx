@@ -107,6 +107,7 @@ export function AbaEnviarBanco({
   const [visualizando, setVisualizando] = useState<{ url: string; nome: string } | null>(null);
   const [excluindo, setExcluindo] = useState<{ id: string; nome: string } | null>(null);
   const [enviando, setEnviando] = useState(false);
+  const [enviandoId, setEnviandoId] = useState<string | null>(null);
   const [uploadCat, setUploadCat] = useState<Categoria | null>(null);
   const [resultado, setResultado] = useState<{
     enviados: number;
@@ -215,11 +216,15 @@ export function AbaEnviarBanco({
     }
   }
 
-  async function enviarAoBanco() {
-    setEnviando(true);
+  async function enviarAoBanco(documentoIds?: string[]) {
+    const individual = Array.isArray(documentoIds) && documentoIds.length === 1;
+    if (individual) setEnviandoId(documentoIds![0]);
+    else setEnviando(true);
     setResultado(null);
     try {
-      const r = await enviar({ data: { proposta_id: propostaId } });
+      const r = await enviar({
+        data: { proposta_id: propostaId, documento_ids: documentoIds },
+      });
       setResultado(r);
       if (r.enviados > 0)
         toast.success(`${r.enviados} documento(s) enviado(s) ao banco.`);
@@ -227,10 +232,12 @@ export function AbaEnviarBanco({
         toast.warning(`${r.erros.length} documento(s) não puderam ser enviados.`);
       if (r.enviados === 0 && r.erros.length === 0)
         toast.info("Nenhum documento foi enviado.");
+      recarregar();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Falha ao enviar ao banco.");
     } finally {
       setEnviando(false);
+      setEnviandoId(null);
     }
   }
 
@@ -246,18 +253,14 @@ export function AbaEnviarBanco({
     <div className="space-y-5">
       <input ref={inputRef} type="file" multiple className="hidden" onChange={onFile} />
 
-      {/* Disclaimer PDF */}
-      <div className="flex items-start gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-4">
-        <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
-        <div className="text-sm">
-          <p className="font-medium text-foreground">
-            Todos os documentos devem estar em formato PDF.
-          </p>
-          <p className="mt-0.5 text-muted-foreground">
-            Apenas arquivos PDF serão enviados ao banco. Converta imagens e outros formatos
-            antes do envio para evitar recusa na integração.
-          </p>
-        </div>
+      {/* Disclaimer PDF — enxuto */}
+      <div className="flex items-start gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2.5 text-sm">
+        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+        <p className="text-muted-foreground">
+          <span className="font-medium text-foreground">Somente PDF é aceito pelo banco.</span>{" "}
+          Os documentos listados abaixo devem ser anexados pelo módulo{" "}
+          <span className="font-medium text-foreground">Documentos</span> do cliente.
+        </p>
       </div>
 
       {/* Ação de envio */}
@@ -279,12 +282,12 @@ export function AbaEnviarBanco({
             </div>
           </div>
           <Button
-            onClick={enviarAoBanco}
+            onClick={() => enviarAoBanco()}
             disabled={enviando || totalPdfs === 0}
             className="h-11 w-full gap-2 rounded-xl px-6 font-semibold shadow-md shadow-primary/20 transition-all hover:shadow-lg hover:shadow-primary/25 active:scale-[0.98] disabled:shadow-none sm:w-auto"
           >
             {enviando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Landmark className="h-4 w-4" />}
-            {enviando ? "Enviando…" : "Enviar ao banco"}
+            {enviando ? "Enviando…" : "Enviar todos os documentos ao banco"}
           </Button>
         </CardContent>
       </Card>
@@ -397,6 +400,23 @@ export function AbaEnviarBanco({
                           </div>
 
                           <div className="flex shrink-0 items-center gap-1">
+                            {pdf && d.situacao_integracao !== "enviado" && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-8 gap-1.5 rounded-lg px-2.5"
+                                title="Enviar este documento ao banco"
+                                disabled={enviando || enviandoId === d.id}
+                                onClick={() => enviarAoBanco([d.id])}
+                              >
+                                {enviandoId === d.id ? (
+                                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                ) : (
+                                  <Landmark className="h-3.5 w-3.5" />
+                                )}
+                                <span className="hidden sm:inline">Enviar</span>
+                              </Button>
+                            )}
                             <Button
                               size="icon"
                               variant="ghost"
