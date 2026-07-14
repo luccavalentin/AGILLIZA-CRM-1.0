@@ -38,6 +38,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { BancoChip } from "@/components/bancos/banco-chip";
 
 export const Route = createFileRoute("/cliente/acompanhar-minha-proposta")({
   head: () => ({ meta: [{ title: "Acompanhar minha proposta — Meu Financiamento" }] }),
