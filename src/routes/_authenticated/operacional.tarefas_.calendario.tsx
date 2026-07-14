@@ -23,10 +23,13 @@ function Pagina() {
   const hoje = new Date();
   const [ref, setRef] = useState(new Date(hoje.getFullYear(), hoje.getMonth(), 1));
   const [sel, setSel] = useState<string | null>(null);
+  const [escopo, setEscopo] = useState<"todas" | "minhas">(
+    () => (typeof window !== "undefined" && (localStorage.getItem("tarefas:escopo") as "todas" | "minhas")) || "todas",
+  );
 
   const { data } = useQuery({
-    queryKey: ["tarefas", "calendario"],
-    queryFn: () => listarTarefas({ data: { escopo: "todas" } }),
+    queryKey: ["tarefas", "calendario", escopo],
+    queryFn: () => listarTarefas({ data: { escopo } }),
   });
 
   const tarefasPorDia = useMemo(() => {
