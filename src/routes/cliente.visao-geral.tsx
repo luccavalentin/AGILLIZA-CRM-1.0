@@ -142,34 +142,46 @@ function VisaoGeral() {
               "linear-gradient(115deg, transparent 55%, rgba(255,255,255,0.12) 55%, rgba(255,255,255,0.12) 56%, transparent 56%), radial-gradient(circle at 80% 30%, rgba(255,255,255,0.18), transparent 60%), repeating-linear-gradient(90deg, rgba(255,255,255,0.06) 0 1px, transparent 1px 44px), repeating-linear-gradient(0deg, rgba(255,255,255,0.06) 0 1px, transparent 1px 44px)",
           }}
         />
-        <div className="relative grid gap-6 p-6 sm:p-8 md:grid-cols-[220px_1fr] md:items-center">
-          {/* Progress radial */}
-          <div className="relative mx-auto h-44 w-44 md:mx-0">
-            <ResponsiveContainer width="100%" height="100%">
-              <RadialBarChart
-                innerRadius="78%"
-                outerRadius="100%"
-                data={heroData}
-                startAngle={90}
-                endAngle={-270}
-              >
-                <PolarAngleAxis type="number" domain={[0, 100]} tick={false} />
-                <RadialBar
-                  background={{ fill: "rgba(255,255,255,0.18)" }}
-                  dataKey="value"
-                  cornerRadius={20}
-                />
-              </RadialBarChart>
-            </ResponsiveContainer>
-            <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-4xl font-bold tracking-tight">{progresso}%</span>
-              <span className="text-xs font-medium opacity-80">concluído</span>
+        <div className="relative grid gap-4 p-4 sm:gap-6 sm:p-8 md:grid-cols-[220px_1fr] md:items-center">
+          {/* Cabeçalho compacto no mobile: radial ao lado do título */}
+          <div className="grid grid-cols-[7rem_minmax(0,1fr)] items-center gap-4 md:block">
+            {/* Progress radial */}
+            <div className="relative h-28 w-28 md:mx-0 md:h-44 md:w-44">
+              <ResponsiveContainer width="100%" height="100%">
+                <RadialBarChart
+                  innerRadius="78%"
+                  outerRadius="100%"
+                  data={heroData}
+                  startAngle={90}
+                  endAngle={-270}
+                >
+                  <PolarAngleAxis type="number" domain={[0, 100]} tick={false} />
+                  <RadialBar
+                    background={{ fill: "rgba(255,255,255,0.18)" }}
+                    dataKey="value"
+                    cornerRadius={20}
+                  />
+                </RadialBarChart>
+              </ResponsiveContainer>
+              <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+                <span className="text-2xl font-bold tracking-tight sm:text-4xl">{progresso}%</span>
+                <span className="text-[10px] font-medium opacity-80 sm:text-xs">concluído</span>
+              </div>
+            </div>
+            {/* Título ao lado no mobile */}
+            <div className="min-w-0 md:hidden">
+              <h1 className="truncate text-xl font-bold leading-tight tracking-tight">
+                Meu <span className="font-light">financiamento</span>
+              </h1>
+              <p className="mt-1 text-[11px] leading-snug opacity-85">
+                Evolução do seu processo em tempo real
+              </p>
             </div>
           </div>
 
           {/* Texto */}
-          <div className="space-y-3">
-            <div>
+          <div className="space-y-2 sm:space-y-3">
+            <div className="hidden md:block">
               <h1 className="text-3xl font-bold leading-tight tracking-tight sm:text-4xl">
                 Meu <span className="font-light">financiamento</span>
               </h1>
@@ -177,25 +189,25 @@ function VisaoGeral() {
                 Acompanhe a evolução do seu processo em tempo real
               </p>
             </div>
-            <span className="inline-flex rounded-full border border-white/30 bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider backdrop-blur-sm">
+            <span className="inline-flex rounded-full border border-white/30 bg-white/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider backdrop-blur-sm sm:px-3 sm:py-1 sm:text-[11px]">
               Etapa atual
             </span>
             <div>
-              <p className="text-2xl font-semibold leading-snug">
+              <p className="text-lg font-semibold leading-snug sm:text-2xl">
                 {processo.etapa_atual ?? "Processo em andamento"}
               </p>
               {processo.descricao && (
-                <p className="mt-1 max-w-xl text-sm opacity-85">{processo.descricao}</p>
+                <p className="mt-1 max-w-xl text-xs opacity-85 sm:text-sm">{processo.descricao}</p>
               )}
             </div>
-            <div className="flex flex-wrap items-center gap-x-5 gap-y-2 pt-1 text-sm">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 pt-1 text-xs sm:gap-x-5 sm:gap-y-2 sm:text-sm">
               <span className="inline-flex items-center gap-2">
                 <span className="h-2 w-2 rounded-full bg-white/90" />
                 Etapa {processo.ordem_atual} de {processo.total || etapas.length}
               </span>
               <span className="h-4 w-px bg-white/25" />
               <span className="inline-flex items-center gap-1.5 opacity-90">
-                <Clock className="h-4 w-4" />
+                <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 {dias == null
                   ? "Aguardando atualização"
                   : dias === 0
@@ -205,6 +217,7 @@ function VisaoGeral() {
             </div>
           </div>
         </div>
+
       </div>
 
       {/* STAT CARDS */}
