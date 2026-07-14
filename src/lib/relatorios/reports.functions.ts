@@ -189,8 +189,6 @@ function aplicarFiltrosPessoa(query: any, filtros: ReportFiltros, cols: string, 
 }
 
 const statusEhFiltroSimulacao = (status?: string) => status === "rascunho" || status === "simulacao";
-const statusEhStatusRealDeSimulacao = (status?: string) =>
-  !!status && !statusEhFiltroSimulacao(status) && Object.prototype.hasOwnProperty.call(STATUS_SIMULACAO_LABEL, status);
 
 function serieMensal(rows: { data: string; valor?: number }[]): ChartSerie[] {
   const map = new Map<string, { valor: number; count: number }>();
