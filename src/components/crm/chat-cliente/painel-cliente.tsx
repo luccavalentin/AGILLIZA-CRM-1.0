@@ -309,7 +309,16 @@ export function PainelChatCliente({
                     rotulo="Proposta"
                     valor={data.proposta.numero ?? "—"}
                   />
-                  <LinhaResumo rotulo="Banco" valor={data.proposta.banco ?? "—"} />
+                  <LinhaResumo
+                    rotulo="Banco"
+                    valor={
+                      data.proposta.banco ? (
+                        <BancoChip nome={data.proposta.banco} />
+                      ) : (
+                        "—"
+                      )
+                    }
+                  />
                   <LinhaResumo
                     rotulo="Produto"
                     valor={data.proposta.produto ?? "—"}
