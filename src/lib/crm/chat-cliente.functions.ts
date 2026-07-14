@@ -305,12 +305,24 @@ export const listarChatCliente = createServerFn({ method: "GET" })
       for (const p of perfis ?? []) nomes.set(p.id, p.nome ?? "");
     }
 
+    // Nome do cliente para exibir como remetente das mensagens do cliente.
+    let nomeCliente = "Cliente";
+    {
+      const { data: cli } = await supabase
+        .from("clientes")
+        .select("nome")
+        .eq("id", data.cliente_id)
+        .maybeSingle();
+      if (cli?.nome && cli.nome.trim()) nomeCliente = cli.nome.trim();
+    }
+
     // Mapa id -> mensagem (para prévia de citações/respostas).
     const porId = new Map<string, (typeof lista)[number]>();
     for (const m of lista) porId.set(m.id, m);
     function autorDe(m: (typeof lista)[number]): string {
-      if (m.remetente_tipo === "time") return nomes.get(m.remetente_id ?? "") || "Equipe";
-      return "Cliente";
+      if (m.remetente_tipo === "time")
+        return nomes.get(m.remetente_id ?? "") || "Atendente";
+      return nomeCliente;
     }
 
     const comAnexo = await resolverAnexosChat(supabase, lista);
@@ -319,7 +331,9 @@ export const listarChatCliente = createServerFn({ method: "GET" })
       return {
         ...m,
         remetente_nome:
-          m.remetente_tipo === "time" ? (nomes.get(m.remetente_id ?? "") ?? null) : null,
+          m.remetente_tipo === "time"
+            ? (nomes.get(m.remetente_id ?? "") ?? null)
+            : nomeCliente,
         citacao: alvo
           ? {
               autor: autorDe(alvo),

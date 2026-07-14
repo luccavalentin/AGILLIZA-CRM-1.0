@@ -126,8 +126,8 @@ export function ListaMensagens({
                       )}
                     >
                       {doTime
-                        ? m.remetente_nome?.trim() || "Equipe"
-                        : info?.nome?.trim() || "Cliente"}
+                        ? m.remetente_nome?.trim() || "Atendente"
+                        : m.remetente_nome?.trim() || info?.nome?.trim() || "Cliente"}
                     </p>
                   )}
 
