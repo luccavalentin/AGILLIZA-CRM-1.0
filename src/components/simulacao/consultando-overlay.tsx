@@ -118,14 +118,16 @@ export function ConsultandoOverlay({
 
           <div className="space-y-1">
             <p className="text-base font-semibold tracking-tight text-card-foreground">
-              Preparando suas simulações
+              {titulo}
             </p>
             <p className="text-sm text-muted-foreground">
-              {temProgresso
-                ? `${concluidos} de ${total} bancos processados`
-                : "Consultando os bancos parceiros…"}
+              {legenda ??
+                (temProgresso
+                  ? `${concluidos} de ${total} bancos processados`
+                  : "Consultando os bancos parceiros…")}
             </p>
           </div>
+
 
           {/* Indicadores por banco */}
           {temProgresso && (
