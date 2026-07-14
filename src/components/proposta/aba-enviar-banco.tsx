@@ -400,6 +400,23 @@ export function AbaEnviarBanco({
                           </div>
 
                           <div className="flex shrink-0 items-center gap-1">
+                            {pdf && d.situacao_integracao !== "enviado" && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-8 gap-1.5 rounded-lg px-2.5"
+                                title="Enviar este documento ao banco"
+                                disabled={enviando || enviandoId === d.id}
+                                onClick={() => enviarAoBanco([d.id])}
+                              >
+                                {enviandoId === d.id ? (
+                                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                ) : (
+                                  <Landmark className="h-3.5 w-3.5" />
+                                )}
+                                <span className="hidden sm:inline">Enviar</span>
+                              </Button>
+                            )}
                             <Button
                               size="icon"
                               variant="ghost"
