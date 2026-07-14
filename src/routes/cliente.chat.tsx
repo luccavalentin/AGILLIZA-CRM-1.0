@@ -341,9 +341,6 @@ function CardResumo({
               <Button variant="outline" size="icon" className="h-8 w-8 rounded-full" aria-label="Mensagem">
                 <MessageSquare className="h-3.5 w-3.5" />
               </Button>
-              <Button variant="outline" size="icon" className="h-8 w-8 rounded-full" aria-label="E-mail">
-                <Mail className="h-3.5 w-3.5" />
-              </Button>
             </div>
           </div>
         </div>
