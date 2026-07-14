@@ -256,7 +256,7 @@ export function ResultadoInlineCompleta({ simulacaoId, onFechar }: Props) {
                   />
                   {rendaBancos && (
                     <ResumoCelula
-                      rotulo="Renda exigida"
+                      rotulo="Renda estimada"
                       valor={formatBRL(rendaBancos.rendaMinima)}
                       detalhe={rendaBancos.bancoNome ?? "maior retorno bancário"}
                       destaque
@@ -330,7 +330,7 @@ export function ResultadoInlineCompleta({ simulacaoId, onFechar }: Props) {
                         />
                         <MobileStat rotulo="IOF" valor={formatBRL(b.valor_iof)} />
                         <MobileStat
-                          rotulo="Renda mín."
+                          rotulo="Renda estimada"
                           valor={formatBRL(rendaMinimaDoBanco(b))}
                         />
                       </dl>
@@ -376,7 +376,7 @@ export function ResultadoInlineCompleta({ simulacaoId, onFechar }: Props) {
                         <TableHead className="text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">Financ. máx</TableHead>
                         <TableHead className="text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">Total financiado</TableHead>
                         <TableHead className="text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">IOF</TableHead>
-                        <TableHead className="text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">Renda mín.</TableHead>
+                        <TableHead className="text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">Renda estimada</TableHead>
                         <TableHead></TableHead>
                       </TableRow>
                     </TableHeader>

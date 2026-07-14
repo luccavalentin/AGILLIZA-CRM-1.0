@@ -4,7 +4,7 @@ import { exportPDF, drawBrandHeader } from "@/lib/relatorios/report-pdf";
 import { formatBRL, formatPercent } from "@/lib/simulacao/format";
 import type { ReportColumn, ReportKpi, ReportRow } from "@/lib/relatorios/shared";
 import { extrairDetalheBanco, normalizarSistemaAmortizacao, calcularCET, type DetalheBanco } from "@/lib/simulacao/detalhe-banco";
-import { avaliarRendaMinima, rendaMinimaPelosBancos } from "@/lib/simulacao/renda";
+import { avaliarRendaMinima, rendaMinimaPelosBancos, parcelaExigidaPeloBanco, rendaMinimaParaParcela } from "@/lib/simulacao/renda";
 import { AGILLIZA_LOGO_LIGHT, AGILLIZA_LOGO_RATIO } from "@/lib/relatorios/brand-logo";
 import { resolveBancoBrand } from "@/lib/relatorios/banco-brand";
 
@@ -239,6 +239,13 @@ function drawInfoFinanciamento(
             (d?.iof ?? 0) + (d?.tarifaAvaliacao ?? 0),
           ),
       ),
+    },
+    {
+      label: "Renda estimada",
+      valor: brlOuTraco((() => {
+        const p = parcelaExigidaPeloBanco(b);
+        return p ? rendaMinimaParaParcela(p) : null;
+      })()),
     },
   ];
 
