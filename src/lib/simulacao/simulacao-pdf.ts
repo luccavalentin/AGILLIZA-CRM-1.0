@@ -209,7 +209,15 @@ function drawInfoFinanciamento(
       label: "Valor de financiamento total",
       valor: brlOuTraco(d?.financiamentoTotal ?? d?.valorFinanciamento ?? s.valor_financiamento),
     },
-    { label: "Entrada", valor: brlOuTraco(d?.valorEntrada ?? s.valor_entrada) },
+    { label: "Entrada", valor: brlOuTraco((() => {
+      const e = d?.valorEntrada ?? s.valor_entrada;
+      if (e != null && Number(e) > 0) return e;
+      const vi = Number(d?.valorImovel ?? s.valor_imovel ?? 0);
+      const vf = Number(d?.financiamentoTotal ?? d?.valorFinanciamento ?? s.valor_financiamento ?? 0);
+      const df = Number(d?.despesasFinanciadas ?? 0);
+      const calc = vi - (vf - df);
+      return vi > 0 && vf > 0 && calc > 0 ? calc : null;
+    })()) },
     { label: "Tipo da parcela", valor: d?.tipoParcela ?? d?.indexador ?? "—" },
     {
       label: "Prazo total",
