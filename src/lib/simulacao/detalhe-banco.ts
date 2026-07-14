@@ -239,9 +239,27 @@ export function extrairDetalheBanco(raw: unknown): DetalheBanco | null {
     }
   }
 
+  // IOF e tarifa de avaliação são custos à vista (deduzidos do valor liberado
+  // no cálculo do CET conforme Bacen).
+  const iofValor = num(desc.iof?.totalValue ?? desc.iof?.value) ?? num(r.valorIofBanco) ?? 0;
+  const tarifaAvaliacaoValor =
+    num(desc.propertyEvaluation) ??
+    num(desc.appraisalFee) ??
+    num(desc.evaluationFee) ??
+    num(desc.guaranteeEvaluationFee) ??
+    num(r.valorTarifaAvaliacaoBanco) ??
+    num(r.valorTarifaAvaliacaoGarantiaBanco) ??
+    num(r.tarifaAvaliacaoGarantia) ??
+    TARIFA_AVALIACAO_GARANTIA_PADRAO;
+  const custosAVista = (iofValor || 0) + (tarifaAvaliacaoValor || 0);
+
   const somatorio = parcelas.length ? parcelas.reduce((s, p) => s + p.parcela, 0) : null;
   const cet =
-    num(desc.cetAnnual) ?? num(r.taxaCetAnoBanco) ?? calcularCET(valorFin, parcelas);
+    num(desc.cetAnnual) ??
+    num(desc.cet) ??
+    num(r.taxaCetAnoBanco) ??
+    num(r.taxaCETAnoBanco) ??
+    calcularCET(valorFin, parcelas, custosAVista);
 
   // Despesas financiadas = valor incorporado ao financiamento além do valor-base
   // (custos como ITBI, registro e tarifas embutidos na operação). O cálculo
