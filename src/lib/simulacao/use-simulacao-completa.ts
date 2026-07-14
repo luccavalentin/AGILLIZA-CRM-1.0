@@ -162,14 +162,17 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
     if (s.cliente_id) setCadastroNome(s.nome_cliente ?? "");
   }, [origem]);
 
-  // default bancos padrão
+  // default bancos padrão — apenas na simulação. Em "Nova Proposta" o usuário
+  // escolhe explicitamente a instituição para envio; nunca selecionamos por ele.
   useEffect(() => {
+    if (modoProposta) return;
     if (bancos && f.bancos_ids.length === 0) {
       const padrao = bancos.filter((b) => b.flag_padrao).map((b) => b.id);
       if (padrao.length > 0) setF((prev) => ({ ...prev, bancos_ids: padrao }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bancos]);
+
 
   const idOperacao = useMemo(() => {
     const op = operacoes?.find((o) => o.produto_sistema === f.produto);
