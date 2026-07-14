@@ -366,6 +366,10 @@ export function ClienteForm({
       }
       if (embutido) {
         // Embutido na ficha da proposta: apenas atualiza os dados e permanece na tela atual.
+        if (id && v.id && vincularPropostaId) {
+          await vincularProposta({ data: { proposta_id: vincularPropostaId, cliente_id: id } });
+          await qc.invalidateQueries({ queryKey: ["proposta", vincularPropostaId] });
+        }
         await qc.invalidateQueries({ queryKey: ["cliente", id] });
         toast.success("Cadastro salvo.");
         onSalvoEmbutido?.();

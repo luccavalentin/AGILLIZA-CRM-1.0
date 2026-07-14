@@ -96,6 +96,7 @@ export function ClienteSecao({
   return (
     <ClienteForm
       embutido
+      vincularPropostaId={propostaId}
       onSalvoEmbutido={onSalvoComprador}
       destacarObrigatorios={destacarObrigatorios}
       portalAtivo={c.portal_acesso_ativo}
