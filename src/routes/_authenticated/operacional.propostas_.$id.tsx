@@ -283,9 +283,10 @@ function Pagina() {
               {p.produto ?? "Operação"}
             </span>
             <h1 className="mt-2 truncate text-2xl font-semibold text-foreground">
-              Proposta {p.numero_proposta}
+              {p.numero_proposta_banco ? `Proposta banco ${p.numero_proposta_banco}` : `Proposta ${p.numero_proposta}`}
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
+              {p.numero_proposta_banco && <span className="mr-2">Interno {p.numero_proposta} ·</span>}
               {status === "cancelada"
                 ? "Proposta cancelada"
                 : `Ativa há ${diasDesde} dia(s)`}
