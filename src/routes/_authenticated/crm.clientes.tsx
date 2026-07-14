@@ -171,7 +171,7 @@ function Pagina() {
       label: "Total de clientes",
       hint: "Ativos no sistema",
       valor: kpis?.total,
-      icon: <Users className="size-5" />,
+      icon: <Users className="size-3.5" />,
       onClick: () => {
         setPortal("todos");
         setStatusF("ativo");
@@ -184,7 +184,7 @@ function Pagina() {
       label: "App ativo",
       hint: "Com acesso liberado",
       valor: kpis?.portal_ativo,
-      icon: <Smartphone className="size-5" />,
+      icon: <Smartphone className="size-3.5" />,
       onClick: () => {
         setPortal("ativo");
         setPagina(1);
@@ -195,7 +195,7 @@ function Pagina() {
       label: "Em andamento",
       hint: "Em etapas da esteira",
       valor: kpis?.em_andamento,
-      icon: <Loader2 className="size-5" />,
+      icon: <Loader2 className="size-3.5" />,
       onClick: () => {
         // filtro visual: seleciona etapa "simulacao" como atalho comum
         setEtapa("simulacao");
@@ -207,7 +207,7 @@ function Pagina() {
       label: "Cadastro completo",
       hint: "100% preenchido",
       valor: kpis?.cadastro_completo,
-      icon: <FileCheck2 className="size-5" />,
+      icon: <FileCheck2 className="size-3.5" />,
       onClick: () => {
         setEtapa("cadastro_completo");
         setPagina(1);
