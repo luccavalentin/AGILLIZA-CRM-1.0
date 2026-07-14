@@ -6,6 +6,7 @@ import { assertModuloPermitido } from "@/lib/route-guards";
 import { listarTarefas } from "@/lib/operacional/tarefas.functions";
 import { TarefaDrawer } from "@/components/operacional/tarefa-drawer";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { mapaFeriados } from "@/lib/feriados-br";
 import { NavegacaoCalendario } from "@/components/operacional/calendario/navegacao-calendario";
 import { GradeCalendario } from "@/components/operacional/calendario/grade-calendario";
