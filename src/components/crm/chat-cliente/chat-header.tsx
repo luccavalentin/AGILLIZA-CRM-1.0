@@ -28,17 +28,12 @@ export function ChatClienteHeader({
       <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 border-b bg-card px-3 py-2.5 sm:gap-3 sm:px-4 sm:py-3">
         <div className="relative flex size-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/70 text-sm font-semibold text-primary-foreground shadow-sm">
           {iniciais(info?.nome)}
-          <span className="absolute -bottom-0.5 -right-0.5 size-3 rounded-full border-2 border-background bg-emerald-500" />
         </div>
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-semibold text-foreground">
             {info?.nome ?? "Conversa com o cliente"}
           </p>
           <div className="flex min-w-0 items-center gap-2 overflow-hidden">
-            <span className="inline-flex items-center gap-1 text-xs text-emerald-600">
-              <span className="size-1.5 rounded-full bg-emerald-500" />
-              Ativo agora
-            </span>
             <Badge
               variant="secondary"
               className="h-5 rounded-full px-2 text-[10px] font-medium"
@@ -47,6 +42,7 @@ export function ChatClienteHeader({
             </Badge>
           </div>
         </div>
+
         <div className="flex min-w-0 shrink-0 items-center justify-end gap-1 overflow-hidden sm:gap-1.5">
           <Button
             type="button"
