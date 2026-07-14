@@ -131,6 +131,11 @@ export function LandingFx({ className }: { className?: string }) {
       ctx.globalCompositeOperation = "lighter";
 
       const minDim = Math.min(w, h);
+      if (!Number.isFinite(minDim) || minDim <= 0) {
+        raf = requestAnimationFrame(frame);
+        return;
+      }
+
 
       for (const o of orbs) {
         // Campo de fluxo: soma de senos para deriva orgânica (movimento amplo).
