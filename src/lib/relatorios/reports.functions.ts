@@ -1112,6 +1112,12 @@ export const runReport = createServerFn({ method: "POST" })
         if (!p.parceiro_nome && p.parceiro_id) idsFaltando.add(p.parceiro_id);
         if (p.usuario_responsavel_id) idsFaltando.add(p.usuario_responsavel_id);
       }
+      for (const p of contratosOperacionais) {
+        if (!p.analista_nome && p.analista_id) idsFaltando.add(p.analista_id);
+        if (!p.consultor_nome && p.comercial_id) idsFaltando.add(p.comercial_id);
+        if (!p.parceiro_nome && p.parceiro_id) idsFaltando.add(p.parceiro_id);
+        if (p.usuario_responsavel_id) idsFaltando.add(p.usuario_responsavel_id);
+      }
       const nomes = await nomesUsuarios([...idsFaltando]);
       const nomeAnalista = (p: any) =>
         p.analista_nome || nomes.get(p.analista_id) || nomes.get(p.usuario_responsavel_id) || "Não atribuído";
@@ -1287,7 +1293,12 @@ export const runReport = createServerFn({ method: "POST" })
           bancoGeralMap.set(b || "—", (bancoGeralMap.get(b || "—") ?? 0) + 1),
         ),
       );
-      propostasFiltradas.forEach((p) =>
+      propostasFiltradas.filter((p) => !contrato.includes(p.status)).forEach((p) =>
+        (p.nomes_bancos?.length ? p.nomes_bancos : [p.nome_banco ?? "—"]).forEach((b: string) =>
+          bancoGeralMap.set(b || "—", (bancoGeralMap.get(b || "—") ?? 0) + 1),
+        ),
+      );
+      contratos.forEach((p) =>
         (p.nomes_bancos?.length ? p.nomes_bancos : [p.nome_banco ?? "—"]).forEach((b: string) =>
           bancoGeralMap.set(b || "—", (bancoGeralMap.get(b || "—") ?? 0) + 1),
         ),
