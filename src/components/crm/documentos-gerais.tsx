@@ -510,257 +510,672 @@ export function DocumentosGerais() {
   }
 
 
+  // ===== Mapeia aba escolhida para visão + reseta caminho =====
+  function trocarAba(a: Aba) {
+    setAba(a);
+    setPagina(1);
+    if (a === "cliente") {
+      setVisao("clientes");
+      setCaminho([]);
+    } else if (a === "comercial") {
+      setVisao("hierarquia");
+      setCaminho([]);
+    } else if (a === "imobiliaria") {
+      setVisao("imobiliarias");
+      setCaminho([]);
+    } else if (a === "corretor") {
+      setVisao("corretores");
+      setCaminho([]);
+    }
+  }
+
+  // Lista base para "Por cliente" (paginação/ordenação)
+  const clientesOrdenados = useMemo(() => {
+    const lista = [...clientesFiltrados];
+    lista.sort((a, b) => {
+      if (ordem === "docs-desc") return (b.total_documentos ?? 0) - (a.total_documentos ?? 0);
+      if (ordem === "docs-asc") return (a.total_documentos ?? 0) - (b.total_documentos ?? 0);
+      const na = titulo(a.nome);
+      const nb = titulo(b.nome);
+      return ordem === "nome-desc" ? nb.localeCompare(na, "pt-BR") : na.localeCompare(nb, "pt-BR");
+    });
+    return lista;
+  }, [clientesFiltrados, ordem]);
+
+  const pastasOrdenadas = useMemo(() => {
+    const base = [...pastasNivel];
+    base.sort((a, b) => {
+      if (ordem === "docs-desc") return b.total_clientes - a.total_clientes;
+      if (ordem === "docs-asc") return a.total_clientes - b.total_clientes;
+      return ordem === "nome-desc"
+        ? b.nome.localeCompare(a.nome, "pt-BR")
+        : a.nome.localeCompare(b.nome, "pt-BR");
+    });
+    return base;
+  }, [pastasNivel, ordem]);
+
+  const listaAtual =
+    aba === "cliente"
+      ? clientesOrdenados
+      : caminho.length === 0
+        ? pastasOrdenadas
+        : pastasNivel.length > 0
+          ? pastasOrdenadas
+          : clientesNivel;
+
+  const totalItens = listaAtual.length;
+  const totalPaginas = Math.max(1, Math.ceil(totalItens / POR_PAGINA));
+  const paginaAtual = Math.min(pagina, totalPaginas);
+  const inicio = (paginaAtual - 1) * POR_PAGINA;
+  const paginado = listaAtual.slice(inicio, inicio + POR_PAGINA);
+
+  const kpis = {
+    pastas: resumo.comerciais + resumo.imobiliarias + resumo.corretores,
+    documentos: resumo.documentos,
+    clientes: resumo.clientes,
+    itens: resumo.documentos + resumo.clientes,
+  };
+
+  const tabsList: { key: Aba; label: string; Icon: typeof Users2 }[] = [
+    { key: "cliente", label: "Por cliente", Icon: Users2 },
+    { key: "comercial", label: "Por comercial", Icon: Briefcase },
+    { key: "imobiliaria", label: "Por imobiliária", Icon: Building2 },
+    { key: "corretor", label: "Por corretor", Icon: IdCard },
+    { key: "lixeira", label: "Lixeira", Icon: Trash2 },
+  ];
+
+  const secaoTitulo =
+    aba === "cliente"
+      ? "Pastas por cliente"
+      : aba === "comercial"
+        ? caminho.length === 0
+          ? "Comerciais"
+          : trilha[trilha.length - 1]?.nome ?? "Pastas"
+        : aba === "imobiliaria"
+          ? "Pastas por imobiliária"
+          : aba === "corretor"
+            ? "Pastas por corretor"
+            : "Lixeira";
+
   return (
-    <Tabs defaultValue="clientes" className="space-y-4">
-      <TabsList className="h-auto flex-wrap gap-1 bg-muted/60 p-1">
-        <TabsTrigger value="clientes" className="gap-2 data-[state=active]:shadow-sm">
-          <Users2 className="h-4 w-4" /> Por cliente
-        </TabsTrigger>
-        <TabsTrigger value="arquivos" className="gap-2 data-[state=active]:shadow-sm">
-          <FolderKanban className="h-4 w-4" /> Pastas &amp; arquivos
-        </TabsTrigger>
-      </TabsList>
-
-      <TabsContent value="arquivos" className="mt-0">
-        <GerenciadorArquivos mostrarCabecalho={false} />
-      </TabsContent>
-
-      <TabsContent value="clientes" className="mt-0 space-y-4">
-      {/* Breadcrumb */}
-      <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-        {caminho.length > 0 && (
-          <button
-            className="flex items-center gap-1 rounded-lg border border-border/60 bg-muted/50 px-2.5 py-1 font-medium text-foreground transition-colors hover:bg-muted"
-            onClick={() => {
-              const next = caminho.slice(0, -1);
-              if (next.length === 0) irParaRaiz();
-              else setCaminho(next);
-            }}
-          >
-            <ChevronLeft className="h-4 w-4" /> Voltar
-          </button>
-        )}
-        <button className="hover:text-foreground" onClick={irParaRaiz}>
-          Documentos Gerais
-        </button>
-        {trilha.map((node, idx) => (
-          <span key={node.key} className="flex items-center gap-2">
-            <ChevronRight className="h-4 w-4" />
-            <button
-              className="font-medium text-foreground hover:underline"
-              onClick={() => setCaminho(caminho.slice(0, idx + 1))}
-            >
-              {node.nome}
-            </button>
-          </span>
-        ))}
-      </div>
-
-      {/* Filtros / consulta (tela inicial) */}
-      {caminho.length === 0 && (
-        <Card>
-          <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-end">
-            <div className="relative flex-1">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Buscar cliente por nome, número ou documento…"
-                value={busca}
-                onChange={(e) => setBusca(e.target.value)}
-                className="pl-9"
-              />
+    <div className="space-y-5">
+      {/* ==================== HERO ==================== */}
+      <div className="relative overflow-hidden rounded-2xl border border-primary/15 bg-gradient-to-br from-primary/8 via-primary/[0.04] to-card p-5 shadow-sm md:p-7">
+        <span className="pointer-events-none absolute -right-24 -top-24 size-72 rounded-full bg-primary/8 blur-3xl" />
+        <span className="pointer-events-none absolute -left-16 bottom-0 size-48 rounded-full bg-primary/5 blur-2xl" />
+        <div className="relative grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+          <div className="flex items-center gap-5">
+            <div className="min-w-0">
+              <h1 className="truncate text-2xl font-bold tracking-tight text-foreground md:text-3xl">
+                Documentos Gerais
+              </h1>
+              <p className="mt-1 max-w-xl text-sm text-muted-foreground">
+                Organizados por Comercial → Imobiliária → Corretor → Cliente, com
+                a documentação de cada cliente.
+              </p>
             </div>
-            <div className="w-full sm:w-52">
-              <Select value={filtroComercial} onValueChange={setFiltroComercial}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Comercial Agilliza" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos os comerciais</SelectItem>
-                  {comerciaisBase.map((cm) => (
-                    <SelectItem key={cm.id} value={cm.id}>
-                      {titulo(cm.nome)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="relative hidden shrink-0 md:block">
+              <span className="absolute -left-4 -top-2 grid size-9 place-items-center rounded-lg bg-primary/15 text-primary shadow-sm">
+                <Cloud className="h-4 w-4" />
+              </span>
+              <span className="grid size-20 place-items-center rounded-2xl bg-gradient-to-br from-primary to-primary/70 text-primary-foreground shadow-lg">
+                <FolderOpen className="h-10 w-10" />
+              </span>
+              <span className="absolute -bottom-1 -right-3 grid size-8 place-items-center rounded-lg bg-primary/15 text-primary shadow-sm">
+                <FileText className="h-4 w-4" />
+              </span>
             </div>
-            <div className="w-full sm:w-52">
-              <Select value={filtroImob} onValueChange={setFiltroImob}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Imobiliária" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todas">Todas as imobiliárias</SelectItem>
-                  <SelectItem value="comercial">{SEM_IMOB}</SelectItem>
-                  {imobiliariasFiltro.map((i) => (
-                    <SelectItem key={i.id} value={i.id}>
-                      {titulo(i.nome)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="w-full sm:w-52">
-              <Select value={filtroCorr} onValueChange={setFiltroCorr}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Corretor" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos os corretores</SelectItem>
-                  {corretoresFiltro.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {titulo(c.nome)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            {filtrando && (
-              <Button variant="ghost" size="sm" onClick={limparFiltros}>
-                <X className="mr-1 h-4 w-4" /> Limpar
-              </Button>
-            )}
-          </CardContent>
-        </Card>
-      )}
+          </div>
 
-      {/* Visão geral — KPIs da estrutura documental (apenas na raiz) */}
-      {caminho.length === 0 && !filtrando && !isLoading && raizes.length > 0 && (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-          {[
-            {
-              Icon: Briefcase,
-              label: "Comerciais",
-              valor: resumo.comerciais,
-              acao: () => raizes[0] && setCaminho([raizes[0].key]),
-            },
-            {
-              Icon: Building2,
-              label: "Imobiliárias",
-              valor: resumo.imobiliarias,
-              acao: () => abrirVisao("imobiliarias"),
-            },
-            {
-              Icon: IdCard,
-              label: "Corretores",
-              valor: resumo.corretores,
-              acao: () => abrirVisao("corretores"),
-            },
-            {
-              Icon: Users,
-              label: "Clientes",
-              valor: resumo.clientes,
-              acao: () => abrirVisao("clientes"),
-            },
-            {
-              Icon: FileText,
-              label: "Documentos",
-              valor: resumo.documentos,
-              acao: () => raizes[0] && setCaminho([raizes[0].key]),
-            },
-          ].map(({ Icon, label, valor, acao }) => (
-            <button
-              key={label}
-              type="button"
-              onClick={acao}
-              className="group relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-card to-primary/[0.03] p-3.5 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-            >
-              <span className="pointer-events-none absolute -right-6 -top-6 size-16 rounded-full bg-primary/5 blur-2xl transition-opacity group-hover:opacity-100" />
-              <div className="relative flex items-center gap-3">
-                <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary ring-1 ring-inset ring-primary/15">
+          {/* KPIs */}
+          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 lg:min-w-[560px]">
+            {[
+              { Icon: Folder, label: "Pastas", valor: kpis.pastas, aba: null as Aba | null },
+              { Icon: FileText, label: "Documentos", valor: kpis.documentos, aba: null },
+              { Icon: Users, label: "Clientes", valor: kpis.clientes, aba: "cliente" as Aba },
+              { Icon: FolderKanban, label: "Itens", valor: kpis.itens, aba: null },
+            ].map(({ Icon, label, valor, aba: destinoAba }) => (
+              <button
+                key={label}
+                type="button"
+                onClick={() => destinoAba && trocarAba(destinoAba)}
+                className={cn(
+                  "group flex items-center gap-3 rounded-xl border border-border/60 bg-card px-3.5 py-3 text-left shadow-sm transition-all",
+                  destinoAba && "hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md",
+                )}
+              >
+                <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary ring-1 ring-inset ring-primary/15">
                   <Icon className="h-[18px] w-[18px]" />
                 </span>
                 <div className="min-w-0">
-                  <p className="text-lg font-semibold leading-none tracking-tight text-foreground tabular-nums">
+                  <p className="text-xl font-bold leading-none tracking-tight text-foreground tabular-nums">
                     {valor.toLocaleString("pt-BR")}
                   </p>
-                  <p className="mt-1 truncate text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                  <p className="mt-1 truncate text-[11px] font-medium text-muted-foreground">
                     {label}
                   </p>
                 </div>
-              </div>
-            </button>
-          ))}
-
+              </button>
+            ))}
+          </div>
         </div>
-      )}
+      </div>
 
-
-
-      {isLoading ? (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} className="h-20 w-full" />
-          ))}
+      {/* ==================== TABS (underline) ==================== */}
+      <div className="border-b border-border/60">
+        <div className="-mb-px flex flex-wrap items-center gap-1 overflow-x-auto">
+          {tabsList.map(({ key, label, Icon }) => {
+            const ativa = aba === key;
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => trocarAba(key)}
+                className={cn(
+                  "relative inline-flex items-center gap-2 whitespace-nowrap border-b-2 px-4 py-3 text-sm font-medium transition-colors",
+                  ativa
+                    ? "border-primary text-primary"
+                    : "border-transparent text-muted-foreground hover:text-foreground",
+                )}
+              >
+                <Icon className="h-4 w-4" />
+                {label}
+              </button>
+            );
+          })}
+          <div className="ml-auto hidden pr-2 md:block">
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-1.5"
+              onClick={() => setArquivosAberto(true)}
+            >
+              <FolderKanban className="h-4 w-4" /> Arquivos personalizados
+            </Button>
+          </div>
         </div>
-      ) : raizes.length === 0 ? (
+      </div>
+
+      {aba === "lixeira" ? (
         <Card>
-          <CardContent className="py-10 text-center text-sm text-muted-foreground">
-            Nenhum comercial cadastrado.
+          <CardContent className="flex flex-col items-center gap-3 py-14 text-center">
+            <span className="grid size-14 place-items-center rounded-2xl bg-muted text-muted-foreground">
+              <Trash2 className="h-7 w-7" />
+            </span>
+            <p className="text-sm font-medium text-foreground">Lixeira vazia</p>
+            <p className="max-w-md text-xs text-muted-foreground">
+              Documentos e pastas removidos aparecerão aqui por 30 dias antes da
+              exclusão definitiva.
+            </p>
           </CardContent>
         </Card>
-
-      ) : filtrando && caminho.length === 0 ? (
-        // Resultado da consulta (lista plana de clientes)
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {clientesFiltrados.map((c) => (
-            <CardCliente key={c.cliente_id} c={c} onOpen={() => abrirCliente(c)} mostrarVinculos />
-          ))}
-          {clientesFiltrados.length === 0 && (
-            <p className="text-sm text-muted-foreground">Nenhum cliente encontrado.</p>
-          )}
-        </div>
-      ) : pastasNivel.length > 0 ? (
-        // Nível de pastas (comercial → imobiliária → corretor)
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {pastasNivel.map((p) => (
-            <button
-              key={p.key}
-              className="group relative flex items-center gap-3 overflow-hidden rounded-xl border border-border/70 bg-card p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
-              onClick={() => setCaminho([...caminho, p.key])}
+      ) : (
+        <>
+          {/* ==================== FILTROS ==================== */}
+          <div className="grid gap-2.5 md:grid-cols-[minmax(0,1fr)_repeat(3,minmax(0,180px))_auto]">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Buscar cliente por nome, documento ou e-mail…"
+                value={busca}
+                onChange={(e) => {
+                  setBusca(e.target.value);
+                  setPagina(1);
+                }}
+                className="h-10 pl-9"
+              />
+            </div>
+            <Select
+              value={filtroComercial}
+              onValueChange={(v) => {
+                setFiltroComercial(v);
+                setPagina(1);
+              }}
             >
-              <span className="pointer-events-none absolute inset-x-0 top-0 h-0.5 scale-x-0 bg-gradient-to-r from-primary/60 to-primary/10 transition-transform group-hover:scale-x-100" />
-              <IconePasta tipo={p.tipo} />
-              <div className="min-w-0 flex-1">
-                <span
+              <SelectTrigger className="h-10">
+                <SelectValue placeholder="Todos os comerciais" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos os comerciais</SelectItem>
+                {comerciaisBase.map((cm) => (
+                  <SelectItem key={cm.id} value={cm.id}>
+                    {titulo(cm.nome)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select
+              value={filtroImob}
+              onValueChange={(v) => {
+                setFiltroImob(v);
+                setPagina(1);
+              }}
+            >
+              <SelectTrigger className="h-10">
+                <SelectValue placeholder="Todas as imobiliárias" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todas">Todas as imobiliárias</SelectItem>
+                <SelectItem value="comercial">{SEM_IMOB}</SelectItem>
+                {imobiliariasFiltro.map((i) => (
+                  <SelectItem key={i.id} value={i.id}>
+                    {titulo(i.nome)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select
+              value={filtroCorr}
+              onValueChange={(v) => {
+                setFiltroCorr(v);
+                setPagina(1);
+              }}
+            >
+              <SelectTrigger className="h-10">
+                <SelectValue placeholder="Todos os corretores" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos os corretores</SelectItem>
+                {corretoresFiltro.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {titulo(c.nome)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button
+              variant="outline"
+              className="h-10 gap-2"
+              onClick={() => setFiltrosSheet(true)}
+            >
+              <SlidersHorizontal className="h-4 w-4" /> Filtros
+            </Button>
+          </div>
+
+          {/* Breadcrumb (quando navegando em pastas) */}
+          {aba !== "cliente" && trilha.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+              <button
+                className="flex items-center gap-1 rounded-lg border border-border/60 bg-muted/50 px-2.5 py-1 font-medium text-foreground transition-colors hover:bg-muted"
+                onClick={() => setCaminho(caminho.slice(0, -1))}
+              >
+                <ChevronLeft className="h-4 w-4" /> Voltar
+              </button>
+              <button className="hover:text-foreground" onClick={() => setCaminho([])}>
+                Início
+              </button>
+              {trilha.map((node, idx) => (
+                <span key={node.key} className="flex items-center gap-2">
+                  <ChevronRight className="h-4 w-4" />
+                  <button
+                    className="font-medium text-foreground hover:underline"
+                    onClick={() => setCaminho(caminho.slice(0, idx + 1))}
+                  >
+                    {node.nome}
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+
+          {/* ==================== SECTION HEADER ==================== */}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <h2 className="text-sm font-semibold text-foreground">{secaoTitulo}</h2>
+              <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
+                {totalItens.toLocaleString("pt-BR")}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="hidden text-xs text-muted-foreground sm:inline">
+                Ordenar por:
+              </span>
+              <Select value={ordem} onValueChange={(v) => setOrdem(v as OrdemChave)}>
+                <SelectTrigger className="h-9 w-[160px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="nome-asc">Nome (A-Z)</SelectItem>
+                  <SelectItem value="nome-desc">Nome (Z-A)</SelectItem>
+                  <SelectItem value="docs-desc">Mais documentos</SelectItem>
+                  <SelectItem value="docs-asc">Menos documentos</SelectItem>
+                </SelectContent>
+              </Select>
+              <div className="flex overflow-hidden rounded-lg border border-border/60">
+                <button
+                  type="button"
+                  onClick={() => setModo("grid")}
+                  aria-label="Grade"
                   className={cn(
-                    "mb-1 inline-flex w-fit items-center rounded-full border px-2 py-0.5 text-[10px] font-medium",
-                    PASTA_BADGE[p.tipo].classe,
+                    "grid size-9 place-items-center transition-colors",
+                    modo === "grid"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-card text-muted-foreground hover:bg-muted",
                   )}
                 >
-                  {PASTA_BADGE[p.tipo].label}
-                </span>
-                <p className="truncate font-semibold text-foreground">{p.nome}</p>
-                <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
-                  {p.subpastas.length > 0 && (
-                    <span className="inline-flex items-center gap-1">
-                      <Folder className="h-3 w-3" /> {p.subpastas.length} pasta(s)
-                    </span>
+                  <LayoutGrid className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setModo("lista")}
+                  aria-label="Lista"
+                  className={cn(
+                    "grid size-9 place-items-center border-l border-border/60 transition-colors",
+                    modo === "lista"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-card text-muted-foreground hover:bg-muted",
                   )}
-                  <span className="inline-flex items-center gap-1">
-                    <Users className="h-3 w-3" /> {p.total_clientes} cliente(s)
-                  </span>
-                </p>
+                >
+                  <List className="h-4 w-4" />
+                </button>
               </div>
-              <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/60 transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
-            </button>
-          ))}
-        </div>
-      ) : (
-        // Nível de clientes (dentro de um corretor)
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {clientesNivel.map((c) => (
-            <CardCliente key={c.cliente_id} c={c} onOpen={() => abrirCliente(c)} />
-          ))}
-          {clientesNivel.length === 0 && (
-            <p className="text-sm text-muted-foreground">Nenhum cliente encontrado.</p>
+            </div>
+          </div>
+
+          {/* ==================== CONTEÚDO ==================== */}
+          {isLoading ? (
+            <div
+              className={cn(
+                modo === "grid"
+                  ? "grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+                  : "space-y-2",
+              )}
+            >
+              {Array.from({ length: 8 }).map((_, i) => (
+                <Skeleton key={i} className="h-24 w-full" />
+              ))}
+            </div>
+          ) : totalItens === 0 ? (
+            <Card>
+              <CardContent className="py-14 text-center text-sm text-muted-foreground">
+                Nenhum item encontrado com os filtros atuais.
+              </CardContent>
+            </Card>
+          ) : (
+            <div
+              className={cn(
+                modo === "grid"
+                  ? "grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+                  : "flex flex-col gap-2",
+              )}
+            >
+              {paginado.map((item) => {
+                if ("cliente_id" in item) {
+                  const c = item as DGCliente;
+                  return (
+                    <CardCliente
+                      key={c.cliente_id}
+                      c={c}
+                      modo={modo}
+                      onOpen={() => abrirCliente(c)}
+                    />
+                  );
+                }
+                const p = item as PastaNode;
+                return (
+                  <CardPasta
+                    key={p.key}
+                    pasta={p}
+                    modo={modo}
+                    IconePasta={IconePasta}
+                    onOpen={() => setCaminho([...caminho, p.key])}
+                  />
+                );
+              })}
+            </div>
           )}
-        </div>
+
+          {/* ==================== PAGINAÇÃO ==================== */}
+          {totalItens > POR_PAGINA && (
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+              <p className="text-xs text-muted-foreground">
+                Mostrando {inicio + 1} a {Math.min(inicio + POR_PAGINA, totalItens)} de{" "}
+                {totalItens} itens
+              </p>
+              <Paginador
+                pagina={paginaAtual}
+                totalPaginas={totalPaginas}
+                onIr={setPagina}
+              />
+            </div>
+          )}
+        </>
       )}
-      </TabsContent>
-    </Tabs>
+
+      {/* ==================== FAIXA DE SEGURANÇA ==================== */}
+      <div className="grid gap-3 rounded-2xl border border-border/60 bg-muted/30 p-4 md:grid-cols-2">
+        <div className="flex items-start gap-3">
+          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+            <Shield className="h-5 w-5" />
+          </span>
+          <div>
+            <p className="text-sm font-semibold text-foreground">
+              Seus documentos sempre seguros
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Armazenamento criptografado e acesso controlado por permissões.
+            </p>
+          </div>
+        </div>
+        <div className="flex items-start gap-3 md:justify-end">
+          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+            <Lock className="h-5 w-5" />
+          </span>
+          <div>
+            <p className="text-sm font-semibold text-foreground">Controle de acesso</p>
+            <p className="text-xs text-muted-foreground">
+              Permissões granulares por perfil e nível de acesso.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Sheet: Filtros avançados (limpar) */}
+      <Sheet open={filtrosSheet} onOpenChange={setFiltrosSheet}>
+        <SheetContent side="right" className="w-full sm:max-w-md">
+          <SheetHeader>
+            <SheetTitle>Filtros avançados</SheetTitle>
+          </SheetHeader>
+          <div className="mt-6 space-y-4">
+            <div>
+              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Filtros ativos
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {filtroComercial !== "todos" && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">
+                    Comercial:{" "}
+                    {titulo(
+                      comerciaisBase.find((cm) => cm.id === filtroComercial)?.nome ?? "",
+                    )}
+                  </span>
+                )}
+                {filtroImob !== "todas" && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">
+                    Imobiliária:{" "}
+                    {filtroImob === "comercial"
+                      ? SEM_IMOB
+                      : titulo(
+                          imobiliariasFiltro.find((i) => i.id === filtroImob)?.nome ?? "",
+                        )}
+                  </span>
+                )}
+                {filtroCorr !== "todos" && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">
+                    Corretor:{" "}
+                    {titulo(
+                      corretoresFiltro.find((c) => c.id === filtroCorr)?.nome ?? "",
+                    )}
+                  </span>
+                )}
+                {!filtrando && (
+                  <span className="text-xs text-muted-foreground">Nenhum filtro ativo.</span>
+                )}
+              </div>
+            </div>
+            {filtrando && (
+              <Button variant="outline" onClick={limparFiltros} className="w-full gap-2">
+                <X className="h-4 w-4" /> Limpar todos os filtros
+              </Button>
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Sheet: Arquivos personalizados */}
+      <Sheet open={arquivosAberto} onOpenChange={setArquivosAberto}>
+        <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-4xl">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <FolderKanban className="h-5 w-5 text-primary" /> Arquivos personalizados
+            </SheetTitle>
+          </SheetHeader>
+          <div className="mt-4">
+            <GerenciadorArquivos mostrarCabecalho={false} />
+          </div>
+        </SheetContent>
+      </Sheet>
+    </div>
   );
 }
+
+/** Paginação numérica com reticências. */
+function Paginador({
+  pagina,
+  totalPaginas,
+  onIr,
+}: {
+  pagina: number;
+  totalPaginas: number;
+  onIr: (p: number) => void;
+}) {
+  const paginas: (number | "...")[] = [];
+  const push = (v: number | "...") => paginas.push(v);
+  if (totalPaginas <= 6) {
+    for (let i = 1; i <= totalPaginas; i++) push(i);
+  } else {
+    push(1);
+    if (pagina > 3) push("...");
+    for (let i = Math.max(2, pagina - 1); i <= Math.min(totalPaginas - 1, pagina + 1); i++)
+      push(i);
+    if (pagina < totalPaginas - 2) push("...");
+    push(totalPaginas);
+  }
+  return (
+    <div className="flex items-center gap-1">
+      <button
+        type="button"
+        disabled={pagina <= 1}
+        onClick={() => onIr(pagina - 1)}
+        className="grid size-8 place-items-center rounded-lg border border-border/60 bg-card text-muted-foreground transition-colors hover:bg-muted disabled:opacity-40"
+      >
+        <ChevronLeft className="h-4 w-4" />
+      </button>
+      {paginas.map((p, i) =>
+        p === "..." ? (
+          <span key={`e${i}`} className="px-2 text-xs text-muted-foreground">
+            …
+          </span>
+        ) : (
+          <button
+            key={p}
+            type="button"
+            onClick={() => onIr(p)}
+            className={cn(
+              "grid size-8 place-items-center rounded-lg border text-xs font-medium transition-colors",
+              p === pagina
+                ? "border-primary bg-primary text-primary-foreground"
+                : "border-border/60 bg-card text-foreground hover:bg-muted",
+            )}
+          >
+            {p}
+          </button>
+        ),
+      )}
+      <button
+        type="button"
+        disabled={pagina >= totalPaginas}
+        onClick={() => onIr(pagina + 1)}
+        className="grid size-8 place-items-center rounded-lg border border-border/60 bg-card text-muted-foreground transition-colors hover:bg-muted disabled:opacity-40"
+      >
+        <ChevronRight className="h-4 w-4" />
+      </button>
+    </div>
+  );
+}
+
+/** Card de pasta (nível intermediário: comercial, imobiliária, corretor). */
+function CardPasta({
+  pasta,
+  modo,
+  IconePasta,
+  onOpen,
+}: {
+  pasta: PastaNode;
+  modo: ModoLista;
+  IconePasta: (props: { tipo: PastaTipo; aberta?: boolean }) => React.JSX.Element;
+  onOpen: () => void;
+}) {
+  const info = (
+    <>
+      {pasta.subpastas.length > 0 && (
+        <span className="inline-flex items-center gap-1">
+          <Folder className="h-3 w-3" /> {pasta.subpastas.length} pasta(s)
+        </span>
+      )}
+      <span className="inline-flex items-center gap-1">
+        <Users className="h-3 w-3" /> {pasta.total_clientes} cliente(s)
+      </span>
+    </>
+  );
+
+  if (modo === "lista") {
+    return (
+      <button
+        onClick={onOpen}
+        className="group flex items-center gap-3 rounded-xl border border-border/70 bg-card p-3 text-left transition-all hover:border-primary/40 hover:shadow-sm"
+      >
+        <IconePasta tipo={pasta.tipo} />
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-semibold text-foreground">{pasta.nome}</p>
+          <p className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+            {info}
+          </p>
+        </div>
+        <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/60 transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
+      </button>
+    );
+  }
+
+  return (
+    <button
+      onClick={onOpen}
+      className="group relative flex flex-col gap-2 overflow-hidden rounded-xl border border-border/70 bg-card p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
+    >
+      <div className="flex items-start gap-3">
+        <IconePasta tipo={pasta.tipo} />
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-semibold text-foreground">{pasta.nome}</p>
+          <p className="mt-0.5 truncate text-xs text-muted-foreground">
+            {PASTA_BADGE[pasta.tipo].label}
+          </p>
+        </div>
+      </div>
+      <div className="h-0.5 w-full rounded-full bg-primary/20">
+        <div
+          className="h-0.5 rounded-full bg-primary"
+          style={{
+            width: `${Math.min(100, (pasta.total_clientes / Math.max(1, pasta.total_clientes)) * 100)}%`,
+          }}
+        />
+      </div>
+      <p className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
+        {info}
+      </p>
+    </button>
+  );
+}
+
 
 /** Card de cliente com etiqueta do usuário que o cadastrou (target). */
 function CardCliente({
