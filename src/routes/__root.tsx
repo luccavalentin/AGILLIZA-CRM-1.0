@@ -154,6 +154,40 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
+  useEffect(() => {
+    // Recarrega uma única vez quando um chunk dinâmico antigo (deploy anterior)
+    // falha ao carregar — evita a tela em branco após novos deploys.
+    const RELOAD_KEY = "__chunk_reload_at";
+    const isChunkError = (msg: string) =>
+      /Failed to fetch dynamically imported module|Importing a module script failed|ChunkLoadError|error loading dynamically imported module/i.test(msg);
+
+    const tryReload = () => {
+      try {
+        const last = Number(sessionStorage.getItem(RELOAD_KEY) || 0);
+        if (Date.now() - last < 15000) return; // não fica em loop
+        sessionStorage.setItem(RELOAD_KEY, String(Date.now()));
+        window.location.reload();
+      } catch {
+        window.location.reload();
+      }
+    };
+
+    const onError = (e: ErrorEvent) => {
+      if (isChunkError(e.message || "")) tryReload();
+    };
+    const onRejection = (e: PromiseRejectionEvent) => {
+      const msg = (e.reason && (e.reason.message || String(e.reason))) || "";
+      if (isChunkError(msg)) tryReload();
+    };
+
+    window.addEventListener("error", onError);
+    window.addEventListener("unhandledrejection", onRejection);
+    return () => {
+      window.removeEventListener("error", onError);
+      window.removeEventListener("unhandledrejection", onRejection);
+    };
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <RealtimeAuthSync />
