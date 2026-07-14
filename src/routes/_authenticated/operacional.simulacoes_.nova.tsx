@@ -227,7 +227,7 @@ function Pagina() {
 
 
   return (
-    <div className="mx-auto w-full max-w-3xl p-4 md:p-8">
+    <div className="mx-auto w-full max-w-6xl p-4 md:p-6 lg:p-8">
       <Button
         variant="ghost"
         size="sm"
@@ -241,7 +241,15 @@ function Pagina() {
         <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
       </Button>
 
-      <div className="flex flex-col gap-4">
+      <div
+        className={cn(
+          "grid gap-4 lg:gap-6",
+          mostrarRapida
+            ? "lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] lg:items-start"
+            : "mx-auto max-w-3xl",
+        )}
+      >
+        <div className="flex min-w-0 flex-col gap-4">
         <Card className="overflow-hidden">
           {/* Cabeçalho integrado ao cartão */}
           <div className="flex items-center gap-4 border-b border-border/60 bg-gradient-to-br from-primary/5 via-card to-card p-5 md:p-6">
