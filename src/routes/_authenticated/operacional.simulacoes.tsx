@@ -556,6 +556,16 @@ function Pagina() {
             >
               Limpar
             </Button>
+            <Button
+              variant={verExcluidas ? "default" : "outline"}
+              size="sm"
+              className="h-9 shrink-0"
+              onClick={() => setVerExcluidas((v) => !v)}
+              title="Ver simulações excluídas"
+            >
+              <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+              {verExcluidas ? "Ver ativas" : "Excluídas"}
+            </Button>
           </div>
         </div>
       </div>
