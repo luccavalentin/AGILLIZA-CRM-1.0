@@ -80,22 +80,32 @@ const toneText: Record<Tone, string> = {
   neutral: "text-muted-foreground",
 };
 
-/** Wash de fundo sutil por tom (usa a própria cor semântica via color-mix). */
-const toneWash: Record<Tone, string> = {
-  brand: "color-mix(in oklab, var(--primary) 7%, transparent)",
-  success: "color-mix(in oklab, var(--success) 8%, transparent)",
-  warning: "color-mix(in oklab, var(--warning) 9%, transparent)",
-  danger: "color-mix(in oklab, var(--destructive) 8%, transparent)",
-  neutral: "transparent",
+/** Cor CSS bruta do tom, usada em inline styles (borda esquerda tonal). */
+const toneVar: Record<Tone, string> = {
+  brand: "var(--primary)",
+  success: "var(--success)",
+  warning: "var(--warning)",
+  danger: "var(--destructive)",
+  neutral: "var(--muted-foreground)",
 };
 
-const toneGlow: Record<Tone, string> = {
-  brand: "color-mix(in oklab, var(--primary) 22%, transparent)",
-  success: "color-mix(in oklab, var(--success) 24%, transparent)",
-  warning: "color-mix(in oklab, var(--warning) 26%, transparent)",
-  danger: "color-mix(in oklab, var(--destructive) 24%, transparent)",
-  neutral: "color-mix(in oklab, var(--muted-foreground) 18%, transparent)",
+/** Wash de fundo sutil por tom (usa a própria cor semântica via color-mix). */
+const toneWash: Record<Tone, string> = {
+  brand: "color-mix(in oklab, var(--primary) 8%, transparent)",
+  success: "color-mix(in oklab, var(--success) 9%, transparent)",
+  warning: "color-mix(in oklab, var(--warning) 10%, transparent)",
+  danger: "color-mix(in oklab, var(--destructive) 9%, transparent)",
+  neutral: "color-mix(in oklab, var(--muted-foreground) 6%, transparent)",
 };
+
+const toneIconBg: Record<Tone, string> = {
+  brand: "color-mix(in oklab, var(--primary) 12%, transparent)",
+  success: "color-mix(in oklab, var(--success) 14%, transparent)",
+  warning: "color-mix(in oklab, var(--warning) 16%, transparent)",
+  danger: "color-mix(in oklab, var(--destructive) 14%, transparent)",
+  neutral: "color-mix(in oklab, var(--muted-foreground) 10%, transparent)",
+};
+
 
 /** Cabeçalho da página de painel: eyebrow, título, descrição, chip de atualização e ações. */
 export function PanelHeader({
@@ -147,13 +157,19 @@ export function PanelHeader({
             {descricao}
           </p>
         </div>
-        <div className="grid min-w-0 grid-cols-1 gap-2 text-foreground sm:flex sm:flex-wrap sm:items-center sm:justify-end">
+        <div
+          className={cn(
+            "grid min-w-0 grid-cols-1 gap-2 text-foreground sm:flex sm:flex-wrap sm:items-center sm:justify-end",
+            dark &&
+              "sm:rounded-2xl sm:border sm:border-white/10 sm:bg-white/[0.06] sm:p-1.5 sm:backdrop-blur-md sm:gap-1.5",
+          )}
+        >
           {atualizadoEm && (
             <span
               className={cn(
                 "inline-flex min-w-0 items-center justify-center gap-1.5 rounded-full border px-3 py-1 text-[11px] tabular-nums sm:justify-start",
                 dark
-                  ? "border-white/20 bg-white/10 text-white/80"
+                  ? "border-white/10 bg-white/[0.06] text-white/85"
                   : "border-border bg-background/60 text-muted-foreground",
               )}
             >
@@ -171,11 +187,13 @@ export function PanelHeader({
               size="icon"
               onClick={onRefresh}
               aria-label="Atualizar"
+              className={cn(dark && "border-white/10 bg-white/10 text-white hover:bg-white/20")}
             >
-              <RefreshCw className="h-3.5 w-3.5 opacity-70" />
+              <RefreshCw className="h-3.5 w-3.5 opacity-80" />
             </Button>
           )}
         </div>
+
       </div>
     </div>
   );
@@ -257,55 +275,51 @@ export function HeroMetric({
   const conteudo = (
     <Card
       className={cn(
-        "group relative h-full min-w-0 overflow-hidden p-4 transition-all duration-300",
+        "group relative flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border-border/70 p-5 shadow-sm transition-all duration-300",
         to &&
-          "cursor-pointer hover:-translate-y-1 hover:border-primary/40 hover:shadow-xl hover:shadow-primary/10",
+          "cursor-pointer hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/[0.06]",
       )}
-      style={{ background: `linear-gradient(180deg, ${toneWash[tone]}, transparent 70%)` }}
     >
       <span
         aria-hidden
-        className={cn(
-          "pointer-events-none absolute inset-x-0 top-0 h-px scale-x-0 bg-gradient-to-r from-transparent via-current to-transparent opacity-0 transition-all duration-300 group-hover:scale-x-100 group-hover:opacity-60",
-          toneText[tone],
-        )}
+        className="pointer-events-none absolute inset-x-0 top-0 h-24 opacity-70"
+        style={{
+          background: `linear-gradient(180deg, ${toneWash[tone]}, transparent 100%)`,
+        }}
       />
-      <div className="flex items-start justify-between gap-2">
+      <div className="relative flex items-start justify-between gap-2">
         {Icon ? (
           <span
             className={cn(
-              "flex h-9 w-9 shrink-0 items-center justify-center rounded-full ring-1 ring-inset ring-border/60",
+              "inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl",
               toneText[tone],
             )}
-            style={{
-              background: toneWash[tone],
-              boxShadow: `0 0 0 4px color-mix(in oklab, ${toneGlow[tone]} 40%, transparent)`,
-            }}
+            style={{ background: toneIconBg[tone] }}
           >
-            <Icon className="h-4 w-4" />
+            <Icon className="h-5 w-5" strokeWidth={2} />
           </span>
         ) : (
           <span
-            className={cn("h-9 w-1 shrink-0 rounded-full", toneBar[tone])}
-            style={{ boxShadow: `0 0 14px ${toneGlow[tone]}` }}
+            className={cn("h-10 w-1 shrink-0 rounded-full", toneBar[tone])}
           />
         )}
         {to && (
-          <ArrowUpRight className="h-3.5 w-3.5 text-muted-foreground/40 transition-all group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-primary" />
+          <ArrowUpRight className="h-4 w-4 text-muted-foreground/40 transition-all group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-primary" />
         )}
       </div>
-      <p className="mt-3 min-w-0 truncate text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground sm:text-[11px] sm:tracking-[0.12em]">
+      <p className="relative mt-4 min-w-0 truncate text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground sm:text-[11px] sm:tracking-[0.14em]">
         {label}
       </p>
-      <p className="mt-1 min-w-0 truncate font-mono text-[clamp(1.2rem,6vw,1.6rem)] font-semibold leading-none tracking-tight tabular-nums text-foreground sm:text-[24px]">
+      <p className="relative mt-1 min-w-0 truncate font-mono text-[clamp(1.35rem,6vw,1.75rem)] font-semibold leading-none tracking-tight tabular-nums text-foreground">
         {valor}
       </p>
-      <div className="mt-2 flex min-w-0 items-center gap-2">
+      <div className="relative mt-2 flex min-w-0 items-center gap-2">
         {delta && <DeltaBadge delta={delta} />}
-        {hint && <p className="min-w-0 truncate text-[11px] text-muted-foreground">{hint}</p>}
+        {hint && <p className="min-w-0 truncate text-[11px] font-medium text-muted-foreground/90">{hint}</p>}
       </div>
     </Card>
   );
+
   return to ? (
     <Link
       to={to}
@@ -334,18 +348,21 @@ export function MiniMetric({
   const conteudo = (
     <Card
       className={cn(
-        "group relative h-full min-w-0 overflow-hidden p-3 pl-4 transition-all duration-300",
+        "group relative h-full min-w-0 overflow-hidden rounded-xl border-l-4 p-3.5 pl-4 shadow-sm transition-all duration-300",
         to &&
-          "cursor-pointer hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md hover:shadow-primary/5",
+          "cursor-pointer hover:-translate-y-0.5 hover:shadow-md hover:shadow-primary/5",
       )}
+      style={{ borderLeftColor: toneVar[tone] }}
     >
-      <span className={cn("absolute left-0 top-0 h-full w-[2px] rounded-r transition-all group-hover:w-[3px]", toneBar[tone])} />
-      <p className="truncate text-[10px] font-semibold uppercase tracking-[0.06em] text-muted-foreground sm:tracking-[0.1em]">
+      <p className="truncate text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground/90 sm:tracking-[0.12em]">
         {label}
       </p>
-      <p className="mt-1.5 min-w-0 truncate font-mono text-[clamp(1rem,6vw,1.25rem)] font-semibold tracking-tight tabular-nums text-foreground sm:text-xl">{valor}</p>
+      <p className="mt-1.5 min-w-0 truncate font-mono text-[clamp(1rem,6vw,1.25rem)] font-semibold tracking-tight tabular-nums text-foreground sm:text-xl">
+        {valor}
+      </p>
     </Card>
   );
+
   return to ? (
     <Link
       to={to}
