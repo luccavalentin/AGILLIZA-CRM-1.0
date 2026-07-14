@@ -62,7 +62,7 @@ export function ChatComposer({
   return (
     <div className="border-t border-border/60 bg-card">
       {/* Abas do compositor */}
-      <div className="flex items-center gap-1 px-3 pt-2">
+      <div className="flex items-center gap-1 overflow-x-auto px-2 pt-2 sm:px-3">
         {ABAS.map((t) => (
           <button
             key={t.id}
@@ -71,7 +71,7 @@ export function ChatComposer({
             onClick={() => t.ativa && setAba(t.id)}
             title={t.ativa ? undefined : "Em breve"}
             className={cn(
-              "relative rounded-md px-3 py-2 text-xs font-medium transition-colors",
+              "relative shrink-0 rounded-md px-2.5 py-2 text-xs font-medium transition-colors sm:px-3",
               aba === t.id
                 ? "text-primary"
                 : t.ativa
@@ -135,12 +135,12 @@ export function ChatComposer({
           placeholder={
             editando ? "Edite a mensagem…" : "Digite sua mensagem…"
           }
-          className="min-h-[3.25rem] max-h-40 resize-none rounded-none border-0 bg-transparent px-4 py-3 text-sm shadow-none focus-visible:ring-0"
+          className="min-h-[3.25rem] max-h-40 min-w-0 resize-none rounded-none border-0 bg-transparent px-3 py-3 text-sm shadow-none focus-visible:ring-0 sm:px-4"
         />
 
         {/* Rodapé de ações */}
-        <div className="flex items-center justify-between gap-2 px-3 pb-3">
-          <div className="flex items-center gap-1">
+        <div className="flex min-w-0 items-center justify-between gap-2 px-2 pb-2.5 sm:px-3 sm:pb-3">
+          <div className="flex min-w-0 items-center gap-1 overflow-x-auto">
             <RespostasRapidas
               contexto={contextoResposta}
               onEscolher={onEscolherResposta}
@@ -197,7 +197,7 @@ export function ChatComposer({
             <Button
               onClick={submeter}
               disabled={enviarPending || salvarEdicaoPending || !texto.trim()}
-              className="h-10 gap-2 rounded-none rounded-l-lg px-4"
+              className="h-10 w-10 gap-2 rounded-none rounded-l-lg px-0 sm:w-auto sm:px-4"
               title={editando ? "Salvar edição" : "Enviar"}
             >
               {enviarPending || salvarEdicaoPending ? (
@@ -207,12 +207,12 @@ export function ChatComposer({
               ) : (
                 <Send className="size-4" />
               )}
-              {editando ? "Salvar" : "Enviar"}
+              <span className="hidden sm:inline">{editando ? "Salvar" : "Enviar"}</span>
             </Button>
             <Button
               type="button"
               disabled
-              className="h-10 w-8 rounded-none rounded-r-lg border-l border-primary-foreground/20 px-0"
+              className="hidden h-10 w-8 rounded-none rounded-r-lg border-l border-primary-foreground/20 px-0 sm:inline-flex"
               title="Enviar com Enter"
             >
               <ChevronDown className="size-4" />

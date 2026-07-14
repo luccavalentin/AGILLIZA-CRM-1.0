@@ -309,7 +309,7 @@ export function ChatClienteConversa({
   }, [mensagens, buscaMsg, buscaAberta]);
 
   return (
-    <Card className="flex h-full flex-col overflow-hidden border-border/60 shadow-sm">
+    <Card className="flex h-full min-w-0 flex-col overflow-hidden border-border/60 shadow-sm">
       <ChatClienteHeader
         info={info}
         clienteId={clienteId}
@@ -424,7 +424,7 @@ export function ChatClienteTab({
   // A janela flutuante só vale para a conversa do próprio usuário.
   if (somenteLeitura) {
     return (
-      <div className="h-full min-h-[24rem]">
+      <div className="h-full min-h-[24rem] min-w-0 overflow-hidden">
         <ChatClienteConversa
           clienteId={clienteId}
           info={info}
@@ -460,7 +460,7 @@ export function ChatClienteTab({
   }
 
   return (
-    <div className="relative h-full min-h-[24rem]">
+    <div className="relative h-full min-h-[24rem] min-w-0 overflow-hidden">
       <button
         type="button"
         onClick={() => abrirChatFlutuante(clienteId, info)}

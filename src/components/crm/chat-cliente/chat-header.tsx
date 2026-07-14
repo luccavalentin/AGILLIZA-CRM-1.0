@@ -25,7 +25,7 @@ export function ChatClienteHeader({
 }) {
   return (
     <>
-      <div className="flex items-center gap-3 border-b bg-card px-4 py-3">
+      <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 border-b bg-card px-3 py-2.5 sm:gap-3 sm:px-4 sm:py-3">
         <div className="relative flex size-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/70 text-sm font-semibold text-primary-foreground shadow-sm">
           {iniciais(info?.nome)}
           <span className="absolute -bottom-0.5 -right-0.5 size-3 rounded-full border-2 border-background bg-emerald-500" />
@@ -34,7 +34,7 @@ export function ChatClienteHeader({
           <p className="truncate text-sm font-semibold text-foreground">
             {info?.nome ?? "Conversa com o cliente"}
           </p>
-          <div className="flex items-center gap-2">
+          <div className="flex min-w-0 items-center gap-2 overflow-hidden">
             <span className="inline-flex items-center gap-1 text-xs text-emerald-600">
               <span className="size-1.5 rounded-full bg-emerald-500" />
               Ativo agora
@@ -47,40 +47,42 @@ export function ChatClienteHeader({
             </Badge>
           </div>
         </div>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="size-9 shrink-0 rounded-lg text-muted-foreground"
-          onClick={toggleBusca}
-          title="Buscar na conversa"
-        >
-          <Search className="size-4" />
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="hidden size-9 shrink-0 rounded-lg text-muted-foreground sm:inline-flex"
-          title="Favoritar conversa"
-        >
-          <Star className="size-4" />
-        </Button>
-        {clienteId && (
+        <div className="flex min-w-0 shrink-0 items-center justify-end gap-1 overflow-hidden sm:gap-1.5">
           <Button
-            asChild
             type="button"
-            variant="outline"
-            size="sm"
-            className="hidden shrink-0 gap-1.5 rounded-lg sm:inline-flex"
+            variant="ghost"
+            size="icon"
+            className="size-9 shrink-0 rounded-lg text-muted-foreground"
+            onClick={toggleBusca}
+            title="Buscar na conversa"
           >
-            <Link to="/crm/clientes/$id" params={{ id: clienteId }}>
-              <UserRound className="size-4" />
-              Ver cliente
-            </Link>
+            <Search className="size-4" />
           </Button>
-        )}
-        {acoes}
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="hidden size-9 shrink-0 rounded-lg text-muted-foreground sm:inline-flex"
+            title="Favoritar conversa"
+          >
+            <Star className="size-4" />
+          </Button>
+          {clienteId && (
+            <Button
+              asChild
+              type="button"
+              variant="outline"
+              size="sm"
+              className="hidden shrink-0 gap-1.5 rounded-lg sm:inline-flex"
+            >
+              <Link to="/crm/clientes/$id" params={{ id: clienteId }}>
+                <UserRound className="size-4" />
+                Ver cliente
+              </Link>
+            </Button>
+          )}
+          {acoes}
+        </div>
       </div>
 
       {buscaAberta && (
