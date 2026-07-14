@@ -1064,6 +1064,7 @@ export const runReport = createServerFn({ method: "POST" })
                 prop?.valor_financiamento_aprovado ?? prop?.valor_financiamento ?? c.imovel_valor ?? 0,
             };
           })
+          .filter((p) => !filtros.status || p.status === filtros.status)
           .filter((p) => !filtros.produto || p.produto === filtros.produto)
           .filter((p) => {
             if (!bancosFiltro.length) return true;
