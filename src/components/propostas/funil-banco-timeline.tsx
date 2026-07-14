@@ -1,4 +1,4 @@
-import { Check, Loader2, Lock, X, Radio } from "lucide-react";
+import { Check, Lock, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export type EtapaBanco = {
@@ -64,18 +64,8 @@ export function FunilBancoTimeline({
     !reprovado && (posBifurcacaoAlcancada || (etapaBifurcacao?.concluida ?? false));
   const decisaoPendente = !reprovado && !aprovado;
 
-  // Última sincronização = maior atualizada_em de qualquer etapa.
-  const ultimaSync = lista
-    .map((e) => e.atualizada_em)
-    .filter((v): v is string => !!v)
-    .sort()
-    .pop();
 
-  // Etapa em andamento (para "Tempo em etapa").
-  const emAndamentoEtapa = lista.find((e) => e.ativa && !e.concluida);
-  const tempoEmEtapa = emAndamentoEtapa?.atualizada_em
-    ? formatarDuracao(emAndamentoEtapa.atualizada_em)
-    : null;
+
 
   return (
     <div className="overflow-hidden rounded-2xl border border-border bg-card">
@@ -238,38 +228,8 @@ export function FunilBancoTimeline({
         </ol>
       </div>
 
-      {/* Rodapé — telemetria com dados reais */}
-      {(tempoEmEtapa || ultimaSync) && (
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/60 bg-muted/30 px-5 py-2.5">
-          <div className="flex flex-wrap items-center gap-4">
-            {tempoEmEtapa && (
-              <div className="flex flex-col">
-                <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
-                  Tempo em etapa
-                </span>
-                <span className="text-[11px] font-mono tabular-nums text-foreground">
-                  {tempoEmEtapa}
-                </span>
-              </div>
-            )}
-            {tempoEmEtapa && ultimaSync && <span className="h-6 w-px bg-border" aria-hidden />}
-            {ultimaSync && (
-              <div className="flex flex-col">
-                <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
-                  Última sincronização
-                </span>
-                <span className="text-[11px] font-mono tabular-nums text-foreground">
-                  {formatarDataHora(ultimaSync)}
-                </span>
-              </div>
-            )}
-          </div>
-          <div className="flex items-center gap-1.5 text-muted-foreground">
-            <Radio className="h-3 w-3 animate-pulse text-emerald-500" aria-hidden />
-            <span className="text-[10px] font-bold uppercase tracking-wider">Canal operacional</span>
-          </div>
-        </div>
-      )}
+
+
     </div>
   );
 }
@@ -390,18 +350,5 @@ function formatarDataHora(v: string): string {
   });
 }
 
-function formatarDuracao(desde: string): string | null {
-  const d = parseDate(desde);
-  if (!d) return null;
-  const ms = Date.now() - d.getTime();
-  if (ms < 0) return null;
-  const min = Math.floor(ms / 60000);
-  if (min < 1) return "agora";
-  if (min < 60) return `${min}min`;
-  const h = Math.floor(min / 60);
-  const mRes = min % 60;
-  if (h < 24) return mRes > 0 ? `${h}h ${mRes}min` : `${h}h`;
-  const dias = Math.floor(h / 24);
-  const hRes = h % 24;
-  return hRes > 0 ? `${dias}d ${hRes}h` : `${dias}d`;
-}
+
+
