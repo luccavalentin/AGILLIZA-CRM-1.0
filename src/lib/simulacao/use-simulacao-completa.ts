@@ -90,6 +90,9 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
     rendaInformada: number;
   }>(null);
   const [pctDespesas, setPctDespesas] = useState<number>(0);
+  // Guarda o id da última simulação gerada para exibir o resultado inline
+  // (sem redirecionar), permitindo o usuário ajustar o prazo e simular novamente.
+  const [simulacaoResultadoId, setSimulacaoResultadoId] = useState<string | null>(null);
 
   const { data: bancos } = useQuery({
     queryKey: ["bancos-ativos"],
@@ -792,7 +795,13 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
       // Download automático do extrato removido a pedido do usuário.
       // O PDF continua disponível sob demanda na ficha da simulação.
 
-      router.navigate({ to: "/operacional/simulacoes/$id", params: { id } });
+      // Mantém o usuário na tela do simulador e exibe o resultado inline,
+      // para permitir comparar rapidamente com outro prazo sem precisar
+      // navegar entre telas.
+      setSimulacaoResultadoId(id);
+      setEnviando(false);
+      setConcluidos(0);
+      toast.success("Simulação gerada. Ajuste o prazo e simule novamente se quiser comparar.");
     } catch (e) {
       const msg = e instanceof Error ? e.message : null;
       toast.error(
@@ -855,6 +864,9 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
     normalizarPctDespesas,
     enviar,
     executarEnvio,
+    // resultado inline
+    simulacaoResultadoId,
+    fecharResultadoInline: () => setSimulacaoResultadoId(null),
   };
 }
 
