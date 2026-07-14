@@ -15,18 +15,28 @@ export interface BancoTaxaRef {
   taxa_ano: number;
 }
 
-/** Taxas anuais de referência por código COMPE (estimativa). */
+/**
+ * Taxas anuais de referência por código COMPE — fallback quando não há
+ * histórico recente de simulação no banco. Valores calibrados pela média
+ * observada nos últimos retornos reais dos bancos (2025-2026).
+ */
 const TAXA_PADRAO_ANO: Record<number, number> = {
-  237: 0.1149, // Bradesco
-  33: 0.1179, // Santander
-  341: 0.1129, // Itaú
-  77: 0.1099, // Inter
-  104: 0.1049, // Caixa
+  237: 0.1265, // Bradesco  — média real ~12,65% a.a.
+  33: 0.1255, // Santander  — média real ~12,55% a.a.
+  341: 0.1325, // Itaú       — média real ~13,25% a.a.
+  77: 0.1199, // Inter
+  104: 0.1189, // Caixa
 };
 
-export function taxaAnoDeBanco(codigo_banco: number): number {
-  return TAXA_PADRAO_ANO[codigo_banco] ?? 0.1199;
+export function taxaAnoDeBanco(
+  codigo_banco: number,
+  override?: Record<number, number> | null,
+): number {
+  const dinamica = override?.[codigo_banco];
+  if (dinamica != null && dinamica > 0) return dinamica;
+  return TAXA_PADRAO_ANO[codigo_banco] ?? 0.1299;
 }
+
 
 export interface EntradaCalculo {
   valor_financiamento: number;
