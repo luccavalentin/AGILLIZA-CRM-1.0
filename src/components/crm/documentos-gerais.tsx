@@ -600,35 +600,33 @@ export function DocumentosGerais() {
   return (
     <div className="space-y-5">
       {/* ==================== HERO ==================== */}
-      <div className="relative overflow-hidden rounded-2xl border border-primary/15 bg-gradient-to-br from-primary/8 via-primary/[0.04] to-card p-5 shadow-sm md:p-7">
-        <span className="pointer-events-none absolute -right-24 -top-24 size-72 rounded-full bg-primary/8 blur-3xl" />
-        <span className="pointer-events-none absolute -left-16 bottom-0 size-48 rounded-full bg-primary/5 blur-2xl" />
-        <div className="relative grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
-          <div className="flex items-center gap-5">
-            <div className="min-w-0">
-              <h1 className="truncate text-2xl font-bold tracking-tight text-foreground md:text-3xl">
-                Documentos Gerais
-              </h1>
-              <p className="mt-1 max-w-xl text-sm text-muted-foreground">
-                Organizados por Comercial → Imobiliária → Corretor → Cliente, com
-                a documentação de cada cliente.
-              </p>
-            </div>
-            <div className="relative hidden shrink-0 md:block">
-              <span className="absolute -left-4 -top-2 grid size-9 place-items-center rounded-lg bg-primary/15 text-primary shadow-sm">
-                <Cloud className="h-4 w-4" />
-              </span>
-              <span className="grid size-20 place-items-center rounded-2xl bg-gradient-to-br from-primary to-primary/70 text-primary-foreground shadow-lg">
-                <FolderOpen className="h-10 w-10" />
-              </span>
-              <span className="absolute -bottom-1 -right-3 grid size-8 place-items-center rounded-lg bg-primary/15 text-primary shadow-sm">
-                <FileText className="h-4 w-4" />
-              </span>
-            </div>
+      <div className="relative overflow-hidden rounded-2xl border border-border/70 bg-card shadow-sm">
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent"
+        />
+        <span
+          aria-hidden
+          className="pointer-events-none absolute -right-32 -top-32 size-80 rounded-full opacity-60 blur-3xl"
+          style={{ background: "color-mix(in oklab, var(--primary) 10%, transparent)" }}
+        />
+        <div className="relative grid gap-6 p-5 md:p-7 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+          <div className="min-w-0">
+            <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-primary">
+              <span className="inline-block h-1 w-6 rounded-full bg-primary" />
+              CRM · Documentos
+            </p>
+            <h1 className="mt-2 text-2xl font-semibold leading-tight tracking-tight text-foreground md:text-[28px]">
+              Documentos Gerais
+            </h1>
+            <p className="mt-1.5 max-w-xl text-sm text-muted-foreground">
+              Organizados por Comercial → Imobiliária → Corretor → Cliente, com a
+              documentação de cada cliente.
+            </p>
           </div>
 
           {/* KPIs */}
-          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 lg:min-w-[560px]">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:min-w-[600px]">
             {[
               { Icon: Folder, label: "Pastas", valor: kpis.pastas, aba: null as Aba | null },
               { Icon: FileText, label: "Documentos", valor: kpis.documentos, aba: null },
@@ -640,21 +638,27 @@ export function DocumentosGerais() {
                 type="button"
                 onClick={() => destinoAba && trocarAba(destinoAba)}
                 className={cn(
-                  "group flex items-center gap-3 rounded-xl border border-border/60 bg-card px-3.5 py-3 text-left shadow-sm transition-all",
-                  destinoAba && "hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md",
+                  "group relative flex flex-col justify-between overflow-hidden rounded-xl border border-border/60 bg-background/60 p-3.5 text-left backdrop-blur-sm transition-all",
+                  destinoAba
+                    ? "cursor-pointer hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md hover:shadow-primary/[0.06]"
+                    : "cursor-default",
                 )}
               >
-                <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary ring-1 ring-inset ring-primary/15">
-                  <Icon className="h-[18px] w-[18px]" />
-                </span>
-                <div className="min-w-0">
-                  <p className="text-xl font-bold leading-none tracking-tight text-foreground tabular-nums">
-                    {valor.toLocaleString("pt-BR")}
-                  </p>
-                  <p className="mt-1 truncate text-[11px] font-medium text-muted-foreground">
+                <span
+                  aria-hidden
+                  className="pointer-events-none absolute left-0 top-0 h-full w-[3px] bg-primary/70"
+                />
+                <div className="flex items-center justify-between">
+                  <span className="inline-flex size-7 items-center justify-center rounded-md text-primary" style={{ background: "color-mix(in oklab, var(--primary) 10%, transparent)" }}>
+                    <Icon className="h-3.5 w-3.5" strokeWidth={2} />
+                  </span>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                     {label}
                   </p>
                 </div>
+                <p className="mt-2 font-mono text-[26px] font-semibold leading-none tracking-tight tabular-nums text-foreground">
+                  {valor.toLocaleString("pt-BR")}
+                </p>
               </button>
             ))}
           </div>
