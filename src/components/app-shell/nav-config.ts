@@ -313,6 +313,18 @@ export const navInterno: NavGroup[] = [
   },
 
   {
+    id: "rh",
+    label: "Gestão de Pessoas e RH",
+    items: [
+      {
+        label: "Gestão de Pessoas e RH",
+        icon: UserRound,
+        to: "/rh",
+      },
+    ],
+  },
+
+  {
     id: "relatorios",
     label: "Relatórios gerenciais",
     items: [
