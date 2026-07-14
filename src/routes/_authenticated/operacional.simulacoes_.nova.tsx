@@ -23,7 +23,7 @@ import { CurrencyInput } from "@/components/simulacao/currency-input";
 import { DicaRendaMinima } from "@/components/simulacao/dica-renda-minima";
 import { PRODUTOS } from "@/lib/simulacao/schemas";
 import { formatBRL, formatPercent } from "@/lib/simulacao/format";
-import { listarBancosAtivos } from "@/lib/simulacao/simulacoes.functions";
+import { listarBancosAtivos, taxasReferenciaBancos } from "@/lib/simulacao/simulacoes.functions";
 import { compararBancosRapido, taxaAnoDeBanco } from "@/lib/simulacao/simulacao-rapida";
 import { toast } from "sonner";
 import {
