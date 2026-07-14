@@ -376,6 +376,7 @@ export function ResultadoInlineCompleta({ simulacaoId, onFechar }: Props) {
                         <TableHead className="text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">Financ. máx</TableHead>
                         <TableHead className="text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">Total financiado</TableHead>
                         <TableHead className="text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">IOF</TableHead>
+                        <TableHead className="text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">Renda mín.</TableHead>
                         <TableHead></TableHead>
                       </TableRow>
                     </TableHeader>
