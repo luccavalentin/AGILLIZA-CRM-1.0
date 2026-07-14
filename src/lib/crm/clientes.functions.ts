@@ -581,6 +581,9 @@ export interface PainelStage {
     proposta_status: string | null;
     nome_banco: string | null;
     responsavel_nome: string | null;
+    imobiliaria_nome: string | null;
+    corretor_nome: string | null;
+    analista_nome: string | null;
   }[];
 }
 
@@ -612,7 +615,7 @@ export const listarPainel = createServerFn({ method: "GET" })
     let q = supabase
       .from("clientes")
       .select(
-        "id, nome, numero_cliente, responsavel_id, responsavel:profiles!clientes_responsavel_id_fkey(nome), vistoria_agendada_em, vistoria_concluida_em, contrato_emitido_em, cliente_pipeline(ultima_atualizacao_em, pipeline_stages(codigo))",
+        "id, nome, numero_cliente, responsavel_id, criador_id, responsavel:profiles!clientes_responsavel_id_fkey(nome), vistoria_agendada_em, vistoria_concluida_em, contrato_emitido_em, cliente_pipeline(ultima_atualizacao_em, pipeline_stages(codigo))",
       )
       .eq("ativo", true)
       .is("contrato_arquivado_em", null);
@@ -629,8 +632,8 @@ export const listarPainel = createServerFn({ method: "GET" })
       if (ate && t > ate) return false;
       return true;
     });
-    // Proposta mais recente por cliente (para comunicar com o kanban de propostas).
     const idsClientes = filtradas.map((r: any) => r.id);
+    // Proposta mais recente por cliente (para comunicar com o kanban de propostas).
     const propostaPorCliente = new Map<string, { numero_proposta: string | null; status: string | null; nome_banco: string | null }>();
     if (idsClientes.length > 0) {
       const { data: props } = await supabase
@@ -649,27 +652,68 @@ export const listarPainel = createServerFn({ method: "GET" })
         }
       }
     }
+
+    // Vínculos de imobiliária / corretor por cliente.
+    const imobPorCliente = new Map<string, string>();
+    const corrPorCliente = new Map<string, string>();
+    if (idsClientes.length > 0) {
+      const { data: vinculos } = await supabase
+        .from("cliente_parceiros")
+        .select("cliente_id, parceiro_id, tipo_vinculo")
+        .in("cliente_id", idsClientes);
+      for (const v of vinculos ?? []) {
+        const cid = (v as any).cliente_id as string;
+        const pid = (v as any).parceiro_id as string | null;
+        const tipo = (v as any).tipo_vinculo as string;
+        if (!pid) continue;
+        if (tipo === "imobiliaria" && !imobPorCliente.has(cid)) imobPorCliente.set(cid, pid);
+        if (tipo === "corretor" && !corrPorCliente.has(cid)) corrPorCliente.set(cid, pid);
+      }
+    }
+
+    // Nomes de perfis (analista = criador; imobiliária/corretor).
+    const perfilIds = new Set<string>();
+    for (const r of filtradas as any[]) if (r.criador_id) perfilIds.add(r.criador_id);
+    for (const id of imobPorCliente.values()) perfilIds.add(id);
+    for (const id of corrPorCliente.values()) perfilIds.add(id);
+    const nomes = new Map<string, string>();
+    if (perfilIds.size > 0) {
+      const { data: perfis } = await supabase
+        .from("profiles")
+        .select("id, nome")
+        .in("id", Array.from(perfilIds));
+      for (const p of perfis ?? []) nomes.set((p as any).id, (p as any).nome ?? "—");
+    }
+
     return (stages ?? []).map((s) => ({
       codigo: s.codigo,
       nome: s.nome,
       ordem: s.ordem,
       clientes: filtradas
         .filter((r: any) => r.cliente_pipeline?.pipeline_stages?.codigo === s.codigo)
-        .map((r: any) => ({
-          id: r.id,
-          nome: r.nome,
-          numero_cliente: r.numero_cliente,
-          vistoria_agendada_em: r.vistoria_agendada_em ?? null,
-          vistoria_concluida_em: r.vistoria_concluida_em ?? null,
-          pipeline_atualizado_em: r.cliente_pipeline?.ultima_atualizacao_em ?? null,
-          contrato_emitido_em: r.contrato_emitido_em ?? null,
-          numero_proposta: propostaPorCliente.get(r.id)?.numero_proposta ?? null,
-          proposta_status: propostaPorCliente.get(r.id)?.status ?? null,
-          nome_banco: propostaPorCliente.get(r.id)?.nome_banco ?? null,
-          responsavel_nome: r.responsavel?.nome ?? null,
-        })),
+        .map((r: any) => {
+          const imobId = imobPorCliente.get(r.id) ?? null;
+          const corrId = corrPorCliente.get(r.id) ?? null;
+          return {
+            id: r.id,
+            nome: r.nome,
+            numero_cliente: r.numero_cliente,
+            vistoria_agendada_em: r.vistoria_agendada_em ?? null,
+            vistoria_concluida_em: r.vistoria_concluida_em ?? null,
+            pipeline_atualizado_em: r.cliente_pipeline?.ultima_atualizacao_em ?? null,
+            contrato_emitido_em: r.contrato_emitido_em ?? null,
+            numero_proposta: propostaPorCliente.get(r.id)?.numero_proposta ?? null,
+            proposta_status: propostaPorCliente.get(r.id)?.status ?? null,
+            nome_banco: propostaPorCliente.get(r.id)?.nome_banco ?? null,
+            responsavel_nome: r.responsavel?.nome ?? null,
+            imobiliaria_nome: imobId ? (nomes.get(imobId) ?? null) : null,
+            corretor_nome: corrId ? (nomes.get(corrId) ?? null) : null,
+            analista_nome: r.criador_id ? (nomes.get(r.criador_id) ?? null) : null,
+          };
+        }),
     }));
   });
+
 
 export const getPipelineStages = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
