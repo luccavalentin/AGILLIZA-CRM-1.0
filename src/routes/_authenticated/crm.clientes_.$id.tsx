@@ -293,7 +293,7 @@ function Pagina() {
                     <TabsTrigger
                       key={s.v}
                       value={s.v}
-                      className="shrink-0 gap-1.5 whitespace-nowrap rounded-lg data-[state=active]:shadow-sm"
+                      className="shrink-0 gap-1.5 whitespace-nowrap rounded-lg transition-colors hover:bg-primary/10 hover:text-primary data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md data-[state=active]:shadow-primary/25"
                     >
                       <s.Icon className="size-4" />
                       {s.label}
