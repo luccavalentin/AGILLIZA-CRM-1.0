@@ -224,16 +224,10 @@ function Pagina() {
             <Users className="size-5" />
           </span>
           <div className="min-w-0 space-y-0.5">
-            <div className="flex items-center gap-2">
-              <h1 className="truncate text-2xl font-semibold tracking-tight text-foreground">
-                Clientes
-              </h1>
-              {(data?.total ?? 0) > 0 && (
-                <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-semibold tabular-nums text-muted-foreground">
-                  {data?.total}
-                </span>
-              )}
-            </div>
+            <h1 className="truncate text-2xl font-semibold tracking-tight text-foreground">
+              Clientes
+            </h1>
+
             <p className="truncate text-sm text-muted-foreground">
               Gestão de clientes do seu ecossistema.
             </p>
