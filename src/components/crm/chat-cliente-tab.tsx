@@ -420,8 +420,9 @@ export function ChatClienteConversa({
           onEscolherResposta={(t) => setTexto((prev) => (prev ? `${prev} ${t}` : t))}
           fileRef={fileRef}
           onAnexo={handleAnexo}
+          enviarArquivo={enviarArquivoDireto}
           enviandoAnexo={enviandoAnexo}
-          enviarPending={enviar.isPending}
+          enviarPending={enviar.isPending || criarTarefaMut.isPending}
           salvarEdicaoPending={salvarEdicao.isPending}
           textareaRef={textareaRef}
           texto={texto}
