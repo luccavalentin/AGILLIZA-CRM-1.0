@@ -174,7 +174,10 @@ export function ChatClienteConversa({
         responde_a: payload.responde_a ?? null,
         citacao: alvo
           ? {
-              autor: alvo.remetente_tipo === "time" ? "Equipe" : info?.nome?.trim() || "Cliente",
+              autor:
+                alvo.remetente_tipo === "time"
+                  ? alvo.remetente_nome?.trim() || meuNome || "Atendente"
+                  : alvo.remetente_nome?.trim() || info?.nome?.trim() || "Cliente",
               texto: alvo.mensagem?.trim() || "Anexo",
             }
           : null,
