@@ -84,7 +84,7 @@ function Pagina() {
           </h1>
           <p className="text-sm text-muted-foreground">
             Centralize aqui os parâmetros do módulo financeiro: plano de contas, centros de
-            custo e regras de comissão.
+            custo e regras de repasse por banco.
           </p>
         </div>
       </header>
