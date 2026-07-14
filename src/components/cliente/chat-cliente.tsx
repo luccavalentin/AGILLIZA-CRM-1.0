@@ -347,36 +347,56 @@ export function ThreadChat({
       )}
     >
       {/* Cabeçalho do chat */}
-      <div className="flex shrink-0 items-center gap-3 border-b border-border/60 bg-gradient-to-r from-primary to-[var(--brand-azul-escuro)] px-3 py-3 text-primary-foreground sm:px-4">
-        {podeVoltar ? (
-          <button
-            type="button"
-            onClick={onVoltar}
-            className="-ml-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-primary-foreground/90 transition-colors hover:bg-white/15"
-            aria-label="Voltar para conversas"
-          >
-            <ChevronLeft className="h-5 w-5" />
-          </button>
-        ) : null}
-        <Avatar className="h-10 w-10 shrink-0 ring-2 ring-white/25">
-          {atendente.foto_url ? <AvatarImage src={atendente.foto_url} alt={atendente.nome} /> : null}
-          <AvatarFallback className="bg-white/15 text-sm text-primary-foreground">
-            {iniciais(atendente.nome)}
-          </AvatarFallback>
-        </Avatar>
-        <div className="min-w-0 flex-1 leading-tight">
-          <p className="truncate text-sm font-semibold sm:text-base">{atendente.nome}</p>
-          <span className="flex min-w-0 items-center gap-1.5 text-xs text-primary-foreground/80">
-            <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-300/70" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-300" />
+      {!hideHeader && (
+        <div className="flex shrink-0 items-center gap-3 border-b border-border/60 bg-card px-3 py-3 sm:px-4">
+          {podeVoltar ? (
+            <button
+              type="button"
+              onClick={onVoltar}
+              className="-ml-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted lg:hidden"
+              aria-label="Voltar para conversas"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
+          ) : null}
+          <div className="relative shrink-0">
+            <Avatar className="h-11 w-11">
+              {atendente.foto_url ? <AvatarImage src={atendente.foto_url} alt={atendente.nome} /> : null}
+              <AvatarFallback className="bg-primary/10 text-sm font-semibold text-primary">
+                {iniciais(atendente.nome)}
+              </AvatarFallback>
+            </Avatar>
+            <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-card bg-emerald-500" />
+          </div>
+          <div className="min-w-0 flex-1 leading-tight">
+            <p className="truncate text-sm font-semibold uppercase tracking-wide text-foreground sm:text-base">
+              {atendente.nome}
+            </p>
+            <span className="flex min-w-0 items-center gap-1.5 text-xs text-emerald-600">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400/70" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+              </span>
+              <span className="truncate">
+                {peerTyping ? "digitando…" : "Atendimento ativo"}
+              </span>
             </span>
-            <span className="truncate">
-              {peerTyping ? "digitando…" : "Online · responde em horário comercial"}
-            </span>
-          </span>
+          </div>
+          {headerExtras ?? (
+            <div className="hidden items-center gap-1.5 sm:flex">
+              <Button variant="outline" size="icon" className="h-9 w-9 rounded-full" aria-label="Buscar mensagem">
+                <Search className="h-4 w-4" />
+              </Button>
+              <Button variant="outline" size="icon" className="h-9 w-9 rounded-full" aria-label="Ligar">
+                <Phone className="h-4 w-4" />
+              </Button>
+              <Button variant="outline" size="icon" className="h-9 w-9 rounded-full" aria-label="Mais opções">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
         </div>
-      </div>
+      )}
 
       {/* Mensagens */}
       <div className={cn("chat-surface flex-1 space-y-1 overflow-y-auto px-3 py-4 sm:px-5")}>
