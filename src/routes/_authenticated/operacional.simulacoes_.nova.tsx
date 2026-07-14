@@ -2,7 +2,8 @@ import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Calculator, TrendingUp, FileText, Award, Download } from "lucide-react";
+import { ArrowLeft, Calculator, TrendingUp, FileText, Award, Download, Send } from "lucide-react";
+import { corDoBanco } from "@/lib/bancos/cores";
 import { BancoLogo } from "@/components/bancos/banco-logo";
 import { assertModuloPermitido } from "@/lib/route-guards";
 
