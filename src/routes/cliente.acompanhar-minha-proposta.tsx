@@ -416,7 +416,7 @@ function ResumoLinha({
 }: {
   icon: typeof FileText;
   label: string;
-  value: string;
+  value: React.ReactNode;
   sub?: string;
 }) {
   return (
@@ -426,7 +426,7 @@ function ResumoLinha({
         <p className="truncate text-xs text-muted-foreground">{label}</p>
       </div>
       <div className="min-w-0 text-right">
-        <p className="truncate text-sm font-semibold text-foreground">{value}</p>
+        <div className="truncate text-sm font-semibold text-foreground">{value}</div>
         {sub && <p className="truncate text-[10px] text-muted-foreground">{sub}</p>}
       </div>
     </div>
