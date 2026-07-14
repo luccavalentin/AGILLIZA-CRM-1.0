@@ -443,13 +443,13 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
 
   function setSistemaAmortizacao(v: string) {
     if (v === "P") {
-      const bradesco = (bancos ?? []).filter(ehBradesco).map((b) => b.id);
-      if (bradesco.length === 0) {
-        toast.error("O sistema PRICE está disponível apenas no Bradesco, que não está habilitado.");
+      const elegiveis = (bancos ?? []).filter(aceitaPrice).map((b) => b.id);
+      if (elegiveis.length === 0) {
+        toast.error("O sistema PRICE está disponível apenas em Bradesco e Santander — nenhum deles está habilitado.");
       } else {
-        toast.info("O sistema PRICE é oferecido somente pelo Bradesco. Apenas o Bradesco foi selecionado.");
+        toast.info("Sistema PRICE: apenas Bradesco e Santander foram mantidos na seleção.");
       }
-      setF((prev) => ({ ...prev, sistema_amortizacao: v, bancos_ids: bradesco }));
+      setF((prev) => ({ ...prev, sistema_amortizacao: v, bancos_ids: elegiveis }));
       return;
     }
     set("sistema_amortizacao", v);
@@ -459,8 +459,8 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
     setF((prev) => {
       const banco = (bancos ?? []).find((b) => b.id === id);
       const has = prev.bancos_ids.includes(id);
-      if (prev.sistema_amortizacao === "P" && !has && banco && !ehBradesco(banco)) {
-        toast.info("No sistema PRICE, somente o Bradesco pode ser selecionado.");
+      if (prev.sistema_amortizacao === "P" && !has && banco && !aceitaPrice(banco)) {
+        toast.info("No sistema PRICE, apenas Bradesco e Santander podem ser selecionados.");
         return prev;
       }
       // Em "Nova Proposta" a seleção é única: o banco escolhido é o que
