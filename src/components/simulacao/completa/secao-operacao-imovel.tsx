@@ -35,6 +35,7 @@ export function SecaoOperacaoImovel({ ctx }: { ctx: SimulacaoCompletaCtx }) {
     maxPrazoIdade,
     aplicarEntradaSugerida,
     aplicarPorFinanciamento,
+    aplicarPorParcela,
     aplicarJogadaNumeros,
     definirPrazo,
     setSistemaAmortizacao,
@@ -43,6 +44,7 @@ export function SecaoOperacaoImovel({ ctx }: { ctx: SimulacaoCompletaCtx }) {
     normalizarPctDespesas,
     pctDespesas,
   } = ctx;
+
 
   return (
     <section className="space-y-4">
@@ -134,10 +136,41 @@ export function SecaoOperacaoImovel({ ctx }: { ctx: SimulacaoCompletaCtx }) {
         />
       </div>
 
+      <label className="flex items-start gap-2 rounded-md border border-border/60 bg-muted/30 p-3 text-sm text-foreground">
+        <Checkbox
+          className="mt-0.5"
+          checked={!!f.simular_por_parcela}
+          onCheckedChange={(v) => {
+            const on = v === true;
+            ctx.set("simular_por_parcela", on);
+            if (!on) ctx.set("parcela_alvo", 0);
+          }}
+        />
+        <span>
+          <span className="font-medium">Simular pelo valor da parcela</span>
+          <span className="ml-1 text-xs text-muted-foreground">
+            — informe a parcela desejada e o sistema preenche imóvel, entrada e financiamento.
+          </span>
+        </span>
+      </label>
 
-
+      {f.simular_por_parcela && (
+        <Campo label={<>Parcela desejada (R$) <Ast /></>}>
+          <CurrencyInput
+            value={f.parcela_alvo}
+            onChange={(v) => aplicarPorParcela(v)}
+            placeholder="Ex: 3.500,00"
+          />
+          <p className="text-xs text-muted-foreground">
+            Cálculo baseado na taxa mais conservadora entre os bancos selecionados, no prazo
+            e no sistema ({f.sistema_amortizacao === "P" ? "PRICE" : "SAC"}), já descontando
+            seguros (MIP/DFI) e tarifa mensal. Valores confirmados pelo banco na simulação.
+          </p>
+        </Campo>
+      )}
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+
         <Campo label={<>Valor do imóvel (R$) <Ast /></>}>
           <CurrencyInput
             value={f.valor_imovel}
