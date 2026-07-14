@@ -104,7 +104,7 @@ export function GenericReportPage({
     >
       {isLoading ? (
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+          <div className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(160px,1fr))]">
             {Array.from({ length: 6 }).map((_, i) => (
               <Skeleton key={i} className="h-20" />
             ))}
@@ -120,7 +120,7 @@ export function GenericReportPage({
         <>
           {data && data.kpis.length > 0 && (
             <ReportSection titulo="Indicadores">
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+              <div className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(160px,1fr))]">
                 {data.kpis.map((k) => (
                   <ReportKpiCard key={k.label} kpi={k} />
                 ))}
@@ -132,7 +132,7 @@ export function GenericReportPage({
       ) : (
         <>
           <ReportSection titulo="Indicadores">
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+            <div className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(160px,1fr))]">
               {data.kpis.map((k) => (
                 <ReportKpiCard key={k.label} kpi={k} />
               ))}
