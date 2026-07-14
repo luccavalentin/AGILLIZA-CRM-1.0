@@ -40,6 +40,7 @@ import {
 } from "@/components/ui/table";
 import { SimulacaoStatusBadge } from "@/components/simulacao/status-badge";
 import { BancosSimulados } from "@/components/simulacao/bancos-simulados";
+import { SelecionarBancosPdfDialog } from "@/components/simulacao/selecionar-bancos-pdf-dialog";
 import { BancoLogo } from "@/components/bancos/banco-logo";
 import { corDoBanco } from "@/lib/bancos/cores";
 import { cn } from "@/lib/utils";
