@@ -38,6 +38,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { BancoChip } from "@/components/bancos/banco-chip";
 
 export const Route = createFileRoute("/cliente/acompanhar-minha-proposta")({
   head: () => ({ meta: [{ title: "Acompanhar minha proposta — Meu Financiamento" }] }),
@@ -323,7 +324,11 @@ function Acompanhar() {
             <p className="mb-3 text-sm font-semibold text-foreground">Resumo do status</p>
             <dl className="space-y-2.5 text-sm">
               <ResumoLinha icon={FileText} label="Nº da proposta" value={resumo?.numero_proposta ?? "—"} />
-              <ResumoLinha icon={Building2} label="Banco em análise" value={resumo?.banco ?? "—"} />
+              <ResumoLinha
+                icon={Building2}
+                label="Banco em análise"
+                value={resumo?.banco ? <BancoChip nome={resumo.banco} /> : "—"}
+              />
               <ResumoLinha icon={Home} label="Valor do imóvel" value={fmtBRL(resumo?.valor_imovel)} />
               <ResumoLinha icon={DollarSign} label="Valor solicitado" value={fmtBRL(resumo?.valor_solicitado)} />
               <ResumoLinha icon={Clock} label="Prazo do financiamento" value={resumo?.prazo ? `${resumo.prazo} meses` : "—"} />
@@ -416,7 +421,7 @@ function ResumoLinha({
 }: {
   icon: typeof FileText;
   label: string;
-  value: string;
+  value: React.ReactNode;
   sub?: string;
 }) {
   return (
@@ -426,7 +431,7 @@ function ResumoLinha({
         <p className="truncate text-xs text-muted-foreground">{label}</p>
       </div>
       <div className="min-w-0 text-right">
-        <p className="truncate text-sm font-semibold text-foreground">{value}</p>
+        <div className="truncate text-sm font-semibold text-foreground">{value}</div>
         {sub && <p className="truncate text-[10px] text-muted-foreground">{sub}</p>}
       </div>
     </div>
