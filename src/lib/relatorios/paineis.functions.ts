@@ -665,16 +665,32 @@ export const getPanelDados = createServerFn({ method: "POST" })
         recusadasPorBanco: recusadasBancoMap.size
           ? { titulo: "Recusadas por banco", itens: topItens(recusadasBancoMap, 8) }
           : undefined,
-        alertas: simErro
-          ? [
-              {
-                tone: "danger",
-                titulo: "Simulações com erro",
-                descricao: "Requerem revisão antes de avançar",
-                contador: simErro,
-              },
-            ]
-          : [],
+        porTipoSimulacao,
+        clientesPorEtapa,
+        topOperadores,
+        volumePorBanco,
+        financeiroResumo:
+          aReceber || aPagar || comissoesPrevistas
+            ? {
+                titulo: "Financeiro em aberto",
+                itens: [
+                  { label: "A receber", valor: brlCompacto(aReceber), tone: "success" },
+                  { label: "A pagar", valor: brlCompacto(aPagar), tone: "warning" },
+                  { label: "Comissões previstas", valor: brlCompacto(comissoesPrevistas), tone: "brand" },
+                ],
+              }
+            : undefined,
+        alertas: [
+          ...(simErro
+            ? [{ tone: "danger" as const, titulo: "Simulações com erro", descricao: "Requerem revisão antes de avançar", contador: simErro }]
+            : []),
+          ...(demVencidas.length
+            ? [{ tone: "danger" as const, titulo: "Demandas com SLA vencido", descricao: "Requerem ação imediata", contador: demVencidas.length }]
+            : []),
+          ...(tkAtrasadas.length
+            ? [{ tone: "warning" as const, titulo: "Tarefas atrasadas", descricao: "Prazo ultrapassado", contador: tkAtrasadas.length }]
+            : []),
+        ],
       };
     }
 
