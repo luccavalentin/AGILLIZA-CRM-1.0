@@ -80,7 +80,22 @@ function Pagina() {
         </Button>
       </div>
 
+      <Tabs
+        value={escopo}
+        onValueChange={(v) => {
+          const val = v as "todas" | "minhas";
+          setEscopo(val);
+          if (typeof window !== "undefined") localStorage.setItem("tarefas:escopo", val);
+        }}
+      >
+        <TabsList className="h-10 rounded-xl">
+          <TabsTrigger value="minhas" className="rounded-lg">Minhas</TabsTrigger>
+          <TabsTrigger value="todas" className="rounded-lg">Gerais</TabsTrigger>
+        </TabsList>
+      </Tabs>
+
       <div className="flex gap-4 overflow-x-auto pb-2">
+
         {COLUNAS.map((col) => {
           const cfg = statusTarefa(col);
           const doStatus = itens.filter((t) => t.status === col);
