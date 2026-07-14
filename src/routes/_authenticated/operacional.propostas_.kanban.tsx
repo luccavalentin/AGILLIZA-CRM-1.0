@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { BancoLogo } from "@/components/bancos/banco-logo";
 import { corDoBanco } from "@/lib/bancos/cores";
 import { assertModuloPermitido } from "@/lib/route-guards";
-import { listarPropostas, moverStatusProposta } from "@/lib/propostas/propostas.functions";
+import { listarPropostas, moverStatusProposta, listarResponsaveisEquipe } from "@/lib/propostas/propostas.functions";
 import { statusProposta } from "@/components/propostas/status";
 import {
   transicaoPermitida,
@@ -198,11 +198,19 @@ function Pagina() {
 
   const itens = data?.itens ?? [];
 
+  // Todos os responsáveis internos do correspondente (mesmo os sem proposta ainda),
+  // combinados com quaisquer nomes que já apareçam nos cards por segurança.
+  const { data: equipe } = useQuery({
+    queryKey: ["propostas", "responsaveis-equipe"],
+    queryFn: () => listarResponsaveisEquipe(),
+    staleTime: 5 * 60_000,
+  });
   const responsaveis = useMemo(() => {
     const s = new Set<string>();
+    (equipe ?? []).forEach((m) => m.nome && s.add(m.nome));
     itens.forEach((i: any) => i.nome_responsavel && s.add(i.nome_responsavel));
     return Array.from(s).sort((a, b) => a.localeCompare(b, "pt-BR"));
-  }, [itens]);
+  }, [equipe, itens]);
   const corretores = useMemo(() => {
     const s = new Set<string>();
     itens.forEach((i: any) => i.corretor_nome && s.add(i.corretor_nome));
