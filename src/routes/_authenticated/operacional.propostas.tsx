@@ -393,16 +393,21 @@ function Pagina() {
               </div>
 
               <div className="px-4 py-3 pl-5">
-                <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                  <span className="text-base font-semibold tabular-nums tracking-tight text-foreground">
-                    {p.numero_proposta_banco ? `Nº banco ${p.numero_proposta_banco}` : p.numero_proposta}
-                  </span>
-                  {p.numero_proposta_banco && (
-                    <span className="text-[10px] font-medium text-muted-foreground">
-                      Interno {p.numero_proposta}
-                    </span>
-                  )}
-                </div>
+                {p.numero_proposta_banco ? (
+                  <>
+                    <div className="text-lg font-bold tabular-nums leading-tight tracking-tight" style={{ color: corBanco }}>
+                      Nº banco {p.numero_proposta_banco}
+                    </div>
+                    <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                      Interno <span className="tabular-nums">{p.numero_proposta}</span>
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-base font-semibold tabular-nums tracking-tight text-foreground">
+                    {p.numero_proposta}
+                  </div>
+                )}
+
                 <p className="mt-0.5 truncate text-sm text-muted-foreground">
                   {p.nome_cliente ?? "—"}
                 </p>
