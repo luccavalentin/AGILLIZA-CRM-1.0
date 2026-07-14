@@ -2190,6 +2190,21 @@ export const runReport = createServerFn({ method: "POST" })
       (data ?? []).forEach((p: any) => out.set(p.id, p.nome ?? "—"));
       return out;
     }
+
+    async function perfisUsuarios(
+      ids: string[],
+    ): Promise<Map<string, { nome: string; tipo: string | null }>> {
+      const out = new Map<string, { nome: string; tipo: string | null }>();
+      if (!ids.length) return out;
+      const { data } = await supabase
+        .from("profiles")
+        .select("id,nome,tipo_pessoa")
+        .in("id", ids);
+      (data ?? []).forEach((p: any) =>
+        out.set(p.id, { nome: p.nome ?? "—", tipo: p.tipo_pessoa ?? null }),
+      );
+      return out;
+    }
   });
 
 /** Registra uma exportação (PDF/XLSX) no histórico e auditoria. */
