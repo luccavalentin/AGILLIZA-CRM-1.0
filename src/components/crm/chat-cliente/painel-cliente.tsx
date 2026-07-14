@@ -13,6 +13,8 @@ import {
   Calculator,
   Loader2,
   Tag,
+  Check,
+  Circle,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -29,6 +31,24 @@ const TABS = [
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
+
+/** Cinco macro-etapas exibidas no stepper do painel. Cada uma agrupa os
+ * códigos internos da tabela pipeline_stages. */
+const MACRO_STAGES = [
+  { key: "simulacao", label: "Simulação", codes: ["cadastro_basico", "cadastro_completo", "simulacao"] },
+  { key: "documentacao", label: "Documentação", codes: ["coleta_documentos"] },
+  { key: "analise", label: "Análise", codes: ["engenharia_vistoria", "analise_juridica", "credito_enviado"] },
+  { key: "proposta", label: "Proposta", codes: ["credito_aprovado"] },
+  { key: "contratacao", label: "Contratação", codes: ["contrato_emitido"] },
+] as const;
+
+function macroIndexOf(codigo: string | null): number {
+  if (!codigo) return 0;
+  for (let i = 0; i < MACRO_STAGES.length; i++) {
+    if ((MACRO_STAGES[i].codes as readonly string[]).includes(codigo)) return i;
+  }
+  return 0;
+}
 
 function formatarBRL(v: number | null): string {
   if (v == null) return "—";
@@ -73,6 +93,72 @@ function BotaoAcao({
   );
 }
 
+function Stepper({ atualIdx }: { atualIdx: number }) {
+  return (
+    <div>
+      <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        Status e etapa
+      </p>
+      <Badge
+        variant="secondary"
+        className="mb-3 rounded-full border-primary/20 bg-primary/10 px-2.5 py-0.5 text-[11px] font-medium text-primary"
+      >
+        {MACRO_STAGES[atualIdx]?.label ?? "Em análise"}
+      </Badge>
+      <div className="flex items-start justify-between gap-1">
+        {MACRO_STAGES.map((s, i) => {
+          const feito = i < atualIdx;
+          const atual = i === atualIdx;
+          return (
+            <div key={s.key} className="flex flex-1 flex-col items-center gap-1.5">
+              <div className="flex w-full items-center">
+                {/* linha esquerda */}
+                <div
+                  className={cn(
+                    "h-0.5 flex-1",
+                    i === 0 ? "opacity-0" : feito || atual ? "bg-primary" : "bg-border",
+                  )}
+                />
+                <div
+                  className={cn(
+                    "flex size-6 shrink-0 items-center justify-center rounded-full border-2 transition-colors",
+                    feito
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : atual
+                        ? "border-primary bg-background text-primary"
+                        : "border-border bg-background text-muted-foreground",
+                  )}
+                >
+                  {feito ? (
+                    <Check className="size-3" />
+                  ) : (
+                    <Circle className={cn("size-2 fill-current", atual ? "" : "opacity-50")} />
+                  )}
+                </div>
+                {/* linha direita */}
+                <div
+                  className={cn(
+                    "h-0.5 flex-1",
+                    i === MACRO_STAGES.length - 1 ? "opacity-0" : feito ? "bg-primary" : "bg-border",
+                  )}
+                />
+              </div>
+              <span
+                className={cn(
+                  "text-center text-[10px] font-medium leading-tight",
+                  atual ? "text-foreground" : feito ? "text-primary" : "text-muted-foreground",
+                )}
+              >
+                {s.label}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export function PainelChatCliente({
   clienteId,
   etiquetas = [],
@@ -92,6 +178,8 @@ export function PainelChatCliente({
     const cel = (data?.celular ?? "").replace(/\D/g, "");
     return cel ? `https://wa.me/55${cel}` : null;
   }, [data?.celular]);
+
+  const atualIdx = useMemo(() => macroIndexOf(data?.etapa_codigo ?? null), [data?.etapa_codigo]);
 
   return (
     <Card className="flex h-full min-h-0 flex-col overflow-hidden border-border/60 shadow-sm">
@@ -131,9 +219,27 @@ export function PainelChatCliente({
                 {iniciais(data.nome)}
               </div>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold text-foreground">
-                  {data.nome ?? "Cliente"}
-                </p>
+                <div className="flex items-center gap-2">
+                  <p className="min-w-0 truncate text-sm font-semibold text-foreground">
+                    {data.nome ?? "Cliente"}
+                  </p>
+                  <Badge
+                    variant="outline"
+                    className={cn(
+                      "h-5 shrink-0 rounded-full px-2 text-[10px] font-medium",
+                      data.ativo
+                        ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
+                        : "border-border bg-muted text-muted-foreground",
+                    )}
+                    title={
+                      data.ativo
+                        ? "App do cliente habilitado."
+                        : "App do cliente ainda não habilitado."
+                    }
+                  >
+                    {data.ativo ? "Ativo" : "Inativo"}
+                  </Badge>
+                </div>
                 {data.documento && (
                   <p className="truncate text-xs text-muted-foreground">
                     {data.documento}
@@ -178,24 +284,22 @@ export function PainelChatCliente({
 
             {/* Resumo rápido */}
             <div className="rounded-2xl border border-border/60 bg-muted/20 p-4">
-              <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                Resumo rápido
-              </p>
+              <div className="mb-1 flex items-center justify-between gap-2">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Resumo da proposta
+                </p>
+                {data.proposta?.status && (
+                  <Badge variant="secondary" className="text-[10px]">
+                    {data.proposta.status}
+                  </Badge>
+                )}
+              </div>
               {data.proposta ? (
                 <>
-                  <div className="flex items-center justify-between gap-2 py-1.5">
-                    <span className="text-sm text-muted-foreground">Proposta</span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-foreground">
-                        {data.proposta.numero ?? "—"}
-                      </span>
-                      {data.proposta.status && (
-                        <Badge variant="secondary" className="text-[10px]">
-                          {data.proposta.status}
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
+                  <LinhaResumo
+                    rotulo="Proposta"
+                    valor={data.proposta.numero ?? "—"}
+                  />
                   <LinhaResumo rotulo="Banco" valor={data.proposta.banco ?? "—"} />
                   <LinhaResumo
                     rotulo="Produto"
@@ -214,7 +318,7 @@ export function PainelChatCliente({
                     params={{ id: data.proposta.id }}
                     className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
                   >
-                    Ver proposta
+                    Ver proposta <ExternalLink className="size-3.5" />
                   </Link>
                 </>
               ) : (
@@ -230,6 +334,9 @@ export function PainelChatCliente({
                 </>
               )}
             </div>
+
+            {/* Status e etapa (stepper) */}
+            <Stepper atualIdx={atualIdx} />
 
             {/* Ações rápidas */}
             <div>
