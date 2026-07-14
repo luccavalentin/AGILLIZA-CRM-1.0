@@ -133,7 +133,7 @@ export function SecaoOperacaoImovel({ ctx }: { ctx: SimulacaoCompletaCtx }) {
         />
       </div>
 
-      <SimularPorFinanciamento ltvMax={ltvMax} onAplicar={aplicarJogadaNumeros} />
+
 
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
