@@ -294,6 +294,74 @@ export const clienteObterVisaoGeral = createServerFn({ method: "GET" }).handler(
 );
 
 // ----------------------------------------------------------------------------
+// Acompanhamento completo (tela "Acompanhar minha proposta")
+// ----------------------------------------------------------------------------
+export interface AcompanhamentoResumo {
+  proposta_id: string | null;
+  numero_proposta: string | null;
+  banco: string | null;
+  produto: string | null;
+  valor_imovel: number | null;
+  valor_solicitado: number | null;
+  prazo: number | null;
+  responsavel_nome: string | null;
+  responsavel_foto: string | null;
+}
+
+export interface AcompanhamentoHistorico {
+  id: string;
+  tipo: string;
+  descricao: string;
+  created_at: string;
+}
+
+export interface AcompanhamentoEvolucao {
+  dia: string;
+  percentual: number;
+}
+
+export interface AcompanhamentoCliente {
+  processo: {
+    etapa_atual: string | null;
+    descricao: string | null;
+    ordem_atual: number;
+    total: number;
+    ultima_atualizacao: string | null;
+  };
+  etapas: EtapaCliente[];
+  resumo: AcompanhamentoResumo | null;
+  historico: AcompanhamentoHistorico[];
+  evolucao: AcompanhamentoEvolucao[];
+  documentos_pendentes: number;
+  prazo_proxima_etapa: string | null;
+}
+
+export const clienteObterAcompanhamento = createServerFn({ method: "GET" }).handler(
+  async (): Promise<AcompanhamentoCliente> => {
+    const sess = requireClienteSession();
+    const { portalDb } = await import("./portal-db.server");
+    const { data, error } = await portalDb().rpc("portal_acompanhamento", { _cid: sess.cid });
+    if (error || !data) throw new Error("Não foi possível carregar seu acompanhamento.");
+    const v = data as any;
+    return {
+      processo: {
+        etapa_atual: v.processo?.etapa_atual ?? null,
+        descricao: v.processo?.descricao ?? null,
+        ordem_atual: v.processo?.ordem_atual ?? 0,
+        total: v.processo?.total ?? 0,
+        ultima_atualizacao: v.processo?.ultima_atualizacao ?? null,
+      },
+      etapas: (v.etapas ?? []) as EtapaCliente[],
+      resumo: v.resumo ?? null,
+      historico: (v.historico ?? []) as AcompanhamentoHistorico[],
+      evolucao: (v.evolucao ?? []) as AcompanhamentoEvolucao[],
+      documentos_pendentes: v.documentos_pendentes ?? 0,
+      prazo_proxima_etapa: v.prazo_proxima_etapa ?? null,
+    };
+  },
+);
+
+// ----------------------------------------------------------------------------
 // Documentos completos + propostas (aba Acompanhar)
 // ----------------------------------------------------------------------------
 export const clienteMeusDocumentos = createServerFn({ method: "GET" }).handler(
