@@ -340,6 +340,7 @@ export type Database = {
           editada_em: string | null
           excluida_em: string | null
           id: string
+          interna: boolean
           lida_em: string | null
           mensagem: string
           proposta_id: string | null
@@ -356,6 +357,7 @@ export type Database = {
           editada_em?: string | null
           excluida_em?: string | null
           id?: string
+          interna?: boolean
           lida_em?: string | null
           mensagem: string
           proposta_id?: string | null
@@ -372,6 +374,7 @@ export type Database = {
           editada_em?: string | null
           excluida_em?: string | null
           id?: string
+          interna?: boolean
           lida_em?: string | null
           mensagem?: string
           proposta_id?: string | null
@@ -5393,6 +5396,10 @@ export type Database = {
         Returns: undefined
       }
       portal_time_marcar_lidas: { Args: { _cid: string }; Returns: undefined }
+      portal_time_nota_interna: {
+        Args: { _anexo: string; _atendente: string; _cid: string; _msg: string }
+        Returns: Json
+      }
       portal_time_responder: {
         Args: { _anexo: string; _cid: string; _msg: string }
         Returns: Json

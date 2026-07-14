@@ -16,6 +16,8 @@ export interface ChatMensagem {
   editada_em: string | null;
   excluida_em: string | null;
   responde_a: string | null;
+  /** Nota interna do time (o cliente não vê). */
+  interna: boolean;
   /** Prévia da mensagem citada (quando responde_a aponta para outra mensagem). */
   citacao: { autor: string; texto: string } | null;
 }
@@ -279,7 +281,7 @@ export const listarChatCliente = createServerFn({ method: "GET" })
     const { data: rows, error } = await supabase
       .from("cliente_app_mensagens")
       .select(
-        "id, remetente_tipo, remetente_id, mensagem, anexo_url, lida_em, criada_em, editada_em, excluida_em, responde_a",
+        "id, remetente_tipo, remetente_id, mensagem, anexo_url, lida_em, criada_em, editada_em, excluida_em, responde_a, interna",
       )
       .eq("cliente_id", data.cliente_id)
       .eq("atendente_id", atendente)
@@ -356,6 +358,7 @@ export const responderChatCliente = createServerFn({ method: "POST" })
       anexo_path?: string;
       responde_a?: string;
       atendente_id?: string;
+      interna?: boolean;
     }) =>
       z
         .object({
@@ -364,6 +367,7 @@ export const responderChatCliente = createServerFn({ method: "POST" })
           anexo_path: z.string().trim().max(1000).optional(),
           responde_a: z.string().uuid().optional(),
           atendente_id: z.string().uuid().optional(),
+          interna: z.boolean().optional(),
         })
         .refine((v) => (v.mensagem?.trim()?.length ?? 0) > 0 || !!v.anexo_path, {
           message: "Escreva uma mensagem ou anexe um arquivo.",
@@ -375,6 +379,27 @@ export const responderChatCliente = createServerFn({ method: "POST" })
     const nomeAnexo = data.anexo_path?.split("/").pop() ?? null;
     const msg = data.mensagem?.trim() || nomeAnexo || "Arquivo";
     const anexo = (data.anexo_path ?? null) as unknown as string;
+
+    // Nota interna: fica só para o time; usa RPC dedicada (não notifica cliente).
+    if (data.interna) {
+      const atendente = data.atendente_id ?? userId;
+      const { data: nova, error } = await supabase.rpc("portal_time_nota_interna", {
+        _cid: data.cliente_id,
+        _atendente: atendente,
+        _msg: msg,
+        _anexo: anexo,
+      });
+      if (error) throw new Error(error.message);
+      const criada = nova as unknown as { id: string; anexo_url: string | null };
+      if (data.responde_a && criada?.id) {
+        await supabase
+          .from("cliente_app_mensagens")
+          .update({ responde_a: data.responde_a })
+          .eq("id", criada.id);
+      }
+      const [resolvida] = await resolverAnexosChat(supabase, [criada]);
+      return { ...(resolvida as unknown as ChatMensagem), interna: true };
+    }
 
     // Se a conversa é compartilhada (thread de outro atendente), publica na
     // mesma thread para que dono e participantes vejam o mesmo histórico.
@@ -402,7 +427,7 @@ export const responderChatCliente = createServerFn({ method: "POST" })
         .eq("id", criada.id);
     }
     const [resolvida] = await resolverAnexosChat(supabase, [criada]);
-    return resolvida as unknown as ChatMensagem;
+    return { ...(resolvida as unknown as ChatMensagem), interna: false };
   });
 
 /** Edita o texto de uma mensagem enviada pela equipe. */

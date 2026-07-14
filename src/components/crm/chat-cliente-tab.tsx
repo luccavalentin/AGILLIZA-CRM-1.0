@@ -3,6 +3,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Maximize2 } from "lucide-react";
 import { toast } from "sonner";
+import { criarTarefa } from "@/lib/operacional/tarefas.functions";
+import type { ComposerSubmitPayload } from "./chat-cliente/composer";
 import { Card } from "@/components/ui/card";
 import {
   AlertDialog,
@@ -142,13 +144,14 @@ export function ChatClienteConversa({
   }, [mensagens?.length, buscaAberta, peerTyping]);
 
   const enviar = useMutation({
-    mutationFn: (payload: { mensagem: string; responde_a?: string }) =>
+    mutationFn: (payload: { mensagem: string; responde_a?: string; interna?: boolean }) =>
       responder({
         data: {
           cliente_id: clienteId,
           atendente_id: atendenteId,
           mensagem: payload.mensagem,
           responde_a: payload.responde_a,
+          interna: payload.interna,
         },
       }),
 
@@ -172,6 +175,7 @@ export function ChatClienteConversa({
         editada_em: null,
         excluida_em: null,
         responde_a: payload.responde_a ?? null,
+        interna: payload.interna ?? false,
         citacao: alvo
           ? {
               autor:
@@ -225,8 +229,48 @@ export function ChatClienteConversa({
     },
   });
 
-  function submeter() {
-    const t = texto.trim();
+  const criarTarefaFn = useServerFn(criarTarefa);
+  const criarTarefaMut = useMutation({
+    mutationFn: (payload: { titulo: string; prazo?: string; retorno?: boolean }) =>
+      criarTarefaFn({
+        data: {
+          titulo: payload.titulo,
+          descricao: payload.retorno
+            ? "Retorno agendado a partir do chat."
+            : "Tarefa criada a partir do chat.",
+          prazo: payload.prazo,
+          cliente_id: clienteId,
+          prioridade: "p2",
+        },
+      }),
+    onSuccess: async (_r, vars) => {
+      // Registra também como nota interna no chat para deixar rastro na conversa.
+      const nota = vars.retorno
+        ? `📅 Retorno agendado para ${new Date(vars.prazo!).toLocaleString("pt-BR")}: ${vars.titulo}`
+        : `✅ Tarefa criada${vars.prazo ? ` (até ${new Date(vars.prazo).toLocaleString("pt-BR")})` : ""}: ${vars.titulo}`;
+      try {
+        await responder({
+          data: {
+            cliente_id: clienteId,
+            atendente_id: atendenteId,
+            mensagem: nota,
+            interna: true,
+          },
+        });
+      } catch { /* silencioso — a tarefa já foi criada */ }
+      setTexto("");
+      qc.invalidateQueries({ queryKey });
+      toast.success(vars.retorno ? "Retorno agendado." : "Tarefa criada.");
+    },
+    onError: (err) => {
+      const motivo = err instanceof Error ? err.message : String(err);
+      toast.error(`Não foi possível criar: ${motivo}`);
+    },
+  });
+
+  function submeter(payload?: ComposerSubmitPayload) {
+    const modo = payload?.modo ?? "mensagem";
+    const t = (payload?.texto ?? texto).trim();
     if (!t) return;
     notifyStop();
 
@@ -235,8 +279,24 @@ export function ChatClienteConversa({
       salvarEdicao.mutate({ id: editando.id, mensagem: t });
       return;
     }
+    if (modo === "tarefa" || modo === "retorno") {
+      if (!payload?.prazo && modo === "retorno") {
+        toast.error("Selecione a data/hora do retorno.");
+        return;
+      }
+      criarTarefaMut.mutate({
+        titulo: t,
+        prazo: payload?.prazo,
+        retorno: modo === "retorno",
+      });
+      return;
+    }
     if (enviar.isPending) return;
-    enviar.mutate({ mensagem: t, responde_a: respondendo?.id });
+    enviar.mutate({
+      mensagem: t,
+      responde_a: respondendo?.id,
+      interna: modo === "nota",
+    });
   }
 
   function iniciarEdicao(m: ChatMensagem) {
@@ -265,12 +325,9 @@ export function ChatClienteConversa({
     );
   }
 
-  async function handleAnexo(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  async function enviarArquivoDireto(file: File) {
     if (file.size > 10 * 1024 * 1024) {
       toast.error("Arquivo muito grande (máx. 10MB).");
-      if (fileRef.current) fileRef.current.value = "";
       return;
     }
     setEnviandoAnexo(true);
@@ -290,7 +347,6 @@ export function ChatClienteConversa({
           responde_a: respondendo?.id,
         },
       });
-
       setTexto("");
       setRespondendo(null);
       qc.invalidateQueries({ queryKey });
@@ -300,7 +356,16 @@ export function ChatClienteConversa({
       toast.error(`Falha ao enviar o arquivo: ${motivo}`);
     } finally {
       setEnviandoAnexo(false);
-      if (fileRef.current) fileRef.current.value = "";
+    }
+  }
+
+  async function handleAnexo(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      await enviarArquivoDireto(file);
+    } finally {
+      if (e.target) e.target.value = "";
     }
   }
 
@@ -355,8 +420,9 @@ export function ChatClienteConversa({
           onEscolherResposta={(t) => setTexto((prev) => (prev ? `${prev} ${t}` : t))}
           fileRef={fileRef}
           onAnexo={handleAnexo}
+          enviarArquivo={enviarArquivoDireto}
           enviandoAnexo={enviandoAnexo}
-          enviarPending={enviar.isPending}
+          enviarPending={enviar.isPending || criarTarefaMut.isPending}
           salvarEdicaoPending={salvarEdicao.isPending}
           textareaRef={textareaRef}
           texto={texto}
