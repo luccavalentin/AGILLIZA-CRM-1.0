@@ -764,7 +764,7 @@ function Pagina() {
                   e.preventDefault();
                   moverPara(stage.codigo);
                 }}
-                className={`group relative flex min-h-[24rem] min-w-0 flex-col rounded-2xl border bg-card shadow-sm transition-all duration-300 hover:shadow-md sm:max-h-[calc(100dvh-18rem)] ${
+                className={`group relative flex min-h-[24rem] min-w-0 flex-col rounded-2xl border bg-card shadow-sm transition-shadow duration-200 hover:shadow-md sm:max-h-[calc(100dvh-18rem)] ${
                   ehAlvo ? "border-primary ring-2 ring-primary/40" : "border-border"
                 }`}
               >
@@ -828,7 +828,7 @@ function Pagina() {
                                 arrastouRef.current = false;
                               }, 0);
                             }}
-                            className="cursor-grab rounded-xl border border-border bg-card transition-all duration-200 hover:border-primary/40 hover:shadow-sm active:cursor-grabbing"
+                            className="cursor-grab rounded-xl border border-border bg-card transition-[border-color,box-shadow] duration-150 hover:border-primary/40 hover:shadow-sm active:cursor-grabbing"
                           >
                             <div className="p-3">
                               <div className="flex items-start gap-2.5">
@@ -1069,10 +1069,9 @@ function Pagina() {
                   type="button"
                   onClick={() => setArquivoAberto(true)}
                   title="Abrir arquivo de contratos emitidos"
-                  className="group/arq relative flex min-h-[18rem] min-w-0 flex-col items-center justify-center gap-3 overflow-hidden rounded-2xl border border-primary/25 bg-gradient-to-br from-primary/5 via-card to-primary/10 p-5 text-center shadow-sm ring-1 ring-inset ring-primary/5 transition-all duration-300 hover:-translate-y-1 hover:border-primary/50 hover:shadow-xl hover:ring-primary/20"
+                  className="group/arq relative flex min-h-[18rem] min-w-0 flex-col items-center justify-center gap-3 overflow-hidden rounded-2xl border border-primary/25 bg-gradient-to-br from-primary/5 via-card to-primary/10 p-5 text-center shadow-sm ring-1 ring-inset ring-primary/5 transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-lg"
                 >
-                  <span className="pointer-events-none absolute -right-6 -top-6 size-20 rounded-full bg-primary/10 blur-2xl transition-opacity duration-300 group-hover/arq:opacity-80" />
-                  <span className="relative grid size-12 place-items-center rounded-2xl bg-primary/10 text-primary shadow-inner transition-all duration-300 group-hover/arq:scale-105 group-hover/arq:bg-primary group-hover/arq:text-primary-foreground group-hover/arq:shadow-lg">
+                  <span className="relative grid size-12 place-items-center rounded-2xl bg-primary/10 text-primary shadow-inner transition-colors duration-200 group-hover/arq:bg-primary group-hover/arq:text-primary-foreground">
                     <FolderClosed className="size-6" />
                     {totalArquivados > 0 && (
                       <span className="absolute -right-1.5 -top-1.5 grid min-h-5 min-w-5 place-items-center rounded-full bg-primary px-1 text-[10px] font-bold leading-none text-primary-foreground shadow-md ring-2 ring-card">
