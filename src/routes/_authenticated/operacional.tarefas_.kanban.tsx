@@ -29,10 +29,13 @@ function Pagina() {
   const qc = useQueryClient();
   const moverFn = useServerFn(moverStatusTarefa);
   const [arrastando, setArrastando] = useState<{ id: string; status: TarefaStatus } | null>(null);
+  const [escopo, setEscopo] = useState<"todas" | "minhas">(
+    () => (typeof window !== "undefined" && (localStorage.getItem("tarefas:escopo") as "todas" | "minhas")) || "todas",
+  );
 
   const { data } = useQuery({
-    queryKey: ["tarefas", "kanban"],
-    queryFn: () => listarTarefas({ data: { escopo: "todas" } }),
+    queryKey: ["tarefas", "kanban", escopo],
+    queryFn: () => listarTarefas({ data: { escopo } }),
   });
 
   async function soltar(coluna: TarefaStatus) {
