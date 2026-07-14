@@ -232,7 +232,12 @@ function drawInfoFinanciamento(
     {
       label: "CET (Custo Efetivo Total)",
       valor: pctTxt(
-        d?.cet ?? calcularCET(d?.valorFinanciamento ?? s.valor_financiamento, d?.parcelas),
+        d?.cet ??
+          calcularCET(
+            d?.valorFinanciamento ?? s.valor_financiamento,
+            d?.parcelas,
+            (d?.iof ?? 0) + (d?.tarifaAvaliacao ?? 0),
+          ),
       ),
     },
   ];

@@ -74,18 +74,27 @@ function taxaMensalEquivalente(taxaAnoPct: number | null): number | null {
 }
 
 /**
- * Calcula o CET (Custo Efetivo Total) anual a partir do fluxo real de parcelas.
- * O CET é a taxa interna de retorno (mensal) que iguala o valor líquido liberado
- * ao valor presente de todas as parcelas.
+ * Calcula o CET (Custo Efetivo Total) anual conforme Resolução Bacen 3.517.
+ *
+ * O CET é a taxa interna de retorno (mensal) que iguala o **valor líquido
+ * efetivamente liberado ao tomador** (= valor financiado − IOF − tarifa de
+ * avaliação − outros custos pagos à vista com recursos do financiamento) ao
+ * valor presente de todas as parcelas (que já devem incluir juros, amortização,
+ * seguros MIP/DFI e tarifa de administração mensal).
+ *
  * Retorna a taxa anual em % ou null quando não há dados suficientes.
  */
 export function calcularCET(
   valorLiberado: number | null | undefined,
   parcelas: { parcela: number }[] | null | undefined,
+  custosAVista?: number | null,
 ): number | null {
-  const principal = valorLiberado ?? null;
+  const bruto = valorLiberado ?? null;
   const fluxo = (parcelas ?? []).map((p) => p.parcela).filter((v) => v > 0);
-  if (principal == null || principal <= 0 || fluxo.length === 0) return null;
+  if (bruto == null || bruto <= 0 || fluxo.length === 0) return null;
+  const descontos = Math.max(0, custosAVista ?? 0);
+  const principal = bruto - descontos;
+  if (!(principal > 0)) return null;
 
   const vpl = (i: number) =>
     fluxo.reduce((acc, parc, idx) => acc + parc / Math.pow(1 + i, idx + 1), -principal);
@@ -230,9 +239,27 @@ export function extrairDetalheBanco(raw: unknown): DetalheBanco | null {
     }
   }
 
+  // IOF e tarifa de avaliação são custos à vista (deduzidos do valor liberado
+  // no cálculo do CET conforme Bacen).
+  const iofValor = num(desc.iof?.totalValue ?? desc.iof?.value) ?? num(r.valorIofBanco) ?? 0;
+  const tarifaAvaliacaoValor =
+    num(desc.propertyEvaluation) ??
+    num(desc.appraisalFee) ??
+    num(desc.evaluationFee) ??
+    num(desc.guaranteeEvaluationFee) ??
+    num(r.valorTarifaAvaliacaoBanco) ??
+    num(r.valorTarifaAvaliacaoGarantiaBanco) ??
+    num(r.tarifaAvaliacaoGarantia) ??
+    TARIFA_AVALIACAO_GARANTIA_PADRAO;
+  const custosAVista = (iofValor || 0) + (tarifaAvaliacaoValor || 0);
+
   const somatorio = parcelas.length ? parcelas.reduce((s, p) => s + p.parcela, 0) : null;
   const cet =
-    num(desc.cetAnnual) ?? num(r.taxaCetAnoBanco) ?? calcularCET(valorFin, parcelas);
+    num(desc.cetAnnual) ??
+    num(desc.cet) ??
+    num(r.taxaCetAnoBanco) ??
+    num(r.taxaCETAnoBanco) ??
+    calcularCET(valorFin, parcelas, custosAVista);
 
   // Despesas financiadas = valor incorporado ao financiamento além do valor-base
   // (custos como ITBI, registro e tarifas embutidos na operação). O cálculo
@@ -272,16 +299,8 @@ export function extrairDetalheBanco(raw: unknown): DetalheBanco | null {
     financiamentoTotal: num(r.valorTotalFinanciamento) ?? valorFin,
     valorEntrada: num(desc.downPayment) ?? num(r.valorEntrada),
     despesasFinanciadas,
-    tarifaAvaliacao:
-      num(desc.propertyEvaluation) ??
-      num(desc.appraisalFee) ??
-      num(desc.evaluationFee) ??
-      num(desc.guaranteeEvaluationFee) ??
-      num(r.valorTarifaAvaliacaoBanco) ??
-      num(r.valorTarifaAvaliacaoGarantiaBanco) ??
-      num(r.tarifaAvaliacaoGarantia) ??
-      TARIFA_AVALIACAO_GARANTIA_PADRAO,
-    iof: num(desc.iof?.totalValue ?? desc.iof?.value) ?? num(r.valorIofBanco),
+    tarifaAvaliacao: tarifaAvaliacaoValor,
+    iof: iofValor || null,
     fgts: num(desc.fgtsAmount) ?? num(r.valorFgts),
     prazoMeses: prazo,
     sistemaAmortizacao:
