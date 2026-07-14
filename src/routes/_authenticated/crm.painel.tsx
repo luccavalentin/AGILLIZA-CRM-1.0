@@ -685,7 +685,7 @@ function Pagina() {
           </div>
         </div>
       ) : (
-        <div className="-mx-3 overflow-x-auto px-3 pb-4 sm:-mx-6 sm:px-6">
+        <div className="no-scrollbar -mx-3 overflow-x-auto overscroll-x-contain px-3 pb-4 sm:-mx-6 sm:px-6">
         <div className="grid grid-flow-col auto-cols-[17rem] gap-3 sm:auto-cols-[19rem] lg:auto-cols-[20rem] lg:gap-4">
           {dadosFiltrados.map((stage, idx) => {
             const temClientes = stage.clientes.length > 0;
