@@ -425,6 +425,9 @@ export function ResultadoInlineCompleta({ simulacaoId, onFechar }: Props) {
                           <TableCell className="py-3 text-right text-sm tabular-nums whitespace-nowrap">
                             {formatBRL(b.valor_iof)}
                           </TableCell>
+                          <TableCell className="py-3 text-right text-sm font-semibold tabular-nums whitespace-nowrap text-primary">
+                            {formatBRL(rendaMinimaDoBanco(b))}
+                          </TableCell>
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-1">
                               <DetalheBancoDialog banco={b} simulacao={s} />
