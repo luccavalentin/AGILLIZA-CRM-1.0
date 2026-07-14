@@ -329,6 +329,10 @@ export function ResultadoInlineCompleta({ simulacaoId, onFechar }: Props) {
                           valor={formatBRL(totalFinanciado(b))}
                         />
                         <MobileStat rotulo="IOF" valor={formatBRL(b.valor_iof)} />
+                        <MobileStat
+                          rotulo="Renda mín."
+                          valor={formatBRL(rendaMinimaDoBanco(b))}
+                        />
                       </dl>
 
                       <div className="mt-3 flex items-center justify-end gap-2">
