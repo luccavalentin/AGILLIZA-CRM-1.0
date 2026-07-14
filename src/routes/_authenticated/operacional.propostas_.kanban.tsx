@@ -359,14 +359,21 @@ function Pagina() {
 
 
                       {/* Nº da proposta */}
-                      <div className="mt-2.5 flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
-                        <span className="rounded bg-muted px-1.5 py-0.5 font-medium tabular-nums text-foreground">
-                          {c.numero_proposta_banco ? `Nº banco ${c.numero_proposta_banco}` : `#${c.numero_proposta}`}
-                        </span>
-                        {c.numero_proposta_banco && (
-                          <span className="tabular-nums">Interno #{c.numero_proposta}</span>
+                      <div className="mt-2.5 flex flex-wrap items-center gap-1.5 text-[11px]">
+                        {c.numero_proposta_banco ? (
+                          <>
+                            <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[12px] font-bold tabular-nums text-primary">
+                              Nº banco {c.numero_proposta_banco}
+                            </span>
+                            <span className="tabular-nums text-muted-foreground">Interno #{c.numero_proposta}</span>
+                          </>
+                        ) : (
+                          <span className="rounded bg-muted px-1.5 py-0.5 font-medium tabular-nums text-foreground">
+                            #{c.numero_proposta}
+                          </span>
                         )}
                       </div>
+
 
                       {escopo === "todas" && c.nome_responsavel && (
                         <div className="mt-2 flex items-center gap-1 text-[11px] text-muted-foreground">
