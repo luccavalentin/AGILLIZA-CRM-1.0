@@ -329,15 +329,25 @@ export function extrairDetalheBanco(raw: unknown): DetalheBanco | null {
       : (despesasDerivada ?? despesasApi);
 
 
+  const valorImovel = num(desc.propertyPrice) ?? num(r.valorImovel);
+  // Entrada = valor do imóvel − financiamento base (quando o banco não devolve).
+  const entradaApi = num(desc.downPayment) ?? num(r.valorEntrada);
+  const entradaDerivada =
+    valorImovel != null && financiamentoBase != null
+      ? Math.max(0, Math.round((valorImovel - financiamentoBase) * 100) / 100)
+      : null;
+  const valorEntrada =
+    entradaApi != null && entradaApi > 0 ? entradaApi : entradaDerivada ?? entradaApi;
+
   return {
     taxaJurosAno: taxaAno,
     taxaJurosMes: taxaMes,
     taxaNominalAno,
     cet,
-    valorImovel: num(desc.propertyPrice) ?? num(r.valorImovel),
+    valorImovel,
     valorFinanciamento: valorFin,
     financiamentoTotal: num(r.valorTotalFinanciamento) ?? valorFin,
-    valorEntrada: num(desc.downPayment) ?? num(r.valorEntrada),
+    valorEntrada,
     despesasFinanciadas,
     tarifaAvaliacao: tarifaAvaliacaoValor,
     iof: iofValor || null,
