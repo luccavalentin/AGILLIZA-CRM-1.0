@@ -78,6 +78,12 @@ export interface PanelDados {
   ranking: { titulo: string; itens: { label: string; valor: number }[] };
   recusadasPorBanco?: { titulo: string; itens: { label: string; valor: number }[] };
   alertas: PanelAlert[];
+  /** Extras exclusivos da visão geral do sistema. */
+  porTipoSimulacao?: PanelDistribuicao;
+  clientesPorEtapa?: PanelDistribuicao;
+  topOperadores?: PanelDistribuicao;
+  financeiroResumo?: { titulo: string; itens: { label: string; valor: string; tone?: "brand" | "success" | "warning" | "danger" | "neutral" }[] };
+  volumePorBanco?: PanelDistribuicao;
 }
 
 const brl = (v: number) => (v || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
