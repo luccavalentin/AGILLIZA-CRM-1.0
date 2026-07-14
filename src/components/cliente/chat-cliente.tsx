@@ -223,16 +223,22 @@ function ListaAtendentes({
   );
 }
 
-function ThreadChat({
+export function ThreadChat({
   atendente,
   altura,
   podeVoltar,
   onVoltar,
+  quickActions,
+  hideHeader = false,
+  headerExtras,
 }: {
   atendente: AtendenteCliente;
   altura: string;
   podeVoltar: boolean;
   onVoltar: () => void;
+  quickActions?: ReactNode;
+  hideHeader?: boolean;
+  headerExtras?: ReactNode;
 }) {
   const qc = useQueryClient();
   const [texto, setTexto] = useState("");
