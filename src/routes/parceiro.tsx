@@ -15,6 +15,7 @@ export const Route = createFileRoute("/parceiro")({
     meta: [
       { title: "Portal do Parceiro — Agilliza" },
       { name: "robots", content: "noindex" },
+      { name: "mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
       { name: "apple-mobile-web-app-title", content: "Agilliza" },
