@@ -40,7 +40,7 @@ const pct = (v: number) => `${(v || 0).toLocaleString("pt-BR", { maximumFraction
 
 /** Rótulos oficiais dos status de proposta (espelha components/propostas/status.ts). */
 const STATUS_PROPOSTA_LABEL: Record<string, string> = {
-  rascunho: "Rascunho",
+  rascunho: "Simulação",
   enviada_banco: "Enviada ao banco",
   em_analise_credito: "Em análise de crédito",
   aguardando_documentos: "Aguardando documentos",
