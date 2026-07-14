@@ -1129,12 +1129,32 @@ export const runReport = createServerFn({ method: "POST" })
         if (!p.parceiro_nome && p.parceiro_id) idsFaltando.add(p.parceiro_id);
         if (p.usuario_responsavel_id) idsFaltando.add(p.usuario_responsavel_id);
       }
-      const nomes = await nomesUsuarios([...idsFaltando]);
+      // Nomes gerais + perfis dos parceiros (para separar Imobiliária x Corretor)
+      const parceiroIds = new Set<string>();
+      for (const s of simulacoesFiltradas) if (s.parceiro_id) parceiroIds.add(s.parceiro_id);
+      for (const p of propostasFiltradas) if (p.parceiro_id) parceiroIds.add(p.parceiro_id);
+      for (const p of contratosOperacionais) if (p.parceiro_id) parceiroIds.add(p.parceiro_id);
+      const [nomes, parceiros] = await Promise.all([
+        nomesUsuarios([...idsFaltando]),
+        perfisUsuarios([...parceiroIds]),
+      ]);
       const nomeAnalista = (p: any) =>
         p.analista_nome || nomes.get(p.analista_id) || nomes.get(p.usuario_responsavel_id) || "Não atribuído";
       const nomeComercial = (p: any) =>
         p.consultor_nome || nomes.get(p.comercial_id) || "Não atribuído";
-      const nomeParceiro = (p: any) => p.parceiro_nome || nomes.get(p.parceiro_id) || "Não atribuído";
+      const perfilParceiro = (p: any) => (p.parceiro_id ? parceiros.get(p.parceiro_id) : null);
+      const nomeParceiro = (p: any) =>
+        perfilParceiro(p)?.nome || p.parceiro_nome || nomes.get(p.parceiro_id) || "Não atribuído";
+      const nomeImobiliaria = (p: any) => {
+        const perfil = perfilParceiro(p);
+        if (perfil?.tipo === "imobiliaria") return perfil.nome;
+        return "—";
+      };
+      const nomeCorretor = (p: any) => {
+        const perfil = perfilParceiro(p);
+        if (perfil?.tipo === "corretor") return perfil.nome;
+        return "—";
+      };
       const valorProc = (p: any) => p.valor_financiamento_aprovado ?? p.valor_financiamento ?? 0;
       const valorSim = (s: any) => s.valor_financiamento ?? 0;
 
@@ -1289,9 +1309,14 @@ export const runReport = createServerFn({ method: "POST" })
             rows: breakdown2(rows, nomeComercial, (p) => p.nome_banco, valFn),
           },
           {
-            titulo: "Por Imobiliária / Corretor",
-            columns: colsBreak("Imobiliária / Corretor"),
-            rows: breakdown(rows, nomeParceiro, valFn),
+            titulo: "Por Imobiliária",
+            columns: colsBreak("Imobiliária"),
+            rows: breakdown(rows.filter((p) => perfilParceiro(p)?.tipo === "imobiliaria"), nomeImobiliaria, valFn),
+          },
+          {
+            titulo: "Por Corretor",
+            columns: colsBreak("Corretor"),
+            rows: breakdown(rows.filter((p) => perfilParceiro(p)?.tipo === "corretor"), nomeCorretor, valFn),
           },
         ];
       };
@@ -1372,9 +1397,22 @@ export const runReport = createServerFn({ method: "POST" })
               rows: breakdown(simulacoesFiltradas, nomeComercial, valorSim),
             },
             {
-              titulo: "Por Imobiliária / Corretor",
-              columns: colsBreak("Imobiliária / Corretor"),
-              rows: breakdown(simulacoesFiltradas, nomeParceiro, valorSim),
+              titulo: "Por Imobiliária",
+              columns: colsBreak("Imobiliária"),
+              rows: breakdown(
+                simulacoesFiltradas.filter((p) => perfilParceiro(p)?.tipo === "imobiliaria"),
+                nomeImobiliaria,
+                valorSim,
+              ),
+            },
+            {
+              titulo: "Por Corretor",
+              columns: colsBreak("Corretor"),
+              rows: breakdown(
+                simulacoesFiltradas.filter((p) => perfilParceiro(p)?.tipo === "corretor"),
+                nomeCorretor,
+                valorSim,
+              ),
             },
           ],
         },
@@ -1403,9 +1441,22 @@ export const runReport = createServerFn({ method: "POST" })
               rows: breakdown2(andamento, nomeComercial, (p) => p.nome_banco, valorProc),
             },
             {
-              titulo: "Por Imobiliária / Corretor",
-              columns: colsBreak("Imobiliária / Corretor"),
-              rows: breakdown(andamento, nomeParceiro, valorProc),
+              titulo: "Por Imobiliária",
+              columns: colsBreak("Imobiliária"),
+              rows: breakdown(
+                andamento.filter((p) => perfilParceiro(p)?.tipo === "imobiliaria"),
+                nomeImobiliaria,
+                valorProc,
+              ),
+            },
+            {
+              titulo: "Por Corretor",
+              columns: colsBreak("Corretor"),
+              rows: breakdown(
+                andamento.filter((p) => perfilParceiro(p)?.tipo === "corretor"),
+                nomeCorretor,
+                valorProc,
+              ),
             },
             {
               titulo: "Por fase (status atual)",
@@ -1497,7 +1548,8 @@ export const runReport = createServerFn({ method: "POST" })
           { key: "status", label: "Fase" },
           { key: "analista", label: "Analista Adm" },
           { key: "comercial", label: "Analista Comercial" },
-          { key: "parceiro", label: "Imobiliária / Corretor" },
+          { key: "imobiliaria", label: "Imobiliária" },
+          { key: "corretor", label: "Corretor" },
           { key: "valor", label: "Valor", align: "right", footer: "sum", format: "brl" },
           { key: "created_at", label: "Criada em", format: "date" },
         ],
@@ -1522,7 +1574,8 @@ export const runReport = createServerFn({ method: "POST" })
                 : rotuloStatus(p.status),
             analista: nomeAnalista(p),
             comercial: nomeComercial(p),
-            parceiro: nomeParceiro(p),
+            imobiliaria: nomeImobiliaria(p),
+            corretor: nomeCorretor(p),
             valor: p.__origem === "Simulação" ? valorSim(p) : valorProc(p),
             created_at: p.created_at,
           })),
@@ -2188,6 +2241,21 @@ export const runReport = createServerFn({ method: "POST" })
       if (!ids.length) return out;
       const { data } = await supabase.from("profiles").select("id,nome").in("id", ids);
       (data ?? []).forEach((p: any) => out.set(p.id, p.nome ?? "—"));
+      return out;
+    }
+
+    async function perfisUsuarios(
+      ids: string[],
+    ): Promise<Map<string, { nome: string; tipo: string | null }>> {
+      const out = new Map<string, { nome: string; tipo: string | null }>();
+      if (!ids.length) return out;
+      const { data } = await supabase
+        .from("profiles")
+        .select("id,nome,tipo_pessoa")
+        .in("id", ids);
+      (data ?? []).forEach((p: any) =>
+        out.set(p.id, { nome: p.nome ?? "—", tipo: p.tipo_pessoa ?? null }),
+      );
       return out;
     }
   });
