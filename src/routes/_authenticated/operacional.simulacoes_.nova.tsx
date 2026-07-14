@@ -137,7 +137,10 @@ function Pagina() {
       const next = { ...prev, [k]: v };
       if (k === "valor_imovel" || k === "valor_entrada" || k === "valor_financiamento") {
         const campo = k as CampoValor;
-        const outroAncora = ultimosEditados.filter((c) => c !== campo)[0];
+        // Só conta como âncora se o outro campo tem valor real (> 0).
+        // Um campo tocado e zerado não deve travar o cálculo pela invariante.
+        const outroAncora = ultimosEditados
+          .filter((c) => c !== campo && (next[c] as number) > 0)[0];
         const recalc = recomputarTerceiro(
           {
             valor_imovel: next.valor_imovel,
@@ -151,9 +154,11 @@ function Pagina() {
         next.valor_entrada = recalc.valor_entrada;
         next.valor_financiamento = recalc.valor_financiamento;
         // Atualiza histórico: o campo editado vira o mais recente; mantém apenas 2.
+        // Se o valor foi zerado, remove do histórico.
         setUltimosEditados((old) => {
           const semAtual = old.filter((c) => c !== campo);
-          return [campo, ...semAtual].slice(0, 2);
+          if ((v as number) > 0) return [campo, ...semAtual].slice(0, 2);
+          return semAtual;
         });
       }
       return next;
