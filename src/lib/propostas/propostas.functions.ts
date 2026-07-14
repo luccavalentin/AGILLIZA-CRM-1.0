@@ -32,6 +32,8 @@ export interface PropostaListaItem {
   created_at: string;
   responsavel_id: string | null;
   nome_responsavel: string | null;
+  imobiliaria_nome: string | null;
+  corretor_nome: string | null;
   bancos: PropostaBancoResumo[];
   deleted_at?: string | null;
   deleted_by?: string | null;
