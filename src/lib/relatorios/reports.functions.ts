@@ -1041,6 +1041,7 @@ export const runReport = createServerFn({ method: "POST" })
 
         const bancosFiltro = [...(filtros.bancos ?? []), filtros.banco].filter(Boolean) as string[];
         const buscaLc = [filtros.busca, filtros.cliente].filter(Boolean).join(" ").trim().toLowerCase();
+        const valorContrato = (p: any) => p.valor_financiamento_aprovado ?? p.valor_financiamento ?? 0;
         const naoVazio = (a?: string[]) => Array.isArray(a) && a.length > 0;
         const contemPessoa = (ids: string[] | undefined, ...vals: unknown[]) =>
           !naoVazio(ids) || vals.some((v) => typeof v === "string" && ids!.includes(v));
@@ -1072,8 +1073,8 @@ export const runReport = createServerFn({ method: "POST" })
           .filter((p) => contemPessoa(filtros.analistas, p.analista_id, p.usuario_responsavel_id))
           .filter((p) => contemPessoa(filtros.comerciais, p.comercial_id))
           .filter((p) => contemPessoa([...(filtros.corretores ?? []), ...(filtros.imobiliarias ?? [])], p.parceiro_id))
-          .filter((p) => filtros.valorMin == null || valorProc(p) >= filtros.valorMin!)
-          .filter((p) => filtros.valorMax == null || valorProc(p) <= filtros.valorMax!)
+          .filter((p) => filtros.valorMin == null || valorContrato(p) >= filtros.valorMin!)
+          .filter((p) => filtros.valorMax == null || valorContrato(p) <= filtros.valorMax!)
           .filter((p) => {
             if (!buscaLc) return true;
             const alvo = [
