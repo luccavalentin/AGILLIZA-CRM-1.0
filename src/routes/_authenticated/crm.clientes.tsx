@@ -764,3 +764,13 @@ function Pagina() {
     </div>
   );
 }
+
+function FilterField({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-1">
+      <label className="text-[11px] font-medium text-muted-foreground">{label}</label>
+      {children}
+    </div>
+  );
+}
+
