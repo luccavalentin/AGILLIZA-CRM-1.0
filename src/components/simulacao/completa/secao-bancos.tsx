@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import type { SimulacaoCompletaCtx } from "@/lib/simulacao/use-simulacao-completa";
 
 export function SecaoBancos({ ctx }: { ctx: SimulacaoCompletaCtx }) {
-  const { f, erros, bancos, ehBradesco, toggleBanco } = ctx;
+  const { f, erros, bancos, aceitaPrice, toggleBanco } = ctx;
 
   return (
     <section className="space-y-4">
