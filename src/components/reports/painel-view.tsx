@@ -224,9 +224,16 @@ export function PainelView({
                   setDe(d);
                   setAte(a);
                 }}
-                className="h-9 w-full sm:w-64"
+                className="h-9 w-full sm:w-72"
+                triggerClassName={
+                  modulo === "visao-geral"
+                    ? "border-white/20 bg-white/10 text-white hover:bg-white/15 hover:text-white [&_svg]:text-white/80"
+                    : undefined
+                }
+                numberOfMonths={2}
               />
             )}
+
           </>
         }
       />

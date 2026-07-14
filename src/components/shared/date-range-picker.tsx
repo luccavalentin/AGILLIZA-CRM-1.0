@@ -35,13 +35,17 @@ export function DateRangePicker({
   ate,
   onChange,
   className,
+  triggerClassName,
   placeholder = "Selecione o período",
+  numberOfMonths = 2,
 }: {
   de: string;
   ate: string;
   onChange: (de: string, ate: string) => void;
   className?: string;
+  triggerClassName?: string;
   placeholder?: string;
+  numberOfMonths?: number;
 }) {
   const [open, setOpen] = useState(false);
   const range: DateRange | undefined = de
@@ -61,6 +65,7 @@ export function DateRangePicker({
             "justify-start gap-2 font-normal",
             !de && "text-muted-foreground",
             className,
+            triggerClassName,
           )}
         >
           <CalendarIcon className="h-4 w-4 shrink-0 opacity-70" />
@@ -71,8 +76,8 @@ export function DateRangePicker({
         <Calendar
           mode="range"
           selected={range}
-          defaultMonth={parseISO(de)}
-          numberOfMonths={1}
+          defaultMonth={parseISO(de) ?? (numberOfMonths > 1 ? new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1) : undefined)}
+          numberOfMonths={numberOfMonths}
           onSelect={(r) => {
             const novoDe = r?.from ? toISO(r.from) : "";
             const novoAte = r?.to ? toISO(r.to) : "";
@@ -85,3 +90,4 @@ export function DateRangePicker({
     </Popover>
   );
 }
+
