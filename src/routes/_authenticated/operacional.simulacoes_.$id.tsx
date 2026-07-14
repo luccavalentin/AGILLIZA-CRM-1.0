@@ -256,10 +256,10 @@ function Pagina() {
             <DropdownMenuContent align="end" className="w-72">
               <DropdownMenuLabel>Extrato para o cliente</DropdownMenuLabel>
               <DropdownMenuItem
-                onClick={() => baixarSimulacaoDetalhadaPDF({ simulacao: s, bancos })}
+                onClick={() => setDetalhePdfAberto(true)}
                 disabled={bancos.length === 0}
               >
-                Simulação detalhada (todas as parcelas)
+                Simulação detalhada (escolher banco)
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
@@ -275,6 +275,13 @@ function Pagina() {
             onOpenChange={setPdfDialogAberto}
             simulacao={s}
             bancos={bancos}
+          />
+          <SelecionarBancosPdfDialog
+            open={detalhePdfAberto}
+            onOpenChange={setDetalhePdfAberto}
+            simulacao={s}
+            bancos={bancos}
+            modo="detalhada"
           />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
