@@ -84,6 +84,14 @@ function Pagina() {
     queryFn: () => listarBancosAtivos(),
   });
 
+  // Taxas reais médias dos últimos 90 dias (do que o banco vem devolvendo);
+  // substitui as taxas de referência estáticas na Simulação Rápida.
+  const { data: taxasReais } = useQuery({
+    queryKey: ["taxas-referencia-bancos"],
+    queryFn: () => taxasReferenciaBancos(),
+    staleTime: 1000 * 60 * 30,
+  });
+
   // Entrada sugerida padrão de 20% do valor do imóvel.
   const entradaSugerida = Math.round((w.valor_imovel || 0) * 0.2);
 
