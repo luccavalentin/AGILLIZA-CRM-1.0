@@ -323,7 +323,11 @@ function Acompanhar() {
             <p className="mb-3 text-sm font-semibold text-foreground">Resumo do status</p>
             <dl className="space-y-2.5 text-sm">
               <ResumoLinha icon={FileText} label="Nº da proposta" value={resumo?.numero_proposta ?? "—"} />
-              <ResumoLinha icon={Building2} label="Banco em análise" value={resumo?.banco ?? "—"} />
+              <ResumoLinha
+                icon={Building2}
+                label="Banco em análise"
+                value={resumo?.banco ? <BancoChip nome={resumo.banco} /> : "—"}
+              />
               <ResumoLinha icon={Home} label="Valor do imóvel" value={fmtBRL(resumo?.valor_imovel)} />
               <ResumoLinha icon={DollarSign} label="Valor solicitado" value={fmtBRL(resumo?.valor_solicitado)} />
               <ResumoLinha icon={Clock} label="Prazo do financiamento" value={resumo?.prazo ? `${resumo.prazo} meses` : "—"} />
