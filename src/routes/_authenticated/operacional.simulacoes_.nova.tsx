@@ -83,21 +83,53 @@ function Pagina() {
   // Entrada sugerida padrão de 20% do valor do imóvel.
   const entradaSugerida = Math.round((w.valor_imovel || 0) * 0.2);
 
+  // Percentual padrão de entrada (mercado SFH): 20% do imóvel.
+  const PCT_ENTRADA_PADRAO = 0.2;
+
   function set<K extends keyof WizardState>(k: K, v: WizardState[K]) {
     if (k === "valor_entrada") setEntradaTocada(true);
     setW((prev) => {
       const next = { ...prev, [k]: v };
-      // Sugere 20% de entrada automaticamente enquanto o usuário não editar o campo manualmente.
-      if (k === "valor_imovel" && !entradaTocada) {
-        next.valor_entrada = Math.round((next.valor_imovel || 0) * 0.2);
-      }
-      if (k === "valor_imovel" || k === "valor_entrada") {
+
+      // Regra 1: usuário editou o VALOR DO IMÓVEL.
+      // → se ainda não mexeu na entrada, aplica 20% automaticamente.
+      // → financiamento = imóvel − entrada.
+      if (k === "valor_imovel") {
+        if (!entradaTocada) {
+          next.valor_entrada = Math.round((next.valor_imovel || 0) * PCT_ENTRADA_PADRAO);
+        }
         next.valor_financiamento = Math.max(0, next.valor_imovel - next.valor_entrada);
       }
+
+      // Regra 2: usuário editou a ENTRADA.
+      // → se o imóvel ainda não foi informado, deriva imóvel = entrada / 20%
+      //   e financiamento = imóvel − entrada (regra de 5x a entrada).
+      // → se o imóvel já existe, mantém imóvel fixo e recalcula financiamento.
+      if (k === "valor_entrada") {
+        if (!prev.valor_imovel || prev.valor_imovel <= 0) {
+          const imovel = Math.round((next.valor_entrada || 0) / PCT_ENTRADA_PADRAO);
+          next.valor_imovel = imovel;
+          next.valor_financiamento = Math.max(0, imovel - next.valor_entrada);
+        } else {
+          next.valor_financiamento = Math.max(0, next.valor_imovel - next.valor_entrada);
+        }
+      }
+
+      // Regra 3: usuário editou o FINANCIAMENTO.
+      // → se o imóvel ainda não existe, deriva imóvel = financiamento / 80%
+      //   e entrada = 20% do imóvel.
+      // → se o imóvel existe, mantém imóvel fixo e recalcula entrada.
       if (k === "valor_financiamento") {
-        next.valor_entrada = Math.max(0, next.valor_imovel - next.valor_financiamento);
+        if (!prev.valor_imovel || prev.valor_imovel <= 0) {
+          const imovel = Math.round((next.valor_financiamento || 0) / (1 - PCT_ENTRADA_PADRAO));
+          next.valor_imovel = imovel;
+          next.valor_entrada = Math.max(0, imovel - next.valor_financiamento);
+        } else {
+          next.valor_entrada = Math.max(0, next.valor_imovel - next.valor_financiamento);
+        }
         setEntradaTocada(true);
       }
+
       return next;
     });
   }
