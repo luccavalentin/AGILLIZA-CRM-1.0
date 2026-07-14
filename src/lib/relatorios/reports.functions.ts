@@ -1441,9 +1441,22 @@ export const runReport = createServerFn({ method: "POST" })
               rows: breakdown2(andamento, nomeComercial, (p) => p.nome_banco, valorProc),
             },
             {
-              titulo: "Por Imobiliária / Corretor",
-              columns: colsBreak("Imobiliária / Corretor"),
-              rows: breakdown(andamento, nomeParceiro, valorProc),
+              titulo: "Por Imobiliária",
+              columns: colsBreak("Imobiliária"),
+              rows: breakdown(
+                andamento.filter((p) => perfilParceiro(p)?.tipo === "imobiliaria"),
+                nomeImobiliaria,
+                valorProc,
+              ),
+            },
+            {
+              titulo: "Por Corretor",
+              columns: colsBreak("Corretor"),
+              rows: breakdown(
+                andamento.filter((p) => perfilParceiro(p)?.tipo === "corretor"),
+                nomeCorretor,
+                valorProc,
+              ),
             },
             {
               titulo: "Por fase (status atual)",
