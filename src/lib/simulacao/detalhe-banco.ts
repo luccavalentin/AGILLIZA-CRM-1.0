@@ -332,6 +332,7 @@ export function extrairDetalheBanco(raw: unknown): DetalheBanco | null {
   return {
     taxaJurosAno: taxaAno,
     taxaJurosMes: taxaMes,
+    taxaNominalAno,
     cet,
     valorImovel: num(desc.propertyPrice) ?? num(r.valorImovel),
     valorFinanciamento: valorFin,
@@ -349,9 +350,15 @@ export function extrairDetalheBanco(raw: unknown): DetalheBanco | null {
       r.codigoIndexadorBanco || desc.indexer
         ? `Atualizável ${(r.codigoIndexadorBanco ?? desc.indexer).toString().toUpperCase()}`
         : null,
-    primeiraParcela: parcelas.length ? parcelas[0].parcela : num(r.valorParcelaBanco),
-    ultimaParcela: parcelas.length ? parcelas[parcelas.length - 1].parcela : null,
+    // Preferir a parcela real informada pelo banco (Bradesco devolve
+    // valorPrimeiraPrestacaoComSeguroTac / valorUltimaPrestacao) sobre a
+    // estimativa local.
+    primeiraParcela: primeiraParcelaApi ?? (parcelas.length ? parcelas[0].parcela : num(r.valorParcelaBanco)),
+    ultimaParcela: ultimaParcelaApi ?? (parcelas.length ? parcelas[parcelas.length - 1].parcela : null),
     somatorioParcelas: somatorio,
+    seguroMensal,
+    taxaAdminMensal,
+    rendaMinimaExigida,
     parcelasEstimadas: estimadas,
     parcelas,
   };
