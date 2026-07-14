@@ -141,7 +141,7 @@ function Pagina() {
                   <div className="flex flex-col items-center gap-3 py-12 text-center">
                     <Percent className="h-8 w-8 text-muted-foreground" />
                     <p className="text-sm text-muted-foreground">
-                      Nenhuma comissão calculada ainda.
+                      Nenhum repasse calculado ainda.
                     </p>
                   </div>
                 </TableCell>
