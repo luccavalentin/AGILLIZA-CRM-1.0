@@ -736,17 +736,14 @@ function Pagina() {
 
 
       {isLoading ? (
-        <div className="no-scrollbar -mx-3 overflow-x-auto overscroll-x-contain px-3 pb-4 sm:-mx-6 sm:px-6">
-
-          <div className="grid grid-flow-col auto-cols-[17rem] gap-3 sm:auto-cols-[19rem] lg:auto-cols-[20rem] lg:gap-4">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 lg:gap-4">
           {Array.from({ length: 8 }).map((_, i) => (
             <Skeleton key={i} className="h-96 w-full rounded-2xl" />
           ))}
-          </div>
         </div>
       ) : (
-        <div className="no-scrollbar -mx-3 overflow-x-auto overscroll-x-contain px-3 pb-4 sm:-mx-6 sm:px-6">
-        <div className="grid grid-flow-col auto-cols-[17rem] gap-3 sm:auto-cols-[19rem] lg:auto-cols-[20rem] lg:gap-4">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 lg:gap-4">
+
           {dadosFiltrados.map((stage, idx) => {
             const temClientes = stage.clientes.length > 0;
             const ehAlvo = alvo === stage.codigo && arrasto?.origem !== stage.codigo;
