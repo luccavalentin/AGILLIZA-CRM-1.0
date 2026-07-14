@@ -281,7 +281,7 @@ export const listarChatCliente = createServerFn({ method: "GET" })
     const { data: rows, error } = await supabase
       .from("cliente_app_mensagens")
       .select(
-        "id, remetente_tipo, remetente_id, mensagem, anexo_url, lida_em, criada_em, editada_em, excluida_em, responde_a",
+        "id, remetente_tipo, remetente_id, mensagem, anexo_url, lida_em, criada_em, editada_em, excluida_em, responde_a, interna",
       )
       .eq("cliente_id", data.cliente_id)
       .eq("atendente_id", atendente)
