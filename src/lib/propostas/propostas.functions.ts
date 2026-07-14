@@ -33,6 +33,10 @@ export interface PropostaListaItem {
   responsavel_id: string | null;
   nome_responsavel: string | null;
   bancos: PropostaBancoResumo[];
+  deleted_at?: string | null;
+  deleted_by?: string | null;
+  deleted_motivo?: string | null;
+  nome_excluidor?: string | null;
 }
 
 export interface PropostaCompleta {
