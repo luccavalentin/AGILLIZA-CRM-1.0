@@ -17,6 +17,15 @@ import {
   IdCard,
   X,
   Printer,
+  Cloud,
+  Trash2,
+  LayoutGrid,
+  List,
+  SlidersHorizontal,
+  Shield,
+  Lock,
+  FolderKanban,
+  Users2,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -35,6 +44,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { DocumentosTab } from "@/components/crm/documentos-tab";
@@ -46,7 +61,7 @@ import {
 } from "@/lib/crm/documentos-gerais.functions";
 import { imprimirFichaPDF } from "@/lib/crm/ficha-pdf";
 import { GerenciadorArquivos } from "@/components/documentos/gerenciador-arquivos";
-import { FolderKanban, Users2 } from "lucide-react";
+
 
 const brl = (n: number | null | undefined) =>
   n == null ? "—" : n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
