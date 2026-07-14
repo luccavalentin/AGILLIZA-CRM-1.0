@@ -17,8 +17,13 @@ import {
   BadgeCheck,
   XCircle,
   FileSignature,
+  Wallet,
+  TrendingUp,
+  Percent,
+  Target,
   type LucideIcon,
 } from "lucide-react";
+
 import { supabase } from "@/integrations/supabase/client";
 import {
   PanelHeader,
@@ -65,12 +70,17 @@ function linkParaMetrica(label: string): string | undefined {
 function iconeParaMetrica(label: string): LucideIcon | undefined {
   const l = label.toLowerCase();
   if (l.includes("simula")) return Calculator;
+  if (l.includes("volume")) return Wallet;
+  if (l.includes("ticket")) return TrendingUp;
+  if (l.includes("convers")) return Percent;
+  if (l.includes("meta")) return Target;
   if (l.includes("propost")) return Send;
   if (l.includes("aprovad")) return BadgeCheck;
   if (l.includes("reprovad") || l.includes("recusad")) return XCircle;
   if (l.includes("contrato")) return FileSignature;
   return undefined;
 }
+
 
 /** Painel de monitoramento reutilizável (visão-geral / operacional). */
 export function PainelView({
