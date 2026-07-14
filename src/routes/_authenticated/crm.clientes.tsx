@@ -103,13 +103,27 @@ function Pagina() {
       </div>
 
       <form
-        className="grid grid-cols-[minmax(0,1fr)_auto] gap-2"
+        className="grid grid-cols-1 gap-2 sm:grid-cols-[auto_minmax(0,1fr)_auto]"
         onSubmit={(e) => {
           e.preventDefault();
           setPagina(1);
           setBusca(q);
         }}
       >
+        <Tabs
+          value={escopo}
+          onValueChange={(v) => {
+            const val = v as "minhas" | "geral";
+            setEscopo(val);
+            setPagina(1);
+            if (typeof window !== "undefined") localStorage.setItem("clientes:escopo", val);
+          }}
+        >
+          <TabsList className="h-11 rounded-xl">
+            <TabsTrigger value="minhas" className="rounded-lg">Minhas</TabsTrigger>
+            <TabsTrigger value="geral" className="rounded-lg">Gerais</TabsTrigger>
+          </TabsList>
+        </Tabs>
         <div className="relative flex-1 sm:max-w-md">
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
