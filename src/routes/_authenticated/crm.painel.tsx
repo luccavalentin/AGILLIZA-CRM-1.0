@@ -197,6 +197,9 @@ function Pagina() {
   function limparTodosFiltros() {
     setPeriodo("todos");
     setRespFiltro("todos");
+    setAnalistaFiltro("todos");
+    setCorretorFiltro("todos");
+    setImobFiltro("todos");
     setDesde("");
     setAte("");
     setBusca("");
