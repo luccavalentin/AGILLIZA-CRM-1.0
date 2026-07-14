@@ -283,7 +283,7 @@ function Pagina() {
       id: "simulacoes",
       label: "Simulações",
       valor: String(kpiTotal),
-      icon: ListChecks,
+      icon: Calculator,
       detalhe: (
         <DetalheSimulacoes
           descricao="Todas as simulações do filtro atual."
