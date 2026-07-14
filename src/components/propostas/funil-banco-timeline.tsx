@@ -64,18 +64,8 @@ export function FunilBancoTimeline({
     !reprovado && (posBifurcacaoAlcancada || (etapaBifurcacao?.concluida ?? false));
   const decisaoPendente = !reprovado && !aprovado;
 
-  // Última sincronização = maior atualizada_em de qualquer etapa.
-  const ultimaSync = lista
-    .map((e) => e.atualizada_em)
-    .filter((v): v is string => !!v)
-    .sort()
-    .pop();
 
-  // Etapa em andamento (para "Tempo em etapa").
-  const emAndamentoEtapa = lista.find((e) => e.ativa && !e.concluida);
-  const tempoEmEtapa = emAndamentoEtapa?.atualizada_em
-    ? formatarDuracao(emAndamentoEtapa.atualizada_em)
-    : null;
+
 
   return (
     <div className="overflow-hidden rounded-2xl border border-border bg-card">
