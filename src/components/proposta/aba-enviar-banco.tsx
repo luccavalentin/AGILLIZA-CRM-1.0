@@ -216,11 +216,15 @@ export function AbaEnviarBanco({
     }
   }
 
-  async function enviarAoBanco() {
-    setEnviando(true);
+  async function enviarAoBanco(documentoIds?: string[]) {
+    const individual = Array.isArray(documentoIds) && documentoIds.length === 1;
+    if (individual) setEnviandoId(documentoIds![0]);
+    else setEnviando(true);
     setResultado(null);
     try {
-      const r = await enviar({ data: { proposta_id: propostaId } });
+      const r = await enviar({
+        data: { proposta_id: propostaId, documento_ids: documentoIds },
+      });
       setResultado(r);
       if (r.enviados > 0)
         toast.success(`${r.enviados} documento(s) enviado(s) ao banco.`);
@@ -228,10 +232,12 @@ export function AbaEnviarBanco({
         toast.warning(`${r.erros.length} documento(s) não puderam ser enviados.`);
       if (r.enviados === 0 && r.erros.length === 0)
         toast.info("Nenhum documento foi enviado.");
+      recarregar();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Falha ao enviar ao banco.");
     } finally {
       setEnviando(false);
+      setEnviandoId(null);
     }
   }
 
