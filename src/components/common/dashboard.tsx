@@ -80,22 +80,32 @@ const toneText: Record<Tone, string> = {
   neutral: "text-muted-foreground",
 };
 
-/** Wash de fundo sutil por tom (usa a própria cor semântica via color-mix). */
-const toneWash: Record<Tone, string> = {
-  brand: "color-mix(in oklab, var(--primary) 7%, transparent)",
-  success: "color-mix(in oklab, var(--success) 8%, transparent)",
-  warning: "color-mix(in oklab, var(--warning) 9%, transparent)",
-  danger: "color-mix(in oklab, var(--destructive) 8%, transparent)",
-  neutral: "transparent",
+/** Cor CSS bruta do tom, usada em inline styles (borda esquerda tonal). */
+const toneVar: Record<Tone, string> = {
+  brand: "var(--primary)",
+  success: "var(--success)",
+  warning: "var(--warning)",
+  danger: "var(--destructive)",
+  neutral: "var(--muted-foreground)",
 };
 
-const toneGlow: Record<Tone, string> = {
-  brand: "color-mix(in oklab, var(--primary) 22%, transparent)",
-  success: "color-mix(in oklab, var(--success) 24%, transparent)",
-  warning: "color-mix(in oklab, var(--warning) 26%, transparent)",
-  danger: "color-mix(in oklab, var(--destructive) 24%, transparent)",
-  neutral: "color-mix(in oklab, var(--muted-foreground) 18%, transparent)",
+/** Wash de fundo sutil por tom (usa a própria cor semântica via color-mix). */
+const toneWash: Record<Tone, string> = {
+  brand: "color-mix(in oklab, var(--primary) 8%, transparent)",
+  success: "color-mix(in oklab, var(--success) 9%, transparent)",
+  warning: "color-mix(in oklab, var(--warning) 10%, transparent)",
+  danger: "color-mix(in oklab, var(--destructive) 9%, transparent)",
+  neutral: "color-mix(in oklab, var(--muted-foreground) 6%, transparent)",
 };
+
+const toneIconBg: Record<Tone, string> = {
+  brand: "color-mix(in oklab, var(--primary) 12%, transparent)",
+  success: "color-mix(in oklab, var(--success) 14%, transparent)",
+  warning: "color-mix(in oklab, var(--warning) 16%, transparent)",
+  danger: "color-mix(in oklab, var(--destructive) 14%, transparent)",
+  neutral: "color-mix(in oklab, var(--muted-foreground) 10%, transparent)",
+};
+
 
 /** Cabeçalho da página de painel: eyebrow, título, descrição, chip de atualização e ações. */
 export function PanelHeader({
