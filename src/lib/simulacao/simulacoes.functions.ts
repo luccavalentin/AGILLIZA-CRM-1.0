@@ -592,14 +592,28 @@ export { humanizarErroBanco };
 export const excluirSimulacao = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+/** Exclui (logicamente) uma simulação. */
+export const excluirSimulacao = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({ id: z.string().uuid(), motivo: z.string().max(500).optional() }).parse(d),
+  )
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
-    const { supabase } = context;
+    const { supabase, userId } = context;
     const { data: sim } = await supabase
       .from("simulacoes")
       .select("cliente_id")
       .eq("id", data.id)
       .maybeSingle();
-    const { error } = await supabase.from("simulacoes").delete().eq("id", data.id);
+    const { error } = await supabase
+      .from("simulacoes")
+      .update({
+        deleted_at: new Date().toISOString(),
+        deleted_by: userId,
+        deleted_motivo: data.motivo ?? null,
+      })
+      .eq("id", data.id)
+      .is("deleted_at", null);
     if (error) throw error;
     try {
       const { recuarEsteiraSeOrfao } = await import("@/lib/crm/clientes.functions");
@@ -607,6 +621,20 @@ export const excluirSimulacao = createServerFn({ method: "POST" })
     } catch {
       /* não bloqueia a exclusão */
     }
+    return { ok: true };
+  });
+
+/** Restaura uma simulação excluída logicamente. */
+export const restaurarSimulacao = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }): Promise<{ ok: true }> => {
+    const { supabase } = context;
+    const { error } = await supabase
+      .from("simulacoes")
+      .update({ deleted_at: null, deleted_by: null, deleted_motivo: null })
+      .eq("id", data.id);
+    if (error) throw error;
     return { ok: true };
   });
 
