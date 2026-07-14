@@ -51,7 +51,7 @@ interface WizardState {
   valor_imovel: number;
   valor_entrada: number;
   valor_financiamento: number;
-  possui_imovel_escolhido: boolean | null;
+  
   data_nascimento: string;
   prazo_meses: number;
   renda_familiar: number;
@@ -65,7 +65,7 @@ function Pagina() {
     valor_imovel: 0,
     valor_entrada: 0,
     valor_financiamento: 0,
-    possui_imovel_escolhido: null,
+    
     data_nascimento: "",
     prazo_meses: 360,
     renda_familiar: 0,
@@ -408,41 +408,6 @@ function Pagina() {
         </div>
 
 
-        <div className="space-y-2 md:col-span-2">
-          <Label>Você já possui o imóvel escolhido?</Label>
-          <RadioGroup
-            className="grid grid-cols-1 gap-2 sm:grid-cols-2"
-            value={
-              w.possui_imovel_escolhido == null ? "" : w.possui_imovel_escolhido ? "sim" : "nao"
-            }
-            onValueChange={(v) => set("possui_imovel_escolhido", v === "sim")}
-          >
-            <label
-              htmlFor="pie-sim"
-              className={cn(
-                "flex cursor-pointer items-center gap-2.5 rounded-lg border p-3 text-sm transition-colors",
-                w.possui_imovel_escolhido === true
-                  ? "border-primary/50 bg-primary/5"
-                  : "border-border hover:bg-muted/40",
-              )}
-            >
-              <RadioGroupItem value="sim" id="pie-sim" />
-              <span className="font-normal">Sim, já tenho um imóvel escolhido</span>
-            </label>
-            <label
-              htmlFor="pie-nao"
-              className={cn(
-                "flex cursor-pointer items-center gap-2.5 rounded-lg border p-3 text-sm transition-colors",
-                w.possui_imovel_escolhido === false
-                  ? "border-primary/50 bg-primary/5"
-                  : "border-border hover:bg-muted/40",
-              )}
-            >
-              <RadioGroupItem value="nao" id="pie-nao" />
-              <span className="font-normal">Não, ainda estou pesquisando</span>
-            </label>
-          </RadioGroup>
-        </div>
 
         <div className="grid grid-cols-1 gap-x-5 gap-y-4 sm:grid-cols-2 md:col-span-2">
           <div className="space-y-1.5">
