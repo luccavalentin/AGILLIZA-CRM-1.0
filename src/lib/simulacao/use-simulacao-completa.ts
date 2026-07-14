@@ -682,11 +682,15 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
 
       router.navigate({ to: "/operacional/simulacoes/$id", params: { id } });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Não foi possível criar a simulação.");
+      const msg = e instanceof Error ? e.message : null;
+      toast.error(
+        msg ?? (modoProposta ? "Não foi possível criar a proposta." : "Não foi possível criar a simulação."),
+      );
       setEnviando(false);
       setConcluidos(0);
     }
   }
+
 
   return {
     router,
