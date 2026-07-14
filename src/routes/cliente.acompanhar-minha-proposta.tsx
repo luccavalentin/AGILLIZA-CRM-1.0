@@ -191,7 +191,7 @@ function Acompanhar() {
                           className={cn(
                             "flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-bold ring-2 transition sm:h-8 sm:w-8 sm:text-xs",
                             done && "bg-white text-primary ring-white",
-                            curr && "bg-white text-primary ring-white shadow-lg shadow-black/20 animate-pulse",
+                            curr && "bg-red-500 text-white ring-red-300 shadow-lg shadow-red-500/50 animate-pulse",
                             !done && !curr && "bg-white/10 text-white/70 ring-white/30",
                           )}
                         >
