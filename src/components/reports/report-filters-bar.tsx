@@ -202,19 +202,19 @@ export function ReportFiltersBar({
           />
         )}
 
-        {!!produtos?.length && (
+        {!!produtoOpts.length && (
           <Select
             value={filtros.produto ?? "__all"}
             onValueChange={(v) => set({ produto: v === "__all" ? undefined : v })}
           >
-            <SelectTrigger className="h-9 w-44">
+            <SelectTrigger className="h-9 w-52">
               <SelectValue placeholder="Produto" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="__all">Todos os produtos</SelectItem>
-              {produtos.map((p) => (
-                <SelectItem key={p} value={p}>
-                  {p}
+              {produtoOpts.map((p) => (
+                <SelectItem key={p.value} value={p.value}>
+                  {p.label}
                 </SelectItem>
               ))}
             </SelectContent>
