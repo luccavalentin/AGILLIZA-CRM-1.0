@@ -99,7 +99,16 @@ const opcoes = (m: Record<string, string>) =>
   Object.entries(m).map(([value, label]) => ({ value, label }));
 
 /** Opções de status do filtro por código de relatório. */
+/** Status ocultos no filtro (transientes, técnicos ou redundantes com outros). */
+const STATUS_PROPOSTA_OCULTOS = new Set([
+  "rascunho",
+  "enviada_banco",
+  "registrado",
+  "erro_envio",
+]);
 function statusOpcoesPorCodigo(codigo: string): { value: string; label: string }[] | undefined {
+  const filtrarPropostas = () =>
+    opcoes(STATUS_PROPOSTA_LABEL).filter((o) => !STATUS_PROPOSTA_OCULTOS.has(o.value));
   switch (codigo) {
     case "consolidado":
     case "painel-geral":
@@ -107,7 +116,7 @@ function statusOpcoesPorCodigo(codigo: string): { value: string; label: string }
     case "gerencial":
     case "propostas":
     case "operacionais":
-      return opcoes(STATUS_PROPOSTA_LABEL);
+      return filtrarPropostas();
     case "simulacoes":
       return opcoes(STATUS_SIMULACAO_LABEL);
     case "demandas":
@@ -481,12 +490,17 @@ export const runReport = createServerFn({ method: "POST" })
     }
 
     async function relComerciais(): Promise<ReportResult> {
-      const props = await fetchAll(
-        "propostas",
-        "id,status,valor_financiamento,valor_financiamento_aprovado,nome_banco,usuario_responsavel_id,created_at",
-        "created_at",
-        "usuario_responsavel_id",
-      );
+      const [props, sims] = await Promise.all([
+        fetchAll(
+          "propostas",
+          "id,status,valor_financiamento,valor_financiamento_aprovado,nome_banco,usuario_responsavel_id,created_at",
+          "created_at",
+          "usuario_responsavel_id",
+        ),
+        fetchAll("simulacoes", "id,status,created_at", "created_at", "usuario_responsavel_id", {
+          statusCol: false,
+        }),
+      ]);
       const enviadas = props.filter((p) => p.status !== "rascunho");
       const aprovadas = props.filter((p) =>
         ["credito_aprovado", "contrato_emitido", "registrado"].includes(p.status),
@@ -522,6 +536,7 @@ export const runReport = createServerFn({ method: "POST" })
         descricao: "Desempenho de produção por período e responsável.",
         modulo: "Comercial",
         kpis: [
+          { label: "Simulações", valor: int(sims.length), tone: "neutral" },
           { label: "Propostas", valor: int(enviadas.length), tone: "neutral" },
           { label: "Taxa de aprovação", valor: pct(taxa), tone: "success" },
           { label: "Ticket médio", valor: brl(ticket), tone: "brand" },
