@@ -1734,7 +1734,7 @@ export interface UsuarioParceiroBanco {
 
 export async function listarUsuariosParceirosImpl(): Promise<UsuarioParceiroBanco[]> {
   try {
-    const resp = await chamarIntegracao<any>("/usuarios-parceiros", "GET");
+    const resp = await chamarIntegracao<any>("/usuarios-parceiros", "GET", undefined, {});
     const arr: any[] = Array.isArray(resp) ? resp : (resp?.data ?? resp?.usuarios ?? []);
     return (arr ?? []).map((u) => ({
       idUsuarioParceiro: Number(u.idUsuarioParceiro),
