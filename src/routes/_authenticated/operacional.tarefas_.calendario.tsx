@@ -68,7 +68,22 @@ function Pagina() {
         </Button>
       </div>
 
+      <Tabs
+        value={escopo}
+        onValueChange={(v) => {
+          const val = v as "todas" | "minhas";
+          setEscopo(val);
+          if (typeof window !== "undefined") localStorage.setItem("tarefas:escopo", val);
+        }}
+      >
+        <TabsList className="h-10 rounded-xl">
+          <TabsTrigger value="minhas" className="rounded-lg">Minhas</TabsTrigger>
+          <TabsTrigger value="todas" className="rounded-lg">Gerais</TabsTrigger>
+        </TabsList>
+      </Tabs>
+
       <NavegacaoCalendario ref={ref} hoje={hoje} onChange={setRef} />
+
 
       <GradeCalendario
         ref={ref}
