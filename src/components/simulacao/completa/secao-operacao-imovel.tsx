@@ -159,12 +159,21 @@ export function SecaoOperacaoImovel({ ctx }: { ctx: SimulacaoCompletaCtx }) {
 
 
       <div className="rounded-md border border-primary/20 bg-primary/5 p-3">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex-1 min-w-[220px]">
-            <p className="text-sm font-medium text-foreground">Simular pelo valor da parcela</p>
-            <p className="text-xs text-muted-foreground">
-              Informe a parcela desejada — o sistema ajusta automaticamente imóvel, entrada e financiamento.
-            </p>
+      <div className="group relative overflow-hidden rounded-lg border border-primary/15 bg-gradient-to-br from-primary/[0.04] via-primary/[0.02] to-transparent p-4 transition-colors hover:border-primary/25">
+        <div className="pointer-events-none absolute inset-y-0 left-0 w-0.5 bg-primary/40" />
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex flex-1 min-w-[220px] items-start gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+              <Calculator className="h-4 w-4" strokeWidth={2.25} />
+            </div>
+            <div className="space-y-0.5">
+              <p className="text-sm font-semibold tracking-tight text-foreground">
+                Simular pelo valor da parcela
+              </p>
+              <p className="text-xs leading-relaxed text-muted-foreground">
+                Informe a parcela desejada e o sistema ajusta automaticamente imóvel, entrada e financiamento.
+              </p>
+            </div>
           </div>
           <div className="w-full sm:w-56">
             <CurrencyInput
@@ -178,6 +187,7 @@ export function SecaoOperacaoImovel({ ctx }: { ctx: SimulacaoCompletaCtx }) {
           </div>
         </div>
       </div>
+
 
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
