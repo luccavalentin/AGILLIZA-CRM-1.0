@@ -1564,3 +1564,194 @@ export async function enviarDocumentosBancoImpl({
 
   return { enviados: sucesso.length, total: docs.length, sucesso, erros };
 }
+
+/* =========================================================================
+ * Gestão de participantes (proponentes/vendedores) da oportunidade
+ * -------------------------------------------------------------------------
+ * Endpoints do provedor:
+ *   POST   /oportunidade/{id}/participante          — incluir novo
+ *   DELETE /oportunidade/{idOportunidade}/participante/{id} — remover
+ *   GET    /usuarios-parceiros                       — listar usuários parceiros
+ * ========================================================================= */
+
+function soDigitosStr(v?: string | null): string | undefined {
+  if (!v) return undefined;
+  const s = String(v).replace(/\D+/g, "");
+  return s.length ? s : undefined;
+}
+
+export interface ParticipantePayload {
+  nomeParticipante: string;
+  cpfCnpj: string;
+  tipoQualificacao?: "CO" | "VD" | "TI" | "CJ" | string; // Comprador / Vendedor / Titular / Cônjuge
+  tipoPessoa?: "F" | "J";
+  tipoSituacao?: "A" | "I";
+  dataNascimento?: string;
+  nomeMae?: string;
+  tipoSexo?: "M" | "F";
+  tipoEstadoCivil?: string;
+  tipoRegimeCasamento?: string;
+  tipoDocumentoIdentidade?: "RG" | "CNH";
+  numeroDocumento?: string;
+  dataExpedicao?: string;
+  orgaoExpedidor?: string;
+  ufExpedicao?: string;
+  nomeProfissao?: string;
+  nomeEmpresaProfissao?: string;
+  renda?: number;
+  email?: string;
+  celular?: string;
+  cep?: string;
+  logradouro?: string;
+  numeroLogradouro?: string;
+  complementoLogradouro?: string;
+  bairro?: string;
+  municipio?: string;
+  uf?: string;
+  utilizaFgts?: "S" | "N";
+  fgAutorizacaoDados?: boolean;
+  // Empresa (PJ)
+  tipoEmpresa?: string;
+  dataRegistroEmpresa?: string;
+  faturamentoEmpresa?: number;
+  patrimonioLiquidoEmpresa?: number;
+  capitalSocialEmpresa?: number;
+  // Cônjuge
+  nomeConjuge?: string;
+  cpfConjuge?: string;
+  dataNascimentoConjuge?: string;
+  tipoEstadoCivilConjuge?: string;
+  tipoDocumentoIdentidadeConjuge?: string;
+  numeroDocumentoConjuge?: string;
+  dataExpedicaoConjuge?: string;
+  orgaoExpedidorConjuge?: string;
+  ufExpedicaoConjuge?: string;
+  nomeProfissaoConjuge?: string;
+  rendaConjuge?: number;
+  nomeEmpresaProfissaoConjuge?: string;
+  tipoSexoConjuge?: string;
+}
+
+export async function adicionarParticipanteImpl({
+  propostaId,
+  participante,
+  supabase,
+}: {
+  propostaId: string;
+  participante: ParticipantePayload;
+  supabase: SupabaseClient<any, any, any>;
+}): Promise<{ idParticipante: number | null }> {
+  const { data: prop } = await supabase
+    .from("propostas")
+    .select("homefin_id_oportunidade, simulacao_id, correspondente_id")
+    .eq("id", propostaId)
+    .maybeSingle();
+  if (!prop?.homefin_id_oportunidade) {
+    throw new Error("Proposta sem oportunidade vinculada.");
+  }
+  const cpfCnpj = soDigitosStr(participante.cpfCnpj);
+  if (!cpfCnpj) throw new Error("CPF/CNPJ obrigatório para incluir participante.");
+  const payload = {
+    tipoSituacao: participante.tipoSituacao ?? "A",
+    tipoQualificacao: participante.tipoQualificacao ?? "CO",
+    tipoPessoa: participante.tipoPessoa ?? (cpfCnpj.length > 11 ? "J" : "F"),
+    ...participante,
+    cpfCnpj,
+    celular: soDigitosStr(participante.celular),
+    cep: soDigitosStr(participante.cep),
+    fgAutorizacaoDados: participante.fgAutorizacaoDados ?? true,
+  };
+  try {
+    const resp = await chamarIntegracao<any>(
+      `/oportunidade/${prop.homefin_id_oportunidade}/participante`,
+      "POST",
+      payload,
+      {
+        simulacao_id: prop.simulacao_id,
+        proposta_id: propostaId,
+        correspondente_id: prop.correspondente_id,
+      },
+    );
+    const idParticipante =
+      Number(resp?.idParticipante ?? resp?.data?.idParticipante ?? resp?.id ?? 0) || null;
+    return { idParticipante };
+  } catch (e) {
+    if (e instanceof IntegracaoBancariaError) {
+      throw new Error(sanitizarMensagemErro(e.message));
+    }
+    throw e;
+  }
+}
+
+export async function removerParticipanteImpl({
+  propostaId,
+  idParticipante,
+  supabase,
+}: {
+  propostaId: string;
+  idParticipante: number;
+  supabase: SupabaseClient<any, any, any>;
+}): Promise<void> {
+  const { data: prop } = await supabase
+    .from("propostas")
+    .select("homefin_id_oportunidade, simulacao_id, correspondente_id")
+    .eq("id", propostaId)
+    .maybeSingle();
+  if (!prop?.homefin_id_oportunidade) {
+    throw new Error("Proposta sem oportunidade vinculada.");
+  }
+  try {
+    await chamarIntegracao<any>(
+      `/oportunidade/${prop.homefin_id_oportunidade}/participante/${idParticipante}`,
+      "DELETE",
+      undefined,
+      {
+        simulacao_id: prop.simulacao_id,
+        proposta_id: propostaId,
+        correspondente_id: prop.correspondente_id,
+      },
+    );
+  } catch (e) {
+    if (e instanceof IntegracaoBancariaError) {
+      throw new Error(sanitizarMensagemErro(e.message));
+    }
+    throw e;
+  }
+}
+
+export interface UsuarioParceiroBanco {
+  idUsuarioParceiro: number;
+  nomeUsuarioParceiro: string;
+  cpfCnpj: string | null;
+  nomeProprietario: string | null;
+  emailProprietario: string | null;
+  celularProprietario: string | null;
+  nomeFaturamento: string | null;
+  emailFaturamento: string | null;
+  celularFaturamento: string | null;
+  tipoSituacao: "A" | "I" | string;
+}
+
+export async function listarUsuariosParceirosImpl(): Promise<UsuarioParceiroBanco[]> {
+  try {
+    const resp = await chamarIntegracao<any>("/usuarios-parceiros", "GET", undefined, {});
+    const arr: any[] = Array.isArray(resp) ? resp : (resp?.data ?? resp?.usuarios ?? []);
+    return (arr ?? []).map((u) => ({
+      idUsuarioParceiro: Number(u.idUsuarioParceiro),
+      nomeUsuarioParceiro: String(u.nomeUsuarioParceiro ?? ""),
+      cpfCnpj: u.cpfCnpj ?? null,
+      nomeProprietario: u.nomeProprietario ?? null,
+      emailProprietario: u.emailProprietario ?? null,
+      celularProprietario: u.celularProprietario ?? null,
+      nomeFaturamento: u.nomeFaturamento ?? null,
+      emailFaturamento: u.emailFaturamento ?? null,
+      celularFaturamento: u.celularFaturamento ?? null,
+      tipoSituacao: u.tipoSituacao ?? "A",
+    }));
+  } catch (e) {
+    if (e instanceof IntegracaoBancariaError) {
+      throw new Error(sanitizarMensagemErro(e.message));
+    }
+    throw e;
+  }
+}

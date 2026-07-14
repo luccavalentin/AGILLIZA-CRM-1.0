@@ -1746,3 +1746,90 @@ export const vincularClienteAProposta = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+
+/** ===== Participantes da oportunidade (provedor bancário) ===== */
+const participanteSchema = z.object({
+  proposta_id: z.string().uuid(),
+  nomeParticipante: z.string().trim().min(2).max(120),
+  cpfCnpj: z.string().trim().min(11).max(20),
+  tipoQualificacao: z.string().trim().max(4).optional(),
+  tipoPessoa: z.enum(["F", "J"]).optional(),
+  dataNascimento: z.string().optional(),
+  nomeMae: z.string().trim().max(120).optional(),
+  tipoSexo: z.enum(["M", "F"]).optional(),
+  tipoEstadoCivil: z.string().trim().max(4).optional(),
+  tipoRegimeCasamento: z.string().trim().max(4).optional(),
+  tipoDocumentoIdentidade: z.enum(["RG", "CNH"]).optional(),
+  numeroDocumento: z.string().trim().max(30).optional(),
+  dataExpedicao: z.string().optional(),
+  orgaoExpedidor: z.string().trim().max(20).optional(),
+  ufExpedicao: z.string().trim().max(2).optional(),
+  nomeProfissao: z.string().trim().max(120).optional(),
+  nomeEmpresaProfissao: z.string().trim().max(120).optional(),
+  renda: z.number().nonnegative().optional(),
+  email: z.string().email().optional(),
+  celular: z.string().trim().max(20).optional(),
+  cep: z.string().trim().max(9).optional(),
+  logradouro: z.string().trim().max(200).optional(),
+  numeroLogradouro: z.string().trim().max(20).optional(),
+  complementoLogradouro: z.string().trim().max(80).optional(),
+  bairro: z.string().trim().max(80).optional(),
+  municipio: z.string().trim().max(80).optional(),
+  uf: z.string().trim().max(2).optional(),
+  utilizaFgts: z.enum(["S", "N"]).optional(),
+});
+
+export const adicionarParticipanteProposta = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => participanteSchema.parse(data))
+  .handler(async ({ context, data }) => {
+    const { supabase } = context;
+    const { adicionarParticipanteImpl } = await import("./enviar.server");
+    const { proposta_id, ...participante } = data;
+    return await adicionarParticipanteImpl({
+      propostaId: proposta_id,
+      participante,
+      supabase,
+    });
+  });
+
+export const removerParticipanteProposta = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z
+      .object({
+        proposta_id: z.string().uuid(),
+        idParticipante: z.number().int().positive(),
+      })
+      .parse(data),
+  )
+  .handler(async ({ context, data }) => {
+    const { supabase } = context;
+    const { removerParticipanteImpl } = await import("./enviar.server");
+    await removerParticipanteImpl({
+      propostaId: data.proposta_id,
+      idParticipante: data.idParticipante,
+      supabase,
+    });
+    return { ok: true };
+  });
+
+/** Listagem de usuários parceiros do provedor bancário (admin/gestor). */
+export const listarUsuariosParceiros = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase, userId } = context;
+    const { data: isAdmin } = await supabase.rpc("has_role", {
+      _user_id: userId,
+      _role: "admin" as any,
+    });
+    const { data: isGestor } = await supabase.rpc("has_role", {
+      _user_id: userId,
+      _role: "gestor" as any,
+    });
+    if (!isAdmin && !isGestor) {
+      throw new Error("Acesso restrito.");
+    }
+    const { listarUsuariosParceirosImpl } = await import("./enviar.server");
+    return await listarUsuariosParceirosImpl();
+  });
