@@ -300,6 +300,28 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
     });
   }
 
+  /**
+   * Preenche imóvel + entrada a partir do valor a financiar (lógica inversa).
+   * valorImóvel = financiamento / LTV; entrada = imóvel - financiamento.
+   */
+  function aplicarPorFinanciamento(valorFinanciamento: number) {
+    const fin = Math.max(0, Number(valorFinanciamento) || 0);
+    if (fin <= 0) {
+      setEntradaTocada(true);
+      setF((prev) => ({ ...prev, valor_financiamento: 0 }));
+      return;
+    }
+    const imovel = Math.round(fin / ltvMax);
+    const entrada = Math.max(0, imovel - fin);
+    setEntradaTocada(true);
+    setF((prev) => ({
+      ...prev,
+      valor_imovel: imovel,
+      valor_entrada: entrada,
+      valor_financiamento: fin,
+    }));
+  }
+
   /** Aplica a "jogada de números": infla o valor de compra e venda para liberar o financiamento. */
   function aplicarJogadaNumeros(dados: {
     valorImovel: number;
@@ -735,6 +757,7 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
     // handlers
     definirPrazo,
     aplicarEntradaSugerida,
+    aplicarPorFinanciamento,
     aplicarJogadaNumeros,
     setSistemaAmortizacao,
     toggleBanco,
