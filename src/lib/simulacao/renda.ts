@@ -26,6 +26,8 @@ import { calcularSimulacao, type SistemaAmortizacao } from "./simulacao-rapida";
 
 /** Percentual máximo da renda que pode ser comprometido com a parcela. */
 export const COMPROMETIMENTO_MAX = 0.3;
+/** Comprometimento máx no PRICE (Bradesco projeta pico da parcela → ~15% da inicial). */
+export const COMPROMETIMENTO_MAX_PRICE = 0.15;
 
 /**
  * Encargos mensais obrigatórios que os bancos SOMAM à parcela ao verificar o
