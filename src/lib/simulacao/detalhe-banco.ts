@@ -299,16 +299,8 @@ export function extrairDetalheBanco(raw: unknown): DetalheBanco | null {
     financiamentoTotal: num(r.valorTotalFinanciamento) ?? valorFin,
     valorEntrada: num(desc.downPayment) ?? num(r.valorEntrada),
     despesasFinanciadas,
-    tarifaAvaliacao:
-      num(desc.propertyEvaluation) ??
-      num(desc.appraisalFee) ??
-      num(desc.evaluationFee) ??
-      num(desc.guaranteeEvaluationFee) ??
-      num(r.valorTarifaAvaliacaoBanco) ??
-      num(r.valorTarifaAvaliacaoGarantiaBanco) ??
-      num(r.tarifaAvaliacaoGarantia) ??
-      TARIFA_AVALIACAO_GARANTIA_PADRAO,
-    iof: num(desc.iof?.totalValue ?? desc.iof?.value) ?? num(r.valorIofBanco),
+    tarifaAvaliacao: tarifaAvaliacaoValor,
+    iof: iofValor || null,
     fgts: num(desc.fgtsAmount) ?? num(r.valorFgts),
     prazoMeses: prazo,
     sistemaAmortizacao:
