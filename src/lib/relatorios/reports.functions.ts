@@ -490,12 +490,17 @@ export const runReport = createServerFn({ method: "POST" })
     }
 
     async function relComerciais(): Promise<ReportResult> {
-      const props = await fetchAll(
-        "propostas",
-        "id,status,valor_financiamento,valor_financiamento_aprovado,nome_banco,usuario_responsavel_id,created_at",
-        "created_at",
-        "usuario_responsavel_id",
-      );
+      const [props, sims] = await Promise.all([
+        fetchAll(
+          "propostas",
+          "id,status,valor_financiamento,valor_financiamento_aprovado,nome_banco,usuario_responsavel_id,created_at",
+          "created_at",
+          "usuario_responsavel_id",
+        ),
+        fetchAll("simulacoes", "id,status,created_at", "created_at", "usuario_responsavel_id", {
+          statusCol: false,
+        }),
+      ]);
       const enviadas = props.filter((p) => p.status !== "rascunho");
       const aprovadas = props.filter((p) =>
         ["credito_aprovado", "contrato_emitido", "registrado"].includes(p.status),
