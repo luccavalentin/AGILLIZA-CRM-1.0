@@ -27,6 +27,7 @@ import { Route as ClientePerfilRouteImport } from './routes/cliente.perfil'
 import { Route as ClienteLogoutRouteImport } from './routes/cliente.logout'
 import { Route as ClienteChatRouteImport } from './routes/cliente.chat'
 import { Route as ClienteAcompanharMinhaPropostaRouteImport } from './routes/cliente.acompanhar-minha-proposta'
+import { Route as AuthenticatedRhRouteImport } from './routes/_authenticated/rh'
 import { Route as AuthenticatedRelatoriosRouteImport } from './routes/_authenticated/relatorios'
 import { Route as AuthenticatedParceiroInicioRouteImport } from './routes/_authenticated/parceiro-inicio'
 import { Route as AuthenticatedMatriculasRouteImport } from './routes/_authenticated/matriculas'
@@ -192,6 +193,11 @@ const ClienteAcompanharMinhaPropostaRoute =
     path: '/acompanhar-minha-proposta',
     getParentRoute: () => ClienteRoute,
   } as any)
+const AuthenticatedRhRoute = AuthenticatedRhRouteImport.update({
+  id: '/rh',
+  path: '/rh',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedRelatoriosRoute = AuthenticatedRelatoriosRouteImport.update({
   id: '/relatorios',
   path: '/relatorios',
@@ -642,6 +648,7 @@ export interface FileRoutesByFullPath {
   '/matriculas': typeof AuthenticatedMatriculasRoute
   '/parceiro-inicio': typeof AuthenticatedParceiroInicioRoute
   '/relatorios': typeof AuthenticatedRelatoriosRouteWithChildren
+  '/rh': typeof AuthenticatedRhRoute
   '/cliente/acompanhar-minha-proposta': typeof ClienteAcompanharMinhaPropostaRoute
   '/cliente/chat': typeof ClienteChatRoute
   '/cliente/logout': typeof ClienteLogoutRoute
@@ -733,6 +740,7 @@ export interface FileRoutesByTo {
   '/links': typeof AuthenticatedLinksRoute
   '/matriculas': typeof AuthenticatedMatriculasRoute
   '/parceiro-inicio': typeof AuthenticatedParceiroInicioRoute
+  '/rh': typeof AuthenticatedRhRoute
   '/cliente/acompanhar-minha-proposta': typeof ClienteAcompanharMinhaPropostaRoute
   '/cliente/chat': typeof ClienteChatRoute
   '/cliente/logout': typeof ClienteLogoutRoute
@@ -828,6 +836,7 @@ export interface FileRoutesById {
   '/_authenticated/matriculas': typeof AuthenticatedMatriculasRoute
   '/_authenticated/parceiro-inicio': typeof AuthenticatedParceiroInicioRoute
   '/_authenticated/relatorios': typeof AuthenticatedRelatoriosRouteWithChildren
+  '/_authenticated/rh': typeof AuthenticatedRhRoute
   '/cliente/acompanhar-minha-proposta': typeof ClienteAcompanharMinhaPropostaRoute
   '/cliente/chat': typeof ClienteChatRoute
   '/cliente/logout': typeof ClienteLogoutRoute
@@ -923,6 +932,7 @@ export interface FileRouteTypes {
     | '/matriculas'
     | '/parceiro-inicio'
     | '/relatorios'
+    | '/rh'
     | '/cliente/acompanhar-minha-proposta'
     | '/cliente/chat'
     | '/cliente/logout'
@@ -1014,6 +1024,7 @@ export interface FileRouteTypes {
     | '/links'
     | '/matriculas'
     | '/parceiro-inicio'
+    | '/rh'
     | '/cliente/acompanhar-minha-proposta'
     | '/cliente/chat'
     | '/cliente/logout'
@@ -1108,6 +1119,7 @@ export interface FileRouteTypes {
     | '/_authenticated/matriculas'
     | '/_authenticated/parceiro-inicio'
     | '/_authenticated/relatorios'
+    | '/_authenticated/rh'
     | '/cliente/acompanhar-minha-proposta'
     | '/cliente/chat'
     | '/cliente/logout'
@@ -1326,6 +1338,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/cliente/acompanhar-minha-proposta'
       preLoaderRoute: typeof ClienteAcompanharMinhaPropostaRouteImport
       parentRoute: typeof ClienteRoute
+    }
+    '/_authenticated/rh': {
+      id: '/_authenticated/rh'
+      path: '/rh'
+      fullPath: '/rh'
+      preLoaderRoute: typeof AuthenticatedRhRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/relatorios': {
       id: '/_authenticated/relatorios'
@@ -1930,6 +1949,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedMatriculasRoute: typeof AuthenticatedMatriculasRoute
   AuthenticatedParceiroInicioRoute: typeof AuthenticatedParceiroInicioRoute
   AuthenticatedRelatoriosRoute: typeof AuthenticatedRelatoriosRouteWithChildren
+  AuthenticatedRhRoute: typeof AuthenticatedRhRoute
   AuthenticatedAdminApisIaRoute: typeof AuthenticatedAdminApisIaRoute
   AuthenticatedAdminAuditoriaRoute: typeof AuthenticatedAdminAuditoriaRoute
   AuthenticatedAdminBackupRoute: typeof AuthenticatedAdminBackupRoute
@@ -1987,6 +2007,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedMatriculasRoute: AuthenticatedMatriculasRoute,
   AuthenticatedParceiroInicioRoute: AuthenticatedParceiroInicioRoute,
   AuthenticatedRelatoriosRoute: AuthenticatedRelatoriosRouteWithChildren,
+  AuthenticatedRhRoute: AuthenticatedRhRoute,
   AuthenticatedAdminApisIaRoute: AuthenticatedAdminApisIaRoute,
   AuthenticatedAdminAuditoriaRoute: AuthenticatedAdminAuditoriaRoute,
   AuthenticatedAdminBackupRoute: AuthenticatedAdminBackupRoute,
