@@ -191,15 +191,16 @@ function Pagina() {
 
       <ConsultandoOverlay
         aberto={enviando}
-        total={f.bancos_ids.length}
+        total={Math.max(1, f.bancos_ids.length)}
         concluidos={concluidos}
         titulo="Enviando proposta ao banco"
         legenda={
           f.bancos_ids.length > 0
-            ? `${concluidos} de ${f.bancos_ids.length} banco(s) processado(s)`
-            : "Enviando ao banco selecionado…"
+            ? "Simulando, criando a proposta e enviando ao banco selecionado…"
+            : "Selecione um banco para enviar a proposta."
         }
       />
+
 
       <AlertDialog open={!!confirmRenda} onOpenChange={(o) => !o && setConfirmRenda(null)}>
         <AlertDialogContent>
