@@ -16,6 +16,8 @@ export interface ChatMensagem {
   editada_em: string | null;
   excluida_em: string | null;
   responde_a: string | null;
+  /** Nota interna do time (o cliente não vê). */
+  interna: boolean;
   /** Prévia da mensagem citada (quando responde_a aponta para outra mensagem). */
   citacao: { autor: string; texto: string } | null;
 }
