@@ -1129,12 +1129,32 @@ export const runReport = createServerFn({ method: "POST" })
         if (!p.parceiro_nome && p.parceiro_id) idsFaltando.add(p.parceiro_id);
         if (p.usuario_responsavel_id) idsFaltando.add(p.usuario_responsavel_id);
       }
-      const nomes = await nomesUsuarios([...idsFaltando]);
+      // Nomes gerais + perfis dos parceiros (para separar Imobiliária x Corretor)
+      const parceiroIds = new Set<string>();
+      for (const s of simulacoesFiltradas) if (s.parceiro_id) parceiroIds.add(s.parceiro_id);
+      for (const p of propostasFiltradas) if (p.parceiro_id) parceiroIds.add(p.parceiro_id);
+      for (const p of contratosOperacionais) if (p.parceiro_id) parceiroIds.add(p.parceiro_id);
+      const [nomes, parceiros] = await Promise.all([
+        nomesUsuarios([...idsFaltando]),
+        perfisUsuarios([...parceiroIds]),
+      ]);
       const nomeAnalista = (p: any) =>
         p.analista_nome || nomes.get(p.analista_id) || nomes.get(p.usuario_responsavel_id) || "Não atribuído";
       const nomeComercial = (p: any) =>
         p.consultor_nome || nomes.get(p.comercial_id) || "Não atribuído";
-      const nomeParceiro = (p: any) => p.parceiro_nome || nomes.get(p.parceiro_id) || "Não atribuído";
+      const perfilParceiro = (p: any) => (p.parceiro_id ? parceiros.get(p.parceiro_id) : null);
+      const nomeParceiro = (p: any) =>
+        perfilParceiro(p)?.nome || p.parceiro_nome || nomes.get(p.parceiro_id) || "Não atribuído";
+      const nomeImobiliaria = (p: any) => {
+        const perfil = perfilParceiro(p);
+        if (perfil?.tipo === "imobiliaria") return perfil.nome;
+        return "—";
+      };
+      const nomeCorretor = (p: any) => {
+        const perfil = perfilParceiro(p);
+        if (perfil?.tipo === "corretor") return perfil.nome;
+        return "—";
+      };
       const valorProc = (p: any) => p.valor_financiamento_aprovado ?? p.valor_financiamento ?? 0;
       const valorSim = (s: any) => s.valor_financiamento ?? 0;
 
