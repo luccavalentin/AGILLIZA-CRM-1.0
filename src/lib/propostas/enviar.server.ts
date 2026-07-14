@@ -834,9 +834,11 @@ function nomeBancoNormalizado(v: unknown): string {
 }
 
 /**
- * Número real da proposta no banco. Não usar códigos de oportunidade/simulação
- * como se fossem número de proposta: alguns bancos não reconhecem esses códigos
- * no portal externo, pois são apenas referências técnicas da integração.
+ * Número real da proposta no banco. Quando o banco não expõe um campo chamado
+ * literalmente "número da proposta", a API devolve o identificador externo em
+ * `codigoOportunidadeBanco` (código da oportunidade no banco), que é o número a
+ * ser exibido para operação já enviada. Códigos de simulação continuam sendo
+ * apenas referência técnica e não entram aqui.
  */
 function numeroPropostaBancoReal(sim: any): string | null {
   const numero =
@@ -844,6 +846,7 @@ function numeroPropostaBancoReal(sim: any): string | null {
     sim?.numeroProposta ??
     sim?.proposalNumber ??
     sim?.codigoPropostaBanco ??
+    sim?.codigoOportunidadeBanco ??
     null;
   return numero == null || numero === "" ? null : String(numero);
 }
@@ -861,7 +864,6 @@ function numeroAtualEhReferenciaTecnica(pb: any, sim: any): boolean {
   const atual = String(pb?.numero_proposta_banco ?? "").trim();
   if (!atual) return false;
   return [
-    sim?.codigoOportunidadeBanco,
     sim?.codigoOportunidadeBancoInterno,
     sim?.codigoSimulacaoBanco,
   ]

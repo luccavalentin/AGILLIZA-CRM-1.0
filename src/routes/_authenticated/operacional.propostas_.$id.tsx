@@ -216,8 +216,16 @@ function Pagina() {
     const tid = toast.loading("Enviando proposta ao banco…");
     try {
       const r = await enviarAutoFn({ data: { proposta_id: id } });
-      toast.success(`Proposta enviada ao banco (${r.status}).`, { id: tid });
-      qc.invalidateQueries({ queryKey: ["proposta", id] });
+      const numero =
+        r?.bancos?.find((x: any) => x?.numero_proposta_banco)?.numero_proposta_banco ?? null;
+      toast.success(
+        numero
+          ? `Proposta enviada ao banco. Nº do banco: ${numero}`
+          : "Proposta enviada ao banco. O número será atualizado em instantes.",
+        { id: tid },
+      );
+      await qc.invalidateQueries({ queryKey: ["proposta", id] });
+      setTab("RESUMO");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Falha ao enviar ao banco.", { id: tid });
     } finally {
@@ -407,7 +415,7 @@ function Pagina() {
 
 
       {tab === "RESUMO" && <TabResumo proposta={p} bancos={data.bancos} propostaId={id} />}
-      {tab === "COMPRADORES" && <ClienteSecao clienteId={p.cliente_id} propostaId={id} secao="comprador" destacarObrigatorios={destacarObrigatorios} onSalvoComprador={() => setTab("ENVIAR_BANCO")} />}
+      {tab === "COMPRADORES" && <ClienteSecao clienteId={p.cliente_id} propostaId={id} secao="comprador" destacarObrigatorios={destacarObrigatorios} onSalvoComprador={autoEnviar ? enviarAposComplementar : () => setTab("RESUMO")} />}
       {tab === "VENDEDORES" && <ClienteSecao clienteId={p.cliente_id} propostaId={id} secao="vendedores" />}
       {tab === "IQ" && <ClienteSecao clienteId={p.cliente_id} propostaId={id} secao="iq" />}
       {tab === "IMÓVEL" && <ClienteSecao clienteId={p.cliente_id} propostaId={id} secao="imovel" />}
