@@ -157,13 +157,19 @@ export function PanelHeader({
             {descricao}
           </p>
         </div>
-        <div className="grid min-w-0 grid-cols-1 gap-2 text-foreground sm:flex sm:flex-wrap sm:items-center sm:justify-end">
+        <div
+          className={cn(
+            "grid min-w-0 grid-cols-1 gap-2 text-foreground sm:flex sm:flex-wrap sm:items-center sm:justify-end",
+            dark &&
+              "sm:rounded-2xl sm:border sm:border-white/10 sm:bg-white/[0.06] sm:p-1.5 sm:backdrop-blur-md sm:gap-1.5",
+          )}
+        >
           {atualizadoEm && (
             <span
               className={cn(
                 "inline-flex min-w-0 items-center justify-center gap-1.5 rounded-full border px-3 py-1 text-[11px] tabular-nums sm:justify-start",
                 dark
-                  ? "border-white/20 bg-white/10 text-white/80"
+                  ? "border-white/10 bg-white/[0.06] text-white/85"
                   : "border-border bg-background/60 text-muted-foreground",
               )}
             >
@@ -181,11 +187,13 @@ export function PanelHeader({
               size="icon"
               onClick={onRefresh}
               aria-label="Atualizar"
+              className={cn(dark && "border-white/10 bg-white/10 text-white hover:bg-white/20")}
             >
-              <RefreshCw className="h-3.5 w-3.5 opacity-70" />
+              <RefreshCw className="h-3.5 w-3.5 opacity-80" />
             </Button>
           )}
         </div>
+
       </div>
     </div>
   );
