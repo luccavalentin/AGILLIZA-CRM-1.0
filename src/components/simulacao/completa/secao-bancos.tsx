@@ -18,8 +18,8 @@ export function SecaoBancos({ ctx }: { ctx: SimulacaoCompletaCtx }) {
 
       {f.sistema_amortizacao === "P" && (
         <div className="rounded-lg border border-border bg-muted p-3 text-sm text-muted-foreground">
-          O sistema PRICE é oferecido somente pelo Bradesco. Apenas o Bradesco pode ser
-          selecionado enquanto esse sistema estiver escolhido.
+          O sistema PRICE é oferecido por Bradesco e Santander. Apenas esses bancos podem ser
+          selecionados enquanto esse sistema estiver escolhido.
         </div>
       )}
 
