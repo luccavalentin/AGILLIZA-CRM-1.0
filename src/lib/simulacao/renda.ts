@@ -12,12 +12,11 @@
  * A parcela incide sobre o VALOR FINANCIADO (preço − entrada − FGTS), nunca
  * sobre o valor cheio do imóvel. As APIs dos bancos aplicam o mesmo teto.
  *
- * SISTEMA PRICE — QUALIFICAÇÃO CONSERVADORA:
- * As parcelas do PRICE crescem ao longo do contrato (indexação TR + amortização
- * crescente do saldo). Bancos como Bradesco, Santander e Itaú qualificam a renda
- * do cliente contratando PRICE usando a PARCELA EQUIVALENTE DO SAC (a maior no
- * início) como base do comprometimento de 30%. Nossa estimativa local segue essa
- * regra para não subestimar a renda exigida e evitar reprovação bancária.
+ * SISTEMA PRICE — QUALIFICAÇÃO CONSERVADORA (regra Bradesco):
+ * As parcelas do PRICE crescem ao longo do contrato (indexação TR + juros sobre
+ * saldo). Para refletir a projeção interna do Bradesco, aplicamos comprometimento
+ * máximo de 15% sobre a parcela inicial PRICE (equivalente a ~30% sobre o pico
+ * projetado da parcela). Regra calibrada a partir de simulações oficiais do banco.
  */
 
 
@@ -27,6 +26,8 @@ import { calcularSimulacao, type SistemaAmortizacao } from "./simulacao-rapida";
 
 /** Percentual máximo da renda que pode ser comprometido com a parcela. */
 export const COMPROMETIMENTO_MAX = 0.3;
+/** Comprometimento máx no PRICE (Bradesco projeta pico da parcela → ~15% da inicial). */
+export const COMPROMETIMENTO_MAX_PRICE = 0.15;
 
 /**
  * Encargos mensais obrigatórios que os bancos SOMAM à parcela ao verificar o
@@ -179,37 +180,31 @@ export function avaliarRendaMinima(params: {
   }
 
   // Parcela usada para QUALIFICAÇÃO da renda:
-  // - SAC: primeira parcela do próprio sistema (que já é a maior).
-  // - PRICE: os bancos qualificam usando a parcela SAC equivalente (pior caso),
-  //   pois no PRICE as parcelas crescem ao longo do contrato.
+  // - SAC: primeira parcela do próprio sistema (já é a maior) com teto 30%.
+  // - PRICE: primeira parcela PRICE com teto 15% (equivale à projeção do pico
+  //   pelo Bradesco: ~2,27x a inicial × 30% ≈ 15% da inicial).
   const { primeira_parcela: parcelaSistema } = calcularSimulacao({
     valor_financiamento: base,
     prazo_meses,
     taxa_ano,
     sistema,
   });
-  const parcelaQualificacao =
-    sistema === "P"
-      ? calcularSimulacao({ valor_financiamento: base, prazo_meses, taxa_ano, sistema: "S" })
-          .primeira_parcela
-      : parcelaSistema;
 
   // Encargos obrigatórios inclusos pelos bancos no comprometimento de renda.
   const valorImovelBase =
     Number.isFinite(valor_imovel) && (valor_imovel ?? 0) > 0 ? (valor_imovel as number) : base;
   const seguroMIP = base * TAXA_MIP_MES; // sobre o saldo devedor inicial (= valor financiado)
   const seguroDFI = valorImovelBase * TAXA_DFI_MES;
-  const prestacaoTotal = parcelaQualificacao + seguroMIP + seguroDFI + TAXA_ADMIN_MES;
+  const prestacaoTotal = parcelaSistema + seguroMIP + seguroDFI + TAXA_ADMIN_MES;
 
-  const rendaMinima = rendaMinimaParaParcela(prestacaoTotal);
+  const tetoComprometimento = sistema === "P" ? COMPROMETIMENTO_MAX_PRICE : COMPROMETIMENTO_MAX;
+  const rendaMinima = rendaMinimaParaParcela(prestacaoTotal, tetoComprometimento);
   const renda = renda_informada && renda_informada > 0 ? renda_informada : null;
 
   return {
-    // primeiraParcela reflete a parcela REAL do sistema escolhido (o que o cliente pagará),
-    // mas a renda mínima considera o pior cenário conforme regra bancária.
     primeiraParcela: parcelaSistema + seguroMIP + seguroDFI + TAXA_ADMIN_MES,
     rendaMinima,
-    comprometimento: renda ? parcelaQualificacao / renda : null,
+    comprometimento: renda ? prestacaoTotal / renda : null,
     suficiente: renda == null ? null : renda >= rendaMinima,
     fonte: "estimativa_local",
   };
