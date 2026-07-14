@@ -389,6 +389,96 @@ export function PainelView({
               )}
             </div>
           )}
+
+          {(data.porTipoSimulacao || data.clientesPorEtapa) && (
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+              {data.porTipoSimulacao && data.porTipoSimulacao.dados.length > 0 && (
+                <PanelCard
+                  titulo={data.porTipoSimulacao.titulo}
+                  subtitulo={data.porTipoSimulacao.subtitulo}
+                >
+                  <div className="h-[240px] w-full overflow-hidden">
+                    <ReportChartView
+                      chart={{
+                        titulo: data.porTipoSimulacao.titulo,
+                        tipo: "donut",
+                        dados: data.porTipoSimulacao.dados,
+                      }}
+                    />
+                  </div>
+                </PanelCard>
+              )}
+              {data.clientesPorEtapa && data.clientesPorEtapa.dados.length > 0 && (
+                <PanelCard
+                  titulo={data.clientesPorEtapa.titulo}
+                  subtitulo={data.clientesPorEtapa.subtitulo}
+                  abrirTo="/crm/painel"
+                >
+                  <div
+                    className="w-full overflow-hidden"
+                    style={{
+                      height: Math.min(360, Math.max(180, data.clientesPorEtapa.dados.length * 40 + 44)),
+                    }}
+                  >
+                    <ReportChartView
+                      chart={{
+                        titulo: data.clientesPorEtapa.titulo,
+                        tipo: "barh",
+                        dados: data.clientesPorEtapa.dados,
+                      }}
+                    />
+                  </div>
+                </PanelCard>
+              )}
+            </div>
+          )}
+
+          {(data.volumePorBanco || data.topOperadores || data.financeiroResumo) && (
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+              {data.volumePorBanco && data.volumePorBanco.dados.length > 0 && (
+                <PanelCard
+                  titulo={data.volumePorBanco.titulo}
+                  subtitulo={data.volumePorBanco.subtitulo}
+                >
+                  <MetricList
+                    items={data.volumePorBanco.dados.map((d) => ({
+                      label: d.label,
+                      valor: d.valor,
+                      display: d.valor.toLocaleString("pt-BR", {
+                        style: "currency",
+                        currency: "BRL",
+                        maximumFractionDigits: 0,
+                      }),
+                    }))}
+                    colorByBank
+                  />
+                </PanelCard>
+              )}
+              {data.topOperadores && data.topOperadores.dados.length > 0 && (
+                <PanelCard
+                  titulo={data.topOperadores.titulo}
+                  subtitulo={data.topOperadores.subtitulo}
+                >
+                  <MetricList items={data.topOperadores.dados} />
+                </PanelCard>
+              )}
+              {data.financeiroResumo && (
+                <PanelCard titulo={data.financeiroResumo.titulo} abrirTo="/financeiro/painel">
+                  <div className="space-y-2">
+                    {data.financeiroResumo.itens.map((i) => (
+                      <div
+                        key={i.label}
+                        className="flex items-center justify-between rounded-lg border border-border/60 bg-card/40 px-3 py-2"
+                      >
+                        <span className="text-sm text-muted-foreground">{i.label}</span>
+                        <span className="text-sm font-semibold tabular-nums">{i.valor}</span>
+                      </div>
+                    ))}
+                  </div>
+                </PanelCard>
+              )}
+            </div>
+          )}
         </>
 
       )}
