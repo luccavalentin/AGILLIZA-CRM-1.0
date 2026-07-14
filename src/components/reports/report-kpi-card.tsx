@@ -24,16 +24,20 @@ export function ReportKpiCard({ kpi }: { kpi: ReportKpi }) {
   const tone = kpi.tone ?? "neutral";
   return (
     <div
-      className="op-stat p-4"
+      className="op-stat min-w-0 p-3 sm:p-4"
       style={{ ["--op-accent" as string]: toneAccent[tone] }}
     >
       <div className="flex items-center justify-between gap-2">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+        <p className="min-w-0 truncate text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
           {kpi.label}
         </p>
-        <span className={cn("size-1.5 rounded-full", toneTint[tone])} />
+        <span className={cn("size-1.5 shrink-0 rounded-full", toneTint[tone])} />
       </div>
-      <p className="mt-2 font-mono text-2xl font-bold leading-none tabular-nums text-foreground">
+      <p
+        className="mt-2 truncate font-mono font-bold leading-tight tabular-nums text-foreground"
+        style={{ fontSize: "clamp(1rem, 1.6vw, 1.35rem)" }}
+        title={String(kpi.valor)}
+      >
         {kpi.valor}
       </p>
       {kpi.hint && <p className="mt-1.5 truncate text-xs text-muted-foreground">{kpi.hint}</p>}
