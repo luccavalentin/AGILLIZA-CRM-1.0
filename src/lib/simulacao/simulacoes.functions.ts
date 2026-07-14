@@ -588,10 +588,7 @@ export const reenviarSimulacaoBanco = enviarSimulacaoBanco;
 
 export { humanizarErroBanco };
 
-/** Exclui uma simulação. */
-export const excluirSimulacao = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+/** Exclui (logicamente) uma simulação. */
 /** Exclui (logicamente) uma simulação. */
 export const excluirSimulacao = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
