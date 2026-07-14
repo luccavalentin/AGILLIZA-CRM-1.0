@@ -115,7 +115,7 @@ function Acompanhar() {
   }));
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+    <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
       <div className="min-w-0 space-y-4">
         {/* HERO */}
         <div
@@ -215,23 +215,24 @@ function Acompanhar() {
         </div>
 
         {/* CHARTS ROW */}
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-3 sm:gap-4 sm:grid-cols-2 xl:grid-cols-3">
           <ChartCard titulo="Progresso da jornada">
             <div className="relative flex items-center justify-center">
-              <div className="relative h-40 w-40">
+              <div className="relative aspect-square w-full max-w-[160px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
-                    <Pie data={panoramaData} dataKey="value" nameKey="name" innerRadius={55} outerRadius={78} paddingAngle={panoramaData.length > 1 ? 2 : 0} stroke="none">
+                    <Pie data={panoramaData} dataKey="value" nameKey="name" innerRadius="70%" outerRadius="100%" paddingAngle={panoramaData.length > 1 ? 2 : 0} stroke="none">
                       {panoramaData.map((d) => <Cell key={d.name} fill={d.cor} />)}
                     </Pie>
                   </PieChart>
                 </ResponsiveContainer>
                 <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-2xl font-bold text-primary">{progresso}%</span>
+                  <span className="text-xl font-bold text-primary sm:text-2xl">{progresso}%</span>
                   <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Concluído</span>
                 </div>
               </div>
             </div>
+
             <ul className="mt-3 space-y-1.5 text-xs">
               {[
                 { k: "Concluído", v: concluidas, cor: "var(--primary)" },
@@ -294,7 +295,7 @@ function Acompanhar() {
           </ChartCard>
 
           <ChartCard titulo="Evolução dos últimos dias">
-            <div className="h-52">
+            <div className="h-40 sm:h-44 md:h-52">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={evolucaoData} margin={{ top: 15, right: 15, left: -20, bottom: 0 }}>
                   <XAxis dataKey="dia" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
@@ -308,7 +309,7 @@ function Acompanhar() {
         </div>
 
         {/* STAT CARDS BOTTOM */}
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        <div className="grid grid-cols-2 gap-2.5 sm:gap-3 md:grid-cols-3 xl:grid-cols-5">
           <MiniStat icon={ClipboardCheck} valor={String(concluidas)} label="Etapas concluídas" hint={`${Math.round((concluidas / total) * 100)}% do processo`} />
           <MiniStat icon={ListChecks} valor={String(restantes)} label="Etapas restantes" hint={`${Math.round((restantes / total) * 100)}% do processo`} />
           <MiniStat icon={FileText} valor={String(documentos_pendentes)} label="Documentos pendentes" linkLabel={documentos_pendentes ? "Ver documentos" : "Tudo em dia"} to="/cliente/chat" />
@@ -392,14 +393,15 @@ function MiniStat({
 }) {
   return (
     <Card className="border-border/70 shadow-sm">
-      <CardContent className="flex items-start gap-3 p-4">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-          <Icon className="h-5 w-5" />
+      <CardContent className="flex items-start gap-2 p-3 sm:gap-3 sm:p-4">
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary sm:h-10 sm:w-10 sm:rounded-xl">
+          <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
         </span>
         <div className="min-w-0">
-          <p className={cn("truncate font-bold text-foreground", small ? "text-sm" : "text-2xl leading-tight")}>
+          <p className={cn("truncate font-bold text-foreground", small ? "text-xs sm:text-sm" : "text-lg leading-tight sm:text-2xl")}>
             {valor}
           </p>
+
           <p className="truncate text-xs font-medium text-muted-foreground">{label}</p>
           {hint && <p className="mt-0.5 truncate text-[11px] text-muted-foreground/80">{hint}</p>}
           {linkLabel && to && (
