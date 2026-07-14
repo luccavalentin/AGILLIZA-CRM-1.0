@@ -70,7 +70,11 @@ function Pagina() {
     renda_familiar: 0,
   });
   const [mostrarRapida, setMostrarRapida] = useState(false);
-  const [entradaTocada, setEntradaTocada] = useState(false);
+  // Rastreia os dois últimos campos editados entre imóvel/entrada/financiamento.
+  // O terceiro campo é o que será recalculado automaticamente.
+  type CampoValor = "valor_imovel" | "valor_entrada" | "valor_financiamento";
+  const [ultimosEditados, setUltimosEditados] = useState<CampoValor[]>([]);
+  const entradaTocada = ultimosEditados.includes("valor_entrada");
   const resultadoRef = useRef<HTMLDivElement>(null);
   const jaBaixou = useRef(false);
 
@@ -86,64 +90,86 @@ function Pagina() {
   // Percentual padrão de entrada (mercado SFH): 20% do imóvel.
   const PCT_ENTRADA_PADRAO = 0.2;
 
+  /**
+   * Recalcula o campo alvo aplicando a invariante `imóvel = entrada + financiamento`.
+   * Quando não há dois campos ancorados, usa a regra padrão de 20% de entrada.
+   */
+  function recomputarTerceiro(
+    valores: { valor_imovel: number; valor_entrada: number; valor_financiamento: number },
+    editado: CampoValor,
+    outroAncora: CampoValor | undefined,
+  ): { valor_imovel: number; valor_entrada: number; valor_financiamento: number } {
+    const { valor_imovel, valor_entrada, valor_financiamento } = valores;
+    const alvo = (["valor_imovel", "valor_entrada", "valor_financiamento"] as CampoValor[]).find(
+      (c) => c !== editado && c !== outroAncora,
+    )!;
+
+    // Sem segunda âncora → aplica a regra padrão de 20%.
+    if (!outroAncora) {
+      if (editado === "valor_imovel") {
+        return {
+          valor_imovel,
+          valor_entrada: Math.round(valor_imovel * PCT_ENTRADA_PADRAO),
+          valor_financiamento: Math.round(valor_imovel * (1 - PCT_ENTRADA_PADRAO)),
+        };
+      }
+      if (editado === "valor_entrada") {
+        const imovel = Math.round(valor_entrada / PCT_ENTRADA_PADRAO);
+        return { valor_imovel: imovel, valor_entrada, valor_financiamento: Math.max(0, imovel - valor_entrada) };
+      }
+      const imovel = Math.round(valor_financiamento / (1 - PCT_ENTRADA_PADRAO));
+      return { valor_imovel: imovel, valor_entrada: Math.max(0, imovel - valor_financiamento), valor_financiamento };
+    }
+
+    // Duas âncoras → deriva o terceiro pela invariante.
+    if (alvo === "valor_financiamento") {
+      return { valor_imovel, valor_entrada, valor_financiamento: Math.max(0, valor_imovel - valor_entrada) };
+    }
+    if (alvo === "valor_entrada") {
+      return { valor_imovel, valor_entrada: Math.max(0, valor_imovel - valor_financiamento), valor_financiamento };
+    }
+    // alvo === "valor_imovel"
+    return { valor_imovel: Math.max(0, valor_entrada + valor_financiamento), valor_entrada, valor_financiamento };
+  }
+
   function set<K extends keyof WizardState>(k: K, v: WizardState[K]) {
-    if (k === "valor_entrada") setEntradaTocada(true);
     setW((prev) => {
       const next = { ...prev, [k]: v };
-
-      // Regra 1: usuário editou o VALOR DO IMÓVEL.
-      // → se ainda não mexeu na entrada, aplica 20% automaticamente.
-      // → financiamento = imóvel − entrada.
-      if (k === "valor_imovel") {
-        if (!entradaTocada) {
-          next.valor_entrada = Math.round((next.valor_imovel || 0) * PCT_ENTRADA_PADRAO);
-        }
-        next.valor_financiamento = Math.max(0, next.valor_imovel - next.valor_entrada);
+      if (k === "valor_imovel" || k === "valor_entrada" || k === "valor_financiamento") {
+        const campo = k as CampoValor;
+        const outroAncora = ultimosEditados.filter((c) => c !== campo)[0];
+        const recalc = recomputarTerceiro(
+          {
+            valor_imovel: next.valor_imovel,
+            valor_entrada: next.valor_entrada,
+            valor_financiamento: next.valor_financiamento,
+          },
+          campo,
+          outroAncora,
+        );
+        next.valor_imovel = recalc.valor_imovel;
+        next.valor_entrada = recalc.valor_entrada;
+        next.valor_financiamento = recalc.valor_financiamento;
+        // Atualiza histórico: o campo editado vira o mais recente; mantém apenas 2.
+        setUltimosEditados((old) => {
+          const semAtual = old.filter((c) => c !== campo);
+          return [campo, ...semAtual].slice(0, 2);
+        });
       }
-
-      // Regra 2: usuário editou a ENTRADA.
-      // → se o imóvel ainda não foi informado, deriva imóvel = entrada / 20%
-      //   e financiamento = imóvel − entrada (regra de 5x a entrada).
-      // → se o imóvel já existe, mantém imóvel fixo e recalcula financiamento.
-      if (k === "valor_entrada") {
-        if (!prev.valor_imovel || prev.valor_imovel <= 0) {
-          const imovel = Math.round((next.valor_entrada || 0) / PCT_ENTRADA_PADRAO);
-          next.valor_imovel = imovel;
-          next.valor_financiamento = Math.max(0, imovel - next.valor_entrada);
-        } else {
-          next.valor_financiamento = Math.max(0, next.valor_imovel - next.valor_entrada);
-        }
-      }
-
-      // Regra 3: usuário editou o FINANCIAMENTO.
-      // → se o imóvel ainda não existe, deriva imóvel = financiamento / 80%
-      //   e entrada = 20% do imóvel.
-      // → se o imóvel existe, mantém imóvel fixo e recalcula entrada.
-      if (k === "valor_financiamento") {
-        if (!prev.valor_imovel || prev.valor_imovel <= 0) {
-          const imovel = Math.round((next.valor_financiamento || 0) / (1 - PCT_ENTRADA_PADRAO));
-          next.valor_imovel = imovel;
-          next.valor_entrada = Math.max(0, imovel - next.valor_financiamento);
-        } else {
-          next.valor_entrada = Math.max(0, next.valor_imovel - next.valor_financiamento);
-        }
-        setEntradaTocada(true);
-      }
-
       return next;
     });
   }
 
   function aplicarEntradaSugerida() {
-    setEntradaTocada(true);
     setW((prev) => {
-      const entrada = Math.round((prev.valor_imovel || 0) * 0.2);
+      const entrada = Math.round((prev.valor_imovel || 0) * PCT_ENTRADA_PADRAO);
       return {
         ...prev,
         valor_entrada: entrada,
         valor_financiamento: Math.max(0, prev.valor_imovel - entrada),
       };
     });
+    setUltimosEditados(["valor_entrada", "valor_imovel"]);
   }
 
   const maxPrazoIdade = useMemo(
