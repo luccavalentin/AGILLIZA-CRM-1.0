@@ -155,18 +155,20 @@ export function SecaoOperacaoImovel({ ctx }: { ctx: SimulacaoCompletaCtx }) {
       </label>
 
       {f.simular_por_parcela && (
-        <Campo label={<>Parcela desejada (R$) <Ast /></>}>
-          <CurrencyInput
-            value={f.parcela_alvo}
-            onChange={(v) => aplicarPorParcela(v)}
-            placeholder="Ex: 3.500,00"
-          />
-          <p className="text-xs text-muted-foreground">
-            Cálculo baseado na taxa mais conservadora entre os bancos selecionados, no prazo
-            e no sistema ({f.sistema_amortizacao === "P" ? "PRICE" : "SAC"}), já descontando
-            seguros (MIP/DFI) e tarifa mensal. Valores confirmados pelo banco na simulação.
-          </p>
-        </Campo>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <Campo label={<>Parcela desejada (R$) <Ast /></>}>
+            <CurrencyInput
+              value={f.parcela_alvo}
+              onChange={(v) => aplicarPorParcela(v)}
+              placeholder="Ex: 3.500,00"
+            />
+            <p className="text-xs text-muted-foreground">
+              Cálculo baseado na taxa mais conservadora entre os bancos selecionados, no prazo
+              e no sistema ({f.sistema_amortizacao === "P" ? "PRICE" : "SAC"}), já descontando
+              seguros (MIP/DFI) e tarifa mensal.
+            </p>
+          </Campo>
+        </div>
       )}
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
