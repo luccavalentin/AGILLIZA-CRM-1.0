@@ -162,8 +162,10 @@ function Pagina() {
   const [arrasto, setArrasto] = useState<Arrasto | null>(null);
   const [alvo, setAlvo] = useState<string | null>(null);
   const arrastouRef = useRef(false);
-  const [periodo, setPeriodo] = useState("todos");
   const [respFiltro, setRespFiltro] = useState("todos");
+  const [analistaFiltro, setAnalistaFiltro] = useState("todos");
+  const [corretorFiltro, setCorretorFiltro] = useState("todos");
+  const [imobFiltro, setImobFiltro] = useState("todos");
 
   function aplicarPeriodo(p: string) {
     setPeriodo(p);
