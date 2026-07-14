@@ -382,7 +382,7 @@ export function ClienteShell({
             </div>
           </header>
 
-          <main className="flex-1 p-3 sm:p-4 lg:p-6">
+          <main className="flex-1 p-2 sm:p-3 lg:p-4">
             <div className="mx-auto w-full max-w-[1400px]">{children}</div>
           </main>
 
