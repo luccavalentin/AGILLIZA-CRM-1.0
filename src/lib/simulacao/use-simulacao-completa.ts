@@ -314,7 +314,9 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
       setF((prev) => ({ ...prev, valor_financiamento: 0 }));
       return;
     }
-    const imovel = Math.round(fin / ltvMax);
+    // Arredonda o imóvel para o milhar mais próximo (para cima) e garante que
+    // financiamento derivado respeite o LTV.
+    const imovel = Math.ceil(fin / ltvMax / 1000) * 1000;
     const entrada = Math.max(0, imovel - fin);
     setEntradaTocada(true);
     setF((prev) => ({
