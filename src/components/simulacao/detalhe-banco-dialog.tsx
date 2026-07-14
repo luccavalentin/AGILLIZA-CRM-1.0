@@ -70,10 +70,19 @@ function Destaque({
 
 /** Linha de definição rótulo → valor dentro de um grupo. */
 function Linha({ rotulo, valor }: { rotulo: string; valor: string }) {
+  const semValor = valor === "—";
   return (
     <div className="flex items-baseline justify-between gap-4 py-2">
       <span className="text-sm text-muted-foreground">{rotulo}</span>
-      <span className="text-right text-sm font-medium text-foreground tabular-nums">{valor}</span>
+      <span
+        className={
+          semValor
+            ? "text-right text-xs italic text-muted-foreground/70"
+            : "text-right text-sm font-medium text-foreground tabular-nums"
+        }
+      >
+        {semValor ? "Não informado pelo banco" : valor}
+      </span>
     </div>
   );
 }
