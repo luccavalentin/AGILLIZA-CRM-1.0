@@ -51,7 +51,7 @@ export function iniciais(nome: string) {
     .join("");
 }
 
-function horaCurta(iso: string) {
+export function horaCurta(iso: string) {
   const d = new Date(iso);
   const hoje = new Date();
   const mesmoDia =
