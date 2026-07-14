@@ -73,7 +73,7 @@ export const Route = createFileRoute("/_authenticated/financeiro/configuracoes")
 
 function Pagina() {
   return (
-    <div className="mx-auto w-full max-w-5xl space-y-6 p-3 sm:p-4 md:p-6">
+    <div className="mx-auto w-full max-w-none space-y-6 p-3 sm:p-4 md:p-6">
       <header className="flex items-start gap-3">
         <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
           <SlidersHorizontal className="h-5 w-5" />

@@ -20,7 +20,7 @@ export const Route = createFileRoute("/_authenticated/admin/comissoes")({
 
 function Pagina() {
   return (
-    <div className="mx-auto w-full max-w-5xl space-y-6 p-4 md:p-6">
+    <div className="mx-auto w-full max-w-none space-y-6 p-4 md:p-6">
       <AdminHero
         icon={<Percent className="h-5 w-5" />}
         titulo="Comissões"

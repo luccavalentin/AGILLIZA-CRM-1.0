@@ -23,7 +23,7 @@ export function ReportShell({
   children: ReactNode;
 }) {
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-4 p-4 md:p-6">
+    <div className="mx-auto w-full max-w-none space-y-4 p-4 md:p-6">
       <header className="op-hero px-4 py-3 md:px-5">
         <div className="relative flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex min-w-0 items-center gap-3">

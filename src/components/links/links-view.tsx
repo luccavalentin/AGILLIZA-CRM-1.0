@@ -82,7 +82,7 @@ export function LinksView() {
   const totalCategorias = new Set((data ?? []).map((l) => l.categoria).filter(Boolean)).size;
 
   return (
-    <div className="mx-auto w-full max-w-5xl space-y-5 p-4 md:p-6">
+    <div className="mx-auto w-full max-w-none space-y-5 p-4 md:p-6">
       <OpHero
         icon={<LinkIcon className="h-5 w-5" />}
         eyebrow="Documentos"

@@ -12,7 +12,7 @@ interface ModuloPlaceholderProps {
  */
 export function ModuloPlaceholder({ icon: Icon, titulo, descricao }: ModuloPlaceholderProps) {
   return (
-    <div className="mx-auto max-w-5xl">
+    <div className="mx-auto max-w-none">
       <div className="mb-6">
         <h1 className="text-2xl font-semibold text-foreground">{titulo}</h1>
         <p className="text-sm text-muted-foreground">{descricao}</p>

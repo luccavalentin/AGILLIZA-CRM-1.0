@@ -176,7 +176,7 @@ function PessoasPage() {
 
   return (
     <>
-      <div className="mx-auto max-w-5xl space-y-6">
+      <div className="mx-auto max-w-none space-y-6">
         <AdminHero
           icon={<Users className="h-5 w-5" />}
           titulo="Pessoas & Acessos"

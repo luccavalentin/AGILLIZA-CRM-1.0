@@ -19,7 +19,7 @@ function Pagina() {
   const { data, isLoading } = useQuery({ queryKey: ["parceiros"], queryFn: () => listar() });
 
   return (
-    <div className="mx-auto w-full max-w-5xl space-y-5 p-4 md:p-6">
+    <div className="mx-auto w-full max-w-none space-y-5 p-4 md:p-6">
       <div className="flex items-center gap-2">
         <Handshake className="h-5 w-5 text-muted-foreground" />
         <div>
