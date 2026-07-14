@@ -15,6 +15,7 @@ import { statusDemanda, TONE_BAR } from "@/components/operacional/status";
 import { PriorityChip, OpAvatar } from "@/components/operacional/ui";
 import { SlaCountdown } from "@/components/operacional/sla-countdown";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 
 type DemandaItem = Awaited<ReturnType<typeof listarDemandas>>[number];
