@@ -337,30 +337,6 @@ function Acompanhar() {
           </CardContent>
         </Card>
 
-        <Card className="border-border/70 shadow-sm">
-          <CardContent className="p-5">
-            <p className="mb-3 text-sm font-semibold text-foreground">Últimas atualizações</p>
-            {historico.length === 0 ? (
-              <p className="text-xs text-muted-foreground">Nenhuma atualização recente.</p>
-            ) : (
-              <ol className="relative space-y-3 border-l border-border/60 pl-4">
-                {historico.map((h, i) => (
-                  <li key={h.id} className="relative">
-                    <span
-                      className={cn(
-                        "absolute -left-[21px] top-1 h-3 w-3 rounded-full ring-2 ring-background",
-                        i === 0 ? "bg-primary" : "bg-muted-foreground/40",
-                      )}
-                    />
-                    <p className="text-[11px] text-muted-foreground">{fmtDataHora(h.created_at)}</p>
-                    <p className="text-sm font-medium text-foreground leading-tight">{h.tipo}</p>
-                    {h.descricao && <p className="text-xs text-muted-foreground">{h.descricao}</p>}
-                  </li>
-                ))}
-              </ol>
-            )}
-          </CardContent>
-        </Card>
 
         <Card className="border-border/70 shadow-sm">
           <CardContent className="space-y-2 p-5">
