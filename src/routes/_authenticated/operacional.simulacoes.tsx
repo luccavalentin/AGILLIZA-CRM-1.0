@@ -623,9 +623,7 @@ function Pagina() {
               <TableRow
                 key={s.id}
                 className="group cursor-pointer border-border/50 transition-colors odd:bg-muted/[0.18] hover:bg-primary/[0.06]"
-                onClick={() =>
-                  router.navigate({ to: "/operacional/simulacoes/$id", params: { id: s.id } })
-                }
+                onClick={() => (verExcluidas ? undefined : handleEditar(s.id))}
               >
                 <TableCell className="py-3.5">
                   <span className="inline-flex items-center rounded-md bg-primary/5 px-2 py-0.5 font-mono text-[13px] font-semibold text-primary ring-1 ring-inset ring-primary/10 transition-colors group-hover:bg-primary/10">
