@@ -144,13 +144,14 @@ export function ChatClienteConversa({
   }, [mensagens?.length, buscaAberta, peerTyping]);
 
   const enviar = useMutation({
-    mutationFn: (payload: { mensagem: string; responde_a?: string }) =>
+    mutationFn: (payload: { mensagem: string; responde_a?: string; interna?: boolean }) =>
       responder({
         data: {
           cliente_id: clienteId,
           atendente_id: atendenteId,
           mensagem: payload.mensagem,
           responde_a: payload.responde_a,
+          interna: payload.interna,
         },
       }),
 
@@ -174,6 +175,7 @@ export function ChatClienteConversa({
         editada_em: null,
         excluida_em: null,
         responde_a: payload.responde_a ?? null,
+        interna: payload.interna ?? false,
         citacao: alvo
           ? {
               autor:
