@@ -12,7 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Card } from "@/components/ui/card";
 import {
   CheckCircle2,
-  FlaskConical,
+  Calculator,
   Send,
   BadgeCheck,
   XCircle,
