@@ -1097,7 +1097,7 @@ function Pagina() {
             );
           })}
         </div>
-        </div>
+
       )}
 
       <Dialog open={!!dialogStage} onOpenChange={(o) => !o && setDialogStage(null)}>
