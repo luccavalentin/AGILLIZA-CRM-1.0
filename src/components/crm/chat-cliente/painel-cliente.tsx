@@ -283,19 +283,22 @@ export function PainelChatCliente({
             </div>
 
             {/* Resumo rápido */}
-            <div className="rounded-2xl border border-border/60 bg-muted/20 p-4">
-              <div className="mb-1 flex items-center justify-between gap-2">
+            <div className="border-t border-border/60 pt-4">
+              <div className="mb-2 flex items-center justify-between gap-2">
                 <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   Resumo da proposta
                 </p>
                 {data.proposta?.status && (
-                  <Badge variant="secondary" className="text-[10px]">
+                  <Badge
+                    variant="secondary"
+                    className="rounded-full border-primary/20 bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary"
+                  >
                     {data.proposta.status}
                   </Badge>
                 )}
               </div>
               {data.proposta ? (
-                <>
+                <div className="divide-y divide-border/50">
                   <LinhaResumo
                     rotulo="Proposta"
                     valor={data.proposta.numero ?? "—"}
@@ -313,16 +316,18 @@ export function PainelChatCliente({
                     rotulo="Responsável"
                     valor={data.responsavel_nome ?? "—"}
                   />
-                  <Link
-                    to="/operacional/propostas/$id"
-                    params={{ id: data.proposta.id }}
-                    className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
-                  >
-                    Ver proposta <ExternalLink className="size-3.5" />
-                  </Link>
-                </>
+                  <div className="pt-3">
+                    <Link
+                      to="/operacional/propostas/$id"
+                      params={{ id: data.proposta.id }}
+                      className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
+                    >
+                      Ver proposta <ExternalLink className="size-3.5" />
+                    </Link>
+                  </div>
+                </div>
               ) : (
-                <>
+                <div className="divide-y divide-border/50">
                   <LinhaResumo rotulo="Etapa" valor={data.etapa_nome ?? "—"} />
                   <LinhaResumo
                     rotulo="Responsável"
@@ -331,9 +336,10 @@ export function PainelChatCliente({
                   <p className="pt-2 text-xs text-muted-foreground">
                     Ainda sem proposta cadastrada.
                   </p>
-                </>
+                </div>
               )}
             </div>
+
 
             {/* Status e etapa (stepper) */}
             <Stepper atualIdx={atualIdx} />
