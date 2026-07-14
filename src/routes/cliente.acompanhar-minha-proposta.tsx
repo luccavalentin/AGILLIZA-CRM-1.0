@@ -114,102 +114,95 @@ function Acompanhar() {
   }));
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
-      <div className="space-y-4">
+    <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="min-w-0 space-y-4">
         {/* HERO */}
         <div
-          className="relative overflow-hidden rounded-2xl text-primary-foreground shadow-xl"
+          className="relative overflow-hidden rounded-2xl text-primary-foreground shadow-lg"
           style={{ background: "linear-gradient(120deg, #000a6b 0%, #000f9f 45%, #1a2ec4 100%)" }}
         >
           <div
             aria-hidden
-            className="pointer-events-none absolute inset-y-0 right-0 hidden w-1/2 opacity-25 md:block"
+            className="pointer-events-none absolute inset-y-0 right-0 hidden w-1/2 opacity-20 md:block"
             style={{
               backgroundImage:
                 "linear-gradient(115deg, transparent 55%, rgba(255,255,255,0.12) 55%, rgba(255,255,255,0.12) 56%, transparent 56%), radial-gradient(circle at 80% 30%, rgba(255,255,255,0.18), transparent 60%), repeating-linear-gradient(90deg, rgba(255,255,255,0.06) 0 1px, transparent 1px 44px), repeating-linear-gradient(0deg, rgba(255,255,255,0.06) 0 1px, transparent 1px 44px)",
             }}
           />
-          <div className="relative space-y-5 p-6 sm:p-7">
-            <div>
-              <h1 className="text-3xl font-bold leading-tight tracking-tight sm:text-4xl">
-                Acompanhar minha proposta
-              </h1>
-              <p className="mt-1 text-sm opacity-85">
-                Acompanhe cada etapa da sua proposta de financiamento em tempo real.
-              </p>
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-[1fr_auto] md:items-center">
-              <div className="flex items-center gap-4">
-                <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-white/15 backdrop-blur-sm ring-1 ring-white/30">
-                  <Send className="h-7 w-7" strokeWidth={2} />
-                </span>
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-[10px] font-semibold uppercase tracking-wider opacity-80">Etapa atual</span>
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-0.5 text-[11px] backdrop-blur-sm">
-                      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" />
-                      {dias === 0 ? "Atualizado hoje" : dias != null ? `Há ${dias} dia${dias > 1 ? "s" : ""}` : "Aguardando"}
-                    </span>
-                  </div>
-                  <p className="mt-1 text-xl font-semibold leading-snug">
-                    {processo.etapa_atual ?? "Processo em andamento"}
-                  </p>
-                  {processo.descricao && (
-                    <p className="mt-0.5 text-sm opacity-85">{processo.descricao}</p>
-                  )}
+          <div className="relative space-y-4 p-4 sm:p-5 md:p-6">
+            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
+              <div className="min-w-0">
+                <h1 className="text-lg font-bold leading-tight tracking-tight sm:text-2xl md:text-3xl">
+                  Acompanhar minha proposta
+                </h1>
+                <p className="mt-0.5 text-[11px] opacity-85 sm:text-sm">
+                  Acompanhe cada etapa em tempo real.
+                </p>
+              </div>
+              <div className="relative h-14 w-14 shrink-0 sm:h-16 sm:w-16">
+                <ResponsiveContainer width="100%" height="100%">
+                  <RadialBarChart innerRadius="72%" outerRadius="100%" data={heroData} startAngle={90} endAngle={-270}>
+                    <PolarAngleAxis type="number" domain={[0, 100]} tick={false} />
+                    <RadialBar background={{ fill: "rgba(255,255,255,0.18)" }} dataKey="value" cornerRadius={20} />
+                  </RadialBarChart>
+                </ResponsiveContainer>
+                <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                  <span className="text-xs font-bold sm:text-sm">{progresso}%</span>
                 </div>
               </div>
+            </div>
 
-              <div className="flex items-center gap-3 rounded-xl bg-white/10 p-4 backdrop-blur-sm ring-1 ring-white/20 md:min-w-[200px]">
-                <div className="relative h-20 w-20">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <RadialBarChart innerRadius="72%" outerRadius="100%" data={heroData} startAngle={90} endAngle={-270}>
-                      <PolarAngleAxis type="number" domain={[0, 100]} tick={false} />
-                      <RadialBar background={{ fill: "rgba(255,255,255,0.18)" }} dataKey="value" cornerRadius={20} />
-                    </RadialBarChart>
-                  </ResponsiveContainer>
-                  <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                    <span className="text-lg font-bold">{progresso}%</span>
-                  </div>
+            <div className="flex items-start gap-3 rounded-xl bg-white/10 p-3 backdrop-blur-sm ring-1 ring-white/15">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/15 ring-1 ring-white/30 sm:h-12 sm:w-12">
+                <Send className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={2} />
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="text-[9px] font-semibold uppercase tracking-wider opacity-80 sm:text-[10px]">Etapa atual</span>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-white/15 px-2 py-0.5 text-[10px] backdrop-blur-sm">
+                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" />
+                    {dias === 0 ? "Hoje" : dias != null ? `Há ${dias}d` : "Aguardando"}
+                  </span>
+                  <span className="ml-auto text-[10px] opacity-80">
+                    Etapa {processo.ordem_atual}/{total}
+                  </span>
                 </div>
-                <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-wider opacity-80">Progresso geral</p>
-                  <p className="text-2xl font-bold leading-none">{progresso}%</p>
-                  <p className="mt-1 text-xs opacity-80">
-                    Etapa {processo.ordem_atual} de {total}
-                  </p>
-                </div>
+                <p className="mt-0.5 truncate text-sm font-semibold leading-snug sm:text-base">
+                  {processo.etapa_atual ?? "Processo em andamento"}
+                </p>
+                {processo.descricao && (
+                  <p className="mt-0.5 line-clamp-2 text-[11px] opacity-85 sm:text-xs">{processo.descricao}</p>
+                )}
               </div>
             </div>
 
             {/* Stepper */}
-            <div className="relative overflow-x-auto pb-1">
-              <ol className="flex min-w-max items-start gap-2">
+            <div className="-mx-1 overflow-x-auto pb-1">
+              <ol className="flex min-w-max items-start gap-1 px-1">
                 {etapas.map((etapa, i) => {
                   const done = etapa.status === "concluida";
                   const curr = etapa.status === "atual";
                   const last = i === etapas.length - 1;
                   return (
                     <li key={etapa.ordem} className="flex items-start">
-                      <div className="flex w-24 flex-col items-center text-center">
+                      <div className="flex w-16 flex-col items-center text-center sm:w-20">
                         <span
                           className={cn(
-                            "flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold ring-2 transition",
+                            "flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-bold ring-2 transition sm:h-8 sm:w-8 sm:text-xs",
                             done && "bg-white text-primary ring-white",
                             curr && "bg-white text-primary ring-white shadow-lg shadow-black/20 animate-pulse",
                             !done && !curr && "bg-white/10 text-white/70 ring-white/30",
                           )}
                         >
-                          {done ? <Check className="h-4 w-4" strokeWidth={3} /> : etapa.ordem}
+                          {done ? <Check className="h-3 w-3 sm:h-4 sm:w-4" strokeWidth={3} /> : etapa.ordem}
                         </span>
-                        <span className={cn("mt-1.5 text-[10px] leading-tight", curr ? "font-semibold" : "opacity-80")}>
+                        <span className={cn("mt-1 line-clamp-2 text-[9px] leading-tight sm:text-[10px]", curr ? "font-semibold" : "opacity-80")}>
                           {etapa.nome}
                         </span>
                       </div>
                       {!last && (
                         <span
-                          className={cn("mt-4 h-0.5 w-6 shrink-0", done ? "bg-white" : "bg-white/25")}
+                          className={cn("mt-3.5 h-0.5 w-3 shrink-0 sm:mt-4 sm:w-4", done ? "bg-white" : "bg-white/25")}
                         />
                       )}
                     </li>
