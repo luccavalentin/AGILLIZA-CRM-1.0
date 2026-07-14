@@ -565,104 +565,106 @@ function Pagina() {
 
       {/* Barra de filtros */}
       <div className="rounded-xl border border-border bg-card p-3 shadow-sm sm:rounded-2xl sm:p-4">
-        <div className="grid grid-cols-2 items-end gap-3 lg:flex lg:flex-wrap lg:gap-x-5 lg:gap-y-4">
-          <div className="col-span-2 flex min-w-0 items-center gap-3 sm:border-r sm:border-border sm:pr-5 lg:col-span-1">
-            <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+        <div className="flex flex-col gap-3 md:flex-row md:items-end md:gap-4">
+          <div className="flex min-w-0 items-center gap-3 md:border-r md:border-border md:pr-4">
+            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary sm:size-11">
               <Users className="size-5" />
             </span>
-            <div>
+            <div className="min-w-0">
               <p className="text-2xl font-bold leading-none tabular-nums text-foreground">
                 {totalClientes}
               </p>
-              <p className="mt-0.5 text-xs text-muted-foreground">
+              <p className="mt-0.5 truncate text-xs text-muted-foreground">
                 de {dadosFiltrados.length} etapas
               </p>
             </div>
           </div>
 
-          <div className="min-w-0 space-y-1">
-            <label className="text-xs font-medium text-muted-foreground">Período</label>
-            <select
-              value={periodo}
-              onChange={(e) => aplicarPeriodo(e.target.value)}
-              className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring lg:w-40"
-            >
-              <option value="todos">Todos</option>
-              <option value="mes">Este mês</option>
-              <option value="7d">Últimos 7 dias</option>
-              <option value="30d">Últimos 30 dias</option>
-              <option value="ano">Este ano</option>
-              <option value="custom">Personalizado</option>
-            </select>
-          </div>
-
-          <div className="min-w-0 space-y-1">
-            <label className="text-xs font-medium text-muted-foreground">Responsável</label>
-            <select
-              value={respFiltro}
-              onChange={(e) => setRespFiltro(e.target.value)}
-              className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring lg:w-44"
-            >
-              <option value="todos">Todos</option>
-              {responsaveis.map((r) => (
-                <option key={r} value={r}>
-                  {r}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="relative col-span-2 min-w-0 space-y-1 sm:col-span-1 lg:w-60">
-            <label className="text-xs font-medium text-muted-foreground">Buscar</label>
-            <div className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={busca}
-                onChange={(e) => setBusca(e.target.value)}
-                placeholder="Cliente ou nº..."
-                className="h-10 rounded-xl pl-9 pr-9 shadow-sm"
-              />
-              {busca && (
-                <button
-                  type="button"
-                  onClick={() => setBusca("")}
-                  className="absolute right-2 top-1/2 grid size-6 -translate-y-1/2 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                  aria-label="Limpar busca"
-                >
-                  <X className="size-3.5" />
-                </button>
-              )}
+          <div className="grid min-w-0 flex-1 grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
+            <div className="min-w-0 space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">Período</label>
+              <select
+                value={periodo}
+                onChange={(e) => aplicarPeriodo(e.target.value)}
+                className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <option value="todos">Todos</option>
+                <option value="mes">Este mês</option>
+                <option value="7d">Últimos 7 dias</option>
+                <option value="30d">Últimos 30 dias</option>
+                <option value="ano">Este ano</option>
+                <option value="custom">Personalizado</option>
+              </select>
             </div>
-          </div>
 
-          <div className="min-w-0 space-y-1">
-            <label className="text-xs font-medium text-muted-foreground">De</label>
-            <Input
-              type="date"
-              value={desde}
-              onChange={(e) => {
-                setDesde(e.target.value);
-                setPeriodo("custom");
-              }}
-              className="h-10 w-full rounded-xl shadow-sm lg:w-40"
-            />
-          </div>
-          <div className="min-w-0 space-y-1">
-            <label className="text-xs font-medium text-muted-foreground">Até</label>
-            <Input
-              type="date"
-              value={ate}
-              onChange={(e) => {
-                setAte(e.target.value);
-                setPeriodo("custom");
-              }}
-              className="h-10 w-full rounded-xl shadow-sm lg:w-40"
-            />
+            <div className="min-w-0 space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">Responsável</label>
+              <select
+                value={respFiltro}
+                onChange={(e) => setRespFiltro(e.target.value)}
+                className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <option value="todos">Todos</option>
+                {responsaveis.map((r) => (
+                  <option key={r} value={r}>
+                    {r}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="relative col-span-2 min-w-0 space-y-1 sm:col-span-1">
+              <label className="text-xs font-medium text-muted-foreground">Buscar</label>
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={busca}
+                  onChange={(e) => setBusca(e.target.value)}
+                  placeholder="Cliente ou nº..."
+                  className="h-10 w-full rounded-xl pl-9 pr-9 shadow-sm"
+                />
+                {busca && (
+                  <button
+                    type="button"
+                    onClick={() => setBusca("")}
+                    className="absolute right-2 top-1/2 grid size-6 -translate-y-1/2 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                    aria-label="Limpar busca"
+                  >
+                    <X className="size-3.5" />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="min-w-0 space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">De</label>
+              <Input
+                type="date"
+                value={desde}
+                onChange={(e) => {
+                  setDesde(e.target.value);
+                  setPeriodo("custom");
+                }}
+                className="h-10 w-full rounded-xl shadow-sm"
+              />
+            </div>
+            <div className="min-w-0 space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">Até</label>
+              <Input
+                type="date"
+                value={ate}
+                onChange={(e) => {
+                  setAte(e.target.value);
+                  setPeriodo("custom");
+                }}
+                className="h-10 w-full rounded-xl shadow-sm"
+              />
+            </div>
           </div>
 
           <Button
             variant="ghost"
-            className="col-span-2 h-10 justify-center gap-2 text-primary hover:bg-primary/5 hover:text-primary lg:ml-auto lg:w-auto"
+            className="h-10 shrink-0 justify-center gap-2 text-primary hover:bg-primary/5 hover:text-primary md:self-end"
             onClick={limparTodosFiltros}
           >
             Limpar filtros
@@ -675,7 +677,7 @@ function Pagina() {
 
       {isLoading ? (
         <div className="-mx-3 overflow-x-auto px-3 pb-4 sm:-mx-6 sm:px-6">
-          <div className="grid grid-flow-col auto-cols-[calc(100vw-1.5rem)] gap-3 sm:auto-cols-[20rem] lg:auto-cols-[21rem]">
+          <div className="grid grid-flow-col auto-cols-[17rem] gap-3 sm:auto-cols-[19rem] lg:auto-cols-[20rem] lg:gap-4">
           {Array.from({ length: 8 }).map((_, i) => (
             <Skeleton key={i} className="h-96 w-full rounded-2xl" />
           ))}
@@ -683,7 +685,7 @@ function Pagina() {
         </div>
       ) : (
         <div className="-mx-3 overflow-x-auto px-3 pb-4 sm:-mx-6 sm:px-6">
-        <div className="grid grid-flow-col auto-cols-[calc(100vw-1.5rem)] gap-3 sm:auto-cols-[20rem] lg:auto-cols-[21rem] lg:gap-4">
+        <div className="grid grid-flow-col auto-cols-[17rem] gap-3 sm:auto-cols-[19rem] lg:auto-cols-[20rem] lg:gap-4">
           {dadosFiltrados.map((stage, idx) => {
             const temClientes = stage.clientes.length > 0;
             const ehAlvo = alvo === stage.codigo && arrasto?.origem !== stage.codigo;
