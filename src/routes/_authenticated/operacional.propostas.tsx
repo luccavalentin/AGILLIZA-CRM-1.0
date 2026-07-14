@@ -348,8 +348,18 @@ function Pagina() {
             <RotateCcw className="mr-1 h-4 w-4 transition-transform duration-300 group-hover:-rotate-180" />{" "}
             Limpar
           </Button>
+          <Button
+            variant={verExcluidas ? "default" : "outline"}
+            className="h-11 rounded-xl"
+            onClick={() => setVerExcluidas((v) => !v)}
+            title="Ver propostas excluídas"
+          >
+            <Trash2 className="mr-1.5 h-4 w-4" />
+            {verExcluidas ? "Ver ativas" : "Excluídas"}
+          </Button>
         </div>
       </Card>
+
 
       {/* Lista mobile (cards) */}
       <div className="space-y-3 md:hidden">
