@@ -201,7 +201,7 @@ function Pagina() {
         setEtapa("simulacao");
         setPagina(1);
       },
-      active: etapa !== "todas" && etapa !== "cadastro_basico" && etapa !== "contrato_emitido",
+      active: etapa === "simulacao",
     },
     {
       label: "Cadastro completo",
