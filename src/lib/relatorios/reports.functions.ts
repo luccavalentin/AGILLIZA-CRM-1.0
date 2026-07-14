@@ -1124,8 +1124,6 @@ export const runReport = createServerFn({ method: "POST" })
       };
 
       const totalSim = simulacoesFiltradas.reduce((s, x) => s + valorSim(x), 0);
-      const totalAnd = andamento.reduce((s, p) => s + valorProc(p), 0);
-      const totalAprov = aprovadas.reduce((s, p) => s + valorProc(p), 0);
       const totalContr = contratos.reduce((s, p) => s + valorProc(p), 0);
       const bancoGeralMap = new Map<string, number>();
       simulacoesFiltradas.forEach((s) =>
