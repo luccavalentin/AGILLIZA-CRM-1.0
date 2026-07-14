@@ -33,6 +33,10 @@ export interface PropostaListaItem {
   responsavel_id: string | null;
   nome_responsavel: string | null;
   bancos: PropostaBancoResumo[];
+  deleted_at?: string | null;
+  deleted_by?: string | null;
+  deleted_motivo?: string | null;
+  nome_excluidor?: string | null;
 }
 
 export interface PropostaCompleta {
@@ -78,6 +82,7 @@ export const listarPropostas = createServerFn({ method: "GET" })
         data_fim: z.string().optional(),
         pagina: z.number().int().min(1).default(1),
         porPagina: z.number().int().min(1).max(500).default(30),
+        apenas_excluidas: z.boolean().default(false),
       })
       .parse(data),
   )
@@ -86,9 +91,12 @@ export const listarPropostas = createServerFn({ method: "GET" })
     let query = supabase
       .from("propostas")
       .select(
-        "id, numero_proposta, numero_proposta_banco, nome_cliente, cpf_cnpj, nome_banco, produto, valor_financiamento, status, detalhe_status_atual, status_atualizado_em, ultima_sincronizacao_em, created_at, usuario_responsavel_id, usuario_criador_id",
+        "id, numero_proposta, numero_proposta_banco, nome_cliente, cpf_cnpj, nome_banco, produto, valor_financiamento, status, detalhe_status_atual, status_atualizado_em, ultima_sincronizacao_em, created_at, usuario_responsavel_id, usuario_criador_id, deleted_at, deleted_by, deleted_motivo",
         { count: "exact" },
       );
+
+    if (data.apenas_excluidas) query = query.not("deleted_at", "is", null);
+    else query = query.is("deleted_at", null);
 
     if (data.escopo === "minhas") {
       query = query.or(`usuario_responsavel_id.eq.${userId},usuario_criador_id.eq.${userId}`);
@@ -130,7 +138,7 @@ export const listarPropostas = createServerFn({ method: "GET" })
       }
     }
 
-    // Resolve nomes dos responsáveis (para exibir o "dono" no escopo Todas).
+    // Resolve nomes dos responsáveis + de quem excluiu (para escopo "Todas" e aba "Excluídas").
     const donoIds = Array.from(
       new Set(
         rows
@@ -138,21 +146,26 @@ export const listarPropostas = createServerFn({ method: "GET" })
           .filter((v): v is string => Boolean(v)),
       ),
     );
-    const nomesDono = new Map<string, string>();
-    if (donoIds.length) {
+    const excluidorIds = Array.from(
+      new Set(rows.map((r: any) => r.deleted_by).filter((v: any): v is string => Boolean(v))),
+    );
+    const perfilIds = Array.from(new Set([...donoIds, ...excluidorIds]));
+    const nomesPerfis = new Map<string, string>();
+    if (perfilIds.length) {
       const { data: perfis } = await supabase
         .from("profiles")
         .select("id, nome")
-        .in("id", donoIds);
-      for (const p of perfis ?? []) nomesDono.set((p as any).id, (p as any).nome ?? "");
+        .in("id", perfilIds);
+      for (const p of perfis ?? []) nomesPerfis.set((p as any).id, (p as any).nome ?? "");
     }
 
-    const lista = rows.map((r) => {
+    const lista = rows.map((r: any) => {
       const responsavel_id = r.usuario_responsavel_id ?? r.usuario_criador_id ?? null;
       return {
         ...r,
         responsavel_id,
-        nome_responsavel: responsavel_id ? (nomesDono.get(responsavel_id) ?? null) : null,
+        nome_responsavel: responsavel_id ? (nomesPerfis.get(responsavel_id) ?? null) : null,
+        nome_excluidor: r.deleted_by ? (nomesPerfis.get(r.deleted_by) ?? null) : null,
         bancos: bancosPorProp.get(r.id) ?? [],
       };
     });
@@ -1390,36 +1403,40 @@ export const excluirProposta = createServerFn({ method: "POST" })
       payloadNovo: null,
     });
 
-    // Exclui e confirma que a linha realmente saiu. Com RLS, um DELETE pode
-    // "passar" sem erro afetando 0 linhas — o que deixava a proposta viva no
-    // painel/kanban mesmo após a mensagem de sucesso. Usamos .select() para
-    // saber quantas linhas foram removidas.
+    // Soft delete: marca deleted_at/deleted_by/deleted_motivo. A proposta some
+    // das listagens e do kanban, mas fica preservada na aba "Excluídas" com
+    // registro de quem excluiu e quando.
     const { data: removidas, error } = await supabase
       .from("propostas")
-      .delete()
+      .update({
+        deleted_at: new Date().toISOString(),
+        deleted_by: userId,
+        deleted_motivo: data.motivo ?? null,
+      })
       .eq("id", data.id)
+      .is("deleted_at", null)
       .select("id");
     if (error) throw error;
 
     if (!removidas || removidas.length === 0) {
-      // A política de RLS bloqueou o DELETE (usuário sem papel adequado ou
-      // fora do escopo). Como já validamos que a proposta existe e pertence ao
-      // correspondente do usuário, e a exclusão exige papel admin/correspondente,
-      // reforçamos com o cliente administrativo do servidor.
       if (!correspondente || prop.correspondente_id !== correspondente) {
         throw new Error("Você não tem permissão para excluir esta proposta.");
       }
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       const { error: errAdmin } = await supabaseAdmin
         .from("propostas")
-        .delete()
+        .update({
+          deleted_at: new Date().toISOString(),
+          deleted_by: userId,
+          deleted_motivo: data.motivo ?? null,
+        })
         .eq("id", data.id)
-        .eq("correspondente_id", correspondente);
+        .eq("correspondente_id", correspondente)
+        .is("deleted_at", null);
       if (errAdmin) throw errAdmin;
     }
 
-    // Se o cliente ficou sem simulações/propostas, recua a esteira para o
-    // cadastro para não deixar um vínculo inexistente no painel/kanban.
+    // Se o cliente ficou sem simulações/propostas ativas, recua a esteira.
     try {
       const { recuarEsteiraSeOrfao } = await import("@/lib/crm/clientes.functions");
       await recuarEsteiraSeOrfao(supabase, (prop as any).cliente_id);
@@ -1428,6 +1445,42 @@ export const excluirProposta = createServerFn({ method: "POST" })
     }
     return { ok: true };
 
+  });
+
+/** Restaura uma proposta excluída logicamente. */
+export const restaurarProposta = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }): Promise<{ ok: true }> => {
+    const { supabase, userId } = context;
+    const { data: prop } = await supabase
+      .from("propostas")
+      .select("id, correspondente_id, deleted_at")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (!prop) throw new Error("Proposta não encontrada.");
+    if (!(prop as any).deleted_at) return { ok: true };
+
+    const { data: rows, error } = await supabase
+      .from("propostas")
+      .update({ deleted_at: null, deleted_by: null, deleted_motivo: null })
+      .eq("id", data.id)
+      .select("id");
+    if (error) throw error;
+    if (!rows || rows.length === 0) {
+      const correspondente = await correspondenteId(supabase, userId).catch(() => null);
+      if (!correspondente || (prop as any).correspondente_id !== correspondente) {
+        throw new Error("Você não tem permissão para restaurar esta proposta.");
+      }
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { error: errAdmin } = await supabaseAdmin
+        .from("propostas")
+        .update({ deleted_at: null, deleted_by: null, deleted_motivo: null })
+        .eq("id", data.id)
+        .eq("correspondente_id", correspondente);
+      if (errAdmin) throw errAdmin;
+    }
+    return { ok: true };
   });
 
 /** ===== Cadastrar cliente (CRM) a partir dos dados da proposta =====

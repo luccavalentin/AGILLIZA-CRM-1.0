@@ -17,13 +17,14 @@ import {
   Clock,
   Wallet,
   User as UserIcon,
-
+  Undo2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import {
   listarSimulacoes,
   excluirSimulacao,
+  restaurarSimulacao,
   obterSimulacao,
 } from "@/lib/simulacao/simulacoes.functions";
 import { criarProposta } from "@/lib/propostas/propostas.functions";
@@ -99,6 +100,7 @@ function Pagina() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const excluir = useServerFn(excluirSimulacao);
+  const restaurar = useServerFn(restaurarSimulacao);
   const criar = useServerFn(criarProposta);
 
   const obter = useServerFn(obterSimulacao);
@@ -111,6 +113,7 @@ function Pagina() {
   const [ate, setAte] = useState(padrao.fim);
   const [responsavel, setResponsavel] = useState<string>("todos");
   const [kpiAberto, setKpiAberto] = useState<string | null>(null);
+  const [verExcluidas, setVerExcluidas] = useState(false);
 
   const { data: colegas } = useQuery({
     queryKey: ["colegas"],
@@ -130,7 +133,7 @@ function Pagina() {
 
 
   const { data, isLoading } = useQuery({
-    queryKey: ["simulacoes", escopo, busca, desde, ate, responsavel],
+    queryKey: ["simulacoes", escopo, busca, desde, ate, responsavel, verExcluidas],
     queryFn: () =>
       listarSimulacoes({
         data: {
@@ -142,6 +145,7 @@ function Pagina() {
             escopo === "todas" && responsavel !== "todos" ? responsavel : undefined,
           pagina: 1,
           porPagina: 30,
+          apenas_excluidas: verExcluidas,
         },
       }),
   });
@@ -157,6 +161,26 @@ function Pagina() {
       toast.error("Não foi possível excluir a simulação.");
     }
   }
+
+  async function handleRestaurar(id: string) {
+    try {
+      await restaurar({ data: { id } });
+      toast.success("Simulação restaurada.");
+      queryClient.invalidateQueries({ queryKey: ["simulacoes"] });
+    } catch {
+      toast.error("Não foi possível restaurar a simulação.");
+    }
+  }
+
+  function formatDataHora(v?: string | null) {
+    if (!v) return "—";
+    try {
+      return new Date(v).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
+    } catch {
+      return "—";
+    }
+  }
+
 
   function handleDuplicar(id: string) {
     router.navigate({
@@ -532,6 +556,16 @@ function Pagina() {
             >
               Limpar
             </Button>
+            <Button
+              variant={verExcluidas ? "default" : "outline"}
+              size="sm"
+              className="h-9 shrink-0"
+              onClick={() => setVerExcluidas((v) => !v)}
+              title="Ver simulações excluídas"
+            >
+              <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+              {verExcluidas ? "Ver ativas" : "Excluídas"}
+            </Button>
           </div>
         </div>
       </div>
@@ -607,6 +641,12 @@ function Pagina() {
                       <span className="truncate">{s.nome_responsavel}</span>
                     </span>
                   )}
+                  {verExcluidas && (
+                    <span className="mt-1 block text-[11px] font-normal text-destructive">
+                      Excluída por {s.nome_excluidor ?? "—"} · {formatDataHora(s.deleted_at)}
+                      {s.deleted_motivo ? ` · ${s.deleted_motivo}` : ""}
+                    </span>
+                  )}
                 </TableCell>
                 <TableCell className="py-3.5">
                   <ProdutoBadge produto={s.produto} />
@@ -624,21 +664,32 @@ function Pagina() {
                   <SimulacaoStatusBadge status={s.status} />
                 </TableCell>
                 <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                  <AcoesSimulacao
-                    onVisualizar={() =>
-                      router.navigate({
-                        to: "/operacional/simulacoes/$id",
-                        params: { id: s.id },
-                      })
-                    }
-                    onEditar={() => handleEditar(s.id)}
-                    onBaixarComparativo={() => handleBaixarComparativo(s.id)}
-                    onBaixarDetalhada={() => handleBaixarDetalhada(s.id)}
-                    onDuplicar={() => handleDuplicar(s.id)}
-                    onEnviarProposta={() => handleEnviarProposta(s.id, s.numero_simulacao)}
-                    onExcluir={() => handleExcluir(s.id)}
-                    numero={s.numero_simulacao}
-                  />
+                  {verExcluidas ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-8 rounded-lg"
+                      onClick={() => handleRestaurar(s.id)}
+                    >
+                      <Undo2 className="mr-1 h-3.5 w-3.5" /> Restaurar
+                    </Button>
+                  ) : (
+                    <AcoesSimulacao
+                      onVisualizar={() =>
+                        router.navigate({
+                          to: "/operacional/simulacoes/$id",
+                          params: { id: s.id },
+                        })
+                      }
+                      onEditar={() => handleEditar(s.id)}
+                      onBaixarComparativo={() => handleBaixarComparativo(s.id)}
+                      onBaixarDetalhada={() => handleBaixarDetalhada(s.id)}
+                      onDuplicar={() => handleDuplicar(s.id)}
+                      onEnviarProposta={() => handleEnviarProposta(s.id, s.numero_simulacao)}
+                      onExcluir={() => handleExcluir(s.id)}
+                      numero={s.numero_simulacao}
+                    />
+                  )}
                 </TableCell>
               </TableRow>
             ))}
@@ -688,24 +739,41 @@ function Pagina() {
                     <span className="truncate">{s.nome_responsavel}</span>
                   </p>
                 )}
+                {verExcluidas && (
+                  <p className="mt-1 text-[11px] font-medium text-destructive">
+                    Excluída por {s.nome_excluidor ?? "—"} · {formatDataHora(s.deleted_at)}
+                    {s.deleted_motivo ? ` · ${s.deleted_motivo}` : ""}
+                  </p>
+                )}
               </div>
               <div className="flex shrink-0 items-center gap-1" onClick={(e) => e.stopPropagation()}>
                 <SimulacaoStatusBadge status={s.status} />
-                <AcoesSimulacao
-                  onVisualizar={() =>
-                    router.navigate({
-                      to: "/operacional/simulacoes/$id",
-                      params: { id: s.id },
-                    })
-                  }
-                  onEditar={() => handleEditar(s.id)}
-                  onBaixarComparativo={() => handleBaixarComparativo(s.id)}
-                  onBaixarDetalhada={() => handleBaixarDetalhada(s.id)}
-                  onDuplicar={() => handleDuplicar(s.id)}
-                  onEnviarProposta={() => handleEnviarProposta(s.id, s.numero_simulacao)}
-                  onExcluir={() => handleExcluir(s.id)}
-                  numero={s.numero_simulacao}
-                />
+                {verExcluidas ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-8 rounded-lg"
+                    onClick={() => handleRestaurar(s.id)}
+                  >
+                    <Undo2 className="mr-1 h-3.5 w-3.5" /> Restaurar
+                  </Button>
+                ) : (
+                  <AcoesSimulacao
+                    onVisualizar={() =>
+                      router.navigate({
+                        to: "/operacional/simulacoes/$id",
+                        params: { id: s.id },
+                      })
+                    }
+                    onEditar={() => handleEditar(s.id)}
+                    onBaixarComparativo={() => handleBaixarComparativo(s.id)}
+                    onBaixarDetalhada={() => handleBaixarDetalhada(s.id)}
+                    onDuplicar={() => handleDuplicar(s.id)}
+                    onEnviarProposta={() => handleEnviarProposta(s.id, s.numero_simulacao)}
+                    onExcluir={() => handleExcluir(s.id)}
+                    numero={s.numero_simulacao}
+                  />
+                )}
               </div>
             </div>
 

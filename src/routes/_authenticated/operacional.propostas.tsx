@@ -8,15 +8,15 @@ import {
   FileText,
   KanbanSquare,
   RotateCcw,
-  
   Wallet,
   ChevronRight,
   User,
-
+  Trash2,
+  Undo2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { assertModuloPermitido } from "@/lib/route-guards";
-import { listarPropostas, excluirProposta } from "@/lib/propostas/propostas.functions";
+import { listarPropostas, excluirProposta, restaurarProposta } from "@/lib/propostas/propostas.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -77,9 +77,11 @@ function Pagina() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const excluir = useServerFn(excluirProposta);
+  const restaurar = useServerFn(restaurarProposta);
   const padrao = useMemo(() => intervaloMesAtual(), []);
   const [escopo, setEscopo] = useState<"todas" | "minhas">("minhas");
   const [grupo, setGrupo] = useState<GrupoProposta | null>(null);
+  const [verExcluidas, setVerExcluidas] = useState(false);
   const [q, setQ] = useState("");
   const [busca, setBusca] = useState("");
   const [responsavel, setResponsavel] = useState<string>("todos");
@@ -127,7 +129,7 @@ function Pagina() {
   }, [queryClient]);
 
   const { data, isLoading } = useQuery({
-    queryKey: ["propostas", escopo, busca, dataInicio, dataFim, responsavel],
+    queryKey: ["propostas", escopo, busca, dataInicio, dataFim, responsavel, verExcluidas],
     queryFn: () =>
       listarPropostas({
         data: {
@@ -139,6 +141,7 @@ function Pagina() {
           data_fim: dataFim ? `${dataFim}T23:59:59` : undefined,
           pagina: 1,
           porPagina: 100,
+          apenas_excluidas: verExcluidas,
         },
       }),
   });
@@ -193,6 +196,26 @@ function Pagina() {
       toast.error("Não foi possível excluir a proposta.");
     }
   }
+
+  async function handleRestaurar(id: string) {
+    try {
+      await restaurar({ data: { id } });
+      toast.success("Proposta restaurada.");
+      queryClient.invalidateQueries({ queryKey: ["propostas"] });
+    } catch {
+      toast.error("Não foi possível restaurar a proposta.");
+    }
+  }
+
+  function formatDataHora(v?: string | null) {
+    if (!v) return "—";
+    try {
+      return new Date(v).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
+    } catch {
+      return "—";
+    }
+  }
+
 
   return (
     <div className="mx-auto w-full max-w-[1600px] space-y-4 p-3 sm:space-y-6 sm:p-6">
@@ -325,8 +348,18 @@ function Pagina() {
             <RotateCcw className="mr-1 h-4 w-4 transition-transform duration-300 group-hover:-rotate-180" />{" "}
             Limpar
           </Button>
+          <Button
+            variant={verExcluidas ? "default" : "outline"}
+            className="h-11 rounded-xl"
+            onClick={() => setVerExcluidas((v) => !v)}
+            title="Ver propostas excluídas"
+          >
+            <Trash2 className="mr-1.5 h-4 w-4" />
+            {verExcluidas ? "Ver ativas" : "Excluídas"}
+          </Button>
         </div>
       </Card>
+
 
       {/* Lista mobile (cards) */}
       <div className="space-y-3 md:hidden">
@@ -384,11 +417,22 @@ function Pagina() {
                   </span>
                 </span>
                 <div onClick={(e) => e.stopPropagation()} className="shrink-0">
-                  <ConfirmDelete
-                    titulo="Excluir proposta"
-                    descricao={`A proposta ${p.numero_proposta} será removida permanentemente. Um registro completo será mantido nos Logs de auditoria.`}
-                    onConfirm={() => handleExcluir(p.id)}
-                  />
+                  {verExcluidas ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-8 rounded-lg"
+                      onClick={() => handleRestaurar(p.id)}
+                    >
+                      <Undo2 className="mr-1 h-3.5 w-3.5" /> Restaurar
+                    </Button>
+                  ) : (
+                    <ConfirmDelete
+                      titulo="Excluir proposta"
+                      descricao={`A proposta ${p.numero_proposta} será movida para a aba "Excluídas". Você poderá restaurá-la a qualquer momento.`}
+                      onConfirm={() => handleExcluir(p.id)}
+                    />
+                  )}
                 </div>
               </div>
 
@@ -417,6 +461,16 @@ function Pagina() {
                     <span className="truncate">{p.nome_responsavel}</span>
                   </p>
                 )}
+                {verExcluidas && (
+                  <div className="mt-2 rounded-md border border-destructive/25 bg-destructive/5 px-2 py-1.5 text-[11px] text-destructive">
+                    <div className="font-medium">Excluída por {p.nome_excluidor ?? "—"}</div>
+                    <div className="text-destructive/80">em {formatDataHora(p.deleted_at)}</div>
+                    {p.deleted_motivo && (
+                      <div className="mt-0.5 truncate text-destructive/70">Motivo: {p.deleted_motivo}</div>
+                    )}
+                  </div>
+                )}
+
 
                 <div className="mt-3 flex items-end justify-between gap-3 border-t border-border/50 pt-3">
                   <div className="min-w-0">
@@ -534,6 +588,12 @@ function Pagina() {
                         <span className="truncate">{p.nome_responsavel}</span>
                       </span>
                     )}
+                    {verExcluidas && (
+                      <span className="mt-1 block text-[11px] font-normal text-destructive">
+                        Excluída por {p.nome_excluidor ?? "—"} · {formatDataHora(p.deleted_at)}
+                        {p.deleted_motivo ? ` · ${p.deleted_motivo}` : ""}
+                      </span>
+                    )}
                   </TableCell>
                   <TableCell>
                     <BancosProposta bancos={p.bancos} />
@@ -545,11 +605,22 @@ function Pagina() {
                     <StatusBancosProposta bancos={p.bancos} fallbackStatus={p.status} />
                   </TableCell>
                   <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                    <ConfirmDelete
-                      titulo="Excluir proposta"
-                      descricao={`A proposta ${p.numero_proposta} será removida permanentemente. Um registro completo será mantido nos Logs de auditoria.`}
-                      onConfirm={() => handleExcluir(p.id)}
-                    />
+                    {verExcluidas ? (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 rounded-lg"
+                        onClick={() => handleRestaurar(p.id)}
+                      >
+                        <Undo2 className="mr-1 h-3.5 w-3.5" /> Restaurar
+                      </Button>
+                    ) : (
+                      <ConfirmDelete
+                        titulo="Excluir proposta"
+                        descricao={`A proposta ${p.numero_proposta} será movida para a aba "Excluídas". Você poderá restaurá-la a qualquer momento.`}
+                        onConfirm={() => handleExcluir(p.id)}
+                      />
+                    )}
                   </TableCell>
                 </TableRow>
                 );
