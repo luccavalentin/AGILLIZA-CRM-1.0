@@ -1,4 +1,4 @@
-import { Check, Loader2, Circle, X } from "lucide-react";
+import { Check, Loader2, Lock, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export type EtapaBanco = {
