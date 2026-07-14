@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/select";
 import { CurrencyInput } from "@/components/simulacao/currency-input";
 import { JogadaNumerosDialog } from "@/components/simulacao/jogada-numeros-dialog";
+import { SimularPorFinanciamento } from "@/components/simulacao/simular-por-financiamento";
 import { Campo, Ast, Erro } from "@/components/simulacao/completa/campo";
 import { formatBRL } from "@/lib/simulacao/format";
 import { formatarMeses } from "@/lib/simulacao/prazo";
@@ -132,6 +133,9 @@ export function SecaoOperacaoImovel({ ctx }: { ctx: SimulacaoCompletaCtx }) {
           onAplicar={aplicarJogadaNumeros}
         />
       </div>
+
+      <SimularPorFinanciamento ltvMax={ltvMax} onAplicar={aplicarJogadaNumeros} />
+
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <Campo label={<>Valor do imóvel (R$) <Ast /></>}>
