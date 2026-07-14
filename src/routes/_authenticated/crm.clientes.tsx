@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, keepPreviousData, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
@@ -73,6 +73,15 @@ function Pagina() {
 
   const [q, setQ] = useState("");
   const [busca, setBusca] = useState("");
+
+  // Busca ao vivo (debounced): reflete no filtro conforme o usuário digita.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setBusca(q.trim());
+      setPagina(1);
+    }, 250);
+    return () => clearTimeout(t);
+  }, [q]);
   const [pagina, setPagina] = useState(1);
   const [etapa, setEtapa] = useState<string>("todas");
   const [responsavel, setResponsavel] = useState<string>("todos");
@@ -162,7 +171,7 @@ function Pagina() {
       label: "Total de clientes",
       hint: "Ativos no sistema",
       valor: kpis?.total,
-      icon: <Users className="size-5" />,
+      icon: <Users className="size-3.5" />,
       onClick: () => {
         setPortal("todos");
         setStatusF("ativo");
@@ -175,7 +184,7 @@ function Pagina() {
       label: "App ativo",
       hint: "Com acesso liberado",
       valor: kpis?.portal_ativo,
-      icon: <Smartphone className="size-5" />,
+      icon: <Smartphone className="size-3.5" />,
       onClick: () => {
         setPortal("ativo");
         setPagina(1);
@@ -186,7 +195,7 @@ function Pagina() {
       label: "Em andamento",
       hint: "Em etapas da esteira",
       valor: kpis?.em_andamento,
-      icon: <Loader2 className="size-5" />,
+      icon: <Loader2 className="size-3.5" />,
       onClick: () => {
         // filtro visual: seleciona etapa "simulacao" como atalho comum
         setEtapa("simulacao");
@@ -198,7 +207,7 @@ function Pagina() {
       label: "Cadastro completo",
       hint: "100% preenchido",
       valor: kpis?.cadastro_completo,
-      icon: <FileCheck2 className="size-5" />,
+      icon: <FileCheck2 className="size-3.5" />,
       onClick: () => {
         setEtapa("cadastro_completo");
         setPagina(1);
@@ -240,32 +249,33 @@ function Pagina() {
         </Button>
       </div>
 
-      {/* KPIs clicáveis */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      {/* KPIs clicáveis — compactos e refinados */}
+      <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
         {kpiCards.map((k) => (
           <button
             key={k.label}
             type="button"
             onClick={k.onClick}
-            className={`group relative overflow-hidden rounded-2xl border p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md ${
+            className={`group relative overflow-hidden rounded-xl border px-3.5 py-3 text-left transition-all hover:border-primary/30 hover:shadow-sm ${
               k.active
-                ? "border-primary/40 bg-primary/[0.04] ring-1 ring-primary/20"
+                ? "border-primary/40 bg-primary/[0.03] shadow-[inset_2px_0_0_0_hsl(var(--primary))]"
                 : "border-border/60 bg-card"
             }`}
           >
-            <span className="pointer-events-none absolute inset-y-0 left-0 w-0.5 bg-primary opacity-0 transition-opacity group-hover:opacity-100" />
-            <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0">
-                <p className="text-xs font-medium text-muted-foreground">{k.label}</p>
-                <p className="mt-1 text-2xl font-semibold tabular-nums text-foreground">
-                  {k.valor ?? "—"}
-                </p>
-                <p className="mt-0.5 truncate text-[11px] text-muted-foreground">{k.hint}</p>
-              </div>
-              <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/15">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                {k.label}
+              </p>
+              <span className={`grid size-6 shrink-0 place-items-center rounded-md transition-colors ${
+                k.active ? "bg-primary/10 text-primary" : "bg-muted/60 text-muted-foreground group-hover:text-primary"
+              }`}>
                 {k.icon}
               </span>
             </div>
+            <p className="mt-1.5 text-2xl font-semibold leading-none tabular-nums text-foreground">
+              {k.valor ?? "—"}
+            </p>
+            <p className="mt-1 truncate text-[11px] text-muted-foreground">{k.hint}</p>
           </button>
         ))}
       </div>
@@ -290,7 +300,7 @@ function Pagina() {
             />
           </div>
 
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[repeat(4,minmax(0,1fr))_auto_auto_auto_auto]">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[repeat(4,minmax(0,1fr))_auto_auto]">
             <FilterField label="Etapa">
               <Select value={etapa} onValueChange={(v) => { setEtapa(v); setPagina(1); }}>
                 <SelectTrigger className="h-10 rounded-xl"><SelectValue placeholder="Todas" /></SelectTrigger>
@@ -355,11 +365,6 @@ function Pagina() {
             <div className="flex items-end">
               <Button type="button" variant="outline" onClick={limpar} className="h-10 w-full rounded-xl gap-2">
                 <RotateCcw className="size-4" /> Limpar
-              </Button>
-            </div>
-            <div className="flex items-end">
-              <Button type="submit" className="h-10 w-full rounded-xl gap-2">
-                <Search className="size-4" /> Buscar
               </Button>
             </div>
           </div>
