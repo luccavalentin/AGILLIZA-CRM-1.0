@@ -27,6 +27,7 @@ import {
 } from "@/lib/crm/clientes.functions";
 import { type ChatEtiqueta } from "@/lib/crm/chat-gestao.functions";
 import { iniciais } from "./utils";
+import { BancoChip } from "@/components/bancos/banco-chip";
 
 
 const TABS = [
