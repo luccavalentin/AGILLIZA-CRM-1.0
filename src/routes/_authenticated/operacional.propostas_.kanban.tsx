@@ -121,6 +121,10 @@ function Pagina() {
   const [busca, setBusca] = useState(qInicial ?? "");
   const [dataInicio, setDataInicio] = useState(qInicial ? "" : padrao.inicio);
   const [dataFim, setDataFim] = useState(qInicial ? "" : padrao.fim);
+  const [respFiltro, setRespFiltro] = useState("todos");
+  const [corretorFiltro, setCorretorFiltro] = useState("todos");
+  const [imobFiltro, setImobFiltro] = useState("todos");
+
 
   // Busca ao vivo: filtra conforme o usuário digita (com debounce).
   useEffect(() => {
