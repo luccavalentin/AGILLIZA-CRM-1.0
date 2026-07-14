@@ -60,12 +60,11 @@ const ESTADO_INICIAL: Form = {
   email_verificado_em: null,
 };
 
-/** Apenas o Bradesco opera pelo sistema PRICE. */
-function ehBradesco(b: { codigo_banco?: number | string | null; nome_banco?: string | null }) {
-  return (
-    String(b.codigo_banco ?? "").replace(/^0+/, "") === "237" ||
-    (b.nome_banco ?? "").toLowerCase().includes("bradesco")
-  );
+/** Bancos que operam pelo sistema PRICE (Tabela Price). Hoje: Bradesco (237) e Santander (33). */
+function aceitaPrice(b: { codigo_banco?: number | string | null; nome_banco?: string | null }) {
+  const cod = String(b.codigo_banco ?? "").replace(/^0+/, "");
+  const nome = (b.nome_banco ?? "").toLowerCase();
+  return cod === "237" || cod === "33" || nome.includes("bradesco") || nome.includes("santander");
 }
 
 interface OpcoesHook {
