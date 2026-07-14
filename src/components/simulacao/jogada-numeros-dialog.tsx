@@ -112,9 +112,15 @@ export function JogadaNumerosDialog({
   return (
     <Dialog open={aberto} onOpenChange={setAberto}>
       <DialogTrigger asChild>
-        <Button type="button" variant="outline" size="sm">
-          <Dice5 className="mr-1 h-4 w-4" /> Jogada de números
-        </Button>
+        <button
+          type="button"
+          className="group relative inline-flex items-center gap-1.5 overflow-hidden rounded-md border border-primary/30 bg-gradient-to-br from-primary to-primary/80 px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-sm ring-1 ring-inset ring-white/10 transition-all hover:shadow-md hover:shadow-primary/25 hover:-translate-y-px active:translate-y-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+          title="Ajusta os valores da operação para viabilizar a proposta"
+        >
+          <span className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/25 to-transparent transition-transform duration-700 group-hover:translate-x-full" aria-hidden />
+          <Dice5 className="h-3.5 w-3.5 transition-transform group-hover:rotate-12" />
+          Jogada de números
+        </button>
       </DialogTrigger>
       <DialogContent className="max-w-md">
         <DialogHeader>
