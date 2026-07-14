@@ -6,6 +6,7 @@ import { assertModuloPermitido } from "@/lib/route-guards";
 import { listarTarefas } from "@/lib/operacional/tarefas.functions";
 import { TarefaDrawer } from "@/components/operacional/tarefa-drawer";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { mapaFeriados } from "@/lib/feriados-br";
 import { NavegacaoCalendario } from "@/components/operacional/calendario/navegacao-calendario";
 import { GradeCalendario } from "@/components/operacional/calendario/grade-calendario";
@@ -22,10 +23,13 @@ function Pagina() {
   const hoje = new Date();
   const [ref, setRef] = useState(new Date(hoje.getFullYear(), hoje.getMonth(), 1));
   const [sel, setSel] = useState<string | null>(null);
+  const [escopo, setEscopo] = useState<"todas" | "minhas">(
+    () => (typeof window !== "undefined" && (localStorage.getItem("tarefas:escopo") as "todas" | "minhas")) || "todas",
+  );
 
   const { data } = useQuery({
-    queryKey: ["tarefas", "calendario"],
-    queryFn: () => listarTarefas({ data: { escopo: "todas" } }),
+    queryKey: ["tarefas", "calendario", escopo],
+    queryFn: () => listarTarefas({ data: { escopo } }),
   });
 
   const tarefasPorDia = useMemo(() => {
@@ -64,7 +68,22 @@ function Pagina() {
         </Button>
       </div>
 
+      <Tabs
+        value={escopo}
+        onValueChange={(v) => {
+          const val = v as "todas" | "minhas";
+          setEscopo(val);
+          if (typeof window !== "undefined") localStorage.setItem("tarefas:escopo", val);
+        }}
+      >
+        <TabsList className="h-10 rounded-xl">
+          <TabsTrigger value="minhas" className="rounded-lg">Minhas</TabsTrigger>
+          <TabsTrigger value="todas" className="rounded-lg">Gerais</TabsTrigger>
+        </TabsList>
+      </Tabs>
+
       <NavegacaoCalendario ref={ref} hoje={hoje} onChange={setRef} />
+
 
       <GradeCalendario
         ref={ref}

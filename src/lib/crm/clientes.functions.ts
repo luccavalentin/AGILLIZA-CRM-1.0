@@ -62,6 +62,7 @@ export interface ClienteListaItem {
 const listarSchema = z.object({
   q: z.string().optional(),
   etapa: z.string().optional(),
+  escopo: z.enum(["minhas", "geral"]).optional(),
   pagina: z.number().int().min(1).default(1),
   porPagina: z.number().int().min(1).max(100).default(20),
 });
@@ -94,6 +95,10 @@ export const listarClientes = createServerFn({ method: "GET" })
       // para que a contagem e a paginação fiquem corretas.
       if (data.etapa) {
         query = query.eq("cliente_pipeline.pipeline_stages.codigo", data.etapa);
+      }
+
+      if (data.escopo === "minhas") {
+        query = query.eq("responsavel_id", userId);
       }
 
       query = query.range(from, to);

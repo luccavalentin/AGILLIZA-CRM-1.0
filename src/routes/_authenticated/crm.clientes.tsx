@@ -16,6 +16,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ToneBadge } from "@/components/crm/tone-badge";
 import { ConfirmDelete } from "@/components/shared/confirm-delete";
 import { assertModuloPermitido } from "@/lib/route-guards";
@@ -41,10 +42,13 @@ function Pagina() {
   const [q, setQ] = useState("");
   const [busca, setBusca] = useState("");
   const [pagina, setPagina] = useState(1);
+  const [escopo, setEscopo] = useState<"minhas" | "geral">(
+    () => (typeof window !== "undefined" && (localStorage.getItem("clientes:escopo") as "minhas" | "geral")) || "geral",
+  );
 
   const { data, isLoading, isFetching } = useQuery({
-    queryKey: ["clientes", busca, pagina],
-    queryFn: () => listar({ data: { q: busca, pagina, porPagina: 20 } }),
+    queryKey: ["clientes", busca, pagina, escopo],
+    queryFn: () => listar({ data: { q: busca, pagina, porPagina: 20, escopo } }),
     placeholderData: keepPreviousData,
   });
 
@@ -99,13 +103,27 @@ function Pagina() {
       </div>
 
       <form
-        className="grid grid-cols-[minmax(0,1fr)_auto] gap-2"
+        className="grid grid-cols-1 gap-2 sm:grid-cols-[auto_minmax(0,1fr)_auto]"
         onSubmit={(e) => {
           e.preventDefault();
           setPagina(1);
           setBusca(q);
         }}
       >
+        <Tabs
+          value={escopo}
+          onValueChange={(v) => {
+            const val = v as "minhas" | "geral";
+            setEscopo(val);
+            setPagina(1);
+            if (typeof window !== "undefined") localStorage.setItem("clientes:escopo", val);
+          }}
+        >
+          <TabsList className="h-11 rounded-xl">
+            <TabsTrigger value="minhas" className="rounded-lg">Minhas</TabsTrigger>
+            <TabsTrigger value="geral" className="rounded-lg">Gerais</TabsTrigger>
+          </TabsList>
+        </Tabs>
         <div className="relative flex-1 sm:max-w-md">
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input

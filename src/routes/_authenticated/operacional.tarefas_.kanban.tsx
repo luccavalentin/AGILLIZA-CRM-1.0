@@ -14,6 +14,7 @@ import {
 import { statusTarefa, TONE_BAR } from "@/components/operacional/status";
 import { PriorityChip, OpAvatar } from "@/components/operacional/ui";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/operacional/tarefas_/kanban")({
@@ -28,10 +29,13 @@ function Pagina() {
   const qc = useQueryClient();
   const moverFn = useServerFn(moverStatusTarefa);
   const [arrastando, setArrastando] = useState<{ id: string; status: TarefaStatus } | null>(null);
+  const [escopo, setEscopo] = useState<"todas" | "minhas">(
+    () => (typeof window !== "undefined" && (localStorage.getItem("tarefas:escopo") as "todas" | "minhas")) || "todas",
+  );
 
   const { data } = useQuery({
-    queryKey: ["tarefas", "kanban"],
-    queryFn: () => listarTarefas({ data: { escopo: "todas" } }),
+    queryKey: ["tarefas", "kanban", escopo],
+    queryFn: () => listarTarefas({ data: { escopo } }),
   });
 
   async function soltar(coluna: TarefaStatus) {
@@ -76,7 +80,22 @@ function Pagina() {
         </Button>
       </div>
 
+      <Tabs
+        value={escopo}
+        onValueChange={(v) => {
+          const val = v as "todas" | "minhas";
+          setEscopo(val);
+          if (typeof window !== "undefined") localStorage.setItem("tarefas:escopo", val);
+        }}
+      >
+        <TabsList className="h-10 rounded-xl">
+          <TabsTrigger value="minhas" className="rounded-lg">Minhas</TabsTrigger>
+          <TabsTrigger value="todas" className="rounded-lg">Gerais</TabsTrigger>
+        </TabsList>
+      </Tabs>
+
       <div className="flex gap-4 overflow-x-auto pb-2">
+
         {COLUNAS.map((col) => {
           const cfg = statusTarefa(col);
           const doStatus = itens.filter((t) => t.status === col);

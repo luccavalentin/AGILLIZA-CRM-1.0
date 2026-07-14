@@ -15,6 +15,7 @@ import { statusDemanda, TONE_BAR } from "@/components/operacional/status";
 import { PriorityChip, OpAvatar } from "@/components/operacional/ui";
 import { SlaCountdown } from "@/components/operacional/sla-countdown";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 
 type DemandaItem = Awaited<ReturnType<typeof listarDemandas>>[number];
@@ -79,10 +80,13 @@ function Pagina() {
   // "trava" do ghost). O estado abaixo só controla o realce da coluna-alvo.
   const arrastandoRef = useRef<{ id: string; status: DemandaStatus } | null>(null);
   const [arrastando, setArrastando] = useState<{ id: string; status: DemandaStatus } | null>(null);
+  const [escopo, setEscopo] = useState<"minhas" | "equipe">(
+    () => (typeof window !== "undefined" && (localStorage.getItem("demandas:escopo") as "minhas" | "equipe")) || "equipe",
+  );
 
   const { data } = useQuery({
-    queryKey: ["demandas", "kanban"],
-    queryFn: () => listarDemandas({ data: { escopo: "equipe" } }),
+    queryKey: ["demandas", "kanban", escopo],
+    queryFn: () => listarDemandas({ data: { escopo } }),
   });
 
   const onDragStart = useCallback((id: string, status: DemandaStatus) => {
@@ -158,7 +162,22 @@ function Pagina() {
         </Button>
       </div>
 
+      <Tabs
+        value={escopo}
+        onValueChange={(v) => {
+          const val = v as "minhas" | "equipe";
+          setEscopo(val);
+          if (typeof window !== "undefined") localStorage.setItem("demandas:escopo", val);
+        }}
+      >
+        <TabsList className="h-10 rounded-xl">
+          <TabsTrigger value="minhas" className="rounded-lg">Minhas</TabsTrigger>
+          <TabsTrigger value="equipe" className="rounded-lg">Gerais</TabsTrigger>
+        </TabsList>
+      </Tabs>
+
       <div className="flex gap-4 overflow-x-auto pb-2">
+
         {COLUNAS.map((col) => {
           const cfg = statusDemanda(col);
           const doStatus = porStatus.get(col) ?? [];

@@ -1,52 +1,36 @@
-## Objetivo
+## Auditoria — onde falta o seletor "Minhas / Gerais"
 
-Hoje o chat com o cliente (`cliente_app_mensagens`) é **um só por cliente**: toda a equipe vê e responde as mesmas mensagens. Vamos torná-lo **individual por atendente** — cada usuário tem sua própria conversa com o cliente, e o cliente vê **uma conversa separada por atendente**.
+Já têm (mantém como está):
+- Painel Visão geral · Painel Operacional · CRM Painel
+- Simulações · Propostas (lista, kanban, enviar) · Tarefas (lista) · Demandas (lista)
+- Relatórios (todos usam `VisionSelector`)
 
-## Arquitetura escolhida
+Faltando o seletor visível na UI (a função-servidor já aceita escopo, só falta expor o controle):
+1. `dashboard.tsx` — home do usuário
+2. `crm.clientes.tsx` — listagem de clientes
+3. `crm.chat.tsx` — caixa de conversas
+4. `operacional.tarefas_.kanban.tsx` — hoje fixo `escopo: "todas"`
+5. `operacional.tarefas_.calendario.tsx` — hoje fixo `escopo: "todas"`
+6. `operacional.demandas_.kanban.tsx` — hoje fixo `escopo: "equipe"`
 
-Uma conversa = par **(cliente, atendente)**. Adicionamos `atendente_id` na mensagem:
+Financeiro (contas a pagar/receber, fluxo de caixa, comissões) — hoje NÃO tem coluna `criador_id/responsavel_id` para separar "minhas" x "gerais"; o módulo é organizacional. Proposta: **não** adicionar seletor no financeiro por enquanto (não faria sentido semântico) — se você quiser, incluo depois um filtro "Minhas comissões" na tela de comissões, que é o único onde há vínculo pessoal (`profissional_id`).
 
-```text
-cliente_app_mensagens
-  cliente_id ─┐
-  atendente_id ┤─ definem a thread
-  remetente_tipo = 'time' | 'cliente'
-```
+## O que vou fazer
 
-- Mensagem da equipe (`time`): `atendente_id = quem enviou`.
-- Mensagem do cliente (`cliente`): `atendente_id = atendente da thread onde ele respondeu`.
+Padrão único em todas as telas:
+- Estado local `escopo: "minha" | "geral"` (default `"minha"`).
+- Chip inline com as duas opções, na mesma linha do título/filtros, usando o mesmo estilo do `VisionSelector` já existente (cor da marca no ativo).
+- Passa o escopo para a server function correspondente (todas já aceitam).
+- Persiste a preferência em `localStorage` por tela.
+- Respeita permissões: se o usuário não tem `podeEquipe/podeGeral`, o chip nem aparece (força "minha").
 
-**Visibilidade (regra que proponho para gestores):**
-- Atendente comum → vê e responde **somente a sua própria** conversa com cada cliente.
-- Admin/Correspondente → mantêm uma **visão supervisora** opcional ("Ver todos os atendimentos") para acompanhar as conversas de todos os atendentes (necessário para auditoria/gestão), mas por padrão também abrem só a sua. Ninguém edita/exclui mensagem de outro usuário.
+## Arquivos a mudar
 
-## Mudanças no banco (migração)
+- `src/routes/_authenticated/dashboard.tsx` + a função de dados que ele consome
+- `src/routes/_authenticated/crm.clientes.tsx`
+- `src/routes/_authenticated/crm.chat.tsx`
+- `src/routes/_authenticated/operacional.tarefas_.kanban.tsx`
+- `src/routes/_authenticated/operacional.tarefas_.calendario.tsx`
+- `src/routes/_authenticated/operacional.demandas_.kanban.tsx`
 
-1. `ALTER TABLE cliente_app_mensagens ADD COLUMN atendente_id uuid` + índice `(cliente_id, atendente_id, criada_em)`.
-2. Backfill:
-   - `time` → `atendente_id = remetente_id`.
-   - `cliente` → atendente da mensagem `time` mais próxima no tempo; fallback = `clientes.responsavel_id`.
-3. Ajustar funções `SECURITY DEFINER`:
-   - `portal_time_responder` → grava `atendente_id = auth.uid()`.
-   - `portal_time_marcar_lidas` → só marca lidas da thread `atendente_id = auth.uid()`.
-   - `portal_enviar_mensagem` → novo parâmetro `_atendente` (thread escolhida pelo cliente).
-   - `portal_listar_mensagens` → novo parâmetro `_atendente` (lista a thread específica).
-   - Nova `portal_listar_atendentes(_cid)` → lista atendentes com quem o cliente conversa (nome, última mensagem, não lidas).
-
-## Lado da equipe (`src/lib/crm/chat-cliente.functions.ts` + UI)
-
-- `listarConversasCliente`: agrupa por (cliente, atendente); filtra `atendente_id = userId` (gestor com toggle vê todas, mostrando o nome do atendente em cada conversa).
-- `listarChatCliente`: passa a aceitar `atendente_id` (default = usuário atual).
-- `editarChatCliente` / `excluirChatCliente`: restringir a `remetente_id = userId` (corrige vazamento atual de editar mensagem alheia).
-- UI `crm.chat.tsx` / `chat-cliente-tab.tsx`: cada conversa carrega a thread do usuário; para gestores, badge com o nome do atendente e o toggle de visão geral.
-
-## Lado do cliente (PWA `src/lib/portal/cliente.functions.ts` + `cliente.chat.tsx`)
-
-- Nova listagem de **threads por atendente** (usa `portal_listar_atendentes`).
-- `listar/enviar/marcar` passam a receber `atendente_id` da thread aberta.
-- UI: o cliente escolhe com qual atendente falar (lista de conversas), cada uma isolada.
-
-## Verificação
-
-- Typecheck (`tsgo`).
-- Playwright: logar como dois usuários diferentes, conversar com o mesmo cliente e confirmar que cada um vê só a sua thread; no app do cliente, confirmar as conversas separadas por atendente.
+Se você confirmar, executo tudo agora. Se quiser incluir também financeiro (mesmo sem lógica de dono clara) ou deixar de fora alguma tela, me diga antes de eu começar.
