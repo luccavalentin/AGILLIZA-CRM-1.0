@@ -148,13 +148,15 @@ export function PipelineTimeline({
           const inner = (
             <>
               {conector}
+              {marcadorAtual}
               {node}
               {label}
             </>
           );
 
           const wrapperClasses =
-            "group relative flex min-w-[104px] flex-1 flex-col items-center px-1.5";
+            "group relative flex min-w-[104px] flex-1 flex-col items-center px-1.5 pt-6";
+
 
 
           if (onSelecionar) {
