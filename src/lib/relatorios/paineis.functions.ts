@@ -484,6 +484,112 @@ export const getPanelDados = createServerFn({ method: "POST" })
       const recusadasCount = enviadas.filter(
         (p) => p.status === "credito_recusado",
       ).length;
+
+      // === Extras: visão geral do sistema ===
+      const clientesRows = (clientesRes.data ?? []) as any[];
+      const clientesNovos = clientesRows.length;
+
+      const demRows = (demRes.data ?? []) as any[];
+      const tkRows = (tkRes.data ?? []) as any[];
+      const agora = new Date();
+      const demAbertas = demRows.filter((d) => !["concluida", "cancelada"].includes(d.status));
+      const demVencidas = demAbertas.filter((d) => d.prazo_sla && new Date(d.prazo_sla) < agora);
+      const tkAbertas = tkRows.filter((t) => !["concluida", "cancelada"].includes(t.status));
+      const tkAtrasadas = tkAbertas.filter((t) => t.prazo && new Date(t.prazo) < agora);
+
+      const recRows = (recRes.data ?? []) as any[];
+      const payRows = (payRes.data ?? []) as any[];
+      const somaAberto = (rows: any[]) =>
+        rows.reduce((s, r) => s + Math.max(0, Number(r.valor ?? 0) - Number(r.valor_pago ?? 0)), 0);
+      const aReceber = somaAberto(recRows);
+      const aPagar = somaAberto(payRows);
+      const comissoesPrevistas = somaAberto(
+        recRows.filter((r) => String(r.tipo ?? "").toLowerCase().includes("comiss")),
+      );
+
+      // Simulações por tipo
+      const tipoSimMap = new Map<string, number>();
+      simRows.forEach((s) => {
+        const t = s.tipo_simulacao === "completa" ? "Completa" : s.tipo_simulacao === "rapida" ? "Rápida" : "Outra";
+        tipoSimMap.set(t, (tipoSimMap.get(t) ?? 0) + 1);
+      });
+      const porTipoSimulacao = tipoSimMap.size
+        ? {
+            titulo: "Simulações por tipo",
+            subtitulo: "Rápida × Completa",
+            dados: [...tipoSimMap.entries()].map(([label, valor]) => ({ label, valor })),
+          }
+        : undefined;
+
+      // Volume por banco (contratos emitidos e propostas aprovadas)
+      const volBancoMap = new Map<string, number>();
+      aprovadasProp.forEach((p) => {
+        const v = Number(p.valor_financiamento_aprovado ?? p.valor_financiamento ?? 0) || 0;
+        if (!v) return;
+        volBancoMap.set(p.nome_banco ?? "—", (volBancoMap.get(p.nome_banco ?? "—") ?? 0) + v);
+      });
+      const volumePorBanco = volBancoMap.size
+        ? {
+            titulo: "Volume aprovado por banco",
+            subtitulo: "Somatório de crédito aprovado",
+            porBanco: true,
+            dados: [...volBancoMap.entries()]
+              .sort((a, b) => b[1] - a[1])
+              .slice(0, 8)
+              .map(([label, valor]) => ({ label, valor })),
+          }
+        : undefined;
+
+      // Clientes por etapa do pipeline
+      const pipeRows = (pipeRes.data ?? []) as any[];
+      const etapaMap = new Map<string, { valor: number; ordem: number }>();
+      pipeRows.forEach((r) => {
+        const stg = r.pipeline_stages;
+        if (!stg) return;
+        const nome = stg.nome ?? stg.codigo ?? "—";
+        const cur = etapaMap.get(nome) ?? { valor: 0, ordem: stg.ordem ?? 0 };
+        cur.valor += 1;
+        cur.ordem = stg.ordem ?? cur.ordem;
+        etapaMap.set(nome, cur);
+      });
+      const clientesPorEtapa = etapaMap.size
+        ? {
+            titulo: "Clientes por etapa da esteira",
+            subtitulo: "Distribuição atual do CRM",
+            dados: [...etapaMap.entries()]
+              .sort((a, b) => a[1].ordem - b[1].ordem)
+              .map(([label, v]) => ({ label, valor: v.valor })),
+          }
+        : undefined;
+
+      // Top operadores por contratos emitidos (apenas visão ampliada)
+      let topOperadores: PanelDistribuicao | undefined;
+      if (data.escopo !== "minha" && !data.responsavel) {
+        const opMap = new Map<string, number>();
+        rowsBrutas
+          .filter((p) => CONTRATO_STATUS.has(p.status) && dentroPeriodo(p.contrato_emitido_em))
+          .forEach((p) => {
+            const uid = p.usuario_responsavel_id ?? "—";
+            opMap.set(uid, (opMap.get(uid) ?? 0) + 1);
+          });
+        if (opMap.size) {
+          const ids = [...opMap.keys()].filter((k) => k !== "—");
+          const nomes = new Map<string, string>();
+          if (ids.length) {
+            const pr = await supabase.from("profiles").select("user_id,nome").in("user_id", ids);
+            (pr.data ?? []).forEach((u: any) => nomes.set(u.user_id, u.nome ?? "Usuário"));
+          }
+          topOperadores = {
+            titulo: "Top operadores",
+            subtitulo: "Contratos emitidos no período",
+            dados: [...opMap.entries()]
+              .sort((a, b) => b[1] - a[1])
+              .slice(0, 6)
+              .map(([id, valor]) => ({ label: nomes.get(id) ?? "—", valor })),
+          };
+        }
+      }
+
       return {
         heros: [
           { label: "Simulações", valor: int(simCount), hint: brlCompacto(volumeSimulado), tone: "neutral", delta: mkDelta(simCount, ant.simCount) },
