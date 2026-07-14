@@ -250,28 +250,37 @@ function Pagina() {
             key={k.label}
             type="button"
             onClick={k.onClick}
-            className={`group relative overflow-hidden rounded-xl border px-3.5 py-3 text-left transition-all hover:border-primary/30 hover:shadow-sm ${
+            aria-pressed={k.active}
+            className={`group relative overflow-hidden rounded-xl border px-3.5 py-3 text-left transition-all duration-200 ease-out will-change-transform hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md hover:shadow-primary/5 active:translate-y-0 active:scale-[0.98] active:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
               k.active
-                ? "border-primary/40 bg-primary/[0.03] shadow-[inset_2px_0_0_0_hsl(var(--primary))]"
+                ? "border-primary/50 bg-primary/[0.04] shadow-[inset_3px_0_0_0_hsl(var(--primary)),0_1px_2px_rgba(0,0,0,0.04)] ring-1 ring-primary/10"
                 : "border-border/60 bg-card"
             }`}
           >
-            <div className="flex items-center justify-between gap-2">
+            {/* brilho sutil no hover */}
+            <span
+              aria-hidden
+              className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-primary/[0.06] to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full"
+            />
+            <div className="relative flex items-center justify-between gap-2">
               <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
                 {k.label}
               </p>
-              <span className={`grid size-6 shrink-0 place-items-center rounded-md transition-colors ${
-                k.active ? "bg-primary/10 text-primary" : "bg-muted/60 text-muted-foreground group-hover:text-primary"
+              <span className={`grid size-6 shrink-0 place-items-center rounded-md transition-all duration-200 ${
+                k.active ? "bg-primary/10 text-primary scale-105" : "bg-muted/60 text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary"
               }`}>
                 {k.icon}
               </span>
             </div>
-            <p className="mt-1.5 text-2xl font-semibold leading-none tabular-nums text-foreground">
+            <p className={`relative mt-1.5 text-2xl font-semibold leading-none tabular-nums transition-colors ${
+              k.active ? "text-primary" : "text-foreground group-hover:text-primary"
+            }`}>
               {k.valor ?? "—"}
             </p>
-            <p className="mt-1 truncate text-[11px] text-muted-foreground">{k.hint}</p>
+            <p className="relative mt-1 truncate text-[11px] text-muted-foreground">{k.hint}</p>
           </button>
         ))}
+
       </div>
 
       {/* Barra de busca + filtros */}
