@@ -73,6 +73,15 @@ function Pagina() {
 
   const [q, setQ] = useState("");
   const [busca, setBusca] = useState("");
+
+  // Busca ao vivo (debounced): reflete no filtro conforme o usuário digita.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setBusca(q.trim());
+      setPagina(1);
+    }, 250);
+    return () => clearTimeout(t);
+  }, [q]);
   const [pagina, setPagina] = useState(1);
   const [etapa, setEtapa] = useState<string>("todas");
   const [responsavel, setResponsavel] = useState<string>("todos");
