@@ -241,9 +241,12 @@ function AbaPropostas({ escopo, busca, dataInicio, dataFim }: FiltroProps) {
           />
         )}
         {!isLoading &&
-          itens.map((p) => (
+          itens.map((p) => {
+            const corBanco = corDoBanco(p.bancos?.[0]?.nome_banco);
+            return (
             <Card
               key={p.id}
+              style={{ ["--banco" as string]: corBanco } as React.CSSProperties}
               className="cursor-pointer rounded-2xl border-border/60 p-4 shadow-sm transition-colors hover:border-primary/30 hover:bg-primary/[0.025]"
               onClick={() =>
                 router.navigate({ to: "/operacional/propostas/$id", params: { id: p.id } })
@@ -251,13 +254,19 @@ function AbaPropostas({ escopo, busca, dataInicio, dataFim }: FiltroProps) {
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <span className="font-semibold tabular-nums text-foreground">
-                    {p.numero_proposta}
-                  </span>
-                  {p.numero_proposta_banco && (
-                    <p className="mt-0.5 truncate text-xs tabular-nums text-muted-foreground">
-                      Nº banco {p.numero_proposta_banco}
-                    </p>
+                  {p.numero_proposta_banco ? (
+                    <>
+                      <div className="text-lg font-bold tabular-nums leading-tight tracking-tight text-[var(--banco)]">
+                        Nº banco {p.numero_proposta_banco}
+                      </div>
+                      <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                        Interno <span className="tabular-nums">{p.numero_proposta}</span>
+                      </div>
+                    </>
+                  ) : (
+                    <span className="font-semibold tabular-nums text-foreground">
+                      {p.numero_proposta}
+                    </span>
                   )}
                   <p className="mt-0.5 truncate text-sm text-muted-foreground">
                     {p.nome_cliente ?? "—"}
@@ -275,7 +284,8 @@ function AbaPropostas({ escopo, busca, dataInicio, dataFim }: FiltroProps) {
                 <StatusBancosProposta bancos={p.bancos} fallbackStatus={p.status} />
               </div>
             </Card>
-          ))}
+            );
+          })}
       </div>
 
       {/* Tabela desktop */}
