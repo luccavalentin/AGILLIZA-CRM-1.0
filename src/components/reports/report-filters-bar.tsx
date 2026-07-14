@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MultiSelect, MultiSelectChips, type MultiOption } from "@/components/reports/multi-select";
+import { BancoLogo } from "@/components/bancos/banco-logo";
 import {
   PERIODO_LABEL,
   ESCOPO_LABEL,
@@ -17,6 +18,13 @@ import {
   type Periodo,
   type Escopo,
 } from "@/lib/relatorios/shared";
+
+const PRODUTO_LABEL: Record<string, string> = {
+  financiamento_imobiliario: "Financiamento imobiliário",
+  home_equity: "Home equity",
+};
+const rotularProduto = (p: string) =>
+  PRODUTO_LABEL[p] ?? p.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
 const PERIODOS: Periodo[] = ["hoje", "7d", "15d", "30d", "mes", "mes_anterior", "ano", "custom"];
 
@@ -76,10 +84,19 @@ export function ReportFiltersBar({
   imobiliarias?: MultiOption[];
 }) {
   const set = (patch: Partial<ReportFiltros>) => onChange({ ...filtros, ...patch });
-  const bancoOpts: MultiOption[] = (bancos ?? []).map((b) => ({ value: b, label: b }));
+  const bancoOpts: MultiOption[] = (bancos ?? []).map((b) => ({
+    value: b,
+    label: b,
+    icon: <BancoLogo nome={b} size="sm" className="rounded-sm" />,
+  }));
+  const produtoOpts: MultiOption[] = (produtos ?? []).map((p) => ({
+    value: p,
+    label: rotularProduto(p),
+  }));
 
   const chips: { key: keyof ReportFiltros; label: string }[] = [];
-  if (filtros.produto) chips.push({ key: "produto", label: `Produto: ${filtros.produto}` });
+  if (filtros.produto)
+    chips.push({ key: "produto", label: `Produto: ${rotularProduto(filtros.produto)}` });
   if (filtros.status)
     chips.push({
       key: "status",
@@ -185,19 +202,19 @@ export function ReportFiltersBar({
           />
         )}
 
-        {!!produtos?.length && (
+        {!!produtoOpts.length && (
           <Select
             value={filtros.produto ?? "__all"}
             onValueChange={(v) => set({ produto: v === "__all" ? undefined : v })}
           >
-            <SelectTrigger className="h-9 w-44">
+            <SelectTrigger className="h-9 w-52">
               <SelectValue placeholder="Produto" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="__all">Todos os produtos</SelectItem>
-              {produtos.map((p) => (
-                <SelectItem key={p} value={p}>
-                  {p}
+              {produtoOpts.map((p) => (
+                <SelectItem key={p.value} value={p.value}>
+                  {p.label}
                 </SelectItem>
               ))}
             </SelectContent>
