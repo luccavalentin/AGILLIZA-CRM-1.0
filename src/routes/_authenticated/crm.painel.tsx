@@ -613,7 +613,7 @@ function Pagina() {
               </select>
             </div>
 
-            <div className="relative col-span-2 min-w-0 space-y-1 sm:col-span-1">
+            <div className="relative min-w-0 space-y-1 sm:col-span-2 md:col-span-1">
               <label className="text-xs font-medium text-muted-foreground">Buscar</label>
               <div className="relative">
                 <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
