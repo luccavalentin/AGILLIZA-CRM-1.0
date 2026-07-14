@@ -350,18 +350,5 @@ function formatarDataHora(v: string): string {
   });
 }
 
-function formatarDuracao(desde: string): string | null {
-  const d = parseDate(desde);
-  if (!d) return null;
-  const ms = Date.now() - d.getTime();
-  if (ms < 0) return null;
-  const min = Math.floor(ms / 60000);
-  if (min < 1) return "agora";
-  if (min < 60) return `${min}min`;
-  const h = Math.floor(min / 60);
-  const mRes = min % 60;
-  if (h < 24) return mRes > 0 ? `${h}h ${mRes}min` : `${h}h`;
-  const dias = Math.floor(h / 24);
-  const hRes = h % 24;
-  return hRes > 0 ? `${dias}d ${hRes}h` : `${dias}d`;
-}
+
+
