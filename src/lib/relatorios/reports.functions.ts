@@ -99,7 +99,16 @@ const opcoes = (m: Record<string, string>) =>
   Object.entries(m).map(([value, label]) => ({ value, label }));
 
 /** Opções de status do filtro por código de relatório. */
+/** Status ocultos no filtro (transientes, técnicos ou redundantes com outros). */
+const STATUS_PROPOSTA_OCULTOS = new Set([
+  "rascunho",
+  "enviada_banco",
+  "registrado",
+  "erro_envio",
+]);
 function statusOpcoesPorCodigo(codigo: string): { value: string; label: string }[] | undefined {
+  const filtrarPropostas = () =>
+    opcoes(STATUS_PROPOSTA_LABEL).filter((o) => !STATUS_PROPOSTA_OCULTOS.has(o.value));
   switch (codigo) {
     case "consolidado":
     case "painel-geral":
@@ -107,7 +116,7 @@ function statusOpcoesPorCodigo(codigo: string): { value: string; label: string }
     case "gerencial":
     case "propostas":
     case "operacionais":
-      return opcoes(STATUS_PROPOSTA_LABEL);
+      return filtrarPropostas();
     case "simulacoes":
       return opcoes(STATUS_SIMULACAO_LABEL);
     case "demandas":
