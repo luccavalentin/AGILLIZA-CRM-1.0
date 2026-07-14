@@ -1281,16 +1281,28 @@ export const excluirCliente = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const { supabase, userId } = context;
-    if (!(await podeAcao(supabase, userId, "crm.clientes", "delete"))) {
-      throw new Error("Você não tem permissão para excluir clientes.");
+    const cid = data.id;
+
+    // Permite excluir se: (a) tem permissão explícita no módulo, OU
+    // (b) é o próprio criador do cliente. A RLS do banco já autoriza o criador,
+    // mas fazíamos aqui uma checagem restrita a admin/gestor que barrava
+    // analistas/comerciais de excluírem seus próprios cadastros.
+    const permitido = await podeAcao(supabase, userId, "crm.clientes", "delete");
+    if (!permitido) {
+      const { data: dono } = await supabase
+        .from("clientes")
+        .select("criador_id")
+        .eq("id", cid)
+        .maybeSingle();
+      if (!dono || (dono as any).criador_id !== userId) {
+        throw new Error("Você só pode excluir clientes que você cadastrou.");
+      }
     }
 
-    // Usa o cliente administrativo: a política de exclusão no banco exige papel
-    // admin/correspondente do MESMO correspondente, então uma exclusão via RLS
-    // podia afetar 0 linhas silenciosamente (o cliente "continuava lá"). Aqui
-    // removemos o cliente e todos os registros dependentes de fato.
+    // Usa o cliente administrativo para remover cliente e dependências mesmo
+    // quando a RLS restringiria o DELETE em cascata.
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const cid = data.id;
+
 
     // Propostas do cliente -> limpa comissões/recebíveis vinculados antes.
     const { data: props } = await supabaseAdmin
