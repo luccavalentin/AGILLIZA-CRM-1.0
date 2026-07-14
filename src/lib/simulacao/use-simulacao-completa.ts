@@ -304,6 +304,28 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
   }
 
   /**
+   * Preenche imóvel + financiamento a partir do valor de entrada.
+   * Regra padrão: entrada = 20% do imóvel  ⇒  imóvel = entrada / 0,20.
+   * financiamento = imóvel − entrada.
+   */
+  function aplicarPorEntrada(valorEntrada: number) {
+    const entrada = Math.max(0, Number(valorEntrada) || 0);
+    setEntradaTocada(true);
+    if (entrada <= 0) {
+      setF((prev) => ({ ...prev, valor_entrada: 0 }));
+      return;
+    }
+    const imovel = Math.round(entrada / 0.2);
+    const fin = Math.max(0, imovel - entrada);
+    setF((prev) => ({
+      ...prev,
+      valor_imovel: imovel,
+      valor_entrada: entrada,
+      valor_financiamento: fin,
+    }));
+  }
+
+  /**
    * Preenche imóvel + entrada a partir do valor a financiar (lógica inversa).
    * valorImóvel = financiamento / LTV; entrada = imóvel - financiamento.
    */
