@@ -147,7 +147,7 @@ export function PanelHeader({
             {descricao}
           </p>
         </div>
-        <div className="grid min-w-0 grid-cols-1 gap-2 sm:flex sm:flex-wrap sm:items-center sm:justify-end">
+        <div className="grid min-w-0 grid-cols-1 gap-2 text-foreground sm:flex sm:flex-wrap sm:items-center sm:justify-end">
           {atualizadoEm && (
             <span
               className={cn(
