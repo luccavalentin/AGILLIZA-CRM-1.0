@@ -42,10 +42,13 @@ function Pagina() {
   const [q, setQ] = useState("");
   const [busca, setBusca] = useState("");
   const [pagina, setPagina] = useState(1);
+  const [escopo, setEscopo] = useState<"minhas" | "geral">(
+    () => (typeof window !== "undefined" && (localStorage.getItem("clientes:escopo") as "minhas" | "geral")) || "geral",
+  );
 
   const { data, isLoading, isFetching } = useQuery({
-    queryKey: ["clientes", busca, pagina],
-    queryFn: () => listar({ data: { q: busca, pagina, porPagina: 20 } }),
+    queryKey: ["clientes", busca, pagina, escopo],
+    queryFn: () => listar({ data: { q: busca, pagina, porPagina: 20, escopo } }),
     placeholderData: keepPreviousData,
   });
 
