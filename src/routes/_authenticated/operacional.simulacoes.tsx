@@ -739,24 +739,41 @@ function Pagina() {
                     <span className="truncate">{s.nome_responsavel}</span>
                   </p>
                 )}
+                {verExcluidas && (
+                  <p className="mt-1 text-[11px] font-medium text-destructive">
+                    Excluída por {s.nome_excluidor ?? "—"} · {formatDataHora(s.deleted_at)}
+                    {s.deleted_motivo ? ` · ${s.deleted_motivo}` : ""}
+                  </p>
+                )}
               </div>
               <div className="flex shrink-0 items-center gap-1" onClick={(e) => e.stopPropagation()}>
                 <SimulacaoStatusBadge status={s.status} />
-                <AcoesSimulacao
-                  onVisualizar={() =>
-                    router.navigate({
-                      to: "/operacional/simulacoes/$id",
-                      params: { id: s.id },
-                    })
-                  }
-                  onEditar={() => handleEditar(s.id)}
-                  onBaixarComparativo={() => handleBaixarComparativo(s.id)}
-                  onBaixarDetalhada={() => handleBaixarDetalhada(s.id)}
-                  onDuplicar={() => handleDuplicar(s.id)}
-                  onEnviarProposta={() => handleEnviarProposta(s.id, s.numero_simulacao)}
-                  onExcluir={() => handleExcluir(s.id)}
-                  numero={s.numero_simulacao}
-                />
+                {verExcluidas ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-8 rounded-lg"
+                    onClick={() => handleRestaurar(s.id)}
+                  >
+                    <Undo2 className="mr-1 h-3.5 w-3.5" /> Restaurar
+                  </Button>
+                ) : (
+                  <AcoesSimulacao
+                    onVisualizar={() =>
+                      router.navigate({
+                        to: "/operacional/simulacoes/$id",
+                        params: { id: s.id },
+                      })
+                    }
+                    onEditar={() => handleEditar(s.id)}
+                    onBaixarComparativo={() => handleBaixarComparativo(s.id)}
+                    onBaixarDetalhada={() => handleBaixarDetalhada(s.id)}
+                    onDuplicar={() => handleDuplicar(s.id)}
+                    onEnviarProposta={() => handleEnviarProposta(s.id, s.numero_simulacao)}
+                    onExcluir={() => handleExcluir(s.id)}
+                    numero={s.numero_simulacao}
+                  />
+                )}
               </div>
             </div>
 
