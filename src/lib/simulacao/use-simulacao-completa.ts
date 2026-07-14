@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { estadoCivilCrmParaCodigo } from "@/lib/propostas/dominios";
-import { avaliarRendaMinima } from "@/lib/simulacao/renda";
+import { avaliarRendaMinima, TAXA_MIP_MES, TAXA_DFI_MES, TAXA_ADMIN_MES } from "@/lib/simulacao/renda";
 import { taxaAnoDeBanco } from "@/lib/simulacao/simulacao-rapida";
 import { completaSchema } from "@/lib/simulacao/schemas";
 import { maskCpfCnpj, maskCelular, formatBRL } from "@/lib/simulacao/format";
