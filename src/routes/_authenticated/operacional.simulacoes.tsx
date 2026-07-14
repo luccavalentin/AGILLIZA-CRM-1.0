@@ -283,7 +283,7 @@ function Pagina() {
       id: "simulacoes",
       label: "Simulações",
       valor: String(kpiTotal),
-      icon: ListChecks,
+      icon: Calculator,
       detalhe: (
         <DetalheSimulacoes
           descricao="Todas as simulações do filtro atual."
@@ -300,7 +300,7 @@ function Pagina() {
       id: "volume",
       label: "Volume simulado",
       valor: formatBRL(kpiValor),
-      icon: Wallet,
+      icon: Calculator,
       detalhe: (
         <DetalheSimulacoes
           descricao="Valor de financiamento de cada simulação."
