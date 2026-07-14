@@ -32,6 +32,8 @@ export interface PropostaListaItem {
   created_at: string;
   responsavel_id: string | null;
   nome_responsavel: string | null;
+  imobiliaria_nome: string | null;
+  corretor_nome: string | null;
   bancos: PropostaBancoResumo[];
   deleted_at?: string | null;
   deleted_by?: string | null;
@@ -91,7 +93,7 @@ export const listarPropostas = createServerFn({ method: "GET" })
     let query = supabase
       .from("propostas")
       .select(
-        "id, numero_proposta, numero_proposta_banco, nome_cliente, cpf_cnpj, nome_banco, produto, valor_financiamento, status, detalhe_status_atual, status_atualizado_em, ultima_sincronizacao_em, created_at, usuario_responsavel_id, usuario_criador_id, deleted_at, deleted_by, deleted_motivo",
+        "id, cliente_id, numero_proposta, numero_proposta_banco, nome_cliente, cpf_cnpj, nome_banco, produto, valor_financiamento, status, detalhe_status_atual, status_atualizado_em, ultima_sincronizacao_em, created_at, usuario_responsavel_id, usuario_criador_id, deleted_at, deleted_by, deleted_motivo",
         { count: "exact" },
       );
 
@@ -159,12 +161,49 @@ export const listarPropostas = createServerFn({ method: "GET" })
       for (const p of perfis ?? []) nomesPerfis.set((p as any).id, (p as any).nome ?? "");
     }
 
+    // Vínculos de imobiliária/corretor via cliente_parceiros (por cliente_id da proposta).
+    const clienteIds = Array.from(
+      new Set(rows.map((r: any) => r.cliente_id).filter((v: any): v is string => Boolean(v))),
+    );
+    const imobPorCliente = new Map<string, string>();
+    const corrPorCliente = new Map<string, string>();
+    const parceiroIds = new Set<string>();
+    if (clienteIds.length) {
+      const { data: vinc } = await supabase
+        .from("cliente_parceiros")
+        .select("cliente_id, parceiro_id, tipo_vinculo")
+        .in("cliente_id", clienteIds);
+      for (const v of vinc ?? []) {
+        const cid = (v as any).cliente_id as string;
+        const pid = (v as any).parceiro_id as string | null;
+        const tipo = (v as any).tipo_vinculo as string;
+        if (!pid) continue;
+        parceiroIds.add(pid);
+        if (tipo === "imobiliaria" && !imobPorCliente.has(cid)) imobPorCliente.set(cid, pid);
+        if (tipo === "corretor" && !corrPorCliente.has(cid)) corrPorCliente.set(cid, pid);
+      }
+    }
+    if (parceiroIds.size) {
+      const faltantes = Array.from(parceiroIds).filter((id) => !nomesPerfis.has(id));
+      if (faltantes.length) {
+        const { data: perfis } = await supabase
+          .from("profiles")
+          .select("id, nome")
+          .in("id", faltantes);
+        for (const p of perfis ?? []) nomesPerfis.set((p as any).id, (p as any).nome ?? "");
+      }
+    }
+
     const lista = rows.map((r: any) => {
       const responsavel_id = r.usuario_responsavel_id ?? r.usuario_criador_id ?? null;
+      const imobId = r.cliente_id ? imobPorCliente.get(r.cliente_id) ?? null : null;
+      const corrId = r.cliente_id ? corrPorCliente.get(r.cliente_id) ?? null : null;
       return {
         ...r,
         responsavel_id,
         nome_responsavel: responsavel_id ? (nomesPerfis.get(responsavel_id) ?? null) : null,
+        imobiliaria_nome: imobId ? (nomesPerfis.get(imobId) ?? null) : null,
+        corretor_nome: corrId ? (nomesPerfis.get(corrId) ?? null) : null,
         nome_excluidor: r.deleted_by ? (nomesPerfis.get(r.deleted_by) ?? null) : null,
         bancos: bancosPorProp.get(r.id) ?? [],
       };

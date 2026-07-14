@@ -121,6 +121,10 @@ function Pagina() {
   const [busca, setBusca] = useState(qInicial ?? "");
   const [dataInicio, setDataInicio] = useState(qInicial ? "" : padrao.inicio);
   const [dataFim, setDataFim] = useState(qInicial ? "" : padrao.fim);
+  const [respFiltro, setRespFiltro] = useState("todos");
+  const [corretorFiltro, setCorretorFiltro] = useState("todos");
+  const [imobFiltro, setImobFiltro] = useState("todos");
+
 
   // Busca ao vivo: filtra conforme o usuário digita (com debounce).
   useEffect(() => {
@@ -167,7 +171,11 @@ function Pagina() {
     setDataInicio(padrao.inicio);
     setDataFim(padrao.fim);
     setEscopo("minhas");
+    setRespFiltro("todos");
+    setCorretorFiltro("todos");
+    setImobFiltro("todos");
   }
+
 
   async function soltar(coluna: PropostaStatus) {
     if (!arrastando) return;
@@ -190,12 +198,39 @@ function Pagina() {
 
   const itens = data?.itens ?? [];
 
+  const responsaveis = useMemo(() => {
+    const s = new Set<string>();
+    itens.forEach((i: any) => i.nome_responsavel && s.add(i.nome_responsavel));
+    return Array.from(s).sort((a, b) => a.localeCompare(b, "pt-BR"));
+  }, [itens]);
+  const corretores = useMemo(() => {
+    const s = new Set<string>();
+    itens.forEach((i: any) => i.corretor_nome && s.add(i.corretor_nome));
+    return Array.from(s).sort((a, b) => a.localeCompare(b, "pt-BR"));
+  }, [itens]);
+  const imobiliarias = useMemo(() => {
+    const s = new Set<string>();
+    itens.forEach((i: any) => i.imobiliaria_nome && s.add(i.imobiliaria_nome));
+    return Array.from(s).sort((a, b) => a.localeCompare(b, "pt-BR"));
+  }, [itens]);
+
+  const itensFiltrados = useMemo(
+    () =>
+      itens.filter((i: any) => {
+        if (respFiltro !== "todos" && (i.nome_responsavel ?? "") !== respFiltro) return false;
+        if (corretorFiltro !== "todos" && (i.corretor_nome ?? "") !== corretorFiltro) return false;
+        if (imobFiltro !== "todos" && (i.imobiliaria_nome ?? "") !== imobFiltro) return false;
+        return true;
+      }),
+    [itens, respFiltro, corretorFiltro, imobFiltro],
+  );
+
   // Agrupa uma única vez por coluna, em vez de refiltrar a lista inteira
   // (até 500 itens) para cada uma das colunas a cada render.
   const cardsPorColuna = useMemo(() => {
     const mapa = new Map<string, typeof itens>();
     for (const col of COLUNAS) mapa.set(col.destino, []);
-    for (const item of itens) {
+    for (const item of itensFiltrados) {
       for (const col of COLUNAS) {
         if (col.agrega.includes(item.status as PropostaStatus)) {
           mapa.get(col.destino)!.push(item);
@@ -204,7 +239,8 @@ function Pagina() {
       }
     }
     return mapa;
-  }, [itens]);
+  }, [itensFiltrados]);
+
 
   return (
     <div className="min-h-[calc(100dvh-var(--app-header,4rem))] space-y-4 p-3 sm:space-y-6 sm:p-4 lg:p-6">
@@ -270,6 +306,39 @@ function Pagina() {
               onChange={(e) => setDataFim(e.target.value)}
               className="h-11 w-[9.5rem] rounded-xl"
             />
+          </div>
+          <div className="flex flex-col gap-1">
+            <Label className="text-xs text-muted-foreground">Responsável</Label>
+            <select
+              value={respFiltro}
+              onChange={(e) => setRespFiltro(e.target.value)}
+              className="h-11 w-[10rem] rounded-xl border border-input bg-background px-3 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <option value="todos">Todos</option>
+              {responsaveis.map((r) => <option key={r} value={r}>{r}</option>)}
+            </select>
+          </div>
+          <div className="flex flex-col gap-1">
+            <Label className="text-xs text-muted-foreground">Corretor</Label>
+            <select
+              value={corretorFiltro}
+              onChange={(e) => setCorretorFiltro(e.target.value)}
+              className="h-11 w-[10rem] rounded-xl border border-input bg-background px-3 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <option value="todos">Todos</option>
+              {corretores.map((r) => <option key={r} value={r}>{r}</option>)}
+            </select>
+          </div>
+          <div className="flex flex-col gap-1">
+            <Label className="text-xs text-muted-foreground">Imobiliária</Label>
+            <select
+              value={imobFiltro}
+              onChange={(e) => setImobFiltro(e.target.value)}
+              className="h-11 w-[10rem] rounded-xl border border-input bg-background px-3 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <option value="todos">Todos</option>
+              {imobiliarias.map((r) => <option key={r} value={r}>{r}</option>)}
+            </select>
           </div>
           <Button variant="ghost" className="h-11 rounded-xl" onClick={limparFiltros}>
             <RotateCcw className="mr-1 h-4 w-4" /> Limpar

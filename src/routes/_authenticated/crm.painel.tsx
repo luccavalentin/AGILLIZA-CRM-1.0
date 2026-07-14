@@ -164,6 +164,9 @@ function Pagina() {
   const arrastouRef = useRef(false);
   const [periodo, setPeriodo] = useState("todos");
   const [respFiltro, setRespFiltro] = useState("todos");
+  const [analistaFiltro, setAnalistaFiltro] = useState("todos");
+  const [corretorFiltro, setCorretorFiltro] = useState("todos");
+  const [imobFiltro, setImobFiltro] = useState("todos");
 
   function aplicarPeriodo(p: string) {
     setPeriodo(p);
@@ -194,6 +197,9 @@ function Pagina() {
   function limparTodosFiltros() {
     setPeriodo("todos");
     setRespFiltro("todos");
+    setAnalistaFiltro("todos");
+    setCorretorFiltro("todos");
+    setImobFiltro("todos");
     setDesde("");
     setAte("");
     setBusca("");
@@ -427,10 +433,16 @@ function Pagina() {
             return false;
           if (respFiltro !== "todos" && (c.responsavel_nome ?? "") !== respFiltro)
             return false;
+          if (analistaFiltro !== "todos" && (c.analista_nome ?? "") !== analistaFiltro)
+            return false;
+          if (corretorFiltro !== "todos" && (c.corretor_nome ?? "") !== corretorFiltro)
+            return false;
+          if (imobFiltro !== "todos" && (c.imobiliaria_nome ?? "") !== imobFiltro)
+            return false;
           return true;
         }),
       })),
-    [data, termo, respFiltro],
+    [data, termo, respFiltro, analistaFiltro, corretorFiltro, imobFiltro],
   );
   const totalClientes = useMemo(
     () => dadosFiltrados.reduce((acc, s) => acc + s.clientes.length, 0),
@@ -440,15 +452,20 @@ function Pagina() {
     () => dadosFiltrados.filter((s) => s.clientes.length > 0).length,
     [dadosFiltrados],
   );
-  const responsaveis = useMemo(() => {
+  function opcoesDe(campo: "responsavel_nome" | "analista_nome" | "corretor_nome" | "imobiliaria_nome"): string[] {
     const set = new Set<string>();
     (data ?? []).forEach((s) =>
       s.clientes.forEach((c) => {
-        if (c.responsavel_nome) set.add(c.responsavel_nome);
+        const v = c[campo];
+        if (v) set.add(v);
       }),
     );
     return Array.from(set).sort((a, b) => a.localeCompare(b, "pt-BR"));
-  }, [data]);
+  }
+  const responsaveis = useMemo(() => opcoesDe("responsavel_nome"), [data]);
+  const analistas = useMemo(() => opcoesDe("analista_nome"), [data]);
+  const corretores = useMemo(() => opcoesDe("corretor_nome"), [data]);
+  const imobiliarias = useMemo(() => opcoesDe("imobiliaria_nome"), [data]);
   const todosClientes = useMemo(
     () => dadosFiltrados.flatMap((s) => s.clientes),
     [dadosFiltrados],
@@ -580,7 +597,7 @@ function Pagina() {
             </div>
           </div>
 
-          <div className="grid min-w-0 flex-1 grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+          <div className="grid min-w-0 flex-1 grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
             <div className="min-w-0 space-y-1">
               <label className="text-xs font-medium text-muted-foreground">Período</label>
               <select
@@ -612,6 +629,49 @@ function Pagina() {
                 ))}
               </select>
             </div>
+
+            <div className="min-w-0 space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">Analista</label>
+              <select
+                value={analistaFiltro}
+                onChange={(e) => setAnalistaFiltro(e.target.value)}
+                className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <option value="todos">Todos</option>
+                {analistas.map((r) => (
+                  <option key={r} value={r}>{r}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="min-w-0 space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">Corretor</label>
+              <select
+                value={corretorFiltro}
+                onChange={(e) => setCorretorFiltro(e.target.value)}
+                className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <option value="todos">Todos</option>
+                {corretores.map((r) => (
+                  <option key={r} value={r}>{r}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="min-w-0 space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">Imobiliária</label>
+              <select
+                value={imobFiltro}
+                onChange={(e) => setImobFiltro(e.target.value)}
+                className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <option value="todos">Todos</option>
+                {imobiliarias.map((r) => (
+                  <option key={r} value={r}>{r}</option>
+                ))}
+              </select>
+            </div>
+
 
             <div className="relative min-w-0 space-y-1 sm:col-span-2 md:col-span-1">
               <label className="text-xs font-medium text-muted-foreground">Buscar</label>
@@ -676,17 +736,14 @@ function Pagina() {
 
 
       {isLoading ? (
-        <div className="no-scrollbar -mx-3 overflow-x-auto overscroll-x-contain px-3 pb-4 sm:-mx-6 sm:px-6">
-
-          <div className="grid grid-flow-col auto-cols-[17rem] gap-3 sm:auto-cols-[19rem] lg:auto-cols-[20rem] lg:gap-4">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 lg:gap-4">
           {Array.from({ length: 8 }).map((_, i) => (
             <Skeleton key={i} className="h-96 w-full rounded-2xl" />
           ))}
-          </div>
         </div>
       ) : (
-        <div className="no-scrollbar -mx-3 overflow-x-auto overscroll-x-contain px-3 pb-4 sm:-mx-6 sm:px-6">
-        <div className="grid grid-flow-col auto-cols-[17rem] gap-3 sm:auto-cols-[19rem] lg:auto-cols-[20rem] lg:gap-4">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 lg:gap-4">
+
           {dadosFiltrados.map((stage, idx) => {
             const temClientes = stage.clientes.length > 0;
             const ehAlvo = alvo === stage.codigo && arrasto?.origem !== stage.codigo;
@@ -1040,7 +1097,7 @@ function Pagina() {
             );
           })}
         </div>
-        </div>
+
       )}
 
       <Dialog open={!!dialogStage} onOpenChange={(o) => !o && setDialogStage(null)}>
