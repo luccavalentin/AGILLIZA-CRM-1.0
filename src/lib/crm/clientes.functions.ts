@@ -97,6 +97,10 @@ export const listarClientes = createServerFn({ method: "GET" })
         query = query.eq("cliente_pipeline.pipeline_stages.codigo", data.etapa);
       }
 
+      if (data.escopo === "minhas") {
+        query = query.eq("responsavel_id", userId);
+      }
+
       query = query.range(from, to);
 
       if (data.q && data.q.trim()) {
