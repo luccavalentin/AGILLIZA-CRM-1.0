@@ -503,7 +503,9 @@ export const runReport = createServerFn({ method: "POST" })
         porSim.set(k, cur);
       });
 
-      const bancosFiltro = [...(filtros.bancos ?? []), filtros.banco].filter(Boolean) as string[];
+      const bancosFiltro = [...(filtros.bancos ?? []), filtros.banco]
+        .filter(Boolean)
+        .map((b) => String(b).trim().toLowerCase()) as string[];
       const buscaLc = [filtros.busca, filtros.cliente].filter(Boolean).join(" ").trim().toLowerCase();
       return sims
         .map((s) => {
@@ -521,8 +523,10 @@ export const runReport = createServerFn({ method: "POST" })
         })
         .filter((s) => {
           if (!bancosFiltro.length) return true;
-          return bancosFiltro.some((b) => s.nomes_bancos.includes(b));
+          const nomesLc = s.nomes_bancos.map((n: string) => n.trim().toLowerCase());
+          return bancosFiltro.some((b) => nomesLc.includes(b));
         })
+
         .filter((s) => {
           if (!buscaLc) return true;
           const alvo = [
