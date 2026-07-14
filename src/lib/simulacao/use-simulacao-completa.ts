@@ -801,7 +801,7 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
       setSimulacaoResultadoId(id);
       setEnviando(false);
       setConcluidos(0);
-      toast.success("Simulação gerada. Ajuste o prazo e simule novamente se quiser comparar.");
+      toast.success("Simulação realizada. Os extratos por banco serão baixados automaticamente assim que os retornos chegarem.");
     } catch (e) {
       const msg = e instanceof Error ? e.message : null;
       toast.error(
