@@ -240,12 +240,14 @@ function VisaoGeral() {
           label="Etapas concluídas"
           valor={`${concluidas}/${total}`}
           hint={`${Math.round((concluidas / total) * 100)}% do processo`}
+          to="/cliente/acompanhar-minha-proposta"
         />
         <StatCard
           icon={ListChecks}
           label="Etapas restantes"
           valor={String(restantes)}
           hint="Até a conclusão"
+          to="/cliente/acompanhar-minha-proposta"
         />
         <StatCard
           icon={FileText}
@@ -253,12 +255,14 @@ function VisaoGeral() {
           valor={String(documentos_pendentes.length)}
           hint={documentos_pendentes.length === 0 ? "Tudo em dia!" : "Enviar pelo chat"}
           hintTone={documentos_pendentes.length === 0 ? "success" : "primary"}
+          to="/cliente/chat"
         />
         <StatCard
           icon={FileSignature}
           label="Propostas ativas"
           valor={String(propostas.length)}
           hint="Acompanhe sua proposta"
+          to="/cliente/acompanhar-minha-proposta"
         />
       </div>
 
