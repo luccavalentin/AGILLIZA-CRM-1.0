@@ -90,6 +90,9 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
     rendaInformada: number;
   }>(null);
   const [pctDespesas, setPctDespesas] = useState<number>(0);
+  // Guarda o id da última simulação gerada para exibir o resultado inline
+  // (sem redirecionar), permitindo o usuário ajustar o prazo e simular novamente.
+  const [simulacaoResultadoId, setSimulacaoResultadoId] = useState<string | null>(null);
 
   const { data: bancos } = useQuery({
     queryKey: ["bancos-ativos"],
