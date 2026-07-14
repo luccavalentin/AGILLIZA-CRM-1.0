@@ -87,7 +87,7 @@ const CORES = [
 
 type FiltroChat = "todas" | "nao_lidas" | "sla" | "lembrete" | "arquivadas";
 
-function formatarHora(iso: string): string {
+function _formatarHoraLegacy(iso: string): string {
   return new Date(iso).toLocaleString("pt-BR", {
     day: "2-digit",
     month: "2-digit",
@@ -95,6 +95,7 @@ function formatarHora(iso: string): string {
     minute: "2-digit",
   });
 }
+void _formatarHoraLegacy;
 
 function rotuloDia(iso: string): string {
   const d = new Date(iso);
