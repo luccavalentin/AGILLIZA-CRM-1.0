@@ -623,6 +623,12 @@ export const getPanelDados = createServerFn({ method: "POST" })
             tone: "warning",
           },
           { label: "Rascunhos", valor: int(rows.length - enviadas.length), tone: "neutral" },
+          { label: "Clientes novos", valor: int(clientesNovos), tone: "brand" },
+          { label: "Demandas abertas", valor: int(demAbertas.length), tone: "warning" },
+          { label: "SLA vencido", valor: int(demVencidas.length), tone: demVencidas.length ? "danger" : "neutral" },
+          { label: "Tarefas abertas", valor: int(tkAbertas.length), tone: "neutral" },
+          { label: "Tarefas atrasadas", valor: int(tkAtrasadas.length), tone: tkAtrasadas.length ? "danger" : "neutral" },
+          { label: "Volume aprovado", valor: brlCompacto(volumeAprovado), tone: "brand" },
         ],
         evolucao: {
           titulo: "Evolução do período",
