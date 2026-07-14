@@ -5396,6 +5396,10 @@ export type Database = {
         Returns: undefined
       }
       portal_time_marcar_lidas: { Args: { _cid: string }; Returns: undefined }
+      portal_time_nota_interna: {
+        Args: { _anexo: string; _atendente: string; _cid: string; _msg: string }
+        Returns: Json
+      }
       portal_time_responder: {
         Args: { _anexo: string; _cid: string; _msg: string }
         Returns: Json
