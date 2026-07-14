@@ -3713,6 +3713,9 @@ export type Database = {
           cpf_cnpj: string | null
           created_at: string
           data_nascimento: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          deleted_motivo: string | null
           detalhe_status_atual: string | null
           digito_conta: string | null
           email: string | null
@@ -3794,6 +3797,9 @@ export type Database = {
           cpf_cnpj?: string | null
           created_at?: string
           data_nascimento?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deleted_motivo?: string | null
           detalhe_status_atual?: string | null
           digito_conta?: string | null
           email?: string | null
@@ -3875,6 +3881,9 @@ export type Database = {
           cpf_cnpj?: string | null
           created_at?: string
           data_nascimento?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deleted_motivo?: string | null
           detalhe_status_atual?: string | null
           digito_conta?: string | null
           email?: string | null
@@ -4579,6 +4588,9 @@ export type Database = {
           created_at: string
           data_nascimento: string | null
           data_nascimento_conjuge: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          deleted_motivo: string | null
           email: string | null
           email_conjuge: string | null
           email_verificado_em: string | null
@@ -4639,6 +4651,9 @@ export type Database = {
           created_at?: string
           data_nascimento?: string | null
           data_nascimento_conjuge?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deleted_motivo?: string | null
           email?: string | null
           email_conjuge?: string | null
           email_verificado_em?: string | null
@@ -4699,6 +4714,9 @@ export type Database = {
           created_at?: string
           data_nascimento?: string | null
           data_nascimento_conjuge?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deleted_motivo?: string | null
           email?: string | null
           email_conjuge?: string | null
           email_verificado_em?: string | null
