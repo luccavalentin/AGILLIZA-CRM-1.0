@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Check, ChevronsUpDown, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 export interface MultiOption {
   value: string;
   label: string;
+  icon?: ReactNode;
 }
 
 /** Seletor multi-valor com busca, usado nos filtros de relatório. */
