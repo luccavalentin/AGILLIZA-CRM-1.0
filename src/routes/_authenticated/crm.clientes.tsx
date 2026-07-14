@@ -249,32 +249,33 @@ function Pagina() {
         </Button>
       </div>
 
-      {/* KPIs clicáveis */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      {/* KPIs clicáveis — compactos e refinados */}
+      <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
         {kpiCards.map((k) => (
           <button
             key={k.label}
             type="button"
             onClick={k.onClick}
-            className={`group relative overflow-hidden rounded-2xl border p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md ${
+            className={`group relative overflow-hidden rounded-xl border px-3.5 py-3 text-left transition-all hover:border-primary/30 hover:shadow-sm ${
               k.active
-                ? "border-primary/40 bg-primary/[0.04] ring-1 ring-primary/20"
+                ? "border-primary/40 bg-primary/[0.03] shadow-[inset_2px_0_0_0_hsl(var(--primary))]"
                 : "border-border/60 bg-card"
             }`}
           >
-            <span className="pointer-events-none absolute inset-y-0 left-0 w-0.5 bg-primary opacity-0 transition-opacity group-hover:opacity-100" />
-            <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0">
-                <p className="text-xs font-medium text-muted-foreground">{k.label}</p>
-                <p className="mt-1 text-2xl font-semibold tabular-nums text-foreground">
-                  {k.valor ?? "—"}
-                </p>
-                <p className="mt-0.5 truncate text-[11px] text-muted-foreground">{k.hint}</p>
-              </div>
-              <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/15">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                {k.label}
+              </p>
+              <span className={`grid size-6 shrink-0 place-items-center rounded-md transition-colors ${
+                k.active ? "bg-primary/10 text-primary" : "bg-muted/60 text-muted-foreground group-hover:text-primary"
+              }`}>
                 {k.icon}
               </span>
             </div>
+            <p className="mt-1.5 text-2xl font-semibold leading-none tabular-nums text-foreground">
+              {k.valor ?? "—"}
+            </p>
+            <p className="mt-1 truncate text-[11px] text-muted-foreground">{k.hint}</p>
           </button>
         ))}
       </div>
