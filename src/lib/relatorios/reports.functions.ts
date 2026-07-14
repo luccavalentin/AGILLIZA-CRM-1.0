@@ -188,6 +188,8 @@ function aplicarFiltrosPessoa(query: any, filtros: ReportFiltros, cols: string, 
   return query;
 }
 
+const statusEhFiltroSimulacao = (status?: string) => status === "rascunho" || status === "simulacao";
+
 function serieMensal(rows: { data: string; valor?: number }[]): ChartSerie[] {
   const map = new Map<string, { valor: number; count: number }>();
   for (const r of rows) {
@@ -391,6 +393,8 @@ export const runReport = createServerFn({ method: "POST" })
       colResp: string,
       opts?: { statusCol?: string | false },
     ) {
+      const colsCompact = `,${cols.replace(/\s/g, "")},`;
+      const temCol = (c: string) => colsCompact.includes(`,${c},`);
       let q = (supabase as any)
         .from(table)
         .select(cols)
@@ -400,6 +404,12 @@ export const runReport = createServerFn({ method: "POST" })
         .limit(5000);
       q = aplicarEscopo(q, filtros, userId, colResp);
       if (filtros.responsavel && colResp) q = q.eq(colResp, filtros.responsavel);
+      if (filtros.banco && temCol("nome_banco")) q = q.eq("nome_banco", filtros.banco);
+      if (filtros.produto && temCol("produto")) q = q.eq("produto", filtros.produto);
+      if (filtros.valorMin != null && temCol("valor_financiamento"))
+        q = q.gte("valor_financiamento", filtros.valorMin);
+      if (filtros.valorMax != null && temCol("valor_financiamento"))
+        q = q.lte("valor_financiamento", filtros.valorMax);
       q = aplicarFiltrosPessoa(q, filtros, cols, colResp);
       // Filtro por status: usa a coluna informada ou "status" quando presente no select.
       const statusCol =
@@ -410,10 +420,214 @@ export const runReport = createServerFn({ method: "POST" })
       if (filtros.status && statusCol) q = q.eq(statusCol, filtros.status);
       const { data: rows, error } = await q;
       if (error) throw new Error(error.message);
-      return (rows ?? []) as any[];
+      const buscaLc = filtros.busca?.trim().toLowerCase();
+      if (!buscaLc) return (rows ?? []) as any[];
+      return ((rows ?? []) as any[]).filter((r) =>
+        Object.values(r).some((v) => String(v ?? "").toLowerCase().includes(buscaLc)),
+      );
+    }
+
+    async function listarOpcoesOperacionais() {
+      const [{ data: bancosCad }, { data: bancosSims }, { data: prodProps }, { data: prodSims }] =
+        await Promise.all([
+          supabase
+            .from("homefin_bancos")
+            .select("nome_banco")
+            .eq("ativo", true)
+            .order("nome_banco", { ascending: true }),
+          supabase.from("simulacao_bancos").select("nome_banco").limit(20000),
+          supabase.from("propostas").select("produto").limit(20000),
+          supabase.from("simulacoes").select("produto").limit(20000),
+        ]);
+      const bancos = [
+        ...new Set(
+          [...((bancosCad ?? []) as any[]), ...((bancosSims ?? []) as any[])]
+            .map((b) => String(b.nome_banco ?? ""))
+            .filter(Boolean),
+        ),
+      ].sort((a, b) => a.localeCompare(b, "pt-BR"));
+      const produtos = [
+        ...new Set(
+          [...((prodProps ?? []) as any[]), ...((prodSims ?? []) as any[])]
+            .map((p) => String(p.produto ?? ""))
+            .filter(Boolean),
+        ),
+      ].sort((a, b) => a.localeCompare(b, "pt-BR"));
+      return { bancos, produtos };
+    }
+
+    async function fetchSimulacoesRelatorio(opts?: { rascunhoComoModulo?: boolean }) {
+      const cols = [
+        "id",
+        "numero_simulacao",
+        "tipo_simulacao",
+        "status",
+        "produto",
+        "valor_financiamento",
+        "nome_cliente",
+        "usuario_responsavel_id",
+        "analista_id",
+        "comercial_id",
+        "parceiro_id",
+        "created_at",
+      ].join(",");
+      const sims = await fetchAll("simulacoes", cols, "created_at", "usuario_responsavel_id", {
+        statusCol: opts?.rascunhoComoModulo && statusEhFiltroSimulacao(filtros.status) ? false : undefined,
+      });
+      if (!sims.length) return sims;
+
+      const ids = sims.map((s) => s.id).filter(Boolean);
+      const { data: bancosRows } = await supabase
+        .from("simulacao_bancos")
+        .select("simulacao_id,nome_banco,status_banco,valor_financiamento_max,valor_parcela")
+        .in("simulacao_id", ids)
+        .limit(20000);
+      if (bancosRows === null) {
+        const { data: bancoTeste, error: bancoError } = await supabase
+          .from("simulacao_bancos")
+          .select("simulacao_id")
+          .limit(1);
+        if (bancoError) throw new Error(bancoError.message);
+        if (bancoTeste === null) throw new Error("Não foi possível carregar bancos das simulações.");
+      }
+      const porSim = new Map<string, any[]>();
+      ((bancosRows ?? []) as any[]).forEach((b) => {
+        const k = String(b.simulacao_id ?? "");
+        if (!k) return;
+        const cur = porSim.get(k) ?? [];
+        cur.push(b);
+        porSim.set(k, cur);
+      });
+
+      const bancosFiltro = [...(filtros.bancos ?? []), filtros.banco].filter(Boolean) as string[];
+      const buscaLc = filtros.busca?.trim().toLowerCase();
+      return sims
+        .map((s) => {
+          const bancos = porSim.get(s.id) ?? [];
+          const nomesBancos = [
+            ...new Set(bancos.map((b) => String(b.nome_banco ?? "")).filter(Boolean)),
+          ];
+          return {
+            ...s,
+            bancos,
+            nomes_bancos: nomesBancos,
+            nome_banco: nomesBancos[0] ?? "—",
+            bancos_label: nomesBancos.length ? nomesBancos.join(", ") : "—",
+          };
+        })
+        .filter((s) => {
+          if (!bancosFiltro.length) return true;
+          return bancosFiltro.some((b) => s.nomes_bancos.includes(b));
+        })
+        .filter((s) => {
+          if (!buscaLc) return true;
+          const alvo = [
+            s.numero_simulacao,
+            s.nome_cliente,
+            s.produto,
+            s.status,
+            s.bancos_label,
+          ]
+            .map((v) => String(v ?? ""))
+            .join(" ")
+            .toLowerCase();
+          return alvo.includes(buscaLc);
+        });
+    }
+
+    function montarResultadoSimulacoes(
+      sims: any[],
+      cfg?: { titulo?: string; descricao?: string; modulo?: string; statusComoModulo?: boolean },
+    ): ReportResult {
+      const rapidas = sims.filter((s) => s.tipo_simulacao === "simplificada").length;
+      const completas = sims.filter((s) => s.tipo_simulacao === "completa").length;
+      const erro = sims.filter((s) => s.status === "erro_banco").length;
+      const promovidas = sims.filter((s) => s.status === "promovida").length;
+      const simuladas = sims.filter((s) =>
+        ["simulada", "parcialmente_simulada", "promovida"].includes(s.status),
+      );
+      const conv = sims.length ? (promovidas / sims.length) * 100 : 0;
+      const volumeSimulado = simuladas.reduce((s, x) => s + (x.valor_financiamento ?? 0), 0);
+      const ticket = simuladas.length ? volumeSimulado / simuladas.length : 0;
+      const statusMap = new Map<string, number>();
+      const bancoMap = new Map<string, number>();
+      const produtoMap = new Map<string, number>();
+      sims.forEach((s) => {
+        const statusLabel = cfg?.statusComoModulo
+          ? STATUS_SIMULACAO_LABEL[s.status] ?? s.status
+          : STATUS_SIMULACAO_LABEL[s.status] ?? s.status;
+        statusMap.set(statusLabel, (statusMap.get(statusLabel) ?? 0) + 1);
+        produtoMap.set(s.produto ?? "—", (produtoMap.get(s.produto ?? "—") ?? 0) + 1);
+        (s.nomes_bancos?.length ? s.nomes_bancos : ["—"]).forEach((b: string) =>
+          bancoMap.set(b, (bancoMap.get(b) ?? 0) + 1),
+        );
+      });
+      return {
+        titulo: cfg?.titulo ?? "Relatório de simulações",
+        descricao: cfg?.descricao ?? "Volume, tipo e conversão de simulações.",
+        modulo: cfg?.modulo ?? "Simulações",
+        kpis: [
+          { label: "Total", valor: int(sims.length), tone: "neutral" },
+          { label: "Rápidas", valor: int(rapidas), tone: "neutral" },
+          { label: "Completas", valor: int(completas), tone: "brand" },
+          { label: "Com erro", valor: int(erro), tone: "danger" },
+          { label: "Volume simulado", valor: brl(volumeSimulado), tone: "success" },
+          { label: "Conversão sim→prop", valor: pct(conv), tone: "success" },
+          { label: "Ticket médio", valor: brl(ticket), tone: "brand" },
+        ],
+        charts: [
+          { titulo: "Distribuição por status", tipo: "barh", dados: topN(statusMap, 8) },
+          { titulo: "Distribuição por banco", tipo: "barh", dados: topN(bancoMap, 10) },
+          { titulo: "Distribuição por produto", tipo: "barh", dados: topN(produtoMap, 8) },
+          {
+            titulo: "Evolução mensal",
+            tipo: "line",
+            dados: serieMensal(sims.map((s) => ({ data: s.created_at, valor: s.valor_financiamento ?? 0 }))),
+          },
+        ],
+        columns: [
+          { key: "numero_simulacao", label: "Número" },
+          { key: "nome_cliente", label: "Cliente" },
+          { key: "tipo", label: "Tipo" },
+          { key: "produto", label: "Produto" },
+          { key: "bancos", label: "Bancos" },
+          { key: "status", label: "Status" },
+          { key: "valor", label: "Financiamento", align: "right", footer: "sum", format: "brl" },
+          { key: "created_at", label: "Criada em", format: "date" },
+        ],
+        rows: sims.slice(0, 1000).map((s) => ({
+          numero_simulacao: s.numero_simulacao,
+          nome_cliente: s.nome_cliente ?? "—",
+          tipo: s.tipo_simulacao,
+          produto: s.produto ?? "—",
+          bancos: s.bancos_label ?? "—",
+          status: STATUS_SIMULACAO_LABEL[s.status] ?? s.status,
+          valor: s.valor_financiamento ?? 0,
+          created_at: s.created_at,
+        })),
+      };
     }
 
     async function relConsolidado(): Promise<ReportResult> {
+      if (statusEhFiltroSimulacao(filtros.status)) {
+        const [sims, opcoesOperacionais] = await Promise.all([
+          fetchSimulacoesRelatorio({ rascunhoComoModulo: true }),
+          listarOpcoesOperacionais(),
+        ]);
+        return {
+          ...montarResultadoSimulacoes(sims, {
+            titulo: "Painel geral — simulações",
+            descricao: "Simulações reais filtradas por período, banco, produto e responsável.",
+            modulo: "Consolidado",
+            statusComoModulo: true,
+          }),
+          filtrosDisponiveis: {
+            bancos: opcoesOperacionais.bancos,
+            produtos: opcoesOperacionais.produtos,
+            statuses: statusOpcoesPorCodigo("consolidado"),
+          },
+        };
+      }
       const [sims, props, cls, coms] = await Promise.all([
         fetchAll("simulacoes", "id,status,created_at", "created_at", "usuario_responsavel_id", {
           statusCol: false,
@@ -489,22 +703,24 @@ export const runReport = createServerFn({ method: "POST" })
     }
 
     async function relComerciais(): Promise<ReportResult> {
-      const [props, sims] = await Promise.all([
+      const [props, sims, opcoesOperacionais] = await Promise.all([
         fetchAll(
           "propostas",
-          "id,status,valor_financiamento,valor_financiamento_aprovado,nome_banco,usuario_responsavel_id,created_at",
+          "id,status,produto,valor_financiamento,valor_financiamento_aprovado,nome_banco,usuario_responsavel_id,analista_id,comercial_id,parceiro_id,created_at",
           "created_at",
           "usuario_responsavel_id",
+          { statusCol: statusEhFiltroSimulacao(filtros.status) ? false : undefined },
         ),
-        fetchAll("simulacoes", "id,status,created_at", "created_at", "usuario_responsavel_id", {
-          statusCol: false,
-        }),
+        fetchSimulacoesRelatorio({ rascunhoComoModulo: true }),
+        listarOpcoesOperacionais(),
       ]);
-      const enviadas = props.filter((p) => p.status !== "rascunho");
-      const aprovadas = props.filter((p) =>
+      const somenteSimulacoes = statusEhFiltroSimulacao(filtros.status);
+      const propsFiltradas = somenteSimulacoes ? [] : props;
+      const enviadas = propsFiltradas.filter((p) => p.status !== "rascunho");
+      const aprovadas = propsFiltradas.filter((p) =>
         ["credito_aprovado", "contrato_emitido", "registrado"].includes(p.status),
       );
-      const contratos = props.filter((p) => ["contrato_emitido", "registrado"].includes(p.status));
+      const contratos = propsFiltradas.filter((p) => ["contrato_emitido", "registrado"].includes(p.status));
       const valor = contratos.reduce(
         (s, p) => s + (p.valor_financiamento_aprovado ?? p.valor_financiamento ?? 0),
         0,
@@ -517,12 +733,22 @@ export const runReport = createServerFn({ method: "POST" })
       );
       const bancoLider = topN(bancoMap, 1)[0]?.label ?? "—";
       // ranking por usuário
-      const respIds = [...new Set(enviadas.map((p) => p.usuario_responsavel_id).filter(Boolean))];
+      const respIds = [
+        ...new Set(
+          [...enviadas, ...sims].map((p) => p.usuario_responsavel_id).filter(Boolean),
+        ),
+      ];
       const nomes = await nomesUsuarios(respIds);
-      const userMap = new Map<string, { props: number; contratos: number; valor: number }>();
+      const userMap = new Map<string, { sims: number; props: number; contratos: number; valor: number }>();
+      sims.forEach((s) => {
+        const k = s.usuario_responsavel_id ?? "—";
+        const cur = userMap.get(k) ?? { sims: 0, props: 0, contratos: 0, valor: 0 };
+        cur.sims += 1;
+        userMap.set(k, cur);
+      });
       enviadas.forEach((p) => {
         const k = p.usuario_responsavel_id ?? "—";
-        const cur = userMap.get(k) ?? { props: 0, contratos: 0, valor: 0 };
+        const cur = userMap.get(k) ?? { sims: 0, props: 0, contratos: 0, valor: 0 };
         cur.props += 1;
         if (["contrato_emitido", "registrado"].includes(p.status)) {
           cur.contratos += 1;
@@ -556,6 +782,7 @@ export const runReport = createServerFn({ method: "POST" })
         ],
         columns: [
           { key: "resp", label: "Responsável" },
+          { key: "sims", label: "Simulações", align: "right", footer: "sum", format: "int" },
           { key: "props", label: "Propostas", align: "right", footer: "sum", format: "int" },
           { key: "contratos", label: "Contratos", align: "right", footer: "sum", format: "int" },
           { key: "valor", label: "Valor contratado", align: "right", footer: "sum", format: "brl" },
@@ -565,14 +792,39 @@ export const runReport = createServerFn({ method: "POST" })
           .slice(0, 50)
           .map(([k, v]) => ({
             resp: nomes.get(k) ?? "—",
+            sims: v.sims,
             props: v.props,
             contratos: v.contratos,
             valor: v.valor,
           })),
+        filtrosDisponiveis: {
+          bancos: opcoesOperacionais.bancos,
+          produtos: opcoesOperacionais.produtos,
+          statuses: statusOpcoesPorCodigo("comerciais"),
+        },
       };
     }
 
     async function relGerencial(): Promise<ReportResult> {
+      if (statusEhFiltroSimulacao(filtros.status)) {
+        const [sims, opcoesOperacionais] = await Promise.all([
+          fetchSimulacoesRelatorio({ rascunhoComoModulo: true }),
+          listarOpcoesOperacionais(),
+        ]);
+        return {
+          ...montarResultadoSimulacoes(sims, {
+            titulo: "Relatório gerencial — simulações",
+            descricao: "Simulações reais filtradas por período, banco, produto e responsáveis.",
+            modulo: "Gerencial",
+            statusComoModulo: true,
+          }),
+          filtrosDisponiveis: {
+            bancos: opcoesOperacionais.bancos,
+            produtos: opcoesOperacionais.produtos,
+            statuses: statusOpcoesPorCodigo("gerencial"),
+          },
+        };
+      }
       const PRODUTO_LABEL = (p?: string) =>
         p === "home_equity"
           ? "Home Equity"
@@ -919,99 +1171,49 @@ export const runReport = createServerFn({ method: "POST" })
     }
 
     async function relSimulacoes(): Promise<ReportResult> {
-      const sims = await fetchAll(
-        "simulacoes",
-        "id,tipo_simulacao,status,valor_financiamento,nome_cliente,numero_simulacao,created_at",
-        "created_at",
-        "usuario_responsavel_id",
-      );
-      const props = await fetchAll(
-        "propostas",
-        "id,created_at",
-        "created_at",
-        "usuario_responsavel_id",
-      );
-      const rapidas = sims.filter((s) => s.tipo_simulacao === "simplificada").length;
-      const completas = sims.filter((s) => s.tipo_simulacao === "completa").length;
-      const erro = sims.filter((s) => s.status === "erro_banco").length;
-      const promovidas = sims.filter((s) => s.status === "promovida").length;
-      // Simulações que efetivamente foram simuladas (com retorno) — base para
-      // volume e ticket médio simulado.
-      const simuladas = sims.filter((s) =>
-        ["simulada", "parcialmente_simulada", "promovida"].includes(s.status),
-      );
-      const conv = sims.length ? (promovidas / sims.length) * 100 : 0;
-      const volumeSimulado = simuladas.reduce((s, x) => s + (x.valor_financiamento ?? 0), 0);
-      const ticket = simuladas.length ? volumeSimulado / simuladas.length : 0;
-      const statusMap = new Map<string, number>();
-      sims.forEach((s) => statusMap.set(s.status, (statusMap.get(s.status) ?? 0) + 1));
+      const [sims, opcoesOperacionais] = await Promise.all([
+        fetchSimulacoesRelatorio(),
+        listarOpcoesOperacionais(),
+      ]);
       return {
-        titulo: "Relatório de simulações",
-        descricao: "Volume, tipo e conversão de simulações.",
-        modulo: "Simulações",
-        kpis: [
-          { label: "Total", valor: int(sims.length), tone: "neutral" },
-          { label: "Rápidas", valor: int(rapidas), tone: "neutral" },
-          { label: "Completas", valor: int(completas), tone: "brand" },
-          { label: "Com erro", valor: int(erro), tone: "danger" },
-          { label: "Volume simulado", valor: brl(volumeSimulado), tone: "success" },
-          { label: "Conversão sim→prop", valor: pct(conv), tone: "success" },
-          { label: "Ticket médio", valor: brl(ticket), tone: "brand" },
-        ],
-        charts: [
-          { titulo: "Distribuição por status", tipo: "barh", dados: topN(statusMap, 8) },
-          {
-            titulo: "Evolução mensal",
-            tipo: "line",
-            dados: serieMensal(sims.map((s) => ({ data: s.created_at }))),
-          },
-        ],
-        columns: [
-          { key: "numero_simulacao", label: "Número" },
-          { key: "nome_cliente", label: "Cliente" },
-          { key: "tipo", label: "Tipo" },
-          { key: "status", label: "Status" },
-          { key: "valor", label: "Financiamento", align: "right", footer: "sum", format: "brl" },
-          { key: "created_at", label: "Criada em", format: "date" },
-        ],
-        rows: sims.slice(0, 500).map((s) => ({
-          numero_simulacao: s.numero_simulacao,
-          nome_cliente: s.nome_cliente ?? "—",
-          tipo: s.tipo_simulacao,
-          status: s.status,
-          valor: s.valor_financiamento ?? 0,
-          created_at: s.created_at,
-        })),
+        ...montarResultadoSimulacoes(sims),
+        filtrosDisponiveis: {
+          bancos: opcoesOperacionais.bancos,
+          produtos: opcoesOperacionais.produtos,
+          statuses: statusOpcoesPorCodigo("simulacoes"),
+        },
       };
     }
 
     async function relPropostas(): Promise<ReportResult> {
+      if (statusEhFiltroSimulacao(filtros.status)) {
+        const [sims, opcoesOperacionais] = await Promise.all([
+          fetchSimulacoesRelatorio({ rascunhoComoModulo: true }),
+          listarOpcoesOperacionais(),
+        ]);
+        return {
+          ...montarResultadoSimulacoes(sims, {
+            titulo: "Relatório de propostas — simulações",
+            descricao: "Simulações reais filtradas por período, banco, produto e responsável.",
+            modulo: "Propostas",
+            statusComoModulo: true,
+          }),
+          filtrosDisponiveis: {
+            bancos: opcoesOperacionais.bancos,
+            produtos: opcoesOperacionais.produtos,
+            statuses: statusOpcoesPorCodigo("propostas"),
+          },
+        };
+      }
       const todas = await fetchAll(
         "propostas",
-        "id,numero_proposta,numero_proposta_banco,nome_cliente,status,valor_financiamento,valor_financiamento_aprovado,nome_banco,produto,prazo,created_at",
+        "id,numero_proposta,numero_proposta_banco,nome_cliente,status,valor_financiamento,valor_financiamento_aprovado,nome_banco,produto,prazo,usuario_responsavel_id,analista_id,comercial_id,parceiro_id,created_at",
         "created_at",
         "usuario_responsavel_id",
       );
 
       // Apenas bancos ATIVOS aparecem no filtro (produtos vêm das propostas existentes).
-      const [{ data: bancosCad }, { data: prodProps }] = await Promise.all([
-        supabase
-          .from("homefin_bancos")
-          .select("nome_banco")
-          .eq("ativo", true)
-          .order("nome_banco", { ascending: true }),
-        supabase.from("propostas").select("produto"),
-      ]);
-      const bancosDisponiveis = [
-        ...new Set(
-          ((bancosCad ?? []) as any[]).map((b) => String(b.nome_banco ?? "")).filter(Boolean),
-        ),
-      ].sort((a, b) => a.localeCompare(b, "pt-BR"));
-      const produtosDisponiveis = [
-        ...new Set(
-          ((prodProps ?? []) as any[]).map((p) => String(p.produto ?? "")).filter(Boolean),
-        ),
-      ].sort((a, b) => a.localeCompare(b, "pt-BR"));
+      const opcoesOperacionais = await listarOpcoesOperacionais();
 
       // Filtros server-side (banco, produto, status, faixa de valor, busca textual).
       const buscaLc = filtros.busca?.trim().toLowerCase();
@@ -1129,12 +1331,9 @@ export const runReport = createServerFn({ method: "POST" })
           created_at: p.created_at,
         })),
         filtrosDisponiveis: {
-          bancos: bancosDisponiveis,
-          produtos: produtosDisponiveis,
-          statuses: Object.entries(STATUS_PROPOSTA_LABEL).map(([value, label]) => ({
-            value,
-            label,
-          })),
+          bancos: opcoesOperacionais.bancos,
+          produtos: opcoesOperacionais.produtos,
+          statuses: statusOpcoesPorCodigo("propostas"),
         },
       };
     }
