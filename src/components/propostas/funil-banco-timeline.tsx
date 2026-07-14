@@ -238,38 +238,8 @@ export function FunilBancoTimeline({
         </ol>
       </div>
 
-      {/* Rodapé — telemetria com dados reais */}
-      {(tempoEmEtapa || ultimaSync) && (
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/60 bg-muted/30 px-5 py-2.5">
-          <div className="flex flex-wrap items-center gap-4">
-            {tempoEmEtapa && (
-              <div className="flex flex-col">
-                <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
-                  Tempo em etapa
-                </span>
-                <span className="text-[11px] font-mono tabular-nums text-foreground">
-                  {tempoEmEtapa}
-                </span>
-              </div>
-            )}
-            {tempoEmEtapa && ultimaSync && <span className="h-6 w-px bg-border" aria-hidden />}
-            {ultimaSync && (
-              <div className="flex flex-col">
-                <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
-                  Última sincronização
-                </span>
-                <span className="text-[11px] font-mono tabular-nums text-foreground">
-                  {formatarDataHora(ultimaSync)}
-                </span>
-              </div>
-            )}
-          </div>
-          <div className="flex items-center gap-1.5 text-muted-foreground">
-            <Radio className="h-3 w-3 animate-pulse text-emerald-500" aria-hidden />
-            <span className="text-[10px] font-bold uppercase tracking-wider">Canal operacional</span>
-          </div>
-        </div>
-      )}
+
+
     </div>
   );
 }
