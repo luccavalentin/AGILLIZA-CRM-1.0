@@ -215,7 +215,7 @@ function Acompanhar() {
         </div>
 
         {/* CHARTS ROW */}
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-3 sm:gap-4 sm:grid-cols-2 xl:grid-cols-3">
           <ChartCard titulo="Progresso da jornada">
             <div className="relative flex items-center justify-center">
               <div className="relative h-40 w-40">
