@@ -374,6 +374,9 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
       valor_imovel: imovel,
       valor_entrada: entrada,
     }));
+  }
+
+
 
 
   /** Aplica a "jogada de números": infla o valor de compra e venda para liberar o financiamento. */
