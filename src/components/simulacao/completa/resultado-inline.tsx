@@ -50,6 +50,13 @@ function totalFinanciado(b: any): number | null {
   return d?.financiamentoTotal ?? d?.valorFinanciamento ?? b?.valor_financiamento_max ?? null;
 }
 
+/** Renda mínima estimada para um único banco a partir da parcela retornada. */
+function rendaMinimaDoBanco(b: any): number | null {
+  const parcela = parcelaExigidaPeloBanco(b);
+  if (!parcela) return null;
+  return rendaMinimaParaParcela(parcela);
+}
+
 export function ResultadoInlineCompleta({ simulacaoId, onFechar }: Props) {
   const router = useRouter();
   const qc = useQueryClient();
