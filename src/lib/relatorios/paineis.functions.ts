@@ -337,11 +337,11 @@ export const getPanelDados = createServerFn({ method: "POST" })
           : q;
 
     if (data.modulo === "visao-geral") {
-      const [sims, props, contratosInfo, ant] = await Promise.all([
+      const [sims, props, contratosInfo, ant, clientesRes, demRes, tkRes, recRes, payRes, pipeRes] = await Promise.all([
         escopoEq(
           supabase
             .from("simulacoes")
-            .select("id,status,tipo_simulacao,valor_financiamento,created_at")
+            .select("id,status,tipo_simulacao,valor_financiamento,created_at,usuario_responsavel_id")
             .gte("created_at", de)
             .lte("created_at", ateFim)
             .limit(5000),
@@ -351,7 +351,7 @@ export const getPanelDados = createServerFn({ method: "POST" })
           supabase
             .from("propostas")
             .select(
-              "status,valor_financiamento_aprovado,valor_financiamento,nome_banco,created_at,contrato_emitido_em",
+              "status,valor_financiamento_aprovado,valor_financiamento,nome_banco,created_at,contrato_emitido_em,usuario_responsavel_id",
             )
             .or(
               `and(created_at.gte.${de},created_at.lte.${ateFim}),and(contrato_emitido_em.gte.${de},contrato_emitido_em.lte.${ateFim})`,
@@ -361,6 +361,43 @@ export const getPanelDados = createServerFn({ method: "POST" })
         ),
         carregarContratosCliente(supabase, escopoEq, de, ate),
         carregarAnterior(supabase, escopoEq, de, ate),
+        escopoEq(
+          supabase
+            .from("clientes")
+            .select("id,created_at,contrato_emitido_em,responsavel_id")
+            .gte("created_at", de)
+            .lte("created_at", ateFim)
+            .limit(5000),
+          "responsavel_id",
+        ),
+        escopoEq(
+          supabase
+            .from("demandas")
+            .select("status,prazo_sla")
+            .limit(5000),
+          "responsavel_id",
+        ),
+        escopoEq(
+          supabase
+            .from("tasks")
+            .select("status,prazo")
+            .limit(5000),
+          "responsavel_id",
+        ),
+        supabase
+          .from("financial_receivables")
+          .select("valor,valor_pago,status,vencimento,tipo")
+          .in("status", ["aberta", "parcial"] as any)
+          .limit(5000),
+        supabase
+          .from("financial_payables")
+          .select("valor,valor_pago,status,vencimento")
+          .in("status", ["aberta", "parcial"] as any)
+          .limit(5000),
+        supabase
+          .from("cliente_pipeline")
+          .select("cliente_id,pipeline_stages(codigo,nome,ordem),clientes!inner(responsavel_id)")
+          .limit(5000),
       ]);
       if (sims.error) throw new Error(sims.error.message);
       if (props.error) throw new Error(props.error.message);
