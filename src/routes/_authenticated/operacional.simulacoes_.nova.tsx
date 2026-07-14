@@ -23,7 +23,7 @@ import { CurrencyInput } from "@/components/simulacao/currency-input";
 import { DicaRendaMinima } from "@/components/simulacao/dica-renda-minima";
 import { PRODUTOS } from "@/lib/simulacao/schemas";
 import { formatBRL, formatPercent } from "@/lib/simulacao/format";
-import { listarBancosAtivos } from "@/lib/simulacao/simulacoes.functions";
+import { listarBancosAtivos, taxasReferenciaBancos } from "@/lib/simulacao/simulacoes.functions";
 import { compararBancosRapido, taxaAnoDeBanco } from "@/lib/simulacao/simulacao-rapida";
 import { toast } from "sonner";
 import {
@@ -82,6 +82,14 @@ function Pagina() {
   const { data: bancos } = useQuery({
     queryKey: ["bancos-ativos"],
     queryFn: () => listarBancosAtivos(),
+  });
+
+  // Taxas reais médias dos últimos 90 dias (do que o banco vem devolvendo);
+  // substitui as taxas de referência estáticas na Simulação Rápida.
+  const { data: taxasReais } = useQuery({
+    queryKey: ["taxas-referencia-bancos"],
+    queryFn: () => taxasReferenciaBancos(),
+    staleTime: 1000 * 60 * 30,
   });
 
   // Entrada sugerida padrão de 20% do valor do imóvel.
@@ -196,17 +204,17 @@ function Pagina() {
         banco_id: b.id,
         codigo_banco: b.codigo_banco,
         nome_banco: b.nome_banco,
-        taxa_ano: taxaAnoDeBanco(b.codigo_banco),
+        taxa_ano: taxaAnoDeBanco(b.codigo_banco, taxasReais),
       })),
       { valor_financiamento: w.valor_financiamento, prazo_meses: w.prazo_meses, sistema: "S" },
     );
-  }, [bancos, mostrarRapida, w.valor_financiamento, w.prazo_meses]);
+  }, [bancos, taxasReais, mostrarRapida, w.valor_financiamento, w.prazo_meses]);
 
   // Taxa mais conservadora entre os bancos ativos, usada para estimar a maior renda mínima.
   const melhorTaxaAno = useMemo(() => {
-    if (!bancos || bancos.length === 0) return 0.1199;
-    return Math.max(...bancos.map((b) => taxaAnoDeBanco(b.codigo_banco)));
-  }, [bancos]);
+    if (!bancos || bancos.length === 0) return 0.1299;
+    return Math.max(...bancos.map((b) => taxaAnoDeBanco(b.codigo_banco, taxasReais)));
+  }, [bancos, taxasReais]);
 
   /** Aplica o prazo digitado, ajustando automaticamente pela regra de idade. */
   function definirPrazo(valor: number) {

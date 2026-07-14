@@ -68,6 +68,40 @@ export const listarBancosAtivos = createServerFn({ method: "GET" })
     return (data ?? []) as BancoAtivo[];
   });
 
+/**
+ * Taxas anuais médias efetivamente retornadas pelos bancos nas últimas
+ * simulações (janela dos últimos 90 dias). Usadas como referência dinâmica
+ * na Simulação Rápida — refletem o que o banco está de fato praticando.
+ * Retorna um mapa `{ [codigo_banco]: taxa_ano_decimal }`.
+ */
+export const taxasReferenciaBancos = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<Record<number, number>> => {
+    const desde = new Date();
+    desde.setDate(desde.getDate() - 90);
+    const { data, error } = await context.supabase
+      .from("simulacao_bancos")
+      .select("codigo_banco, taxa_juros_ano")
+      .gt("taxa_juros_ano", 0)
+      .gte("simulado_em", desde.toISOString());
+    if (error) throw new Error(error.message);
+    const acc: Record<number, { soma: number; n: number }> = {};
+    for (const r of data ?? []) {
+      const cod = r.codigo_banco as number | null;
+      const taxa = r.taxa_juros_ano as number | null;
+      if (!cod || !taxa || taxa <= 0) continue;
+      acc[cod] ??= { soma: 0, n: 0 };
+      acc[cod].soma += taxa;
+      acc[cod].n += 1;
+    }
+    const out: Record<number, number> = {};
+    for (const [cod, { soma, n }] of Object.entries(acc)) {
+      // API retorna em %; convertemos para decimal (12,64 → 0,1264)
+      if (n > 0) out[Number(cod)] = soma / n / 100;
+    }
+    return out;
+  });
+
 export const listarOperacoes = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
