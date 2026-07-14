@@ -95,11 +95,11 @@ export function DicaRendaMinima(props: Props) {
             {apiEval
               ? "Renda exigida pelo retorno bancário mais conservador"
               : sistema === "P"
-                ? "Renda necessária para o valor financiado. No PRICE os bancos qualificam a renda pela parcela SAC equivalente (pior caso, pois as parcelas do PRICE crescem no contrato)"
-                : "Renda necessária para o valor financiado"}
+                ? "Renda necessária no PRICE. Como as parcelas crescem ao longo do contrato (TR + juros sobre saldo), o Bradesco projeta o pico da parcela e aplica 30% sobre esse pico — o que equivale a ~15% de comprometimento sobre a parcela inicial"
+                : "Renda necessária para o valor financiado, com teto de 30% de comprometimento sobre a parcela inicial (regra SFH)"}
             {principal.bancoNome ? ` (${principal.bancoNome})` : ""}, com prestação inicial de{" "}
-            <span className="font-medium text-foreground/80">{formatBRL(principal.primeiraParcela)}</span>{" "}
-            e no teto de 30% de comprometimento de renda.
+            <span className="font-medium text-foreground/80">{formatBRL(principal.primeiraParcela)}</span>
+            .
           </p>
 
 
