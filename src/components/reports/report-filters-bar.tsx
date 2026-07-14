@@ -84,10 +84,19 @@ export function ReportFiltersBar({
   imobiliarias?: MultiOption[];
 }) {
   const set = (patch: Partial<ReportFiltros>) => onChange({ ...filtros, ...patch });
-  const bancoOpts: MultiOption[] = (bancos ?? []).map((b) => ({ value: b, label: b }));
+  const bancoOpts: MultiOption[] = (bancos ?? []).map((b) => ({
+    value: b,
+    label: b,
+    icon: <BancoLogo nome={b} size={20} className="rounded-sm" />,
+  }));
+  const produtoOpts: MultiOption[] = (produtos ?? []).map((p) => ({
+    value: p,
+    label: rotularProduto(p),
+  }));
 
   const chips: { key: keyof ReportFiltros; label: string }[] = [];
-  if (filtros.produto) chips.push({ key: "produto", label: `Produto: ${filtros.produto}` });
+  if (filtros.produto)
+    chips.push({ key: "produto", label: `Produto: ${rotularProduto(filtros.produto)}` });
   if (filtros.status)
     chips.push({
       key: "status",
