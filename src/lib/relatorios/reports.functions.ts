@@ -420,7 +420,7 @@ export const runReport = createServerFn({ method: "POST" })
       if (filtros.status && statusCol) q = q.eq(statusCol, filtros.status);
       const { data: rows, error } = await q;
       if (error) throw new Error(error.message);
-      const buscaLc = filtros.busca?.trim().toLowerCase();
+      const buscaLc = [filtros.busca, filtros.cliente].filter(Boolean).join(" ").trim().toLowerCase();
       if (!buscaLc) return (rows ?? []) as any[];
       return ((rows ?? []) as any[]).filter((r) =>
         Object.values(r).some((v) => String(v ?? "").toLowerCase().includes(buscaLc)),
@@ -460,6 +460,7 @@ export const runReport = createServerFn({ method: "POST" })
       const cols = [
         "id",
         "numero_simulacao",
+        "cliente_id",
         "tipo_simulacao",
         "status",
         "produto",
@@ -500,7 +501,7 @@ export const runReport = createServerFn({ method: "POST" })
       });
 
       const bancosFiltro = [...(filtros.bancos ?? []), filtros.banco].filter(Boolean) as string[];
-      const buscaLc = filtros.busca?.trim().toLowerCase();
+      const buscaLc = [filtros.busca, filtros.cliente].filter(Boolean).join(" ").trim().toLowerCase();
       return sims
         .map((s) => {
           const bancos = porSim.get(s.id) ?? [];
@@ -815,6 +816,7 @@ export const runReport = createServerFn({ method: "POST" })
               ? p
               : "—";
       const statusSimulacao = statusEhFiltroSimulacao(filtros.status);
+      const statusContrato = ["contrato_emitido", "registrado"];
       const [simulacoesFiltradas, propostasFiltradas, opcoesOperacionais] = await Promise.all([
         statusSimulacao || !filtros.status
           ? fetchSimulacoesRelatorio({ rascunhoComoModulo: true })
@@ -822,10 +824,15 @@ export const runReport = createServerFn({ method: "POST" })
         statusSimulacao ? Promise.resolve([] as any[]) : fetchPropostasGerenciais(),
         listarOpcoesOperacionais(),
       ]);
+      const contratosOperacionais =
+        !statusSimulacao && (!filtros.status || statusContrato.includes(filtros.status))
+          ? await carregarContratosGerenciais()
+          : [];
 
       async function fetchPropostasGerenciais() {
         const cols = [
           "id",
+          "cliente_id",
           "numero_proposta",
           "numero_proposta_banco",
           "nome_cliente",
@@ -885,7 +892,7 @@ export const runReport = createServerFn({ method: "POST" })
         });
 
         const bancosFiltro = [...(filtros.bancos ?? []), filtros.banco].filter(Boolean) as string[];
-        const buscaLc = filtros.busca?.trim().toLowerCase();
+        const buscaLc = [filtros.busca, filtros.cliente].filter(Boolean).join(" ").trim().toLowerCase();
         const valorProposta = (p: any) => p.valor_financiamento_aprovado ?? p.valor_financiamento ?? 0;
 
         return propsBase
@@ -918,6 +925,155 @@ export const runReport = createServerFn({ method: "POST" })
           })
           .filter((p) => filtros.valorMin == null || valorProposta(p) >= filtros.valorMin!)
           .filter((p) => filtros.valorMax == null || valorProposta(p) <= filtros.valorMax!)
+          .filter((p) => {
+            if (!buscaLc) return true;
+            const alvo = [
+              p.numero_proposta,
+              p.numero_proposta_banco,
+              p.nome_cliente,
+              p.cpf_cnpj,
+              p.produto,
+              p.status,
+              rotuloStatus(p.status),
+              p.bancos_label,
+              p.analista_nome,
+              p.consultor_nome,
+              p.parceiro_nome,
+            ]
+              .map((v) => String(v ?? ""))
+              .join(" ")
+              .toLowerCase();
+            return alvo.includes(buscaLc);
+          });
+      }
+
+      async function carregarContratosGerenciais() {
+        let q = (supabase as any)
+          .from("clientes")
+          .select("id,nome,documento,responsavel_id,contrato_emitido_em,imovel_valor")
+          .not("contrato_emitido_em", "is", null)
+          .gte("contrato_emitido_em", de)
+          .lte("contrato_emitido_em", ate)
+          .order("contrato_emitido_em", { ascending: false })
+          .limit(10000);
+        q = aplicarEscopo(q, filtros, userId, "responsavel_id");
+        if (filtros.responsavel) q = q.eq("responsavel_id", filtros.responsavel);
+        const { data: clientesRaw, error } = await q;
+        if (error) throw new Error(error.message);
+        const clientes = (clientesRaw ?? []) as any[];
+        if (!clientes.length) return [] as any[];
+
+        const clienteIds = clientes.map((c) => c.id).filter(Boolean);
+        const propCols = [
+          "id",
+          "cliente_id",
+          "numero_proposta",
+          "numero_proposta_banco",
+          "nome_cliente",
+          "cpf_cnpj",
+          "status",
+          "produto",
+          "nome_banco",
+          "valor_financiamento",
+          "valor_financiamento_aprovado",
+          "analista_id",
+          "analista_nome",
+          "comercial_id",
+          "consultor_nome",
+          "parceiro_id",
+          "parceiro_nome",
+          "usuario_responsavel_id",
+          "created_at",
+          "contrato_emitido_em",
+        ].join(",");
+        const { data: propsRaw, error: propsError } = await supabase
+          .from("propostas")
+          .select(propCols)
+          .in("cliente_id", clienteIds)
+          .order("created_at", { ascending: false })
+          .limit(10000);
+        if (propsError) throw new Error(propsError.message);
+
+        const propsBase = (propsRaw ?? []) as any[];
+        const propIds = propsBase.map((p) => p.id).filter(Boolean);
+        const porPropostaBanco = new Map<string, any[]>();
+        if (propIds.length) {
+          const { data: bancosRows, error: bancosError } = await supabase
+            .from("proposta_bancos")
+            .select("proposta_id,nome_banco,numero_proposta_banco,status_banco,valor_financiamento_max,valor_parcela")
+            .in("proposta_id", propIds)
+            .limit(20000);
+          if (bancosError) throw new Error(bancosError.message);
+          ((bancosRows ?? []) as any[]).forEach((b) => {
+            const k = String(b.proposta_id ?? "");
+            if (!k) return;
+            const cur = porPropostaBanco.get(k) ?? [];
+            cur.push(b);
+            porPropostaBanco.set(k, cur);
+          });
+        }
+
+        const porCliente = new Map<string, any[]>();
+        for (const p of propsBase) {
+          const bancos = porPropostaBanco.get(p.id) ?? [];
+          const nomesBancos = [
+            ...new Set(
+              [p.nome_banco, ...bancos.map((b) => b.nome_banco)]
+                .map((b) => String(b ?? "").trim())
+                .filter(Boolean),
+            ),
+          ];
+          const enriquecida = {
+            ...p,
+            bancos,
+            nomes_bancos: nomesBancos,
+            nome_banco: p.nome_banco || nomesBancos[0] || "—",
+            bancos_label: nomesBancos.length ? nomesBancos.join(", ") : "—",
+            numero_proposta_banco:
+              p.numero_proposta_banco ||
+              bancos.find((b) => b.numero_proposta_banco)?.numero_proposta_banco ||
+              null,
+          };
+          const arr = porCliente.get(String(p.cliente_id)) ?? [];
+          arr.push(enriquecida);
+          porCliente.set(String(p.cliente_id), arr);
+        }
+
+        const bancosFiltro = [...(filtros.bancos ?? []), filtros.banco].filter(Boolean) as string[];
+        const buscaLc = [filtros.busca, filtros.cliente].filter(Boolean).join(" ").trim().toLowerCase();
+        const naoVazio = (a?: string[]) => Array.isArray(a) && a.length > 0;
+        const contemPessoa = (ids: string[] | undefined, ...vals: unknown[]) =>
+          !naoVazio(ids) || vals.some((v) => typeof v === "string" && ids!.includes(v));
+
+        return clientes
+          .map((c) => {
+            const candidatas = porCliente.get(String(c.id)) ?? [];
+            const prop = candidatas.find((p) => statusContrato.includes(p.status)) ?? candidatas[0];
+            return {
+              ...(prop ?? {}),
+              id: prop?.id ?? c.id,
+              cliente_id: c.id,
+              nome_cliente: prop?.nome_cliente ?? c.nome ?? "—",
+              cpf_cnpj: prop?.cpf_cnpj ?? c.documento ?? null,
+              status: prop?.status && statusContrato.includes(prop.status) ? prop.status : "contrato_emitido",
+              usuario_responsavel_id: prop?.usuario_responsavel_id ?? c.responsavel_id,
+              contrato_emitido_em: c.contrato_emitido_em,
+              created_at: prop?.created_at ?? c.contrato_emitido_em,
+              valor_financiamento_aprovado:
+                prop?.valor_financiamento_aprovado ?? prop?.valor_financiamento ?? c.imovel_valor ?? 0,
+            };
+          })
+          .filter((p) => !filtros.produto || p.produto === filtros.produto)
+          .filter((p) => {
+            if (!bancosFiltro.length) return true;
+            const nomes = p.nomes_bancos?.length ? p.nomes_bancos : [p.nome_banco].filter(Boolean);
+            return bancosFiltro.some((b) => nomes.includes(b));
+          })
+          .filter((p) => contemPessoa(filtros.analistas, p.analista_id, p.usuario_responsavel_id))
+          .filter((p) => contemPessoa(filtros.comerciais, p.comercial_id))
+          .filter((p) => contemPessoa([...(filtros.corretores ?? []), ...(filtros.imobiliarias ?? [])], p.parceiro_id))
+          .filter((p) => filtros.valorMin == null || valorProc(p) >= filtros.valorMin!)
+          .filter((p) => filtros.valorMax == null || valorProc(p) <= filtros.valorMax!)
           .filter((p) => {
             if (!buscaLc) return true;
             const alvo = [
@@ -974,15 +1130,13 @@ export const runReport = createServerFn({ method: "POST" })
       // Crédito aprovado é diferente de contrato emitido: propostas já
       // contratadas saem de "aprovadas" e contam apenas em "contratos".
       const aprovado = ["credito_aprovado"];
-      const contrato = ["contrato_emitido", "registrado"];
+      const contrato = statusContrato;
 
       const dentro = (iso?: string) => !!iso && iso.slice(0, 10) >= de && iso.slice(0, 10) <= ate;
       const andamento = propostasFiltradas.filter((p) => emAndamento.includes(p.status) && dentro(p.created_at));
       const aprovadas = propostasFiltradas.filter((p) => aprovado.includes(p.status) && dentro(p.created_at));
       const recusadas = propostasFiltradas.filter((p) => p.status === "credito_recusado" && dentro(p.created_at));
-      const contratos = propostasFiltradas.filter(
-        (p) => contrato.includes(p.status) && dentro(p.contrato_emitido_em),
-      );
+      const contratos = contratosOperacionais;
 
       // Helper: agrupamento simples por 1 dimensão -> {chave, qtd, valor}
       const colsBreak = (label: string) => [
@@ -1325,7 +1479,10 @@ export const runReport = createServerFn({ method: "POST" })
         ],
         rows: [
           ...simulacoesFiltradas.map((s) => ({ ...s, __origem: "Simulação" })),
-          ...propostasFiltradas.map((p) => ({ ...p, __origem: "Proposta" })),
+          ...propostasFiltradas
+            .filter((p) => !contrato.includes(p.status))
+            .map((p) => ({ ...p, __origem: "Proposta" })),
+          ...contratos.map((p) => ({ ...p, __origem: "Contrato" })),
         ]
           .slice(0, 1000)
           .map((p) => ({
