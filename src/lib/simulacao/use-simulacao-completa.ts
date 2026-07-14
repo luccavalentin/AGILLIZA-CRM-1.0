@@ -365,9 +365,13 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
       setF((prev) => ({ ...prev, parcela_alvo: pmt }));
       return;
     }
-    const financiamento = Math.round(pv);
-    const imovel = Math.round(financiamento / ltvMax);
-    const entrada = Math.max(0, imovel - financiamento);
+    // Arredonda o imóvel para o milhar mais próximo (para baixo) para evitar
+    // centavos e garantir que o financiamento derivado (floor(imovel*LTV))
+    // nunca ultrapasse o teto do banco.
+    const pvBruto = pv;
+    const imovel = Math.max(1000, Math.floor(pvBruto / ltvMax / 1000) * 1000);
+    const financiamento = Math.floor(imovel * ltvMax);
+    const entrada = imovel - financiamento;
     setEntradaTocada(true);
     setF((prev) => ({
       ...prev,
