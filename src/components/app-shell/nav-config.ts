@@ -36,6 +36,7 @@ import {
   Cpu,
   ClipboardList,
   Link as LinkIcon,
+  Percent,
 } from "lucide-react";
 
 /** Permissão exigida por um item (chave = `${modulo}:view`). */
