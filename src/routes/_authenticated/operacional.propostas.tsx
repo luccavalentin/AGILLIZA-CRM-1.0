@@ -479,11 +479,11 @@ function Pagina() {
                   <TableCell className="relative">
                     <span className="absolute inset-y-0 left-0 w-[3px] origin-top scale-y-0 rounded-r-full bg-[var(--banco)] transition-transform duration-200 group-hover:scale-y-100" />
                     <div className="font-medium tabular-nums text-foreground transition-colors group-hover:text-[var(--banco)]">
-                      {p.numero_proposta}
+                      {p.numero_proposta_banco ? `Nº banco ${p.numero_proposta_banco}` : p.numero_proposta}
                     </div>
                     {p.numero_proposta_banco && (
                       <div className="text-[11px] text-muted-foreground">
-                        Nº banco {p.numero_proposta_banco}
+                        Interno {p.numero_proposta}
                       </div>
                     )}
                   </TableCell>
