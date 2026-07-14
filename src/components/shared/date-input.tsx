@@ -34,22 +34,15 @@ function textoParaIso(texto: string): string | null {
   const t = texto.trim();
   if (!t) return "";
 
-  // Já em ISO
+  // Já em ISO (aaaa-mm-dd) — exige ano com 4 dígitos
   let m = /^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})$/.exec(t);
   if (m) return montar(m[1], m[2], m[3]);
 
-  // dd/mm/aaaa (ou separadores - . )
-  m = /^(\d{1,2})[-/.](\d{1,2})[-/.](\d{2,4})$/.exec(t);
-  if (m) {
-    const ano = m[3].length === 2 ? `20${m[3]}` : m[3];
-    return montar(ano, m[2], m[1]);
-  }
+  // dd/mm/aaaa — SÓ aceita ano com 4 dígitos (evita "22/11/19" virar 2019
+  // enquanto o usuário ainda está digitando 22/11/1993).
+  m = /^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})$/.exec(t);
+  if (m) return montar(m[3], m[2], m[1]);
 
-  // Fallback: Date.parse (ex.: datas por extenso de outros sistemas)
-  const d = new Date(t);
-  if (!Number.isNaN(d.getTime()) && /\d{4}/.test(t)) {
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-  }
   return null;
 }
 
