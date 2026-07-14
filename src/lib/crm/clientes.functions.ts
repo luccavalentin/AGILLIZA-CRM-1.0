@@ -103,6 +103,15 @@ export const listarClientes = createServerFn({ method: "GET" })
       if (data.escopo === "minhas") {
         query = query.eq("responsavel_id", userId);
       }
+      if (data.responsavel) {
+        query = query.eq("responsavel_id", data.responsavel);
+      }
+      if (data.portal) {
+        query = query.eq("portal_acesso_ativo", data.portal === "ativo");
+      }
+      if (data.status) {
+        query = query.eq("ativo", data.status === "ativo");
+      }
 
       query = query.range(from, to);
 
