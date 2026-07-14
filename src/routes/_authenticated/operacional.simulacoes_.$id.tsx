@@ -41,9 +41,6 @@ import { SelecionarBancosPdfDialog } from "@/components/simulacao/selecionar-ban
 import { formatBRL, formatPercent } from "@/lib/simulacao/format";
 import { extrairDetalheBanco } from "@/lib/simulacao/detalhe-banco";
 import { rendaMinimaPelosBancos } from "@/lib/simulacao/renda";
-import {
-  baixarSimulacaoDetalhadaPDF,
-} from "@/lib/simulacao/simulacao-pdf";
 
 /** Valor total financiado do banco (financiamento + despesas/tarifas financiadas). */
 function totalFinanciado(b: any): number | null {
@@ -66,6 +63,7 @@ function Pagina() {
   const router = useRouter();
   const qc = useQueryClient();
   const [pdfDialogAberto, setPdfDialogAberto] = useState(false);
+  const [detalhePdfAberto, setDetalhePdfAberto] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ["simulacao", id],
@@ -255,10 +253,10 @@ function Pagina() {
             <DropdownMenuContent align="end" className="w-72">
               <DropdownMenuLabel>Extrato para o cliente</DropdownMenuLabel>
               <DropdownMenuItem
-                onClick={() => baixarSimulacaoDetalhadaPDF({ simulacao: s, bancos })}
+                onClick={() => setDetalhePdfAberto(true)}
                 disabled={bancos.length === 0}
               >
-                Simulação detalhada (todas as parcelas)
+                Simulação detalhada (escolher banco)
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
@@ -274,6 +272,13 @@ function Pagina() {
             onOpenChange={setPdfDialogAberto}
             simulacao={s}
             bancos={bancos}
+          />
+          <SelecionarBancosPdfDialog
+            open={detalhePdfAberto}
+            onOpenChange={setDetalhePdfAberto}
+            simulacao={s}
+            bancos={bancos}
+            modo="detalhada"
           />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
