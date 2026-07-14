@@ -546,6 +546,8 @@ export interface PainelChatCliente {
   celular: string | null;
   email: string | null;
   etapa_nome: string | null;
+  etapa_codigo: string | null;
+  ativo: boolean;
   responsavel_nome: string | null;
   proposta: {
     id: string;
@@ -571,7 +573,7 @@ export const obterPainelChatCliente = createServerFn({ method: "GET" })
     const { data: cliente } = await supabase
       .from("clientes")
       .select(
-        "id, nome, documento, telefone_celular, email, responsavel:profiles!clientes_responsavel_id_fkey(nome), cliente_pipeline(pipeline_stages(nome))",
+        "id, nome, documento, telefone_celular, email, ativo, portal_acesso_ativo, responsavel:profiles!clientes_responsavel_id_fkey(nome), cliente_pipeline(pipeline_stages(codigo, nome))",
       )
       .eq("id", data.cliente_id)
       .maybeSingle();
@@ -592,6 +594,11 @@ export const obterPainelChatCliente = createServerFn({ method: "GET" })
       email: (cliente as any)?.email ?? null,
       etapa_nome:
         (cliente as any)?.cliente_pipeline?.pipeline_stages?.nome ?? null,
+      etapa_codigo:
+        (cliente as any)?.cliente_pipeline?.pipeline_stages?.codigo ?? null,
+      ativo:
+        Boolean((cliente as any)?.ativo ?? true) &&
+        Boolean((cliente as any)?.portal_acesso_ativo ?? false),
       responsavel_nome: (cliente as any)?.responsavel?.nome ?? null,
       proposta: proposta
         ? {
