@@ -299,7 +299,15 @@ function Acompanhar() {
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={evolucaoData} margin={{ top: 15, right: 15, left: -20, bottom: 0 }}>
                   <XAxis dataKey="dia" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 10 }} domain={[0, 100]} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}%`} />
+                  <YAxis
+                    tick={{ fontSize: 10 }}
+                    domain={[0, 100]}
+                    ticks={[0, 25, 50, 75, 100]}
+                    allowDataOverflow={false}
+                    axisLine={false}
+                    tickLine={false}
+                    tickFormatter={(v) => `${v}%`}
+                  />
                   <RTooltip formatter={(v: any) => [`${v}%`, "Progresso"]} labelStyle={{ fontSize: 11 }} contentStyle={{ fontSize: 11, borderRadius: 8 }} />
                   <Line type="monotone" dataKey="percentual" stroke="var(--primary)" strokeWidth={2.5} dot={{ r: 3, fill: "var(--primary)" }} activeDot={{ r: 5 }} />
                 </LineChart>
