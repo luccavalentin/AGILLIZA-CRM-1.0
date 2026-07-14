@@ -36,6 +36,7 @@ import { StatusBancosProposta } from "@/components/proposta/status-bancos-propos
 import { SimulacaoStatusBadge } from "@/components/simulacao/status-badge";
 import { BancosSimulados } from "@/components/simulacao/bancos-simulados";
 import { formatBRL } from "@/lib/simulacao/format";
+import { corDoBanco } from "@/lib/bancos/cores";
 
 /** Primeiro e último dia do mês atual como intervalo ISO (filtro padrão). */
 function intervaloMesAtual(): { inicio: string; fim: string } {
@@ -240,9 +241,12 @@ function AbaPropostas({ escopo, busca, dataInicio, dataFim }: FiltroProps) {
           />
         )}
         {!isLoading &&
-          itens.map((p) => (
+          itens.map((p) => {
+            const corBanco = corDoBanco(p.bancos?.[0]?.nome_banco);
+            return (
             <Card
               key={p.id}
+              style={{ ["--banco" as string]: corBanco } as React.CSSProperties}
               className="cursor-pointer rounded-2xl border-border/60 p-4 shadow-sm transition-colors hover:border-primary/30 hover:bg-primary/[0.025]"
               onClick={() =>
                 router.navigate({ to: "/operacional/propostas/$id", params: { id: p.id } })
@@ -250,13 +254,19 @@ function AbaPropostas({ escopo, busca, dataInicio, dataFim }: FiltroProps) {
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <span className="font-semibold tabular-nums text-foreground">
-                    {p.numero_proposta}
-                  </span>
-                  {p.numero_proposta_banco && (
-                    <p className="mt-0.5 truncate text-xs tabular-nums text-muted-foreground">
-                      Nº banco {p.numero_proposta_banco}
-                    </p>
+                  {p.numero_proposta_banco ? (
+                    <>
+                      <div className="text-lg font-bold tabular-nums leading-tight tracking-tight text-[var(--banco)]">
+                        Nº banco {p.numero_proposta_banco}
+                      </div>
+                      <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                        Interno <span className="tabular-nums">{p.numero_proposta}</span>
+                      </div>
+                    </>
+                  ) : (
+                    <span className="font-semibold tabular-nums text-foreground">
+                      {p.numero_proposta}
+                    </span>
                   )}
                   <p className="mt-0.5 truncate text-sm text-muted-foreground">
                     {p.nome_cliente ?? "—"}
@@ -274,7 +284,8 @@ function AbaPropostas({ escopo, busca, dataInicio, dataFim }: FiltroProps) {
                 <StatusBancosProposta bancos={p.bancos} fallbackStatus={p.status} />
               </div>
             </Card>
-          ))}
+            );
+          })}
       </div>
 
       {/* Tabela desktop */}
@@ -309,22 +320,36 @@ function AbaPropostas({ escopo, busca, dataInicio, dataFim }: FiltroProps) {
               </TableRow>
             )}
             {!isLoading &&
-              itens.map((p) => (
+              itens.map((p) => {
+                const corBanco = corDoBanco(p.bancos?.[0]?.nome_banco);
+                return (
                 <TableRow
                   key={p.id}
-                  className="group relative cursor-pointer transition-colors hover:bg-primary/[0.03]"
+                  style={
+                    {
+                      ["--banco" as string]: corBanco,
+                      ["--banco-tint" as string]: `${corBanco}12`,
+                    } as React.CSSProperties
+                  }
+                  className="group relative cursor-pointer transition-colors hover:bg-[var(--banco-tint)] hover:shadow-[inset_3px_0_0_0_var(--banco)]"
                   onClick={() =>
                     router.navigate({ to: "/operacional/propostas/$id", params: { id: p.id } })
                   }
                 >
                   <TableCell className="relative">
-                    <span className="absolute inset-y-0 left-0 w-[3px] origin-top scale-y-0 rounded-r-full bg-primary transition-transform duration-200 group-hover:scale-y-100" />
-                    <div className="font-medium tabular-nums text-foreground transition-colors group-hover:text-primary">
-                      {p.numero_proposta}
-                    </div>
-                    {p.numero_proposta_banco && (
-                      <div className="text-[11px] text-muted-foreground">
-                        Nº banco {p.numero_proposta_banco}
+                    <span className="absolute inset-y-0 left-0 w-[3px] origin-top scale-y-0 rounded-r-full bg-[var(--banco)] transition-transform duration-200 group-hover:scale-y-100" />
+                    {p.numero_proposta_banco ? (
+                      <>
+                        <div className="text-base font-bold tabular-nums leading-tight text-[var(--banco)]">
+                          Nº banco {p.numero_proposta_banco}
+                        </div>
+                        <div className="mt-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                          Interno <span className="tabular-nums">{p.numero_proposta}</span>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="font-medium tabular-nums text-foreground transition-colors group-hover:text-[var(--banco)]">
+                        {p.numero_proposta}
                       </div>
                     )}
                   </TableCell>
@@ -341,7 +366,8 @@ function AbaPropostas({ escopo, busca, dataInicio, dataFim }: FiltroProps) {
                     <StatusBancosProposta bancos={p.bancos} fallbackStatus={p.status} />
                   </TableCell>
                 </TableRow>
-              ))}
+                );
+              })}
           </TableBody>
         </Table>
       </Card>
