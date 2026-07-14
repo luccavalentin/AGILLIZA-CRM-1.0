@@ -10,6 +10,7 @@ export const Route = createFileRoute("/cliente")({
       { title: "Meu Financiamento — Agilliza" },
       { name: "robots", content: "noindex" },
       { name: "theme-color", content: "#000F9F" },
+      { name: "mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
     ],
