@@ -300,7 +300,7 @@ function Pagina() {
       id: "volume",
       label: "Volume simulado",
       valor: formatBRL(kpiValor),
-      icon: Wallet,
+      icon: Calculator,
       detalhe: (
         <DetalheSimulacoes
           descricao="Valor de financiamento de cada simulação."
