@@ -441,11 +441,14 @@ export const listarSimulacoes = createServerFn({ method: "GET" })
     let query = supabase
       .from("simulacoes")
       .select(
-        "id, numero_simulacao, nome_cliente, produto, valor_imovel, valor_financiamento, prazo, status, created_at, usuario_criador_id",
+        "id, numero_simulacao, nome_cliente, produto, valor_imovel, valor_financiamento, prazo, status, created_at, usuario_criador_id, deleted_at, deleted_by, deleted_motivo",
         { count: "exact" },
       )
       .order("created_at", { ascending: false })
       .range(from, to);
+
+    if (data.apenas_excluidas) query = query.not("deleted_at", "is", null);
+    else query = query.is("deleted_at", null);
 
     if (data.escopo === "minhas") query = query.eq("usuario_criador_id", userId);
     if (data.responsavel) query = query.eq("usuario_criador_id", data.responsavel);
