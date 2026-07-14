@@ -17,8 +17,13 @@ import {
   BadgeCheck,
   XCircle,
   FileSignature,
+  Wallet,
+  TrendingUp,
+  Percent,
+  Target,
   type LucideIcon,
 } from "lucide-react";
+
 import { supabase } from "@/integrations/supabase/client";
 import {
   PanelHeader,
