@@ -101,10 +101,16 @@ export function rendaMinimaPelosBancos(
     .map((b) => {
       const parcela = parcelaExigidaPeloBanco(b);
       if (!parcela) return null;
+      // Se o banco devolveu a renda mínima diretamente (ex.: Bradesco em
+      // valorRendaLiquidaMinimaExigida), usamos o valor exato da API.
+      const raw = unwrapApiResponse(b.raw_response);
+      const detalhe = extrairDetalheBanco(raw ?? b.raw_response);
+      const rendaMinima =
+        numeroPositivo(detalhe?.rendaMinimaExigida) ?? rendaMinimaParaParcela(parcela);
       return {
         bancoNome: b.nome_banco ?? null,
         primeiraParcela: parcela,
-        rendaMinima: rendaMinimaParaParcela(parcela),
+        rendaMinima,
       };
     })
     .filter((v): v is { bancoNome: string | null; primeiraParcela: number; rendaMinima: number } =>
