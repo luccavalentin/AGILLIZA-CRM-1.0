@@ -300,7 +300,7 @@ function Pagina() {
             />
           </div>
 
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[repeat(4,minmax(0,1fr))_auto_auto_auto_auto]">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[repeat(4,minmax(0,1fr))_auto_auto]">
             <FilterField label="Etapa">
               <Select value={etapa} onValueChange={(v) => { setEtapa(v); setPagina(1); }}>
                 <SelectTrigger className="h-10 rounded-xl"><SelectValue placeholder="Todas" /></SelectTrigger>
@@ -365,11 +365,6 @@ function Pagina() {
             <div className="flex items-end">
               <Button type="button" variant="outline" onClick={limpar} className="h-10 w-full rounded-xl gap-2">
                 <RotateCcw className="size-4" /> Limpar
-              </Button>
-            </div>
-            <div className="flex items-end">
-              <Button type="submit" className="h-10 w-full rounded-xl gap-2">
-                <Search className="size-4" /> Buscar
               </Button>
             </div>
           </div>
