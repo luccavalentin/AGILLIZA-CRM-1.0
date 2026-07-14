@@ -8,7 +8,7 @@ export const wizardSchema = z
     valor_imovel: z.number().positive("Informe o valor do imóvel"),
     valor_entrada: z.number().min(0),
     valor_financiamento: z.number().positive("Informe o valor do crédito"),
-    possui_imovel_escolhido: z.boolean(),
+    possui_imovel_escolhido: z.boolean().optional().nullable(),
     data_nascimento: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data inválida"),
     prazo_meses: z
       .number()
