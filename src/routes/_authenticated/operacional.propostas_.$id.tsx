@@ -596,12 +596,6 @@ function AcoesTopo({
         <DropdownMenuContent align="end" className="w-72">
           <DropdownMenuLabel>Extrato para o cliente</DropdownMenuLabel>
           <DropdownMenuItem
-            onClick={() => baixarPropostaSimplificadaPDF({ proposta, bancos })}
-            disabled={(bancos ?? []).length === 0}
-          >
-            Proposta simplificada
-          </DropdownMenuItem>
-          <DropdownMenuItem
             onClick={() => baixarPropostaDetalhadaPDF({ proposta, bancos })}
             disabled={(bancos ?? []).length === 0}
           >
