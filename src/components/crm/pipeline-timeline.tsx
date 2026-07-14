@@ -79,10 +79,11 @@ export function PipelineTimeline({
           const node = (
             <span
               className={cn(
-                "relative z-10 flex size-9 shrink-0 items-center justify-center rounded-full border-2 text-xs font-semibold transition-all duration-300",
+                "relative z-10 flex shrink-0 items-center justify-center rounded-full border-2 text-xs font-semibold transition-all duration-300",
+                atual ? "size-11" : "size-9",
                 concluida && "border-success bg-success text-success-foreground",
                 atual &&
-                  "border-primary bg-primary text-primary-foreground ring-4 ring-primary/20",
+                  "border-primary bg-primary text-primary-foreground ring-[6px] ring-primary/25 shadow-[0_0_24px_-4px_var(--primary)] animate-pulse",
                 bloqueada && "border-dashed border-border bg-muted/40 text-muted-foreground/60",
                 onSelecionar &&
                   !atual &&
@@ -93,7 +94,7 @@ export function PipelineTimeline({
               {concluida ? (
                 <Check className="size-4" aria-hidden />
               ) : atual ? (
-                <span className="size-2 animate-pulse rounded-full bg-primary-foreground" aria-hidden />
+                <span className="size-2.5 rounded-full bg-primary-foreground" aria-hidden />
               ) : bloqueada ? (
                 <Lock className="size-3.5" aria-hidden />
               ) : (
@@ -102,17 +103,35 @@ export function PipelineTimeline({
             </span>
           );
 
+          // Selo "VOCÊ ESTÁ AQUI" com ponteiro apontando para o nó.
+          const marcadorAtual = atual ? (
+            <span
+              className="absolute -top-6 left-1/2 z-20 -translate-x-1/2 whitespace-nowrap"
+              aria-hidden
+            >
+              <span className="relative inline-flex items-center gap-1 rounded-full bg-primary px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-primary-foreground shadow-md">
+                <span className="size-1 rounded-full bg-primary-foreground animate-pulse" />
+                Você está aqui
+                <span
+                  className="absolute left-1/2 top-full -translate-x-1/2 border-4 border-transparent border-t-primary"
+                  aria-hidden
+                />
+              </span>
+            </span>
+          ) : null;
+
           const label = (
             <span
               className={cn(
                 "mt-2 w-full text-balance break-words text-center text-[11px] leading-tight transition-colors",
-                atual ? "font-semibold text-foreground" : "text-muted-foreground",
+                atual ? "font-bold text-primary" : "text-muted-foreground",
                 bloqueada && "text-muted-foreground/60",
               )}
             >
               {s.nome}
             </span>
           );
+
 
 
           const conector =
