@@ -133,7 +133,7 @@ function Pagina() {
 
 
   const { data, isLoading } = useQuery({
-    queryKey: ["simulacoes", escopo, busca, desde, ate, responsavel],
+    queryKey: ["simulacoes", escopo, busca, desde, ate, responsavel, verExcluidas],
     queryFn: () =>
       listarSimulacoes({
         data: {
@@ -145,6 +145,7 @@ function Pagina() {
             escopo === "todas" && responsavel !== "todos" ? responsavel : undefined,
           pagina: 1,
           porPagina: 30,
+          apenas_excluidas: verExcluidas,
         },
       }),
   });
@@ -160,6 +161,26 @@ function Pagina() {
       toast.error("Não foi possível excluir a simulação.");
     }
   }
+
+  async function handleRestaurar(id: string) {
+    try {
+      await restaurar({ data: { id } });
+      toast.success("Simulação restaurada.");
+      queryClient.invalidateQueries({ queryKey: ["simulacoes"] });
+    } catch {
+      toast.error("Não foi possível restaurar a simulação.");
+    }
+  }
+
+  function formatDataHora(v?: string | null) {
+    if (!v) return "—";
+    try {
+      return new Date(v).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
+    } catch {
+      return "—";
+    }
+  }
+
 
   function handleDuplicar(id: string) {
     router.navigate({
