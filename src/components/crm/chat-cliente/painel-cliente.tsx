@@ -462,10 +462,9 @@ function AbaInteracoes({ clienteId }: { clienteId: string }) {
   }
   const lista = (data ?? []) as Array<{
     id: string;
-    tipo: string | null;
     canal: string | null;
-    assunto: string | null;
-    descricao: string | null;
+    resultado: string | null;
+    observacao: string | null;
     ocorrido_em: string | null;
     responsavel?: { nome: string | null } | null;
   }>;
@@ -498,19 +497,18 @@ function AbaInteracoes({ clienteId }: { clienteId: string }) {
               variant="secondary"
               className="rounded-full border-primary/20 bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary"
             >
-              {i.tipo ?? "interação"}
-              {i.canal ? ` · ${i.canal}` : ""}
+              {i.canal ?? "interação"}
             </Badge>
             <span className="text-[10px] text-muted-foreground">
               {formatarData(i.ocorrido_em)}
             </span>
           </div>
-          {i.assunto && (
-            <p className="text-sm font-medium text-foreground">{i.assunto}</p>
+          {i.resultado && (
+            <p className="text-sm font-medium text-foreground">{i.resultado}</p>
           )}
-          {i.descricao && (
+          {i.observacao && (
             <p className="mt-0.5 line-clamp-3 text-xs text-muted-foreground">
-              {i.descricao}
+              {i.observacao}
             </p>
           )}
           {i.responsavel?.nome && (
@@ -523,6 +521,7 @@ function AbaInteracoes({ clienteId }: { clienteId: string }) {
     </div>
   );
 }
+
 
 function AbaArquivos({ clienteId }: { clienteId: string }) {
   const fn = useServerFn(listarDocumentos);
