@@ -98,7 +98,7 @@ function Pagina() {
             <Building2 className="h-4 w-4" /> Centros de custo
           </TabsTrigger>
           <TabsTrigger value="comissoes" className="gap-1.5">
-            <Percent className="h-4 w-4" /> Comissões
+            <Percent className="h-4 w-4" /> Repasses
           </TabsTrigger>
         </TabsList>
 
