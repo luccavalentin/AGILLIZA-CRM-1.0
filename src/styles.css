@@ -679,6 +679,8 @@ div[style*="Edit with Lovable"],
   &::-webkit-scrollbar {
     display: none; /* Chromium/Safari */
   }
+}
+
 
 /* ============================= DPS ============================= */
 /* Documento da Declaração Pessoal de Saúde (tela + impressão). */
