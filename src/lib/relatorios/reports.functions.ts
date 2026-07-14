@@ -2081,12 +2081,12 @@ export const runReport = createServerFn({ method: "POST" })
         ),
       );
       return {
-        titulo: "Relatório de comissões",
-        descricao: "Comissões previstas e pagas no período.",
+        titulo: "Relatório de repasses",
+        descricao: "Repasses previstos e pagos no período (comissões de contratos emitidos).",
         modulo: "Financeiro",
         kpis: [
-          { label: "Comissão prevista", valor: brl(prevista), tone: "brand" },
-          { label: "Comissão paga", valor: brl(paga), tone: "success" },
+          { label: "Repasse previsto", valor: brl(prevista), tone: "brand" },
+          { label: "Repasse pago", valor: brl(paga), tone: "success" },
           { label: "Ticket médio", valor: brl(ticket), tone: "neutral" },
           { label: "Registros", valor: int(coms.length), tone: "neutral" },
         ],
@@ -2103,7 +2103,7 @@ export const runReport = createServerFn({ method: "POST" })
         ],
         columns: [
           { key: "resp", label: "Responsável" },
-          { key: "valor", label: "Comissão", align: "right", footer: "sum", format: "brl" },
+          { key: "valor", label: "Repasse", align: "right", footer: "sum", format: "brl" },
         ],
         rows: [...userMap.entries()]
           .sort((a, b) => b[1] - a[1])
