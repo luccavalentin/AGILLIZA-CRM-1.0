@@ -267,55 +267,51 @@ export function HeroMetric({
   const conteudo = (
     <Card
       className={cn(
-        "group relative h-full min-w-0 overflow-hidden p-4 transition-all duration-300",
+        "group relative flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border-border/70 p-5 shadow-sm transition-all duration-300",
         to &&
-          "cursor-pointer hover:-translate-y-1 hover:border-primary/40 hover:shadow-xl hover:shadow-primary/10",
+          "cursor-pointer hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/[0.06]",
       )}
-      style={{ background: `linear-gradient(180deg, ${toneWash[tone]}, transparent 70%)` }}
     >
       <span
         aria-hidden
-        className={cn(
-          "pointer-events-none absolute inset-x-0 top-0 h-px scale-x-0 bg-gradient-to-r from-transparent via-current to-transparent opacity-0 transition-all duration-300 group-hover:scale-x-100 group-hover:opacity-60",
-          toneText[tone],
-        )}
+        className="pointer-events-none absolute inset-x-0 top-0 h-24 opacity-70"
+        style={{
+          background: `linear-gradient(180deg, ${toneWash[tone]}, transparent 100%)`,
+        }}
       />
-      <div className="flex items-start justify-between gap-2">
+      <div className="relative flex items-start justify-between gap-2">
         {Icon ? (
           <span
             className={cn(
-              "flex h-9 w-9 shrink-0 items-center justify-center rounded-full ring-1 ring-inset ring-border/60",
+              "inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl",
               toneText[tone],
             )}
-            style={{
-              background: toneWash[tone],
-              boxShadow: `0 0 0 4px color-mix(in oklab, ${toneGlow[tone]} 40%, transparent)`,
-            }}
+            style={{ background: toneIconBg[tone] }}
           >
-            <Icon className="h-4 w-4" />
+            <Icon className="h-5 w-5" strokeWidth={2} />
           </span>
         ) : (
           <span
-            className={cn("h-9 w-1 shrink-0 rounded-full", toneBar[tone])}
-            style={{ boxShadow: `0 0 14px ${toneGlow[tone]}` }}
+            className={cn("h-10 w-1 shrink-0 rounded-full", toneBar[tone])}
           />
         )}
         {to && (
-          <ArrowUpRight className="h-3.5 w-3.5 text-muted-foreground/40 transition-all group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-primary" />
+          <ArrowUpRight className="h-4 w-4 text-muted-foreground/40 transition-all group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-primary" />
         )}
       </div>
-      <p className="mt-3 min-w-0 truncate text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground sm:text-[11px] sm:tracking-[0.12em]">
+      <p className="relative mt-4 min-w-0 truncate text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground sm:text-[11px] sm:tracking-[0.14em]">
         {label}
       </p>
-      <p className="mt-1 min-w-0 truncate font-mono text-[clamp(1.2rem,6vw,1.6rem)] font-semibold leading-none tracking-tight tabular-nums text-foreground sm:text-[24px]">
+      <p className="relative mt-1 min-w-0 truncate font-mono text-[clamp(1.35rem,6vw,1.75rem)] font-semibold leading-none tracking-tight tabular-nums text-foreground">
         {valor}
       </p>
-      <div className="mt-2 flex min-w-0 items-center gap-2">
+      <div className="relative mt-2 flex min-w-0 items-center gap-2">
         {delta && <DeltaBadge delta={delta} />}
-        {hint && <p className="min-w-0 truncate text-[11px] text-muted-foreground">{hint}</p>}
+        {hint && <p className="min-w-0 truncate text-[11px] font-medium text-muted-foreground/90">{hint}</p>}
       </div>
     </Card>
   );
+
   return to ? (
     <Link
       to={to}
