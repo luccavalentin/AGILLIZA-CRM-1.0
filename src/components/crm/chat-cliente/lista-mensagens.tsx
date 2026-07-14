@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { TypingIndicator } from "@/components/shared/typing-indicator";
 import { type ChatMensagem } from "@/lib/crm/chat-cliente.functions";
 import { MsgAcoes } from "./msg-acoes";
-import { formatarDia, formatarHora, iniciais, type ChatClienteInfo } from "./utils";
+import { formatarDia, formatarHora, type ChatClienteInfo } from "./utils";
 
 export function ListaMensagens({
   filtradas,
