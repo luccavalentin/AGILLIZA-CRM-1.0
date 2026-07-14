@@ -557,30 +557,10 @@ export function DocumentosGerais() {
     }
   }
 
-  // Lista base para "Por cliente" (paginação/ordenação)
-  const clientesOrdenados = useMemo(() => {
-    const lista = [...clientesFiltrados];
-    lista.sort((a, b) => {
-      if (ordem === "docs-desc") return (b.total_documentos ?? 0) - (a.total_documentos ?? 0);
-      if (ordem === "docs-asc") return (a.total_documentos ?? 0) - (b.total_documentos ?? 0);
-      const na = titulo(a.nome);
-      const nb = titulo(b.nome);
-      return ordem === "nome-desc" ? nb.localeCompare(na, "pt-BR") : na.localeCompare(nb, "pt-BR");
-    });
-    return lista;
-  }, [clientesFiltrados, ordem]);
+  // Reutiliza os useMemo declarados antes do early return.
+  const clientesOrdenados = clientesOrdenadosPre;
+  const pastasOrdenadas = pastasOrdenadasPre;
 
-  const pastasOrdenadas = useMemo(() => {
-    const base = [...pastasNivel];
-    base.sort((a, b) => {
-      if (ordem === "docs-desc") return b.total_clientes - a.total_clientes;
-      if (ordem === "docs-asc") return a.total_clientes - b.total_clientes;
-      return ordem === "nome-desc"
-        ? b.nome.localeCompare(a.nome, "pt-BR")
-        : a.nome.localeCompare(b.nome, "pt-BR");
-    });
-    return base;
-  }, [pastasNivel, ordem]);
 
   const listaAtual =
     aba === "cliente"
