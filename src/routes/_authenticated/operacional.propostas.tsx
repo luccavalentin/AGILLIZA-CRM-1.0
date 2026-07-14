@@ -129,7 +129,7 @@ function Pagina() {
   }, [queryClient]);
 
   const { data, isLoading } = useQuery({
-    queryKey: ["propostas", escopo, busca, dataInicio, dataFim, responsavel],
+    queryKey: ["propostas", escopo, busca, dataInicio, dataFim, responsavel, verExcluidas],
     queryFn: () =>
       listarPropostas({
         data: {
@@ -141,6 +141,7 @@ function Pagina() {
           data_fim: dataFim ? `${dataFim}T23:59:59` : undefined,
           pagina: 1,
           porPagina: 100,
+          apenas_excluidas: verExcluidas,
         },
       }),
   });
