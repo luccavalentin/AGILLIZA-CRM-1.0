@@ -3,6 +3,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Maximize2 } from "lucide-react";
 import { toast } from "sonner";
+import { criarTarefa } from "@/lib/operacional/tarefas.functions";
+import type { ComposerSubmitPayload } from "./chat-cliente/composer";
 import { Card } from "@/components/ui/card";
 import {
   AlertDialog,
