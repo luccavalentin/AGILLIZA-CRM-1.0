@@ -322,6 +322,60 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
     }));
   }
 
+  /**
+   * Lógica inversa por parcela: dado o valor de parcela alvo, encontra o PV
+   * (valor financiado) máximo, e daí deriva imóvel = PV / LTV e entrada.
+   *
+   * Fórmula: PMT_alvo = fator_amortização · PV + encargos(PV)
+   *   PRICE  fator = i(1+i)^n / ((1+i)^n - 1)
+   *   SAC    fator = 1/n + i   (primeira e maior parcela)
+   *   encargos ≈ (MIP_mes + DFI_mes/LTV)·PV + Taxa_admin  (linear em PV)
+   * ⇒ PV = (PMT_alvo - Taxa_admin) / (fator + k)
+   * Usa a MAIOR taxa entre os bancos selecionados (conservador: menor PV).
+   */
+  function aplicarPorParcela(parcelaAlvo: number) {
+    const pmt = Math.max(0, Number(parcelaAlvo) || 0);
+    if (pmt <= 0) {
+      setEntradaTocada(true);
+      setF((prev) => ({
+        ...prev,
+        parcela_alvo: 0,
+        valor_financiamento: 0,
+        valor_imovel: 0,
+        valor_entrada: 0,
+      }));
+      return;
+    }
+    // Import local para evitar ciclo — constantes ficam no módulo de renda.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { TAXA_MIP_MES, TAXA_DFI_MES, TAXA_ADMIN_MES } = require("./renda");
+    const taxaAno = melhorTaxaAno || 0.1199;
+    const i = Math.pow(1 + taxaAno, 1 / 12) - 1;
+    const n = Math.max(1, Math.round(Number(f.prazo) || 360));
+    const fator =
+      f.sistema_amortizacao === "P"
+        ? (i * Math.pow(1 + i, n)) / (Math.pow(1 + i, n) - 1)
+        : 1 / n + i;
+    const k = TAXA_MIP_MES + TAXA_DFI_MES / ltvMax;
+    const pmtLiq = pmt - TAXA_ADMIN_MES;
+    const pv = pmtLiq > 0 ? pmtLiq / (fator + k) : 0;
+    if (pv <= 0) {
+      toast.warning("Parcela informada é insuficiente para cobrir os encargos do banco.");
+      return;
+    }
+    const financiamento = Math.round(pv);
+    const imovel = Math.round(financiamento / ltvMax);
+    const entrada = Math.max(0, imovel - financiamento);
+    setEntradaTocada(true);
+    setF((prev) => ({
+      ...prev,
+      parcela_alvo: pmt,
+      valor_financiamento: financiamento,
+      valor_imovel: imovel,
+      valor_entrada: entrada,
+    }));
+
+
   /** Aplica a "jogada de números": infla o valor de compra e venda para liberar o financiamento. */
   function aplicarJogadaNumeros(dados: {
     valorImovel: number;
