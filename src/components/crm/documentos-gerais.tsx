@@ -184,6 +184,13 @@ export function DocumentosGerais() {
   const [visao, setVisao] = useState<Visao>("hierarquia");
   const [cliente, setCliente] = useState<DGCliente | null>(null);
   const [fichaAberta, setFichaAberta] = useState(false);
+  const [aba, setAba] = useState<Aba>("cliente");
+  const [ordem, setOrdem] = useState<OrdemChave>("nome-asc");
+  const [modo, setModo] = useState<ModoLista>("grid");
+  const [pagina, setPagina] = useState(1);
+  const [filtrosSheet, setFiltrosSheet] = useState(false);
+  const [arquivosAberto, setArquivosAberto] = useState(false);
+  const POR_PAGINA = 8;
 
   const { data, isLoading } = useQuery({
     queryKey: ["crm-documentos-gerais"],
