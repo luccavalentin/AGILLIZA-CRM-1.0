@@ -623,9 +623,7 @@ function Pagina() {
               <TableRow
                 key={s.id}
                 className="group cursor-pointer border-border/50 transition-colors odd:bg-muted/[0.18] hover:bg-primary/[0.06]"
-                onClick={() =>
-                  router.navigate({ to: "/operacional/simulacoes/$id", params: { id: s.id } })
-                }
+                onClick={() => (verExcluidas ? undefined : handleEditar(s.id))}
               >
                 <TableCell className="py-3.5">
                   <span className="inline-flex items-center rounded-md bg-primary/5 px-2 py-0.5 font-mono text-[13px] font-semibold text-primary ring-1 ring-inset ring-primary/10 transition-colors group-hover:bg-primary/10">
@@ -674,21 +672,38 @@ function Pagina() {
                       <Undo2 className="mr-1 h-3.5 w-3.5" /> Restaurar
                     </Button>
                   ) : (
-                    <AcoesSimulacao
-                      onVisualizar={() =>
-                        router.navigate({
-                          to: "/operacional/simulacoes/$id",
-                          params: { id: s.id },
-                        })
-                      }
-                      onEditar={() => handleEditar(s.id)}
-                      onBaixarComparativo={() => handleBaixarComparativo(s.id)}
-                      onBaixarDetalhada={() => handleBaixarDetalhada(s.id)}
-                      onDuplicar={() => handleDuplicar(s.id)}
-                      onEnviarProposta={() => handleEnviarProposta(s.id, s.numero_simulacao)}
-                      onExcluir={() => handleExcluir(s.id)}
-                      numero={s.numero_simulacao}
-                    />
+                    <div className="flex items-center justify-end gap-1">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8 text-muted-foreground hover:text-primary"
+                        title="Ver detalhes"
+                        aria-label="Ver detalhes da simulação"
+                        onClick={() =>
+                          router.navigate({
+                            to: "/operacional/simulacoes/$id",
+                            params: { id: s.id },
+                          })
+                        }
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      <AcoesSimulacao
+                        onVisualizar={() =>
+                          router.navigate({
+                            to: "/operacional/simulacoes/$id",
+                            params: { id: s.id },
+                          })
+                        }
+                        onEditar={() => handleEditar(s.id)}
+                        onBaixarComparativo={() => handleBaixarComparativo(s.id)}
+                        onBaixarDetalhada={() => handleBaixarDetalhada(s.id)}
+                        onDuplicar={() => handleDuplicar(s.id)}
+                        onEnviarProposta={() => handleEnviarProposta(s.id, s.numero_simulacao)}
+                        onExcluir={() => handleExcluir(s.id)}
+                        numero={s.numero_simulacao}
+                      />
+                    </div>
                   )}
                 </TableCell>
               </TableRow>
@@ -725,9 +740,7 @@ function Pagina() {
           <div
             key={s.id}
             className="cursor-pointer rounded-xl border border-border/60 bg-card p-4 shadow-sm transition-all active:scale-[0.99]"
-            onClick={() =>
-              router.navigate({ to: "/operacional/simulacoes/$id", params: { id: s.id } })
-            }
+            onClick={() => (verExcluidas ? undefined : handleEditar(s.id))}
           >
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
@@ -758,21 +771,38 @@ function Pagina() {
                     <Undo2 className="mr-1 h-3.5 w-3.5" /> Restaurar
                   </Button>
                 ) : (
-                  <AcoesSimulacao
-                    onVisualizar={() =>
-                      router.navigate({
-                        to: "/operacional/simulacoes/$id",
-                        params: { id: s.id },
-                      })
-                    }
-                    onEditar={() => handleEditar(s.id)}
-                    onBaixarComparativo={() => handleBaixarComparativo(s.id)}
-                    onBaixarDetalhada={() => handleBaixarDetalhada(s.id)}
-                    onDuplicar={() => handleDuplicar(s.id)}
-                    onEnviarProposta={() => handleEnviarProposta(s.id, s.numero_simulacao)}
-                    onExcluir={() => handleExcluir(s.id)}
-                    numero={s.numero_simulacao}
-                  />
+                  <>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-8 w-8 text-muted-foreground hover:text-primary"
+                      title="Ver detalhes"
+                      aria-label="Ver detalhes da simulação"
+                      onClick={() =>
+                        router.navigate({
+                          to: "/operacional/simulacoes/$id",
+                          params: { id: s.id },
+                        })
+                      }
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    <AcoesSimulacao
+                      onVisualizar={() =>
+                        router.navigate({
+                          to: "/operacional/simulacoes/$id",
+                          params: { id: s.id },
+                        })
+                      }
+                      onEditar={() => handleEditar(s.id)}
+                      onBaixarComparativo={() => handleBaixarComparativo(s.id)}
+                      onBaixarDetalhada={() => handleBaixarDetalhada(s.id)}
+                      onDuplicar={() => handleDuplicar(s.id)}
+                      onEnviarProposta={() => handleEnviarProposta(s.id, s.numero_simulacao)}
+                      onExcluir={() => handleExcluir(s.id)}
+                      numero={s.numero_simulacao}
+                    />
+                  </>
                 )}
               </div>
             </div>
