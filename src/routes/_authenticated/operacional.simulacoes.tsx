@@ -100,6 +100,7 @@ function Pagina() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const excluir = useServerFn(excluirSimulacao);
+  const restaurar = useServerFn(restaurarSimulacao);
   const criar = useServerFn(criarProposta);
 
   const obter = useServerFn(obterSimulacao);
@@ -112,6 +113,7 @@ function Pagina() {
   const [ate, setAte] = useState(padrao.fim);
   const [responsavel, setResponsavel] = useState<string>("todos");
   const [kpiAberto, setKpiAberto] = useState<string | null>(null);
+  const [verExcluidas, setVerExcluidas] = useState(false);
 
   const { data: colegas } = useQuery({
     queryKey: ["colegas"],
