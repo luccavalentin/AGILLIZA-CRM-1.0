@@ -188,13 +188,28 @@ export function SecaoOperacaoImovel({ ctx }: { ctx: SimulacaoCompletaCtx }) {
           )}
         </Campo>
 
-        <Campo label="Valor total do financiamento (R$)">
-          <div className="flex h-10 items-center rounded-md border border-input bg-muted/40 px-3 text-sm font-semibold tabular-nums text-foreground">
-            {formatBRL(
-              (f.valor_financiamento || 0) +
-                (f.fg_financiar_despesas ? Number(f.valor_despesas_financiadas) || 0 : 0),
-            )}
-          </div>
+        <Campo label="Valor a financiar (R$)">
+          <CurrencyInput
+            value={f.valor_financiamento}
+            onChange={(v) => aplicarPorFinanciamento(v)}
+            placeholder="Ex: 400.000,00"
+          />
+          <p className="text-xs text-muted-foreground">
+            Ao digitar aqui, o imóvel e a entrada são preenchidos automaticamente
+            considerando o teto do banco ({Math.round(ltvMax * 100)}%).
+            {f.fg_financiar_despesas &&
+              (f.valor_despesas_financiadas || 0) > 0 && (
+                <>
+                  {" "}Total com despesas:{" "}
+                  <span className="font-medium text-foreground">
+                    {formatBRL(
+                      (f.valor_financiamento || 0) +
+                        (Number(f.valor_despesas_financiadas) || 0),
+                    )}
+                  </span>
+                </>
+              )}
+          </p>
         </Campo>
 
         <Campo label={<>Prazo (meses) <Ast /></>}>
