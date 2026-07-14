@@ -41,9 +41,6 @@ import { SelecionarBancosPdfDialog } from "@/components/simulacao/selecionar-ban
 import { formatBRL, formatPercent } from "@/lib/simulacao/format";
 import { extrairDetalheBanco } from "@/lib/simulacao/detalhe-banco";
 import { rendaMinimaPelosBancos } from "@/lib/simulacao/renda";
-import {
-  baixarSimulacaoDetalhadaPDF,
-} from "@/lib/simulacao/simulacao-pdf";
 
 /** Valor total financiado do banco (financiamento + despesas/tarifas financiadas). */
 function totalFinanciado(b: any): number | null {
