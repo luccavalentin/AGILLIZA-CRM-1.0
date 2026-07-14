@@ -340,6 +340,7 @@ export type Database = {
           editada_em: string | null
           excluida_em: string | null
           id: string
+          interna: boolean
           lida_em: string | null
           mensagem: string
           proposta_id: string | null
@@ -356,6 +357,7 @@ export type Database = {
           editada_em?: string | null
           excluida_em?: string | null
           id?: string
+          interna?: boolean
           lida_em?: string | null
           mensagem: string
           proposta_id?: string | null
@@ -372,6 +374,7 @@ export type Database = {
           editada_em?: string | null
           excluida_em?: string | null
           id?: string
+          interna?: boolean
           lida_em?: string | null
           mensagem?: string
           proposta_id?: string | null
