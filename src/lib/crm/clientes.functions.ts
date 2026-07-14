@@ -62,6 +62,7 @@ export interface ClienteListaItem {
 const listarSchema = z.object({
   q: z.string().optional(),
   etapa: z.string().optional(),
+  escopo: z.enum(["minhas", "geral"]).optional(),
   pagina: z.number().int().min(1).default(1),
   porPagina: z.number().int().min(1).max(100).default(20),
 });
