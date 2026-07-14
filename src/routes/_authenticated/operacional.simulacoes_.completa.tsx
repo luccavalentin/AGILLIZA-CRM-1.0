@@ -211,7 +211,17 @@ function Pagina() {
         </aside>
       </div>
 
+      {simulacaoResultadoId && !modoProposta && (
+        <div ref={resultadoRef} className="scroll-mt-4">
+          <ResultadoInlineCompleta
+            simulacaoId={simulacaoResultadoId}
+            onFechar={fecharResultadoInline}
+          />
+        </div>
+      )}
+
       <ConsultandoOverlay aberto={enviando} total={f.bancos_ids.length} concluidos={concluidos} />
+
 
 
       <AlertDialog open={!!confirmRenda} onOpenChange={(o) => !o && setConfirmRenda(null)}>
