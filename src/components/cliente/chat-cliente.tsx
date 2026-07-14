@@ -544,6 +544,14 @@ export function ThreadChat({
         }}
       />
 
+      {quickActions ? (
+        <div className="shrink-0 border-t border-border/60 bg-card/80 px-2.5 py-2 sm:px-3">
+          {quickActions}
+        </div>
+      ) : null}
+
+
+
       <form
         className="flex shrink-0 items-end gap-1.5 border-t border-border/60 bg-background/95 p-2.5 backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:p-3"
         onSubmit={(e) => {
