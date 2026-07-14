@@ -295,7 +295,7 @@ function Acompanhar() {
           </ChartCard>
 
           <ChartCard titulo="Evolução dos últimos dias">
-            <div className="h-52">
+            <div className="h-40 sm:h-44 md:h-52">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={evolucaoData} margin={{ top: 15, right: 15, left: -20, bottom: 0 }}>
                   <XAxis dataKey="dia" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
