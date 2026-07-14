@@ -40,11 +40,12 @@ export function MultiSelect({
       selected.includes(value) ? selected.filter((v) => v !== value) : [...selected, value],
     );
 
+  const activeOne = selected.length === 1 ? options.find((o) => o.value === selected[0]) : null;
   const label =
     selected.length === 0
       ? placeholder
-      : selected.length === 1
-        ? (options.find((o) => o.value === selected[0])?.label ?? "1 selecionado")
+      : activeOne
+        ? activeOne.label
         : `${selected.length} selecionados`;
 
   return (
@@ -59,7 +60,10 @@ export function MultiSelect({
             className,
           )}
         >
-          <span className="truncate">{label}</span>
+          <span className="flex min-w-0 items-center gap-2">
+            {activeOne?.icon}
+            <span className="truncate">{label}</span>
+          </span>
           {selected.length > 0 ? (
             <X
               className="h-3.5 w-3.5 shrink-0 opacity-60 hover:opacity-100"
@@ -92,6 +96,7 @@ export function MultiSelect({
                     >
                       {active && <Check className="h-3 w-3" />}
                     </div>
+                    {o.icon ? <span className="mr-2 flex shrink-0 items-center">{o.icon}</span> : null}
                     <span className="truncate">{o.label}</span>
                   </CommandItem>
                 );
