@@ -46,6 +46,9 @@ export function bancoJaEnviado(b: {
   status_banco?: string | null;
   numero_proposta_banco?: string | null;
 }): boolean {
+  // Se a última tentativa falhou, o usuário precisa poder reenviar — mesmo
+  // que exista um número técnico (ex.: codigoSimulacaoBanco) na linha.
+  if (String(b.status_banco ?? "") === "erro") return false;
   return (
     Boolean(b.numero_proposta_banco) ||
     STATUS_BANCO_JA_ENVIADO.has(String(b.status_banco ?? ""))
