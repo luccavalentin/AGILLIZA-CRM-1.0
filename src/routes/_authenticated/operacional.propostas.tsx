@@ -197,6 +197,26 @@ function Pagina() {
     }
   }
 
+  async function handleRestaurar(id: string) {
+    try {
+      await restaurar({ data: { id } });
+      toast.success("Proposta restaurada.");
+      queryClient.invalidateQueries({ queryKey: ["propostas"] });
+    } catch {
+      toast.error("Não foi possível restaurar a proposta.");
+    }
+  }
+
+  function formatDataHora(v?: string | null) {
+    if (!v) return "—";
+    try {
+      return new Date(v).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
+    } catch {
+      return "—";
+    }
+  }
+
+
   return (
     <div className="mx-auto w-full max-w-[1600px] space-y-4 p-3 sm:space-y-6 sm:p-6">
       {/* Cabeçalho */}
