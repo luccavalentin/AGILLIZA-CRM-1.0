@@ -45,11 +45,11 @@ const STATUS_PROPOSTA_LABEL: Record<string, string> = {
   em_analise_credito: "Em análise de crédito",
   aguardando_documentos: "Aguardando documentos",
   credito_aprovado: "Crédito aprovado",
+  credito_recusado: "Crédito recusado",
   engenharia_vistoria: "Engenharia / vistoria",
   analise_juridica: "Análise jurídica",
   contrato_emitido: "Contrato emitido",
   registrado: "Registrado",
-  credito_recusado: "Crédito recusado",
   erro_envio: "Erro no envio",
   cancelada: "Cancelada",
 };
