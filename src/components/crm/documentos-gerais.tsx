@@ -99,10 +99,27 @@ function primeiroNome(s: string | null | undefined): string {
   return t === "—" ? "" : t.split(" ")[0];
 }
 
+/** Formata documento (CPF/CNPJ) com máscara parcial estilo "389.***.***-20". */
+function formatarDocumento(v: string | null | undefined): string | null {
+  if (!v) return null;
+  const digits = v.replace(/\D/g, "");
+  if (digits.length === 11) {
+    return `CPF: ${digits.slice(0, 3)}.***.***-${digits.slice(9)}`;
+  }
+  if (digits.length === 14) {
+    return `CNPJ: ${digits.slice(0, 2)}.***.***/****-${digits.slice(12)}`;
+  }
+  return v;
+}
+
 type PastaTipo = "raiz" | "comercial" | "imob" | "corretor";
+type Aba = "cliente" | "comercial" | "imobiliaria" | "corretor" | "lixeira";
+type OrdemChave = "nome-asc" | "nome-desc" | "docs-desc" | "docs-asc";
+type ModoLista = "grid" | "lista";
 
 /** Modo de navegação: hierarquia completa ou visão agregada por dimensão. */
 type Visao = "hierarquia" | "imobiliarias" | "corretores" | "clientes";
+
 
 const RAIZ_KEY = "__raiz_principal__";
 const RAIZ_NOME = "Pasta Comercial e documentos de clientes";
