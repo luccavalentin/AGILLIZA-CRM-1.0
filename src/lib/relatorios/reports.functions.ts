@@ -536,6 +536,7 @@ export const runReport = createServerFn({ method: "POST" })
         descricao: "Desempenho de produção por período e responsável.",
         modulo: "Comercial",
         kpis: [
+          { label: "Simulações", valor: int(sims.length), tone: "neutral" },
           { label: "Propostas", valor: int(enviadas.length), tone: "neutral" },
           { label: "Taxa de aprovação", valor: pct(taxa), tone: "success" },
           { label: "Ticket médio", valor: brl(ticket), tone: "brand" },
