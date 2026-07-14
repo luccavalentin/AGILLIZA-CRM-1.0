@@ -40,7 +40,14 @@ export const Route = createFileRoute("/_authenticated/operacional/simulacoes_/co
 function Pagina() {
   const { duplicar, origem: origemFluxo } = Route.useSearch();
   const ctx = useSimulacaoCompleta({ duplicar, modoProposta: origemFluxo === "proposta" });
-  const { router, modoProposta, f, enviando, concluidos, mostraConjuge, confirmRenda, setConfirmRenda, enviar, executarEnvio } = ctx;
+  const { router, modoProposta, f, enviando, concluidos, mostraConjuge, confirmRenda, setConfirmRenda, enviar, executarEnvio, simulacaoResultadoId, fecharResultadoInline } = ctx;
+  const resultadoRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (simulacaoResultadoId && resultadoRef.current) {
+      resultadoRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [simulacaoResultadoId]);
 
   const resumoEtapas = [
     { label: "Titular", ok: !!f.nome_cliente },
