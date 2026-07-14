@@ -107,6 +107,7 @@ export function AbaEnviarBanco({
   const [visualizando, setVisualizando] = useState<{ url: string; nome: string } | null>(null);
   const [excluindo, setExcluindo] = useState<{ id: string; nome: string } | null>(null);
   const [enviando, setEnviando] = useState(false);
+  const [enviandoId, setEnviandoId] = useState<string | null>(null);
   const [uploadCat, setUploadCat] = useState<Categoria | null>(null);
   const [resultado, setResultado] = useState<{
     enviados: number;
