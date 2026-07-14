@@ -89,15 +89,6 @@ export function ListaMensagens({
                   mesmoAutorAntes ? "mt-0.5" : "mt-2",
                 )}
               >
-                {!doTime &&
-                  (mesmoAutorDepois ? (
-                    <span className="size-7 shrink-0" />
-                  ) : (
-                    <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary/80 to-primary/50 text-[10px] font-semibold text-primary-foreground shadow-sm">
-                      {iniciais(info?.nome)}
-                    </span>
-                  ))}
-
                 {/* Ações (aparecem no hover) — à esquerda das bolhas do time */}
                 {podeGerenciar && (
                   <MsgAcoes
@@ -108,6 +99,7 @@ export function ListaMensagens({
                     onDelete={() => onExcluir(m)}
                   />
                 )}
+
 
                 <div
                   className={cn(
