@@ -835,6 +835,7 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
     definirPrazo,
     aplicarEntradaSugerida,
     aplicarPorFinanciamento,
+    aplicarPorEntrada,
     aplicarPorParcela,
 
     aplicarJogadaNumeros,
