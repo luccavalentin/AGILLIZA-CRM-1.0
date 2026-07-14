@@ -349,6 +349,11 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
         toast.info("No sistema PRICE, somente o Bradesco pode ser selecionado.");
         return prev;
       }
+      // Em "Nova Proposta" a seleção é única: o banco escolhido é o que
+      // receberá a proposta. Marcar outro substitui o anterior.
+      if (modoProposta) {
+        return { ...prev, bancos_ids: has ? [] : [id] };
+      }
       return {
         ...prev,
         bancos_ids: has
@@ -357,6 +362,7 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
       };
     });
   }
+
 
   const mostraConjuge = f.possui_conjuge || f.compoe_renda;
 
