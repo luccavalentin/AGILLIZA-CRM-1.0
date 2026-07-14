@@ -736,9 +736,82 @@ function TabResumo({
     }
   }
 
+  const bancosEnviados = (bancos ?? []).filter((b) => bancoJaEnviado(b));
+
   return (
     <div className="space-y-5">
-      <FunilBancoTimeline etapas={proposta.etapas_banco} statusProposta={proposta.status} />
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
+        <FunilBancoTimeline etapas={proposta.etapas_banco} statusProposta={proposta.status} />
+        {bancosEnviados.length > 0 && (
+          <aside className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+            <div className="border-b border-border/70 bg-muted/30 px-4 py-2.5">
+              <h3 className="text-[13px] font-semibold text-foreground">Detalhamento do financiamento</h3>
+              <p className="text-[11px] text-muted-foreground">Dados oficiais do banco enviado</p>
+            </div>
+            <div className="divide-y divide-border/60">
+              {bancosEnviados.map((b) => {
+                const cfg = statusBancoConfig(b.status_banco);
+                return (
+                  <div key={b.id} className="space-y-3 p-4">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="flex min-w-0 items-center gap-2">
+                        <BancoLogo nome={b.nome_banco} size="md" className="shrink-0" />
+                        <span className="min-w-0">
+                          <span
+                            className="block truncate text-sm font-semibold leading-tight"
+                            style={{ color: corDoBanco(b.nome_banco) }}
+                          >
+                            {b.nome_banco}
+                          </span>
+                          {b.numero_proposta_banco && (
+                            <span className="block truncate text-[11px] tabular-nums text-muted-foreground">
+                              Nº banco {b.numero_proposta_banco}
+                            </span>
+                          )}
+                        </span>
+                      </span>
+                      <ToneBadge tone={cfg.tone}>{cfg.label}</ToneBadge>
+                    </div>
+                    <dl className="grid grid-cols-2 gap-x-3 gap-y-2 text-[12px]">
+                      <div className="min-w-0">
+                        <dt className="text-[10.5px] uppercase tracking-[0.06em] text-muted-foreground">Financiamento</dt>
+                        <dd className="truncate font-semibold tabular-nums text-foreground">{formatBRL(b.valor_financiamento_max)}</dd>
+                      </div>
+                      <div className="min-w-0">
+                        <dt className="text-[10.5px] uppercase tracking-[0.06em] text-muted-foreground">Parcela</dt>
+                        <dd className="truncate font-semibold tabular-nums text-foreground">{formatBRL(b.valor_parcela)}</dd>
+                      </div>
+                      <div className="min-w-0">
+                        <dt className="text-[10.5px] uppercase tracking-[0.06em] text-muted-foreground">Prazo</dt>
+                        <dd className="truncate font-medium tabular-nums text-foreground">{b.prazo_pagamento_max ?? "—"} meses</dd>
+                      </div>
+                      <div className="min-w-0">
+                        <dt className="text-[10.5px] uppercase tracking-[0.06em] text-muted-foreground">Taxa/ano</dt>
+                        <dd className="truncate font-medium tabular-nums text-foreground">{b.taxa_juros_ano != null ? `${b.taxa_juros_ano}%` : "—"}</dd>
+                      </div>
+                      <div className="col-span-2 min-w-0">
+                        <dt className="text-[10.5px] uppercase tracking-[0.06em] text-muted-foreground">Situação de crédito</dt>
+                        <dd className="truncate font-medium text-foreground">
+                          {SITUACAO_BANCO_LABEL[(b.situacao_banco as SituacaoBanco) ?? "nao_enviado"]}
+                        </dd>
+                      </div>
+                    </dl>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-8 w-full"
+                      onClick={() => setDetalheBanco(b)}
+                    >
+                      <Info className="mr-1 h-4 w-4" /> Ver detalhamento
+                    </Button>
+                  </div>
+                );
+              })}
+            </div>
+          </aside>
+        )}
+      </div>
+
 
       <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
         <div className="border-b border-border px-4 py-3 text-sm font-medium text-muted-foreground">
