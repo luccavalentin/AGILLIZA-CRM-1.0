@@ -672,6 +672,14 @@ div[style*="Edit with Lovable"],
   animation: piscar-chat 1.1s ease-in-out infinite;
 }
 
+/* Oculta a scrollbar horizontal/vertical mantendo o scroll funcional. */
+@utility no-scrollbar {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge legado */
+  &::-webkit-scrollbar {
+    display: none; /* Chromium/Safari */
+  }
+
 /* ============================= DPS ============================= */
 /* Documento da Declaração Pessoal de Saúde (tela + impressão). */
 .dps-screen {
