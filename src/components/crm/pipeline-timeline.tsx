@@ -1,4 +1,4 @@
-import { Check } from "lucide-react";
+import { Check, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export interface StageItem {
