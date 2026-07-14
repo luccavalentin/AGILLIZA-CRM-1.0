@@ -16,6 +16,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ToneBadge } from "@/components/crm/tone-badge";
 import { ConfirmDelete } from "@/components/shared/confirm-delete";
 import { assertModuloPermitido } from "@/lib/route-guards";
