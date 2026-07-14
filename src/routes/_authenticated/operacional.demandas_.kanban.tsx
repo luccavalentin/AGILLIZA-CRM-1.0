@@ -80,10 +80,13 @@ function Pagina() {
   // "trava" do ghost). O estado abaixo só controla o realce da coluna-alvo.
   const arrastandoRef = useRef<{ id: string; status: DemandaStatus } | null>(null);
   const [arrastando, setArrastando] = useState<{ id: string; status: DemandaStatus } | null>(null);
+  const [escopo, setEscopo] = useState<"minhas" | "equipe">(
+    () => (typeof window !== "undefined" && (localStorage.getItem("demandas:escopo") as "minhas" | "equipe")) || "equipe",
+  );
 
   const { data } = useQuery({
-    queryKey: ["demandas", "kanban"],
-    queryFn: () => listarDemandas({ data: { escopo: "equipe" } }),
+    queryKey: ["demandas", "kanban", escopo],
+    queryFn: () => listarDemandas({ data: { escopo } }),
   });
 
   const onDragStart = useCallback((id: string, status: DemandaStatus) => {
