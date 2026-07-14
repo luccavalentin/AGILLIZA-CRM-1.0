@@ -175,13 +175,19 @@ function Pagina() {
     }
   }
 
+  // Diálogo para o usuário escolher qual banco baixar em detalhe.
+  const [detalhePdf, setDetalhePdf] = useState<{ simulacao: any; bancos: any[] } | null>(null);
+
   async function handleBaixarDetalhada(id: string) {
     try {
       const dados = await obter({ data: { id } });
-      const { baixarSimulacaoDetalhadaPDF } = await import("@/lib/simulacao/simulacao-pdf");
-      baixarSimulacaoDetalhadaPDF({ simulacao: dados.simulacao, bancos: dados.bancos });
+      if (!dados.bancos?.length) {
+        toast.error("Esta simulação não possui bancos para baixar.");
+        return;
+      }
+      setDetalhePdf({ simulacao: dados.simulacao, bancos: dados.bancos });
     } catch {
-      toast.error("Não foi possível gerar o PDF da simulação.");
+      toast.error("Não foi possível abrir a simulação.");
     }
   }
 
