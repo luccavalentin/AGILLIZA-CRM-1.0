@@ -139,6 +139,10 @@ export function GenericReportPage({
             </div>
           </ReportSection>
 
+          <ReportSection titulo={`Detalhamento — ${data.rows.length} registros`}>
+            <DrilldownTable columns={data.columns} rows={data.rows} />
+          </ReportSection>
+
           {data.charts.length > 0 && (
             <ReportSection titulo="Análise">
               <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -183,10 +187,6 @@ export function GenericReportPage({
                 </div>
               </ReportSection>
             ))}
-
-          <ReportSection titulo={`Detalhamento — ${data.rows.length} registros`}>
-            <DrilldownTable columns={data.columns} rows={data.rows} />
-          </ReportSection>
         </>
       )}
     </ReportShell>
