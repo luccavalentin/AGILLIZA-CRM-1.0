@@ -171,7 +171,11 @@ function Pagina() {
     setDataInicio(padrao.inicio);
     setDataFim(padrao.fim);
     setEscopo("minhas");
+    setRespFiltro("todos");
+    setCorretorFiltro("todos");
+    setImobFiltro("todos");
   }
+
 
   async function soltar(coluna: PropostaStatus) {
     if (!arrastando) return;
