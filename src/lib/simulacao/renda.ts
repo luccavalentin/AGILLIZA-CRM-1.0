@@ -11,7 +11,15 @@
  *
  * A parcela incide sobre o VALOR FINANCIADO (preço − entrada − FGTS), nunca
  * sobre o valor cheio do imóvel. As APIs dos bancos aplicam o mesmo teto.
+ *
+ * SISTEMA PRICE — QUALIFICAÇÃO CONSERVADORA:
+ * As parcelas do PRICE crescem ao longo do contrato (indexação TR + amortização
+ * crescente do saldo). Bancos como Bradesco, Santander e Itaú qualificam a renda
+ * do cliente contratando PRICE usando a PARCELA EQUIVALENTE DO SAC (a maior no
+ * início) como base do comprometimento de 30%. Nossa estimativa local segue essa
+ * regra para não subestimar a renda exigida e evitar reprovação bancária.
  */
+
 
 
 import { extrairDetalheBanco } from "./detalhe-banco";
