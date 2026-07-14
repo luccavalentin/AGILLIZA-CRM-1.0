@@ -24,6 +24,7 @@ import { assertModuloPermitido } from "@/lib/route-guards";
 import {
   listarSimulacoes,
   excluirSimulacao,
+  restaurarSimulacao,
   obterSimulacao,
 } from "@/lib/simulacao/simulacoes.functions";
 import { criarProposta } from "@/lib/propostas/propostas.functions";
