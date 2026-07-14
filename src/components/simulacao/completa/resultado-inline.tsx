@@ -33,7 +33,11 @@ import { criarProposta, enviarPropostaHomeFin } from "@/lib/propostas/propostas.
 import { formatBRL, formatPercent } from "@/lib/simulacao/format";
 import { corDoBanco } from "@/lib/bancos/cores";
 import { extrairDetalheBanco } from "@/lib/simulacao/detalhe-banco";
-import { rendaMinimaPelosBancos } from "@/lib/simulacao/renda";
+import {
+  rendaMinimaPelosBancos,
+  parcelaExigidaPeloBanco,
+  rendaMinimaParaParcela,
+} from "@/lib/simulacao/renda";
 import { cn } from "@/lib/utils";
 
 interface Props {
