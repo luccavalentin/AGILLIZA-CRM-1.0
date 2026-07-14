@@ -417,11 +417,22 @@ function Pagina() {
                   </span>
                 </span>
                 <div onClick={(e) => e.stopPropagation()} className="shrink-0">
-                  <ConfirmDelete
-                    titulo="Excluir proposta"
-                    descricao={`A proposta ${p.numero_proposta} será removida permanentemente. Um registro completo será mantido nos Logs de auditoria.`}
-                    onConfirm={() => handleExcluir(p.id)}
-                  />
+                  {verExcluidas ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-8 rounded-lg"
+                      onClick={() => handleRestaurar(p.id)}
+                    >
+                      <Undo2 className="mr-1 h-3.5 w-3.5" /> Restaurar
+                    </Button>
+                  ) : (
+                    <ConfirmDelete
+                      titulo="Excluir proposta"
+                      descricao={`A proposta ${p.numero_proposta} será movida para a aba "Excluídas". Você poderá restaurá-la a qualquer momento.`}
+                      onConfirm={() => handleExcluir(p.id)}
+                    />
+                  )}
                 </div>
               </div>
 
