@@ -33,7 +33,11 @@ import { criarProposta, enviarPropostaHomeFin } from "@/lib/propostas/propostas.
 import { formatBRL, formatPercent } from "@/lib/simulacao/format";
 import { corDoBanco } from "@/lib/bancos/cores";
 import { extrairDetalheBanco } from "@/lib/simulacao/detalhe-banco";
-import { rendaMinimaPelosBancos } from "@/lib/simulacao/renda";
+import {
+  rendaMinimaPelosBancos,
+  parcelaExigidaPeloBanco,
+  rendaMinimaParaParcela,
+} from "@/lib/simulacao/renda";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -44,6 +48,13 @@ interface Props {
 function totalFinanciado(b: any): number | null {
   const d = extrairDetalheBanco(b?.raw_response);
   return d?.financiamentoTotal ?? d?.valorFinanciamento ?? b?.valor_financiamento_max ?? null;
+}
+
+/** Renda mínima estimada para um único banco a partir da parcela retornada. */
+function rendaMinimaDoBanco(b: any): number | null {
+  const parcela = parcelaExigidaPeloBanco(b);
+  if (!parcela) return null;
+  return rendaMinimaParaParcela(parcela);
 }
 
 export function ResultadoInlineCompleta({ simulacaoId, onFechar }: Props) {
@@ -318,6 +329,10 @@ export function ResultadoInlineCompleta({ simulacaoId, onFechar }: Props) {
                           valor={formatBRL(totalFinanciado(b))}
                         />
                         <MobileStat rotulo="IOF" valor={formatBRL(b.valor_iof)} />
+                        <MobileStat
+                          rotulo="Renda mín."
+                          valor={formatBRL(rendaMinimaDoBanco(b))}
+                        />
                       </dl>
 
                       <div className="mt-3 flex items-center justify-end gap-2">
@@ -361,6 +376,7 @@ export function ResultadoInlineCompleta({ simulacaoId, onFechar }: Props) {
                         <TableHead className="text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">Financ. máx</TableHead>
                         <TableHead className="text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">Total financiado</TableHead>
                         <TableHead className="text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">IOF</TableHead>
+                        <TableHead className="text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">Renda mín.</TableHead>
                         <TableHead></TableHead>
                       </TableRow>
                     </TableHeader>
@@ -408,6 +424,9 @@ export function ResultadoInlineCompleta({ simulacaoId, onFechar }: Props) {
                           </TableCell>
                           <TableCell className="py-3 text-right text-sm tabular-nums whitespace-nowrap">
                             {formatBRL(b.valor_iof)}
+                          </TableCell>
+                          <TableCell className="py-3 text-right text-sm font-semibold tabular-nums whitespace-nowrap text-primary">
+                            {formatBRL(rendaMinimaDoBanco(b))}
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-1">
