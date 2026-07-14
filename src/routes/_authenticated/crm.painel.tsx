@@ -677,7 +677,7 @@ function Pagina() {
 
       {isLoading ? (
         <div className="-mx-3 overflow-x-auto px-3 pb-4 sm:-mx-6 sm:px-6">
-          <div className="grid grid-flow-col auto-cols-[calc(100vw-1.5rem)] gap-3 sm:auto-cols-[20rem] lg:auto-cols-[21rem]">
+          <div className="grid grid-flow-col auto-cols-[17rem] gap-3 sm:auto-cols-[19rem] lg:auto-cols-[20rem] lg:gap-4">
           {Array.from({ length: 8 }).map((_, i) => (
             <Skeleton key={i} className="h-96 w-full rounded-2xl" />
           ))}
@@ -685,7 +685,7 @@ function Pagina() {
         </div>
       ) : (
         <div className="-mx-3 overflow-x-auto px-3 pb-4 sm:-mx-6 sm:px-6">
-        <div className="grid grid-flow-col auto-cols-[calc(100vw-1.5rem)] gap-3 sm:auto-cols-[20rem] lg:auto-cols-[21rem] lg:gap-4">
+        <div className="grid grid-flow-col auto-cols-[17rem] gap-3 sm:auto-cols-[19rem] lg:auto-cols-[20rem] lg:gap-4">
           {dadosFiltrados.map((stage, idx) => {
             const temClientes = stage.clientes.length > 0;
             const ehAlvo = alvo === stage.codigo && arrasto?.origem !== stage.codigo;
