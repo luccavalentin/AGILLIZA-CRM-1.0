@@ -37,6 +37,9 @@ const ESTADO_INICIAL: Form = {
   valor_imovel: 0,
   valor_entrada: 0,
   valor_financiamento: 0,
+  simular_por_parcela: false,
+  parcela_alvo: 0,
+
   prazo: 360,
   utiliza_fgts: "N",
   fg_financiar_despesas: false,
