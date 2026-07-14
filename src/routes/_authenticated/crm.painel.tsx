@@ -580,7 +580,7 @@ function Pagina() {
             </div>
           </div>
 
-          <div className="grid min-w-0 flex-1 grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
+          <div className="grid min-w-0 flex-1 grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
             <div className="min-w-0 space-y-1">
               <label className="text-xs font-medium text-muted-foreground">Período</label>
               <select
