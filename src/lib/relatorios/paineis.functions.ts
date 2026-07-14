@@ -676,7 +676,7 @@ export const getPanelDados = createServerFn({ method: "POST" })
                 itens: [
                   { label: "A receber", valor: brlCompacto(aReceber), tone: "success" },
                   { label: "A pagar", valor: brlCompacto(aPagar), tone: "warning" },
-                  { label: "Comissões previstas", valor: brlCompacto(comissoesPrevistas), tone: "brand" },
+                  { label: "Repasses previstos", valor: brlCompacto(comissoesPrevistas), tone: "brand" },
                 ],
               }
             : undefined,
