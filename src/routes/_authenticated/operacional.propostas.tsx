@@ -99,6 +99,33 @@ function Pagina() {
     return () => clearTimeout(t);
   }, [q]);
 
+  // Realtime: atualiza a lista quando o status/banco de qualquer proposta mudar
+  // (ex.: após enviar ao banco, o status_banco passa de "aguardando" a "enviada"/"recusada").
+  useEffect(() => {
+    let raf: number | null = null;
+    const invalidar = () => {
+      if (raf !== null) return;
+      raf = requestAnimationFrame(() => {
+        raf = null;
+        queryClient.invalidateQueries({ queryKey: ["propostas"] });
+      });
+    };
+    let canalRef: any = null;
+    import("@/integrations/supabase/client").then(({ supabase }) => {
+      canalRef = supabase
+        .channel("propostas-lista")
+        .on("postgres_changes", { event: "*", schema: "public", table: "propostas" }, invalidar)
+        .on("postgres_changes", { event: "*", schema: "public", table: "proposta_bancos" }, invalidar)
+        .subscribe();
+    });
+    return () => {
+      if (raf !== null) cancelAnimationFrame(raf);
+      if (canalRef) {
+        import("@/integrations/supabase/client").then(({ supabase }) => supabase.removeChannel(canalRef));
+      }
+    };
+  }, [queryClient]);
+
   const { data, isLoading } = useQuery({
     queryKey: ["propostas", escopo, busca, dataInicio, dataFim, responsavel],
     queryFn: () =>
