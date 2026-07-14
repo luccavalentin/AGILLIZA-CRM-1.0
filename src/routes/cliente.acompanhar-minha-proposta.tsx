@@ -153,14 +153,14 @@ function Acompanhar() {
               </div>
             </div>
 
-            <div className="flex items-start gap-3 rounded-xl bg-white/10 p-3 backdrop-blur-sm ring-1 ring-white/15">
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/15 ring-1 ring-white/30 sm:h-12 sm:w-12">
-                <Send className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={2} />
+            <div className="relative flex items-start gap-3 rounded-xl bg-white/10 p-3 backdrop-blur-sm ring-1 ring-red-400/60 shadow-[0_0_0_0_rgba(248,113,113,0.6)] animate-[pulse_2s_ease-in-out_infinite]">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-500 ring-2 ring-red-300/70 sm:h-12 sm:w-12">
+                <Send className="h-4 w-4 sm:h-5 sm:w-5 text-white" strokeWidth={2} />
               </span>
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-1.5">
                   <span className="text-[9px] font-semibold uppercase tracking-wider opacity-80 sm:text-[10px]">Etapa atual</span>
-                  <span className="inline-flex items-center gap-1 rounded-full bg-white/15 px-2 py-0.5 text-[10px] backdrop-blur-sm">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-red-500/90 px-2 py-0.5 text-[10px] font-semibold text-white">
                     <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" />
                     {dias === 0 ? "Hoje" : dias != null ? `Há ${dias}d` : "Aguardando"}
                   </span>
