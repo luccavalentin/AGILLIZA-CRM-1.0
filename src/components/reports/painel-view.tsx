@@ -444,9 +444,13 @@ export function PainelView({
                     items={data.volumePorBanco.dados.map((d) => ({
                       label: d.label,
                       valor: d.valor,
+                      display: d.valor.toLocaleString("pt-BR", {
+                        style: "currency",
+                        currency: "BRL",
+                        maximumFractionDigits: 0,
+                      }),
                     }))}
                     colorByBank
-                    money
                   />
                 </PanelCard>
               )}
