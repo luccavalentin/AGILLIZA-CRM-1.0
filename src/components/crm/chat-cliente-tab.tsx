@@ -469,10 +469,12 @@ export function ChatClienteTab({
         onClick={() => abrirChatFlutuante(clienteId, info)}
         title="Soltar em janela flutuante"
         aria-label="Soltar em janela flutuante"
-        className="absolute right-2 top-2 z-20 flex size-7 items-center justify-center rounded-md border border-border/60 bg-background/80 text-muted-foreground shadow-sm backdrop-blur transition-colors hover:bg-accent hover:text-foreground"
+        className="absolute right-3 top-3 z-20 inline-flex items-center gap-1.5 rounded-lg border border-primary/30 bg-primary px-2.5 py-1.5 text-xs font-semibold text-primary-foreground shadow-md transition-all hover:bg-primary/90 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
       >
         <Maximize2 className="size-3.5" />
+        <span className="hidden sm:inline">Soltar chat</span>
       </button>
+
       <ChatClienteConversa clienteId={clienteId} info={info} acoes={acoes} />
     </div>
   );
