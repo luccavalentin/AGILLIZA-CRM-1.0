@@ -445,7 +445,7 @@ export const clienteListarAtendentes = createServerFn({ method: "GET" }).handler
     const { data } = await portalDb().rpc("portal_listar_atendentes", { _cid: sess.cid });
     return ((data as any[]) ?? []).map((a) => ({
       atendente_id: a.atendente_id,
-      nome: a.nome ?? "Equipe",
+      nome: (a.nome && String(a.nome).trim()) || "Atendente",
       foto_url: a.foto_url ?? null,
       ultima_em: a.ultima_em ?? null,
       ultima_mensagem: a.ultima_mensagem ?? null,
