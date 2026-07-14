@@ -113,7 +113,7 @@ function FormulariosLista({ banco }: { banco: BancoFormulario }) {
   const accent = ehBanco ? corDoBanco(label) : undefined;
 
   return (
-    <div className="mx-auto w-full max-w-5xl space-y-5 p-4 md:p-6">
+    <div className="mx-auto w-full max-w-none space-y-5 p-4 md:p-6">
       <OpHero
         icon={
           ehBanco ? <BancoLogo nome={label} size="lg" /> : <FileText className="h-5 w-5" />

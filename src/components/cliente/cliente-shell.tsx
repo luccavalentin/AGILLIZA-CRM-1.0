@@ -382,8 +382,8 @@ export function ClienteShell({
             </div>
           </header>
 
-          <main className="flex-1 p-4 sm:p-6">
-            <div className="mx-auto w-full max-w-5xl">{children}</div>
+          <main className="flex-1 p-3 sm:p-4 lg:p-6">
+            <div className="mx-auto w-full max-w-[1400px]">{children}</div>
           </main>
 
           <footer className="border-t border-border py-4 text-center text-xs text-muted-foreground">

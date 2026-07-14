@@ -220,7 +220,7 @@ export function ContasPage({ tipo }: { tipo: ContaTipo }) {
   ];
 
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-6 p-3 sm:p-4 md:p-6">
+    <div className="mx-auto w-full max-w-none space-y-6 p-3 sm:p-4 md:p-6">
       {/* Cabeçalho */}
       <div className="flex flex-col gap-4 rounded-2xl border border-border bg-gradient-to-br from-primary/[0.06] via-card to-card p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
         <div className="flex items-start gap-3">

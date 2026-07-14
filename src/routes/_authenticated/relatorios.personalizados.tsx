@@ -90,7 +90,7 @@ function Pagina() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-5xl space-y-6 p-4 md:p-6">
+    <div className="mx-auto w-full max-w-none space-y-6 p-4 md:p-6">
       <header className="border-b border-border pb-4">
         <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
           Relatórios · Personalizados

@@ -22,7 +22,7 @@ export function ParceiroPage({ titulo, descricao, acoes, children }: Props) {
     (resumo.data?.papel === "imobiliaria" ? "Imobiliária" : "Corretor");
 
   return (
-    <div className="mx-auto w-full max-w-5xl">
+    <div className="mx-auto w-full max-w-none">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <h1 className="text-xl font-semibold text-foreground sm:text-2xl">{titulo}</h1>

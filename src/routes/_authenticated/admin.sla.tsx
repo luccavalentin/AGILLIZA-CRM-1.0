@@ -93,7 +93,7 @@ function Pagina() {
   const canais = useCatalogo("canal");
 
   return (
-    <div className="mx-auto w-full max-w-5xl space-y-6 p-4 md:p-6">
+    <div className="mx-auto w-full max-w-none space-y-6 p-4 md:p-6">
       <AdminHero
         icon={<Timer className="h-5 w-5" />}
         titulo="SLA & Feriados"
