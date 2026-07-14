@@ -78,6 +78,7 @@ export const listarPropostas = createServerFn({ method: "GET" })
         data_fim: z.string().optional(),
         pagina: z.number().int().min(1).default(1),
         porPagina: z.number().int().min(1).max(500).default(30),
+        apenas_excluidas: z.boolean().default(false),
       })
       .parse(data),
   )
@@ -86,9 +87,12 @@ export const listarPropostas = createServerFn({ method: "GET" })
     let query = supabase
       .from("propostas")
       .select(
-        "id, numero_proposta, numero_proposta_banco, nome_cliente, cpf_cnpj, nome_banco, produto, valor_financiamento, status, detalhe_status_atual, status_atualizado_em, ultima_sincronizacao_em, created_at, usuario_responsavel_id, usuario_criador_id",
+        "id, numero_proposta, numero_proposta_banco, nome_cliente, cpf_cnpj, nome_banco, produto, valor_financiamento, status, detalhe_status_atual, status_atualizado_em, ultima_sincronizacao_em, created_at, usuario_responsavel_id, usuario_criador_id, deleted_at, deleted_by, deleted_motivo",
         { count: "exact" },
       );
+
+    if (data.apenas_excluidas) query = query.not("deleted_at", "is", null);
+    else query = query.is("deleted_at", null);
 
     if (data.escopo === "minhas") {
       query = query.or(`usuario_responsavel_id.eq.${userId},usuario_criador_id.eq.${userId}`);
