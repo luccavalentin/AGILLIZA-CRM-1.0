@@ -893,6 +893,14 @@ function buscarCampoRetorno(obj: unknown, chaves: string[], visitados = new Weak
   return null;
 }
 
+/**
+ * Número real da proposta no banco. A API devolve, dependendo da instituição:
+ *  - `numeroPropostaBanco` / `codigoPropostaBanco` (raro, alguns bancos)
+ *  - `codigoOportunidadeBanco` (Bradesco/Itaú — código da oportunidade no banco)
+ *  - `codigoSimulacaoBanco` (Santander — referência oficial devolvida pelo banco)
+ * Todos vêm DO banco (não são referências internas do sistema), portanto
+ * qualquer um deles é um identificador válido para exibição ao usuário.
+ */
 function numeroPropostaBancoReal(sim: any): string | null {
   const numero = buscarCampoRetorno(sim, [
     "numeroPropostaBanco",
@@ -900,6 +908,7 @@ function numeroPropostaBancoReal(sim: any): string | null {
     "proposalNumber",
     "codigoPropostaBanco",
     "codigoOportunidadeBanco",
+    "codigoSimulacaoBanco",
   ]);
   return numero == null || numero === "" ? null : String(numero);
 }
@@ -920,6 +929,7 @@ function numeroBancoDaOportunidade(op: any): string | null {
     "proposalNumber",
     "codigoPropostaBanco",
     "codigoOportunidadeBanco",
+    "codigoSimulacaoBanco",
   ]);
   return numero == null || numero === "" ? null : String(numero);
 }
@@ -927,13 +937,14 @@ function numeroBancoDaOportunidade(op: any): string | null {
 function numeroAtualEhReferenciaTecnica(pb: any, sim: any): boolean {
   const atual = String(pb?.numero_proposta_banco ?? "").trim();
   if (!atual) return false;
-  return [
-    sim?.codigoOportunidadeBancoInterno,
-    sim?.codigoSimulacaoBanco,
-  ]
+  // Só o `codigoOportunidadeBancoInterno` é "interno" (referência do próprio
+  // sistema). Os demais campos são valores devolvidos pelo banco e devem
+  // permanecer gravados.
+  return [sim?.codigoOportunidadeBancoInterno]
     .filter((v) => v != null && v !== "")
     .some((v) => String(v).trim() === atual);
 }
+
 
 function mesmoBanco(pb: any, sim: any): boolean {
   const codigoPb = codigoBancoDe(pb);
