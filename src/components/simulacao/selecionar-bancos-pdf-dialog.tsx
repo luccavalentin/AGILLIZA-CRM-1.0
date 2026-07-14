@@ -12,27 +12,45 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { formatBRL } from "@/lib/simulacao/format";
 
+type Modo = "consolidado" | "detalhada";
+
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   simulacao: any;
   bancos: any[];
+  /** consolidado = 1 PDF comparativo; detalhada = 1 PDF por banco (com nome, renda etc.). */
+  modo?: Modo;
 }
 
-/** Deixa o usuário escolher quais bancos entram no PDF comparativo consolidado. */
-export function SelecionarBancosPdfDialog({ open, onOpenChange, simulacao, bancos }: Props) {
+/**
+ * Escolha de bancos para gerar PDF.
+ * - consolidado: gera 1 PDF comparativo com os bancos marcados.
+ * - detalhada: gera 1 PDF individual por banco (nome do banco no arquivo,
+ *   renda necessária, parcelas etc.). Cada linha também tem um botão para
+ *   baixar apenas aquele banco.
+ */
+export function SelecionarBancosPdfDialog({
+  open,
+  onOpenChange,
+  simulacao,
+  bancos,
+  modo = "consolidado",
+}: Props) {
   const [selecionados, setSelecionados] = useState<Record<string, boolean>>({});
+  const [gerando, setGerando] = useState(false);
 
-  // Ao abrir, começa com todos os bancos marcados.
   useEffect(() => {
     if (open) {
       const inicial: Record<string, boolean> = {};
       (bancos ?? []).forEach((b, i) => {
-        inicial[b.id ?? String(i)] = true;
+        // No modo detalhada começa desmarcado (usuário escolhe qual quer);
+        // no consolidado começa com todos marcados.
+        inicial[b.id ?? String(i)] = modo === "consolidado";
       });
       setSelecionados(inicial);
     }
-  }, [open, bancos]);
+  }, [open, bancos, modo]);
 
   const escolhidos = useMemo(
     () => (bancos ?? []).filter((b, i) => selecionados[b.id ?? String(i)]),
@@ -49,20 +67,42 @@ export function SelecionarBancosPdfDialog({ open, onOpenChange, simulacao, banco
     setSelecionados(novo);
   }
 
-  async function gerar() {
-    const { baixarSimulacaoPDF } = await import("@/lib/simulacao/simulacao-pdf");
-    baixarSimulacaoPDF({ simulacao, bancos: escolhidos });
-    onOpenChange(false);
+  async function baixarDetalhadaDeUm(banco: any) {
+    const { baixarSimulacaoDetalhadaPDF } = await import("@/lib/simulacao/simulacao-pdf");
+    baixarSimulacaoDetalhadaPDF({ simulacao, bancos: [banco] });
   }
+
+  async function gerar() {
+    setGerando(true);
+    try {
+      if (modo === "consolidado") {
+        const { baixarSimulacaoPDF } = await import("@/lib/simulacao/simulacao-pdf");
+        baixarSimulacaoPDF({ simulacao, bancos: escolhidos });
+      } else {
+        const { baixarSimulacaoDetalhadaPDF } = await import("@/lib/simulacao/simulacao-pdf");
+        // Um PDF por banco selecionado — o nome do arquivo já vem com o banco.
+        for (const b of escolhidos) {
+          baixarSimulacaoDetalhadaPDF({ simulacao, bancos: [b] });
+        }
+      }
+      onOpenChange(false);
+    } finally {
+      setGerando(false);
+    }
+  }
+
+  const titulo = modo === "consolidado" ? "Comparativo consolidado" : "Simulação detalhada";
+  const descricao =
+    modo === "consolidado"
+      ? "Selecione os bancos que devem aparecer no PDF comparativo."
+      : "Escolha os bancos para baixar. Cada banco gera um PDF individual com nome, renda necessária e todas as parcelas.";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Comparativo consolidado</DialogTitle>
-          <DialogDescription>
-            Selecione os bancos que devem aparecer no PDF comparativo.
-          </DialogDescription>
+          <DialogTitle>{titulo}</DialogTitle>
+          <DialogDescription>{descricao}</DialogDescription>
         </DialogHeader>
 
         <div className="max-h-80 space-y-1 overflow-y-auto">
@@ -73,21 +113,34 @@ export function SelecionarBancosPdfDialog({ open, onOpenChange, simulacao, banco
           {(bancos ?? []).map((b, i) => {
             const key = b.id ?? String(i);
             return (
-              <label
+              <div
                 key={key}
-                className="flex cursor-pointer items-center gap-3 rounded-md px-3 py-2 hover:bg-muted"
+                className="flex items-center gap-3 rounded-md px-3 py-2 hover:bg-muted"
               >
-                <Checkbox
-                  checked={!!selecionados[key]}
-                  onCheckedChange={(v) =>
-                    setSelecionados((prev) => ({ ...prev, [key]: !!v }))
-                  }
-                />
-                <span className="flex-1 text-sm text-foreground">{b.nome_banco ?? "—"}</span>
-                <span className="text-xs text-muted-foreground">
-                  {b.valor_parcela != null ? formatBRL(b.valor_parcela) : "—"}
-                </span>
-              </label>
+                <label className="flex flex-1 cursor-pointer items-center gap-3">
+                  <Checkbox
+                    checked={!!selecionados[key]}
+                    onCheckedChange={(v) =>
+                      setSelecionados((prev) => ({ ...prev, [key]: !!v }))
+                    }
+                  />
+                  <span className="flex-1 text-sm text-foreground">{b.nome_banco ?? "—"}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {b.valor_parcela != null ? formatBRL(b.valor_parcela) : "—"}
+                  </span>
+                </label>
+                {modo === "detalhada" ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 px-2"
+                    onClick={() => baixarDetalhadaDeUm(b)}
+                    title="Baixar apenas este banco"
+                  >
+                    <Download className="h-4 w-4" />
+                  </Button>
+                ) : null}
+              </div>
             );
           })}
         </div>
@@ -96,8 +149,11 @@ export function SelecionarBancosPdfDialog({ open, onOpenChange, simulacao, banco
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
             Cancelar
           </Button>
-          <Button onClick={gerar} disabled={escolhidos.length === 0}>
-            <Download className="mr-1 h-4 w-4" /> Gerar PDF ({escolhidos.length})
+          <Button onClick={gerar} disabled={escolhidos.length === 0 || gerando}>
+            <Download className="mr-1 h-4 w-4" />
+            {modo === "consolidado"
+              ? `Gerar PDF (${escolhidos.length})`
+              : `Baixar ${escolhidos.length} PDF${escolhidos.length === 1 ? "" : "s"}`}
           </Button>
         </DialogFooter>
       </DialogContent>
