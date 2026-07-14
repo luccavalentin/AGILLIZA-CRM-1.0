@@ -702,7 +702,7 @@ function TabResumo({
   // todos para o usuário escolher qual enviar.
   const houveEnvio = (bancos ?? []).some((b) => bancoJaEnviado(b));
   const bancosVisiveis = houveEnvio
-    ? (bancos ?? []).filter((b) => bancoJaEnviado(b))
+    ? (bancos ?? []).filter((b) => bancoJaEnviado(b) || b.status_banco === "erro")
     : (bancos ?? []);
   const podeEnviarBanco =
     Boolean(proposta.homefin_id_oportunidade) &&
