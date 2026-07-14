@@ -87,7 +87,7 @@ export function ReportFiltersBar({
   const bancoOpts: MultiOption[] = (bancos ?? []).map((b) => ({
     value: b,
     label: b,
-    icon: <BancoLogo nome={b} size={20} className="rounded-sm" />,
+    icon: <BancoLogo nome={b} size="sm" className="rounded-sm" />,
   }));
   const produtoOpts: MultiOption[] = (produtos ?? []).map((p) => ({
     value: p,
