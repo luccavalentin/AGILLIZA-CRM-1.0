@@ -168,7 +168,7 @@ function ListaAtendentes({
               <MessageCircle className="h-6 w-6" />
             </span>
             <p className="max-w-xs text-sm text-muted-foreground">
-              Assim que sua equipe iniciar o atendimento, a conversa aparecerá aqui.
+              Assim que seu atendente iniciar a conversa, as mensagens aparecerão aqui.
             </p>
           </div>
         ) : (
