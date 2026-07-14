@@ -1,8 +1,20 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery, keepPreviousData, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Plus, Search, Users, Phone, Mail, ChevronRight } from "lucide-react";
+import {
+  Plus,
+  Search,
+  Users,
+  Phone,
+  Mail,
+  ChevronRight,
+  Smartphone,
+  Loader2,
+  FileCheck2,
+  Filter,
+  RotateCcw,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,12 +27,25 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ToneBadge } from "@/components/crm/tone-badge";
 import { ConfirmDelete } from "@/components/shared/confirm-delete";
 import { assertModuloPermitido } from "@/lib/route-guards";
-import { listarClientes, excluirCliente } from "@/lib/crm/clientes.functions";
+import {
+  listarClientes,
+  excluirCliente,
+  estatisticasClientes,
+  listarEtapasPipeline,
+} from "@/lib/crm/clientes.functions";
+import { listarColegas } from "@/lib/operacional/shared.functions";
 import { formatarDocumento, formatarCelular } from "@/lib/crm/documento";
 import { usePipelineRealtime } from "@/hooks/use-pipeline-realtime";
 
@@ -33,23 +58,68 @@ export const Route = createFileRoute("/_authenticated/crm/clientes")({
   ),
 });
 
+type Portal = "todos" | "ativo" | "inativo";
+type StatusF = "todos" | "ativo" | "inativo";
+
 function Pagina() {
   usePipelineRealtime();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const listar = useServerFn(listarClientes);
   const excluir = useServerFn(excluirCliente);
+  const stats = useServerFn(estatisticasClientes);
+  const etapasFn = useServerFn(listarEtapasPipeline);
+  const colegasFn = useServerFn(listarColegas);
+
   const [q, setQ] = useState("");
   const [busca, setBusca] = useState("");
   const [pagina, setPagina] = useState(1);
+  const [etapa, setEtapa] = useState<string>("todas");
+  const [responsavel, setResponsavel] = useState<string>("todos");
+  const [portal, setPortal] = useState<Portal>("todos");
+  const [statusF, setStatusF] = useState<StatusF>("todos");
   const [escopo, setEscopo] = useState<"minhas" | "geral">(
-    () => (typeof window !== "undefined" && (localStorage.getItem("clientes:escopo") as "minhas" | "geral")) || "geral",
+    () =>
+      (typeof window !== "undefined" &&
+        (localStorage.getItem("clientes:escopo") as "minhas" | "geral")) ||
+      "geral",
+  );
+
+  const filtros = useMemo(
+    () => ({
+      q: busca,
+      pagina,
+      porPagina: 20,
+      escopo,
+      etapa: etapa === "todas" ? undefined : etapa,
+      responsavel: responsavel === "todos" ? undefined : responsavel,
+      portal: portal === "todos" ? undefined : portal,
+      status: statusF === "todos" ? undefined : statusF,
+    }),
+    [busca, pagina, escopo, etapa, responsavel, portal, statusF],
   );
 
   const { data, isLoading, isFetching } = useQuery({
-    queryKey: ["clientes", busca, pagina, escopo],
-    queryFn: () => listar({ data: { q: busca, pagina, porPagina: 20, escopo } }),
+    queryKey: ["clientes", filtros],
+    queryFn: () => listar({ data: filtros }),
     placeholderData: keepPreviousData,
+  });
+
+  const { data: kpis } = useQuery({
+    queryKey: ["clientes-stats", escopo],
+    queryFn: () => stats({ data: { escopo } }),
+  });
+
+  const { data: etapas } = useQuery({
+    queryKey: ["pipeline-etapas"],
+    queryFn: () => etapasFn(),
+    staleTime: 5 * 60_000,
+  });
+
+  const { data: colegas } = useQuery({
+    queryKey: ["colegas-clientes"],
+    queryFn: () => colegasFn(),
+    staleTime: 5 * 60_000,
   });
 
   async function handleExcluir(id: string) {
@@ -57,9 +127,20 @@ function Pagina() {
       await excluir({ data: { id } });
       toast.success("Cliente excluído.");
       queryClient.invalidateQueries({ queryKey: ["clientes"] });
+      queryClient.invalidateQueries({ queryKey: ["clientes-stats"] });
     } catch {
       toast.error("Não foi possível excluir o cliente.");
     }
+  }
+
+  function limpar() {
+    setQ("");
+    setBusca("");
+    setEtapa("todas");
+    setResponsavel("todos");
+    setPortal("todos");
+    setStatusF("todos");
+    setPagina(1);
   }
 
   const iniciais = (nome: string) => {
@@ -69,11 +150,68 @@ function Pagina() {
     return (a + b).toUpperCase() || "?";
   };
 
+  const kpiCards: Array<{
+    label: string;
+    hint: string;
+    valor: number | undefined;
+    icon: React.ReactNode;
+    onClick: () => void;
+    active: boolean;
+  }> = [
+    {
+      label: "Total de clientes",
+      hint: "Ativos no sistema",
+      valor: kpis?.total,
+      icon: <Users className="size-5" />,
+      onClick: () => {
+        setPortal("todos");
+        setStatusF("ativo");
+        setEtapa("todas");
+        setPagina(1);
+      },
+      active: statusF === "ativo" && portal === "todos" && etapa === "todas",
+    },
+    {
+      label: "App ativo",
+      hint: "Com acesso liberado",
+      valor: kpis?.portal_ativo,
+      icon: <Smartphone className="size-5" />,
+      onClick: () => {
+        setPortal("ativo");
+        setPagina(1);
+      },
+      active: portal === "ativo",
+    },
+    {
+      label: "Em andamento",
+      hint: "Em etapas da esteira",
+      valor: kpis?.em_andamento,
+      icon: <Loader2 className="size-5" />,
+      onClick: () => {
+        // filtro visual: seleciona etapa "simulacao" como atalho comum
+        setEtapa("simulacao");
+        setPagina(1);
+      },
+      active: etapa !== "todas" && etapa !== "cadastro_basico" && etapa !== "contrato_emitido",
+    },
+    {
+      label: "Cadastro completo",
+      hint: "100% preenchido",
+      valor: kpis?.cadastro_completo,
+      icon: <FileCheck2 className="size-5" />,
+      onClick: () => {
+        setEtapa("cadastro_completo");
+        setPagina(1);
+      },
+      active: etapa === "cadastro_completo",
+    },
+  ];
+
   return (
     <div className="space-y-4 p-3 sm:space-y-6 sm:p-6">
       <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:gap-4">
         <div className="flex min-w-0 items-center gap-3.5">
-          <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-primary to-primary/70 text-primary-foreground shadow-sm ring-1 ring-primary/20">
+          <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-primary to-primary/70 text-primary-foreground shadow-sm ring-1 ring-primary/20">
             <Users className="size-5" />
           </span>
           <div className="min-w-0 space-y-0.5">
@@ -102,41 +240,133 @@ function Pagina() {
         </Button>
       </div>
 
-      <form
-        className="grid grid-cols-1 gap-2 sm:grid-cols-[auto_minmax(0,1fr)_auto]"
-        onSubmit={(e) => {
-          e.preventDefault();
-          setPagina(1);
-          setBusca(q);
-        }}
-      >
-        <Tabs
-          value={escopo}
-          onValueChange={(v) => {
-            const val = v as "minhas" | "geral";
-            setEscopo(val);
+      {/* KPIs clicáveis */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {kpiCards.map((k) => (
+          <button
+            key={k.label}
+            type="button"
+            onClick={k.onClick}
+            className={`group relative overflow-hidden rounded-2xl border p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md ${
+              k.active
+                ? "border-primary/40 bg-primary/[0.04] ring-1 ring-primary/20"
+                : "border-border/60 bg-card"
+            }`}
+          >
+            <span className="pointer-events-none absolute inset-y-0 left-0 w-0.5 bg-primary opacity-0 transition-opacity group-hover:opacity-100" />
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-muted-foreground">{k.label}</p>
+                <p className="mt-1 text-2xl font-semibold tabular-nums text-foreground">
+                  {k.valor ?? "—"}
+                </p>
+                <p className="mt-0.5 truncate text-[11px] text-muted-foreground">{k.hint}</p>
+              </div>
+              <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/15">
+                {k.icon}
+              </span>
+            </div>
+          </button>
+        ))}
+      </div>
+
+      {/* Barra de busca + filtros */}
+      <Card className="rounded-2xl border-border/60 p-3 shadow-sm sm:p-4">
+        <form
+          className="space-y-3"
+          onSubmit={(e) => {
+            e.preventDefault();
             setPagina(1);
-            if (typeof window !== "undefined") localStorage.setItem("clientes:escopo", val);
+            setBusca(q);
           }}
         >
-          <TabsList className="h-11 rounded-xl">
-            <TabsTrigger value="minhas" className="rounded-lg">Minhas</TabsTrigger>
-            <TabsTrigger value="geral" className="rounded-lg">Gerais</TabsTrigger>
-          </TabsList>
-        </Tabs>
-        <div className="relative flex-1 sm:max-w-md">
-          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            className="h-11 rounded-xl pl-9 shadow-sm"
-            placeholder="Nome, documento ou e-mail"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-          />
-        </div>
-        <Button type="submit" variant="outline" className="h-11 shrink-0 rounded-xl px-4">
-          Buscar
-        </Button>
-      </form>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              className="h-11 rounded-xl bg-muted/40 pl-9"
+              placeholder="Buscar por nome, documento ou e-mail..."
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[repeat(4,minmax(0,1fr))_auto_auto_auto_auto]">
+            <FilterField label="Etapa">
+              <Select value={etapa} onValueChange={(v) => { setEtapa(v); setPagina(1); }}>
+                <SelectTrigger className="h-10 rounded-xl"><SelectValue placeholder="Todas" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todas">Todas</SelectItem>
+                  {(etapas ?? []).map((e) => (
+                    <SelectItem key={e.codigo} value={e.codigo}>{e.nome}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FilterField>
+            <FilterField label="Responsável">
+              <Select value={responsavel} onValueChange={(v) => { setResponsavel(v); setPagina(1); }}>
+                <SelectTrigger className="h-10 rounded-xl"><SelectValue placeholder="Todos" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos</SelectItem>
+                  {(colegas ?? []).map((c) => (
+                    <SelectItem key={c.id} value={c.id}>{c.nome ?? c.email ?? "—"}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FilterField>
+            <FilterField label="Portal do cliente">
+              <Select value={portal} onValueChange={(v) => { setPortal(v as Portal); setPagina(1); }}>
+                <SelectTrigger className="h-10 rounded-xl"><SelectValue placeholder="Todos" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos</SelectItem>
+                  <SelectItem value="ativo">App ativo</SelectItem>
+                  <SelectItem value="inativo">App inativo</SelectItem>
+                </SelectContent>
+              </Select>
+            </FilterField>
+            <FilterField label="Status">
+              <Select value={statusF} onValueChange={(v) => { setStatusF(v as StatusF); setPagina(1); }}>
+                <SelectTrigger className="h-10 rounded-xl"><SelectValue placeholder="Todos" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos</SelectItem>
+                  <SelectItem value="ativo">Ativo</SelectItem>
+                  <SelectItem value="inativo">Inativo</SelectItem>
+                </SelectContent>
+              </Select>
+            </FilterField>
+
+            <div className="flex items-end">
+              <Tabs
+                value={escopo}
+                onValueChange={(v) => {
+                  const val = v as "minhas" | "geral";
+                  setEscopo(val);
+                  setPagina(1);
+                  if (typeof window !== "undefined") localStorage.setItem("clientes:escopo", val);
+                }}
+              >
+                <TabsList className="h-10 rounded-xl">
+                  <TabsTrigger value="minhas" className="rounded-lg">
+                    <Filter className="mr-1 size-3.5" /> Minhas
+                  </TabsTrigger>
+                  <TabsTrigger value="geral" className="rounded-lg">Gerais</TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
+            <div className="flex items-end">
+              <Button type="button" variant="outline" onClick={limpar} className="h-10 w-full rounded-xl gap-2">
+                <RotateCcw className="size-4" /> Limpar
+              </Button>
+            </div>
+            <div className="flex items-end">
+              <Button type="submit" className="h-10 w-full rounded-xl gap-2">
+                <Search className="size-4" /> Buscar
+              </Button>
+            </div>
+          </div>
+        </form>
+      </Card>
+
+
 
       <div className="space-y-3 md:hidden">
         {isLoading ? (
