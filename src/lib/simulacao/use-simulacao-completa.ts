@@ -162,14 +162,17 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
     if (s.cliente_id) setCadastroNome(s.nome_cliente ?? "");
   }, [origem]);
 
-  // default bancos padrão
+  // default bancos padrão — apenas na simulação. Em "Nova Proposta" o usuário
+  // escolhe explicitamente a instituição para envio; nunca selecionamos por ele.
   useEffect(() => {
+    if (modoProposta) return;
     if (bancos && f.bancos_ids.length === 0) {
       const padrao = bancos.filter((b) => b.flag_padrao).map((b) => b.id);
       if (padrao.length > 0) setF((prev) => ({ ...prev, bancos_ids: padrao }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bancos]);
+
 
   const idOperacao = useMemo(() => {
     const op = operacoes?.find((o) => o.produto_sistema === f.produto);
@@ -346,6 +349,11 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
         toast.info("No sistema PRICE, somente o Bradesco pode ser selecionado.");
         return prev;
       }
+      // Em "Nova Proposta" a seleção é única: o banco escolhido é o que
+      // receberá a proposta. Marcar outro substitui o anterior.
+      if (modoProposta) {
+        return { ...prev, bancos_ids: has ? [] : [id] };
+      }
       return {
         ...prev,
         bancos_ids: has
@@ -354,6 +362,7 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
       };
     });
   }
+
 
   const mostraConjuge = f.possui_conjuge || f.compoe_renda;
 
@@ -618,9 +627,8 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
       if (modoProposta) {
         try {
           const dadosSim: any = await obterSimulacao({ data: { id } });
-          const simulados = (dadosSim.bancos ?? []).filter(
-            (b: any) => b.status_banco === "simulada",
-          );
+          const bancosSim: any[] = dadosSim.bancos ?? [];
+          const simulados = bancosSim.filter((b) => b.status_banco === "simulada");
           if (simulados.length === 0) {
             toast.error(
               "Nenhum banco aceitou a proposta. Revise os dados e envie novamente.",
@@ -629,17 +637,30 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
             setConcluidos(0);
             return;
           }
-          // Melhor taxa (menor parcela) como banco da proposta.
-          const escolhido = [...simulados].sort(
-            (a: any, b: any) => (a.valor_parcela ?? Infinity) - (b.valor_parcela ?? Infinity),
-          )[0];
+          // Respeita a escolha do usuário: usa o banco selecionado na tela,
+          // NÃO o de menor parcela. Só cai no fallback se o escolhido não
+          // tiver simulado com sucesso.
+          const escolhidoUsuarioId = idsBancos[0] ?? null;
+          const escolhido =
+            simulados.find((b: any) => b.banco_id === escolhidoUsuarioId) ??
+            simulados[0];
           const bancoId = escolhido.banco_id as string;
           const { proposta_id } = await criarProposta({
             data: { simulacao_id: id, banco_id: bancoId },
           });
           try {
-            await enviarPropostaHomeFin({ data: { proposta_id, banco_id: bancoId } });
-            toast.success("Proposta criada e enviada ao banco.");
+            const envio: any = await enviarPropostaHomeFin({
+              data: { proposta_id, banco_id: bancoId },
+            });
+            const numero =
+              envio?.bancos?.find((x: any) => x.banco_id === bancoId)?.numero_proposta_banco ??
+              envio?.bancos?.[0]?.numero_proposta_banco ??
+              null;
+            toast.success(
+              numero
+                ? `Proposta enviada ao banco. Nº do banco: ${numero}`
+                : "Proposta enviada ao banco. O número será atualizado em instantes.",
+            );
           } catch (envioErr) {
             toast.warning(
               envioErr instanceof Error
@@ -653,6 +674,7 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
             search: { complementar: 1 },
           });
           return;
+
         } catch (e) {
           toast.error(
             e instanceof Error ? e.message : "Não foi possível criar a proposta.",
