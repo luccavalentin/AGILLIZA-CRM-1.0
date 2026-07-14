@@ -206,15 +206,47 @@ export function extrairDetalheBanco(raw: unknown): DetalheBanco | null {
     r.codigoSistemaAmortizacaoSimulacao,
   );
 
-  const taxaAno = num(desc.annualRate) ?? num(r.taxaJurosAnoBanco) ?? num(r.taxaJurosAnoSimulacao);
-  const taxaMes = num(desc.monthlyRate) ?? taxaMensalEquivalente(taxaAno);
+  // Bradesco devolve campos em português dentro de descricaoRespostaBanco:
+  //   valorTaxaJurosEfetivoAno, valorTaxaNominal, valorCetAno, prazoFinanciamento,
+  //   valorFinanciamento, valorTotalFinanciamento, valorPrimeiraPrestacaoComSeguroTac,
+  //   valorUltimaPrestacao, valorSeguro, valorTaxaAdministracaoMensal,
+  //   valorRendaLiquidaMinimaExigida.
+  const taxaAno =
+    num(desc.annualRate) ??
+    num(desc.valorTaxaJurosEfetivoAno) ??
+    num(r.taxaJurosAnoBanco) ??
+    num(r.taxaJurosAnoSimulacao);
+  const taxaNominalAno = num(desc.valorTaxaNominal);
+  // Se o banco informa taxa nominal a.a., a taxa mensal é nominal/12 (regime
+  // usado pelos bancos para calcular a parcela SAC/PRICE). Caso contrário,
+  // deriva pela equivalência composta da taxa efetiva anual.
+  const taxaMes =
+    num(desc.monthlyRate) ??
+    (taxaNominalAno != null ? taxaNominalAno / 12 : null) ??
+    taxaMensalEquivalente(taxaAno);
   const prazo =
-    num(desc.period) ?? num(r.prazoPagamentoBanco) ?? num(r.prazoPagamentoSimulacao);
+    num(desc.period) ??
+    num(desc.prazoFinanciamento) ??
+    num(r.prazoPagamentoBanco) ??
+    num(r.prazoPagamentoSimulacao);
   const valorFin =
     num(desc.loanAmount) ??
+    num(desc.valorTotalFinanciamento) ??
+    num(desc.valorFinanciamento) ??
     num(r.valorTotalFinanciamento) ??
     num(r.valorFinanciamentoBanco) ??
     num(r.valorFinanciamentoSimulacao);
+
+  // Valores reais devolvidos pelo banco (quando existirem) — usados como
+  // âncora para primeira/última parcela e para não sobrescrever com estimativa.
+  const primeiraParcelaApi =
+    num(desc.valorPrimeiraPrestacaoComSeguroTac) ??
+    num(desc.valorPrimeiraPrestacaoSemSeguroTac) ??
+    num(r.valorParcelaBanco);
+  const ultimaParcelaApi = num(desc.valorUltimaPrestacao);
+  const seguroMensal = num(desc.valorSeguro);
+  const taxaAdminMensal = num(desc.valorTaxaAdministracaoMensal);
+  const rendaMinimaExigida = num(desc.valorRendaLiquidaMinimaExigida);
 
   const brutas: any[] = Array.isArray(desc.installments) ? desc.installments : [];
   let parcelas: ParcelaDetalhe[] = brutas.map(mapParcela).filter((p) => p.parcela > 0);
