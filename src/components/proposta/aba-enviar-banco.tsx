@@ -253,18 +253,14 @@ export function AbaEnviarBanco({
     <div className="space-y-5">
       <input ref={inputRef} type="file" multiple className="hidden" onChange={onFile} />
 
-      {/* Disclaimer PDF */}
-      <div className="flex items-start gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-4">
-        <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
-        <div className="text-sm">
-          <p className="font-medium text-foreground">
-            Todos os documentos devem estar em formato PDF.
-          </p>
-          <p className="mt-0.5 text-muted-foreground">
-            Apenas arquivos PDF serão enviados ao banco. Converta imagens e outros formatos
-            antes do envio para evitar recusa na integração.
-          </p>
-        </div>
+      {/* Disclaimer PDF — enxuto */}
+      <div className="flex items-start gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2.5 text-sm">
+        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+        <p className="text-muted-foreground">
+          <span className="font-medium text-foreground">Somente PDF é aceito pelo banco.</span>{" "}
+          Os documentos listados abaixo devem ser anexados pelo módulo{" "}
+          <span className="font-medium text-foreground">Documentos</span> do cliente.
+        </p>
       </div>
 
       {/* Ação de envio */}
