@@ -443,7 +443,7 @@ function AbaSimulacoes({ escopo, busca, dataInicio, dataFim }: FiltroProps) {
             texto="Nenhuma simulação no período."
             acao={
               <Button asChild size="sm" className="rounded-xl">
-                <Link to="/operacional/simulacoes/completa" search={{ origem: "proposta" }}>
+                <Link to="/operacional/propostas/nova">
                   Gerar Nova Proposta
                 </Link>
               </Button>
@@ -513,7 +513,7 @@ function AbaSimulacoes({ escopo, busca, dataInicio, dataFim }: FiltroProps) {
                     texto="Nenhuma simulação no período."
                     acao={
                       <Button asChild size="sm" className="rounded-xl">
-                        <Link to="/operacional/simulacoes/completa" search={{ origem: "proposta" }}>
+                        <Link to="/operacional/propostas/nova">
                           Gerar Nova Proposta
                         </Link>
                       </Button>
