@@ -218,20 +218,21 @@ function Acompanhar() {
         <div className="grid gap-3 sm:gap-4 sm:grid-cols-2 xl:grid-cols-3">
           <ChartCard titulo="Progresso da jornada">
             <div className="relative flex items-center justify-center">
-              <div className="relative h-40 w-40">
+              <div className="relative aspect-square w-full max-w-[160px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
-                    <Pie data={panoramaData} dataKey="value" nameKey="name" innerRadius={55} outerRadius={78} paddingAngle={panoramaData.length > 1 ? 2 : 0} stroke="none">
+                    <Pie data={panoramaData} dataKey="value" nameKey="name" innerRadius="70%" outerRadius="100%" paddingAngle={panoramaData.length > 1 ? 2 : 0} stroke="none">
                       {panoramaData.map((d) => <Cell key={d.name} fill={d.cor} />)}
                     </Pie>
                   </PieChart>
                 </ResponsiveContainer>
                 <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-2xl font-bold text-primary">{progresso}%</span>
+                  <span className="text-xl font-bold text-primary sm:text-2xl">{progresso}%</span>
                   <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Concluído</span>
                 </div>
               </div>
             </div>
+
             <ul className="mt-3 space-y-1.5 text-xs">
               {[
                 { k: "Concluído", v: concluidas, cor: "var(--primary)" },
