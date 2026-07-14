@@ -213,23 +213,24 @@ export function FunilBancoTimeline({
                     </div>
                   )}
 
-                  {/* Bifurcação (Análise de Crédito) */}
+                  {/* Bifurcação (Análise de Crédito) — cartões compactos lado a lado */}
                   {mostrarBifurcacao && (
-                    <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    <div className="mt-3 flex max-w-md flex-col gap-2 sm:flex-row">
                       <DecisionCard
                         tone="success"
                         label="Aprovado"
                         state={aprovado ? "ativo" : decisaoPendente ? "aguardando" : "descartado"}
-                        caption="Segue para Engenharia, Jurídica e demais etapas"
+                        caption="Segue para Engenharia e Jurídica"
                       />
                       <DecisionCard
                         tone="danger"
                         label="Reprovado"
                         state={reprovado ? "ativo" : decisaoPendente ? "aguardando" : "descartado"}
-                        caption="Fluxo encerrado — sem próximas etapas"
+                        caption="Encerra o fluxo"
                       />
                     </div>
                   )}
+
                 </div>
               </li>
             );
