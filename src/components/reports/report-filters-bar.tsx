@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MultiSelect, MultiSelectChips, type MultiOption } from "@/components/reports/multi-select";
+import { BancoLogo } from "@/components/bancos/banco-logo";
 import {
   PERIODO_LABEL,
   ESCOPO_LABEL,
@@ -17,6 +18,13 @@ import {
   type Periodo,
   type Escopo,
 } from "@/lib/relatorios/shared";
+
+const PRODUTO_LABEL: Record<string, string> = {
+  financiamento_imobiliario: "Financiamento imobiliário",
+  home_equity: "Home equity",
+};
+const rotularProduto = (p: string) =>
+  PRODUTO_LABEL[p] ?? p.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
 const PERIODOS: Periodo[] = ["hoje", "7d", "15d", "30d", "mes", "mes_anterior", "ano", "custom"];
 
