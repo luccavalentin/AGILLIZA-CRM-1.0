@@ -367,15 +367,15 @@ function Pagina() {
     ) : null;
 
   return (
-    <div className="flex h-[calc(100dvh-3.5rem)] w-full flex-col p-2 sm:p-3 md:p-4">
-      <div className="grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)] gap-3 md:gap-4 lg:grid-cols-[18rem_1fr] xl:grid-cols-[20rem_1fr_20rem]">
+    <div className="flex h-[calc(100dvh-3.5rem)] w-full min-w-0 flex-col overflow-hidden p-2 sm:p-3 md:p-4">
+      <div className="grid min-h-0 min-w-0 flex-1 grid-rows-[minmax(0,1fr)] gap-3 overflow-hidden md:gap-4 lg:grid-cols-[18rem_minmax(0,1fr)] xl:grid-cols-[20rem_minmax(0,1fr)_20rem]">
 
 
 
         {/* Lista de conversas — no mobile some quando uma conversa é aberta */}
         <Card
           className={cn(
-            "h-full min-h-0 flex-col overflow-hidden border-border/60 shadow-sm lg:flex",
+            "h-full min-h-0 min-w-0 flex-col overflow-hidden border-border/60 shadow-sm lg:flex",
             selecionado ? "hidden" : "flex",
           )}
         >
@@ -600,20 +600,20 @@ function Pagina() {
         {/* Chat + follow-up — no mobile ocupa a tela inteira quando aberto */}
         <div
           className={cn(
-            "min-h-0 flex-col",
+            "min-h-0 min-w-0 flex-col overflow-hidden",
             selecionado ? "flex" : "hidden lg:flex",
           )}
         >
           <button
             type="button"
             onClick={() => setSelecionado(null)}
-            className="mb-3 inline-flex shrink-0 items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground lg:hidden"
+            className="mb-2 inline-flex shrink-0 items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground lg:hidden"
           >
             <ArrowLeft className="h-4 w-4" />
             Voltar às conversas
           </button>
           {alvoAtual ? (
-            <div className="flex min-h-0 flex-1 flex-col gap-2">
+            <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2 overflow-hidden">
               {(() => {
                 // Só é leitura quando um gestor abre a thread de outro atendente
                 // (modo "Todos os atendentes"). Participantes convidados — que
@@ -630,7 +630,7 @@ function Pagina() {
                         />
                       </div>
                     )}
-                    <div className="min-h-0 flex-1">
+                      <div className="min-h-0 min-w-0 flex-1 overflow-hidden">
                       <ChatClienteTab
                         key={`${alvoAtual.cliente_id}::${alvoAtual.atendente_id ?? ""}`}
                         clienteId={alvoAtual.cliente_id}
@@ -652,7 +652,7 @@ function Pagina() {
             </div>
           ) : (
 
-            <Card className="flex h-full min-h-0 flex-1 flex-col items-center justify-center gap-3 border-dashed border-border/60 text-center shadow-sm">
+            <Card className="flex h-full min-h-0 min-w-0 flex-1 flex-col items-center justify-center gap-3 border-dashed border-border/60 text-center shadow-sm">
               <div className="flex size-14 items-center justify-center rounded-full bg-primary/10 text-primary">
                 <MessagesSquare className="h-6 w-6" />
               </div>
@@ -695,9 +695,9 @@ function MaisAcoesGestao(props: {
           type="button"
           variant="outline"
           size="sm"
-          className="shrink-0 gap-1.5 rounded-lg"
+            className="h-9 w-9 shrink-0 gap-1.5 rounded-lg px-0 sm:w-auto sm:px-3"
         >
-          Mais ações
+          <span className="hidden sm:inline">Mais ações</span>
           <ChevronDown className="size-4 opacity-70" />
         </Button>
       </PopoverTrigger>

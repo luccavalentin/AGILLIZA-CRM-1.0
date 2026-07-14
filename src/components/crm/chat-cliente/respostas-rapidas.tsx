@@ -113,7 +113,7 @@ export function RespostasRapidas({
       <PopoverContent
         align="start"
         side="top"
-        className="z-[70] w-[22rem] overflow-hidden rounded-xl p-0 shadow-xl"
+        className="z-[70] w-[min(22rem,calc(100vw-1.5rem))] overflow-hidden rounded-xl p-0 shadow-xl"
         collisionPadding={12}
       >
         <div className="flex items-center justify-between border-b bg-gradient-to-r from-primary/10 via-card to-card px-3 py-2.5">

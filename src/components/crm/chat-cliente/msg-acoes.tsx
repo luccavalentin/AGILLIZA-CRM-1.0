@@ -36,7 +36,7 @@ export function MsgAcoes({
           onClick={onReply}
           aria-label="Responder"
           title="Responder"
-          className="flex size-7 items-center justify-center rounded-full text-muted-foreground opacity-0 transition-opacity hover:bg-muted hover:text-primary group-hover:opacity-100 focus:opacity-100"
+          className="hidden size-7 items-center justify-center rounded-full text-muted-foreground opacity-0 transition-opacity hover:bg-muted hover:text-primary group-hover:opacity-100 focus:opacity-100 sm:flex"
         >
           <Reply className="size-4" />
         </button>

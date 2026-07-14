@@ -89,7 +89,7 @@ function chaveDia(iso: string) {
  * (cabeçalho + paddings + rodapé), garantindo que somente a lista de mensagens
  * role — a "janela solta" e o compositor fica sempre visível.
  */
-const ALTURA_PADRAO = "h-[calc(100dvh-13rem)] min-h-[420px]";
+const ALTURA_PADRAO = "h-[calc(100dvh-10.5rem)] min-h-[24rem] sm:h-[calc(100dvh-13rem)] sm:min-h-[420px]";
 
 export function ChatCliente({ altura = ALTURA_PADRAO }: { altura?: string }) {
   const [atendenteSel, setAtendenteSel] = useState<AtendenteCliente | null>(null);
@@ -150,7 +150,7 @@ function ListaAtendentes({
   return (
     <div
       className={cn(
-        "flex flex-col overflow-hidden rounded-3xl border border-border/60 bg-card shadow-[0_1px_2px_rgba(0,0,0,0.04),0_18px_50px_-30px_color-mix(in_oklab,var(--brand-azul-profundo)_45%,transparent)]",
+        "flex min-w-0 flex-col overflow-hidden rounded-2xl border border-border/60 bg-card shadow-[0_1px_2px_rgba(0,0,0,0.04),0_18px_50px_-30px_color-mix(in_oklab,var(--brand-azul-profundo)_45%,transparent)] sm:rounded-3xl",
         altura,
       )}
     >
@@ -333,7 +333,7 @@ function ThreadChat({
   return (
     <div
       className={cn(
-        "flex flex-col overflow-hidden rounded-3xl border border-border/60 bg-card shadow-[0_1px_2px_rgba(0,0,0,0.04),0_18px_50px_-30px_color-mix(in_oklab,var(--brand-azul-profundo)_45%,transparent)]",
+        "flex min-w-0 flex-col overflow-hidden rounded-2xl border border-border/60 bg-card shadow-[0_1px_2px_rgba(0,0,0,0.04),0_18px_50px_-30px_color-mix(in_oklab,var(--brand-azul-profundo)_45%,transparent)] sm:rounded-3xl",
         altura,
       )}
     >
@@ -355,14 +355,16 @@ function ThreadChat({
             {iniciais(atendente.nome)}
           </AvatarFallback>
         </Avatar>
-        <div className="min-w-0 leading-tight">
+        <div className="min-w-0 flex-1 leading-tight">
           <p className="truncate text-sm font-semibold sm:text-base">{atendente.nome}</p>
-          <span className="flex items-center gap-1.5 text-xs text-primary-foreground/80">
+          <span className="flex min-w-0 items-center gap-1.5 text-xs text-primary-foreground/80">
             <span className="relative flex h-2 w-2">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-300/70" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-300" />
             </span>
-            {peerTyping ? "digitando…" : "Online · responde em horário comercial"}
+            <span className="truncate">
+              {peerTyping ? "digitando…" : "Online · responde em horário comercial"}
+            </span>
           </span>
         </div>
       </div>
@@ -419,7 +421,7 @@ function ThreadChat({
                   ) : null}
                   <div
                     className={cn(
-                      "flex max-w-[80%] flex-col",
+                      "flex min-w-0 max-w-[82%] flex-col sm:max-w-[80%]",
                       doCliente ? "items-end" : "items-start",
                     )}
                   >
@@ -459,7 +461,7 @@ function ThreadChat({
                                   nome: m.anexo_nome ?? "Documento",
                                 })
                               }
-                              className="flex items-center gap-2 px-3.5 py-2 underline underline-offset-2"
+                              className="flex min-w-0 items-center gap-2 px-3.5 py-2 underline underline-offset-2"
                             >
                               <FileText className="h-4 w-4 shrink-0" />
                               <span className="truncate">{m.anexo_nome ?? "Documento"}</span>
