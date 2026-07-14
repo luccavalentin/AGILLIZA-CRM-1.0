@@ -454,8 +454,10 @@ function Pagina() {
             <FileText className="h-4 w-4" /> Simulação completa
           </Button>
         </div>
+        </div>
 
         {mostrarRapida && (
+          <div className="min-w-0 lg:sticky lg:top-4">
           <Card ref={resultadoRef} className="scroll-mt-4 overflow-hidden">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 bg-muted/30 px-5 py-3.5">
               <div className="flex items-center gap-2">
