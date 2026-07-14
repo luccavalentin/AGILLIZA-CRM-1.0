@@ -50,38 +50,51 @@ function StatCard({
   valor,
   hint,
   hintTone = "muted",
+  to,
 }: {
   icon: typeof FileText;
   label: string;
   valor: string;
   hint?: string;
   hintTone?: "muted" | "primary" | "success";
+  to?: string;
 }) {
-  return (
-    <Card className="border-border/70 shadow-sm">
-      <CardContent className="flex items-center gap-3 p-4">
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-          <Icon className="h-5 w-5" strokeWidth={2} />
-        </span>
-        <div className="min-w-0">
-          <p className="truncate text-2xl font-bold leading-tight text-foreground">{valor}</p>
-          <p className="truncate text-xs font-medium text-muted-foreground">{label}</p>
-          {hint && (
-            <p
-              className={cn(
-                "truncate text-[11px] font-medium",
-                hintTone === "primary" && "text-primary",
-                hintTone === "success" && "text-success",
-                hintTone === "muted" && "text-muted-foreground/80",
-              )}
-            >
-              {hint}
-            </p>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+  const inner = (
+    <CardContent className="flex items-center gap-3 p-4">
+      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
+        <Icon className="h-5 w-5" strokeWidth={2} />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-2xl font-bold leading-tight text-foreground">{valor}</p>
+        <p className="truncate text-xs font-medium text-muted-foreground">{label}</p>
+        {hint && (
+          <p
+            className={cn(
+              "truncate text-[11px] font-medium",
+              hintTone === "primary" && "text-primary",
+              hintTone === "success" && "text-success",
+              hintTone === "muted" && "text-muted-foreground/80",
+            )}
+          >
+            {hint}
+          </p>
+        )}
+      </div>
+      {to && (
+        <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/60 transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
+      )}
+    </CardContent>
   );
+  const cardCls =
+    "group border-border/70 shadow-sm transition-all hover:border-primary/40 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50";
+  if (to) {
+    return (
+      <Link to={to as any} className="block rounded-xl">
+        <Card className={cn(cardCls, "cursor-pointer active:scale-[0.99]")}>{inner}</Card>
+      </Link>
+    );
+  }
+  return <Card className={cardCls}>{inner}</Card>;
 }
 
 function VisaoGeral() {
