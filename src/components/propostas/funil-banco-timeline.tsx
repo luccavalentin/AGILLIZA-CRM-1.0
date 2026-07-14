@@ -294,70 +294,84 @@ function DecisionCard({
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-xl border-2 p-3 transition-all",
+        "group relative flex-1 overflow-hidden rounded-lg border px-2.5 py-2 transition-all",
         tone === "success" && ativo &&
-          "border-emerald-500 bg-emerald-500/[0.06] shadow-[0_0_0_4px_color-mix(in_oklab,theme(colors.emerald.500)_10%,transparent)]",
+          "border-emerald-500/70 bg-emerald-500/[0.05] shadow-sm",
         tone === "danger" && ativo &&
-          "border-rose-500 bg-rose-500/[0.06] shadow-[0_0_0_4px_color-mix(in_oklab,theme(colors.rose.500)_10%,transparent)]",
-        aguardando && tone === "success" && "border-emerald-500/25 bg-emerald-500/[0.03]",
-        aguardando && tone === "danger" && "border-rose-500/25 bg-rose-500/[0.03]",
-        descartado && "border-dashed border-border bg-transparent",
+          "border-rose-500/70 bg-rose-500/[0.05] shadow-sm",
+        aguardando && tone === "success" && "border-emerald-500/20 bg-emerald-500/[0.02]",
+        aguardando && tone === "danger" && "border-rose-500/20 bg-rose-500/[0.02]",
+        descartado && "border-dashed border-border/60 bg-transparent opacity-70",
       )}
     >
-      <div className="flex items-start gap-2.5">
+      {/* filete lateral tonal */}
+      {ativo && (
+        <span
+          aria-hidden
+          className={cn(
+            "absolute inset-y-0 left-0 w-0.5",
+            tone === "success" && "bg-emerald-500",
+            tone === "danger" && "bg-rose-500",
+          )}
+        />
+      )}
+      <div className="flex items-center gap-2">
         <span
           className={cn(
-            "mt-0.5 grid size-6 shrink-0 place-items-center rounded-full",
-            tone === "success" && ativo && "bg-emerald-500 text-white shadow-sm",
-            tone === "danger" && ativo && "bg-rose-500 text-white shadow-sm",
-            !ativo && tone === "success" && "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
-            !ativo && tone === "danger" && "bg-rose-500/15 text-rose-600 dark:text-rose-400",
+            "grid size-5 shrink-0 place-items-center rounded-full",
+            tone === "success" && ativo && "bg-emerald-500 text-white",
+            tone === "danger" && ativo && "bg-rose-500 text-white",
+            !ativo && tone === "success" && "bg-emerald-500/12 text-emerald-600 dark:text-emerald-400",
+            !ativo && tone === "danger" && "bg-rose-500/12 text-rose-600 dark:text-rose-400",
             descartado && "bg-muted text-muted-foreground",
           )}
         >
           {tone === "success" ? (
-            <Check className="h-3.5 w-3.5" strokeWidth={3} />
+            <Check className="h-3 w-3" strokeWidth={3} />
           ) : (
-            <X className="h-3.5 w-3.5" strokeWidth={3} />
+            <X className="h-3 w-3" strokeWidth={3} />
           )}
         </span>
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-1.5">
+          <div className="flex items-center gap-1.5">
             <span
               className={cn(
-                "text-sm font-bold leading-none",
+                "text-[13px] font-semibold leading-none",
                 tone === "success" && ativo && "text-emerald-700 dark:text-emerald-300",
                 tone === "danger" && ativo && "text-rose-700 dark:text-rose-300",
-                !ativo && "text-foreground/80",
+                !ativo && "text-foreground/70",
                 descartado && "text-muted-foreground line-through",
               )}
             >
               {label}
             </span>
-            <span
-              className={cn(
-                "rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider",
-                ativo && tone === "success" && "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300",
-                ativo && tone === "danger" && "bg-rose-500/20 text-rose-700 dark:text-rose-300",
-                !ativo && "bg-muted text-muted-foreground",
-              )}
-            >
-              {statusLabel}
-            </span>
+            {ativo && (
+              <span
+                className={cn(
+                  "size-1.5 shrink-0 rounded-full",
+                  tone === "success" && "bg-emerald-500",
+                  tone === "danger" && "bg-rose-500 animate-pulse",
+                )}
+                aria-hidden
+              />
+            )}
           </div>
           <p
             className={cn(
-              "mt-1 text-[11px] leading-snug text-muted-foreground",
-              descartado && "text-muted-foreground/60",
+              "mt-0.5 truncate text-[10.5px] leading-tight text-muted-foreground",
+              descartado && "text-muted-foreground/50",
             )}
+            title={caption}
           >
             {caption}
           </p>
         </div>
       </div>
+      <span className="sr-only">{statusLabel}</span>
     </div>
   );
 }
+
 
 function parseDate(v: string): Date | null {
   const d = new Date(v.includes("T") ? v : v.replace(" ", "T"));
