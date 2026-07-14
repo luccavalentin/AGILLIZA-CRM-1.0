@@ -204,7 +204,7 @@ export function SecaoOperacaoImovel({ ctx }: { ctx: SimulacaoCompletaCtx }) {
         <Campo label={<>Valor de entrada (R$) <Ast /></>}>
           <CurrencyInput
             value={f.valor_entrada}
-            onChange={(v) => set("valor_entrada", v)}
+            onChange={(v) => aplicarPorEntrada(v)}
             placeholder="Ex: 100.000,00"
           />
           {f.valor_imovel > 0 && (
