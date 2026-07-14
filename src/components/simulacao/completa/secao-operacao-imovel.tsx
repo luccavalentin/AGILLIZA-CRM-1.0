@@ -162,11 +162,6 @@ export function SecaoOperacaoImovel({ ctx }: { ctx: SimulacaoCompletaCtx }) {
               onChange={(v) => aplicarPorParcela(v)}
               placeholder="Ex: 3.500,00"
             />
-            <p className="text-xs text-muted-foreground">
-              Cálculo baseado na taxa mais conservadora entre os bancos selecionados, no prazo
-              e no sistema ({f.sistema_amortizacao === "P" ? "PRICE" : "SAC"}), já descontando
-              seguros (MIP/DFI) e tarifa mensal.
-            </p>
           </Campo>
         </div>
       )}
