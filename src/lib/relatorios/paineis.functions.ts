@@ -453,9 +453,9 @@ export const getPanelDados = createServerFn({ method: "POST" })
             delta: mkDelta(aprovadasCount, ant.aprovadas),
           },
           {
-            label: "Reprovadas",
+            label: "Recusadas",
             valor: int(recusadasCount),
-            hint: `${enviadas.length ? pct((recusadasCount / enviadas.length) * 100) : pct(0)} de reprovação`,
+            hint: `${enviadas.length ? pct((recusadasCount / enviadas.length) * 100) : pct(0)} de recusa`,
             tone: recusadasCount ? "danger" : "neutral",
             delta: mkDelta(recusadasCount, ant.recusadas, false),
           },
@@ -464,12 +464,8 @@ export const getPanelDados = createServerFn({ method: "POST" })
         minis: [
           { label: "Volume contratado", valor: brlCompacto(volume), tone: "success" },
           { label: "Volume simulado", valor: brlCompacto(volumeSimulado), tone: "neutral" },
-          { label: "Volume aprovado", valor: brlCompacto(volumeAprovado), tone: aprovadasCount ? "success" : "neutral" },
           { label: "Ticket médio", valor: brlCompacto(ticket), tone: "brand" },
           { label: "Conversão sim→contrato", valor: pct(conversao), tone: "success" },
-          { label: "Simulações concluídas", valor: int(simConcluidas), tone: "success" },
-          { label: "Simulações com erro", valor: int(simErro), tone: simErro ? "danger" : "neutral" },
-          { label: "Aprovadas", valor: int(aprovadasCount), tone: aprovadasCount ? "success" : "neutral" },
           {
             label: "Em análise",
             valor: int(
@@ -477,7 +473,6 @@ export const getPanelDados = createServerFn({ method: "POST" })
             ),
             tone: "warning",
           },
-          { label: "Recusadas", valor: int(enviadas.filter((p) => p.status === "credito_recusado").length), tone: "danger" },
           { label: "Rascunhos", valor: int(rows.length - enviadas.length), tone: "neutral" },
         ],
         evolucao: {
@@ -728,10 +723,7 @@ export const getPanelDados = createServerFn({ method: "POST" })
         { label: "Ticket médio", valor: brlCompacto(ticket), tone: "brand" },
         { label: "Conversão sim→proposta", valor: pct(convSimProp), tone: "brand" },
         { label: "Conversão proposta→contrato", valor: pct(convPropContrato), tone: "success" },
-        { label: "Propostas em análise", valor: int(emAnalise), tone: "warning" },
-        { label: "Recusadas", valor: int(recusadas), tone: recusadas ? "danger" : "neutral" },
         { label: "Rascunhos", valor: int(rascunhos), tone: "neutral" },
-        { label: "Simulações com erro", valor: int(simErro), tone: simErro ? "danger" : "neutral" },
         {
           label: "SLA em dia",
           valor: pct(slaEmDia),
@@ -739,10 +731,8 @@ export const getPanelDados = createServerFn({ method: "POST" })
         },
         { label: "Demandas abertas", valor: int(demAbertas.length), tone: "warning" },
         { label: "SLA vencido", valor: int(demVencidas.length), tone: demVencidas.length ? "danger" : "neutral" },
-        { label: "Demandas concluídas", valor: int(demConcluidas), tone: "success" },
         { label: "Tarefas abertas", valor: int(tkAbertas.length), tone: "neutral" },
         { label: "Tarefas atrasadas", valor: int(tkAtrasadas.length), tone: tkAtrasadas.length ? "danger" : "neutral" },
-        { label: "Tarefas concluídas", valor: int(tkConcluidas), tone: "success" },
         { label: "Conclusão de tarefas", valor: pct(taxaConclusaoTarefas), tone: "success" },
       ],
       evolucao: {

@@ -24,7 +24,7 @@ import {
   PanelHeader,
   SectionTitle,
   HeroMetric,
-
+  MiniMetric,
   PanelCard,
   MetricList,
   AlertRow,
@@ -239,8 +239,8 @@ export function PainelView({
       ) : (
         <>
           <SectionTitle>Indicadores</SectionTitle>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-            {[...data.heros, ...data.minis].map((h) => (
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+            {data.heros.map((h) => (
               <HeroMetric
                 key={h.label}
                 label={h.label}
@@ -248,12 +248,24 @@ export function PainelView({
                 hint={h.hint}
                 tone={h.tone}
                 delta={h.delta}
-
                 icon={iconeParaMetrica(h.label)}
                 to={linkParaMetrica(h.label)}
               />
             ))}
           </div>
+          {data.minis.length > 0 && (
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+              {data.minis.map((m) => (
+                <MiniMetric
+                  key={m.label}
+                  label={m.label}
+                  valor={m.valor}
+                  tone={m.tone}
+                  to={linkParaMetrica(m.label)}
+                />
+              ))}
+            </div>
+          )}
 
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
             {data.evolucao && data.evolucao.dados.length > 1 && (

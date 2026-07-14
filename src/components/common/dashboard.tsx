@@ -257,7 +257,7 @@ export function HeroMetric({
   const conteudo = (
     <Card
       className={cn(
-        "group relative h-full min-w-0 overflow-hidden p-3 pl-4 transition-all duration-300 sm:p-4 sm:pl-5",
+        "group relative h-full min-w-0 overflow-hidden p-3 pl-4 transition-all duration-300",
         to &&
           "cursor-pointer hover:-translate-y-1 hover:border-primary/40 hover:shadow-xl hover:shadow-primary/10",
       )}
@@ -282,23 +282,23 @@ export function HeroMetric({
         {Icon ? (
           <span
             className={cn(
-              "flex h-7 w-7 items-center justify-center rounded-lg ring-1 ring-inset ring-border/50",
+              "flex h-6 w-6 items-center justify-center rounded-md ring-1 ring-inset ring-border/50",
               toneText[tone],
             )}
             style={{ background: toneWash[tone] }}
           >
-            <Icon className="h-3.5 w-3.5" />
+            <Icon className="h-3 w-3" />
           </span>
         ) : to ? (
-          <ArrowUpRight className="h-4 w-4 text-muted-foreground/40 transition-all group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-primary" />
+          <ArrowUpRight className="h-3.5 w-3.5 text-muted-foreground/40 transition-all group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-primary" />
         ) : null}
       </div>
-       <p className="mt-3 min-w-0 truncate font-mono text-[clamp(1.25rem,8vw,2rem)] font-semibold leading-none tracking-tight tabular-nums text-foreground sm:text-[32px]">
+      <p className="mt-2 min-w-0 truncate font-mono text-[clamp(1.1rem,6vw,1.5rem)] font-semibold leading-none tracking-tight tabular-nums text-foreground sm:text-[22px]">
         {valor}
       </p>
-      <div className="mt-2 flex min-w-0 items-center gap-2">
+      <div className="mt-1.5 flex min-w-0 items-center gap-2">
         {delta && <DeltaBadge delta={delta} />}
-        {hint && <p className="min-w-0 truncate text-xs text-muted-foreground">{hint}</p>}
+        {hint && <p className="min-w-0 truncate text-[11px] text-muted-foreground">{hint}</p>}
       </div>
     </Card>
   );
