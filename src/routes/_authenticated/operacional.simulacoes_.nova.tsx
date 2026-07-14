@@ -544,6 +544,7 @@ function Pagina() {
               )}
             </div>
           </Card>
+          </div>
         )}
       </div>
     </div>
