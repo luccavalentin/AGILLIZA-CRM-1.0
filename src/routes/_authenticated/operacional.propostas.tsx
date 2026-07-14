@@ -588,6 +588,12 @@ function Pagina() {
                         <span className="truncate">{p.nome_responsavel}</span>
                       </span>
                     )}
+                    {verExcluidas && (
+                      <span className="mt-1 block text-[11px] font-normal text-destructive">
+                        Excluída por {p.nome_excluidor ?? "—"} · {formatDataHora(p.deleted_at)}
+                        {p.deleted_motivo ? ` · ${p.deleted_motivo}` : ""}
+                      </span>
+                    )}
                   </TableCell>
                   <TableCell>
                     <BancosProposta bancos={p.bancos} />
@@ -599,11 +605,22 @@ function Pagina() {
                     <StatusBancosProposta bancos={p.bancos} fallbackStatus={p.status} />
                   </TableCell>
                   <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                    <ConfirmDelete
-                      titulo="Excluir proposta"
-                      descricao={`A proposta ${p.numero_proposta} será removida permanentemente. Um registro completo será mantido nos Logs de auditoria.`}
-                      onConfirm={() => handleExcluir(p.id)}
-                    />
+                    {verExcluidas ? (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 rounded-lg"
+                        onClick={() => handleRestaurar(p.id)}
+                      >
+                        <Undo2 className="mr-1 h-3.5 w-3.5" /> Restaurar
+                      </Button>
+                    ) : (
+                      <ConfirmDelete
+                        titulo="Excluir proposta"
+                        descricao={`A proposta ${p.numero_proposta} será movida para a aba "Excluídas". Você poderá restaurá-la a qualquer momento.`}
+                        onConfirm={() => handleExcluir(p.id)}
+                      />
+                    )}
                   </TableCell>
                 </TableRow>
                 );
