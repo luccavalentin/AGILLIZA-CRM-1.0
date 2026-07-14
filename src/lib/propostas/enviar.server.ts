@@ -860,6 +860,17 @@ function referenciaIntegracaoBanco(sim: any): string | null {
   return referencia == null || referencia === "" ? null : String(referencia);
 }
 
+function numeroBancoDaOportunidade(op: any): string | null {
+  const numero =
+    op?.numeroPropostaBanco ??
+    op?.numeroProposta ??
+    op?.proposalNumber ??
+    op?.codigoPropostaBanco ??
+    op?.codigoOportunidadeBanco ??
+    null;
+  return numero == null || numero === "" ? null : String(numero);
+}
+
 function numeroAtualEhReferenciaTecnica(pb: any, sim: any): boolean {
   const atual = String(pb?.numero_proposta_banco ?? "").trim();
   if (!atual) return false;
@@ -1156,7 +1167,10 @@ export async function sincronizarPropostaImpl({
     .sort((a, b) => a.ordem - b.ordem);
   if (funilBanco.length > 0) patch.etapas_banco = funilBanco;
   const escolhida = simEscolhida ?? {};
-  if (numeroPropostaBanco) patch.numero_proposta_banco = numeroPropostaBanco;
+  const numeroOportunidadeBanco = numeroBancoDaOportunidade(op);
+  if (numeroPropostaBanco || numeroOportunidadeBanco) {
+    patch.numero_proposta_banco = numeroPropostaBanco ?? numeroOportunidadeBanco;
+  }
   else if (numeroAtualEhReferenciaTecnica({ numero_proposta_banco: prop.numero_proposta_banco }, escolhida)) {
     patch.numero_proposta_banco = null;
   }
