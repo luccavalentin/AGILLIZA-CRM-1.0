@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { BancoLogo } from "@/components/bancos/banco-logo";
 import { corDoBanco } from "@/lib/bancos/cores";
 import { assertModuloPermitido } from "@/lib/route-guards";
-import { listarPropostas, moverStatusProposta } from "@/lib/propostas/propostas.functions";
+import { listarPropostas, moverStatusProposta, listarResponsaveisEquipe } from "@/lib/propostas/propostas.functions";
 import { statusProposta } from "@/components/propostas/status";
 import {
   transicaoPermitida,
