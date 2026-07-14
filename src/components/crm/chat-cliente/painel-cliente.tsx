@@ -416,22 +416,12 @@ export function PainelChatCliente({
             <LinhaResumo rotulo="Etapa" valor={data.etapa_nome ?? "—"} />
             <LinhaResumo rotulo="Responsável" valor={data.responsavel_nome ?? "—"} />
           </div>
+        ) : tab === "interacoes" ? (
+          <AbaInteracoes clienteId={clienteId} />
         ) : (
-          <div className="flex h-full flex-col items-center justify-center gap-2 text-center">
-            <p className="text-sm text-muted-foreground">
-              {tab === "interacoes"
-                ? "Veja o histórico completo de interações na ficha do cliente."
-                : "Veja e gerencie os arquivos na ficha do cliente."}
-            </p>
-            <Link
-              to="/crm/clientes/$id"
-              params={{ id: clienteId }}
-              className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
-            >
-              <ExternalLink className="size-3.5" /> Abrir ficha do cliente
-            </Link>
-          </div>
+          <AbaArquivos clienteId={clienteId} />
         )}
+
       </div>
     </Card>
   );
