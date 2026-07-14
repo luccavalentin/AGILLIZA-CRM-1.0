@@ -393,14 +393,15 @@ function MiniStat({
 }) {
   return (
     <Card className="border-border/70 shadow-sm">
-      <CardContent className="flex items-start gap-3 p-4">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-          <Icon className="h-5 w-5" />
+      <CardContent className="flex items-start gap-2 p-3 sm:gap-3 sm:p-4">
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary sm:h-10 sm:w-10 sm:rounded-xl">
+          <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
         </span>
         <div className="min-w-0">
-          <p className={cn("truncate font-bold text-foreground", small ? "text-sm" : "text-2xl leading-tight")}>
+          <p className={cn("truncate font-bold text-foreground", small ? "text-xs sm:text-sm" : "text-lg leading-tight sm:text-2xl")}>
             {valor}
           </p>
+
           <p className="truncate text-xs font-medium text-muted-foreground">{label}</p>
           {hint && <p className="mt-0.5 truncate text-[11px] text-muted-foreground/80">{hint}</p>}
           {linkLabel && to && (
