@@ -834,34 +834,100 @@ function nomeBancoNormalizado(v: unknown): string {
 }
 
 /**
- * Número real da proposta no banco. Não usar códigos de oportunidade/simulação
- * como se fossem número de proposta: alguns bancos não reconhecem esses códigos
- * no portal externo, pois são apenas referências técnicas da integração.
+ * Número real da proposta no banco. Quando o banco não expõe um campo chamado
+ * literalmente "número da proposta", a API devolve o identificador externo em
+ * `codigoOportunidadeBanco` (código da oportunidade no banco), que é o número a
+ * ser exibido para operação já enviada. Códigos de simulação continuam sendo
+ * apenas referência técnica e não entram aqui.
  */
+function normalizarChaveRetorno(v: string): string {
+  return v
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+function buscarCampoRetorno(obj: unknown, chaves: string[], visitados = new WeakSet<object>()): string | null {
+  if (obj == null) return null;
+  if (typeof obj === "string") {
+    const texto = obj.trim();
+    if (!texto) return null;
+    if (texto.startsWith("{") || texto.startsWith("[")) {
+      try {
+        const parsed = JSON.parse(texto);
+        const achado = buscarCampoRetorno(parsed, chaves, visitados);
+        if (achado) return achado;
+      } catch {
+        // Continua para extração por regex em strings não-JSON ou JSON malformado.
+      }
+    }
+    for (const chave of chaves) {
+      const re = new RegExp(`"?${chave}"?\\s*[:=]\\s*"?([A-Za-z0-9._/-]+)`, "i");
+      const match = texto.match(re);
+      if (match?.[1]) return match[1];
+    }
+    return null;
+  }
+  if (typeof obj !== "object") return null;
+  if (visitados.has(obj)) return null;
+  visitados.add(obj);
+
+  if (Array.isArray(obj)) {
+    for (const item of obj) {
+      const achado = buscarCampoRetorno(item, chaves, visitados);
+      if (achado) return achado;
+    }
+    return null;
+  }
+
+  const mapaChaves = new Set(chaves.map(normalizarChaveRetorno));
+  for (const [k, v] of Object.entries(obj as Record<string, unknown>)) {
+    if (mapaChaves.has(normalizarChaveRetorno(k)) && v != null && String(v).trim()) {
+      return String(v).trim();
+    }
+  }
+  for (const v of Object.values(obj as Record<string, unknown>)) {
+    const achado = buscarCampoRetorno(v, chaves, visitados);
+    if (achado) return achado;
+  }
+  return null;
+}
+
 function numeroPropostaBancoReal(sim: any): string | null {
-  const numero =
-    sim?.numeroPropostaBanco ??
-    sim?.numeroProposta ??
-    sim?.proposalNumber ??
-    sim?.codigoPropostaBanco ??
-    null;
+  const numero = buscarCampoRetorno(sim, [
+    "numeroPropostaBanco",
+    "numeroProposta",
+    "proposalNumber",
+    "codigoPropostaBanco",
+    "codigoOportunidadeBanco",
+  ]);
   return numero == null || numero === "" ? null : String(numero);
 }
 
 function referenciaIntegracaoBanco(sim: any): string | null {
-  const referencia =
-    sim?.codigoOportunidadeBanco ??
-    sim?.codigoOportunidadeBancoInterno ??
-    sim?.codigoSimulacaoBanco ??
-    null;
+  const referencia = buscarCampoRetorno(sim, [
+    "codigoOportunidadeBanco",
+    "codigoOportunidadeBancoInterno",
+    "codigoSimulacaoBanco",
+  ]);
   return referencia == null || referencia === "" ? null : String(referencia);
+}
+
+function numeroBancoDaOportunidade(op: any): string | null {
+  const numero = buscarCampoRetorno(op, [
+    "numeroPropostaBanco",
+    "numeroProposta",
+    "proposalNumber",
+    "codigoPropostaBanco",
+    "codigoOportunidadeBanco",
+  ]);
+  return numero == null || numero === "" ? null : String(numero);
 }
 
 function numeroAtualEhReferenciaTecnica(pb: any, sim: any): boolean {
   const atual = String(pb?.numero_proposta_banco ?? "").trim();
   if (!atual) return false;
   return [
-    sim?.codigoOportunidadeBanco,
     sim?.codigoOportunidadeBancoInterno,
     sim?.codigoSimulacaoBanco,
   ]
@@ -1154,7 +1220,10 @@ export async function sincronizarPropostaImpl({
     .sort((a, b) => a.ordem - b.ordem);
   if (funilBanco.length > 0) patch.etapas_banco = funilBanco;
   const escolhida = simEscolhida ?? {};
-  if (numeroPropostaBanco) patch.numero_proposta_banco = numeroPropostaBanco;
+  const numeroOportunidadeBanco = numeroBancoDaOportunidade(op);
+  if (numeroPropostaBanco || numeroOportunidadeBanco) {
+    patch.numero_proposta_banco = numeroPropostaBanco ?? numeroOportunidadeBanco;
+  }
   else if (numeroAtualEhReferenciaTecnica({ numero_proposta_banco: prop.numero_proposta_banco }, escolhida)) {
     patch.numero_proposta_banco = null;
   }

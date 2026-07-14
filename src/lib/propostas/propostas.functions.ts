@@ -1594,12 +1594,154 @@ export const vincularClienteAProposta = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     if (!prop) throw new Error("Proposta não encontrada.");
 
+    const { data: cli, error: cliErr } = await supabase
+      .from("clientes")
+      .select("*")
+      .eq("id", data.cliente_id)
+      .maybeSingle();
+    if (cliErr) throw new Error(cliErr.message);
+    if (!cli) throw new Error("Cliente não encontrado.");
+
+    const { data: end } = await supabase
+      .from("cliente_enderecos")
+      .select("*")
+      .eq("cliente_id", data.cliente_id)
+      .limit(1)
+      .maybeSingle();
+
     await supabase.from("propostas").update({ cliente_id: data.cliente_id }).eq("id", prop.id);
     if (prop.simulacao_id) {
       await supabase
         .from("simulacoes")
         .update({ cliente_id: data.cliente_id })
         .eq("id", prop.simulacao_id);
+    }
+
+    const c = cli as any;
+    const e = (end ?? {}) as any;
+    const titular = {
+      proposta_id: prop.id,
+      cliente_id: data.cliente_id,
+      tipo_qualificacao: "CO",
+      tipo_pessoa: c.tipo_pessoa === "PJ" ? "J" : "F",
+      nome: c.nome,
+      cpf_cnpj: c.documento,
+      data_nascimento: c.data_nascimento,
+      nome_mae: c.mae,
+      tipo_sexo: c.sexo ? String(c.sexo).trim().charAt(0).toUpperCase() : c.sexo,
+      estado_civil: estadoCivilCrmParaCodigo(c.estado_civil) || null,
+      regime_casamento: regimeCasamentoCrmParaCodigo(c.regime_casamento) || null,
+      tipo_documento_identidade: c.tipo_documento_identidade,
+      numero_documento: c.numero_documento,
+      data_expedicao: c.data_expedicao,
+      orgao_expedidor: c.orgao_expedidor,
+      uf_expedicao: c.uf_expedicao,
+      profissao: c.profissao,
+      empresa: c.empresa,
+      renda: c.renda_total_declarada,
+      agencia: c.agencia,
+      conta_corrente: c.conta_corrente,
+      digito_conta: c.digito_conta,
+      email: c.email,
+      celular: c.telefone_celular,
+      cep: e.cep ?? null,
+      logradouro: e.logradouro ?? null,
+      numero_logradouro: e.numero ?? null,
+      complemento: e.complemento ?? null,
+      bairro: e.bairro ?? null,
+      municipio: e.cidade ?? null,
+      uf: e.uf ?? c.uf_interesse ?? null,
+      utiliza_fgts: c.utiliza_fgts ?? false,
+      fg_autorizacao_dados: c.fg_autorizacao_dados ?? false,
+      dados: {
+        pai: c.pai ?? null,
+        nacionalidade: c.nacionalidade ?? null,
+        naturalidade: c.naturalidade ?? null,
+        banco_conta: c.banco_conta ?? null,
+      },
+    };
+
+    const { data: envExistente } = await supabase
+      .from("proposta_envolvidos")
+      .select("id")
+      .eq("proposta_id", prop.id)
+      .eq("tipo_qualificacao", "CO")
+      .limit(1)
+      .maybeSingle();
+    let titularId = (envExistente as any)?.id as string | undefined;
+    if (titularId) {
+      const { error: updErr } = await supabase
+        .from("proposta_envolvidos")
+        .update(titular as any)
+        .eq("id", titularId);
+      if (updErr) throw new Error(updErr.message);
+    } else {
+      const { data: ins, error: insErr } = await supabase
+        .from("proposta_envolvidos")
+        .insert(titular as any)
+        .select("id")
+        .single();
+      if (insErr) throw new Error(insErr.message);
+      titularId = (ins as any).id;
+    }
+
+    const ehCasado = ["casado", "uniao_estavel"].includes(String(c.estado_civil ?? ""));
+    if (titularId && ehCasado && (c.conjuge_nome || c.conjuge_cpf)) {
+      const conjuge = {
+        proposta_id: prop.id,
+        conjuge_de: titularId,
+        tipo_qualificacao: "TI",
+        tipo_pessoa: "F",
+        nome: c.conjuge_nome,
+        cpf_cnpj: c.conjuge_cpf,
+        data_nascimento: c.conjuge_data_nascimento,
+        nome_mae: c.conjuge_nome_mae,
+        tipo_sexo: c.conjuge_sexo ? String(c.conjuge_sexo).trim().charAt(0).toUpperCase() : c.conjuge_sexo,
+        estado_civil: estadoCivilCrmParaCodigo(c.estado_civil) || null,
+        regime_casamento: regimeCasamentoCrmParaCodigo(c.regime_casamento) || null,
+        tipo_documento_identidade: c.conjuge_tipo_documento_identidade,
+        numero_documento: c.conjuge_numero_documento,
+        data_expedicao: c.conjuge_data_expedicao,
+        orgao_expedidor: c.conjuge_orgao_expedidor,
+        uf_expedicao: c.conjuge_uf_expedicao,
+        profissao: c.conjuge_profissao,
+        empresa: c.conjuge_empresa,
+        renda: c.conjuge_renda,
+        agencia: c.conjuge_agencia,
+        conta_corrente: c.conjuge_conta_corrente,
+        digito_conta: c.conjuge_digito_conta,
+        email: c.conjuge_email,
+        celular: c.conjuge_celular,
+        cep: e.cep ?? null,
+        logradouro: e.logradouro ?? null,
+        numero_logradouro: e.numero ?? null,
+        complemento: e.complemento ?? null,
+        bairro: e.bairro ?? null,
+        municipio: e.cidade ?? null,
+        uf: e.uf ?? c.uf_interesse ?? null,
+        utiliza_fgts: false,
+        fg_autorizacao_dados: c.fg_autorizacao_dados ?? false,
+        dados: { nacionalidade: c.conjuge_nacionalidade ?? null, banco_conta: c.conjuge_banco_conta ?? null },
+      };
+      const { data: conjExistente } = await supabase
+        .from("proposta_envolvidos")
+        .select("id")
+        .eq("proposta_id", prop.id)
+        .eq("conjuge_de", titularId)
+        .limit(1)
+        .maybeSingle();
+      if ((conjExistente as any)?.id) {
+        const { error: conjUpdErr } = await supabase
+          .from("proposta_envolvidos")
+          .update(conjuge as any)
+          .eq("id", (conjExistente as any).id);
+        if (conjUpdErr) throw new Error(conjUpdErr.message);
+      } else {
+        const { error: conjInsErr } = await supabase
+          .from("proposta_envolvidos")
+          .insert(conjuge as any);
+        if (conjInsErr) throw new Error(conjInsErr.message);
+      }
     }
     return { ok: true };
   });
