@@ -94,11 +94,14 @@ export function DicaRendaMinima(props: Props) {
           <p className="text-xs leading-relaxed text-muted-foreground">
             {apiEval
               ? "Renda exigida pelo retorno bancário mais conservador"
-              : "Renda necessária para o valor financiado"}
+              : sistema === "P"
+                ? "Renda necessária para o valor financiado. No PRICE os bancos qualificam a renda pela parcela SAC equivalente (pior caso, pois as parcelas do PRICE crescem no contrato)"
+                : "Renda necessária para o valor financiado"}
             {principal.bancoNome ? ` (${principal.bancoNome})` : ""}, com prestação inicial de{" "}
             <span className="font-medium text-foreground/80">{formatBRL(principal.primeiraParcela)}</span>{" "}
             e no teto de 30% de comprometimento de renda.
           </p>
+
 
           {principal.suficiente === true && (
             <div
