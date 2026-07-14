@@ -448,9 +448,12 @@ export const runReport = createServerFn({ method: "POST" })
       ].sort((a, b) => a.localeCompare(b, "pt-BR"));
       const produtos = [
         ...new Set(
-          [...((prodProps ?? []) as any[]), ...((prodSims ?? []) as any[])]
-            .map((p) => String(p.produto ?? ""))
-            .filter(Boolean),
+          [
+            "financiamento_imobiliario",
+            "home_equity",
+            ...((prodProps ?? []) as any[]).map((p) => String(p.produto ?? "")),
+            ...((prodSims ?? []) as any[]).map((p) => String(p.produto ?? "")),
+          ].filter(Boolean),
         ),
       ].sort((a, b) => a.localeCompare(b, "pt-BR"));
       return { bancos, produtos };
