@@ -1403,36 +1403,40 @@ export const excluirProposta = createServerFn({ method: "POST" })
       payloadNovo: null,
     });
 
-    // Exclui e confirma que a linha realmente saiu. Com RLS, um DELETE pode
-    // "passar" sem erro afetando 0 linhas — o que deixava a proposta viva no
-    // painel/kanban mesmo após a mensagem de sucesso. Usamos .select() para
-    // saber quantas linhas foram removidas.
+    // Soft delete: marca deleted_at/deleted_by/deleted_motivo. A proposta some
+    // das listagens e do kanban, mas fica preservada na aba "Excluídas" com
+    // registro de quem excluiu e quando.
     const { data: removidas, error } = await supabase
       .from("propostas")
-      .delete()
+      .update({
+        deleted_at: new Date().toISOString(),
+        deleted_by: userId,
+        deleted_motivo: data.motivo ?? null,
+      })
       .eq("id", data.id)
+      .is("deleted_at", null)
       .select("id");
     if (error) throw error;
 
     if (!removidas || removidas.length === 0) {
-      // A política de RLS bloqueou o DELETE (usuário sem papel adequado ou
-      // fora do escopo). Como já validamos que a proposta existe e pertence ao
-      // correspondente do usuário, e a exclusão exige papel admin/correspondente,
-      // reforçamos com o cliente administrativo do servidor.
       if (!correspondente || prop.correspondente_id !== correspondente) {
         throw new Error("Você não tem permissão para excluir esta proposta.");
       }
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       const { error: errAdmin } = await supabaseAdmin
         .from("propostas")
-        .delete()
+        .update({
+          deleted_at: new Date().toISOString(),
+          deleted_by: userId,
+          deleted_motivo: data.motivo ?? null,
+        })
         .eq("id", data.id)
-        .eq("correspondente_id", correspondente);
+        .eq("correspondente_id", correspondente)
+        .is("deleted_at", null);
       if (errAdmin) throw errAdmin;
     }
 
-    // Se o cliente ficou sem simulações/propostas, recua a esteira para o
-    // cadastro para não deixar um vínculo inexistente no painel/kanban.
+    // Se o cliente ficou sem simulações/propostas ativas, recua a esteira.
     try {
       const { recuarEsteiraSeOrfao } = await import("@/lib/crm/clientes.functions");
       await recuarEsteiraSeOrfao(supabase, (prop as any).cliente_id);
@@ -1441,6 +1445,42 @@ export const excluirProposta = createServerFn({ method: "POST" })
     }
     return { ok: true };
 
+  });
+
+/** Restaura uma proposta excluída logicamente. */
+export const restaurarProposta = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }): Promise<{ ok: true }> => {
+    const { supabase, userId } = context;
+    const { data: prop } = await supabase
+      .from("propostas")
+      .select("id, correspondente_id, deleted_at")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (!prop) throw new Error("Proposta não encontrada.");
+    if (!(prop as any).deleted_at) return { ok: true };
+
+    const { data: rows, error } = await supabase
+      .from("propostas")
+      .update({ deleted_at: null, deleted_by: null, deleted_motivo: null })
+      .eq("id", data.id)
+      .select("id");
+    if (error) throw error;
+    if (!rows || rows.length === 0) {
+      const correspondente = await correspondenteId(supabase, userId).catch(() => null);
+      if (!correspondente || (prop as any).correspondente_id !== correspondente) {
+        throw new Error("Você não tem permissão para restaurar esta proposta.");
+      }
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { error: errAdmin } = await supabaseAdmin
+        .from("propostas")
+        .update({ deleted_at: null, deleted_by: null, deleted_motivo: null })
+        .eq("id", data.id)
+        .eq("correspondente_id", correspondente);
+      if (errAdmin) throw errAdmin;
+    }
+    return { ok: true };
   });
 
 /** ===== Cadastrar cliente (CRM) a partir dos dados da proposta =====
