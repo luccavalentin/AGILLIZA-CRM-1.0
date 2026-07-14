@@ -40,7 +40,7 @@ const pct = (v: number) => `${(v || 0).toLocaleString("pt-BR", { maximumFraction
 
 /** Rótulos oficiais dos status de proposta (espelha components/propostas/status.ts). */
 const STATUS_PROPOSTA_LABEL: Record<string, string> = {
-  rascunho: "Rascunho",
+  rascunho: "Simulação",
   enviada_banco: "Enviada ao banco",
   em_analise_credito: "Em análise de crédito",
   aguardando_documentos: "Aguardando documentos",
@@ -99,9 +99,8 @@ const opcoes = (m: Record<string, string>) =>
   Object.entries(m).map(([value, label]) => ({ value, label }));
 
 /** Opções de status do filtro por código de relatório. */
-/** Status ocultos no filtro (transientes, técnicos ou redundantes com outros). */
+/** Status ocultos no filtro (transientes/técnicos). Simulação (rascunho) fica visível. */
 const STATUS_PROPOSTA_OCULTOS = new Set([
-  "rascunho",
   "enviada_banco",
   "registrado",
   "erro_envio",
