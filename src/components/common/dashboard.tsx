@@ -275,14 +275,14 @@ export function HeroMetric({
   const conteudo = (
     <Card
       className={cn(
-        "group relative flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border-border/70 p-5 shadow-sm transition-all duration-300",
+        "group relative flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border-border/70 p-3.5 shadow-sm transition-all duration-300 sm:p-4",
         to &&
           "cursor-pointer hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/[0.06]",
       )}
     >
       <span
         aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 h-24 opacity-70"
+        className="pointer-events-none absolute inset-x-0 top-0 h-16 opacity-70"
         style={{
           background: `linear-gradient(180deg, ${toneWash[tone]}, transparent 100%)`,
         }}
@@ -291,32 +291,34 @@ export function HeroMetric({
         {Icon ? (
           <span
             className={cn(
-              "inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl",
+              "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
               toneText[tone],
             )}
             style={{ background: toneIconBg[tone] }}
           >
-            <Icon className="h-5 w-5" strokeWidth={2} />
+            <Icon className="h-4 w-4" strokeWidth={2} />
           </span>
         ) : (
           <span
-            className={cn("h-10 w-1 shrink-0 rounded-full", toneBar[tone])}
+            className={cn("h-8 w-1 shrink-0 rounded-full", toneBar[tone])}
           />
         )}
         {to && (
           <ArrowUpRight className="h-4 w-4 text-muted-foreground/40 transition-all group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-primary" />
         )}
       </div>
-      <p className="relative mt-4 min-w-0 truncate text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground sm:text-[11px] sm:tracking-[0.14em]">
+      <p className="relative mt-2.5 min-w-0 truncate text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground sm:text-[11px] sm:tracking-[0.14em]">
         {label}
       </p>
-      <p className="relative mt-1 min-w-0 truncate font-mono text-[clamp(1.35rem,6vw,1.75rem)] font-semibold leading-none tracking-tight tabular-nums text-foreground">
+      <p className="relative mt-0.5 min-w-0 truncate font-mono text-[clamp(1.2rem,5vw,1.5rem)] font-semibold leading-none tracking-tight tabular-nums text-foreground">
         {valor}
       </p>
-      <div className="relative mt-2 flex min-w-0 items-center gap-2">
-        {delta && <DeltaBadge delta={delta} />}
-        {hint && <p className="min-w-0 truncate text-[11px] font-medium text-muted-foreground/90">{hint}</p>}
-      </div>
+      {(delta || hint) && (
+        <div className="relative mt-1.5 flex min-w-0 items-center gap-2">
+          {delta && <DeltaBadge delta={delta} />}
+          {hint && <p className="min-w-0 truncate text-[11px] font-medium text-muted-foreground/90">{hint}</p>}
+        </div>
+      )}
     </Card>
   );
 
