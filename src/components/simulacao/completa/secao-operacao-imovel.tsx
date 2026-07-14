@@ -138,7 +138,7 @@ export function SecaoOperacaoImovel({ ctx }: { ctx: SimulacaoCompletaCtx }) {
               set("valor_financiamento", 0);
               set("parcela_alvo", 0);
               set("fg_financiar_despesas", false);
-              definirPctDespesas(0);
+              definirPctDespesas("0");
             }}
             className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground shadow-sm transition hover:border-destructive/50 hover:bg-destructive/5 hover:text-destructive"
             title="Zera imóvel, entrada, financiamento e parcela desejada"
