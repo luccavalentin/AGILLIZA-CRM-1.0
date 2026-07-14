@@ -531,84 +531,140 @@ function Pagina() {
 
         {mostrarRapida && (
           <div className="min-w-0 lg:sticky lg:top-4">
-          <Card ref={resultadoRef} className="scroll-mt-4 overflow-hidden">
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 bg-muted/30 px-5 py-3.5">
-              <div className="flex items-center gap-2">
-                <TrendingUp className="h-4 w-4 text-primary" />
-                <h3 className="text-sm font-semibold text-foreground">Comparativo estimado</h3>
-                <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
-                  SAC · {w.prazo_meses} meses
-                </span>
+          <Card ref={resultadoRef} className="scroll-mt-4 overflow-hidden border-primary/30 shadow-lg ring-1 ring-primary/10">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 bg-gradient-to-br from-primary/10 via-card to-card px-5 py-4">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4 text-primary" />
+                  <h2 className="truncate text-base font-semibold tracking-tight text-foreground">
+                    Resultado — Simulação rápida
+                  </h2>
+                  <span className="rounded-full bg-muted px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground">
+                    SAC · {w.prazo_meses} meses
+                  </span>
+                </div>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  Financiamento:{" "}
+                  <span className="font-medium tabular-nums text-foreground">
+                    {formatBRL(w.valor_financiamento)}
+                  </span>
+                  {" · "}
+                  Estimativa baseada nas taxas médias praticadas pelos bancos. Para enviar
+                  ao banco, prossiga para a simulação completa.
+                </p>
               </div>
-              {comparativo.length > 0 && (
+              <div className="flex items-center gap-2">
+                {comparativo.length > 0 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5"
+                    onClick={baixarSimulacao}
+                    disabled={baixando}
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                    {baixando ? "Gerando…" : "Baixar"}
+                  </Button>
+                )}
                 <Button
-                  variant="outline"
                   size="sm"
-                  className="h-8 gap-1.5"
-                  onClick={baixarSimulacao}
-                  disabled={baixando}
+                  className="gap-1.5"
+                  onClick={irParaCompleta}
                 >
-                  <Download className="h-3.5 w-3.5" />
-                  {baixando ? "Gerando…" : "Baixar simulação"}
+                  <Send className="h-3.5 w-3.5" /> Enviar ao banco
                 </Button>
-              )}
+              </div>
             </div>
-            <div className="p-5">
+
+            <div className="p-4 sm:p-5">
               {comparativo.length === 0 ? (
-                <p className="py-4 text-center text-sm text-muted-foreground">
+                <p className="py-8 text-center text-sm text-muted-foreground">
                   Nenhum banco habilitado. Ative bancos em Configurações → Bancos.
                 </p>
               ) : (
-                <div className="space-y-2.5">
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                   {comparativo.map((c, i) => {
                     const melhor = i === 0 && comparativo.length > 1;
+                    const cor = corDoBanco(c.nome_banco);
                     return (
                       <div
                         key={c.banco_id}
                         className={cn(
-                          "flex items-center justify-between gap-3 rounded-xl border p-3.5 transition-colors",
-                          melhor
-                            ? "border-primary/30 bg-primary/5"
-                            : "border-border bg-card hover:bg-muted/30",
+                          "flex flex-col gap-3 rounded-xl border border-border/60 bg-card p-4 transition hover:shadow-md",
+                          melhor && "ring-1 ring-primary/40",
                         )}
                       >
-                        <div className="flex min-w-0 items-center gap-3">
-                          <span className="relative shrink-0">
-                            <BancoLogo nome={c.nome_banco} size="xl" />
-                            <span
-                              className={cn(
-                                "absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold tabular-nums ring-2 ring-card",
-                                melhor
-                                  ? "bg-primary text-primary-foreground"
-                                  : "bg-muted text-muted-foreground",
-                              )}
-                            >
-                              {i + 1}
-                            </span>
-                          </span>
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-1.5">
-                              <p className="font-semibold leading-tight text-card-foreground break-words">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex min-w-0 items-center gap-2">
+                            <BancoLogo nome={c.nome_banco} size="md" />
+                            <div className="min-w-0">
+                              <div
+                                className="truncate text-sm font-semibold"
+                                style={{ color: cor }}
+                              >
                                 {c.nome_banco}
-                              </p>
-                              {melhor && (
-                                <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
-                                  <Award className="h-3 w-3" /> Melhor taxa
+                              </div>
+                              <div className="mt-0.5">
+                                <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-400">
+                                  Simulação
                                 </span>
-                              )}
+                              </div>
                             </div>
-                            <p className="text-xs text-muted-foreground">
-                              Taxa {formatPercent(c.taxa_ano)} a.a.
-                            </p>
                           </div>
+                          {melhor && (
+                            <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
+                              <Award className="h-3 w-3" /> Melhor
+                            </span>
+                          )}
                         </div>
-                        <div className="shrink-0 text-right">
-                          <p className="text-[10.5px] font-medium uppercase tracking-wide text-muted-foreground">
-                            1ª parcela
-                          </p>
-                          <p className="tabular-nums text-base font-semibold text-card-foreground">
-                            {formatBRL(c.resultado.primeira_parcela)}
-                          </p>
+
+                        <dl className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs">
+                          <div className="flex flex-col">
+                            <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                              Parcela
+                            </dt>
+                            <dd className="text-sm font-semibold tabular-nums text-foreground">
+                              {formatBRL(c.resultado.primeira_parcela)}
+                            </dd>
+                          </div>
+                          <div className="flex flex-col">
+                            <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                              Taxa a.a.
+                            </dt>
+                            <dd className="text-sm font-medium tabular-nums text-foreground">
+                              {formatPercent(c.taxa_ano)}
+                            </dd>
+                          </div>
+                          <div className="flex flex-col">
+                            <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                              Prazo
+                            </dt>
+                            <dd className="text-sm font-medium tabular-nums text-foreground">
+                              {w.prazo_meses}m
+                            </dd>
+                          </div>
+                          <div className="flex flex-col">
+                            <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                              Financ. máx
+                            </dt>
+                            <dd className="text-sm font-medium tabular-nums text-foreground">
+                              {formatBRL(w.valor_financiamento)}
+                            </dd>
+                          </div>
+                        </dl>
+
+                        <div className="mt-auto flex items-center justify-between gap-2 pt-1">
+                          <span className="text-[11px] text-muted-foreground">
+                            Última parcela {formatBRL(c.resultado.ultima_parcela)}
+                          </span>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 gap-1 px-2 text-xs"
+                            onClick={irParaCompleta}
+                          >
+                            <Send className="h-3 w-3" /> Enviar
+                          </Button>
                         </div>
                       </div>
                     );
@@ -624,5 +680,6 @@ function Pagina() {
 
   );
 }
+
 
 
