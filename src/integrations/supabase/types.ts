@@ -5314,6 +5314,7 @@ export type Database = {
         Returns: undefined
       }
       pode_gerenciar_pessoas: { Args: { _user_id: string }; Returns: boolean }
+      portal_acompanhamento: { Args: { _cid: string }; Returns: Json }
       portal_baixar_dados: { Args: { _cid: string }; Returns: Json }
       portal_cliente_login: {
         Args: {
