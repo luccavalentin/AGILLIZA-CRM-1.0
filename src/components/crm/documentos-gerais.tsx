@@ -386,7 +386,7 @@ export function DocumentosGerais() {
     if (visao === "clientes") return [];
 
     let dim: "imob" | "corr" | "analista";
-    let base: DGCliente[keyof DGCliente] extends never ? never : { id: string; nome: string }[];
+    let base: { id: string; nome: string }[];
     let tipo: PastaTipo;
     let semKey: string;
     let semNome: string;
