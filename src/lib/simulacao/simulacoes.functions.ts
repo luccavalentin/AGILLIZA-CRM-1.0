@@ -423,16 +423,42 @@ export const obterSimulacao = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
     if (!simulacao) throw new Error("Simulação não encontrada.");
 
-    const { data: bancos } = await supabase
+    // Se a simulação faz parte de um par SAC + PRICE (modo "Ambos"),
+    // carrega também a simulação irmã para exibir os dois sistemas juntos.
+    const agrupador = (simulacao as any).agrupador_id as string | null;
+    let simIds: string[] = [data.id];
+    let irmas: any[] = [];
+    if (agrupador) {
+      const { data: pares } = await supabase
+        .from("simulacoes")
+        .select("*")
+        .eq("agrupador_id", agrupador);
+      irmas = pares ?? [];
+      simIds = Array.from(new Set(irmas.map((p: any) => p.id)));
+      if (!simIds.includes(data.id)) simIds.push(data.id);
+    }
+
+    const { data: bancosRaw } = await supabase
       .from("simulacao_bancos")
       .select("*")
-      .eq("simulacao_id", data.id)
+      .in("simulacao_id", simIds)
       .order("valor_parcela", { ascending: true, nullsFirst: false });
+
+    // Mapa simulacao_id -> sistema para etiquetar os bancos com SAC/PRICE.
+    const sistemaPorSim = new Map<string, string>();
+    const registros = irmas.length ? irmas : [simulacao];
+    for (const r of registros) {
+      sistemaPorSim.set((r as any).id, (r as any).sistema_amortizacao ?? "S");
+    }
+    const bancos = (bancosRaw ?? []).map((b: any) => ({
+      ...b,
+      _sistema: sistemaPorSim.get(b.simulacao_id) === "P" ? "PRICE" : "SAC",
+    }));
 
     const { data: historico } = await supabase
       .from("simulacao_historico")
       .select("*")
-      .eq("simulacao_id", data.id)
+      .in("simulacao_id", simIds)
       .order("created_at", { ascending: false });
 
     // resolve nomes dos autores
@@ -449,8 +475,16 @@ export const obterSimulacao = createServerFn({ method: "GET" })
       ator_nome: h.ator_id ? (nomesAtores[h.ator_id] ?? null) : null,
     }));
 
-    return { simulacao, bancos: bancos ?? [], historico: historicoComAutor };
+    // Se agrupado, expõe também qual sistema é o "principal" (esta simulação)
+    // e sinaliza que é mista, para o front renderizar cabeçalhos SAC/PRICE.
+    const simulacaoOut =
+      irmas.length > 1
+        ? { ...simulacao, sistema_amortizacao: "B" as const }
+        : simulacao;
+
+    return { simulacao: simulacaoOut, bancos, historico: historicoComAutor };
   });
+
 
 /** ===== Listar simulações (paginado, escopo por RLS) ===== */
 const listarSchema = z.object({
