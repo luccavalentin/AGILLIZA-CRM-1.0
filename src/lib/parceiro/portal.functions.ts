@@ -95,11 +95,13 @@ export const getResumoParceiro = createServerFn({ method: "GET" })
         supabaseAdmin
           .from("simulacoes")
           .select("id", { count: "exact", head: true })
-          .in("cliente_id", ctx.clienteIds),
+          .in("cliente_id", ctx.clienteIds)
+          .is("deleted_at", null),
         supabaseAdmin
           .from("propostas")
           .select("id", { count: "exact", head: true })
-          .in("cliente_id", ctx.clienteIds),
+          .in("cliente_id", ctx.clienteIds)
+          .is("deleted_at", null),
       ]);
       totalSimulacoes = cSim ?? 0;
       totalPropostas = cProp ?? 0;
