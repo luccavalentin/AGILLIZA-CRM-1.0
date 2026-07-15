@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import type { SimulacaoCompletaCtx } from "@/lib/simulacao/use-simulacao-completa";
 
 export function SecaoBancos({ ctx }: { ctx: SimulacaoCompletaCtx }) {
-  const { f, erros, bancos, aceitaPrice, toggleBanco } = ctx;
+  const { f, erros, bancos, aceitaPrice, aceitaBancoNaOperacao, restricaoEspecial, toggleBanco } = ctx;
 
   return (
     <section className="space-y-4">
@@ -14,6 +14,12 @@ export function SecaoBancos({ ctx }: { ctx: SimulacaoCompletaCtx }) {
         <p className="text-xs text-muted-foreground">
           {f.bancos_ids.length} de {bancos.length} banco(s) selecionado(s)
         </p>
+      )}
+
+      {restricaoEspecial.ativo && (
+        <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-900 dark:text-amber-200">
+          {restricaoEspecial.motivo}: apenas Bradesco opera essa modalidade (LTV máx. 70%, prazo máx. 240 meses).
+        </div>
       )}
 
       {f.sistema_amortizacao === "P" && (
@@ -30,7 +36,9 @@ export function SecaoBancos({ ctx }: { ctx: SimulacaoCompletaCtx }) {
       ) : (
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
           {bancos.map((b) => {
-            const bloqueado = f.sistema_amortizacao === "P" && !aceitaPrice(b);
+            const bloqueadoPrice = f.sistema_amortizacao === "P" && !aceitaPrice(b);
+            const bloqueadoOperacao = !aceitaBancoNaOperacao(b);
+            const bloqueado = bloqueadoPrice || bloqueadoOperacao;
             const selecionado = f.bancos_ids.includes(b.id);
             const cor = corDoBanco(b.nome_banco);
             return (
