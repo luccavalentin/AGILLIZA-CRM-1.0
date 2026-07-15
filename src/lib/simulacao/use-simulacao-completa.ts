@@ -214,8 +214,39 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
     [f.renda_total, f.compoe_renda, f.renda_conjuge],
   );
 
-  // Teto de financiamento (LTV) por produto.
-  const ltvMax = f.produto === "home_equity" ? 0.6 : 0.8;
+  // Restrição especial: Terreno (TE/TC) ou Imóvel comercial (uso "C")
+  // -> LTV 70%, prazo máx 240 meses, apenas Bradesco opera.
+  const restricaoEspecial = useMemo(() => {
+    const isTerreno = f.tipo_imovel === "TE" || f.tipo_imovel === "TC";
+    const isComercial = f.uso_imovel === "C";
+    const ativo = isTerreno || isComercial;
+    const motivo = !ativo
+      ? ""
+      : isTerreno && isComercial
+        ? "Terreno / Imóvel comercial"
+        : isTerreno
+          ? "Terreno"
+          : "Imóvel comercial";
+    return { ativo, motivo, ltvMax: 0.7, prazoMax: 240 };
+  }, [f.tipo_imovel, f.uso_imovel]);
+
+  function aceitaBancoNaOperacao(b: { codigo_banco?: number | string | null; nome_banco?: string | null }) {
+    if (!restricaoEspecial.ativo) return true;
+    const cod = String(b.codigo_banco ?? "").replace(/^0+/, "");
+    const nome = (b.nome_banco ?? "").toLowerCase();
+    return cod === "237" || nome.includes("bradesco");
+  }
+
+  // Teto de financiamento (LTV) por produto e restrição especial.
+  const ltvMax = restricaoEspecial.ativo
+    ? restricaoEspecial.ltvMax
+    : f.produto === "home_equity"
+      ? 0.6
+      : 0.8;
+  const prazoMaximo = useMemo(() => {
+    const idade = maxPrazoIdade ?? 420;
+    return restricaoEspecial.ativo ? Math.min(idade, restricaoEspecial.prazoMax) : idade;
+  }, [maxPrazoIdade, restricaoEspecial]);
   const financiamentoMaximo = useMemo(
     () => Math.floor((Number(f.valor_imovel) || 0) * ltvMax),
     [f.valor_imovel, ltvMax],
@@ -236,15 +267,23 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
     (Number(f.valor_imovel) || 0) > 0 &&
     (Number(f.valor_financiamento) || 0) > financiamentoImovelMaximo;
 
-  /** Aplica o prazo digitado, ajustando automaticamente pela regra de idade. */
+  /** Aplica o prazo digitado, ajustando pela idade e pelo teto da operação. */
   function definirPrazo(valor: number) {
     if (!Number.isFinite(valor) || valor <= 0) {
       set("prazo", 0);
       return;
     }
     const { prazo, ajustado, mensagem } = ajustarPrazoPorIdade(valor, f.data_nascimento);
-    if (ajustado && mensagem) toast.warning(mensagem);
-    set("prazo", prazo);
+    let final = prazo;
+    if (restricaoEspecial.ativo && final > restricaoEspecial.prazoMax) {
+      final = restricaoEspecial.prazoMax;
+      toast.warning(
+        `${restricaoEspecial.motivo}: prazo máximo de ${restricaoEspecial.prazoMax} meses.`,
+      );
+    } else if (ajustado && mensagem) {
+      toast.warning(mensagem);
+    }
+    set("prazo", final);
   }
 
   // Reajusta o prazo se a data de nascimento reduzir o máximo permitido.
@@ -256,6 +295,34 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [maxPrazoIdade]);
+
+  // Aplica a restrição de Terreno / Imóvel comercial: prazo <=240m e apenas
+  // Bradesco elegível. Filtra bancos selecionados e clampa o prazo.
+  useEffect(() => {
+    if (!restricaoEspecial.ativo) return;
+    setF((prev) => {
+      const bancosFiltrados = prev.bancos_ids.filter((id: string) => {
+        const b = (bancos ?? []).find((x) => x.id === id);
+        return b ? aceitaBancoNaOperacao(b) : false;
+      });
+      const prazoClamp =
+        prev.prazo > restricaoEspecial.prazoMax ? restricaoEspecial.prazoMax : prev.prazo;
+      const mudouBancos = bancosFiltrados.length !== prev.bancos_ids.length;
+      const mudouPrazo = prazoClamp !== prev.prazo;
+      if (!mudouBancos && !mudouPrazo) return prev;
+      if (mudouBancos)
+        toast.info(
+          `${restricaoEspecial.motivo}: apenas Bradesco opera. Outros bancos foram removidos.`,
+        );
+      if (mudouPrazo)
+        toast.info(
+          `${restricaoEspecial.motivo}: prazo ajustado para ${restricaoEspecial.prazoMax} meses.`,
+        );
+      return { ...prev, bancos_ids: bancosFiltrados, prazo: prazoClamp };
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [restricaoEspecial.ativo, bancos]);
+
 
   // Mantém as despesas coladas no percentual e respeita o teto de LTV.
   useEffect(() => {
@@ -464,6 +531,12 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
       const has = prev.bancos_ids.includes(id);
       if (prev.sistema_amortizacao === "P" && !has && banco && !aceitaPrice(banco)) {
         toast.info("No sistema PRICE, apenas Bradesco e Santander podem ser selecionados.");
+        return prev;
+      }
+      if (!has && banco && !aceitaBancoNaOperacao(banco)) {
+        toast.info(
+          `${restricaoEspecial.motivo}: apenas Bradesco opera essa modalidade.`,
+        );
         return prev;
       }
       // Em "Nova Proposta" a seleção é única: o banco escolhido é o que
@@ -823,6 +896,9 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
     concluidos,
     bancos: bancos as Banco[] | undefined,
     aceitaPrice,
+    aceitaBancoNaOperacao,
+    restricaoEspecial,
+    prazoMaximo,
     // valores calculados
     ltvMax,
     financiamentoMaximo,

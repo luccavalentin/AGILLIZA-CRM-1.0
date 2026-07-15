@@ -34,6 +34,8 @@ export function SecaoOperacaoImovel({ ctx }: { ctx: SimulacaoCompletaCtx }) {
     entradaMinimaEfetiva,
     financiamentoExcedido,
     maxPrazoIdade,
+    prazoMaximo,
+    restricaoEspecial,
     aplicarEntradaSugerida,
     aplicarPorFinanciamento,
     aplicarPorEntrada,
@@ -50,6 +52,14 @@ export function SecaoOperacaoImovel({ ctx }: { ctx: SimulacaoCompletaCtx }) {
 
   return (
     <section className="space-y-4">
+      {restricaoEspecial.ativo && (
+        <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs leading-relaxed text-amber-900 dark:text-amber-200">
+          <strong>{restricaoEspecial.motivo}:</strong> financiamento máx.{" "}
+          {Math.round(restricaoEspecial.ltvMax * 100)}% (entrada mín. de{" "}
+          {Math.round((1 - restricaoEspecial.ltvMax) * 100)}%), prazo máx. de{" "}
+          {restricaoEspecial.prazoMax} meses, operado apenas pelo Bradesco.
+        </div>
+      )}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <Campo label={<>Produto <Ast /></>}>
           <Select value={f.produto} onValueChange={(v) => set("produto", v)}>
@@ -271,7 +281,7 @@ export function SecaoOperacaoImovel({ ctx }: { ctx: SimulacaoCompletaCtx }) {
           <Input
             type="number"
             min={60}
-            max={maxPrazoIdade ?? 420}
+            max={prazoMaximo ?? 420}
             step={12}
             value={f.prazo || ""}
             onChange={(e) => set("prazo", Number(e.target.value))}
@@ -279,6 +289,11 @@ export function SecaoOperacaoImovel({ ctx }: { ctx: SimulacaoCompletaCtx }) {
             onWheel={(e) => (e.target as HTMLInputElement).blur()}
             aria-invalid={!!erros.prazo}
           />
+          {restricaoEspecial.ativo && (
+            <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">
+              {restricaoEspecial.motivo}: máx. {restricaoEspecial.prazoMax} meses.
+            </p>
+          )}
           {maxPrazoIdade != null && (
             <p className="mt-1 text-xs text-muted-foreground">
               Máximo para a idade: {maxPrazoIdade} meses ({formatarMeses(maxPrazoIdade)})
