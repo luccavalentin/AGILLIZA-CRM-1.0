@@ -26,10 +26,7 @@ import { criarProposta, enviarPropostaHomeFin } from "@/lib/propostas/propostas.
 import { formatBRL, formatPercent } from "@/lib/simulacao/format";
 import { corDoBanco } from "@/lib/bancos/cores";
 import { extrairDetalheBanco } from "@/lib/simulacao/detalhe-banco";
-import {
-  parcelaExigidaPeloBanco,
-  rendaMinimaParaParcela,
-} from "@/lib/simulacao/renda";
+import { rendaMinimaDoBanco } from "@/lib/simulacao/renda";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -43,13 +40,6 @@ function totalFinanciado(b: any): number | null {
   return d?.financiamentoTotal ?? d?.valorFinanciamento ?? b?.valor_financiamento_max ?? null;
 }
 
-function rendaMinimaDoBanco(b: any): number | null {
-  const d = extrairDetalheBanco(b?.raw_response);
-  if (d?.rendaMinimaExigida && d.rendaMinimaExigida > 0) return d.rendaMinimaExigida;
-  const parcela = parcelaExigidaPeloBanco(b);
-  if (!parcela) return null;
-  return rendaMinimaParaParcela(parcela);
-}
 
 async function baixarPdfLinha(simulacao: any, banco: any) {
   try {
