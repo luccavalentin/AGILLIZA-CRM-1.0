@@ -340,6 +340,24 @@ export function ResultadoInlineCompleta({ simulacaoId, onFechar }: Props) {
 
                       <div className="mt-3 flex items-center justify-end gap-2">
                         <DetalheBancoDialog banco={b} simulacao={s} />
+                        {b.status_banco === "simulada" && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={async () => {
+                              try {
+                                const { baixarSimulacaoDetalhadaPDF } = await import("@/lib/simulacao/simulacao-pdf");
+                                baixarSimulacaoDetalhadaPDF({ simulacao: s, bancos: [b] });
+                              } catch (e) {
+                                console.error(e);
+                                toast.error("Não foi possível gerar o PDF.");
+                              }
+                            }}
+                            title="Baixar PDF deste banco"
+                          >
+                            <Download className="mr-1 h-4 w-4" /> PDF
+                          </Button>
+                        )}
                         {b.status_banco === "erro" ? (
                           <Button
                             size="sm"
