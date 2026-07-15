@@ -109,7 +109,7 @@ function Perfil() {
       linha("E-mail", c.email ?? "—");
       linha("Telefone", c.telefone_celular ?? "—");
       linha("UF de interesse", c.uf_interesse ?? "—");
-      if (c.created_at) linha("Cliente desde", new Date(c.created_at).toLocaleDateString("pt-BR"));
+      if (c.created_at) linha("Cliente desde", new Date(c.created_at).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" }));
       y += 8;
 
       titulo("Documentos");

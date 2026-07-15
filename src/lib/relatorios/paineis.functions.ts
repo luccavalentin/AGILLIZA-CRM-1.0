@@ -86,20 +86,20 @@ export interface PanelDados {
   volumePorBanco?: PanelDistribuicao;
 }
 
-const brl = (v: number) => (v || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const brl = (v: number) => (v || 0).toLocaleString("pt-BR", {  style: "currency", currency: "BRL" });
 const brlCompacto = (v: number) => {
   const n = v || 0;
   // Mantém uma casa decimal em milhares/milhões para não distorcer o valor
   // real (ex.: R$ 615.300 vira "R$ 615,3 mil", não "R$ 615 mil").
   if (Math.abs(n) >= 1_000_000)
-    return `R$ ${(n / 1_000_000).toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 2 })} mi`;
+    return `R$ ${(n / 1_000_000).toLocaleString("pt-BR", {  minimumFractionDigits: 1, maximumFractionDigits: 2 })} mi`;
   if (Math.abs(n) >= 1_000)
-    return `R$ ${(n / 1_000).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} mil`;
+    return `R$ ${(n / 1_000).toLocaleString("pt-BR", {  maximumFractionDigits: 1 })} mil`;
   return brl(n);
 };
 const int = (v: number) => (v || 0).toLocaleString("pt-BR");
 const pct = (v: number) =>
-  `${Math.min(100, Math.max(0, v || 0)).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`;
+  `${Math.min(100, Math.max(0, v || 0)).toLocaleString("pt-BR", {  maximumFractionDigits: 1 })}%`;
 
 function topItens(map: Map<string, number>, limite = 8) {
   return [...map.entries()]
@@ -156,7 +156,7 @@ function construirBuckets(deISO: string, ateISO: string) {
   const rotulo = (chave: string) => {
     if (porMes) {
       const [y, m] = chave.split("-");
-      return new Date(Number(y), Number(m) - 1, 1).toLocaleDateString("pt-BR", { month: "short" });
+      return new Date(Number(y), Number(m) - 1, 1).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo",   month: "short" });
     }
     const [, m, d] = chave.split("-");
     return `${d}/${m}`;

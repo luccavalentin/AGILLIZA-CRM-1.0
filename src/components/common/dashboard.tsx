@@ -48,7 +48,7 @@ function DeltaBadge({ delta }: { delta: MetricDelta }) {
       <Icon className="h-3 w-3" />
       {delta.dir === "flat"
         ? "estável"
-        : `${sinal}${delta.pct.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}%`}
+        : `${sinal}${delta.pct.toLocaleString("pt-BR", {  maximumFractionDigits: 0 })}%`}
 
     </span>
   );
@@ -215,7 +215,7 @@ export function ConversionFunnel({ etapas }: { etapas: { label: string; valor: n
               <div className="mb-1 flex items-center justify-between gap-2">
                 <span className="truncate text-xs font-medium text-foreground">{e.label}</span>
                 <span className="shrink-0 font-mono text-xs tabular-nums text-muted-foreground">
-                  {pctBase.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}%
+                  {pctBase.toLocaleString("pt-BR", {  maximumFractionDigits: 0 })}%
                 </span>
               </div>
               <div className="flex h-9 items-center">

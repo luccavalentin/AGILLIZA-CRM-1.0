@@ -73,7 +73,7 @@ export const Route = createFileRoute("/_authenticated/operacional/demandas_/$id"
 
 function fmtData(iso: string | null): string {
   if (!iso) return "—";
-  return new Date(iso).toLocaleString("pt-BR", {
+  return new Date(iso).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo",  
     day: "2-digit",
     month: "2-digit",
     hour: "2-digit",
@@ -82,7 +82,7 @@ function fmtData(iso: string | null): string {
 }
 
 function fmtHora(iso: string): string {
-  return new Date(iso).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  return new Date(iso).toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo",   hour: "2-digit", minute: "2-digit" });
 }
 
 function fmtDia(iso: string): string {
@@ -96,7 +96,7 @@ function fmtDia(iso: string): string {
     a.getDate() === b.getDate();
   if (mesmoDia(d, hoje)) return "Hoje";
   if (mesmoDia(d, ontem)) return "Ontem";
-  return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" });
+  return d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo",   day: "2-digit", month: "long", year: "numeric" });
 }
 
 function iniciaisChat(nome?: string | null): string {

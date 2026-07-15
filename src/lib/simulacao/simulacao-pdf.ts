@@ -46,14 +46,14 @@ const MARGIN = 36;
 
 function pctTxt(v: number | null | undefined, sufixo = "a.a.", casas = 4): string {
   if (v == null || Number.isNaN(v)) return "—";
-  return `${v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: casas })}% ${sufixo}`.trim();
+  return `${v.toLocaleString("pt-BR", {  minimumFractionDigits: 2, maximumFractionDigits: casas })}% ${sufixo}`.trim();
 }
 
 function dataTxt(v: unknown): string {
   if (!v) return "—";
   const d = new Date(String(v).length <= 10 ? `${v}T00:00:00` : String(v));
   if (Number.isNaN(d.getTime())) return String(v);
-  return d.toLocaleDateString("pt-BR");
+  return d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
 }
 
 function produtoLabel(s: any): string {

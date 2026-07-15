@@ -161,7 +161,7 @@ const TAB_LABELS: Partial<Record<Tab, string>> = {
 function formatarDataHora(iso: string): string {
   const d = new Date(iso.includes("T") ? iso : iso.replace(" ", "T"));
   if (isNaN(d.getTime())) return "—";
-  return d.toLocaleString("pt-BR", {
+  return d.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo",  
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
@@ -206,6 +206,37 @@ function Pagina() {
     },
     refetchOnWindowFocus: true,
   });
+
+  // Polling automático silencioso da API do banco (Itaú, Santander, Bradesco…).
+  // Enquanto a proposta estiver em análise ativa, dispara sincronização a cada 60s
+  // para trazer o retorno do banco sem depender do clique manual em "Sincronizar".
+  const sincronizarAutoFn = useServerFn(sincronizarProposta);
+  const propostaStatus = data?.proposta?.status as string | undefined;
+  useEffect(() => {
+    const terminais = ["contrato_emitido", "cancelada", "credito_recusado", "rascunho"];
+    if (!propostaStatus || terminais.includes(propostaStatus)) return;
+    let cancelado = false;
+    const tick = async () => {
+      if (cancelado) return;
+      try {
+        const r = await sincronizarAutoFn({ data: { proposta_id: id } });
+        if (!cancelado && r?.atualizado) {
+          qc.invalidateQueries({ queryKey: ["proposta", id] });
+        }
+      } catch {
+        // silencioso: mantém o botão manual como fallback visível ao usuário.
+      }
+    };
+    // Primeiro disparo imediato após montar, depois a cada 60s.
+    const t0 = setTimeout(tick, 2_000);
+    const iv = setInterval(tick, 60_000);
+    return () => {
+      cancelado = true;
+      clearTimeout(t0);
+      clearInterval(iv);
+    };
+  }, [id, propostaStatus, sincronizarAutoFn, qc]);
+
 
   // Ao chegar de "Criar proposta", abre o cadastro complementar automaticamente
   // e marca a proposta para envio automático assim que o formulário for fechado.

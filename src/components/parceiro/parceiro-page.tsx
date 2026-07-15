@@ -51,5 +51,5 @@ export function formatBRL(valor: number | null | undefined): string {
 
 export function formatData(iso: string | null | undefined): string {
   if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("pt-BR");
+  return new Date(iso).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
 }

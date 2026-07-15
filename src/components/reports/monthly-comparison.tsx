@@ -20,7 +20,7 @@ const tooltipStyle = {
 };
 
 const intFmt = (v: number) => Number(v).toLocaleString("pt-BR");
-const pctFmt = (v: number) => `${Number(v).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`;
+const pctFmt = (v: number) => `${Number(v).toLocaleString("pt-BR", {  maximumFractionDigits: 1 })}%`;
 
 /** Variação percentual do último mês vs. o penúltimo. */
 function variacao(serie: number[]): { texto: string; tone: "up" | "down" | "flat" } {
@@ -31,7 +31,7 @@ function variacao(serie: number[]): { texto: string; tone: "up" | "down" | "flat
   const delta = ((atual - anterior) / Math.abs(anterior)) * 100;
   const tone = delta > 0.5 ? "up" : delta < -0.5 ? "down" : "flat";
   const sinal = delta > 0 ? "+" : "";
-  return { texto: `${sinal}${delta.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`, tone };
+  return { texto: `${sinal}${delta.toLocaleString("pt-BR", {  maximumFractionDigits: 1 })}%`, tone };
 }
 
 function VarChip({ serie }: { serie: number[] }) {

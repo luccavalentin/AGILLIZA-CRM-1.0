@@ -1280,7 +1280,7 @@ function Pagina() {
                       <span className="inline-flex items-center gap-1">
                         <CalendarCheck className="size-3" />
                         {ct.contrato_emitido_em
-                          ? new Date(ct.contrato_emitido_em).toLocaleDateString("pt-BR")
+                          ? new Date(ct.contrato_emitido_em).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })
                           : "—"}
                       </span>
                       {ct.nome_banco && (
@@ -1322,7 +1322,7 @@ function Pagina() {
                   </span>
                   {ct.valor_financiamento != null && (
                     <span className="shrink-0 text-xs font-semibold tabular-nums text-foreground">
-                      {`R$ ${Number(ct.valor_financiamento).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`}
+                      {`R$ ${Number(ct.valor_financiamento).toLocaleString("pt-BR", {  minimumFractionDigits: 2 })}`}
                     </span>
                   )}
                   <DropdownMenu>

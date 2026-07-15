@@ -11,7 +11,7 @@ export function formatCell(value: ReportCell, format?: ReportColumn["format"]): 
     case "int":
       return Number(value).toLocaleString("pt-BR");
     case "pct":
-      return `${Number(value).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`;
+      return `${Number(value).toLocaleString("pt-BR", {  maximumFractionDigits: 1 })}%`;
     case "date":
       return formatData(String(value));
     default:

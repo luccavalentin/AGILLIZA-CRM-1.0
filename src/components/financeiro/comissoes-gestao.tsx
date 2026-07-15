@@ -45,7 +45,7 @@ import {
 } from "@/lib/admin/comissoes.functions";
 
 const brl = (n: number) =>
-  n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 2 });
+  n.toLocaleString("pt-BR", {  style: "currency", currency: "BRL", minimumFractionDigits: 2 });
 
 function produtoLabel(v: string | null) {
   return PRODUTOS_COMISSAO.find((p) => p.v === v)?.l ?? v ?? "Todos";

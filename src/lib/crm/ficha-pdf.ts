@@ -19,14 +19,14 @@ function titulo(s: string | null | undefined): string {
 function brl(n: number | null | undefined): string {
   return n == null || n === ("" as any)
     ? "—"
-    : Number(n).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+    : Number(n).toLocaleString("pt-BR", {  style: "currency", currency: "BRL" });
 }
 
 function fmtData(v: string | null | undefined): string {
   if (!v) return "—";
   const d = new Date(v);
   if (Number.isNaN(d.getTime())) return String(v);
-  return d.toLocaleDateString("pt-BR");
+  return d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
 }
 
 function docLabel(tipo: string | null | undefined): string {

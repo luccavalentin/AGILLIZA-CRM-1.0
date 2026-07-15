@@ -4,7 +4,7 @@ import type { EtapaCliente } from "@/lib/portal/cliente.functions";
 
 function formatarData(iso: string | null) {
   if (!iso) return null;
-  return new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
+  return new Date(iso).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo",   day: "2-digit", month: "short" });
 }
 
 function formatarDataLonga(iso: string | null) {
@@ -12,7 +12,7 @@ function formatarDataLonga(iso: string | null) {
   // Datas civis (YYYY-MM-DD) sem conversão de fuso.
   const [ano, mes, dia] = iso.slice(0, 10).split("-").map(Number);
   if (!ano || !mes || !dia) return null;
-  return new Date(ano, mes - 1, dia).toLocaleDateString("pt-BR", {
+  return new Date(ano, mes - 1, dia).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo",  
     day: "2-digit",
     month: "long",
     year: "numeric",

@@ -48,7 +48,7 @@ export const filtrosPadrao = (): ReportFiltros => ({ periodo: "mes", escopo: "mi
 /** Resolve um intervalo [de, ate] em ISO (yyyy-mm-dd) a partir do filtro de período. */
 export function resolverIntervalo(f: ReportFiltros): { de: string; ate: string } {
   // "Hoje" ancorado no fuso America/Sao_Paulo (o servidor roda em UTC).
-  const hojeStr = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+  const hojeStr = new Date().toLocaleDateString("en-CA");
   const [hy, hm, hd] = hojeStr.split("-").map(Number);
   const hoje = new Date(hy, hm - 1, hd);
   const iso = (d: Date) =>

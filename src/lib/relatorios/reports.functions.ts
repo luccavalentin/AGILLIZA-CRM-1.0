@@ -34,9 +34,9 @@ const filtrosSchema = z.object({
   }),
 });
 
-const brl = (v: number) => (v || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const brl = (v: number) => (v || 0).toLocaleString("pt-BR", {  style: "currency", currency: "BRL" });
 const int = (v: number) => (v || 0).toLocaleString("pt-BR");
-const pct = (v: number) => `${(v || 0).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`;
+const pct = (v: number) => `${(v || 0).toLocaleString("pt-BR", {  maximumFractionDigits: 1 })}%`;
 
 /** Rótulos oficiais dos status de proposta (espelha components/propostas/status.ts). */
 const STATUS_PROPOSTA_LABEL: Record<string, string> = {
@@ -315,7 +315,7 @@ export const runReport = createServerFn({ method: "POST" })
 
 
     async function comparativoMensalPropostas(): Promise<ComparativoMensal | undefined> {
-      const hojeStr = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+      const hojeStr = new Date().toLocaleDateString("en-CA");
       const [hy, hm] = hojeStr.split("-").map(Number);
       const inicio = new Date(hy, hm - 1 - 5, 1); // 1º dia, 5 meses atrás
       const isoDia = (d: Date) =>

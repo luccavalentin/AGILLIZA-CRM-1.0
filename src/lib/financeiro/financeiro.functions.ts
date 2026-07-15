@@ -105,7 +105,7 @@ export const listarContas = createServerFn({ method: "GET" })
 
     if (data.status === "atrasada") {
       // "atrasada" é um status derivado (não existe na coluna): abertas/parciais vencidas.
-      const hojeStr = new Date().toLocaleDateString("sv", { timeZone: "America/Sao_Paulo" });
+      const hojeStr = new Date().toLocaleDateString("sv");
       query = query.in("status", ["aberta", "parcial"] as any).lt("vencimento", hojeStr);
     } else if (data.status) {
       query = query.eq("status", data.status as any);
@@ -173,7 +173,7 @@ export const resumoContas = createServerFn({ method: "GET" })
       .select("vencimento, valor, valor_pago, status");
 
     if (data.status === "atrasada") {
-      const hojeStr = new Date().toLocaleDateString("sv", { timeZone: "America/Sao_Paulo" });
+      const hojeStr = new Date().toLocaleDateString("sv");
       query = query.in("status", ["aberta", "parcial"] as any).lt("vencimento", hojeStr);
     } else if (data.status) {
       query = query.eq("status", data.status as any);
@@ -1126,7 +1126,7 @@ export const obterFluxoCaixaAnalitico = createServerFn({ method: "GET" })
   .handler(async ({ context, data }): Promise<FluxoAnalitico> => {
     const { supabase } = context;
     const abertos = ["aberta", "parcial"] as any;
-    const hojeStr = new Date().toLocaleDateString("sv", { timeZone: "America/Sao_Paulo" });
+    const hojeStr = new Date().toLocaleDateString("sv");
 
     const [rec, pay, realiz] = await Promise.all([
       supabase

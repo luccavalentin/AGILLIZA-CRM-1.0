@@ -35,7 +35,7 @@ export const Route = createFileRoute("/_authenticated/admin/compras")({
   component: Pagina,
 });
 
-const brl = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const brl = (n: number) => n.toLocaleString("pt-BR", {  style: "currency", currency: "BRL" });
 
 function statusVariant(s: string): "default" | "secondary" | "destructive" | "outline" {
   if (s === "aprovada") return "default";
