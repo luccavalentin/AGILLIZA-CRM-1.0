@@ -636,10 +636,12 @@ export const listarPainel = createServerFn({ method: "GET" })
     // Proposta mais recente por cliente (para comunicar com o kanban de propostas).
     const propostaPorCliente = new Map<string, { numero_proposta: string | null; status: string | null; nome_banco: string | null }>();
     if (idsClientes.length > 0) {
+      // Só considera propostas ATIVAS (não excluídas) para exibir vínculo no card.
       const { data: props } = await supabase
         .from("propostas")
         .select("cliente_id, numero_proposta, status, nome_banco, created_at")
         .in("cliente_id", idsClientes)
+        .is("deleted_at", null)
         .order("created_at", { ascending: false });
       for (const p of props ?? []) {
         const cid = (p as any).cliente_id as string | null;
