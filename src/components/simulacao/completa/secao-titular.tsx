@@ -31,8 +31,6 @@ export function SecaoTitular({ ctx }: { ctx: SimulacaoCompletaCtx }) {
     puxarConjugeDoCRM,
     selecionarClienteCRM,
     limparTitular,
-    melhorTaxaAno,
-    rendaConsiderada,
   } = ctx;
 
   return (
