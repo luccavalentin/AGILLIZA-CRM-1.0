@@ -63,6 +63,10 @@ export interface BancoRendaApi {
   status_banco?: string | null;
   valor_parcela?: number | null;
   raw_response?: unknown;
+  /** Sistema exibido no card do banco (definido pela simulação). */
+  _sistema?: "SAC" | "PRICE" | string | null;
+  /** Sistema salvo no banco após retorno da API. */
+  sistema_amortizacao_banco?: string | null;
 }
 
 function numeroPositivo(v: unknown): number | null {
@@ -74,6 +78,31 @@ function unwrapApiResponse(raw: unknown): Record<string, any> | null {
   if (!raw || typeof raw !== "object") return null;
   const r = raw as Record<string, any>;
   return (r.simulacao ?? r.data ?? r.resultado ?? r) as Record<string, any>;
+}
+
+/** Retorna true quando o banco está simulando em tabela PRICE. */
+export function isBancoPrice(b: BancoRendaApi): boolean {
+  const raw = unwrapApiResponse(b.raw_response);
+  const detalhe = extrairDetalheBanco(raw ?? b.raw_response);
+  const candidatos: Array<unknown> = [
+    b._sistema,
+    b.sistema_amortizacao_banco,
+    detalhe?.sistemaAmortizacao,
+    raw?.codigoSistemaAmortizacaoBanco?.id,
+    raw?.codigoSistemaAmortizacaoBanco,
+  ];
+  for (const c of candidatos) {
+    if (c == null) continue;
+    const s = String(c).trim().toUpperCase();
+    if (s === "P" || s.startsWith("PRICE")) return true;
+    if (s === "S" || s.startsWith("SAC")) return false;
+  }
+  return false;
+}
+
+/** Teto de comprometimento de renda aplicável ao banco (30% SAC / 15% PRICE). */
+export function tetoDoBanco(b: BancoRendaApi): number {
+  return isBancoPrice(b) ? COMPROMETIMENTO_MAX_PRICE : COMPROMETIMENTO_MAX;
 }
 
 /** Parcela que a integração retornou para o banco, já com os encargos do banco. */
@@ -90,6 +119,28 @@ export function parcelaExigidaPeloBanco(banco: BancoRendaApi): number | null {
 }
 
 /**
+ * Renda mínima exigida pelo banco, aplicando o teto correto por sistema:
+ *   SAC   → parcela / 30%
+ *   PRICE → parcela / 15%  (regra padrão para todas as IFs que ofertam PRICE)
+ *
+ * Em PRICE a renda devolvida pela API do banco é ignorada (geralmente vem
+ * calculada em SAC); sempre recomputamos com o teto de 15% sobre a parcela.
+ */
+export function rendaMinimaDoBanco(banco: BancoRendaApi): number | null {
+  const parcela = parcelaExigidaPeloBanco(banco);
+  if (!parcela) return null;
+  const price = isBancoPrice(banco);
+  const teto = price ? COMPROMETIMENTO_MAX_PRICE : COMPROMETIMENTO_MAX;
+  if (!price) {
+    const raw = unwrapApiResponse(banco.raw_response);
+    const detalhe = extrairDetalheBanco(raw ?? banco.raw_response);
+    const apiRenda = numeroPositivo(detalhe?.rendaMinimaExigida);
+    if (apiRenda) return apiRenda;
+  }
+  return rendaMinimaParaParcela(parcela, teto);
+}
+
+/**
  * Renda exigida a partir dos retornos reais dos bancos.
  * Quando houver divergência entre instituições, usa a maior renda exigida.
  */
@@ -101,13 +152,8 @@ export function rendaMinimaPelosBancos(
     .filter((b) => !b.status_banco || b.status_banco === "simulada")
     .map((b) => {
       const parcela = parcelaExigidaPeloBanco(b);
-      if (!parcela) return null;
-      // Se o banco devolveu a renda mínima diretamente (ex.: Bradesco em
-      // valorRendaLiquidaMinimaExigida), usamos o valor exato da API.
-      const raw = unwrapApiResponse(b.raw_response);
-      const detalhe = extrairDetalheBanco(raw ?? b.raw_response);
-      const rendaMinima =
-        numeroPositivo(detalhe?.rendaMinimaExigida) ?? rendaMinimaParaParcela(parcela);
+      const rendaMinima = rendaMinimaDoBanco(b);
+      if (!parcela || !rendaMinima) return null;
       return {
         bancoNome: b.nome_banco ?? null,
         primeiraParcela: parcela,
@@ -129,6 +175,7 @@ export function rendaMinimaPelosBancos(
     fonte: "api_banco",
   };
 }
+
 
 /** Renda mínima a partir de uma parcela conhecida. */
 export function rendaMinimaParaParcela(
