@@ -304,6 +304,7 @@ function Pagina() {
   const [analistaFiltro, setAnalistaFiltro] = useState<string>("todos");
   const [corretorFiltro, setCorretorFiltro] = useState<string>("todos");
   const [imobiliariaFiltro, setImobiliariaFiltro] = useState<string>("todos");
+  const [comercialFiltro, setComercialFiltro] = useState<string>("todos");
   const [pagina, setPagina] = useState(1);
   const [porPagina, setPorPagina] = useState(10);
 
@@ -347,7 +348,18 @@ function Pagina() {
         .sort((a, b) => a.label.localeCompare(b.label)),
     [colegasData],
   );
-  const analistas = responsaveis; // Analista = criador do cliente (mesma base de perfis)
+  const filtrarColegasPor = (papel: string) =>
+    (colegasData ?? [])
+      .filter((c) => {
+        if (!c.nome) return false;
+        const tipo = (c as any).tipo_pessoa ?? null;
+        const roles = ((c as any).roles ?? []) as string[];
+        return tipo === papel || roles.includes(papel);
+      })
+      .map((c) => ({ id: c.id, label: c.nome as string }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+  const analistas = useMemo<OpcaoId[]>(() => filtrarColegasPor("analista"), [colegasData]);
+  const comerciais = useMemo<OpcaoId[]>(() => filtrarColegasPor("comercial"), [colegasData]);
   const clientes = useMemo<OpcaoId[]>(
     () =>
       (clientesData ?? [])
@@ -359,7 +371,7 @@ function Pagina() {
   const corretores = useMemo<OpcaoId[]>(
     () =>
       (parceirosData ?? [])
-        .filter((p) => (p.tipo_pessoa ?? "PF") === "PF" && (p.nome || p.razao_social))
+        .filter((p) => (p.tipo_pessoa ?? "") === "corretor" || ((p.tipo_pessoa ?? "PF") === "PF" && (p.nome || p.razao_social)))
         .map((p) => ({ id: p.profile_id ?? p.id, label: (p.nome ?? p.razao_social) as string }))
         .sort((a, b) => a.label.localeCompare(b.label)),
     [parceirosData],
@@ -367,7 +379,8 @@ function Pagina() {
   const imobiliarias = useMemo<OpcaoId[]>(
     () =>
       (parceirosData ?? [])
-        .filter((p) => p.tipo_pessoa === "PJ" && (p.razao_social || p.nome))
+        .filter((p) => p.tipo_pessoa === "imobiliaria" || p.tipo_pessoa === "PJ")
+        .filter((p) => p.razao_social || p.nome)
         .map((p) => ({ id: p.profile_id ?? p.id, label: (p.razao_social ?? p.nome) as string }))
         .sort((a, b) => a.label.localeCompare(b.label)),
     [parceirosData],
@@ -382,9 +395,10 @@ function Pagina() {
       if (analistaFiltro !== "todos" && d.analista_id !== analistaFiltro) return false;
       if (corretorFiltro !== "todos" && d.corretor_id !== corretorFiltro) return false;
       if (imobiliariaFiltro !== "todos" && d.imobiliaria_id !== imobiliariaFiltro) return false;
+      if (comercialFiltro !== "todos" && (d as any).comercial_id !== comercialFiltro) return false;
       return true;
     });
-  }, [todos, statusFiltro, prioridadeFiltro, responsavelFiltro, clienteFiltro, analistaFiltro, corretorFiltro, imobiliariaFiltro]);
+  }, [todos, statusFiltro, prioridadeFiltro, responsavelFiltro, clienteFiltro, analistaFiltro, corretorFiltro, imobiliariaFiltro, comercialFiltro]);
 
   const stats = useMemo(() => {
     const base = todos;
@@ -458,6 +472,7 @@ function Pagina() {
     setAnalistaFiltro("todos");
     setCorretorFiltro("todos");
     setImobiliariaFiltro("todos");
+    setComercialFiltro("todos");
     setPagina(1);
   }
 
@@ -649,6 +664,13 @@ function Pagina() {
               onValueChange={(v) => { setImobiliariaFiltro(v); setPagina(1); }}
               placeholder="Todas"
               options={imobiliarias}
+            />
+            <FilterCombo
+              label="Comercial Agilliza"
+              value={comercialFiltro}
+              onValueChange={(v) => { setComercialFiltro(v); setPagina(1); }}
+              placeholder="Todos"
+              options={comerciais}
             />
           </div>
         </div>

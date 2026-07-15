@@ -42,6 +42,8 @@ export interface DemandaItem {
   nome_corretor: string | null;
   imobiliaria_id: string | null;
   nome_imobiliaria: string | null;
+  comercial_id: string | null;
+  nome_comercial: string | null;
   prazo_sla: string | null;
   sla_inicio: string;
   concluida_em: string | null;
@@ -115,6 +117,7 @@ export const listarDemandas = createServerFn({ method: "GET" })
     const clienteIds = [...new Set(rows.map((r) => r.cliente_id).filter(Boolean) as string[])];
     const corretorPorCliente = new Map<string, string>();
     const imobiliariaPorCliente = new Map<string, string>();
+    const comercialPorCliente = new Map<string, string>();
     if (clienteIds.length > 0) {
       const { data: vinculos } = await supabase
         .from("cliente_parceiros")
@@ -127,6 +130,9 @@ export const listarDemandas = createServerFn({ method: "GET" })
         if (v.tipo_vinculo === "imobiliaria" && !imobiliariaPorCliente.has(v.cliente_id)) {
           imobiliariaPorCliente.set(v.cliente_id, v.parceiro_id);
         }
+        if (v.tipo_vinculo === "comercial_agilliza" && !comercialPorCliente.has(v.cliente_id)) {
+          comercialPorCliente.set(v.cliente_id, v.parceiro_id);
+        }
       });
     }
 
@@ -135,6 +141,7 @@ export const listarDemandas = createServerFn({ method: "GET" })
       ...rows.map((r) => r.clientes?.criador_id),
       ...corretorPorCliente.values(),
       ...imobiliariaPorCliente.values(),
+      ...comercialPorCliente.values(),
     ];
     const nomes = await nomesPorId(supabase, idsPerfil);
     const nm = (id: string | null | undefined) => (id ? (nomes.get(id) ?? null) : null);
@@ -143,6 +150,7 @@ export const listarDemandas = createServerFn({ method: "GET" })
       const analistaId = r.clientes?.criador_id ?? null;
       const corretorId = r.cliente_id ? (corretorPorCliente.get(r.cliente_id) ?? null) : null;
       const imobiliariaId = r.cliente_id ? (imobiliariaPorCliente.get(r.cliente_id) ?? null) : null;
+      const comercialId = r.cliente_id ? (comercialPorCliente.get(r.cliente_id) ?? null) : null;
       return {
         id: r.id,
         numero: r.numero,
@@ -160,6 +168,8 @@ export const listarDemandas = createServerFn({ method: "GET" })
         nome_corretor: nm(corretorId),
         imobiliaria_id: imobiliariaId,
         nome_imobiliaria: nm(imobiliariaId),
+        comercial_id: comercialId,
+        nome_comercial: nm(comercialId),
         prazo_sla: r.prazo_sla,
         sla_inicio: r.sla_inicio,
         concluida_em: r.concluida_em ?? null,
@@ -168,6 +178,7 @@ export const listarDemandas = createServerFn({ method: "GET" })
       };
     });
   });
+
 
 export const obterDemanda = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
