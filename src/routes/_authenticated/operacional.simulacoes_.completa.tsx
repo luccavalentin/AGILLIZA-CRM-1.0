@@ -22,6 +22,7 @@ import { SecaoConjuge } from "@/components/simulacao/completa/secao-conjuge";
 import { SecaoBancos } from "@/components/simulacao/completa/secao-bancos";
 import { SecaoConsentimentos } from "@/components/simulacao/completa/secao-consentimentos";
 import { ResultadoInlineCompleta } from "@/components/simulacao/completa/resultado-inline";
+import { ResultadoInlineAmbos } from "@/components/simulacao/completa/resultado-inline-ambos";
 import { formatBRL } from "@/lib/simulacao/format";
 import { useSimulacaoCompleta } from "@/lib/simulacao/use-simulacao-completa";
 
@@ -218,18 +219,26 @@ function Pagina() {
 
       {(simulacaoResultadoId || simulacaoResultadoIdPrice) && !modoProposta && (
         <div ref={resultadoRef} className="scroll-mt-4 space-y-4">
-          {simulacaoResultadoId && (
+          {simulacaoResultadoId && simulacaoResultadoIdPrice ? (
+            <ResultadoInlineAmbos
+              simulacaoIdSac={simulacaoResultadoId}
+              simulacaoIdPrice={simulacaoResultadoIdPrice}
+              onFechar={() => {
+                fecharResultadoInline();
+                fecharResultadoInlinePrice();
+              }}
+            />
+          ) : simulacaoResultadoId ? (
             <ResultadoInlineCompleta
               simulacaoId={simulacaoResultadoId}
               onFechar={fecharResultadoInline}
             />
-          )}
-          {simulacaoResultadoIdPrice && (
+          ) : simulacaoResultadoIdPrice ? (
             <ResultadoInlineCompleta
               simulacaoId={simulacaoResultadoIdPrice}
               onFechar={fecharResultadoInlinePrice}
             />
-          )}
+          ) : null}
         </div>
       )}
 
