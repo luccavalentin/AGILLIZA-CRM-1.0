@@ -101,7 +101,16 @@ export const listarClientes = createServerFn({ method: "GET" })
       }
 
       if (data.escopo === "minhas") {
-        query = query.eq("responsavel_id", userId);
+        // "Minhas" inclui clientes onde eu sou responsável/criador OU vinculado
+        // como parceiro (imobiliária, corretor, comercial) via cliente_parceiros.
+        const { data: vinc } = await supabase
+          .from("cliente_parceiros")
+          .select("cliente_id")
+          .eq("parceiro_id", userId);
+        const ids = Array.from(new Set((vinc ?? []).map((v: any) => v.cliente_id).filter(Boolean)));
+        const partes = [`responsavel_id.eq.${userId}`, `criador_id.eq.${userId}`];
+        if (ids.length) partes.push(`id.in.(${ids.join(",")})`);
+        query = query.or(partes.join(","));
       }
       if (data.responsavel) {
         query = query.eq("responsavel_id", data.responsavel);
