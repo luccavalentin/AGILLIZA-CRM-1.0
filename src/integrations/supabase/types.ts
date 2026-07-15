@@ -1882,7 +1882,9 @@ export type Database = {
           origem: string
           prazo_sla: string | null
           prioridade: Database["public"]["Enums"]["prioridade_op"]
+          proposta_id: string | null
           responsavel_id: string | null
+          simulacao_id: string | null
           sla_horas: number | null
           sla_inicio: string
           status: Database["public"]["Enums"]["demanda_status"]
@@ -1905,7 +1907,9 @@ export type Database = {
           origem?: string
           prazo_sla?: string | null
           prioridade?: Database["public"]["Enums"]["prioridade_op"]
+          proposta_id?: string | null
           responsavel_id?: string | null
+          simulacao_id?: string | null
           sla_horas?: number | null
           sla_inicio?: string
           status?: Database["public"]["Enums"]["demanda_status"]
@@ -1928,7 +1932,9 @@ export type Database = {
           origem?: string
           prazo_sla?: string | null
           prioridade?: Database["public"]["Enums"]["prioridade_op"]
+          proposta_id?: string | null
           responsavel_id?: string | null
+          simulacao_id?: string | null
           sla_horas?: number | null
           sla_inicio?: string
           status?: Database["public"]["Enums"]["demanda_status"]
@@ -1942,6 +1948,20 @@ export type Database = {
             columns: ["cliente_id"]
             isOneToOne: false
             referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "demandas_proposta_id_fkey"
+            columns: ["proposta_id"]
+            isOneToOne: false
+            referencedRelation: "propostas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "demandas_simulacao_id_fkey"
+            columns: ["simulacao_id"]
+            isOneToOne: false
+            referencedRelation: "simulacoes"
             referencedColumns: ["id"]
           },
         ]
