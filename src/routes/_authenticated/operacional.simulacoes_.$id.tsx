@@ -429,15 +429,26 @@ function Pagina() {
                     <div className="mt-3 flex items-center justify-end gap-2">
                       <DetalheBancoDialog banco={b} simulacao={s} />
                       {b.status_banco === "erro" ? (
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          disabled={reenviandoBanco !== null}
-                          onClick={() => reenviarBanco(b.banco_id)}
-                        >
-                          <RefreshCw className="mr-1 h-4 w-4" />
-                          {reenviandoBanco === b.banco_id ? "Reenviando…" : "Reenviar"}
-                        </Button>
+                        <>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={editar}
+                            title="Abrir simulação para alterar dados"
+                          >
+                            <Pencil className="mr-1 h-4 w-4" />
+                            Editar
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            disabled={reenviandoBanco !== null}
+                            onClick={() => reenviarBanco(b.banco_id)}
+                          >
+                            <RefreshCw className="mr-1 h-4 w-4" />
+                            {reenviandoBanco === b.banco_id ? "Reenviando…" : "Reenviar"}
+                          </Button>
+                        </>
                       ) : (
                         <Button
                           size="sm"
@@ -534,15 +545,26 @@ function Pagina() {
                           <div className="flex items-center justify-end gap-1">
                             <DetalheBancoDialog banco={b} simulacao={s} />
                             {b.status_banco === "erro" ? (
-                              <Button
-                                size="sm"
-                                variant="secondary"
-                                disabled={reenviandoBanco !== null}
-                                onClick={() => reenviarBanco(b.banco_id)}
-                              >
-                                <RefreshCw className="mr-1 h-4 w-4" />
-                                {reenviandoBanco === b.banco_id ? "Reenviando…" : "Reenviar"}
-                              </Button>
+                              <>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={editar}
+                                  title="Abrir simulação para alterar dados"
+                                >
+                                  <Pencil className="mr-1 h-4 w-4" />
+                                  Editar
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="secondary"
+                                  disabled={reenviandoBanco !== null}
+                                  onClick={() => reenviarBanco(b.banco_id)}
+                                >
+                                  <RefreshCw className="mr-1 h-4 w-4" />
+                                  {reenviandoBanco === b.banco_id ? "Reenviando…" : "Reenviar"}
+                                </Button>
+                              </>
                             ) : (
                               <Button
                                 size="sm"
