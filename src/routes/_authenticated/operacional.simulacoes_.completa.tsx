@@ -240,7 +240,7 @@ function Pagina() {
               onFechar={fecharResultadoInlinePrice}
             />
           ) : null}
-          <PainelRendaNecessaria ctx={ctx} />
+          
         </div>
       )}
 
