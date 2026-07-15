@@ -772,7 +772,7 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
       cpf_conjuge: "",
       renda_conjuge: 0,
       data_nascimento_conjuge: "",
-      email_conjuge: "",
+      email_conjuge: EMAIL_PADRAO,
       celular_conjuge: "",
     }));
     setCadastroNome(null);
