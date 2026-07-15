@@ -357,24 +357,34 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [maxPrazoIdade]);
 
-  // Aplica a restrição de Terreno / Imóvel comercial: prazo <=240m e apenas
-  // Bradesco elegível. Filtra bancos selecionados e clampa o prazo.
+  // Aplica restrições operacionais:
+  //  - Terreno/Comercial: prazo <=240m; Terreno filtra apenas Bradesco.
+  //  - Home Equity: remove Itaú dos bancos selecionados.
   useEffect(() => {
-    if (!restricaoEspecial.ativo) return;
+    if (!restricaoEspecial.ativo && !isHomeEquity) return;
     setF((prev) => {
       const bancosFiltrados = prev.bancos_ids.filter((id: string) => {
         const b = (bancos ?? []).find((x) => x.id === id);
         return b ? aceitaBancoNaOperacao(b) : false;
       });
       const prazoClamp =
-        prev.prazo > restricaoEspecial.prazoMax ? restricaoEspecial.prazoMax : prev.prazo;
+        restricaoEspecial.ativo && prev.prazo > restricaoEspecial.prazoMax
+          ? restricaoEspecial.prazoMax
+          : prev.prazo;
       const mudouBancos = bancosFiltrados.length !== prev.bancos_ids.length;
       const mudouPrazo = prazoClamp !== prev.prazo;
       if (!mudouBancos && !mudouPrazo) return prev;
-      if (mudouBancos)
-        toast.info(
-          `${restricaoEspecial.motivo}: apenas Bradesco opera. Outros bancos foram removidos.`,
-        );
+      if (mudouBancos) {
+        if (restricaoEspecial.apenasBradesco) {
+          toast.info(
+            `${restricaoEspecial.motivo}: apenas Bradesco opera. Outros bancos foram removidos.`,
+          );
+        } else if (isHomeEquity) {
+          toast.info("Home Equity: Itaú não opera este produto. Banco removido.");
+        } else {
+          toast.info("Bancos incompatíveis com a operação foram removidos.");
+        }
+      }
       if (mudouPrazo)
         toast.info(
           `${restricaoEspecial.motivo}: prazo ajustado para ${restricaoEspecial.prazoMax} meses.`,
@@ -382,7 +392,7 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
       return { ...prev, bancos_ids: bancosFiltrados, prazo: prazoClamp };
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [restricaoEspecial.ativo, bancos]);
+  }, [restricaoEspecial.ativo, restricaoEspecial.apenasBradesco, isHomeEquity, bancos]);
 
 
   // Mantém as despesas coladas no percentual e respeita o teto de LTV.
