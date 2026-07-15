@@ -1309,27 +1309,26 @@ export const limparVinculoEsteira = createServerFn({ method: "POST" })
     // as simulações/propostas foram originadas por outro analista/escopo — o
     // objetivo é limpar de vez o vínculo da esteira.
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { userId } = context;
+    const agora = new Date().toISOString();
+    const motivo = "Vínculo removido pelo painel do CRM.";
 
-    // Propostas do cliente (para limpar comissões/recebíveis vinculados antes).
-    const { data: props } = await supabaseAdmin
-      .from("propostas")
-      .select("id")
-      .eq("cliente_id", data.cliente_id);
-    const propIds = (props ?? []).map((p: any) => p.id);
-    if (propIds.length > 0) {
-      await supabaseAdmin.from("comissoes").delete().in("proposta_id", propIds);
-      await supabaseAdmin.from("financial_receivables").delete().in("proposta_id", propIds);
-    }
-
+    // Soft delete das propostas ativas do cliente (preserva histórico e permite
+    // restauração na aba "Excluídas"). Não apagamos comissões/recebíveis: eles
+    // permanecem vinculados e voltam a valer caso a proposta seja restaurada.
     const { error: eProp } = await supabaseAdmin
       .from("propostas")
-      .delete()
-      .eq("cliente_id", data.cliente_id);
+      .update({ deleted_at: agora, deleted_by: userId, deleted_motivo: motivo })
+      .eq("cliente_id", data.cliente_id)
+      .is("deleted_at", null);
     if (eProp) throw eProp;
+
+    // Soft delete das simulações ativas do cliente pelo mesmo motivo.
     const { error: eSim } = await supabaseAdmin
       .from("simulacoes")
-      .delete()
-      .eq("cliente_id", data.cliente_id);
+      .update({ deleted_at: agora, deleted_by: userId, deleted_motivo: motivo } as any)
+      .eq("cliente_id", data.cliente_id)
+      .is("deleted_at", null);
     if (eSim) throw eSim;
 
     const { error } = await context.supabase.rpc("cliente_pipeline_definir", {
@@ -1340,6 +1339,7 @@ export const limparVinculoEsteira = createServerFn({ method: "POST" })
     if (error) throw error;
     return { ok: true };
   });
+
 
 
 
