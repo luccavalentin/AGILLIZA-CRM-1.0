@@ -248,7 +248,8 @@ export function ResultadoInlineAmbos({ simulacaoIdSac, simulacaoIdPrice, onFecha
             Comparativo SAC e PRICE lado a lado.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <BaixarPdfsButton dataSac={dataSac} dataPrice={dataPrice} />
           {dataSac && (
             <Button
               variant="outline"
