@@ -377,6 +377,7 @@ export const getPanelDados = createServerFn({ method: "POST" })
             .select(
               "status,valor_financiamento_aprovado,valor_financiamento,nome_banco,created_at,contrato_emitido_em,usuario_responsavel_id",
             )
+            .is("deleted_at", null)
             .or(
               `and(created_at.gte.${de},created_at.lte.${ateFim}),and(contrato_emitido_em.gte.${de},contrato_emitido_em.lte.${ateFim})`,
             )
