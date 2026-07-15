@@ -385,6 +385,7 @@ export function ResultadoInlineAmbos({ simulacaoIdSac, simulacaoIdPrice, onFecha
                           <Download className="mr-1 h-4 w-4" /> PDF
                         </Button>
                       )}
+                      {b.status_banco === "erro" ? (
                         <Button
                           size="sm"
                           variant="secondary"
