@@ -1,0 +1,186 @@
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { Link } from "@tanstack/react-router";
+import { ArrowUpRight, Loader2, ExternalLink } from "lucide-react";
+
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { getPanelDrilldown } from "@/lib/relatorios/paineis.functions";
+import type { ReportFiltros } from "@/lib/relatorios/shared";
+
+const toneClasses: Record<string, string> = {
+  brand: "bg-primary/10 text-primary",
+  success: "bg-success/10 text-success",
+  warning: "bg-warning/10 text-warning",
+  danger: "bg-destructive/10 text-destructive",
+  neutral: "bg-muted text-muted-foreground",
+};
+
+export interface DrilldownContext {
+  metrica: string;
+  valorAtual?: string;
+  filtros: ReportFiltros & { modulo: "visao-geral" | "operacional" };
+}
+
+export function PainelDrilldownDialog({
+  open,
+  onOpenChange,
+  contexto,
+}: {
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  contexto: DrilldownContext | null;
+}) {
+  const drillFn = useServerFn(getPanelDrilldown);
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["panel-drilldown", contexto?.metrica, contexto?.filtros],
+    queryFn: () =>
+      drillFn({
+        data: { ...(contexto!.filtros as any), metrica: contexto!.metrica },
+      }),
+    enabled: open && !!contexto,
+    staleTime: 30_000,
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl gap-0 overflow-hidden p-0">
+        <DialogHeader className="border-b bg-gradient-to-br from-primary/5 via-transparent to-primary/[0.02] px-6 py-4">
+          <DialogTitle className="text-lg font-semibold tracking-tight">
+            {data?.titulo ?? contexto?.metrica ?? "Detalhamento"}
+          </DialogTitle>
+          {(data?.subtitulo || data?.descricao) && (
+            <DialogDescription className="text-sm leading-relaxed text-muted-foreground">
+              {data?.subtitulo}
+              {data?.subtitulo && data?.descricao ? " · " : ""}
+              {data?.descricao}
+            </DialogDescription>
+          )}
+          {(data?.valor || contexto?.valorAtual) && (
+            <div className="mt-2 flex items-baseline gap-2">
+              <span className="font-mono text-3xl font-semibold tabular-nums text-foreground">
+                {data?.valor ?? contexto?.valorAtual}
+              </span>
+              {data?.total && data.total !== data.valor && (
+                <span className="text-xs text-muted-foreground">
+                  Volume total: <span className="font-mono">{data.total}</span>
+                </span>
+              )}
+            </div>
+          )}
+          {data?.formula && data.formula.length > 0 && (
+            <div className="mt-3 flex flex-wrap items-center gap-1.5">
+              {data.formula.map((f, i) => (
+                <span key={i} className="inline-flex items-center gap-1.5">
+                  {i > 0 && (
+                    <span className="text-xs text-muted-foreground">
+                      {i === data.formula!.length - 1 ? "=" : "÷"}
+                    </span>
+                  )}
+                  <Badge
+                    variant="outline"
+                    className={cn(
+                      "gap-1.5 rounded-md border-transparent px-2 py-1 font-mono text-xs tabular-nums",
+                      toneClasses[f.tone ?? "neutral"],
+                    )}
+                  >
+                    <span className="text-[10px] font-medium uppercase tracking-wide opacity-80">
+                      {f.label}
+                    </span>
+                    <span className="font-semibold">{f.valor}</span>
+                  </Badge>
+                </span>
+              ))}
+            </div>
+          )}
+        </DialogHeader>
+
+        <ScrollArea className="max-h-[60vh]">
+          <div className="p-6">
+            {isLoading ? (
+              <div className="flex items-center justify-center py-10 text-sm text-muted-foreground">
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Carregando detalhamento…
+              </div>
+            ) : error ? (
+              <p className="py-8 text-center text-sm text-destructive">
+                Não foi possível carregar o detalhamento.
+              </p>
+            ) : !data || data.itens.length === 0 ? (
+              <p className="py-8 text-center text-sm text-muted-foreground">
+                {data?.descricao ??
+                  "Não há registros específicos para exibir neste indicador dentro do filtro selecionado."}
+              </p>
+            ) : (
+              <ul className="divide-y divide-border/60">
+                {data.itens.map((it, idx) => {
+                  const conteudo = (
+                    <div className="group grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 py-2.5">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium text-foreground">
+                          {it.label}
+                        </p>
+                        {it.sub && (
+                          <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                            {it.sub}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex flex-col items-end gap-0.5">
+                        {it.valor && (
+                          <span className="font-mono text-sm font-semibold tabular-nums text-foreground">
+                            {it.valor}
+                          </span>
+                        )}
+                        {it.data && (
+                          <span className="text-[11px] tabular-nums text-muted-foreground">
+                            {it.data}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                  return (
+                    <li key={idx}>
+                      {it.to ? (
+                        <Link
+                          to={it.to}
+                          className="block -mx-2 rounded-md px-2 transition-colors hover:bg-muted/60"
+                          onClick={() => onOpenChange(false)}
+                        >
+                          {conteudo}
+                        </Link>
+                      ) : (
+                        <div className="-mx-2 px-2">{conteudo}</div>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+        </ScrollArea>
+
+        {data?.linkAbrir && (
+          <div className="flex items-center justify-end gap-2 border-t bg-muted/30 px-6 py-3">
+            <Button asChild size="sm" variant="outline">
+              <Link to={data.linkAbrir} onClick={() => onOpenChange(false)}>
+                <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
+                {data.linkAbrirLabel ?? "Abrir lista completa"}
+                <ArrowUpRight className="ml-1 h-3.5 w-3.5" />
+              </Link>
+            </Button>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}

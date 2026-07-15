@@ -43,6 +43,10 @@ import { listarColegas } from "@/lib/operacional/shared.functions";
 import { getPanelDados } from "@/lib/relatorios/paineis.functions";
 import { getEscopoRelatorios } from "@/lib/relatorios/reports.functions";
 import { PERIODO_LABEL, type Periodo, type Escopo } from "@/lib/relatorios/shared";
+import {
+  PainelDrilldownDialog,
+  type DrilldownContext,
+} from "@/components/reports/painel-drilldown-dialog";
 
 const PERIODOS: Periodo[] = ["hoje", "7d", "15d", "30d", "mes", "mes_anterior", "ano", "custom"];
 
@@ -108,6 +112,7 @@ export function PainelView({
   const [ate, setAte] = useState<string>("");
   const [responsavel, setResponsavel] = useState<string>("todos");
   const escopoTocado = useRef(false);
+  const [drilldown, setDrilldown] = useState<DrilldownContext | null>(null);
 
   const { data: perms } = useQuery({
     queryKey: ["report-escopo"],
@@ -152,6 +157,17 @@ export function PainelView({
     enabled: customPronto,
     staleTime: 30_000,
   });
+
+  const filtrosAtuais = {
+    modulo,
+    periodo,
+    escopo,
+    ...(periodo === "custom" ? { de, ate } : {}),
+    ...(responsavelId ? { responsavel: responsavelId } : {}),
+  } as DrilldownContext["filtros"];
+  const abrirDetalhe = (metrica: string, valorAtual?: string) =>
+    setDrilldown({ metrica, valorAtual, filtros: filtrosAtuais });
+
 
   const tabelasKey = realtimeTabelas.join(",");
   useEffect(() => {
@@ -272,7 +288,7 @@ export function PainelView({
                 tone={h.tone}
                 delta={h.delta}
                 icon={iconeParaMetrica(h.label)}
-                to={linkParaMetrica(h.label)}
+                onDetails={() => abrirDetalhe(h.label, h.valor)}
               />
             ))}
           </div>
@@ -284,7 +300,7 @@ export function PainelView({
                   label={m.label}
                   valor={m.valor}
                   tone={m.tone}
-                  to={linkParaMetrica(m.label)}
+                  onDetails={() => abrirDetalhe(m.label, m.valor)}
                 />
               ))}
             </div>
@@ -495,6 +511,12 @@ export function PainelView({
         </>
 
       )}
+
+      <PainelDrilldownDialog
+        open={!!drilldown}
+        onOpenChange={(o) => !o && setDrilldown(null)}
+        contexto={drilldown}
+      />
     </div>
   );
 }

@@ -263,6 +263,7 @@ export function HeroMetric({
   icon: Icon,
   to,
   delta,
+  onDetails,
 }: {
   label: string;
   valor: string;
@@ -271,12 +272,15 @@ export function HeroMetric({
   icon?: LucideIcon;
   to?: string;
   delta?: MetricDelta;
+  /** Se fornecido, o card vira um botão que abre o detalhamento em modal. */
+  onDetails?: () => void;
 }) {
+  const clicavel = !!onDetails || !!to;
   const conteudo = (
     <Card
       className={cn(
         "group relative flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border-border/70 p-3.5 shadow-sm transition-all duration-300 sm:p-4",
-        to &&
+        clicavel &&
           "cursor-pointer hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/[0.06]",
       )}
     >
@@ -303,7 +307,7 @@ export function HeroMetric({
             className={cn("h-8 w-1 shrink-0 rounded-full", toneBar[tone])}
           />
         )}
-        {to && (
+        {clicavel && (
           <ArrowUpRight className="h-4 w-4 text-muted-foreground/40 transition-all group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-primary" />
         )}
       </div>
@@ -322,6 +326,18 @@ export function HeroMetric({
     </Card>
   );
 
+  if (onDetails) {
+    return (
+      <button
+        type="button"
+        onClick={onDetails}
+        aria-label={`Ver detalhamento de ${label}`}
+        className="block w-full rounded-2xl text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        {conteudo}
+      </button>
+    );
+  }
   return to ? (
     <Link
       to={to}
@@ -335,23 +351,27 @@ export function HeroMetric({
 }
 
 
+
 /** Métrica secundária compacta em linha única. */
 export function MiniMetric({
   label,
   valor,
   tone = "neutral",
   to,
+  onDetails,
 }: {
   label: string;
   valor: string;
   tone?: Tone;
   to?: string;
+  onDetails?: () => void;
 }) {
+  const clicavel = !!onDetails || !!to;
   const conteudo = (
     <Card
       className={cn(
         "group relative h-full min-w-0 overflow-hidden rounded-xl border-l-4 p-3.5 pl-4 shadow-sm transition-all duration-300",
-        to &&
+        clicavel &&
           "cursor-pointer hover:-translate-y-0.5 hover:shadow-md hover:shadow-primary/5",
       )}
       style={{ borderLeftColor: toneVar[tone] }}
@@ -365,6 +385,18 @@ export function MiniMetric({
     </Card>
   );
 
+  if (onDetails) {
+    return (
+      <button
+        type="button"
+        onClick={onDetails}
+        aria-label={`Ver detalhamento de ${label}`}
+        className="block w-full rounded-xl text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        {conteudo}
+      </button>
+    );
+  }
   return to ? (
     <Link
       to={to}
@@ -376,6 +408,7 @@ export function MiniMetric({
     conteudo
   );
 }
+
 
 /** Moldura padrão de gráfico/lista com título, subtítulo e link "Abrir". */
 export function PanelCard({

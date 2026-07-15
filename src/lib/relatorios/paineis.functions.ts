@@ -961,3 +961,607 @@ export const getPanelDados = createServerFn({ method: "POST" })
       alertas,
     };
   });
+
+// ============================================================================
+// Drilldown de KPIs — "clique no card para ver o detalhamento".
+// ============================================================================
+
+export interface PanelDrilldownItem {
+  label: string;
+  sub?: string;
+  valor?: string;
+  data?: string;
+  to?: string;
+  tone?: "brand" | "success" | "warning" | "danger" | "neutral";
+}
+
+export interface PanelDrilldown {
+  titulo: string;
+  subtitulo?: string;
+  valor?: string;
+  descricao?: string;
+  formula?: { label: string; valor: string; tone?: "brand" | "success" | "warning" | "danger" | "neutral" }[];
+  itens: PanelDrilldownItem[];
+  total?: string;
+  linkAbrir?: string;
+  linkAbrirLabel?: string;
+}
+
+const drillSchema = schema.extend({ metrica: z.string().min(1).max(80) });
+
+function normLabel(s: string): string {
+  return (s || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[→↦]/g, ">")
+    .toLowerCase()
+    .trim();
+}
+
+const fmtData = (iso: string | null | undefined) =>
+  iso ? new Date(iso).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" }) : "";
+
+function itemProposta(p: any): PanelDrilldownItem {
+  const cliente = (p.clientes?.nome as string | undefined) ?? "Cliente";
+  const banco = (p.nome_banco as string | undefined) ?? "";
+  const status = rotularStatus((p.status as string) ?? "", PROP_LABEL);
+  const numero = (p.numero_proposta as string | undefined) ?? "";
+  const partes = [numero && `Nº ${numero}`, banco, status].filter(Boolean);
+  const valorNum = Number(p.valor_financiamento_aprovado ?? p.valor_financiamento ?? 0) || 0;
+  return {
+    label: cliente,
+    sub: partes.join(" · "),
+    valor: valorNum ? brlCompacto(valorNum) : undefined,
+    data: fmtData(p.contrato_emitido_em ?? p.created_at),
+    to: `/operacional/propostas/${p.id}`,
+  };
+}
+
+function itemSimulacao(s: any): PanelDrilldownItem {
+  const cliente = (s.clientes?.nome as string | undefined) ?? "Cliente";
+  const status = rotularStatus((s.status as string) ?? "", SIM_LABEL);
+  const numero = (s.numero_simulacao as string | undefined) ?? "";
+  const partes = [numero && `Nº ${numero}`, status].filter(Boolean);
+  const valorNum = Number(s.valor_financiamento ?? 0) || 0;
+  return {
+    label: cliente,
+    sub: partes.join(" · "),
+    valor: valorNum ? brlCompacto(valorNum) : undefined,
+    data: fmtData(s.created_at),
+    to: `/operacional/simulacoes/${s.id}`,
+  };
+}
+
+export const getPanelDrilldown = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => drillSchema.parse(d))
+  .handler(async ({ data, context }): Promise<PanelDrilldown> => {
+    const { supabase, userId } = context;
+    const f = data as unknown as ReportFiltros;
+    const { de, ate } = resolverIntervalo(f);
+    const ateFim = `${ate}T23:59:59`;
+    const escopoEq = (q: any, col: string) =>
+      data.responsavel
+        ? q.eq(col, data.responsavel)
+        : data.escopo === "minha"
+          ? q.eq(col, userId)
+          : q;
+
+    const dentroPeriodo = (iso?: string | null) =>
+      !!iso && iso.slice(0, 10) >= de && iso.slice(0, 10) <= ate;
+
+    const chave = normLabel(data.metrica);
+    const LIMITE = 200;
+
+    async function propostasNoPeriodo(): Promise<any[]> {
+      const res = await escopoEq(
+        supabase
+          .from("propostas")
+          .select(
+            "id,numero_proposta,status,nome_banco,valor_financiamento,valor_financiamento_aprovado,created_at,contrato_emitido_em,clientes(nome)",
+          )
+          .or(
+            `and(created_at.gte.${de},created_at.lte.${ateFim}),and(contrato_emitido_em.gte.${de},contrato_emitido_em.lte.${ateFim})`,
+          )
+          .order("created_at", { ascending: false })
+          .limit(LIMITE * 2),
+        "usuario_responsavel_id",
+      );
+      if (res.error) throw new Error(res.error.message);
+      return (res.data ?? []) as any[];
+    }
+    async function simulacoesNoPeriodo(): Promise<any[]> {
+      const res = await escopoEq(
+        supabase
+          .from("simulacoes")
+          .select(
+            "id,numero_simulacao,status,valor_financiamento,created_at,clientes(nome)",
+          )
+          .is("deleted_at", null)
+          .gte("created_at", de)
+          .lte("created_at", ateFim)
+          .order("created_at", { ascending: false })
+          .limit(LIMITE),
+        "usuario_responsavel_id",
+      );
+      if (res.error) throw new Error(res.error.message);
+      return (res.data ?? []) as any[];
+    }
+    async function contratosDetalhados(): Promise<{ cliente: any; prop: any }[]> {
+      const cliRes = await escopoEq(
+        supabase
+          .from("clientes")
+          .select("id,nome,contrato_emitido_em,imovel_valor")
+          .not("contrato_emitido_em", "is", null)
+          .gte("contrato_emitido_em", de)
+          .lte("contrato_emitido_em", ate)
+          .order("contrato_emitido_em", { ascending: false })
+          .limit(LIMITE),
+        "responsavel_id",
+      );
+      if (cliRes.error) throw new Error(cliRes.error.message);
+      const cliRows = (cliRes.data ?? []) as any[];
+      if (!cliRows.length) return [];
+      const ids = cliRows.map((c) => c.id);
+      const propRes = await supabase
+        .from("propostas")
+        .select("id,cliente_id,status,nome_banco,valor_financiamento_aprovado,valor_financiamento,numero_proposta")
+        .in("cliente_id", ids)
+        .in("status", Array.from(CONTRATO_STATUS) as any);
+      const propByCli = new Map<string, any>();
+      for (const p of ((propRes.data ?? []) as any[])) {
+        if (!propByCli.has(p.cliente_id)) propByCli.set(p.cliente_id, p);
+      }
+      return cliRows
+        .filter((c) => propByCli.has(c.id))
+        .map((c) => ({ cliente: c, prop: propByCli.get(c.id) }));
+    }
+
+    if (chave === "simulacoes") {
+      const rows = await simulacoesNoPeriodo();
+      const somaValor = rows.reduce((s, r) => s + (Number(r.valor_financiamento) || 0), 0);
+      return {
+        titulo: "Simulações do período",
+        subtitulo: "Ordenadas da mais recente para a mais antiga",
+        valor: int(rows.length),
+        descricao: `Volume total simulado: ${brlCompacto(somaValor)}.`,
+        itens: rows.map(itemSimulacao),
+        linkAbrir: "/operacional/simulacoes",
+        linkAbrirLabel: "Abrir lista completa de simulações",
+      };
+    }
+
+    if (chave === "volume simulado") {
+      const rows = (await simulacoesNoPeriodo()).filter((s) =>
+        ["simulada", "parcialmente_simulada", "promovida"].includes(s.status),
+      );
+      const soma = rows.reduce((s, r) => s + (Number(r.valor_financiamento) || 0), 0);
+      return {
+        titulo: "Volume simulado",
+        subtitulo: "Simulações concluídas com retorno do banco",
+        valor: brlCompacto(soma),
+        descricao: `${int(rows.length)} simulações somam ${brlCompacto(soma)} em crédito simulado.`,
+        itens: rows
+          .sort((a, b) => (Number(b.valor_financiamento) || 0) - (Number(a.valor_financiamento) || 0))
+          .map(itemSimulacao),
+        total: brlCompacto(soma),
+        linkAbrir: "/operacional/simulacoes",
+        linkAbrirLabel: "Abrir lista completa de simulações",
+      };
+    }
+
+    if (chave === "propostas enviadas" || chave === "propostas ativas" || chave === "propostas") {
+      const rows = (await propostasNoPeriodo()).filter(
+        (p) => dentroPeriodo(p.created_at) && p.status !== "rascunho",
+      );
+      return {
+        titulo: chave === "propostas ativas" ? "Propostas ativas" : "Propostas enviadas",
+        subtitulo: "Criadas no período (excluindo rascunhos)",
+        valor: int(rows.length),
+        itens: rows.map(itemProposta),
+        linkAbrir: "/operacional/propostas",
+        linkAbrirLabel: "Abrir lista completa de propostas",
+      };
+    }
+
+    if (chave === "aprovadas") {
+      const rows = (await propostasNoPeriodo()).filter(
+        (p) => dentroPeriodo(p.created_at) && foiAprovada(p.status),
+      );
+      return {
+        titulo: "Propostas aprovadas",
+        subtitulo: "Crédito aprovado pelo banco no período",
+        valor: int(rows.length),
+        itens: rows.map(itemProposta),
+        linkAbrir: "/operacional/propostas",
+        linkAbrirLabel: "Abrir lista completa de propostas",
+      };
+    }
+
+    if (chave === "recusadas") {
+      const rows = (await propostasNoPeriodo()).filter(
+        (p) => dentroPeriodo(p.created_at) && p.status === "credito_recusado",
+      );
+      return {
+        titulo: "Propostas recusadas",
+        subtitulo: "Crédito reprovado pelo banco no período",
+        valor: int(rows.length),
+        itens: rows.map(itemProposta),
+        linkAbrir: "/operacional/propostas",
+        linkAbrirLabel: "Abrir lista completa de propostas",
+      };
+    }
+
+    if (chave === "em analise") {
+      const rows = (await propostasNoPeriodo()).filter(
+        (p) =>
+          dentroPeriodo(p.created_at) &&
+          ["enviada_banco", "em_analise_credito"].includes(p.status),
+      );
+      return {
+        titulo: "Em análise no banco",
+        subtitulo: "Propostas enviadas aguardando retorno",
+        valor: int(rows.length),
+        itens: rows.map(itemProposta),
+        linkAbrir: "/operacional/propostas",
+        linkAbrirLabel: "Abrir lista completa de propostas",
+      };
+    }
+
+    if (chave === "rascunhos") {
+      const rows = (await propostasNoPeriodo()).filter(
+        (p) => dentroPeriodo(p.created_at) && p.status === "rascunho",
+      );
+      return {
+        titulo: "Rascunhos",
+        subtitulo: "Propostas ainda não enviadas ao banco",
+        valor: int(rows.length),
+        itens: rows.map(itemProposta),
+        linkAbrir: "/operacional/propostas",
+        linkAbrirLabel: "Abrir lista completa de propostas",
+      };
+    }
+
+    if (chave === "contratos emitidos" || chave === "volume contratado") {
+      const detalhes = await contratosDetalhados();
+      const somaBruta = detalhes.reduce(
+        (s, { cliente, prop }) =>
+          s +
+          (Number(
+            cliente.imovel_valor ?? prop.valor_financiamento_aprovado ?? prop.valor_financiamento ?? 0,
+          ) || 0),
+        0,
+      );
+      const linhas: PanelDrilldownItem[] = detalhes.map(({ cliente, prop }) => {
+        const valorNum =
+          Number(
+            cliente.imovel_valor ?? prop.valor_financiamento_aprovado ?? prop.valor_financiamento ?? 0,
+          ) || 0;
+        return {
+          label: cliente.nome ?? "Cliente",
+          sub: [prop.numero_proposta && `Nº ${prop.numero_proposta}`, prop.nome_banco]
+            .filter(Boolean)
+            .join(" · "),
+          valor: valorNum ? brlCompacto(valorNum) : undefined,
+          data: fmtData(cliente.contrato_emitido_em),
+          to: `/operacional/propostas/${prop.id}`,
+        };
+      });
+      return {
+        titulo: chave === "volume contratado" ? "Volume contratado" : "Contratos emitidos",
+        subtitulo: "Contratos com data de emissão no período",
+        valor: chave === "volume contratado" ? brlCompacto(somaBruta) : int(linhas.length),
+        descricao: `${int(linhas.length)} contrato(s) · ${brlCompacto(somaBruta)} de volume`,
+        itens: linhas,
+        total: brlCompacto(somaBruta),
+        linkAbrir: "/operacional/propostas",
+        linkAbrirLabel: "Abrir propostas contratadas",
+      };
+    }
+
+    if (chave === "volume aprovado") {
+      const rows = (await propostasNoPeriodo()).filter(
+        (p) => dentroPeriodo(p.created_at) && foiAprovada(p.status),
+      );
+      const soma = rows.reduce(
+        (s, p) => s + (Number(p.valor_financiamento_aprovado ?? p.valor_financiamento) || 0),
+        0,
+      );
+      return {
+        titulo: "Volume aprovado",
+        subtitulo: "Somatório do crédito aprovado no período",
+        valor: brlCompacto(soma),
+        descricao: `${int(rows.length)} proposta(s) aprovada(s).`,
+        itens: rows
+          .sort(
+            (a, b) =>
+              (Number(b.valor_financiamento_aprovado ?? b.valor_financiamento) || 0) -
+              (Number(a.valor_financiamento_aprovado ?? a.valor_financiamento) || 0),
+          )
+          .map(itemProposta),
+        total: brlCompacto(soma),
+        linkAbrir: "/operacional/propostas",
+      };
+    }
+
+    if (chave === "ticket medio") {
+      const detalhes = await contratosDetalhados();
+      const soma = detalhes.reduce(
+        (s, { cliente, prop }) =>
+          s +
+          (Number(
+            cliente.imovel_valor ?? prop.valor_financiamento_aprovado ?? prop.valor_financiamento ?? 0,
+          ) || 0),
+        0,
+      );
+      const qtd = detalhes.length;
+      const ticket = qtd ? soma / qtd : 0;
+      return {
+        titulo: "Ticket médio",
+        subtitulo: "Volume contratado ÷ contratos emitidos",
+        valor: brlCompacto(ticket),
+        formula: [
+          { label: "Volume contratado", valor: brlCompacto(soma), tone: "success" },
+          { label: "Contratos emitidos", valor: int(qtd), tone: "brand" },
+          { label: "Ticket médio", valor: brlCompacto(ticket), tone: "success" },
+        ],
+        itens: detalhes.map(({ cliente, prop }) => {
+          const valorNum =
+            Number(
+              cliente.imovel_valor ?? prop.valor_financiamento_aprovado ?? prop.valor_financiamento ?? 0,
+            ) || 0;
+          return {
+            label: cliente.nome ?? "Cliente",
+            sub: [prop.numero_proposta && `Nº ${prop.numero_proposta}`, prop.nome_banco]
+              .filter(Boolean)
+              .join(" · "),
+            valor: valorNum ? brlCompacto(valorNum) : undefined,
+            data: fmtData(cliente.contrato_emitido_em),
+            to: `/operacional/propostas/${prop.id}`,
+          };
+        }),
+        linkAbrir: "/operacional/propostas",
+      };
+    }
+
+    if (
+      chave === "conversao sim>contrato" ||
+      chave === "conversao sim>proposta" ||
+      chave === "conversao proposta>contrato" ||
+      chave === "taxa de aprovacao"
+    ) {
+      const [sims, props, contratos] = await Promise.all([
+        simulacoesNoPeriodo(),
+        propostasNoPeriodo(),
+        contratosDetalhados(),
+      ]);
+      const enviadas = props.filter(
+        (p) => dentroPeriodo(p.created_at) && p.status !== "rascunho",
+      );
+      const aprovadas = props.filter(
+        (p) => dentroPeriodo(p.created_at) && foiAprovada(p.status),
+      ).length;
+      const qtdContratos = contratos.length;
+      let num = 0;
+      let den = 0;
+      let titulo = "";
+      let numLabel = "";
+      let denLabel = "";
+      if (chave === "conversao sim>contrato") {
+        num = qtdContratos;
+        den = sims.length;
+        titulo = "Conversão simulação → contrato";
+        numLabel = "Contratos emitidos";
+        denLabel = "Simulações";
+      } else if (chave === "conversao sim>proposta") {
+        num = enviadas.length;
+        den = sims.length;
+        titulo = "Conversão simulação → proposta";
+        numLabel = "Propostas enviadas";
+        denLabel = "Simulações";
+      } else if (chave === "conversao proposta>contrato") {
+        num = qtdContratos;
+        den = enviadas.length;
+        titulo = "Conversão proposta → contrato";
+        numLabel = "Contratos emitidos";
+        denLabel = "Propostas enviadas";
+      } else {
+        num = aprovadas;
+        den = enviadas.length;
+        titulo = "Taxa de aprovação";
+        numLabel = "Aprovadas";
+        denLabel = "Propostas enviadas";
+      }
+      const taxa = den ? (num / den) * 100 : 0;
+      return {
+        titulo,
+        subtitulo: `${numLabel} ÷ ${denLabel}`,
+        valor: pct(taxa),
+        formula: [
+          { label: numLabel, valor: int(num), tone: "success" },
+          { label: denLabel, valor: int(den), tone: "brand" },
+          { label: "Resultado", valor: pct(taxa), tone: taxa >= 50 ? "success" : "warning" },
+        ],
+        itens: [],
+        descricao:
+          den === 0
+            ? "Sem base para calcular a conversão no período selecionado."
+            : "Aumente o numerador ou revise a base para elevar a conversão.",
+      };
+    }
+
+    if (chave === "clientes novos") {
+      const res = await escopoEq(
+        supabase
+          .from("clientes")
+          .select("id,nome,documento,created_at,telefone_celular")
+          .gte("created_at", de)
+          .lte("created_at", ateFim)
+          .order("created_at", { ascending: false })
+          .limit(LIMITE),
+        "responsavel_id",
+      );
+      if (res.error) throw new Error(res.error.message);
+      const rows = (res.data ?? []) as any[];
+      return {
+        titulo: "Clientes novos",
+        subtitulo: "Cadastrados no período",
+        valor: int(rows.length),
+        itens: rows.map((c) => ({
+          label: c.nome ?? "Cliente",
+          sub: [c.documento, c.telefone_celular].filter(Boolean).join(" · "),
+          data: fmtData(c.created_at),
+          to: `/crm/clientes/${c.id}`,
+        })),
+        linkAbrir: "/crm/clientes",
+        linkAbrirLabel: "Abrir lista de clientes",
+      };
+    }
+
+    if (chave === "demandas abertas" || chave === "sla vencido") {
+      const res = await escopoEq(
+        supabase
+          .from("demandas")
+          .select("id,numero,titulo,status,prazo_sla,created_at")
+          .limit(LIMITE * 2),
+        "responsavel_id",
+      );
+      if (res.error) throw new Error(res.error.message);
+      const agora = new Date();
+      let rows = ((res.data ?? []) as any[]).filter(
+        (d) => !["concluida", "cancelada"].includes(d.status),
+      );
+      const isVencido = chave === "sla vencido";
+      const titulo = isVencido ? "Demandas com SLA vencido" : "Demandas abertas";
+      if (isVencido) rows = rows.filter((d) => d.prazo_sla && new Date(d.prazo_sla) < agora);
+      return {
+        titulo,
+        subtitulo: isVencido
+          ? "Prazo de atendimento já ultrapassado"
+          : "Ainda não concluídas ou canceladas",
+        valor: int(rows.length),
+        itens: rows.map((d) => ({
+          label: d.titulo ?? "Demanda",
+          sub: [d.numero && `Nº ${d.numero}`, d.status].filter(Boolean).join(" · "),
+          data: fmtData(d.prazo_sla ?? d.created_at),
+          to: `/operacional/demandas/${d.id}`,
+          tone: isVencido ? "danger" : "warning",
+        })),
+        linkAbrir: "/operacional/demandas",
+        linkAbrirLabel: "Abrir lista de demandas",
+      };
+    }
+
+    if (chave === "tarefas abertas" || chave === "tarefas atrasadas") {
+      const res = await escopoEq(
+        supabase
+          .from("tasks")
+          .select("id,numero,titulo,status,prazo,created_at")
+          .limit(LIMITE * 2),
+        "responsavel_id",
+      );
+      if (res.error) throw new Error(res.error.message);
+      const agora = new Date();
+      let rows = ((res.data ?? []) as any[]).filter(
+        (t) => !["concluida", "cancelada"].includes(t.status),
+      );
+      const atrasadas = chave === "tarefas atrasadas";
+      if (atrasadas) rows = rows.filter((t) => t.prazo && new Date(t.prazo) < agora);
+      return {
+        titulo: atrasadas ? "Tarefas atrasadas" : "Tarefas abertas",
+        subtitulo: atrasadas ? "Prazo ultrapassado" : "Ainda não concluídas",
+        valor: int(rows.length),
+        itens: rows.map((t) => ({
+          label: t.titulo ?? "Tarefa",
+          sub: [t.numero && `Nº ${t.numero}`, t.status].filter(Boolean).join(" · "),
+          data: fmtData(t.prazo ?? t.created_at),
+          to: `/operacional/tarefas/${t.id}`,
+          tone: atrasadas ? "danger" : "neutral",
+        })),
+        linkAbrir: "/operacional/tarefas",
+        linkAbrirLabel: "Abrir lista de tarefas",
+      };
+    }
+
+    if (chave === "sla em dia") {
+      const res = await escopoEq(
+        supabase
+          .from("demandas")
+          .select("id,numero,titulo,status,prazo_sla,created_at")
+          .limit(LIMITE * 2),
+        "responsavel_id",
+      );
+      if (res.error) throw new Error(res.error.message);
+      const agora = new Date();
+      const abertas = ((res.data ?? []) as any[]).filter(
+        (d) => !["concluida", "cancelada"].includes(d.status),
+      );
+      const vencidas = abertas.filter((d) => d.prazo_sla && new Date(d.prazo_sla) < agora);
+      const emDia = abertas.length - vencidas.length;
+      const taxa = abertas.length ? (emDia / abertas.length) * 100 : 100;
+      return {
+        titulo: "SLA em dia",
+        subtitulo: "(Abertas − vencidas) ÷ abertas",
+        valor: pct(taxa),
+        formula: [
+          { label: "Demandas em dia", valor: int(emDia), tone: "success" },
+          { label: "Demandas vencidas", valor: int(vencidas.length), tone: "danger" },
+          { label: "Demandas abertas", valor: int(abertas.length), tone: "brand" },
+          { label: "Resultado", valor: pct(taxa), tone: taxa >= 90 ? "success" : "warning" },
+        ],
+        itens: abertas
+          .filter((d) => !vencidas.includes(d))
+          .slice(0, LIMITE)
+          .map((d) => ({
+            label: d.titulo ?? "Demanda",
+            sub: [d.numero && `Nº ${d.numero}`, d.status].filter(Boolean).join(" · "),
+            data: fmtData(d.prazo_sla ?? d.created_at),
+            to: `/operacional/demandas/${d.id}`,
+            tone: "success",
+          })),
+        linkAbrir: "/operacional/demandas",
+      };
+    }
+
+    if (chave === "conclusao de tarefas") {
+      const res = await escopoEq(
+        supabase
+          .from("tasks")
+          .select("id,numero,titulo,status,prazo,created_at")
+          .gte("created_at", de)
+          .lte("created_at", ateFim)
+          .limit(LIMITE * 2),
+        "responsavel_id",
+      );
+      if (res.error) throw new Error(res.error.message);
+      const rows = (res.data ?? []) as any[];
+      const concluidas = rows.filter((t) => t.status === "concluida").length;
+      const taxa = rows.length ? (concluidas / rows.length) * 100 : 0;
+      return {
+        titulo: "Conclusão de tarefas",
+        subtitulo: "Concluídas ÷ total no período",
+        valor: pct(taxa),
+        formula: [
+          { label: "Concluídas", valor: int(concluidas), tone: "success" },
+          { label: "Total no período", valor: int(rows.length), tone: "brand" },
+          { label: "Resultado", valor: pct(taxa), tone: taxa >= 80 ? "success" : "warning" },
+        ],
+        itens: rows.slice(0, LIMITE).map((t) => ({
+          label: t.titulo ?? "Tarefa",
+          sub: [t.numero && `Nº ${t.numero}`, t.status].filter(Boolean).join(" · "),
+          data: fmtData(t.created_at),
+          to: `/operacional/tarefas/${t.id}`,
+          tone: t.status === "concluida" ? "success" : "neutral",
+        })),
+        linkAbrir: "/operacional/tarefas",
+      };
+    }
+
+    return {
+      titulo: data.metrica,
+      subtitulo: "Detalhamento não disponível para este indicador",
+      descricao:
+        "Este KPI é calculado a partir de várias fontes e ainda não tem uma listagem específica de detalhamento. Consulte os relatórios para explorar em profundidade.",
+      itens: [],
+    };
+  });
