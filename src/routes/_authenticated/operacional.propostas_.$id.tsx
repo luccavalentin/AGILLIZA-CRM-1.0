@@ -195,6 +195,15 @@ function Pagina() {
   const { data, isLoading } = useQuery({
     queryKey: ["proposta", id],
     queryFn: () => obterProposta({ data: { id } }),
+    // Fallback de atualização automática caso o realtime não entregue o evento
+    // (aba em background, websocket caído, etc.). Para em desfechos terminais.
+    refetchInterval: (q: any) => {
+      const st = q.state.data?.proposta?.status as string | undefined;
+      if (!st) return 30_000;
+      const terminais = ["contrato_emitido", "cancelada", "credito_recusado"];
+      return terminais.includes(st) ? false : 30_000;
+    },
+    refetchOnWindowFocus: true,
   });
 
   // Ao chegar de "Criar proposta", abre o cadastro complementar automaticamente
