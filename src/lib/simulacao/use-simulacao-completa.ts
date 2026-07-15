@@ -21,6 +21,12 @@ import { criarProposta } from "@/lib/propostas/propostas.functions";
 
 export type Form = Record<string, any>;
 
+/**
+ * E-mail pré-preenchido em cadastros de titular e cônjuge para agilizar testes
+ * e operação com atendimento centralizado. O usuário pode alterar livremente.
+ */
+const EMAIL_PADRAO = "thiago@agilliza.net.br";
+
 interface Banco {
   id: string;
   nome_banco?: string | null;
