@@ -567,7 +567,7 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
         const priceBase =
           prev.bancos_price_ids.length > 0
             ? prev.bancos_price_ids
-            : prev.bancos_ids.filter((id) => {
+            : prev.bancos_ids.filter((id: string) => {
                 const b = (bancos ?? []).find((x) => x.id === id);
                 return b ? aceitaPrice(b) : false;
               });
