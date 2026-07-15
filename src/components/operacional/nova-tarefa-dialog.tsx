@@ -25,14 +25,22 @@ import {
 import { criarTarefa } from "@/lib/operacional/tarefas.functions";
 import { listarColegas, buscarClientesOpcoes } from "@/lib/operacional/shared.functions";
 
-export function NovaTarefaDialog({ onCriada }: { onCriada: () => void }) {
+export function NovaTarefaDialog({
+  onCriada,
+  clientePreSelecionado,
+  trigger,
+}: {
+  onCriada: () => void;
+  clientePreSelecionado?: string;
+  trigger?: React.ReactNode;
+}) {
   const [aberto, setAberto] = useState(false);
   const [titulo, setTitulo] = useState("");
   const [descricao, setDescricao] = useState("");
   const [prioridade, setPrioridade] = useState<"p1" | "p2" | "p3">("p2");
   const [prazo, setPrazo] = useState("");
   const [responsavel, setResponsavel] = useState<string>("");
-  const [cliente, setCliente] = useState<string>("");
+  const [cliente, setCliente] = useState<string>(clientePreSelecionado ?? "");
   const [checklist, setChecklist] = useState<string[]>([]);
   const [novoItem, setNovoItem] = useState("");
   const [salvando, setSalvando] = useState(false);
