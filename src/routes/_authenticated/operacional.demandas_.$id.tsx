@@ -616,8 +616,8 @@ function Pagina() {
 
             {/* Stepper compacto */}
             <div className="border-b border-border/60">
-              <div className="overflow-x-auto px-4 py-3.5 sm:px-5">
-                <div className="flex min-w-[520px] items-start">
+              <div className="px-4 py-3.5 sm:px-5">
+                <div className="flex items-start">
                   {STEPPER.map((step, i) => {
                     const done = i < stepAtual;
                     const active = i === stepAtual;
