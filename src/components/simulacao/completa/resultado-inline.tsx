@@ -102,12 +102,10 @@ export function ResultadoInlineCompleta({ simulacaoId, onFechar }: Props) {
     jaBaixou.current = true;
     (async () => {
       try {
-        const { baixarSimulacaoDetalhadaPDF } = await import("@/lib/simulacao/simulacao-pdf");
-        for (const b of simulados) {
-          baixarSimulacaoDetalhadaPDF({ simulacao: data.simulacao, bancos: [b] });
-        }
+        const { baixarSimulacoesDetalhadasZipPDF } = await import("@/lib/simulacao/simulacao-pdf");
+        await baixarSimulacoesDetalhadasZipPDF({ simulacao: data.simulacao, bancos: simulados });
         toast.success(
-          `Simulação realizada. ${simulados.length} PDF${simulados.length === 1 ? "" : "s"} por banco baixado${simulados.length === 1 ? "" : "s"} automaticamente.`,
+          `Simulação realizada. ${simulados.length} PDF${simulados.length === 1 ? "" : "s"} liberado${simulados.length === 1 ? "" : "s"} para download.`,
         );
       } catch {
         toast.error("Não foi possível baixar automaticamente os PDFs.");
@@ -615,10 +613,8 @@ function BaixarPdfsButton({ data }: { data: any }) {
     if (desabilitado) return;
     setBaixando(true);
     try {
-      const { baixarSimulacaoDetalhadaPDF } = await import("@/lib/simulacao/simulacao-pdf");
-      for (const b of bancosOk) {
-        baixarSimulacaoDetalhadaPDF({ simulacao: data.simulacao, bancos: [b] });
-      }
+      const { baixarSimulacoesDetalhadasZipPDF } = await import("@/lib/simulacao/simulacao-pdf");
+      await baixarSimulacoesDetalhadasZipPDF({ simulacao: data.simulacao, bancos: bancosOk });
       toast.success(`${totalOk} PDF${totalOk === 1 ? "" : "s"} gerado${totalOk === 1 ? "" : "s"}.`);
     } catch {
       toast.error("Não foi possível gerar os PDFs.");

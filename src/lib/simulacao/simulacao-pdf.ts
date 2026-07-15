@@ -699,8 +699,8 @@ export function baixarSimulacaoSimplificadaPDF({
   return salvar(doc, s, "simplificada", lista);
 }
 
-/** Baixa o extrato detalhado: cabeçalho + TODAS as parcelas, um banco por folha. */
-export function baixarSimulacaoDetalhadaPDF({
+/** Monta o extrato detalhado: cabeçalho + TODAS as parcelas, um banco por folha. */
+function criarDocSimulacaoDetalhada({
   simulacao: s,
   bancos,
   docLabel,
@@ -810,7 +810,53 @@ export function baixarSimulacaoDetalhadaPDF({
     drawFooter(doc, pageW, pageH, p, total);
   }
 
-  return salvar(doc, s, "detalhada", lista);
+  return {
+    doc,
+    nome: sanitizarNomeArquivo(filePrefix || nomeDescritivo(s, lista)),
+    totalBancos: lista.length,
+  };
+}
+
+/** Baixa o extrato detalhado em PDF. */
+export function baixarSimulacaoDetalhadaPDF(input: SimulacaoPdfInput) {
+  const { doc, nome } = criarDocSimulacaoDetalhada(input);
+  baixarBlob(doc.output("blob"), `${nome}.pdf`);
+  return doc;
+}
+
+/** Baixa vários PDFs detalhados em um único arquivo ZIP, evitando bloqueio de múltiplos downloads pelo navegador. */
+export async function baixarSimulacoesDetalhadasZipPDF(input: SimulacaoPdfInput) {
+  return baixarSimulacoesDetalhadasAgrupadasZipPDF([{ simulacao: input.simulacao, bancos: input.bancos }]);
+}
+
+/** Baixa PDFs detalhados de uma ou mais simulações em um único ZIP. */
+export async function baixarSimulacoesDetalhadasAgrupadasZipPDF(
+  grupos: Array<{ simulacao: any; bancos: any[] }>,
+) {
+  const itens = grupos.flatMap((grupo) =>
+    bancosParaExtrato(grupo.bancos).map((banco) => ({ simulacao: grupo.simulacao, banco })),
+  );
+
+  if (itens.length === 0) throw new Error("Nenhum banco disponível para gerar PDF.");
+  if (itens.length === 1) {
+    baixarSimulacaoDetalhadaPDF({ simulacao: itens[0].simulacao, bancos: [itens[0].banco] });
+    return 1;
+  }
+
+  const JSZip = (await import("jszip")).default;
+  const zip = new JSZip();
+  const nomesUsados = new Set<string>();
+
+  itens.forEach(({ simulacao, banco }) => {
+    const { doc, nome } = criarDocSimulacaoDetalhada({ simulacao, bancos: [banco] });
+    zip.file(nomeArquivoUnico(`${nome}.pdf`, nomesUsados), doc.output("arraybuffer"));
+  });
+
+  const primeira = itens[0]?.simulacao;
+  const ref = primeira?.numero_simulacao ? ` ${primeira.numero_simulacao}` : "";
+  const blob = await zip.generateAsync({ type: "blob" });
+  baixarBlob(blob, `${sanitizarNomeArquivo(`PDFs simulação${ref}`)}.zip`);
+  return itens.length;
 }
 
 /** Abrevia um valor monetário em "k"/"mi" para uso no nome do arquivo. */
@@ -884,9 +930,39 @@ function sanitizarNomeArquivo(nome: string): string {
   return nome.replace(/[\\/:*?"<>|]+/g, "").replace(/\s+/g, " ").trim();
 }
 
+function nomeArquivoUnico(nome: string, usados: Set<string>): string {
+  const limpo = sanitizarNomeArquivo(nome);
+  if (!usados.has(limpo)) {
+    usados.add(limpo);
+    return limpo;
+  }
+  const base = limpo.replace(/\.pdf$/i, "");
+  let i = 2;
+  while (usados.has(`${base} (${i}).pdf`)) i += 1;
+  const unico = `${base} (${i}).pdf`;
+  usados.add(unico);
+  return unico;
+}
+
+function baixarBlob(blob: Blob, filename: string) {
+  if (typeof document === "undefined") {
+    throw new Error("Download disponível apenas no navegador.");
+  }
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = sanitizarNomeArquivo(filename);
+  a.rel = "noopener";
+  a.style.display = "none";
+  (document.body || document.documentElement).appendChild(a);
+  a.click();
+  a.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 30_000);
+}
+
 function salvar(doc: jsPDF, s: any, _tipo: string, bancos: any[] = []): jsPDF {
   const nome = sanitizarNomeArquivo(nomeDescritivo(s, bancos));
-  doc.save(`${nome}.pdf`);
+  baixarBlob(doc.output("blob"), `${nome}.pdf`);
   return doc;
 }
 
