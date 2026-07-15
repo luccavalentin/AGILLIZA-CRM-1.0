@@ -202,7 +202,7 @@ function Pagina() {
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Bancos</span>
                   <span className="font-medium tabular-nums text-foreground">
-                    {f.bancos_ids.length}
+                    {totalBancosResumo}
                   </span>
                 </div>
               </div>
@@ -216,16 +216,25 @@ function Pagina() {
         </aside>
       </div>
 
-      {simulacaoResultadoId && !modoProposta && (
-        <div ref={resultadoRef} className="scroll-mt-4">
-          <ResultadoInlineCompleta
-            simulacaoId={simulacaoResultadoId}
-            onFechar={fecharResultadoInline}
-          />
+      {(simulacaoResultadoId || simulacaoResultadoIdPrice) && !modoProposta && (
+        <div ref={resultadoRef} className="scroll-mt-4 space-y-4">
+          {simulacaoResultadoId && (
+            <ResultadoInlineCompleta
+              simulacaoId={simulacaoResultadoId}
+              onFechar={fecharResultadoInline}
+            />
+          )}
+          {simulacaoResultadoIdPrice && (
+            <ResultadoInlineCompleta
+              simulacaoId={simulacaoResultadoIdPrice}
+              onFechar={fecharResultadoInlinePrice}
+            />
+          )}
         </div>
       )}
 
-      <ConsultandoOverlay aberto={enviando} total={f.bancos_ids.length} concluidos={concluidos} />
+      <ConsultandoOverlay aberto={enviando} total={totalBancosResumo} concluidos={concluidos} />
+
 
 
 
