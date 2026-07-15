@@ -581,7 +581,17 @@ export const getPanelDados = createServerFn({ method: "POST" })
         : undefined;
 
       // Clientes por etapa do pipeline
-      const pipeRows = (pipeRes.data ?? []) as any[];
+      const pipeRowsBrutas = (pipeRes.data ?? []) as any[];
+      // Aplica o mesmo escopo em memória (o cliente_pipeline não permite
+      // filtro OR em join): somente clientes onde o usuário é responsável ou
+      // criador quando o escopo é "minha".
+      const filtroResp = data.responsavel ?? (data.escopo === "minha" ? userId : null);
+      const pipeRows = filtroResp
+        ? pipeRowsBrutas.filter((r) => {
+            const c = r.clientes ?? {};
+            return c.responsavel_id === filtroResp || c.criador_id === filtroResp;
+          })
+        : pipeRowsBrutas;
       const etapaMap = new Map<string, { valor: number; ordem: number }>();
       pipeRows.forEach((r) => {
         const stg = r.pipeline_stages;
