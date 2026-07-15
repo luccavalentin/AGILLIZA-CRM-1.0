@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Link } from "@tanstack/react-router";
-import { ArrowUpRight, Loader2, ExternalLink } from "lucide-react";
+import { ArrowUpRight, Loader2, ExternalLink, ChevronRight } from "lucide-react";
 
 import {
   Dialog,
@@ -13,6 +13,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
+import { BancoLogo } from "@/components/bancos/banco-logo";
 import { cn } from "@/lib/utils";
 import { getPanelDrilldown } from "@/lib/relatorios/paineis.functions";
 import type { ReportFiltros } from "@/lib/relatorios/shared";
