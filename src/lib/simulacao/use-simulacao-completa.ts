@@ -390,8 +390,9 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
 
   function aplicarEntradaSugerida() {
     setEntradaTocada(true);
+    const pctEntrada = 1 - ltvMax;
     setF((prev) => {
-      const entrada = Math.round((prev.valor_imovel || 0) * 0.2);
+      const entrada = Math.round((prev.valor_imovel || 0) * pctEntrada);
       return {
         ...prev,
         valor_entrada: entrada,
@@ -402,7 +403,7 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
 
   /**
    * Preenche imóvel + financiamento a partir do valor de entrada.
-   * Regra padrão: entrada = 20% do imóvel  ⇒  imóvel = entrada / 0,20.
+   * Regra: entrada = (1 - LTV) do imóvel  ⇒  imóvel = entrada / (1 - LTV).
    * financiamento = imóvel − entrada.
    */
   function aplicarPorEntrada(valorEntrada: number) {
@@ -412,7 +413,8 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
       setF((prev) => ({ ...prev, valor_entrada: 0 }));
       return;
     }
-    const imovel = Math.round(entrada / 0.2);
+    const pctEntrada = 1 - ltvMax;
+    const imovel = Math.round(entrada / pctEntrada);
     const fin = Math.max(0, imovel - entrada);
     setF((prev) => ({
       ...prev,
