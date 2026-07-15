@@ -35,7 +35,7 @@ export const Route = createFileRoute("/_authenticated/admin/notificacoes")({
 });
 
 function formatarData(iso: string): string {
-  return new Date(iso).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", 
+  return new Date(iso).toLocaleString("pt-BR", { 
     day: "2-digit",
     month: "2-digit",
     year: "numeric",

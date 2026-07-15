@@ -64,13 +64,13 @@ import { GerenciadorArquivos } from "@/components/documentos/gerenciador-arquivo
 
 
 const brl = (n: number | null | undefined) =>
-  n == null ? "—" : n.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo",  style: "currency", currency: "BRL" });
+  n == null ? "—" : n.toLocaleString("pt-BR", {  style: "currency", currency: "BRL" });
 
 function fmtData(v: string | null | undefined) {
   if (!v) return "—";
   const d = new Date(v);
   if (Number.isNaN(d.getTime())) return String(v);
-  return d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
+  return d.toLocaleDateString("pt-BR");
 }
 
 const SEM_CORRETOR = "Sem corretor vinculado";
@@ -665,7 +665,7 @@ export function DocumentosGerais() {
                   </p>
                 </div>
                 <p className="mt-2 font-mono text-[26px] font-semibold leading-none tracking-tight tabular-nums text-foreground">
-                  {valor.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}
+                  {valor.toLocaleString("pt-BR")}
                 </p>
               </button>
             ))}
@@ -835,7 +835,7 @@ export function DocumentosGerais() {
             <div className="flex items-center gap-2">
               <h2 className="text-sm font-semibold text-foreground">{secaoTitulo}</h2>
               <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
-                {totalItens.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}
+                {totalItens.toLocaleString("pt-BR")}
               </span>
             </div>
             <div className="flex items-center gap-2">

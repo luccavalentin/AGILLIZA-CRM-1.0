@@ -41,7 +41,7 @@ function diasNaEtapa(iso: string | null) {
 
 function formatarData(iso: string | null) {
   if (!iso) return null;
-  return new Date(iso).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo",  day: "2-digit", month: "short" });
+  return new Date(iso).toLocaleDateString("pt-BR", {  day: "2-digit", month: "short" });
 }
 
 function StatCard({

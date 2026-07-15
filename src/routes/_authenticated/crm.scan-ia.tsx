@@ -222,7 +222,7 @@ function Pagina() {
                   <TableCell className="text-center">{l.total_campos}</TableCell>
                   <TableCell className="text-muted-foreground">{l.criador_nome ?? "—"}</TableCell>
                   <TableCell className="text-muted-foreground">
-                    {new Date(l.created_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}
+                    {new Date(l.created_at).toLocaleString("pt-BR")}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">

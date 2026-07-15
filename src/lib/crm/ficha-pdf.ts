@@ -19,14 +19,14 @@ function titulo(s: string | null | undefined): string {
 function brl(n: number | null | undefined): string {
   return n == null || n === ("" as any)
     ? "—"
-    : Number(n).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo",  style: "currency", currency: "BRL" });
+    : Number(n).toLocaleString("pt-BR", {  style: "currency", currency: "BRL" });
 }
 
 function fmtData(v: string | null | undefined): string {
   if (!v) return "—";
   const d = new Date(v);
   if (Number.isNaN(d.getTime())) return String(v);
-  return d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
+  return d.toLocaleDateString("pt-BR");
 }
 
 function docLabel(tipo: string | null | undefined): string {
@@ -96,7 +96,7 @@ function secao(num: number, tit: string, corpo: string): string {
  */
 export function imprimirFichaPDF(clienteNome: string, data: FichaConsolidada): void {
   const nome = titulo(clienteNome);
-  const agora = new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
+  const agora = new Date().toLocaleString("pt-BR");
   const dark = getTheme() === "dark";
   const logoUrl = new URL(logoLight, window.location.origin).href;
   const marcaUrl = new URL(dark ? symbolLight : symbolDark, window.location.origin).href;

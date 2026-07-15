@@ -96,7 +96,7 @@ function Perfil() {
       doc.setFont("helvetica", "normal");
       doc.setFontSize(9);
       doc.text(
-        `Gerado em ${new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}`,
+        `Gerado em ${new Date().toLocaleString("pt-BR")}`,
         margem,
         y,
       );
@@ -109,7 +109,7 @@ function Perfil() {
       linha("E-mail", c.email ?? "—");
       linha("Telefone", c.telefone_celular ?? "—");
       linha("UF de interesse", c.uf_interesse ?? "—");
-      if (c.created_at) linha("Cliente desde", new Date(c.created_at).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" }));
+      if (c.created_at) linha("Cliente desde", new Date(c.created_at).toLocaleDateString("pt-BR"));
       y += 8;
 
       titulo("Documentos");
@@ -131,7 +131,7 @@ function Perfil() {
             m.remetente_tipo === "cliente"
               ? "Você"
               : (m.remetente_nome && String(m.remetente_nome).trim()) || "Atendente";
-          const quando = m.criada_em ? new Date(m.criada_em).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" }) : "";
+          const quando = m.criada_em ? new Date(m.criada_em).toLocaleString("pt-BR") : "";
           linha(`${quem} (${quando})`, m.mensagem ?? "");
         });
       }

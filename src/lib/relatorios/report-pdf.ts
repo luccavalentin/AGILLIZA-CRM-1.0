@@ -90,7 +90,7 @@ function drawFooter(doc: jsPDF, pageW: number, pageH: number, pageNum: number, t
   doc.setFontSize(7.5);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(P.cinza);
-  const emitido = new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
+  const emitido = new Date().toLocaleString("pt-BR");
   doc.text(`Agilliza · Crédito Imobiliário  —  Emitido em ${emitido}`, 32, y + 12);
   doc.text(`Página ${pageNum} de ${total}`, pageW - 32, y + 12, { align: "right" });
 }

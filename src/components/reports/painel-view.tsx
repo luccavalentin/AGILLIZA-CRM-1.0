@@ -169,7 +169,7 @@ export function PainelView({
   }, [modulo, qc, tabelasKey]);
 
   const atualizado = dataUpdatedAt
-    ? new Date(dataUpdatedAt).toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo",  hour: "2-digit", minute: "2-digit" })
+    ? new Date(dataUpdatedAt).toLocaleTimeString("pt-BR", {  hour: "2-digit", minute: "2-digit" })
     : undefined;
 
   return (
@@ -457,7 +457,7 @@ export function PainelView({
                     items={data.volumePorBanco.dados.map((d) => ({
                       label: d.label,
                       valor: d.valor,
-                      display: d.valor.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", 
+                      display: d.valor.toLocaleString("pt-BR", { 
                         style: "currency",
                         currency: "BRL",
                         maximumFractionDigits: 0,

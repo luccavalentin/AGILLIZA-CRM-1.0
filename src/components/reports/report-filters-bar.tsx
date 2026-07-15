@@ -103,9 +103,9 @@ export function ReportFiltersBar({
       label: `Status: ${statuses?.find((s) => s.value === filtros.status)?.label ?? filtros.status}`,
     });
   if (filtros.valorMin != null)
-    chips.push({ key: "valorMin", label: `Mín: ${filtros.valorMin.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}` });
+    chips.push({ key: "valorMin", label: `Mín: ${filtros.valorMin.toLocaleString("pt-BR")}` });
   if (filtros.valorMax != null)
-    chips.push({ key: "valorMax", label: `Máx: ${filtros.valorMax.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}` });
+    chips.push({ key: "valorMax", label: `Máx: ${filtros.valorMax.toLocaleString("pt-BR")}` });
   if (filtros.busca) chips.push({ key: "busca", label: `Busca: ${filtros.busca}` });
 
   const temAlgum =

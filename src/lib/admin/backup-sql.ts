@@ -19,7 +19,7 @@ function sqlLiteral(v: Valor): string {
 
 /** Monta o conteúdo .sql completo a partir do backup. */
 export function gerarBackupSQL(dados: BackupCompleto): string {
-  const dataStr = new Date(dados.geradoEm).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
+  const dataStr = new Date(dados.geradoEm).toLocaleString("pt-BR");
   const partes: string[] = [];
 
   partes.push("-- ============================================================");

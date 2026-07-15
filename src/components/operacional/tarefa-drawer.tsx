@@ -28,7 +28,7 @@ import {
 
 function fmtData(iso: string | null): string {
   if (!iso) return "—";
-  return new Date(iso).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", 
+  return new Date(iso).toLocaleString("pt-BR", { 
     day: "2-digit",
     month: "2-digit",
     hour: "2-digit",

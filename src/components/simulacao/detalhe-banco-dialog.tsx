@@ -32,7 +32,7 @@ import { formatBRL } from "@/lib/simulacao/format";
 
 function pct(v: number | null | undefined): string {
   if (v == null || Number.isNaN(v)) return "—";
-  return `${v.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo",  minimumFractionDigits: 2, maximumFractionDigits: 4 })}% a.a.`;
+  return `${v.toLocaleString("pt-BR", {  minimumFractionDigits: 2, maximumFractionDigits: 4 })}% a.a.`;
 }
 
 /** Métrica de destaque no topo do detalhamento. */
@@ -200,7 +200,7 @@ export function DetalheBancoDialog({
                   valor={pct(detalhe!.taxaJurosAno)}
                   sub={
                     detalhe!.taxaJurosMes != null
-                      ? `${detalhe!.taxaJurosMes.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo",  minimumFractionDigits: 2, maximumFractionDigits: 4 })}% a.m.`
+                      ? `${detalhe!.taxaJurosMes.toLocaleString("pt-BR", {  minimumFractionDigits: 2, maximumFractionDigits: 4 })}% a.m.`
                       : undefined
                   }
                   cor={cor}

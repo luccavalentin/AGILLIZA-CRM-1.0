@@ -246,8 +246,8 @@ export function ChatClienteConversa({
     onSuccess: async (_r, vars) => {
       // Registra também como nota interna no chat para deixar rastro na conversa.
       const nota = vars.retorno
-        ? `📅 Retorno agendado para ${new Date(vars.prazo!).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}: ${vars.titulo}`
-        : `✅ Tarefa criada${vars.prazo ? ` (até ${new Date(vars.prazo).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })})` : ""}: ${vars.titulo}`;
+        ? `📅 Retorno agendado para ${new Date(vars.prazo!).toLocaleString("pt-BR")}: ${vars.titulo}`
+        : `✅ Tarefa criada${vars.prazo ? ` (até ${new Date(vars.prazo).toLocaleString("pt-BR")})` : ""}: ${vars.titulo}`;
       try {
         await responder({
           data: {

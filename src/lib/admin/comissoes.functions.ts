@@ -195,6 +195,6 @@ export const simularComissao = createServerFn({ method: "POST" })
       descricao:
         r.tipo === "percentual"
           ? `${r.valor}% sobre a operação (${r.banco_nome ?? "todos os bancos"})`
-          : `Valor fixo de R$ ${Number(r.valor).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })} (${r.banco_nome ?? "todos os bancos"})`,
+          : `Valor fixo de R$ ${Number(r.valor).toLocaleString("pt-BR")} (${r.banco_nome ?? "todos os bancos"})`,
     };
   });

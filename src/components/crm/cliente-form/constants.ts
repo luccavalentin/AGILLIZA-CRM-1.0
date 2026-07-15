@@ -182,7 +182,7 @@ export const OPCOES_BANCO = [
 
 // Exibe um número no formato R$ pt-BR (ex.: 20000 -> "20.000,00").
 export function formatarMoedaBR(n: number): string {
-  return n.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo",  minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return n.toLocaleString("pt-BR", {  minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 // Aplica máscara de moeda enquanto o usuário digita (tratando os dígitos como centavos).

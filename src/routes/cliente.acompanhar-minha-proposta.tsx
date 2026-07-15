@@ -47,7 +47,7 @@ export const Route = createFileRoute("/cliente/acompanhar-minha-proposta")({
 
 function fmtBRL(v: number | null | undefined) {
   if (v == null) return "—";
-  return v.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo",  style: "currency", currency: "BRL", maximumFractionDigits: 0 });
+  return v.toLocaleString("pt-BR", {  style: "currency", currency: "BRL", maximumFractionDigits: 0 });
 }
 
 function fmtData(iso: string | null | undefined, opts?: Intl.DateTimeFormatOptions) {
@@ -60,9 +60,9 @@ function fmtDataHora(iso: string | null | undefined) {
   const d = new Date(iso);
   const hoje = new Date();
   const isHoje = d.toDateString() === hoje.toDateString();
-  const hora = d.toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo",  hour: "2-digit", minute: "2-digit" });
+  const hora = d.toLocaleTimeString("pt-BR", {  hour: "2-digit", minute: "2-digit" });
   if (isHoje) return `Hoje, ${hora}`;
-  return `${d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo",  day: "2-digit", month: "2-digit" })}, ${hora}`;
+  return `${d.toLocaleDateString("pt-BR", {  day: "2-digit", month: "2-digit" })}, ${hora}`;
 }
 
 function diasNaEtapa(iso: string | null) {
@@ -110,7 +110,7 @@ function Acompanhar() {
     { name: "Pendentes", value: pendentes, fill: "color-mix(in oklab, var(--primary) 20%, white)" },
   ];
   const evolucaoData = evolucao.map((e) => ({
-    dia: new Date(e.dia).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo",  day: "2-digit", month: "2-digit" }),
+    dia: new Date(e.dia).toLocaleDateString("pt-BR", {  day: "2-digit", month: "2-digit" }),
     percentual: e.percentual,
   }));
 

@@ -354,7 +354,7 @@ function Pagina() {
                 rotulo="Renda declarada"
                 valor={
                   c.renda_total_declarada != null
-                    ? `R$ ${Number(c.renda_total_declarada).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo",  minimumFractionDigits: 2 })}`
+                    ? `R$ ${Number(c.renda_total_declarada).toLocaleString("pt-BR", {  minimumFractionDigits: 2 })}`
                     : "—"
                 }
               />
@@ -382,7 +382,7 @@ function Pagina() {
               <Linha rotulo="Origem" valor={c.origem} />
               <Linha
                 rotulo="Cadastrado em"
-                valor={new Date(c.created_at).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}
+                valor={new Date(c.created_at).toLocaleDateString("pt-BR")}
               />
             </CardContent>
           </Card>
@@ -618,7 +618,7 @@ function Pagina() {
                 >
                   <span className="text-foreground">{h.descricao}</span>
                   <span className="text-xs text-muted-foreground">
-                    {new Date(h.created_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}
+                    {new Date(h.created_at).toLocaleString("pt-BR")}
                   </span>
                 </div>
               ))}
@@ -632,7 +632,7 @@ function Pagina() {
 
 function fmtValor(v: number | null): string {
   if (v == null) return "—";
-  return `R$ ${Number(v).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo",  minimumFractionDigits: 2 })}`;
+  return `R$ ${Number(v).toLocaleString("pt-BR", {  minimumFractionDigits: 2 })}`;
 }
 
 function formatarDataCivil(data: string | null): string {

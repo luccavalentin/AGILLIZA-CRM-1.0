@@ -9,9 +9,9 @@ export function formatCell(value: ReportCell, format?: ReportColumn["format"]): 
     case "brl":
       return formatBRL(Number(value));
     case "int":
-      return Number(value).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
+      return Number(value).toLocaleString("pt-BR");
     case "pct":
-      return `${Number(value).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo",  maximumFractionDigits: 1 })}%`;
+      return `${Number(value).toLocaleString("pt-BR", {  maximumFractionDigits: 1 })}%`;
     case "date":
       return formatData(String(value));
     default:
@@ -23,7 +23,7 @@ export function formatCell(value: ReportCell, format?: ReportColumn["format"]): 
 export function footerValue(rows: Record<string, ReportCell>[], col: ReportColumn): string {
   if (!col.footer || col.footer === "none") return "";
   const nums = rows.map((r) => Number(r[col.key])).filter((n) => Number.isFinite(n));
-  if (col.footer === "count") return rows.length.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
+  if (col.footer === "count") return rows.length.toLocaleString("pt-BR");
   const soma = nums.reduce((s, n) => s + n, 0);
   const val = col.footer === "avg" ? (nums.length ? soma / nums.length : 0) : soma;
   return formatCell(val, col.format);

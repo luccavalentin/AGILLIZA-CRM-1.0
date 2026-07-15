@@ -98,7 +98,7 @@ export function NoCard({
   const meta =
     no.tipo === "pasta"
       ? "Pasta"
-      : `${formatBytes(no.tamanho)} · ${new Date(no.created_at).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}`;
+      : `${formatBytes(no.tamanho)} · ${new Date(no.created_at).toLocaleDateString("pt-BR")}`;
 
   const autor = no.criado_por_nome ? (
     <span className="inline-flex max-w-full items-center gap-1 rounded-full border border-border/60 bg-muted/50 px-2 py-0.5 text-[11px] font-medium text-muted-foreground">

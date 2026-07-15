@@ -23,7 +23,7 @@ function toISO(d: Date): string {
 
 function fmt(v: string): string {
   const d = parseISO(v);
-  return d ? d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" }) : "";
+  return d ? d.toLocaleDateString("pt-BR") : "";
 }
 
 /**

@@ -85,7 +85,7 @@ function Pagina() {
                 </h2>
                 <p className="text-xs text-muted-foreground">
                   Enviado por {leitura.data.criador_nome ?? "—"} ·{" "}
-                  {new Date(leitura.data.created_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}
+                  {new Date(leitura.data.created_at).toLocaleString("pt-BR")}
                 </p>
               </div>
               <Badge variant="outline">{leitura.data.status}</Badge>

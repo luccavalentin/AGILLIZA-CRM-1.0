@@ -668,7 +668,7 @@ function SecaoFeriados() {
               {feriados!.map((f) => (
                 <TableRow key={f.id}>
                   <TableCell className="tabular-nums">
-                    {new Date(f.data + "T00:00:00").toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}
+                    {new Date(f.data + "T00:00:00").toLocaleDateString("pt-BR")}
                   </TableCell>
                   <TableCell className="text-foreground">{f.descricao}</TableCell>
                   <TableCell className="text-muted-foreground">

@@ -177,7 +177,7 @@ function Pagina() {
   function formatDataHora(v?: string | null) {
     if (!v) return "—";
     try {
-      return new Date(v).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo",  dateStyle: "short", timeStyle: "short" });
+      return new Date(v).toLocaleString("pt-BR", {  dateStyle: "short", timeStyle: "short" });
     } catch {
       return "—";
     }
