@@ -183,7 +183,7 @@ function contarPorBucket(rows: { created_at?: string | null }[], buckets: Return
  */
 async function carregarContratosCliente(
   supabase: any,
-  escopoEq: (q: any, col: string) => any,
+  escopoEq: (q: any, ...cols: string[]) => any,
   de: string,
   ate: string,
 ) {
@@ -196,6 +196,7 @@ async function carregarContratosCliente(
       .lte("contrato_emitido_em", ate)
       .limit(5000),
     "responsavel_id",
+    "criador_id",
   );
   if (cliRes.error) throw new Error(cliRes.error.message);
   const cliRowsAll = (cliRes.data ?? []) as any[];
@@ -272,7 +273,7 @@ interface AnteriorTotais {
 /** Totais do período anterior equivalente, para calcular tendências (deltas). */
 async function carregarAnterior(
   supabase: any,
-  escopoEq: (q: any, col: string) => any,
+  escopoEq: (q: any, ...cols: string[]) => any,
   deAtual: string,
   ateAtual: string,
 ): Promise<AnteriorTotais> {
@@ -288,6 +289,7 @@ async function carregarAnterior(
         .lte("created_at", ateFim)
         .limit(5000),
       "usuario_responsavel_id",
+      "usuario_criador_id",
     ),
     escopoEq(
       supabase
@@ -298,6 +300,7 @@ async function carregarAnterior(
         .lte("created_at", ateFim)
         .limit(5000),
       "usuario_responsavel_id",
+      "usuario_criador_id",
     ),
     carregarContratosCliente(supabase, escopoEq, de, ate),
   ]);
@@ -351,13 +354,14 @@ export const getPanelDados = createServerFn({ method: "POST" })
 
     // Filtro por usuário: quando um responsável específico é escolhido, ele
     // prevalece sobre o escopo (mesmo em "geral"). Sem responsável, mantém a
-    // regra de escopo: "minha" restringe ao próprio usuário; "geral" abre tudo.
-    const escopoEq = (q: any, col: string) =>
-      data.responsavel
-        ? q.eq(col, data.responsavel)
-        : data.escopo === "minha"
-          ? q.eq(col, userId)
-          : q;
+    // regra de escopo: "minha" restringe ao usuário — como responsável OU
+    // criador (participa/fez); "geral" abre tudo.
+    const escopoEq = (q: any, ...cols: string[]) => {
+      if (data.responsavel) return q.eq(cols[0], data.responsavel);
+      if (data.escopo !== "minha") return q;
+      if (cols.length <= 1) return q.eq(cols[0], userId);
+      return q.or(cols.map((c) => `${c}.eq.${userId}`).join(","));
+    };
 
     if (data.modulo === "visao-geral") {
       const [sims, props, contratosInfo, ant, clientesRes, demRes, tkRes, recRes, payRes, pipeRes] = await Promise.all([
@@ -370,6 +374,7 @@ export const getPanelDados = createServerFn({ method: "POST" })
             .lte("created_at", ateFim)
             .limit(5000),
           "usuario_responsavel_id",
+          "usuario_criador_id",
         ),
         escopoEq(
           supabase
@@ -383,6 +388,7 @@ export const getPanelDados = createServerFn({ method: "POST" })
             )
             .limit(5000),
           "usuario_responsavel_id",
+          "usuario_criador_id",
         ),
         carregarContratosCliente(supabase, escopoEq, de, ate),
         carregarAnterior(supabase, escopoEq, de, ate),
@@ -394,6 +400,7 @@ export const getPanelDados = createServerFn({ method: "POST" })
             .lte("created_at", ateFim)
             .limit(5000),
           "responsavel_id",
+          "criador_id",
         ),
         escopoEq(
           supabase
@@ -401,6 +408,7 @@ export const getPanelDados = createServerFn({ method: "POST" })
             .select("status,prazo_sla")
             .limit(5000),
           "responsavel_id",
+          "criador_id",
         ),
         escopoEq(
           supabase
@@ -408,20 +416,27 @@ export const getPanelDados = createServerFn({ method: "POST" })
             .select("status,prazo")
             .limit(5000),
           "responsavel_id",
+          "criador_id",
+        ),
+        escopoEq(
+          supabase
+            .from("financial_receivables")
+            .select("valor,valor_pago,status,vencimento,tipo,criador_id")
+            .in("status", ["aberta", "parcial"] as any)
+            .limit(5000),
+          "criador_id",
+        ),
+        escopoEq(
+          supabase
+            .from("financial_payables")
+            .select("valor,valor_pago,status,vencimento,criador_id")
+            .in("status", ["aberta", "parcial"] as any)
+            .limit(5000),
+          "criador_id",
         ),
         supabase
-          .from("financial_receivables")
-          .select("valor,valor_pago,status,vencimento,tipo")
-          .in("status", ["aberta", "parcial"] as any)
-          .limit(5000),
-        supabase
-          .from("financial_payables")
-          .select("valor,valor_pago,status,vencimento")
-          .in("status", ["aberta", "parcial"] as any)
-          .limit(5000),
-        supabase
           .from("cliente_pipeline")
-          .select("cliente_id,pipeline_stages(codigo,nome,ordem),clientes!inner(responsavel_id)")
+          .select("cliente_id,pipeline_stages(codigo,nome,ordem),clientes!inner(responsavel_id,criador_id)")
           .limit(5000),
       ]);
       if (sims.error) throw new Error(sims.error.message);
@@ -566,7 +581,17 @@ export const getPanelDados = createServerFn({ method: "POST" })
         : undefined;
 
       // Clientes por etapa do pipeline
-      const pipeRows = (pipeRes.data ?? []) as any[];
+      const pipeRowsBrutas = (pipeRes.data ?? []) as any[];
+      // Aplica o mesmo escopo em memória (o cliente_pipeline não permite
+      // filtro OR em join): somente clientes onde o usuário é responsável ou
+      // criador quando o escopo é "minha".
+      const filtroResp = data.responsavel ?? (data.escopo === "minha" ? userId : null);
+      const pipeRows = filtroResp
+        ? pipeRowsBrutas.filter((r) => {
+            const c = r.clientes ?? {};
+            return c.responsavel_id === filtroResp || c.criador_id === filtroResp;
+          })
+        : pipeRowsBrutas;
       const etapaMap = new Map<string, { valor: number; ordem: number }>();
       pipeRows.forEach((r) => {
         const stg = r.pipeline_stages;
@@ -730,6 +755,7 @@ export const getPanelDados = createServerFn({ method: "POST" })
           .lte("created_at", ateFim)
           .limit(5000),
         "usuario_responsavel_id",
+        "usuario_criador_id",
       ),
       escopoEq(
         supabase
@@ -743,6 +769,7 @@ export const getPanelDados = createServerFn({ method: "POST" })
           )
           .limit(5000),
         "usuario_responsavel_id",
+        "usuario_criador_id",
       ),
       escopoEq(
         supabase
@@ -752,6 +779,7 @@ export const getPanelDados = createServerFn({ method: "POST" })
           .lte("created_at", ateFim)
           .limit(5000),
         "responsavel_id",
+        "criador_id",
       ),
       escopoEq(
         supabase
@@ -761,6 +789,7 @@ export const getPanelDados = createServerFn({ method: "POST" })
           .lte("created_at", ateFim)
           .limit(5000),
         "responsavel_id",
+        "criador_id",
       ),
       carregarContratosCliente(supabase, escopoEq, de, ate),
       carregarAnterior(supabase, escopoEq, de, ate),
@@ -1046,12 +1075,12 @@ export const getPanelDrilldown = createServerFn({ method: "POST" })
     const f = data as unknown as ReportFiltros;
     const { de, ate } = resolverIntervalo(f);
     const ateFim = `${ate}T23:59:59`;
-    const escopoEq = (q: any, col: string) =>
-      data.responsavel
-        ? q.eq(col, data.responsavel)
-        : data.escopo === "minha"
-          ? q.eq(col, userId)
-          : q;
+    const escopoEq = (q: any, ...cols: string[]) => {
+      if (data.responsavel) return q.eq(cols[0], data.responsavel);
+      if (data.escopo !== "minha") return q;
+      if (cols.length <= 1) return q.eq(cols[0], userId);
+      return q.or(cols.map((c) => `${c}.eq.${userId}`).join(","));
+    };
 
     const dentroPeriodo = (iso?: string | null) =>
       !!iso && iso.slice(0, 10) >= de && iso.slice(0, 10) <= ate;
@@ -1073,6 +1102,7 @@ export const getPanelDrilldown = createServerFn({ method: "POST" })
           .order("created_at", { ascending: false })
           .limit(LIMITE * 2),
         "usuario_responsavel_id",
+        "usuario_criador_id",
       );
       if (res.error) throw new Error(res.error.message);
       return (res.data ?? []) as any[];
@@ -1090,6 +1120,7 @@ export const getPanelDrilldown = createServerFn({ method: "POST" })
           .order("created_at", { ascending: false })
           .limit(LIMITE),
         "usuario_responsavel_id",
+        "usuario_criador_id",
       );
       if (res.error) throw new Error(res.error.message);
       return (res.data ?? []) as any[];
@@ -1105,6 +1136,7 @@ export const getPanelDrilldown = createServerFn({ method: "POST" })
           .order("contrato_emitido_em", { ascending: false })
           .limit(LIMITE),
         "responsavel_id",
+        "criador_id",
       );
       if (cliRes.error) throw new Error(cliRes.error.message);
       const cliRows = (cliRes.data ?? []) as any[];
@@ -1406,6 +1438,7 @@ export const getPanelDrilldown = createServerFn({ method: "POST" })
           .order("created_at", { ascending: false })
           .limit(LIMITE),
         "responsavel_id",
+        "criador_id",
       );
       if (res.error) throw new Error(res.error.message);
       const rows = (res.data ?? []) as any[];
@@ -1431,6 +1464,7 @@ export const getPanelDrilldown = createServerFn({ method: "POST" })
           .select("id,numero,titulo,status,prazo_sla,created_at")
           .limit(LIMITE * 2),
         "responsavel_id",
+        "criador_id",
       );
       if (res.error) throw new Error(res.error.message);
       const agora = new Date();
@@ -1465,6 +1499,7 @@ export const getPanelDrilldown = createServerFn({ method: "POST" })
           .select("id,numero,titulo,status,prazo,created_at")
           .limit(LIMITE * 2),
         "responsavel_id",
+        "criador_id",
       );
       if (res.error) throw new Error(res.error.message);
       const agora = new Date();
@@ -1496,6 +1531,7 @@ export const getPanelDrilldown = createServerFn({ method: "POST" })
           .select("id,numero,titulo,status,prazo_sla,created_at")
           .limit(LIMITE * 2),
         "responsavel_id",
+        "criador_id",
       );
       if (res.error) throw new Error(res.error.message);
       const agora = new Date();
@@ -1538,6 +1574,7 @@ export const getPanelDrilldown = createServerFn({ method: "POST" })
           .lte("created_at", ateFim)
           .limit(LIMITE * 2),
         "responsavel_id",
+        "criador_id",
       );
       if (res.error) throw new Error(res.error.message);
       const rows = (res.data ?? []) as any[];
