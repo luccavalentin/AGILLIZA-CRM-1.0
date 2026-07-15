@@ -507,6 +507,7 @@ export function DocumentosGerais() {
       comercial: { Icon: Briefcase, classe: "from-primary/20 to-primary/5 text-primary" },
       imob: { Icon: Building2, classe: "from-primary/20 to-primary/5 text-primary" },
       corretor: { Icon: IdCard, classe: "from-primary/20 to-primary/5 text-primary" },
+      analista: { Icon: UserCog, classe: "from-primary/20 to-primary/5 text-primary" },
 
     };
     const { Icon, classe } = conf[tipo];
