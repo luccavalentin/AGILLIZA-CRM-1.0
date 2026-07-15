@@ -509,91 +509,92 @@ function Pagina() {
 
       {/* Filtros */}
       <div className="rounded-2xl border border-border bg-card p-3 shadow-card md:p-4">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(220px,1fr)_repeat(3,minmax(140px,180px))_auto]">
-          <div className="relative sm:col-span-2 lg:col-span-1">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={q}
-              onChange={(e) => {
-                setQ(e.target.value);
-                setPagina(1);
-              }}
-              placeholder="Buscar por título, cliente, responsável ou ID…"
-              className="pl-9"
-            />
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="relative min-w-[220px] flex-1">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={q}
+                onChange={(e) => {
+                  setQ(e.target.value);
+                  setPagina(1);
+                }}
+                placeholder="Buscar por título, cliente, responsável ou ID…"
+                className="pl-9"
+              />
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button variant="outline" size="sm" onClick={limparFiltros}>
+                <FilterX className="mr-1.5 h-4 w-4" /> Limpar
+              </Button>
+              <Button size="sm" onClick={exportarCsv} className="gap-1.5">
+                <Download className="h-4 w-4" /> Exportar
+              </Button>
+            </div>
           </div>
 
-          <FilterField label="Status">
-            <Select
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
+            <FilterSelect
+              label="Status"
               value={statusFiltro}
-              onValueChange={(v) => {
-                setStatusFiltro(v);
-                setPagina(1);
-              }}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Todos" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos</SelectItem>
-                <SelectItem value="aberta">Aberta</SelectItem>
-                <SelectItem value="em_andamento">Em andamento</SelectItem>
-                <SelectItem value="aguardando">Aguardando</SelectItem>
-                <SelectItem value="concluida">Concluída</SelectItem>
-                <SelectItem value="cancelada">Cancelada</SelectItem>
-              </SelectContent>
-            </Select>
-          </FilterField>
-
-          <FilterField label="Prioridade">
-            <Select
+              onValueChange={(v) => { setStatusFiltro(v); setPagina(1); }}
+              placeholder="Todos"
+              options={[
+                { value: "todos", label: "Todos" },
+                { value: "aberta", label: "Aberta" },
+                { value: "em_andamento", label: "Em andamento" },
+                { value: "aguardando", label: "Aguardando" },
+                { value: "concluida", label: "Concluída" },
+                { value: "cancelada", label: "Cancelada" },
+              ]}
+            />
+            <FilterSelect
+              label="Prioridade"
               value={prioridadeFiltro}
-              onValueChange={(v) => {
-                setPrioridadeFiltro(v);
-                setPagina(1);
-              }}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Todas" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todas">Todas</SelectItem>
-                <SelectItem value="p1">Alta</SelectItem>
-                <SelectItem value="p2">Média</SelectItem>
-                <SelectItem value="p3">Baixa</SelectItem>
-              </SelectContent>
-            </Select>
-          </FilterField>
-
-          <FilterField label="Responsável">
-            <Select
+              onValueChange={(v) => { setPrioridadeFiltro(v); setPagina(1); }}
+              placeholder="Todas"
+              options={[
+                { value: "todas", label: "Todas" },
+                { value: "p1", label: "Alta" },
+                { value: "p2", label: "Média" },
+                { value: "p3", label: "Baixa" },
+              ]}
+            />
+            <FilterSelect
+              label="Cliente"
+              value={clienteFiltro}
+              onValueChange={(v) => { setClienteFiltro(v); setPagina(1); }}
+              placeholder="Todos"
+              options={[{ value: "todos", label: "Todos" }, ...clientes.map(([id, n]) => ({ value: id, label: n }))]}
+            />
+            <FilterSelect
+              label="Responsável"
               value={responsavelFiltro}
-              onValueChange={(v) => {
-                setResponsavelFiltro(v);
-                setPagina(1);
-              }}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Todos" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos</SelectItem>
-                {responsaveis.map(([id, nome]) => (
-                  <SelectItem key={id} value={id}>
-                    {nome}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </FilterField>
-
-          <div className="flex flex-wrap items-end gap-2 sm:col-span-2 lg:col-span-1 lg:justify-end">
-            <Button variant="outline" size="sm" onClick={limparFiltros} className="flex-1 lg:flex-none">
-              <FilterX className="mr-1.5 h-4 w-4" /> Limpar filtros
-            </Button>
-            <Button size="sm" onClick={exportarCsv} className="flex-1 gap-1.5 lg:flex-none">
-              <Download className="h-4 w-4" /> Exportar
-            </Button>
+              onValueChange={(v) => { setResponsavelFiltro(v); setPagina(1); }}
+              placeholder="Todos"
+              options={[{ value: "todos", label: "Todos" }, ...responsaveis.map(([id, n]) => ({ value: id, label: n }))]}
+            />
+            <FilterSelect
+              label="Analista"
+              value={analistaFiltro}
+              onValueChange={(v) => { setAnalistaFiltro(v); setPagina(1); }}
+              placeholder="Todos"
+              options={[{ value: "todos", label: "Todos" }, ...analistas.map(([id, n]) => ({ value: id, label: n }))]}
+            />
+            <FilterSelect
+              label="Corretor"
+              value={corretorFiltro}
+              onValueChange={(v) => { setCorretorFiltro(v); setPagina(1); }}
+              placeholder="Todos"
+              options={[{ value: "todos", label: "Todos" }, ...corretores.map(([id, n]) => ({ value: id, label: n }))]}
+            />
+            <FilterSelect
+              label="Imobiliária"
+              value={imobiliariaFiltro}
+              onValueChange={(v) => { setImobiliariaFiltro(v); setPagina(1); }}
+              placeholder="Todas"
+              options={[{ value: "todos", label: "Todas" }, ...imobiliarias.map(([id, n]) => ({ value: id, label: n }))]}
+            />
           </div>
         </div>
       </div>
