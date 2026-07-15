@@ -825,7 +825,8 @@ function Pagina() {
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
-                          <span className="inline-flex items-center rounded-md border border-border bg-muted/50 px-1.5 py-0.5 font-mono text-[10px] tabular-nums text-muted-foreground">
+                          <span className="inline-flex items-center gap-1 rounded-md border border-primary/15 bg-primary/[0.06] px-1.5 py-0.5 font-mono text-[10px] font-semibold tabular-nums text-primary">
+                            <span className="size-1 rounded-full bg-primary" aria-hidden />
                             {d.numero ?? "—"}
                           </span>
                           <PrioridadeBadge prioridade={d.prioridade} />
