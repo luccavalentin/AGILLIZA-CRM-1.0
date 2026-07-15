@@ -276,6 +276,10 @@ function Pagina() {
   const [statusFiltro, setStatusFiltro] = useState<string>("todos");
   const [prioridadeFiltro, setPrioridadeFiltro] = useState<string>("todas");
   const [responsavelFiltro, setResponsavelFiltro] = useState<string>("todos");
+  const [clienteFiltro, setClienteFiltro] = useState<string>("todos");
+  const [analistaFiltro, setAnalistaFiltro] = useState<string>("todos");
+  const [corretorFiltro, setCorretorFiltro] = useState<string>("todos");
+  const [imobiliariaFiltro, setImobiliariaFiltro] = useState<string>("todos");
   const [pagina, setPagina] = useState(1);
   const [porPagina, setPorPagina] = useState(10);
 
@@ -292,24 +296,33 @@ function Pagina() {
 
   const todos = data ?? [];
 
-  const responsaveis = useMemo(() => {
+  function opcoesUnicas(getId: (d: (typeof todos)[number]) => string | null, getNome: (d: (typeof todos)[number]) => string | null) {
     const m = new Map<string, string>();
     todos.forEach((d) => {
-      if (d.responsavel_id && d.nome_responsavel) {
-        m.set(d.responsavel_id, d.nome_responsavel);
-      }
+      const id = getId(d);
+      const nome = getNome(d);
+      if (id && nome && !m.has(id)) m.set(id, nome);
     });
-    return [...m.entries()];
-  }, [todos]);
+    return [...m.entries()].sort((a, b) => a[1].localeCompare(b[1]));
+  }
+  const responsaveis = useMemo(() => opcoesUnicas((d) => d.responsavel_id, (d) => d.nome_responsavel), [todos]);
+  const clientes = useMemo(() => opcoesUnicas((d) => d.cliente_id, (d) => d.nome_cliente), [todos]);
+  const analistas = useMemo(() => opcoesUnicas((d) => d.analista_id, (d) => d.nome_analista), [todos]);
+  const corretores = useMemo(() => opcoesUnicas((d) => d.corretor_id, (d) => d.nome_corretor), [todos]);
+  const imobiliarias = useMemo(() => opcoesUnicas((d) => d.imobiliaria_id, (d) => d.nome_imobiliaria), [todos]);
 
   const filtrados = useMemo(() => {
     return todos.filter((d) => {
       if (statusFiltro !== "todos" && d.status !== statusFiltro) return false;
       if (prioridadeFiltro !== "todas" && d.prioridade !== prioridadeFiltro) return false;
       if (responsavelFiltro !== "todos" && d.responsavel_id !== responsavelFiltro) return false;
+      if (clienteFiltro !== "todos" && d.cliente_id !== clienteFiltro) return false;
+      if (analistaFiltro !== "todos" && d.analista_id !== analistaFiltro) return false;
+      if (corretorFiltro !== "todos" && d.corretor_id !== corretorFiltro) return false;
+      if (imobiliariaFiltro !== "todos" && d.imobiliaria_id !== imobiliariaFiltro) return false;
       return true;
     });
-  }, [todos, statusFiltro, prioridadeFiltro, responsavelFiltro]);
+  }, [todos, statusFiltro, prioridadeFiltro, responsavelFiltro, clienteFiltro, analistaFiltro, corretorFiltro, imobiliariaFiltro]);
 
   const stats = useMemo(() => {
     const base = todos;
