@@ -34,6 +34,7 @@ import { DocumentosTab } from "@/components/crm/documentos-tab";
 import { InteracoesTab } from "@/components/crm/interacoes-tab";
 import { VinculoTab } from "@/components/crm/vinculo-tab";
 import { ChatClienteInstagram } from "@/components/crm/chat-cliente-instagram";
+import { SimulacaoPreviewDialog } from "@/components/simulacao/simulacao-preview-dialog";
 import { VendedoresTab } from "@/components/crm/vendedores-tab";
 import { ImovelTab, IqTab } from "@/components/crm/imovel-iq-tab";
 import { StatusBadge } from "@/components/crm/tone-badge";
