@@ -598,19 +598,12 @@ export function DocumentosGerais() {
   function trocarAba(a: Aba) {
     setAba(a);
     setPagina(1);
-    if (a === "cliente") {
-      setVisao("clientes");
-      setCaminho([]);
-    } else if (a === "comercial") {
-      setVisao("hierarquia");
-      setCaminho([]);
-    } else if (a === "imobiliaria") {
-      setVisao("imobiliarias");
-      setCaminho([]);
-    } else if (a === "corretor") {
-      setVisao("corretores");
-      setCaminho([]);
-    }
+    setCaminho([]);
+    if (a === "cliente") setVisao("clientes");
+    else if (a === "comercial") setVisao("hierarquia");
+    else if (a === "imobiliaria") setVisao("imobiliarias");
+    else if (a === "corretor") setVisao("corretores");
+    else if (a === "analista") setVisao("analistas");
   }
 
   // Reutiliza os useMemo declarados antes do early return.
@@ -621,11 +614,9 @@ export function DocumentosGerais() {
   const listaAtual =
     aba === "cliente"
       ? clientesOrdenados
-      : caminho.length === 0
+      : pastasNivel.length > 0
         ? pastasOrdenadas
-        : pastasNivel.length > 0
-          ? pastasOrdenadas
-          : clientesNivel;
+        : clientesNivel;
 
   const totalItens = listaAtual.length;
   const totalPaginas = Math.max(1, Math.ceil(totalItens / POR_PAGINA));
@@ -645,21 +636,24 @@ export function DocumentosGerais() {
     { key: "comercial", label: "Por comercial", Icon: Briefcase },
     { key: "imobiliaria", label: "Por imobiliária", Icon: Building2 },
     { key: "corretor", label: "Por corretor", Icon: IdCard },
+    { key: "analista", label: "Por analista", Icon: UserCog },
     { key: "lixeira", label: "Lixeira", Icon: Trash2 },
   ];
 
   const secaoTitulo =
     aba === "cliente"
       ? "Pastas por cliente"
-      : aba === "comercial"
-        ? caminho.length === 0
-          ? "Comerciais"
-          : trilha[trilha.length - 1]?.nome ?? "Pastas"
-        : aba === "imobiliaria"
-          ? "Pastas por imobiliária"
-          : aba === "corretor"
-            ? "Pastas por corretor"
-            : "Lixeira";
+      : aba === "lixeira"
+        ? "Lixeira"
+        : caminho.length === 0
+          ? aba === "comercial"
+            ? "Comerciais"
+            : aba === "imobiliaria"
+              ? "Imobiliárias"
+              : aba === "corretor"
+                ? "Corretores"
+                : "Analistas"
+          : trilha[trilha.length - 1]?.nome ?? "Pastas";
 
   return (
     <div className="space-y-5">
