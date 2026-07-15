@@ -551,15 +551,37 @@ function Pagina() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {bancos.map((b: any) => (
+                    {bancosExibicao.map((b: any, idx: number) => {
+                      const primeiroDoGrupo =
+                        isMista &&
+                        (idx === 0 || bancosExibicao[idx - 1]._sistema !== b._sistema);
+                      const melhor = ehMelhor(b);
+                      return (
+                        <Fragment key={b.id}>
+                          {primeiroDoGrupo && (
+                            <TableRow className="border-border/60 bg-muted/40 hover:bg-muted/40">
+                              <TableCell colSpan={9} className="py-2">
+                                <div className="flex items-center gap-2">
+                                  <ToneBadge tone={b._sistema === "SAC" ? "info" : "warning"}>
+                                    Tabela {b._sistema}
+                                  </ToneBadge>
+                                  <span className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                                    {b._sistema === "SAC"
+                                      ? "Amortização constante · parcelas decrescentes"
+                                      : "Parcelas fixas · juros compostos"}
+                                  </span>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          )}
                       <TableRow
-                        key={b.id}
                         className={cn(
                           "border-border/50 transition-colors odd:bg-card even:bg-muted/20 hover:bg-primary/5",
-                          b.id === melhorId &&
+                          melhor &&
                             "bg-success/5 even:bg-success/5 hover:bg-success/10 [box-shadow:inset_3px_0_0_var(--success)]",
                         )}
                       >
+
                         <TableCell className="py-3 text-sm font-semibold">
                           <div className="flex items-center gap-2.5">
                             <BancoLogo nome={b.nome_banco} size="lg" />
