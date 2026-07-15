@@ -38,7 +38,7 @@ export function VinculosSection({
   vinculos: Array<{ parceiro_id: string; tipo_vinculo: TipoVinculo }>;
   vinculoSel: Record<string, string>;
   setVinculoSel: React.Dispatch<React.SetStateAction<Record<string, string>>>;
-  adicionarVinculo: (tipo: TipoVinculo) => void;
+  adicionarVinculo: (tipo: TipoVinculo, parceiroId?: string) => void;
   removerVinculo: (parceiro_id: string, tipo: TipoVinculo) => void;
   nomeParceiro: (id: string) => string;
   onCriarTipo: (tipo: TipoVinculo) => void;
