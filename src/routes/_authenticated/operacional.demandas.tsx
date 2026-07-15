@@ -25,6 +25,8 @@ import {
   escalarDemanda,
   excluirDemanda,
 } from "@/lib/operacional/demandas.functions";
+import { listarColegas, buscarClientesOpcoes } from "@/lib/operacional/shared.functions";
+import { listarParceiros } from "@/lib/crm/parceiros.functions";
 import { NovaDemandaDialog } from "@/components/operacional/nova-demanda-dialog";
 import { statusDemanda, type Prioridade } from "@/components/operacional/status";
 import { OpAvatar } from "@/components/operacional/ui";
@@ -44,6 +46,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/operacional/demandas")({
@@ -53,6 +65,11 @@ export const Route = createFileRoute("/_authenticated/operacional/demandas")({
 });
 
 type Escopo = "minhas" | "todas";
+
+interface OpcaoId {
+  id: string;
+  label: string;
+}
 
 function atrasada(d: { status: string; prazo_sla: string | null }): boolean {
   if (d.status === "concluida" || d.status === "cancelada" || !d.prazo_sla) return false;
@@ -303,20 +320,58 @@ function Pagina() {
 
   const todos = data ?? [];
 
-  function opcoesUnicas(getId: (d: (typeof todos)[number]) => string | null, getNome: (d: (typeof todos)[number]) => string | null) {
-    const m = new Map<string, string>();
-    todos.forEach((d) => {
-      const id = getId(d);
-      const nome = getNome(d);
-      if (id && nome && !m.has(id)) m.set(id, nome);
-    });
-    return [...m.entries()].sort((a, b) => a[1].localeCompare(b[1]));
-  }
-  const responsaveis = useMemo(() => opcoesUnicas((d) => d.responsavel_id, (d) => d.nome_responsavel), [todos]);
-  const clientes = useMemo(() => opcoesUnicas((d) => d.cliente_id, (d) => d.nome_cliente), [todos]);
-  const analistas = useMemo(() => opcoesUnicas((d) => d.analista_id, (d) => d.nome_analista), [todos]);
-  const corretores = useMemo(() => opcoesUnicas((d) => d.corretor_id, (d) => d.nome_corretor), [todos]);
-  const imobiliarias = useMemo(() => opcoesUnicas((d) => d.imobiliaria_id, (d) => d.nome_imobiliaria), [todos]);
+  // Listas completas de opções vindas do cadastro (não apenas do que aparece na
+  // grade atual), para que os filtros ofereçam todas as pessoas vinculadas ao
+  // correspondente.
+  const { data: colegasData } = useQuery({
+    queryKey: ["colegas"],
+    queryFn: () => listarColegas(),
+    staleTime: 5 * 60 * 1000,
+  });
+  const { data: clientesData } = useQuery({
+    queryKey: ["clientes-opcoes-demandas"],
+    queryFn: () => buscarClientesOpcoes({ data: {} }),
+    staleTime: 5 * 60 * 1000,
+  });
+  const { data: parceirosData } = useQuery({
+    queryKey: ["parceiros-opcoes-demandas"],
+    queryFn: () => listarParceiros(),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const responsaveis = useMemo<OpcaoId[]>(
+    () =>
+      (colegasData ?? [])
+        .filter((c) => c.nome)
+        .map((c) => ({ id: c.id, label: c.nome as string }))
+        .sort((a, b) => a.label.localeCompare(b.label)),
+    [colegasData],
+  );
+  const analistas = responsaveis; // Analista = criador do cliente (mesma base de perfis)
+  const clientes = useMemo<OpcaoId[]>(
+    () =>
+      (clientesData ?? [])
+        .filter((c) => c.nome)
+        .map((c) => ({ id: c.id, label: c.nome as string }))
+        .sort((a, b) => a.label.localeCompare(b.label)),
+    [clientesData],
+  );
+  const corretores = useMemo<OpcaoId[]>(
+    () =>
+      (parceirosData ?? [])
+        .filter((p) => (p.tipo_pessoa ?? "PF") === "PF" && (p.nome || p.razao_social))
+        .map((p) => ({ id: p.profile_id ?? p.id, label: (p.nome ?? p.razao_social) as string }))
+        .sort((a, b) => a.label.localeCompare(b.label)),
+    [parceirosData],
+  );
+  const imobiliarias = useMemo<OpcaoId[]>(
+    () =>
+      (parceirosData ?? [])
+        .filter((p) => p.tipo_pessoa === "PJ" && (p.razao_social || p.nome))
+        .map((p) => ({ id: p.profile_id ?? p.id, label: (p.razao_social ?? p.nome) as string }))
+        .sort((a, b) => a.label.localeCompare(b.label)),
+    [parceirosData],
+  );
 
   const filtrados = useMemo(() => {
     return todos.filter((d) => {
@@ -560,40 +615,40 @@ function Pagina() {
                 { value: "p3", label: "Baixa" },
               ]}
             />
-            <FilterSelect
+            <FilterCombo
               label="Cliente"
               value={clienteFiltro}
               onValueChange={(v) => { setClienteFiltro(v); setPagina(1); }}
               placeholder="Todos"
-              options={[{ value: "todos", label: "Todos" }, ...clientes.map(([id, n]) => ({ value: id, label: n }))]}
+              options={clientes}
             />
-            <FilterSelect
+            <FilterCombo
               label="Responsável"
               value={responsavelFiltro}
               onValueChange={(v) => { setResponsavelFiltro(v); setPagina(1); }}
               placeholder="Todos"
-              options={[{ value: "todos", label: "Todos" }, ...responsaveis.map(([id, n]) => ({ value: id, label: n }))]}
+              options={responsaveis}
             />
-            <FilterSelect
+            <FilterCombo
               label="Analista"
               value={analistaFiltro}
               onValueChange={(v) => { setAnalistaFiltro(v); setPagina(1); }}
               placeholder="Todos"
-              options={[{ value: "todos", label: "Todos" }, ...analistas.map(([id, n]) => ({ value: id, label: n }))]}
+              options={analistas}
             />
-            <FilterSelect
+            <FilterCombo
               label="Corretor"
               value={corretorFiltro}
               onValueChange={(v) => { setCorretorFiltro(v); setPagina(1); }}
               placeholder="Todos"
-              options={[{ value: "todos", label: "Todos" }, ...corretores.map(([id, n]) => ({ value: id, label: n }))]}
+              options={corretores}
             />
-            <FilterSelect
+            <FilterCombo
               label="Imobiliária"
               value={imobiliariaFiltro}
               onValueChange={(v) => { setImobiliariaFiltro(v); setPagina(1); }}
               placeholder="Todas"
-              options={[{ value: "todos", label: "Todas" }, ...imobiliarias.map(([id, n]) => ({ value: id, label: n }))]}
+              options={imobiliarias}
             />
           </div>
         </div>
@@ -664,7 +719,8 @@ function Pagina() {
                       className="cursor-pointer transition-colors hover:bg-accent/40"
                     >
                       <td className="px-5 py-3 align-middle">
-                        <span className="inline-flex items-center rounded-md border border-border bg-muted/50 px-2 py-0.5 font-mono text-[11px] tabular-nums text-muted-foreground">
+                        <span className="inline-flex items-center gap-1.5 rounded-md border border-primary/15 bg-primary/[0.06] px-2 py-1 font-mono text-[11px] font-semibold tracking-tight tabular-nums text-primary shadow-[0_1px_0_0_hsl(var(--border))]">
+                          <span className="size-1.5 rounded-full bg-primary" aria-hidden />
                           {d.numero ?? "—"}
                         </span>
                       </td>
@@ -769,7 +825,8 @@ function Pagina() {
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
-                          <span className="inline-flex items-center rounded-md border border-border bg-muted/50 px-1.5 py-0.5 font-mono text-[10px] tabular-nums text-muted-foreground">
+                          <span className="inline-flex items-center gap-1 rounded-md border border-primary/15 bg-primary/[0.06] px-1.5 py-0.5 font-mono text-[10px] font-semibold tabular-nums text-primary">
+                            <span className="size-1 rounded-full bg-primary" aria-hidden />
                             {d.numero ?? "—"}
                           </span>
                           <PrioridadeBadge prioridade={d.prioridade} />
@@ -930,6 +987,79 @@ function FilterSelect({
           ))}
         </SelectContent>
       </Select>
+    </FilterField>
+  );
+}
+
+/** Filtro combobox pesquisável — opções vêm da base cadastrada, não apenas do que aparece na grade. */
+function FilterCombo({
+  label,
+  value,
+  onValueChange,
+  placeholder,
+  options,
+}: {
+  label: string;
+  value: string;
+  onValueChange: (v: string) => void;
+  placeholder?: string;
+  options: OpcaoId[];
+}) {
+  const [open, setOpen] = useState(false);
+  const selecionado = options.find((o) => o.id === value);
+  const rotulo = value === "todos" || !value ? (placeholder ?? "Todos") : (selecionado?.label ?? "—");
+  return (
+    <FilterField label={label}>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            type="button"
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className={cn(
+              "w-full justify-between font-normal",
+              (value === "todos" || !value) && "text-muted-foreground",
+            )}
+          >
+            <span className="truncate">{rotulo}</span>
+            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+          <Command>
+            <CommandInput placeholder="Buscar…" />
+            <CommandList>
+              <CommandEmpty>Nenhum resultado.</CommandEmpty>
+              <CommandGroup>
+                <CommandItem
+                  value="__todos__"
+                  onSelect={() => {
+                    onValueChange("todos");
+                    setOpen(false);
+                  }}
+                >
+                  <Check className={cn("mr-2 h-4 w-4", value === "todos" || !value ? "opacity-100" : "opacity-0")} />
+                  {placeholder ?? "Todos"}
+                </CommandItem>
+                {options.map((o) => (
+                  <CommandItem
+                    key={o.id}
+                    value={o.label}
+                    onSelect={() => {
+                      onValueChange(o.id);
+                      setOpen(false);
+                    }}
+                  >
+                    <Check className={cn("mr-2 h-4 w-4", value === o.id ? "opacity-100" : "opacity-0")} />
+                    <span className="truncate">{o.label}</span>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
     </FilterField>
   );
 }
