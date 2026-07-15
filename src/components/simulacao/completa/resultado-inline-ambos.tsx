@@ -475,8 +475,19 @@ export function ResultadoInlineAmbos({ simulacaoIdSac, simulacaoIdPrice, onFecha
                             <BancoLogo nome={b.nome_banco} size="md" />
                             <div className="min-w-0 flex-1">
                               <div className="flex items-center gap-1.5">
+                                <span
+                                  className={cn(
+                                    "inline-flex items-center rounded-md border px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider",
+                                    l.sistema === "SAC"
+                                      ? "border-info/30 bg-info/10 text-info"
+                                      : "border-warning/30 bg-warning/10 text-warning",
+                                  )}
+                                >
+                                  {l.sistema}
+                                </span>
                                 <span className="truncate text-sm font-semibold" style={{ color: corDoBanco(b.nome_banco) }}>{b.nome_banco}</span>
                               </div>
+
                               {isMelhor && <ToneBadge tone="success">Melhor taxa</ToneBadge>}
                               {b.status_banco === "erro" && b.mensagem_banco && (
                                 <p className="mt-0.5 line-clamp-1 text-[11px] text-destructive">{b.mensagem_banco}</p>
