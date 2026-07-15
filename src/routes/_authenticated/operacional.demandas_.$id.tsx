@@ -314,7 +314,7 @@ function Pagina() {
           {data.permissoes?.pode_transferir && (
             <TransferirDialog
               demandaId={id}
-              onTransferido={() => {
+              onTransferida={() => {
                 refetch();
                 qc.invalidateQueries({ queryKey: ["demandas"] });
               }}
