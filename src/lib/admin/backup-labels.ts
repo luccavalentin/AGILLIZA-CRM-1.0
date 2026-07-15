@@ -157,7 +157,7 @@ function humanizarValor(col: string, v: Valor): Valor {
         // Se tem hora, mostra data+hora; senão só data.
         return v.includes("T")
           ? d.toLocaleString("pt-BR")
-          : d.toLocaleDateString("pt-BR");
+          : d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
       }
     }
 

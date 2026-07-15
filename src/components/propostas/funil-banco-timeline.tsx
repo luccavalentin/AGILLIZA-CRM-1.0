@@ -341,7 +341,7 @@ function parseDate(v: string): Date | null {
 function formatarDataHora(v: string): string {
   const d = parseDate(v);
   if (!d) return v;
-  return d.toLocaleString("pt-BR", { 
+  return d.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo",  
     day: "2-digit",
     month: "2-digit",
     year: "numeric",

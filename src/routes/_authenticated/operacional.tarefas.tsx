@@ -42,7 +42,7 @@ type Tarefa = Awaited<ReturnType<typeof listarTarefas>>[number];
 
 function fmtData(iso: string | null): string {
   if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("pt-BR", { 
+  return new Date(iso).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo",  
     day: "2-digit",
     month: "2-digit",
     hour: "2-digit",

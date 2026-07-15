@@ -26,7 +26,7 @@ function fmtData(v: string | null | undefined): string {
   if (!v) return "—";
   const d = new Date(v);
   if (Number.isNaN(d.getTime())) return String(v);
-  return d.toLocaleDateString("pt-BR");
+  return d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
 }
 
 function docLabel(tipo: string | null | undefined): string {

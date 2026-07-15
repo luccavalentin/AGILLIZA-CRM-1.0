@@ -53,7 +53,7 @@ function dataTxt(v: unknown): string {
   if (!v) return "—";
   const d = new Date(String(v).length <= 10 ? `${v}T00:00:00` : String(v));
   if (Number.isNaN(d.getTime())) return String(v);
-  return d.toLocaleDateString("pt-BR");
+  return d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
 }
 
 function produtoLabel(s: any): string {

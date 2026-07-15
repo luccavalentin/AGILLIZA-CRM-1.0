@@ -156,7 +156,7 @@ function construirBuckets(deISO: string, ateISO: string) {
   const rotulo = (chave: string) => {
     if (porMes) {
       const [y, m] = chave.split("-");
-      return new Date(Number(y), Number(m) - 1, 1).toLocaleDateString("pt-BR", {  month: "short" });
+      return new Date(Number(y), Number(m) - 1, 1).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo",   month: "short" });
     }
     const [, m, d] = chave.split("-");
     return `${d}/${m}`;

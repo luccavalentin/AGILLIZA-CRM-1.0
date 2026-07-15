@@ -58,7 +58,7 @@ export function horaCurta(iso: string) {
     d.getDate() === hoje.getDate() &&
     d.getMonth() === hoje.getMonth() &&
     d.getFullYear() === hoje.getFullYear();
-  return d.toLocaleString("pt-BR", { 
+  return d.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo",  
     ...(mesmoDia ? {} : { day: "2-digit", month: "2-digit" }),
     hour: "2-digit",
     minute: "2-digit",
@@ -66,7 +66,7 @@ export function horaCurta(iso: string) {
 }
 
 function horaMin(iso: string) {
-  return new Date(iso).toLocaleTimeString("pt-BR", {  hour: "2-digit", minute: "2-digit" });
+  return new Date(iso).toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo",   hour: "2-digit", minute: "2-digit" });
 }
 
 function rotuloDia(iso: string) {
@@ -80,7 +80,7 @@ function rotuloDia(iso: string) {
     a.getFullYear() === b.getFullYear();
   if (igual(d, hoje)) return "Hoje";
   if (igual(d, ontem)) return "Ontem";
-  return d.toLocaleDateString("pt-BR", {  day: "2-digit", month: "long", year: "numeric" });
+  return d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo",   day: "2-digit", month: "long", year: "numeric" });
 }
 
 function chaveDia(iso: string) {

@@ -533,8 +533,8 @@ export function ResultadoInlineCompleta({ simulacaoId, onFechar }: Props) {
                         )}
                       </div>
                       <time className="shrink-0 text-xs tabular-nums text-muted-foreground">
-                        {dt.toLocaleDateString("pt-BR")}{" · "}
-                        {dt.toLocaleTimeString("pt-BR", {  hour: "2-digit", minute: "2-digit" })}
+                        {dt.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}{" · "}
+                        {dt.toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo",   hour: "2-digit", minute: "2-digit" })}
                       </time>
                     </li>
                   );

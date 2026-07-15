@@ -773,10 +773,10 @@ function Pagina() {
                           )}
                         </div>
                         <time className="shrink-0 text-xs tabular-nums text-muted-foreground">
-                          {dt.toLocaleDateString("pt-BR")}
+                          {dt.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}
                           <span className="text-muted-foreground/60">
                             {" · "}
-                            {dt.toLocaleTimeString("pt-BR", { 
+                            {dt.toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo",  
                               hour: "2-digit",
                               minute: "2-digit",
                             })}

@@ -70,7 +70,7 @@ function fmtData(v: string | null | undefined) {
   if (!v) return "—";
   const d = new Date(v);
   if (Number.isNaN(d.getTime())) return String(v);
-  return d.toLocaleDateString("pt-BR");
+  return d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
 }
 
 const SEM_CORRETOR = "Sem corretor vinculado";

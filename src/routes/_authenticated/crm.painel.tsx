@@ -1280,7 +1280,7 @@ function Pagina() {
                       <span className="inline-flex items-center gap-1">
                         <CalendarCheck className="size-3" />
                         {ct.contrato_emitido_em
-                          ? new Date(ct.contrato_emitido_em).toLocaleDateString("pt-BR")
+                          ? new Date(ct.contrato_emitido_em).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })
                           : "—"}
                       </span>
                       {ct.nome_banco && (
