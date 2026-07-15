@@ -324,8 +324,15 @@ export function SecaoOperacaoImovel({ ctx }: { ctx: SimulacaoCompletaCtx }) {
             <SelectContent>
               <SelectItem value="S">SAC</SelectItem>
               <SelectItem value="P">PRICE</SelectItem>
+              <SelectItem value="B">Ambos (SAC + PRICE)</SelectItem>
             </SelectContent>
           </Select>
+          {f.sistema_amortizacao === "B" && (
+            <p className="mt-1 text-xs text-muted-foreground">
+              Selecione bancos para SAC e PRICE separadamente. Uma simulação é gerada para cada
+              sistema, cada uma com sua renda.
+            </p>
+          )}
         </Campo>
         <Campo label="Financiar despesas?">
           <label className="flex items-center gap-2 py-2 text-sm text-foreground">
