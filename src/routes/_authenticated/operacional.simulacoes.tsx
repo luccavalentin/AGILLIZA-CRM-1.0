@@ -128,8 +128,10 @@ function Pagina() {
     bancos: any[];
   } | null>(null);
   const [envioCarregando, setEnvioCarregando] = useState(false);
-  const [bancoSelecionado, setBancoSelecionado] = useState<string | null>(null);
-  const [enviando, setEnviando] = useState(false);
+  const [enviandoBancoId, setEnviandoBancoId] = useState<string | null>(null);
+  const [propostasCriadas, setPropostasCriadas] = useState<
+    Array<{ banco_id: string; nome_banco: string; proposta_id: string; numero: string }>
+  >([]);
 
 
   const { data, isLoading } = useQuery({
