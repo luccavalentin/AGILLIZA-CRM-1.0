@@ -247,25 +247,32 @@ function KpiCard({
   accent: string;
 }) {
   return (
-    <div
-      className="relative overflow-hidden rounded-2xl border border-border bg-card p-4 shadow-card transition-all hover:-translate-y-0.5 hover:shadow-elegant"
-      style={{ borderBottom: `3px solid ${accent}` }}
-    >
-      <div className="flex items-start justify-between gap-2">
-        <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+    <div className="group relative overflow-hidden rounded-xl border border-border bg-card px-3 py-2.5 transition-colors hover:border-foreground/15">
+      <span
+        aria-hidden
+        className="absolute inset-y-0 left-0 w-[3px]"
+        style={{ backgroundColor: accent }}
+      />
+      <div className="flex items-center justify-between gap-2 pl-2">
+        <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
           {label}
         </p>
         <span
-          className="grid size-7 shrink-0 place-items-center rounded-full border border-border text-muted-foreground"
-          style={{ color: accent, borderColor: `color-mix(in oklab, ${accent} 30%, var(--border))` }}
+          className="grid size-5 shrink-0 place-items-center rounded-full"
+          style={{
+            color: accent,
+            backgroundColor: `color-mix(in oklab, ${accent} 10%, transparent)`,
+          }}
         >
           {icon}
         </span>
       </div>
-      <p className="mt-3 text-3xl font-semibold leading-none tracking-tight text-foreground tabular-nums">
+      <p className="mt-1 pl-2 text-xl font-semibold leading-tight tracking-tight text-foreground tabular-nums">
         {value}
       </p>
-      {hint && <p className="mt-2 text-[11px] text-muted-foreground">{hint}</p>}
+      {hint && (
+        <p className="mt-0.5 pl-2 text-[10.5px] leading-tight text-muted-foreground">{hint}</p>
+      )}
     </div>
   );
 }
