@@ -40,11 +40,13 @@ import {
   removerAnexoDemanda,
   urlAnexoDemanda,
   excluirDemanda,
+  editarDemanda,
   listarDemandas,
   type DemandaStatus,
 } from "@/lib/operacional/demandas.functions";
 import { TransferirDialog } from "@/components/operacional/transferir-dialog";
 import { EditarDemandaDialog } from "@/components/operacional/editar-demanda-dialog";
+import { NovaTarefaDialog } from "@/components/operacional/nova-tarefa-dialog";
 import { SlaCountdown } from "@/components/operacional/sla-countdown";
 import { ToneBadge } from "@/components/crm/tone-badge";
 import { PRIORIDADE, statusDemanda } from "@/components/operacional/status";
