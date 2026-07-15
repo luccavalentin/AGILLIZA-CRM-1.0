@@ -434,14 +434,7 @@ function Pagina() {
               <KanbanSquare className="mr-1.5 h-4 w-4" /> Kanban
             </Link>
           </Button>
-          <NovaDemandaDialog
-            onCriada={refetch}
-            trigger={
-              <Button size="sm" className="gap-1.5">
-                <Plus className="h-4 w-4" /> Nova demanda
-              </Button>
-            }
-          />
+          <NovaDemandaDialog onCriada={refetch} />
         </div>
       </div>
 
