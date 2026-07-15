@@ -628,6 +628,11 @@ function Pagina() {
           )}
         </TabsContent>
       </Tabs>
+      <SimulacaoPreviewDialog
+        simulacaoId={previewSimId}
+        open={!!previewSimId}
+        onOpenChange={(o) => !o && setPreviewSimId(null)}
+      />
     </div>
   );
 }
