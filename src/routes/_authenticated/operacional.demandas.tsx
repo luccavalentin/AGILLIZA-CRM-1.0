@@ -348,7 +348,18 @@ function Pagina() {
         .sort((a, b) => a.label.localeCompare(b.label)),
     [colegasData],
   );
-  const analistas = responsaveis; // Analista = criador do cliente (mesma base de perfis)
+  const filtrarColegasPor = (papel: string) =>
+    (colegasData ?? [])
+      .filter((c) => {
+        if (!c.nome) return false;
+        const tipo = (c as any).tipo_pessoa ?? null;
+        const roles = ((c as any).roles ?? []) as string[];
+        return tipo === papel || roles.includes(papel);
+      })
+      .map((c) => ({ id: c.id, label: c.nome as string }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+  const analistas = useMemo<OpcaoId[]>(() => filtrarColegasPor("analista"), [colegasData]);
+  const comerciais = useMemo<OpcaoId[]>(() => filtrarColegasPor("comercial"), [colegasData]);
   const clientes = useMemo<OpcaoId[]>(
     () =>
       (clientesData ?? [])
@@ -360,7 +371,7 @@ function Pagina() {
   const corretores = useMemo<OpcaoId[]>(
     () =>
       (parceirosData ?? [])
-        .filter((p) => (p.tipo_pessoa ?? "PF") === "PF" && (p.nome || p.razao_social))
+        .filter((p) => (p.tipo_pessoa ?? "") === "corretor" || ((p.tipo_pessoa ?? "PF") === "PF" && (p.nome || p.razao_social)))
         .map((p) => ({ id: p.profile_id ?? p.id, label: (p.nome ?? p.razao_social) as string }))
         .sort((a, b) => a.label.localeCompare(b.label)),
     [parceirosData],
@@ -368,7 +379,8 @@ function Pagina() {
   const imobiliarias = useMemo<OpcaoId[]>(
     () =>
       (parceirosData ?? [])
-        .filter((p) => p.tipo_pessoa === "PJ" && (p.razao_social || p.nome))
+        .filter((p) => p.tipo_pessoa === "imobiliaria" || p.tipo_pessoa === "PJ")
+        .filter((p) => p.razao_social || p.nome)
         .map((p) => ({ id: p.profile_id ?? p.id, label: (p.razao_social ?? p.nome) as string }))
         .sort((a, b) => a.label.localeCompare(b.label)),
     [parceirosData],
