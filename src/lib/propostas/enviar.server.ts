@@ -1106,10 +1106,22 @@ export async function sincronizarPropostaImpl({
     const sim = escolherSimulacaoBanco(pb, simulacoes);
     if (!sim) continue;
 
-    const erroMsg = extrairErroRetorno(
+    let erroMsg = extrairErroRetorno(
       sim.retornoIntegracao ?? sim.descricaoRespostaBanco?.retornoIntegracao,
     );
+    // Detecção adicional: quando o banco marca tipoSituacao "E" (erro) e a
+    // simulação NÃO tem timestamps de envio/retorno ao banco, a proposta
+    // nunca chegou de fato ao banco — deve virar erro visível (não ficar
+    // eternamente "em análise" no polling).
+    const tipoStr = String(sim?.tipoSituacao ?? "").toUpperCase().charAt(0);
+    const nuncaEnviada =
+      sim?.dataHoraEnvioIntegracao == null && sim?.dataHoraRetornoIntegracao == null;
+    if (!erroMsg && tipoStr === "E" && nuncaEnviada) {
+      erroMsg =
+        "A proposta não chegou a ser recebida pelo banco (falha na integração). Reenvie para retomar o processo.";
+    }
     const mapa = statusInternoBanco(sim.tipoSituacao, Boolean(erroMsg), sim.codigoSituacaoBanco);
+
 
     if (mapa.proposta === "credito_aprovado") algumAprovado = true;
     else if (mapa.proposta === "em_analise_credito") algumEmAnalise = true;
