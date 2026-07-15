@@ -4573,6 +4573,7 @@ export type Database = {
       }
       simulacoes: {
         Row: {
+          agrupador_id: string | null
           analista_id: string | null
           celular: string | null
           celular_conjuge: string | null
@@ -4636,6 +4637,7 @@ export type Database = {
           valor_imovel: number | null
         }
         Insert: {
+          agrupador_id?: string | null
           analista_id?: string | null
           celular?: string | null
           celular_conjuge?: string | null
@@ -4699,6 +4701,7 @@ export type Database = {
           valor_imovel?: number | null
         }
         Update: {
+          agrupador_id?: string | null
           analista_id?: string | null
           celular?: string | null
           celular_conjuge?: string | null
