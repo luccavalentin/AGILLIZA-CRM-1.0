@@ -215,14 +215,8 @@ export const explorarDocumentosGerais = createServerFn({ method: "GET" })
       };
     });
 
-    // Mescla as bases completas (todos os usuários daquele tipo cadastrados)
-    // com os nomes vindos dos vínculos — assim os dropdowns listam todos.
-    const mesclar = (base: DGOpcaoFiltro[], extra: Map<string, string>): DGOpcaoFiltro[] => {
-      const map = new Map<string, string>();
-      for (const b of base) map.set(b.id, b.nome);
-      for (const [id, nome] of extra) if (!map.has(id)) map.set(id, nome);
-      return Array.from(map, ([id, nome]) => ({ id, nome })).sort(ordenarNome);
-    };
+    // (mescla removida: as bases já contêm todos os cadastrados)
+
 
     // Cada dropdown/aba lista TODOS os usuários cadastrados naquele papel
     // (por `tipo_pessoa` ou `user_roles.role`), independentemente de haver
