@@ -218,8 +218,11 @@ function Pagina() {
     queryKey,
     queryFn: () =>
       listar({ data: { desde: desde || undefined, ate: ate || undefined, escopo } }),
-    staleTime: 30_000,
+    staleTime: 2 * 60_000,
+    gcTime: 10 * 60_000,
     refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
   });
 
   // Debounce da busca de clientes para não disparar servidor a cada tecla.
