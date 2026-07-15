@@ -844,13 +844,18 @@ export const inverterTitularSimulacao = createServerFn({ method: "POST" })
             const nome = (params.nome || "").trim();
             const documento = (params.documento || "").replace(/\D+/g, "");
             if (!nome || !documento || !params.dataNascimento) return;
-            const campos: Record<string, unknown> = {
+            const campos = {
               nome,
               email: (params.email || "").toLowerCase() || null,
               telefone_celular: params.celular || null,
               data_nascimento: params.dataNascimento,
               renda_total_declarada: params.renda ?? 0,
-              estado_civil: params.estadoCivil || "solteiro",
+              estado_civil: (params.estadoCivil || "solteiro") as
+                | "solteiro"
+                | "casado"
+                | "divorciado"
+                | "viuvo"
+                | "uniao_estavel",
               conjuge_nome: params.conjugeNome || null,
               conjuge_cpf: params.conjugeCpf
                 ? params.conjugeCpf.replace(/\D+/g, "")
@@ -874,7 +879,7 @@ export const inverterTitularSimulacao = createServerFn({ method: "POST" })
                 numero_cliente: "",
                 tipo_pessoa: "PF",
                 documento,
-                origem: "simulacao",
+                origem: "direto",
                 responsavel_id: userId,
                 criador_id: userId,
                 ...campos,
