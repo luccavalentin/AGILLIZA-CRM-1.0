@@ -701,8 +701,8 @@ function extrairErroRetorno(retorno: unknown): string | null {
       null
     );
   }
-  const direto = obj?.message ?? obj?.erro ?? obj?.error_description ?? null;
-  if (direto) return String(direto);
+  const direto = obj?.message ?? obj?.erro ?? obj?.error_description ?? obj?.mensagem ?? null;
+  if (direto && String(direto).trim()) return String(direto);
   const error = obj?.error;
   if (typeof error === "string") return error;
   if (error && typeof error === "object") {
@@ -711,8 +711,19 @@ function extrairErroRetorno(retorno: unknown): string | null {
     }
     if (error.message) return String(error.message);
   }
+  // Alguns bancos devolvem apenas `{codigo:"121-L", mensagem:""}` — código sem
+  // texto ainda indica falha na integração (a proposta não chegou ao banco).
+  const codigo = obj?.codigo ?? obj?.code ?? null;
+  if (codigo) {
+    const c = String(codigo).trim();
+    // Códigos que começam com "0"/"200"/"OK"/"SUCC" indicam sucesso.
+    if (c && !/^(0+|200|ok|succ)/i.test(c)) {
+      return `Falha na integração com o banco (código ${c}). A proposta não chegou a ser recebida — reenvie.`;
+    }
+  }
   return null;
 }
+
 
 /** Traduz o tipoSituacao da proposta (por banco) para status interno do banco. */
 function statusInternoBanco(
@@ -1095,10 +1106,22 @@ export async function sincronizarPropostaImpl({
     const sim = escolherSimulacaoBanco(pb, simulacoes);
     if (!sim) continue;
 
-    const erroMsg = extrairErroRetorno(
+    let erroMsg = extrairErroRetorno(
       sim.retornoIntegracao ?? sim.descricaoRespostaBanco?.retornoIntegracao,
     );
+    // Detecção adicional: quando o banco marca tipoSituacao "E" (erro) e a
+    // simulação NÃO tem timestamps de envio/retorno ao banco, a proposta
+    // nunca chegou de fato ao banco — deve virar erro visível (não ficar
+    // eternamente "em análise" no polling).
+    const tipoStr = String(sim?.tipoSituacao ?? "").toUpperCase().charAt(0);
+    const nuncaEnviada =
+      sim?.dataHoraEnvioIntegracao == null && sim?.dataHoraRetornoIntegracao == null;
+    if (!erroMsg && tipoStr === "E" && nuncaEnviada) {
+      erroMsg =
+        "A proposta não chegou a ser recebida pelo banco (falha na integração). Reenvie para retomar o processo.";
+    }
     const mapa = statusInternoBanco(sim.tipoSituacao, Boolean(erroMsg), sim.codigoSituacaoBanco);
+
 
     if (mapa.proposta === "credito_aprovado") algumAprovado = true;
     else if (mapa.proposta === "em_analise_credito") algumEmAnalise = true;
