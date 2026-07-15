@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { listarClienteIdsParceiroDoUsuario } from "@/lib/escopo";
 
 export type TarefaStatus = "aberta" | "em_andamento" | "concluida" | "cancelada";
 export type Prioridade = "p1" | "p2" | "p3";
