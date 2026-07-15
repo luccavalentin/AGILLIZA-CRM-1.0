@@ -351,14 +351,36 @@ function Pagina() {
                   rotulo="Valor financiado"
                   valor={formatBRL(s.valor_financiamento)}
                 />
-                {rendaBancos && (
-                  <ResumoCelula
-                    rotulo="Renda exigida"
-                    valor={formatBRL(rendaBancos.rendaMinima)}
-                    detalhe={rendaBancos.bancoNome ?? "maior retorno bancário"}
-                    destaque
-                  />
+                {isMista ? (
+                  <>
+                    {rendaSac && (
+                      <ResumoCelula
+                        rotulo="Renda exigida — SAC"
+                        valor={formatBRL(rendaSac.rendaMinima)}
+                        detalhe={rendaSac.bancoNome ?? "maior retorno bancário"}
+                        destaque
+                      />
+                    )}
+                    {rendaPrice && (
+                      <ResumoCelula
+                        rotulo="Renda exigida — PRICE"
+                        valor={formatBRL(rendaPrice.rendaMinima)}
+                        detalhe={rendaPrice.bancoNome ?? "maior retorno bancário"}
+                        destaque
+                      />
+                    )}
+                  </>
+                ) : (
+                  rendaBancos && (
+                    <ResumoCelula
+                      rotulo="Renda exigida"
+                      valor={formatBRL(rendaBancos.rendaMinima)}
+                      detalhe={rendaBancos.bancoNome ?? "maior retorno bancário"}
+                      destaque
+                    />
+                  )
                 )}
+
                 <ResumoCelula
                   rotulo="Financiar despesas"
                   valor={s.fg_financiar_despesas ? "Sim" : "Não"}
