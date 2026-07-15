@@ -102,7 +102,7 @@ export function Topbar({
               <Button
                 variant="ghost"
                 size="icon"
-                className="rounded-full"
+                className="min-h-11 min-w-11 rounded-full sm:min-h-10 sm:min-w-10"
                 aria-label="Menu da conta"
               >
                 <Avatar className="h-8 w-8">
