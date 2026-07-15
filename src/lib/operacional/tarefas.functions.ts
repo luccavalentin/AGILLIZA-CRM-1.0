@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { listarClienteIdsParceiroDoUsuario } from "@/lib/escopo";
 
 export type TarefaStatus = "aberta" | "em_andamento" | "concluida" | "cancelada";
 export type Prioridade = "p1" | "p2" | "p3";
@@ -64,7 +65,10 @@ export const listarTarefas = createServerFn({ method: "GET" })
       .order("created_at", { ascending: false })
       .limit(300);
     if (data.escopo === "minhas") {
-      query = query.or(`responsavel_id.eq.${userId},criador_id.eq.${userId}`);
+      const partnerIds = await listarClienteIdsParceiroDoUsuario(supabase, userId);
+      const orParts = [`responsavel_id.eq.${userId}`, `criador_id.eq.${userId}`];
+      if (partnerIds.length) orParts.push(`cliente_id.in.(${partnerIds.join(",")})`);
+      query = query.or(orParts.join(","));
     }
     if (data.status) query = query.eq("status", data.status as any);
     if (data.q) query = query.ilike("titulo", `%${data.q.trim()}%`);
