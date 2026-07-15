@@ -52,7 +52,7 @@ export const Route = createFileRoute("/_authenticated/operacional/demandas")({
   component: Pagina,
 });
 
-type Escopo = "minhas" | "equipe" | "todas";
+type Escopo = "minhas" | "todas";
 
 function atrasada(d: { status: string; prazo_sla: string | null }): boolean {
   if (d.status === "concluida" || d.status === "cancelada" || !d.prazo_sla) return false;
