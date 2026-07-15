@@ -219,6 +219,12 @@ function Pagina() {
   const melhorPriceId = bancosPrice.filter((b: any) => b.status_banco === "simulada" && b.valor_parcela != null)
     .sort((a: any, b: any) => (a.valor_parcela ?? 0) - (b.valor_parcela ?? 0))[0]?.id;
   const melhorId = isMista ? undefined : (bancosComTaxa.length > 1 ? bancosComTaxa[0]?.id : undefined);
+  const bancosExibicao: any[] = isMista ? [...bancosSac, ...bancosPrice] : bancos;
+  const ehMelhor = (b: any) => {
+    if (!isMista) return b.id === melhorId;
+    return (b._sistema === "PRICE" ? melhorPriceId : melhorSacId) === b.id;
+  };
+
 
 
   return (
