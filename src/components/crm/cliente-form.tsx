@@ -139,8 +139,8 @@ export function ClienteForm({
     const p = (parceiros.data ?? []).find((x) => x.id === id);
     return p?.nome ?? p?.email ?? id;
   };
-  const adicionarVinculo = (tipo: TipoVinculo) => {
-    const id = vinculoSel[tipo];
+  const adicionarVinculo = (tipo: TipoVinculo, parceiroId?: string) => {
+    const id = parceiroId ?? vinculoSel[tipo];
     if (!id) return;
     setVinculos((prev) => [...prev, { parceiro_id: id, tipo_vinculo: tipo }]);
     setVinculoSel((prev) => ({ ...prev, [tipo]: "" }));
