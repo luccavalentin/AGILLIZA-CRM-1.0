@@ -41,8 +41,10 @@ export interface DemandaItem {
   numero_simulacao: string | null;
   criador_id: string | null;
   nome_criador: string | null;
+  tipo_criador: string | null;
   responsavel_id: string | null;
   nome_responsavel: string | null;
+  tipo_responsavel: string | null;
   prazo_sla: string | null;
   sla_inicio: string;
   concluida_em: string | null;
@@ -52,15 +54,27 @@ export interface DemandaItem {
   ultima_mensagem_em: string | null;
 }
 
+async function perfisPorId(
+  supabase: any,
+  ids: (string | null | undefined)[],
+): Promise<Map<string, { nome: string; tipo_pessoa: string | null }>> {
+  const uniq = [...new Set(ids.filter(Boolean) as string[])];
+  if (uniq.length === 0) return new Map();
+  const { data } = await supabase.from("profiles").select("id, nome, tipo_pessoa").in("id", uniq);
+  const m = new Map<string, { nome: string; tipo_pessoa: string | null }>();
+  (data ?? []).forEach((p: any) =>
+    m.set(p.id, { nome: p.nome ?? "", tipo_pessoa: p.tipo_pessoa ?? null }),
+  );
+  return m;
+}
+
 async function nomesPorId(
   supabase: any,
   ids: (string | null | undefined)[],
 ): Promise<Map<string, string>> {
-  const uniq = [...new Set(ids.filter(Boolean) as string[])];
-  if (uniq.length === 0) return new Map();
-  const { data } = await supabase.from("profiles").select("id, nome").in("id", uniq);
+  const perfis = await perfisPorId(supabase, ids);
   const m = new Map<string, string>();
-  (data ?? []).forEach((p: any) => m.set(p.id, p.nome ?? ""));
+  perfis.forEach((v, k) => m.set(k, v.nome));
   return m;
 }
 
