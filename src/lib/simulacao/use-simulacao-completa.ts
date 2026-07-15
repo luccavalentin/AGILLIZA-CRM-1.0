@@ -533,6 +533,12 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
         toast.info("No sistema PRICE, apenas Bradesco e Santander podem ser selecionados.");
         return prev;
       }
+      if (!has && banco && !aceitaBancoNaOperacao(banco)) {
+        toast.info(
+          `${restricaoEspecial.motivo}: apenas Bradesco opera essa modalidade.`,
+        );
+        return prev;
+      }
       // Em "Nova Proposta" a seleção é única: o banco escolhido é o que
       // receberá a proposta. Marcar outro substitui o anterior.
       if (modoProposta) {
