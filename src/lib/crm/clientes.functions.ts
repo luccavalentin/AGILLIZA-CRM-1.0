@@ -1688,11 +1688,13 @@ export const getClienteNegocios = createServerFn({ method: "GET" })
         .from("simulacoes")
         .select("id, numero_simulacao, produto, status, valor_financiamento, created_at")
         .eq("cliente_id", data.cliente_id)
+        .is("deleted_at", null)
         .order("created_at", { ascending: false }),
       supabase
         .from("propostas")
         .select("id, numero_proposta, nome_banco, produto, status, valor_financiamento, created_at")
         .eq("cliente_id", data.cliente_id)
+        .is("deleted_at", null)
         .order("created_at", { ascending: false }),
     ]);
 
