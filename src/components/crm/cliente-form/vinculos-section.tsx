@@ -67,16 +67,20 @@ export function VinculosSection({
           return (
             <div key={tipo.valor} className="space-y-2">
               <Label className="block">{tipo.rotulo}</Label>
-              <div className="flex items-end gap-2">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                 <div className="flex-1">
                   <Select
                     value={sel}
-                    onValueChange={(val) =>
-                      setVinculoSel((prev) => ({ ...prev, [tipo.valor]: val }))
-                    }
+                    onValueChange={(val) => {
+                      // Ao selecionar já vincula automaticamente, evita a dúvida
+                      // sobre o botão-ícone. O select fica pronto para próximo vínculo.
+                      setVinculoSel((prev) => ({ ...prev, [tipo.valor]: val }));
+                      adicionarVinculo(tipo.valor);
+                      setVinculoSel((prev) => ({ ...prev, [tipo.valor]: "" }));
+                    }}
                   >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione um usuário" />
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Buscar e selecionar um usuário…" />
                     </SelectTrigger>
                     <SelectContent>
                       {opcoesParceiros.length === 0 ? (
@@ -95,22 +99,19 @@ export function VinculosSection({
                 </div>
                 <Button
                   type="button"
-                  size="icon"
-                  disabled={!sel}
-                  onClick={() => adicionarVinculo(tipo.valor)}
-                  title="Vincular usuário selecionado"
-                >
-                  <UserPlus className="size-4" />
-                </Button>
-                <Button
-                  type="button"
                   variant="outline"
+                  className="shrink-0 gap-1.5"
                   onClick={() => onCriarTipo(tipo.valor)}
-                  title={`Criar novo ${tipo.rotulo}`}
+                  title={`Cadastrar novo ${tipo.rotulo.toLowerCase()}`}
                 >
-                  <Plus className="size-4" /> Novo
+                  <Plus className="size-4" /> Cadastrar novo
                 </Button>
               </div>
+              <p className="text-[11px] text-muted-foreground">
+                Selecione na lista para vincular na hora, ou use{" "}
+                <span className="font-medium text-foreground">Cadastrar novo</span> se a pessoa
+                ainda não existir.
+              </p>
               {desteTipo.length > 0 && (
                 <div className="flex flex-wrap gap-2">
                   {desteTipo.map((vinc) => (
