@@ -989,6 +989,79 @@ function FilterSelect({
   );
 }
 
+/** Filtro combobox pesquisável — opções vêm da base cadastrada, não apenas do que aparece na grade. */
+function FilterCombo({
+  label,
+  value,
+  onValueChange,
+  placeholder,
+  options,
+}: {
+  label: string;
+  value: string;
+  onValueChange: (v: string) => void;
+  placeholder?: string;
+  options: OpcaoId[];
+}) {
+  const [open, setOpen] = useState(false);
+  const selecionado = options.find((o) => o.id === value);
+  const rotulo = value === "todos" || !value ? (placeholder ?? "Todos") : (selecionado?.label ?? "—");
+  return (
+    <FilterField label={label}>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            type="button"
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className={cn(
+              "w-full justify-between font-normal",
+              (value === "todos" || !value) && "text-muted-foreground",
+            )}
+          >
+            <span className="truncate">{rotulo}</span>
+            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+          <Command>
+            <CommandInput placeholder="Buscar…" />
+            <CommandList>
+              <CommandEmpty>Nenhum resultado.</CommandEmpty>
+              <CommandGroup>
+                <CommandItem
+                  value="__todos__"
+                  onSelect={() => {
+                    onValueChange("todos");
+                    setOpen(false);
+                  }}
+                >
+                  <Check className={cn("mr-2 h-4 w-4", value === "todos" || !value ? "opacity-100" : "opacity-0")} />
+                  {placeholder ?? "Todos"}
+                </CommandItem>
+                {options.map((o) => (
+                  <CommandItem
+                    key={o.id}
+                    value={o.label}
+                    onSelect={() => {
+                      onValueChange(o.id);
+                      setOpen(false);
+                    }}
+                  >
+                    <Check className={cn("mr-2 h-4 w-4", value === o.id ? "opacity-100" : "opacity-0")} />
+                    <span className="truncate">{o.label}</span>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+    </FilterField>
+  );
+}
+
 function Paginacao({
   pagina,
   total,
