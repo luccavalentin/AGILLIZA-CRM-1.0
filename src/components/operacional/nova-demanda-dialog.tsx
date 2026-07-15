@@ -108,7 +108,7 @@ const TIPOS = [
   { v: "simulacao", l: "Simulação" },
 ];
 
-export function NovaDemandaDialog({ onCriada }: { onCriada: () => void }) {
+export function NovaDemandaDialog({ onCriada, trigger }: { onCriada: () => void; trigger?: React.ReactNode }) {
   const [aberto, setAberto] = useState(false);
   const [tipo, setTipo] = useState("diversos");
   const [titulo, setTitulo] = useState("");
