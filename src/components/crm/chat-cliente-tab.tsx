@@ -280,6 +280,10 @@ export function ChatClienteConversa({
       return;
     }
     if (modo === "tarefa" || modo === "retorno") {
+      if (t.length < 2) {
+        toast.error("Descreva a tarefa com pelo menos 2 caracteres.");
+        return;
+      }
       if (!payload?.prazo && modo === "retorno") {
         toast.error("Selecione a data/hora do retorno.");
         return;
