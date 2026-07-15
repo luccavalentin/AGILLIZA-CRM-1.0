@@ -112,6 +112,7 @@ export function PainelView({
   const [ate, setAte] = useState<string>("");
   const [responsavel, setResponsavel] = useState<string>("todos");
   const escopoTocado = useRef(false);
+  const [drilldown, setDrilldown] = useState<DrilldownContext | null>(null);
 
   const { data: perms } = useQuery({
     queryKey: ["report-escopo"],
