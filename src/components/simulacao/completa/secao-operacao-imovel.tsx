@@ -54,8 +54,8 @@ export function SecaoOperacaoImovel({ ctx }: { ctx: SimulacaoCompletaCtx }) {
   return (
     <section className="space-y-4">
       {restricaoEspecial.ativo && (
-        <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs leading-relaxed text-amber-900 dark:text-amber-200">
-          <strong>{restricaoEspecial.motivo}:</strong> financiamento máx.{" "}
+        <div className="rounded-lg border-l-4 border-amber-600 border-y border-r border-y-amber-600/50 border-r-amber-600/50 bg-amber-100 px-3 py-2 text-sm leading-relaxed text-amber-950 dark:bg-amber-950/60 dark:text-amber-50 dark:border-amber-400 dark:border-y-amber-400/60 dark:border-r-amber-400/60">
+          <strong className="font-semibold">{restricaoEspecial.motivo}:</strong> financiamento máx.{" "}
           {Math.round(restricaoEspecial.ltvMax * 100)}% (entrada mín. de{" "}
           {Math.round((1 - restricaoEspecial.ltvMax) * 100)}%), prazo máx. de{" "}
           {restricaoEspecial.prazoMax} meses, operado apenas pelo Bradesco.
