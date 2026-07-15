@@ -441,19 +441,19 @@ export function ResultadoInlineAmbos({ simulacaoIdSac, simulacaoIdPrice, onFecha
                         )}
                       >
                         <TableCell className="py-3">
-                          <ToneBadge tone={l.sistema === "SAC" ? "info" : "warning"}>
-                            {l.sistema}
-                          </ToneBadge>
-                        </TableCell>
-                        <TableCell className="py-3 text-sm font-semibold">
-                          <div className="flex items-center gap-2.5">
-                            <BancoLogo nome={b.nome_banco} size="lg" />
-                            <span style={{ color: corDoBanco(b.nome_banco) }}>{b.nome_banco}</span>
-                            {isMelhor && <ToneBadge tone="success">Melhor taxa</ToneBadge>}
+                          <div className="flex items-center gap-2">
+                            <BancoLogo nome={b.nome_banco} size="md" />
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-1.5">
+                                <span className="truncate text-sm font-semibold" style={{ color: corDoBanco(b.nome_banco) }}>{b.nome_banco}</span>
+                                <ToneBadge tone={l.sistema === "SAC" ? "info" : "warning"}>{l.sistema}</ToneBadge>
+                              </div>
+                              {isMelhor && <ToneBadge tone="success">Melhor taxa</ToneBadge>}
+                              {b.status_banco === "erro" && b.mensagem_banco && (
+                                <p className="mt-0.5 line-clamp-1 text-[11px] text-destructive">{b.mensagem_banco}</p>
+                              )}
+                            </div>
                           </div>
-                          {b.status_banco === "erro" && b.mensagem_banco && (
-                            <p className="mt-1 text-xs text-destructive">{b.mensagem_banco}</p>
-                          )}
                         </TableCell>
                         <TableCell className="py-3">
                           <BancoStatusBadge status={b.status_banco} />
@@ -467,9 +467,6 @@ export function ResultadoInlineAmbos({ simulacaoIdSac, simulacaoIdPrice, onFecha
                         <TableCell className="py-3 text-right text-sm tabular-nums whitespace-nowrap">
                           {b.prazo_pagamento_max ? `${b.prazo_pagamento_max}m` : "—"}
                         </TableCell>
-                        <TableCell className="py-3 text-right text-sm tabular-nums whitespace-nowrap">
-                          {formatBRL(b.valor_financiamento_max)}
-                        </TableCell>
                         <TableCell className="py-3 text-right text-sm font-semibold tabular-nums whitespace-nowrap">
                           {formatBRL(totalFinanciado(b))}
                         </TableCell>
@@ -480,7 +477,7 @@ export function ResultadoInlineAmbos({ simulacaoIdSac, simulacaoIdPrice, onFecha
                           {formatBRL(rendaMinimaDoBanco(b))}
                         </TableCell>
                         <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-1">
+                          <div className="flex flex-wrap items-center justify-end gap-1">
                             <DetalheBancoDialog banco={b} simulacao={l.simulacao} />
                             {b.status_banco === "simulada" && (
                               <Button
@@ -489,7 +486,7 @@ export function ResultadoInlineAmbos({ simulacaoIdSac, simulacaoIdPrice, onFecha
                                 onClick={() => baixarPdfLinha(l.simulacao, b)}
                                 title="Baixar PDF deste banco"
                               >
-                                <Download className="mr-1 h-4 w-4" /> PDF
+                                <Download className="h-4 w-4" />
                               </Button>
                             )}
                             {b.status_banco === "erro" ? (
@@ -500,7 +497,7 @@ export function ResultadoInlineAmbos({ simulacaoIdSac, simulacaoIdPrice, onFecha
                                 onClick={() => reenviarBanco(l.simId, b.banco_id)}
                               >
                                 <RefreshCw className="mr-1 h-4 w-4" />
-                                {reenviandoBanco === b.banco_id ? "Reenviando…" : "Reenviar"}
+                                {reenviandoBanco === b.banco_id ? "…" : "Reenviar"}
                               </Button>
                             ) : (
                               <Button
@@ -510,7 +507,7 @@ export function ResultadoInlineAmbos({ simulacaoIdSac, simulacaoIdPrice, onFecha
                                 onClick={() => enviarAprovacao(l.simId, b.banco_id)}
                               >
                                 <Send className="mr-1 h-4 w-4" />
-                                {criandoBanco === b.banco_id ? "Enviando…" : "Enviar Aprovação"}
+                                {criandoBanco === b.banco_id ? "…" : "Enviar"}
                               </Button>
                             )}
                           </div>
