@@ -447,7 +447,7 @@ export function ClienteForm({
 
 
   return (
-    <form ref={formRef} onSubmit={submit} className="space-y-6">
+    <form ref={formRef} onSubmit={submit} className="space-y-6 form-cadastro-upper">
       {novoCadastro && (
         <VinculosSection
           parceiros={(parceiros.data ?? []) as any}
