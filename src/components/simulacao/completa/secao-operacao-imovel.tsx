@@ -185,6 +185,10 @@ export function SecaoOperacaoImovel({ ctx }: { ctx: SimulacaoCompletaCtx }) {
               <p className="text-xs leading-relaxed text-muted-foreground">
                 Informe a parcela desejada e o sistema ajusta automaticamente imóvel, entrada e financiamento.
               </p>
+              <p className="text-[11px] leading-relaxed text-amber-600 dark:text-amber-500">
+                Valores estimados com taxa de referência — podem sofrer leve variação quando a simulação for enviada ao banco.
+              </p>
+
             </div>
           </div>
           <div className="w-full sm:w-56">
