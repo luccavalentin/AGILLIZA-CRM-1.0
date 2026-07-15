@@ -328,7 +328,7 @@ export function ResultadoInlineAmbos({ simulacaoIdSac, simulacaoIdPrice, onFecha
         ) : (
           <>
             {/* Mobile: cartões */}
-            <div className="grid gap-3 lg:hidden">
+            <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:hidden">
               {linhas.map((l, idx) => {
                 const b = l.banco;
                 const isMelhor = melhorPorSistema[l.sistema] === b.id;
