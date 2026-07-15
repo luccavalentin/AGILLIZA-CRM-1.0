@@ -670,7 +670,7 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
         cpf_conjuge: crmVinculado.conjuge_cpf ? maskCpfCnpj(crmVinculado.conjuge_cpf) : "",
         renda_conjuge: crmVinculado.conjuge_renda ?? 0,
         data_nascimento_conjuge: crmVinculado.conjuge_data_nascimento ?? "",
-        email_conjuge: crmVinculado.conjuge_email ?? "",
+        email_conjuge: crmVinculado.conjuge_email || EMAIL_PADRAO,
         celular_conjuge: crmVinculado.conjuge_celular
           ? maskCelular(crmVinculado.conjuge_celular)
           : "",
