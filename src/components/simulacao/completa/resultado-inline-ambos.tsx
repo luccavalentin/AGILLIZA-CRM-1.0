@@ -541,6 +541,7 @@ export function ResultadoInlineAmbos({ simulacaoIdSac, simulacaoIdPrice, onFecha
                           </div>
                         </TableCell>
                       </TableRow>
+                      </>
                     );
                   })}
                 </TableBody>
