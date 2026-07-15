@@ -2,7 +2,7 @@ import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { Fragment, useEffect, useState, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ArrowLeft, RefreshCw, Copy, Download, ChevronDown, Pencil, Trash2, Calculator, Home, Landmark, UserRound, History, CheckCircle2, XCircle, Send, Plus, CircleDot } from "lucide-react";
+import { ArrowLeft, ArrowLeftRight, RefreshCw, Copy, Download, ChevronDown, Pencil, Trash2, Calculator, Home, Landmark, UserRound, History, CheckCircle2, XCircle, Send, Plus, CircleDot } from "lucide-react";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { supabase } from "@/integrations/supabase/client";
 import { ConfirmDelete } from "@/components/shared/confirm-delete";
@@ -10,6 +10,7 @@ import {
   obterSimulacao,
   enviarSimulacaoBanco,
   excluirSimulacao,
+  inverterTitularSimulacao,
 } from "@/lib/simulacao/simulacoes.functions";
 import { criarProposta, enviarPropostaHomeFin } from "@/lib/propostas/propostas.functions";
 import { Button } from "@/components/ui/button";
@@ -142,6 +143,25 @@ function Pagina() {
       toast.error(e instanceof Error ? e.message : "Falha ao reenviar.");
     } finally {
       setReenviandoBanco(null);
+    }
+  }
+
+  const [invertendo, setInvertendo] = useState(false);
+  async function inverterTitular(reenviarBancos: boolean) {
+    setInvertendo(true);
+    try {
+      await inverterTitularSimulacao({ data: { id } });
+      if (reenviarBancos) {
+        await enviarSimulacaoBanco({ data: { simulacao_id: id } });
+        toast.success("Titular invertido e simulação reenviada aos bancos.");
+      } else {
+        toast.success("Titular e cônjuge invertidos.");
+      }
+      qc.invalidateQueries({ queryKey: ["simulacao", id] });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao inverter titular.");
+    } finally {
+      setInvertendo(false);
     }
   }
 
@@ -314,13 +334,33 @@ function Pagina() {
                 <ChevronDown className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuContent align="end" className="w-64">
               <DropdownMenuItem onClick={duplicar}>
                 <Copy className="mr-2 h-4 w-4" /> Duplicar
               </DropdownMenuItem>
               <DropdownMenuItem onClick={editar}>
                 <Pencil className="mr-2 h-4 w-4" /> Editar
               </DropdownMenuItem>
+              {s.possui_conjuge && s.nome_conjuge && s.cpf_conjuge && s.data_nascimento_conjuge ? (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                    Titular ⇄ Cônjuge
+                  </DropdownMenuLabel>
+                  <DropdownMenuItem
+                    disabled={invertendo}
+                    onClick={() => inverterTitular(false)}
+                  >
+                    <ArrowLeftRight className="mr-2 h-4 w-4" /> Inverter titular
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    disabled={invertendo}
+                    onClick={() => inverterTitular(true)}
+                  >
+                    <RefreshCw className="mr-2 h-4 w-4" /> Inverter e reenviar aos bancos
+                  </DropdownMenuItem>
+                </>
+              ) : null}
               <DropdownMenuSeparator />
               <ConfirmDelete
                 titulo="Excluir simulação"
