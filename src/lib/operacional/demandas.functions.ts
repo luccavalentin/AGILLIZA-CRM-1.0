@@ -114,14 +114,16 @@ export const listarDemandas = createServerFn({ method: "GET" })
   .handler(async ({ context, data }): Promise<DemandaItem[]> => {
     const { supabase, userId } = context;
 
-    // Escopo "minhas": criador OU responsável OU participante.
+    // Escopo "minhas": criador OU responsável OU participante OU parceiro do cliente.
     let idsParticipante: string[] = [];
+    let partnerClienteIds: string[] = [];
     if (data.escopo === "minhas") {
-      const { data: parts } = await supabase
-        .from("demanda_participantes")
-        .select("demanda_id")
-        .eq("user_id", userId);
-      idsParticipante = ((parts ?? []) as any[]).map((p) => p.demanda_id);
+      const [parts, partners] = await Promise.all([
+        supabase.from("demanda_participantes").select("demanda_id").eq("user_id", userId),
+        listarClienteIdsParceiroDoUsuario(supabase, userId),
+      ]);
+      idsParticipante = (((parts as any).data ?? []) as any[]).map((p) => p.demanda_id);
+      partnerClienteIds = partners;
     }
 
     let query = supabase
@@ -135,6 +137,7 @@ export const listarDemandas = createServerFn({ method: "GET" })
     if (data.escopo === "minhas") {
       const orParts = [`criador_id.eq.${userId}`, `responsavel_id.eq.${userId}`];
       if (idsParticipante.length) orParts.push(`id.in.(${idsParticipante.join(",")})`);
+      if (partnerClienteIds.length) orParts.push(`cliente_id.in.(${partnerClienteIds.join(",")})`);
       query = query.or(orParts.join(","));
     }
     if (data.status) query = query.eq("status", data.status as any);
