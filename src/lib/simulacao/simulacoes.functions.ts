@@ -268,53 +268,156 @@ export const criarSimulacao = createServerFn({ method: "POST" })
       // (validação de bloqueio ocorre no enviarSimulacaoBanco)
     }
 
-    // resolve/insere cliente — grava direto no CRM, mesmo que o usuário não
+    // Resolve/insere cliente — grava direto no CRM, mesmo que o usuário não
     // tenha permissão crm.clientes:create (usa client admin com escopo do correspondente).
+    // Importante: quando o titular é invertido na tela, `cliente_id` ainda pode
+    // apontar para o titular original. Por isso a referência da simulação deve
+    // ser recalculada pelo CPF/CNPJ atual e o cônjuge também deve virar cliente.
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     let cliente_id = dd.cliente_id ?? null;
-    if (!cliente_id && dd.cpf_cnpj) {
-      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      const digitos = dd.cpf_cnpj.replace(/\D/g, "");
-      const { data: existente } = await supabaseAdmin
+    const clienteOrigemId = cliente_id;
+    const casado = Boolean(dd.possui_conjuge);
+    const limparDocumento = (v?: string | null) => (v ?? "").replace(/\D/g, "");
+
+    const upsertClienteCRM = async (params: {
+      nome?: string | null;
+      documento?: string | null;
+      email?: string | null;
+      celular?: string | null;
+      dataNascimento?: string | null;
+      renda?: number | null;
+      estadoCivil?: string | null;
+      regimeCasamento?: string | null;
+      ufInteresse?: string | null;
+      utilizaFgts?: boolean | null;
+      conjugeNome?: string | null;
+      conjugeCpf?: string | null;
+      conjugeDataNascimento?: string | null;
+      conjugeEmail?: string | null;
+      conjugeCelular?: string | null;
+      conjugeRenda?: number | null;
+    }) => {
+      const nome = (params.nome ?? "").trim();
+      const documento = limparDocumento(params.documento);
+      if (!nome || !documento) return null;
+      const conjugeCpf = limparDocumento(params.conjugeCpf);
+      const campos = {
+        nome,
+        tipo_pessoa: documento.length > 11 ? "PJ" : "PF",
+        email: (params.email ?? "").trim().toLowerCase() || null,
+        telefone_celular: params.celular ?? null,
+        data_nascimento: params.dataNascimento || null,
+        estado_civil: mapEstadoCivilEnum(params.estadoCivil),
+        regime_casamento: params.regimeCasamento ?? null,
+        renda_total_declarada: params.renda ?? null,
+        uf_interesse: params.ufInteresse ?? null,
+        utiliza_fgts: params.utilizaFgts ?? false,
+        conjuge_nome: params.conjugeNome ?? null,
+        conjuge_cpf: conjugeCpf || null,
+        conjuge_data_nascimento: params.conjugeDataNascimento || null,
+        conjuge_email: params.conjugeEmail ?? null,
+        conjuge_celular: params.conjugeCelular ?? null,
+        conjuge_renda: params.conjugeRenda ?? null,
+      } as any;
+      const { data: existente, error: errBusca } = await supabaseAdmin
         .from("clientes")
         .select("id")
         .eq("correspondente_id", correspondente_id)
-        .eq("documento", digitos)
+        .eq("documento", documento)
         .maybeSingle();
-      if (existente) {
-        cliente_id = existente.id;
-      } else if (dd.nome_cliente) {
-        const casado = Boolean(dd.possui_conjuge);
-        const { data: novo, error: errCli } = await supabaseAdmin
+      if (errBusca) throw new Error(`Falha ao localizar cliente no CRM: ${errBusca.message}`);
+      if (existente?.id) {
+        const { error: errUpd } = await supabaseAdmin
           .from("clientes")
-          .insert({
-            correspondente_id,
-            numero_cliente: "",
-            tipo_pessoa: digitos.length > 11 ? "PJ" : "PF",
-            nome: dd.nome_cliente,
-            documento: digitos,
-            email: dd.email ?? null,
-            telefone_celular: dd.celular ?? null,
-            data_nascimento: dd.data_nascimento || null,
-            estado_civil: mapEstadoCivilEnum(dd.estado_civil),
-            regime_casamento: casado ? (dd.regime_casamento ?? null) : null,
-            renda_total_declarada: dd.renda_total ?? null,
-            uf_interesse: dd.uf ?? null,
-            utiliza_fgts: dd.utiliza_fgts ?? false,
-            conjuge_nome: casado ? (dd.nome_conjuge ?? null) : null,
-            conjuge_cpf: casado ? (dd.cpf_conjuge ?? null) : null,
-            conjuge_data_nascimento: casado ? (dd.data_nascimento_conjuge || null) : null,
-            conjuge_email: casado ? (dd.email_conjuge ?? null) : null,
-            conjuge_celular: casado ? (dd.celular_conjuge ?? null) : null,
-            conjuge_renda: casado ? (dd.renda_conjuge ?? null) : null,
-            criador_id: userId,
-            responsavel_id: userId,
-          } as any)
-          .select("id")
-          .maybeSingle();
-        if (errCli) throw new Error(`Falha ao gravar cliente no CRM: ${errCli.message}`);
-        if (novo) cliente_id = novo.id;
+          .update(campos)
+          .eq("id", existente.id);
+        if (errUpd) throw new Error(`Falha ao atualizar cliente no CRM: ${errUpd.message}`);
+        return existente.id as string;
       }
-    }
+      const { data: novo, error: errCli } = await supabaseAdmin
+        .from("clientes")
+        .insert({
+          correspondente_id,
+          numero_cliente: "",
+          documento,
+          origem: "direto",
+          criador_id: userId,
+          responsavel_id: userId,
+          ...campos,
+        })
+        .select("id")
+        .maybeSingle();
+      if (errCli) throw new Error(`Falha ao gravar cliente no CRM: ${errCli.message}`);
+      return (novo?.id as string | undefined) ?? null;
+    };
+
+    const replicarVinculos = async (origemId: string | null, alvos: Array<string | null>) => {
+      const destinoIds = Array.from(new Set(alvos.filter((v): v is string => Boolean(v && v !== origemId))));
+      if (!origemId || destinoIds.length === 0) return;
+      const { data: vinculos, error: errVinculos } = await supabaseAdmin
+        .from("cliente_parceiros")
+        .select("parceiro_id, tipo_vinculo")
+        .eq("cliente_id", origemId);
+      if (errVinculos) throw new Error(`Falha ao ler vínculos do cliente: ${errVinculos.message}`);
+      if (!vinculos?.length) return;
+      const rows = destinoIds.flatMap((cid) =>
+        vinculos.map((v: any) => ({
+          cliente_id: cid,
+          parceiro_id: v.parceiro_id,
+          tipo_vinculo: v.tipo_vinculo,
+          correspondente_id,
+        })),
+      );
+      const { error: errUpsert } = await supabaseAdmin
+        .from("cliente_parceiros")
+        .upsert(rows, {
+          onConflict: "cliente_id,parceiro_id,tipo_vinculo",
+          ignoreDuplicates: true,
+        });
+      if (errUpsert) throw new Error(`Falha ao replicar vínculos do cliente: ${errUpsert.message}`);
+    };
+
+    const titularId = await upsertClienteCRM({
+      nome: dd.nome_cliente,
+      documento: dd.cpf_cnpj,
+      email: dd.email,
+      celular: dd.celular,
+      dataNascimento: dd.data_nascimento,
+      renda: dd.renda_total,
+      estadoCivil: dd.estado_civil,
+      regimeCasamento: casado ? dd.regime_casamento : null,
+      ufInteresse: dd.uf,
+      utilizaFgts: dd.utiliza_fgts === "S",
+      conjugeNome: casado ? dd.nome_conjuge : null,
+      conjugeCpf: casado ? dd.cpf_conjuge : null,
+      conjugeDataNascimento: casado ? dd.data_nascimento_conjuge : null,
+      conjugeEmail: casado ? dd.email_conjuge : null,
+      conjugeCelular: casado ? dd.celular_conjuge : null,
+      conjugeRenda: casado ? dd.renda_conjuge : null,
+    });
+    if (titularId) cliente_id = titularId;
+
+    const conjugeId = casado
+      ? await upsertClienteCRM({
+          nome: dd.nome_conjuge,
+          documento: dd.cpf_conjuge,
+          email: dd.email_conjuge,
+          celular: dd.celular_conjuge,
+          dataNascimento: dd.data_nascimento_conjuge,
+          renda: dd.renda_conjuge,
+          estadoCivil: dd.estado_civil_conjuge || dd.estado_civil,
+          regimeCasamento: dd.regime_casamento,
+          ufInteresse: dd.uf,
+          utilizaFgts: false,
+          conjugeNome: dd.nome_cliente,
+          conjugeCpf: dd.cpf_cnpj,
+          conjugeDataNascimento: dd.data_nascimento,
+          conjugeEmail: dd.email,
+          conjugeCelular: dd.celular,
+          conjugeRenda: dd.renda_total,
+        })
+      : null;
+    await replicarVinculos(clienteOrigemId, [titularId, conjugeId]);
 
     const insert = {
       correspondente_id,
@@ -371,8 +474,6 @@ export const criarSimulacao = createServerFn({ method: "POST" })
     // Isso evita falhas de "row-level security policy" em cenários de borda
     // (token renovado no envio, usuário sem permissão direta de escrita etc.),
     // mantendo o mesmo padrão já usado para gravar o cliente no CRM acima.
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-
     const { data: sim, error } = await supabaseAdmin
       .from("simulacoes")
       .insert(insert as any)
