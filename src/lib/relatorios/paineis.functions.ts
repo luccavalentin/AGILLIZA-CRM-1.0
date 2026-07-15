@@ -263,6 +263,7 @@ async function carregarAnterior(
       supabase
         .from("simulacoes")
         .select("status,valor_financiamento,created_at")
+        .is("deleted_at", null)
         .gte("created_at", de)
         .lte("created_at", ateFim)
         .limit(5000),
@@ -343,6 +344,7 @@ export const getPanelDados = createServerFn({ method: "POST" })
           supabase
             .from("simulacoes")
             .select("id,status,tipo_simulacao,valor_financiamento,created_at,usuario_responsavel_id")
+            .is("deleted_at", null)
             .gte("created_at", de)
             .lte("created_at", ateFim)
             .limit(5000),
