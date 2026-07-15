@@ -18,6 +18,11 @@ import {
   ArrowUpRight,
   Minus,
   ArrowDownRight,
+  Plus,
+  List as ListIcon,
+  Clock,
+  CircleDot,
+  MoreHorizontal,
 } from "lucide-react";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import {
