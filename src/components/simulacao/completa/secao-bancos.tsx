@@ -99,7 +99,8 @@ export function SecaoBancos({ ctx }: { ctx: SimulacaoCompletaCtx }) {
       <section className="space-y-6">
         {restricaoEspecial.ativo && (
           <div className="rounded-lg border-l-4 border-amber-600 border-y border-r border-y-amber-600/50 border-r-amber-600/50 bg-amber-100 p-3 text-sm text-amber-950 dark:bg-amber-950/60 dark:text-amber-50 dark:border-amber-400 dark:border-y-amber-400/60 dark:border-r-amber-400/60">
-            {restricaoEspecial.motivo}: apenas Bradesco opera essa modalidade (LTV máx. 70%, prazo máx. 240 meses).
+            {restricaoEspecial.motivo}: LTV máx. 70%, prazo máx. 240 meses
+            {restricaoEspecial.apenasBradesco ? " — apenas Bradesco opera." : "."}
           </div>
         )}
 
