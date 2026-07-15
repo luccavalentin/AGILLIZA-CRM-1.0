@@ -21,6 +21,12 @@ import { criarProposta } from "@/lib/propostas/propostas.functions";
 
 export type Form = Record<string, any>;
 
+/**
+ * E-mail pré-preenchido em cadastros de titular e cônjuge para agilizar testes
+ * e operação com atendimento centralizado. O usuário pode alterar livremente.
+ */
+const EMAIL_PADRAO = "thiago@agilliza.net.br";
+
 interface Banco {
   id: string;
   nome_banco?: string | null;
@@ -51,7 +57,7 @@ const ESTADO_INICIAL: Form = {
   renda_price: 0,
   data_nascimento: "",
   estado_civil: "",
-  email: "",
+  email: EMAIL_PADRAO,
   celular: "",
   possui_conjuge: false,
   compoe_renda: false,
@@ -160,7 +166,7 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
       renda_conjuge: Number(s.renda_conjuge) || 0,
       data_nascimento: s.data_nascimento ?? "",
       estado_civil: s.estado_civil ?? "",
-      email: s.email ?? "",
+      email: s.email || EMAIL_PADRAO,
       celular: s.celular ?? "",
       possui_conjuge: Boolean(s.possui_conjuge),
       compoe_renda: Boolean(s.compoe_renda),
@@ -664,7 +670,7 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
         cpf_conjuge: crmVinculado.conjuge_cpf ? maskCpfCnpj(crmVinculado.conjuge_cpf) : "",
         renda_conjuge: crmVinculado.conjuge_renda ?? 0,
         data_nascimento_conjuge: crmVinculado.conjuge_data_nascimento ?? "",
-        email_conjuge: crmVinculado.conjuge_email ?? "",
+        email_conjuge: crmVinculado.conjuge_email || EMAIL_PADRAO,
         celular_conjuge: crmVinculado.conjuge_celular
           ? maskCelular(crmVinculado.conjuge_celular)
           : "",
@@ -691,14 +697,14 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
       renda_total: Number(prev.renda_conjuge) || 0,
       data_nascimento: prev.data_nascimento_conjuge ?? "",
       estado_civil: prev.estado_civil_conjuge || prev.estado_civil,
-      email: prev.email_conjuge ?? "",
+      email: prev.email_conjuge || EMAIL_PADRAO,
       celular: prev.celular_conjuge ?? "",
       nome_conjuge: prev.nome_cliente ?? "",
       cpf_conjuge: prev.cpf_cnpj ?? "",
       renda_conjuge: Number(prev.renda_total) || 0,
       data_nascimento_conjuge: prev.data_nascimento ?? "",
       estado_civil_conjuge: prev.estado_civil || prev.estado_civil_conjuge,
-      email_conjuge: prev.email ?? "",
+      email_conjuge: prev.email || EMAIL_PADRAO,
       celular_conjuge: prev.celular ?? "",
     }));
     setInvertido((v) => !v);
@@ -723,7 +729,7 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
       cliente_id: c.id,
       nome_cliente: c.nome ?? "",
       cpf_cnpj: c.documento ? maskCpfCnpj(c.documento) : "",
-      email: c.email ?? "",
+      email: c.email || EMAIL_PADRAO,
       celular: c.telefone_celular ? maskCelular(c.telefone_celular) : "",
       data_nascimento: c.data_nascimento ?? "",
       estado_civil: ec || prev.estado_civil,
@@ -734,7 +740,7 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
       cpf_conjuge: c.conjuge_cpf ? maskCpfCnpj(c.conjuge_cpf) : "",
       renda_conjuge: c.conjuge_renda ?? 0,
       data_nascimento_conjuge: c.conjuge_data_nascimento ?? "",
-      email_conjuge: c.conjuge_email ?? "",
+      email_conjuge: c.conjuge_email || EMAIL_PADRAO,
       celular_conjuge: c.conjuge_celular ? maskCelular(c.conjuge_celular) : "",
       // O cônjuge herda o mesmo estado civil de casal do titular.
       estado_civil_conjuge: temConjuge ? ec : (prev.estado_civil_conjuge ?? ""),
@@ -755,7 +761,7 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
       cliente_id: null,
       nome_cliente: "",
       cpf_cnpj: "",
-      email: "",
+      email: EMAIL_PADRAO,
       celular: "",
       data_nascimento: "",
       estado_civil: "",
@@ -766,7 +772,7 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
       cpf_conjuge: "",
       renda_conjuge: 0,
       data_nascimento_conjuge: "",
-      email_conjuge: "",
+      email_conjuge: EMAIL_PADRAO,
       celular_conjuge: "",
     }));
     setCadastroNome(null);
