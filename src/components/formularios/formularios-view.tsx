@@ -347,17 +347,16 @@ function UploadDialog({
               className="hidden"
               onChange={(e) => escolher(e.target.files?.[0] ?? null)}
             />
-            <Button
+            <button
               type="button"
-              variant="outline"
-              className="flex w-full min-w-0 justify-start overflow-hidden"
               onClick={() => inputRef.current?.click()}
+              className="flex h-10 w-full items-center gap-2 rounded-md border border-input bg-background px-3 text-sm text-left ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
-              <Upload className="mr-2 h-4 w-4 shrink-0" />
-              <span className="min-w-0 flex-1 truncate text-left">
-                {file ? file.name : "Selecionar PDF"}
+              <Upload className="h-4 w-4 shrink-0 text-muted-foreground" />
+              <span className="min-w-0 flex-1 truncate">
+                {file ? file.name : <span className="text-muted-foreground">Selecionar PDF</span>}
               </span>
-            </Button>
+            </button>
           </div>
         </div>
         <DialogFooter>
