@@ -149,7 +149,7 @@ export function ReportChartView({
   const isMobile = useIsMobile();
   const fmt = chart.moeda
     ? (v: number) => formatBRL(Number(v))
-    : (v: number) => Number(v).toLocaleString("pt-BR");
+    : (v: number) => Number(v).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
   const allowDecimals = Boolean(chart.moeda);
 
   if (chart.dados.length === 0) {

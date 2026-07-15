@@ -42,7 +42,7 @@ function tempoRelativo(iso: string) {
   if (h < 24) return `${h} h`;
   const dias = Math.floor(h / 24);
   if (dias < 7) return `${dias} d`;
-  return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
+  return d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo",  day: "2-digit", month: "short" });
 }
 
 type EventoFeed = {

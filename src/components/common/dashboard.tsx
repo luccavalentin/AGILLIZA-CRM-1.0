@@ -48,7 +48,7 @@ function DeltaBadge({ delta }: { delta: MetricDelta }) {
       <Icon className="h-3 w-3" />
       {delta.dir === "flat"
         ? "estável"
-        : `${sinal}${delta.pct.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}%`}
+        : `${sinal}${delta.pct.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo",  maximumFractionDigits: 0 })}%`}
 
     </span>
   );
@@ -215,7 +215,7 @@ export function ConversionFunnel({ etapas }: { etapas: { label: string; valor: n
               <div className="mb-1 flex items-center justify-between gap-2">
                 <span className="truncate text-xs font-medium text-foreground">{e.label}</span>
                 <span className="shrink-0 font-mono text-xs tabular-nums text-muted-foreground">
-                  {pctBase.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}%
+                  {pctBase.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo",  maximumFractionDigits: 0 })}%
                 </span>
               </div>
               <div className="flex h-9 items-center">
@@ -226,7 +226,7 @@ export function ConversionFunnel({ etapas }: { etapas: { label: string; valor: n
                   )}
                   style={{ width: `${largura}%` }}
                 >
-                  {e.valor.toLocaleString("pt-BR")}
+                  {e.valor.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}
                 </div>
               </div>
             </div>
@@ -444,7 +444,7 @@ export function MetricList({
                 <span className="truncate font-medium">{i.label}</span>
               </span>
               <span className="shrink-0 font-mono tabular-nums text-foreground">
-                {i.display ?? i.valor.toLocaleString("pt-BR")}
+                {i.display ?? i.valor.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}
               </span>
             </div>
             <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-muted">

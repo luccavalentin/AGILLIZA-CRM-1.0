@@ -46,14 +46,14 @@ const MARGIN = 36;
 
 function pctTxt(v: number | null | undefined, sufixo = "a.a.", casas = 4): string {
   if (v == null || Number.isNaN(v)) return "—";
-  return `${v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: casas })}% ${sufixo}`.trim();
+  return `${v.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo",  minimumFractionDigits: 2, maximumFractionDigits: casas })}% ${sufixo}`.trim();
 }
 
 function dataTxt(v: unknown): string {
   if (!v) return "—";
   const d = new Date(String(v).length <= 10 ? `${v}T00:00:00` : String(v));
   if (Number.isNaN(d.getTime())) return String(v);
-  return d.toLocaleDateString("pt-BR");
+  return d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
 }
 
 function produtoLabel(s: any): string {
@@ -106,7 +106,7 @@ function drawFooter(doc: jsPDF, pageW: number, pageH: number, pageNum: number, t
   doc.setFontSize(7.5);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(P.cinza);
-  const emitido = new Date().toLocaleString("pt-BR");
+  const emitido = new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
   doc.text(`Agilliza · Crédito Imobiliário  —  Emitido em ${emitido}`, MARGIN, y + 12);
   doc.text(`Página ${pageNum} de ${total}`, pageW - MARGIN, y + 12, { align: "right" });
 }

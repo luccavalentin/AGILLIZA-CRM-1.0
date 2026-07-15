@@ -266,7 +266,7 @@ function Pagina() {
                   (health.data ?? []).map((h) => (
                     <TableRow key={h.id}>
                       <TableCell className="whitespace-nowrap tabular-nums text-muted-foreground">
-                        {new Date(h.created_at).toLocaleString("pt-BR")}
+                        {new Date(h.created_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}
                       </TableCell>
                       <TableCell className="font-medium text-foreground">{h.integracao}</TableCell>
                       <TableCell>

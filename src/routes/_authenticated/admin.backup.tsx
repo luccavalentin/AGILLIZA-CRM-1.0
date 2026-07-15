@@ -304,7 +304,7 @@ function Pagina() {
                     </TableCell>
                     <TableCell>{formatBytes(b.tamanho_bytes)}</TableCell>
                     <TableCell className="text-muted-foreground">
-                      {b.concluido_em ? new Date(b.concluido_em).toLocaleString("pt-BR") : "—"}
+                      {b.concluido_em ? new Date(b.concluido_em).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" }) : "—"}
                     </TableCell>
                     <TableCell>
                       <AlertDialog>

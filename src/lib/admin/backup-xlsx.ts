@@ -116,7 +116,7 @@ function cabecalhoMarca(
 export function exportarBackupXLSX(dados: BackupCompleto) {
   const wb = XLSX.utils.book_new();
   const usados = new Set<string>();
-  const dataStr = new Date(dados.geradoEm).toLocaleString("pt-BR");
+  const dataStr = new Date(dados.geradoEm).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
 
   // ---------------------------------------------------------------- Resumo
   const wsResumo: XLSX.WorkSheet = {};

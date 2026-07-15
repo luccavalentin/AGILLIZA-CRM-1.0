@@ -161,7 +161,7 @@ const TAB_LABELS: Partial<Record<Tab, string>> = {
 function formatarDataHora(iso: string): string {
   const d = new Date(iso.includes("T") ? iso : iso.replace(" ", "T"));
   if (isNaN(d.getTime())) return "—";
-  return d.toLocaleString("pt-BR", {
+  return d.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", 
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
@@ -1702,7 +1702,7 @@ function TabAtividades({ historico }: { historico: any[] }) {
                 {h.descricao ?? (h.status_novo ? statusProposta(h.status_novo).label : "—")}
               </TableCell>
               <TableCell className="text-muted-foreground">
-                {new Date(h.created_at).toLocaleString("pt-BR")}
+                {new Date(h.created_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}
               </TableCell>
             </TableRow>
           ))}
@@ -1798,7 +1798,7 @@ function TabFup({ propostaId, followups }: { propostaId: string; followups: any[
                 <div className="flex items-center justify-between">
                   <ToneBadge tone={tone as any}>{rotulo}</ToneBadge>
                   <span className="text-xs text-muted-foreground">
-                    {new Date(f.created_at).toLocaleString("pt-BR")}
+                    {new Date(f.created_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}
                   </span>
                 </div>
                 {f.titulo && <p className="mt-2 font-medium text-foreground">{f.titulo}</p>}

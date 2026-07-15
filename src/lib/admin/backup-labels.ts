@@ -156,8 +156,8 @@ function humanizarValor(col: string, v: Valor): Valor {
       if (!Number.isNaN(d.getTime())) {
         // Se tem hora, mostra data+hora; senão só data.
         return v.includes("T")
-          ? d.toLocaleString("pt-BR")
-          : d.toLocaleDateString("pt-BR");
+          ? d.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })
+          : d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
       }
     }
 

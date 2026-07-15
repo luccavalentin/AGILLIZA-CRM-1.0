@@ -2,12 +2,12 @@
 
 export function formatBRL(v: number | null | undefined): string {
   if (v == null || Number.isNaN(v)) return "—";
-  return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  return v.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo",  style: "currency", currency: "BRL" });
 }
 
 export function formatPercent(v: number | null | undefined, casas = 2): string {
   if (v == null || Number.isNaN(v)) return "—";
-  return `${(v * 100).toLocaleString("pt-BR", { minimumFractionDigits: casas, maximumFractionDigits: casas })}%`;
+  return `${(v * 100).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo",  minimumFractionDigits: casas, maximumFractionDigits: casas })}%`;
 }
 
 /** Converte texto com máscara BRL ("1.234,56" ou "R$ 1.234,56") em número. */
@@ -22,7 +22,7 @@ export function parseBRL(texto: string): number {
 
 /** Formata um número como texto de moeda para input (sem prefixo R$). */
 export function maskBRLInput(valor: number): string {
-  return valor.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return valor.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo",  minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 /**
@@ -34,7 +34,7 @@ export function maskBRLCents(texto: string): string {
   const digits = texto.replace(/\D/g, "");
   if (!digits) return "";
   const n = Number(digits) / 100;
-  return n.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return n.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo",  minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 

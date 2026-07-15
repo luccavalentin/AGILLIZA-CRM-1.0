@@ -88,7 +88,7 @@ const CORES = [
 type FiltroChat = "todas" | "nao_lidas" | "sla" | "lembrete" | "arquivadas";
 
 function _formatarHoraLegacy(iso: string): string {
-  return new Date(iso).toLocaleString("pt-BR", {
+  return new Date(iso).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", 
     day: "2-digit",
     month: "2-digit",
     hour: "2-digit",
@@ -108,7 +108,7 @@ function rotuloDia(iso: string): string {
     a.getDate() === b.getDate();
   if (mesmoDia(d, hoje)) return "Hoje";
   if (mesmoDia(d, ontem)) return "Ontem";
-  return d.toLocaleDateString("pt-BR", {
+  return d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo", 
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
@@ -548,7 +548,7 @@ function Pagina() {
                               {c.nome}
                             </span>
                             <span className="shrink-0 text-[10px] text-muted-foreground">
-                              {new Date(c.ultima_em).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                              {new Date(c.ultima_em).toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo",  hour: "2-digit", minute: "2-digit" })}
                             </span>
                           </div>
                           {verTodos && !c.minha && c.atendente_nome && (

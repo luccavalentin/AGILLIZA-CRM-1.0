@@ -34,9 +34,9 @@ const filtrosSchema = z.object({
   }),
 });
 
-const brl = (v: number) => (v || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-const int = (v: number) => (v || 0).toLocaleString("pt-BR");
-const pct = (v: number) => `${(v || 0).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`;
+const brl = (v: number) => (v || 0).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo",  style: "currency", currency: "BRL" });
+const int = (v: number) => (v || 0).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
+const pct = (v: number) => `${(v || 0).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo",  maximumFractionDigits: 1 })}%`;
 
 /** Rótulos oficiais dos status de proposta (espelha components/propostas/status.ts). */
 const STATUS_PROPOSTA_LABEL: Record<string, string> = {

@@ -59,7 +59,7 @@ function macroIndexOf(codigo: string | null): number {
 
 function formatarBRL(v: number | null): string {
   if (v == null) return "—";
-  return v.toLocaleString("pt-BR", {
+  return v.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", 
     style: "currency",
     currency: "BRL",
     minimumFractionDigits: 2,
@@ -440,7 +440,7 @@ export function PainelChatCliente({
 function formatarData(iso: string | null | undefined): string {
   if (!iso) return "—";
   const d = new Date(iso);
-  return d.toLocaleString("pt-BR", {
+  return d.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", 
     day: "2-digit",
     month: "2-digit",
     year: "2-digit",

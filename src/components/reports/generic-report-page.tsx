@@ -40,7 +40,7 @@ export function GenericReportPage({
   const metaArr = [
     `Período: ${PERIODO_LABEL[filtros.periodo]}`,
     `Escopo: ${ESCOPO_LABEL[filtros.escopo]}`,
-    `Registros: ${(data?.rows.length ?? 0).toLocaleString("pt-BR")}`,
+    `Registros: ${(data?.rows.length ?? 0).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}`,
   ];
 
   // Opções completas de filtro vindas do servidor (todos os bancos/produtos/status cadastrados);

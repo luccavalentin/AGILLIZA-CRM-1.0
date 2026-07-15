@@ -142,7 +142,7 @@ export function InteracoesTab({ clienteId }: { clienteId: string }) {
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-sm font-medium text-foreground">{canalCfg?.l}</span>
                       <span className="text-xs text-muted-foreground">
-                        {new Date(i.ocorrido_em).toLocaleString("pt-BR")}
+                        {new Date(i.ocorrido_em).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}
                       </span>
                     </div>
                     {i.resultado && <p className="text-sm text-foreground">{i.resultado}</p>}
