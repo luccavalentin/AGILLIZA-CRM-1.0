@@ -1092,11 +1092,11 @@ function DetalhamentoBancoDialog({
               <p className="whitespace-pre-wrap text-foreground">{banco.mensagem_banco}</p>
             </div>
           )}
-          {banco?.numero_proposta_banco && (
+          {(() => { const nb = numeroBancoParaExibir(banco?.numero_proposta_banco); return nb ? (
             <p className="text-xs text-muted-foreground">
-              Nº oficial da proposta no banco: {banco.numero_proposta_banco}
+              Nº oficial da proposta no banco: {nb}
             </p>
-          )}
+          ) : null; })()}
         </div>
         <DialogFooter>
           <Button onClick={onClose}>Fechar</Button>
