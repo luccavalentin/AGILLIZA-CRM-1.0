@@ -366,6 +366,7 @@ export const criarProposta = createServerFn({ method: "POST" })
       .object({
         simulacao_id: z.string().uuid().optional(),
         banco_id: z.string().uuid().optional(),
+        simulacao_banco_id: z.string().uuid().optional(),
         cliente_id: z.string().uuid().optional(),
       })
       .parse(data),
@@ -409,14 +410,19 @@ export const criarProposta = createServerFn({ method: "POST" })
       bancosSimulados = (sim.simulacao_bancos ?? []).filter(
         (b: any) => b.status_banco === "simulada",
       );
-      const bancoEscolhido = data.banco_id
-        ? bancosSimulados.find((b: any) => b.banco_id === data.banco_id)
-        : bancosSimulados[0];
+      const bancoEscolhido = data.simulacao_banco_id
+        ? bancosSimulados.find((b: any) => b.id === data.simulacao_banco_id)
+        : data.banco_id
+          ? bancosSimulados.find((b: any) => b.banco_id === data.banco_id)
+          : bancosSimulados[0];
 
+      if (data.simulacao_banco_id && !bancoEscolhido) {
+        throw new Error("Simulação de banco não encontrada.");
+      }
       if (data.banco_id && !bancoEscolhido) {
         throw new Error("Banco da simulação não encontrado ou ainda não simulado.");
       }
-      if (!data.banco_id && bancosSimulados.length > 1) {
+      if (!data.banco_id && !data.simulacao_banco_id && bancosSimulados.length > 1) {
         throw new Error("Escolha um banco específico para enviar a aprovação.");
       }
       bancosParaVincular = bancoEscolhido ? [bancoEscolhido] : bancosSimulados;

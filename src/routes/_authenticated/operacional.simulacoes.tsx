@@ -130,7 +130,7 @@ function Pagina() {
   const [envioCarregando, setEnvioCarregando] = useState(false);
   const [enviandoBancoId, setEnviandoBancoId] = useState<string | null>(null);
   const [propostasCriadas, setPropostasCriadas] = useState<
-    Array<{ banco_id: string; nome_banco: string; proposta_id: string; numero: string }>
+    Array<{ simulacao_banco_id: string; banco_id: string; nome_banco: string; proposta_id: string; numero: string }>
   >([]);
 
 
@@ -249,15 +249,16 @@ function Pagina() {
 
   async function enviarBancoIndividual(banco: any) {
     if (!envio || enviandoBancoId) return;
-    setEnviandoBancoId(banco.banco_id);
+    setEnviandoBancoId(banco.id);
     try {
       const res = await criar({
-        data: { simulacao_id: envio.id, banco_id: banco.banco_id },
+        data: { simulacao_id: envio.id, simulacao_banco_id: banco.id },
       });
       toast.success(`Proposta ${res.numero_proposta} criada para ${banco.nome_banco}.`);
       setPropostasCriadas((prev) => [
         ...prev,
         {
+          simulacao_banco_id: banco.id,
           banco_id: banco.banco_id,
           nome_banco: banco.nome_banco,
           proposta_id: res.proposta_id,
@@ -856,12 +857,12 @@ function Pagina() {
               </p>
             ) : (
               envio?.bancos.map((b: any) => {
-                const criada = propostasCriadas.find((p) => p.banco_id === b.banco_id);
-                const esteEnviando = enviandoBancoId === b.banco_id;
+                const criada = propostasCriadas.find((p) => p.simulacao_banco_id === b.id);
+                const esteEnviando = enviandoBancoId === b.id;
                 const cor = corDoBanco(b.nome_banco);
                 return (
                   <div
-                    key={b.banco_id}
+                    key={b.id}
                     style={criada ? { borderColor: cor } : undefined}
                     className={cn(
                       "flex items-center gap-3 rounded-lg border bg-card p-3 transition-colors",
