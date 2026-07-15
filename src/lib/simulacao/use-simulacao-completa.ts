@@ -884,6 +884,13 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
     setEnviando(true);
     const idsGerados: string[] = [];
     let done = 0;
+    // No modo "Ambos", geramos um único agrupador para colapsar as duas
+    // simulações (SAC + PRICE) em um único item na listagem.
+    const agrupador_id =
+      f.sistema_amortizacao === "B" && f.bancos_sac_ids.length > 0 && f.bancos_price_ids.length > 0
+        ? (crypto.randomUUID?.() ??
+          `${Date.now().toString(16)}-${Math.random().toString(16).slice(2)}`)
+        : null;
     try {
       // Simulação SAC
       if (f.bancos_sac_ids.length > 0) {
