@@ -735,31 +735,98 @@ function Pagina() {
             {/* Mobile */}
             <ul className="divide-y divide-border xl:hidden">
               {pageItens.map((d) => (
-                <li key={d.id}>
+                <li key={d.id} className="relative">
                   <Link
                     to="/operacional/demandas/$id"
                     params={{ id: d.id }}
-                    className="flex flex-col gap-2 p-4 active:bg-accent/40"
+                    className="flex flex-col gap-3 p-4 transition-colors hover:bg-accent/40 active:bg-accent/40"
                   >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <div className="line-clamp-1 font-medium text-foreground">{d.titulo}</div>
-                        <div className="mt-0.5 flex items-center gap-2 text-[11px] text-muted-foreground">
-                          <span className="font-mono tabular-nums">{d.numero ?? "—"}</span>
-                          {d.nome_cliente && <span>• {d.nome_cliente}</span>}
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="inline-flex items-center rounded-md border border-border bg-muted/50 px-1.5 py-0.5 font-mono text-[10px] tabular-nums text-muted-foreground">
+                            {d.numero ?? "—"}
+                          </span>
+                          <PrioridadeBadge prioridade={d.prioridade} />
                         </div>
+                        <div className="mt-1.5 line-clamp-2 text-sm font-medium text-foreground">
+                          {d.titulo}
+                        </div>
+                        {d.tipo && (
+                          <div className="mt-0.5 text-[11px] text-muted-foreground">
+                            {d.tipo.replace(/_/g, " ")}
+                          </div>
+                        )}
                       </div>
                       <StatusPill status={d.status} />
                     </div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <PrioridadeBadge prioridade={d.prioridade} />
+
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                      {d.nome_cliente && (
+                        <div className="flex min-w-0 items-center gap-2">
+                          <OpAvatar nome={d.nome_cliente} />
+                          <div className="min-w-0">
+                            <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                              Cliente
+                            </div>
+                            <div className="line-clamp-1 text-xs text-foreground">
+                              {d.nome_cliente}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      {d.nome_responsavel && (
+                        <div className="flex min-w-0 items-center gap-2">
+                          <OpAvatar nome={d.nome_responsavel} />
+                          <div className="min-w-0">
+                            <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                              Responsável
+                            </div>
+                            <div className="line-clamp-1 text-xs text-foreground">
+                              {d.nome_responsavel}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/60 pt-2.5">
                       <SlaRing
                         inicio={d.sla_inicio}
                         prazo={d.prazo_sla}
                         concluida={d.status === "concluida"}
                       />
+                      <PrazoCell prazo={d.prazo_sla} status={d.status} />
                     </div>
                   </Link>
+                  <div className="absolute right-2 top-2">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={() =>
+                            navigate({
+                              to: "/operacional/demandas/$id",
+                              params: { id: d.id },
+                            })
+                          }
+                        >
+                          Abrir detalhes
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className="text-destructive focus:text-destructive"
+                          onClick={() => handleExcluir(d.id)}
+                        >
+                          Excluir
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </li>
               ))}
             </ul>
