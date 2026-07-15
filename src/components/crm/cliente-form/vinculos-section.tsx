@@ -72,11 +72,10 @@ export function VinculosSection({
                   <Select
                     value={sel}
                     onValueChange={(val) => {
-                      // Ao selecionar já vincula automaticamente, evita a dúvida
-                      // sobre o botão-ícone. O select fica pronto para próximo vínculo.
-                      setVinculoSel((prev) => ({ ...prev, [tipo.valor]: val }));
-                      adicionarVinculo(tipo.valor);
-                      setVinculoSel((prev) => ({ ...prev, [tipo.valor]: "" }));
+                      // Selecionar já vincula: elimina a dúvida sobre o
+                      // antigo botão-ícone e mantém o select pronto para
+                      // novos vínculos.
+                      adicionarVinculo(tipo.valor, val);
                     }}
                   >
                     <SelectTrigger className="w-full">
