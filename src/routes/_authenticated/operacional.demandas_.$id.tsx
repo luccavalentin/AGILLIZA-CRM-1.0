@@ -528,30 +528,30 @@ function Pagina() {
 
           {/* Cabeçalho da demanda */}
           <div className="overflow-hidden rounded-2xl border border-border/70 bg-card shadow-sm">
-            <div className="grid gap-4 border-b border-border/60 px-5 py-4 lg:grid-cols-[minmax(0,1fr)_260px]">
+            <div className="grid gap-4 border-b border-border/60 p-4 sm:p-5 lg:grid-cols-[minmax(0,1fr)_minmax(240px,320px)]">
               <div className="min-w-0">
-                <div className="mb-2 flex flex-wrap items-center gap-2">
-                  <span className="rounded-md bg-background px-2 py-0.5 font-mono text-xs text-muted-foreground ring-1 ring-border/60">
+                <div className="mb-2 flex flex-wrap items-center gap-1.5">
+                  <span className="rounded-md bg-background px-2 py-0.5 font-mono text-[11px] text-muted-foreground ring-1 ring-border/60">
                     {d.numero}
                   </span>
                   <ToneBadge tone={statusDemanda(d.status).tone}>
                     {statusDemanda(d.status).label}
                   </ToneBadge>
-                  <span className="inline-flex items-center gap-1.5 rounded-md bg-background px-2 py-0.5 text-xs text-muted-foreground ring-1 ring-border/60">
+                  <span className="inline-flex items-center gap-1.5 rounded-md bg-background px-2 py-0.5 text-[11px] text-muted-foreground ring-1 ring-border/60">
                     <span
                       className={cn(
-                        "inline-block h-1.5 w-5 rounded-full",
+                        "inline-block h-1.5 w-4 rounded-full",
                         PRIORIDADE[d.prioridade as "p1"].bar,
                       )}
                     />
                     {PRIORIDADE[d.prioridade as "p1"].label}
                   </span>
                 </div>
-                <h1 className="text-xl font-semibold tracking-tight text-foreground">
+                <h1 className="break-words text-lg font-semibold tracking-tight text-foreground sm:text-xl">
                   {d.titulo}
                 </h1>
                 {d.descricao && (
-                  <p className="mt-1.5 whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
+                  <p className="mt-1.5 whitespace-pre-wrap break-words text-sm leading-relaxed text-muted-foreground">
                     {d.descricao}
                   </p>
                 )}
@@ -559,24 +559,29 @@ function Pagina() {
               {/* Card SLA */}
               <div
                 className={cn(
-                  "rounded-xl border p-3.5",
+                  "flex min-w-0 flex-col rounded-xl border p-3.5",
                   slaCritico
                     ? "border-destructive/40 bg-destructive/[0.06]"
                     : "border-border/70 bg-muted/30",
                 )}
               >
-                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide">
+                <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide">
                   <AlertTriangle
                     className={cn(
-                      "h-3.5 w-3.5",
+                      "h-3.5 w-3.5 shrink-0",
                       slaCritico ? "text-destructive" : "text-muted-foreground",
                     )}
                   />
-                  <span className={slaCritico ? "text-destructive" : "text-muted-foreground"}>
+                  <span
+                    className={cn(
+                      "truncate",
+                      slaCritico ? "text-destructive" : "text-muted-foreground",
+                    )}
+                  >
                     {slaCritico ? "SLA crítico" : "SLA"}
                   </span>
                 </div>
-                <div className="mt-1 text-base font-semibold text-foreground">
+                <div className="mt-1 break-words text-sm font-semibold leading-tight text-foreground sm:text-base">
                   <SlaCountdown
                     inicio={d.sla_inicio}
                     prazo={d.prazo_sla}
@@ -584,10 +589,11 @@ function Pagina() {
                     concluidaEm={d.concluida_em}
                   />
                 </div>
-                <p className="mt-2 text-[11px] uppercase tracking-wide text-muted-foreground">
+                <div className="mt-2 h-px bg-border/60" />
+                <p className="mt-2 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
                   Próxima ação necessária
                 </p>
-                <p className="text-xs text-foreground">
+                <p className="mt-0.5 break-words text-xs leading-relaxed text-foreground">
                   {proximaAcao}
                   {data?.nome_responsavel ? (
                     <>
@@ -599,60 +605,64 @@ function Pagina() {
               </div>
             </div>
 
-            {/* Stepper */}
-            <div className="border-b border-border/60 px-5 py-5">
-              <div className="flex items-center">
-                {STEPPER.map((step, i) => {
-                  const done = i < stepAtual;
-                  const active = i === stepAtual;
-                  return (
-                    <div key={step.key} className="flex flex-1 items-center last:flex-none">
-                      <div className="flex flex-col items-center gap-1.5">
-                        <div
-                          className={cn(
-                            "flex size-8 items-center justify-center rounded-full ring-2 transition-colors",
-                            done && "bg-primary text-primary-foreground ring-primary",
-                            active && "bg-background text-primary ring-primary shadow-sm",
-                            !done && !active && "bg-background text-muted-foreground ring-border",
-                          )}
-                        >
-                          {done ? (
-                            <CheckCircle2 className="h-4 w-4" />
-                          ) : active ? (
-                            <div className="size-2.5 rounded-full bg-primary" />
-                          ) : (
-                            <Circle className="h-3.5 w-3.5" />
-                          )}
+            {/* Stepper — scroll horizontal em telas estreitas */}
+            <div className="border-b border-border/60">
+              <div className="overflow-x-auto px-4 py-5 sm:px-5">
+                <div className="flex min-w-[560px] items-start">
+                  {STEPPER.map((step, i) => {
+                    const done = i < stepAtual;
+                    const active = i === stepAtual;
+                    return (
+                      <div key={step.key} className="flex flex-1 items-start last:flex-none">
+                        <div className="flex min-w-0 flex-col items-center gap-1.5">
+                          <div
+                            className={cn(
+                              "flex size-8 shrink-0 items-center justify-center rounded-full ring-2 transition-colors",
+                              done && "bg-primary text-primary-foreground ring-primary",
+                              active &&
+                                "bg-background text-primary ring-primary shadow-sm",
+                              !done && !active &&
+                                "bg-background text-muted-foreground ring-border",
+                            )}
+                          >
+                            {done ? (
+                              <CheckCircle2 className="h-4 w-4" />
+                            ) : active ? (
+                              <div className="size-2.5 rounded-full bg-primary" />
+                            ) : (
+                              <Circle className="h-3.5 w-3.5" />
+                            )}
+                          </div>
+                          <span
+                            className={cn(
+                              "whitespace-nowrap text-[11px] font-medium",
+                              active
+                                ? "text-primary"
+                                : done
+                                  ? "text-foreground"
+                                  : "text-muted-foreground",
+                            )}
+                          >
+                            {step.label}
+                          </span>
                         </div>
-                        <span
-                          className={cn(
-                            "whitespace-nowrap text-[11px] font-medium",
-                            active
-                              ? "text-primary"
-                              : done
-                                ? "text-foreground"
-                                : "text-muted-foreground",
-                          )}
-                        >
-                          {step.label}
-                        </span>
+                        {i < STEPPER.length - 1 && (
+                          <div
+                            className={cn(
+                              "mx-2 mt-4 h-0.5 flex-1 rounded-full",
+                              i < stepAtual ? "bg-primary" : "bg-border",
+                            )}
+                          />
+                        )}
                       </div>
-                      {i < STEPPER.length - 1 && (
-                        <div
-                          className={cn(
-                            "mx-2 h-0.5 flex-1 rounded-full",
-                            i < stepAtual ? "bg-primary" : "bg-border",
-                          )}
-                        />
-                      )}
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
             </div>
 
-            {/* Faixa de métricas */}
-            <div className="grid grid-cols-2 gap-px bg-border/60 md:grid-cols-5">
+            {/* Faixa de métricas — responsiva sem truncamento */}
+            <div className="grid grid-cols-2 gap-px bg-border/60 sm:grid-cols-3 lg:grid-cols-5">
               <MetricCell
                 dot={slaCritico ? "bg-destructive" : "bg-emerald-500"}
                 rotulo="SLA"
@@ -696,12 +706,12 @@ function Pagina() {
             </div>
 
             {d.dados_simulacao && (
-              <div className="border-t border-border/60 px-5 py-4">
+              <div className="border-t border-border/60 p-4 sm:px-5 sm:py-4">
                 <div className="rounded-xl border border-primary/30 bg-primary/[0.04] p-3.5">
                   <p className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-primary">
                     <FileText className="h-3.5 w-3.5" /> Dados da simulação
                   </p>
-                  <p className="whitespace-pre-wrap text-sm text-foreground">
+                  <p className="whitespace-pre-wrap break-words text-sm text-foreground">
                     {d.dados_simulacao}
                   </p>
                 </div>
@@ -1291,15 +1301,19 @@ function MetricCell({
   valor: React.ReactNode;
 }) {
   return (
-    <div className="flex items-start gap-2.5 bg-card px-4 py-3">
+    <div className="flex min-w-0 items-start gap-2.5 bg-card px-3.5 py-3 sm:px-4">
       {Icon ? (
         <Icon className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
       ) : (
         <span className={cn("mt-1.5 size-2 shrink-0 rounded-full", dot)} />
       )}
-      <div className="min-w-0">
-        <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{rotulo}</p>
-        <div className="mt-0.5 truncate text-sm font-medium text-foreground">{valor}</div>
+      <div className="min-w-0 flex-1">
+        <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+          {rotulo}
+        </p>
+        <div className="mt-0.5 break-words text-sm font-semibold leading-tight text-foreground">
+          {valor}
+        </div>
       </div>
     </div>
   );
