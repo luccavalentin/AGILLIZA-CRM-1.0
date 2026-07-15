@@ -803,11 +803,11 @@ function TabResumo({
                     >
                       {b.nome_banco}
                     </span>
-                    {b.numero_proposta_banco && (
+                    {(() => { const nb = numeroBancoParaExibir(b.numero_proposta_banco); return nb ? (
                       <span className="truncate text-[11px] tabular-nums text-muted-foreground">
-                        Nº banco {b.numero_proposta_banco}
+                        Nº banco {nb}
                       </span>
-                    )}
+                    ) : null; })()}
                   </span>
                 </span>
                 <ToneBadge tone={statusBancoConfig(b.status_banco).tone}>
