@@ -857,12 +857,12 @@ function Pagina() {
               </p>
             ) : (
               envio?.bancos.map((b: any) => {
-                const criada = propostasCriadas.find((p) => p.banco_id === b.banco_id);
-                const esteEnviando = enviandoBancoId === b.banco_id;
+                const criada = propostasCriadas.find((p) => p.simulacao_banco_id === b.id);
+                const esteEnviando = enviandoBancoId === b.id;
                 const cor = corDoBanco(b.nome_banco);
                 return (
                   <div
-                    key={b.banco_id}
+                    key={b.id}
                     style={criada ? { borderColor: cor } : undefined}
                     className={cn(
                       "flex items-center gap-3 rounded-lg border bg-card p-3 transition-colors",
