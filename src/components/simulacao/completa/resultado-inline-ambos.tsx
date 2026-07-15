@@ -51,6 +51,16 @@ function rendaMinimaDoBanco(b: any): number | null {
   return rendaMinimaParaParcela(parcela);
 }
 
+async function baixarPdfLinha(simulacao: any, banco: any) {
+  try {
+    const { baixarSimulacaoDetalhadaPDF } = await import("@/lib/simulacao/simulacao-pdf");
+    baixarSimulacaoDetalhadaPDF({ simulacao, bancos: [banco] });
+  } catch (e) {
+    console.error("[baixar PDF linha]", e);
+    toast.error("Não foi possível gerar o PDF deste banco.");
+  }
+}
+
 function useSimQuery(id: string | null) {
   const qc = useQueryClient();
   const q = useQuery({
