@@ -234,8 +234,10 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
     [f.renda_total, f.compoe_renda, f.renda_conjuge],
   );
 
-  // Restrição especial: Terreno (TE/TC) ou Imóvel comercial (uso "C")
-  // -> LTV 70%, prazo máx 240 meses, apenas Bradesco opera.
+  // Restrições operacionais por tipo de operação:
+  //  - Terreno (TE/TC): apenas Bradesco opera, LTV 70%, prazo máx 240 meses.
+  //  - Imóvel comercial (uso "C"): todos os bancos operam, LTV 70%, prazo máx 240 meses.
+  //  - Home Equity: Itaú não opera; LTV 60%.
   const restricaoEspecial = useMemo(() => {
     const isTerreno = f.tipo_imovel === "TE" || f.tipo_imovel === "TC";
     const isComercial = f.uso_imovel === "C";
@@ -247,20 +249,38 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
         : isTerreno
           ? "Terreno"
           : "Imóvel comercial";
-    return { ativo, motivo, ltvMax: 0.7, prazoMax: 240 };
+    return {
+      ativo,
+      motivo,
+      isTerreno,
+      isComercial,
+      ltvMax: 0.7,
+      prazoMax: 240,
+      // Apenas terreno restringe os bancos elegíveis a Bradesco.
+      apenasBradesco: isTerreno,
+    };
   }, [f.tipo_imovel, f.uso_imovel]);
 
+  const isHomeEquity = f.produto === "home_equity";
+
   function aceitaBancoNaOperacao(b: { codigo_banco?: number | string | null; nome_banco?: string | null }) {
-    if (!restricaoEspecial.ativo) return true;
     const cod = String(b.codigo_banco ?? "").replace(/^0+/, "");
     const nome = (b.nome_banco ?? "").toLowerCase();
-    return cod === "237" || nome.includes("bradesco");
+    // Home Equity: Itaú não opera.
+    if (isHomeEquity && (cod === "341" || nome.includes("itaú") || nome.includes("itau"))) {
+      return false;
+    }
+    // Terreno: apenas Bradesco.
+    if (restricaoEspecial.apenasBradesco) {
+      return cod === "237" || nome.includes("bradesco");
+    }
+    return true;
   }
 
   // Teto de financiamento (LTV) por produto e restrição especial.
   const ltvMax = restricaoEspecial.ativo
     ? restricaoEspecial.ltvMax
-    : f.produto === "home_equity"
+    : isHomeEquity
       ? 0.6
       : 0.8;
   // Mantém a ref sincronizada para handlers criados antes desta linha.
