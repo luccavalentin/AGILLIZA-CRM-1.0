@@ -473,14 +473,17 @@ export const listarSimulacoes = createServerFn({ method: "GET" })
     const from = (data.pagina - 1) * data.porPagina;
     const to = from + data.porPagina - 1;
 
+    // Buscamos mais que porPagina para poder colapsar pares agrupados
+    // (SAC + PRICE criados como "Ambos") em um único item da lista.
+    const overFetch = data.porPagina * 2;
     let query = supabase
       .from("simulacoes")
       .select(
-        "id, numero_simulacao, nome_cliente, produto, valor_imovel, valor_financiamento, prazo, status, created_at, usuario_criador_id, deleted_at, deleted_by, deleted_motivo",
+        "id, numero_simulacao, nome_cliente, produto, valor_imovel, valor_financiamento, prazo, status, created_at, usuario_criador_id, deleted_at, deleted_by, deleted_motivo, sistema_amortizacao, agrupador_id",
         { count: "exact" },
       )
       .order("created_at", { ascending: false })
-      .range(from, to);
+      .range(from, from + overFetch - 1);
 
     if (data.apenas_excluidas) query = query.not("deleted_at", "is", null);
     else query = query.is("deleted_at", null);
@@ -500,13 +503,51 @@ export const listarSimulacoes = createServerFn({ method: "GET" })
     const { data: rows, error, count } = await query;
     if (error) throw new Error(error.message);
 
-    const ids = (rows ?? []).map((r: any) => r.id);
+    // Colapsa simulações que compartilham agrupador_id (modo Ambos SAC + PRICE)
+    // em uma única linha. Mantém o registro mais antigo (o SAC, criado primeiro)
+    // como "principal"; carrega os ids das demais para o front resolver ações.
+    const porGrupo = new Map<string, any[]>();
+    const linhas: any[] = [];
+    for (const r of rows ?? []) {
+      const key = (r as any).agrupador_id;
+      if (!key) {
+        linhas.push({ ...r, _agrupadas_ids: [] as string[] });
+        continue;
+      }
+      const lista = porGrupo.get(key) ?? [];
+      lista.push(r);
+      porGrupo.set(key, lista);
+    }
+    for (const grupo of porGrupo.values()) {
+      grupo.sort((a: any, b: any) => (a.created_at < b.created_at ? -1 : 1));
+      const principal = grupo[0];
+      linhas.push({
+        ...principal,
+        sistema_amortizacao: "B",
+        _agrupadas_ids: grupo.slice(1).map((g: any) => g.id),
+      });
+    }
+    linhas.sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
+    const paginadas = linhas.slice(0, data.porPagina);
+    // Ajusta o total contando cada grupo como 1
+    const totalCru = count ?? 0;
+    const colapsadosNaPagina = Array.from(porGrupo.values()).reduce(
+      (acc, g) => acc + Math.max(0, g.length - 1),
+      0,
+    );
+    const total = Math.max(0, totalCru - colapsadosNaPagina);
+
+    // Carrega bancos de TODAS as simulações (principais + agrupadas) para
+    // consolidar a exibição.
+    const idsPrincipais = paginadas.map((r: any) => r.id);
+    const idsAgrupadas = paginadas.flatMap((r: any) => r._agrupadas_ids ?? []);
+    const idsTodos = [...idsPrincipais, ...idsAgrupadas];
     const bancosPorSim = new Map<string, SimulacaoBancoResumo[]>();
-    if (ids.length) {
+    if (idsTodos.length) {
       const { data: bancos } = await supabase
         .from("simulacao_bancos")
         .select("id, simulacao_id, banco_id, nome_banco, status_banco")
-        .in("simulacao_id", ids)
+        .in("simulacao_id", idsTodos)
         .order("nome_banco", { ascending: true });
       for (const b of bancos ?? []) {
         const lista = bancosPorSim.get((b as any).simulacao_id) ?? [];
@@ -522,10 +563,10 @@ export const listarSimulacoes = createServerFn({ method: "GET" })
 
     // Resolve nomes dos criadores + de quem excluiu.
     const donoIds = Array.from(
-      new Set((rows ?? []).map((r: any) => r.usuario_criador_id).filter(Boolean)),
+      new Set(paginadas.map((r: any) => r.usuario_criador_id).filter(Boolean)),
     ) as string[];
     const excluidorIds = Array.from(
-      new Set((rows ?? []).map((r: any) => r.deleted_by).filter(Boolean)),
+      new Set(paginadas.map((r: any) => r.deleted_by).filter(Boolean)),
     ) as string[];
     const perfilIds = Array.from(new Set([...donoIds, ...excluidorIds]));
     const nomesPerfis = new Map<string, string>();
@@ -537,14 +578,18 @@ export const listarSimulacoes = createServerFn({ method: "GET" })
       for (const p of perfis ?? []) nomesPerfis.set((p as any).id, (p as any).nome ?? "");
     }
 
-    const itens = (rows ?? []).map((r: any) => ({
-      ...r,
-      responsavel_id: r.usuario_criador_id ?? null,
-      nome_responsavel: r.usuario_criador_id ? (nomesPerfis.get(r.usuario_criador_id) ?? null) : null,
-      nome_excluidor: r.deleted_by ? (nomesPerfis.get(r.deleted_by) ?? null) : null,
-      bancos: bancosPorSim.get(r.id) ?? [],
-    })) as SimulacaoListaItem[];
-    return { itens, total: count ?? 0 };
+    const itens = paginadas.map((r: any) => {
+      const bancosPrincipal = bancosPorSim.get(r.id) ?? [];
+      const bancosExtras = (r._agrupadas_ids ?? []).flatMap((id: string) => bancosPorSim.get(id) ?? []);
+      return {
+        ...r,
+        responsavel_id: r.usuario_criador_id ?? null,
+        nome_responsavel: r.usuario_criador_id ? (nomesPerfis.get(r.usuario_criador_id) ?? null) : null,
+        nome_excluidor: r.deleted_by ? (nomesPerfis.get(r.deleted_by) ?? null) : null,
+        bancos: [...bancosPrincipal, ...bancosExtras],
+      };
+    }) as SimulacaoListaItem[];
+    return { itens, total };
   });
 
 /** ===== Duplicar simulação ===== */
