@@ -142,6 +142,10 @@ const PASTA_BADGE: Record<PastaTipo, { label: string; classe: string }> = {
     label: "Corretor",
     classe: "border-primary/25 bg-primary/10 text-primary",
   },
+  analista: {
+    label: "Analista",
+    classe: "border-primary/25 bg-primary/10 text-primary",
+  },
 };
 
 
