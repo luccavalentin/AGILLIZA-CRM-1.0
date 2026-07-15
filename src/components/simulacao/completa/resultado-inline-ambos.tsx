@@ -338,14 +338,15 @@ export function ResultadoInlineAmbos({ simulacaoIdSac, simulacaoIdPrice, onFecha
                           <div className="flex flex-wrap items-center gap-2">
                             <span
                               className={cn(
-                                "inline-flex items-center rounded-md border px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider",
+                                "inline-flex items-center rounded-md px-2 py-1 text-[11px] font-extrabold uppercase tracking-[0.08em] shadow-sm ring-1",
                                 l.sistema === "SAC"
-                                  ? "border-info/30 bg-info/10 text-info"
-                                  : "border-warning/30 bg-warning/10 text-warning",
+                                  ? "bg-[#1e40af] text-white ring-[#1e40af]/40 dark:bg-[#3b82f6] dark:ring-[#3b82f6]/50"
+                                  : "bg-[#b45309] text-white ring-[#b45309]/40 dark:bg-[#f59e0b] dark:ring-[#f59e0b]/50",
                               )}
                             >
                               {l.sistema}
                             </span>
+
                             <span
                               className="truncate font-medium"
                               style={{ color: corDoBanco(b.nome_banco) }}
@@ -477,14 +478,15 @@ export function ResultadoInlineAmbos({ simulacaoIdSac, simulacaoIdPrice, onFecha
                               <div className="flex items-center gap-1.5">
                                 <span
                                   className={cn(
-                                    "inline-flex items-center rounded-md border px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider",
+                                    "inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-[0.08em] shadow-sm ring-1",
                                     l.sistema === "SAC"
-                                      ? "border-info/30 bg-info/10 text-info"
-                                      : "border-warning/30 bg-warning/10 text-warning",
+                                      ? "bg-[#1e40af] text-white ring-[#1e40af]/40 dark:bg-[#3b82f6] dark:ring-[#3b82f6]/50"
+                                      : "bg-[#b45309] text-white ring-[#b45309]/40 dark:bg-[#f59e0b] dark:ring-[#f59e0b]/50",
                                   )}
                                 >
                                   {l.sistema}
                                 </span>
+
                                 <span className="truncate text-sm font-semibold" style={{ color: corDoBanco(b.nome_banco) }}>{b.nome_banco}</span>
                               </div>
 
