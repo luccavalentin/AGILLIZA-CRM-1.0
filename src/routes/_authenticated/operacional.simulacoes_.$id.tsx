@@ -146,6 +146,25 @@ function Pagina() {
     }
   }
 
+  const [invertendo, setInvertendo] = useState(false);
+  async function inverterTitular(reenviarBancos: boolean) {
+    setInvertendo(true);
+    try {
+      await inverterTitularSimulacao({ data: { id } });
+      if (reenviarBancos) {
+        await enviarSimulacaoBanco({ data: { simulacao_id: id } });
+        toast.success("Titular invertido e simulação reenviada aos bancos.");
+      } else {
+        toast.success("Titular e cônjuge invertidos.");
+      }
+      qc.invalidateQueries({ queryKey: ["simulacao", id] });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao inverter titular.");
+    } finally {
+      setInvertendo(false);
+    }
+  }
+
   function duplicar() {
     router.navigate({
       to: "/operacional/simulacoes/completa",
