@@ -790,8 +790,8 @@ export function DocumentosGerais() {
       ) : (
         <>
           {/* ==================== FILTROS ==================== */}
-          <div className="grid gap-2.5 md:grid-cols-[minmax(0,1fr)_repeat(3,minmax(0,180px))_auto]">
-            <div className="relative">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <div className="relative min-w-[240px] flex-1">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder="Buscar cliente por nome, documento ou e-mail…"
@@ -800,8 +800,21 @@ export function DocumentosGerais() {
                   setBusca(e.target.value);
                   setPagina(1);
                 }}
-                className="h-10 pl-9"
+                className="h-10 pl-9 pr-9"
               />
+              {busca && (
+                <button
+                  type="button"
+                  aria-label="Limpar busca"
+                  onClick={() => {
+                    setBusca("");
+                    setPagina(1);
+                  }}
+                  className="absolute right-2 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
             </div>
             <Select
               value={filtroComercial}
@@ -810,12 +823,12 @@ export function DocumentosGerais() {
                 setPagina(1);
               }}
             >
-              <SelectTrigger className="h-10">
+              <SelectTrigger className="h-10 w-[180px]">
                 <SelectValue placeholder="Todos os comerciais" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos os comerciais</SelectItem>
-                {comerciaisBase.map((cm) => (
+                {opcoesComerciais.map((cm) => (
                   <SelectItem key={cm.id} value={cm.id}>
                     {titulo(cm.nome)}
                   </SelectItem>
@@ -829,13 +842,13 @@ export function DocumentosGerais() {
                 setPagina(1);
               }}
             >
-              <SelectTrigger className="h-10">
+              <SelectTrigger className="h-10 w-[180px]">
                 <SelectValue placeholder="Todas as imobiliárias" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="todas">Todas as imobiliárias</SelectItem>
                 <SelectItem value="comercial">{SEM_IMOB}</SelectItem>
-                {imobiliariasFiltro.map((i) => (
+                {opcoesImobiliarias.map((i) => (
                   <SelectItem key={i.id} value={i.id}>
                     {titulo(i.nome)}
                   </SelectItem>
@@ -849,18 +862,46 @@ export function DocumentosGerais() {
                 setPagina(1);
               }}
             >
-              <SelectTrigger className="h-10">
+              <SelectTrigger className="h-10 w-[180px]">
                 <SelectValue placeholder="Todos os corretores" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos os corretores</SelectItem>
-                {corretoresFiltro.map((c) => (
+                {opcoesCorretores.map((c) => (
                   <SelectItem key={c.id} value={c.id}>
                     {titulo(c.nome)}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+            <Select
+              value={filtroAnalista}
+              onValueChange={(v) => {
+                setFiltroAnalista(v);
+                setPagina(1);
+              }}
+            >
+              <SelectTrigger className="h-10 w-[180px]">
+                <SelectValue placeholder="Todos os analistas" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos os analistas</SelectItem>
+                {opcoesAnalistas.map((a) => (
+                  <SelectItem key={a.id} value={a.id}>
+                    {titulo(a.nome)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {filtrando && (
+              <Button
+                variant="ghost"
+                className="h-10 gap-2 text-muted-foreground hover:text-foreground"
+                onClick={limparFiltros}
+              >
+                <X className="h-4 w-4" /> Limpar
+              </Button>
+            )}
             <Button
               variant="outline"
               className="h-10 gap-2"
