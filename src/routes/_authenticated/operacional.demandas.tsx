@@ -14,7 +14,6 @@ import {
   Download,
   FilterX,
   MoreVertical,
-  MoreVertical,
   Calendar,
   ArrowUpRight,
   Minus,
