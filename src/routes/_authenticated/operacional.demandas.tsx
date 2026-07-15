@@ -719,7 +719,8 @@ function Pagina() {
                       className="cursor-pointer transition-colors hover:bg-accent/40"
                     >
                       <td className="px-5 py-3 align-middle">
-                        <span className="inline-flex items-center rounded-md border border-border bg-muted/50 px-2 py-0.5 font-mono text-[11px] tabular-nums text-muted-foreground">
+                        <span className="inline-flex items-center gap-1.5 rounded-md border border-primary/15 bg-primary/[0.06] px-2 py-1 font-mono text-[11px] font-semibold tracking-tight tabular-nums text-primary shadow-[0_1px_0_0_hsl(var(--border))]">
+                          <span className="size-1.5 rounded-full bg-primary" aria-hidden />
                           {d.numero ?? "—"}
                         </span>
                       </td>
