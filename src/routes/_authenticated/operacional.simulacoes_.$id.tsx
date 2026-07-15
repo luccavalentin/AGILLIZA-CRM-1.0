@@ -48,6 +48,18 @@ function totalFinanciado(b: any): number | null {
   return d?.financiamentoTotal ?? d?.valorFinanciamento ?? b?.valor_financiamento_max ?? null;
 }
 
+function AmortizacaoTag({ sistema }: { sistema: "SAC" | "PRICE" }) {
+  return (
+    <span
+      className="inline-flex h-5 items-center rounded-[5px] border border-primary/25 bg-primary/[0.08] px-1.5 text-[9px] font-semibold uppercase leading-none tracking-wide text-primary"
+      title={`Tabela ${sistema}`}
+      aria-label={`Tabela ${sistema}`}
+    >
+      {sistema}
+    </span>
+  );
+}
+
 
 export const Route = createFileRoute("/_authenticated/operacional/simulacoes_/$id")({
   head: () => ({ meta: [{ title: "Simulação — Agilliza" }] }),
@@ -420,9 +432,7 @@ function Pagina() {
                     <div key={b.id}>
                       {primeiroDoGrupo && (
                         <div className="mb-2 flex items-center gap-2">
-                          <ToneBadge tone={b._sistema === "SAC" ? "info" : "warning"}>
-                            Tabela {b._sistema}
-                          </ToneBadge>
+                          <AmortizacaoTag sistema={b._sistema} />
                           <div className="h-px flex-1 bg-border" />
                         </div>
                       )}
@@ -562,9 +572,7 @@ function Pagina() {
                             <TableRow className="border-border/60 bg-muted/40 hover:bg-muted/40">
                               <TableCell colSpan={9} className="py-2">
                                 <div className="flex items-center gap-2">
-                                  <ToneBadge tone={b._sistema === "SAC" ? "info" : "warning"}>
-                                    Tabela {b._sistema}
-                                  </ToneBadge>
+                                  <AmortizacaoTag sistema={b._sistema} />
                                   <span className="text-[11px] uppercase tracking-wide text-muted-foreground">
                                     {b._sistema === "SAC"
                                       ? "Amortização constante · parcelas decrescentes"
