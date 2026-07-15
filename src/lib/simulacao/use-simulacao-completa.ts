@@ -660,9 +660,7 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
         return prev;
       }
       if (!has && banco && !aceitaBancoNaOperacao(banco)) {
-        toast.info(
-          `${restricaoEspecial.motivo}: apenas Bradesco opera essa modalidade.`,
-        );
+        toast.info(mensagemBancoIncompativel(banco));
         return prev;
       }
       // Em "Nova Proposta" a seleção é única: o banco escolhido é o que
