@@ -442,7 +442,7 @@ export function ResultadoInlineAmbos({ simulacaoIdSac, simulacaoIdPrice, onFecha
                     const isMelhor = melhorPorSistema[l.sistema] === b.id;
                     const primeiroDoGrupo = idx === 0 || linhas[idx - 1].sistema !== l.sistema;
                     return (
-                      <React.Fragment key={`${l.sistema}-${b.id}`}>
+                      <Fragment key={`${l.sistema}-${b.id}`}>
                         {primeiroDoGrupo && (
                           <TableRow
                             key={`hdr-${l.sistema}`}
@@ -541,7 +541,7 @@ export function ResultadoInlineAmbos({ simulacaoIdSac, simulacaoIdPrice, onFecha
                           </div>
                         </TableCell>
                       </TableRow>
-                      </React.Fragment>
+                      </Fragment>
                     );
                   })}
                 </TableBody>
