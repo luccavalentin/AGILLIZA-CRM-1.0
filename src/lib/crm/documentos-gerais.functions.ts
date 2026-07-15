@@ -51,37 +51,51 @@ export const explorarDocumentosGerais = createServerFn({ method: "GET" })
     const { supabase, userId } = context;
     const { data: corr } = await supabase.rpc("correspondente_do_usuario", { _user_id: userId });
 
-    // Todos os usuários "Comercial Agilliza": seja pelo tipo de pessoa
-    // (profiles.tipo_pessoa = 'comercial') ou pelo papel (user_roles.role = 'comercial').
-    // Cria uma pasta por comercial mesmo sem clientes vinculados.
     const ordenarNome = (a: DGOpcaoFiltro, b: DGOpcaoFiltro) =>
       a.nome.localeCompare(b.nome, "pt-BR");
-    const comerciaisMap = new Map<string, string>();
 
-    // 1) Por tipo de pessoa "Comercial Agilliza".
-    let porTipoQuery = supabase
+    // Carrega TODOS os perfis do correspondente e classifica cada um em
+    // Comercial / Imobiliária / Corretor / Analista por tipo_pessoa OU por
+    // papel em user_roles. Cada dropdown lista todos os usuários daquele tipo,
+    // mesmo sem clientes vinculados.
+    let perfisQuery = supabase
       .from("profiles")
-      .select("id, nome, correspondente_id")
-      .eq("tipo_pessoa", "comercial");
-    if (corr) porTipoQuery = porTipoQuery.eq("correspondente_id", corr);
-    const { data: porTipo } = await porTipoQuery;
-    for (const p of porTipo ?? []) {
-      if ((p as any)?.id) comerciaisMap.set((p as any).id, (p as any).nome ?? "—");
-    }
+      .select("id, nome, tipo_pessoa, correspondente_id");
+    if (corr) perfisQuery = perfisQuery.eq("correspondente_id", corr);
+    const { data: perfis } = await perfisQuery.limit(2000);
 
-    // 2) Por papel "comercial".
-    let porPapelQuery = supabase
+    let papeisQuery = supabase
       .from("user_roles")
-      .select("user_id, profiles!inner(id, nome, correspondente_id)")
-      .eq("role", "comercial");
-    if (corr) porPapelQuery = porPapelQuery.eq("profiles.correspondente_id", corr);
-    const { data: porPapel } = await porPapelQuery;
-    for (const r of porPapel ?? []) {
-      const p = (r as any).profiles;
-      if (p?.id) comerciaisMap.set(p.id, p.nome ?? "—");
+      .select("user_id, role, profiles!inner(id, nome, correspondente_id)");
+    if (corr) papeisQuery = papeisQuery.eq("profiles.correspondente_id", corr);
+    const { data: papeis } = await papeisQuery.limit(4000);
+
+    const comerciaisMap = new Map<string, string>();
+    const imobsBaseMap = new Map<string, string>();
+    const corretoresBaseMap = new Map<string, string>();
+    const analistasBaseMap = new Map<string, string>();
+
+    const registrar = (id: string, nome: string, chave: string) => {
+      const nomeFinal = nome || "—";
+      const k = chave.toLowerCase();
+      if (k === "comercial" || k === "comercial_agilliza") comerciaisMap.set(id, nomeFinal);
+      else if (k === "imobiliaria" || k === "imobiliária") imobsBaseMap.set(id, nomeFinal);
+      else if (k === "corretor") corretoresBaseMap.set(id, nomeFinal);
+      else if (k === "analista") analistasBaseMap.set(id, nomeFinal);
+    };
+
+    for (const p of (perfis ?? []) as any[]) {
+      if (p?.id && p?.tipo_pessoa) registrar(p.id, p.nome ?? "—", String(p.tipo_pessoa));
+    }
+    for (const r of (papeis ?? []) as any[]) {
+      const p = r?.profiles;
+      if (p?.id && r?.role) registrar(p.id, p.nome ?? "—", String(r.role));
     }
 
     const comerciais = Array.from(comerciaisMap, ([id, nome]) => ({ id, nome })).sort(ordenarNome);
+    const imobiliariasBase = Array.from(imobsBaseMap, ([id, nome]) => ({ id, nome })).sort(ordenarNome);
+    const corretoresBase = Array.from(corretoresBaseMap, ([id, nome]) => ({ id, nome })).sort(ordenarNome);
+    const analistasBase = Array.from(analistasBaseMap, ([id, nome]) => ({ id, nome })).sort(ordenarNome);
 
     // Clientes acessíveis (RLS aplica o escopo do usuário).
     let clientesQuery = supabase
@@ -94,7 +108,13 @@ export const explorarDocumentosGerais = createServerFn({ method: "GET" })
     if (cliErr) throw cliErr;
     const listaClientes = clientes ?? [];
     if (listaClientes.length === 0) {
-      return { clientes: [], imobiliarias: [], corretores: [], comerciais, analistas: [] };
+      return {
+        clientes: [],
+        imobiliarias: imobiliariasBase,
+        corretores: corretoresBase,
+        comerciais,
+        analistas: analistasBase,
+      };
     }
 
     const idsClientes = listaClientes.map((c: any) => c.id);
