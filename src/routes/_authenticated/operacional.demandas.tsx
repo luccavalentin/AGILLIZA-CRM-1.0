@@ -733,7 +733,7 @@ function Pagina() {
             </div>
 
             {/* Mobile */}
-            <ul className="divide-y divide-border md:hidden">
+            <ul className="divide-y divide-border xl:hidden">
               {pageItens.map((d) => (
                 <li key={d.id}>
                   <Link
