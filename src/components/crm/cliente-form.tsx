@@ -330,7 +330,13 @@ export function ClienteForm({
 
       }
       if (id && (end.cep || end.logradouro)) {
-        await salvarEnd({ data: { cliente_id: id, ...end } });
+        const endUp = Object.fromEntries(
+          Object.entries(end).map(([k, val]) => [
+            k,
+            typeof val === "string" && k !== "cep" ? up(val) : val,
+          ]),
+        );
+        await salvarEnd({ data: { cliente_id: id, ...(endUp as typeof end) } });
       }
       // Cadastro criado a partir de uma proposta direta: vincula e volta à ficha.
       if (id && !v.id && vincularPropostaId) {
