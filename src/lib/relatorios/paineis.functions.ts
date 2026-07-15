@@ -599,10 +599,15 @@ export const getPanelDados = createServerFn({ method: "POST" })
       // filtro OR em join): somente clientes onde o usuário é responsável ou
       // criador quando o escopo é "minha".
       const filtroResp = data.responsavel ?? (data.escopo === "minha" ? userId : null);
+      const partnerSet = new Set(partnerClienteIds);
       const pipeRows = filtroResp
         ? pipeRowsBrutas.filter((r) => {
             const c = r.clientes ?? {};
-            return c.responsavel_id === filtroResp || c.criador_id === filtroResp;
+            return (
+              c.responsavel_id === filtroResp ||
+              c.criador_id === filtroResp ||
+              partnerSet.has(r.cliente_id)
+            );
           })
         : pipeRowsBrutas;
       const etapaMap = new Map<string, { valor: number; ordem: number }>();
