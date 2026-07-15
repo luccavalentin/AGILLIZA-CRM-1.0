@@ -26,9 +26,12 @@ export function BancosSimulados({
   const grupos = agruparPorSistema(bancos);
 
   return (
-    <div className={`flex flex-wrap items-center gap-1 ${className ?? ""}`}>
+    <div className={cn("flex flex-col gap-1.5", className)}>
       {grupos.map((grupo) => (
-        <div key={grupo.sistema ?? "sem-sistema"} className="contents">
+        <div
+          key={grupo.sistema ?? "sem-sistema"}
+          className="flex flex-wrap items-center gap-1"
+        >
           {grupo.sistema && <SistemaTarget sistema={grupo.sistema} />}
           {grupo.bancos.map((b, i) => (
             <BancoChip key={`${grupo.sistema ?? "banco"}-${b.nome_banco}-${i}`} nome={b.nome_banco} />
