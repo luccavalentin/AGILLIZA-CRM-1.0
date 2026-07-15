@@ -106,6 +106,8 @@ import {
   buscarClientesCRM,
   type PainelStage,
 } from "@/lib/crm/clientes.functions";
+import { listarParceiros } from "@/lib/crm/parceiros.functions";
+import { listarResponsaveisEquipe } from "@/lib/propostas/propostas.functions";
 
 import { usePipelineRealtime } from "@/hooks/use-pipeline-realtime";
 import { BancoLogo } from "@/components/bancos/banco-logo";
@@ -452,6 +454,21 @@ function Pagina() {
     () => dadosFiltrados.filter((s) => s.clientes.length > 0).length,
     [dadosFiltrados],
   );
+  // Além dos nomes visíveis nos cards atuais, quando o escopo é "Geral" trazemos
+  // TODAS as pessoas cadastradas no ecossistema (equipe interna + parceiros) para
+  // que o dropdown mostre todos os vinculados possíveis, não apenas os que já
+  // aparecem em algum cartão em tela.
+  const { data: equipeInterna } = useQuery({
+    queryKey: ["equipe-interna"],
+    queryFn: () => listarResponsaveisEquipe(),
+    staleTime: 5 * 60_000,
+  });
+  const { data: parceirosCadastrados } = useQuery({
+    queryKey: ["parceiros-cadastrados"],
+    queryFn: () => listarParceiros(),
+    staleTime: 5 * 60_000,
+  });
+
   function opcoesDe(campo: "responsavel_nome" | "analista_nome" | "corretor_nome" | "imobiliaria_nome"): string[] {
     const set = new Set<string>();
     (data ?? []).forEach((s) =>
@@ -460,12 +477,25 @@ function Pagina() {
         if (v) set.add(v);
       }),
     );
+    // União com o cadastro do ecossistema para cobrir vinculados que não estão
+    // em nenhum cartão no momento (ex.: parceiro sem cliente ativo na esteira).
+    if (campo === "responsavel_nome" || campo === "analista_nome") {
+      (equipeInterna ?? []).forEach((m) => m.nome && set.add(m.nome));
+    } else if (campo === "corretor_nome") {
+      (parceirosCadastrados ?? [])
+        .filter((p) => (p.tipo_pessoa ?? "").toLowerCase() === "corretor")
+        .forEach((p) => p.nome && set.add(p.nome));
+    } else if (campo === "imobiliaria_nome") {
+      (parceirosCadastrados ?? [])
+        .filter((p) => (p.tipo_pessoa ?? "").toLowerCase() === "imobiliaria")
+        .forEach((p) => p.nome && set.add(p.nome));
+    }
     return Array.from(set).sort((a, b) => a.localeCompare(b, "pt-BR"));
   }
-  const responsaveis = useMemo(() => opcoesDe("responsavel_nome"), [data]);
-  const analistas = useMemo(() => opcoesDe("analista_nome"), [data]);
-  const corretores = useMemo(() => opcoesDe("corretor_nome"), [data]);
-  const imobiliarias = useMemo(() => opcoesDe("imobiliaria_nome"), [data]);
+  const responsaveis = useMemo(() => opcoesDe("responsavel_nome"), [data, equipeInterna]);
+  const analistas = useMemo(() => opcoesDe("analista_nome"), [data, equipeInterna]);
+  const corretores = useMemo(() => opcoesDe("corretor_nome"), [data, parceirosCadastrados]);
+  const imobiliarias = useMemo(() => opcoesDe("imobiliaria_nome"), [data, parceirosCadastrados]);
   const todosClientes = useMemo(
     () => dadosFiltrados.flatMap((s) => s.clientes),
     [dadosFiltrados],
