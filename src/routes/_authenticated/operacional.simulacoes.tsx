@@ -868,8 +868,26 @@ function Pagina() {
                     />
                     <BancoLogo nome={b.nome_banco} size="lg" className="shrink-0" />
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-semibold text-foreground">
-                        {b.nome_banco}
+                      <span className="flex items-center gap-1.5">
+                        <span className="min-w-0 truncate text-sm font-semibold text-foreground">
+                          {b.nome_banco}
+                        </span>
+                        {(() => {
+                          const s = String(
+                            b.sistema_amortizacao_banco ?? b.sistema_amortizacao ?? "",
+                          ).toUpperCase();
+                          const sis = s === "P" || s.includes("PRICE")
+                            ? "PRICE"
+                            : s === "S" || s.includes("SAC")
+                              ? "SAC"
+                              : null;
+                          if (!sis) return null;
+                          return (
+                            <span className="inline-flex h-5 shrink-0 items-center rounded-[5px] border border-primary/25 bg-primary/[0.08] px-1.5 text-[9px] font-semibold uppercase leading-none tracking-wide text-primary">
+                              {sis}
+                            </span>
+                          );
+                        })()}
                       </span>
                       {b.valor_parcela != null && (
                         <span className="block text-xs text-muted-foreground">
