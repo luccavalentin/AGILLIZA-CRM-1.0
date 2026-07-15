@@ -472,6 +472,7 @@ function Pagina() {
     setAnalistaFiltro("todos");
     setCorretorFiltro("todos");
     setImobiliariaFiltro("todos");
+    setComercialFiltro("todos");
     setPagina(1);
   }
 
