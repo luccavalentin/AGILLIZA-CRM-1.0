@@ -1064,6 +1064,7 @@ export const getPanelDrilldown = createServerFn({ method: "POST" })
           .select(
             "id,numero_proposta,status,nome_banco,valor_financiamento,valor_financiamento_aprovado,created_at,contrato_emitido_em,clientes(nome)",
           )
+          .is("deleted_at", null)
           .or(
             `and(created_at.gte.${de},created_at.lte.${ateFim}),and(contrato_emitido_em.gte.${de},contrato_emitido_em.lte.${ateFim})`,
           )
