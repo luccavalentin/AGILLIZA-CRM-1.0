@@ -122,40 +122,50 @@ export function PainelDrilldownDialog({
                   "Não há registros específicos para exibir neste indicador dentro do filtro selecionado."}
               </p>
             ) : (
-              <ul className="divide-y divide-border/50">
+              <ul className="space-y-1 py-1">
                 {data.itens.map((it, idx) => {
                   const conteudo = (
-                    <div className="group grid grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-3 px-3 py-3">
-                      <BancoLogo nome={it.banco ?? null} size="lg" />
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold leading-tight text-foreground">
-                          {it.label}
-                        </p>
-                        <p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11.5px] text-muted-foreground">
-                          {it.sub && <span className="truncate">{it.sub}</span>}
-                          {it.sub && it.banco && <span className="opacity-40">·</span>}
-                          {it.banco && (
-                            <span className="font-medium text-foreground/70">{it.banco}</span>
-                          )}
-                        </p>
-                      </div>
-                      <div className="flex flex-col items-end gap-0.5">
-                        {it.valor && (
-                          <span className="font-mono text-sm font-semibold tabular-nums text-foreground">
-                            {it.valor}
-                          </span>
-                        )}
-                        {it.data && (
-                          <span className="text-[11px] tabular-nums text-muted-foreground">
-                            {it.data}
-                          </span>
-                        )}
-                      </div>
-                      {it.to ? (
-                        <ChevronRight className="h-4 w-4 text-muted-foreground/40 transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
-                      ) : (
-                        <span className="w-4" />
+                    <div className="group relative isolate overflow-hidden rounded-xl border border-transparent px-4 py-3 transition-all duration-300 hover:border-border/60 hover:bg-gradient-to-r hover:from-muted/50 hover:to-transparent hover:shadow-sm">
+                      {it.banco && (
+                        <div
+                          aria-hidden
+                          className="pointer-events-none absolute -right-3 top-1/2 -translate-y-1/2 opacity-[0.06] transition-opacity duration-300 group-hover:opacity-[0.11]"
+                        >
+                          <BancoLogo nome={it.banco} size="xl" className="scale-[2.2] ring-0" />
+                        </div>
                       )}
+                      <div className="relative grid grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-3.5">
+                        <BancoLogo nome={it.banco ?? null} size="lg" />
+                        <div className="min-w-0">
+                          <p className="truncate text-[13.5px] font-semibold leading-tight tracking-tight text-foreground">
+                            {it.label}
+                          </p>
+                          <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] uppercase tracking-[0.06em] text-muted-foreground/90">
+                            {it.sub && <span className="truncate font-medium">{it.sub}</span>}
+                            {it.sub && it.banco && <span className="opacity-30">•</span>}
+                            {it.banco && (
+                              <span className="font-semibold text-foreground/75">{it.banco}</span>
+                            )}
+                          </p>
+                        </div>
+                        <div className="flex flex-col items-end gap-0.5">
+                          {it.valor && (
+                            <span className="font-mono text-sm font-semibold tabular-nums text-foreground">
+                              {it.valor}
+                            </span>
+                          )}
+                          {it.data && (
+                            <span className="text-[10.5px] font-medium uppercase tracking-wider tabular-nums text-muted-foreground/80">
+                              {it.data}
+                            </span>
+                          )}
+                        </div>
+                        {it.to ? (
+                          <ChevronRight className="h-4 w-4 text-muted-foreground/30 transition-all duration-300 group-hover:translate-x-1 group-hover:text-primary" />
+                        ) : (
+                          <span className="w-4" />
+                        )}
+                      </div>
                     </div>
                   );
                   return (
@@ -163,7 +173,7 @@ export function PainelDrilldownDialog({
                       {it.to ? (
                         <Link
                           to={it.to}
-                          className="block rounded-lg transition-colors hover:bg-muted/60"
+                          className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-xl"
                           onClick={() => onOpenChange(false)}
                         >
                           {conteudo}
