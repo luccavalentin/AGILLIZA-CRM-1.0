@@ -358,17 +358,20 @@ export function MiniMetric({
   valor,
   tone = "neutral",
   to,
+  onDetails,
 }: {
   label: string;
   valor: string;
   tone?: Tone;
   to?: string;
+  onDetails?: () => void;
 }) {
+  const clicavel = !!onDetails || !!to;
   const conteudo = (
     <Card
       className={cn(
         "group relative h-full min-w-0 overflow-hidden rounded-xl border-l-4 p-3.5 pl-4 shadow-sm transition-all duration-300",
-        to &&
+        clicavel &&
           "cursor-pointer hover:-translate-y-0.5 hover:shadow-md hover:shadow-primary/5",
       )}
       style={{ borderLeftColor: toneVar[tone] }}
@@ -382,6 +385,18 @@ export function MiniMetric({
     </Card>
   );
 
+  if (onDetails) {
+    return (
+      <button
+        type="button"
+        onClick={onDetails}
+        aria-label={`Ver detalhamento de ${label}`}
+        className="block w-full rounded-xl text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        {conteudo}
+      </button>
+    );
+  }
   return to ? (
     <Link
       to={to}
@@ -393,6 +408,7 @@ export function MiniMetric({
     conteudo
   );
 }
+
 
 /** Moldura padrão de gráfico/lista com título, subtítulo e link "Abrir". */
 export function PanelCard({
