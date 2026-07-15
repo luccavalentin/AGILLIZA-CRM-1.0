@@ -1,6 +1,8 @@
 import type { FeriadoBR } from "@/lib/feriados-br";
 import { CelulaDia, type TarefaCelula } from "./celula-dia";
 import { DIAS, chaveDia, montarCelulas } from "./utils";
+import brandSymbol from "@/assets/brand/agilliza-symbol-oficial.png";
+
 
 interface GradeCalendarioProps {
   ref: Date;
