@@ -953,21 +953,22 @@ export const inverterTitularSimulacao = createServerFn({ method: "POST" })
           if (origemId && alvos.length) {
             const { data: vinculos } = await supabaseAdmin
               .from("cliente_parceiros")
-              .select("parceiro_id, tipo")
+              .select("parceiro_id, tipo_vinculo")
               .eq("cliente_id", origemId);
             if (vinculos && vinculos.length) {
               const rows = alvos.flatMap((cid) =>
                 vinculos.map((v: any) => ({
                   cliente_id: cid,
                   parceiro_id: v.parceiro_id,
-                  tipo: v.tipo,
+                  tipo_vinculo: v.tipo_vinculo,
+                  correspondente_id: correspondenteId,
                 })),
               );
               if (rows.length) {
                 await supabaseAdmin
                   .from("cliente_parceiros")
                   .upsert(rows, {
-                    onConflict: "cliente_id,parceiro_id,tipo",
+                    onConflict: "cliente_id,parceiro_id,tipo_vinculo",
                     ignoreDuplicates: true,
                   });
               }
