@@ -183,7 +183,7 @@ function contarPorBucket(rows: { created_at?: string | null }[], buckets: Return
  */
 async function carregarContratosCliente(
   supabase: any,
-  escopoEq: (q: any, col: string) => any,
+  escopoEq: (q: any, ...cols: string[]) => any,
   de: string,
   ate: string,
 ) {
@@ -196,6 +196,7 @@ async function carregarContratosCliente(
       .lte("contrato_emitido_em", ate)
       .limit(5000),
     "responsavel_id",
+    "criador_id",
   );
   if (cliRes.error) throw new Error(cliRes.error.message);
   const cliRowsAll = (cliRes.data ?? []) as any[];
