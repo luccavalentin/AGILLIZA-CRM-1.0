@@ -896,6 +896,9 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
     concluidos,
     bancos: bancos as Banco[] | undefined,
     aceitaPrice,
+    aceitaBancoNaOperacao,
+    restricaoEspecial,
+    prazoMaximo,
     // valores calculados
     ltvMax,
     financiamentoMaximo,
