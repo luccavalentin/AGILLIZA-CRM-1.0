@@ -41,8 +41,10 @@ export interface DemandaItem {
   numero_simulacao: string | null;
   criador_id: string | null;
   nome_criador: string | null;
+  tipo_criador: string | null;
   responsavel_id: string | null;
   nome_responsavel: string | null;
+  tipo_responsavel: string | null;
   prazo_sla: string | null;
   sla_inicio: string;
   concluida_em: string | null;
@@ -52,15 +54,27 @@ export interface DemandaItem {
   ultima_mensagem_em: string | null;
 }
 
+async function perfisPorId(
+  supabase: any,
+  ids: (string | null | undefined)[],
+): Promise<Map<string, { nome: string; tipo_pessoa: string | null }>> {
+  const uniq = [...new Set(ids.filter(Boolean) as string[])];
+  if (uniq.length === 0) return new Map();
+  const { data } = await supabase.from("profiles").select("id, nome, tipo_pessoa").in("id", uniq);
+  const m = new Map<string, { nome: string; tipo_pessoa: string | null }>();
+  (data ?? []).forEach((p: any) =>
+    m.set(p.id, { nome: p.nome ?? "", tipo_pessoa: p.tipo_pessoa ?? null }),
+  );
+  return m;
+}
+
 async function nomesPorId(
   supabase: any,
   ids: (string | null | undefined)[],
 ): Promise<Map<string, string>> {
-  const uniq = [...new Set(ids.filter(Boolean) as string[])];
-  if (uniq.length === 0) return new Map();
-  const { data } = await supabase.from("profiles").select("id, nome").in("id", uniq);
+  const perfis = await perfisPorId(supabase, ids);
   const m = new Map<string, string>();
-  (data ?? []).forEach((p: any) => m.set(p.id, p.nome ?? ""));
+  perfis.forEach((v, k) => m.set(k, v.nome));
   return m;
 }
 
@@ -133,8 +147,9 @@ export const listarDemandas = createServerFn({ method: "GET" })
     const rows = (itens ?? []) as any[];
 
     const idsPerfil = rows.flatMap((r) => [r.responsavel_id, r.criador_id]);
-    const nomes = await nomesPorId(supabase, idsPerfil);
-    const nm = (id: string | null | undefined) => (id ? (nomes.get(id) ?? null) : null);
+    const perfis = await perfisPorId(supabase, idsPerfil);
+    const nm = (id: string | null | undefined) => (id ? (perfis.get(id)?.nome ?? null) : null);
+    const tp = (id: string | null | undefined) => (id ? (perfis.get(id)?.tipo_pessoa ?? null) : null);
 
     // Contagem simples de "não lidas": mensagens depois da última leitura do usuário
     // (upper bound razoável: total de mensagens quando não há registro de leitura).
@@ -149,12 +164,10 @@ export const listarDemandas = createServerFn({ method: "GET" })
       const lidasEm = new Map<string, string>();
       for (const l of (leituras ?? []) as any[]) lidasEm.set(l.demanda_id, l.lida_em);
       for (const m of (msgs ?? []) as any[]) {
-        // última mensagem
         const cur = ultimaMap.get(m.demanda_id);
         if (!cur || new Date(m.created_at).getTime() > new Date(cur).getTime()) {
           ultimaMap.set(m.demanda_id, m.created_at);
         }
-        // não lidas (só de outros autores)
         if (m.autor_id === userId) continue;
         const lida = lidasEm.get(m.demanda_id);
         if (!lida || new Date(m.created_at).getTime() > new Date(lida).getTime()) {
@@ -179,8 +192,10 @@ export const listarDemandas = createServerFn({ method: "GET" })
       numero_simulacao: r.simulacoes?.numero_simulacao ?? null,
       criador_id: r.criador_id,
       nome_criador: nm(r.criador_id),
+      tipo_criador: tp(r.criador_id),
       responsavel_id: r.responsavel_id,
       nome_responsavel: nm(r.responsavel_id),
+      tipo_responsavel: tp(r.responsavel_id),
       prazo_sla: r.prazo_sla,
       sla_inicio: r.sla_inicio,
       concluida_em: r.concluida_em ?? null,
