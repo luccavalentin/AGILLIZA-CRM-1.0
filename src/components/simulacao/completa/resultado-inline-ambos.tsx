@@ -496,3 +496,39 @@ function MobileStat({ rotulo, valor }: { rotulo: string; valor: string }) {
     </div>
   );
 }
+
+function BaixarPdfsButton({ dataSac, dataPrice }: { dataSac: any; dataPrice: any }) {
+  const [baixando, setBaixando] = useState(false);
+  const ativos = [dataSac, dataPrice].filter(Boolean) as any[];
+  const totalOk = ativos.reduce(
+    (acc, d) => acc + ((d.bancos as any[]) ?? []).filter((b) => b.status_banco === "simulada").length,
+    0,
+  );
+  const desabilitado = totalOk === 0 || baixando;
+
+  async function baixar() {
+    if (desabilitado) return;
+    setBaixando(true);
+    try {
+      const { baixarSimulacaoDetalhadaPDF } = await import("@/lib/simulacao/simulacao-pdf");
+      for (const d of ativos) {
+        const bancosOk = ((d.bancos as any[]) ?? []).filter((b) => b.status_banco === "simulada");
+        for (const b of bancosOk) {
+          baixarSimulacaoDetalhadaPDF({ simulacao: d.simulacao, bancos: [b] });
+        }
+      }
+      toast.success(`${totalOk} PDF${totalOk === 1 ? "" : "s"} gerado${totalOk === 1 ? "" : "s"}.`);
+    } catch {
+      toast.error("Não foi possível gerar os PDFs.");
+    } finally {
+      setBaixando(false);
+    }
+  }
+
+  return (
+    <Button variant="outline" size="sm" onClick={baixar} disabled={desabilitado}>
+      <Download className="mr-1.5 h-4 w-4" />
+      {baixando ? "Gerando…" : `Baixar PDFs${totalOk > 0 ? ` (${totalOk})` : ""}`}
+    </Button>
+  );
+}
