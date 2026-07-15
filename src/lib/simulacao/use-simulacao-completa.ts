@@ -188,8 +188,11 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
     if (k === "valor_entrada") setEntradaTocada(true);
     setF((prev) => {
       const next = { ...prev, [k]: v };
+      // Percentual padrão de entrada = 1 - LTV do banco (20% no SFH, 30% em
+      // terreno/comercial, 40% em home equity).
+      const pctEntradaDefault = 1 - ltvMaxRef.current;
       if (k === "valor_imovel" && !entradaTocada)
-        next.valor_entrada = Math.round((next.valor_imovel || 0) * 0.2);
+        next.valor_entrada = Math.round((next.valor_imovel || 0) * pctEntradaDefault);
       if (k === "valor_imovel" || k === "valor_entrada")
         next.valor_financiamento = Math.max(0, next.valor_imovel - next.valor_entrada);
       if (k === "estado_civil") next.possui_conjuge = v === "CA" || v === "UE";
