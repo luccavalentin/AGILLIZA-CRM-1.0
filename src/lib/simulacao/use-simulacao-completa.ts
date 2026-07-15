@@ -249,6 +249,8 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
   }, [maxPrazoIdade, restricaoEspecial]);
   const financiamentoMaximo = useMemo(
     () => Math.floor((Number(f.valor_imovel) || 0) * ltvMax),
+    [f.valor_imovel, ltvMax],
+  );
   const despesasNoTeto = f.fg_financiar_despesas
     ? Number(f.valor_despesas_financiadas) || 0
     : 0;
