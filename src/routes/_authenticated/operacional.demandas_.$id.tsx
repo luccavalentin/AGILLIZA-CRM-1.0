@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useParams, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   ArrowLeft,
@@ -10,17 +10,26 @@ import {
   Trash2,
   Send,
   MessageCircle,
-  User,
-  Users,
-  Tag,
-  Clock,
   History,
   FileText,
   Layers,
+  CheckCircle2,
+  Circle,
+  Clock,
+  MessageSquare,
+  StickyNote,
+  Cog,
+  FileArchive,
+  AlertTriangle,
+  UserCog,
+  CalendarClock,
+  ListChecks,
+  ArrowUpRight,
+  Sparkles,
+  MoreHorizontal,
+  Check,
 } from "lucide-react";
 import { getMinhaSessao } from "@/lib/session.functions";
-import { PopOutPanel } from "@/components/shared/pop-out-panel";
-import { Card } from "@/components/ui/card";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import {
   obterDemanda,
@@ -43,6 +52,13 @@ import { Button } from "@/components/ui/button";
 import { VisualizadorArquivo } from "@/components/comum/visualizador-arquivo";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -64,16 +80,45 @@ import { supabase } from "@/integrations/supabase/client";
 import { useIncomingChatSound } from "@/hooks/use-chat-sound";
 import { cn } from "@/lib/utils";
 
-
 export const Route = createFileRoute("/_authenticated/operacional/demandas_/$id")({
   head: () => ({ meta: [{ title: "Demanda — Agilliza" }] }),
   beforeLoad: () => assertModuloPermitido("operacional.demandas"),
   component: Pagina,
 });
 
+const STATUS_OPCOES: DemandaStatus[] = [
+  "aberta",
+  "em_andamento",
+  "aguardando",
+  "concluida",
+  "cancelada",
+];
+
+// Ordem visual do stepper
+const STEPPER: { key: DemandaStatus | "criada" | "aceita"; label: string }[] = [
+  { key: "criada", label: "Criada" },
+  { key: "aberta", label: "Aceita" },
+  { key: "em_andamento", label: "Em andamento" },
+  { key: "aguardando", label: "Aguardando retorno" },
+  { key: "concluida", label: "Concluída" },
+];
+
 function fmtData(iso: string | null): string {
   if (!iso) return "—";
-  return new Date(iso).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo",  
+  return new Date(iso).toLocaleString("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function fmtDataCurta(iso: string | null): string {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleString("pt-BR", {
+    timeZone: "America/Sao_Paulo",
     day: "2-digit",
     month: "2-digit",
     hour: "2-digit",
@@ -82,7 +127,11 @@ function fmtData(iso: string | null): string {
 }
 
 function fmtHora(iso: string): string {
-  return new Date(iso).toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo",   hour: "2-digit", minute: "2-digit" });
+  return new Date(iso).toLocaleTimeString("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 function fmtDia(iso: string): string {
@@ -96,7 +145,12 @@ function fmtDia(iso: string): string {
     a.getDate() === b.getDate();
   if (mesmoDia(d, hoje)) return "Hoje";
   if (mesmoDia(d, ontem)) return "Ontem";
-  return d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo",   day: "2-digit", month: "long", year: "numeric" });
+  return d.toLocaleDateString("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
 }
 
 function iniciaisChat(nome?: string | null): string {
@@ -105,41 +159,27 @@ function iniciaisChat(nome?: string | null): string {
   return ((p[0]?.[0] ?? "") + (p.length > 1 ? p[p.length - 1][0] : "")).toUpperCase();
 }
 
-const STATUS_OPCOES: DemandaStatus[] = [
-  "aberta",
-  "em_andamento",
-  "aguardando",
-  "concluida",
-  "cancelada",
-];
-
-function InfoCell({
-  icon: Icon,
-  rotulo,
-  valor,
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  rotulo: string;
-  valor: React.ReactNode;
-}) {
-  return (
-    <div className="flex items-start gap-2.5 bg-card px-4 py-3">
-      <Icon className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-      <div className="min-w-0">
-        <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{rotulo}</p>
-        <p className="mt-0.5 truncate text-sm font-medium text-foreground">{valor}</p>
-      </div>
-    </div>
-  );
+function tempoAberto(sla_inicio: string, concluida_em: string | null): string {
+  const fim = concluida_em ? new Date(concluida_em).getTime() : Date.now();
+  const ini = new Date(sla_inicio).getTime();
+  const diffMs = Math.max(0, fim - ini);
+  const dias = Math.floor(diffMs / 86_400_000);
+  const horas = Math.floor((diffMs % 86_400_000) / 3_600_000);
+  if (dias > 0) return `${dias}d ${horas}h`;
+  const min = Math.floor((diffMs % 3_600_000) / 60_000);
+  if (horas > 0) return `${horas}h ${min}m`;
+  return `${min}m`;
 }
 
+type AbaChat = "tudo" | "mensagens" | "notas" | "sistema" | "arquivos";
 
 function Pagina() {
   const { id } = useParams({ from: "/_authenticated/operacional/demandas_/$id" });
   const qc = useQueryClient();
   const navigate = useNavigate();
   const [corpo, setCorpo] = useState("");
-  const [visivelCliente] = useState(false);
+  const [modoNotaInterna, setModoNotaInterna] = useState(true); // padrão interno
+  const [aba, setAba] = useState<AbaChat>("tudo");
   const comentarFn = useServerFn(comentarDemanda);
   const moverFn = useServerFn(moverStatusDemanda);
   const lidaFn = useServerFn(marcarDemandaLida);
@@ -154,6 +194,51 @@ function Pagina() {
   const [enviandoMsg, setEnviandoMsg] = useState(false);
   const [arquivoChat, setArquivoChat] = useState<File | null>(null);
   const [visualizando, setVisualizando] = useState<{ url: string; nome: string } | null>(null);
+
+  const { data } = useQuery({
+    queryKey: ["demanda", id],
+    queryFn: () => obterDemanda({ data: { id } }),
+  });
+
+  const [escopoPilha, setEscopoPilha] = useState<"minhas" | "equipe">("equipe");
+  const { data: pilha } = useQuery({
+    queryKey: ["demandas", "pilha", escopoPilha],
+    queryFn: () => listarDemandas({ data: { escopo: escopoPilha } }),
+  });
+
+  const { data: sessao } = useQuery({
+    queryKey: ["minha-sessao"],
+    queryFn: () => getMinhaSessao(),
+  });
+  const meuId = sessao?.profile?.id ?? null;
+
+  useIncomingChatSound(
+    (data?.mensagens ?? []).map((m: any) => ({ id: m.id, mine: m.autor_id === meuId })),
+    id,
+  );
+
+  useEffect(() => {
+    lidaFn({ data: { demanda_id: id } }).catch(() => {});
+  }, [id, lidaFn]);
+
+  useEffect(() => {
+    const canal = supabase
+      .channel(`demanda:${id}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "demanda_mensagens", filter: `demanda_id=eq.${id}` },
+        () => qc.invalidateQueries({ queryKey: ["demanda", id] }),
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(canal);
+    };
+  }, [id, qc]);
+
+  function invalidar() {
+    qc.invalidateQueries({ queryKey: ["demanda", id] });
+    qc.invalidateQueries({ queryKey: ["demandas"] });
+  }
 
   async function enviarMensagem() {
     const texto = corpo.trim();
@@ -175,7 +260,7 @@ function Pagina() {
         data: {
           demanda_id: id,
           corpo: texto,
-          visivel_cliente: visivelCliente,
+          visivel_cliente: !modoNotaInterna,
           anexo_path,
           anexo_nome,
           anexo_tamanho,
@@ -190,7 +275,6 @@ function Pagina() {
       setEnviandoMsg(false);
     }
   }
-
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -222,18 +306,6 @@ function Pagina() {
     }
   }
 
-  const { data } = useQuery({
-    queryKey: ["demanda", id],
-    queryFn: () => obterDemanda({ data: { id } }),
-  });
-
-  // Pilha de demandas (navegação lateral)
-  const [escopoPilha, setEscopoPilha] = useState<"minhas" | "equipe">("equipe");
-  const { data: pilha } = useQuery({
-    queryKey: ["demandas", "pilha", escopoPilha],
-    queryFn: () => listarDemandas({ data: { escopo: escopoPilha } }),
-  });
-
   async function excluir() {
     setExcluindo(true);
     try {
@@ -248,50 +320,60 @@ function Pagina() {
     }
   }
 
-
-  useEffect(() => {
-    lidaFn({ data: { demanda_id: id } }).catch(() => {});
-  }, [id, lidaFn]);
-
-  useEffect(() => {
-    const canal = supabase
-      .channel(`demanda:${id}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "demanda_mensagens", filter: `demanda_id=eq.${id}` },
-        () => qc.invalidateQueries({ queryKey: ["demanda", id] }),
-      )
-      .subscribe();
-    return () => {
-      supabase.removeChannel(canal);
-    };
-  }, [id, qc]);
-
-  function invalidar() {
-    qc.invalidateQueries({ queryKey: ["demanda", id] });
-    qc.invalidateQueries({ queryKey: ["demandas"] });
-  }
-
-  const { data: sessao } = useQuery({
-    queryKey: ["minha-sessao"],
-    queryFn: () => getMinhaSessao(),
-  });
-  const meuId = sessao?.profile?.id ?? null;
-
-  useIncomingChatSound(
-    (data?.mensagens ?? []).map((m: any) => ({ id: m.id, mine: m.autor_id === meuId })),
-    id,
-  );
+  const mensagensFiltradas = useMemo(() => {
+    const lista = data?.mensagens ?? [];
+    if (aba === "mensagens") return lista.filter((m: any) => m.visivel_cliente);
+    if (aba === "notas") return lista.filter((m: any) => !m.visivel_cliente);
+    if (aba === "arquivos") return lista.filter((m: any) => !!m.anexo_path);
+    return lista;
+  }, [data?.mensagens, aba]);
 
   const d = data?.demanda;
   if (!d) return <div className="p-6 text-sm text-muted-foreground">Carregando…</div>;
 
   const perm = data?.permissoes;
+  const totalMensagens = (data?.mensagens ?? []).length;
+  const totalAnexos = (data?.anexos ?? []).length;
+  const ultimaMsg = (data?.mensagens ?? []).at(-1);
+  const historico = data?.historico ?? [];
+  const ultimaAtividade =
+    ultimaMsg?.created_at ?? historico[0]?.created_at ?? d.updated_at ?? d.sla_inicio;
+
+  // Determinar o índice atual do stepper com base no status
+  const stepperIdxMap: Record<string, number> = {
+    aberta: 1,
+    em_andamento: 2,
+    aguardando: 3,
+    concluida: 4,
+    cancelada: 4,
+  };
+  const stepAtual = stepperIdxMap[d.status] ?? 0;
+  const slaCritico =
+    !!d.prazo_sla && d.status !== "concluida" && new Date(d.prazo_sla).getTime() < Date.now();
+  const proximaAcao =
+    d.status === "aberta"
+      ? "Iniciar atendimento"
+      : d.status === "em_andamento"
+        ? "Aguardando retorno do responsável"
+        : d.status === "aguardando"
+          ? "Aguardando retorno do cliente"
+          : d.status === "concluida"
+            ? "Demanda concluída"
+            : "Cancelada";
+
+  const abas: { key: AbaChat; label: string; icon: React.ComponentType<{ className?: string }> }[] =
+    [
+      { key: "tudo", label: "Tudo", icon: Layers },
+      { key: "mensagens", label: "Mensagens", icon: MessageSquare },
+      { key: "notas", label: "Notas internas", icon: StickyNote },
+      { key: "sistema", label: "Sistema", icon: Cog },
+      { key: "arquivos", label: "Arquivos", icon: FileArchive },
+    ];
 
   return (
-    <div className="mx-auto max-w-[1400px] p-4 md:p-6">
-      <div className="grid gap-6 lg:grid-cols-[300px_minmax(0,1fr)]">
-        {/* Pilha de demandas */}
+    <div className="mx-auto max-w-[1500px] p-4 md:p-6">
+      <div className="grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)_340px]">
+        {/* Coluna esquerda — pilha de demandas */}
         <aside className="flex flex-col rounded-2xl border border-border/70 bg-card shadow-sm lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)]">
           <div className="flex items-center justify-between gap-2 border-b border-border/60 px-4 py-3">
             <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
@@ -304,7 +386,7 @@ function Pagina() {
                   type="button"
                   onClick={() => setEscopoPilha(op)}
                   className={cn(
-                    "rounded-md px-2 py-0.5 text-[11px] font-medium capitalize transition-colors",
+                    "rounded-md px-2 py-0.5 text-[11px] font-medium transition-colors",
                     escopoPilha === op
                       ? "bg-primary text-primary-foreground"
                       : "text-muted-foreground hover:text-foreground",
@@ -362,181 +444,361 @@ function Pagina() {
           </div>
         </aside>
 
-        {/* Conteúdo da demanda */}
-        <div className="min-w-0 space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <Button asChild variant="ghost" size="sm">
-          <Link to="/operacional/demandas">
-            <ArrowLeft className="mr-1 h-4 w-4" /> Demandas
-          </Link>
-        </Button>
-        <div className="flex flex-wrap items-center gap-2">
-          {perm?.pode_editar && (
-            <EditarDemandaDialog
-              demanda={{
-                id: d.id,
-                titulo: d.titulo,
-                descricao: d.descricao ?? null,
-                prioridade: d.prioridade,
-                sla_horas: d.sla_horas ?? null,
-              }}
-              onSalva={invalidar}
-            />
-          )}
-          {perm?.pode_transferir && (
-            <TransferirDialog demandaId={id} onTransferida={invalidar} />
-          )}
-          {perm?.pode_excluir && (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="outline" size="sm" className="text-destructive hover:text-destructive">
-                  <Trash2 className="mr-1 h-3.5 w-3.5" /> Excluir
+        {/* Coluna central */}
+        <div className="min-w-0 space-y-4">
+          {/* Barra superior */}
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <Button asChild variant="ghost" size="sm">
+              <Link to="/operacional/demandas">
+                <ArrowLeft className="mr-1 h-4 w-4" /> Demanda
+              </Link>
+            </Button>
+            <div className="flex flex-wrap items-center gap-2">
+              {perm?.pode_mover_status && d.status !== "concluida" && (
+                <Button
+                  size="sm"
+                  onClick={async () => {
+                    await moverFn({ data: { id, status: "concluida" } });
+                    invalidar();
+                    toast.success("Demanda concluída.");
+                  }}
+                >
+                  <Check className="mr-1 h-4 w-4" /> Concluir demanda
                 </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Excluir demanda?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Esta ação não pode ser desfeita. A demanda {d.numero} e seu histórico serão
-                    removidos.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={excluir}
-                    disabled={excluindo}
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                  >
-                    {excluindo ? "Excluindo…" : "Excluir"}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          )}
-          <Select
-            value={d.status}
-            onValueChange={async (v) => {
-              await moverFn({ data: { id, status: v as DemandaStatus } });
-              invalidar();
-              toast.success("Status atualizado.");
-            }}
-            disabled={!perm?.pode_mover_status}
-          >
-            <SelectTrigger className="w-40">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {STATUS_OPCOES.map((s) => (
-                <SelectItem key={s} value={s}>
-                  {statusDemanda(s).label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-
-      <div className="overflow-hidden rounded-2xl border border-border/70 bg-card shadow-sm">
-        <div className="border-b border-border/60 bg-muted/30 px-5 py-4">
-          <div className="mb-2 flex flex-wrap items-center gap-2">
-            <span className="rounded-md bg-background px-2 py-0.5 font-mono text-xs text-muted-foreground ring-1 ring-border/60">
-              {d.numero}
-            </span>
-            <ToneBadge tone={statusDemanda(d.status).tone}>
-              {statusDemanda(d.status).label}
-            </ToneBadge>
-            <span className="inline-flex items-center gap-1.5 rounded-md bg-background px-2 py-0.5 text-xs text-muted-foreground ring-1 ring-border/60">
-              <span
-                className={cn(
-                  "inline-block h-1.5 w-5 rounded-full",
-                  PRIORIDADE[d.prioridade as "p1"].bar,
-                )}
-              />
-              {PRIORIDADE[d.prioridade as "p1"].label}
-            </span>
-          </div>
-          <h1 className="text-xl font-semibold tracking-tight text-foreground">{d.titulo}</h1>
-          {d.descricao && (
-            <p className="mt-1.5 whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
-              {d.descricao}
-            </p>
-          )}
-        </div>
-
-        <div className="grid grid-cols-2 gap-px bg-border/60 md:grid-cols-4">
-          <InfoCell icon={User} rotulo="Responsável" valor={data?.nome_responsavel ?? "—"} />
-          <InfoCell icon={Users} rotulo="Cliente" valor={d.clientes?.nome ?? "—"} />
-          <InfoCell
-            icon={Tag}
-            rotulo="Tipo"
-            valor={d.tipo === "simulacao" ? "Simulação" : d.tipo === "diversos" ? "Diversos" : d.tipo}
-          />
-          <div className="flex items-start gap-2.5 bg-card px-4 py-3">
-            <Clock className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-            <div className="min-w-0">
-              <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Prazo (SLA)</p>
-              <div className="mt-0.5 text-sm font-medium text-foreground">
-                <SlaCountdown
-                  inicio={d.sla_inicio}
-                  prazo={d.prazo_sla}
-                  concluida={d.status === "concluida"}
-                  concluidaEm={d.concluida_em}
-                />
-              </div>
+              )}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    Mais ações
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  {STATUS_OPCOES.map((s) => (
+                    <DropdownMenuItem
+                      key={s}
+                      disabled={!perm?.pode_mover_status || s === d.status}
+                      onClick={async () => {
+                        await moverFn({ data: { id, status: s } });
+                        invalidar();
+                        toast.success("Status atualizado.");
+                      }}
+                    >
+                      Mover para: {statusDemanda(s).label}
+                    </DropdownMenuItem>
+                  ))}
+                  <DropdownMenuSeparator />
+                  {perm?.pode_excluir && (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <DropdownMenuItem
+                          onSelect={(e) => e.preventDefault()}
+                          className="text-destructive focus:text-destructive"
+                        >
+                          <Trash2 className="mr-2 h-3.5 w-3.5" /> Excluir demanda
+                        </DropdownMenuItem>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Excluir demanda?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Esta ação não pode ser desfeita. A demanda {d.numero} e seu histórico
+                            serão removidos.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={excluir}
+                            disabled={excluindo}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          >
+                            {excluindo ? "Excluindo…" : "Excluir"}
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <Button variant="outline" size="icon" className="h-9 w-9">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
             </div>
           </div>
-        </div>
 
-        {d.dados_simulacao && (
-          <div className="border-t border-border/60 px-5 py-4">
-            <div className="rounded-xl border border-primary/30 bg-primary/[0.04] p-3.5">
-              <p className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-primary">
-                <FileText className="h-3.5 w-3.5" /> Dados da simulação
-              </p>
-              <p className="whitespace-pre-wrap text-sm text-foreground">{d.dados_simulacao}</p>
-            </div>
-          </div>
-        )}
-      </div>
-
-
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Mensagens */}
-        <PopOutPanel title={`Mensagens · ${d.numero}`} className="h-[32rem] lg:col-span-2">
-          <Card className="flex h-full flex-col overflow-hidden border-border/60 shadow-sm">
-            <div className="flex items-center gap-2 border-b bg-muted/30 px-4 py-3">
-              <div className="flex size-8 items-center justify-center rounded-full bg-primary/10 text-primary">
-                <MessageCircle className="size-4" />
-              </div>
+          {/* Cabeçalho da demanda */}
+          <div className="overflow-hidden rounded-2xl border border-border/70 bg-card shadow-sm">
+            <div className="grid gap-4 border-b border-border/60 px-5 py-4 lg:grid-cols-[minmax(0,1fr)_260px]">
               <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-foreground">Mensagens</p>
-                <p className="truncate text-xs text-muted-foreground">
-                  Conversa da demanda {d.numero}
+                <div className="mb-2 flex flex-wrap items-center gap-2">
+                  <span className="rounded-md bg-background px-2 py-0.5 font-mono text-xs text-muted-foreground ring-1 ring-border/60">
+                    {d.numero}
+                  </span>
+                  <ToneBadge tone={statusDemanda(d.status).tone}>
+                    {statusDemanda(d.status).label}
+                  </ToneBadge>
+                  <span className="inline-flex items-center gap-1.5 rounded-md bg-background px-2 py-0.5 text-xs text-muted-foreground ring-1 ring-border/60">
+                    <span
+                      className={cn(
+                        "inline-block h-1.5 w-5 rounded-full",
+                        PRIORIDADE[d.prioridade as "p1"].bar,
+                      )}
+                    />
+                    {PRIORIDADE[d.prioridade as "p1"].label}
+                  </span>
+                </div>
+                <h1 className="text-xl font-semibold tracking-tight text-foreground">
+                  {d.titulo}
+                </h1>
+                {d.descricao && (
+                  <p className="mt-1.5 whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
+                    {d.descricao}
+                  </p>
+                )}
+              </div>
+              {/* Card SLA */}
+              <div
+                className={cn(
+                  "rounded-xl border p-3.5",
+                  slaCritico
+                    ? "border-destructive/40 bg-destructive/[0.06]"
+                    : "border-border/70 bg-muted/30",
+                )}
+              >
+                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide">
+                  <AlertTriangle
+                    className={cn(
+                      "h-3.5 w-3.5",
+                      slaCritico ? "text-destructive" : "text-muted-foreground",
+                    )}
+                  />
+                  <span className={slaCritico ? "text-destructive" : "text-muted-foreground"}>
+                    {slaCritico ? "SLA crítico" : "SLA"}
+                  </span>
+                </div>
+                <div className="mt-1 text-base font-semibold text-foreground">
+                  <SlaCountdown
+                    inicio={d.sla_inicio}
+                    prazo={d.prazo_sla}
+                    concluida={d.status === "concluida"}
+                    concluidaEm={d.concluida_em}
+                  />
+                </div>
+                <p className="mt-2 text-[11px] uppercase tracking-wide text-muted-foreground">
+                  Próxima ação necessária
+                </p>
+                <p className="text-xs text-foreground">
+                  {proximaAcao}
+                  {data?.nome_responsavel ? (
+                    <>
+                      {" — "}
+                      <span className="font-medium">{data.nome_responsavel}</span>
+                    </>
+                  ) : null}
                 </p>
               </div>
             </div>
 
-            <div className="chat-surface flex-1 space-y-1 overflow-y-auto p-4">
-              {(data?.mensagens ?? []).length === 0 ? (
-                <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
-                  <div className="flex size-14 items-center justify-center rounded-full bg-primary/10 text-primary">
-                    <MessageCircle className="size-7" />
+            {/* Stepper */}
+            <div className="border-b border-border/60 px-5 py-5">
+              <div className="flex items-center">
+                {STEPPER.map((step, i) => {
+                  const done = i < stepAtual;
+                  const active = i === stepAtual;
+                  return (
+                    <div key={step.key} className="flex flex-1 items-center last:flex-none">
+                      <div className="flex flex-col items-center gap-1.5">
+                        <div
+                          className={cn(
+                            "flex size-8 items-center justify-center rounded-full ring-2 transition-colors",
+                            done && "bg-primary text-primary-foreground ring-primary",
+                            active && "bg-background text-primary ring-primary shadow-sm",
+                            !done && !active && "bg-background text-muted-foreground ring-border",
+                          )}
+                        >
+                          {done ? (
+                            <CheckCircle2 className="h-4 w-4" />
+                          ) : active ? (
+                            <div className="size-2.5 rounded-full bg-primary" />
+                          ) : (
+                            <Circle className="h-3.5 w-3.5" />
+                          )}
+                        </div>
+                        <span
+                          className={cn(
+                            "whitespace-nowrap text-[11px] font-medium",
+                            active
+                              ? "text-primary"
+                              : done
+                                ? "text-foreground"
+                                : "text-muted-foreground",
+                          )}
+                        >
+                          {step.label}
+                        </span>
+                      </div>
+                      {i < STEPPER.length - 1 && (
+                        <div
+                          className={cn(
+                            "mx-2 h-0.5 flex-1 rounded-full",
+                            i < stepAtual ? "bg-primary" : "bg-border",
+                          )}
+                        />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Faixa de métricas */}
+            <div className="grid grid-cols-2 gap-px bg-border/60 md:grid-cols-5">
+              <MetricCell
+                dot={slaCritico ? "bg-destructive" : "bg-emerald-500"}
+                rotulo="SLA"
+                valor={
+                  slaCritico ? (
+                    <span className="text-destructive">
+                      Vencido há{" "}
+                      <SlaCountdown
+                        inicio={d.sla_inicio}
+                        prazo={d.prazo_sla}
+                        concluida={d.status === "concluida"}
+                        concluidaEm={d.concluida_em}
+                      />
+                    </span>
+                  ) : (
+                    <SlaCountdown
+                      inicio={d.sla_inicio}
+                      prazo={d.prazo_sla}
+                      concluida={d.status === "concluida"}
+                      concluidaEm={d.concluida_em}
+                    />
+                  )
+                }
+              />
+              <MetricCell
+                icon={Clock}
+                rotulo="Tempo em aberto"
+                valor={tempoAberto(d.sla_inicio, d.concluida_em)}
+              />
+              <MetricCell
+                icon={MessageSquare}
+                rotulo="Interações"
+                valor={String(totalMensagens)}
+              />
+              <MetricCell icon={Paperclip} rotulo="Anexos" valor={String(totalAnexos)} />
+              <MetricCell
+                icon={Sparkles}
+                rotulo="Última atividade"
+                valor={ultimaAtividade ? fmtDataCurta(ultimaAtividade) : "—"}
+              />
+            </div>
+
+            {d.dados_simulacao && (
+              <div className="border-t border-border/60 px-5 py-4">
+                <div className="rounded-xl border border-primary/30 bg-primary/[0.04] p-3.5">
+                  <p className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-primary">
+                    <FileText className="h-3.5 w-3.5" /> Dados da simulação
+                  </p>
+                  <p className="whitespace-pre-wrap text-sm text-foreground">
+                    {d.dados_simulacao}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Conversas e atividades */}
+          <div className="overflow-hidden rounded-2xl border border-border/70 bg-card shadow-sm">
+            <div className="flex items-center justify-between gap-2 border-b border-border/60 px-5 py-3">
+              <h2 className="text-sm font-semibold text-foreground">Conversas e atividades</h2>
+              <span className="text-xs text-muted-foreground">
+                {totalMensagens} interações
+              </span>
+            </div>
+
+            {/* Abas */}
+            <div className="flex items-center gap-1 overflow-x-auto border-b border-border/60 px-3 py-2">
+              {abas.map((t) => {
+                const Icon = t.icon;
+                const ativo = aba === t.key;
+                return (
+                  <button
+                    key={t.key}
+                    type="button"
+                    onClick={() => setAba(t.key)}
+                    className={cn(
+                      "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors",
+                      ativo
+                        ? "bg-primary/10 text-primary"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                    )}
+                  >
+                    <Icon className="h-3.5 w-3.5" />
+                    {t.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Lista */}
+            <div className="chat-surface max-h-[28rem] space-y-1 overflow-y-auto p-4">
+              {aba === "sistema" ? (
+                historico.length === 0 ? (
+                  <p className="py-8 text-center text-xs text-muted-foreground">
+                    Sem eventos do sistema.
+                  </p>
+                ) : (
+                  <ol className="space-y-2">
+                    {historico.map((h: any) => (
+                      <li
+                        key={h.id}
+                        className="flex items-start gap-3 rounded-xl border border-border/60 bg-background p-3"
+                      >
+                        <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                          <Cog className="h-3.5 w-3.5" />
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-baseline justify-between gap-2">
+                            <span className="text-xs font-medium text-foreground">
+                              {h.nome_ator ?? "Sistema"}
+                            </span>
+                            <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground">
+                              {fmtData(h.created_at)}
+                            </span>
+                          </div>
+                          <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                            {h.acao}
+                          </p>
+                          {h.detalhe && (
+                            <p className="mt-0.5 text-xs text-muted-foreground">{h.detalhe}</p>
+                          )}
+                          {h.motivo && (
+                            <p className="mt-1 rounded-md bg-muted/60 px-2 py-1 text-xs text-foreground">
+                              {h.motivo}
+                            </p>
+                          )}
+                        </div>
+                      </li>
+                    ))}
+                  </ol>
+                )
+              ) : mensagensFiltradas.length === 0 ? (
+                <div className="flex h-40 flex-col items-center justify-center gap-2 text-center">
+                  <div className="flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+                    <MessageCircle className="size-6" />
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-foreground">Nenhuma mensagem ainda</p>
-                    <p className="text-xs text-muted-foreground">
-                      Escreva a primeira mensagem desta demanda.
-                    </p>
-                  </div>
+                  <p className="text-sm font-medium text-foreground">Nenhuma mensagem aqui</p>
+                  <p className="text-xs text-muted-foreground">
+                    Envie a primeira mensagem desta demanda.
+                  </p>
                 </div>
               ) : (
-                (data?.mensagens ?? []).map((m: any, i: number) => {
+                mensagensFiltradas.map((m: any, i: number) => {
                   const meu = meuId != null && m.autor_id === meuId;
-                  const lista = data?.mensagens ?? [];
-                  const anterior = lista[i - 1];
-                  const proxima = lista[i + 1];
+                  const anterior = mensagensFiltradas[i - 1];
+                  const proxima = mensagensFiltradas[i + 1];
                   const mostrarDia =
                     !anterior || fmtDia(anterior.created_at) !== fmtDia(m.created_at);
                   const mesmoAutorAntes = !mostrarDia && anterior?.autor_id === m.autor_id;
@@ -630,8 +892,36 @@ function Pagina() {
               )}
             </div>
 
+            {/* Modo de mensagem */}
+            <div className="flex items-center gap-1 border-t border-border/60 px-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setModoNotaInterna(false)}
+                className={cn(
+                  "rounded-lg px-3 py-1.5 text-xs font-medium transition-colors",
+                  !modoNotaInterna
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                Mensagem
+              </button>
+              <button
+                type="button"
+                onClick={() => setModoNotaInterna(true)}
+                className={cn(
+                  "rounded-lg px-3 py-1.5 text-xs font-medium transition-colors",
+                  modoNotaInterna
+                    ? "bg-amber-500/15 text-amber-700 dark:text-amber-400"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                Nota interna
+              </button>
+            </div>
 
-            <div className="space-y-2.5 border-t border-border/60 bg-gradient-to-b from-muted/20 to-muted/40 p-3.5">
+            {/* Input */}
+            <div className="space-y-2.5 px-3 pb-3.5 pt-2">
               {arquivoChat && (
                 <div className="flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-2.5 py-1.5 text-xs">
                   <Paperclip className="h-3.5 w-3.5 shrink-0 text-primary" />
@@ -676,7 +966,11 @@ function Pagina() {
                       enviarMensagem();
                     }
                   }}
-                  placeholder="Escreva uma mensagem…"
+                  placeholder={
+                    modoNotaInterna
+                      ? "Escreva uma nota interna…"
+                      : "Escreva uma mensagem para o cliente…"
+                  }
                   className="min-h-[40px] max-h-32 resize-none border-0 bg-transparent px-1 shadow-none focus-visible:ring-0"
                 />
                 <Button
@@ -689,20 +983,203 @@ function Pagina() {
                 </Button>
               </div>
             </div>
-          </Card>
-        </PopOutPanel>
+          </div>
+        </div>
 
+        {/* Coluna direita — Resumo */}
+        <aside className="min-w-0 space-y-4 lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
+          {/* Informações gerais */}
+          <div className="rounded-2xl border border-border/70 bg-card shadow-sm">
+            <div className="border-b border-border/60 px-4 py-3">
+              <h2 className="text-sm font-semibold text-foreground">Informações gerais</h2>
+            </div>
+            <dl className="divide-y divide-border/60 px-4 py-2 text-sm">
+              <InfoLinha
+                rotulo="Status"
+                valor={
+                  <ToneBadge tone={statusDemanda(d.status).tone}>
+                    {statusDemanda(d.status).label}
+                  </ToneBadge>
+                }
+              />
+              <InfoLinha
+                rotulo="Prioridade"
+                valor={
+                  <span className="inline-flex items-center gap-1.5">
+                    <span
+                      className={cn(
+                        "inline-block h-1.5 w-4 rounded-full",
+                        PRIORIDADE[d.prioridade as "p1"].bar,
+                      )}
+                    />
+                    <span className="text-foreground">
+                      {PRIORIDADE[d.prioridade as "p1"].label}
+                    </span>
+                  </span>
+                }
+              />
+              <InfoLinha
+                rotulo="Tipo"
+                valor={
+                  d.tipo === "simulacao"
+                    ? "Simulação"
+                    : d.tipo === "diversos"
+                      ? "Diversos"
+                      : d.tipo
+                }
+              />
+              <InfoLinha
+                rotulo="Responsável atual"
+                valor={data?.nome_responsavel ?? "—"}
+              />
+              <InfoLinha rotulo="Solicitante" valor={d.clientes?.nome ?? "—"} />
+              <InfoLinha rotulo="Criada em" valor={fmtData(d.created_at)} />
+              <InfoLinha
+                rotulo="Última atualização"
+                valor={fmtData(ultimaAtividade)}
+              />
+            </dl>
+          </div>
 
-        {/* Sidebar: Anexos + Histórico de auditoria */}
-        <div className="space-y-6">
+          {/* Próxima ação */}
+          <div className="rounded-2xl border border-border/70 bg-card shadow-sm">
+            <div className="border-b border-border/60 px-4 py-3">
+              <h2 className="text-sm font-semibold text-foreground">Próxima ação</h2>
+            </div>
+            <div className="space-y-1 px-4 py-3 text-sm">
+              <p className="text-foreground">{proximaAcao}</p>
+              <p className="text-xs text-muted-foreground">
+                Prazo:{" "}
+                <span
+                  className={cn(
+                    "font-medium",
+                    slaCritico ? "text-destructive" : "text-foreground",
+                  )}
+                >
+                  {slaCritico ? "vencido há " : ""}
+                  <SlaCountdown
+                    inicio={d.sla_inicio}
+                    prazo={d.prazo_sla}
+                    concluida={d.status === "concluida"}
+                    concluidaEm={d.concluida_em}
+                  />
+                </span>
+              </p>
+            </div>
+          </div>
+
+          {/* Ações rápidas */}
+          <div className="rounded-2xl border border-border/70 bg-card shadow-sm">
+            <div className="border-b border-border/60 px-4 py-3">
+              <h2 className="text-sm font-semibold text-foreground">Ações rápidas</h2>
+            </div>
+            <div className="grid grid-cols-2 gap-2 p-3">
+              {perm?.pode_transferir ? (
+                <TransferirDialog
+                  demandaId={id}
+                  onTransferida={invalidar}
+                  trigger={
+                    <button
+                      type="button"
+                      className="flex flex-col items-start gap-1 rounded-xl border border-border/60 bg-background p-3 text-left transition-colors hover:border-primary/40 hover:bg-primary/[0.04]"
+                    >
+                      <UserCog className="h-4 w-4 text-primary" />
+                      <span className="text-xs font-medium text-foreground">
+                        Alterar responsável
+                      </span>
+                    </button>
+                  }
+                />
+              ) : null}
+              {perm?.pode_editar && (
+                <EditarDemandaDialog
+                  demanda={{
+                    id: d.id,
+                    titulo: d.titulo,
+                    descricao: d.descricao ?? null,
+                    prioridade: d.prioridade,
+                    sla_horas: d.sla_horas ?? null,
+                  }}
+                  onSalva={invalidar}
+                  trigger={
+                    <button
+                      type="button"
+                      className="flex flex-col items-start gap-1 rounded-xl border border-border/60 bg-background p-3 text-left transition-colors hover:border-primary/40 hover:bg-primary/[0.04]"
+                    >
+                      <CalendarClock className="h-4 w-4 text-primary" />
+                      <span className="text-xs font-medium text-foreground">Alterar prazo</span>
+                    </button>
+                  }
+                />
+              )}
+              <button
+                type="button"
+                onClick={() => navigate({ to: "/operacional/tarefas" })}
+                className="flex flex-col items-start gap-1 rounded-xl border border-border/60 bg-background p-3 text-left transition-colors hover:border-primary/40 hover:bg-primary/[0.04]"
+              >
+                <ListChecks className="h-4 w-4 text-primary" />
+                <span className="text-xs font-medium text-foreground">Criar tarefa</span>
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!perm?.pode_mover_status) return;
+                  await moverFn({ data: { id, status: "aguardando" } });
+                  invalidar();
+                  toast.success("Demanda escalonada.");
+                }}
+                className="flex flex-col items-start gap-1 rounded-xl border border-border/60 bg-background p-3 text-left transition-colors hover:border-primary/40 hover:bg-primary/[0.04]"
+              >
+                <ArrowUpRight className="h-4 w-4 text-primary" />
+                <span className="text-xs font-medium text-foreground">Escalonar</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Insight operacional */}
+          <div className="rounded-2xl border border-primary/30 bg-primary/[0.04] p-4">
+            <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-primary">
+              <Sparkles className="h-3.5 w-3.5" /> Insight operacional
+            </p>
+            <ul className="space-y-1.5 text-xs text-foreground">
+              <li className="flex gap-1.5">
+                <span className="mt-1 inline-block size-1 shrink-0 rounded-full bg-primary" />
+                <span>
+                  {slaCritico
+                    ? "A demanda está sem resposta e o SLA já venceu."
+                    : d.status === "concluida"
+                      ? "Demanda concluída dentro do prazo."
+                      : "A demanda está dentro do SLA — continue o atendimento."}
+                </span>
+              </li>
+              <li className="flex gap-1.5">
+                <span className="mt-1 inline-block size-1 shrink-0 rounded-full bg-primary" />
+                <span>
+                  Última interação realizada por{" "}
+                  <span className="font-medium">
+                    {ultimaMsg?.nome_autor ?? historico[0]?.nome_ator ?? "—"}
+                  </span>
+                  .
+                </span>
+              </li>
+              <li className="flex gap-1.5">
+                <span className="mt-1 inline-block size-1 shrink-0 rounded-full bg-primary" />
+                <span>
+                  Próxima ação recomendada:{" "}
+                  <span className="font-medium">{proximaAcao}</span>.
+                </span>
+              </li>
+            </ul>
+          </div>
+
           {/* Anexos */}
           <div className="rounded-2xl border border-border/70 bg-card shadow-sm">
             <div className="flex items-center justify-between gap-2 border-b border-border/60 px-4 py-3">
               <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
                 <Paperclip className="h-4 w-4 text-muted-foreground" /> Anexos
-                {(data?.anexos ?? []).length > 0 && (
+                {totalAnexos > 0 && (
                   <span className="rounded-full bg-muted px-1.5 text-xs font-medium text-muted-foreground">
-                    {(data?.anexos ?? []).length}
+                    {totalAnexos}
                   </span>
                 )}
               </h2>
@@ -717,7 +1194,7 @@ function Pagina() {
               </Button>
             </div>
             <div className="space-y-2 p-3">
-              {(data?.anexos ?? []).length === 0 ? (
+              {totalAnexos === 0 ? (
                 <p className="px-1 py-4 text-center text-sm text-muted-foreground">
                   Nenhum anexo.
                 </p>
@@ -732,7 +1209,9 @@ function Pagina() {
                     </span>
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-medium text-foreground">{a.nome}</p>
-                      <p className="truncate text-xs text-muted-foreground">{a.nome_autor ?? "—"}</p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {a.nome_autor ?? "—"}
+                      </p>
                     </div>
                     <Button
                       variant="ghost"
@@ -759,18 +1238,18 @@ function Pagina() {
             </div>
           </div>
 
-          {/* Histórico (auditoria) */}
+          {/* Histórico */}
           <div className="rounded-2xl border border-border/70 bg-card shadow-sm">
             <div className="flex items-center gap-2 border-b border-border/60 px-4 py-3">
               <History className="h-4 w-4 text-muted-foreground" />
               <h2 className="text-sm font-semibold text-foreground">Histórico</h2>
             </div>
             <div className="max-h-80 overflow-y-auto p-4">
-              {(data?.historico ?? []).length === 0 ? (
+              {historico.length === 0 ? (
                 <p className="text-center text-xs text-muted-foreground">Sem registros.</p>
               ) : (
                 <ol className="relative space-y-3 border-l border-border/60 pl-4">
-                  {(data?.historico ?? []).map((h: any) => (
+                  {historico.map((h: any) => (
                     <li key={h.id} className="relative">
                       <span className="absolute -left-[21px] top-1 size-2 rounded-full bg-primary/60 ring-2 ring-card" />
                       <div className="flex items-baseline justify-between gap-2">
@@ -807,9 +1286,7 @@ function Pagina() {
               )}
             </div>
           </div>
-        </div>
-      </div>
-        </div>
+        </aside>
       </div>
 
       <VisualizadorArquivo
@@ -818,6 +1295,40 @@ function Pagina() {
         onOpenChange={(o: boolean) => !o && setVisualizando(null)}
       />
     </div>
+  );
+}
 
+function MetricCell({
+  icon: Icon,
+  dot,
+  rotulo,
+  valor,
+}: {
+  icon?: React.ComponentType<{ className?: string }>;
+  dot?: string;
+  rotulo: string;
+  valor: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-start gap-2.5 bg-card px-4 py-3">
+      {Icon ? (
+        <Icon className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+      ) : (
+        <span className={cn("mt-1.5 size-2 shrink-0 rounded-full", dot)} />
+      )}
+      <div className="min-w-0">
+        <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{rotulo}</p>
+        <div className="mt-0.5 truncate text-sm font-medium text-foreground">{valor}</div>
+      </div>
+    </div>
+  );
+}
+
+function InfoLinha({ rotulo, valor }: { rotulo: string; valor: React.ReactNode }) {
+  return (
+    <div className="flex items-center justify-between gap-3 py-2">
+      <dt className="text-xs text-muted-foreground">{rotulo}</dt>
+      <dd className="min-w-0 truncate text-right text-sm text-foreground">{valor}</dd>
+    </div>
   );
 }
