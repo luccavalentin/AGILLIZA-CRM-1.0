@@ -654,7 +654,10 @@ function Pagina() {
                           </div>
                         </TableCell>
                       </TableRow>
-                    ))}
+                        </Fragment>
+                      );
+                    })}
+
                   </TableBody>
                 </Table>
               </div>
