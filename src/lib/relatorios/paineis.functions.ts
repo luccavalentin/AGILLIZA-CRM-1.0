@@ -977,6 +977,7 @@ export interface PanelDrilldownItem {
   data?: string;
   to?: string;
   tone?: "brand" | "success" | "warning" | "danger" | "neutral";
+  banco?: string;
 }
 
 export interface PanelDrilldown {
