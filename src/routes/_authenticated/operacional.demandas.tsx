@@ -610,40 +610,40 @@ function Pagina() {
                 { value: "p3", label: "Baixa" },
               ]}
             />
-            <FilterSelect
+            <FilterCombo
               label="Cliente"
               value={clienteFiltro}
               onValueChange={(v) => { setClienteFiltro(v); setPagina(1); }}
               placeholder="Todos"
-              options={[{ value: "todos", label: "Todos" }, ...clientes.map(([id, n]) => ({ value: id, label: n }))]}
+              options={clientes}
             />
-            <FilterSelect
+            <FilterCombo
               label="Responsável"
               value={responsavelFiltro}
               onValueChange={(v) => { setResponsavelFiltro(v); setPagina(1); }}
               placeholder="Todos"
-              options={[{ value: "todos", label: "Todos" }, ...responsaveis.map(([id, n]) => ({ value: id, label: n }))]}
+              options={responsaveis}
             />
-            <FilterSelect
+            <FilterCombo
               label="Analista"
               value={analistaFiltro}
               onValueChange={(v) => { setAnalistaFiltro(v); setPagina(1); }}
               placeholder="Todos"
-              options={[{ value: "todos", label: "Todos" }, ...analistas.map(([id, n]) => ({ value: id, label: n }))]}
+              options={analistas}
             />
-            <FilterSelect
+            <FilterCombo
               label="Corretor"
               value={corretorFiltro}
               onValueChange={(v) => { setCorretorFiltro(v); setPagina(1); }}
               placeholder="Todos"
-              options={[{ value: "todos", label: "Todos" }, ...corretores.map(([id, n]) => ({ value: id, label: n }))]}
+              options={corretores}
             />
-            <FilterSelect
+            <FilterCombo
               label="Imobiliária"
               value={imobiliariaFiltro}
               onValueChange={(v) => { setImobiliariaFiltro(v); setPagina(1); }}
               placeholder="Todas"
-              options={[{ value: "todos", label: "Todas" }, ...imobiliarias.map(([id, n]) => ({ value: id, label: n }))]}
+              options={imobiliarias}
             />
           </div>
         </div>
