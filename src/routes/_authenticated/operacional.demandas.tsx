@@ -614,7 +614,7 @@ function Pagina() {
           </div>
         ) : (
           <>
-            <div className="hidden overflow-x-auto md:block">
+            <div className="hidden overflow-x-auto xl:block">
               <table className="w-full text-sm">
                 <thead className="border-b border-border bg-muted/30 text-left text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                   <tr>
