@@ -334,13 +334,33 @@ function Pagina() {
                 <ChevronDown className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuContent align="end" className="w-64">
               <DropdownMenuItem onClick={duplicar}>
                 <Copy className="mr-2 h-4 w-4" /> Duplicar
               </DropdownMenuItem>
               <DropdownMenuItem onClick={editar}>
                 <Pencil className="mr-2 h-4 w-4" /> Editar
               </DropdownMenuItem>
+              {s.possui_conjuge && s.nome_conjuge && s.cpf_conjuge && s.data_nascimento_conjuge ? (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                    Titular ⇄ Cônjuge
+                  </DropdownMenuLabel>
+                  <DropdownMenuItem
+                    disabled={invertendo}
+                    onClick={() => inverterTitular(false)}
+                  >
+                    <ArrowLeftRight className="mr-2 h-4 w-4" /> Inverter titular
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    disabled={invertendo}
+                    onClick={() => inverterTitular(true)}
+                  >
+                    <RefreshCw className="mr-2 h-4 w-4" /> Inverter e reenviar aos bancos
+                  </DropdownMenuItem>
+                </>
+              ) : null}
               <DropdownMenuSeparator />
               <ConfirmDelete
                 titulo="Excluir simulação"
