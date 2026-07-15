@@ -118,7 +118,7 @@ type OrdemChave = "nome-asc" | "nome-desc" | "docs-desc" | "docs-asc";
 type ModoLista = "grid" | "lista";
 
 /** Modo de navegação: hierarquia completa ou visão agregada por dimensão. */
-type Visao = "hierarquia" | "imobiliarias" | "corretores" | "clientes";
+type Visao = "hierarquia" | "imobiliarias" | "corretores" | "analistas" | "clientes";
 
 
 const RAIZ_KEY = "__raiz_principal__";
