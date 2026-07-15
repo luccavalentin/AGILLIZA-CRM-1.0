@@ -77,8 +77,11 @@ export function NovaTarefaDialog({
       setTitulo("");
       setDescricao("");
       setPrazo("");
+      setTitulo("");
+      setDescricao("");
+      setPrazo("");
       setResponsavel("");
-      setCliente("");
+      setCliente(clientePreSelecionado ?? "");
       setChecklist([]);
       onCriada();
     } catch (e) {
