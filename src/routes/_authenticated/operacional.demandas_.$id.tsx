@@ -526,116 +526,125 @@ function Pagina() {
             </div>
           </div>
 
-          {/* Cabeçalho da demanda */}
+          {/* Cabeçalho da demanda — compacto e refinado */}
           <div className="overflow-hidden rounded-2xl border border-border/70 bg-card shadow-sm">
-            <div className="grid gap-4 border-b border-border/60 p-4 sm:p-5 lg:grid-cols-[minmax(0,1fr)_minmax(240px,320px)]">
+            <div className="flex flex-col gap-3 border-b border-border/60 px-4 py-3.5 sm:px-5">
+              {/* Meta linha superior */}
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="rounded-md bg-muted/50 px-1.5 py-0.5 font-mono text-[10px] font-medium text-muted-foreground ring-1 ring-border/60">
+                  {d.numero}
+                </span>
+                <ToneBadge tone={statusDemanda(d.status).tone}>
+                  {statusDemanda(d.status).label}
+                </ToneBadge>
+                <span className="inline-flex items-center gap-1 rounded-md bg-muted/50 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground ring-1 ring-border/60">
+                  <span
+                    className={cn(
+                      "inline-block h-1 w-3 rounded-full",
+                      PRIORIDADE[d.prioridade as "p1"].bar,
+                    )}
+                  />
+                  {PRIORIDADE[d.prioridade as "p1"].label}
+                </span>
+                {slaCritico && (
+                  <span className="ml-auto inline-flex items-center gap-1 rounded-md bg-destructive/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-destructive ring-1 ring-destructive/30">
+                    <AlertTriangle className="h-3 w-3" />
+                    SLA estourado
+                  </span>
+                )}
+              </div>
+
               <div className="min-w-0">
-                <div className="mb-2 flex flex-wrap items-center gap-1.5">
-                  <span className="rounded-md bg-background px-2 py-0.5 font-mono text-[11px] text-muted-foreground ring-1 ring-border/60">
-                    {d.numero}
-                  </span>
-                  <ToneBadge tone={statusDemanda(d.status).tone}>
-                    {statusDemanda(d.status).label}
-                  </ToneBadge>
-                  <span className="inline-flex items-center gap-1.5 rounded-md bg-background px-2 py-0.5 text-[11px] text-muted-foreground ring-1 ring-border/60">
-                    <span
-                      className={cn(
-                        "inline-block h-1.5 w-4 rounded-full",
-                        PRIORIDADE[d.prioridade as "p1"].bar,
-                      )}
-                    />
-                    {PRIORIDADE[d.prioridade as "p1"].label}
-                  </span>
-                </div>
-                <h1 className="break-words text-lg font-semibold tracking-tight text-foreground sm:text-xl">
+                <h1 className="break-words text-base font-semibold leading-tight tracking-tight text-foreground sm:text-lg">
                   {d.titulo}
                 </h1>
                 {d.descricao && (
-                  <p className="mt-1.5 whitespace-pre-wrap break-words text-sm leading-relaxed text-muted-foreground">
+                  <p className="mt-1 line-clamp-3 whitespace-pre-wrap break-words text-[13px] leading-relaxed text-muted-foreground">
                     {d.descricao}
                   </p>
                 )}
               </div>
-              {/* Card SLA */}
+
+              {/* Próxima ação — linha fina */}
               <div
                 className={cn(
-                  "flex min-w-0 flex-col rounded-xl border p-3.5",
+                  "flex items-start gap-2 rounded-lg border px-3 py-2",
                   slaCritico
-                    ? "border-destructive/40 bg-destructive/[0.06]"
-                    : "border-border/70 bg-muted/30",
+                    ? "border-destructive/30 bg-destructive/[0.04]"
+                    : "border-border/60 bg-muted/30",
                 )}
               >
-                <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide">
-                  <AlertTriangle
+                <ArrowUpRight
+                  className={cn(
+                    "mt-0.5 h-3.5 w-3.5 shrink-0",
+                    slaCritico ? "text-destructive" : "text-primary",
+                  )}
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    Próxima ação
+                  </p>
+                  <p className="break-words text-[13px] font-medium leading-snug text-foreground">
+                    {proximaAcao}
+                    {data?.nome_responsavel ? (
+                      <span className="font-normal text-muted-foreground">
+                        {" · "}
+                        {data.nome_responsavel}
+                      </span>
+                    ) : null}
+                  </p>
+                </div>
+                <div className="shrink-0 text-right">
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    SLA
+                  </p>
+                  <p
                     className={cn(
-                      "h-3.5 w-3.5 shrink-0",
-                      slaCritico ? "text-destructive" : "text-muted-foreground",
-                    )}
-                  />
-                  <span
-                    className={cn(
-                      "truncate",
-                      slaCritico ? "text-destructive" : "text-muted-foreground",
+                      "text-[13px] font-semibold tabular-nums",
+                      slaCritico ? "text-destructive" : "text-foreground",
                     )}
                   >
-                    {slaCritico ? "SLA crítico" : "SLA"}
-                  </span>
+                    <SlaCountdown
+                      inicio={d.sla_inicio}
+                      prazo={d.prazo_sla}
+                      concluida={d.status === "concluida"}
+                      concluidaEm={d.concluida_em}
+                    />
+                  </p>
                 </div>
-                <div className="mt-1 break-words text-sm font-semibold leading-tight text-foreground sm:text-base">
-                  <SlaCountdown
-                    inicio={d.sla_inicio}
-                    prazo={d.prazo_sla}
-                    concluida={d.status === "concluida"}
-                    concluidaEm={d.concluida_em}
-                  />
-                </div>
-                <div className="mt-2 h-px bg-border/60" />
-                <p className="mt-2 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                  Próxima ação necessária
-                </p>
-                <p className="mt-0.5 break-words text-xs leading-relaxed text-foreground">
-                  {proximaAcao}
-                  {data?.nome_responsavel ? (
-                    <>
-                      {" — "}
-                      <span className="font-medium">{data.nome_responsavel}</span>
-                    </>
-                  ) : null}
-                </p>
               </div>
             </div>
 
-            {/* Stepper — scroll horizontal em telas estreitas */}
+            {/* Stepper compacto */}
             <div className="border-b border-border/60">
-              <div className="overflow-x-auto px-4 py-5 sm:px-5">
-                <div className="flex min-w-[560px] items-start">
+              <div className="overflow-x-auto px-4 py-3.5 sm:px-5">
+                <div className="flex min-w-[520px] items-start">
                   {STEPPER.map((step, i) => {
                     const done = i < stepAtual;
                     const active = i === stepAtual;
                     return (
                       <div key={step.key} className="flex flex-1 items-start last:flex-none">
-                        <div className="flex min-w-0 flex-col items-center gap-1.5">
+                        <div className="flex min-w-0 flex-col items-center gap-1">
                           <div
                             className={cn(
-                              "flex size-8 shrink-0 items-center justify-center rounded-full ring-2 transition-colors",
+                              "flex size-6 shrink-0 items-center justify-center rounded-full ring-2 transition-colors",
                               done && "bg-primary text-primary-foreground ring-primary",
-                              active &&
-                                "bg-background text-primary ring-primary shadow-sm",
+                              active && "bg-background text-primary ring-primary",
                               !done && !active &&
-                                "bg-background text-muted-foreground ring-border",
+                                "bg-background text-muted-foreground/60 ring-border",
                             )}
                           >
                             {done ? (
-                              <CheckCircle2 className="h-4 w-4" />
+                              <CheckCircle2 className="h-3 w-3" />
                             ) : active ? (
-                              <div className="size-2.5 rounded-full bg-primary" />
+                              <div className="size-2 rounded-full bg-primary" />
                             ) : (
-                              <Circle className="h-3.5 w-3.5" />
+                              <Circle className="h-2.5 w-2.5" />
                             )}
                           </div>
                           <span
                             className={cn(
-                              "whitespace-nowrap text-[11px] font-medium",
+                              "whitespace-nowrap text-[10px] font-medium",
                               active
                                 ? "text-primary"
                                 : done
@@ -649,7 +658,7 @@ function Pagina() {
                         {i < STEPPER.length - 1 && (
                           <div
                             className={cn(
-                              "mx-2 mt-4 h-0.5 flex-1 rounded-full",
+                              "mx-1.5 mt-3 h-px flex-1",
                               i < stepAtual ? "bg-primary" : "bg-border",
                             )}
                           />
@@ -661,44 +670,20 @@ function Pagina() {
               </div>
             </div>
 
-            {/* Faixa de métricas — responsiva sem truncamento */}
-            <div className="grid grid-cols-2 gap-px bg-border/60 sm:grid-cols-3 lg:grid-cols-5">
-              <MetricCell
+            {/* Métricas inline — chips que quebram naturalmente, sem grid rígido */}
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-b border-border/60 bg-muted/20 px-4 py-2.5 sm:px-5">
+              <InlineMetric
                 dot={slaCritico ? "bg-destructive" : "bg-emerald-500"}
-                rotulo="SLA"
-                valor={
-                  slaCritico ? (
-                    <span className="text-destructive">
-                      Vencido há{" "}
-                      <SlaCountdown
-                        inicio={d.sla_inicio}
-                        prazo={d.prazo_sla}
-                        concluida={d.status === "concluida"}
-                        concluidaEm={d.concluida_em}
-                      />
-                    </span>
-                  ) : (
-                    <SlaCountdown
-                      inicio={d.sla_inicio}
-                      prazo={d.prazo_sla}
-                      concluida={d.status === "concluida"}
-                      concluidaEm={d.concluida_em}
-                    />
-                  )
-                }
-              />
-              <MetricCell
-                icon={Clock}
                 rotulo="Tempo em aberto"
                 valor={tempoAberto(d.sla_inicio, d.concluida_em)}
               />
-              <MetricCell
+              <InlineMetric
                 icon={MessageSquare}
                 rotulo="Interações"
                 valor={String(totalMensagens)}
               />
-              <MetricCell icon={Paperclip} rotulo="Anexos" valor={String(totalAnexos)} />
-              <MetricCell
+              <InlineMetric icon={Paperclip} rotulo="Anexos" valor={String(totalAnexos)} />
+              <InlineMetric
                 icon={Sparkles}
                 rotulo="Última atividade"
                 valor={ultimaAtividade ? fmtDataCurta(ultimaAtividade) : "—"}
@@ -706,12 +691,12 @@ function Pagina() {
             </div>
 
             {d.dados_simulacao && (
-              <div className="border-t border-border/60 p-4 sm:px-5 sm:py-4">
-                <div className="rounded-xl border border-primary/30 bg-primary/[0.04] p-3.5">
-                  <p className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-primary">
-                    <FileText className="h-3.5 w-3.5" /> Dados da simulação
+              <div className="p-4 sm:px-5 sm:py-4">
+                <div className="rounded-lg border border-primary/25 bg-primary/[0.03] p-3">
+                  <p className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold text-primary">
+                    <FileText className="h-3 w-3" /> Dados da simulação
                   </p>
-                  <p className="whitespace-pre-wrap break-words text-sm text-foreground">
+                  <p className="whitespace-pre-wrap break-words text-[13px] leading-relaxed text-foreground">
                     {d.dados_simulacao}
                   </p>
                 </div>
@@ -1315,6 +1300,30 @@ function MetricCell({
           {valor}
         </div>
       </div>
+    </div>
+  );
+}
+
+function InlineMetric({
+  icon: Icon,
+  dot,
+  rotulo,
+  valor,
+}: {
+  icon?: React.ComponentType<{ className?: string }>;
+  dot?: string;
+  rotulo: string;
+  valor: React.ReactNode;
+}) {
+  return (
+    <div className="flex min-w-0 items-center gap-1.5">
+      {Icon ? (
+        <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+      ) : (
+        <span className={cn("size-1.5 shrink-0 rounded-full", dot)} />
+      )}
+      <span className="text-[11px] font-medium text-muted-foreground">{rotulo}</span>
+      <span className="text-[12px] font-semibold text-foreground">{valor}</span>
     </div>
   );
 }
