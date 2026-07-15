@@ -9,6 +9,7 @@ import {
   AlertTriangle,
   CheckCircle2,
   X,
+  Users,
 } from "lucide-react";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { listarDemandas, type DemandaStatus } from "@/lib/operacional/demandas.functions";
@@ -19,6 +20,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/operacional/demandas")({
