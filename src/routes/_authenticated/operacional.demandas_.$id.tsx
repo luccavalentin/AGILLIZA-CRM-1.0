@@ -1075,42 +1075,23 @@ function Pagina() {
             </div>
             <div className="grid grid-cols-2 gap-2 p-3">
               {perm?.pode_transferir ? (
-                <TransferirDialog
-                  demandaId={id}
-                  onTransferida={invalidar}
-                  trigger={
-                    <button
-                      type="button"
-                      className="flex flex-col items-start gap-1 rounded-xl border border-border/60 bg-background p-3 text-left transition-colors hover:border-primary/40 hover:bg-primary/[0.04]"
-                    >
-                      <UserCog className="h-4 w-4 text-primary" />
-                      <span className="text-xs font-medium text-foreground">
-                        Alterar responsável
-                      </span>
-                    </button>
-                  }
-                />
+                <div className="[&_button]:!w-full [&_button]:!justify-start [&_button]:!h-auto [&_button]:!rounded-xl [&_button]:!border [&_button]:!border-border/60 [&_button]:!bg-background [&_button]:!p-3 [&_button]:!text-left [&_button]:hover:!border-primary/40 [&_button]:hover:!bg-primary/[0.04]">
+                  <TransferirDialog demandaId={id} onTransferida={invalidar} />
+                </div>
               ) : null}
               {perm?.pode_editar && (
-                <EditarDemandaDialog
-                  demanda={{
-                    id: d.id,
-                    titulo: d.titulo,
-                    descricao: d.descricao ?? null,
-                    prioridade: d.prioridade,
-                    sla_horas: d.sla_horas ?? null,
-                  }}
-                  onSalva={invalidar}
-                  trigger={
-                    <button
-                      type="button"
-                      className="flex flex-col items-start gap-1 rounded-xl border border-border/60 bg-background p-3 text-left transition-colors hover:border-primary/40 hover:bg-primary/[0.04]"
-                    >
-                      <CalendarClock className="h-4 w-4 text-primary" />
-                      <span className="text-xs font-medium text-foreground">Alterar prazo</span>
-                    </button>
-                  }
-                />
+                <div className="[&_button]:!w-full [&_button]:!justify-start [&_button]:!h-auto [&_button]:!rounded-xl [&_button]:!border [&_button]:!border-border/60 [&_button]:!bg-background [&_button]:!p-3 [&_button]:!text-left [&_button]:hover:!border-primary/40 [&_button]:hover:!bg-primary/[0.04]">
+                  <EditarDemandaDialog
+                    demanda={{
+                      id: d.id,
+                      titulo: d.titulo,
+                      descricao: d.descricao ?? null,
+                      prioridade: d.prioridade,
+                      sla_horas: d.sla_horas ?? null,
+                    }}
+                    onSalva={invalidar}
+                  />
+                </div>
               )}
               <button
                 type="button"
