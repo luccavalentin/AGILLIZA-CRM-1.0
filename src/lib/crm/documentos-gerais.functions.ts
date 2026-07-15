@@ -94,7 +94,7 @@ export const explorarDocumentosGerais = createServerFn({ method: "GET" })
     if (cliErr) throw cliErr;
     const listaClientes = clientes ?? [];
     if (listaClientes.length === 0) {
-      return { clientes: [], imobiliarias: [], corretores: [], comerciais };
+      return { clientes: [], imobiliarias: [], corretores: [], comerciais, analistas: [] };
     }
 
     const idsClientes = listaClientes.map((c: any) => c.id);
