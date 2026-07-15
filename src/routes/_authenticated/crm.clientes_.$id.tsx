@@ -82,6 +82,7 @@ function Pagina() {
   const setEtapa = useServerFn(definirEtapa);
   const [movendoEtapa, setMovendoEtapa] = useState(false);
   const [aba, setAba] = useState("resumo");
+  const [previewSimId, setPreviewSimId] = useState<string | null>(null);
 
   async function moverParaEtapa(codigo: string) {
     setMovendoEtapa(true);
