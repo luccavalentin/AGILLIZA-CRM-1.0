@@ -511,6 +511,12 @@ export function PainelView({
         </>
 
       )}
+
+      <PainelDrilldownDialog
+        open={!!drilldown}
+        onOpenChange={(o) => !o && setDrilldown(null)}
+        contexto={drilldown}
+      />
     </div>
   );
 }
