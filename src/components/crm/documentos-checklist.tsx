@@ -501,7 +501,8 @@ export function DocumentosChecklist({ clienteId }: { clienteId: string }) {
   const casado =
     cli?.estado_civil === "casado" || cli?.estado_civil === "uniao_estavel";
   const vendCasado = vend?.estado_civil === "casado" || vend?.estado_civil === "uniao_estavel";
-  const vendPJ = vend?.tipo_pessoa === "PJ";
+  const [vendTipoManual, setVendTipoManual] = useState<"PF" | "PJ" | null>(null);
+  const vendPJ = vendTipoManual ? vendTipoManual === "PJ" : vend?.tipo_pessoa === "PJ";
 
   const temDoc = (cat: Categoria, key: string) =>
     (docs ?? []).some((d: any) => d.categoria === cat && d.tipo_documento === key);
@@ -910,9 +911,32 @@ export function DocumentosChecklist({ clienteId }: { clienteId: string }) {
       {/* VENDEDOR */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">
-            Checklist do vendedor — {vendPJ ? "Pessoa Jurídica" : "Pessoa Física"}
-          </CardTitle>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <CardTitle className="text-base">
+              Checklist do vendedor — {vendPJ ? "Pessoa Jurídica" : "Pessoa Física"}
+            </CardTitle>
+            <div className="inline-flex items-center gap-1 rounded-lg border border-border p-0.5">
+              <button
+                type="button"
+                onClick={() => setVendTipoManual("PF")}
+                className={`rounded-md px-3 py-1 text-xs font-medium transition ${!vendPJ ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"}`}
+              >
+                Pessoa Física
+              </button>
+              <button
+                type="button"
+                onClick={() => setVendTipoManual("PJ")}
+                className={`rounded-md px-3 py-1 text-xs font-medium transition ${vendPJ ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"}`}
+              >
+                Pessoa Jurídica
+              </button>
+            </div>
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {vend
+              ? "O tipo é detectado automaticamente pelo vendedor cadastrado na aba \"Vendedores\". Use os botões acima para visualizar o outro checklist."
+              : "Nenhum vendedor cadastrado ainda. Escolha PF ou PJ acima para preparar os documentos, ou cadastre o vendedor na aba \"Vendedores\"."}
+          </p>
         </CardHeader>
         <CardContent className="space-y-1">
           <div className="pb-2">
