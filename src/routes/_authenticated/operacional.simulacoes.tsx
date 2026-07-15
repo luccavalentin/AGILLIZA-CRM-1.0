@@ -128,8 +128,10 @@ function Pagina() {
     bancos: any[];
   } | null>(null);
   const [envioCarregando, setEnvioCarregando] = useState(false);
-  const [bancoSelecionado, setBancoSelecionado] = useState<string | null>(null);
-  const [enviando, setEnviando] = useState(false);
+  const [enviandoBancoId, setEnviandoBancoId] = useState<string | null>(null);
+  const [propostasCriadas, setPropostasCriadas] = useState<
+    Array<{ banco_id: string; nome_banco: string; proposta_id: string; numero: string }>
+  >([]);
 
 
   const { data, isLoading } = useQuery({
@@ -228,7 +230,8 @@ function Pagina() {
 
   async function handleEnviarProposta(id: string, numero: string) {
     setEnvio({ id, numero, bancos: [] });
-    setBancoSelecionado(null);
+    setPropostasCriadas([]);
+    setEnviandoBancoId(null);
     setEnvioCarregando(true);
     try {
       const dados = await obter({ data: { id } });
@@ -236,7 +239,6 @@ function Pagina() {
         (b: any) => b.status_banco === "simulada" && b.banco_id,
       );
       setEnvio({ id, numero, bancos: simulados });
-      if (simulados.length === 1) setBancoSelecionado(simulados[0].banco_id);
     } catch {
       toast.error("Não foi possível carregar os bancos da simulação.");
       setEnvio(null);
@@ -245,24 +247,29 @@ function Pagina() {
     }
   }
 
-  async function confirmarEnvio() {
-    if (!envio || !bancoSelecionado) return;
-    setEnviando(true);
+  async function enviarBancoIndividual(banco: any) {
+    if (!envio || enviandoBancoId) return;
+    setEnviandoBancoId(banco.banco_id);
     try {
       const res = await criar({
-        data: { simulacao_id: envio.id, banco_id: bancoSelecionado },
+        data: { simulacao_id: envio.id, banco_id: banco.banco_id },
       });
-      toast.success(`Proposta ${res.numero_proposta} criada.`);
-      setEnvio(null);
-      router.navigate({
-        to: "/operacional/propostas/$id",
-        params: { id: res.proposta_id },
-        search: { complementar: 1 },
-      });
+      toast.success(`Proposta ${res.numero_proposta} criada para ${banco.nome_banco}.`);
+      setPropostasCriadas((prev) => [
+        ...prev,
+        {
+          banco_id: banco.banco_id,
+          nome_banco: banco.nome_banco,
+          proposta_id: res.proposta_id,
+          numero: res.numero_proposta,
+        },
+      ]);
+      queryClient.invalidateQueries({ queryKey: ["simulacoes"] });
+      queryClient.invalidateQueries({ queryKey: ["propostas"] });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Não foi possível gerar a proposta.");
     } finally {
-      setEnviando(false);
+      setEnviandoBancoId(null);
     }
   }
 
@@ -835,8 +842,8 @@ function Pagina() {
           <DialogHeader>
             <DialogTitle>Enviar proposta</DialogTitle>
             <DialogDescription>
-              Selecione o banco para o qual deseja enviar a proposta{" "}
-              {envio?.numero ? `da simulação ${envio.numero}` : ""}. É permitido um banco por vez.
+              Envie a proposta{" "}
+              {envio?.numero ? `da simulação ${envio.numero}` : ""} para cada banco individualmente.
             </DialogDescription>
           </DialogHeader>
 
@@ -849,23 +856,18 @@ function Pagina() {
               </p>
             ) : (
               envio?.bancos.map((b: any) => {
-                const marcado = bancoSelecionado === b.banco_id;
+                const criada = propostasCriadas.find((p) => p.banco_id === b.banco_id);
+                const esteEnviando = enviandoBancoId === b.banco_id;
                 const cor = corDoBanco(b.nome_banco);
                 return (
-                  <label
+                  <div
                     key={b.banco_id}
-                    style={marcado ? { borderColor: cor } : undefined}
+                    style={criada ? { borderColor: cor } : undefined}
                     className={cn(
-                      "flex cursor-pointer items-center gap-3 rounded-lg border bg-card p-3 transition-colors",
-                      marcado ? "border-2" : "border-border hover:bg-accent",
+                      "flex items-center gap-3 rounded-lg border bg-card p-3 transition-colors",
+                      criada ? "border-2" : "border-border",
                     )}
                   >
-                    <Checkbox
-                      checked={marcado}
-                      onCheckedChange={(v) =>
-                        setBancoSelecionado(v ? b.banco_id : null)
-                      }
-                    />
                     <BancoLogo nome={b.nome_banco} size="lg" className="shrink-0" />
                     <span className="min-w-0 flex-1">
                       <span className="flex items-center gap-1.5">
@@ -895,18 +897,44 @@ function Pagina() {
                         </span>
                       )}
                     </span>
-                  </label>
+                    {criada ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setEnvio(null);
+                          router.navigate({
+                            to: "/operacional/propostas/$id",
+                            params: { id: criada.proposta_id },
+                            search: { complementar: 1 },
+                          });
+                        }}
+                      >
+                        Abrir {criada.numero}
+                      </Button>
+                    ) : (
+                      <Button
+                        size="sm"
+                        onClick={() => enviarBancoIndividual(b)}
+                        disabled={!!enviandoBancoId}
+                      >
+                        <Send className="mr-1.5 h-3.5 w-3.5" />
+                        {esteEnviando ? "Enviando…" : "Enviar"}
+                      </Button>
+                    )}
+                  </div>
                 );
               })
             )}
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEnvio(null)} disabled={enviando}>
-              Cancelar
-            </Button>
-            <Button onClick={confirmarEnvio} disabled={!bancoSelecionado || enviando}>
-              {enviando ? "Enviando…" : "Enviar proposta"}
+            <Button
+              variant="outline"
+              onClick={() => setEnvio(null)}
+              disabled={!!enviandoBancoId}
+            >
+              Fechar
             </Button>
           </DialogFooter>
         </DialogContent>
