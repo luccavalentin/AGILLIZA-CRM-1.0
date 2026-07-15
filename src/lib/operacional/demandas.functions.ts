@@ -624,6 +624,9 @@ export const editarDemanda = createServerFn({ method: "POST" })
         descricao: z.string().optional().nullable(),
         prioridade: z.enum(["p1", "p2", "p3"]),
         sla_horas: z.number().positive().max(2000).optional(),
+        cliente_id: z.string().uuid().nullable().optional(),
+        proposta_id: z.string().uuid().nullable().optional(),
+        simulacao_id: z.string().uuid().nullable().optional(),
       })
       .parse(d),
   )
@@ -639,6 +642,9 @@ export const editarDemanda = createServerFn({ method: "POST" })
       descricao: data.descricao ?? null,
       prioridade: data.prioridade,
     };
+    if (data.cliente_id !== undefined) patch.cliente_id = data.cliente_id;
+    if (data.proposta_id !== undefined) patch.proposta_id = data.proposta_id;
+    if (data.simulacao_id !== undefined) patch.simulacao_id = data.simulacao_id;
 
     // Reconfiguração do SLA: recalcula o prazo em horas úteis.
     if (typeof data.sla_horas === "number") {
