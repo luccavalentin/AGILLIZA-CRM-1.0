@@ -25,6 +25,8 @@ import {
   escalarDemanda,
   excluirDemanda,
 } from "@/lib/operacional/demandas.functions";
+import { listarColegas, buscarClientesOpcoes } from "@/lib/operacional/shared.functions";
+import { listarParceiros } from "@/lib/crm/parceiros.functions";
 import { NovaDemandaDialog } from "@/components/operacional/nova-demanda-dialog";
 import { statusDemanda, type Prioridade } from "@/components/operacional/status";
 import { OpAvatar } from "@/components/operacional/ui";
@@ -44,6 +46,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/operacional/demandas")({
