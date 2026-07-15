@@ -1088,27 +1088,55 @@ function Pagina() {
                   />
                 </div>
               )}
-              <button
-                type="button"
-                onClick={() => navigate({ to: "/operacional/tarefas" })}
-                className="flex flex-col items-start gap-1 rounded-xl border border-border/60 bg-background p-3 text-left transition-colors hover:border-primary/40 hover:bg-primary/[0.04]"
-              >
-                <ListChecks className="h-4 w-4 text-primary" />
-                <span className="text-xs font-medium text-foreground">Criar tarefa</span>
-              </button>
-              <button
-                type="button"
-                onClick={async () => {
-                  if (!perm?.pode_mover_status) return;
-                  await moverFn({ data: { id, status: "aguardando" } });
-                  invalidar();
-                  toast.success("Demanda escalonada.");
-                }}
-                className="flex flex-col items-start gap-1 rounded-xl border border-border/60 bg-background p-3 text-left transition-colors hover:border-primary/40 hover:bg-primary/[0.04]"
-              >
-                <ArrowUpRight className="h-4 w-4 text-primary" />
-                <span className="text-xs font-medium text-foreground">Escalonar</span>
-              </button>
+              <NovaTarefaDialog
+                onCriada={invalidar}
+                clientePreSelecionado={d.cliente_id ?? undefined}
+                trigger={
+                  <button
+                    type="button"
+                    className="flex flex-col items-start gap-1 rounded-xl border border-border/60 bg-background p-3 text-left transition-colors hover:border-primary/40 hover:bg-primary/[0.04]"
+                  >
+                    <ListChecks className="h-4 w-4 text-primary" />
+                    <span className="text-xs font-medium text-foreground">Criar tarefa</span>
+                  </button>
+                }
+              />
+              {perm?.pode_editar && d.prioridade !== "p1" && (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const nova = d.prioridade === "p3" ? "p2" : "p1";
+                    try {
+                      await editarFn({
+                        data: {
+                          id: d.id,
+                          titulo: d.titulo,
+                          descricao: d.descricao ?? null,
+                          prioridade: nova,
+                        },
+                      });
+                      invalidar();
+                      toast.success(
+                        `Prioridade elevada para ${nova.toUpperCase()}.`,
+                      );
+                    } catch (e) {
+                      toast.error(
+                        e instanceof Error ? e.message : "Falha ao escalonar.",
+                      );
+                    }
+                  }}
+                  className="flex flex-col items-start gap-1 rounded-xl border border-border/60 bg-background p-3 text-left transition-colors hover:border-primary/40 hover:bg-primary/[0.04]"
+                >
+                  <ArrowUpRight className="h-4 w-4 text-primary" />
+                  <span className="text-xs font-medium text-foreground">
+                    Escalonar prioridade
+                  </span>
+                  <span className="text-[10px] text-muted-foreground">
+                    {d.prioridade.toUpperCase()} →{" "}
+                    {(d.prioridade === "p3" ? "p2" : "p1").toUpperCase()}
+                  </span>
+                </button>
+              )}
             </div>
           </div>
 
