@@ -26,7 +26,8 @@ import {
   type DemandaStatus,
 } from "@/lib/operacional/demandas.functions";
 import { TransferirDialog } from "@/components/operacional/transferir-dialog";
-import { statusDemanda, PRIORIDADE } from "@/components/operacional/status";
+import { EditarDemandaDialog } from "@/components/operacional/editar-demanda-dialog";
+import { statusDemanda } from "@/components/operacional/status";
 import { PriorityChip, OpAvatar } from "@/components/operacional/ui";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
