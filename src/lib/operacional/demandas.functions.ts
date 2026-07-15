@@ -98,13 +98,11 @@ export const listarDemandas = createServerFn({ method: "GET" })
     let query = supabase
       .from("demandas")
       .select(
-        "id, numero, tipo, titulo, status, prioridade, cliente_id, responsavel_id, prazo_sla, sla_inicio, concluida_em, escalonada, created_at, clientes(nome)",
+        "id, numero, tipo, titulo, status, prioridade, cliente_id, responsavel_id, prazo_sla, sla_inicio, concluida_em, escalonada, created_at, clientes(nome, criador_id)",
       )
       .order("created_at", { ascending: false })
       .limit(300);
     if (data.escopo === "minhas") {
-      // "Minhas" = demandas sob minha responsabilidade atual.
-      // Ao transferir, a demanda sai da caixa do responsável anterior.
       query = query.eq("responsavel_id", userId);
     }
     if (data.status) query = query.eq("status", data.status as any);
@@ -112,27 +110,63 @@ export const listarDemandas = createServerFn({ method: "GET" })
     const { data: itens, error } = await query;
     if (error) throw new Error(error.message);
     const rows = (itens ?? []) as any[];
-    const nomes = await nomesPorId(
-      supabase,
-      rows.map((r) => r.responsavel_id),
-    );
-    return rows.map((r) => ({
-      id: r.id,
-      numero: r.numero,
-      tipo: r.tipo,
-      titulo: r.titulo,
-      status: r.status,
-      prioridade: r.prioridade,
-      cliente_id: r.cliente_id,
-      nome_cliente: r.clientes?.nome ?? null,
-      responsavel_id: r.responsavel_id,
-      nome_responsavel: r.responsavel_id ? (nomes.get(r.responsavel_id) ?? null) : null,
-      prazo_sla: r.prazo_sla,
-      sla_inicio: r.sla_inicio,
-      concluida_em: r.concluida_em ?? null,
-      escalonada: r.escalonada,
-      created_at: r.created_at,
-    }));
+
+    // Vínculos (corretor / imobiliária) por cliente.
+    const clienteIds = [...new Set(rows.map((r) => r.cliente_id).filter(Boolean) as string[])];
+    const corretorPorCliente = new Map<string, string>();
+    const imobiliariaPorCliente = new Map<string, string>();
+    if (clienteIds.length > 0) {
+      const { data: vinculos } = await supabase
+        .from("cliente_parceiros")
+        .select("cliente_id, parceiro_id, tipo_vinculo")
+        .in("cliente_id", clienteIds);
+      (vinculos ?? []).forEach((v: any) => {
+        if (v.tipo_vinculo === "corretor" && !corretorPorCliente.has(v.cliente_id)) {
+          corretorPorCliente.set(v.cliente_id, v.parceiro_id);
+        }
+        if (v.tipo_vinculo === "imobiliaria" && !imobiliariaPorCliente.has(v.cliente_id)) {
+          imobiliariaPorCliente.set(v.cliente_id, v.parceiro_id);
+        }
+      });
+    }
+
+    const idsPerfil = [
+      ...rows.map((r) => r.responsavel_id),
+      ...rows.map((r) => r.clientes?.criador_id),
+      ...corretorPorCliente.values(),
+      ...imobiliariaPorCliente.values(),
+    ];
+    const nomes = await nomesPorId(supabase, idsPerfil);
+    const nm = (id: string | null | undefined) => (id ? (nomes.get(id) ?? null) : null);
+
+    return rows.map((r) => {
+      const analistaId = r.clientes?.criador_id ?? null;
+      const corretorId = r.cliente_id ? (corretorPorCliente.get(r.cliente_id) ?? null) : null;
+      const imobiliariaId = r.cliente_id ? (imobiliariaPorCliente.get(r.cliente_id) ?? null) : null;
+      return {
+        id: r.id,
+        numero: r.numero,
+        tipo: r.tipo,
+        titulo: r.titulo,
+        status: r.status,
+        prioridade: r.prioridade,
+        cliente_id: r.cliente_id,
+        nome_cliente: r.clientes?.nome ?? null,
+        responsavel_id: r.responsavel_id,
+        nome_responsavel: nm(r.responsavel_id),
+        analista_id: analistaId,
+        nome_analista: nm(analistaId),
+        corretor_id: corretorId,
+        nome_corretor: nm(corretorId),
+        imobiliaria_id: imobiliariaId,
+        nome_imobiliaria: nm(imobiliariaId),
+        prazo_sla: r.prazo_sla,
+        sla_inicio: r.sla_inicio,
+        concluida_em: r.concluida_em ?? null,
+        escalonada: r.escalonada,
+        created_at: r.created_at,
+      };
+    });
   });
 
 export const obterDemanda = createServerFn({ method: "GET" })
