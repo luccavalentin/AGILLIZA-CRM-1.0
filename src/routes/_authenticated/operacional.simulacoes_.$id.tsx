@@ -1,5 +1,5 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
-import { useEffect, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useState, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ArrowLeft, RefreshCw, Copy, Download, ChevronDown, Pencil, Trash2, Calculator, Home, Landmark, UserRound, History, CheckCircle2, XCircle, Send, Plus, CircleDot } from "lucide-react";
@@ -207,9 +207,25 @@ function Pagina() {
     .sort((a: any, b: any) => (a.valor_parcela ?? 0) - (b.valor_parcela ?? 0));
   const rendaInformada =
     (Number(s.renda_total) || 0) + (s.compoe_renda ? Number(s.renda_conjuge) || 0 : 0);
+  const bancosSac = bancos.filter((b: any) => (b._sistema ?? "SAC") === "SAC");
+  const bancosPrice = bancos.filter((b: any) => b._sistema === "PRICE");
+  const isMista = bancosSac.length > 0 && bancosPrice.length > 0;
   const rendaBancos = rendaMinimaPelosBancos(bancos, rendaInformada || null);
-  // Só destaca "Melhor taxa" quando há mais de um banco para comparar.
-  const melhorId = bancosComTaxa.length > 1 ? bancosComTaxa[0]?.id : undefined;
+  const rendaSac = isMista ? rendaMinimaPelosBancos(bancosSac, rendaInformada || null) : null;
+  const rendaPrice = isMista ? rendaMinimaPelosBancos(bancosPrice, rendaInformada || null) : null;
+  // Só destaca "Melhor taxa" quando há mais de um banco para comparar (por sistema).
+  const melhorSacId = bancosSac.filter((b: any) => b.status_banco === "simulada" && b.valor_parcela != null)
+    .sort((a: any, b: any) => (a.valor_parcela ?? 0) - (b.valor_parcela ?? 0))[0]?.id;
+  const melhorPriceId = bancosPrice.filter((b: any) => b.status_banco === "simulada" && b.valor_parcela != null)
+    .sort((a: any, b: any) => (a.valor_parcela ?? 0) - (b.valor_parcela ?? 0))[0]?.id;
+  const melhorId = isMista ? undefined : (bancosComTaxa.length > 1 ? bancosComTaxa[0]?.id : undefined);
+  const bancosExibicao: any[] = isMista ? [...bancosSac, ...bancosPrice] : bancos;
+  const ehMelhor = (b: any) => {
+    if (!isMista) return b.id === melhorId;
+    return (b._sistema === "PRICE" ? melhorPriceId : melhorSacId) === b.id;
+  };
+
+
 
   return (
     <div className="mx-auto w-full max-w-[1600px] space-y-5 p-4 md:p-6">
@@ -341,14 +357,36 @@ function Pagina() {
                   rotulo="Valor financiado"
                   valor={formatBRL(s.valor_financiamento)}
                 />
-                {rendaBancos && (
-                  <ResumoCelula
-                    rotulo="Renda exigida"
-                    valor={formatBRL(rendaBancos.rendaMinima)}
-                    detalhe={rendaBancos.bancoNome ?? "maior retorno bancário"}
-                    destaque
-                  />
+                {isMista ? (
+                  <>
+                    {rendaSac && (
+                      <ResumoCelula
+                        rotulo="Renda exigida — SAC"
+                        valor={formatBRL(rendaSac.rendaMinima)}
+                        detalhe={rendaSac.bancoNome ?? "maior retorno bancário"}
+                        destaque
+                      />
+                    )}
+                    {rendaPrice && (
+                      <ResumoCelula
+                        rotulo="Renda exigida — PRICE"
+                        valor={formatBRL(rendaPrice.rendaMinima)}
+                        detalhe={rendaPrice.bancoNome ?? "maior retorno bancário"}
+                        destaque
+                      />
+                    )}
+                  </>
+                ) : (
+                  rendaBancos && (
+                    <ResumoCelula
+                      rotulo="Renda exigida"
+                      valor={formatBRL(rendaBancos.rendaMinima)}
+                      detalhe={rendaBancos.bancoNome ?? "maior retorno bancário"}
+                      destaque
+                    />
+                  )
                 )}
+
                 <ResumoCelula
                   rotulo="Financiar despesas"
                   valor={s.fg_financiar_despesas ? "Sim" : "Não"}
@@ -374,8 +412,21 @@ function Pagina() {
 
               {/* Mobile: cartões */}
               <div className="grid gap-3 lg:hidden">
-                {bancos.map((b: any) => (
-                  <div key={b.id} className="rounded-lg border border-border p-4">
+                {bancosExibicao.map((b: any, idx: number) => {
+                  const primeiroDoGrupo =
+                    isMista &&
+                    (idx === 0 || bancosExibicao[idx - 1]._sistema !== b._sistema);
+                  return (
+                    <div key={b.id}>
+                      {primeiroDoGrupo && (
+                        <div className="mb-2 flex items-center gap-2">
+                          <ToneBadge tone={b._sistema === "SAC" ? "info" : "warning"}>
+                            Tabela {b._sistema}
+                          </ToneBadge>
+                          <div className="h-px flex-1 bg-border" />
+                        </div>
+                      )}
+                      <div className="rounded-lg border border-border p-4">
                     <div className="flex items-start gap-3">
                       <BancoLogo nome={b.nome_banco} size="lg" className="mt-0.5" />
                       <div className="min-w-0 flex-1">
@@ -386,7 +437,7 @@ function Pagina() {
                           >
                             {b.nome_banco}
                           </span>
-                          {b.id === melhorId && (
+                          {ehMelhor(b) && (
                             <ToneBadge tone="success">Melhor taxa</ToneBadge>
                           )}
                         </div>
@@ -460,9 +511,12 @@ function Pagina() {
                         </Button>
                       )}
                     </div>
-                  </div>
-                ))}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
+
 
               {/* Desktop: tabela */}
               <div className="hidden overflow-x-auto rounded-xl border border-border/60 shadow-sm lg:block">
@@ -497,15 +551,37 @@ function Pagina() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {bancos.map((b: any) => (
+                    {bancosExibicao.map((b: any, idx: number) => {
+                      const primeiroDoGrupo =
+                        isMista &&
+                        (idx === 0 || bancosExibicao[idx - 1]._sistema !== b._sistema);
+                      const melhor = ehMelhor(b);
+                      return (
+                        <Fragment key={b.id}>
+                          {primeiroDoGrupo && (
+                            <TableRow className="border-border/60 bg-muted/40 hover:bg-muted/40">
+                              <TableCell colSpan={9} className="py-2">
+                                <div className="flex items-center gap-2">
+                                  <ToneBadge tone={b._sistema === "SAC" ? "info" : "warning"}>
+                                    Tabela {b._sistema}
+                                  </ToneBadge>
+                                  <span className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                                    {b._sistema === "SAC"
+                                      ? "Amortização constante · parcelas decrescentes"
+                                      : "Parcelas fixas · juros compostos"}
+                                  </span>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          )}
                       <TableRow
-                        key={b.id}
                         className={cn(
                           "border-border/50 transition-colors odd:bg-card even:bg-muted/20 hover:bg-primary/5",
-                          b.id === melhorId &&
+                          melhor &&
                             "bg-success/5 even:bg-success/5 hover:bg-success/10 [box-shadow:inset_3px_0_0_var(--success)]",
                         )}
                       >
+
                         <TableCell className="py-3 text-sm font-semibold">
                           <div className="flex items-center gap-2.5">
                             <BancoLogo nome={b.nome_banco} size="lg" />
@@ -578,7 +654,10 @@ function Pagina() {
                           </div>
                         </TableCell>
                       </TableRow>
-                    ))}
+                        </Fragment>
+                      );
+                    })}
+
                   </TableBody>
                 </Table>
               </div>
