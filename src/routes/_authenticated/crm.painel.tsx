@@ -210,6 +210,10 @@ function Pagina() {
   const { data: contratos, isLoading: carregandoContratos } = useQuery({
     queryKey: ["crm-contratos-emitidos"],
     queryFn: () => listarContratos(),
+    staleTime: 2 * 60_000,
+    gcTime: 10 * 60_000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
   const totalArquivados = contratos?.length ?? 0;
 
