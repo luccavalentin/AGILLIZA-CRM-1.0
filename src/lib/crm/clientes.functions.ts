@@ -627,11 +627,20 @@ export const listarPainel = createServerFn({ method: "GET" })
       ((parceirosVinc.data as { cliente_id: string }[] | null) ?? []).map((r) => r.cliente_id),
     );
 
-    // Clientes visíveis (RLS aplica). Em "Minhas": responsável OU criador OU eu como parceiro.
+    // Uma única query: cliente + responsável + analista + pipeline + propostas + simulações + parceiros.
+    // Reduz round-trips do Worker→Supabase de ~4 para 1 no caminho crítico.
+    const sel = (s: string): string => s;
     let q = supabase
       .from("clientes")
       .select(
-        "id, nome, numero_cliente, responsavel_id, criador_id, responsavel:profiles!clientes_responsavel_id_fkey(nome), vistoria_agendada_em, vistoria_concluida_em, contrato_emitido_em, cliente_pipeline(ultima_atualizacao_em, pipeline_stages(codigo))",
+        sel(`id, nome, numero_cliente, responsavel_id, criador_id,
+             vistoria_agendada_em, vistoria_concluida_em, contrato_emitido_em,
+             responsavel:profiles!clientes_responsavel_id_fkey(nome),
+             analista:profiles!clientes_criador_id_fkey(nome),
+             cliente_pipeline(ultima_atualizacao_em, pipeline_stages(codigo)),
+             propostas!propostas_cliente_id_fkey(id, numero_proposta, status, nome_banco, created_at, deleted_at),
+             simulacoes!simulacoes_cliente_id_fkey(id, numero_simulacao, status, created_at, deleted_at),
+             cliente_parceiros!cliente_parceiros_cliente_id_fkey(tipo_vinculo, parceiro:profiles!cliente_parceiros_parceiro_id_fkey(nome))`),
       )
       .eq("ativo", true)
       .is("contrato_arquivado_em", null);
@@ -645,7 +654,7 @@ export const listarPainel = createServerFn({ method: "GET" })
       }
       q = q.or(partes.join(","));
     }
-    const { data: rows, error: e2 } = await q.order("nome");
+    const { data: rows, error: e2 } = await q.order("nome").returns<any[]>();
     if (e2) throw e2;
 
     const filtradas = (rows ?? []).filter((r: any) => {
@@ -657,94 +666,9 @@ export const listarPainel = createServerFn({ method: "GET" })
       if (ate && t > ate) return false;
       return true;
     });
-    const idsClientes = filtradas.map((r: any) => r.id);
 
-    // Propostas + Simulações + Vínculos parceiro em paralelo.
-    const [propRes, simRes, vincRes] = await Promise.all([
-      idsClientes.length
-        ? supabase
-            .from("propostas")
-            .select("id, cliente_id, numero_proposta, status, nome_banco, created_at")
-            .in("cliente_id", idsClientes)
-            .is("deleted_at", null)
-            .order("created_at", { ascending: false })
-        : Promise.resolve({ data: [] as any[] }),
-      idsClientes.length
-        ? supabase
-            .from("simulacoes")
-            .select("id, cliente_id, numero_simulacao, status, created_at")
-            .in("cliente_id", idsClientes)
-            .is("deleted_at", null)
-            .order("created_at", { ascending: false })
-        : Promise.resolve({ data: [] as any[] }),
-      idsClientes.length
-        ? supabase
-            .from("cliente_parceiros")
-            .select("cliente_id, parceiro_id, tipo_vinculo")
-            .in("cliente_id", idsClientes)
-        : Promise.resolve({ data: [] as any[] }),
-    ]);
-
-    const propostaPorCliente = new Map<
-      string,
-      { id: string; numero_proposta: string | null; status: string | null; nome_banco: string | null }
-    >();
-    const totalPropCli = new Map<string, number>();
-    for (const p of (propRes.data as any[]) ?? []) {
-      const cid = p.cliente_id as string | null;
-      if (!cid) continue;
-      totalPropCli.set(cid, (totalPropCli.get(cid) ?? 0) + 1);
-      if (!propostaPorCliente.has(cid)) {
-        propostaPorCliente.set(cid, {
-          id: p.id,
-          numero_proposta: p.numero_proposta ?? null,
-          status: p.status ?? null,
-          nome_banco: p.nome_banco ?? null,
-        });
-      }
-    }
-
-    const simPorCliente = new Map<
-      string,
-      { id: string; numero_simulacao: string | null; status: string | null }
-    >();
-    const totalSimCli = new Map<string, number>();
-    for (const s of (simRes.data as any[]) ?? []) {
-      const cid = s.cliente_id as string | null;
-      if (!cid) continue;
-      totalSimCli.set(cid, (totalSimCli.get(cid) ?? 0) + 1);
-      if (!simPorCliente.has(cid)) {
-        simPorCliente.set(cid, {
-          id: s.id,
-          numero_simulacao: s.numero_simulacao ?? null,
-          status: s.status ?? null,
-        });
-      }
-    }
-
-    const imobPorCliente = new Map<string, string>();
-    const corrPorCliente = new Map<string, string>();
-    for (const v of (vincRes.data as any[]) ?? []) {
-      const cid = v.cliente_id as string;
-      const pid = v.parceiro_id as string | null;
-      const tipo = v.tipo_vinculo as string;
-      if (!pid) continue;
-      if (tipo === "imobiliaria" && !imobPorCliente.has(cid)) imobPorCliente.set(cid, pid);
-      if (tipo === "corretor" && !corrPorCliente.has(cid)) corrPorCliente.set(cid, pid);
-    }
-
-    const perfilIds = new Set<string>();
-    for (const r of filtradas as any[]) if (r.criador_id) perfilIds.add(r.criador_id);
-    for (const id of imobPorCliente.values()) perfilIds.add(id);
-    for (const id of corrPorCliente.values()) perfilIds.add(id);
-    const nomes = new Map<string, string>();
-    if (perfilIds.size > 0) {
-      const { data: perfis } = await supabase
-        .from("profiles")
-        .select("id, nome")
-        .in("id", Array.from(perfilIds));
-      for (const p of perfis ?? []) nomes.set((p as any).id, (p as any).nome ?? "—");
-    }
+    const cmpDesc = (a: string | null, b: string | null) =>
+      (b ?? "").localeCompare(a ?? "");
 
     return stages.map((s) => ({
       codigo: s.codigo,
@@ -753,10 +677,17 @@ export const listarPainel = createServerFn({ method: "GET" })
       clientes: filtradas
         .filter((r: any) => r.cliente_pipeline?.pipeline_stages?.codigo === s.codigo)
         .map((r: any) => {
-          const imobId = imobPorCliente.get(r.id) ?? null;
-          const corrId = corrPorCliente.get(r.id) ?? null;
-          const prop = propostaPorCliente.get(r.id);
-          const sim = simPorCliente.get(r.id);
+          const propostas = ((r.propostas ?? []) as any[])
+            .filter((p) => p.deleted_at == null)
+            .sort((a, b) => cmpDesc(a.created_at, b.created_at));
+          const simulacoes = ((r.simulacoes ?? []) as any[])
+            .filter((sm) => sm.deleted_at == null)
+            .sort((a, b) => cmpDesc(a.created_at, b.created_at));
+          const prop = propostas[0] ?? null;
+          const sim = simulacoes[0] ?? null;
+          const parceiros = (r.cliente_parceiros ?? []) as any[];
+          const imob = parceiros.find((v) => v.tipo_vinculo === "imobiliaria");
+          const corr = parceiros.find((v) => v.tipo_vinculo === "corretor");
           return {
             id: r.id,
             nome: r.nome,
@@ -772,12 +703,12 @@ export const listarPainel = createServerFn({ method: "GET" })
             numero_simulacao: sim?.numero_simulacao ?? null,
             simulacao_id: sim?.id ?? null,
             simulacao_status: sim?.status ?? null,
-            total_propostas: totalPropCli.get(r.id) ?? 0,
-            total_simulacoes: totalSimCli.get(r.id) ?? 0,
+            total_propostas: propostas.length,
+            total_simulacoes: simulacoes.length,
             responsavel_nome: r.responsavel?.nome ?? null,
-            imobiliaria_nome: imobId ? (nomes.get(imobId) ?? null) : null,
-            corretor_nome: corrId ? (nomes.get(corrId) ?? null) : null,
-            analista_nome: r.criador_id ? (nomes.get(r.criador_id) ?? null) : null,
+            imobiliaria_nome: imob?.parceiro?.nome ?? null,
+            corretor_nome: corr?.parceiro?.nome ?? null,
+            analista_nome: r.analista?.nome ?? null,
           };
         }),
     }));

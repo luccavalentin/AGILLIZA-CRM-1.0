@@ -210,6 +210,10 @@ function Pagina() {
   const { data: contratos, isLoading: carregandoContratos } = useQuery({
     queryKey: ["crm-contratos-emitidos"],
     queryFn: () => listarContratos(),
+    staleTime: 2 * 60_000,
+    gcTime: 10 * 60_000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
   const totalArquivados = contratos?.length ?? 0;
 
@@ -218,8 +222,11 @@ function Pagina() {
     queryKey,
     queryFn: () =>
       listar({ data: { desde: desde || undefined, ate: ate || undefined, escopo } }),
-    staleTime: 30_000,
+    staleTime: 2 * 60_000,
+    gcTime: 10 * 60_000,
     refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
   });
 
   // Debounce da busca de clientes para não disparar servidor a cada tecla.
@@ -471,11 +478,17 @@ function Pagina() {
     queryKey: ["equipe-interna"],
     queryFn: () => listarResponsaveisEquipe(),
     staleTime: 5 * 60_000,
+    gcTime: 30 * 60_000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
   const { data: parceirosCadastrados } = useQuery({
     queryKey: ["parceiros-cadastrados"],
     queryFn: () => listarParceiros(),
     staleTime: 5 * 60_000,
+    gcTime: 30 * 60_000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
 
   function opcoesDe(campo: "responsavel_nome" | "analista_nome" | "corretor_nome" | "imobiliaria_nome"): string[] {
