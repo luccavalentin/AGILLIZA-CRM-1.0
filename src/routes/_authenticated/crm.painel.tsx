@@ -963,7 +963,6 @@ function Pagina() {
                                 <div className="mt-2 flex flex-wrap items-center gap-1.5 border-t border-border/60 pt-2">
                                   <Link
                                     to="/operacional/simulacoes"
-                                    search={{ q: c.numero_simulacao ?? "" }}
                                     onClick={(e) => e.stopPropagation()}
                                     title={`Ver simulação ${c.numero_simulacao}`}
                                     className="inline-flex min-w-0 items-center gap-1.5 rounded-full bg-primary/[0.07] px-2 py-0.5 text-[11px] font-medium text-primary ring-1 ring-inset ring-primary/15 transition-colors hover:bg-primary/15"
