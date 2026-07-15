@@ -484,6 +484,16 @@ export function ResultadoInlineAmbos({ simulacaoIdSac, simulacaoIdPrice, onFecha
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-1">
                             <DetalheBancoDialog banco={b} simulacao={l.simulacao} />
+                            {b.status_banco === "simulada" && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => baixarPdfLinha(l.simulacao, b)}
+                                title="Baixar PDF deste banco"
+                              >
+                                <Download className="mr-1 h-4 w-4" /> PDF
+                              </Button>
+                            )}
                             {b.status_banco === "erro" ? (
                               <Button
                                 size="sm"
