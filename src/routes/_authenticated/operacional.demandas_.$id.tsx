@@ -189,6 +189,7 @@ function Pagina() {
   const removerAnexoFn = useServerFn(removerAnexoDemanda);
   const urlAnexoFn = useServerFn(urlAnexoDemanda);
   const excluirFn = useServerFn(excluirDemanda);
+  const editarFn = useServerFn(editarDemanda);
   const [excluindo, setExcluindo] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const chatFileRef = useRef<HTMLInputElement>(null);
