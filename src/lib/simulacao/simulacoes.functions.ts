@@ -956,21 +956,14 @@ export const inverterTitularSimulacao = createServerFn({ method: "POST" })
           }) => {
             const nome = (params.nome || "").trim();
             const documento = (params.documento || "").replace(/\D+/g, "");
-            if (!nome || !documento || !params.dataNascimento) return null;
+            if (!nome || !documento) return null;
             const campos = {
               nome,
               email: (params.email || "").toLowerCase() || null,
               telefone_celular: params.celular || null,
               data_nascimento: params.dataNascimento,
               renda_total_declarada: params.renda ?? 0,
-              estado_civil: (params.estadoCivil === "uniao_estavel"
-                ? "uniao_estavel"
-                : "casado") as
-                | "solteiro"
-                | "casado"
-                | "divorciado"
-                | "viuvo"
-                | "uniao_estavel",
+              estado_civil: mapEstadoCivilEnum(params.estadoCivil) ?? "casado",
               conjuge_nome: params.conjugeNome || null,
               conjuge_cpf: params.conjugeCpf
                 ? params.conjugeCpf.replace(/\D+/g, "")
@@ -987,10 +980,16 @@ export const inverterTitularSimulacao = createServerFn({ method: "POST" })
               .eq("documento", documento)
               .maybeSingle();
             if (existente?.id) {
-              await supabaseAdmin.from("clientes").update(campos).eq("id", existente.id);
+              const { error: errUpdate } = await supabaseAdmin
+                .from("clientes")
+                .update(campos)
+                .eq("id", existente.id);
+              if (errUpdate) {
+                throw new Error(`Falha ao atualizar cliente no CRM: ${errUpdate.message}`);
+              }
               return existente.id as string;
             }
-            const { data: novo } = await supabaseAdmin
+            const { data: novo, error: errInsert } = await supabaseAdmin
               .from("clientes")
               .insert({
                 correspondente_id: correspondenteId,
@@ -1004,6 +1003,9 @@ export const inverterTitularSimulacao = createServerFn({ method: "POST" })
               })
               .select("id")
               .maybeSingle();
+            if (errInsert) {
+              throw new Error(`Falha ao gravar cliente no CRM: ${errInsert.message}`);
+            }
             return (novo?.id as string | undefined) ?? null;
           };
 
@@ -1085,9 +1087,10 @@ export const inverterTitularSimulacao = createServerFn({ method: "POST" })
         }
       }
     } catch (e) {
-      // Não bloqueia a inversão da simulação se o cadastro no CRM falhar;
-      // apenas registra em log para investigação.
       console.error("[inverterTitularSimulacao] Falha ao sincronizar clientes:", e);
+      throw e instanceof Error
+        ? e
+        : new Error("Titular invertido, mas não foi possível cadastrar o cônjuge no CRM.");
     }
 
     return { ok: true };
