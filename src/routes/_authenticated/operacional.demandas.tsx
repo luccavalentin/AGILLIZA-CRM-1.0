@@ -315,20 +315,58 @@ function Pagina() {
 
   const todos = data ?? [];
 
-  function opcoesUnicas(getId: (d: (typeof todos)[number]) => string | null, getNome: (d: (typeof todos)[number]) => string | null) {
-    const m = new Map<string, string>();
-    todos.forEach((d) => {
-      const id = getId(d);
-      const nome = getNome(d);
-      if (id && nome && !m.has(id)) m.set(id, nome);
-    });
-    return [...m.entries()].sort((a, b) => a[1].localeCompare(b[1]));
-  }
-  const responsaveis = useMemo(() => opcoesUnicas((d) => d.responsavel_id, (d) => d.nome_responsavel), [todos]);
-  const clientes = useMemo(() => opcoesUnicas((d) => d.cliente_id, (d) => d.nome_cliente), [todos]);
-  const analistas = useMemo(() => opcoesUnicas((d) => d.analista_id, (d) => d.nome_analista), [todos]);
-  const corretores = useMemo(() => opcoesUnicas((d) => d.corretor_id, (d) => d.nome_corretor), [todos]);
-  const imobiliarias = useMemo(() => opcoesUnicas((d) => d.imobiliaria_id, (d) => d.nome_imobiliaria), [todos]);
+  // Listas completas de opções vindas do cadastro (não apenas do que aparece na
+  // grade atual), para que os filtros ofereçam todas as pessoas vinculadas ao
+  // correspondente.
+  const { data: colegasData } = useQuery({
+    queryKey: ["colegas"],
+    queryFn: () => listarColegas(),
+    staleTime: 5 * 60 * 1000,
+  });
+  const { data: clientesData } = useQuery({
+    queryKey: ["clientes-opcoes-demandas"],
+    queryFn: () => buscarClientesOpcoes({ data: {} }),
+    staleTime: 5 * 60 * 1000,
+  });
+  const { data: parceirosData } = useQuery({
+    queryKey: ["parceiros-opcoes-demandas"],
+    queryFn: () => listarParceiros(),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const responsaveis = useMemo<OpcaoId[]>(
+    () =>
+      (colegasData ?? [])
+        .filter((c) => c.nome)
+        .map((c) => ({ id: c.id, label: c.nome as string }))
+        .sort((a, b) => a.label.localeCompare(b.label)),
+    [colegasData],
+  );
+  const analistas = responsaveis; // Analista = criador do cliente (mesma base de perfis)
+  const clientes = useMemo<OpcaoId[]>(
+    () =>
+      (clientesData ?? [])
+        .filter((c) => c.nome)
+        .map((c) => ({ id: c.id, label: c.nome as string }))
+        .sort((a, b) => a.label.localeCompare(b.label)),
+    [clientesData],
+  );
+  const corretores = useMemo<OpcaoId[]>(
+    () =>
+      (parceirosData ?? [])
+        .filter((p) => (p.tipo_pessoa ?? "PF") === "PF" && (p.nome || p.razao_social))
+        .map((p) => ({ id: p.profile_id ?? p.id, label: (p.nome ?? p.razao_social) as string }))
+        .sort((a, b) => a.label.localeCompare(b.label)),
+    [parceirosData],
+  );
+  const imobiliarias = useMemo<OpcaoId[]>(
+    () =>
+      (parceirosData ?? [])
+        .filter((p) => p.tipo_pessoa === "PJ" && (p.razao_social || p.nome))
+        .map((p) => ({ id: p.profile_id ?? p.id, label: (p.razao_social ?? p.nome) as string }))
+        .sort((a, b) => a.label.localeCompare(b.label)),
+    [parceirosData],
+  );
 
   const filtrados = useMemo(() => {
     return todos.filter((d) => {
