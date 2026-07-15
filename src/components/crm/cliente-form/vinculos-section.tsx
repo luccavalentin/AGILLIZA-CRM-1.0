@@ -1,4 +1,4 @@
-import { Plus, UserPlus, Users, X } from "lucide-react";
+import { Plus, Users, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
