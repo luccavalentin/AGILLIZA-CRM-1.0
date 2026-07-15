@@ -23,7 +23,7 @@ export function GradeCalendario({
   const celulas = montarCelulas(ref);
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-border/70 bg-card shadow-card">
+    <div className="relative overflow-hidden rounded-2xl border border-border/70 bg-border shadow-card">
       <div className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center">
         <img
           src={brandSymbol}
