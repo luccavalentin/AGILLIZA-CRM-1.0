@@ -327,85 +327,93 @@ export function ResultadoInlineAmbos({ simulacaoIdSac, simulacaoIdPrice, onFecha
           <>
             {/* Mobile: cartões */}
             <div className="grid gap-3 lg:hidden">
-              {linhas.map((l) => {
+              {linhas.map((l, idx) => {
                 const b = l.banco;
                 const isMelhor = melhorPorSistema[l.sistema] === b.id;
+                const primeiroDoGrupo = idx === 0 || linhas[idx - 1].sistema !== l.sistema;
                 return (
-                  <div key={`${l.sistema}-${b.id}`} className="rounded-lg border border-border p-4">
-                    <div className="flex items-start gap-3">
-                      <BancoLogo nome={b.nome_banco} size="lg" className="mt-0.5" />
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span
-                            className="truncate font-medium"
-                            style={{ color: corDoBanco(b.nome_banco) }}
-                          >
-                            {b.nome_banco}
-                          </span>
-                          <ToneBadge tone={l.sistema === "SAC" ? "info" : "warning"}>
-                            {l.sistema}
-                          </ToneBadge>
-                          {isMelhor && <ToneBadge tone="success">Melhor taxa</ToneBadge>}
-                        </div>
-                        <div className="mt-1">
-                          <BancoStatusBadge status={b.status_banco} />
+                  <div key={`${l.sistema}-${b.id}`}>
+                    {primeiroDoGrupo && (
+                      <div className="mb-2 flex items-center gap-2">
+                        <ToneBadge tone={l.sistema === "SAC" ? "info" : "warning"}>
+                          Tabela {l.sistema}
+                        </ToneBadge>
+                        <div className="h-px flex-1 bg-border" />
+                      </div>
+                    )}
+                    <div className="rounded-lg border border-border p-4">
+                      <div className="flex items-start gap-3">
+                        <BancoLogo nome={b.nome_banco} size="lg" className="mt-0.5" />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span
+                              className="truncate font-medium"
+                              style={{ color: corDoBanco(b.nome_banco) }}
+                            >
+                              {b.nome_banco}
+                            </span>
+                            {isMelhor && <ToneBadge tone="success">Melhor taxa</ToneBadge>}
+                          </div>
+                          <div className="mt-1">
+                            <BancoStatusBadge status={b.status_banco} />
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    {b.status_banco === "erro" && b.mensagem_banco && (
-                      <p className="mt-2 text-xs text-destructive">{b.mensagem_banco}</p>
-                    )}
-
-                    <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-                      <MobileStat rotulo="Parcela" valor={formatBRL(b.valor_parcela)} />
-                      <MobileStat
-                        rotulo="Taxa a.a."
-                        valor={b.taxa_juros_ano != null ? formatPercent(b.taxa_juros_ano / 100) : "—"}
-                      />
-                      <MobileStat
-                        rotulo="Prazo máx"
-                        valor={b.prazo_pagamento_max ? `${b.prazo_pagamento_max}m` : "—"}
-                      />
-                      <MobileStat rotulo="Financ. máx" valor={formatBRL(b.valor_financiamento_max)} />
-                      <MobileStat rotulo="Total financiado" valor={formatBRL(totalFinanciado(b))} />
-                      <MobileStat rotulo="IOF" valor={formatBRL(b.valor_iof)} />
-                      <MobileStat rotulo="Renda estimada" valor={formatBRL(rendaMinimaDoBanco(b))} />
-                    </dl>
-
-                    <div className="mt-3 flex items-center justify-end gap-2">
-                      <DetalheBancoDialog banco={b} simulacao={l.simulacao} />
-                      {b.status_banco === "simulada" && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => baixarPdfLinha(l.simulacao, b)}
-                          title="Baixar PDF deste banco"
-                        >
-                          <Download className="mr-1 h-4 w-4" /> PDF
-                        </Button>
+                      {b.status_banco === "erro" && b.mensagem_banco && (
+                        <p className="mt-2 text-xs text-destructive">{b.mensagem_banco}</p>
                       )}
-                      {b.status_banco === "erro" ? (
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          disabled={reenviandoBanco !== null}
-                          onClick={() => reenviarBanco(l.simId, b.banco_id)}
-                        >
-                          <RefreshCw className="mr-1 h-4 w-4" />
-                          {reenviandoBanco === b.banco_id ? "Reenviando…" : "Reenviar"}
-                        </Button>
-                      ) : (
-                        <Button
-                          size="sm"
-                          className="bg-gradient-to-b from-primary to-primary/90 shadow-sm"
-                          disabled={b.status_banco !== "simulada" || criandoBanco !== null}
-                          onClick={() => enviarAprovacao(l.simId, b.banco_id)}
-                        >
-                          <Send className="mr-1 h-4 w-4" />
-                          {criandoBanco === b.banco_id ? "Enviando…" : "Enviar Aprovação"}
-                        </Button>
-                      )}
+
+                      <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                        <MobileStat rotulo="Parcela" valor={formatBRL(b.valor_parcela)} />
+                        <MobileStat
+                          rotulo="Taxa a.a."
+                          valor={b.taxa_juros_ano != null ? formatPercent(b.taxa_juros_ano / 100) : "—"}
+                        />
+                        <MobileStat
+                          rotulo="Prazo máx"
+                          valor={b.prazo_pagamento_max ? `${b.prazo_pagamento_max}m` : "—"}
+                        />
+                        <MobileStat rotulo="Financ. máx" valor={formatBRL(b.valor_financiamento_max)} />
+                        <MobileStat rotulo="Total financiado" valor={formatBRL(totalFinanciado(b))} />
+                        <MobileStat rotulo="IOF" valor={formatBRL(b.valor_iof)} />
+                        <MobileStat rotulo="Renda estimada" valor={formatBRL(rendaMinimaDoBanco(b))} />
+                      </dl>
+
+                      <div className="mt-3 flex items-center justify-end gap-2">
+                        <DetalheBancoDialog banco={b} simulacao={l.simulacao} />
+                        {b.status_banco === "simulada" && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => baixarPdfLinha(l.simulacao, b)}
+                            title="Baixar PDF deste banco"
+                          >
+                            <Download className="mr-1 h-4 w-4" /> PDF
+                          </Button>
+                        )}
+                        {b.status_banco === "erro" ? (
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            disabled={reenviandoBanco !== null}
+                            onClick={() => reenviarBanco(l.simId, b.banco_id)}
+                          >
+                            <RefreshCw className="mr-1 h-4 w-4" />
+                            {reenviandoBanco === b.banco_id ? "Reenviando…" : "Reenviar"}
+                          </Button>
+                        ) : (
+                          <Button
+                            size="sm"
+                            className="bg-gradient-to-b from-primary to-primary/90 shadow-sm"
+                            disabled={b.status_banco !== "simulada" || criandoBanco !== null}
+                            onClick={() => enviarAprovacao(l.simId, b.banco_id)}
+                          >
+                            <Send className="mr-1 h-4 w-4" />
+                            {criandoBanco === b.banco_id ? "Enviando…" : "Enviar Aprovação"}
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 );
