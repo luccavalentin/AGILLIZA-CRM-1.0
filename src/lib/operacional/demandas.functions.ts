@@ -36,6 +36,12 @@ export interface DemandaItem {
   nome_cliente: string | null;
   responsavel_id: string | null;
   nome_responsavel: string | null;
+  analista_id: string | null;
+  nome_analista: string | null;
+  corretor_id: string | null;
+  nome_corretor: string | null;
+  imobiliaria_id: string | null;
+  nome_imobiliaria: string | null;
   prazo_sla: string | null;
   sla_inicio: string;
   concluida_em: string | null;
