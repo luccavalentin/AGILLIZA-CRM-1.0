@@ -43,6 +43,10 @@ import { listarColegas } from "@/lib/operacional/shared.functions";
 import { getPanelDados } from "@/lib/relatorios/paineis.functions";
 import { getEscopoRelatorios } from "@/lib/relatorios/reports.functions";
 import { PERIODO_LABEL, type Periodo, type Escopo } from "@/lib/relatorios/shared";
+import {
+  PainelDrilldownDialog,
+  type DrilldownContext,
+} from "@/components/reports/painel-drilldown-dialog";
 
 const PERIODOS: Periodo[] = ["hoje", "7d", "15d", "30d", "mes", "mes_anterior", "ano", "custom"];
 
