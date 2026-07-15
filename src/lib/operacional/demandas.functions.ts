@@ -30,25 +30,26 @@ export interface DemandaItem {
   numero: string | null;
   tipo: string;
   titulo: string;
+  descricao: string | null;
   status: DemandaStatus;
   prioridade: Prioridade;
   cliente_id: string | null;
   nome_cliente: string | null;
+  proposta_id: string | null;
+  numero_proposta: string | null;
+  simulacao_id: string | null;
+  numero_simulacao: string | null;
+  criador_id: string | null;
+  nome_criador: string | null;
   responsavel_id: string | null;
   nome_responsavel: string | null;
-  analista_id: string | null;
-  nome_analista: string | null;
-  corretor_id: string | null;
-  nome_corretor: string | null;
-  imobiliaria_id: string | null;
-  nome_imobiliaria: string | null;
-  comercial_id: string | null;
-  nome_comercial: string | null;
   prazo_sla: string | null;
   sla_inicio: string;
   concluida_em: string | null;
   escalonada: boolean;
   created_at: string;
+  nao_lidas: number;
+  ultima_mensagem_em: string | null;
 }
 
 async function nomesPorId(
