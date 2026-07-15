@@ -37,7 +37,7 @@ export function CelulaDia({
   return (
     <div
       className={cn(
-        "min-h-[92px] bg-card p-1.5",
+        "relative min-h-[92px] bg-card/70 p-1.5 backdrop-blur-[1px]",
         foraMes && "bg-muted/30",
         feriadoOficial && "bg-destructive/5",
       )}
