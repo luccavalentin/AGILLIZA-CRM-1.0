@@ -1,6 +1,8 @@
 import type { FeriadoBR } from "@/lib/feriados-br";
 import { CelulaDia, type TarefaCelula } from "./celula-dia";
 import { DIAS, chaveDia, montarCelulas } from "./utils";
+import brandSymbol from "@/assets/brand/agilliza-symbol-oficial.png";
+
 
 interface GradeCalendarioProps {
   ref: Date;
@@ -21,8 +23,15 @@ export function GradeCalendario({
   const celulas = montarCelulas(ref);
 
   return (
-    <div className="overflow-x-auto rounded-2xl border border-border/70 bg-border shadow-card">
-      <div className="grid min-w-[560px] grid-cols-7 gap-px overflow-hidden">
+    <div className="relative overflow-hidden rounded-2xl border border-border/70 bg-border shadow-card">
+      <img
+        src={brandSymbol}
+        alt=""
+        aria-hidden
+        draggable={false}
+        className="pointer-events-none absolute left-1/2 top-1/2 z-0 w-[38%] max-w-[420px] -translate-x-1/2 -translate-y-1/2 select-none opacity-[0.05] dark:opacity-[0.08]"
+      />
+      <div className="relative z-10 grid min-w-[560px] grid-cols-7 gap-px overflow-x-auto">
       {DIAS.map((d) => (
         <div
           key={d}

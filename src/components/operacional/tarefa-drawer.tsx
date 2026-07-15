@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Plus, Paperclip, Download, Trash2, Tag as TagIcon, X } from "lucide-react";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { VisualizadorArquivo } from "@/components/comum/visualizador-arquivo";
@@ -133,11 +133,11 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
   }
 
   return (
-    <Sheet open={!!id} onOpenChange={(o) => !o && onClose()}>
-      <SheetContent className="w-full overflow-y-auto sm:max-w-xl">
+    <Dialog open={!!id} onOpenChange={(o: boolean) => !o && onClose()}>
+      <DialogContent className="max-w-3xl max-h-[90dvh] overflow-y-auto p-6 sm:p-8">
         {t && (
           <>
-            <SheetHeader>
+            <DialogHeader>
               <div className="flex items-center gap-2">
                 <span className="text-xs text-muted-foreground tabular-nums">{t.numero}</span>
                 <ToneBadge tone={statusTarefa(t.status).tone}>
@@ -145,8 +145,8 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
                 </ToneBadge>
                 <ToneBadge tone="muted">{PRIORIDADE[t.prioridade as "p1"].label}</ToneBadge>
               </div>
-              <SheetTitle className="text-left">{t.titulo}</SheetTitle>
-            </SheetHeader>
+              <DialogTitle className="text-left">{t.titulo}</DialogTitle>
+            </DialogHeader>
             <div className="mt-4 space-y-6">
               {t.descricao && (
                 <p className="text-sm text-foreground whitespace-pre-wrap">{t.descricao}</p>
@@ -395,12 +395,12 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
             </div>
           </>
         )}
-      </SheetContent>
+      </DialogContent>
       <VisualizadorArquivo
         arquivo={visualizando}
         open={!!visualizando}
         onOpenChange={(o: boolean) => !o && setVisualizando(null)}
       />
-    </Sheet>
+    </Dialog>
   );
 }
