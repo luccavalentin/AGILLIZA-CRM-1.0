@@ -471,7 +471,6 @@ export const listarSimulacoes = createServerFn({ method: "GET" })
   .handler(async ({ data, context }): Promise<{ itens: SimulacaoListaItem[]; total: number }> => {
     const { supabase, userId } = context;
     const from = (data.pagina - 1) * data.porPagina;
-    const to = from + data.porPagina - 1;
 
     // Buscamos mais que porPagina para poder colapsar pares agrupados
     // (SAC + PRICE criados como "Ambos") em um único item da lista.
