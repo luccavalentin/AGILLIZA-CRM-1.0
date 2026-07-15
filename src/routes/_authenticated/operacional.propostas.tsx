@@ -260,7 +260,7 @@ function Pagina() {
       </div>
 
       {/* Cards por status (clicáveis para filtrar) + volume financiado */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
         <StatusCard
           ativo={grupo === null}
           label="Todas"
@@ -284,6 +284,7 @@ function Pagina() {
         ))}
         <VolumeCard volume={volumeTotal} loading={isLoading} />
       </div>
+
 
 
 
