@@ -126,9 +126,9 @@ export function DicaRendaMinima(props: Props) {
                 )}
               >
                 <AlertTriangle className="h-3.5 w-3.5" />
-                Abaixo do mínimo exigido
+                Renda insuficiente
                 {principal.comprometimento != null &&
-                  ` · comprometimento de ${(principal.comprometimento * 100).toFixed(0)}%`}
+                  ` · comprometimento de ${(principal.comprometimento * 100).toFixed(0)}% (teto ${sistema === "P" ? "15" : "30"}%)`}
               </div>
               <p className="text-xs leading-relaxed text-muted-foreground">
                 Reduza o valor do crédito, aumente o prazo ou componha renda com um cônjuge/coobrigado.
