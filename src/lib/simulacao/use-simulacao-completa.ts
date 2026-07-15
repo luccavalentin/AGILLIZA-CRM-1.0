@@ -301,7 +301,7 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
   useEffect(() => {
     if (!restricaoEspecial.ativo) return;
     setF((prev) => {
-      const bancosFiltrados = prev.bancos_ids.filter((id) => {
+      const bancosFiltrados = prev.bancos_ids.filter((id: string) => {
         const b = (bancos ?? []).find((x) => x.id === id);
         return b ? aceitaBancoNaOperacao(b) : false;
       });
