@@ -1163,9 +1163,12 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
     normalizarPctDespesas,
     enviar,
     executarEnvio,
+    enviarAmbos,
     // resultado inline
     simulacaoResultadoId,
+    simulacaoResultadoIdPrice,
     fecharResultadoInline: () => setSimulacaoResultadoId(null),
+    fecharResultadoInlinePrice: () => setSimulacaoResultadoIdPrice(null),
   };
 }
 
