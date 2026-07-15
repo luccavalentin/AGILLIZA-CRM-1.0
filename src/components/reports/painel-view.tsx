@@ -288,7 +288,7 @@ export function PainelView({
                 tone={h.tone}
                 delta={h.delta}
                 icon={iconeParaMetrica(h.label)}
-                to={linkParaMetrica(h.label)}
+                onDetails={() => abrirDetalhe(h.label, h.valor)}
               />
             ))}
           </div>
@@ -300,7 +300,7 @@ export function PainelView({
                   label={m.label}
                   valor={m.valor}
                   tone={m.tone}
-                  to={linkParaMetrica(m.label)}
+                  onDetails={() => abrirDetalhe(m.label, m.valor)}
                 />
               ))}
             </div>
