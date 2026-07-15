@@ -112,8 +112,8 @@ function formatarDocumento(v: string | null | undefined): string | null {
   return v;
 }
 
-type PastaTipo = "raiz" | "comercial" | "imob" | "corretor";
-type Aba = "cliente" | "comercial" | "imobiliaria" | "corretor" | "lixeira";
+type PastaTipo = "raiz" | "comercial" | "imob" | "corretor" | "analista";
+type Aba = "cliente" | "comercial" | "imobiliaria" | "corretor" | "analista" | "lixeira";
 type OrdemChave = "nome-asc" | "nome-desc" | "docs-desc" | "docs-asc";
 type ModoLista = "grid" | "lista";
 
