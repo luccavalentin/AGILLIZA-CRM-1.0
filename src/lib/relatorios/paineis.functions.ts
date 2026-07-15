@@ -977,6 +977,7 @@ export interface PanelDrilldownItem {
   data?: string;
   to?: string;
   tone?: "brand" | "success" | "warning" | "danger" | "neutral";
+  banco?: string;
 }
 
 export interface PanelDrilldown {
@@ -1010,11 +1011,12 @@ function itemProposta(p: any): PanelDrilldownItem {
   const banco = (p.nome_banco as string | undefined) ?? "";
   const status = rotularStatus((p.status as string) ?? "", PROP_LABEL);
   const numero = (p.numero_proposta as string | undefined) ?? "";
-  const partes = [numero && `Nº ${numero}`, banco, status].filter(Boolean);
+  const partes = [numero && `Nº ${numero}`, status].filter(Boolean);
   const valorNum = Number(p.valor_financiamento_aprovado ?? p.valor_financiamento ?? 0) || 0;
   return {
     label: cliente,
     sub: partes.join(" · "),
+    banco: banco || undefined,
     valor: valorNum ? brlCompacto(valorNum) : undefined,
     data: fmtData(p.contrato_emitido_em ?? p.created_at),
     to: `/operacional/propostas/${p.id}`,
@@ -1245,9 +1247,8 @@ export const getPanelDrilldown = createServerFn({ method: "POST" })
           ) || 0;
         return {
           label: cliente.nome ?? "Cliente",
-          sub: [prop.numero_proposta && `Nº ${prop.numero_proposta}`, prop.nome_banco]
-            .filter(Boolean)
-            .join(" · "),
+          sub: prop.numero_proposta ? `Nº ${prop.numero_proposta}` : undefined,
+          banco: prop.nome_banco ?? undefined,
           valor: valorNum ? brlCompacto(valorNum) : undefined,
           data: fmtData(cliente.contrato_emitido_em),
           to: `/operacional/propostas/${prop.id}`,
@@ -1318,9 +1319,8 @@ export const getPanelDrilldown = createServerFn({ method: "POST" })
             ) || 0;
           return {
             label: cliente.nome ?? "Cliente",
-            sub: [prop.numero_proposta && `Nº ${prop.numero_proposta}`, prop.nome_banco]
-              .filter(Boolean)
-              .join(" · "),
+            sub: prop.numero_proposta ? `Nº ${prop.numero_proposta}` : undefined,
+            banco: prop.nome_banco ?? undefined,
             valor: valorNum ? brlCompacto(valorNum) : undefined,
             data: fmtData(cliente.contrato_emitido_em),
             to: `/operacional/propostas/${prop.id}`,
