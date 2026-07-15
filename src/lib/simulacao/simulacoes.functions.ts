@@ -753,3 +753,57 @@ export const restaurarSimulacao = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+/**
+ * Inverte titular ⇄ cônjuge de uma simulação (troca nome, CPF, renda, data
+ * de nascimento, estado civil, e-mail e celular). Só se aplica quando a
+ * simulação possui cônjuge (casado / união estável). O valor invertido fica
+ * persistido, então qualquer reenvio aos bancos usa automaticamente o novo
+ * titular.
+ */
+export const inverterTitularSimulacao = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }): Promise<{ ok: true }> => {
+    const { supabase } = context;
+    const { data: s, error: eSel } = await supabase
+      .from("simulacoes")
+      .select(
+        "id, possui_conjuge, nome_cliente, cpf_cnpj, email, celular, data_nascimento, renda_total, estado_civil, nome_conjuge, cpf_conjuge, email_conjuge, celular_conjuge, data_nascimento_conjuge, renda_conjuge, estado_civil_conjuge",
+      )
+      .eq("id", data.id)
+      .maybeSingle();
+    if (eSel) throw eSel;
+    if (!s) throw new Error("Simulação não encontrada.");
+    if (!(s as any).possui_conjuge) {
+      throw new Error("A simulação não possui cônjuge para inverter.");
+    }
+    const r = s as any;
+    if (!r.nome_conjuge || !r.cpf_conjuge || !r.data_nascimento_conjuge) {
+      throw new Error(
+        "Preencha nome, CPF e data de nascimento do cônjuge antes de inverter.",
+      );
+    }
+    const { error } = await supabase
+      .from("simulacoes")
+      .update({
+        nome_cliente: r.nome_conjuge,
+        cpf_cnpj: r.cpf_conjuge,
+        email: r.email_conjuge,
+        celular: r.celular_conjuge,
+        data_nascimento: r.data_nascimento_conjuge,
+        renda_total: r.renda_conjuge,
+        estado_civil: r.estado_civil_conjuge || r.estado_civil,
+        nome_conjuge: r.nome_cliente,
+        cpf_conjuge: r.cpf_cnpj,
+        email_conjuge: r.email,
+        celular_conjuge: r.celular,
+        data_nascimento_conjuge: r.data_nascimento,
+        renda_conjuge: r.renda_total,
+        estado_civil_conjuge: r.estado_civil || r.estado_civil_conjuge,
+      })
+      .eq("id", data.id);
+    if (error) throw error;
+    return { ok: true };
+  });
+
+
