@@ -234,8 +234,10 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
     [f.renda_total, f.compoe_renda, f.renda_conjuge],
   );
 
-  // Restrição especial: Terreno (TE/TC) ou Imóvel comercial (uso "C")
-  // -> LTV 70%, prazo máx 240 meses, apenas Bradesco opera.
+  // Restrições operacionais por tipo de operação:
+  //  - Terreno (TE/TC): apenas Bradesco opera, LTV 70%, prazo máx 240 meses.
+  //  - Imóvel comercial (uso "C"): todos os bancos operam, LTV 70%, prazo máx 240 meses.
+  //  - Home Equity: Itaú não opera; LTV 60%.
   const restricaoEspecial = useMemo(() => {
     const isTerreno = f.tipo_imovel === "TE" || f.tipo_imovel === "TC";
     const isComercial = f.uso_imovel === "C";
@@ -247,20 +249,50 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
         : isTerreno
           ? "Terreno"
           : "Imóvel comercial";
-    return { ativo, motivo, ltvMax: 0.7, prazoMax: 240 };
+    return {
+      ativo,
+      motivo,
+      isTerreno,
+      isComercial,
+      ltvMax: 0.7,
+      prazoMax: 240,
+      // Apenas terreno restringe os bancos elegíveis a Bradesco.
+      apenasBradesco: isTerreno,
+    };
   }, [f.tipo_imovel, f.uso_imovel]);
 
+  const isHomeEquity = f.produto === "home_equity";
+
   function aceitaBancoNaOperacao(b: { codigo_banco?: number | string | null; nome_banco?: string | null }) {
-    if (!restricaoEspecial.ativo) return true;
     const cod = String(b.codigo_banco ?? "").replace(/^0+/, "");
     const nome = (b.nome_banco ?? "").toLowerCase();
-    return cod === "237" || nome.includes("bradesco");
+    // Home Equity: Itaú não opera.
+    if (isHomeEquity && (cod === "341" || nome.includes("itaú") || nome.includes("itau"))) {
+      return false;
+    }
+    // Terreno: apenas Bradesco.
+    if (restricaoEspecial.apenasBradesco) {
+      return cod === "237" || nome.includes("bradesco");
+    }
+    return true;
+  }
+
+  function mensagemBancoIncompativel(b: { codigo_banco?: number | string | null; nome_banco?: string | null }) {
+    const cod = String(b?.codigo_banco ?? "").replace(/^0+/, "");
+    const nome = (b?.nome_banco ?? "").toLowerCase();
+    if (isHomeEquity && (cod === "341" || nome.includes("itaú") || nome.includes("itau"))) {
+      return "Home Equity: Itaú não opera este produto.";
+    }
+    if (restricaoEspecial.apenasBradesco) {
+      return `${restricaoEspecial.motivo}: apenas Bradesco opera essa modalidade.`;
+    }
+    return "Banco incompatível com a operação selecionada.";
   }
 
   // Teto de financiamento (LTV) por produto e restrição especial.
   const ltvMax = restricaoEspecial.ativo
     ? restricaoEspecial.ltvMax
-    : f.produto === "home_equity"
+    : isHomeEquity
       ? 0.6
       : 0.8;
   // Mantém a ref sincronizada para handlers criados antes desta linha.
@@ -337,24 +369,34 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [maxPrazoIdade]);
 
-  // Aplica a restrição de Terreno / Imóvel comercial: prazo <=240m e apenas
-  // Bradesco elegível. Filtra bancos selecionados e clampa o prazo.
+  // Aplica restrições operacionais:
+  //  - Terreno/Comercial: prazo <=240m; Terreno filtra apenas Bradesco.
+  //  - Home Equity: remove Itaú dos bancos selecionados.
   useEffect(() => {
-    if (!restricaoEspecial.ativo) return;
+    if (!restricaoEspecial.ativo && !isHomeEquity) return;
     setF((prev) => {
       const bancosFiltrados = prev.bancos_ids.filter((id: string) => {
         const b = (bancos ?? []).find((x) => x.id === id);
         return b ? aceitaBancoNaOperacao(b) : false;
       });
       const prazoClamp =
-        prev.prazo > restricaoEspecial.prazoMax ? restricaoEspecial.prazoMax : prev.prazo;
+        restricaoEspecial.ativo && prev.prazo > restricaoEspecial.prazoMax
+          ? restricaoEspecial.prazoMax
+          : prev.prazo;
       const mudouBancos = bancosFiltrados.length !== prev.bancos_ids.length;
       const mudouPrazo = prazoClamp !== prev.prazo;
       if (!mudouBancos && !mudouPrazo) return prev;
-      if (mudouBancos)
-        toast.info(
-          `${restricaoEspecial.motivo}: apenas Bradesco opera. Outros bancos foram removidos.`,
-        );
+      if (mudouBancos) {
+        if (restricaoEspecial.apenasBradesco) {
+          toast.info(
+            `${restricaoEspecial.motivo}: apenas Bradesco opera. Outros bancos foram removidos.`,
+          );
+        } else if (isHomeEquity) {
+          toast.info("Home Equity: Itaú não opera este produto. Banco removido.");
+        } else {
+          toast.info("Bancos incompatíveis com a operação foram removidos.");
+        }
+      }
       if (mudouPrazo)
         toast.info(
           `${restricaoEspecial.motivo}: prazo ajustado para ${restricaoEspecial.prazoMax} meses.`,
@@ -362,7 +404,7 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
       return { ...prev, bancos_ids: bancosFiltrados, prazo: prazoClamp };
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [restricaoEspecial.ativo, bancos]);
+  }, [restricaoEspecial.ativo, restricaoEspecial.apenasBradesco, isHomeEquity, bancos]);
 
 
   // Mantém as despesas coladas no percentual e respeita o teto de LTV.
@@ -603,7 +645,7 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
           return prev;
         }
         if (banco && !aceitaBancoNaOperacao(banco)) {
-          toast.info(`${restricaoEspecial.motivo}: apenas Bradesco opera essa modalidade.`);
+          toast.info(mensagemBancoIncompativel(banco));
           return prev;
         }
         const key = sistemaAlvo === "S" ? "bancos_sac_ids" : "bancos_price_ids";
@@ -618,9 +660,7 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
         return prev;
       }
       if (!has && banco && !aceitaBancoNaOperacao(banco)) {
-        toast.info(
-          `${restricaoEspecial.motivo}: apenas Bradesco opera essa modalidade.`,
-        );
+        toast.info(mensagemBancoIncompativel(banco));
         return prev;
       }
       // Em "Nova Proposta" a seleção é única: o banco escolhido é o que

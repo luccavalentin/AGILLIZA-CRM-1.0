@@ -58,7 +58,8 @@ export function SecaoOperacaoImovel({ ctx }: { ctx: SimulacaoCompletaCtx }) {
           <strong className="font-semibold">{restricaoEspecial.motivo}:</strong> financiamento máx.{" "}
           {Math.round(restricaoEspecial.ltvMax * 100)}% (entrada mín. de{" "}
           {Math.round((1 - restricaoEspecial.ltvMax) * 100)}%), prazo máx. de{" "}
-          {restricaoEspecial.prazoMax} meses, operado apenas pelo Bradesco.
+          {restricaoEspecial.prazoMax} meses
+          {restricaoEspecial.apenasBradesco ? ", operado apenas pelo Bradesco." : "."}
         </div>
       )}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
