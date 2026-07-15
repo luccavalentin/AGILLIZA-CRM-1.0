@@ -54,26 +54,27 @@ export function PainelDrilldownDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl gap-0 overflow-hidden p-0">
-        <DialogHeader className="border-b bg-gradient-to-br from-primary/5 via-transparent to-primary/[0.02] px-6 py-4">
-          <DialogTitle className="text-lg font-semibold tracking-tight">
+      <DialogContent className="max-w-2xl gap-0 overflow-hidden border-border/60 p-0 shadow-2xl">
+        <DialogHeader className="relative space-y-1 border-b border-border/60 bg-gradient-to-br from-primary/[0.06] via-background to-background px-7 pt-6 pb-5">
+          <span className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+          <DialogTitle className="text-[15px] font-semibold tracking-tight text-foreground">
             {data?.titulo ?? contexto?.metrica ?? "Detalhamento"}
           </DialogTitle>
           {(data?.subtitulo || data?.descricao) && (
-            <DialogDescription className="text-sm leading-relaxed text-muted-foreground">
+            <DialogDescription className="text-[13px] leading-relaxed text-muted-foreground">
               {data?.subtitulo}
               {data?.subtitulo && data?.descricao ? " · " : ""}
               {data?.descricao}
             </DialogDescription>
           )}
           {(data?.valor || contexto?.valorAtual) && (
-            <div className="mt-2 flex items-baseline gap-2">
-              <span className="font-mono text-3xl font-semibold tabular-nums text-foreground">
+            <div className="mt-3 flex items-baseline gap-2.5">
+              <span className="font-mono text-[34px] font-semibold leading-none tabular-nums text-foreground">
                 {data?.valor ?? contexto?.valorAtual}
               </span>
               {data?.total && data.total !== data.valor && (
                 <span className="text-xs text-muted-foreground">
-                  Volume total: <span className="font-mono">{data.total}</span>
+                  Volume total <span className="font-mono font-medium text-foreground/80">{data.total}</span>
                 </span>
               )}
             </div>
@@ -105,35 +106,38 @@ export function PainelDrilldownDialog({
           )}
         </DialogHeader>
 
-        <ScrollArea className="max-h-[60vh]">
-          <div className="p-6">
+        <ScrollArea className="max-h-[62vh]">
+          <div className="px-3 py-2">
             {isLoading ? (
-              <div className="flex items-center justify-center py-10 text-sm text-muted-foreground">
+              <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Carregando detalhamento…
               </div>
             ) : error ? (
-              <p className="py-8 text-center text-sm text-destructive">
+              <p className="py-10 text-center text-sm text-destructive">
                 Não foi possível carregar o detalhamento.
               </p>
             ) : !data || data.itens.length === 0 ? (
-              <p className="py-8 text-center text-sm text-muted-foreground">
+              <p className="py-10 text-center text-sm text-muted-foreground">
                 {data?.descricao ??
                   "Não há registros específicos para exibir neste indicador dentro do filtro selecionado."}
               </p>
             ) : (
-              <ul className="divide-y divide-border/60">
+              <ul className="divide-y divide-border/50">
                 {data.itens.map((it, idx) => {
                   const conteudo = (
-                    <div className="group grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 py-2.5">
+                    <div className="group grid grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-3 px-3 py-3">
+                      <BancoLogo nome={it.banco ?? null} size="lg" />
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-medium text-foreground">
+                        <p className="truncate text-sm font-semibold leading-tight text-foreground">
                           {it.label}
                         </p>
-                        {it.sub && (
-                          <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                            {it.sub}
-                          </p>
-                        )}
+                        <p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11.5px] text-muted-foreground">
+                          {it.sub && <span className="truncate">{it.sub}</span>}
+                          {it.sub && it.banco && <span className="opacity-40">·</span>}
+                          {it.banco && (
+                            <span className="font-medium text-foreground/70">{it.banco}</span>
+                          )}
+                        </p>
                       </div>
                       <div className="flex flex-col items-end gap-0.5">
                         {it.valor && (
@@ -147,6 +151,11 @@ export function PainelDrilldownDialog({
                           </span>
                         )}
                       </div>
+                      {it.to ? (
+                        <ChevronRight className="h-4 w-4 text-muted-foreground/40 transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
+                      ) : (
+                        <span className="w-4" />
+                      )}
                     </div>
                   );
                   return (
@@ -154,13 +163,13 @@ export function PainelDrilldownDialog({
                       {it.to ? (
                         <Link
                           to={it.to}
-                          className="block -mx-2 rounded-md px-2 transition-colors hover:bg-muted/60"
+                          className="block rounded-lg transition-colors hover:bg-muted/60"
                           onClick={() => onOpenChange(false)}
                         >
                           {conteudo}
                         </Link>
                       ) : (
-                        <div className="-mx-2 px-2">{conteudo}</div>
+                        <div>{conteudo}</div>
                       )}
                     </li>
                   );
@@ -171,8 +180,8 @@ export function PainelDrilldownDialog({
         </ScrollArea>
 
         {data?.linkAbrir && (
-          <div className="flex items-center justify-end gap-2 border-t bg-muted/30 px-6 py-3">
-            <Button asChild size="sm" variant="outline">
+          <div className="flex items-center justify-end gap-2 border-t border-border/60 bg-muted/30 px-6 py-3">
+            <Button asChild size="sm" variant="outline" className="h-8 rounded-lg">
               <Link to={data.linkAbrir} onClick={() => onOpenChange(false)}>
                 <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
                 {data.linkAbrirLabel ?? "Abrir lista completa"}
