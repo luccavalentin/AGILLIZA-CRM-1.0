@@ -23,14 +23,16 @@ export function GradeCalendario({
   const celulas = montarCelulas(ref);
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-border/70 bg-border shadow-card">
-      <img
-        src={brandSymbol}
-        alt=""
-        aria-hidden
-        draggable={false}
-        className="pointer-events-none absolute left-1/2 top-1/2 z-0 w-[38%] max-w-[420px] -translate-x-1/2 -translate-y-1/2 select-none opacity-[0.05] dark:opacity-[0.08]"
-      />
+    <div className="relative overflow-hidden rounded-2xl border border-border/70 bg-card shadow-card">
+      <div className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center">
+        <img
+          src={brandSymbol}
+          alt=""
+          aria-hidden
+          draggable={false}
+          className="max-h-[85%] max-w-[70%] select-none object-contain opacity-[0.10] dark:opacity-[0.14]"
+        />
+      </div>
       <div className="relative z-10 grid min-w-[560px] grid-cols-7 gap-px overflow-x-auto">
       {DIAS.map((d) => (
         <div
