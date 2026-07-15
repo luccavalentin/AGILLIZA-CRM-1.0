@@ -52,7 +52,7 @@ export const Route = createFileRoute("/_authenticated/operacional/demandas")({
   component: Pagina,
 });
 
-type Escopo = "minhas" | "equipe" | "todas";
+type Escopo = "minhas" | "todas";
 
 function atrasada(d: { status: string; prazo_sla: string | null }): boolean {
   if (d.status === "concluida" || d.status === "cancelada" || !d.prazo_sla) return false;
@@ -247,25 +247,32 @@ function KpiCard({
   accent: string;
 }) {
   return (
-    <div
-      className="relative overflow-hidden rounded-2xl border border-border bg-card p-4 shadow-card transition-all hover:-translate-y-0.5 hover:shadow-elegant"
-      style={{ borderBottom: `3px solid ${accent}` }}
-    >
-      <div className="flex items-start justify-between gap-2">
-        <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+    <div className="group relative overflow-hidden rounded-xl border border-border bg-card px-3 py-2.5 transition-colors hover:border-foreground/15">
+      <span
+        aria-hidden
+        className="absolute inset-y-0 left-0 w-[3px]"
+        style={{ backgroundColor: accent }}
+      />
+      <div className="flex items-center justify-between gap-2 pl-2">
+        <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
           {label}
         </p>
         <span
-          className="grid size-7 shrink-0 place-items-center rounded-full border border-border text-muted-foreground"
-          style={{ color: accent, borderColor: `color-mix(in oklab, ${accent} 30%, var(--border))` }}
+          className="grid size-5 shrink-0 place-items-center rounded-full"
+          style={{
+            color: accent,
+            backgroundColor: `color-mix(in oklab, ${accent} 10%, transparent)`,
+          }}
         >
           {icon}
         </span>
       </div>
-      <p className="mt-3 text-3xl font-semibold leading-none tracking-tight text-foreground tabular-nums">
+      <p className="mt-1 pl-2 text-xl font-semibold leading-tight tracking-tight text-foreground tabular-nums">
         {value}
       </p>
-      {hint && <p className="mt-2 text-[11px] text-muted-foreground">{hint}</p>}
+      {hint && (
+        <p className="mt-0.5 pl-2 text-[10.5px] leading-tight text-muted-foreground">{hint}</p>
+      )}
     </div>
   );
 }
@@ -276,6 +283,10 @@ function Pagina() {
   const [statusFiltro, setStatusFiltro] = useState<string>("todos");
   const [prioridadeFiltro, setPrioridadeFiltro] = useState<string>("todas");
   const [responsavelFiltro, setResponsavelFiltro] = useState<string>("todos");
+  const [clienteFiltro, setClienteFiltro] = useState<string>("todos");
+  const [analistaFiltro, setAnalistaFiltro] = useState<string>("todos");
+  const [corretorFiltro, setCorretorFiltro] = useState<string>("todos");
+  const [imobiliariaFiltro, setImobiliariaFiltro] = useState<string>("todos");
   const [pagina, setPagina] = useState(1);
   const [porPagina, setPorPagina] = useState(10);
 
@@ -292,24 +303,33 @@ function Pagina() {
 
   const todos = data ?? [];
 
-  const responsaveis = useMemo(() => {
+  function opcoesUnicas(getId: (d: (typeof todos)[number]) => string | null, getNome: (d: (typeof todos)[number]) => string | null) {
     const m = new Map<string, string>();
     todos.forEach((d) => {
-      if (d.responsavel_id && d.nome_responsavel) {
-        m.set(d.responsavel_id, d.nome_responsavel);
-      }
+      const id = getId(d);
+      const nome = getNome(d);
+      if (id && nome && !m.has(id)) m.set(id, nome);
     });
-    return [...m.entries()];
-  }, [todos]);
+    return [...m.entries()].sort((a, b) => a[1].localeCompare(b[1]));
+  }
+  const responsaveis = useMemo(() => opcoesUnicas((d) => d.responsavel_id, (d) => d.nome_responsavel), [todos]);
+  const clientes = useMemo(() => opcoesUnicas((d) => d.cliente_id, (d) => d.nome_cliente), [todos]);
+  const analistas = useMemo(() => opcoesUnicas((d) => d.analista_id, (d) => d.nome_analista), [todos]);
+  const corretores = useMemo(() => opcoesUnicas((d) => d.corretor_id, (d) => d.nome_corretor), [todos]);
+  const imobiliarias = useMemo(() => opcoesUnicas((d) => d.imobiliaria_id, (d) => d.nome_imobiliaria), [todos]);
 
   const filtrados = useMemo(() => {
     return todos.filter((d) => {
       if (statusFiltro !== "todos" && d.status !== statusFiltro) return false;
       if (prioridadeFiltro !== "todas" && d.prioridade !== prioridadeFiltro) return false;
       if (responsavelFiltro !== "todos" && d.responsavel_id !== responsavelFiltro) return false;
+      if (clienteFiltro !== "todos" && d.cliente_id !== clienteFiltro) return false;
+      if (analistaFiltro !== "todos" && d.analista_id !== analistaFiltro) return false;
+      if (corretorFiltro !== "todos" && d.corretor_id !== corretorFiltro) return false;
+      if (imobiliariaFiltro !== "todos" && d.imobiliaria_id !== imobiliariaFiltro) return false;
       return true;
     });
-  }, [todos, statusFiltro, prioridadeFiltro, responsavelFiltro]);
+  }, [todos, statusFiltro, prioridadeFiltro, responsavelFiltro, clienteFiltro, analistaFiltro, corretorFiltro, imobiliariaFiltro]);
 
   const stats = useMemo(() => {
     const base = todos;
@@ -379,6 +399,10 @@ function Pagina() {
     setStatusFiltro("todos");
     setPrioridadeFiltro("todas");
     setResponsavelFiltro("todos");
+    setClienteFiltro("todos");
+    setAnalistaFiltro("todos");
+    setCorretorFiltro("todos");
+    setImobiliariaFiltro("todos");
     setPagina(1);
   }
 
@@ -485,91 +509,92 @@ function Pagina() {
 
       {/* Filtros */}
       <div className="rounded-2xl border border-border bg-card p-3 shadow-card md:p-4">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(220px,1fr)_repeat(3,minmax(140px,180px))_auto]">
-          <div className="relative sm:col-span-2 lg:col-span-1">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={q}
-              onChange={(e) => {
-                setQ(e.target.value);
-                setPagina(1);
-              }}
-              placeholder="Buscar por título, cliente, responsável ou ID…"
-              className="pl-9"
-            />
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="relative min-w-[220px] flex-1">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={q}
+                onChange={(e) => {
+                  setQ(e.target.value);
+                  setPagina(1);
+                }}
+                placeholder="Buscar por título, cliente, responsável ou ID…"
+                className="pl-9"
+              />
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button variant="outline" size="sm" onClick={limparFiltros}>
+                <FilterX className="mr-1.5 h-4 w-4" /> Limpar
+              </Button>
+              <Button size="sm" onClick={exportarCsv} className="gap-1.5">
+                <Download className="h-4 w-4" /> Exportar
+              </Button>
+            </div>
           </div>
 
-          <FilterField label="Status">
-            <Select
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
+            <FilterSelect
+              label="Status"
               value={statusFiltro}
-              onValueChange={(v) => {
-                setStatusFiltro(v);
-                setPagina(1);
-              }}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Todos" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos</SelectItem>
-                <SelectItem value="aberta">Aberta</SelectItem>
-                <SelectItem value="em_andamento">Em andamento</SelectItem>
-                <SelectItem value="aguardando">Aguardando</SelectItem>
-                <SelectItem value="concluida">Concluída</SelectItem>
-                <SelectItem value="cancelada">Cancelada</SelectItem>
-              </SelectContent>
-            </Select>
-          </FilterField>
-
-          <FilterField label="Prioridade">
-            <Select
+              onValueChange={(v) => { setStatusFiltro(v); setPagina(1); }}
+              placeholder="Todos"
+              options={[
+                { value: "todos", label: "Todos" },
+                { value: "aberta", label: "Aberta" },
+                { value: "em_andamento", label: "Em andamento" },
+                { value: "aguardando", label: "Aguardando" },
+                { value: "concluida", label: "Concluída" },
+                { value: "cancelada", label: "Cancelada" },
+              ]}
+            />
+            <FilterSelect
+              label="Prioridade"
               value={prioridadeFiltro}
-              onValueChange={(v) => {
-                setPrioridadeFiltro(v);
-                setPagina(1);
-              }}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Todas" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todas">Todas</SelectItem>
-                <SelectItem value="p1">Alta</SelectItem>
-                <SelectItem value="p2">Média</SelectItem>
-                <SelectItem value="p3">Baixa</SelectItem>
-              </SelectContent>
-            </Select>
-          </FilterField>
-
-          <FilterField label="Responsável">
-            <Select
+              onValueChange={(v) => { setPrioridadeFiltro(v); setPagina(1); }}
+              placeholder="Todas"
+              options={[
+                { value: "todas", label: "Todas" },
+                { value: "p1", label: "Alta" },
+                { value: "p2", label: "Média" },
+                { value: "p3", label: "Baixa" },
+              ]}
+            />
+            <FilterSelect
+              label="Cliente"
+              value={clienteFiltro}
+              onValueChange={(v) => { setClienteFiltro(v); setPagina(1); }}
+              placeholder="Todos"
+              options={[{ value: "todos", label: "Todos" }, ...clientes.map(([id, n]) => ({ value: id, label: n }))]}
+            />
+            <FilterSelect
+              label="Responsável"
               value={responsavelFiltro}
-              onValueChange={(v) => {
-                setResponsavelFiltro(v);
-                setPagina(1);
-              }}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Todos" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos</SelectItem>
-                {responsaveis.map(([id, nome]) => (
-                  <SelectItem key={id} value={id}>
-                    {nome}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </FilterField>
-
-          <div className="flex flex-wrap items-end gap-2 sm:col-span-2 lg:col-span-1 lg:justify-end">
-            <Button variant="outline" size="sm" onClick={limparFiltros} className="flex-1 lg:flex-none">
-              <FilterX className="mr-1.5 h-4 w-4" /> Limpar filtros
-            </Button>
-            <Button size="sm" onClick={exportarCsv} className="flex-1 gap-1.5 lg:flex-none">
-              <Download className="h-4 w-4" /> Exportar
-            </Button>
+              onValueChange={(v) => { setResponsavelFiltro(v); setPagina(1); }}
+              placeholder="Todos"
+              options={[{ value: "todos", label: "Todos" }, ...responsaveis.map(([id, n]) => ({ value: id, label: n }))]}
+            />
+            <FilterSelect
+              label="Analista"
+              value={analistaFiltro}
+              onValueChange={(v) => { setAnalistaFiltro(v); setPagina(1); }}
+              placeholder="Todos"
+              options={[{ value: "todos", label: "Todos" }, ...analistas.map(([id, n]) => ({ value: id, label: n }))]}
+            />
+            <FilterSelect
+              label="Corretor"
+              value={corretorFiltro}
+              onValueChange={(v) => { setCorretorFiltro(v); setPagina(1); }}
+              placeholder="Todos"
+              options={[{ value: "todos", label: "Todos" }, ...corretores.map(([id, n]) => ({ value: id, label: n }))]}
+            />
+            <FilterSelect
+              label="Imobiliária"
+              value={imobiliariaFiltro}
+              onValueChange={(v) => { setImobiliariaFiltro(v); setPagina(1); }}
+              placeholder="Todas"
+              options={[{ value: "todos", label: "Todas" }, ...imobiliarias.map(([id, n]) => ({ value: id, label: n }))]}
+            />
           </div>
         </div>
       </div>
@@ -577,7 +602,7 @@ function Pagina() {
       {/* Abas + Tabela */}
       <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-card">
         <div className="flex items-center gap-6 border-b border-border px-5 pt-3">
-          {(["minhas", "equipe", "todas"] as Escopo[]).map((e) => (
+          {(["minhas", "todas"] as Escopo[]).map((e) => (
             <button
               key={e}
               onClick={() => {
@@ -591,7 +616,7 @@ function Pagina() {
                   : "border-transparent text-muted-foreground hover:text-foreground",
               )}
             >
-              {e === "minhas" ? "Minhas demandas" : e === "equipe" ? "Equipe" : "Todas"}
+              {e === "minhas" ? "Minhas demandas" : "Todas"}
             </button>
           ))}
         </div>
@@ -875,6 +900,37 @@ function FilterField({ label, children }: { label: string; children: React.React
       <span className="text-[11px] font-medium text-muted-foreground">{label}</span>
       {children}
     </div>
+  );
+}
+
+function FilterSelect({
+  label,
+  value,
+  onValueChange,
+  placeholder,
+  options,
+}: {
+  label: string;
+  value: string;
+  onValueChange: (v: string) => void;
+  placeholder?: string;
+  options: { value: string; label: string }[];
+}) {
+  return (
+    <FilterField label={label}>
+      <Select value={value} onValueChange={onValueChange}>
+        <SelectTrigger className="w-full">
+          <SelectValue placeholder={placeholder} />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map((o) => (
+            <SelectItem key={o.value} value={o.value}>
+              {o.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </FilterField>
   );
 }
 
