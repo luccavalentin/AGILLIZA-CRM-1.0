@@ -304,6 +304,7 @@ function Pagina() {
   const [analistaFiltro, setAnalistaFiltro] = useState<string>("todos");
   const [corretorFiltro, setCorretorFiltro] = useState<string>("todos");
   const [imobiliariaFiltro, setImobiliariaFiltro] = useState<string>("todos");
+  const [comercialFiltro, setComercialFiltro] = useState<string>("todos");
   const [pagina, setPagina] = useState(1);
   const [porPagina, setPorPagina] = useState(10);
 
