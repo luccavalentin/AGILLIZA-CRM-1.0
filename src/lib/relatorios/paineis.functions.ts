@@ -293,6 +293,7 @@ async function carregarAnterior(
       supabase
         .from("propostas")
         .select("status,created_at")
+        .is("deleted_at", null)
         .gte("created_at", de)
         .lte("created_at", ateFim)
         .limit(5000),
