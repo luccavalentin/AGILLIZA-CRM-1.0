@@ -124,19 +124,34 @@ export function ResultadoInlineAmbos({ simulacaoIdSac, simulacaoIdPrice, onFecha
     if (simulados.length === 0) return;
     jaBaixou.current = true;
     (async () => {
+      let okCount = 0;
+      let errCount = 0;
       try {
         const { baixarSimulacaoDetalhadaPDF } = await import("@/lib/simulacao/simulacao-pdf");
         for (const d of ativas) {
           const bancosOk = ((d.bancos as any[]) ?? []).filter((b) => b.status_banco === "simulada");
           for (const b of bancosOk) {
-            baixarSimulacaoDetalhadaPDF({ simulacao: d.simulacao, bancos: [b] });
+            try {
+              baixarSimulacaoDetalhadaPDF({ simulacao: d.simulacao, bancos: [b] });
+              okCount += 1;
+              // pequena pausa para o browser não descartar downloads sequenciais
+              await new Promise((r) => setTimeout(r, 250));
+            } catch (err) {
+              errCount += 1;
+              console.error("[auto-download PDF] falhou para banco", b?.nome_banco, err);
+            }
           }
         }
+      } catch (err) {
+        console.error("[auto-download PDF] falha ao carregar módulo", err);
+      }
+      if (okCount > 0) {
         toast.success(
-          `Simulação realizada. ${simulados.length} PDF${simulados.length === 1 ? "" : "s"} baixado${simulados.length === 1 ? "" : "s"} automaticamente.`,
+          `Simulação realizada. ${okCount} PDF${okCount === 1 ? "" : "s"} baixado${okCount === 1 ? "" : "s"} automaticamente.` +
+            (errCount > 0 ? ` (${errCount} com falha — use o botão Baixar PDFs)` : ""),
         );
-      } catch {
-        toast.error("Não foi possível baixar automaticamente os PDFs.");
+      } else if (errCount > 0) {
+        toast.warning("Alguns PDFs não puderam ser baixados automaticamente. Use o botão Baixar PDFs.");
       }
     })();
   }, [dataSac, dataPrice, simulacaoIdSac, simulacaoIdPrice]);
@@ -512,16 +527,27 @@ function BaixarPdfsButton({ dataSac, dataPrice }: { dataSac: any; dataPrice: any
   async function baixar() {
     if (desabilitado) return;
     setBaixando(true);
+    let ok = 0;
+    let err = 0;
     try {
       const { baixarSimulacaoDetalhadaPDF } = await import("@/lib/simulacao/simulacao-pdf");
       for (const d of ativos) {
         const bancosOk = ((d.bancos as any[]) ?? []).filter((b) => b.status_banco === "simulada");
         for (const b of bancosOk) {
-          baixarSimulacaoDetalhadaPDF({ simulacao: d.simulacao, bancos: [b] });
+          try {
+            baixarSimulacaoDetalhadaPDF({ simulacao: d.simulacao, bancos: [b] });
+            ok += 1;
+            await new Promise((r) => setTimeout(r, 250));
+          } catch (e) {
+            err += 1;
+            console.error("[baixar PDF]", b?.nome_banco, e);
+          }
         }
       }
-      toast.success(`${totalOk} PDF${totalOk === 1 ? "" : "s"} gerado${totalOk === 1 ? "" : "s"}.`);
-    } catch {
+      if (ok > 0) toast.success(`${ok} PDF${ok === 1 ? "" : "s"} gerado${ok === 1 ? "" : "s"}.${err > 0 ? ` (${err} falharam)` : ""}`);
+      else toast.error("Não foi possível gerar os PDFs.");
+    } catch (e) {
+      console.error("[baixar PDF] módulo", e);
       toast.error("Não foi possível gerar os PDFs.");
     } finally {
       setBaixando(false);
