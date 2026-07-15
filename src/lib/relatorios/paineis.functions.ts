@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { resolverIntervalo, type ReportFiltros } from "@/lib/relatorios/shared";
 import { grupoDoStatus } from "@/lib/propostas/status-grupos";
+import { criarEscopoEq, listarClienteIdsParceiroDoUsuario } from "@/lib/escopo";
 
 /** Status terminais de contrato — a proposta já virou contrato emitido. */
 const CONTRATO_STATUS = new Set(["contrato_emitido", "registrado"]);
