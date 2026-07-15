@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -184,12 +184,19 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
     return op?.id_operacao ?? null;
   }, [operacoes, f.produto]);
 
+  // Ref para acessar o LTV atual dentro de handlers definidos antes da declaração
+  // de `ltvMax` (evita "cannot access before initialization").
+  const ltvMaxRef = useRef(0.8);
+
   function set(k: string, v: any) {
     if (k === "valor_entrada") setEntradaTocada(true);
     setF((prev) => {
       const next = { ...prev, [k]: v };
+      // Percentual padrão de entrada = 1 - LTV do banco (20% no SFH, 30% em
+      // terreno/comercial, 40% em home equity).
+      const pctEntradaDefault = 1 - ltvMaxRef.current;
       if (k === "valor_imovel" && !entradaTocada)
-        next.valor_entrada = Math.round((next.valor_imovel || 0) * 0.2);
+        next.valor_entrada = Math.round((next.valor_imovel || 0) * pctEntradaDefault);
       if (k === "valor_imovel" || k === "valor_entrada")
         next.valor_financiamento = Math.max(0, next.valor_imovel - next.valor_entrada);
       if (k === "estado_civil") next.possui_conjuge = v === "CA" || v === "UE";
@@ -243,6 +250,27 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
     : f.produto === "home_equity"
       ? 0.6
       : 0.8;
+  // Mantém a ref sincronizada para handlers criados antes desta linha.
+  ltvMaxRef.current = ltvMax;
+
+  // Reajusta entrada/financiamento quando o LTV muda (ex.: usuário seleciona
+  // Terreno/Comercial → 70%, ou volta para Residencial → 80%). Garante que o
+  // financiamento nunca ultrapasse o teto do banco, adaptando a entrada.
+  useEffect(() => {
+    const imovel = Number(f.valor_imovel) || 0;
+    if (imovel <= 0) return;
+    const finMax = Math.floor(imovel * ltvMax);
+    const finAtual = Number(f.valor_financiamento) || 0;
+    if (finAtual <= finMax) return;
+    const novaEntrada = imovel - finMax;
+    setEntradaTocada(true);
+    setF((prev) => ({
+      ...prev,
+      valor_entrada: novaEntrada,
+      valor_financiamento: finMax,
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ltvMax]);
   const prazoMaximo = useMemo(() => {
     const idade = maxPrazoIdade ?? 420;
     return restricaoEspecial.ativo ? Math.min(idade, restricaoEspecial.prazoMax) : idade;
@@ -362,8 +390,9 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
 
   function aplicarEntradaSugerida() {
     setEntradaTocada(true);
+    const pctEntrada = 1 - ltvMax;
     setF((prev) => {
-      const entrada = Math.round((prev.valor_imovel || 0) * 0.2);
+      const entrada = Math.round((prev.valor_imovel || 0) * pctEntrada);
       return {
         ...prev,
         valor_entrada: entrada,
@@ -374,7 +403,7 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
 
   /**
    * Preenche imóvel + financiamento a partir do valor de entrada.
-   * Regra padrão: entrada = 20% do imóvel  ⇒  imóvel = entrada / 0,20.
+   * Regra: entrada = (1 - LTV) do imóvel  ⇒  imóvel = entrada / (1 - LTV).
    * financiamento = imóvel − entrada.
    */
   function aplicarPorEntrada(valorEntrada: number) {
@@ -384,7 +413,8 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
       setF((prev) => ({ ...prev, valor_entrada: 0 }));
       return;
     }
-    const imovel = Math.round(entrada / 0.2);
+    const pctEntrada = 1 - ltvMax;
+    const imovel = Math.round(entrada / pctEntrada);
     const fin = Math.max(0, imovel - entrada);
     setF((prev) => ({
       ...prev,
