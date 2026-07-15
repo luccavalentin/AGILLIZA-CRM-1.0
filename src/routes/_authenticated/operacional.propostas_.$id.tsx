@@ -926,7 +926,7 @@ function TabResumo({
                   </span>
                 </TableCell>
                 <TableCell className="max-w-44 truncate text-xs tabular-nums text-muted-foreground">
-                  {b.numero_proposta_banco ? `Nº banco ${b.numero_proposta_banco}` : "—"}
+                  {(() => { const nb = numeroBancoParaExibir(b.numero_proposta_banco); return nb ? `Nº banco ${nb}` : "—"; })()}
                 </TableCell>
                 <TableCell className="text-right tabular-nums">
                   {formatBRL(b.valor_financiamento_max)}
