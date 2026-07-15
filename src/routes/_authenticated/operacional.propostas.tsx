@@ -705,7 +705,8 @@ function StatusCard({
 
 function VolumeCard({ volume, loading }: { volume: number; loading: boolean }) {
   return (
-    <div className="group relative overflow-hidden rounded-xl border border-primary/25 bg-primary p-4 text-primary-foreground shadow-sm">
+    <div className="group relative col-span-2 overflow-hidden rounded-xl border border-primary/30 bg-gradient-to-br from-primary to-primary/85 p-4 text-primary-foreground shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/25 sm:col-span-1 lg:col-span-1 xl:col-span-2">
+      <div className="pointer-events-none absolute -right-6 -top-6 h-20 w-20 rounded-full bg-primary-foreground/10 blur-2xl transition-opacity duration-300 group-hover:opacity-80" />
       <div className="flex items-center gap-2">
         <Wallet className="h-3.5 w-3.5 shrink-0 text-primary-foreground/80" />
         <p className="truncate text-[11px] font-medium uppercase tracking-wider text-primary-foreground/80">
@@ -715,10 +716,11 @@ function VolumeCard({ volume, loading }: { volume: number; loading: boolean }) {
       {loading ? (
         <Skeleton className="mt-3 h-6 w-24 bg-primary-foreground/20" />
       ) : (
-        <p className="mt-2 truncate text-xl font-semibold tabular-nums leading-tight">
+        <p className="mt-2 text-lg font-semibold tabular-nums leading-tight break-words sm:text-xl">
           {formatBRL(volume)}
         </p>
       )}
     </div>
   );
 }
+
