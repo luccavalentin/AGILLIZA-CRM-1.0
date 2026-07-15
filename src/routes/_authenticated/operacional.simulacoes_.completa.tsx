@@ -40,19 +40,24 @@ export const Route = createFileRoute("/_authenticated/operacional/simulacoes_/co
 function Pagina() {
   const { duplicar, origem: origemFluxo } = Route.useSearch();
   const ctx = useSimulacaoCompleta({ duplicar, modoProposta: origemFluxo === "proposta" });
-  const { router, modoProposta, f, enviando, concluidos, mostraConjuge, confirmRenda, setConfirmRenda, enviar, executarEnvio, simulacaoResultadoId, fecharResultadoInline } = ctx;
+  const { router, modoProposta, f, enviando, concluidos, mostraConjuge, confirmRenda, setConfirmRenda, enviar, executarEnvio, simulacaoResultadoId, simulacaoResultadoIdPrice, fecharResultadoInline, fecharResultadoInlinePrice } = ctx;
   const resultadoRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (simulacaoResultadoId && resultadoRef.current) {
+    if ((simulacaoResultadoId || simulacaoResultadoIdPrice) && resultadoRef.current) {
       resultadoRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
     }
-  }, [simulacaoResultadoId]);
+  }, [simulacaoResultadoId, simulacaoResultadoIdPrice]);
+
+  const totalBancosResumo =
+    f.sistema_amortizacao === "B"
+      ? (f.bancos_sac_ids?.length ?? 0) + (f.bancos_price_ids?.length ?? 0)
+      : f.bancos_ids.length;
 
   const resumoEtapas = [
     { label: "Titular", ok: !!f.nome_cliente },
     { label: "Operação e imóvel", ok: (Number(f.valor_financiamento) || 0) > 0 },
-    { label: "Bancos", ok: f.bancos_ids.length > 0 },
+    { label: "Bancos", ok: totalBancosResumo > 0 },
   ];
 
   return (
