@@ -40,6 +40,18 @@ function totalFinanciado(b: any): number | null {
   return d?.financiamentoTotal ?? d?.valorFinanciamento ?? b?.valor_financiamento_max ?? null;
 }
 
+function AmortizacaoTag({ sistema }: { sistema: "SAC" | "PRICE" }) {
+  return (
+    <span
+      className="inline-flex h-5 items-center rounded-[5px] border border-primary/25 bg-primary/[0.08] px-1.5 text-[9px] font-semibold uppercase leading-none tracking-wide text-primary"
+      title={`Tabela ${sistema}`}
+      aria-label={`Tabela ${sistema}`}
+    >
+      {sistema}
+    </span>
+  );
+}
+
 
 async function baixarPdfLinha(simulacao: any, banco: any) {
   try {
@@ -325,9 +337,7 @@ export function ResultadoInlineAmbos({ simulacaoIdSac, simulacaoIdPrice, onFecha
                   <div key={`${l.sistema}-${b.id}`}>
                     {primeiroDoGrupo && (
                       <div className="mb-2 flex items-center gap-2">
-                        <ToneBadge tone={l.sistema === "SAC" ? "info" : "warning"}>
-                          Tabela {l.sistema}
-                        </ToneBadge>
+                        <AmortizacaoTag sistema={l.sistema} />
                         <div className="h-px flex-1 bg-border" />
                       </div>
                     )}
@@ -336,16 +346,7 @@ export function ResultadoInlineAmbos({ simulacaoIdSac, simulacaoIdPrice, onFecha
                         <BancoLogo nome={b.nome_banco} size="lg" className="mt-0.5" />
                         <div className="min-w-0 flex-1">
                           <div className="flex flex-wrap items-center gap-2">
-                            <span
-                              className={cn(
-                                "inline-flex items-center rounded-md px-2 py-1 text-[11px] font-extrabold uppercase tracking-[0.08em] shadow-sm ring-1",
-                                l.sistema === "SAC"
-                                  ? "bg-[#1e40af] text-white ring-[#1e40af]/40 dark:bg-[#3b82f6] dark:ring-[#3b82f6]/50"
-                                  : "bg-[#b45309] text-white ring-[#b45309]/40 dark:bg-[#f59e0b] dark:ring-[#f59e0b]/50",
-                              )}
-                            >
-                              {l.sistema}
-                            </span>
+                            <AmortizacaoTag sistema={l.sistema} />
 
                             <span
                               className="truncate font-medium"
@@ -452,9 +453,7 @@ export function ResultadoInlineAmbos({ simulacaoIdSac, simulacaoIdPrice, onFecha
                           >
                             <TableCell colSpan={9} className="py-2">
                               <div className="flex items-center gap-2">
-                                <ToneBadge tone={l.sistema === "SAC" ? "info" : "warning"}>
-                                  Tabela {l.sistema}
-                                </ToneBadge>
+                                <AmortizacaoTag sistema={l.sistema} />
                                 <span className="text-[11px] uppercase tracking-wide text-muted-foreground">
                                   {l.sistema === "SAC"
                                     ? "Amortização constante · parcelas decrescentes"
@@ -476,16 +475,7 @@ export function ResultadoInlineAmbos({ simulacaoIdSac, simulacaoIdPrice, onFecha
                             <BancoLogo nome={b.nome_banco} size="md" />
                             <div className="min-w-0 flex-1">
                               <div className="flex items-center gap-1.5">
-                                <span
-                                  className={cn(
-                                    "inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-[0.08em] shadow-sm ring-1",
-                                    l.sistema === "SAC"
-                                      ? "bg-[#1e40af] text-white ring-[#1e40af]/40 dark:bg-[#3b82f6] dark:ring-[#3b82f6]/50"
-                                      : "bg-[#b45309] text-white ring-[#b45309]/40 dark:bg-[#f59e0b] dark:ring-[#f59e0b]/50",
-                                  )}
-                                >
-                                  {l.sistema}
-                                </span>
+                                <AmortizacaoTag sistema={l.sistema} />
 
                                 <span className="truncate text-sm font-semibold" style={{ color: corDoBanco(b.nome_banco) }}>{b.nome_banco}</span>
                               </div>

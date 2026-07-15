@@ -122,7 +122,7 @@ export function DicaRendaMinima(props: Props) {
             <span className={cn("text-[11px] font-semibold uppercase tracking-wide", s.status)}>
               {statusLabel}
             </span>
-            <span className="inline-flex h-5 items-center rounded border border-border bg-muted/50 px-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            <span className="inline-flex h-5 items-center rounded-[5px] border border-primary/20 bg-primary/[0.06] px-1.5 text-[9px] font-semibold uppercase tracking-wide text-primary">
               Tabela {sistema === "P" ? "PRICE" : "SAC"}
             </span>
           </div>

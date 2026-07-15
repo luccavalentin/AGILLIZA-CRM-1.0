@@ -62,10 +62,7 @@ function SistemaTarget({ sistema }: { sistema: "SAC" | "PRICE" }) {
   return (
     <span
       className={cn(
-        "inline-flex h-6 items-center rounded-md px-2 text-[10px] font-black uppercase tracking-wider shadow-sm ring-1 ring-inset",
-        sistema === "SAC"
-          ? "bg-primary text-primary-foreground ring-primary/30"
-          : "bg-warning text-warning-foreground ring-warning/30",
+        "inline-flex h-5 items-center rounded-[5px] border border-primary/25 bg-primary/[0.08] px-1.5 text-[9px] font-semibold uppercase leading-none tracking-wide text-primary",
       )}
       title={`Tabela ${sistema}`}
       aria-label={`Tabela ${sistema}`}
