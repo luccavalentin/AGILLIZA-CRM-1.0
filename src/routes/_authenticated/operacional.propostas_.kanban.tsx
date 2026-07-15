@@ -22,6 +22,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatBRL, maskCpfCnpj } from "@/lib/simulacao/format";
 import { cn } from "@/lib/utils";
+import { numeroBancoParaExibir } from "@/lib/propostas/numero-banco-display";
 
 export const Route = createFileRoute("/_authenticated/operacional/propostas_/kanban")({
   head: () => ({ meta: [{ title: "Kanban de Propostas — Agilliza" }] }),
