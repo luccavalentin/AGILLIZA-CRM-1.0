@@ -13,7 +13,7 @@ import {
 import { CurrencyInput } from "@/components/simulacao/currency-input";
 import { ClienteCRMPicker } from "@/components/simulacao/cliente-crm-picker";
 import { DateInput } from "@/components/shared/date-input";
-import { DicaRendaMinima } from "@/components/simulacao/dica-renda-minima";
+
 import { Campo, Ast, Erro } from "@/components/simulacao/completa/campo";
 import { maskCpfCnpj, maskCelular } from "@/lib/simulacao/format";
 import { ESTADOS_CIVIS } from "@/lib/simulacao/schemas";
@@ -31,8 +31,6 @@ export function SecaoTitular({ ctx }: { ctx: SimulacaoCompletaCtx }) {
     puxarConjugeDoCRM,
     selecionarClienteCRM,
     limparTitular,
-    melhorTaxaAno,
-    rendaConsiderada,
   } = ctx;
 
   return (
@@ -183,36 +181,6 @@ export function SecaoTitular({ ctx }: { ctx: SimulacaoCompletaCtx }) {
             <Link2 className="h-4 w-4" />
             Puxar cônjuge do CRM
           </Button>
-        </div>
-      )}
-      {f.valor_financiamento > 0 && f.prazo >= 60 && f.sistema_amortizacao !== "B" && (
-        <DicaRendaMinima
-          valorFinanciamento={f.valor_financiamento}
-          valorImovel={f.valor_imovel}
-          prazoMeses={f.prazo}
-          taxaAno={melhorTaxaAno}
-          sistema={f.sistema_amortizacao === "P" ? "P" : "S"}
-          rendaInformada={rendaConsiderada}
-        />
-      )}
-      {f.valor_financiamento > 0 && f.prazo >= 60 && f.sistema_amortizacao === "B" && (
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-          <DicaRendaMinima
-            valorFinanciamento={f.valor_financiamento}
-            valorImovel={f.valor_imovel}
-            prazoMeses={f.prazo}
-            taxaAno={melhorTaxaAno}
-            sistema="S"
-            rendaInformada={Number(f.renda_total) || 0}
-          />
-          <DicaRendaMinima
-            valorFinanciamento={f.valor_financiamento}
-            valorImovel={f.valor_imovel}
-            prazoMeses={f.prazo}
-            taxaAno={melhorTaxaAno}
-            sistema="P"
-            rendaInformada={Number(f.renda_price) || 0}
-          />
         </div>
       )}
     </section>
