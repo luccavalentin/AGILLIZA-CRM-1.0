@@ -14,7 +14,13 @@ import {
   History,
   ChevronLeft,
   Activity,
+  Maximize2,
 } from "lucide-react";
+import {
+  abrirChatFlutuante,
+  fecharChatFlutuante,
+  useFloatingChat,
+} from "@/components/shared/floating-chat-store";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
