@@ -420,15 +420,19 @@ export function DocumentosGerais() {
       return node;
     }
     const prefix = dim === "imob" ? "imob:" : dim === "corr" ? "corr:" : "ana:";
+    // Semeia UMA pasta por cadastrado (todos aparecem, mesmo sem clientes).
     for (const b of base) garantir(`${prefix}${b.id}`, titulo(b.nome));
 
+    // Vincula clientes apenas às pastas cadastradas; se o ID não estiver na
+    // base (ex.: criador que não é analista), o cliente cai em "Sem …".
+    const idsBase = new Set(base.map((b) => b.id));
     for (const c of clientes) {
       const id =
         dim === "imob" ? c.imobiliaria_id : dim === "corr" ? c.corretor_id : c.analista_id;
       const nome =
         dim === "imob" ? c.imobiliaria_nome : dim === "corr" ? c.corretor_nome : c.analista_nome;
-      const key = id ? `${prefix}${id}` : semKey;
-      const node = garantir(key, id ? titulo(nome) : semNome);
+      const key = id && idsBase.has(id) ? `${prefix}${id}` : semKey;
+      const node = garantir(key, id && idsBase.has(id) ? titulo(nome) : semNome);
       node.clientes.push(c);
     }
 
