@@ -130,7 +130,7 @@ function Pagina() {
   const [envioCarregando, setEnvioCarregando] = useState(false);
   const [enviandoBancoId, setEnviandoBancoId] = useState<string | null>(null);
   const [propostasCriadas, setPropostasCriadas] = useState<
-    Array<{ banco_id: string; nome_banco: string; proposta_id: string; numero: string }>
+    Array<{ simulacao_banco_id: string; banco_id: string; nome_banco: string; proposta_id: string; numero: string }>
   >([]);
 
 
