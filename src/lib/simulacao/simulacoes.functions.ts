@@ -339,6 +339,7 @@ export const criarSimulacao = createServerFn({ method: "POST" })
       regime_casamento: dd.regime_casamento ?? null,
       produto: dd.produto ?? null,
       id_operacao_homefin: dd.id_operacao_homefin ?? null,
+      agrupador_id: (dd as any).agrupador_id ?? null,
       tipo_imovel: dd.tipo_imovel ?? null,
       uso_imovel: dd.uso_imovel ?? null,
       situacao_imovel: dd.situacao_imovel ?? null,
