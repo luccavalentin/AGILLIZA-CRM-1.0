@@ -329,7 +329,8 @@ function KpiCard({
 }
 
 function Pagina() {
-  const [escopo, setEscopo] = useState<Escopo>("minhas");
+  const [vista, setVista] = useState<"kanban" | "lista">("kanban");
+  const [escopo, setEscopo] = useState<Escopo>("todas");
   const [q, setQ] = useState("");
   const [statusFiltro, setStatusFiltro] = useState<string>("todos");
   const [prioridadeFiltro, setPrioridadeFiltro] = useState<string>("todas");
