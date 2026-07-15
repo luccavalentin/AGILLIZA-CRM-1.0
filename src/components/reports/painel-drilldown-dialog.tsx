@@ -28,7 +28,7 @@ const toneClasses: Record<string, string> = {
 export interface DrilldownContext {
   metrica: string;
   valorAtual?: string;
-  filtros: Omit<ReportFiltros, "modulo"> & { modulo: ReportFiltros["modulo"] };
+  filtros: ReportFiltros & { modulo: "visao-geral" | "operacional" };
 }
 
 export function PainelDrilldownDialog({
