@@ -1,4 +1,4 @@
-import { Plus, UserPlus, Users, X } from "lucide-react";
+import { Plus, Users, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -38,7 +38,7 @@ export function VinculosSection({
   vinculos: Array<{ parceiro_id: string; tipo_vinculo: TipoVinculo }>;
   vinculoSel: Record<string, string>;
   setVinculoSel: React.Dispatch<React.SetStateAction<Record<string, string>>>;
-  adicionarVinculo: (tipo: TipoVinculo) => void;
+  adicionarVinculo: (tipo: TipoVinculo, parceiroId?: string) => void;
   removerVinculo: (parceiro_id: string, tipo: TipoVinculo) => void;
   nomeParceiro: (id: string) => string;
   onCriarTipo: (tipo: TipoVinculo) => void;
@@ -67,16 +67,19 @@ export function VinculosSection({
           return (
             <div key={tipo.valor} className="space-y-2">
               <Label className="block">{tipo.rotulo}</Label>
-              <div className="flex items-end gap-2">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                 <div className="flex-1">
                   <Select
                     value={sel}
-                    onValueChange={(val) =>
-                      setVinculoSel((prev) => ({ ...prev, [tipo.valor]: val }))
-                    }
+                    onValueChange={(val) => {
+                      // Selecionar já vincula: elimina a dúvida sobre o
+                      // antigo botão-ícone e mantém o select pronto para
+                      // novos vínculos.
+                      adicionarVinculo(tipo.valor, val);
+                    }}
                   >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione um usuário" />
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Buscar e selecionar um usuário…" />
                     </SelectTrigger>
                     <SelectContent>
                       {opcoesParceiros.length === 0 ? (
@@ -95,22 +98,19 @@ export function VinculosSection({
                 </div>
                 <Button
                   type="button"
-                  size="icon"
-                  disabled={!sel}
-                  onClick={() => adicionarVinculo(tipo.valor)}
-                  title="Vincular usuário selecionado"
-                >
-                  <UserPlus className="size-4" />
-                </Button>
-                <Button
-                  type="button"
                   variant="outline"
+                  className="shrink-0 gap-1.5"
                   onClick={() => onCriarTipo(tipo.valor)}
-                  title={`Criar novo ${tipo.rotulo}`}
+                  title={`Cadastrar novo ${tipo.rotulo.toLowerCase()}`}
                 >
-                  <Plus className="size-4" /> Novo
+                  <Plus className="size-4" /> Cadastrar novo
                 </Button>
               </div>
+              <p className="text-[11px] text-muted-foreground">
+                Selecione na lista para vincular na hora, ou use{" "}
+                <span className="font-medium text-foreground">Cadastrar novo</span> se a pessoa
+                ainda não existir.
+              </p>
               {desteTipo.length > 0 && (
                 <div className="flex flex-wrap gap-2">
                   {desteTipo.map((vinc) => (
