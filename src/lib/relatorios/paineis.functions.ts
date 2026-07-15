@@ -356,13 +356,17 @@ export const getPanelDados = createServerFn({ method: "POST" })
     // Filtro por usuário: quando um responsável específico é escolhido, ele
     // prevalece sobre o escopo (mesmo em "geral"). Sem responsável, mantém a
     // regra de escopo: "minha" restringe ao usuário — como responsável OU
-    // criador (participa/fez); "geral" abre tudo.
-    const escopoEq = (q: any, ...cols: string[]) => {
-      if (data.responsavel) return q.eq(cols[0], data.responsavel);
-      if (data.escopo !== "minha") return q;
-      if (cols.length <= 1) return q.eq(cols[0], userId);
-      return q.or(cols.map((c) => `${c}.eq.${userId}`).join(","));
-    };
+    // criador OU parceiro do cliente (corretor/imobiliária/comercial).
+    const partnerClienteIds =
+      data.escopo === "minha" && !data.responsavel
+        ? await listarClienteIdsParceiroDoUsuario(supabase, userId)
+        : [];
+    const escopoEq = criarEscopoEq({
+      userId,
+      escopo: data.escopo,
+      responsavel: data.responsavel,
+      partnerClienteIds,
+    });
 
     if (data.modulo === "visao-geral") {
       const [sims, props, contratosInfo, ant, clientesRes, demRes, tkRes, recRes, payRes, pipeRes] = await Promise.all([
