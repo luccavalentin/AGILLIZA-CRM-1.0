@@ -24,15 +24,6 @@ export function GradeCalendario({
 
   return (
     <div className="relative overflow-hidden rounded-2xl border border-border/70 bg-border shadow-card">
-      <div className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center">
-        <img
-          src={brandSymbol}
-          alt=""
-          aria-hidden
-          draggable={false}
-          className="max-h-[85%] max-w-[70%] select-none object-contain opacity-[0.10] dark:opacity-[0.14]"
-        />
-      </div>
       <div className="relative z-10 grid min-w-[560px] grid-cols-7 gap-px overflow-x-auto">
       {DIAS.map((d) => (
         <div
@@ -57,6 +48,15 @@ export function GradeCalendario({
           />
         );
       })}
+      </div>
+      <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center mix-blend-multiply dark:mix-blend-screen">
+        <img
+          src={brandSymbol}
+          alt=""
+          aria-hidden
+          draggable={false}
+          className="h-[90%] w-auto max-w-[85%] select-none object-contain opacity-[0.07] dark:opacity-[0.09]"
+        />
       </div>
     </div>
   );
