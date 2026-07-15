@@ -47,6 +47,7 @@ export function SecaoOperacaoImovel({ ctx }: { ctx: SimulacaoCompletaCtx }) {
     definirPctDespesas,
     normalizarPctDespesas,
     pctDespesas,
+    modoProposta,
   } = ctx;
 
 
