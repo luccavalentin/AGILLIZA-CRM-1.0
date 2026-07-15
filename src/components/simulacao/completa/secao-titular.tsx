@@ -90,7 +90,7 @@ export function SecaoTitular({ ctx }: { ctx: SimulacaoCompletaCtx }) {
           />
           <Erro erros={erros} campo="cpf_cnpj" />
         </Campo>
-        <Campo label={<>Renda total (R$) <Ast /></>}>
+        <Campo label={<>{f.sistema_amortizacao === "B" ? "Renda familiar — SAC (R$)" : "Renda total (R$)"} <Ast /></>}>
           <CurrencyInput
             value={f.renda_total}
             onChange={(v) => set("renda_total", v)}
@@ -98,6 +98,22 @@ export function SecaoTitular({ ctx }: { ctx: SimulacaoCompletaCtx }) {
           />
           <Erro erros={erros} campo="renda_total" />
         </Campo>
+        {f.sistema_amortizacao === "B" && (
+          <Campo label={<>Renda familiar — PRICE (R$) <Ast /></>}>
+            <div id="campo-renda-price">
+              <CurrencyInput
+                value={f.renda_price ?? 0}
+                onChange={(v) => set("renda_price", v)}
+                placeholder="Ex: 12.000,00"
+                aria-invalid={!!erros.renda_price}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              PRICE geralmente exige renda mais alta (teto de 15% da parcela inicial).
+            </p>
+            <Erro erros={erros} campo="renda_price" />
+          </Campo>
+        )}
         <Campo label={<>Data de nascimento <Ast /></>}>
           <DateInput
             value={f.data_nascimento}
