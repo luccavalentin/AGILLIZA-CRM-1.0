@@ -158,6 +158,17 @@ export function PainelView({
     staleTime: 30_000,
   });
 
+  const filtrosAtuais = {
+    modulo,
+    periodo,
+    escopo,
+    ...(periodo === "custom" ? { de, ate } : {}),
+    ...(responsavelId ? { responsavel: responsavelId } : {}),
+  } as DrilldownContext["filtros"];
+  const abrirDetalhe = (metrica: string, valorAtual?: string) =>
+    setDrilldown({ metrica, valorAtual, filtros: filtrosAtuais });
+
+
   const tabelasKey = realtimeTabelas.join(",");
   useEffect(() => {
     const tabelas = tabelasKey ? tabelasKey.split(",") : [];
