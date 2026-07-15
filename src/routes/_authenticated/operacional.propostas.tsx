@@ -695,9 +695,10 @@ function StatusCard({
       {loading ? (
         <Skeleton className="mt-2.5 h-3 w-16" />
       ) : (
-        <p className="mt-2 truncate text-[11px] tabular-nums text-muted-foreground">
+        <p className="mt-2 truncate text-[11px] tabular-nums text-muted-foreground" title={formatBRL(volume)}>
           {formatBRL(volume)}
         </p>
+
       )}
     </button>
   );
