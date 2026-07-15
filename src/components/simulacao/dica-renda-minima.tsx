@@ -25,30 +25,30 @@ interface Props {
 
 type Tone = "success" | "warning" | "danger" | "info";
 
-const TONE_STYLES: Record<Tone, { wrap: string; icon: string; label: string; text: string }> = {
+const TONE_STYLES: Record<Tone, { accent: string; iconBox: string; icon: string; status: string }> = {
   success: {
-    wrap: "border-emerald-500/40 bg-emerald-500/10",
-    icon: "text-emerald-600 dark:text-emerald-400",
-    label: "text-emerald-700 dark:text-emerald-300",
-    text: "text-emerald-900 dark:text-emerald-100",
+    accent: "bg-success",
+    iconBox: "bg-success/10 ring-success/20",
+    icon: "text-success",
+    status: "text-success",
   },
   warning: {
-    wrap: "border-amber-500/40 bg-amber-500/10",
-    icon: "text-amber-600 dark:text-amber-400",
-    label: "text-amber-700 dark:text-amber-300",
-    text: "text-amber-900 dark:text-amber-100",
+    accent: "bg-warning",
+    iconBox: "bg-warning/15 ring-warning/25",
+    icon: "text-warning-foreground",
+    status: "text-warning-foreground",
   },
   danger: {
-    wrap: "border-rose-500/40 bg-rose-500/10",
-    icon: "text-rose-600 dark:text-rose-400",
-    label: "text-rose-700 dark:text-rose-300",
-    text: "text-rose-900 dark:text-rose-100",
+    accent: "bg-destructive",
+    iconBox: "bg-destructive/10 ring-destructive/20",
+    icon: "text-destructive",
+    status: "text-destructive",
   },
   info: {
-    wrap: "border-sky-500/40 bg-sky-500/10",
-    icon: "text-sky-600 dark:text-sky-400",
-    label: "text-sky-700 dark:text-sky-300",
-    text: "text-sky-900 dark:text-sky-100",
+    accent: "bg-primary",
+    iconBox: "bg-primary/10 ring-primary/20",
+    icon: "text-primary",
+    status: "text-primary",
   },
 };
 
@@ -108,27 +108,40 @@ export function DicaRendaMinima(props: Props) {
   return (
     <div
       className={cn(
-        "mt-1.5 flex items-center gap-2 rounded-lg border px-2.5 py-1.5 shadow-sm",
-        s.wrap,
+        "mt-2 grid grid-cols-[3px_1fr] overflow-hidden rounded-lg border border-border/70 bg-card shadow-sm ring-1 ring-border/40",
       )}
     >
-      <Icon className={cn("h-4 w-4 shrink-0", s.icon)} aria-hidden />
-      <div className="flex min-w-0 flex-1 items-baseline gap-2 leading-tight">
-        <span className={cn("text-[11px] font-semibold uppercase tracking-wide", s.label)}>
-          {statusLabel}
+      <div className={cn("h-full", s.accent)} aria-hidden />
+      <div className="flex min-w-0 items-center gap-3 px-3 py-2">
+        <span className={cn("grid h-8 w-8 shrink-0 place-items-center rounded-md ring-1", s.iconBox)}>
+          <Icon className={cn("h-4 w-4", s.icon)} aria-hidden />
         </span>
-        <span className={cn("truncate text-sm font-bold tabular-nums", s.text)}>
-          {formatBRL(rendaMin)}
-        </span>
-        <span className={cn("text-[10px] font-medium uppercase tracking-wider opacity-70", s.label)}>
-          {sistema === "P" ? "PRICE" : "SAC"}
-        </span>
+
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className={cn("text-[11px] font-semibold uppercase tracking-wide", s.status)}>
+              {statusLabel}
+            </span>
+            <span className="inline-flex h-5 items-center rounded border border-border bg-muted/50 px-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              Tabela {sistema === "P" ? "PRICE" : "SAC"}
+            </span>
+          </div>
+          {subtitulo && (
+            <p className="mt-0.5 truncate text-[11px] font-medium tabular-nums text-muted-foreground">
+              {subtitulo}
+            </p>
+          )}
+        </div>
+
+        <div className="shrink-0 text-right">
+          <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+            Renda mínima
+          </p>
+          <p className="font-mono text-sm font-semibold tabular-nums text-foreground">
+            {formatBRL(rendaMin)}
+          </p>
+        </div>
       </div>
-      {subtitulo && (
-        <span className={cn("shrink-0 text-[11px] font-medium tabular-nums", s.label)}>
-          {subtitulo}
-        </span>
-      )}
     </div>
   );
 }
