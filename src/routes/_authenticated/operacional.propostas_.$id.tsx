@@ -195,6 +195,15 @@ function Pagina() {
   const { data, isLoading } = useQuery({
     queryKey: ["proposta", id],
     queryFn: () => obterProposta({ data: { id } }),
+    // Fallback de atualização automática caso o realtime não entregue o evento
+    // (aba em background, websocket caído, etc.). Para em desfechos terminais.
+    refetchInterval: (q: any) => {
+      const st = q.state.data?.proposta?.status as string | undefined;
+      if (!st) return 30_000;
+      const terminais = ["contrato_emitido", "cancelada", "credito_recusado"];
+      return terminais.includes(st) ? false : 30_000;
+    },
+    refetchOnWindowFocus: true,
   });
 
   // Ao chegar de "Criar proposta", abre o cadastro complementar automaticamente
@@ -236,16 +245,26 @@ function Pagina() {
 
 
 
-  // realtime na proposta
+  // realtime na proposta, nos bancos e no histórico — qualquer mudança dispara
+  // uma reconsulta da proposta para refletir o retorno do banco em tempo real.
   useEffect(() => {
+    const invalidar = () => qc.invalidateQueries({ queryKey: ["proposta", id] });
     const channel = supabase
       .channel(`proposta-${id}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "propostas", filter: `id=eq.${id}` },
-        () => {
-          qc.invalidateQueries({ queryKey: ["proposta", id] });
-        },
+        invalidar,
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "proposta_bancos", filter: `proposta_id=eq.${id}` },
+        invalidar,
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "proposta_historico", filter: `proposta_id=eq.${id}` },
+        invalidar,
       )
       .subscribe();
     return () => {
