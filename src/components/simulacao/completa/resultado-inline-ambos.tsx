@@ -413,21 +413,19 @@ export function ResultadoInlineAmbos({ simulacaoIdSac, simulacaoIdPrice, onFecha
             </div>
 
             {/* Desktop: tabela unificada */}
-            <div className="hidden overflow-x-auto rounded-xl border border-border/60 shadow-sm lg:block">
-              <Table>
+            <div className="hidden rounded-xl border border-border/60 shadow-sm lg:block">
+              <Table className="w-full table-fixed text-[13px]">
                 <TableHeader>
                   <TableRow className="border-border/60 bg-muted/50 hover:bg-muted/50">
-                    <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Sistema</TableHead>
-                    <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Banco</TableHead>
-                    <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Situação</TableHead>
-                    <TableHead className="text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">Parcela</TableHead>
-                    <TableHead className="text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">Taxa a.a.</TableHead>
-                    <TableHead className="text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">Prazo máx</TableHead>
-                    <TableHead className="text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">Financ. máx</TableHead>
-                    <TableHead className="text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">Total financiado</TableHead>
-                    <TableHead className="text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">IOF</TableHead>
-                    <TableHead className="text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">Renda estimada</TableHead>
-                    <TableHead></TableHead>
+                    <TableHead className="w-[22%] text-xs font-semibold uppercase tracking-wide text-muted-foreground">Banco</TableHead>
+                    <TableHead className="w-[9%] text-xs font-semibold uppercase tracking-wide text-muted-foreground">Situação</TableHead>
+                    <TableHead className="w-[11%] text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">Parcela</TableHead>
+                    <TableHead className="w-[7%] text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">Taxa</TableHead>
+                    <TableHead className="w-[7%] text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">Prazo</TableHead>
+                    <TableHead className="w-[12%] text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">Financiado</TableHead>
+                    <TableHead className="w-[9%] text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">IOF</TableHead>
+                    <TableHead className="w-[11%] text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">Renda est.</TableHead>
+                    <TableHead className="w-[12%]"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
