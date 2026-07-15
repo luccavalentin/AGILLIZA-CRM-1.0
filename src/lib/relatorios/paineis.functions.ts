@@ -1112,7 +1112,8 @@ export const getPanelDrilldown = createServerFn({ method: "POST" })
         .from("propostas")
         .select("id,cliente_id,status,nome_banco,valor_financiamento_aprovado,valor_financiamento,numero_proposta")
         .in("cliente_id", ids)
-        .in("status", Array.from(CONTRATO_STATUS) as any);
+        .in("status", Array.from(CONTRATO_STATUS) as any)
+        .is("deleted_at", null);
       const propByCli = new Map<string, any>();
       for (const p of ((propRes.data ?? []) as any[])) {
         if (!propByCli.has(p.cliente_id)) propByCli.set(p.cliente_id, p);
