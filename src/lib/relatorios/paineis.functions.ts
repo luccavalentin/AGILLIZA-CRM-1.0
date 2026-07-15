@@ -208,6 +208,7 @@ async function carregarContratosCliente(
       .from("simulacoes")
       .select("cliente_id,valor_financiamento,valor_imovel")
       .in("cliente_id", semValor)
+      .is("deleted_at", null)
       .limit(5000);
     for (const s of (simRes.data ?? []) as any[]) {
       const v = Number(s.valor_financiamento ?? s.valor_imovel ?? 0) || 0;
@@ -262,6 +263,7 @@ async function carregarAnterior(
       supabase
         .from("simulacoes")
         .select("status,valor_financiamento,created_at")
+        .is("deleted_at", null)
         .gte("created_at", de)
         .lte("created_at", ateFim)
         .limit(5000),
@@ -342,6 +344,7 @@ export const getPanelDados = createServerFn({ method: "POST" })
           supabase
             .from("simulacoes")
             .select("id,status,tipo_simulacao,valor_financiamento,created_at,usuario_responsavel_id")
+            .is("deleted_at", null)
             .gte("created_at", de)
             .lte("created_at", ateFim)
             .limit(5000),
@@ -700,6 +703,7 @@ export const getPanelDados = createServerFn({ method: "POST" })
         supabase
           .from("simulacoes")
           .select("status,valor_financiamento,created_at")
+          .is("deleted_at", null)
           .gte("created_at", de)
           .lte("created_at", ateFim)
           .limit(5000),

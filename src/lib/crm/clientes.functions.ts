@@ -1254,11 +1254,13 @@ export async function recuarEsteiraSeOrfao(
     supabase
       .from("simulacoes")
       .select("id", { count: "exact", head: true })
-      .eq("cliente_id", clienteId),
+      .eq("cliente_id", clienteId)
+      .is("deleted_at", null),
     supabase
       .from("propostas")
       .select("id", { count: "exact", head: true })
-      .eq("cliente_id", clienteId),
+      .eq("cliente_id", clienteId)
+      .is("deleted_at", null),
   ]);
   const temSims = (sims ?? 0) > 0;
   const temProps = (props ?? 0) > 0;
@@ -1686,11 +1688,13 @@ export const getClienteNegocios = createServerFn({ method: "GET" })
         .from("simulacoes")
         .select("id, numero_simulacao, produto, status, valor_financiamento, created_at")
         .eq("cliente_id", data.cliente_id)
+        .is("deleted_at", null)
         .order("created_at", { ascending: false }),
       supabase
         .from("propostas")
         .select("id, numero_proposta, nome_banco, produto, status, valor_financiamento, created_at")
         .eq("cliente_id", data.cliente_id)
+        .is("deleted_at", null)
         .order("created_at", { ascending: false }),
     ]);
 

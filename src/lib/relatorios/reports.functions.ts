@@ -402,6 +402,15 @@ export const runReport = createServerFn({ method: "POST" })
         .lte(dateCol, ateFim)
         .order(dateCol, { ascending: false })
         .limit(5000);
+      // Ignora registros soft-deleted em tabelas que suportam exclusão lógica.
+      const TEM_SOFT_DELETE = new Set([
+        "simulacoes",
+        "propostas",
+        "clientes",
+        "tasks",
+        "demandas",
+      ]);
+      if (TEM_SOFT_DELETE.has(table)) q = q.is("deleted_at", null);
       q = aplicarEscopo(q, filtros, userId, colResp);
       if (filtros.responsavel && colResp) q = q.eq(colResp, filtros.responsavel);
       if (filtros.banco && temCol("nome_banco")) q = q.eq("nome_banco", filtros.banco);

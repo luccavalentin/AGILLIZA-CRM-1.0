@@ -38,6 +38,7 @@ export const buscaGlobal = createServerFn({ method: "GET" })
       supabase
         .from("simulacoes")
         .select("id, nome_cliente, cpf_cnpj, numero_simulacao")
+        .is("deleted_at", null)
         .or(`nome_cliente.ilike.${like},cpf_cnpj.ilike.${like}`)
         .limit(6),
       supabase
