@@ -57,7 +57,7 @@ const ESTADO_INICIAL: Form = {
   renda_price: 0,
   data_nascimento: "",
   estado_civil: "",
-  email: "",
+  email: EMAIL_PADRAO,
   celular: "",
   possui_conjuge: false,
   compoe_renda: false,
