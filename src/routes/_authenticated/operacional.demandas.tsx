@@ -395,9 +395,10 @@ function Pagina() {
       if (analistaFiltro !== "todos" && d.analista_id !== analistaFiltro) return false;
       if (corretorFiltro !== "todos" && d.corretor_id !== corretorFiltro) return false;
       if (imobiliariaFiltro !== "todos" && d.imobiliaria_id !== imobiliariaFiltro) return false;
+      if (comercialFiltro !== "todos" && (d as any).comercial_id !== comercialFiltro) return false;
       return true;
     });
-  }, [todos, statusFiltro, prioridadeFiltro, responsavelFiltro, clienteFiltro, analistaFiltro, corretorFiltro, imobiliariaFiltro]);
+  }, [todos, statusFiltro, prioridadeFiltro, responsavelFiltro, clienteFiltro, analistaFiltro, corretorFiltro, imobiliariaFiltro, comercialFiltro]);
 
   const stats = useMemo(() => {
     const base = todos;
