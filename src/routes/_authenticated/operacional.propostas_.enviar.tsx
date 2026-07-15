@@ -255,20 +255,23 @@ function AbaPropostas({ escopo, busca, dataInicio, dataFim }: FiltroProps) {
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  {p.numero_proposta_banco ? (
-                    <>
-                      <div className="text-lg font-bold tabular-nums leading-tight tracking-tight text-[var(--banco)]">
-                        Nº banco {p.numero_proposta_banco}
-                      </div>
-                      <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                        Interno <span className="tabular-nums">{p.numero_proposta}</span>
-                      </div>
-                    </>
-                  ) : (
-                    <span className="font-semibold tabular-nums text-foreground">
-                      {p.numero_proposta}
-                    </span>
-                  )}
+                  {(() => {
+                    const nb = numeroBancoParaExibir(p.numero_proposta_banco);
+                    return nb ? (
+                      <>
+                        <div className="text-lg font-bold tabular-nums leading-tight tracking-tight text-[var(--banco)]">
+                          Nº banco {nb}
+                        </div>
+                        <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                          Interno <span className="tabular-nums">{p.numero_proposta}</span>
+                        </div>
+                      </>
+                    ) : (
+                      <span className="font-semibold tabular-nums text-foreground">
+                        {p.numero_proposta}
+                      </span>
+                    );
+                  })()}
                   <p className="mt-0.5 truncate text-sm text-muted-foreground">
                     {p.nome_cliente ?? "—"}
                   </p>
