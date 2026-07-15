@@ -1087,12 +1087,16 @@ export const getPanelDrilldown = createServerFn({ method: "POST" })
     const f = data as unknown as ReportFiltros;
     const { de, ate } = resolverIntervalo(f);
     const ateFim = `${ate}T23:59:59`;
-    const escopoEq = (q: any, ...cols: string[]) => {
-      if (data.responsavel) return q.eq(cols[0], data.responsavel);
-      if (data.escopo !== "minha") return q;
-      if (cols.length <= 1) return q.eq(cols[0], userId);
-      return q.or(cols.map((c) => `${c}.eq.${userId}`).join(","));
-    };
+    const partnerClienteIds =
+      data.escopo === "minha" && !data.responsavel
+        ? await listarClienteIdsParceiroDoUsuario(supabase, userId)
+        : [];
+    const escopoEq = criarEscopoEq({
+      userId,
+      escopo: data.escopo,
+      responsavel: data.responsavel,
+      partnerClienteIds,
+    });
 
     const dentroPeriodo = (iso?: string | null) =>
       !!iso && iso.slice(0, 10) >= de && iso.slice(0, 10) <= ate;
