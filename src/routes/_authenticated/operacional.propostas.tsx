@@ -48,6 +48,7 @@ import { StatusBancosProposta } from "@/components/proposta/status-bancos-propos
 import { ConfirmDelete } from "@/components/shared/confirm-delete";
 import { formatBRL } from "@/lib/simulacao/format";
 import { corDoBanco } from "@/lib/bancos/cores";
+import { numeroBancoParaExibir } from "@/lib/propostas/numero-banco-display";
 import {
   GRUPOS_PROPOSTA,
   grupoDoStatus,
@@ -437,20 +438,23 @@ function Pagina() {
               </div>
 
               <div className="px-4 py-3 pl-5">
-                {p.numero_proposta_banco ? (
-                  <>
-                    <div className="text-lg font-bold tabular-nums leading-tight tracking-tight" style={{ color: corBanco }}>
-                      Nº banco {p.numero_proposta_banco}
+                {(() => {
+                  const nb = numeroBancoParaExibir(p.numero_proposta_banco);
+                  return nb ? (
+                    <>
+                      <div className="text-lg font-bold tabular-nums leading-tight tracking-tight" style={{ color: corBanco }}>
+                        Nº banco {nb}
+                      </div>
+                      <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                        Interno <span className="tabular-nums">{p.numero_proposta}</span>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-base font-semibold tabular-nums tracking-tight text-foreground">
+                      {p.numero_proposta}
                     </div>
-                    <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                      Interno <span className="tabular-nums">{p.numero_proposta}</span>
-                    </div>
-                  </>
-                ) : (
-                  <div className="text-base font-semibold tabular-nums tracking-tight text-foreground">
-                    {p.numero_proposta}
-                  </div>
-                )}
+                  );
+                })()}
 
                 <p className="mt-0.5 truncate text-sm text-muted-foreground">
                   {p.nome_cliente ?? "—"}
@@ -564,20 +568,23 @@ function Pagina() {
                 >
                   <TableCell className="relative">
                     <span className="absolute inset-y-0 left-0 w-[3px] origin-top scale-y-0 rounded-r-full bg-[var(--banco)] transition-transform duration-200 group-hover:scale-y-100" />
-                    {p.numero_proposta_banco ? (
-                      <>
-                        <div className="text-base font-bold tabular-nums leading-tight text-[var(--banco)]">
-                          Nº banco {p.numero_proposta_banco}
+                    {(() => {
+                      const nb = numeroBancoParaExibir(p.numero_proposta_banco);
+                      return nb ? (
+                        <>
+                          <div className="text-base font-bold tabular-nums leading-tight text-[var(--banco)]">
+                            Nº banco {nb}
+                          </div>
+                          <div className="mt-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                            Interno <span className="tabular-nums">{p.numero_proposta}</span>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="font-medium tabular-nums text-foreground transition-colors group-hover:text-[var(--banco)]">
+                          {p.numero_proposta}
                         </div>
-                        <div className="mt-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                          Interno <span className="tabular-nums">{p.numero_proposta}</span>
-                        </div>
-                      </>
-                    ) : (
-                      <div className="font-medium tabular-nums text-foreground transition-colors group-hover:text-[var(--banco)]">
-                        {p.numero_proposta}
-                      </div>
-                    )}
+                      );
+                    })()}
                   </TableCell>
 
                   <TableCell className="font-medium text-foreground">

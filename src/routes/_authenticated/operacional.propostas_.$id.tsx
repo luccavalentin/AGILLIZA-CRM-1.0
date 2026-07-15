@@ -1,5 +1,6 @@
 import { createFileRoute, useRouter, Link } from "@tanstack/react-router";
 import { corDoBanco } from "@/lib/bancos/cores";
+import { numeroBancoParaExibir } from "@/lib/propostas/numero-banco-display";
 import { BancoLogo } from "@/components/bancos/banco-logo";
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -310,10 +311,10 @@ function Pagina() {
               {p.produto ?? "Operação"}
             </span>
             <h1 className="mt-2 truncate text-2xl font-semibold text-foreground">
-              {p.numero_proposta_banco ? `Proposta banco ${p.numero_proposta_banco}` : `Proposta ${p.numero_proposta}`}
+              {(() => { const nb = numeroBancoParaExibir(p.numero_proposta_banco); return nb ? `Proposta banco ${nb}` : `Proposta ${p.numero_proposta}`; })()}
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              {p.numero_proposta_banco && <span className="mr-2">Interno {p.numero_proposta} ·</span>}
+              {numeroBancoParaExibir(p.numero_proposta_banco) && <span className="mr-2">Interno {p.numero_proposta} ·</span>}
               {status === "cancelada"
                 ? "Proposta cancelada"
                 : `Ativa há ${diasDesde} dia(s)`}
@@ -802,11 +803,11 @@ function TabResumo({
                     >
                       {b.nome_banco}
                     </span>
-                    {b.numero_proposta_banco && (
+                    {(() => { const nb = numeroBancoParaExibir(b.numero_proposta_banco); return nb ? (
                       <span className="truncate text-[11px] tabular-nums text-muted-foreground">
-                        Nº banco {b.numero_proposta_banco}
+                        Nº banco {nb}
                       </span>
-                    )}
+                    ) : null; })()}
                   </span>
                 </span>
                 <ToneBadge tone={statusBancoConfig(b.status_banco).tone}>
@@ -925,7 +926,7 @@ function TabResumo({
                   </span>
                 </TableCell>
                 <TableCell className="max-w-44 truncate text-xs tabular-nums text-muted-foreground">
-                  {b.numero_proposta_banco ? `Nº banco ${b.numero_proposta_banco}` : "—"}
+                  {(() => { const nb = numeroBancoParaExibir(b.numero_proposta_banco); return nb ? `Nº banco ${nb}` : "—"; })()}
                 </TableCell>
                 <TableCell className="text-right tabular-nums">
                   {formatBRL(b.valor_financiamento_max)}
@@ -1091,11 +1092,11 @@ function DetalhamentoBancoDialog({
               <p className="whitespace-pre-wrap text-foreground">{banco.mensagem_banco}</p>
             </div>
           )}
-          {banco?.numero_proposta_banco && (
+          {(() => { const nb = numeroBancoParaExibir(banco?.numero_proposta_banco); return nb ? (
             <p className="text-xs text-muted-foreground">
-              Nº oficial da proposta no banco: {banco.numero_proposta_banco}
+              Nº oficial da proposta no banco: {nb}
             </p>
-          )}
+          ) : null; })()}
         </div>
         <DialogFooter>
           <Button onClick={onClose}>Fechar</Button>

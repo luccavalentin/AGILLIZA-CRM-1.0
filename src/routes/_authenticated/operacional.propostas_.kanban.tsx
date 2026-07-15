@@ -22,6 +22,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatBRL, maskCpfCnpj } from "@/lib/simulacao/format";
 import { cn } from "@/lib/utils";
+import { numeroBancoParaExibir } from "@/lib/propostas/numero-banco-display";
 
 export const Route = createFileRoute("/_authenticated/operacional/propostas_/kanban")({
   head: () => ({ meta: [{ title: "Kanban de Propostas — Agilliza" }] }),
@@ -437,18 +438,21 @@ function Pagina() {
 
                       {/* Nº da proposta */}
                       <div className="mt-2.5 flex flex-wrap items-center gap-1.5 text-[11px]">
-                        {c.numero_proposta_banco ? (
-                          <>
-                            <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[12px] font-bold tabular-nums text-primary">
-                              Nº banco {c.numero_proposta_banco}
+                        {(() => {
+                          const nb = numeroBancoParaExibir(c.numero_proposta_banco);
+                          return nb ? (
+                            <>
+                              <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[12px] font-bold tabular-nums text-primary">
+                                Nº banco {nb}
+                              </span>
+                              <span className="tabular-nums text-muted-foreground">Interno #{c.numero_proposta}</span>
+                            </>
+                          ) : (
+                            <span className="rounded bg-muted px-1.5 py-0.5 font-medium tabular-nums text-foreground">
+                              #{c.numero_proposta}
                             </span>
-                            <span className="tabular-nums text-muted-foreground">Interno #{c.numero_proposta}</span>
-                          </>
-                        ) : (
-                          <span className="rounded bg-muted px-1.5 py-0.5 font-medium tabular-nums text-foreground">
-                            #{c.numero_proposta}
-                          </span>
-                        )}
+                          );
+                        })()}
                       </div>
 
 
