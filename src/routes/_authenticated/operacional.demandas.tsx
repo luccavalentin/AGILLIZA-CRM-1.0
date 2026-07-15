@@ -66,6 +66,11 @@ export const Route = createFileRoute("/_authenticated/operacional/demandas")({
 
 type Escopo = "minhas" | "todas";
 
+interface OpcaoId {
+  id: string;
+  label: string;
+}
+
 function atrasada(d: { status: string; prazo_sla: string | null }): boolean {
   if (d.status === "concluida" || d.status === "cancelada" || !d.prazo_sla) return false;
   return new Date(d.prazo_sla).getTime() < Date.now();
