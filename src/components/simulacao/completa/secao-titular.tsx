@@ -90,7 +90,7 @@ export function SecaoTitular({ ctx }: { ctx: SimulacaoCompletaCtx }) {
           />
           <Erro erros={erros} campo="cpf_cnpj" />
         </Campo>
-        <Campo label={<>Renda total (R$) <Ast /></>}>
+        <Campo label={<>{f.sistema_amortizacao === "B" ? "Renda familiar — SAC (R$)" : "Renda total (R$)"} <Ast /></>}>
           <CurrencyInput
             value={f.renda_total}
             onChange={(v) => set("renda_total", v)}
@@ -98,6 +98,22 @@ export function SecaoTitular({ ctx }: { ctx: SimulacaoCompletaCtx }) {
           />
           <Erro erros={erros} campo="renda_total" />
         </Campo>
+        {f.sistema_amortizacao === "B" && (
+          <Campo label={<>Renda familiar — PRICE (R$) <Ast /></>}>
+            <div id="campo-renda-price">
+              <CurrencyInput
+                value={f.renda_price ?? 0}
+                onChange={(v) => set("renda_price", v)}
+                placeholder="Ex: 12.000,00"
+                aria-invalid={!!erros.renda_price}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              PRICE geralmente exige renda mais alta (teto de 15% da parcela inicial).
+            </p>
+            <Erro erros={erros} campo="renda_price" />
+          </Campo>
+        )}
         <Campo label={<>Data de nascimento <Ast /></>}>
           <DateInput
             value={f.data_nascimento}
@@ -169,7 +185,7 @@ export function SecaoTitular({ ctx }: { ctx: SimulacaoCompletaCtx }) {
           </Button>
         </div>
       )}
-      {f.valor_financiamento > 0 && f.prazo >= 60 && (
+      {f.valor_financiamento > 0 && f.prazo >= 60 && f.sistema_amortizacao !== "B" && (
         <DicaRendaMinima
           valorFinanciamento={f.valor_financiamento}
           valorImovel={f.valor_imovel}
@@ -178,6 +194,26 @@ export function SecaoTitular({ ctx }: { ctx: SimulacaoCompletaCtx }) {
           sistema={f.sistema_amortizacao === "P" ? "P" : "S"}
           rendaInformada={rendaConsiderada}
         />
+      )}
+      {f.valor_financiamento > 0 && f.prazo >= 60 && f.sistema_amortizacao === "B" && (
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          <DicaRendaMinima
+            valorFinanciamento={f.valor_financiamento}
+            valorImovel={f.valor_imovel}
+            prazoMeses={f.prazo}
+            taxaAno={melhorTaxaAno}
+            sistema="S"
+            rendaInformada={Number(f.renda_total) || 0}
+          />
+          <DicaRendaMinima
+            valorFinanciamento={f.valor_financiamento}
+            valorImovel={f.valor_imovel}
+            prazoMeses={f.prazo}
+            taxaAno={melhorTaxaAno}
+            sistema="P"
+            rendaInformada={Number(f.renda_price) || 0}
+          />
+        </div>
       )}
     </section>
   );

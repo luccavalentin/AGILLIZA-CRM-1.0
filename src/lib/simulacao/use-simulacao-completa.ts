@@ -48,6 +48,7 @@ const ESTADO_INICIAL: Form = {
   nome_cliente: "",
   cpf_cnpj: "",
   renda_total: 0,
+  renda_price: 0,
   data_nascimento: "",
   estado_civil: "",
   email: "",
@@ -55,6 +56,8 @@ const ESTADO_INICIAL: Form = {
   possui_conjuge: false,
   compoe_renda: false,
   bancos_ids: [] as string[],
+  bancos_sac_ids: [] as string[],
+  bancos_price_ids: [] as string[],
   consentimento_lgpd: false,
   consentimento_scr: false,
   email_verificado_em: null,
@@ -93,6 +96,8 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
   // Guarda o id da última simulação gerada para exibir o resultado inline
   // (sem redirecionar), permitindo o usuário ajustar o prazo e simular novamente.
   const [simulacaoResultadoId, setSimulacaoResultadoId] = useState<string | null>(null);
+  // Segundo id de simulação para o modo "Ambos" (uma simulação SAC + uma PRICE).
+  const [simulacaoResultadoIdPrice, setSimulacaoResultadoIdPrice] = useState<string | null>(null);
 
   const { data: bancos } = useQuery({
     queryKey: ["bancos-ativos"],
@@ -552,12 +557,53 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
       setF((prev) => ({ ...prev, sistema_amortizacao: v, bancos_ids: elegiveis }));
       return;
     }
+    if (v === "B") {
+      // Modo "Ambos": mantém as seleções separadas por sistema.
+      // Se ainda não há bancos separados, propaga a seleção atual como base
+      // para SAC (todos elegíveis) e PRICE (só Bradesco/Santander).
+      setF((prev) => {
+        const sacBase =
+          prev.bancos_sac_ids.length > 0 ? prev.bancos_sac_ids : prev.bancos_ids;
+        const priceBase =
+          prev.bancos_price_ids.length > 0
+            ? prev.bancos_price_ids
+            : prev.bancos_ids.filter((id: string) => {
+                const b = (bancos ?? []).find((x) => x.id === id);
+                return b ? aceitaPrice(b) : false;
+              });
+        return {
+          ...prev,
+          sistema_amortizacao: "B",
+          bancos_sac_ids: sacBase,
+          bancos_price_ids: priceBase,
+        };
+      });
+      toast.info("Modo Ambos: escolha os bancos SAC e PRICE separadamente e preencha a renda para PRICE.");
+      return;
+    }
     set("sistema_amortizacao", v);
   }
 
-  function toggleBanco(id: string) {
+  function toggleBanco(id: string, sistemaAlvo?: "S" | "P") {
     setF((prev) => {
       const banco = (bancos ?? []).find((b) => b.id === id);
+
+      // Modo "Ambos": alterna dentro de bancos_sac_ids ou bancos_price_ids.
+      if (prev.sistema_amortizacao === "B" && sistemaAlvo) {
+        if (sistemaAlvo === "P" && banco && !aceitaPrice(banco)) {
+          toast.info("PRICE: apenas Bradesco e Santander operam esse sistema.");
+          return prev;
+        }
+        if (banco && !aceitaBancoNaOperacao(banco)) {
+          toast.info(`${restricaoEspecial.motivo}: apenas Bradesco opera essa modalidade.`);
+          return prev;
+        }
+        const key = sistemaAlvo === "S" ? "bancos_sac_ids" : "bancos_price_ids";
+        const arr = (prev[key] as string[]) ?? [];
+        const has = arr.includes(id);
+        return { ...prev, [key]: has ? arr.filter((x) => x !== id) : [...arr, id] };
+      }
+
       const has = prev.bancos_ids.includes(id);
       if (prev.sistema_amortizacao === "P" && !has && banco && !aceitaPrice(banco)) {
         toast.info("No sistema PRICE, apenas Bradesco e Santander podem ser selecionados.");
@@ -771,6 +817,10 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
   }
 
   async function enviar() {
+    if (f.sistema_amortizacao === "B") {
+      await enviarAmbos();
+      return;
+    }
     const parsed = completaSchema.safeParse({ ...f, id_operacao_homefin: idOperacao });
     if (!parsed.success) {
       const novos: Record<string, string> = {};
@@ -790,6 +840,149 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
     }
     if (!rendaSuficiente()) return;
     await executarEnvio();
+  }
+
+  /**
+   * Envio no modo "Ambos": cria uma simulação SAC (com renda_total) e uma
+   * simulação PRICE (com renda_price). Cada simulação usa somente os bancos
+   * selecionados no seu grupo. Se a renda PRICE não foi preenchida, o envio
+   * é bloqueado e o usuário é levado ao campo para completar.
+   */
+  async function enviarAmbos() {
+    const novosErros: Record<string, string> = {};
+    if (!(Number(f.renda_price) > 0)) {
+      novosErros.renda_price = "Informe a renda para o sistema PRICE.";
+    }
+    const totalBancos = f.bancos_sac_ids.length + f.bancos_price_ids.length;
+    if (totalBancos === 0) {
+      novosErros.bancos_ids = "Selecione ao menos um banco em SAC ou PRICE.";
+    }
+    if (Object.keys(novosErros).length > 0) {
+      setErros(novosErros);
+      if (novosErros.renda_price) {
+        toast.error("Preencha a renda para o sistema PRICE antes de enviar.");
+        if (typeof document !== "undefined") {
+          const el = document.getElementById("campo-renda-price");
+          if (el) {
+            el.scrollIntoView({ behavior: "smooth", block: "center" });
+            setTimeout(() => {
+              const input = el.querySelector("input") as HTMLInputElement | null;
+              input?.focus();
+            }, 300);
+          }
+        }
+      } else {
+        toast.error(novosErros.bancos_ids ?? "Revise os campos destacados.");
+      }
+      return;
+    }
+    setErros({});
+
+    setConcluidos(0);
+    setEnviando(true);
+    const idsGerados: string[] = [];
+    let done = 0;
+    try {
+      // Simulação SAC
+      if (f.bancos_sac_ids.length > 0) {
+        const parsedS = completaSchema.safeParse({
+          ...f,
+          sistema_amortizacao: "S",
+          bancos_ids: f.bancos_sac_ids,
+          id_operacao_homefin: idOperacao,
+        });
+        if (!parsedS.success) {
+          const novos: Record<string, string> = {};
+          for (const issue of parsedS.error.issues) novos[String(issue.path[0])] = issue.message;
+          setErros(novos);
+          toast.error("Revise os campos destacados.");
+          setEnviando(false);
+          setConcluidos(0);
+          return;
+        }
+        const { id } = await criarSimulacao({
+          data: {
+            modo: "completa",
+            dados: {
+              ...parsedS.data,
+              id_operacao_homefin: idOperacao,
+              email_verificado_em: f.email_verificado_em,
+            } as any,
+          },
+        });
+        idsGerados.push(id);
+        for (const bid of f.bancos_sac_ids) {
+          try {
+            await enviarSimulacaoBanco({ data: { simulacao_id: id, banco_ids: [bid] } });
+          } catch (e) {
+            toast.error(
+              e instanceof Error
+                ? e.message
+                : "Falha ao enviar a um banco (SAC). Você pode reenviar na tela da simulação.",
+            );
+          }
+          done++;
+          setConcluidos(done);
+        }
+      }
+
+      // Simulação PRICE (usa a renda específica para PRICE como renda_total)
+      if (f.bancos_price_ids.length > 0) {
+        const parsedP = completaSchema.safeParse({
+          ...f,
+          sistema_amortizacao: "P",
+          bancos_ids: f.bancos_price_ids,
+          renda_total: Number(f.renda_price),
+          id_operacao_homefin: idOperacao,
+        });
+        if (!parsedP.success) {
+          const novos: Record<string, string> = {};
+          for (const issue of parsedP.error.issues) novos[String(issue.path[0])] = issue.message;
+          setErros(novos);
+          toast.error("Revise os campos destacados.");
+          setEnviando(false);
+          setConcluidos(0);
+          return;
+        }
+        const { id } = await criarSimulacao({
+          data: {
+            modo: "completa",
+            dados: {
+              ...parsedP.data,
+              id_operacao_homefin: idOperacao,
+              email_verificado_em: f.email_verificado_em,
+            } as any,
+          },
+        });
+        idsGerados.push(id);
+        for (const bid of f.bancos_price_ids) {
+          try {
+            await enviarSimulacaoBanco({ data: { simulacao_id: id, banco_ids: [bid] } });
+          } catch (e) {
+            toast.error(
+              e instanceof Error
+                ? e.message
+                : "Falha ao enviar a um banco (PRICE). Você pode reenviar na tela da simulação.",
+            );
+          }
+          done++;
+          setConcluidos(done);
+        }
+      }
+
+      sessionStorage.removeItem("simulacao_wizard");
+      setSimulacaoResultadoId(idsGerados[0] ?? null);
+      setSimulacaoResultadoIdPrice(idsGerados[1] ?? null);
+      setEnviando(false);
+      setConcluidos(0);
+      toast.success("Simulações SAC e PRICE geradas. Confira os resultados abaixo.");
+    } catch (e) {
+      toast.error(
+        e instanceof Error ? e.message : "Não foi possível criar as simulações.",
+      );
+      setEnviando(false);
+      setConcluidos(0);
+    }
   }
 
   async function executarEnvio() {
@@ -970,9 +1163,12 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
     normalizarPctDespesas,
     enviar,
     executarEnvio,
+    enviarAmbos,
     // resultado inline
     simulacaoResultadoId,
+    simulacaoResultadoIdPrice,
     fecharResultadoInline: () => setSimulacaoResultadoId(null),
+    fecharResultadoInlinePrice: () => setSimulacaoResultadoIdPrice(null),
   };
 }
 
