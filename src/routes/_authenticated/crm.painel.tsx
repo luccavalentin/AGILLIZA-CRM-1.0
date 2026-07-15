@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { Fragment, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -218,13 +218,22 @@ function Pagina() {
     queryKey,
     queryFn: () =>
       listar({ data: { desde: desde || undefined, ate: ate || undefined, escopo } }),
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
   });
 
+  // Debounce da busca de clientes para não disparar servidor a cada tecla.
+  const [termoAdicionarDeb, setTermoAdicionarDeb] = useState("");
   const termoAdicionar = adicionarBusca.trim();
+  useEffect(() => {
+    const t = window.setTimeout(() => setTermoAdicionarDeb(termoAdicionar), 250);
+    return () => window.clearTimeout(t);
+  }, [termoAdicionar]);
   const { data: resultadosAdicionar, isFetching: buscandoAdicionar } = useQuery({
-    queryKey: ["crm-painel-buscar-cliente", termoAdicionar],
-    queryFn: () => buscarClientes({ data: { q: termoAdicionar } }),
-    enabled: !!adicionarStage && termoAdicionar.length >= 2,
+    queryKey: ["crm-painel-buscar-cliente", termoAdicionarDeb],
+    queryFn: () => buscarClientes({ data: { q: termoAdicionarDeb } }),
+    enabled: !!adicionarStage && termoAdicionarDeb.length >= 2,
+    staleTime: 60_000,
   });
 
   async function moverPara(codigoDestino: string) {
