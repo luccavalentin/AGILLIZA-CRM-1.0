@@ -812,7 +812,7 @@ export function DocumentosGerais() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos os comerciais</SelectItem>
-                {opcoesComerciais.map((cm) => (
+                {comerciaisBase.map((cm) => (
                   <SelectItem key={cm.id} value={cm.id}>
                     {titulo(cm.nome)}
                   </SelectItem>
@@ -832,7 +832,7 @@ export function DocumentosGerais() {
               <SelectContent>
                 <SelectItem value="todas">Todas as imobiliárias</SelectItem>
                 <SelectItem value="comercial">{SEM_IMOB}</SelectItem>
-                {opcoesImobiliarias.map((i) => (
+                {imobiliariasFiltro.map((i) => (
                   <SelectItem key={i.id} value={i.id}>
                     {titulo(i.nome)}
                   </SelectItem>
@@ -851,7 +851,7 @@ export function DocumentosGerais() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos os corretores</SelectItem>
-                {opcoesCorretores.map((c) => (
+                {corretoresFiltro.map((c) => (
                   <SelectItem key={c.id} value={c.id}>
                     {titulo(c.nome)}
                   </SelectItem>
@@ -870,7 +870,7 @@ export function DocumentosGerais() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos os analistas</SelectItem>
-                {opcoesAnalistas.map((a) => (
+                {analistasFiltro.map((a) => (
                   <SelectItem key={a.id} value={a.id}>
                     {titulo(a.nome)}
                   </SelectItem>
