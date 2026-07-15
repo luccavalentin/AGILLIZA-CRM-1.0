@@ -633,7 +633,7 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
           return prev;
         }
         if (banco && !aceitaBancoNaOperacao(banco)) {
-          toast.info(`${restricaoEspecial.motivo}: apenas Bradesco opera essa modalidade.`);
+          toast.info(mensagemBancoIncompativel(banco));
           return prev;
         }
         const key = sistemaAlvo === "S" ? "bancos_sac_ids" : "bancos_price_ids";
