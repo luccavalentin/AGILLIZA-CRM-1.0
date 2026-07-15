@@ -64,6 +64,52 @@ function atrasada(d: { status: string; prazo_sla: string | null }): boolean {
   return new Date(d.prazo_sla).getTime() < Date.now();
 }
 
+/** Duração compacta: "1d 2h 16m", "3h 45m", "12m". */
+function durCompacta(ms: number): string {
+  const abs = Math.max(0, Math.abs(ms));
+  const d = Math.floor(abs / 86_400_000);
+  const h = Math.floor((abs % 86_400_000) / 3_600_000);
+  const m = Math.floor((abs % 3_600_000) / 60_000);
+  if (d > 0) return `${d}d ${h}h${h > 0 && m > 0 && d < 3 ? ` ${m}m` : ""}`.trim();
+  if (h > 0) return `${h}h${m > 0 ? ` ${m}m` : ""}`;
+  return `${Math.max(m, 1)}m`;
+}
+
+function diasAbertos(sla_inicio: string): number {
+  return Math.max(0, Math.floor((Date.now() - new Date(sla_inicio).getTime()) / 86_400_000));
+}
+
+type CardStatusInfo = { texto: string; tone: "muted" | "danger" | "warning" | "success" };
+
+function cardStatusInfo(d: {
+  status: string;
+  prazo_sla: string | null;
+  sla_inicio: string;
+  concluida_em: string | null;
+}): CardStatusInfo {
+  if (d.status === "concluida" && d.concluida_em) {
+    const dt = new Date(d.concluida_em).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
+    return { texto: `Concluída em ${dt}`, tone: "success" };
+  }
+  if (d.status === "cancelada") {
+    return { texto: "Cancelada", tone: "muted" };
+  }
+  if (d.prazo_sla) {
+    const delta = new Date(d.prazo_sla).getTime() - Date.now();
+    if (delta < 0) return { texto: `SLA vencido há ${durCompacta(delta)}`, tone: "danger" };
+    if (delta <= 24 * 3_600_000) return { texto: `SLA vence em ${durCompacta(delta)}`, tone: "warning" };
+    return { texto: `SLA vence em ${durCompacta(delta)}`, tone: "muted" };
+  }
+  const dias = diasAbertos(d.sla_inicio);
+  const label =
+    d.status === "aguardando"
+      ? `Aguardando há ${dias === 0 ? "hoje" : `${dias} ${dias === 1 ? "dia" : "dias"}`}`
+      : d.status === "em_andamento"
+        ? `${dias} ${dias === 1 ? "dia" : "dias"} em aberto`
+        : `Aberta há ${dias === 0 ? "hoje" : `${dias} ${dias === 1 ? "dia" : "dias"}`}`;
+  return { texto: label, tone: "muted" };
+}
+
 const PRIORIDADE_MAP: Record<Prioridade, { label: string; cls: string; Icon: typeof ArrowUpRight }> = {
   p1: {
     label: "Alta",
