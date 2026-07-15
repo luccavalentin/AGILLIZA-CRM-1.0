@@ -740,7 +740,7 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
       cpf_conjuge: c.conjuge_cpf ? maskCpfCnpj(c.conjuge_cpf) : "",
       renda_conjuge: c.conjuge_renda ?? 0,
       data_nascimento_conjuge: c.conjuge_data_nascimento ?? "",
-      email_conjuge: c.conjuge_email ?? "",
+      email_conjuge: c.conjuge_email || EMAIL_PADRAO,
       celular_conjuge: c.conjuge_celular ? maskCelular(c.conjuge_celular) : "",
       // O cônjuge herda o mesmo estado civil de casal do titular.
       estado_civil_conjuge: temConjuge ? ec : (prev.estado_civil_conjuge ?? ""),
