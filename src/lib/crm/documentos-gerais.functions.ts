@@ -35,6 +35,8 @@ export interface DGResposta {
   corretores: DGOpcaoFiltro[];
   /** Todos os comerciais cadastrados na base (para criar a pasta mesmo sem clientes). */
   comerciais: DGOpcaoFiltro[];
+  /** Analistas (criadores) presentes na base de clientes. */
+  analistas: DGOpcaoFiltro[];
 }
 
 /**
