@@ -1254,11 +1254,13 @@ export async function recuarEsteiraSeOrfao(
     supabase
       .from("simulacoes")
       .select("id", { count: "exact", head: true })
-      .eq("cliente_id", clienteId),
+      .eq("cliente_id", clienteId)
+      .is("deleted_at", null),
     supabase
       .from("propostas")
       .select("id", { count: "exact", head: true })
-      .eq("cliente_id", clienteId),
+      .eq("cliente_id", clienteId)
+      .is("deleted_at", null),
   ]);
   const temSims = (sims ?? 0) > 0;
   const temProps = (props ?? 0) > 0;
