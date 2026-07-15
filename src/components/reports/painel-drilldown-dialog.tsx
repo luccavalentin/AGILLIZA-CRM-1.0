@@ -17,6 +17,7 @@ import { BancoLogo } from "@/components/bancos/banco-logo";
 import { cn } from "@/lib/utils";
 import { getPanelDrilldown } from "@/lib/relatorios/paineis.functions";
 import type { ReportFiltros } from "@/lib/relatorios/shared";
+import agillizaSymbol from "@/assets/brand/agilliza-symbol-oficial.png";
 
 const toneClasses: Record<string, string> = {
   brand: "bg-primary/10 text-primary",
