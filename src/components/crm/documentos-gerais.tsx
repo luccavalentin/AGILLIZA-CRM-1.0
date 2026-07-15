@@ -180,6 +180,7 @@ export function DocumentosGerais() {
   const [filtroComercial, setFiltroComercial] = useState<string>("todos");
   const [filtroImob, setFiltroImob] = useState<string>("todas");
   const [filtroCorr, setFiltroCorr] = useState<string>("todos");
+  const [filtroAnalista, setFiltroAnalista] = useState<string>("todos");
   const [caminho, setCaminho] = useState<string[]>([]);
   const [visao, setVisao] = useState<Visao>("hierarquia");
   const [cliente, setCliente] = useState<DGCliente | null>(null);
@@ -201,32 +202,95 @@ export function DocumentosGerais() {
   const imobiliariasFiltro = data?.imobiliarias ?? [];
   const corretoresFiltro = data?.corretores ?? [];
   const comerciaisBase = data?.comerciais ?? [];
+  const analistasFiltro = data?.analistas ?? [];
 
   const filtrando =
     busca.trim() !== "" ||
     filtroComercial !== "todos" ||
     filtroImob !== "todas" ||
-    filtroCorr !== "todos";
+    filtroCorr !== "todos" ||
+    filtroAnalista !== "todos";
 
-  // Clientes após aplicar os filtros da tela inicial.
-  const clientesFiltrados = useMemo(() => {
+  // Predicado por dimensão — permite calcular quais clientes ficam se
+  // ignorarmos apenas o filtro daquela dimensão (afunilamento progressivo).
+  const matchBusca = (c: DGCliente) => {
     const q = busca.trim().toLowerCase();
-    return clientes.filter((c) => {
-      if (filtroComercial !== "todos" && c.comercial_id !== filtroComercial) return false;
-      if (filtroImob === "comercial" && c.imobiliaria_id) return false;
-      if (filtroImob !== "todas" && filtroImob !== "comercial" && c.imobiliaria_id !== filtroImob)
-        return false;
-      if (filtroCorr !== "todos" && c.corretor_id !== filtroCorr) return false;
-      if (
-        q &&
-        !c.nome.toLowerCase().includes(q) &&
-        !(c.numero_cliente ?? "").toLowerCase().includes(q) &&
-        !(c.documento ?? "").includes(q)
-      )
-        return false;
-      return true;
-    });
-  }, [clientes, busca, filtroComercial, filtroImob, filtroCorr]);
+    if (!q) return true;
+    return (
+      c.nome.toLowerCase().includes(q) ||
+      (c.numero_cliente ?? "").toLowerCase().includes(q) ||
+      (c.documento ?? "").includes(q)
+    );
+  };
+  const matchComercial = (c: DGCliente) =>
+    filtroComercial === "todos" || c.comercial_id === filtroComercial;
+  const matchImob = (c: DGCliente) => {
+    if (filtroImob === "todas") return true;
+    if (filtroImob === "comercial") return !c.imobiliaria_id;
+    return c.imobiliaria_id === filtroImob;
+  };
+  const matchCorr = (c: DGCliente) => filtroCorr === "todos" || c.corretor_id === filtroCorr;
+  const matchAnalista = (c: DGCliente) =>
+    filtroAnalista === "todos" || c.analista_id === filtroAnalista;
+
+  // Clientes após aplicar TODOS os filtros.
+  const clientesFiltrados = useMemo(() => {
+    return clientes.filter(
+      (c) =>
+        matchBusca(c) &&
+        matchComercial(c) &&
+        matchImob(c) &&
+        matchCorr(c) &&
+        matchAnalista(c),
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clientes, busca, filtroComercial, filtroImob, filtroCorr, filtroAnalista]);
+
+  // Opções de cada dropdown consideram todos os filtros exceto o próprio,
+  // fazendo o painel afunilar progressivamente conforme a pesquisa avança.
+  const opcoesComerciais = useMemo(() => {
+    const ids = new Set(
+      clientes
+        .filter((c) => matchBusca(c) && matchImob(c) && matchCorr(c) && matchAnalista(c))
+        .map((c) => c.comercial_id)
+        .filter((v): v is string => !!v),
+    );
+    return comerciaisBase.filter((cm) => ids.has(cm.id) || cm.id === filtroComercial);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clientes, comerciaisBase, busca, filtroImob, filtroCorr, filtroAnalista, filtroComercial]);
+
+  const opcoesImobiliarias = useMemo(() => {
+    const ids = new Set(
+      clientes
+        .filter((c) => matchBusca(c) && matchComercial(c) && matchCorr(c) && matchAnalista(c))
+        .map((c) => c.imobiliaria_id)
+        .filter((v): v is string => !!v),
+    );
+    return imobiliariasFiltro.filter((i) => ids.has(i.id) || i.id === filtroImob);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clientes, imobiliariasFiltro, busca, filtroComercial, filtroCorr, filtroAnalista, filtroImob]);
+
+  const opcoesCorretores = useMemo(() => {
+    const ids = new Set(
+      clientes
+        .filter((c) => matchBusca(c) && matchComercial(c) && matchImob(c) && matchAnalista(c))
+        .map((c) => c.corretor_id)
+        .filter((v): v is string => !!v),
+    );
+    return corretoresFiltro.filter((co) => ids.has(co.id) || co.id === filtroCorr);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clientes, corretoresFiltro, busca, filtroComercial, filtroImob, filtroAnalista, filtroCorr]);
+
+  const opcoesAnalistas = useMemo(() => {
+    const ids = new Set(
+      clientes
+        .filter((c) => matchBusca(c) && matchComercial(c) && matchImob(c) && matchCorr(c))
+        .map((c) => c.analista_id)
+        .filter((v): v is string => !!v),
+    );
+    return analistasFiltro.filter((a) => ids.has(a.id) || a.id === filtroAnalista);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clientes, analistasFiltro, busca, filtroComercial, filtroImob, filtroCorr, filtroAnalista]);
 
   // Visão geral (KPIs) — sempre sobre a base completa, para dar contexto no topo.
   const resumo = useMemo(() => {
