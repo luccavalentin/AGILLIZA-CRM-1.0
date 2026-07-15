@@ -277,6 +277,18 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
     return true;
   }
 
+  function mensagemBancoIncompativel(b: { codigo_banco?: number | string | null; nome_banco?: string | null }) {
+    const cod = String(b?.codigo_banco ?? "").replace(/^0+/, "");
+    const nome = (b?.nome_banco ?? "").toLowerCase();
+    if (isHomeEquity && (cod === "341" || nome.includes("itaú") || nome.includes("itau"))) {
+      return "Home Equity: Itaú não opera este produto.";
+    }
+    if (restricaoEspecial.apenasBradesco) {
+      return `${restricaoEspecial.motivo}: apenas Bradesco opera essa modalidade.`;
+    }
+    return "Banco incompatível com a operação selecionada.";
+  }
+
   // Teto de financiamento (LTV) por produto e restrição especial.
   const ltvMax = restricaoEspecial.ativo
     ? restricaoEspecial.ltvMax
