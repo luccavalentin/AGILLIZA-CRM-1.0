@@ -961,6 +961,7 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
               ...parsedP.data,
               id_operacao_homefin: idOperacao,
               email_verificado_em: f.email_verificado_em,
+              agrupador_id,
             } as any,
           },
         });
