@@ -485,8 +485,8 @@ function Pagina() {
 
       {/* Filtros */}
       <div className="rounded-2xl border border-border bg-card p-3 shadow-card md:p-4">
-        <div className="flex flex-wrap items-end gap-3">
-          <div className="relative min-w-[220px] flex-1">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(220px,1fr)_repeat(3,minmax(140px,180px))_auto]">
+          <div className="relative sm:col-span-2 lg:col-span-1">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={q}
@@ -507,7 +507,7 @@ function Pagina() {
                 setPagina(1);
               }}
             >
-              <SelectTrigger className="w-[150px]">
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder="Todos" />
               </SelectTrigger>
               <SelectContent>
@@ -529,7 +529,7 @@ function Pagina() {
                 setPagina(1);
               }}
             >
-              <SelectTrigger className="w-[140px]">
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder="Todas" />
               </SelectTrigger>
               <SelectContent>
@@ -549,7 +549,7 @@ function Pagina() {
                 setPagina(1);
               }}
             >
-              <SelectTrigger className="w-[170px]">
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder="Todos" />
               </SelectTrigger>
               <SelectContent>
@@ -563,11 +563,11 @@ function Pagina() {
             </Select>
           </FilterField>
 
-          <div className="ml-auto flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={limparFiltros}>
+          <div className="flex flex-wrap items-end gap-2 sm:col-span-2 lg:col-span-1 lg:justify-end">
+            <Button variant="outline" size="sm" onClick={limparFiltros} className="flex-1 lg:flex-none">
               <FilterX className="mr-1.5 h-4 w-4" /> Limpar filtros
             </Button>
-            <Button size="sm" onClick={exportarCsv} className="gap-1.5">
+            <Button size="sm" onClick={exportarCsv} className="flex-1 gap-1.5 lg:flex-none">
               <Download className="h-4 w-4" /> Exportar
             </Button>
           </div>
