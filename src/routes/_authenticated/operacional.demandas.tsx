@@ -485,8 +485,8 @@ function Pagina() {
 
       {/* Filtros */}
       <div className="rounded-2xl border border-border bg-card p-3 shadow-card md:p-4">
-        <div className="flex flex-wrap items-end gap-3">
-          <div className="relative min-w-[220px] flex-1">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(220px,1fr)_repeat(3,minmax(140px,180px))_auto]">
+          <div className="relative sm:col-span-2 lg:col-span-1">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={q}
@@ -507,7 +507,7 @@ function Pagina() {
                 setPagina(1);
               }}
             >
-              <SelectTrigger className="w-[150px]">
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder="Todos" />
               </SelectTrigger>
               <SelectContent>
@@ -529,7 +529,7 @@ function Pagina() {
                 setPagina(1);
               }}
             >
-              <SelectTrigger className="w-[140px]">
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder="Todas" />
               </SelectTrigger>
               <SelectContent>
@@ -549,7 +549,7 @@ function Pagina() {
                 setPagina(1);
               }}
             >
-              <SelectTrigger className="w-[170px]">
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder="Todos" />
               </SelectTrigger>
               <SelectContent>
@@ -563,11 +563,11 @@ function Pagina() {
             </Select>
           </FilterField>
 
-          <div className="ml-auto flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={limparFiltros}>
+          <div className="flex flex-wrap items-end gap-2 sm:col-span-2 lg:col-span-1 lg:justify-end">
+            <Button variant="outline" size="sm" onClick={limparFiltros} className="flex-1 lg:flex-none">
               <FilterX className="mr-1.5 h-4 w-4" /> Limpar filtros
             </Button>
-            <Button size="sm" onClick={exportarCsv} className="gap-1.5">
+            <Button size="sm" onClick={exportarCsv} className="flex-1 gap-1.5 lg:flex-none">
               <Download className="h-4 w-4" /> Exportar
             </Button>
           </div>
@@ -614,7 +614,7 @@ function Pagina() {
           </div>
         ) : (
           <>
-            <div className="hidden overflow-x-auto md:block">
+            <div className="hidden overflow-x-auto xl:block">
               <table className="w-full text-sm">
                 <thead className="border-b border-border bg-muted/30 text-left text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                   <tr>
@@ -733,33 +733,100 @@ function Pagina() {
             </div>
 
             {/* Mobile */}
-            <ul className="divide-y divide-border md:hidden">
+            <ul className="divide-y divide-border xl:hidden">
               {pageItens.map((d) => (
-                <li key={d.id}>
+                <li key={d.id} className="relative">
                   <Link
                     to="/operacional/demandas/$id"
                     params={{ id: d.id }}
-                    className="flex flex-col gap-2 p-4 active:bg-accent/40"
+                    className="flex flex-col gap-3 p-4 transition-colors hover:bg-accent/40 active:bg-accent/40"
                   >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <div className="line-clamp-1 font-medium text-foreground">{d.titulo}</div>
-                        <div className="mt-0.5 flex items-center gap-2 text-[11px] text-muted-foreground">
-                          <span className="font-mono tabular-nums">{d.numero ?? "—"}</span>
-                          {d.nome_cliente && <span>• {d.nome_cliente}</span>}
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="inline-flex items-center rounded-md border border-border bg-muted/50 px-1.5 py-0.5 font-mono text-[10px] tabular-nums text-muted-foreground">
+                            {d.numero ?? "—"}
+                          </span>
+                          <PrioridadeBadge prioridade={d.prioridade} />
                         </div>
+                        <div className="mt-1.5 line-clamp-2 text-sm font-medium text-foreground">
+                          {d.titulo}
+                        </div>
+                        {d.tipo && (
+                          <div className="mt-0.5 text-[11px] text-muted-foreground">
+                            {d.tipo.replace(/_/g, " ")}
+                          </div>
+                        )}
                       </div>
                       <StatusPill status={d.status} />
                     </div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <PrioridadeBadge prioridade={d.prioridade} />
+
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                      {d.nome_cliente && (
+                        <div className="flex min-w-0 items-center gap-2">
+                          <OpAvatar nome={d.nome_cliente} />
+                          <div className="min-w-0">
+                            <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                              Cliente
+                            </div>
+                            <div className="line-clamp-1 text-xs text-foreground">
+                              {d.nome_cliente}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      {d.nome_responsavel && (
+                        <div className="flex min-w-0 items-center gap-2">
+                          <OpAvatar nome={d.nome_responsavel} />
+                          <div className="min-w-0">
+                            <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                              Responsável
+                            </div>
+                            <div className="line-clamp-1 text-xs text-foreground">
+                              {d.nome_responsavel}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/60 pt-2.5">
                       <SlaRing
                         inicio={d.sla_inicio}
                         prazo={d.prazo_sla}
                         concluida={d.status === "concluida"}
                       />
+                      <PrazoCell prazo={d.prazo_sla} status={d.status} />
                     </div>
                   </Link>
+                  <div className="absolute right-2 top-2">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={() =>
+                            navigate({
+                              to: "/operacional/demandas/$id",
+                              params: { id: d.id },
+                            })
+                          }
+                        >
+                          Abrir detalhes
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className="text-destructive focus:text-destructive"
+                          onClick={() => handleExcluir(d.id)}
+                        >
+                          Excluir
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </li>
               ))}
             </ul>
