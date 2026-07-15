@@ -704,7 +704,7 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
       renda_conjuge: Number(prev.renda_total) || 0,
       data_nascimento_conjuge: prev.data_nascimento ?? "",
       estado_civil_conjuge: prev.estado_civil || prev.estado_civil_conjuge,
-      email_conjuge: prev.email ?? "",
+      email_conjuge: prev.email || EMAIL_PADRAO,
       celular_conjuge: prev.celular ?? "",
     }));
     setInvertido((v) => !v);
