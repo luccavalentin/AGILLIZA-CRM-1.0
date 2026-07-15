@@ -176,21 +176,7 @@ export const estatisticasClientes = createServerFn({ method: "GET" })
       cadastro_completo: number;
     }> => {
       const { supabase, userId } = context;
-      const base = () => {
-        let q = supabase
-          .from("clientes")
-          .select(
-            "id, portal_acesso_ativo, cliente_pipeline(pipeline_stages(codigo, ordem))",
-            { count: "exact" },
-          )
-          .eq("ativo", true);
-        if (data?.escopo === "minhas") {
-          // Mesmo escopo da listagem: responsável, criador ou parceiro vinculado.
-          // Feito com sub-select via .or() para não perder KPIs de vinculados.
-        }
-        return q;
-      };
-      // Aplica escopo minhas fora do base() para poder aguardar a busca de vínculos.
+      let orMinhas: string | null = null;
       if (data?.escopo === "minhas") {
         const { data: vinc } = await supabase
           .from("cliente_parceiros")
@@ -199,11 +185,17 @@ export const estatisticasClientes = createServerFn({ method: "GET" })
         const ids = Array.from(new Set((vinc ?? []).map((v: any) => v.cliente_id).filter(Boolean)));
         const partes = [`responsavel_id.eq.${userId}`, `criador_id.eq.${userId}`];
         if (ids.length) partes.push(`id.in.(${ids.join(",")})`);
-        // reatribui base()
-        const anterior = base;
-        (base as any) = () => anterior().or(partes.join(","));
+        orMinhas = partes.join(",");
       }
-      const { data: rows, count } = await base();
+      let q = supabase
+        .from("clientes")
+        .select(
+          "id, portal_acesso_ativo, cliente_pipeline(pipeline_stages(codigo, ordem))",
+          { count: "exact" },
+        )
+        .eq("ativo", true);
+      if (orMinhas) q = q.or(orMinhas);
+      const { data: rows, count } = await q;
       const list = (rows ?? []) as any[];
       const portal_ativo = list.filter((r) => r.portal_acesso_ativo).length;
       const em_andamento = list.filter((r) => {
