@@ -729,7 +729,7 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
       cliente_id: c.id,
       nome_cliente: c.nome ?? "",
       cpf_cnpj: c.documento ? maskCpfCnpj(c.documento) : "",
-      email: c.email ?? "",
+      email: c.email || EMAIL_PADRAO,
       celular: c.telefone_celular ? maskCelular(c.telefone_celular) : "",
       data_nascimento: c.data_nascimento ?? "",
       estado_civil: ec || prev.estado_civil,
