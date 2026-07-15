@@ -273,7 +273,7 @@ interface AnteriorTotais {
 /** Totais do período anterior equivalente, para calcular tendências (deltas). */
 async function carregarAnterior(
   supabase: any,
-  escopoEq: (q: any, col: string) => any,
+  escopoEq: (q: any, ...cols: string[]) => any,
   deAtual: string,
   ateAtual: string,
 ): Promise<AnteriorTotais> {
@@ -289,6 +289,7 @@ async function carregarAnterior(
         .lte("created_at", ateFim)
         .limit(5000),
       "usuario_responsavel_id",
+      "usuario_criador_id",
     ),
     escopoEq(
       supabase
@@ -299,6 +300,7 @@ async function carregarAnterior(
         .lte("created_at", ateFim)
         .limit(5000),
       "usuario_responsavel_id",
+      "usuario_criador_id",
     ),
     carregarContratosCliente(supabase, escopoEq, de, ate),
   ]);
