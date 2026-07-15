@@ -836,10 +836,14 @@ function tabelaLabel(s: any, bancos: any[]): string {
  * estimativa local conservadora.
  */
 function rendaNecessaria(s: any, bancos: any[]): number | null {
-  const rendaApi = rendaMinimaPelosBancos(bancos);
-  if (rendaApi) return rendaApi.rendaMinima;
+  // Usa a MESMA lógica exibida na tela: renda mínima por banco (SAC ÷ 30% ou PRICE ÷ 15%).
+  // Para múltiplos bancos no mesmo arquivo, considera a MAIOR renda exigida (mais conservador).
+  const rendas = (bancos ?? [])
+    .map((b) => rendaMinimaDoBanco(b))
+    .filter((r): r is number => typeof r === "number" && r > 0);
+  if (rendas.length) return Math.max(...rendas);
 
-  // Maior taxa anual (fração, ex.: 0,1199) entre os bancos com taxa informada.
+  // Fallback local quando nenhum banco tem retorno.
   const taxas = (bancos ?? [])
     .map((b) => {
       const d = extrairDetalheBanco(b?.raw_response);
@@ -858,6 +862,7 @@ function rendaNecessaria(s: any, bancos: any[]): number | null {
   });
   return av?.rendaMinima ?? null;
 }
+
 
 /**
  * Nome de arquivo descritivo pedido pela operação, ex.:
