@@ -292,88 +292,147 @@ function Pagina() {
           </div>
         )}
 
-        {/* Ações */}
+        {/* Ações — status, transferência, edição inline (título, prioridade, SLA) */}
         <div className="rounded-2xl border border-border/60 bg-card p-4 shadow-sm space-y-3">
           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Status
+            Ações
           </p>
-          <Select
-            value={d.status}
-            onValueChange={(v) => trocarStatus(v as DemandaStatus)}
-            disabled={!data.permissoes?.pode_mover_status}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="aberta">Aberta</SelectItem>
-              <SelectItem value="em_andamento">Em andamento</SelectItem>
-              <SelectItem value="aguardando">Aguardando</SelectItem>
-              <SelectItem value="concluida">Concluída</SelectItem>
-              <SelectItem value="cancelada">Cancelada</SelectItem>
-            </SelectContent>
-          </Select>
-          {data.permissoes?.pode_transferir && (
-            <TransferirDialog
-              demandaId={id}
-              onTransferida={() => {
-                refetch();
-                qc.invalidateQueries({ queryKey: ["demandas"] });
-              }}
-            />
-          )}
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-medium text-muted-foreground">Status</label>
+            <Select
+              value={d.status}
+              onValueChange={(v) => trocarStatus(v as DemandaStatus)}
+              disabled={!data.permissoes?.pode_mover_status}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="aberta">Aberta</SelectItem>
+                <SelectItem value="em_andamento">Em andamento</SelectItem>
+                <SelectItem value="aguardando">Aguardando</SelectItem>
+                <SelectItem value="concluida">Concluída</SelectItem>
+                <SelectItem value="cancelada">Cancelada</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {data.permissoes?.pode_editar && (
+              <EditarDemandaDialog
+                demanda={{
+                  id: d.id,
+                  titulo: d.titulo,
+                  descricao: d.descricao ?? null,
+                  prioridade: d.prioridade,
+                  sla_horas: d.sla_horas ?? null,
+                }}
+                onSalva={() => {
+                  refetch();
+                  qc.invalidateQueries({ queryKey: ["demandas"] });
+                }}
+              />
+            )}
+            {data.permissoes?.pode_transferir && (
+              <TransferirDialog
+                demandaId={id}
+                onTransferida={() => {
+                  refetch();
+                  qc.invalidateQueries({ queryKey: ["demandas"] });
+                }}
+              />
+            )}
+          </div>
+          <p className="pt-1 text-[10.5px] leading-relaxed text-muted-foreground">
+            Ajuste prioridade, título e prazo (SLA) diretamente em “Editar”.
+          </p>
         </div>
       </aside>
 
-      {/* ============ Coluna direita: chat realtime ============ */}
-      <section className="flex flex-col rounded-2xl border border-border/60 bg-card shadow-sm">
-        <header className="flex items-center gap-2 border-b border-border/60 px-4 py-3">
+      {/* ============ Coluna direita: chat realtime (padrão do chat do cliente) ============ */}
+      <section className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-border/60 bg-card shadow-sm">
+        <header className="flex items-center gap-2 border-b border-border/60 bg-card/80 px-4 py-3 backdrop-blur">
           <MessageCircle className="h-4 w-4 text-primary" />
-          <span className="text-sm font-semibold">Conversa</span>
+          <span className="text-sm font-semibold">Conversa da demanda</span>
           <span className="ml-auto text-xs text-muted-foreground">
             {(data.mensagens ?? []).length} mensagens
           </span>
         </header>
 
-        <div className="brand-scroll flex-1 space-y-2 overflow-y-auto p-4">
+        <div className="chat-surface flex-1 space-y-1 overflow-y-auto overflow-x-hidden p-3 sm:p-4">
           {(data.mensagens ?? []).length === 0 && (
-            <p className="mt-8 text-center text-sm text-muted-foreground">
-              Sem mensagens ainda. Comece a conversa.
-            </p>
+            <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
+              <div className="flex size-14 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <MessageCircle className="size-7" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-foreground">Nenhuma mensagem ainda</p>
+                <p className="text-xs text-muted-foreground">
+                  Envie a primeira mensagem para iniciar a conversa.
+                </p>
+              </div>
+            </div>
           )}
-          {(data.mensagens ?? []).map((m: any) => {
+          {(data.mensagens ?? []).map((m: any, i: number) => {
+            const msgs = data.mensagens as any[];
+            const anterior = msgs[i - 1];
+            const proxima = msgs[i + 1];
             const minha = m.autor_id === meuId;
+            const mostrarDia = !anterior || fmtDia(anterior.created_at) !== fmtDia(m.created_at);
+            const mesmoAutorAntes = !mostrarDia && anterior?.autor_id === m.autor_id;
+            const mesmoAutorDepois =
+              proxima?.autor_id === m.autor_id &&
+              fmtDia(proxima?.created_at ?? "") === fmtDia(m.created_at);
             return (
-              <div
-                key={m.id}
-                className={cn(
-                  "flex items-end gap-2",
-                  minha ? "justify-end" : "justify-start",
+              <div key={m.id}>
+                {mostrarDia && (
+                  <div className="my-3 flex items-center justify-center">
+                    <span className="rounded-full bg-background/80 px-3 py-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground shadow-sm ring-1 ring-border/50 backdrop-blur">
+                      {fmtDia(m.created_at)}
+                    </span>
+                  </div>
                 )}
-              >
-                {!minha && <OpAvatar nome={m.nome_autor} className="size-6 text-[10px]" />}
                 <div
                   className={cn(
-                    "max-w-[75%] rounded-2xl px-3.5 py-2 text-sm shadow-sm",
-                    minha
-                      ? "rounded-br-md bg-primary text-primary-foreground"
-                      : "rounded-bl-md border border-border/60 bg-background text-foreground",
+                    "flex min-w-0 items-end gap-1.5 sm:gap-2",
+                    minha ? "justify-end" : "justify-start",
+                    mesmoAutorAntes ? "mt-0.5" : "mt-2",
                   )}
                 >
-                  {!minha && (
-                    <p className="mb-0.5 text-[10.5px] font-semibold text-muted-foreground">
-                      {m.nome_autor ?? "—"}
-                    </p>
-                  )}
-                  <p className="whitespace-pre-wrap break-words leading-snug">{m.corpo}</p>
-                  <p
+                  {!minha &&
+                    (mesmoAutorDepois ? (
+                      <span className="size-6 shrink-0" />
+                    ) : (
+                      <OpAvatar nome={m.nome_autor} className="size-6 text-[10px]" />
+                    ))}
+                  <div
                     className={cn(
-                      "mt-1 text-[10px] tabular-nums",
-                      minha ? "text-primary-foreground/70" : "text-muted-foreground",
+                      "chat-bubble min-w-0 max-w-[calc(100%-3.25rem)] overflow-hidden px-3 py-2 text-sm sm:max-w-[78%] sm:px-3.5",
+                      minha
+                        ? "rounded-2xl rounded-br-md bg-primary text-primary-foreground"
+                        : "rounded-2xl rounded-bl-md border border-chat-them-border bg-chat-them text-chat-them-foreground",
+                      mesmoAutorAntes && (minha ? "rounded-tr-md" : "rounded-tl-md"),
                     )}
                   >
-                    {fmtHora(m.created_at)}
-                  </p>
+                    {!mesmoAutorAntes && (
+                      <p
+                        className={cn(
+                          "mb-0.5 text-[11px] font-semibold",
+                          minha ? "text-primary-foreground/90" : "text-chat-them-foreground/80",
+                        )}
+                      >
+                        {m.nome_autor ?? (minha ? "Eu" : "—")}
+                      </p>
+                    )}
+                    <p className="whitespace-pre-wrap break-words leading-relaxed">{m.corpo}</p>
+                    <div
+                      className={cn(
+                        "mt-1 flex items-center justify-end gap-1 text-[10px] tabular-nums",
+                        minha ? "text-primary-foreground/70" : "text-chat-them-foreground/60",
+                      )}
+                    >
+                      <span>{fmtHora(m.created_at)}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             );
@@ -381,7 +440,7 @@ function Pagina() {
           <div ref={fimRef} />
         </div>
 
-        <footer className="border-t border-border/60 p-3">
+        <footer className="border-t border-border/60 bg-card/80 p-3 backdrop-blur">
           <div className="flex items-end gap-2">
             <Textarea
               value={texto}
@@ -392,11 +451,17 @@ function Pagina() {
                   enviar();
                 }
               }}
-              placeholder="Escreva uma mensagem…  (Enter para enviar)"
+              placeholder="Escreva uma mensagem…  (Enter para enviar, Shift+Enter para nova linha)"
               rows={2}
-              className="resize-none"
+              className="resize-none rounded-xl bg-background/70"
             />
-            <Button onClick={enviar} disabled={enviando || !texto.trim()} size="icon">
+            <Button
+              onClick={enviar}
+              disabled={enviando || !texto.trim()}
+              size="icon"
+              className="size-10 shrink-0 rounded-full"
+              aria-label="Enviar"
+            >
               <Send className="h-4 w-4" />
             </Button>
           </div>
