@@ -354,13 +354,14 @@ export const getPanelDados = createServerFn({ method: "POST" })
 
     // Filtro por usuário: quando um responsável específico é escolhido, ele
     // prevalece sobre o escopo (mesmo em "geral"). Sem responsável, mantém a
-    // regra de escopo: "minha" restringe ao próprio usuário; "geral" abre tudo.
-    const escopoEq = (q: any, col: string) =>
-      data.responsavel
-        ? q.eq(col, data.responsavel)
-        : data.escopo === "minha"
-          ? q.eq(col, userId)
-          : q;
+    // regra de escopo: "minha" restringe ao usuário — como responsável OU
+    // criador (participa/fez); "geral" abre tudo.
+    const escopoEq = (q: any, ...cols: string[]) => {
+      if (data.responsavel) return q.eq(cols[0], data.responsavel);
+      if (data.escopo !== "minha") return q;
+      if (cols.length <= 1) return q.eq(cols[0], userId);
+      return q.or(cols.map((c) => `${c}.eq.${userId}`).join(","));
+    };
 
     if (data.modulo === "visao-geral") {
       const [sims, props, contratosInfo, ant, clientesRes, demRes, tkRes, recRes, payRes, pipeRes] = await Promise.all([
@@ -373,6 +374,7 @@ export const getPanelDados = createServerFn({ method: "POST" })
             .lte("created_at", ateFim)
             .limit(5000),
           "usuario_responsavel_id",
+          "usuario_criador_id",
         ),
         escopoEq(
           supabase
@@ -386,6 +388,7 @@ export const getPanelDados = createServerFn({ method: "POST" })
             )
             .limit(5000),
           "usuario_responsavel_id",
+          "usuario_criador_id",
         ),
         carregarContratosCliente(supabase, escopoEq, de, ate),
         carregarAnterior(supabase, escopoEq, de, ate),
@@ -397,6 +400,7 @@ export const getPanelDados = createServerFn({ method: "POST" })
             .lte("created_at", ateFim)
             .limit(5000),
           "responsavel_id",
+          "criador_id",
         ),
         escopoEq(
           supabase
@@ -404,6 +408,7 @@ export const getPanelDados = createServerFn({ method: "POST" })
             .select("status,prazo_sla")
             .limit(5000),
           "responsavel_id",
+          "criador_id",
         ),
         escopoEq(
           supabase
@@ -411,17 +416,24 @@ export const getPanelDados = createServerFn({ method: "POST" })
             .select("status,prazo")
             .limit(5000),
           "responsavel_id",
+          "criador_id",
         ),
-        supabase
-          .from("financial_receivables")
-          .select("valor,valor_pago,status,vencimento,tipo")
-          .in("status", ["aberta", "parcial"] as any)
-          .limit(5000),
-        supabase
-          .from("financial_payables")
-          .select("valor,valor_pago,status,vencimento")
-          .in("status", ["aberta", "parcial"] as any)
-          .limit(5000),
+        escopoEq(
+          supabase
+            .from("financial_receivables")
+            .select("valor,valor_pago,status,vencimento,tipo,criador_id")
+            .in("status", ["aberta", "parcial"] as any)
+            .limit(5000),
+          "criador_id",
+        ),
+        escopoEq(
+          supabase
+            .from("financial_payables")
+            .select("valor,valor_pago,status,vencimento,criador_id")
+            .in("status", ["aberta", "parcial"] as any)
+            .limit(5000),
+          "criador_id",
+        ),
         supabase
           .from("cliente_pipeline")
           .select("cliente_id,pipeline_stages(codigo,nome,ordem),clientes!inner(responsavel_id)")
