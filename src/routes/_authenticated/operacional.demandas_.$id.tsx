@@ -374,7 +374,7 @@ function Pagina() {
 
   return (
     <div className="mx-auto max-w-[1500px] p-4 md:p-6">
-      <div className="grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)_340px]">
+      <div className="grid gap-6 lg:grid-cols-[260px_minmax(0,1fr)_280px]">
         {/* Coluna esquerda — pilha de demandas */}
         <aside className="flex flex-col rounded-2xl border border-border/70 bg-card shadow-sm lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)]">
           <div className="flex items-center justify-between gap-2 border-b border-border/60 px-4 py-3">
@@ -616,8 +616,8 @@ function Pagina() {
 
             {/* Stepper compacto */}
             <div className="border-b border-border/60">
-              <div className="overflow-x-auto px-4 py-3.5 sm:px-5">
-                <div className="flex min-w-[520px] items-start">
+              <div className="px-4 py-3.5 sm:px-5">
+                <div className="flex items-start">
                   {STEPPER.map((step, i) => {
                     const done = i < stepAtual;
                     const active = i === stepAtual;
