@@ -77,7 +77,7 @@ function Pagina() {
     queryFn: () => getMinhaSessao(),
     staleTime: 5 * 60_000,
   });
-  const meuId = sessao?.user?.id ?? null;
+  const meuId = sessao?.profile?.id ?? null;
 
   const { data, refetch } = useQuery({
     queryKey: ["demanda", id],
