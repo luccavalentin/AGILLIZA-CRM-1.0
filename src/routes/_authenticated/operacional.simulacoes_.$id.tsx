@@ -207,9 +207,19 @@ function Pagina() {
     .sort((a: any, b: any) => (a.valor_parcela ?? 0) - (b.valor_parcela ?? 0));
   const rendaInformada =
     (Number(s.renda_total) || 0) + (s.compoe_renda ? Number(s.renda_conjuge) || 0 : 0);
+  const bancosSac = bancos.filter((b: any) => (b._sistema ?? "SAC") === "SAC");
+  const bancosPrice = bancos.filter((b: any) => b._sistema === "PRICE");
+  const isMista = bancosSac.length > 0 && bancosPrice.length > 0;
   const rendaBancos = rendaMinimaPelosBancos(bancos, rendaInformada || null);
-  // Só destaca "Melhor taxa" quando há mais de um banco para comparar.
-  const melhorId = bancosComTaxa.length > 1 ? bancosComTaxa[0]?.id : undefined;
+  const rendaSac = isMista ? rendaMinimaPelosBancos(bancosSac, rendaInformada || null) : null;
+  const rendaPrice = isMista ? rendaMinimaPelosBancos(bancosPrice, rendaInformada || null) : null;
+  // Só destaca "Melhor taxa" quando há mais de um banco para comparar (por sistema).
+  const melhorSacId = bancosSac.filter((b: any) => b.status_banco === "simulada" && b.valor_parcela != null)
+    .sort((a: any, b: any) => (a.valor_parcela ?? 0) - (b.valor_parcela ?? 0))[0]?.id;
+  const melhorPriceId = bancosPrice.filter((b: any) => b.status_banco === "simulada" && b.valor_parcela != null)
+    .sort((a: any, b: any) => (a.valor_parcela ?? 0) - (b.valor_parcela ?? 0))[0]?.id;
+  const melhorId = isMista ? undefined : (bancosComTaxa.length > 1 ? bancosComTaxa[0]?.id : undefined);
+
 
   return (
     <div className="mx-auto w-full max-w-[1600px] space-y-5 p-4 md:p-6">
