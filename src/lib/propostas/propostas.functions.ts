@@ -101,7 +101,19 @@ export const listarPropostas = createServerFn({ method: "GET" })
     else query = query.is("deleted_at", null);
 
     if (data.escopo === "minhas") {
-      query = query.or(`usuario_responsavel_id.eq.${userId},usuario_criador_id.eq.${userId}`);
+      // Inclui propostas onde o usuário é responsável/criador OU está vinculado
+      // ao cliente como parceiro (imobiliária, corretor, comercial).
+      const { data: vinc } = await supabase
+        .from("cliente_parceiros")
+        .select("cliente_id")
+        .eq("parceiro_id", userId);
+      const ids = Array.from(new Set((vinc ?? []).map((v: any) => v.cliente_id).filter(Boolean)));
+      const partes = [
+        `usuario_responsavel_id.eq.${userId}`,
+        `usuario_criador_id.eq.${userId}`,
+      ];
+      if (ids.length) partes.push(`cliente_id.in.(${ids.join(",")})`);
+      query = query.or(partes.join(","));
     }
     if (data.responsavel) {
       query = query.or(
