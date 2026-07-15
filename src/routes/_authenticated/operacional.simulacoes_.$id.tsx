@@ -412,8 +412,21 @@ function Pagina() {
 
               {/* Mobile: cartões */}
               <div className="grid gap-3 lg:hidden">
-                {bancos.map((b: any) => (
-                  <div key={b.id} className="rounded-lg border border-border p-4">
+                {bancosExibicao.map((b: any, idx: number) => {
+                  const primeiroDoGrupo =
+                    isMista &&
+                    (idx === 0 || bancosExibicao[idx - 1]._sistema !== b._sistema);
+                  return (
+                    <div key={b.id}>
+                      {primeiroDoGrupo && (
+                        <div className="mb-2 flex items-center gap-2">
+                          <ToneBadge tone={b._sistema === "SAC" ? "info" : "warning"}>
+                            Tabela {b._sistema}
+                          </ToneBadge>
+                          <div className="h-px flex-1 bg-border" />
+                        </div>
+                      )}
+                      <div className="rounded-lg border border-border p-4">
                     <div className="flex items-start gap-3">
                       <BancoLogo nome={b.nome_banco} size="lg" className="mt-0.5" />
                       <div className="min-w-0 flex-1">
@@ -424,7 +437,7 @@ function Pagina() {
                           >
                             {b.nome_banco}
                           </span>
-                          {b.id === melhorId && (
+                          {ehMelhor(b) && (
                             <ToneBadge tone="success">Melhor taxa</ToneBadge>
                           )}
                         </div>
@@ -498,9 +511,12 @@ function Pagina() {
                         </Button>
                       )}
                     </div>
-                  </div>
-                ))}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
+
 
               {/* Desktop: tabela */}
               <div className="hidden overflow-x-auto rounded-xl border border-border/60 shadow-sm lg:block">
