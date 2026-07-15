@@ -1304,6 +1304,30 @@ function MetricCell({
   );
 }
 
+function InlineMetric({
+  icon: Icon,
+  dot,
+  rotulo,
+  valor,
+}: {
+  icon?: React.ComponentType<{ className?: string }>;
+  dot?: string;
+  rotulo: string;
+  valor: React.ReactNode;
+}) {
+  return (
+    <div className="flex min-w-0 items-center gap-1.5">
+      {Icon ? (
+        <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+      ) : (
+        <span className={cn("size-1.5 shrink-0 rounded-full", dot)} />
+      )}
+      <span className="text-[11px] font-medium text-muted-foreground">{rotulo}</span>
+      <span className="text-[12px] font-semibold text-foreground">{valor}</span>
+    </div>
+  );
+}
+
 function InfoLinha({ rotulo, valor }: { rotulo: string; valor: React.ReactNode }) {
   return (
     <div className="flex items-center justify-between gap-3 py-2">
