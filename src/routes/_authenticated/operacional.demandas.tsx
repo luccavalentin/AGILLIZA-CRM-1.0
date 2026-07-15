@@ -506,7 +506,9 @@ function Pagina() {
           <Button variant="outline" size="sm" onClick={verificarSla} className="hidden md:inline-flex">
             <AlertTriangle className="mr-1.5 h-4 w-4" /> Verificar SLA
           </Button>
-          <NovaDemandaDialog onCriada={refetch} />
+          <span data-nova-demanda-trigger>
+            <NovaDemandaDialog onCriada={refetch} />
+          </span>
         </div>
       </div>
 
