@@ -13,6 +13,20 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* Respeita usuários com sensibilidade a movimento — suprime animações e
+   transições pesadas mantendo microinterações essenciais funcionais. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+
 :root {
   --radius: 0.625rem;
 
