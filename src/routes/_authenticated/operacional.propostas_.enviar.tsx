@@ -37,6 +37,7 @@ import { SimulacaoStatusBadge } from "@/components/simulacao/status-badge";
 import { BancosSimulados } from "@/components/simulacao/bancos-simulados";
 import { formatBRL } from "@/lib/simulacao/format";
 import { corDoBanco } from "@/lib/bancos/cores";
+import { numeroBancoParaExibir } from "@/lib/propostas/numero-banco-display";
 
 /** Primeiro e último dia do mês atual como intervalo ISO (filtro padrão). */
 function intervaloMesAtual(): { inicio: string; fim: string } {
