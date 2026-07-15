@@ -1301,15 +1301,19 @@ function MetricCell({
   valor: React.ReactNode;
 }) {
   return (
-    <div className="flex items-start gap-2.5 bg-card px-4 py-3">
+    <div className="flex min-w-0 items-start gap-2.5 bg-card px-3.5 py-3 sm:px-4">
       {Icon ? (
         <Icon className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
       ) : (
         <span className={cn("mt-1.5 size-2 shrink-0 rounded-full", dot)} />
       )}
-      <div className="min-w-0">
-        <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{rotulo}</p>
-        <div className="mt-0.5 truncate text-sm font-medium text-foreground">{valor}</div>
+      <div className="min-w-0 flex-1">
+        <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+          {rotulo}
+        </p>
+        <div className="mt-0.5 break-words text-sm font-semibold leading-tight text-foreground">
+          {valor}
+        </div>
       </div>
     </div>
   );
