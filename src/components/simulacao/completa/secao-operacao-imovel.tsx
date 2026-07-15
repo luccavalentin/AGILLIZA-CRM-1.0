@@ -217,23 +217,27 @@ export function SecaoOperacaoImovel({ ctx }: { ctx: SimulacaoCompletaCtx }) {
             onChange={(v) => aplicarPorEntrada(v)}
             placeholder="Ex: 100.000,00"
           />
-          {f.valor_imovel > 0 && (
-            <p className="text-xs text-muted-foreground">
-              Entrada sugerida (20%):{" "}
-              <span className="font-medium text-foreground">
-                {formatBRL(Math.round(f.valor_imovel * 0.2))}
-              </span>
-              {f.valor_entrada !== Math.round(f.valor_imovel * 0.2) && (
-                <button
-                  type="button"
-                  onClick={aplicarEntradaSugerida}
-                  className="ml-2 font-medium text-primary underline-offset-2 hover:underline"
-                >
-                  Aplicar
-                </button>
-              )}
-            </p>
-          )}
+          {f.valor_imovel > 0 && (() => {
+            const pctEntradaSugerida = Math.round((1 - ltvMax) * 100);
+            const entradaSugerida = Math.round(f.valor_imovel * (1 - ltvMax));
+            return (
+              <p className="text-xs text-muted-foreground">
+                Entrada sugerida ({pctEntradaSugerida}%):{" "}
+                <span className="font-medium text-foreground">
+                  {formatBRL(entradaSugerida)}
+                </span>
+                {f.valor_entrada !== entradaSugerida && (
+                  <button
+                    type="button"
+                    onClick={aplicarEntradaSugerida}
+                    className="ml-2 font-medium text-primary underline-offset-2 hover:underline"
+                  >
+                    Aplicar
+                  </button>
+                )}
+              </p>
+            );
+          })()}
           {financiamentoExcedido && (
             <p className="text-xs font-medium text-destructive">
               {f.fg_financiar_despesas ? (
