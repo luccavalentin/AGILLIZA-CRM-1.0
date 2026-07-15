@@ -705,6 +705,20 @@ div[style*="Edit with Lovable"],
 }
 
 
+/* ============= Padrão de cadastro em MAIÚSCULAS ============= */
+/* Todo formulário de cadastro do CRM exibe os textos digitados em caixa
+   alta. Campos onde o padrão não faz sentido (e-mail, senha, data) ficam
+   preservados. A gravação também é em maiúsculas (ver cliente-form.tsx). */
+.form-cadastro-upper input:not([type="email"]):not([type="password"]):not([type="date"]):not([type="number"]),
+.form-cadastro-upper textarea {
+  text-transform: uppercase;
+}
+.form-cadastro-upper input::placeholder,
+.form-cadastro-upper textarea::placeholder {
+  text-transform: none;
+}
+
+
 /* ============================= DPS ============================= */
 /* Documento da Declaração Pessoal de Saúde (tela + impressão). */
 .dps-screen {
