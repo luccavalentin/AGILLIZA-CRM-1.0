@@ -281,7 +281,7 @@ export function SecaoOperacaoImovel({ ctx }: { ctx: SimulacaoCompletaCtx }) {
           <Input
             type="number"
             min={60}
-            max={maxPrazoIdade ?? 420}
+            max={prazoMaximo ?? 420}
             step={12}
             value={f.prazo || ""}
             onChange={(e) => set("prazo", Number(e.target.value))}
@@ -289,6 +289,11 @@ export function SecaoOperacaoImovel({ ctx }: { ctx: SimulacaoCompletaCtx }) {
             onWheel={(e) => (e.target as HTMLInputElement).blur()}
             aria-invalid={!!erros.prazo}
           />
+          {restricaoEspecial.ativo && (
+            <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">
+              {restricaoEspecial.motivo}: máx. {restricaoEspecial.prazoMax} meses.
+            </p>
+          )}
           {maxPrazoIdade != null && (
             <p className="mt-1 text-xs text-muted-foreground">
               Máximo para a idade: {maxPrazoIdade} meses ({formatarMeses(maxPrazoIdade)})
