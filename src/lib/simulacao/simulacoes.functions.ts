@@ -36,6 +36,7 @@ export interface SimulacaoBancoResumo {
   banco_id: string | null;
   nome_banco: string | null;
   status_banco: string | null;
+  sistema_amortizacao: string | null;
 }
 
 export interface SimulacaoListaItem {
@@ -575,6 +576,9 @@ export const listarSimulacoes = createServerFn({ method: "GET" })
     const idsPrincipais = paginadas.map((r: any) => r.id);
     const idsAgrupadas = paginadas.flatMap((r: any) => r._agrupadas_ids ?? []);
     const idsTodos = [...idsPrincipais, ...idsAgrupadas];
+    const sistemaPorSimulacao = new Map(
+      (rows ?? []).map((r: any) => [r.id, r.sistema_amortizacao ?? null]),
+    );
     const bancosPorSim = new Map<string, SimulacaoBancoResumo[]>();
     if (idsTodos.length) {
       const { data: bancos } = await supabase
@@ -589,6 +593,7 @@ export const listarSimulacoes = createServerFn({ method: "GET" })
           banco_id: (b as any).banco_id,
           nome_banco: (b as any).nome_banco,
           status_banco: (b as any).status_banco,
+          sistema_amortizacao: sistemaPorSimulacao.get((b as any).simulacao_id) ?? null,
         });
         bancosPorSim.set((b as any).simulacao_id, lista);
       }
