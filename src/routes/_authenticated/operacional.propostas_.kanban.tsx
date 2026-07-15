@@ -9,6 +9,7 @@ import { BancoLogo } from "@/components/bancos/banco-logo";
 import { corDoBanco } from "@/lib/bancos/cores";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { listarPropostas, moverStatusProposta, listarResponsaveisEquipe } from "@/lib/propostas/propostas.functions";
+import { listarParceiros } from "@/lib/crm/parceiros.functions";
 import { statusProposta } from "@/components/propostas/status";
 import {
   transicaoPermitida,
