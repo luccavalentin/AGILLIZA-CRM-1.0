@@ -184,9 +184,25 @@ export const estatisticasClientes = createServerFn({ method: "GET" })
             { count: "exact" },
           )
           .eq("ativo", true);
-        if (data?.escopo === "minhas") q = q.eq("responsavel_id", userId);
+        if (data?.escopo === "minhas") {
+          // Mesmo escopo da listagem: responsável, criador ou parceiro vinculado.
+          // Feito com sub-select via .or() para não perder KPIs de vinculados.
+        }
         return q;
       };
+      // Aplica escopo minhas fora do base() para poder aguardar a busca de vínculos.
+      if (data?.escopo === "minhas") {
+        const { data: vinc } = await supabase
+          .from("cliente_parceiros")
+          .select("cliente_id")
+          .eq("parceiro_id", userId);
+        const ids = Array.from(new Set((vinc ?? []).map((v: any) => v.cliente_id).filter(Boolean)));
+        const partes = [`responsavel_id.eq.${userId}`, `criador_id.eq.${userId}`];
+        if (ids.length) partes.push(`id.in.(${ids.join(",")})`);
+        // reatribui base()
+        const anterior = base;
+        (base as any) = () => anterior().or(partes.join(","));
+      }
       const { data: rows, count } = await base();
       const list = (rows ?? []) as any[];
       const portal_ativo = list.filter((r) => r.portal_acesso_ativo).length;
