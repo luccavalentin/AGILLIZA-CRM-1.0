@@ -392,6 +392,10 @@ function Pagina() {
     setStatusFiltro("todos");
     setPrioridadeFiltro("todas");
     setResponsavelFiltro("todos");
+    setClienteFiltro("todos");
+    setAnalistaFiltro("todos");
+    setCorretorFiltro("todos");
+    setImobiliariaFiltro("todos");
     setPagina(1);
   }
 
