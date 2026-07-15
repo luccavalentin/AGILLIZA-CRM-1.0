@@ -224,12 +224,19 @@ export const explorarDocumentosGerais = createServerFn({ method: "GET" })
       return Array.from(map, ([id, nome]) => ({ id, nome })).sort(ordenarNome);
     };
 
+    // Cada dropdown/aba lista TODOS os usuários cadastrados naquele papel
+    // (por `tipo_pessoa` ou `user_roles.role`), independentemente de haver
+    // clientes vinculados. Analistas ficam restritos ao cadastro — criadores
+    // que não são analistas de fato não aparecem aqui.
+    void imobiliariasSet;
+    void corretoresSet;
+    void analistasSet;
     return {
       clientes: clientesResp,
-      imobiliarias: mesclar(imobiliariasBase, imobiliariasSet),
-      corretores: mesclar(corretoresBase, corretoresSet),
+      imobiliarias: imobiliariasBase,
+      corretores: corretoresBase,
       comerciais,
-      analistas: mesclar(analistasBase, analistasSet),
+      analistas: analistasBase,
     };
   });
 
