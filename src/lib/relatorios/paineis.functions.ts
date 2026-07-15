@@ -755,6 +755,7 @@ export const getPanelDados = createServerFn({ method: "POST" })
           .lte("created_at", ateFim)
           .limit(5000),
         "usuario_responsavel_id",
+        "usuario_criador_id",
       ),
       escopoEq(
         supabase
@@ -768,6 +769,7 @@ export const getPanelDados = createServerFn({ method: "POST" })
           )
           .limit(5000),
         "usuario_responsavel_id",
+        "usuario_criador_id",
       ),
       escopoEq(
         supabase
@@ -777,6 +779,7 @@ export const getPanelDados = createServerFn({ method: "POST" })
           .lte("created_at", ateFim)
           .limit(5000),
         "responsavel_id",
+        "criador_id",
       ),
       escopoEq(
         supabase
@@ -786,6 +789,7 @@ export const getPanelDados = createServerFn({ method: "POST" })
           .lte("created_at", ateFim)
           .limit(5000),
         "responsavel_id",
+        "criador_id",
       ),
       carregarContratosCliente(supabase, escopoEq, de, ate),
       carregarAnterior(supabase, escopoEq, de, ate),
@@ -1098,6 +1102,7 @@ export const getPanelDrilldown = createServerFn({ method: "POST" })
           .order("created_at", { ascending: false })
           .limit(LIMITE * 2),
         "usuario_responsavel_id",
+        "usuario_criador_id",
       );
       if (res.error) throw new Error(res.error.message);
       return (res.data ?? []) as any[];
@@ -1115,6 +1120,7 @@ export const getPanelDrilldown = createServerFn({ method: "POST" })
           .order("created_at", { ascending: false })
           .limit(LIMITE),
         "usuario_responsavel_id",
+        "usuario_criador_id",
       );
       if (res.error) throw new Error(res.error.message);
       return (res.data ?? []) as any[];
@@ -1130,6 +1136,7 @@ export const getPanelDrilldown = createServerFn({ method: "POST" })
           .order("contrato_emitido_em", { ascending: false })
           .limit(LIMITE),
         "responsavel_id",
+        "criador_id",
       );
       if (cliRes.error) throw new Error(cliRes.error.message);
       const cliRows = (cliRes.data ?? []) as any[];
@@ -1431,6 +1438,7 @@ export const getPanelDrilldown = createServerFn({ method: "POST" })
           .order("created_at", { ascending: false })
           .limit(LIMITE),
         "responsavel_id",
+        "criador_id",
       );
       if (res.error) throw new Error(res.error.message);
       const rows = (res.data ?? []) as any[];
@@ -1456,6 +1464,7 @@ export const getPanelDrilldown = createServerFn({ method: "POST" })
           .select("id,numero,titulo,status,prazo_sla,created_at")
           .limit(LIMITE * 2),
         "responsavel_id",
+        "criador_id",
       );
       if (res.error) throw new Error(res.error.message);
       const agora = new Date();
@@ -1490,6 +1499,7 @@ export const getPanelDrilldown = createServerFn({ method: "POST" })
           .select("id,numero,titulo,status,prazo,created_at")
           .limit(LIMITE * 2),
         "responsavel_id",
+        "criador_id",
       );
       if (res.error) throw new Error(res.error.message);
       const agora = new Date();
@@ -1521,6 +1531,7 @@ export const getPanelDrilldown = createServerFn({ method: "POST" })
           .select("id,numero,titulo,status,prazo_sla,created_at")
           .limit(LIMITE * 2),
         "responsavel_id",
+        "criador_id",
       );
       if (res.error) throw new Error(res.error.message);
       const agora = new Date();
@@ -1563,6 +1574,7 @@ export const getPanelDrilldown = createServerFn({ method: "POST" })
           .lte("created_at", ateFim)
           .limit(LIMITE * 2),
         "responsavel_id",
+        "criador_id",
       );
       if (res.error) throw new Error(res.error.message);
       const rows = (res.data ?? []) as any[];
