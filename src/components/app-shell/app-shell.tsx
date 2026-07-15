@@ -85,7 +85,7 @@ export function AppShell({
         {/* Sidebar desktop */}
         <aside
           className={cn(
-            "app-sidebar sticky top-0 hidden h-[100dvh] shrink-0 flex-col border-r border-sidebar-border text-sidebar-foreground transition-[width] duration-200 lg:flex",
+            "app-sidebar sticky top-0 hidden h-[100dvh] shrink-0 flex-col border-r border-sidebar-border text-sidebar-foreground shadow-[1px_0_0_0_rgba(0,0,0,0.04)] transition-[width] duration-200 ease-out lg:flex",
             larguraDesktop,
           )}
         >
@@ -95,7 +95,11 @@ export function AppShell({
               hydrated && collapsed ? "justify-center px-2" : "px-4",
             )}
           >
-            <Link to={"/dashboard" as string} aria-label="Ir para o início">
+            <Link
+              to={"/dashboard" as string}
+              aria-label="Ir para o início"
+              className="rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar"
+            >
               {hydrated && collapsed ? <BrandSymbol /> : <Logo variant="light" className="h-7" />}
             </Link>
           </div>
@@ -112,16 +116,16 @@ export function AppShell({
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
           <SheetContent
             side="left"
-            className="app-sidebar w-72 border-sidebar-border p-0 text-sidebar-foreground"
+            className="app-sidebar flex w-[86vw] max-w-xs flex-col border-sidebar-border p-0 text-sidebar-foreground sm:w-80"
           >
             <SheetTitle className="sr-only">Menu de navegação</SheetTitle>
-            <div className="flex h-16 items-center border-b border-sidebar-border px-4">
+            <div className="flex h-16 shrink-0 items-center border-b border-sidebar-border px-4">
               <Logo variant="light" className="h-7" />
             </div>
-            <div className="sidebar-scroll h-[calc(100dvh-8rem)] overflow-y-auto">
+            <div className="sidebar-scroll min-h-0 flex-1 overflow-y-auto">
               <SidebarNav nav={nav} onNavigate={() => setMobileOpen(false)} />
             </div>
-            <div className="border-t border-sidebar-border p-2">
+            <div className="shrink-0 border-t border-sidebar-border p-2">
               <SidebarSignOut
                 collapsed={false}
                 onSignOut={() => {
@@ -146,7 +150,11 @@ export function AppShell({
             onToggleCollapse={toggleCollapse}
             onSignOut={onSignOut}
           />
-          <main id="conteudo-principal" className="flex-1 p-3 sm:p-4 lg:p-6">
+          <main
+            id="conteudo-principal"
+            tabIndex={-1}
+            className="flex-1 p-3 focus:outline-none sm:p-4 lg:p-6"
+          >
             {children}
           </main>
         </div>

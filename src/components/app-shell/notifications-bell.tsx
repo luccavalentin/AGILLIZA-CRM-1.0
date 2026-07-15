@@ -162,7 +162,12 @@ export function NotificationsBell({ userId }: NotificationsBellProps) {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative" aria-label="Notificações">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="relative min-h-11 min-w-11 sm:min-h-10 sm:min-w-10"
+          aria-label={naoLidas > 0 ? `Notificações (${naoLidas} não lidas)` : "Notificações"}
+        >
           <Bell className="h-5 w-5 text-muted-foreground" />
           {naoLidas > 0 && (
             <Badge className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground">

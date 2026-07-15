@@ -53,7 +53,10 @@ export function Topbar({
 }: TopbarProps) {
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center gap-2 border-b border-border bg-background/85 px-3 backdrop-blur supports-[backdrop-filter]:bg-background/70 sm:px-4">
+    <header
+      role="banner"
+      className="sticky top-0 z-30 flex h-16 items-center gap-1 border-b border-border bg-background/85 px-2 backdrop-blur supports-[backdrop-filter]:bg-background/70 sm:gap-2 sm:px-4"
+    >
       <Button
         variant="ghost"
         size="icon"
@@ -66,7 +69,7 @@ export function Topbar({
       <Button
         variant="ghost"
         size="icon"
-        className="hidden lg:inline-flex"
+        className="hidden min-h-10 min-w-10 lg:inline-flex"
         aria-label={collapsed ? "Expandir menu" : "Recolher menu"}
         aria-pressed={collapsed}
         onClick={onToggleCollapse}
@@ -78,17 +81,17 @@ export function Topbar({
       <Link
         to={"/dashboard" as string}
         aria-label="Ir para o início"
-        className="lg:hidden"
+        className="ml-1 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:hidden"
       >
         <Logo variant="dark" className="h-6" />
       </Link>
 
-      <div className="mx-1 hidden lg:block">
+      <div className="mx-1 hidden min-w-0 lg:block">
         <AppBreadcrumbs nav={nav} />
       </div>
 
 
-      <div className="ml-auto flex items-center gap-1 sm:gap-2">
+      <div className="ml-auto flex items-center gap-0.5 sm:gap-1.5">
         {showSearch && <GlobalSearch />}
         <ThemeToggle />
         <NotificationsBell userId={user.id} />
@@ -99,7 +102,7 @@ export function Topbar({
               <Button
                 variant="ghost"
                 size="icon"
-                className="rounded-full"
+                className="min-h-11 min-w-11 rounded-full sm:min-h-10 sm:min-w-10"
                 aria-label="Menu da conta"
               >
                 <Avatar className="h-8 w-8">
