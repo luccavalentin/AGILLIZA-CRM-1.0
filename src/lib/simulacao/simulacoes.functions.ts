@@ -850,7 +850,11 @@ export const inverterTitularSimulacao = createServerFn({ method: "POST" })
               telefone_celular: params.celular || null,
               data_nascimento: params.dataNascimento,
               renda_total_declarada: params.renda ?? 0,
-              estado_civil: (params.estadoCivil || "solteiro") as
+              // Como estamos vindo de uma simulação com cônjuge, ambos ficam
+              // necessariamente vinculados como casal no CRM.
+              estado_civil: (params.estadoCivil === "uniao_estavel"
+                ? "uniao_estavel"
+                : "casado") as
                 | "solteiro"
                 | "casado"
                 | "divorciado"
