@@ -437,10 +437,31 @@ export function ResultadoInlineAmbos({ simulacaoIdSac, simulacaoIdPrice, onFecha
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {linhas.map((l) => {
+                  {linhas.map((l, idx) => {
                     const b = l.banco;
                     const isMelhor = melhorPorSistema[l.sistema] === b.id;
+                    const primeiroDoGrupo = idx === 0 || linhas[idx - 1].sistema !== l.sistema;
                     return (
+                      <>
+                        {primeiroDoGrupo && (
+                          <TableRow
+                            key={`hdr-${l.sistema}`}
+                            className="border-border/60 bg-muted/40 hover:bg-muted/40"
+                          >
+                            <TableCell colSpan={9} className="py-2">
+                              <div className="flex items-center gap-2">
+                                <ToneBadge tone={l.sistema === "SAC" ? "info" : "warning"}>
+                                  Tabela {l.sistema}
+                                </ToneBadge>
+                                <span className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                                  {l.sistema === "SAC"
+                                    ? "Amortização constante · parcelas decrescentes"
+                                    : "Parcelas fixas · juros compostos"}
+                                </span>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        )}
                       <TableRow
                         key={`${l.sistema}-${b.id}`}
                         className={cn(
@@ -454,7 +475,6 @@ export function ResultadoInlineAmbos({ simulacaoIdSac, simulacaoIdPrice, onFecha
                             <div className="min-w-0 flex-1">
                               <div className="flex items-center gap-1.5">
                                 <span className="truncate text-sm font-semibold" style={{ color: corDoBanco(b.nome_banco) }}>{b.nome_banco}</span>
-                                <ToneBadge tone={l.sistema === "SAC" ? "info" : "warning"}>{l.sistema}</ToneBadge>
                               </div>
                               {isMelhor && <ToneBadge tone="success">Melhor taxa</ToneBadge>}
                               {b.status_banco === "erro" && b.mensagem_banco && (
