@@ -184,6 +184,10 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
     return op?.id_operacao ?? null;
   }, [operacoes, f.produto]);
 
+  // Ref para acessar o LTV atual dentro de handlers definidos antes da declaração
+  // de `ltvMax` (evita "cannot access before initialization").
+  const ltvMaxRef = useRef(0.8);
+
   function set(k: string, v: any) {
     if (k === "valor_entrada") setEntradaTocada(true);
     setF((prev) => {
