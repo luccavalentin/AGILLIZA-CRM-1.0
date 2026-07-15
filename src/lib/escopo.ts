@@ -52,10 +52,9 @@ export function criarEscopoEq(opts: {
       const ids = partnerClienteIds.join(",");
       for (const c of clienteCols) parts.push(`${c}.in.(${ids})`);
     }
-    if (parts.length === 1) {
-      const [col, , val] = parts[0].split(".");
-      // eq shortcut
-      return q.eq(col, val);
+    if (!parts.length) return q;
+    if (parts.length === 1 && respCols.length === 1 && !clienteCols.length) {
+      return q.eq(respCols[0], userId);
     }
     return q.or(parts.join(","));
   };
