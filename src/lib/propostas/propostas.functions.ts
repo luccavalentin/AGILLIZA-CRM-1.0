@@ -366,6 +366,7 @@ export const criarProposta = createServerFn({ method: "POST" })
       .object({
         simulacao_id: z.string().uuid().optional(),
         banco_id: z.string().uuid().optional(),
+        simulacao_banco_id: z.string().uuid().optional(),
         cliente_id: z.string().uuid().optional(),
       })
       .parse(data),
