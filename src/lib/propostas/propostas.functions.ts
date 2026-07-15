@@ -407,14 +407,44 @@ export const criarProposta = createServerFn({ method: "POST" })
       if (error) throw new Error(error.message);
       if (!sim) throw new Error("Simulação não encontrada.");
 
-      bancosSimulados = (sim.simulacao_bancos ?? []).filter(
+      bancosSimulados = ((sim as any).simulacao_bancos ?? []).filter(
         (b: any) => b.status_banco === "simulada",
       );
-      const bancoEscolhido = data.simulacao_banco_id
-        ? bancosSimulados.find((b: any) => b.id === data.simulacao_banco_id)
-        : data.banco_id
-          ? bancosSimulados.find((b: any) => b.banco_id === data.banco_id)
-          : bancosSimulados[0];
+
+      // Se veio um simulacao_banco_id explícito e ele não está entre os
+      // bancos da simulação atual, tenta na simulação irmã (agrupador SAC+PRICE).
+      let bancoEscolhido: any = null;
+      let simDeOrigem: any = sim;
+      if (data.simulacao_banco_id) {
+        bancoEscolhido =
+          bancosSimulados.find((b: any) => b.id === data.simulacao_banco_id) ?? null;
+        if (!bancoEscolhido) {
+          const { data: sbRow } = await supabase
+            .from("simulacao_bancos")
+            .select("*")
+            .eq("id", data.simulacao_banco_id)
+            .maybeSingle();
+          if (sbRow && (sbRow as any).status_banco === "simulada") {
+            const agrup = (sim as any).agrupador_id;
+            if (agrup) {
+              const { data: siblingSim } = await supabase
+                .from("simulacoes")
+                .select("*")
+                .eq("id", (sbRow as any).simulacao_id)
+                .maybeSingle();
+              if (siblingSim && (siblingSim as any).agrupador_id === agrup) {
+                bancoEscolhido = sbRow;
+                simDeOrigem = siblingSim;
+              }
+            }
+          }
+        }
+      } else if (data.banco_id) {
+        bancoEscolhido =
+          bancosSimulados.find((b: any) => b.banco_id === data.banco_id) ?? null;
+      } else if (bancosSimulados.length === 1) {
+        bancoEscolhido = bancosSimulados[0];
+      }
 
       if (data.simulacao_banco_id && !bancoEscolhido) {
         throw new Error("Simulação de banco não encontrada.");
@@ -425,45 +455,54 @@ export const criarProposta = createServerFn({ method: "POST" })
       if (!data.banco_id && !data.simulacao_banco_id && bancosSimulados.length > 1) {
         throw new Error("Escolha um banco específico para enviar a aprovação.");
       }
-      bancosParaVincular = bancoEscolhido ? [bancoEscolhido] : bancosSimulados;
+
+      // NUNCA vincular todos os bancos: sempre exatamente um quando há escolha.
+      if (!bancoEscolhido) {
+        throw new Error("Selecione o banco/tabela para envio.");
+      }
+      bancosParaVincular = [bancoEscolhido];
 
       snapshot = {
         ...snapshot,
-        simulacao_id: sim.id,
-        cliente_id: sim.cliente_id ?? data.cliente_id ?? null,
+        simulacao_id: (simDeOrigem as any).id ?? sim.id,
+        cliente_id: (simDeOrigem as any).cliente_id ?? sim.cliente_id ?? data.cliente_id ?? null,
         banco_id: bancoEscolhido?.banco_id ?? data.banco_id ?? null,
         nome_banco: bancoEscolhido?.nome_banco ?? null,
-        produto: sim.produto,
-        cpf_cnpj: sim.cpf_cnpj,
-        nome_cliente: sim.nome_cliente,
-        email: sim.email,
-        celular: sim.celular,
-        data_nascimento: sim.data_nascimento,
-        renda_total: sim.renda_total,
-        estado_civil: sim.estado_civil,
-        possui_conjuge: sim.possui_conjuge,
-        compoe_renda: sim.compoe_renda,
-        utiliza_fgts: sim.utiliza_fgts === "S",
-        id_operacao_homefin: sim.id_operacao_homefin,
-        tipo_imovel: sim.tipo_imovel,
-        uso_imovel: sim.uso_imovel,
-        situacao_imovel: sim.situacao_imovel,
-        uf: sim.uf,
-        cep_imovel: sim.cep_imovel,
-        valor_imovel: sim.valor_imovel,
-        valor_financiamento: sim.valor_financiamento,
-        prazo: sim.prazo,
-        sistema_amortizacao: sim.sistema_amortizacao,
-        financia_despesas_cartorarias: sim.fg_financiar_despesas,
-        homefin_id_oportunidade: sim.homefin_id_oportunidade,
+        produto: (simDeOrigem as any).produto ?? sim.produto,
+        cpf_cnpj: (simDeOrigem as any).cpf_cnpj ?? sim.cpf_cnpj,
+        nome_cliente: (simDeOrigem as any).nome_cliente ?? sim.nome_cliente,
+        email: (simDeOrigem as any).email ?? sim.email,
+        celular: (simDeOrigem as any).celular ?? sim.celular,
+        data_nascimento: (simDeOrigem as any).data_nascimento ?? sim.data_nascimento,
+        renda_total: (simDeOrigem as any).renda_total ?? sim.renda_total,
+        estado_civil: (simDeOrigem as any).estado_civil ?? sim.estado_civil,
+        possui_conjuge: (simDeOrigem as any).possui_conjuge ?? sim.possui_conjuge,
+        compoe_renda: (simDeOrigem as any).compoe_renda ?? sim.compoe_renda,
+        utiliza_fgts: ((simDeOrigem as any).utiliza_fgts ?? sim.utiliza_fgts) === "S",
+        id_operacao_homefin: (simDeOrigem as any).id_operacao_homefin ?? sim.id_operacao_homefin,
+        tipo_imovel: (simDeOrigem as any).tipo_imovel ?? sim.tipo_imovel,
+        uso_imovel: (simDeOrigem as any).uso_imovel ?? sim.uso_imovel,
+        situacao_imovel: (simDeOrigem as any).situacao_imovel ?? sim.situacao_imovel,
+        uf: (simDeOrigem as any).uf ?? sim.uf,
+        cep_imovel: (simDeOrigem as any).cep_imovel ?? sim.cep_imovel,
+        valor_imovel: (simDeOrigem as any).valor_imovel ?? sim.valor_imovel,
+        valor_financiamento: (simDeOrigem as any).valor_financiamento ?? sim.valor_financiamento,
+        prazo: (simDeOrigem as any).prazo ?? sim.prazo,
+        sistema_amortizacao: (simDeOrigem as any).sistema_amortizacao ?? sim.sistema_amortizacao,
+        financia_despesas_cartorarias:
+          (simDeOrigem as any).fg_financiar_despesas ?? (sim as any).fg_financiar_despesas,
+        homefin_id_oportunidade:
+          (simDeOrigem as any).homefin_id_oportunidade ?? sim.homefin_id_oportunidade,
         homefin_id_simulacao: bancoEscolhido?.homefin_id_simulacao_banco ?? null,
-        codigo_oportunidade_homefin: sim.codigo_oportunidade_homefin,
-        consentimento_lgpd: sim.consentimento_lgpd,
-        consentimento_scr: sim.consentimento_scr,
-        analista_id: sim.analista_id,
-        comercial_id: sim.comercial_id,
+        codigo_oportunidade_homefin:
+          (simDeOrigem as any).codigo_oportunidade_homefin ?? sim.codigo_oportunidade_homefin,
+        consentimento_lgpd: (simDeOrigem as any).consentimento_lgpd ?? sim.consentimento_lgpd,
+        consentimento_scr: (simDeOrigem as any).consentimento_scr ?? sim.consentimento_scr,
+        analista_id: (simDeOrigem as any).analista_id ?? sim.analista_id,
+        comercial_id: (simDeOrigem as any).comercial_id ?? sim.comercial_id,
       };
     }
+
 
     const { data: inserted, error: insErr } = await supabaseAdmin
       .from("propostas")
