@@ -263,7 +263,16 @@ export function ChatClienteConversa({
       toast.success(vars.retorno ? "Retorno agendado." : "Tarefa criada.");
     },
     onError: (err) => {
-      const motivo = err instanceof Error ? err.message : String(err);
+      const raw = err instanceof Error ? err.message : String(err);
+      let motivo = raw;
+      try {
+        const parsed = JSON.parse(raw);
+        const first = Array.isArray(parsed) ? parsed[0] : parsed?.issues?.[0];
+        if (first?.message) motivo = first.message;
+      } catch { /* mensagem já é texto */ }
+      if (/at least 2 character/i.test(motivo)) {
+        motivo = "Descreva a tarefa com pelo menos 2 caracteres.";
+      }
       toast.error(`Não foi possível criar: ${motivo}`);
     },
   });
