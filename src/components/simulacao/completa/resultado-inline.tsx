@@ -270,7 +270,7 @@ export function ResultadoInlineCompleta({ simulacaoId, onFechar }: Props) {
                 </div>
 
                 {/* Mobile: cartões */}
-                <div className="grid gap-3 lg:hidden">
+                <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:hidden">
                   {bancos.map((b: any) => (
                     <div key={b.id} className="rounded-lg border border-border p-4">
                       <div className="flex items-start gap-3">
