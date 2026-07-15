@@ -557,12 +557,53 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
       setF((prev) => ({ ...prev, sistema_amortizacao: v, bancos_ids: elegiveis }));
       return;
     }
+    if (v === "B") {
+      // Modo "Ambos": mantém as seleções separadas por sistema.
+      // Se ainda não há bancos separados, propaga a seleção atual como base
+      // para SAC (todos elegíveis) e PRICE (só Bradesco/Santander).
+      setF((prev) => {
+        const sacBase =
+          prev.bancos_sac_ids.length > 0 ? prev.bancos_sac_ids : prev.bancos_ids;
+        const priceBase =
+          prev.bancos_price_ids.length > 0
+            ? prev.bancos_price_ids
+            : prev.bancos_ids.filter((id) => {
+                const b = (bancos ?? []).find((x) => x.id === id);
+                return b ? aceitaPrice(b) : false;
+              });
+        return {
+          ...prev,
+          sistema_amortizacao: "B",
+          bancos_sac_ids: sacBase,
+          bancos_price_ids: priceBase,
+        };
+      });
+      toast.info("Modo Ambos: escolha os bancos SAC e PRICE separadamente e preencha a renda para PRICE.");
+      return;
+    }
     set("sistema_amortizacao", v);
   }
 
-  function toggleBanco(id: string) {
+  function toggleBanco(id: string, sistemaAlvo?: "S" | "P") {
     setF((prev) => {
       const banco = (bancos ?? []).find((b) => b.id === id);
+
+      // Modo "Ambos": alterna dentro de bancos_sac_ids ou bancos_price_ids.
+      if (prev.sistema_amortizacao === "B" && sistemaAlvo) {
+        if (sistemaAlvo === "P" && banco && !aceitaPrice(banco)) {
+          toast.info("PRICE: apenas Bradesco e Santander operam esse sistema.");
+          return prev;
+        }
+        if (banco && !aceitaBancoNaOperacao(banco)) {
+          toast.info(`${restricaoEspecial.motivo}: apenas Bradesco opera essa modalidade.`);
+          return prev;
+        }
+        const key = sistemaAlvo === "S" ? "bancos_sac_ids" : "bancos_price_ids";
+        const arr = (prev[key] as string[]) ?? [];
+        const has = arr.includes(id);
+        return { ...prev, [key]: has ? arr.filter((x) => x !== id) : [...arr, id] };
+      }
+
       const has = prev.bancos_ids.includes(id);
       if (prev.sistema_amortizacao === "P" && !has && banco && !aceitaPrice(banco)) {
         toast.info("No sistema PRICE, apenas Bradesco e Santander podem ser selecionados.");
