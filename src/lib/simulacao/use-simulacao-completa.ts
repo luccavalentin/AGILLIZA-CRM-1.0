@@ -214,12 +214,41 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
     [f.renda_total, f.compoe_renda, f.renda_conjuge],
   );
 
-  // Teto de financiamento (LTV) por produto.
-  const ltvMax = f.produto === "home_equity" ? 0.6 : 0.8;
+  // Restrição especial: Terreno (TE/TC) ou Imóvel comercial (uso "C")
+  // -> LTV 70%, prazo máx 240 meses, apenas Bradesco opera.
+  const restricaoEspecial = useMemo(() => {
+    const isTerreno = f.tipo_imovel === "TE" || f.tipo_imovel === "TC";
+    const isComercial = f.uso_imovel === "C";
+    const ativo = isTerreno || isComercial;
+    const motivo = !ativo
+      ? ""
+      : isTerreno && isComercial
+        ? "Terreno / Imóvel comercial"
+        : isTerreno
+          ? "Terreno"
+          : "Imóvel comercial";
+    return { ativo, motivo, ltvMax: 0.7, prazoMax: 240 };
+  }, [f.tipo_imovel, f.uso_imovel]);
+
+  function aceitaBancoNaOperacao(b: { codigo_banco?: number | string | null; nome_banco?: string | null }) {
+    if (!restricaoEspecial.ativo) return true;
+    const cod = String(b.codigo_banco ?? "").replace(/^0+/, "");
+    const nome = (b.nome_banco ?? "").toLowerCase();
+    return cod === "237" || nome.includes("bradesco");
+  }
+
+  // Teto de financiamento (LTV) por produto e restrição especial.
+  const ltvMax = restricaoEspecial.ativo
+    ? restricaoEspecial.ltvMax
+    : f.produto === "home_equity"
+      ? 0.6
+      : 0.8;
+  const prazoMaximo = useMemo(() => {
+    const idade = maxPrazoIdade ?? 420;
+    return restricaoEspecial.ativo ? Math.min(idade, restricaoEspecial.prazoMax) : idade;
+  }, [maxPrazoIdade, restricaoEspecial]);
   const financiamentoMaximo = useMemo(
     () => Math.floor((Number(f.valor_imovel) || 0) * ltvMax),
-    [f.valor_imovel, ltvMax],
-  );
   const despesasNoTeto = f.fg_financiar_despesas
     ? Number(f.valor_despesas_financiadas) || 0
     : 0;
