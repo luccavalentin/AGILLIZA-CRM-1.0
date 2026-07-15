@@ -903,6 +903,37 @@ function FilterField({ label, children }: { label: string; children: React.React
   );
 }
 
+function FilterSelect({
+  label,
+  value,
+  onValueChange,
+  placeholder,
+  options,
+}: {
+  label: string;
+  value: string;
+  onValueChange: (v: string) => void;
+  placeholder?: string;
+  options: { value: string; label: string }[];
+}) {
+  return (
+    <FilterField label={label}>
+      <Select value={value} onValueChange={onValueChange}>
+        <SelectTrigger className="w-full">
+          <SelectValue placeholder={placeholder} />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map((o) => (
+            <SelectItem key={o.value} value={o.value}>
+              {o.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </FilterField>
+  );
+}
+
 function Paginacao({
   pagina,
   total,
