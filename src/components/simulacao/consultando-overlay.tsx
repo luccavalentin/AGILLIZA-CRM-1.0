@@ -123,7 +123,7 @@ export function ConsultandoOverlay({
             <p className="text-sm text-muted-foreground">
               {legenda ??
                 (temProgresso
-                  ? `${concluidos} de ${total} bancos processados`
+                  ? `${concluidos} de ${total} simulações processadas`
                   : "Consultando os bancos parceiros…")}
             </p>
           </div>
