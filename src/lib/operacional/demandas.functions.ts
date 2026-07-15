@@ -310,12 +310,13 @@ export const criarDemanda = createServerFn({ method: "POST" })
   .inputValidator((data) =>
     z
       .object({
-        tipo: z.string().min(1),
+        tipo: z.string().min(1).default("diversos"),
         titulo: z.string().min(2),
         descricao: z.string().optional(),
-        dados_simulacao: z.string().optional(),
         prioridade: z.enum(["p1", "p2", "p3"]).default("p2"),
         cliente_id: z.string().uuid().optional().nullable(),
+        proposta_id: z.string().uuid().optional().nullable(),
+        simulacao_id: z.string().uuid().optional().nullable(),
         responsavel_id: z.string().uuid(),
         participantes: z.array(z.string().uuid()).optional(),
       })
