@@ -474,11 +474,17 @@ function Pagina() {
     queryKey: ["equipe-interna"],
     queryFn: () => listarResponsaveisEquipe(),
     staleTime: 5 * 60_000,
+    gcTime: 30 * 60_000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
   const { data: parceirosCadastrados } = useQuery({
     queryKey: ["parceiros-cadastrados"],
     queryFn: () => listarParceiros(),
     staleTime: 5 * 60_000,
+    gcTime: 30 * 60_000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
 
   function opcoesDe(campo: "responsavel_nome" | "analista_nome" | "corretor_nome" | "imobiliaria_nome"): string[] {
