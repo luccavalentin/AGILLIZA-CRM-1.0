@@ -27,7 +27,6 @@ import {
   ArrowUpRight,
   Sparkles,
   Check,
-  Check,
 } from "lucide-react";
 import { getMinhaSessao } from "@/lib/session.functions";
 import { assertModuloPermitido } from "@/lib/route-guards";
