@@ -248,31 +248,36 @@ export function ClienteForm({
       : null;
 
     setSalvando(true);
+    // Padrão do sistema: todos os campos de texto do cadastro são gravados
+    // em MAIÚSCULAS. E-mails (case-sensitive para autenticação/entrega) e
+    // valores puramente numéricos/mascarados ficam de fora.
+    const up = (s: string | null | undefined) =>
+      s ? s.trim().toLocaleUpperCase("pt-BR") : s ?? null;
     try {
       const payload = {
         tipo_pessoa: v.tipo_pessoa,
-        nome: v.nome.trim(),
+        nome: up(v.nome),
         documento: soDigitos(v.documento),
-        documento_secundario: v.documento_secundario || null,
+        documento_secundario: up(v.documento_secundario) || null,
         data_nascimento: v.data_nascimento,
         estado_civil: v.estado_civil as any,
         regime_casamento: (v.regime_casamento || null) as any,
-        mae: v.mae.trim() || null,
-        pai: v.pai.trim() || null,
+        mae: up(v.mae) || null,
+        pai: up(v.pai) || null,
         sexo: v.sexo || null,
-        nacionalidade: v.nacionalidade.trim() || null,
-        naturalidade: v.naturalidade.trim() || null,
+        nacionalidade: up(v.nacionalidade) || null,
+        naturalidade: up(v.naturalidade) || null,
         tipo_documento_identidade: v.tipo_documento_identidade || null,
-        numero_documento: v.numero_documento.trim() || null,
-        orgao_expedidor: v.orgao_expedidor.trim() || null,
+        numero_documento: up(v.numero_documento) || null,
+        orgao_expedidor: up(v.orgao_expedidor) || null,
         uf_expedicao: v.uf_expedicao || null,
         data_expedicao: v.data_expedicao || null,
-        profissao: v.profissao.trim() || null,
-        empresa: v.empresa.trim() || null,
-        banco_conta: v.banco_conta.trim() || null,
-        agencia: v.agencia.trim() || null,
-        conta_corrente: v.conta_corrente.trim() || null,
-        digito_conta: v.digito_conta.trim() || null,
+        profissao: up(v.profissao) || null,
+        empresa: up(v.empresa) || null,
+        banco_conta: up(v.banco_conta) || null,
+        agencia: up(v.agencia) || null,
+        conta_corrente: up(v.conta_corrente) || null,
+        digito_conta: up(v.digito_conta) || null,
         email: v.email.trim(),
         telefone_celular: soDigitos(v.telefone_celular),
         renda_total_declarada: renda,
@@ -281,26 +286,26 @@ export function ClienteForm({
         fg_autorizacao_dados: v.fg_autorizacao_dados,
         origem: v.origem as any,
         // Cônjuge: só envia quando casado/união estável; caso contrário limpa.
-        conjuge_nome: casado ? v.conjuge_nome.trim() || null : null,
+        conjuge_nome: casado ? up(v.conjuge_nome) || null : null,
         conjuge_cpf: casado ? soDigitos(v.conjuge_cpf) || null : null,
         conjuge_data_nascimento: casado ? v.conjuge_data_nascimento || null : null,
-        conjuge_nome_mae: casado ? v.conjuge_nome_mae.trim() || null : null,
+        conjuge_nome_mae: casado ? up(v.conjuge_nome_mae) || null : null,
         conjuge_sexo: casado ? v.conjuge_sexo || null : null,
-        conjuge_nacionalidade: casado ? v.conjuge_nacionalidade.trim() || null : null,
+        conjuge_nacionalidade: casado ? up(v.conjuge_nacionalidade) || null : null,
         conjuge_tipo_documento_identidade: casado ? v.conjuge_tipo_documento_identidade || null : null,
-        conjuge_numero_documento: casado ? v.conjuge_numero_documento.trim() || null : null,
-        conjuge_orgao_expedidor: casado ? v.conjuge_orgao_expedidor.trim() || null : null,
+        conjuge_numero_documento: casado ? up(v.conjuge_numero_documento) || null : null,
+        conjuge_orgao_expedidor: casado ? up(v.conjuge_orgao_expedidor) || null : null,
         conjuge_uf_expedicao: casado ? v.conjuge_uf_expedicao || null : null,
         conjuge_data_expedicao: casado ? v.conjuge_data_expedicao || null : null,
-        conjuge_profissao: casado ? v.conjuge_profissao.trim() || null : null,
-        conjuge_empresa: casado ? v.conjuge_empresa.trim() || null : null,
+        conjuge_profissao: casado ? up(v.conjuge_profissao) || null : null,
+        conjuge_empresa: casado ? up(v.conjuge_empresa) || null : null,
         conjuge_renda: casado ? rendaConjuge : null,
         conjuge_email: casado ? v.conjuge_email.trim() || null : null,
         conjuge_celular: casado ? soDigitos(v.conjuge_celular) || null : null,
-        conjuge_banco_conta: casado ? v.conjuge_banco_conta.trim() || null : null,
-        conjuge_agencia: casado ? v.conjuge_agencia.trim() || null : null,
-        conjuge_conta_corrente: casado ? v.conjuge_conta_corrente.trim() || null : null,
-        conjuge_digito_conta: casado ? v.conjuge_digito_conta.trim() || null : null,
+        conjuge_banco_conta: casado ? up(v.conjuge_banco_conta) || null : null,
+        conjuge_agencia: casado ? up(v.conjuge_agencia) || null : null,
+        conjuge_conta_corrente: casado ? up(v.conjuge_conta_corrente) || null : null,
+        conjuge_digito_conta: casado ? up(v.conjuge_digito_conta) || null : null,
       };
       let id = v.id;
       if (id) {
@@ -325,7 +330,13 @@ export function ClienteForm({
 
       }
       if (id && (end.cep || end.logradouro)) {
-        await salvarEnd({ data: { cliente_id: id, ...end } });
+        const endUp = Object.fromEntries(
+          Object.entries(end).map(([k, val]) => [
+            k,
+            typeof val === "string" && k !== "cep" ? up(val) : val,
+          ]),
+        );
+        await salvarEnd({ data: { cliente_id: id, ...(endUp as typeof end) } });
       }
       // Cadastro criado a partir de uma proposta direta: vincula e volta à ficha.
       if (id && !v.id && vincularPropostaId) {
@@ -447,7 +458,7 @@ export function ClienteForm({
 
 
   return (
-    <form ref={formRef} onSubmit={submit} className="space-y-6">
+    <form ref={formRef} onSubmit={submit} className="space-y-6 form-cadastro-upper">
       {novoCadastro && (
         <VinculosSection
           parceiros={(parceiros.data ?? []) as any}
