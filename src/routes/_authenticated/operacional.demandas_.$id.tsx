@@ -26,7 +26,7 @@ import {
   ListChecks,
   ArrowUpRight,
   Sparkles,
-  MoreHorizontal,
+  Check,
   Check,
 } from "lucide-react";
 import { getMinhaSessao } from "@/lib/session.functions";
