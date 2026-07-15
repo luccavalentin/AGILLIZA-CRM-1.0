@@ -198,7 +198,25 @@ async function carregarContratosCliente(
     "responsavel_id",
   );
   if (cliRes.error) throw new Error(cliRes.error.message);
-  const cliRows = (cliRes.data ?? []) as any[];
+  const cliRowsAll = (cliRes.data ?? []) as any[];
+  if (!cliRowsAll.length) return { rows: [] as { contrato_emitido_em: string; valor: number }[], volume: 0, count: 0 };
+
+  // Um contrato só é considerado "emitido" quando existe uma proposta com
+  // status contrato_emitido/registrado vinculada ao cliente. Isso evita que
+  // uma movimentação manual da esteira (que também popula contrato_emitido_em)
+  // conte como contrato no painel sem que exista contrato real.
+  const contratoStatus = Array.from(CONTRATO_STATUS) as string[];
+  const propRes = await supabase
+    .from("propostas")
+    .select("cliente_id,status")
+    .in("cliente_id", cliRowsAll.map((c) => c.id))
+    .in("status", contratoStatus as any)
+    .limit(5000);
+  if (propRes.error) throw new Error(propRes.error.message);
+  const clientesComContratoReal = new Set<string>(
+    (propRes.data ?? []).map((p: any) => p.cliente_id),
+  );
+  const cliRows = cliRowsAll.filter((c) => clientesComContratoReal.has(c.id));
   if (!cliRows.length) return { rows: [] as { contrato_emitido_em: string; valor: number }[], volume: 0, count: 0 };
 
   const semValor = cliRows.filter((c) => !c.imovel_valor).map((c) => c.id);
@@ -223,6 +241,7 @@ async function carregarContratosCliente(
   const volume = rows.reduce((s, r) => s + r.valor, 0);
   return { rows, volume, count: rows.length };
 }
+
 
 /** Calcula o período imediatamente anterior de igual duração. */
 function intervaloAnterior(deISO: string, ateISO: string) {
