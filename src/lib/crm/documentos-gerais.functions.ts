@@ -182,10 +182,6 @@ export const explorarDocumentosGerais = createServerFn({ method: "GET" })
       }
     }
 
-    const imobiliariasSet = new Map<string, string>();
-    const corretoresSet = new Map<string, string>();
-    const analistasSet = new Map<string, string>();
-
     const clientesResp: DGCliente[] = listaClientes.map((c: any) => {
       const imobId = imobPorCliente.get(c.id) ?? null;
       const corrId = corrPorCliente.get(c.id) ?? null;
@@ -195,9 +191,6 @@ export const explorarDocumentosGerais = createServerFn({ method: "GET" })
       const comNome = comId ? nomesParceiros.get(comId) ?? "—" : null;
       const anaId = c.criador_id ?? null;
       const anaNome = anaId ? nomesParceiros.get(anaId) ?? "—" : null;
-      if (imobId && imobNome) imobiliariasSet.set(imobId, imobNome);
-      if (corrId && corrNome) corretoresSet.set(corrId, corrNome);
-      if (anaId && anaNome) analistasSet.set(anaId, anaNome);
       return {
         cliente_id: c.id,
         nome: c.nome,
@@ -215,16 +208,10 @@ export const explorarDocumentosGerais = createServerFn({ method: "GET" })
       };
     });
 
-    // (mescla removida: as bases já contêm todos os cadastrados)
-
-
     // Cada dropdown/aba lista TODOS os usuários cadastrados naquele papel
     // (por `tipo_pessoa` ou `user_roles.role`), independentemente de haver
     // clientes vinculados. Analistas ficam restritos ao cadastro — criadores
     // que não são analistas de fato não aparecem aqui.
-    void imobiliariasSet;
-    void corretoresSet;
-    void analistasSet;
     return {
       clientes: clientesResp,
       imobiliarias: imobiliariasBase,
