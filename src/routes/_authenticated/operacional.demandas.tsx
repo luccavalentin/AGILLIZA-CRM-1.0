@@ -665,6 +665,13 @@ function Pagina() {
               placeholder="Todas"
               options={imobiliarias}
             />
+            <FilterCombo
+              label="Comercial Agilliza"
+              value={comercialFiltro}
+              onValueChange={(v) => { setComercialFiltro(v); setPagina(1); }}
+              placeholder="Todos"
+              options={comerciais}
+            />
           </div>
         </div>
       </div>
