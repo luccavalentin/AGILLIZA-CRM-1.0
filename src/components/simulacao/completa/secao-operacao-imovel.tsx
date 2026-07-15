@@ -214,7 +214,7 @@ export function SecaoOperacaoImovel({ ctx }: { ctx: SimulacaoCompletaCtx }) {
                   aplicarPorParcela(v);
                 }}
                 placeholder="Ex: 3.500,00"
-                className="h-11 border-primary/30 bg-background pl-3 pr-3 text-base font-semibold tracking-tight shadow-sm transition-colors focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20"
+                className="h-11 border-primary/30 bg-background pr-3 text-base font-semibold tracking-tight shadow-sm transition-colors focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20"
               />
             </div>
             <p className="mt-1.5 text-[10px] leading-tight text-muted-foreground">
