@@ -1,8 +1,11 @@
 import { BancoChip } from "@/components/bancos/banco-chip";
+import { cn } from "@/lib/utils";
 
 export interface BancoResumoChip {
   nome_banco: string | null;
   status_banco: string | null;
+  sistema_amortizacao?: string | null;
+  sistema_amortizacao_banco?: string | null;
 }
 
 /**
@@ -19,11 +22,55 @@ export function BancosSimulados({
   if (!bancos || bancos.length === 0) {
     return <span className="text-xs text-muted-foreground">Nenhum banco</span>;
   }
+
+  const grupos = agruparPorSistema(bancos);
+
   return (
     <div className={`flex flex-wrap items-center gap-1 ${className ?? ""}`}>
-      {bancos.map((b, i) => (
-        <BancoChip key={`${b.nome_banco}-${i}`} nome={b.nome_banco} />
+      {grupos.map((grupo) => (
+        <div key={grupo.sistema ?? "sem-sistema"} className="contents">
+          {grupo.sistema && <SistemaTarget sistema={grupo.sistema} />}
+          {grupo.bancos.map((b, i) => (
+            <BancoChip key={`${grupo.sistema ?? "banco"}-${b.nome_banco}-${i}`} nome={b.nome_banco} />
+          ))}
+        </div>
       ))}
     </div>
+  );
+}
+
+function normalizarSistema(banco: BancoResumoChip): "SAC" | "PRICE" | null {
+  const valor = String(
+    banco.sistema_amortizacao_banco ?? banco.sistema_amortizacao ?? "",
+  ).toUpperCase();
+  if (valor === "P" || valor.includes("PRICE")) return "PRICE";
+  if (valor === "S" || valor.includes("SAC")) return "SAC";
+  return null;
+}
+
+function agruparPorSistema(bancos: BancoResumoChip[]) {
+  const ordem: Array<"SAC" | "PRICE" | null> = ["SAC", "PRICE", null];
+  return ordem
+    .map((sistema) => ({
+      sistema,
+      bancos: bancos.filter((b) => normalizarSistema(b) === sistema),
+    }))
+    .filter((grupo) => grupo.bancos.length > 0);
+}
+
+function SistemaTarget({ sistema }: { sistema: "SAC" | "PRICE" }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex h-6 items-center rounded-md px-2 text-[10px] font-black uppercase tracking-wider shadow-sm ring-1 ring-inset",
+        sistema === "SAC"
+          ? "bg-primary text-primary-foreground ring-primary/30"
+          : "bg-warning text-warning-foreground ring-warning/30",
+      )}
+      title={`Tabela ${sistema}`}
+      aria-label={`Tabela ${sistema}`}
+    >
+      {sistema}
+    </span>
   );
 }
