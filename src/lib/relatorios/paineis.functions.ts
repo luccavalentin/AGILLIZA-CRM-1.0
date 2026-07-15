@@ -1058,9 +1058,16 @@ function itemSimulacao(s: any): PanelDrilldownItem {
   const numero = (s.numero_simulacao as string | undefined) ?? "";
   const partes = [numero && `Nº ${numero}`, status].filter(Boolean);
   const valorNum = Number(s.valor_financiamento ?? 0) || 0;
+  const bancos = (s.simulacao_bancos ?? []) as any[];
+  const bancoPref =
+    bancos.find((b) => b?.selecionado) ??
+    bancos.find((b) => b?.status_banco === "simulada") ??
+    bancos[0];
+  const banco = (bancoPref?.nome_banco as string | undefined) ?? undefined;
   return {
     label: cliente,
     sub: partes.join(" · "),
+    banco,
     valor: valorNum ? brlCompacto(valorNum) : undefined,
     data: fmtData(s.created_at),
     to: `/operacional/simulacoes/${s.id}`,
