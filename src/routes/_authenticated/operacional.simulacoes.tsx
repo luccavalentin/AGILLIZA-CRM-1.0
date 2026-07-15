@@ -230,7 +230,8 @@ function Pagina() {
 
   async function handleEnviarProposta(id: string, numero: string) {
     setEnvio({ id, numero, bancos: [] });
-    setBancoSelecionado(null);
+    setPropostasCriadas([]);
+    setEnviandoBancoId(null);
     setEnvioCarregando(true);
     try {
       const dados = await obter({ data: { id } });
@@ -238,7 +239,6 @@ function Pagina() {
         (b: any) => b.status_banco === "simulada" && b.banco_id,
       );
       setEnvio({ id, numero, bancos: simulados });
-      if (simulados.length === 1) setBancoSelecionado(simulados[0].banco_id);
     } catch {
       toast.error("Não foi possível carregar os bancos da simulação.");
       setEnvio(null);
@@ -247,24 +247,29 @@ function Pagina() {
     }
   }
 
-  async function confirmarEnvio() {
-    if (!envio || !bancoSelecionado) return;
-    setEnviando(true);
+  async function enviarBancoIndividual(banco: any) {
+    if (!envio || enviandoBancoId) return;
+    setEnviandoBancoId(banco.banco_id);
     try {
       const res = await criar({
-        data: { simulacao_id: envio.id, banco_id: bancoSelecionado },
+        data: { simulacao_id: envio.id, banco_id: banco.banco_id },
       });
-      toast.success(`Proposta ${res.numero_proposta} criada.`);
-      setEnvio(null);
-      router.navigate({
-        to: "/operacional/propostas/$id",
-        params: { id: res.proposta_id },
-        search: { complementar: 1 },
-      });
+      toast.success(`Proposta ${res.numero_proposta} criada para ${banco.nome_banco}.`);
+      setPropostasCriadas((prev) => [
+        ...prev,
+        {
+          banco_id: banco.banco_id,
+          nome_banco: banco.nome_banco,
+          proposta_id: res.proposta_id,
+          numero: res.numero_proposta,
+        },
+      ]);
+      queryClient.invalidateQueries({ queryKey: ["simulacoes"] });
+      queryClient.invalidateQueries({ queryKey: ["propostas"] });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Não foi possível gerar a proposta.");
     } finally {
-      setEnviando(false);
+      setEnviandoBancoId(null);
     }
   }
 
