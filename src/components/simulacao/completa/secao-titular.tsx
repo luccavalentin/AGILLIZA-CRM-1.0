@@ -106,9 +106,6 @@ export function SecaoTitular({ ctx }: { ctx: SimulacaoCompletaCtx }) {
                 aria-invalid={!!erros.renda_price}
               />
             </div>
-            <p className="text-xs text-muted-foreground">
-              PRICE geralmente exige renda mais alta (teto de 15% da parcela inicial).
-            </p>
             <Erro erros={erros} campo="renda_price" />
           </Campo>
         )}
