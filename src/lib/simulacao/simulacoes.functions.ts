@@ -522,7 +522,21 @@ export const listarSimulacoes = createServerFn({ method: "GET" })
     if (data.apenas_excluidas) query = query.not("deleted_at", "is", null);
     else query = query.is("deleted_at", null);
 
-    if (data.escopo === "minhas") query = query.eq("usuario_criador_id", userId);
+    if (data.escopo === "minhas") {
+      // Inclui simulações onde o usuário é criador/responsável OU está vinculado
+      // ao cliente como parceiro (imobiliária, corretor, comercial).
+      const { data: vinc } = await supabase
+        .from("cliente_parceiros")
+        .select("cliente_id")
+        .eq("parceiro_id", userId);
+      const ids = Array.from(new Set((vinc ?? []).map((v: any) => v.cliente_id).filter(Boolean)));
+      const partes = [
+        `usuario_criador_id.eq.${userId}`,
+        `usuario_responsavel_id.eq.${userId}`,
+      ];
+      if (ids.length) partes.push(`cliente_id.in.(${ids.join(",")})`);
+      query = query.or(partes.join(","));
+    }
     if (data.responsavel) query = query.eq("usuario_criador_id", data.responsavel);
     if (data.status) query = query.eq("status", data.status as any);
     if (data.desde) query = query.gte("created_at", data.desde);

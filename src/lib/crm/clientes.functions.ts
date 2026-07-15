@@ -101,7 +101,16 @@ export const listarClientes = createServerFn({ method: "GET" })
       }
 
       if (data.escopo === "minhas") {
-        query = query.eq("responsavel_id", userId);
+        // "Minhas" inclui clientes onde eu sou responsável/criador OU vinculado
+        // como parceiro (imobiliária, corretor, comercial) via cliente_parceiros.
+        const { data: vinc } = await supabase
+          .from("cliente_parceiros")
+          .select("cliente_id")
+          .eq("parceiro_id", userId);
+        const ids = Array.from(new Set((vinc ?? []).map((v: any) => v.cliente_id).filter(Boolean)));
+        const partes = [`responsavel_id.eq.${userId}`, `criador_id.eq.${userId}`];
+        if (ids.length) partes.push(`id.in.(${ids.join(",")})`);
+        query = query.or(partes.join(","));
       }
       if (data.responsavel) {
         query = query.eq("responsavel_id", data.responsavel);
@@ -167,18 +176,26 @@ export const estatisticasClientes = createServerFn({ method: "GET" })
       cadastro_completo: number;
     }> => {
       const { supabase, userId } = context;
-      const base = () => {
-        let q = supabase
-          .from("clientes")
-          .select(
-            "id, portal_acesso_ativo, cliente_pipeline(pipeline_stages(codigo, ordem))",
-            { count: "exact" },
-          )
-          .eq("ativo", true);
-        if (data?.escopo === "minhas") q = q.eq("responsavel_id", userId);
-        return q;
-      };
-      const { data: rows, count } = await base();
+      let orMinhas: string | null = null;
+      if (data?.escopo === "minhas") {
+        const { data: vinc } = await supabase
+          .from("cliente_parceiros")
+          .select("cliente_id")
+          .eq("parceiro_id", userId);
+        const ids = Array.from(new Set((vinc ?? []).map((v: any) => v.cliente_id).filter(Boolean)));
+        const partes = [`responsavel_id.eq.${userId}`, `criador_id.eq.${userId}`];
+        if (ids.length) partes.push(`id.in.(${ids.join(",")})`);
+        orMinhas = partes.join(",");
+      }
+      let q = supabase
+        .from("clientes")
+        .select(
+          "id, portal_acesso_ativo, cliente_pipeline(pipeline_stages(codigo, ordem))",
+          { count: "exact" },
+        )
+        .eq("ativo", true);
+      if (orMinhas) q = q.or(orMinhas);
+      const { data: rows, count } = await q;
       const list = (rows ?? []) as any[];
       const portal_ativo = list.filter((r) => r.portal_acesso_ativo).length;
       const em_andamento = list.filter((r) => {
