@@ -242,10 +242,7 @@ function drawInfoFinanciamento(
     },
     {
       label: "Renda estimada",
-      valor: brlOuTraco((() => {
-        const p = parcelaExigidaPeloBanco(b);
-        return p ? rendaMinimaParaParcela(p) : null;
-      })()),
+      valor: brlOuTraco(rendaMinimaDoBanco(b)),
     },
   ];
 
