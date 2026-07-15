@@ -30,7 +30,7 @@ export function BancosSimulados({
       {grupos.map((grupo) => (
         <div
           key={grupo.sistema ?? "sem-sistema"}
-          className="flex flex-wrap items-center gap-1"
+          className="flex flex-nowrap items-center gap-1 whitespace-nowrap"
         >
           {grupo.sistema && <SistemaTarget sistema={grupo.sistema} />}
           {grupo.bancos.map((b, i) => (
