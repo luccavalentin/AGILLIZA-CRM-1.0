@@ -278,7 +278,7 @@ function Pagina() {
         </TabsList>
       </Tabs>
 
-      <div className="flex gap-4 overflow-x-auto pb-3">
+      <div className="grid grid-cols-1 gap-4 pb-3 sm:grid-cols-2 xl:grid-cols-4">
         {COLUNAS.map((col) => {
           const cfg = statusDemanda(col);
           const doStatus = porStatus.get(col) ?? [];
@@ -289,7 +289,7 @@ function Pagina() {
               onDragOver={(e) => e.preventDefault()}
               onDrop={() => soltar(col)}
               className={cn(
-                "flex w-[300px] shrink-0 flex-col rounded-2xl border border-border/60 bg-muted/30 transition-all",
+                "flex min-w-0 flex-col rounded-2xl border border-border/60 bg-muted/30 transition-all",
                 alvo && "border-primary/60 bg-primary/5 ring-2 ring-primary/30",
               )}
             >
