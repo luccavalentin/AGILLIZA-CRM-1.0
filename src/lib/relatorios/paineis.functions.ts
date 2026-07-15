@@ -208,6 +208,7 @@ async function carregarContratosCliente(
       .from("simulacoes")
       .select("cliente_id,valor_financiamento,valor_imovel")
       .in("cliente_id", semValor)
+      .is("deleted_at", null)
       .limit(5000);
     for (const s of (simRes.data ?? []) as any[]) {
       const v = Number(s.valor_financiamento ?? s.valor_imovel ?? 0) || 0;
