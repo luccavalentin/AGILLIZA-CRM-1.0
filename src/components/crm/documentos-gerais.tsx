@@ -488,6 +488,8 @@ export function DocumentosGerais() {
     setFiltroComercial("todos");
     setFiltroImob("todas");
     setFiltroCorr("todos");
+    setFiltroAnalista("todos");
+    setPagina(1);
   }
 
   function abrirCliente(c: DGCliente) {
