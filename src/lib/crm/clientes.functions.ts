@@ -1275,8 +1275,16 @@ export async function recuarEsteiraSeOrfao(
   const codigo = (atual as any)?.pipeline_stages?.codigo as string | undefined;
   if (!codigo) return;
 
-  // Etapas que só fazem sentido enquanto existe uma proposta ativa vinculada.
-  const etapasProposta = new Set(["credito_enviado", "credito_aprovado"]);
+  // Etapas que só fazem sentido enquanto existe uma proposta ativa vinculada
+  // (crédito e todo o fluxo pós-crédito: docs/engenharia/jurídico/contrato).
+  const etapasProposta = new Set([
+    "credito_enviado",
+    "credito_aprovado",
+    "coleta_documentos",
+    "engenharia_vistoria",
+    "analise_juridica",
+    "contrato_emitido",
+  ]);
   // Etapa que só faz sentido enquanto existe uma simulação vinculada.
   const etapaSimulacao = "simulacao";
 
@@ -1289,6 +1297,15 @@ export async function recuarEsteiraSeOrfao(
     destino = "cadastro_completo";
   }
   if (!destino || destino === codigo) return;
+
+  // Se estava em "contrato_emitido" e a proposta foi excluída, limpa também
+  // a marca do contrato no cadastro do cliente — o vínculo deixou de existir.
+  if (codigo === "contrato_emitido") {
+    await supabase
+      .from("clientes")
+      .update({ contrato_emitido_em: null, contrato_arquivado_em: null })
+      .eq("id", clienteId);
+  }
 
   await supabase.rpc("cliente_pipeline_definir", {
     _cliente_id: clienteId,
