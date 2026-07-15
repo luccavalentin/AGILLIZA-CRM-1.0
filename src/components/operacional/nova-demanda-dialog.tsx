@@ -195,9 +195,11 @@ export function NovaDemandaDialog({ onCriada, trigger }: { onCriada: () => void;
   return (
     <Dialog open={aberto} onOpenChange={setAberto}>
       <DialogTrigger asChild>
-        <Button size="sm">
-          <Plus className="mr-1 h-4 w-4" /> Nova demanda
-        </Button>
+        {trigger ?? (
+          <Button size="sm">
+            <Plus className="mr-1 h-4 w-4" /> Nova demanda
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="w-[calc(100%-2rem)] max-h-[90vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
