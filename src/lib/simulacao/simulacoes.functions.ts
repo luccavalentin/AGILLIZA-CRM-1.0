@@ -782,7 +782,7 @@ export const inverterTitularSimulacao = createServerFn({ method: "POST" })
     const { data: s, error: eSel } = await supabase
       .from("simulacoes")
       .select(
-        "id, possui_conjuge, nome_cliente, cpf_cnpj, email, celular, data_nascimento, renda_total, estado_civil, nome_conjuge, cpf_conjuge, email_conjuge, celular_conjuge, data_nascimento_conjuge, renda_conjuge, estado_civil_conjuge",
+        "id, cliente_id, possui_conjuge, nome_cliente, cpf_cnpj, email, celular, data_nascimento, renda_total, estado_civil, nome_conjuge, cpf_conjuge, email_conjuge, celular_conjuge, data_nascimento_conjuge, renda_conjuge, estado_civil_conjuge",
       )
       .eq("id", data.id)
       .maybeSingle();
