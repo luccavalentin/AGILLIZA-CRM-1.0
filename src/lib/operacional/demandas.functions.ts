@@ -147,8 +147,9 @@ export const listarDemandas = createServerFn({ method: "GET" })
     const rows = (itens ?? []) as any[];
 
     const idsPerfil = rows.flatMap((r) => [r.responsavel_id, r.criador_id]);
-    const nomes = await nomesPorId(supabase, idsPerfil);
-    const nm = (id: string | null | undefined) => (id ? (nomes.get(id) ?? null) : null);
+    const perfis = await perfisPorId(supabase, idsPerfil);
+    const nm = (id: string | null | undefined) => (id ? (perfis.get(id)?.nome ?? null) : null);
+    const tp = (id: string | null | undefined) => (id ? (perfis.get(id)?.tipo_pessoa ?? null) : null);
 
     // Contagem simples de "não lidas": mensagens depois da última leitura do usuário
     // (upper bound razoável: total de mensagens quando não há registro de leitura).
@@ -163,12 +164,10 @@ export const listarDemandas = createServerFn({ method: "GET" })
       const lidasEm = new Map<string, string>();
       for (const l of (leituras ?? []) as any[]) lidasEm.set(l.demanda_id, l.lida_em);
       for (const m of (msgs ?? []) as any[]) {
-        // última mensagem
         const cur = ultimaMap.get(m.demanda_id);
         if (!cur || new Date(m.created_at).getTime() > new Date(cur).getTime()) {
           ultimaMap.set(m.demanda_id, m.created_at);
         }
-        // não lidas (só de outros autores)
         if (m.autor_id === userId) continue;
         const lida = lidasEm.get(m.demanda_id);
         if (!lida || new Date(m.created_at).getTime() > new Date(lida).getTime()) {
@@ -193,8 +192,10 @@ export const listarDemandas = createServerFn({ method: "GET" })
       numero_simulacao: r.simulacoes?.numero_simulacao ?? null,
       criador_id: r.criador_id,
       nome_criador: nm(r.criador_id),
+      tipo_criador: tp(r.criador_id),
       responsavel_id: r.responsavel_id,
       nome_responsavel: nm(r.responsavel_id),
+      tipo_responsavel: tp(r.responsavel_id),
       prazo_sla: r.prazo_sla,
       sla_inicio: r.sla_inicio,
       concluida_em: r.concluida_em ?? null,
