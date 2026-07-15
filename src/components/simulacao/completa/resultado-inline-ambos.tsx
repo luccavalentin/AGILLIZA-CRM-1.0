@@ -541,7 +541,7 @@ export function ResultadoInlineAmbos({ simulacaoIdSac, simulacaoIdPrice, onFecha
                           </div>
                         </TableCell>
                       </TableRow>
-                      </>
+                      </React.Fragment>
                     );
                   })}
                 </TableBody>
