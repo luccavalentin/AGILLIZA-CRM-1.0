@@ -703,6 +703,7 @@ export const getPanelDados = createServerFn({ method: "POST" })
         supabase
           .from("simulacoes")
           .select("status,valor_financiamento,created_at")
+          .is("deleted_at", null)
           .gte("created_at", de)
           .lte("created_at", ateFim)
           .limit(5000),
