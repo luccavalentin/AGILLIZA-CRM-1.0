@@ -250,6 +250,27 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
     : f.produto === "home_equity"
       ? 0.6
       : 0.8;
+  // Mantém a ref sincronizada para handlers criados antes desta linha.
+  ltvMaxRef.current = ltvMax;
+
+  // Reajusta entrada/financiamento quando o LTV muda (ex.: usuário seleciona
+  // Terreno/Comercial → 70%, ou volta para Residencial → 80%). Garante que o
+  // financiamento nunca ultrapasse o teto do banco, adaptando a entrada.
+  useEffect(() => {
+    const imovel = Number(f.valor_imovel) || 0;
+    if (imovel <= 0) return;
+    const finMax = Math.floor(imovel * ltvMax);
+    const finAtual = Number(f.valor_financiamento) || 0;
+    if (finAtual <= finMax) return;
+    const novaEntrada = imovel - finMax;
+    setEntradaTocada(true);
+    setF((prev) => ({
+      ...prev,
+      valor_entrada: novaEntrada,
+      valor_financiamento: finMax,
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ltvMax]);
   const prazoMaximo = useMemo(() => {
     const idade = maxPrazoIdade ?? 420;
     return restricaoEspecial.ativo ? Math.min(idade, restricaoEspecial.prazoMax) : idade;
