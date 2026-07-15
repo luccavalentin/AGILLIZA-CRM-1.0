@@ -215,12 +215,21 @@ export const explorarDocumentosGerais = createServerFn({ method: "GET" })
       };
     });
 
+    // Mescla as bases completas (todos os usuários daquele tipo cadastrados)
+    // com os nomes vindos dos vínculos — assim os dropdowns listam todos.
+    const mesclar = (base: DGOpcaoFiltro[], extra: Map<string, string>): DGOpcaoFiltro[] => {
+      const map = new Map<string, string>();
+      for (const b of base) map.set(b.id, b.nome);
+      for (const [id, nome] of extra) if (!map.has(id)) map.set(id, nome);
+      return Array.from(map, ([id, nome]) => ({ id, nome })).sort(ordenarNome);
+    };
+
     return {
       clientes: clientesResp,
-      imobiliarias: Array.from(imobiliariasSet, ([id, nome]) => ({ id, nome })).sort(ordenarNome),
-      corretores: Array.from(corretoresSet, ([id, nome]) => ({ id, nome })).sort(ordenarNome),
+      imobiliarias: mesclar(imobiliariasBase, imobiliariasSet),
+      corretores: mesclar(corretoresBase, corretoresSet),
       comerciais,
-      analistas: Array.from(analistasSet, ([id, nome]) => ({ id, nome })).sort(ordenarNome),
+      analistas: mesclar(analistasBase, analistasSet),
     };
   });
 
