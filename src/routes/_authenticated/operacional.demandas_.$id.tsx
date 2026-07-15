@@ -52,18 +52,19 @@ export const Route = createFileRoute("/_authenticated/operacional/demandas_/$id"
 
 function fmtHora(iso: string): string {
   const d = new Date(iso);
+  return d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+}
+
+function fmtDia(iso: string): string {
+  const d = new Date(iso);
   const hoje = new Date();
-  const sameDay =
-    d.getFullYear() === hoje.getFullYear() &&
-    d.getMonth() === hoje.getMonth() &&
-    d.getDate() === hoje.getDate();
-  if (sameDay) return d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
-  return d.toLocaleString("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  const ontem = new Date();
+  ontem.setDate(hoje.getDate() - 1);
+  const same = (a: Date, b: Date) =>
+    a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+  if (same(d, hoje)) return "Hoje";
+  if (same(d, ontem)) return "Ontem";
+  return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" });
 }
 
 function Pagina() {
