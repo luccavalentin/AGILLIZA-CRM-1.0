@@ -30,25 +30,26 @@ export interface DemandaItem {
   numero: string | null;
   tipo: string;
   titulo: string;
+  descricao: string | null;
   status: DemandaStatus;
   prioridade: Prioridade;
   cliente_id: string | null;
   nome_cliente: string | null;
+  proposta_id: string | null;
+  numero_proposta: string | null;
+  simulacao_id: string | null;
+  numero_simulacao: string | null;
+  criador_id: string | null;
+  nome_criador: string | null;
   responsavel_id: string | null;
   nome_responsavel: string | null;
-  analista_id: string | null;
-  nome_analista: string | null;
-  corretor_id: string | null;
-  nome_corretor: string | null;
-  imobiliaria_id: string | null;
-  nome_imobiliaria: string | null;
-  comercial_id: string | null;
-  nome_comercial: string | null;
   prazo_sla: string | null;
   sla_inicio: string;
   concluida_em: string | null;
   escalonada: boolean;
   created_at: string;
+  nao_lidas: number;
+  ultima_mensagem_em: string | null;
 }
 
 async function nomesPorId(
@@ -89,7 +90,7 @@ export const listarDemandas = createServerFn({ method: "GET" })
   .inputValidator((data) =>
     z
       .object({
-        escopo: z.enum(["minhas", "equipe"]).default("equipe"),
+        escopo: z.enum(["minhas", "geral", "equipe"]).default("geral"),
         status: z.string().optional(),
         q: z.string().optional(),
       })
@@ -97,86 +98,139 @@ export const listarDemandas = createServerFn({ method: "GET" })
   )
   .handler(async ({ context, data }): Promise<DemandaItem[]> => {
     const { supabase, userId } = context;
+
+    // Escopo "minhas": criador OU responsável OU participante.
+    let idsParticipante: string[] = [];
+    if (data.escopo === "minhas") {
+      const { data: parts } = await supabase
+        .from("demanda_participantes")
+        .select("demanda_id")
+        .eq("user_id", userId);
+      idsParticipante = ((parts ?? []) as any[]).map((p) => p.demanda_id);
+    }
+
     let query = supabase
       .from("demandas")
       .select(
-        "id, numero, tipo, titulo, status, prioridade, cliente_id, responsavel_id, prazo_sla, sla_inicio, concluida_em, escalonada, created_at, clientes(nome, criador_id)",
+        "id, numero, tipo, titulo, descricao, status, prioridade, cliente_id, proposta_id, simulacao_id, responsavel_id, criador_id, prazo_sla, sla_inicio, concluida_em, escalonada, created_at, clientes(nome), propostas(numero_proposta), simulacoes(numero_simulacao)",
       )
       .order("created_at", { ascending: false })
       .limit(300);
+
     if (data.escopo === "minhas") {
-      query = query.eq("responsavel_id", userId);
+      const orParts = [`criador_id.eq.${userId}`, `responsavel_id.eq.${userId}`];
+      if (idsParticipante.length) orParts.push(`id.in.(${idsParticipante.join(",")})`);
+      query = query.or(orParts.join(","));
     }
     if (data.status) query = query.eq("status", data.status as any);
-    if (data.q) query = query.ilike("titulo", `%${data.q.trim()}%`);
+    if (data.q) {
+      const t = data.q.trim();
+      query = query.or(`titulo.ilike.%${t}%,numero.ilike.%${t}%`);
+    }
+
     const { data: itens, error } = await query;
     if (error) throw new Error(error.message);
     const rows = (itens ?? []) as any[];
 
-    // Vínculos (corretor / imobiliária) por cliente.
-    const clienteIds = [...new Set(rows.map((r) => r.cliente_id).filter(Boolean) as string[])];
-    const corretorPorCliente = new Map<string, string>();
-    const imobiliariaPorCliente = new Map<string, string>();
-    const comercialPorCliente = new Map<string, string>();
-    if (clienteIds.length > 0) {
-      const { data: vinculos } = await supabase
-        .from("cliente_parceiros")
-        .select("cliente_id, parceiro_id, tipo_vinculo")
-        .in("cliente_id", clienteIds);
-      (vinculos ?? []).forEach((v: any) => {
-        if (v.tipo_vinculo === "corretor" && !corretorPorCliente.has(v.cliente_id)) {
-          corretorPorCliente.set(v.cliente_id, v.parceiro_id);
-        }
-        if (v.tipo_vinculo === "imobiliaria" && !imobiliariaPorCliente.has(v.cliente_id)) {
-          imobiliariaPorCliente.set(v.cliente_id, v.parceiro_id);
-        }
-        if (v.tipo_vinculo === "comercial_agilliza" && !comercialPorCliente.has(v.cliente_id)) {
-          comercialPorCliente.set(v.cliente_id, v.parceiro_id);
-        }
-      });
-    }
-
-    const idsPerfil = [
-      ...rows.map((r) => r.responsavel_id),
-      ...rows.map((r) => r.clientes?.criador_id),
-      ...corretorPorCliente.values(),
-      ...imobiliariaPorCliente.values(),
-      ...comercialPorCliente.values(),
-    ];
+    const idsPerfil = rows.flatMap((r) => [r.responsavel_id, r.criador_id]);
     const nomes = await nomesPorId(supabase, idsPerfil);
     const nm = (id: string | null | undefined) => (id ? (nomes.get(id) ?? null) : null);
 
-    return rows.map((r) => {
-      const analistaId = r.clientes?.criador_id ?? null;
-      const corretorId = r.cliente_id ? (corretorPorCliente.get(r.cliente_id) ?? null) : null;
-      const imobiliariaId = r.cliente_id ? (imobiliariaPorCliente.get(r.cliente_id) ?? null) : null;
-      const comercialId = r.cliente_id ? (comercialPorCliente.get(r.cliente_id) ?? null) : null;
-      return {
-        id: r.id,
-        numero: r.numero,
-        tipo: r.tipo,
-        titulo: r.titulo,
-        status: r.status,
-        prioridade: r.prioridade,
-        cliente_id: r.cliente_id,
-        nome_cliente: r.clientes?.nome ?? null,
-        responsavel_id: r.responsavel_id,
-        nome_responsavel: nm(r.responsavel_id),
-        analista_id: analistaId,
-        nome_analista: nm(analistaId),
-        corretor_id: corretorId,
-        nome_corretor: nm(corretorId),
-        imobiliaria_id: imobiliariaId,
-        nome_imobiliaria: nm(imobiliariaId),
-        comercial_id: comercialId,
-        nome_comercial: nm(comercialId),
-        prazo_sla: r.prazo_sla,
-        sla_inicio: r.sla_inicio,
-        concluida_em: r.concluida_em ?? null,
-        escalonada: r.escalonada,
-        created_at: r.created_at,
-      };
-    });
+    // Contagem simples de "não lidas": mensagens depois da última leitura do usuário
+    // (upper bound razoável: total de mensagens quando não há registro de leitura).
+    const idsDem = rows.map((r) => r.id);
+    const naoLidasMap = new Map<string, number>();
+    const ultimaMap = new Map<string, string | null>();
+    if (idsDem.length) {
+      const [{ data: leituras }, { data: msgs }] = await Promise.all([
+        supabase.from("demanda_leituras").select("demanda_id, lida_em").in("demanda_id", idsDem).eq("user_id", userId),
+        supabase.from("demanda_mensagens").select("demanda_id, autor_id, created_at").in("demanda_id", idsDem),
+      ]);
+      const lidasEm = new Map<string, string>();
+      for (const l of (leituras ?? []) as any[]) lidasEm.set(l.demanda_id, l.lida_em);
+      for (const m of (msgs ?? []) as any[]) {
+        // última mensagem
+        const cur = ultimaMap.get(m.demanda_id);
+        if (!cur || new Date(m.created_at).getTime() > new Date(cur).getTime()) {
+          ultimaMap.set(m.demanda_id, m.created_at);
+        }
+        // não lidas (só de outros autores)
+        if (m.autor_id === userId) continue;
+        const lida = lidasEm.get(m.demanda_id);
+        if (!lida || new Date(m.created_at).getTime() > new Date(lida).getTime()) {
+          naoLidasMap.set(m.demanda_id, (naoLidasMap.get(m.demanda_id) ?? 0) + 1);
+        }
+      }
+    }
+
+    return rows.map((r) => ({
+      id: r.id,
+      numero: r.numero,
+      tipo: r.tipo,
+      titulo: r.titulo,
+      descricao: r.descricao ?? null,
+      status: r.status,
+      prioridade: r.prioridade,
+      cliente_id: r.cliente_id,
+      nome_cliente: r.clientes?.nome ?? null,
+      proposta_id: r.proposta_id ?? null,
+      numero_proposta: r.propostas?.numero_proposta ?? null,
+      simulacao_id: r.simulacao_id ?? null,
+      numero_simulacao: r.simulacoes?.numero_simulacao ?? null,
+      criador_id: r.criador_id,
+      nome_criador: nm(r.criador_id),
+      responsavel_id: r.responsavel_id,
+      nome_responsavel: nm(r.responsavel_id),
+      prazo_sla: r.prazo_sla,
+      sla_inicio: r.sla_inicio,
+      concluida_em: r.concluida_em ?? null,
+      escalonada: r.escalonada,
+      created_at: r.created_at,
+      nao_lidas: naoLidasMap.get(r.id) ?? 0,
+      ultima_mensagem_em: ultimaMap.get(r.id) ?? null,
+    }));
+  });
+
+/** Opções de propostas para vincular a uma demanda (filtra por cliente quando informado). */
+export const listarPropostasOpcoes = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => z.object({ cliente_id: z.string().uuid().optional() }).parse(data))
+  .handler(async ({ context, data }) => {
+    const { supabase } = context;
+    let query = supabase
+      .from("propostas")
+      .select("id, numero_proposta, cliente_id, clientes(nome)")
+      .order("created_at", { ascending: false })
+      .limit(50);
+    if (data.cliente_id) query = query.eq("cliente_id", data.cliente_id);
+    const { data: rows, error } = await query;
+    if (error) throw new Error(error.message);
+    return ((rows ?? []) as any[]).map((r) => ({
+      id: r.id as string,
+      numero: r.numero_proposta as string | null,
+      nome_cliente: r.clientes?.nome ?? null,
+    }));
+  });
+
+/** Opções de simulações para vincular a uma demanda (filtra por cliente quando informado). */
+export const listarSimulacoesOpcoes = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => z.object({ cliente_id: z.string().uuid().optional() }).parse(data))
+  .handler(async ({ context, data }) => {
+    const { supabase } = context;
+    let query = supabase
+      .from("simulacoes")
+      .select("id, numero_simulacao, cliente_id, clientes(nome)")
+      .order("created_at", { ascending: false })
+      .limit(50);
+    if (data.cliente_id) query = query.eq("cliente_id", data.cliente_id);
+    const { data: rows, error } = await query;
+    if (error) throw new Error(error.message);
+    return ((rows ?? []) as any[]).map((r) => ({
+      id: r.id as string,
+      numero: r.numero_simulacao as string | null,
+      nome_cliente: r.clientes?.nome ?? null,
+    }));
   });
 
 
@@ -256,12 +310,13 @@ export const criarDemanda = createServerFn({ method: "POST" })
   .inputValidator((data) =>
     z
       .object({
-        tipo: z.string().min(1),
+        tipo: z.string().min(1).default("diversos"),
         titulo: z.string().min(2),
         descricao: z.string().optional(),
-        dados_simulacao: z.string().optional(),
         prioridade: z.enum(["p1", "p2", "p3"]).default("p2"),
         cliente_id: z.string().uuid().optional().nullable(),
+        proposta_id: z.string().uuid().optional().nullable(),
+        simulacao_id: z.string().uuid().optional().nullable(),
         responsavel_id: z.string().uuid(),
         participantes: z.array(z.string().uuid()).optional(),
       })
@@ -317,9 +372,10 @@ export const criarDemanda = createServerFn({ method: "POST" })
         tipo: data.tipo,
         titulo: data.titulo,
         descricao: data.descricao ?? null,
-        dados_simulacao: data.dados_simulacao ?? null,
         prioridade: data.prioridade,
         cliente_id: data.cliente_id ?? null,
+        proposta_id: data.proposta_id ?? null,
+        simulacao_id: data.simulacao_id ?? null,
         responsavel_id: data.responsavel_id,
         criador_id: userId,
       })
@@ -568,6 +624,9 @@ export const editarDemanda = createServerFn({ method: "POST" })
         descricao: z.string().optional().nullable(),
         prioridade: z.enum(["p1", "p2", "p3"]),
         sla_horas: z.number().positive().max(2000).optional(),
+        cliente_id: z.string().uuid().nullable().optional(),
+        proposta_id: z.string().uuid().nullable().optional(),
+        simulacao_id: z.string().uuid().nullable().optional(),
       })
       .parse(d),
   )
@@ -583,6 +642,9 @@ export const editarDemanda = createServerFn({ method: "POST" })
       descricao: data.descricao ?? null,
       prioridade: data.prioridade,
     };
+    if (data.cliente_id !== undefined) patch.cliente_id = data.cliente_id;
+    if (data.proposta_id !== undefined) patch.proposta_id = data.proposta_id;
+    if (data.simulacao_id !== undefined) patch.simulacao_id = data.simulacao_id;
 
     // Reconfiguração do SLA: recalcula o prazo em horas úteis.
     if (typeof data.sla_horas === "number") {
