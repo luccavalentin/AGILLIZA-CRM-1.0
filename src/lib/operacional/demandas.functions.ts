@@ -372,9 +372,10 @@ export const criarDemanda = createServerFn({ method: "POST" })
         tipo: data.tipo,
         titulo: data.titulo,
         descricao: data.descricao ?? null,
-        dados_simulacao: data.dados_simulacao ?? null,
         prioridade: data.prioridade,
         cliente_id: data.cliente_id ?? null,
+        proposta_id: data.proposta_id ?? null,
+        simulacao_id: data.simulacao_id ?? null,
         responsavel_id: data.responsavel_id,
         criador_id: userId,
       })
