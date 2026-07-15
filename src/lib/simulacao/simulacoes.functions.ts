@@ -832,12 +832,10 @@ export const inverterTitularSimulacao = createServerFn({ method: "POST" })
         .maybeSingle();
       const correspondenteId = (me as any)?.correspondente_id as string | undefined;
       if (correspondenteId) {
-        const { data: podeCriar } = await supabase.rpc("usuario_tem_permissao", {
-          _user_id: userId,
-          _modulo: "crm.clientes",
-          _acao: "create",
-        });
-        if (podeCriar) {
+        {
+          // Cadastro no CRM é efeito colateral do sistema (não uma ação
+          // manual do usuário), portanto não depende de permissão
+          // crm.clientes:create — quem pode inverter deve ver ambos no CRM.
           const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
           const upsertCliente = async (params: {
