@@ -22,6 +22,7 @@ import { SecaoConjuge } from "@/components/simulacao/completa/secao-conjuge";
 import { SecaoBancos } from "@/components/simulacao/completa/secao-bancos";
 import { SecaoConsentimentos } from "@/components/simulacao/completa/secao-consentimentos";
 import { ResultadoInlineCompleta } from "@/components/simulacao/completa/resultado-inline";
+import { ResultadoInlineAmbos } from "@/components/simulacao/completa/resultado-inline-ambos";
 import { formatBRL } from "@/lib/simulacao/format";
 import { useSimulacaoCompleta } from "@/lib/simulacao/use-simulacao-completa";
 
