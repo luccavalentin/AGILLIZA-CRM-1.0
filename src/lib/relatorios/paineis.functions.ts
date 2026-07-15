@@ -436,7 +436,7 @@ export const getPanelDados = createServerFn({ method: "POST" })
         ),
         supabase
           .from("cliente_pipeline")
-          .select("cliente_id,pipeline_stages(codigo,nome,ordem),clientes!inner(responsavel_id)")
+          .select("cliente_id,pipeline_stages(codigo,nome,ordem),clientes!inner(responsavel_id,criador_id)")
           .limit(5000),
       ]);
       if (sims.error) throw new Error(sims.error.message);
