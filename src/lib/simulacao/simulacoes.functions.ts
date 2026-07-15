@@ -857,15 +857,13 @@ export const inverterTitularSimulacao = createServerFn({ method: "POST" })
           }) => {
             const nome = (params.nome || "").trim();
             const documento = (params.documento || "").replace(/\D+/g, "");
-            if (!nome || !documento || !params.dataNascimento) return;
+            if (!nome || !documento || !params.dataNascimento) return null;
             const campos = {
               nome,
               email: (params.email || "").toLowerCase() || null,
               telefone_celular: params.celular || null,
               data_nascimento: params.dataNascimento,
               renda_total_declarada: params.renda ?? 0,
-              // Como estamos vindo de uma simulação com cônjuge, ambos ficam
-              // necessariamente vinculados como casal no CRM.
               estado_civil: (params.estadoCivil === "uniao_estavel"
                 ? "uniao_estavel"
                 : "casado") as
@@ -891,8 +889,11 @@ export const inverterTitularSimulacao = createServerFn({ method: "POST" })
               .maybeSingle();
             if (existente?.id) {
               await supabaseAdmin.from("clientes").update(campos).eq("id", existente.id);
-            } else {
-              await supabaseAdmin.from("clientes").insert({
+              return existente.id as string;
+            }
+            const { data: novo } = await supabaseAdmin
+              .from("clientes")
+              .insert({
                 correspondente_id: correspondenteId,
                 numero_cliente: "",
                 tipo_pessoa: "PF",
@@ -901,12 +902,14 @@ export const inverterTitularSimulacao = createServerFn({ method: "POST" })
                 responsavel_id: userId,
                 criador_id: userId,
                 ...campos,
-              });
-            }
+              })
+              .select("id")
+              .maybeSingle();
+            return (novo?.id as string | undefined) ?? null;
           };
 
           // Novo titular (dados do ex-cônjuge). O cônjuge dele passa a ser o ex-titular.
-          await upsertCliente({
+          const novoTitularId = await upsertCliente({
             nome: r.nome_conjuge,
             documento: r.cpf_conjuge,
             dataNascimento: r.data_nascimento_conjuge,
@@ -921,8 +924,8 @@ export const inverterTitularSimulacao = createServerFn({ method: "POST" })
             conjugeCelular: r.celular,
             conjugeRenda: r.renda_total,
           });
-          // Novo cônjuge (dados do ex-titular) — cadastrado também como cliente do ecossistema.
-          await upsertCliente({
+          // Novo cônjuge (dados do ex-titular) — também cadastrado no CRM.
+          const novoConjugeId = await upsertCliente({
             nome: r.nome_cliente,
             documento: r.cpf_cnpj,
             dataNascimento: r.data_nascimento,
@@ -937,6 +940,48 @@ export const inverterTitularSimulacao = createServerFn({ method: "POST" })
             conjugeCelular: r.celular_conjuge,
             conjugeRenda: r.renda_conjuge,
           });
+
+          // Preserva o "grupo": replica todos os vínculos de parceiros
+          // (corretor, imobiliária, comercial, etc.) do titular original
+          // para o novo titular e o novo cônjuge, de forma que a simulação
+          // invertida — e as futuras propostas dela — continuem visíveis
+          // para os mesmos envolvidos.
+          const origemId = (r.cliente_id as string | null) ?? null;
+          const alvos = [novoTitularId, novoConjugeId].filter(
+            (v): v is string => Boolean(v),
+          );
+          if (origemId && alvos.length) {
+            const { data: vinculos } = await supabaseAdmin
+              .from("cliente_parceiros")
+              .select("parceiro_id, tipo")
+              .eq("cliente_id", origemId);
+            if (vinculos && vinculos.length) {
+              const rows = alvos.flatMap((cid) =>
+                vinculos.map((v: any) => ({
+                  cliente_id: cid,
+                  parceiro_id: v.parceiro_id,
+                  tipo: v.tipo,
+                })),
+              );
+              if (rows.length) {
+                await supabaseAdmin
+                  .from("cliente_parceiros")
+                  .upsert(rows, {
+                    onConflict: "cliente_id,parceiro_id,tipo",
+                    ignoreDuplicates: true,
+                  });
+              }
+            }
+          }
+
+          // Atualiza o cliente_id da simulação para apontar ao novo titular,
+          // mantendo o grupo via cliente_parceiros replicados acima.
+          if (novoTitularId && novoTitularId !== origemId) {
+            await supabaseAdmin
+              .from("simulacoes")
+              .update({ cliente_id: novoTitularId })
+              .eq("id", data.id);
+          }
         }
       }
     } catch (e) {
