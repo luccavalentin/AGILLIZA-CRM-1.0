@@ -96,6 +96,30 @@ export function SecaoTitular({ ctx }: { ctx: SimulacaoCompletaCtx }) {
             placeholder="Ex: 9.500,00"
           />
           <Erro erros={erros} campo="renda_total" />
+          {f.valor_financiamento > 0 && (f.sistema_amortizacao === "S" || f.sistema_amortizacao === "B") && (
+            <div className="pt-1">
+              <DicaRendaMinima
+                valorFinanciamento={f.valor_financiamento}
+                valorImovel={f.valor_imovel}
+                prazoMeses={f.prazo}
+                taxaAno={ctx.melhorTaxaAno}
+                sistema="S"
+                rendaInformada={f.renda_total}
+              />
+            </div>
+          )}
+          {f.valor_financiamento > 0 && f.sistema_amortizacao === "P" && (
+            <div className="pt-1">
+              <DicaRendaMinima
+                valorFinanciamento={f.valor_financiamento}
+                valorImovel={f.valor_imovel}
+                prazoMeses={f.prazo}
+                taxaAno={ctx.melhorTaxaAno}
+                sistema="P"
+                rendaInformada={f.renda_total}
+              />
+            </div>
+          )}
         </Campo>
         {f.sistema_amortizacao === "B" && (
           <Campo label={<>Renda familiar — PRICE (R$) <Ast /></>}>
@@ -108,6 +132,18 @@ export function SecaoTitular({ ctx }: { ctx: SimulacaoCompletaCtx }) {
               />
             </div>
             <Erro erros={erros} campo="renda_price" />
+            {f.valor_financiamento > 0 && (
+              <div className="pt-1">
+                <DicaRendaMinima
+                  valorFinanciamento={f.valor_financiamento}
+                  valorImovel={f.valor_imovel}
+                  prazoMeses={f.prazo}
+                  taxaAno={ctx.melhorTaxaAno}
+                  sistema="P"
+                  rendaInformada={f.renda_price}
+                />
+              </div>
+            )}
           </Campo>
         )}
         <Campo label={<>Data de nascimento <Ast /></>}>
