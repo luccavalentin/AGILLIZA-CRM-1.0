@@ -218,7 +218,9 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
     const selecionados = (bancos ?? []).filter((b) => f.bancos_ids.includes(b.id));
     const base = selecionados.length > 0 ? selecionados : (bancos ?? []);
     if (base.length === 0) return 0.1199;
-    return Math.max(...base.map((b) => taxaAnoDeBanco(b.codigo_banco)));
+    // "Melhor" taxa = a MENOR entre os bancos escolhidos. Usar Math.max inflava
+    // artificialmente a parcela e, portanto, a renda mínima exibida na dica.
+    return Math.min(...base.map((b) => taxaAnoDeBanco(b.codigo_banco)));
   }, [bancos, f.bancos_ids]);
 
   const rendaConsiderada = useMemo(

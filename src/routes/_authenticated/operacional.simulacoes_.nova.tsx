@@ -211,10 +211,11 @@ function Pagina() {
     );
   }, [bancos, taxasReais, mostrarRapida, w.valor_financiamento, w.prazo_meses]);
 
-  // Taxa mais conservadora entre os bancos ativos, usada para estimar a maior renda mínima.
+  // Menor taxa entre os bancos ativos = renda mínima para viabilizar em pelo
+  // menos um banco. Usar Math.max (pior taxa) inflava a renda exibida.
   const melhorTaxaAno = useMemo(() => {
     if (!bancos || bancos.length === 0) return 0.1299;
-    return Math.max(...bancos.map((b) => taxaAnoDeBanco(b.codigo_banco, taxasReais)));
+    return Math.min(...bancos.map((b) => taxaAnoDeBanco(b.codigo_banco, taxasReais)));
   }, [bancos, taxasReais]);
 
   /** Aplica o prazo digitado, ajustando automaticamente pela regra de idade. */
