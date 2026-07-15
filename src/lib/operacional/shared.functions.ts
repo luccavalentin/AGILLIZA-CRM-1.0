@@ -6,6 +6,8 @@ export interface Colega {
   id: string;
   nome: string | null;
   email: string | null;
+  tipo_pessoa?: string | null;
+  roles?: string[];
 }
 
 /** Lista membros da equipe do mesmo correspondente (para atribuição/participantes). */
@@ -21,13 +23,28 @@ export const listarColegas = createServerFn({ method: "GET" })
     if (!me?.correspondente_id) return [];
     const { data, error } = await supabase
       .from("profiles")
-      .select("id, nome, email")
+      .select("id, nome, email, tipo_pessoa")
       .eq("correspondente_id", me.correspondente_id)
       .eq("ativo", true)
       .order("nome", { ascending: true });
     if (error) throw new Error(error.message);
-    return (data ?? []) as Colega[];
+    const profs = (data ?? []) as any[];
+    const ids = profs.map((p) => p.id);
+    let rolesMap = new Map<string, string[]>();
+    if (ids.length) {
+      const { data: rows } = await supabase
+        .from("user_roles")
+        .select("user_id, role")
+        .in("user_id", ids);
+      for (const r of (rows ?? []) as any[]) {
+        const arr = rolesMap.get(r.user_id) ?? [];
+        arr.push(r.role);
+        rolesMap.set(r.user_id, arr);
+      }
+    }
+    return profs.map((p) => ({ ...p, roles: rolesMap.get(p.id) ?? [] })) as Colega[];
   });
+
 
 export interface ClienteOpcao {
   id: string;
