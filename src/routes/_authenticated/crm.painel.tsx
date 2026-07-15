@@ -925,16 +925,59 @@ function Pagina() {
                               </div>
                               <div className="mt-2.5 space-y-1">
                                 <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                                  <User className="size-3 shrink-0" />
+                                  <User className="size-3 shrink-0 text-primary/70" />
                                   <span className="truncate">
-                                    {c.responsavel_nome ?? "Sem responsável"}
+                                    <span className="font-medium text-foreground/80">Resp:</span>{" "}
+                                    {c.responsavel_nome ?? "—"}
                                   </span>
                                 </div>
+                                {c.analista_nome && (
+                                  <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                                    <UserCheck className="size-3 shrink-0 text-primary/70" />
+                                    <span className="truncate">
+                                      <span className="font-medium text-foreground/80">Analista:</span>{" "}
+                                      {c.analista_nome}
+                                    </span>
+                                  </div>
+                                )}
+                                {(c.corretor_nome || c.imobiliaria_nome) && (
+                                  <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                                    <Building2 className="size-3 shrink-0 text-primary/70" />
+                                    <span className="truncate">
+                                      {c.corretor_nome ?? c.imobiliaria_nome}
+                                      {c.corretor_nome && c.imobiliaria_nome && (
+                                        <span className="text-muted-foreground/70">
+                                          {" · "}
+                                          {c.imobiliaria_nome}
+                                        </span>
+                                      )}
+                                    </span>
+                                  </div>
+                                )}
                                 <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
                                   <Clock className="size-3 shrink-0" />
                                   Atualizado {tempoRelativo(c.pipeline_atualizado_em)}
                                 </div>
                               </div>
+                              {c.numero_simulacao && (
+                                <div className="mt-2 flex flex-wrap items-center gap-1.5 border-t border-border/60 pt-2">
+                                  <Link
+                                    to="/operacional/simulacoes"
+                                    search={{ q: c.numero_simulacao ?? "" }}
+                                    onClick={(e) => e.stopPropagation()}
+                                    title={`Ver simulação ${c.numero_simulacao}`}
+                                    className="inline-flex min-w-0 items-center gap-1.5 rounded-full bg-primary/[0.07] px-2 py-0.5 text-[11px] font-medium text-primary ring-1 ring-inset ring-primary/15 transition-colors hover:bg-primary/15"
+                                  >
+                                    <Calculator className="size-3 shrink-0" />
+                                    <span className="truncate font-mono">{c.numero_simulacao}</span>
+                                  </Link>
+                                  {c.total_simulacoes > 1 && (
+                                    <span className="text-[10px] font-medium text-muted-foreground">
+                                      +{c.total_simulacoes - 1}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
                             </div>
                             {(() => {
                               const dependente = [
