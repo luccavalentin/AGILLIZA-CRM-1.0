@@ -51,6 +51,16 @@ function rendaMinimaDoBanco(b: any): number | null {
   return rendaMinimaParaParcela(parcela);
 }
 
+async function baixarPdfLinha(simulacao: any, banco: any) {
+  try {
+    const { baixarSimulacaoDetalhadaPDF } = await import("@/lib/simulacao/simulacao-pdf");
+    baixarSimulacaoDetalhadaPDF({ simulacao, bancos: [banco] });
+  } catch (e) {
+    console.error("[baixar PDF linha]", e);
+    toast.error("Não foi possível gerar o PDF deste banco.");
+  }
+}
+
 function useSimQuery(id: string | null) {
   const qc = useQueryClient();
   const q = useQuery({
@@ -365,6 +375,16 @@ export function ResultadoInlineAmbos({ simulacaoIdSac, simulacaoIdPrice, onFecha
 
                     <div className="mt-3 flex items-center justify-end gap-2">
                       <DetalheBancoDialog banco={b} simulacao={l.simulacao} />
+                      {b.status_banco === "simulada" && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => baixarPdfLinha(l.simulacao, b)}
+                          title="Baixar PDF deste banco"
+                        >
+                          <Download className="mr-1 h-4 w-4" /> PDF
+                        </Button>
+                      )}
                       {b.status_banco === "erro" ? (
                         <Button
                           size="sm"
@@ -464,6 +484,16 @@ export function ResultadoInlineAmbos({ simulacaoIdSac, simulacaoIdPrice, onFecha
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-1">
                             <DetalheBancoDialog banco={b} simulacao={l.simulacao} />
+                            {b.status_banco === "simulada" && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => baixarPdfLinha(l.simulacao, b)}
+                                title="Baixar PDF deste banco"
+                              >
+                                <Download className="mr-1 h-4 w-4" /> PDF
+                              </Button>
+                            )}
                             {b.status_banco === "erro" ? (
                               <Button
                                 size="sm"
