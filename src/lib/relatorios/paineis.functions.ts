@@ -211,6 +211,7 @@ async function carregarContratosCliente(
     .select("cliente_id,status")
     .in("cliente_id", cliRowsAll.map((c) => c.id))
     .in("status", contratoStatus as any)
+    .is("deleted_at", null)
     .limit(5000);
   if (propRes.error) throw new Error(propRes.error.message);
   const clientesComContratoReal = new Set<string>(
