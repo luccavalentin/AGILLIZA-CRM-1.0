@@ -207,7 +207,8 @@ export function ResultadoInlineCompleta({ simulacaoId, onFechar }: Props) {
             comparar outro prazo.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <BaixarPdfsButton data={data} />
           <Button
             variant="outline"
             size="sm"
