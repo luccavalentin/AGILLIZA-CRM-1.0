@@ -48,6 +48,7 @@ const ESTADO_INICIAL: Form = {
   nome_cliente: "",
   cpf_cnpj: "",
   renda_total: 0,
+  renda_price: 0,
   data_nascimento: "",
   estado_civil: "",
   email: "",
@@ -55,6 +56,8 @@ const ESTADO_INICIAL: Form = {
   possui_conjuge: false,
   compoe_renda: false,
   bancos_ids: [] as string[],
+  bancos_sac_ids: [] as string[],
+  bancos_price_ids: [] as string[],
   consentimento_lgpd: false,
   consentimento_scr: false,
   email_verificado_em: null,
@@ -93,6 +96,8 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
   // Guarda o id da última simulação gerada para exibir o resultado inline
   // (sem redirecionar), permitindo o usuário ajustar o prazo e simular novamente.
   const [simulacaoResultadoId, setSimulacaoResultadoId] = useState<string | null>(null);
+  // Segundo id de simulação para o modo "Ambos" (uma simulação SAC + uma PRICE).
+  const [simulacaoResultadoIdPrice, setSimulacaoResultadoIdPrice] = useState<string | null>(null);
 
   const { data: bancos } = useQuery({
     queryKey: ["bancos-ativos"],
