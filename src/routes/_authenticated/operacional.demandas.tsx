@@ -577,7 +577,7 @@ function Pagina() {
       {/* Abas + Tabela */}
       <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-card">
         <div className="flex items-center gap-6 border-b border-border px-5 pt-3">
-          {(["minhas", "equipe", "todas"] as Escopo[]).map((e) => (
+          {(["minhas", "todas"] as Escopo[]).map((e) => (
             <button
               key={e}
               onClick={() => {
@@ -591,7 +591,7 @@ function Pagina() {
                   : "border-transparent text-muted-foreground hover:text-foreground",
               )}
             >
-              {e === "minhas" ? "Minhas demandas" : e === "equipe" ? "Equipe" : "Todas"}
+              {e === "minhas" ? "Minhas demandas" : "Todas"}
             </button>
           ))}
         </div>
