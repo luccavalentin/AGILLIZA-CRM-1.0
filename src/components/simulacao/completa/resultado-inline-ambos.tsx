@@ -234,9 +234,12 @@ export function ResultadoInlineAmbos({ simulacaoIdSac, simulacaoIdPrice, onFecha
     <Card className="overflow-hidden border-primary/30 shadow-lg ring-1 ring-primary/10">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 bg-gradient-to-br from-primary/10 via-card to-card px-5 py-4">
         <div className="min-w-0">
-          <h2 className="truncate text-base font-semibold tracking-tight text-foreground">
-            Resultado — {numeros}
-          </h2>
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="truncate text-base font-semibold tracking-tight text-foreground">
+              Resultado — {numeros}
+            </h2>
+            <ToneBadge tone="info">Simulação mista · SAC + PRICE</ToneBadge>
+          </div>
           <p className="mt-0.5 text-xs text-muted-foreground">
             Prazo: <span className="font-medium text-foreground">{ref?.prazo} meses</span>
             {" · "}
@@ -245,7 +248,7 @@ export function ResultadoInlineAmbos({ simulacaoIdSac, simulacaoIdPrice, onFecha
               {formatBRL(ref?.valor_financiamento)}
             </span>
             {" · "}
-            Comparativo SAC e PRICE lado a lado.
+            Comparativo dos dois sistemas de amortização lado a lado.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
