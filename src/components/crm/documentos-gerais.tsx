@@ -180,6 +180,7 @@ export function DocumentosGerais() {
   const [filtroComercial, setFiltroComercial] = useState<string>("todos");
   const [filtroImob, setFiltroImob] = useState<string>("todas");
   const [filtroCorr, setFiltroCorr] = useState<string>("todos");
+  const [filtroAnalista, setFiltroAnalista] = useState<string>("todos");
   const [caminho, setCaminho] = useState<string[]>([]);
   const [visao, setVisao] = useState<Visao>("hierarquia");
   const [cliente, setCliente] = useState<DGCliente | null>(null);
@@ -201,32 +202,95 @@ export function DocumentosGerais() {
   const imobiliariasFiltro = data?.imobiliarias ?? [];
   const corretoresFiltro = data?.corretores ?? [];
   const comerciaisBase = data?.comerciais ?? [];
+  const analistasFiltro = data?.analistas ?? [];
 
   const filtrando =
     busca.trim() !== "" ||
     filtroComercial !== "todos" ||
     filtroImob !== "todas" ||
-    filtroCorr !== "todos";
+    filtroCorr !== "todos" ||
+    filtroAnalista !== "todos";
 
-  // Clientes após aplicar os filtros da tela inicial.
-  const clientesFiltrados = useMemo(() => {
+  // Predicado por dimensão — permite calcular quais clientes ficam se
+  // ignorarmos apenas o filtro daquela dimensão (afunilamento progressivo).
+  const matchBusca = (c: DGCliente) => {
     const q = busca.trim().toLowerCase();
-    return clientes.filter((c) => {
-      if (filtroComercial !== "todos" && c.comercial_id !== filtroComercial) return false;
-      if (filtroImob === "comercial" && c.imobiliaria_id) return false;
-      if (filtroImob !== "todas" && filtroImob !== "comercial" && c.imobiliaria_id !== filtroImob)
-        return false;
-      if (filtroCorr !== "todos" && c.corretor_id !== filtroCorr) return false;
-      if (
-        q &&
-        !c.nome.toLowerCase().includes(q) &&
-        !(c.numero_cliente ?? "").toLowerCase().includes(q) &&
-        !(c.documento ?? "").includes(q)
-      )
-        return false;
-      return true;
-    });
-  }, [clientes, busca, filtroComercial, filtroImob, filtroCorr]);
+    if (!q) return true;
+    return (
+      c.nome.toLowerCase().includes(q) ||
+      (c.numero_cliente ?? "").toLowerCase().includes(q) ||
+      (c.documento ?? "").includes(q)
+    );
+  };
+  const matchComercial = (c: DGCliente) =>
+    filtroComercial === "todos" || c.comercial_id === filtroComercial;
+  const matchImob = (c: DGCliente) => {
+    if (filtroImob === "todas") return true;
+    if (filtroImob === "comercial") return !c.imobiliaria_id;
+    return c.imobiliaria_id === filtroImob;
+  };
+  const matchCorr = (c: DGCliente) => filtroCorr === "todos" || c.corretor_id === filtroCorr;
+  const matchAnalista = (c: DGCliente) =>
+    filtroAnalista === "todos" || c.analista_id === filtroAnalista;
+
+  // Clientes após aplicar TODOS os filtros.
+  const clientesFiltrados = useMemo(() => {
+    return clientes.filter(
+      (c) =>
+        matchBusca(c) &&
+        matchComercial(c) &&
+        matchImob(c) &&
+        matchCorr(c) &&
+        matchAnalista(c),
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clientes, busca, filtroComercial, filtroImob, filtroCorr, filtroAnalista]);
+
+  // Opções de cada dropdown consideram todos os filtros exceto o próprio,
+  // fazendo o painel afunilar progressivamente conforme a pesquisa avança.
+  const opcoesComerciais = useMemo(() => {
+    const ids = new Set(
+      clientes
+        .filter((c) => matchBusca(c) && matchImob(c) && matchCorr(c) && matchAnalista(c))
+        .map((c) => c.comercial_id)
+        .filter((v): v is string => !!v),
+    );
+    return comerciaisBase.filter((cm) => ids.has(cm.id) || cm.id === filtroComercial);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clientes, comerciaisBase, busca, filtroImob, filtroCorr, filtroAnalista, filtroComercial]);
+
+  const opcoesImobiliarias = useMemo(() => {
+    const ids = new Set(
+      clientes
+        .filter((c) => matchBusca(c) && matchComercial(c) && matchCorr(c) && matchAnalista(c))
+        .map((c) => c.imobiliaria_id)
+        .filter((v): v is string => !!v),
+    );
+    return imobiliariasFiltro.filter((i) => ids.has(i.id) || i.id === filtroImob);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clientes, imobiliariasFiltro, busca, filtroComercial, filtroCorr, filtroAnalista, filtroImob]);
+
+  const opcoesCorretores = useMemo(() => {
+    const ids = new Set(
+      clientes
+        .filter((c) => matchBusca(c) && matchComercial(c) && matchImob(c) && matchAnalista(c))
+        .map((c) => c.corretor_id)
+        .filter((v): v is string => !!v),
+    );
+    return corretoresFiltro.filter((co) => ids.has(co.id) || co.id === filtroCorr);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clientes, corretoresFiltro, busca, filtroComercial, filtroImob, filtroAnalista, filtroCorr]);
+
+  const opcoesAnalistas = useMemo(() => {
+    const ids = new Set(
+      clientes
+        .filter((c) => matchBusca(c) && matchComercial(c) && matchImob(c) && matchCorr(c))
+        .map((c) => c.analista_id)
+        .filter((v): v is string => !!v),
+    );
+    return analistasFiltro.filter((a) => ids.has(a.id) || a.id === filtroAnalista);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clientes, analistasFiltro, busca, filtroComercial, filtroImob, filtroCorr, filtroAnalista]);
 
   // Visão geral (KPIs) — sempre sobre a base completa, para dar contexto no topo.
   const resumo = useMemo(() => {
@@ -424,6 +488,8 @@ export function DocumentosGerais() {
     setFiltroComercial("todos");
     setFiltroImob("todas");
     setFiltroCorr("todos");
+    setFiltroAnalista("todos");
+    setPagina(1);
   }
 
   function abrirCliente(c: DGCliente) {
@@ -724,8 +790,8 @@ export function DocumentosGerais() {
       ) : (
         <>
           {/* ==================== FILTROS ==================== */}
-          <div className="grid gap-2.5 md:grid-cols-[minmax(0,1fr)_repeat(3,minmax(0,180px))_auto]">
-            <div className="relative">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <div className="relative min-w-[240px] flex-1">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder="Buscar cliente por nome, documento ou e-mail…"
@@ -734,8 +800,21 @@ export function DocumentosGerais() {
                   setBusca(e.target.value);
                   setPagina(1);
                 }}
-                className="h-10 pl-9"
+                className="h-10 pl-9 pr-9"
               />
+              {busca && (
+                <button
+                  type="button"
+                  aria-label="Limpar busca"
+                  onClick={() => {
+                    setBusca("");
+                    setPagina(1);
+                  }}
+                  className="absolute right-2 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
             </div>
             <Select
               value={filtroComercial}
@@ -744,12 +823,12 @@ export function DocumentosGerais() {
                 setPagina(1);
               }}
             >
-              <SelectTrigger className="h-10">
+              <SelectTrigger className="h-10 w-[180px]">
                 <SelectValue placeholder="Todos os comerciais" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos os comerciais</SelectItem>
-                {comerciaisBase.map((cm) => (
+                {opcoesComerciais.map((cm) => (
                   <SelectItem key={cm.id} value={cm.id}>
                     {titulo(cm.nome)}
                   </SelectItem>
@@ -763,13 +842,13 @@ export function DocumentosGerais() {
                 setPagina(1);
               }}
             >
-              <SelectTrigger className="h-10">
+              <SelectTrigger className="h-10 w-[180px]">
                 <SelectValue placeholder="Todas as imobiliárias" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="todas">Todas as imobiliárias</SelectItem>
                 <SelectItem value="comercial">{SEM_IMOB}</SelectItem>
-                {imobiliariasFiltro.map((i) => (
+                {opcoesImobiliarias.map((i) => (
                   <SelectItem key={i.id} value={i.id}>
                     {titulo(i.nome)}
                   </SelectItem>
@@ -783,18 +862,46 @@ export function DocumentosGerais() {
                 setPagina(1);
               }}
             >
-              <SelectTrigger className="h-10">
+              <SelectTrigger className="h-10 w-[180px]">
                 <SelectValue placeholder="Todos os corretores" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos os corretores</SelectItem>
-                {corretoresFiltro.map((c) => (
+                {opcoesCorretores.map((c) => (
                   <SelectItem key={c.id} value={c.id}>
                     {titulo(c.nome)}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+            <Select
+              value={filtroAnalista}
+              onValueChange={(v) => {
+                setFiltroAnalista(v);
+                setPagina(1);
+              }}
+            >
+              <SelectTrigger className="h-10 w-[180px]">
+                <SelectValue placeholder="Todos os analistas" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos os analistas</SelectItem>
+                {opcoesAnalistas.map((a) => (
+                  <SelectItem key={a.id} value={a.id}>
+                    {titulo(a.nome)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {filtrando && (
+              <Button
+                variant="ghost"
+                className="h-10 gap-2 text-muted-foreground hover:text-foreground"
+                onClick={limparFiltros}
+              >
+                <X className="h-4 w-4" /> Limpar
+              </Button>
+            )}
             <Button
               variant="outline"
               className="h-10 gap-2"

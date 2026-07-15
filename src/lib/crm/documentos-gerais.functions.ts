@@ -35,6 +35,8 @@ export interface DGResposta {
   corretores: DGOpcaoFiltro[];
   /** Todos os comerciais cadastrados na base (para criar a pasta mesmo sem clientes). */
   comerciais: DGOpcaoFiltro[];
+  /** Analistas (criadores) presentes na base de clientes. */
+  analistas: DGOpcaoFiltro[];
 }
 
 /**
@@ -92,7 +94,7 @@ export const explorarDocumentosGerais = createServerFn({ method: "GET" })
     if (cliErr) throw cliErr;
     const listaClientes = clientes ?? [];
     if (listaClientes.length === 0) {
-      return { clientes: [], imobiliarias: [], corretores: [], comerciais };
+      return { clientes: [], imobiliarias: [], corretores: [], comerciais, analistas: [] };
     }
 
     const idsClientes = listaClientes.map((c: any) => c.id);
@@ -162,6 +164,7 @@ export const explorarDocumentosGerais = createServerFn({ method: "GET" })
 
     const imobiliariasSet = new Map<string, string>();
     const corretoresSet = new Map<string, string>();
+    const analistasSet = new Map<string, string>();
 
     const clientesResp: DGCliente[] = listaClientes.map((c: any) => {
       const imobId = imobPorCliente.get(c.id) ?? null;
@@ -174,6 +177,7 @@ export const explorarDocumentosGerais = createServerFn({ method: "GET" })
       const anaNome = anaId ? nomesParceiros.get(anaId) ?? "—" : null;
       if (imobId && imobNome) imobiliariasSet.set(imobId, imobNome);
       if (corrId && corrNome) corretoresSet.set(corrId, corrNome);
+      if (anaId && anaNome) analistasSet.set(anaId, anaNome);
       return {
         cliente_id: c.id,
         nome: c.nome,
@@ -196,6 +200,7 @@ export const explorarDocumentosGerais = createServerFn({ method: "GET" })
       imobiliarias: Array.from(imobiliariasSet, ([id, nome]) => ({ id, nome })).sort(ordenarNome),
       corretores: Array.from(corretoresSet, ([id, nome]) => ({ id, nome })).sort(ordenarNome),
       comerciais,
+      analistas: Array.from(analistasSet, ([id, nome]) => ({ id, nome })).sort(ordenarNome),
     };
   });
 
