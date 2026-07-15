@@ -746,7 +746,7 @@ function Pagina() {
                   onClick={() => {
                     // dispara o mesmo diálogo global — atalho por coluna
                     const btn = document.querySelector<HTMLButtonElement>(
-                      "[data-nova-demanda-trigger]",
+                      "[data-nova-demanda-trigger] button",
                     );
                     btn?.click();
                   }}
