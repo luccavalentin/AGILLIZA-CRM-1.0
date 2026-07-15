@@ -463,7 +463,7 @@ export function DocumentosGerais() {
   /** Abre uma visão agregada a partir dos cards de KPI. */
   function abrirVisao(v: Visao) {
     setVisao(v);
-    setCaminho([RAIZ_KEY]);
+    setCaminho([]);
   }
 
   /** Volta à raiz (cards de KPI) e restaura a visão hierárquica. */
