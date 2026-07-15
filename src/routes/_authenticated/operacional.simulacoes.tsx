@@ -249,15 +249,16 @@ function Pagina() {
 
   async function enviarBancoIndividual(banco: any) {
     if (!envio || enviandoBancoId) return;
-    setEnviandoBancoId(banco.banco_id);
+    setEnviandoBancoId(banco.id);
     try {
       const res = await criar({
-        data: { simulacao_id: envio.id, banco_id: banco.banco_id },
+        data: { simulacao_id: envio.id, simulacao_banco_id: banco.id },
       });
       toast.success(`Proposta ${res.numero_proposta} criada para ${banco.nome_banco}.`);
       setPropostasCriadas((prev) => [
         ...prev,
         {
+          simulacao_banco_id: banco.id,
           banco_id: banco.banco_id,
           nome_banco: banco.nome_banco,
           proposta_id: res.proposta_id,
