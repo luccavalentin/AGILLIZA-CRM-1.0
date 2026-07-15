@@ -413,6 +413,29 @@
   pointer-events: none;
 }
 
+/* Ajuste de legibilidade: inputs/selects/buttons dentro do hero escuro
+   herdam contraste claro para não sumirem sobre o fundo azul-marinho. */
+.op-hero-dark input,
+.op-hero-dark textarea,
+.op-hero-dark [role="combobox"],
+.op-hero-dark button[data-slot="select-trigger"],
+.op-hero-dark button[role="combobox"] {
+  color: #fff;
+  background-color: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+.op-hero-dark input::placeholder,
+.op-hero-dark textarea::placeholder {
+  color: rgba(255, 255, 255, 0.55);
+}
+.op-hero-dark input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) brightness(1.4);
+  opacity: 0.75;
+}
+.op-hero-dark svg {
+  color: inherit;
+}
+
 /* Card de KPI sóbrio com fina régua de acento. */
 .op-stat {
   position: relative;
