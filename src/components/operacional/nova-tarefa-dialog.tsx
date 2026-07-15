@@ -25,14 +25,22 @@ import {
 import { criarTarefa } from "@/lib/operacional/tarefas.functions";
 import { listarColegas, buscarClientesOpcoes } from "@/lib/operacional/shared.functions";
 
-export function NovaTarefaDialog({ onCriada }: { onCriada: () => void }) {
+export function NovaTarefaDialog({
+  onCriada,
+  clientePreSelecionado,
+  trigger,
+}: {
+  onCriada: () => void;
+  clientePreSelecionado?: string;
+  trigger?: React.ReactNode;
+}) {
   const [aberto, setAberto] = useState(false);
   const [titulo, setTitulo] = useState("");
   const [descricao, setDescricao] = useState("");
   const [prioridade, setPrioridade] = useState<"p1" | "p2" | "p3">("p2");
   const [prazo, setPrazo] = useState("");
   const [responsavel, setResponsavel] = useState<string>("");
-  const [cliente, setCliente] = useState<string>("");
+  const [cliente, setCliente] = useState<string>(clientePreSelecionado ?? "");
   const [checklist, setChecklist] = useState<string[]>([]);
   const [novoItem, setNovoItem] = useState("");
   const [salvando, setSalvando] = useState(false);
@@ -69,8 +77,11 @@ export function NovaTarefaDialog({ onCriada }: { onCriada: () => void }) {
       setTitulo("");
       setDescricao("");
       setPrazo("");
+      setTitulo("");
+      setDescricao("");
+      setPrazo("");
       setResponsavel("");
-      setCliente("");
+      setCliente(clientePreSelecionado ?? "");
       setChecklist([]);
       onCriada();
     } catch (e) {
@@ -83,9 +94,11 @@ export function NovaTarefaDialog({ onCriada }: { onCriada: () => void }) {
   return (
     <Dialog open={aberto} onOpenChange={setAberto}>
       <DialogTrigger asChild>
-        <Button size="sm">
-          <Plus className="mr-1 h-4 w-4" /> Nova tarefa
-        </Button>
+        {trigger ?? (
+          <Button size="sm">
+            <Plus className="mr-1 h-4 w-4" /> Nova tarefa
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="w-[calc(100%-2rem)] max-h-[90vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
