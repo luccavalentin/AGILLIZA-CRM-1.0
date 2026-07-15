@@ -404,11 +404,11 @@ function Pagina() {
                 </p>
               ) : (
                 negocios!.simulacoes.map((s) => (
-                  <Link
+                  <button
                     key={s.id}
-                    to="/operacional/simulacoes/$id"
-                    params={{ id: s.id }}
-                    className="group relative flex flex-wrap items-center justify-between gap-3 overflow-hidden rounded-xl border border-border bg-card p-3.5 pl-4 text-sm shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
+                    type="button"
+                    onClick={() => setPreviewSimId(s.id)}
+                    className="group relative flex w-full flex-wrap items-center justify-between gap-3 overflow-hidden rounded-xl border border-border bg-card p-3.5 pl-4 text-left text-sm shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
                   >
                     <span
                       aria-hidden
@@ -438,7 +438,7 @@ function Pagina() {
                         Valor do financiamento
                       </span>
                     </div>
-                  </Link>
+                  </button>
                 ))
               )}
             </CardContent>
