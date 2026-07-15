@@ -318,9 +318,9 @@ export function DocumentosGerais() {
 
   // Árvore de pastas (hierarquia oficial):
   //   Comercial Agilliza → Imobiliária → Corretor → Cliente
-  // Todo comercial tem a sua pasta; dentro dela ficam as imobiliárias com que
-  // trabalha (uma mesma imobiliária pode aparecer em vários comerciais), e cada
-  // imobiliária lista os corretores e, por fim, os clientes.
+  // Cada comercial vira uma pasta solta no primeiro nível (sem envelopar tudo
+  // em uma "pasta principal"). Dentro do comercial ficam suas imobiliárias e,
+  // sob cada imobiliária, os corretores e clientes.
   const raizes = useMemo<PastaNode[]>(() => {
     const comerciais = new Map<string, PastaNode>();
 
@@ -366,7 +366,6 @@ export function DocumentosGerais() {
 
     const lista = Array.from(comerciais.values());
     for (const r of lista) finalizar(r);
-    // Comerciais em ordem alfabética; "Sem comercial" por último.
     lista.sort((a, b) => {
       const aSem = a.key === SEM_COMERCIAL_KEY;
       const bSem = b.key === SEM_COMERCIAL_KEY;
@@ -374,46 +373,44 @@ export function DocumentosGerais() {
       return a.nome.localeCompare(b.nome, "pt-BR");
     });
 
-    // Todos os comerciais ficam dentro de uma única pasta raiz.
-    const raiz: PastaNode = {
-      key: RAIZ_KEY,
-      nome: RAIZ_NOME,
-      tipo: "raiz",
-      subpastas: lista,
-      clientes: [],
-      total_clientes: lista.reduce((acc, n) => acc + n.total_clientes, 0),
-    };
-    return [raiz];
+    return lista;
   }, [clientes, comerciaisBase]);
 
-  // Árvore agregada conforme a visão escolhida (cards de KPI):
-  //  - "hierarquia": Comercial → Imobiliária → Corretor → Cliente (padrão)
-  //  - "imobiliarias": lista todas as imobiliárias; cada uma abre seus clientes
-  //  - "corretores": lista todos os corretores; cada um abre seus clientes
-  //  - "clientes": lista todos os clientes diretamente
+  // Árvore agregada conforme a visão escolhida (sempre lista solta no topo):
+  //  - "hierarquia": cards de comerciais → Imobiliária → Corretor → Cliente
+  //  - "imobiliarias" | "corretores" | "analistas": cards flat da dimensão,
+  //    abrindo direto nos clientes daquela pessoa.
+  //  - "clientes": não usa árvore (a aba "Por cliente" renderiza clientes direto).
   const arvore = useMemo<PastaNode[]>(() => {
     if (visao === "hierarquia") return raizes;
+    if (visao === "clientes") return [];
 
-    if (visao === "clientes") {
-      const raiz: PastaNode = {
-        key: RAIZ_KEY,
-        nome: "Todos os clientes",
-        tipo: "raiz",
-        subpastas: [],
-        clientes: [...clientes],
-        total_clientes: clientes.length,
-      };
-      finalizar(raiz);
-      return [raiz];
+    let dim: "imob" | "corr" | "analista";
+    let base: DGCliente[keyof DGCliente] extends never ? never : { id: string; nome: string }[];
+    let tipo: PastaTipo;
+    let semKey: string;
+    let semNome: string;
+    if (visao === "imobiliarias") {
+      dim = "imob";
+      base = imobiliariasFiltro;
+      tipo = "imob";
+      semKey = SEM_IMOB_KEY;
+      semNome = SEM_IMOB;
+    } else if (visao === "corretores") {
+      dim = "corr";
+      base = corretoresFiltro;
+      tipo = "corretor";
+      semKey = SEM_CORRETOR_KEY;
+      semNome = SEM_CORRETOR;
+    } else {
+      dim = "analista";
+      base = analistasFiltro;
+      tipo = "analista";
+      semKey = "__sem_analista__";
+      semNome = "Sem analista";
     }
 
-    // imobiliarias | corretores → agrupa clientes pela dimensão
-    const porDimensao = visao === "imobiliarias";
     const map = new Map<string, PastaNode>();
-    const semKey = porDimensao ? SEM_IMOB_KEY : SEM_CORRETOR_KEY;
-    const semNome = porDimensao ? SEM_IMOB : SEM_CORRETOR;
-    const tipo: PastaTipo = porDimensao ? "imob" : "corretor";
-
     function garantir(key: string, nome: string): PastaNode {
       let node = map.get(key);
       if (!node) {
@@ -422,18 +419,15 @@ export function DocumentosGerais() {
       }
       return node;
     }
-
-    // Semeia todas as entidades cadastradas (mesmo sem clientes vinculados).
-    if (porDimensao) {
-      for (const i of imobiliariasFiltro) garantir(`imob:${i.id}`, titulo(i.nome));
-    } else {
-      for (const co of corretoresFiltro) garantir(`corr:${co.id}`, titulo(co.nome));
-    }
+    const prefix = dim === "imob" ? "imob:" : dim === "corr" ? "corr:" : "ana:";
+    for (const b of base) garantir(`${prefix}${b.id}`, titulo(b.nome));
 
     for (const c of clientes) {
-      const id = porDimensao ? c.imobiliaria_id : c.corretor_id;
-      const nome = porDimensao ? c.imobiliaria_nome : c.corretor_nome;
-      const key = id ? (porDimensao ? `imob:${id}` : `corr:${id}`) : semKey;
+      const id =
+        dim === "imob" ? c.imobiliaria_id : dim === "corr" ? c.corretor_id : c.analista_id;
+      const nome =
+        dim === "imob" ? c.imobiliaria_nome : dim === "corr" ? c.corretor_nome : c.analista_nome;
+      const key = id ? `${prefix}${id}` : semKey;
       const node = garantir(key, id ? titulo(nome) : semNome);
       node.clientes.push(c);
     }
@@ -446,17 +440,8 @@ export function DocumentosGerais() {
       if (aSem !== bSem) return aSem ? 1 : -1;
       return a.nome.localeCompare(b.nome, "pt-BR");
     });
-
-    const raiz: PastaNode = {
-      key: RAIZ_KEY,
-      nome: porDimensao ? "Imobiliárias" : "Corretores",
-      tipo: "raiz",
-      subpastas: lista,
-      clientes: [],
-      total_clientes: lista.reduce((acc, n) => acc + n.total_clientes, 0),
-    };
-    return [raiz];
-  }, [visao, raizes, clientes, imobiliariasFiltro, corretoresFiltro]);
+    return lista;
+  }, [visao, raizes, clientes, imobiliariasFiltro, corretoresFiltro, analistasFiltro]);
 
   // Traça o caminho atual na árvore, coletando as pastas percorridas.
   const trilha = useMemo<PastaNode[]>(() => {
