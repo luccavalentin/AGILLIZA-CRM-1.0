@@ -207,7 +207,8 @@ export function ResultadoInlineCompleta({ simulacaoId, onFechar }: Props) {
             comparar outro prazo.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <BaixarPdfsButton data={data} />
           <Button
             variant="outline"
             size="sm"
@@ -577,5 +578,35 @@ function MobileStat({ rotulo, valor }: { rotulo: string; valor: string }) {
       <dt className="text-xs text-muted-foreground">{rotulo}</dt>
       <dd className="truncate font-medium tabular-nums">{valor}</dd>
     </div>
+  );
+}
+
+function BaixarPdfsButton({ data }: { data: any }) {
+  const [baixando, setBaixando] = useState(false);
+  const bancosOk = ((data?.bancos as any[]) ?? []).filter((b) => b.status_banco === "simulada");
+  const totalOk = bancosOk.length;
+  const desabilitado = totalOk === 0 || baixando;
+
+  async function baixar() {
+    if (desabilitado) return;
+    setBaixando(true);
+    try {
+      const { baixarSimulacaoDetalhadaPDF } = await import("@/lib/simulacao/simulacao-pdf");
+      for (const b of bancosOk) {
+        baixarSimulacaoDetalhadaPDF({ simulacao: data.simulacao, bancos: [b] });
+      }
+      toast.success(`${totalOk} PDF${totalOk === 1 ? "" : "s"} gerado${totalOk === 1 ? "" : "s"}.`);
+    } catch {
+      toast.error("Não foi possível gerar os PDFs.");
+    } finally {
+      setBaixando(false);
+    }
+  }
+
+  return (
+    <Button variant="outline" size="sm" onClick={baixar} disabled={desabilitado}>
+      <Download className="mr-1.5 h-4 w-4" />
+      {baixando ? "Gerando…" : `Baixar PDFs${totalOk > 0 ? ` (${totalOk})` : ""}`}
+    </Button>
   );
 }
