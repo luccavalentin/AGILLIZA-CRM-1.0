@@ -13,7 +13,7 @@ import {
   Flame,
   Download,
   FilterX,
-  Plus,
+  MoreVertical,
   MoreVertical,
   Calendar,
   ArrowUpRight,
