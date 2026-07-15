@@ -803,6 +803,130 @@ export const inverterTitularSimulacao = createServerFn({ method: "POST" })
       })
       .eq("id", data.id);
     if (error) throw error;
+
+    // Após a inversão, garante que o novo titular (ex-cônjuge) e o novo
+    // cônjuge (ex-titular) estejam cadastrados no CRM > Clientes do
+    // ecossistema, para que qualquer fluxo posterior (proposta, chat,
+    // documentos, contrato) consiga localizá-los. Idempotente: se já existir
+    // cliente com o mesmo documento, apenas atualiza os campos informados.
+    try {
+      const { userId } = context;
+      const { data: me } = await supabase
+        .from("profiles")
+        .select("correspondente_id")
+        .eq("id", userId)
+        .maybeSingle();
+      const correspondenteId = (me as any)?.correspondente_id as string | undefined;
+      if (correspondenteId) {
+        const { data: podeCriar } = await supabase.rpc("usuario_tem_permissao", {
+          _user_id: userId,
+          _modulo: "crm.clientes",
+          _acao: "create",
+        });
+        if (podeCriar) {
+          const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+          const upsertCliente = async (params: {
+            nome: string | null;
+            documento: string | null;
+            dataNascimento: string | null;
+            email: string | null;
+            celular: string | null;
+            renda: number | null;
+            estadoCivil: string | null;
+            conjugeNome: string | null;
+            conjugeCpf: string | null;
+            conjugeDataNascimento: string | null;
+            conjugeEmail: string | null;
+            conjugeCelular: string | null;
+            conjugeRenda: number | null;
+          }) => {
+            const nome = (params.nome || "").trim();
+            const documento = (params.documento || "").replace(/\D+/g, "");
+            if (!nome || !documento || !params.dataNascimento) return;
+            const campos = {
+              nome,
+              email: (params.email || "").toLowerCase() || null,
+              telefone_celular: params.celular || null,
+              data_nascimento: params.dataNascimento,
+              renda_total_declarada: params.renda ?? 0,
+              estado_civil: (params.estadoCivil || "solteiro") as
+                | "solteiro"
+                | "casado"
+                | "divorciado"
+                | "viuvo"
+                | "uniao_estavel",
+              conjuge_nome: params.conjugeNome || null,
+              conjuge_cpf: params.conjugeCpf
+                ? params.conjugeCpf.replace(/\D+/g, "")
+                : null,
+              conjuge_data_nascimento: params.conjugeDataNascimento || null,
+              conjuge_email: params.conjugeEmail || null,
+              conjuge_celular: params.conjugeCelular || null,
+              conjuge_renda: params.conjugeRenda ?? null,
+            };
+            const { data: existente } = await supabaseAdmin
+              .from("clientes")
+              .select("id")
+              .eq("correspondente_id", correspondenteId)
+              .eq("documento", documento)
+              .maybeSingle();
+            if (existente?.id) {
+              await supabaseAdmin.from("clientes").update(campos).eq("id", existente.id);
+            } else {
+              await supabaseAdmin.from("clientes").insert({
+                correspondente_id: correspondenteId,
+                numero_cliente: "",
+                tipo_pessoa: "PF",
+                documento,
+                origem: "direto",
+                responsavel_id: userId,
+                criador_id: userId,
+                ...campos,
+              });
+            }
+          };
+
+          // Novo titular (dados do ex-cônjuge). O cônjuge dele passa a ser o ex-titular.
+          await upsertCliente({
+            nome: r.nome_conjuge,
+            documento: r.cpf_conjuge,
+            dataNascimento: r.data_nascimento_conjuge,
+            email: r.email_conjuge,
+            celular: r.celular_conjuge,
+            renda: r.renda_conjuge,
+            estadoCivil: r.estado_civil_conjuge || r.estado_civil,
+            conjugeNome: r.nome_cliente,
+            conjugeCpf: r.cpf_cnpj,
+            conjugeDataNascimento: r.data_nascimento,
+            conjugeEmail: r.email,
+            conjugeCelular: r.celular,
+            conjugeRenda: r.renda_total,
+          });
+          // Novo cônjuge (dados do ex-titular) — cadastrado também como cliente do ecossistema.
+          await upsertCliente({
+            nome: r.nome_cliente,
+            documento: r.cpf_cnpj,
+            dataNascimento: r.data_nascimento,
+            email: r.email,
+            celular: r.celular,
+            renda: r.renda_total,
+            estadoCivil: r.estado_civil || r.estado_civil_conjuge,
+            conjugeNome: r.nome_conjuge,
+            conjugeCpf: r.cpf_conjuge,
+            conjugeDataNascimento: r.data_nascimento_conjuge,
+            conjugeEmail: r.email_conjuge,
+            conjugeCelular: r.celular_conjuge,
+            conjugeRenda: r.renda_conjuge,
+          });
+        }
+      }
+    } catch (e) {
+      // Não bloqueia a inversão da simulação se o cadastro no CRM falhar;
+      // apenas registra em log para investigação.
+      console.error("[inverterTitularSimulacao] Falha ao sincronizar clientes:", e);
+    }
+
     return { ok: true };
   });
 
