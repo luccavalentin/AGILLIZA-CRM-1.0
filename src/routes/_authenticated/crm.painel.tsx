@@ -106,6 +106,8 @@ import {
   buscarClientesCRM,
   type PainelStage,
 } from "@/lib/crm/clientes.functions";
+import { listarParceiros } from "@/lib/crm/parceiros.functions";
+import { listarResponsaveisEquipe } from "@/lib/propostas/propostas.functions";
 
 import { usePipelineRealtime } from "@/hooks/use-pipeline-realtime";
 import { BancoLogo } from "@/components/bancos/banco-logo";
