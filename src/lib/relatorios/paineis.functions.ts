@@ -1247,9 +1247,8 @@ export const getPanelDrilldown = createServerFn({ method: "POST" })
           ) || 0;
         return {
           label: cliente.nome ?? "Cliente",
-          sub: [prop.numero_proposta && `Nº ${prop.numero_proposta}`, prop.nome_banco]
-            .filter(Boolean)
-            .join(" · "),
+          sub: prop.numero_proposta ? `Nº ${prop.numero_proposta}` : undefined,
+          banco: prop.nome_banco ?? undefined,
           valor: valorNum ? brlCompacto(valorNum) : undefined,
           data: fmtData(cliente.contrato_emitido_em),
           to: `/operacional/propostas/${prop.id}`,
