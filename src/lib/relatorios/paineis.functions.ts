@@ -1011,11 +1011,12 @@ function itemProposta(p: any): PanelDrilldownItem {
   const banco = (p.nome_banco as string | undefined) ?? "";
   const status = rotularStatus((p.status as string) ?? "", PROP_LABEL);
   const numero = (p.numero_proposta as string | undefined) ?? "";
-  const partes = [numero && `Nº ${numero}`, banco, status].filter(Boolean);
+  const partes = [numero && `Nº ${numero}`, status].filter(Boolean);
   const valorNum = Number(p.valor_financiamento_aprovado ?? p.valor_financiamento ?? 0) || 0;
   return {
     label: cliente,
     sub: partes.join(" · "),
+    banco: banco || undefined,
     valor: valorNum ? brlCompacto(valorNum) : undefined,
     data: fmtData(p.contrato_emitido_em ?? p.created_at),
     to: `/operacional/propostas/${p.id}`,
