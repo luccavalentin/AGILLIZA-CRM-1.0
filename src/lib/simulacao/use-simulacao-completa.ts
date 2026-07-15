@@ -761,7 +761,7 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
       cliente_id: null,
       nome_cliente: "",
       cpf_cnpj: "",
-      email: "",
+      email: EMAIL_PADRAO,
       celular: "",
       data_nascimento: "",
       estado_civil: "",
