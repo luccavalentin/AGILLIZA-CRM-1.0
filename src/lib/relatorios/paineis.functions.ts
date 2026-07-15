@@ -211,6 +211,7 @@ async function carregarContratosCliente(
     .select("cliente_id,status")
     .in("cliente_id", cliRowsAll.map((c) => c.id))
     .in("status", contratoStatus as any)
+    .is("deleted_at", null)
     .limit(5000);
   if (propRes.error) throw new Error(propRes.error.message);
   const clientesComContratoReal = new Set<string>(
@@ -292,6 +293,7 @@ async function carregarAnterior(
       supabase
         .from("propostas")
         .select("status,created_at")
+        .is("deleted_at", null)
         .gte("created_at", de)
         .lte("created_at", ateFim)
         .limit(5000),
@@ -375,6 +377,7 @@ export const getPanelDados = createServerFn({ method: "POST" })
             .select(
               "status,valor_financiamento_aprovado,valor_financiamento,nome_banco,created_at,contrato_emitido_em,usuario_responsavel_id",
             )
+            .is("deleted_at", null)
             .or(
               `and(created_at.gte.${de},created_at.lte.${ateFim}),and(contrato_emitido_em.gte.${de},contrato_emitido_em.lte.${ateFim})`,
             )
@@ -734,6 +737,7 @@ export const getPanelDados = createServerFn({ method: "POST" })
           .select(
             "status,valor_financiamento_aprovado,valor_financiamento,nome_banco,created_at,contrato_emitido_em",
           )
+          .is("deleted_at", null)
           .or(
             `and(created_at.gte.${de},created_at.lte.${ateFim}),and(contrato_emitido_em.gte.${de},contrato_emitido_em.lte.${ateFim})`,
           )
@@ -1060,6 +1064,7 @@ export const getPanelDrilldown = createServerFn({ method: "POST" })
           .select(
             "id,numero_proposta,status,nome_banco,valor_financiamento,valor_financiamento_aprovado,created_at,contrato_emitido_em,clientes(nome)",
           )
+          .is("deleted_at", null)
           .or(
             `and(created_at.gte.${de},created_at.lte.${ateFim}),and(contrato_emitido_em.gte.${de},contrato_emitido_em.lte.${ateFim})`,
           )
@@ -1107,7 +1112,8 @@ export const getPanelDrilldown = createServerFn({ method: "POST" })
         .from("propostas")
         .select("id,cliente_id,status,nome_banco,valor_financiamento_aprovado,valor_financiamento,numero_proposta")
         .in("cliente_id", ids)
-        .in("status", Array.from(CONTRATO_STATUS) as any);
+        .in("status", Array.from(CONTRATO_STATUS) as any)
+        .is("deleted_at", null);
       const propByCli = new Map<string, any>();
       for (const p of ((propRes.data ?? []) as any[])) {
         if (!propByCli.has(p.cliente_id)) propByCli.set(p.cliente_id, p);

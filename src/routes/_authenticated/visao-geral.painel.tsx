@@ -13,7 +13,7 @@ function Pagina() {
       eyebrow="Visão geral · Painel"
       titulo="Produção comercial"
       descricao="Como está a produção comercial agora."
-      realtimeTabelas={["propostas", "simulacoes"]}
+      realtimeTabelas={["propostas", "simulacoes", "clientes"]}
       abrirTo="/relatorios/painel-geral"
     />
   );

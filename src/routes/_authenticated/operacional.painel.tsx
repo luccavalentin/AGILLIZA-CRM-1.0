@@ -15,7 +15,7 @@ function Pagina() {
       eyebrow="Operacional · Painel"
       titulo="Execução operacional"
       descricao="Como está a execução de propostas, demandas e tarefas."
-      realtimeTabelas={["propostas", "demandas", "tasks"]}
+      realtimeTabelas={["propostas", "simulacoes", "demandas", "tasks", "clientes"]}
       abrirTo="/relatorios/operacionais"
     />
   );
