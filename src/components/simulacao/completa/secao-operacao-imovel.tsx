@@ -34,6 +34,8 @@ export function SecaoOperacaoImovel({ ctx }: { ctx: SimulacaoCompletaCtx }) {
     entradaMinimaEfetiva,
     financiamentoExcedido,
     maxPrazoIdade,
+    prazoMaximo,
+    restricaoEspecial,
     aplicarEntradaSugerida,
     aplicarPorFinanciamento,
     aplicarPorEntrada,
