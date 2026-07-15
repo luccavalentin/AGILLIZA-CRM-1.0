@@ -697,7 +697,7 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
       renda_total: Number(prev.renda_conjuge) || 0,
       data_nascimento: prev.data_nascimento_conjuge ?? "",
       estado_civil: prev.estado_civil_conjuge || prev.estado_civil,
-      email: prev.email_conjuge ?? "",
+      email: prev.email_conjuge || EMAIL_PADRAO,
       celular: prev.celular_conjuge ?? "",
       nome_conjuge: prev.nome_cliente ?? "",
       cpf_conjuge: prev.cpf_cnpj ?? "",
