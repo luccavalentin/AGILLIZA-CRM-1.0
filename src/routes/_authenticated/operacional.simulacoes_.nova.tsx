@@ -1,7 +1,7 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, FileText } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 
 import { assertModuloPermitido } from "@/lib/route-guards";
@@ -205,22 +205,14 @@ function Pagina() {
             melhorTaxaAno={melhorTaxaAno}
           />
 
-          <div className="grid grid-cols-1 gap-3 pt-1 sm:grid-cols-2">
+          <div className="pt-1">
             <Button
               variant="default"
-              className="h-12 gap-2 text-sm font-semibold"
+              className="h-12 w-full gap-2 text-sm font-semibold"
               disabled={!valido}
               onClick={simularRapida}
             >
-              Simulação rápida
-            </Button>
-            <Button
-              variant="secondary"
-              className="h-12 gap-2 text-sm font-semibold"
-              disabled={!valido}
-              onClick={() => irParaCompleta()}
-            >
-              <FileText className="h-4 w-4" /> Simulação completa
+              Simular
             </Button>
           </div>
         </div>
