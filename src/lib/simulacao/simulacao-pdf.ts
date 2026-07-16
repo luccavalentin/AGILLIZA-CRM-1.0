@@ -696,7 +696,7 @@ export function baixarSimulacaoSimplificadaPDF({
     drawFooter(doc, pageW, pageH, p, total);
   }
 
-  return salvar(doc, s, "simplificada", lista);
+  return salvar(doc, s, "simplificada", lista, filePrefix);
 }
 
 /** Monta o extrato detalhado: cabeçalho + TODAS as parcelas, um banco por folha. */
@@ -939,7 +939,7 @@ function rendaNecessaria(s: any, bancos: any[]): number | null {
  * Nome de arquivo descritivo pedido pela operação, ex.:
  * "Bradesco,Caixa-SAC-C e V 420k - Finan 350k - 420 meses - renda 28k".
  */
-function nomeDescritivo(s: any, bancos: any[]): string {
+export function nomeDescritivo(s: any, bancos: any[]): string {
   const nomes = bancos.map((b) => b?.nome_banco).filter(Boolean);
   const bancoTxt = nomes.length ? Array.from(new Set(nomes)).join(",") : "Simulacao";
   const tabela = tabelaLabel(s, bancos);
@@ -985,11 +985,13 @@ function baixarBlob(blob: Blob, filename: string) {
   window.setTimeout(() => URL.revokeObjectURL(url), 30_000);
 }
 
-function salvar(doc: jsPDF, s: any, _tipo: string, bancos: any[] = []): jsPDF {
-  const nome = sanitizarNomeArquivo(nomeDescritivo(s, bancos));
+function salvar(doc: jsPDF, s: any, _tipo: string, bancos: any[] = [], filePrefix?: string): jsPDF {
+  const base = filePrefix && filePrefix.trim() ? filePrefix : nomeDescritivo(s, bancos);
+  const nome = sanitizarNomeArquivo(base);
   baixarBlob(doc.output("blob"), `${nome}.pdf`);
   return doc;
 }
+
 
 // ---------------------------------------------------------------------------
 // Compatibilidade: detalhe de um único banco = extrato detalhado com 1 banco
