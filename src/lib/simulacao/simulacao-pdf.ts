@@ -825,8 +825,8 @@ export function baixarSimulacaoDetalhadaPDF(input: SimulacaoPdfInput) {
 }
 
 /**
- * Baixa TODOS os bancos simulados em um ÚNICO arquivo PDF (uma folha por banco).
- * Substitui a antiga geração em ZIP — o usuário quer PDF, não pacote compactado.
+ * Compatibilidade do nome antigo: baixa um PDF separado para cada banco.
+ * Não gera ZIP e não junta os bancos em arquivo único.
  */
 export async function baixarSimulacoesDetalhadasZipPDF(input: SimulacaoPdfInput) {
   return baixarSimulacoesDetalhadasAgrupadasZipPDF([
@@ -834,7 +834,10 @@ export async function baixarSimulacoesDetalhadasZipPDF(input: SimulacaoPdfInput)
   ]);
 }
 
-/** Baixa PDFs detalhados de uma ou mais simulações em um ÚNICO PDF (páginas concatenadas). */
+/**
+ * Baixa PDFs detalhados de uma ou mais simulações como arquivos individuais:
+ * 1 banco/tabela = 1 PDF nomeado de forma clara.
+ */
 export async function baixarSimulacoesDetalhadasAgrupadasZipPDF(
   grupos: Array<{ simulacao: any; bancos: any[] }>,
 ) {
@@ -844,37 +847,23 @@ export async function baixarSimulacoesDetalhadasAgrupadasZipPDF(
 
   if (gruposValidos.length === 0) throw new Error("Nenhum banco disponível para gerar PDF.");
 
-  // Grupo único: usa direto o fluxo detalhado (já concatena N bancos em N páginas).
-  if (gruposValidos.length === 1) {
-    baixarSimulacaoDetalhadaPDF({
-      simulacao: gruposValidos[0].simulacao,
-      bancos: gruposValidos[0].bancos,
-    });
-    return gruposValidos[0].bancos.length;
-  }
-
-  // Múltiplas simulações (ex.: SAC + PRICE): renderiza cada uma como PDF
-  // detalhado e mescla tudo em um único documento com pdf-lib.
-  const { PDFDocument } = await import("pdf-lib");
-  const merged = await PDFDocument.create();
   let total = 0;
+  const nomesUsados = new Set<string>();
 
   for (const g of gruposValidos) {
-    const { doc } = criarDocSimulacaoDetalhada({ simulacao: g.simulacao, bancos: g.bancos });
-    const bytes = doc.output("arraybuffer");
-    const src = await PDFDocument.load(bytes);
-    const pages = await merged.copyPages(src, src.getPageIndices());
-    pages.forEach((p) => merged.addPage(p));
-    total += g.bancos.length;
+    for (const banco of g.bancos) {
+      const base = `${nomeDescritivo(g.simulacao, [banco])}.pdf`;
+      const filename = nomeArquivoUnico(base, nomesUsados);
+      const { doc } = criarDocSimulacaoDetalhada({
+        simulacao: g.simulacao,
+        bancos: [banco],
+        filePrefix: filename.replace(/\.pdf$/i, ""),
+      });
+      baixarBlob(doc.output("blob"), filename);
+      total += 1;
+    }
   }
 
-  const primeira = gruposValidos[0]?.simulacao;
-  const ref = primeira?.numero_simulacao ? ` ${primeira.numero_simulacao}` : "";
-  const outBytes = await merged.save();
-  const ab = new ArrayBuffer(outBytes.byteLength);
-  new Uint8Array(ab).set(outBytes);
-  const blob = new Blob([ab], { type: "application/pdf" });
-  baixarBlob(blob, `${sanitizarNomeArquivo(`Simulação${ref} — detalhada`)}.pdf`);
   return total;
 }
 
