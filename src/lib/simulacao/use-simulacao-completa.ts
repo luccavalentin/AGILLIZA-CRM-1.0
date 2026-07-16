@@ -967,19 +967,23 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
           },
         });
         idsGerados.push(id);
-        for (const bid of f.bancos_sac_ids) {
-          try {
-            await enviarSimulacaoBanco({ data: { simulacao_id: id, banco_ids: [bid] } });
-          } catch (e) {
-            toast.error(
-              e instanceof Error
-                ? e.message
-                : "Falha ao enviar a um banco (SAC). Você pode reenviar na tela da simulação.",
-            );
-          }
-          done++;
-          setConcluidos(done);
-        }
+        await Promise.all(
+          f.bancos_sac_ids.map(async (bid) => {
+            try {
+              await enviarSimulacaoBanco({ data: { simulacao_id: id, banco_ids: [bid] } });
+            } catch (e) {
+              toast.error(
+                e instanceof Error
+                  ? e.message
+                  : "Falha ao enviar a um banco (SAC). Você pode reenviar na tela da simulação.",
+              );
+            } finally {
+              done++;
+              setConcluidos(done);
+            }
+          }),
+        );
+
       }
 
       // Simulação PRICE (usa a renda específica para PRICE como renda_total)
