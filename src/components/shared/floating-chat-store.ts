@@ -6,6 +6,7 @@ export type FloatingChatState =
       kind: "cliente";
       clienteId: string;
       info?: ChatClienteInfo;
+      minimized?: boolean;
     }
   | {
       kind: "demanda";
@@ -15,6 +16,7 @@ export type FloatingChatState =
         titulo?: string | null;
         statusLabel?: string | null;
       };
+      minimized?: boolean;
     };
 
 let estado: FloatingChatState | null = null;
@@ -25,8 +27,12 @@ function emitir() {
 }
 
 /** Abre (ou troca) a conversa do cliente em janela flutuante global. */
-export function abrirChatFlutuante(clienteId: string, info?: ChatClienteInfo) {
-  estado = { kind: "cliente", clienteId, info };
+export function abrirChatFlutuante(
+  clienteId: string,
+  info?: ChatClienteInfo,
+  opts?: { minimized?: boolean },
+) {
+  estado = { kind: "cliente", clienteId, info, minimized: opts?.minimized };
   emitir();
 }
 
@@ -34,8 +40,9 @@ export function abrirChatFlutuante(clienteId: string, info?: ChatClienteInfo) {
 export function abrirDemandaChatFlutuante(
   demandaId: string,
   info?: Extract<FloatingChatState, { kind: "demanda" }>["info"],
+  opts?: { minimized?: boolean },
 ) {
-  estado = { kind: "demanda", demandaId, info };
+  estado = { kind: "demanda", demandaId, info, minimized: opts?.minimized };
   emitir();
 }
 

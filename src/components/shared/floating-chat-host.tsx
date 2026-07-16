@@ -19,6 +19,7 @@ export function FloatingChatHost() {
       <FloatingWindow
         title={`Demanda · ${flutuante.info?.numero ?? "Conversa"}`}
         onClose={fecharChatFlutuante}
+        startMinimized={flutuante.minimized}
       >
         <div className="h-full min-h-[24rem]">
           <DemandaChatConversa
@@ -35,6 +36,7 @@ export function FloatingChatHost() {
     <FloatingWindow
       title={`Conversa · ${flutuante.info?.nome ?? "Cliente"}`}
       onClose={fecharChatFlutuante}
+      startMinimized={flutuante.minimized}
     >
       <div className="h-full min-h-[24rem]">
         <ChatClienteConversa

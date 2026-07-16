@@ -1,9 +1,10 @@
 import { useEffect, useRef } from "react";
-import { toast } from "sonner";
-import { useRouter } from "@tanstack/react-router";
-import { MessageSquare } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { signalIncomingChat } from "@/components/shared/chat-alert-store";
+import {
+  abrirChatFlutuante,
+  abrirDemandaChatFlutuante,
+} from "@/components/shared/floating-chat-store";
 
 interface Props {
   /** ID do usuário logado — usado para não abrir chat quando ele mesmo é o autor. */
@@ -12,13 +13,11 @@ interface Props {
 
 /**
  * Observador global: escuta novas mensagens de qualquer chat (cliente e
- * demanda), dispara alerta (som + pisca do menu) e mostra um card compacto
- * (toast) preservando a privacidade — só nº da demanda / nome do cliente e
- * um botão "Ver" que leva para a tela original do chat.
+ * demanda), dispara alerta sonoro/pisca do menu e abre a janela do próprio
+ * chat MINIMIZADA (canto superior direito) exibindo apenas o identificador
+ * (nº da demanda / nome do cliente). O usuário decide quando expandir.
  */
 export function ChatAlertWatcher({ meuId }: Props) {
-  const router = useRouter();
-  // Evita disparar múltiplos toasts para a mesma mensagem em StrictMode.
   const vistos = useRef<Set<string>>(new Set());
 
   useEffect(() => {
@@ -52,19 +51,11 @@ export function ChatAlertWatcher({ meuId }: Props) {
             .maybeSingle();
           const nome = (cli?.nome as string | null) ?? "Cliente";
 
-          const clienteId = row.cliente_id;
-          toast("Nova mensagem", {
-            description: `Cliente · ${nome}`,
-            icon: <MessageSquare className="h-4 w-4" />,
-            action: {
-              label: "Ver",
-              onClick: () =>
-                router.navigate({
-                  to: "/crm/chat",
-                  search: { c: clienteId },
-                }),
-            },
-          });
+          abrirChatFlutuante(
+            row.cliente_id,
+            { nome },
+            { minimized: true },
+          );
         },
       )
       .subscribe();
@@ -96,19 +87,13 @@ export function ChatAlertWatcher({ meuId }: Props) {
             .eq("id", row.demanda_id)
             .maybeSingle();
           const numero = (dem?.numero as string | null) ?? "—";
-          const demandaId = row.demanda_id;
-          toast("Nova mensagem", {
-            description: `Demanda · ${numero}`,
-            icon: <MessageSquare className="h-4 w-4" />,
-            action: {
-              label: "Ver",
-              onClick: () =>
-                router.navigate({
-                  to: "/operacional/demandas/$id",
-                  params: { id: demandaId },
-                }),
-            },
-          });
+          const titulo = (dem?.titulo as string | null) ?? null;
+
+          abrirDemandaChatFlutuante(
+            row.demanda_id,
+            { numero, titulo },
+            { minimized: true },
+          );
         },
       )
       .subscribe();
@@ -117,7 +102,7 @@ export function ChatAlertWatcher({ meuId }: Props) {
       supabase.removeChannel(canalCliente);
       supabase.removeChannel(canalDemanda);
     };
-  }, [meuId, router]);
+  }, [meuId]);
 
   return null;
 }
