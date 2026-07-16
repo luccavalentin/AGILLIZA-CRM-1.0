@@ -35,7 +35,7 @@ type Props = {
   onDuplicar: () => void;
   onEditar: () => void;
   onInverterTitular: (reenviar: boolean) => void;
-  onExcluir: () => void;
+  onExcluir: () => Promise<void> | void;
 };
 
 export function HeaderAcoes({
