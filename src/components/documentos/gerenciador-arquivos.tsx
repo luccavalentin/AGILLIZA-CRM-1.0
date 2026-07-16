@@ -44,6 +44,14 @@ import {
   NovaPastaDialog,
   RenomearDialog,
 } from "./gerenciador/dialogos-arquivo";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 
 export interface GerenciadorArquivosProps {
   /** Pasta inicial (id) ao montar. */
