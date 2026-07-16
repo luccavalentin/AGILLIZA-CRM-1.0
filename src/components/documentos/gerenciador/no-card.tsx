@@ -1,5 +1,7 @@
 import {
   Download,
+  Eye,
+  EyeOff,
   Folder,
   FolderOpen,
   MoreVertical,
@@ -27,6 +29,7 @@ export interface NoCardProps {
   onRenomear: (no: ArquivoNo) => void;
   onMover: (no: ArquivoNo) => void;
   onExcluir: (no: ArquivoNo) => void;
+  onAlternarMenu?: (no: ArquivoNo) => void;
 }
 
 /** Card de um único nó (pasta ou arquivo) com o menu de ações. */
