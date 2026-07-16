@@ -109,18 +109,35 @@ function BotaoAcao({
   );
 }
 
-function Stepper({ atualIdx }: { atualIdx: number }) {
+function Stepper({
+  atualIdx,
+  encerradaMotivo,
+}: {
+  atualIdx: number;
+  encerradaMotivo: "recusado" | "cancelada" | null;
+}) {
   return (
     <div>
       <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
         Status e etapa
       </p>
-      <Badge
-        variant="secondary"
-        className="mb-3 rounded-full border-primary/20 bg-primary/10 px-2.5 py-0.5 text-[11px] font-medium text-primary"
-      >
-        {MACRO_STAGES[atualIdx]?.label ?? "Em análise"}
-      </Badge>
+      {encerradaMotivo ? (
+        <Badge
+          variant="secondary"
+          className="mb-3 inline-flex items-center gap-1 rounded-full border-destructive/25 bg-destructive/10 px-2.5 py-0.5 text-[11px] font-medium text-destructive"
+        >
+          <AlertOctagon className="size-3" />
+          {encerradaMotivo === "recusado" ? "Crédito recusado — encerrada" : "Proposta cancelada"}
+        </Badge>
+      ) : (
+        <Badge
+          variant="secondary"
+          className="mb-3 rounded-full border-primary/20 bg-primary/10 px-2.5 py-0.5 text-[11px] font-medium text-primary"
+        >
+          {MACRO_STAGES[atualIdx]?.label ?? "Em análise"}
+        </Badge>
+      )}
+
       <div className="flex items-start justify-between gap-1">
         {MACRO_STAGES.map((s, i) => {
           const feito = i < atualIdx;
