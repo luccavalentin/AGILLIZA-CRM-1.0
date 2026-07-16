@@ -53,7 +53,7 @@ export function ChatAlertWatcher({ meuId }: Props) {
 
           abrirChatFlutuante(
             row.cliente_id,
-            { id: row.cliente_id, nome },
+            { nome },
             { minimized: true },
           );
         },
