@@ -406,8 +406,10 @@ export function DocumentosGerais() {
       dim = "analista";
       base = analistasFiltro;
       tipo = "analista";
-      semKey = "__sem_analista__";
-      semNome = "Sem analista";
+      // Regra: todo cliente cadastrado tem analista (criador). Nunca criamos
+      // uma pasta "Sem analista" — clientes órfãos ficam soltos na raiz.
+      semKey = "";
+      semNome = "";
     }
 
     const map = new Map<string, PastaNode>();
@@ -424,27 +426,50 @@ export function DocumentosGerais() {
     for (const b of base) garantir(`${prefix}${b.id}`, titulo(b.nome));
 
     // Vincula clientes apenas às pastas cadastradas; se o ID não estiver na
-    // base (ex.: criador que não é analista), o cliente cai em "Sem …".
+    // base (só imob/corr), o cliente cai em "Sem …". Na visão de analistas
+    // não existe fallback: o criador sempre está na base.
     const idsBase = new Set(base.map((b) => b.id));
+    const clientesSoltos: DGCliente[] = [];
     for (const c of clientes) {
       const id =
         dim === "imob" ? c.imobiliaria_id : dim === "corr" ? c.corretor_id : c.analista_id;
       const nome =
         dim === "imob" ? c.imobiliaria_nome : dim === "corr" ? c.corretor_nome : c.analista_nome;
-      const key = id && idsBase.has(id) ? `${prefix}${id}` : semKey;
-      const node = garantir(key, id && idsBase.has(id) ? titulo(nome) : semNome);
-      node.clientes.push(c);
+      if (id && idsBase.has(id)) {
+        const node = garantir(`${prefix}${id}`, titulo(nome));
+        node.clientes.push(c);
+      } else if (semKey) {
+        const node = garantir(semKey, semNome);
+        node.clientes.push(c);
+      } else {
+        clientesSoltos.push(c);
+      }
     }
 
     const lista = Array.from(map.values());
     lista.forEach(finalizar);
     lista.sort((a, b) => {
-      const aSem = a.key === semKey;
-      const bSem = b.key === semKey;
+      const aSem = semKey ? a.key === semKey : false;
+      const bSem = semKey ? b.key === semKey : false;
       if (aSem !== bSem) return aSem ? 1 : -1;
       return a.nome.localeCompare(b.nome, "pt-BR");
     });
+    // Clientes órfãos (sem analista tipado) aparecem soltos como pseudo-pastas
+    // "cliente" ao final — mantém a promessa de "não criar pasta fake".
+    if (clientesSoltos.length > 0 && visao === "analistas") {
+      for (const c of clientesSoltos) {
+        lista.push({
+          key: `cli:${c.cliente_id}`,
+          nome: titulo(c.nome),
+          tipo: "analista",
+          subpastas: [],
+          clientes: [c],
+          total_clientes: 1,
+        });
+      }
+    }
     return lista;
+
   }, [visao, raizes, clientes, imobiliariasFiltro, corretoresFiltro, analistasFiltro]);
 
   // Traça o caminho atual na árvore, coletando as pastas percorridas.
