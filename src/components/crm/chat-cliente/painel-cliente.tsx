@@ -391,7 +391,7 @@ export function PainelChatCliente({
 
 
             {/* Status e etapa (stepper) */}
-            <Stepper atualIdx={atualIdx} />
+            <Stepper atualIdx={atualIdx} encerradaMotivo={encerradaMotivo} />
 
             {/* Ações rápidas */}
             <div>
