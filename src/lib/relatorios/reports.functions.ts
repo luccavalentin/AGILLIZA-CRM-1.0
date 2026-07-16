@@ -1906,7 +1906,7 @@ export const runReport = createServerFn({ method: "POST" })
 
     async function relFinanceiro(): Promise<ReportResult> {
       const filtrarStatus = (q: any) => (filtros.status ? q.eq("status", filtros.status) : q);
-      const [pag, rec] = await Promise.all([
+      const [pag, rec, repasses, comUsr] = await Promise.all([
         filtrarStatus(
           supabase
             .from("financial_payables")
@@ -1923,6 +1923,20 @@ export const runReport = createServerFn({ method: "POST" })
             .lte("created_at", ateFim)
             .limit(5000),
         ).then((r: any) => r.data ?? []),
+        (supabase as any)
+          .from("comissoes")
+          .select("valor_bruto,split_parceiro,split_interno,status,usuario_responsavel_id,nome_banco,created_at")
+          .gte("created_at", de)
+          .lte("created_at", ateFim)
+          .limit(5000)
+          .then((r: any) => r.data ?? []),
+        (supabase as any)
+          .from("comissoes_usuario")
+          .select("valor_comissao,valor_base,percentual,status,usuario_id,tipo_vinculo,banco_nome,numero_proposta,created_at")
+          .gte("created_at", de)
+          .lte("created_at", ateFim)
+          .limit(5000)
+          .then((r: any) => r.data ?? []),
       ]);
       const hoje = new Date();
       const hojeStr = hoje.toISOString().slice(0, 10);
