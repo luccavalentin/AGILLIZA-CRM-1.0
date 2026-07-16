@@ -450,6 +450,15 @@ export function CentralChatPage() {
                     Abrir demanda
                   </Link>
                 </Button>
+                <ConversaMenuAcoes
+                  chatTipo="demanda"
+                  chatId={selecionado.demandaId}
+                  arquivado={!!estadoPor.get(chaveConversa("demanda", selecionado.demandaId))?.arquivado_em}
+                  fixado={!!estadoPor.get(chaveConversa("demanda", selecionado.demandaId))?.pinado_em}
+                  apelidoAtual={estadoPor.get(chaveConversa("demanda", selecionado.demandaId))?.apelido ?? null}
+                  nomeReferencia={selecionado.interlocutorNome ?? selecionado.titulo ?? selecionado.numero}
+                  etiquetaIds={etiquetaPor.get(chaveConversa("demanda", selecionado.demandaId)) ?? []}
+                />
               </div>
               <div className="min-h-0 flex-1">
                 <DemandaChatConversa
