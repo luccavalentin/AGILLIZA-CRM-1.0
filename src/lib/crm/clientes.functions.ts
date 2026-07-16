@@ -1462,18 +1462,24 @@ export const buscarClientesCRM = createServerFn({ method: "GET" })
     return rows ?? [];
   });
 
-/** Exclui um cliente (e seus registros dependentes via cascata). */
+/**
+ * Exclui um cliente por soft delete (`deleted_at`) e propaga o soft delete para
+ * simulações, propostas, demandas e tasks vinculadas. Não apaga fisicamente
+ * nenhum registro financeiro (comissões/recebíveis/pagáveis continuam íntegros
+ * e permanecem contabilizados até que sejam explicitamente cancelados no
+ * módulo financeiro). Um administrador pode restaurar tudo pela aba "Excluídos".
+ */
 export const excluirCliente = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .inputValidator((d: unknown) =>
+    z.object({ id: z.string().uuid(), motivo: z.string().max(500).optional() }).parse(d),
+  )
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const { supabase, userId } = context;
     const cid = data.id;
 
     // Permite excluir se: (a) tem permissão explícita no módulo, OU
-    // (b) é o próprio criador do cliente. A RLS do banco já autoriza o criador,
-    // mas fazíamos aqui uma checagem restrita a admin/gestor que barrava
-    // analistas/comerciais de excluírem seus próprios cadastros.
+    // (b) é o próprio criador do cliente.
     const permitido = await podeAcao(supabase, userId, "crm.clientes", "delete");
     if (!permitido) {
       const { data: dono } = await supabase
@@ -1486,52 +1492,24 @@ export const excluirCliente = createServerFn({ method: "POST" })
       }
     }
 
-    // Usa o cliente administrativo para remover cliente e dependências mesmo
-    // quando a RLS restringiria o DELETE em cascata.
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const agora = new Date().toISOString();
+    const motivo = data.motivo ?? "Cliente excluído pelo CRM.";
 
-
-    // Propostas do cliente -> limpa comissões/recebíveis vinculados antes.
-    const { data: props } = await supabaseAdmin
-      .from("propostas")
-      .select("id")
-      .eq("cliente_id", cid);
-    const propIds = (props ?? []).map((p: any) => p.id);
-    if (propIds.length > 0) {
-      await supabaseAdmin.from("comissoes").delete().in("proposta_id", propIds);
-      await supabaseAdmin.from("financial_receivables").delete().in("proposta_id", propIds);
+    // Soft delete em cascata (mesmo padrão de limparVinculoEsteira).
+    for (const tabela of ["propostas", "simulacoes", "demandas", "tasks"] as const) {
+      await supabaseAdmin
+        .from(tabela)
+        .update({ deleted_at: agora, deleted_by: userId, deleted_motivo: motivo } as any)
+        .eq("cliente_id", cid)
+        .is("deleted_at", null);
     }
 
-    // Remove todos os registros dependentes que referenciam este cliente.
-    const tabelasDependentes = [
-      "cliente_app_acessos",
-      "cliente_app_mensagens",
-      "cliente_app_notificacoes",
-      "cliente_documento_pastas",
-      "cliente_documentos",
-      "cliente_enderecos",
-      "cliente_historico",
-      "cliente_imoveis",
-      "cliente_interacoes",
-      "cliente_parceiros",
-      "cliente_pipeline",
-      "cliente_pipeline_historico",
-      "cliente_portal_acessos",
-      "cliente_vendedores",
-      "crm_chat_cliente_etiquetas",
-      "crm_chat_meta",
-      "demandas",
-      "proposta_envolvidos",
-      "propostas",
-      "scan_ia_leituras",
-      "simulacoes",
-      "tasks",
-    ] as const;
-    for (const tabela of tabelasDependentes) {
-      await supabaseAdmin.from(tabela as any).delete().eq("cliente_id", cid);
-    }
-
-    const { error } = await supabaseAdmin.from("clientes").delete().eq("id", cid);
+    // Soft delete do próprio cliente.
+    const { error } = await supabaseAdmin
+      .from("clientes")
+      .update({ deleted_at: agora, deleted_by: userId, deleted_motivo: motivo } as any)
+      .eq("id", cid);
     if (error) throw error;
 
     const { data: corr } = await supabase.rpc("correspondente_do_usuario", { _user_id: userId });
@@ -1542,7 +1520,8 @@ export const excluirCliente = createServerFn({ method: "POST" })
       correspondenteId: corr ?? null,
       acao: "cliente.excluir",
       entidade: "clientes",
-      entidadeId: data.id,
+      entidadeId: cid,
+      payloadNovo: { motivo, tipo: "soft_delete" },
     });
     return { ok: true };
   });
