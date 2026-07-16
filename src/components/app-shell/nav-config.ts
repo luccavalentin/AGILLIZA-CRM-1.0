@@ -391,18 +391,6 @@ export const navInterno: NavGroup[] = [
             perm: { modulo: "admin.integracoes" },
           },
           {
-            label: "Regras de repasse",
-            icon: Percent,
-            to: "/admin/comissoes",
-            perm: { modulo: "admin.comissoes" },
-          },
-          {
-            label: "SLA & Feriados",
-            icon: Timer,
-            to: "/admin/sla",
-            perm: { modulo: "admin.sla" },
-          },
-          {
             label: "Backup",
             icon: DatabaseBackup,
             to: "/admin/backup",
