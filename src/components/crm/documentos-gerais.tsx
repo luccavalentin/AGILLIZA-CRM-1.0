@@ -7,7 +7,6 @@ import {
   FolderOpen,
   ChevronLeft,
   ChevronRight,
-  User,
   Users,
   FileText,
   ClipboardList,
@@ -16,8 +15,6 @@ import {
   Briefcase,
   IdCard,
   X,
-  Printer,
-  Cloud,
   Trash2,
   LayoutGrid,
   List,
@@ -26,8 +23,6 @@ import {
   Lock,
   FolderKanban,
   Users2,
-  Check,
-  ChevronsUpDown,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -40,154 +35,42 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { DocumentosTab } from "@/components/crm/documentos-tab";
 import {
   explorarDocumentosGerais,
-  obterFichaConsolidada,
   SEM_COMERCIAL_LABEL,
   type DGCliente,
 } from "@/lib/crm/documentos-gerais.functions";
-import { imprimirFichaPDF } from "@/lib/crm/ficha-pdf";
 import { GerenciadorArquivos } from "@/components/documentos/gerenciador-arquivos";
-
-
-const brl = (n: number | null | undefined) =>
-  n == null ? "—" : n.toLocaleString("pt-BR", {  style: "currency", currency: "BRL" });
-
-function fmtData(v: string | null | undefined) {
-  if (!v) return "—";
-  const d = new Date(v);
-  if (Number.isNaN(d.getTime())) return String(v);
-  return d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
-}
-
-const SEM_CORRETOR = "Sem corretor vinculado";
-const SEM_CORRETOR_KEY = "__sem_corretor__";
-const SEM_IMOB = "Sem imobiliária";
-const SEM_IMOB_KEY = "__sem_imob__";
-const SEM_COMERCIAL_KEY = "__sem_comercial__";
-
-// Palavras que permanecem minúsculas no meio do nome.
-const MINUSCULAS = new Set(["de", "da", "do", "das", "dos", "e", "di", "du"]);
-
-/** Formata nomes em Maiúscula/minúscula corretas ("NOVA SOLUÇÃO" → "Nova Solução"). */
-function titulo(s: string | null | undefined): string {
-  if (!s || !s.trim()) return "—";
-  return s
-    .toLowerCase()
-    .replace(/\S+/g, (palavra, offset: number) => {
-      if (offset !== 0 && MINUSCULAS.has(palavra)) return palavra;
-      return palavra.charAt(0).toUpperCase() + palavra.slice(1);
-    });
-}
-
-/** Primeiro nome já formatado ("LUCCA VALENTIN" → "Lucca"). */
-function primeiroNome(s: string | null | undefined): string {
-  const t = titulo(s);
-  return t === "—" ? "" : t.split(" ")[0];
-}
-
-/** Formata documento (CPF/CNPJ) com máscara parcial estilo "389.***.***-20". */
-function formatarDocumento(v: string | null | undefined): string | null {
-  if (!v) return null;
-  const digits = v.replace(/\D/g, "");
-  if (digits.length === 11) {
-    return `CPF: ${digits.slice(0, 3)}.***.***-${digits.slice(9)}`;
-  }
-  if (digits.length === 14) {
-    return `CNPJ: ${digits.slice(0, 2)}.***.***/****-${digits.slice(12)}`;
-  }
-  return v;
-}
-
-type PastaTipo = "raiz" | "comercial" | "imob" | "corretor" | "analista";
-type Aba = "cliente" | "comercial" | "imobiliaria" | "corretor" | "analista" | "lixeira";
-type OrdemChave = "nome-asc" | "nome-desc" | "docs-desc" | "docs-asc";
-type ModoLista = "grid" | "lista";
-
-/** Modo de navegação: hierarquia completa ou visão agregada por dimensão. */
-type Visao = "hierarquia" | "imobiliarias" | "corretores" | "analistas" | "clientes";
-
-
-const RAIZ_KEY = "__raiz_principal__";
-const RAIZ_NOME = "Pasta Comercial e documentos de clientes";
-
-/** Rótulo e cor da etiqueta que identifica o nível da pasta. */
-const PASTA_BADGE: Record<PastaTipo, { label: string; classe: string }> = {
-  raiz: {
-    label: "Pasta principal",
-    classe: "border-primary/25 bg-primary/10 text-primary",
-  },
-  comercial: {
-    label: "Comercial Agilliza",
-    classe: "border-primary/25 bg-primary/10 text-primary",
-  },
-  imob: {
-    label: "Imobiliária",
-    classe: "border-primary/25 bg-primary/10 text-primary",
-  },
-  corretor: {
-    label: "Corretor",
-    classe: "border-primary/25 bg-primary/10 text-primary",
-  },
-  analista: {
-    label: "Analista",
-    classe: "border-primary/25 bg-primary/10 text-primary",
-  },
-};
-
-
-interface PastaNode {
-  key: string;
-  nome: string;
-  tipo: PastaTipo;
-  subpastas: PastaNode[];
-  clientes: DGCliente[];
-  total_clientes: number;
-  /** Analistas (criadores) marcados como etiqueta na pasta comercial. */
-  analistas?: Map<string, string>;
-}
-
-function garantirFilho(pai: PastaNode, key: string, nome: string, tipo: PastaTipo): PastaNode {
-  let filho = pai.subpastas.find((p) => p.key === key);
-  if (!filho) {
-    filho = { key, nome, tipo, subpastas: [], clientes: [], total_clientes: 0 };
-    pai.subpastas.push(filho);
-  }
-  return filho;
-}
-
-function finalizar(node: PastaNode): number {
-  let total = node.clientes.length;
-  for (const s of node.subpastas) total += finalizar(s);
-  node.subpastas.sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
-  node.clientes.sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
-  node.total_clientes = total;
-  return total;
-}
+import {
+  finalizar,
+  garantirFilho,
+  primeiroNome,
+  titulo,
+  SEM_COMERCIAL_KEY,
+  SEM_CORRETOR,
+  SEM_CORRETOR_KEY,
+  SEM_IMOB,
+  SEM_IMOB_KEY,
+  type Aba,
+  type ModoLista,
+  type OrdemChave,
+  type PastaNode,
+  type PastaTipo,
+  type Visao,
+} from "@/components/crm/documentos-gerais/helpers";
+import { FiltroPesquisa } from "@/components/crm/documentos-gerais/filtro-pesquisa";
+import { Paginador } from "@/components/crm/documentos-gerais/paginador";
+import { CardPasta } from "@/components/crm/documentos-gerais/card-pasta";
+import { CardCliente } from "@/components/crm/documentos-gerais/card-cliente";
+import { FichaDialog } from "@/components/crm/documentos-gerais/ficha-dialog";
 
 export function DocumentosGerais() {
   const explorar = useServerFn(explorarDocumentosGerais);
@@ -248,7 +131,6 @@ export function DocumentosGerais() {
   const matchAnalista = (c: DGCliente) =>
     filtroAnalista === "todos" || c.analista_id === filtroAnalista;
 
-  // Clientes após aplicar TODOS os filtros.
   const clientesFiltrados = useMemo(() => {
     return clientes.filter(
       (c) =>
@@ -261,7 +143,6 @@ export function DocumentosGerais() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clientes, busca, filtroComercial, filtroImob, filtroCorr, filtroAnalista]);
 
-  // Visão geral (KPIs) — sempre sobre a base completa, para dar contexto no topo.
   const resumo = useMemo(() => {
     const imobs = new Set<string>();
     const corrs = new Set<string>();
@@ -280,12 +161,8 @@ export function DocumentosGerais() {
     };
   }, [clientes, comerciaisBase]);
 
-
   // Árvore de pastas (hierarquia oficial):
   //   Comercial Agilliza → Imobiliária → Corretor → Cliente
-  // Cada comercial vira uma pasta solta no primeiro nível (sem envelopar tudo
-  // em uma "pasta principal"). Dentro do comercial ficam suas imobiliárias e,
-  // sob cada imobiliária, os corretores e clientes.
   const raizes = useMemo<PastaNode[]>(() => {
     const comerciais = new Map<string, PastaNode>();
 
@@ -305,7 +182,6 @@ export function DocumentosGerais() {
       return com;
     }
 
-    // Semeia uma pasta para cada comercial cadastrado na base (mesmo sem clientes).
     for (const cm of comerciaisBase) {
       garantirComercial(`com:${cm.id}`, titulo(cm.nome));
     }
@@ -315,7 +191,6 @@ export function DocumentosGerais() {
       const comNome = c.comercial_id ? titulo(c.comercial_nome) : SEM_COMERCIAL_LABEL;
       const com = garantirComercial(comKey, comNome);
 
-      // Sem imobiliária: usa "Avulso · <primeiro nome do comercial>".
       const semImobNome = c.comercial_id
         ? `Avulso · ${primeiroNome(c.comercial_nome)}`.trim().replace(/·\s*$/, "").trim()
         : SEM_IMOB;
@@ -341,11 +216,6 @@ export function DocumentosGerais() {
     return lista;
   }, [clientes, comerciaisBase]);
 
-  // Árvore agregada conforme a visão escolhida (sempre lista solta no topo):
-  //  - "hierarquia": cards de comerciais → Imobiliária → Corretor → Cliente
-  //  - "imobiliarias" | "corretores" | "analistas": cards flat da dimensão,
-  //    abrindo direto nos clientes daquela pessoa.
-  //  - "clientes": não usa árvore (a aba "Por cliente" renderiza clientes direto).
   const arvore = useMemo<PastaNode[]>(() => {
     if (visao === "hierarquia") return raizes;
     if (visao === "clientes") return [];
@@ -371,8 +241,6 @@ export function DocumentosGerais() {
       dim = "analista";
       base = analistasFiltro;
       tipo = "analista";
-      // Regra: todo cliente cadastrado tem analista (criador). Nunca criamos
-      // uma pasta "Sem analista" — clientes órfãos ficam soltos na raiz.
       semKey = "";
       semNome = "";
     }
@@ -387,12 +255,8 @@ export function DocumentosGerais() {
       return node;
     }
     const prefix = dim === "imob" ? "imob:" : dim === "corr" ? "corr:" : "ana:";
-    // Semeia UMA pasta por cadastrado (todos aparecem, mesmo sem clientes).
     for (const b of base) garantir(`${prefix}${b.id}`, titulo(b.nome));
 
-    // Vincula clientes apenas às pastas cadastradas; se o ID não estiver na
-    // base (só imob/corr), o cliente cai em "Sem …". Na visão de analistas
-    // não existe fallback: o criador sempre está na base.
     const idsBase = new Set(base.map((b) => b.id));
     const clientesSoltos: DGCliente[] = [];
     for (const c of clientes) {
@@ -419,8 +283,6 @@ export function DocumentosGerais() {
       if (aSem !== bSem) return aSem ? 1 : -1;
       return a.nome.localeCompare(b.nome, "pt-BR");
     });
-    // Clientes órfãos (sem analista tipado) aparecem soltos como pseudo-pastas
-    // "cliente" ao final — mantém a promessa de "não criar pasta fake".
     if (clientesSoltos.length > 0 && visao === "analistas") {
       for (const c of clientesSoltos) {
         lista.push({
@@ -434,10 +296,8 @@ export function DocumentosGerais() {
       }
     }
     return lista;
-
   }, [visao, raizes, clientes, imobiliariasFiltro, corretoresFiltro, analistasFiltro]);
 
-  // Traça o caminho atual na árvore, coletando as pastas percorridas.
   const trilha = useMemo<PastaNode[]>(() => {
     const nodes: PastaNode[] = [];
     let nivel = arvore;
@@ -453,18 +313,6 @@ export function DocumentosGerais() {
   const atual = trilha.length > 0 ? trilha[trilha.length - 1] : null;
   const pastasNivel = atual ? atual.subpastas : arvore;
   const clientesNivel = atual && atual.subpastas.length === 0 ? atual.clientes : [];
-
-  /** Abre uma visão agregada a partir dos cards de KPI. */
-  function abrirVisao(v: Visao) {
-    setVisao(v);
-    setCaminho([]);
-  }
-
-  /** Volta à raiz (cards de KPI) e restaura a visão hierárquica. */
-  function irParaRaiz() {
-    setVisao("hierarquia");
-    setCaminho([]);
-  }
 
   function limparFiltros() {
     setBusca("");
@@ -487,7 +335,6 @@ export function DocumentosGerais() {
       imob: { Icon: Building2, classe: "from-primary/20 to-primary/5 text-primary" },
       corretor: { Icon: IdCard, classe: "from-primary/20 to-primary/5 text-primary" },
       analista: { Icon: UserCog, classe: "from-primary/20 to-primary/5 text-primary" },
-
     };
     const { Icon, classe } = conf[tipo];
     return (
@@ -503,8 +350,6 @@ export function DocumentosGerais() {
   }
 
   // ⚠️ Todos os hooks devem ser chamados ANTES de qualquer early return.
-  // A ficha do cliente (`if (cliente) return ...`) fica logo abaixo destes
-  // useMemo — mover para dentro do IF causa erro #300 (fewer hooks).
   const clientesOrdenadosPre = useMemo(() => {
     const lista = [...clientesFiltrados];
     lista.sort((a, b) => {
@@ -531,7 +376,6 @@ export function DocumentosGerais() {
 
   // ===== Ficha do cliente selecionado =====
   if (cliente) {
-
     return (
       <div className="space-y-4">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -542,7 +386,6 @@ export function DocumentosGerais() {
           <span className="font-medium text-foreground">{titulo(cliente.nome)}</span>
         </div>
 
-        {/* Cabeçalho sofisticado do cliente */}
         <div className="relative overflow-hidden rounded-2xl border border-border/60 bg-gradient-to-br from-primary/10 via-card to-card p-5 shadow-sm">
           <span className="pointer-events-none absolute -right-16 -top-16 size-48 rounded-full bg-primary/10 blur-3xl" />
           <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -587,8 +430,6 @@ export function DocumentosGerais() {
     );
   }
 
-
-  // ===== Mapeia aba escolhida para visão + reseta caminho =====
   function trocarAba(a: Aba) {
     setAba(a);
     setPagina(1);
@@ -600,10 +441,8 @@ export function DocumentosGerais() {
     else if (a === "analista") setVisao("analistas");
   }
 
-  // Reutiliza os useMemo declarados antes do early return.
   const clientesOrdenados = clientesOrdenadosPre;
   const pastasOrdenadas = pastasOrdenadasPre;
-
 
   const listaAtual =
     aba === "cliente"
@@ -677,7 +516,6 @@ export function DocumentosGerais() {
             </p>
           </div>
 
-          {/* KPIs */}
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:min-w-[600px]">
             {[
               { Icon: Folder, label: "Pastas", valor: kpis.pastas, aba: null as Aba | null },
@@ -701,7 +539,10 @@ export function DocumentosGerais() {
                   className="pointer-events-none absolute left-0 top-0 h-full w-[3px] bg-primary/70"
                 />
                 <div className="flex items-center justify-between">
-                  <span className="inline-flex size-7 items-center justify-center rounded-md text-primary" style={{ background: "color-mix(in oklab, var(--primary) 10%, transparent)" }}>
+                  <span
+                    className="inline-flex size-7 items-center justify-center rounded-md text-primary"
+                    style={{ background: "color-mix(in oklab, var(--primary) 10%, transparent)" }}
+                  >
                     <Icon className="h-3.5 w-3.5" strokeWidth={2} />
                   </span>
                   <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
@@ -896,9 +737,7 @@ export function DocumentosGerais() {
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="hidden text-xs text-muted-foreground sm:inline">
-                Ordenar por:
-              </span>
+              <span className="hidden text-xs text-muted-foreground sm:inline">Ordenar por:</span>
               <Select value={ordem} onValueChange={(v) => setOrdem(v as OrdemChave)}>
                 <SelectTrigger className="h-9 w-[160px]">
                   <SelectValue />
@@ -1054,9 +893,7 @@ export function DocumentosGerais() {
                 {filtroComercial !== "todos" && (
                   <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">
                     Comercial:{" "}
-                    {titulo(
-                      comerciaisBase.find((cm) => cm.id === filtroComercial)?.nome ?? "",
-                    )}
+                    {titulo(comerciaisBase.find((cm) => cm.id === filtroComercial)?.nome ?? "")}
                   </span>
                 )}
                 {filtroImob !== "todas" && (
@@ -1064,25 +901,19 @@ export function DocumentosGerais() {
                     Imobiliária:{" "}
                     {filtroImob === "comercial"
                       ? SEM_IMOB
-                      : titulo(
-                          imobiliariasFiltro.find((i) => i.id === filtroImob)?.nome ?? "",
-                        )}
+                      : titulo(imobiliariasFiltro.find((i) => i.id === filtroImob)?.nome ?? "")}
                   </span>
                 )}
                 {filtroCorr !== "todos" && (
                   <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">
                     Corretor:{" "}
-                    {titulo(
-                      corretoresFiltro.find((c) => c.id === filtroCorr)?.nome ?? "",
-                    )}
+                    {titulo(corretoresFiltro.find((c) => c.id === filtroCorr)?.nome ?? "")}
                   </span>
                 )}
                 {filtroAnalista !== "todos" && (
                   <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">
                     Analista:{" "}
-                    {titulo(
-                      analistasFiltro.find((a) => a.id === filtroAnalista)?.nome ?? "",
-                    )}
+                    {titulo(analistasFiltro.find((a) => a.id === filtroAnalista)?.nome ?? "")}
                   </span>
                 )}
                 {!filtrando && (
@@ -1113,493 +944,5 @@ export function DocumentosGerais() {
         </SheetContent>
       </Sheet>
     </div>
-  );
-}
-
-type FiltroOpcao = { id: string; nome: string };
-
-function FiltroPesquisa({
-  label,
-  value,
-  todosValue,
-  todosLabel,
-  placeholder,
-  opcoes,
-  opcoesFixas = [],
-  onChange,
-}: {
-  label: string;
-  value: string;
-  todosValue: string;
-  todosLabel: string;
-  placeholder: string;
-  opcoes: FiltroOpcao[];
-  opcoesFixas?: FiltroOpcao[];
-  onChange: (value: string) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const itens = useMemo(() => {
-    const map = new Map<string, FiltroOpcao>();
-    for (const item of opcoesFixas) map.set(item.id, item);
-    for (const item of opcoes) map.set(item.id, item);
-    return Array.from(map.values()).sort((a, b) =>
-      titulo(a.nome).localeCompare(titulo(b.nome), "pt-BR"),
-    );
-  }, [opcoes, opcoesFixas]);
-  const selecionado = value === todosValue ? todosLabel : titulo(itens.find((i) => i.id === value)?.nome);
-
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <button
-          type="button"
-          role="combobox"
-          aria-expanded={open}
-          aria-label={label}
-          className={cn(
-            "group flex h-10 min-w-[210px] max-w-full flex-1 items-center justify-between gap-2 rounded-xl border border-border/70 bg-card px-3 text-left text-sm shadow-sm transition-all sm:flex-none lg:w-[220px]",
-            "hover:border-primary/35 hover:bg-accent/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-            value === todosValue ? "text-muted-foreground" : "text-foreground",
-          )}
-        >
-          <span className="min-w-0 flex-1 truncate">
-            {selecionado && selecionado !== "—" ? selecionado : todosLabel}
-          </span>
-          <ChevronsUpDown className="size-4 shrink-0 text-muted-foreground transition-colors group-hover:text-primary" />
-        </button>
-      </PopoverTrigger>
-      <PopoverContent
-        align="start"
-        className="w-[--radix-popover-trigger-width] overflow-hidden rounded-xl border-border/70 p-0 shadow-lg"
-      >
-        <Command
-          filter={(itemValue, search) => {
-            const normalize = (s: string) =>
-              s
-                .normalize("NFD")
-                .replace(/[\u0300-\u036f]/g, "")
-                .toLowerCase();
-            return normalize(itemValue).includes(normalize(search)) ? 1 : 0;
-          }}
-        >
-          <CommandInput placeholder={placeholder} className="h-10" />
-          <CommandList className="max-h-72">
-            <CommandEmpty>Nenhum resultado encontrado.</CommandEmpty>
-            <CommandGroup>
-              <CommandItem
-                value={todosLabel}
-                onSelect={() => {
-                  onChange(todosValue);
-                  setOpen(false);
-                }}
-                className="py-2.5"
-              >
-                <Check className={cn("size-4", value === todosValue ? "opacity-100" : "opacity-0")} />
-                <span className="truncate font-medium">{todosLabel}</span>
-              </CommandItem>
-              {itens.map((item) => {
-                const nome = titulo(item.nome);
-                return (
-                  <CommandItem
-                    key={item.id}
-                    value={`${nome} ${item.id}`}
-                    onSelect={() => {
-                      onChange(item.id);
-                      setOpen(false);
-                    }}
-                    className="py-2.5"
-                  >
-                    <Check className={cn("size-4", value === item.id ? "opacity-100" : "opacity-0")} />
-                    <span className="truncate">{nome}</span>
-                  </CommandItem>
-                );
-              })}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
-  );
-}
-
-/** Paginação numérica com reticências. */
-function Paginador({
-  pagina,
-  totalPaginas,
-  onIr,
-}: {
-  pagina: number;
-  totalPaginas: number;
-  onIr: (p: number) => void;
-}) {
-  const paginas: (number | "...")[] = [];
-  const push = (v: number | "...") => paginas.push(v);
-  if (totalPaginas <= 6) {
-    for (let i = 1; i <= totalPaginas; i++) push(i);
-  } else {
-    push(1);
-    if (pagina > 3) push("...");
-    for (let i = Math.max(2, pagina - 1); i <= Math.min(totalPaginas - 1, pagina + 1); i++)
-      push(i);
-    if (pagina < totalPaginas - 2) push("...");
-    push(totalPaginas);
-  }
-  return (
-    <div className="flex items-center gap-1">
-      <button
-        type="button"
-        disabled={pagina <= 1}
-        onClick={() => onIr(pagina - 1)}
-        className="grid size-8 place-items-center rounded-lg border border-border/60 bg-card text-muted-foreground transition-colors hover:bg-muted disabled:opacity-40"
-      >
-        <ChevronLeft className="h-4 w-4" />
-      </button>
-      {paginas.map((p, i) =>
-        p === "..." ? (
-          <span key={`e${i}`} className="px-2 text-xs text-muted-foreground">
-            …
-          </span>
-        ) : (
-          <button
-            key={p}
-            type="button"
-            onClick={() => onIr(p)}
-            className={cn(
-              "grid size-8 place-items-center rounded-lg border text-xs font-medium transition-colors",
-              p === pagina
-                ? "border-primary bg-primary text-primary-foreground"
-                : "border-border/60 bg-card text-foreground hover:bg-muted",
-            )}
-          >
-            {p}
-          </button>
-        ),
-      )}
-      <button
-        type="button"
-        disabled={pagina >= totalPaginas}
-        onClick={() => onIr(pagina + 1)}
-        className="grid size-8 place-items-center rounded-lg border border-border/60 bg-card text-muted-foreground transition-colors hover:bg-muted disabled:opacity-40"
-      >
-        <ChevronRight className="h-4 w-4" />
-      </button>
-    </div>
-  );
-}
-
-/** Card de pasta (nível intermediário: comercial, imobiliária, corretor). */
-function CardPasta({
-  pasta,
-  modo,
-  IconePasta,
-  onOpen,
-}: {
-  pasta: PastaNode;
-  modo: ModoLista;
-  IconePasta: (props: { tipo: PastaTipo; aberta?: boolean }) => React.JSX.Element;
-  onOpen: () => void;
-}) {
-  const info = (
-    <>
-      {pasta.subpastas.length > 0 && (
-        <span className="inline-flex items-center gap-1">
-          <Folder className="h-3 w-3" /> {pasta.subpastas.length} pasta(s)
-        </span>
-      )}
-      <span className="inline-flex items-center gap-1">
-        <Users className="h-3 w-3" /> {pasta.total_clientes} cliente(s)
-      </span>
-    </>
-  );
-
-  if (modo === "lista") {
-    return (
-      <button
-        onClick={onOpen}
-        className="group flex items-center gap-3 rounded-xl border border-border/70 bg-card p-3 text-left transition-all hover:border-primary/40 hover:shadow-sm"
-      >
-        <IconePasta tipo={pasta.tipo} />
-        <div className="min-w-0 flex-1">
-          <p className="truncate font-semibold text-foreground">{pasta.nome}</p>
-          <p className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
-            {info}
-          </p>
-        </div>
-        <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/60 transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
-      </button>
-    );
-  }
-
-  return (
-    <button
-      onClick={onOpen}
-      className="group relative flex flex-col gap-2 overflow-hidden rounded-xl border border-border/70 bg-card p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
-    >
-      <div className="flex items-start gap-3">
-        <IconePasta tipo={pasta.tipo} />
-        <div className="min-w-0 flex-1">
-          <p className="truncate font-semibold text-foreground">{pasta.nome}</p>
-          <p className="mt-0.5 truncate text-xs text-muted-foreground">
-            {PASTA_BADGE[pasta.tipo].label}
-          </p>
-        </div>
-      </div>
-      <div className="h-0.5 w-full rounded-full bg-primary/20">
-        <div
-          className="h-0.5 rounded-full bg-primary"
-          style={{
-            width: `${Math.min(100, (pasta.total_clientes / Math.max(1, pasta.total_clientes)) * 100)}%`,
-          }}
-        />
-      </div>
-      <p className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
-        {info}
-      </p>
-    </button>
-  );
-}
-
-
-/** Card de cliente com etiqueta do usuário que o cadastrou (target). */
-function CardCliente({
-  c,
-  onOpen,
-  modo = "grid",
-  mostrarVinculos,
-}: {
-  c: DGCliente;
-  onOpen: () => void;
-  modo?: ModoLista;
-  mostrarVinculos?: boolean;
-}) {
-  const docMasked = formatarDocumento(c.documento);
-  const vinculo =
-    mostrarVinculos || true
-      ? `${c.imobiliaria_nome ? titulo(c.imobiliaria_nome) : SEM_IMOB} · ${c.corretor_nome ? titulo(c.corretor_nome) : SEM_CORRETOR}`
-      : null;
-
-  if (modo === "lista") {
-    return (
-      <button
-        onClick={onOpen}
-        className="group flex items-center gap-3 rounded-xl border border-border/70 bg-card p-3 text-left transition-all hover:border-primary/40 hover:shadow-sm"
-      >
-        <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/15">
-          <FolderOpen className="h-5 w-5" />
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold text-foreground">
-            {titulo(c.nome)}
-          </p>
-          <p className="truncate text-xs text-muted-foreground">
-            {docMasked ?? vinculo}
-          </p>
-        </div>
-        <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
-          <FileText className="h-3 w-3" /> {c.total_documentos}
-        </span>
-      </button>
-    );
-  }
-
-  return (
-    <button
-      className="group relative flex flex-col gap-2.5 overflow-hidden rounded-xl border border-border/70 bg-card p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
-      onClick={onOpen}
-    >
-      <span className="pointer-events-none absolute inset-x-0 top-0 h-0.5 scale-x-0 bg-gradient-to-r from-primary/60 to-primary/10 transition-transform group-hover:scale-x-100" />
-      <div className="flex items-start gap-3">
-        <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 text-primary shadow-inner ring-1 ring-inset ring-border/40">
-          <FolderOpen className="h-5 w-5" />
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="truncate font-semibold text-foreground">{titulo(c.nome)}</p>
-          {docMasked && (
-            <p className="mt-0.5 truncate text-xs font-medium text-primary/80">
-              {docMasked}
-            </p>
-          )}
-          <p className="truncate text-xs text-muted-foreground">
-            {c.imobiliaria_nome ? titulo(c.imobiliaria_nome) : SEM_IMOB} ·{" "}
-            {c.corretor_nome ? titulo(c.corretor_nome) : SEM_CORRETOR}
-          </p>
-        </div>
-      </div>
-      <div className="flex items-center justify-between gap-2 border-t border-border/40 pt-2">
-        <span className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground">
-          <FileText className="h-3.5 w-3.5" /> {c.total_documentos} documento(s)
-        </span>
-        {c.analista_nome && (
-          <span
-            className="inline-flex items-center gap-1 rounded-full border border-primary/25 bg-primary/8 px-2 py-0.5 text-[10px] font-medium text-primary"
-            title="Cadastrado por"
-          >
-            <UserCog className="h-3 w-3" />
-            {primeiroNome(c.analista_nome)}
-          </span>
-        )}
-      </div>
-    </button>
-  );
-}
-
-
-
-function Campo({ rotulo, valor }: { rotulo: string; valor: any }) {
-  return (
-    <div className="rounded-lg border border-border/50 bg-muted/30 px-3 py-2 transition-colors hover:border-primary/30 hover:bg-muted/50">
-      <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{rotulo}</p>
-      <p className="mt-0.5 text-sm font-medium text-foreground">{valor === null || valor === undefined || valor === "" ? "—" : String(valor)}</p>
-    </div>
-  );
-}
-
-
-function FichaDialog({
-  clienteId,
-  clienteNome,
-  open,
-  onOpenChange,
-}: {
-  clienteId: string;
-  clienteNome: string;
-  open: boolean;
-  onOpenChange: (v: boolean) => void;
-}) {
-  const obter = useServerFn(obterFichaConsolidada);
-  const { data, isLoading } = useQuery({
-    queryKey: ["crm-ficha-consolidada", clienteId],
-    queryFn: () => obter({ data: { cliente_id: clienteId } }),
-    enabled: open,
-  });
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] max-w-3xl overflow-hidden p-0">
-        <DialogHeader className="relative overflow-hidden border-b border-border/60 bg-gradient-to-r from-primary/12 via-primary/5 to-transparent p-5">
-          <span className="pointer-events-none absolute -right-10 -top-12 size-40 rounded-full bg-primary/10 blur-3xl" />
-          <div className="relative flex items-center justify-between gap-3">
-            <DialogTitle className="flex items-center gap-3">
-              <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/70 text-primary-foreground shadow-md ring-1 ring-inset ring-primary/30">
-                <User className="h-5 w-5" />
-              </span>
-              <span className="flex flex-col">
-                <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Ficha consolidada</span>
-                <span className="text-base font-semibold text-foreground">{titulo(clienteNome)}</span>
-              </span>
-            </DialogTitle>
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={!data}
-              onClick={() => data && imprimirFichaPDF(clienteNome, data)}
-              className="mr-8 shrink-0 gap-2 border-primary/30 bg-background/70 text-primary hover:bg-primary/10"
-            >
-              <Printer className="h-4 w-4" /> Imprimir PDF
-            </Button>
-          </div>
-        </DialogHeader>
-        <div className="max-h-[calc(90vh-5.5rem)] overflow-y-auto p-5">
-
-          {isLoading || !data ? (
-            <div className="space-y-2">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <Skeleton key={i} className="h-8 w-full" />
-              ))}
-            </div>
-          ) : (
-            <Tabs defaultValue="comprador">
-              <TabsList className="flex-wrap">
-                <TabsTrigger value="comprador">Comprador</TabsTrigger>
-                {data.conjuge && <TabsTrigger value="conjuge">Cônjuge</TabsTrigger>}
-                <TabsTrigger value="vendedor">
-                  Vendedor{data.vendedores.length > 1 ? `es (${data.vendedores.length})` : ""}
-                </TabsTrigger>
-                <TabsTrigger value="imovel">Imóvel</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="comprador" className="mt-4">
-                {data.comprador ? (
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    <Campo rotulo="Nome" valor={data.comprador.nome} />
-                    <Campo rotulo="Documento" valor={data.comprador.documento} />
-                    <Campo rotulo="Nascimento" valor={fmtData(data.comprador.data_nascimento)} />
-                    <Campo rotulo="Estado civil" valor={data.comprador.estado_civil} />
-                    <Campo rotulo="Profissão" valor={data.comprador.profissao} />
-                    <Campo rotulo="Nacionalidade" valor={data.comprador.nacionalidade} />
-                    <Campo rotulo="E-mail" valor={data.comprador.email} />
-                    <Campo rotulo="Celular" valor={data.comprador.telefone_celular} />
-                    <Campo rotulo="Renda declarada" valor={brl(data.comprador.renda_total_declarada)} />
-                    <Campo rotulo="Nome da mãe" valor={data.comprador.nome_mae} />
-                    <Campo rotulo="Banco" valor={data.comprador.banco_conta} />
-                    <Campo rotulo="Agência / Conta" valor={[data.comprador.agencia, data.comprador.conta_corrente].filter(Boolean).join(" / ") || "—"} />
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground">Sem dados.</p>
-                )}
-              </TabsContent>
-
-              {data.conjuge && (
-                <TabsContent value="conjuge" className="mt-4">
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    <Campo rotulo="Nome" valor={data.conjuge.nome} />
-                    <Campo rotulo="Documento" valor={data.conjuge.documento} />
-                    <Campo rotulo="Nascimento" valor={fmtData(data.conjuge.data_nascimento)} />
-                    <Campo rotulo="Profissão" valor={data.conjuge.profissao} />
-                    <Campo rotulo="Nacionalidade" valor={data.conjuge.nacionalidade} />
-                    <Campo rotulo="E-mail" valor={data.conjuge.email} />
-                    <Campo rotulo="Celular" valor={data.conjuge.telefone_celular} />
-                    <Campo rotulo="Renda" valor={brl(data.conjuge.renda)} />
-                    <Campo rotulo="Nome da mãe" valor={data.conjuge.nome_mae} />
-                    <Campo rotulo="Empresa" valor={data.conjuge.empresa} />
-                    <Campo rotulo="Banco" valor={data.conjuge.banco_conta} />
-                    <Campo rotulo="Agência / Conta" valor={[data.conjuge.agencia, data.conjuge.conta_corrente].filter(Boolean).join(" / ") || "—"} />
-                  </div>
-                </TabsContent>
-              )}
-
-              <TabsContent value="vendedor" className="mt-4 space-y-4">
-                {data.vendedores.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Nenhum vendedor cadastrado.</p>
-                ) : (
-                  data.vendedores.map((v, i) => (
-                    <div key={v.id ?? i} className="rounded-lg border border-border p-3">
-                      <p className="mb-2 text-sm font-semibold text-foreground">
-                        {v.nome ?? `Vendedor ${i + 1}`}
-                      </p>
-                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                        <Campo rotulo="Documento" valor={v.documento ?? v.cpf_cnpj} />
-                        <Campo rotulo="Estado civil" valor={v.estado_civil} />
-                        <Campo rotulo="Profissão" valor={v.profissao} />
-                        <Campo rotulo="E-mail" valor={v.email} />
-                        <Campo rotulo="Celular" valor={v.telefone_celular} />
-                        <Campo rotulo="Banco" valor={v.banco_conta} />
-                        <Campo rotulo="Agência / Conta" valor={[v.agencia, v.conta_corrente].filter(Boolean).join(" / ") || "—"} />
-                      </div>
-                    </div>
-                  ))
-                )}
-              </TabsContent>
-
-              <TabsContent value="imovel" className="mt-4 space-y-4">
-                {data.imoveis.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Nenhum imóvel cadastrado.</p>
-                ) : (
-                  data.imoveis.map((im, i) => (
-                    <div key={i} className="grid grid-cols-1 gap-3 rounded-lg border border-border p-3 sm:grid-cols-2">
-                      <Campo rotulo="Tipo" valor={im.tipo} />
-                      <Campo rotulo="Uso" valor={im.uso} />
-                      <Campo rotulo="Logradouro" valor={im.logradouro} />
-                      <Campo rotulo="Cidade / UF" valor={[im.cidade, im.uf].filter(Boolean).join(" / ") || "—"} />
-                      <Campo rotulo="Valor" valor={brl(im.valor)} />
-                    </div>
-                  ))
-                )}
-              </TabsContent>
-            </Tabs>
-          )}
-        </div>
-      </DialogContent>
-    </Dialog>
   );
 }
