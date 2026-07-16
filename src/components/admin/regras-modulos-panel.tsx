@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Plus, Save, Loader2, ShieldCheck, Lock, Pencil, Trash2, Check } from "lucide-react";
+import { Plus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import {
   CATALOGO_MODULOS,
@@ -20,84 +20,20 @@ import {
 import { listarPessoas } from "@/lib/admin/pessoas.functions";
 import { listarTiposPessoa } from "@/lib/admin/tipos-pessoa.functions";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  chave,
+  estadoInicial,
+  type MatrizEstado,
+} from "./regras-modulos/constants";
+import { AbaPapeis } from "./regras-modulos/aba-papeis";
+import { ListaNiveis, MatrizPermissoes } from "./regras-modulos/matriz";
 import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-
-type MatrizEstado = Record<string, { permitido: boolean; escopo: EscopoDados }>;
-
-const ESCOPOS: { value: EscopoDados; label: string }[] = [
-  { value: "todos", label: "Todos" },
-  { value: "equipe", label: "Equipe" },
-  { value: "proprios", label: "Somente os meus" },
-  { value: "personalizado", label: "Personalizado" },
-];
-
-/** Papéis que podem ser escolhidos como alvo do escopo personalizado. */
-const PAPEIS_ALVO: { value: string; label: string }[] = [
-  { value: "gestor", label: "Gestor" },
-  { value: "comercial", label: "Comercial" },
-  { value: "analista", label: "Analista" },
-  { value: "financeiro", label: "Financeiro" },
-  { value: "corretor", label: "Corretor" },
-  { value: "imobiliaria", label: "Imobiliária" },
-];
-
-const PORTAIS: { value: AcessoTipo; label: string }[] = [
-  { value: "sistema", label: "Portal do Correspondente" },
-  { value: "portal_parceiro", label: "Portal do Parceiro" },
-];
-
-const PAPEL_LABEL: Record<string, string> = {
-  gestor: "Gestor",
-  comercial: "Comercial",
-  analista: "Analista",
-  corretor: "Corretor",
-  imobiliaria: "Imobiliária",
-};
-
-const chave = (modulo: string, acao: string) => `${modulo}:${acao}`;
-
-function estadoInicial(nivel: NivelAcesso): MatrizEstado {
-  const estado: MatrizEstado = {};
-  for (const mod of CATALOGO_MODULOS) {
-    for (const a of mod.acoes) {
-      const atual = nivel.permissoes.find((p) => p.modulo === mod.modulo && p.acao === a.acao);
-      estado[chave(mod.modulo, a.acao)] = {
-        permitido: atual?.permitido ?? false,
-        escopo: atual?.escopo_dados ?? "proprios",
-      };
-    }
-  }
-  return estado;
-}
+  DialogEditarNivel,
+  DialogExcluirNivel,
+  DialogNovoNivel,
+} from "./regras-modulos/dialogs-nivel";
+import { DialogAlvos } from "./regras-modulos/dialog-alvos";
 
 export function RegrasModulosPanel() {
   const qc = useQueryClient();
@@ -209,14 +145,11 @@ export function RegrasModulosPanel() {
     mutationFn: () => {
       if (!selecionado) throw new Error("Selecione um nível.");
       const permissoes = Object.entries(estado).map(([k, v]) => {
-        // A ação pode conter ":" (ex.: "pii:view"), então separamos só no
-        // primeiro ":" — o módulo nunca contém ":".
         const idx = k.indexOf(":");
         const modulo = k.slice(0, idx);
         const acao = k.slice(idx + 1);
         return { modulo, acao, permitido: v.permitido, escopo_dados: v.escopo };
       });
-      // Só envia alvos dos módulos que estão em escopo personalizado.
       const modulosPersonalizados = new Set(
         permissoes.filter((p) => p.escopo_dados === "personalizado").map((p) => p.modulo),
       );
@@ -272,15 +205,6 @@ export function RegrasModulosPanel() {
     setDirty(true);
   }
 
-  function alvoAtivo(modulo: string, alvo: EscopoAlvo): boolean {
-    return (alvos[modulo] ?? []).some(
-      (a) =>
-        a.alvo_tipo === alvo.alvo_tipo &&
-        (a.alvo_id ?? null) === (alvo.alvo_id ?? null) &&
-        (a.alvo_valor ?? null) === (alvo.alvo_valor ?? null),
-    );
-  }
-
   function toggleAlvo(modulo: string, alvo: EscopoAlvo, ativo: boolean) {
     setAlvos((prev) => {
       const lista = prev[modulo] ?? [];
@@ -308,7 +232,6 @@ export function RegrasModulosPanel() {
     setEditarOpen(true);
   }
 
-  // Abre a matriz de permissões de um papel específico.
   function configurarPermissoes(id: string) {
     setSelecionadoId(id);
     setCarregadoPara("");
@@ -320,7 +243,6 @@ export function RegrasModulosPanel() {
     setExcluirOpen(true);
   }
 
-  // Garante papel válido ao trocar de portal.
   function ajustarPapel(portal: AcessoTipo, papel: PapelNivel): PapelNivel {
     const opcoes = PAPEIS_POR_PORTAL[portal].map((p) => p.value);
     return opcoes.includes(papel) ? papel : opcoes[0];
@@ -344,7 +266,6 @@ export function RegrasModulosPanel() {
           <TabsTrigger value="permissoes">Regras & Módulos</TabsTrigger>
         </TabsList>
 
-        {/* ABA: Papéis & Funções — cadastro/config dos níveis de acesso */}
         <TabsContent value="papeis">
           <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
             <div>
@@ -362,588 +283,122 @@ export function RegrasModulosPanel() {
             <div className="flex items-center justify-center py-24 text-muted-foreground">
               <Loader2 className="h-5 w-5 animate-spin" />
             </div>
-          ) : (niveis ?? []).length === 0 ? (
-            <p className="text-sm text-muted-foreground">Nenhum papel cadastrado ainda.</p>
           ) : (
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {(niveis ?? []).map((n) => (
-                <Card key={n.id} className="flex flex-col gap-3 p-4">
-                  <div className="flex items-start gap-2">
-                    <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        <span className="truncate text-sm font-medium text-foreground">
-                          {n.nome}
-                        </span>
-                        {n.is_padrao ? (
-                          <Badge variant="secondary" className="shrink-0 gap-1 text-[10px]">
-                            <Lock className="h-3 w-3" /> Padrão
-                          </Badge>
-                        ) : null}
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        {PAPEL_LABEL[n.papel] ?? n.papel} ·{" "}
-                        {n.acesso_tipo === "portal_parceiro"
-                          ? "Portal do Parceiro"
-                          : "Portal do Correspondente"}
-                      </p>
-                      {n.descricao ? (
-                        <p className="mt-1 text-xs text-muted-foreground">{n.descricao}</p>
-                      ) : null}
-                    </div>
-                  </div>
-                  <div className="mt-auto flex flex-wrap gap-2">
-                    <Button variant="outline" size="sm" onClick={() => configurarPermissoes(n.id)}>
-                      <ShieldCheck className="h-4 w-4" /> Permissões
-                    </Button>
-                    {editavel ? (
-                      <>
-                        <Button variant="outline" size="sm" onClick={() => abrirEditar(n)}>
-                          <Pencil className="h-4 w-4" /> Editar
-                        </Button>
-                        {!n.is_padrao ? (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-destructive hover:text-destructive"
-                            onClick={() => pedirExcluir(n.id)}
-                          >
-                            <Trash2 className="h-4 w-4" /> Excluir
-                          </Button>
-                        ) : null}
-                      </>
-                    ) : null}
-                  </div>
-                </Card>
-              ))}
-            </div>
+            <AbaPapeis
+              niveis={niveis ?? []}
+              editavel={editavel}
+              onConfigurar={configurarPermissoes}
+              onEditar={abrirEditar}
+              onExcluir={pedirExcluir}
+            />
           )}
         </TabsContent>
 
-        {/* ABA: Regras & Módulos — matriz de permissões */}
         <TabsContent value="permissoes">
-
-      {isLoading ? (
-        <div className="flex items-center justify-center py-24 text-muted-foreground">
-          <Loader2 className="h-5 w-5 animate-spin" />
-        </div>
-      ) : (
-        <div className="grid gap-6 md:grid-cols-[240px_1fr]">
-          {/* Lista de níveis */}
-          <div className="space-y-2">
-            {(niveis ?? []).map((n) => {
-              const ativo = selecionado?.id === n.id;
-              return (
-                <button
-                  key={n.id}
-                  onClick={() => setSelecionadoId(n.id)}
-                  className={`flex w-full items-start gap-2 rounded-lg border p-3 text-left transition-colors ${
-                    ativo ? "border-primary bg-accent" : "border-border bg-card hover:bg-accent/50"
-                  }`}
-                >
-                  <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <span className="truncate text-sm font-medium text-foreground">{n.nome}</span>
-                      {n.is_padrao ? (
-                        <Badge variant="secondary" className="shrink-0 text-[10px]">
-                          Padrão
-                        </Badge>
-                      ) : null}
-                    </div>
-                    <p className="truncate text-xs text-muted-foreground">
-                      {PAPEL_LABEL[n.papel] ?? n.papel} ·{" "}
-                      {n.acesso_tipo === "portal_parceiro" ? "Parceiro" : "Correspondente"}
-                    </p>
-                    {n.descricao ? (
-                      <p className="truncate text-xs text-muted-foreground">{n.descricao}</p>
-                    ) : null}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Matriz */}
-          <div className="space-y-4">
-            {selecionado ? (
-              <>
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h2 className="text-lg font-medium text-foreground">{selecionado.nome}</h2>
-                    <Badge variant="outline">
-                      {PAPEL_LABEL[selecionado.papel] ?? selecionado.papel}
-                    </Badge>
-                    <Badge variant="outline">
-                      {selecionado.acesso_tipo === "portal_parceiro"
-                        ? "Portal do Parceiro"
-                        : "Portal do Correspondente"}
-                    </Badge>
-                    {selecionado.is_padrao ? (
-                      <Badge variant="secondary" className="gap-1">
-                        <Lock className="h-3 w-3" /> Padrão
-                      </Badge>
-                    ) : null}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {editavel ? (
-                      <>
-                        <Button variant="outline" size="sm" onClick={() => abrirEditar()}>
-                          <Pencil className="h-4 w-4" /> Editar
-                        </Button>
-                        {!selecionado.is_padrao ? (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-destructive hover:text-destructive"
-                            onClick={() => setExcluirOpen(true)}
-                          >
-                            <Trash2 className="h-4 w-4" /> Excluir
-                          </Button>
-                        ) : null}
-                      </>
-                    ) : null}
-                    <Button
-                      onClick={() => salvarMut.mutate()}
-                      disabled={!editavel || !dirty || salvarMut.isPending}
-                    >
-                      {salvarMut.isPending ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Save className="h-4 w-4" />
-                      )}{" "}
-                      Salvar
-                    </Button>
-                  </div>
-                </div>
-                {!editavel ? (
-                  <p className="text-sm text-muted-foreground">
-                    Você não tem permissão para editar níveis de acesso.
-                  </p>
-                ) : selecionado.is_padrao ? (
-                  <p className="text-sm text-muted-foreground">
-                    Este é um nível padrão. Você pode renomeá-lo e ajustar as permissões
-                    diretamente — as alterações são aplicadas a este mesmo nível.
-                  </p>
-                ) : null}
-
-                {grupos.map(([grupo, mods]) => (
-                  <Card key={grupo} className="overflow-hidden">
-                    <div className="border-b border-border bg-muted/40 px-4 py-2">
-                      <h3 className="text-sm font-semibold text-foreground">{grupo}</h3>
-                    </div>
-                    <div className="divide-y divide-border">
-                      {mods.map((mod) => {
-                        const escopoAtual =
-                          estado[chave(mod.modulo, mod.acoes[0].acao)]?.escopo ?? "proprios";
-                        const ativos = mod.acoes.filter(
-                          (a) => estado[chave(mod.modulo, a.acao)]?.permitido,
-                        ).length;
-                        const todos = ativos === mod.acoes.length && ativos > 0;
-                        const nenhum = ativos === 0;
-                        return (
-                          <div
-                            key={mod.modulo}
-                            className="flex flex-col gap-3 p-4 lg:flex-row lg:items-center lg:justify-between"
-                          >
-                            <div className="flex min-w-[160px] items-center justify-between gap-2 lg:justify-start">
-                              <div className="min-w-0">
-                                <p className="text-sm font-medium text-foreground">{mod.label}</p>
-                                <p className="text-xs text-muted-foreground">{mod.modulo}</p>
-                              </div>
-                              <button
-                                type="button"
-                                disabled={!editavel}
-                                onClick={() => toggleModulo(mod.modulo, !todos)}
-                                className="shrink-0 rounded-full border border-border px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-50 lg:hidden"
-                              >
-                                {todos ? "Limpar" : "Tudo"}
-                              </button>
-                            </div>
-                            <div className="flex flex-1 flex-wrap items-center gap-2">
-                              <button
-                                type="button"
-                                disabled={!editavel}
-                                onClick={() => toggleModulo(mod.modulo, !todos)}
-                                className={`hidden shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-50 lg:inline-flex ${
-                                  todos
-                                    ? "border-primary bg-primary/10 text-primary"
-                                    : "border-border text-muted-foreground hover:bg-accent hover:text-foreground"
-                                }`}
-                              >
-                                {todos ? "Limpar" : "Tudo"}
-                              </button>
-                              {mod.acoes.map((a) => {
-                                const ativo = estado[chave(mod.modulo, a.acao)]?.permitido ?? false;
-                                return (
-                                  <button
-                                    key={a.acao}
-                                    type="button"
-                                    disabled={!editavel}
-                                    aria-pressed={ativo}
-                                    onClick={() => toggle(mod.modulo, a.acao, !ativo)}
-                                    className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all disabled:cursor-not-allowed disabled:opacity-50 ${
-                                      ativo
-                                        ? "border-primary bg-primary text-primary-foreground shadow-sm"
-                                        : "border-border bg-background text-muted-foreground hover:border-primary/40 hover:text-foreground"
-                                    }`}
-                                  >
-                                    <Check
-                                      className={`h-3.5 w-3.5 transition-all ${
-                                        ativo ? "scale-100 opacity-100" : "scale-0 opacity-0"
-                                      } ${ativo ? "-ml-0.5" : "-ml-2"}`}
-                                    />
-                                    {a.label}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                            <div className="w-full lg:w-52">
-                              <Select
-                                value={escopoAtual}
-                                disabled={!editavel || nenhum}
-                                onValueChange={(v) => setEscopo(mod.modulo, v as EscopoDados)}
-                              >
-                                <SelectTrigger className="h-9">
-                                  <SelectValue placeholder="Escopo" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {ESCOPOS.map((e) => (
-                                    <SelectItem key={e.value} value={e.value}>
-                                      {e.label}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                              {escopoAtual === "personalizado" ? (
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  size="sm"
-                                  disabled={!editavel}
-                                  className="mt-2 w-full"
-                                  onClick={() => setAlvosModulo(mod.modulo)}
-                                >
-                                  Escolher quem ({(alvos[mod.modulo] ?? []).length})
-                                </Button>
-                              ) : null}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </Card>
-                ))}
-              </>
-            ) : (
-              <p className="text-sm text-muted-foreground">Nenhum nível de acesso encontrado.</p>
-            )}
-          </div>
-        </div>
-      )}
+          {isLoading ? (
+            <div className="flex items-center justify-center py-24 text-muted-foreground">
+              <Loader2 className="h-5 w-5 animate-spin" />
+            </div>
+          ) : (
+            <div className="grid gap-6 md:grid-cols-[240px_1fr]">
+              <ListaNiveis
+                niveis={niveis ?? []}
+                selecionadoId={selecionado?.id ?? null}
+                onSelecionar={setSelecionadoId}
+              />
+              {selecionado ? (
+                <MatrizPermissoes
+                  selecionado={selecionado}
+                  estado={estado}
+                  alvos={alvos}
+                  editavel={editavel}
+                  dirty={dirty}
+                  salvando={salvarMut.isPending}
+                  grupos={grupos}
+                  onToggle={toggle}
+                  onToggleModulo={toggleModulo}
+                  onSetEscopo={setEscopo}
+                  onAbrirAlvos={setAlvosModulo}
+                  onSalvar={() => salvarMut.mutate()}
+                  onEditar={() => abrirEditar()}
+                  onExcluir={() => setExcluirOpen(true)}
+                />
+              ) : (
+                <p className="text-sm text-muted-foreground">Nenhum nível de acesso encontrado.</p>
+              )}
+            </div>
+          )}
         </TabsContent>
       </Tabs>
 
+      <DialogNovoNivel
+        open={novoOpen}
+        onOpenChange={setNovoOpen}
+        nome={novoNome}
+        setNome={setNovoNome}
+        desc={novaDesc}
+        setDesc={setNovaDesc}
+        copiarDe={copiarDe}
+        setCopiarDe={setCopiarDe}
+        portal={novoPortal}
+        setPortal={setNovoPortal}
+        papel={novoPapel}
+        setPapel={setNovoPapel}
+        ajustarPapel={ajustarPapel}
+        niveis={niveis ?? []}
+        pending={criarMut.isPending}
+        onCriar={() =>
+          criarMut.mutate({
+            nome: novoNome.trim(),
+            descricao: novaDesc.trim() || undefined,
+            copiar_de: copiarDe === "baseline" ? undefined : copiarDe,
+            papel: novoPapel,
+            acesso_tipo: novoPortal,
+          })
+        }
+      />
 
+      <DialogEditarNivel
+        open={editarOpen}
+        onOpenChange={setEditarOpen}
+        nome={editNome}
+        setNome={setEditNome}
+        desc={editDesc}
+        setDesc={setEditDesc}
+        portal={editPortal}
+        setPortal={setEditPortal}
+        papel={editPapel}
+        setPapel={setEditPapel}
+        ajustarPapel={ajustarPapel}
+        pending={atualizarMut.isPending}
+        onSalvar={() =>
+          selecionado &&
+          atualizarMut.mutate({
+            id: selecionado.id,
+            nome: editNome.trim(),
+            descricao: editDesc.trim() || undefined,
+            papel: editPapel,
+            acesso_tipo: editPortal,
+          })
+        }
+      />
 
-      {/* Dialog: novo nível */}
-      <Dialog open={novoOpen} onOpenChange={setNovoOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Novo papel / função</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="nome">Nome</Label>
-              <Input
-                id="nome"
-                value={novoNome}
-                onChange={(e) => setNovoNome(e.target.value)}
-                placeholder="Ex.: Supervisor"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="desc">Descrição</Label>
-              <Input
-                id="desc"
-                value={novaDesc}
-                onChange={(e) => setNovaDesc(e.target.value)}
-                placeholder="Opcional"
-              />
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label>Portal</Label>
-                <Select
-                  value={novoPortal}
-                  onValueChange={(v) => {
-                    const p = v as AcessoTipo;
-                    setNovoPortal(p);
-                    setNovoPapel(ajustarPapel(p, novoPapel));
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {PORTAIS.map((p) => (
-                      <SelectItem key={p.value} value={p.value}>
-                        {p.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Papel / função</Label>
-                <Select value={novoPapel} onValueChange={(v) => setNovoPapel(v as PapelNivel)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {PAPEIS_POR_PORTAL[novoPortal].map((p) => (
-                      <SelectItem key={p.value} value={p.value}>
-                        {p.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Começar as permissões a partir de</Label>
-              <Select value={copiarDe} onValueChange={setCopiarDe}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="baseline">Somente visualização (padrão)</SelectItem>
-                  {(niveis ?? []).map((n) => (
-                    <SelectItem key={n.id} value={n.id}>
-                      Copiar de: {n.nome}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">
-                O nível já nasce com uma matriz de permissões que você pode ajustar em seguida.
-              </p>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              onClick={() =>
-                criarMut.mutate({
-                  nome: novoNome.trim(),
-                  descricao: novaDesc.trim() || undefined,
-                  copiar_de: copiarDe === "baseline" ? undefined : copiarDe,
-                  papel: novoPapel,
-                  acesso_tipo: novoPortal,
-                })
-              }
-              disabled={novoNome.trim().length < 2 || criarMut.isPending}
-            >
-              {criarMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null} Criar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <DialogExcluirNivel
+        open={excluirOpen}
+        onOpenChange={setExcluirOpen}
+        nome={selecionado?.nome}
+        pending={excluirMut.isPending}
+        onConfirmar={() => selecionado && excluirMut.mutate(selecionado.id)}
+      />
 
-      {/* Dialog: editar nível */}
-      <Dialog open={editarOpen} onOpenChange={setEditarOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Editar papel / função</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="edit-nome">Nome</Label>
-              <Input
-                id="edit-nome"
-                value={editNome}
-                onChange={(e) => setEditNome(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-desc">Descrição</Label>
-              <Input
-                id="edit-desc"
-                value={editDesc}
-                onChange={(e) => setEditDesc(e.target.value)}
-                placeholder="Opcional"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Portal</Label>
-              <Select
-                value={editPortal}
-                onValueChange={(v) => {
-                  const p = v as AcessoTipo;
-                  setEditPortal(p);
-                  setEditPapel(ajustarPapel(p, editPapel));
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {PORTAIS.map((p) => (
-                    <SelectItem key={p.value} value={p.value}>
-                      {p.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              onClick={() =>
-                selecionado &&
-                atualizarMut.mutate({
-                  id: selecionado.id,
-                  nome: editNome.trim(),
-                  descricao: editDesc.trim() || undefined,
-                  papel: editPapel,
-                  acesso_tipo: editPortal,
-                })
-              }
-              disabled={editNome.trim().length < 2 || atualizarMut.isPending}
-            >
-              {atualizarMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null} Salvar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Confirmação: excluir nível */}
-      <AlertDialog open={excluirOpen} onOpenChange={setExcluirOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Excluir nível de acesso?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Esta ação remove o nível “{selecionado?.nome}” e todas as suas permissões. Não é
-              possível excluir se houver pessoas usando este nível.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={(e) => {
-                e.preventDefault();
-                if (selecionado) excluirMut.mutate(selecionado.id);
-              }}
-              disabled={excluirMut.isPending}
-            >
-              {excluirMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null} Excluir
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Dialog: escolher alvos do escopo personalizado */}
-      <Dialog open={alvosModulo !== null} onOpenChange={(o) => !o && setAlvosModulo(null)}>
-        <DialogContent className="max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              Quem este papel pode ver
-              {alvosModulo
-                ? ` — ${CATALOGO_MODULOS.find((m) => m.modulo === alvosModulo)?.label ?? ""}`
-                : ""}
-            </DialogTitle>
-          </DialogHeader>
-          {alvosModulo ? (
-            <div className="space-y-5">
-              <div className="space-y-2">
-                <p className="text-sm font-semibold text-foreground">Por papel</p>
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  {PAPEIS_ALVO.map((p) => (
-                    <label key={p.value} className="flex items-center gap-2 text-sm">
-                      <Checkbox
-                        checked={alvoAtivo(alvosModulo, {
-                          alvo_tipo: "papel",
-                          alvo_valor: p.value,
-                        })}
-                        onCheckedChange={(v) =>
-                          toggleAlvo(
-                            alvosModulo,
-                            { alvo_tipo: "papel", alvo_valor: p.value },
-                            v === true,
-                          )
-                        }
-                      />
-                      {p.label}
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <p className="text-sm font-semibold text-foreground">Por tipo de pessoa</p>
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  {(tiposQuery.data ?? []).map((t) => (
-                    <label key={t.id} className="flex items-center gap-2 text-sm">
-                      <Checkbox
-                        checked={alvoAtivo(alvosModulo, {
-                          alvo_tipo: "tipo_pessoa",
-                          alvo_valor: t.slug,
-                        })}
-                        onCheckedChange={(v) =>
-                          toggleAlvo(
-                            alvosModulo,
-                            { alvo_tipo: "tipo_pessoa", alvo_valor: t.slug },
-                            v === true,
-                          )
-                        }
-                      />
-                      {t.nome}
-                    </label>
-                  ))}
-                  {(tiposQuery.data ?? []).length === 0 ? (
-                    <p className="text-xs text-muted-foreground">Nenhum tipo cadastrado.</p>
-                  ) : null}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <p className="text-sm font-semibold text-foreground">Por usuário específico</p>
-                <div className="max-h-56 space-y-1 overflow-y-auto rounded-md border p-2">
-                  {(pessoasQuery.data ?? []).map((u) => (
-                    <label key={u.id} className="flex items-center gap-2 text-sm">
-                      <Checkbox
-                        checked={alvoAtivo(alvosModulo, {
-                          alvo_tipo: "usuario",
-                          alvo_id: u.id,
-                        })}
-                        onCheckedChange={(v) =>
-                          toggleAlvo(
-                            alvosModulo,
-                            { alvo_tipo: "usuario", alvo_id: u.id },
-                            v === true,
-                          )
-                        }
-                      />
-                      <span className="truncate">
-                        {u.nome ?? "—"}
-                        {u.email ? (
-                          <span className="text-muted-foreground"> · {u.email}</span>
-                        ) : null}
-                      </span>
-                    </label>
-                  ))}
-                  {(pessoasQuery.data ?? []).length === 0 ? (
-                    <p className="text-xs text-muted-foreground">Nenhuma pessoa cadastrada.</p>
-                  ) : null}
-                </div>
-              </div>
-            </div>
-          ) : null}
-          <DialogFooter>
-            <Button onClick={() => setAlvosModulo(null)}>Concluir</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <DialogAlvos
+        moduloAtivo={alvosModulo}
+        onClose={() => setAlvosModulo(null)}
+        alvos={alvos}
+        toggleAlvo={toggleAlvo}
+        tipos={(tiposQuery.data ?? []) as any}
+        pessoas={(pessoasQuery.data ?? []) as any}
+      />
     </div>
   );
 }
