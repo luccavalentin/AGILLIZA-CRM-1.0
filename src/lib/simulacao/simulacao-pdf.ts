@@ -985,11 +985,13 @@ function baixarBlob(blob: Blob, filename: string) {
   window.setTimeout(() => URL.revokeObjectURL(url), 30_000);
 }
 
-function salvar(doc: jsPDF, s: any, _tipo: string, bancos: any[] = []): jsPDF {
-  const nome = sanitizarNomeArquivo(nomeDescritivo(s, bancos));
+function salvar(doc: jsPDF, s: any, _tipo: string, bancos: any[] = [], filePrefix?: string): jsPDF {
+  const base = filePrefix && filePrefix.trim() ? filePrefix : nomeDescritivo(s, bancos);
+  const nome = sanitizarNomeArquivo(base);
   baixarBlob(doc.output("blob"), `${nome}.pdf`);
   return doc;
 }
+
 
 // ---------------------------------------------------------------------------
 // Compatibilidade: detalhe de um único banco = extrato detalhado com 1 banco
