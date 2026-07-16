@@ -87,7 +87,14 @@ function Pagina() {
   function aplicarPeriodo(p: string) {
     setPeriodo(p);
     const hoje = new Date();
-    const fmt = (dt: Date) => dt.toISOString().slice(0, 10);
+    // Formata como YYYY-MM-DD em fuso local (não UTC), evitando deslocamento
+    // de 1 dia quando o usuário está em UTC-3 e roda de tarde/noite.
+    const fmt = (dt: Date) => {
+      const y = dt.getFullYear();
+      const m = String(dt.getMonth() + 1).padStart(2, "0");
+      const d = String(dt.getDate()).padStart(2, "0");
+      return `${y}-${m}-${d}`;
+    };
     if (p === "todos") {
       setDesde("");
       setAte("");
@@ -109,6 +116,7 @@ function Pagina() {
       setAte(fmt(new Date(hoje.getFullYear(), 11, 31)));
     }
   }
+
 
   function limparTodosFiltros() {
     setPeriodo("todos");
@@ -337,13 +345,17 @@ function Pagina() {
             `${ct.nome_cliente ?? ""} ${ct.numero_cliente ?? ""} ${ct.numero_proposta ?? ""} ${ct.nome_banco ?? ""}`.toLowerCase();
           if (!alvoStr.includes(termoContrato)) return false;
         }
-        const dia = ct.contrato_emitido_em ?? null;
+        // Normaliza para YYYY-MM-DD antes de comparar. Sem isso, colunas com
+        // horário (ex.: "2026-07-16T15:00:00Z") comparadas contra o filtro
+        // "YYYY-MM-DD" excluíam o próprio dia final por comparação lexical.
+        const dia = ct.contrato_emitido_em ? String(ct.contrato_emitido_em).slice(0, 10) : null;
         if (contratoDesde && (!dia || dia < contratoDesde)) return false;
         if (contratoAte && (!dia || dia > contratoAte)) return false;
         return true;
       }),
     [contratos, termoContrato, contratoDesde, contratoAte],
   );
+
   const dadosFiltrados = useMemo(
     () =>
       (data ?? []).map((s) => ({
