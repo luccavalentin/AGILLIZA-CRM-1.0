@@ -108,9 +108,11 @@ export const listarDemandas = createServerFn({ method: "GET" })
         escopo: z.enum(["minhas", "geral", "equipe"]).default("geral"),
         status: z.string().optional(),
         q: z.string().optional(),
+        cliente_id: z.string().uuid().optional(),
       })
       .parse(data),
   )
+
   .handler(async ({ context, data }): Promise<DemandaItem[]> => {
     const { supabase, userId } = context;
 
