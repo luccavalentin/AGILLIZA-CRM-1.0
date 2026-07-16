@@ -876,14 +876,22 @@ function Pagina() {
                           {b.nome_banco}
                         </span>
                         {(() => {
-                          const s = String(
-                            b.sistema_amortizacao_banco ?? b.sistema_amortizacao ?? "",
-                          ).toUpperCase();
-                          const sis = s === "P" || s.includes("PRICE")
-                            ? "PRICE"
-                            : s === "S" || s.includes("SAC")
-                              ? "SAC"
-                              : null;
+                          // Prioriza o sistema REQUISITADO na simulação. O retorno
+                          // da API (sistema_amortizacao_banco) é usado só como
+                          // fallback porque o Santander devolve "SAC" mesmo em
+                          // simulações executadas em PRICE.
+                          const req = String(b.sistema_amortizacao ?? "").toUpperCase();
+                          const api = String(b.sistema_amortizacao_banco ?? "").toUpperCase();
+                          const sis =
+                            req === "P" || req.includes("PRICE")
+                              ? "PRICE"
+                              : req === "S" || req.includes("SAC")
+                                ? "SAC"
+                                : api === "P" || api.includes("PRICE")
+                                  ? "PRICE"
+                                  : api === "S" || api.includes("SAC")
+                                    ? "SAC"
+                                    : null;
                           if (!sis) return null;
                           return (
                             <span className="inline-flex h-5 shrink-0 items-center rounded-[5px] border border-primary/25 bg-primary/[0.08] px-1.5 text-[9px] font-semibold uppercase leading-none tracking-wide text-primary">
