@@ -1,65 +1,100 @@
-## Escopo
+# Central de Conversas — Operacional › Chats
 
-Reestruturar o módulo CRM (painel/esteira/ficha/lista/documentos) em componentes reutilizáveis, mantendo 100% do comportamento atual. Sem mudanças de lógica de negócio, RLS, queries, formatos de PDF ou telemetria.
+Hub único inspirado em Teams/WhatsApp com todos os históricos de conversa do usuário, unificando design, som, "digitando…", flutuante e realtime.
 
-Arquivos alvo (por tamanho e concentração de responsabilidades):
+## Localização
+- Novo item de menu em **Operacional › Chats** (rota `/operacional/chats`), logo abaixo de "Demandas".
+- Mantém o item "Chat" do CRM e as conversas dentro de cada demanda funcionando (a central apenas reúne tudo).
 
-| Arquivo | Linhas | Ação |
-|---|---|---|
-| `routes/_authenticated/crm.painel.tsx` | 1608 | Explodir em `components/crm/painel/*` |
-| `components/crm/documentos-gerais.tsx` | 1529 | Extrair para `components/crm/documentos-gerais/*` |
-| `routes/_authenticated/crm.chat.tsx` | 1193 | Extrair para `components/crm/chat-gestao/*` |
-| `components/crm/documentos-checklist.tsx` | 1132 | Extrair para `components/crm/documentos-checklist/*` |
-| `components/crm/documentos-tab.tsx` | 1059 | Extrair para `components/crm/documentos-tab/*` |
-| `routes/_authenticated/crm.clientes.tsx` | 784 | Extrair para `components/crm/lista-clientes/*` |
-| `components/crm/vendedores-tab.tsx` | 687 | Extrair para `components/crm/vendedores-tab/*` |
-| `routes/_authenticated/crm.clientes_.$id.tsx` | 659 | Extrair para `components/crm/ficha-cliente/*` |
-| `components/crm/cliente-form.tsx` | 532 | Reduzir a wrapper — sub-seções já existem em `cliente-form/` |
-| `components/crm/chat-cliente-tab.tsx` | 560 | Consolidar em `chat-cliente/` (subpasta já existe) |
-
-## Padrão de reestruturação
-
-Para cada tela grande:
+## Estrutura da tela
+Layout de 3 colunas (Teams-like), responsivo (mobile empilha lista → conversa):
 
 ```text
-components/crm/<feature>/
-  index.tsx            # composição e estado orquestrador
-  types.ts             # tipos locais e contratos
-  hooks/
-    use-*.ts           # queries + estado (uma responsabilidade por hook)
-  components/
-    <bloco>.tsx        # apresentação pura, props tipadas
+┌───────────────┬──────────────────────────────────┐
+│ Sidebar       │  Cabeçalho da conversa           │
+│ ┌───────────┐ │  Nome · status · ações           │
+│ │ Abas      │ ├──────────────────────────────────┤
+│ │ Tudo /    │ │                                  │
+│ │ Diretas / │ │  Mensagens (mesmo design de      │
+│ │ Clientes/ │ │  chat-cliente-tab: bolhas,       │
+│ │ Demandas  │ │  âncoras, "digitando…", som)     │
+│ ├───────────┤ │                                  │
+│ │ Busca     │ ├──────────────────────────────────┤
+│ │ + Nova DM │ │  Composer                        │
+│ ├───────────┤ │                                  │
+│ │ Lista de  │ │                                  │
+│ │ threads   │ │                                  │
+│ └───────────┘ │                                  │
+└───────────────┴──────────────────────────────────┘
 ```
 
-Regras:
-- Cada componente extraído recebe props tipadas, sem acessar `useQuery` direto salvo quando é dono do dado.
-- Hooks isolam `useServerFn` + `useQuery` + `useMutation` + realtime.
-- Utilidades puras (formatação, filtros, mapeamentos de status) vão para `<feature>/utils.ts`.
-- Rotas ficam com <60 linhas: `head()`, guards, e `<FeatureRoot/>`.
-- Zero alteração em `src/lib/crm/*.functions.ts` (server functions permanecem).
+**Abas** na sidebar:
+1. **Tudo** — feed misto ordenado por última mensagem.
+2. **Diretas** — DMs entre usuários internos (novo).
+3. **Clientes** — reaproveita `crm_chat_meta` + `cliente_app_mensagens`.
+4. **Demandas** — threads via `demanda_mensagens`.
 
-## Ordem de execução
+Cada item mostra: avatar/iniciais, nome, prévia da última mensagem, timestamp relativo, badge de não lidas.
 
-1. **Painel CRM** (`crm.painel.tsx`) — maior impacto. Extrair: `HeaderPainel`, `FiltrosPainel`, `ColunasEsteira`, `CardCliente`, `MenuAcoesCliente`, `PastaArquivados`, `ContratoEmitido`, hooks `use-painel-esteira`, `use-realtime-painel`.
-2. **Ficha do cliente** (`crm.clientes_.$id.tsx`) — extrair `CabecalhoFicha`, `AbasFicha`, `AbaResumo`, `AbaSimulacoes`, `AbaPropostas`, hook `use-cliente-ficha`.
-3. **Lista de clientes** (`crm.clientes.tsx`) — extrair `ToolbarClientes`, `TabelaClientes`, `FiltrosClientes`, hook `use-lista-clientes`.
-4. **Chat CRM** (`crm.chat.tsx`) — extrair `ChatSidebar`, `ChatConversa`, `EtiquetasBar`, hook `use-chat-gestao`.
-5. **Documentos** (3 arquivos) — extrair `PastaTree`, `ArquivoRow`, `ChecklistItem`, `UploadDropzone`, hooks `use-documentos-*`.
-6. **Cliente form + chat-cliente-tab** — consolidar wrappers finos que apenas montam as subpastas já existentes.
+**"+ Nova conversa"** abre popover com busca de colegas (`profiles` do mesmo `correspondente_id`, com login habilitado) — clique inicia/abre DM 1:1.
 
-## Garantias
+## Backend (nova estrutura para DMs internas)
 
-- Nenhuma migração de banco.
-- Nenhuma mudança em server functions, RLS, tokens de design.
-- Sem alterar rotas públicas ou nomes de arquivos de rota (URLs preservadas).
-- Após cada passo: build + typecheck limpos antes de seguir para o próximo.
+Nova migration cria:
 
-## Fora de escopo
+- `dm_conversas` — conversa entre 2+ usuários internos.
+- `dm_participantes` — vínculo user↔conversa + `ultima_leitura_em` (badge de não lidas).
+- `dm_mensagens` — mensagens (texto + anexo opcional já no bucket existente).
+- Função `dm_get_or_create_1on1(_other uuid)` — SECURITY DEFINER, garante conversa única por par.
+- Trigger `dm_after_insert_mensagem` — dispara `emitir_notificacao` para o outro participante.
+- RLS: participante lê/escreve; escopo pelo `correspondente_id` do criador.
+- `ALTER PUBLICATION supabase_realtime ADD TABLE dm_mensagens, dm_conversas, dm_participantes` para realtime.
 
-- Otimização de queries (foi entregue turno anterior).
-- Refino visual/UX (foi entregue turno anterior).
-- Refatoração de módulos fora do CRM.
+Server functions em `src/lib/chats/central.functions.ts`:
+- `listarThreadsCentral()` — retorna união (DMs, clientes, demandas) já ordenada + contadores de não lidas.
+- `buscarColegas(termo)` — autocomplete para DM nova.
+- `iniciarDM(other_user_id)` — chama `dm_get_or_create_1on1`.
+- `listarMensagensDM(conversa_id)`, `enviarMensagemDM(conversa_id, texto, anexo?)`, `marcarLidoDM(conversa_id)`.
 
-## Entrega incremental
+## Frontend
 
-Dado o volume (~10k linhas afetadas), executo em turnos sequenciais nesta ordem: (1) Painel → (2) Ficha → (3) Lista → (4) Chat → (5) Documentos → (6) Wrappers finos. Ao fim de cada passo, sinalizo pronto para você validar antes do próximo — assim regressões ficam isoladas e reversíveis.
+Novos arquivos:
+- `src/routes/_authenticated/operacional.chats.tsx` — rota principal.
+- `src/components/operacional/central-chat/sidebar-threads.tsx` — abas + lista + busca + nova DM.
+- `src/components/operacional/central-chat/dm-conversa.tsx` — motor de conversa DM (mesmo visual das outras).
+- `src/lib/chats/central.functions.ts` — server functions listadas acima.
+- `src/hooks/use-dm-realtime.ts` — subscribe em `dm_mensagens`.
+
+Reaproveita:
+- `ChatClienteConversa` para threads de cliente.
+- `DemandaChatConversa` para threads de demanda.
+- `useIncomingChatSound`, `useChatTyping`, `signalIncomingChat` (já globais).
+- `abrirChatFlutuante` / `abrirDemandaChatFlutuante` + novo `abrirDMFlutuante` no `floating-chat-store` (adiciona `kind: "dm"`).
+
+Menu (`nav-config`): adicionar entrada "Chats" sob Operacional, com badge de não lidas somado.
+
+## Recursos incluídos no v1
+- Design unificado das 3 conversas (mesma bolha/composer/tokens).
+- Busca de colegas para iniciar DM (autocomplete).
+- Realtime de mensagens + "digitando…" + som + pisca-menu (já existentes, plugados na DM).
+- Contador de não lidas por thread e agregado.
+- Anexos usando bucket existente `chat-anexos` (mesma UX das outras conversas).
+- Botão "Soltar chat" → janela flutuante global.
+
+## Fora do v1 (avisar ao usuário)
+- Grupos internos (N usuários).
+- Menções `@usuario` com notificação específica.
+- Presença online / última vez visto.
+- Busca full-text em todas as threads (v1 tem busca por nome da thread).
+
+Se preferir incluir alguma dessas no v1, me avise antes de eu executar.
+
+## Passos de execução
+1. Rodar migration das tabelas DM + RLS + realtime + função `dm_get_or_create_1on1`.
+2. Criar server functions + hook realtime.
+3. Criar rota `/operacional/chats` + componentes da central.
+4. Estender `floating-chat-store` com `kind: "dm"` e `FloatingChatHost`.
+5. Adicionar item no menu + badge agregado.
+6. Typecheck.
+
+Confirma que posso executar? (Se quiser grupos/menções/presença no v1, diz agora — dobra o escopo, mas faço junto.)

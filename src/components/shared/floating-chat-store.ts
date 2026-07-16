@@ -17,6 +17,12 @@ export type FloatingChatState =
         statusLabel?: string | null;
       };
       minimized?: boolean;
+    }
+  | {
+      kind: "dm";
+      conversaId: string;
+      info?: { nome?: string | null };
+      minimized?: boolean;
     };
 
 let estado: FloatingChatState | null = null;
@@ -43,6 +49,16 @@ export function abrirDemandaChatFlutuante(
   opts?: { minimized?: boolean },
 ) {
   estado = { kind: "demanda", demandaId, info, minimized: opts?.minimized };
+  emitir();
+}
+
+/** Abre (ou troca) uma mensagem direta (DM) em janela flutuante global. */
+export function abrirDmFlutuante(
+  conversaId: string,
+  info?: Extract<FloatingChatState, { kind: "dm" }>["info"],
+  opts?: { minimized?: boolean },
+) {
+  estado = { kind: "dm", conversaId, info, minimized: opts?.minimized };
   emitir();
 }
 

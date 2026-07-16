@@ -1966,6 +1966,131 @@ export type Database = {
           },
         ]
       }
+      dm_conversas: {
+        Row: {
+          correspondente_id: string
+          created_at: string
+          criador_id: string
+          id: string
+          ultima_mensagem_em: string | null
+          ultima_mensagem_preview: string | null
+          updated_at: string
+        }
+        Insert: {
+          correspondente_id: string
+          created_at?: string
+          criador_id: string
+          id?: string
+          ultima_mensagem_em?: string | null
+          ultima_mensagem_preview?: string | null
+          updated_at?: string
+        }
+        Update: {
+          correspondente_id?: string
+          created_at?: string
+          criador_id?: string
+          id?: string
+          ultima_mensagem_em?: string | null
+          ultima_mensagem_preview?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dm_conversas_criador_id_fkey"
+            columns: ["criador_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dm_mensagens: {
+        Row: {
+          anexo_mime: string | null
+          anexo_nome: string | null
+          anexo_url: string | null
+          autor_id: string
+          conversa_id: string
+          correspondente_id: string
+          created_at: string
+          id: string
+          texto: string | null
+        }
+        Insert: {
+          anexo_mime?: string | null
+          anexo_nome?: string | null
+          anexo_url?: string | null
+          autor_id: string
+          conversa_id: string
+          correspondente_id: string
+          created_at?: string
+          id?: string
+          texto?: string | null
+        }
+        Update: {
+          anexo_mime?: string | null
+          anexo_nome?: string | null
+          anexo_url?: string | null
+          autor_id?: string
+          conversa_id?: string
+          correspondente_id?: string
+          created_at?: string
+          id?: string
+          texto?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dm_mensagens_autor_id_fkey"
+            columns: ["autor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dm_mensagens_conversa_id_fkey"
+            columns: ["conversa_id"]
+            isOneToOne: false
+            referencedRelation: "dm_conversas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dm_participantes: {
+        Row: {
+          conversa_id: string
+          entrou_em: string
+          ultima_leitura_em: string | null
+          user_id: string
+        }
+        Insert: {
+          conversa_id: string
+          entrou_em?: string
+          ultima_leitura_em?: string | null
+          user_id: string
+        }
+        Update: {
+          conversa_id?: string
+          entrou_em?: string
+          ultima_leitura_em?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dm_participantes_conversa_id_fkey"
+            columns: ["conversa_id"]
+            isOneToOne: false
+            referencedRelation: "dm_conversas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dm_participantes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       feriados: {
         Row: {
           correspondente_id: string | null
@@ -5311,6 +5436,11 @@ export type Database = {
       }
       correspondente_do_usuario: { Args: { _user_id: string }; Returns: string }
       demanda_escalar_vencidas: { Args: { _corr: string }; Returns: number }
+      dm_e_participante: {
+        Args: { _conv: string; _user: string }
+        Returns: boolean
+      }
+      dm_get_or_create_1on1: { Args: { _other: string }; Returns: string }
       domingo_de_pascoa: { Args: { ano: number }; Returns: string }
       emitir_notificacao: {
         Args: {
