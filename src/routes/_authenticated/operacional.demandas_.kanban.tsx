@@ -250,7 +250,12 @@ function Pagina() {
     [moverFn, qc],
   );
 
-  const itens = useMemo(() => data ?? [], [data]);
+  const itens = useMemo(() => {
+    const base = data ?? [];
+    if (filtroResponsavel === "todos") return base;
+    if (filtroResponsavel === "sem") return base.filter((d) => !d.responsavel_id);
+    return base.filter((d) => d.responsavel_id === filtroResponsavel);
+  }, [data, filtroResponsavel]);
   const porStatus = useMemo(() => {
     const mapa = new Map<DemandaStatus, DemandaItem[]>();
     for (const col of COLUNAS) mapa.set(col, []);
