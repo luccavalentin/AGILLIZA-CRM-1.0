@@ -3,11 +3,13 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Link, useRouter } from "@tanstack/react-router";
 import {
+  Archive,
   ArrowLeft,
   Loader2,
   Maximize2,
   MessageCircle,
   MessagesSquare,
+  Pin,
   Plus,
   Search,
   UserCircle2,
