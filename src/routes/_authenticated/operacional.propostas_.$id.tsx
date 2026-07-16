@@ -685,15 +685,33 @@ function AcoesTopo({
         <DropdownMenuContent align="end" className="w-72">
           <DropdownMenuLabel>Documentos da proposta</DropdownMenuLabel>
           <DropdownMenuItem
-            onClick={async () => {
-              const { baixarPropostaOficialPDF } = await import("@/lib/propostas/proposta-oficial-pdf");
-              baixarPropostaOficialPDF({
-                proposta,
-                bancos: bancos ?? [],
-                envolvidos: envolvidos ?? [],
-                documentos: documentos ?? [],
-                followups: followups ?? [],
-              });
+            onSelect={(e) => {
+              e.preventDefault();
+              const gerar = async () => {
+                const t = toast.loading("Gerando ficha da proposta…");
+                try {
+                  const { baixarPropostaOficialPDF } = await import(
+                    "@/lib/propostas/proposta-oficial-pdf"
+                  );
+                  // adia para o próximo tick para o menu fechar antes do trabalho síncrono do jsPDF
+                  await new Promise((r) => setTimeout(r, 30));
+                  baixarPropostaOficialPDF({
+                    proposta,
+                    bancos: bancos ?? [],
+                    envolvidos: envolvidos ?? [],
+                    documentos: documentos ?? [],
+                    followups: followups ?? [],
+                  });
+                  toast.success("Ficha da proposta gerada.", { id: t });
+                } catch (err) {
+                  console.error("Falha ao gerar ficha da proposta", err);
+                  toast.error(
+                    err instanceof Error ? err.message : "Falha ao gerar a ficha da proposta.",
+                    { id: t },
+                  );
+                }
+              };
+              void gerar();
             }}
           >
             Ficha da proposta (cadastro, checklist, etapas)
@@ -701,14 +719,48 @@ function AcoesTopo({
           <DropdownMenuSeparator />
           <DropdownMenuLabel>Extrato para o cliente</DropdownMenuLabel>
           <DropdownMenuItem
-            onClick={() => baixarPropostaDetalhadaPDF({ proposta, bancos })}
+            onSelect={(e) => {
+              e.preventDefault();
+              const gerar = async () => {
+                const t = toast.loading("Gerando cronograma detalhado…");
+                try {
+                  await new Promise((r) => setTimeout(r, 30));
+                  baixarPropostaDetalhadaPDF({ proposta, bancos });
+                  toast.success("Cronograma gerado.", { id: t });
+                } catch (err) {
+                  console.error(err);
+                  toast.error(
+                    err instanceof Error ? err.message : "Falha ao gerar o cronograma.",
+                    { id: t },
+                  );
+                }
+              };
+              void gerar();
+            }}
             disabled={(bancos ?? []).length === 0}
           >
             Cronograma detalhado (todas as parcelas)
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
-            onClick={() => baixarPropostaConsolidadoPDF({ proposta, bancos })}
+            onSelect={(e) => {
+              e.preventDefault();
+              const gerar = async () => {
+                const t = toast.loading("Gerando comparativo consolidado…");
+                try {
+                  await new Promise((r) => setTimeout(r, 30));
+                  baixarPropostaConsolidadoPDF({ proposta, bancos });
+                  toast.success("Comparativo gerado.", { id: t });
+                } catch (err) {
+                  console.error(err);
+                  toast.error(
+                    err instanceof Error ? err.message : "Falha ao gerar o comparativo.",
+                    { id: t },
+                  );
+                }
+              };
+              void gerar();
+            }}
             disabled={(bancos ?? []).length === 0}
           >
             Comparativo consolidado

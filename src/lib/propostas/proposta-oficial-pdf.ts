@@ -623,56 +623,70 @@ function tabelaFollowups(doc: jsPDF, pageW: number, followups: any[], y: number)
 /* API                                                                         */
 /* -------------------------------------------------------------------------- */
 
-export function baixarPropostaOficialPDF({
-  proposta,
-  bancos,
-  envolvidos,
-  documentos,
-  followups,
-}: Input) {
+export function baixarPropostaOficialPDF(input: Input) {
+  const proposta = input?.proposta ?? {};
+  const bancos = Array.isArray(input?.bancos) ? input.bancos : [];
+  const envolvidos = Array.isArray(input?.envolvidos) ? input.envolvidos : [];
+  const documentos = Array.isArray(input?.documentos) ? input.documentos : [];
+  const followups = Array.isArray(input?.followups) ? input.followups : [];
+
   P = getPdfPalette();
   const doc = new jsPDF({ unit: "pt", format: "a4", orientation: "portrait" });
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
 
+  const safe = <T,>(fn: () => T, fallback: T): T => {
+    try {
+      return fn();
+    } catch (err) {
+      console.error("[proposta-oficial-pdf] bloco falhou:", err);
+      return fallback;
+    }
+  };
+
   // ---------------- Página 1 : ficha da proposta ----------------
-  drawHeader(doc, pageW);
+  safe(() => drawHeader(doc, pageW), undefined);
   let y = HEADER_H + 24;
-  y = drawTituloProposta(doc, pageW, proposta, y);
-  y = drawResumoFinanceiro(doc, pageW, proposta, bancos, y);
-  y = drawImovel(doc, pageW, proposta, y);
-  y = drawEtapas(doc, pageW, proposta, y);
+  y = safe(() => drawTituloProposta(doc, pageW, proposta, y), y + 20);
+  y = safe(() => drawResumoFinanceiro(doc, pageW, proposta, bancos, y), y + 90);
+  y = safe(() => drawImovel(doc, pageW, proposta, y), y + 80);
+  y = safe(() => drawEtapas(doc, pageW, proposta, y), y + 60);
 
   // ---------------- Página 2 : proponentes ----------------
   doc.addPage();
-  drawHeader(doc, pageW);
+  safe(() => drawHeader(doc, pageW), undefined);
   y = HEADER_H + 24;
-  y = tabelaProponentes(doc, pageW, envolvidos, y);
+  safe(() => tabelaProponentes(doc, pageW, envolvidos, y), 0);
 
   // ---------------- Página 3 : documentação ----------------
   doc.addPage();
-  drawHeader(doc, pageW);
+  safe(() => drawHeader(doc, pageW), undefined);
   y = HEADER_H + 24;
-  y = tabelaDocumentos(doc, pageW, documentos, y);
+  safe(() => tabelaDocumentos(doc, pageW, documentos, y), 0);
 
   // ---------------- Página 4 : follow-ups ----------------
-  if ((followups ?? []).length) {
+  if (followups.length) {
     doc.addPage();
-    drawHeader(doc, pageW);
+    safe(() => drawHeader(doc, pageW), undefined);
     y = HEADER_H + 24;
-    y = tabelaFollowups(doc, pageW, followups!, y);
+    safe(() => tabelaFollowups(doc, pageW, followups, y), 0);
   }
 
   // Rodapé em todas as páginas
   const total = doc.getNumberOfPages();
   for (let i = 1; i <= total; i++) {
     doc.setPage(i);
-    drawFooter(doc, pageW, pageH, i, total);
+    safe(() => drawFooter(doc, pageW, pageH, i, total), undefined);
   }
 
   // Nome do arquivo: "{Nº proposta} - Ficha - {descritivo}.pdf"
-  const numero = String(proposta?.numero_proposta ?? "").trim();
-  const descritivo = nomeDescritivo(proposta, bancos);
-  const nome = [numero, "Ficha", descritivo].filter(Boolean).join(" - ");
-  doc.save(`${nome || "Ficha da Proposta"}.pdf`);
+  let nome = "Ficha da Proposta";
+  try {
+    const numero = String(proposta?.numero_proposta ?? "").trim();
+    const descritivo = nomeDescritivo(proposta, bancos);
+    nome = [numero, "Ficha", descritivo].filter(Boolean).join(" - ") || nome;
+  } catch (err) {
+    console.error("[proposta-oficial-pdf] falha no nome do arquivo:", err);
+  }
+  doc.save(`${nome}.pdf`);
 }
