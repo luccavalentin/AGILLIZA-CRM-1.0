@@ -213,6 +213,13 @@ export function PainelChatCliente({
   }, [data?.celular]);
 
   const atualIdx = useMemo(() => macroIndexOf(data?.etapa_codigo ?? null), [data?.etapa_codigo]);
+  const encerradaMotivo = useMemo<"recusado" | "cancelada" | null>(() => {
+    const st = (data?.proposta?.status ?? "").toLowerCase();
+    if (st.includes("recusad") || st.includes("reprovad")) return "recusado";
+    if (st.includes("cancelad")) return "cancelada";
+    return null;
+  }, [data?.proposta?.status]);
+
 
   return (
     <Card className="flex h-full min-h-0 flex-col overflow-hidden border-border/60 shadow-sm">
