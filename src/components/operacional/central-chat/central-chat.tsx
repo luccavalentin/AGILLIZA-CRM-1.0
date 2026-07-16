@@ -1,9 +1,11 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Link } from "@tanstack/react-router";
+import { Link, useRouter } from "@tanstack/react-router";
 import {
+  ArrowLeft,
   Loader2,
+  Maximize2,
   MessageCircle,
   MessagesSquare,
   Plus,
@@ -12,6 +14,11 @@ import {
   Users,
 } from "lucide-react";
 import { toast } from "sonner";
+import {
+  abrirChatFlutuante,
+  abrirDemandaChatFlutuante,
+  abrirDmFlutuante,
+} from "@/components/shared/floating-chat-store";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
