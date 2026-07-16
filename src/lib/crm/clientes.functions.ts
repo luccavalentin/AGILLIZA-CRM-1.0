@@ -1698,6 +1698,7 @@ export interface ClienteNegocios {
     status: string | null;
     valor_financiamento: number | null;
     created_at: string;
+    bancos: string[];
   }>;
   propostas: Array<{
     id: string;
@@ -1732,11 +1733,32 @@ export const getClienteNegocios = createServerFn({ method: "GET" })
         .order("created_at", { ascending: false }),
     ]);
 
+    // Busca os bancos selecionados de cada simulação para exibir logos/cores.
+    const simIds = (sims ?? []).map((s: any) => s.id as string);
+    const bancosPorSim: Record<string, string[]> = {};
+    if (simIds.length > 0) {
+      const { data: bancos } = await supabase
+        .from("simulacao_bancos")
+        .select("simulacao_id, nome_banco, selecionado")
+        .in("simulacao_id", simIds)
+        .eq("selecionado", true);
+      for (const b of (bancos ?? []) as any[]) {
+        const nome = (b.nome_banco ?? "").toString().trim();
+        if (!nome) continue;
+        const arr = (bancosPorSim[b.simulacao_id] ??= []);
+        if (!arr.includes(nome)) arr.push(nome);
+      }
+    }
+
     return {
-      simulacoes: (sims ?? []) as ClienteNegocios["simulacoes"],
+      simulacoes: ((sims ?? []) as any[]).map((s) => ({
+        ...s,
+        bancos: bancosPorSim[s.id] ?? [],
+      })) as ClienteNegocios["simulacoes"],
       propostas: (props ?? []) as ClienteNegocios["propostas"],
     };
   });
+
 
 /** Dados do cadastro usados para pré-marcar o checklist de documentação. */
 export const getChecklistDados = createServerFn({ method: "GET" })
