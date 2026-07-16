@@ -74,10 +74,12 @@ export function FloatingWindow({
   title,
   onClose,
   children,
+  startMinimized = false,
 }: {
   title: string;
   onClose: () => void;
   children: ReactNode;
+  startMinimized?: boolean;
 }) {
   const [viewport, setViewport] = useState(() => ({
     w: typeof window !== "undefined" ? window.innerWidth : 1024,
@@ -98,12 +100,17 @@ export function FloatingWindow({
     const vw = typeof window !== "undefined" ? window.innerWidth : 1024;
     const vh = typeof window !== "undefined" ? window.innerHeight : 768;
     const w = vw < 640 ? Math.max(280, vw - 24) : 420;
+    // Quando inicia minimizado, ancora no canto superior direito para não
+    // atrapalhar a tela atual do usuário.
+    if (startMinimized) {
+      return { x: Math.max(12, vw - w - 16), y: 72 };
+    }
     return {
       x: Math.max(12, Math.round((vw - w) / 2)),
       y: Math.max(64, Math.round(vh * 0.1)),
     };
   });
-  const [minimized, setMinimized] = useState(false);
+  const [minimized, setMinimized] = useState(startMinimized);
   const dragRef = useRef<{ dx: number; dy: number } | null>(null);
 
   const onPointerMove = useCallback(
