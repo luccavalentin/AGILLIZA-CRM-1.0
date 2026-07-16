@@ -37,6 +37,12 @@ import {
   calcularPorFinanciamento,
   calcularPorParcela,
 } from "./use-simulacao-completa/calculos";
+import {
+  patchSelecionarClienteCRM,
+  patchLimparTitular,
+  patchPuxarConjugeCRM,
+  patchInverterPrincipal,
+} from "./use-simulacao-completa/cliente-crm";
 
 export type { Form };
 
