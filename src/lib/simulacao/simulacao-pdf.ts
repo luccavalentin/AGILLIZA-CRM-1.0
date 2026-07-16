@@ -891,15 +891,20 @@ function abreviarValor(v: number | null | undefined): string {
 }
 
 /** Sistema de amortização em rótulo curto (SAC/PRICE) para o nome do arquivo.
- * Prioriza o sistema requisitado por banco (b._sistema) — necessário para o
- * caso "Ambos (SAC + PRICE)" em que o mesmo banco aparece duas vezes. */
+ * Usa a MESMA fonte exibida no corpo do PDF (resposta real do banco → sistema
+ * da simulação), caindo em `_sistema` só quando não há nenhuma outra pista.
+ * Isso evita rotular "PRICE" um PDF que rendeu SAC (e vice-versa) no fluxo
+ * "Ambos (SAC + PRICE)". */
 function tabelaLabel(s: any, bancos: any[]): string {
+  const d = bancos.map((b) => extrairDetalheBanco(b?.raw_response)).find(Boolean);
+  const real = normalizarSistemaAmortizacao(d?.sistemaAmortizacao, s?.sistema_amortizacao);
+  if (real === "SAC" || real === "PRICE") return real;
   const req = String(bancos?.[0]?._sistema ?? "").toUpperCase();
   if (req.includes("PRICE") || req === "P") return "PRICE";
   if (req.includes("SAC") || req === "S") return "SAC";
-  const d = bancos.map((b) => extrairDetalheBanco(b?.raw_response)).find(Boolean);
-  return normalizarSistemaAmortizacao(d?.sistemaAmortizacao, s.sistema_amortizacao) || "-";
+  return "-";
 }
+
 
 /**
  * Renda familiar estimada: usa primeiro o retorno real dos bancos e, havendo
