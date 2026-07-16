@@ -109,8 +109,18 @@ export function CentralChatPage() {
 
   const totalNaoLidas = (threads ?? []).reduce((acc, t) => acc + (t.nao_lidas ?? 0), 0);
 
+  const router = useRouter();
+
   return (
     <div className="mx-auto flex h-[calc(100vh-9rem)] w-full max-w-[1400px] flex-col gap-4 px-4 py-4 lg:px-6">
+      <Button
+        variant="ghost"
+        size="sm"
+        className="w-fit gap-2 text-muted-foreground hover:text-foreground"
+        onClick={() => router.history.back()}
+      >
+        <ArrowLeft className="h-4 w-4" /> Voltar
+      </Button>
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Central de Conversas</h1>
