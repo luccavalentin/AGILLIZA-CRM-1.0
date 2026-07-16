@@ -2165,10 +2165,34 @@ export const runReport = createServerFn({ method: "POST" })
             tone: cobertura >= 100 ? "success" : "warning",
             hint: `Inadimplência ${inadimplencia.toFixed(1)}%`,
           },
+          {
+            label: "Repasse previsto",
+            valor: brl(repassePrev),
+            tone: "brand",
+            hint: `${repasses.length} contrato(s)`,
+          },
+          {
+            label: "Repasse pago",
+            valor: brl(repassePago),
+            tone: "success",
+            hint: repasseAberto > 0 ? `${brl(repasseAberto)} em aberto` : "Sem pendências",
+          },
+          {
+            label: "Comissões usuários",
+            valor: brl(comTotal),
+            tone: "neutral",
+            hint: `${comUsr.length} lançamento(s)`,
+          },
+          {
+            label: "Comissões pagas",
+            valor: brl(comPagoValor),
+            tone: "success",
+            hint: comAPagarValor > 0 ? `${brl(comAPagarValor)} a pagar` : "Em dia",
+          },
         ],
         charts,
-        tabelas:
-          proximos.length > 0
+        tabelas: [
+          ...(proximos.length > 0
             ? [
                 {
                   titulo: "Agenda de caixa",
@@ -2197,7 +2221,60 @@ export const runReport = createServerFn({ method: "POST" })
                   ],
                 },
               ]
-            : undefined,
+            : []),
+          ...(repassePorBanco.size > 0
+            ? [
+                {
+                  titulo: "Repasses do correspondente",
+                  descricao: "Comissões geradas ao correspondente por banco.",
+                  tabelas: [
+                    {
+                      titulo: "Total por banco",
+                      columns: [
+                        { key: "banco", label: "Banco" },
+                        {
+                          key: "valor",
+                          label: "Repasse",
+                          align: "right" as const,
+                          footer: "sum" as const,
+                          format: "brl" as const,
+                        },
+                      ],
+                      rows: [...repassePorBanco.entries()]
+                        .sort((a, b) => b[1] - a[1])
+                        .map(([banco, valor]) => ({ banco, valor })),
+                    },
+                  ],
+                },
+              ]
+            : []),
+          ...(comPorUsuario.size > 0
+            ? [
+                {
+                  titulo: "Comissões por usuário",
+                  descricao: "Comissões geradas para corretores, imobiliária, analistas e comercial.",
+                  tabelas: [
+                    {
+                      titulo: "Total por usuário",
+                      columns: [
+                        { key: "usuario", label: "Usuário" },
+                        {
+                          key: "valor",
+                          label: "Comissão",
+                          align: "right" as const,
+                          footer: "sum" as const,
+                          format: "brl" as const,
+                        },
+                      ],
+                      rows: [...comPorUsuario.entries()]
+                        .sort((a, b) => b[1] - a[1])
+                        .map(([k, valor]) => ({ usuario: nomesCom.get(k) ?? "—", valor })),
+                    },
+                  ],
+                },
+              ]
+            : []),
+        ],
         columns: [
           { key: "tipo", label: "Tipo" },
           { key: "descricao", label: "Descrição" },
