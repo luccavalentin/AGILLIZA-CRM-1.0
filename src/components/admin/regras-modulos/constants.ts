@@ -1,7 +1,8 @@
-import type {
-  AcessoTipo,
-  EscopoDados,
-  NivelAcesso,
+import {
+  CATALOGO_MODULOS,
+  type AcessoTipo,
+  type EscopoDados,
+  type NivelAcesso,
 } from "@/lib/admin/regras-modulos.functions";
 
 export type MatrizEstado = Record<
@@ -42,9 +43,16 @@ export const chave = (modulo: string, acao: string) => `${modulo}:${acao}`;
 
 export function estadoInicial(nivel: NivelAcesso): MatrizEstado {
   const estado: MatrizEstado = {};
-  // Import lazily via caller to avoid circular; we accept the catálogo as argument below when needed.
+  for (const mod of CATALOGO_MODULOS) {
+    for (const a of mod.acoes) {
+      const atual = nivel.permissoes.find(
+        (p) => p.modulo === mod.modulo && p.acao === a.acao,
+      );
+      estado[chave(mod.modulo, a.acao)] = {
+        permitido: atual?.permitido ?? false,
+        escopo: atual?.escopo_dados ?? "proprios",
+      };
+    }
+  }
   return estado;
 }
-
-// Helper importado no painel — mantido aqui por proximidade semântica com o restante das constantes.
-export { estadoInicialFromCatalogo } from "./estado-inicial";
