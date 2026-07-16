@@ -194,6 +194,7 @@ export function FloatingWindow({
           ? "h-auto border-primary/60 ring-2 ring-primary/40 shadow-[0_12px_40px_-12px_color-mix(in_oklab,var(--primary)_55%,transparent)]"
           : "border-primary/40 ring-1 ring-primary/20",
         !minimized && (mobileExpanded ? "" : "min-h-[20rem] resize"),
+        blink && "chat-blink",
       )}
     >
       <div
