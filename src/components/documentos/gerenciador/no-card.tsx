@@ -40,9 +40,12 @@ export function NoCard({
   onRenomear,
   onMover,
   onExcluir,
+  onAlternarMenu,
 }: NoCardProps) {
   const arq = no.tipo === "arquivo" ? estiloArquivo(no.content_type, no.nome) : null;
   const Icon = arq?.Icon;
+  const podeAlternarMenu =
+    no.tipo === "pasta" && no.parent_id === null && !!onAlternarMenu;
 
   const menu = (
     <DropdownMenu>
