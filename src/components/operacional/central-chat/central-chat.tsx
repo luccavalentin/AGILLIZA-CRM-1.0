@@ -3,11 +3,13 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Link, useRouter } from "@tanstack/react-router";
 import {
+  Archive,
   ArrowLeft,
   Loader2,
   Maximize2,
   MessageCircle,
   MessagesSquare,
+  Pin,
   Plus,
   Search,
   UserCircle2,
@@ -45,7 +47,23 @@ import {
   type ThreadCentral,
   type ThreadKind,
 } from "@/lib/chats/central.functions";
+import {
+  ConversaMenuAcoes,
+  EtiquetasPills,
+} from "@/components/shared/conversa-menu-acoes";
+import {
+  listarEstadoChatDoUsuario,
+  listarEtiquetas,
+  listarVinculosEtiqueta,
+  type ChatTipo,
+  type EstadoChat,
+  type EtiquetaChat,
+} from "@/lib/chats/gestao.functions";
 import { cn } from "@/lib/utils";
+
+function chaveConversa(kind: ChatTipo | ThreadKind, id: string) {
+  return `${kind}-${id}`;
+}
 
 function iniciais(nome?: string | null): string {
   if (!nome) return "?";
@@ -91,31 +109,100 @@ type SelecionadoState =
 
 export function CentralChatPage() {
   const listarFn = useServerFn(listarThreadsCentral);
+  const listarEstadoFn = useServerFn(listarEstadoChatDoUsuario);
+  const listarVinculosFn = useServerFn(listarVinculosEtiqueta);
+  const listarEtiquetasFn = useServerFn(listarEtiquetas);
   const { data: threads, isLoading } = useQuery({
     queryKey: ["threads-central"],
     queryFn: () => listarFn(),
     refetchInterval: 15_000,
   });
+  const { data: estados } = useQuery({
+    queryKey: ["chat-estado-usuario"],
+    queryFn: () => listarEstadoFn(),
+    refetchInterval: 30_000,
+  });
+  const { data: vinculos } = useQuery({
+    queryKey: ["chat-etiqueta-vinculos"],
+    queryFn: () => listarVinculosFn(),
+    refetchInterval: 30_000,
+  });
+  const { data: etiquetas } = useQuery({
+    queryKey: ["chat-etiquetas"],
+    queryFn: () => listarEtiquetasFn(),
+  });
 
-  const [aba, setAba] = useState<"todos" | ThreadKind>("todos");
+  const estadoPor = useMemo(() => {
+    const m = new Map<string, EstadoChat>();
+    for (const e of estados ?? []) m.set(chaveConversa(e.chat_tipo, e.chat_id), e);
+    return m;
+  }, [estados]);
+
+  const etiquetaPor = useMemo(() => {
+    const m = new Map<string, string[]>();
+    for (const v of vinculos ?? []) {
+      const k = chaveConversa(v.chat_tipo, v.chat_id);
+      const arr = m.get(k) ?? [];
+      arr.push(v.etiqueta_id);
+      m.set(k, arr);
+    }
+    return m;
+  }, [vinculos]);
+
+  const catalogoEtiquetas = useMemo(() => {
+    const m = new Map<string, EtiquetaChat>();
+    for (const e of etiquetas ?? []) m.set(e.id, e);
+    return m;
+  }, [etiquetas]);
+
+  const [aba, setAba] = useState<"todos" | ThreadKind | "arquivadas">("todos");
   const [termo, setTermo] = useState("");
   const [selecionado, setSelecionado] = useState<SelecionadoState>(null);
 
   const filtradas = useMemo(() => {
     const t = termo.trim().toLowerCase();
-    return (threads ?? [])
-      .filter((th) => (aba === "todos" ? true : th.kind === aba))
-      .filter((th) =>
-        !t
-          ? true
-          : th.titulo.toLowerCase().includes(t) ||
-            (th.subtitulo?.toLowerCase().includes(t) ?? false) ||
-            (th.demanda_titulo?.toLowerCase().includes(t) ?? false) ||
-            (th.ultima_mensagem?.toLowerCase().includes(t) ?? false),
-      );
-  }, [threads, aba, termo]);
+    const list = (threads ?? [])
+      .map((th) => {
+        const st = estadoPor.get(chaveConversa(th.kind, th.id));
+        return {
+          th,
+          arquivado: !!st?.arquivado_em,
+          oculto: !!st?.oculto_em,
+          fixado: !!st?.pinado_em,
+          apelido: st?.apelido ?? null,
+        };
+      })
+      .filter((r) => !r.oculto)
+      .filter((r) =>
+        aba === "arquivadas" ? r.arquivado : !r.arquivado,
+      )
+      .filter((r) =>
+        aba === "todos" || aba === "arquivadas" ? true : r.th.kind === aba,
+      )
+      .filter((r) => {
+        if (!t) return true;
+        const th = r.th;
+        return (
+          th.titulo.toLowerCase().includes(t) ||
+          (r.apelido?.toLowerCase().includes(t) ?? false) ||
+          (th.subtitulo?.toLowerCase().includes(t) ?? false) ||
+          (th.demanda_titulo?.toLowerCase().includes(t) ?? false) ||
+          (th.ultima_mensagem?.toLowerCase().includes(t) ?? false)
+        );
+      });
+    list.sort((a, b) => {
+      if (a.fixado !== b.fixado) return a.fixado ? -1 : 1;
+      const ta = a.th.ultima_em ? new Date(a.th.ultima_em).getTime() : 0;
+      const tb = b.th.ultima_em ? new Date(b.th.ultima_em).getTime() : 0;
+      return tb - ta;
+    });
+    return list;
+  }, [threads, aba, termo, estadoPor]);
 
   const totalNaoLidas = (threads ?? []).reduce((acc, t) => acc + (t.nao_lidas ?? 0), 0);
+  const totalArquivadas = (threads ?? []).filter(
+    (t) => estadoPor.get(chaveConversa(t.kind, t.id))?.arquivado_em,
+  ).length;
 
   const router = useRouter();
 
@@ -161,11 +248,17 @@ export function CentralChatPage() {
               />
             </div>
             <Tabs value={aba} onValueChange={(v) => setAba(v as any)}>
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className="grid w-full grid-cols-5">
                 <TabsTrigger value="todos">Tudo</TabsTrigger>
                 <TabsTrigger value="dm">Diretas</TabsTrigger>
                 <TabsTrigger value="cliente">Clientes</TabsTrigger>
                 <TabsTrigger value="demanda">Demandas</TabsTrigger>
+                <TabsTrigger value="arquivadas" className="gap-1">
+                  <Archive className="size-3" />
+                  {totalArquivadas > 0 && (
+                    <span className="text-[10px]">{totalArquivadas}</span>
+                  )}
+                </TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
@@ -186,15 +279,27 @@ export function CentralChatPage() {
               </div>
             ) : (
               <ul className="divide-y">
-                {filtradas.map((t) => (
-                  <li key={`${t.kind}-${t.id}`}>
-                    <ThreadItem
-                      thread={t}
-                      selecionado={ehSelecionado(selecionado, t)}
-                      onClick={() => setSelecionado(threadParaSelecionado(t))}
-                    />
-                  </li>
-                ))}
+                {filtradas.map((r) => {
+                  const t = r.th;
+                  const chave = chaveConversa(t.kind, t.id);
+                  const etiquetasDaConv = (etiquetaPor.get(chave) ?? [])
+                    .map((id) => catalogoEtiquetas.get(id))
+                    .filter(Boolean) as EtiquetaChat[];
+                  return (
+                    <li key={chave}>
+                      <ThreadItem
+                        thread={t}
+                        selecionado={ehSelecionado(selecionado, t)}
+                        onClick={() => setSelecionado(threadParaSelecionado(t))}
+                        apelido={r.apelido}
+                        fixado={r.fixado}
+                        arquivado={r.arquivado}
+                        etiquetas={etiquetasDaConv}
+                        etiquetaIds={etiquetaPor.get(chave) ?? []}
+                      />
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </ScrollArea>
@@ -240,6 +345,15 @@ export function CentralChatPage() {
                   <Maximize2 className="size-3.5" />
                   <span className="hidden sm:inline">Soltar chat</span>
                 </Button>
+                <ConversaMenuAcoes
+                  chatTipo="dm"
+                  chatId={selecionado.conversaId}
+                  arquivado={!!estadoPor.get(chaveConversa("dm", selecionado.conversaId))?.arquivado_em}
+                  fixado={!!estadoPor.get(chaveConversa("dm", selecionado.conversaId))?.pinado_em}
+                  apelidoAtual={estadoPor.get(chaveConversa("dm", selecionado.conversaId))?.apelido ?? null}
+                  nomeReferencia={selecionado.nome}
+                  etiquetaIds={etiquetaPor.get(chaveConversa("dm", selecionado.conversaId)) ?? []}
+                />
               </div>
               <div className="min-h-0 flex-1">
                 <DmConversa conversaId={selecionado.conversaId} />
@@ -273,6 +387,15 @@ export function CentralChatPage() {
                   <Maximize2 className="size-3.5" />
                   <span className="hidden sm:inline">Soltar chat</span>
                 </Button>
+                <ConversaMenuAcoes
+                  chatTipo="cliente"
+                  chatId={selecionado.clienteId}
+                  arquivado={!!estadoPor.get(chaveConversa("cliente", selecionado.clienteId))?.arquivado_em}
+                  fixado={!!estadoPor.get(chaveConversa("cliente", selecionado.clienteId))?.pinado_em}
+                  apelidoAtual={estadoPor.get(chaveConversa("cliente", selecionado.clienteId))?.apelido ?? null}
+                  nomeReferencia={selecionado.nome}
+                  etiquetaIds={etiquetaPor.get(chaveConversa("cliente", selecionado.clienteId)) ?? []}
+                />
               </div>
               <div className="min-h-0 flex-1">
                 <ChatClienteConversa
@@ -327,6 +450,15 @@ export function CentralChatPage() {
                     Abrir demanda
                   </Link>
                 </Button>
+                <ConversaMenuAcoes
+                  chatTipo="demanda"
+                  chatId={selecionado.demandaId}
+                  arquivado={!!estadoPor.get(chaveConversa("demanda", selecionado.demandaId))?.arquivado_em}
+                  fixado={!!estadoPor.get(chaveConversa("demanda", selecionado.demandaId))?.pinado_em}
+                  apelidoAtual={estadoPor.get(chaveConversa("demanda", selecionado.demandaId))?.apelido ?? null}
+                  nomeReferencia={selecionado.interlocutorNome ?? selecionado.titulo ?? selecionado.numero}
+                  etiquetaIds={etiquetaPor.get(chaveConversa("demanda", selecionado.demandaId)) ?? []}
+                />
               </div>
               <div className="min-h-0 flex-1">
                 <DemandaChatConversa
@@ -374,19 +506,29 @@ function ThreadItem({
   thread,
   selecionado,
   onClick,
+  apelido,
+  fixado,
+  arquivado,
+  etiquetas,
+  etiquetaIds,
 }: {
   thread: ThreadCentral;
   selecionado: boolean;
   onClick: () => void;
+  apelido: string | null;
+  fixado: boolean;
+  arquivado: boolean;
+  etiquetas: EtiquetaChat[];
+  etiquetaIds: string[];
 }) {
   const rot = RÓTULOS[thread.kind];
   const Icon = rot.icon;
 
-  // Nome de exibição principal — a pessoa com quem se conversa.
-  const nomePrincipal =
+  const nomeBase =
     thread.kind === "demanda"
       ? thread.interlocutor_nome?.trim() || thread.titulo || "Usuário da demanda"
       : thread.titulo;
+  const nomePrincipal = apelido?.trim() || nomeBase;
 
   const contexto =
     thread.kind === "demanda"
@@ -400,51 +542,74 @@ function ThreadItem({
   };
 
   return (
-    <button
-      type="button"
-      onClick={onClick}
+    <div
       className={cn(
-        "flex w-full items-start gap-3 px-3 py-2.5 text-left transition-colors hover:bg-muted/60",
+        "group relative flex w-full items-start gap-3 px-3 py-2.5 text-left transition-colors hover:bg-muted/60",
         selecionado && "bg-primary/10 hover:bg-primary/10",
       )}
     >
-      <Avatar className="size-10 border border-border/60">
-        {thread.avatar_url && <AvatarImage src={thread.avatar_url} alt={nomePrincipal} />}
-        <AvatarFallback className="bg-primary/15 text-xs font-semibold text-primary">
-          {iniciais(nomePrincipal)}
-        </AvatarFallback>
-      </Avatar>
-      <div className="min-w-0 flex-1">
-        <div className="mb-0.5 flex items-center gap-1.5">
-          <span
-            className={cn(
-              "inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
-              badgeClasses[thread.kind],
-            )}
-          >
-            <Icon className="size-3" />
-            {rot.label}
-          </span>
-          <span className="ml-auto shrink-0 text-[10px] text-muted-foreground">
-            {tempoRelativo(thread.ultima_em)}
-          </span>
+      <button
+        type="button"
+        onClick={onClick}
+        className="flex flex-1 items-start gap-3 text-left"
+      >
+        <Avatar className="size-10 border border-border/60">
+          {thread.avatar_url && <AvatarImage src={thread.avatar_url} alt={nomePrincipal} />}
+          <AvatarFallback className="bg-primary/15 text-xs font-semibold text-primary">
+            {iniciais(nomePrincipal)}
+          </AvatarFallback>
+        </Avatar>
+        <div className="min-w-0 flex-1">
+          <div className="mb-0.5 flex items-center gap-1.5">
+            <span
+              className={cn(
+                "inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
+                badgeClasses[thread.kind],
+              )}
+            >
+              <Icon className="size-3" />
+              {rot.label}
+            </span>
+            {fixado && <Pin className="size-3 text-primary" />}
+            {arquivado && <Archive className="size-3 text-muted-foreground" />}
+            <span className="ml-auto shrink-0 text-[10px] text-muted-foreground">
+              {tempoRelativo(thread.ultima_em)}
+            </span>
+          </div>
+          <p className="truncate text-sm font-semibold text-foreground">
+            {thread.kind === "demanda" ? `Conversando com ${nomePrincipal}` : nomePrincipal}
+          </p>
+          {contexto && (
+            <p className="truncate text-[11px] text-muted-foreground/90">{contexto}</p>
+          )}
+          <p className="truncate text-xs text-muted-foreground">
+            {thread.ultima_mensagem?.trim() || "Sem mensagens ainda"}
+          </p>
+          {etiquetas.length > 0 && (
+            <div className="mt-1">
+              <EtiquetasPills etiquetas={etiquetas} />
+            </div>
+          )}
         </div>
-        <p className="truncate text-sm font-semibold text-foreground">
-          {thread.kind === "demanda" ? `Conversando com ${nomePrincipal}` : nomePrincipal}
-        </p>
-        {contexto && (
-          <p className="truncate text-[11px] text-muted-foreground/90">{contexto}</p>
+      </button>
+      <div className="flex flex-col items-end gap-1">
+        {thread.nao_lidas > 0 && (
+          <Badge className="h-5 min-w-5 rounded-full px-1.5 text-[10px]">
+            {thread.nao_lidas}
+          </Badge>
         )}
-        <p className="truncate text-xs text-muted-foreground">
-          {thread.ultima_mensagem?.trim() || "Sem mensagens ainda"}
-        </p>
+        <ConversaMenuAcoes
+          chatTipo={thread.kind as ChatTipo}
+          chatId={thread.id}
+          arquivado={arquivado}
+          fixado={fixado}
+          apelidoAtual={apelido}
+          nomeReferencia={nomeBase}
+          etiquetaIds={etiquetaIds}
+          compact
+        />
       </div>
-      {thread.nao_lidas > 0 && (
-        <Badge className="mt-1 h-5 min-w-5 rounded-full px-1.5 text-[10px]">
-          {thread.nao_lidas}
-        </Badge>
-      )}
-    </button>
+    </div>
   );
 }
 
