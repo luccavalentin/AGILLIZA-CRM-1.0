@@ -21,6 +21,7 @@ import {
   fecharChatFlutuante,
   useFloatingChat,
 } from "@/components/shared/floating-chat-store";
+import { ConversaMenuAcoesLive } from "@/components/shared/conversa-menu-acoes";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
