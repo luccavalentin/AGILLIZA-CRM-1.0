@@ -433,6 +433,17 @@ export function GerenciadorArquivos({
             </span>
           )}
         </div>
+        <div className="flex items-center gap-2">
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => {
+            setTermoGlobal("");
+            setBuscaGlobalAberta(true);
+          }}
+        >
+          <Search className="mr-2 h-4 w-4" /> Buscar em todos
+        </Button>
         <div className="inline-flex rounded-lg border border-border/60 bg-card p-0.5 shadow-sm">
           <button
             type="button"
