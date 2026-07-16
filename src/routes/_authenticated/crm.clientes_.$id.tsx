@@ -34,6 +34,8 @@ import { PipelineTimeline } from "@/components/crm/pipeline-timeline";
 import { ClienteForm } from "@/components/crm/cliente-form";
 import { DocumentosTab } from "@/components/crm/documentos-tab";
 import { InteracoesTab } from "@/components/crm/interacoes-tab";
+import { AtividadesClienteTab } from "@/components/crm/atividades-cliente-tab";
+
 import { VinculoTab } from "@/components/crm/vinculo-tab";
 import { ChatClienteInstagram } from "@/components/crm/chat-cliente-instagram";
 import { SimulacaoPreviewDialog } from "@/components/simulacao/simulacao-preview-dialog";
