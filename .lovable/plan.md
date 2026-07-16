@@ -1,62 +1,39 @@
 ## Objetivo
 
-Padronizar a gestão de conversas em todos os chats do sistema — Central de Conversas (DM), Chat do Cliente (CRM), Chat de Demandas e Chat do Portal do Cliente — com as ações: **Arquivar / Desarquivar, Excluir, Editar (renomear/apelido), Etiquetar (marcadores coloridos)**, além de **pesquisa por palavra-chave** (no assunto e no conteúdo das mensagens).
+Reduzir `src/lib/simulacao/use-simulacao-completa.ts` (1246 linhas) sem alterar **nenhum comportamento**. O hook orquestra todo o fluxo da simulação completa (formulário, regras de LTV/prazo, restrições por produto, envio síncrono ou "SAC+PRICE"), então qualquer refatoração agressiva pode quebrar o envio para o banco.
 
-## Escopo
+Adoto uma abordagem **puramente aditiva e conservadora**: extrair apenas o que é puro/sem closure. O hook principal continua sendo a fonte da verdade e apenas re-exporta/consome os módulos.
 
-### 1. Banco de dados (migração única)
-- Nova tabela genérica `chat_gestao` (por usuário + tipo de chat + id do chat):
-  - `usuario_id`, `chat_tipo` (`dm | cliente | demanda | portal_cliente`), `chat_id`, `arquivado_em`, `excluido_em` (soft delete só para o usuário), `apelido`, `pinado_em`, timestamps.
-- Nova tabela `chat_etiquetas` (globais por organização, com nome + cor).
-- Nova tabela `chat_etiqueta_vinculos` (`etiqueta_id`, `chat_tipo`, `chat_id`).
-- Migrar `crm_chat_etiquetas` e `crm_chat_cliente_etiquetas` existentes para o novo modelo, mantendo compatibilidade da tela `/crm/chat`.
-- Índices por `(usuario_id, chat_tipo, arquivado_em, excluido_em)` e busca full-text (`tsvector`) em `dm_mensagens`, `cliente_app_mensagens`, `demanda_mensagens` para pesquisa por palavra-chave.
-- RLS: cada usuário só vê/gerencia sua própria linha de `chat_gestao`; etiquetas visíveis para todos os autenticados; admin gerencia catálogo.
+## Etapas (ordem = risco crescente)
 
-### 2. Server functions (`src/lib/chats/gestao.functions.ts`)
-- `arquivarConversa / desarquivarConversa`
-- `excluirConversa` (soft delete por usuário; admin pode excluir "para todos" nos casos DM)
-- `renomearConversa` (define apelido pessoal)
-- `criarEtiqueta / listarEtiquetas / editarEtiqueta / excluirEtiqueta`
-- `aplicarEtiqueta / removerEtiqueta`
-- `pesquisarConversas({ q, tipos, incluirArquivadas, etiquetas })` — busca unificada em títulos e mensagens usando `tsvector` + `websearch_to_tsquery('portuguese', ...)`.
-- Atualizar `listarThreadsCentral` para respeitar `arquivado_em/excluido_em` e trazer etiquetas + apelido.
+**Fase 1 — Zero risco (constantes e tipos puros):**
+- Novo `src/lib/simulacao/use-simulacao-completa/state.ts`:
+  - `Form`, `Banco`, `OpcoesHook` (tipos)
+  - `EMAIL_PADRAO`, `ESTADO_INICIAL` (constantes)
+- Novo `src/lib/simulacao/use-simulacao-completa/bancos-helpers.ts`:
+  - `aceitaPrice(b)` — função pura já isolada
 
-### 3. UI compartilhada
-- Novo componente `ConversaMenuAcoes` (dropdown com Arquivar, Excluir, Renomear, Etiquetar, Fixar) usado em:
-  - Central de Conversas (`central-chat.tsx`) — item da lista + cabeçalho.
-  - Chat de Cliente (`chat-cliente-instagram.tsx` e `/crm/chat`).
-  - Chat de Demandas (`demanda-chat.tsx`).
-  - Portal do Cliente (`chat-cliente.tsx`).
-  - Janelas flutuantes (`floating-chat-host.tsx`) — menu no header.
-- Novo `EtiquetaPicker` (popover multi-seleção com cores + criação inline).
-- Nova aba/filtro **Arquivadas** e chip de **Etiquetas** na sidebar da Central.
-- Barra de pesquisa da Central passa a debounced + busca em mensagens; destaque do trecho encontrado.
-- Renomear = edição inline do título da conversa (apelido pessoal, não altera o nome global).
+**Fase 2 — Baixo risco (regras puras derivadas de `f`):**
+- Em `bancos-helpers.ts` extrair `calcularRestricaoEspecial(f)` (linhas 241-263) — depende só de `f`, hoje já é `useMemo` puro. O hook passa a chamar `useMemo(() => calcularRestricaoEspecial(f), [f...])`.
+- Extrair `criarAceitaBanco(operacoes, isHomeEquity, restricao, tipoImovel)` retornando `{ aceita, motivo }` — encapsula `aceitaBancoNaOperacao` + `mensagemBancoIncompativel`.
 
-### 4. Portal do Cliente
-- Ícone de opções ao lado do chat com **Arquivar** e **Limpar histórico (para mim)**; sem exclusão global.
+**Fase 3 (opcional, só se F1+F2 ficarem verdes):**
+- Extrair as funções de "recálculo cruzado" (`aplicarPorEntrada`, `aplicarPorFinanciamento`, `aplicarPorParcela`, `aplicarJogadaNumeros`) para `calculos.ts` recebendo `f` e retornando um patch parcial de `Form`. O hook só faz `set` do resultado.
 
-## Detalhes técnicos
+**Não vou mexer** (alto risco de quebrar envio):
+- `enviar`, `enviarAmbos`, `executarEnvio` (linhas 867-1182) — dependem de ~20 closures do hook. Refatorar isso exige testes E2E que não temos.
+- `useEffect` de duplicação/origem, sincronização de LTV, atualização de prazo por idade.
+- `return { ... }` final — a superfície pública fica **idêntica**.
 
-```text
-chat_gestao (usuario_id, chat_tipo, chat_id)  ── 1..n ── chat_etiqueta_vinculos ── n..1 ── chat_etiquetas
-                     │
-                     └── arquivado_em / excluido_em / apelido / pinado_em
-```
+## Validação
 
-- Full-text: coluna gerada `search_tsv tsvector` em cada tabela de mensagens + índice GIN.
-- Feature flag não necessária — retrocompat via migração das tabelas `crm_chat_*`.
-- Papéis: qualquer usuário arquiva/renomeia/etiqueta sua própria visão; excluir mensagens de outros exige `admin` (via `has_role`).
-- Realtime: canal atual continua; nova subscription para `chat_gestao` do próprio usuário para refletir arquivamento em múltiplas abas.
+Após cada fase:
+1. `bunx tsgo` — zero erros novos.
+2. Conferir que a assinatura de retorno do hook não mudou (mesmas chaves).
+3. `wc -l` no arquivo principal para medir ganho.
 
-## Fora de escopo
-- Encaminhar mensagens, silenciar por período, exportar conversa (podem entrar depois).
-- Reordenar etiquetas por drag-and-drop.
+Meta realista: **1246 → ~1000 linhas** (-20%) só com F1+F2. F3 pode chegar a ~800 se der certo.
 
-## Entregáveis
-1. Migração SQL (tabelas + índices + RLS + tsvector + backfill das etiquetas do CRM).
-2. `src/lib/chats/gestao.functions.ts` + atualização de `central.functions.ts`.
-3. Componentes: `ConversaMenuAcoes`, `EtiquetaPicker`, `PesquisaConversas`.
-4. Integração nos 5 pontos de chat citados + janela flutuante.
-5. Verificação: `tsgo`, teste manual das ações em cada chat.
+## Se algo quebrar
+
+Reverto imediatamente a fase problemática (arquivos novos são autocontidos e o `use-simulacao-completa.ts` fica intacto até o `import` ser trocado). Nada é fundido em uma etapa que impeça rollback.

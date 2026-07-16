@@ -18,68 +18,27 @@ import {
   obterClienteCRM,
 } from "@/lib/simulacao/simulacoes.functions";
 import { criarProposta } from "@/lib/propostas/propostas.functions";
+import {
+  EMAIL_PADRAO,
+  ESTADO_INICIAL,
+  type Banco,
+  type Form,
+  type OpcoesHook,
+} from "./use-simulacao-completa/state";
+import {
+  aceitaPrice,
+  calcularRestricaoEspecial,
+  aceitaBancoNaOperacao as aceitaBancoNaOperacaoPuro,
+  mensagemBancoIncompativel as mensagemBancoIncompativelPuro,
+} from "./use-simulacao-completa/bancos-helpers";
+import {
+  calcularEntradaSugerida,
+  calcularPorEntrada,
+  calcularPorFinanciamento,
+  calcularPorParcela,
+} from "./use-simulacao-completa/calculos";
 
-export type Form = Record<string, any>;
-
-/**
- * E-mail pré-preenchido em cadastros de titular e cônjuge para agilizar testes
- * e operação com atendimento centralizado. O usuário pode alterar livremente.
- */
-const EMAIL_PADRAO = "thiago@agilliza.net.br";
-
-interface Banco {
-  id: string;
-  nome_banco?: string | null;
-  codigo_banco?: number | string | null;
-  flag_padrao?: boolean | null;
-}
-
-const ESTADO_INICIAL: Form = {
-  produto: "financiamento_imobiliario",
-  tipo_imovel: "",
-  uso_imovel: "",
-  situacao_imovel: "",
-  uf: "",
-  valor_imovel: 0,
-  valor_entrada: 0,
-  valor_financiamento: 0,
-  simular_por_parcela: false,
-  parcela_alvo: 0,
-
-  prazo: 360,
-  utiliza_fgts: "N",
-  fg_financiar_despesas: false,
-  valor_despesas_financiadas: 0,
-  sistema_amortizacao: "S",
-  nome_cliente: "",
-  cpf_cnpj: "",
-  renda_total: 0,
-  renda_price: 0,
-  data_nascimento: "",
-  estado_civil: "",
-  email: EMAIL_PADRAO,
-  celular: "",
-  possui_conjuge: false,
-  compoe_renda: false,
-  bancos_ids: [] as string[],
-  bancos_sac_ids: [] as string[],
-  bancos_price_ids: [] as string[],
-  consentimento_lgpd: false,
-  consentimento_scr: false,
-  email_verificado_em: null,
-};
-
-/** Bancos que operam pelo sistema PRICE (Tabela Price). Hoje: Bradesco (237) e Santander (33). */
-function aceitaPrice(b: { codigo_banco?: number | string | null; nome_banco?: string | null }) {
-  const cod = String(b.codigo_banco ?? "").replace(/^0+/, "");
-  const nome = (b.nome_banco ?? "").toLowerCase();
-  return cod === "237" || cod === "33" || nome.includes("bradesco") || nome.includes("santander");
-}
-
-interface OpcoesHook {
-  duplicar?: string;
-  modoProposta: boolean;
-}
+export type { Form };
 
 /**
  * Concentra todo o estado, regras de negócio e efeitos da simulação completa.
@@ -238,56 +197,21 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
   //  - Terreno (TE/TC): apenas Bradesco opera, LTV 70%, prazo máx 240 meses.
   //  - Imóvel comercial (uso "C"): todos os bancos operam, LTV 70%, prazo máx 240 meses.
   //  - Home Equity: Itaú não opera; LTV 60%.
-  const restricaoEspecial = useMemo(() => {
-    const isTerreno = f.tipo_imovel === "TE" || f.tipo_imovel === "TC";
-    const isComercial = f.uso_imovel === "C";
-    const ativo = isTerreno || isComercial;
-    const motivo = !ativo
-      ? ""
-      : isTerreno && isComercial
-        ? "Terreno / Imóvel comercial"
-        : isTerreno
-          ? "Terreno"
-          : "Imóvel comercial";
-    return {
-      ativo,
-      motivo,
-      isTerreno,
-      isComercial,
-      ltvMax: 0.7,
-      prazoMax: 240,
-      // Apenas terreno restringe os bancos elegíveis a Bradesco.
-      apenasBradesco: isTerreno,
-    };
-  }, [f.tipo_imovel, f.uso_imovel]);
+  const restricaoEspecial = useMemo(
+    () => calcularRestricaoEspecial(f),
+    [f.tipo_imovel, f.uso_imovel],
+  );
 
   const isHomeEquity = f.produto === "home_equity";
 
   function aceitaBancoNaOperacao(b: { codigo_banco?: number | string | null; nome_banco?: string | null }) {
-    const cod = String(b.codigo_banco ?? "").replace(/^0+/, "");
-    const nome = (b.nome_banco ?? "").toLowerCase();
-    // Home Equity: Itaú não opera.
-    if (isHomeEquity && (cod === "341" || nome.includes("itaú") || nome.includes("itau"))) {
-      return false;
-    }
-    // Terreno: apenas Bradesco.
-    if (restricaoEspecial.apenasBradesco) {
-      return cod === "237" || nome.includes("bradesco");
-    }
-    return true;
+    return aceitaBancoNaOperacaoPuro(b, { isHomeEquity, restricao: restricaoEspecial });
   }
 
   function mensagemBancoIncompativel(b: { codigo_banco?: number | string | null; nome_banco?: string | null }) {
-    const cod = String(b?.codigo_banco ?? "").replace(/^0+/, "");
-    const nome = (b?.nome_banco ?? "").toLowerCase();
-    if (isHomeEquity && (cod === "341" || nome.includes("itaú") || nome.includes("itau"))) {
-      return "Home Equity: Itaú não opera este produto.";
-    }
-    if (restricaoEspecial.apenasBradesco) {
-      return `${restricaoEspecial.motivo}: apenas Bradesco opera essa modalidade.`;
-    }
-    return "Banco incompatível com a operação selecionada.";
+    return mensagemBancoIncompativelPuro(b, { isHomeEquity, restricao: restricaoEspecial });
   }
+
 
   // Teto de financiamento (LTV) por produto e restrição especial.
   const ltvMax = restricaoEspecial.ativo
@@ -445,38 +369,17 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
 
   function aplicarEntradaSugerida() {
     setEntradaTocada(true);
-    const pctEntrada = 1 - ltvMax;
-    setF((prev) => {
-      const entrada = Math.round((prev.valor_imovel || 0) * pctEntrada);
-      return {
-        ...prev,
-        valor_entrada: entrada,
-        valor_financiamento: Math.max(0, prev.valor_imovel - entrada),
-      };
-    });
+    setF((prev) => ({ ...prev, ...calcularEntradaSugerida(prev.valor_imovel || 0, ltvMax) }));
   }
 
   /**
    * Preenche imóvel + financiamento a partir do valor de entrada.
    * Regra: entrada = (1 - LTV) do imóvel  ⇒  imóvel = entrada / (1 - LTV).
-   * financiamento = imóvel − entrada.
    */
   function aplicarPorEntrada(valorEntrada: number) {
-    const entrada = Math.max(0, Number(valorEntrada) || 0);
     setEntradaTocada(true);
-    if (entrada <= 0) {
-      setF((prev) => ({ ...prev, valor_entrada: 0 }));
-      return;
-    }
-    const pctEntrada = 1 - ltvMax;
-    const imovel = Math.round(entrada / pctEntrada);
-    const fin = Math.max(0, imovel - entrada);
-    setF((prev) => ({
-      ...prev,
-      valor_imovel: imovel,
-      valor_entrada: entrada,
-      valor_financiamento: fin,
-    }));
+    const patch = calcularPorEntrada(valorEntrada, ltvMax);
+    setF((prev) => ({ ...prev, ...patch }));
   }
 
   /**
@@ -484,81 +387,26 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
    * valorImóvel = financiamento / LTV; entrada = imóvel - financiamento.
    */
   function aplicarPorFinanciamento(valorFinanciamento: number) {
-    const fin = Math.max(0, Number(valorFinanciamento) || 0);
-    if (fin <= 0) {
-      setEntradaTocada(true);
-      setF((prev) => ({ ...prev, valor_financiamento: 0 }));
-      return;
-    }
-    // Arredonda o imóvel para o milhar mais próximo (para cima) e garante que
-    // financiamento derivado respeite o LTV.
-    const imovel = Math.ceil(fin / ltvMax / 1000) * 1000;
-    const entrada = Math.max(0, imovel - fin);
     setEntradaTocada(true);
-    setF((prev) => ({
-      ...prev,
-      valor_imovel: imovel,
-      valor_entrada: entrada,
-      valor_financiamento: fin,
-    }));
+    const patch = calcularPorFinanciamento(valorFinanciamento, ltvMax);
+    setF((prev) => ({ ...prev, ...patch }));
   }
 
   /**
-   * Lógica inversa por parcela: dado o valor de parcela alvo, encontra o PV
-   * (valor financiado) máximo, e daí deriva imóvel = PV / LTV e entrada.
-   *
-   * Fórmula: PMT_alvo = fator_amortização · PV + encargos(PV)
-   *   PRICE  fator = i(1+i)^n / ((1+i)^n - 1)
-   *   SAC    fator = 1/n + i   (primeira e maior parcela)
-   *   encargos ≈ (MIP_mes + DFI_mes/LTV)·PV + Taxa_admin  (linear em PV)
-   * ⇒ PV = (PMT_alvo - Taxa_admin) / (fator + k)
-   * Usa a MAIOR taxa entre os bancos selecionados (conservador: menor PV).
+   * Wrapper fino sobre `calcularPorParcela` — a fórmula (PV a partir de PMT
+   * alvo) mora em `calculos.ts`.
    */
   function aplicarPorParcela(parcelaAlvo: number) {
-    const pmt = Math.max(0, Number(parcelaAlvo) || 0);
-    // Sempre persistir o valor digitado — nunca bloquear a digitação.
-    if (pmt <= 0) {
-      setEntradaTocada(true);
-      setF((prev) => ({
-        ...prev,
-        parcela_alvo: 0,
-        valor_financiamento: 0,
-        valor_imovel: 0,
-        valor_entrada: 0,
-      }));
-      return;
-    }
-    const taxaAno = melhorTaxaAno || 0.1199;
-    const i = Math.pow(1 + taxaAno, 1 / 12) - 1;
-    const n = Math.max(1, Math.round(Number(f.prazo) || 360));
-    const fator =
-      f.sistema_amortizacao === "P"
-        ? (i * Math.pow(1 + i, n)) / (Math.pow(1 + i, n) - 1)
-        : 1 / n + i;
-    const k = TAXA_MIP_MES + TAXA_DFI_MES / ltvMax;
-    const pmtLiq = pmt - TAXA_ADMIN_MES;
-    const pv = pmtLiq > 0 ? pmtLiq / (fator + k) : 0;
-    // Se a parcela ainda é insuficiente (usuário digitando), só guardamos o valor sem toast.
-    if (pv <= 0) {
-      setF((prev) => ({ ...prev, parcela_alvo: pmt }));
-      return;
-    }
-    // Arredonda o imóvel para o milhar mais próximo (para baixo) para evitar
-    // centavos e garantir que o financiamento derivado (floor(imovel*LTV))
-    // nunca ultrapasse o teto do banco.
-    const pvBruto = pv;
-    const imovel = Math.max(1000, Math.floor(pvBruto / ltvMax / 1000) * 1000);
-    const financiamento = Math.floor(imovel * ltvMax);
-    const entrada = imovel - financiamento;
     setEntradaTocada(true);
-    setF((prev) => ({
-      ...prev,
-      parcela_alvo: pmt,
-      valor_financiamento: financiamento,
-      valor_imovel: imovel,
-      valor_entrada: entrada,
-    }));
+    const patch = calcularPorParcela(parcelaAlvo, {
+      ltvMax,
+      melhorTaxaAno,
+      prazo: Number(f.prazo) || 360,
+      sistemaAmortizacao: String(f.sistema_amortizacao ?? "S"),
+    });
+    setF((prev) => ({ ...prev, ...patch }));
   }
+
 
 
 
