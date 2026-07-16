@@ -200,7 +200,8 @@ export function exportarCsv(registros: AuditoriaLinha[]): void {
       r.ator_nome ?? "",
       r.acao_label,
       r.descricao ?? "",
-      r.entidade ?? "",
+      rotuloEntidade(r.entidade),
+
       r.entidade_id ?? "",
       r.ip ?? "",
       r.user_agent ?? "",
