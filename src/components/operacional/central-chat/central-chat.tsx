@@ -193,7 +193,7 @@ export function CentralChatPage() {
           ) : selecionado.kind === "cliente" ? (
             <ChatClienteConversa
               clienteId={selecionado.clienteId}
-              info={{ nome: selecionado.nome ?? "Cliente", foto_url: selecionado.foto ?? null }}
+              info={{ nome: selecionado.nome ?? "Cliente" }}
             />
           ) : (
             <div className="flex h-full min-h-0 flex-col overflow-hidden">
