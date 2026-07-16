@@ -128,17 +128,18 @@ function drawTituloExtrato(
   titulo = "Extrato da Simulação de Financiamento",
   dataLabel = "Data da Simulação",
 ): number {
+  const topPad = 12; // garante folga acima do título (jsPDF usa baseline)
   doc.setTextColor(P.destaque);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(14);
-  doc.text(titulo, pageW / 2, y, { align: "center" });
+  doc.text(titulo, pageW / 2, y + topPad, { align: "center" });
   doc.setTextColor(P.cinza);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
-  doc.text(`${dataLabel}: ${dataTxt(s.created_at ?? new Date())}`, pageW / 2, y + 12, {
+  doc.text(`${dataLabel}: ${dataTxt(s.created_at ?? new Date())}`, pageW / 2, y + topPad + 12, {
     align: "center",
   });
-  return y + 22;
+  return y + topPad + 24;
 }
 
 /** Caixa formal com os dados do cliente em destaque. */
