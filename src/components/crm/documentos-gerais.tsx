@@ -26,6 +26,8 @@ import {
   Lock,
   FolderKanban,
   Users2,
+  Check,
+  ChevronsUpDown,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -38,6 +40,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import {
   Dialog,
   DialogContent,
@@ -829,83 +840,55 @@ export function DocumentosGerais() {
                 </button>
               )}
             </div>
-            <Select
+            <FiltroPesquisa
+              label="Comercial"
               value={filtroComercial}
-              onValueChange={(v) => {
+              todosValue="todos"
+              todosLabel="Todos os comerciais"
+              placeholder="Pesquisar comercial..."
+              opcoes={opcoesComerciais}
+              onChange={(v) => {
                 setFiltroComercial(v);
                 setPagina(1);
               }}
-            >
-              <SelectTrigger className="h-10 w-[180px]">
-                <SelectValue placeholder="Todos os comerciais" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos os comerciais</SelectItem>
-                {comerciaisBase.map((cm) => (
-                  <SelectItem key={cm.id} value={cm.id}>
-                    {titulo(cm.nome)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select
+            />
+            <FiltroPesquisa
+              label="Imobiliária"
               value={filtroImob}
-              onValueChange={(v) => {
+              todosValue="todas"
+              todosLabel="Todas as imobiliárias"
+              placeholder="Pesquisar imobiliária..."
+              opcoes={opcoesImobiliarias}
+              opcoesFixas={[{ id: "comercial", nome: SEM_IMOB }]}
+              onChange={(v) => {
                 setFiltroImob(v);
                 setPagina(1);
               }}
-            >
-              <SelectTrigger className="h-10 w-[180px]">
-                <SelectValue placeholder="Todas as imobiliárias" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todas">Todas as imobiliárias</SelectItem>
-                <SelectItem value="comercial">{SEM_IMOB}</SelectItem>
-                {imobiliariasFiltro.map((i) => (
-                  <SelectItem key={i.id} value={i.id}>
-                    {titulo(i.nome)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select
+            />
+            <FiltroPesquisa
+              label="Corretor"
               value={filtroCorr}
-              onValueChange={(v) => {
+              todosValue="todos"
+              todosLabel="Todos os corretores"
+              placeholder="Pesquisar corretor..."
+              opcoes={opcoesCorretores}
+              onChange={(v) => {
                 setFiltroCorr(v);
                 setPagina(1);
               }}
-            >
-              <SelectTrigger className="h-10 w-[180px]">
-                <SelectValue placeholder="Todos os corretores" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos os corretores</SelectItem>
-                {corretoresFiltro.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {titulo(c.nome)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select
+            />
+            <FiltroPesquisa
+              label="Analista"
               value={filtroAnalista}
-              onValueChange={(v) => {
+              todosValue="todos"
+              todosLabel="Todos os analistas"
+              placeholder="Pesquisar analista..."
+              opcoes={opcoesAnalistas}
+              onChange={(v) => {
                 setFiltroAnalista(v);
                 setPagina(1);
               }}
-            >
-              <SelectTrigger className="h-10 w-[180px]">
-                <SelectValue placeholder="Todos os analistas" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos os analistas</SelectItem>
-                {analistasFiltro.map((a) => (
-                  <SelectItem key={a.id} value={a.id}>
-                    {titulo(a.nome)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            />
             {filtrando && (
               <Button
                 variant="ghost"
@@ -1137,6 +1120,14 @@ export function DocumentosGerais() {
                     Corretor:{" "}
                     {titulo(
                       corretoresFiltro.find((c) => c.id === filtroCorr)?.nome ?? "",
+                    )}
+                  </span>
+                )}
+                {filtroAnalista !== "todos" && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">
+                    Analista:{" "}
+                    {titulo(
+                      analistasFiltro.find((a) => a.id === filtroAnalista)?.nome ?? "",
                     )}
                   </span>
                 )}
