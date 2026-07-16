@@ -630,7 +630,12 @@ function Pagina() {
 
 
 
+        <TabsContent value="atividades" className="mt-4">
+          <AtividadesClienteTab clienteId={id} />
+        </TabsContent>
+
         <TabsContent value="interacoes" className="mt-4">
+
           <InteracoesTab clienteId={id} />
         </TabsContent>
 
