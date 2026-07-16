@@ -580,17 +580,28 @@ export function baixarSimulacaoPDF(input: SimulacaoPdfInput) {
   ];
 
 
+  const sistemasBancos = Array.from(
+    new Set((bancos ?? []).map((b) => sistemaDoBanco(b, s)).filter((v) => v === "SAC" || v === "PRICE")),
+  );
+  const isMista = s.sistema_amortizacao === "B" || sistemasBancos.length > 1;
+  const sistemaKpi = isMista
+    ? "SAC + PRICE"
+    : s.sistema_amortizacao === "P"
+      ? "PRICE"
+      : "SAC";
+
   const kpis: ReportKpi[] = [
     { label: "Valor do imóvel", valor: formatBRL(s.valor_imovel) },
     { label: "Financiamento", valor: formatBRL(s.valor_financiamento) },
     { label: "Entrada", valor: formatBRL(s.valor_entrada) },
     { label: "Prazo", valor: s.prazo ? `${s.prazo} meses` : "—" },
-    { label: "Sistema", valor: s.sistema_amortizacao === "P" ? "PRICE" : "SAC" },
+    { label: "Sistema", valor: sistemaKpi },
     { label: "FGTS", valor: s.utiliza_fgts === "S" ? "Sim" : "Não" },
   ];
 
   const columns: ReportColumn[] = [
     { key: "banco", label: "Banco" },
+    ...(isMista ? [{ key: "tabela", label: "Tabela" } as ReportColumn] : []),
     { key: "situacao", label: "Situação" },
     { key: "parcela", label: "Parcela", align: "right" },
     { key: "taxa", label: "Taxa a.a.", align: "right" },
@@ -600,6 +611,7 @@ export function baixarSimulacaoPDF(input: SimulacaoPdfInput) {
 
   const rows: ReportRow[] = (bancos ?? []).map((b) => ({
     banco: b.nome_banco ?? "—",
+    ...(isMista ? { tabela: sistemaDoBanco(b, s) } : {}),
     situacao: LABEL_STATUS_BANCO[b.status_banco ?? ""] ?? (b.status_banco || "—"),
     parcela: b.valor_parcela != null ? formatBRL(b.valor_parcela) : "—",
     taxa: b.taxa_juros_ano != null ? formatPercent(b.taxa_juros_ano / 100) : "—",
