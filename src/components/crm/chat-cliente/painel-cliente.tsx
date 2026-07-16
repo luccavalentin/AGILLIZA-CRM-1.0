@@ -41,14 +41,20 @@ const TABS = [
 
 type TabId = (typeof TABS)[number]["id"];
 
-/** Cinco macro-etapas exibidas no stepper do painel. Cada uma agrupa os
- * códigos internos da tabela pipeline_stages. */
+/** Cinco macro-etapas do fluxo real (state machine da proposta):
+ *  Simulação → Crédito (envio+análise no banco) → Documentação (após
+ *  aprovado, coleta e organização) → Vistoria & Jurídico (engenharia +
+ *  análise jurídica) → Contrato. `credito_recusado` encerra o fluxo. */
 const MACRO_STAGES = [
   { key: "simulacao", label: "Simulação", codes: ["cadastro_basico", "cadastro_completo", "simulacao"] },
-  { key: "documentacao", label: "Documentação", codes: ["coleta_documentos"] },
-  { key: "analise", label: "Análise", codes: ["engenharia_vistoria", "analise_juridica", "credito_enviado"] },
-  { key: "proposta", label: "Proposta", codes: ["credito_aprovado"] },
-  { key: "contratacao", label: "Contratação", codes: ["contrato_emitido"] },
+  { key: "credito", label: "Crédito", codes: ["credito_enviado"] },
+  {
+    key: "documentacao",
+    label: "Documentação",
+    codes: ["credito_aprovado", "coleta_documentos", "aguardando_documentos"],
+  },
+  { key: "vistoria", label: "Vistoria & Jurídico", codes: ["engenharia_vistoria", "analise_juridica"] },
+  { key: "contratacao", label: "Contrato", codes: ["contrato_emitido"] },
 ] as const;
 
 function macroIndexOf(codigo: string | null): number {
@@ -58,6 +64,7 @@ function macroIndexOf(codigo: string | null): number {
   }
   return 0;
 }
+
 
 function formatarBRL(v: number | null): string {
   if (v == null) return "—";
