@@ -18,6 +18,9 @@ export interface ThreadCentral {
   ultima_em: string | null;
   nao_lidas: number;
   avatar_url?: string | null;
+  demanda_titulo?: string | null;
+  interlocutor_nome?: string | null;
+  interlocutor_foto?: string | null;
 }
 
 /** Busca colegas do mesmo correspondente para iniciar uma nova DM. */
@@ -245,7 +248,7 @@ export const listarThreadsCentral = createServerFn({ method: "GET" })
     // Demandas — apenas as que o usuário tem acesso
     const { data: demandas } = await supabase
       .from("demandas")
-      .select("id, numero, titulo, status")
+      .select("id, numero, titulo, status, criador_id, responsavel_id")
       .order("updated_at", { ascending: false })
       .limit(200);
     const demIds = (demandas ?? []).map((d: any) => d.id as string);
@@ -277,17 +280,47 @@ export const listarThreadsCentral = createServerFn({ method: "GET" })
           contPor.set(m.demanda_id, (contPor.get(m.demanda_id) ?? 0) + 1);
         }
       }
+
+      const perfilIds = [
+        ...(demandas ?? []).flatMap((d: any) => [d.criador_id, d.responsavel_id]),
+        ...(msgs ?? []).map((m: any) => m.autor_id),
+      ].filter(Boolean) as string[];
+      const idsUnicos = [...new Set(perfilIds)];
+      const perfisPorId = new Map<string, { nome: string | null; foto_url: string | null }>();
+      if (idsUnicos.length) {
+        const { data: perfis } = await supabase
+          .from("profiles")
+          .select("id, nome, foto_url")
+          .in("id", idsUnicos);
+        for (const p of (perfis ?? []) as any[]) {
+          perfisPorId.set(p.id, { nome: p.nome ?? null, foto_url: p.foto_url ?? null });
+        }
+      }
+
       for (const d of (demandas ?? []) as any[]) {
         const m = ultimoPor.get(d.id);
         if (!m) continue;
+        const ultimoAutor = m.autor_id && m.autor_id !== userId ? perfisPorId.get(m.autor_id) : null;
+        const contraparteId =
+          d.criador_id === userId
+            ? d.responsavel_id
+            : d.responsavel_id === userId
+              ? d.criador_id
+              : d.responsavel_id ?? d.criador_id;
+        const contraparte = contraparteId ? perfisPorId.get(contraparteId) : null;
+        const interlocutor = ultimoAutor ?? contraparte ?? null;
         dems.push({
           kind: "demanda",
           id: d.id,
-          titulo: d.titulo ?? "Demanda",
+          titulo: interlocutor?.nome ?? "Usuário da demanda",
           subtitulo: d.numero ?? "Demanda",
+          demanda_titulo: d.titulo ?? "Demanda",
+          interlocutor_nome: interlocutor?.nome ?? null,
+          interlocutor_foto: interlocutor?.foto_url ?? null,
           ultima_mensagem: m.corpo ?? null,
           ultima_em: m.created_at ?? null,
           nao_lidas: contPor.get(d.id) ?? 0,
+          avatar_url: interlocutor?.foto_url ?? null,
         });
       }
     }
