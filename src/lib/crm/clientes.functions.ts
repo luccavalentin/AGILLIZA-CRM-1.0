@@ -695,7 +695,7 @@ export const listarPainel = createServerFn({ method: "GET" })
       }
       q = q.or(partes.join(","));
     }
-    const { data: rows, error: e2 } = await q.order("nome").returns<any[]>();
+    const { data: rows, error: e2 } = await q.order("nome").limit(10000).returns<any[]>();
     if (e2) throw e2;
 
     const filtradas = (rows ?? []).filter((r: any) => {
