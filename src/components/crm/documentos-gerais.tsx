@@ -261,52 +261,6 @@ export function DocumentosGerais() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clientes, busca, filtroComercial, filtroImob, filtroCorr, filtroAnalista]);
 
-  // Opções de cada dropdown consideram todos os filtros exceto o próprio,
-  // fazendo o painel afunilar progressivamente conforme a pesquisa avança.
-  const opcoesComerciais = useMemo(() => {
-    const ids = new Set(
-      clientes
-        .filter((c) => matchBusca(c) && matchImob(c) && matchCorr(c) && matchAnalista(c))
-        .map((c) => c.comercial_id)
-        .filter((v): v is string => !!v),
-    );
-    return comerciaisBase.filter((cm) => ids.has(cm.id) || cm.id === filtroComercial);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [clientes, comerciaisBase, busca, filtroImob, filtroCorr, filtroAnalista, filtroComercial]);
-
-  const opcoesImobiliarias = useMemo(() => {
-    const ids = new Set(
-      clientes
-        .filter((c) => matchBusca(c) && matchComercial(c) && matchCorr(c) && matchAnalista(c))
-        .map((c) => c.imobiliaria_id)
-        .filter((v): v is string => !!v),
-    );
-    return imobiliariasFiltro.filter((i) => ids.has(i.id) || i.id === filtroImob);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [clientes, imobiliariasFiltro, busca, filtroComercial, filtroCorr, filtroAnalista, filtroImob]);
-
-  const opcoesCorretores = useMemo(() => {
-    const ids = new Set(
-      clientes
-        .filter((c) => matchBusca(c) && matchComercial(c) && matchImob(c) && matchAnalista(c))
-        .map((c) => c.corretor_id)
-        .filter((v): v is string => !!v),
-    );
-    return corretoresFiltro.filter((co) => ids.has(co.id) || co.id === filtroCorr);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [clientes, corretoresFiltro, busca, filtroComercial, filtroImob, filtroAnalista, filtroCorr]);
-
-  const opcoesAnalistas = useMemo(() => {
-    const ids = new Set(
-      clientes
-        .filter((c) => matchBusca(c) && matchComercial(c) && matchImob(c) && matchCorr(c))
-        .map((c) => c.analista_id)
-        .filter((v): v is string => !!v),
-    );
-    return analistasFiltro.filter((a) => ids.has(a.id) || a.id === filtroAnalista);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [clientes, analistasFiltro, busca, filtroComercial, filtroImob, filtroCorr, filtroAnalista]);
-
   // Visão geral (KPIs) — sempre sobre a base completa, para dar contexto no topo.
   const resumo = useMemo(() => {
     const imobs = new Set<string>();
@@ -846,7 +800,7 @@ export function DocumentosGerais() {
               todosValue="todos"
               todosLabel="Todos os comerciais"
               placeholder="Pesquisar comercial..."
-              opcoes={opcoesComerciais}
+              opcoes={comerciaisBase}
               onChange={(v) => {
                 setFiltroComercial(v);
                 setPagina(1);
@@ -858,7 +812,7 @@ export function DocumentosGerais() {
               todosValue="todas"
               todosLabel="Todas as imobiliárias"
               placeholder="Pesquisar imobiliária..."
-              opcoes={opcoesImobiliarias}
+              opcoes={imobiliariasFiltro}
               opcoesFixas={[{ id: "comercial", nome: SEM_IMOB }]}
               onChange={(v) => {
                 setFiltroImob(v);
@@ -871,7 +825,7 @@ export function DocumentosGerais() {
               todosValue="todos"
               todosLabel="Todos os corretores"
               placeholder="Pesquisar corretor..."
-              opcoes={opcoesCorretores}
+              opcoes={corretoresFiltro}
               onChange={(v) => {
                 setFiltroCorr(v);
                 setPagina(1);
@@ -883,7 +837,7 @@ export function DocumentosGerais() {
               todosValue="todos"
               todosLabel="Todos os analistas"
               placeholder="Pesquisar analista..."
-              opcoes={opcoesAnalistas}
+              opcoes={analistasFiltro}
               onChange={(v) => {
                 setFiltroAnalista(v);
                 setPagina(1);
