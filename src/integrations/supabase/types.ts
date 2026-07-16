@@ -286,6 +286,83 @@ export type Database = {
           },
         ]
       }
+      chat_estado_usuario: {
+        Row: {
+          apelido: string | null
+          arquivado_em: string | null
+          chat_id: string
+          chat_tipo: string
+          created_at: string
+          id: string
+          oculto_em: string | null
+          pinado_em: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          apelido?: string | null
+          arquivado_em?: string | null
+          chat_id: string
+          chat_tipo: string
+          created_at?: string
+          id?: string
+          oculto_em?: string | null
+          pinado_em?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          apelido?: string | null
+          arquivado_em?: string | null
+          chat_id?: string
+          chat_tipo?: string
+          created_at?: string
+          id?: string
+          oculto_em?: string | null
+          pinado_em?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      chat_etiqueta_vinculos: {
+        Row: {
+          aplicado_por: string | null
+          chat_id: string
+          chat_tipo: string
+          correspondente_id: string
+          created_at: string
+          etiqueta_id: string
+          id: string
+        }
+        Insert: {
+          aplicado_por?: string | null
+          chat_id: string
+          chat_tipo: string
+          correspondente_id: string
+          created_at?: string
+          etiqueta_id: string
+          id?: string
+        }
+        Update: {
+          aplicado_por?: string | null
+          chat_id?: string
+          chat_tipo?: string
+          correspondente_id?: string
+          created_at?: string
+          etiqueta_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_etiqueta_vinculos_etiqueta_id_fkey"
+            columns: ["etiqueta_id"]
+            isOneToOne: false
+            referencedRelation: "crm_chat_etiquetas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cliente_app_acessos: {
         Row: {
           cliente_id: string | null
@@ -347,6 +424,7 @@ export type Database = {
           remetente_id: string | null
           remetente_tipo: string
           responde_a: string | null
+          search_tsv: unknown
         }
         Insert: {
           anexo_url?: string | null
@@ -364,6 +442,7 @@ export type Database = {
           remetente_id?: string | null
           remetente_tipo: string
           responde_a?: string | null
+          search_tsv?: unknown
         }
         Update: {
           anexo_url?: string | null
@@ -381,6 +460,7 @@ export type Database = {
           remetente_id?: string | null
           remetente_tipo?: string
           responde_a?: string | null
+          search_tsv?: unknown
         }
         Relationships: [
           {
@@ -1803,6 +1883,7 @@ export type Database = {
           created_at: string
           demanda_id: string
           id: string
+          search_tsv: unknown
           visivel_cliente: boolean
         }
         Insert: {
@@ -1814,6 +1895,7 @@ export type Database = {
           created_at?: string
           demanda_id: string
           id?: string
+          search_tsv?: unknown
           visivel_cliente?: boolean
         }
         Update: {
@@ -1825,6 +1907,7 @@ export type Database = {
           created_at?: string
           demanda_id?: string
           id?: string
+          search_tsv?: unknown
           visivel_cliente?: boolean
         }
         Relationships: [
@@ -2014,6 +2097,7 @@ export type Database = {
           correspondente_id: string
           created_at: string
           id: string
+          search_tsv: unknown
           texto: string | null
         }
         Insert: {
@@ -2025,6 +2109,7 @@ export type Database = {
           correspondente_id: string
           created_at?: string
           id?: string
+          search_tsv?: unknown
           texto?: string | null
         }
         Update: {
@@ -2036,6 +2121,7 @@ export type Database = {
           correspondente_id?: string
           created_at?: string
           id?: string
+          search_tsv?: unknown
           texto?: string | null
         }
         Relationships: [
