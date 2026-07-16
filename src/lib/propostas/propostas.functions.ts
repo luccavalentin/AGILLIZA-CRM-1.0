@@ -335,38 +335,47 @@ export const listarSimulacoesElegiveis = createServerFn({ method: "GET" })
 /** ===== Equipe interna (para filtros de responsável) ===== */
 export const listarResponsaveisEquipe = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }): Promise<{ id: string; nome: string }[]> => {
-    const { supabase, userId } = context;
-    const corr = await correspondenteId(supabase, userId);
-    const { data: membros, error } = await supabase
-      .from("profiles")
-      .select("id, nome, acesso_tipo, ativo")
-      .eq("correspondente_id", corr)
-      .eq("acesso_tipo", "sistema")
-      .order("nome", { ascending: true });
-    if (error) throw new Error(error.message);
-    const ids = (membros ?? []).map((m: any) => m.id);
-    if (ids.length === 0) return [];
-    const { data: roles } = await supabase
-      .from("user_roles")
-      .select("user_id, role")
-      .in("user_id", ids);
-    const PAPEIS_INTERNOS = new Set([
-      "correspondente",
-      "gestor",
-      "comercial",
-      "analista",
-      "admin",
-    ]);
-    const idsInternos = new Set(
-      (roles ?? [])
-        .filter((r: any) => PAPEIS_INTERNOS.has(r.role))
-        .map((r: any) => r.user_id),
-    );
-    return (membros ?? [])
-      .filter((m: any) => idsInternos.has(m.id))
-      .map((m: any) => ({ id: m.id, nome: m.nome ?? "—" }));
-  });
+  .handler(
+    async ({ context }): Promise<{ id: string; nome: string; papeis: string[] }[]> => {
+      const { supabase, userId } = context;
+      const corr = await correspondenteId(supabase, userId);
+      const { data: membros, error } = await supabase
+        .from("profiles")
+        .select("id, nome, acesso_tipo, ativo")
+        .eq("correspondente_id", corr)
+        .eq("acesso_tipo", "sistema")
+        .order("nome", { ascending: true });
+      if (error) throw new Error(error.message);
+      const ids = (membros ?? []).map((m: any) => m.id);
+      if (ids.length === 0) return [];
+      const { data: roles } = await supabase
+        .from("user_roles")
+        .select("user_id, role")
+        .in("user_id", ids);
+      const PAPEIS_INTERNOS = new Set([
+        "correspondente",
+        "gestor",
+        "comercial",
+        "analista",
+        "admin",
+      ]);
+      const papeisPorUsuario = new Map<string, string[]>();
+      (roles ?? []).forEach((r: any) => {
+        if (!PAPEIS_INTERNOS.has(r.role)) return;
+        const arr = papeisPorUsuario.get(r.user_id) ?? [];
+        arr.push(r.role);
+        papeisPorUsuario.set(r.user_id, arr);
+      });
+      return (membros ?? [])
+        .filter((m: any) => papeisPorUsuario.has(m.id))
+        .map((m: any) => ({
+          id: m.id,
+          nome: m.nome ?? "—",
+          papeis: papeisPorUsuario.get(m.id) ?? [],
+        }));
+    },
+  );
+
 
 
 

@@ -1,6 +1,17 @@
-import { Users, Search, X, Filter } from "lucide-react";
+import { useState } from "react";
+import { Users, Search, X, Filter, Check, ChevronsUpDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import { cn } from "@/lib/utils";
 
 interface Props {
   totalClientes: number;
@@ -57,10 +68,34 @@ export function FiltrosPainel(p: Props) {
             <option value="custom">Personalizado</option>
           </SelectCampo>
 
-          <SelectFiltro label="Responsável" value={p.respFiltro} onChange={p.onResp} opcoes={p.responsaveis} />
-          <SelectFiltro label="Analista" value={p.analistaFiltro} onChange={p.onAnalista} opcoes={p.analistas} />
-          <SelectFiltro label="Corretor" value={p.corretorFiltro} onChange={p.onCorretor} opcoes={p.corretores} />
-          <SelectFiltro label="Imobiliária" value={p.imobFiltro} onChange={p.onImob} opcoes={p.imobiliarias} />
+          <ComboFiltro
+            label="Responsável"
+            value={p.respFiltro}
+            onChange={p.onResp}
+            opcoes={p.responsaveis}
+            placeholder="Buscar responsável..."
+          />
+          <ComboFiltro
+            label="Analista"
+            value={p.analistaFiltro}
+            onChange={p.onAnalista}
+            opcoes={p.analistas}
+            placeholder="Buscar analista..."
+          />
+          <ComboFiltro
+            label="Corretor"
+            value={p.corretorFiltro}
+            onChange={p.onCorretor}
+            opcoes={p.corretores}
+            placeholder="Buscar corretor..."
+          />
+          <ComboFiltro
+            label="Imobiliária"
+            value={p.imobFiltro}
+            onChange={p.onImob}
+            opcoes={p.imobiliarias}
+            placeholder="Buscar imobiliária..."
+          />
 
           <div className="relative min-w-0 space-y-1 sm:col-span-2 md:col-span-1">
             <label className="text-xs font-medium text-muted-foreground">Buscar</label>
@@ -143,25 +178,89 @@ function SelectCampo({
   );
 }
 
-function SelectFiltro({
+/** Combobox com pesquisa. Mostra todas as opções cadastradas mesmo sem cards. */
+function ComboFiltro({
   label,
   value,
   onChange,
   opcoes,
+  placeholder,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   opcoes: string[];
+  placeholder: string;
 }) {
+  const [aberto, setAberto] = useState(false);
+  const rotulo = value === "todos" ? "Todos" : value;
   return (
-    <SelectCampo label={label} value={value} onChange={onChange}>
-      <option value="todos">Todos</option>
-      {opcoes.map((r) => (
-        <option key={r} value={r}>
-          {r}
-        </option>
-      ))}
-    </SelectCampo>
+    <div className="min-w-0 space-y-1">
+      <label className="text-xs font-medium text-muted-foreground">{label}</label>
+      <Popover open={aberto} onOpenChange={setAberto}>
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            role="combobox"
+            aria-expanded={aberto}
+            className={cn(
+              "flex h-10 w-full items-center justify-between rounded-xl border border-input bg-background px-3 text-left text-sm shadow-sm outline-none transition-colors",
+              "hover:bg-accent/40 focus-visible:ring-2 focus-visible:ring-ring",
+              value === "todos" && "text-muted-foreground",
+            )}
+          >
+            <span className="truncate">{rotulo}</span>
+            <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
+          </button>
+        </PopoverTrigger>
+        <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+          <Command
+            filter={(itemValue, search) =>
+              itemValue.toLowerCase().includes(search.toLowerCase()) ? 1 : 0
+            }
+          >
+            <CommandInput placeholder={placeholder} className="h-9" />
+            <CommandList>
+              <CommandEmpty>Nenhum resultado.</CommandEmpty>
+              <CommandGroup>
+                <CommandItem
+                  value="todos"
+                  onSelect={() => {
+                    onChange("todos");
+                    setAberto(false);
+                  }}
+                >
+                  <Check
+                    className={cn(
+                      "mr-2 size-4",
+                      value === "todos" ? "opacity-100" : "opacity-0",
+                    )}
+                  />
+                  Todos
+                </CommandItem>
+                {opcoes.map((o) => (
+                  <CommandItem
+                    key={o}
+                    value={o}
+                    onSelect={() => {
+                      onChange(o);
+                      setAberto(false);
+                    }}
+                  >
+                    <Check
+                      className={cn(
+                        "mr-2 size-4",
+                        value === o ? "opacity-100" : "opacity-0",
+                      )}
+                    />
+                    <span className="truncate">{o}</span>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+    </div>
   );
 }
