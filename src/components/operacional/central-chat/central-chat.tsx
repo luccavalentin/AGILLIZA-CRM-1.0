@@ -191,18 +191,45 @@ export function CentralChatPage() {
           ) : selecionado.kind === "dm" ? (
             <DmConversa conversaId={selecionado.conversaId} />
           ) : selecionado.kind === "cliente" ? (
-            <ChatClienteConversa
-              clienteId={selecionado.clienteId}
-              info={{ nome: selecionado.nome ?? "Cliente" }}
-            />
+            <div className="flex h-full min-h-0 flex-col overflow-hidden">
+              <div className="mb-2 flex items-center gap-3 rounded-lg border bg-card px-3 py-2">
+                <Avatar className="size-10 border border-border/60">
+                  {selecionado.foto && <AvatarImage src={selecionado.foto} alt={selecionado.nome ?? ""} />}
+                  <AvatarFallback className="bg-emerald-600 text-xs font-semibold text-white">
+                    {iniciais(selecionado.nome)}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
+                    Cliente
+                  </p>
+                  <p className="truncate text-sm font-semibold text-foreground">
+                    Conversando com {selecionado.nome ?? "cliente"}
+                  </p>
+                </div>
+              </div>
+              <div className="min-h-0 flex-1">
+                <ChatClienteConversa
+                  clienteId={selecionado.clienteId}
+                  info={{ nome: selecionado.nome ?? "Cliente" }}
+                />
+              </div>
+            </div>
           ) : (
             <div className="flex h-full min-h-0 flex-col overflow-hidden">
-              <div className="mb-2 flex items-center justify-between">
-                <div className="min-w-0">
-                  <p className="truncate text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                    {selecionado.numero ?? "Demanda"}
+              <div className="mb-2 flex items-center gap-3 rounded-lg border bg-card px-3 py-2">
+                <Avatar className="size-10 border border-border/60">
+                  <AvatarFallback className="bg-amber-600 text-xs font-semibold text-white">
+                    {iniciais(selecionado.numero ?? "DE")}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400">
+                    Demanda · {selecionado.numero ?? "—"}
                   </p>
-                  <p className="truncate text-sm font-semibold">{selecionado.titulo ?? ""}</p>
+                  <p className="truncate text-sm font-semibold text-foreground">
+                    {selecionado.titulo ?? "Chat da demanda"}
+                  </p>
                 </div>
                 <Button asChild variant="outline" size="sm">
                   <Link to="/operacional/demandas/$id" params={{ id: selecionado.demandaId }}>
@@ -268,9 +295,9 @@ function ThreadItem({
     thread.kind === "demanda" ? thread.titulo?.trim() || null : null;
 
   const badgeClasses: Record<ThreadKind, string> = {
-    dm: "bg-sky-500/15 text-sky-700 dark:text-sky-300",
-    cliente: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
-    demanda: "bg-amber-500/15 text-amber-700 dark:text-amber-300",
+    dm: "bg-sky-600 text-white dark:bg-sky-500",
+    cliente: "bg-emerald-600 text-white dark:bg-emerald-500",
+    demanda: "bg-amber-600 text-white dark:bg-amber-500",
   };
 
   return (
