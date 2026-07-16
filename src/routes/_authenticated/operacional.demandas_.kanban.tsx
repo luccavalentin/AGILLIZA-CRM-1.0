@@ -190,10 +190,17 @@ function Pagina() {
   const [escopo, setEscopo] = useState<"minhas" | "equipe">(
     () => (typeof window !== "undefined" && (localStorage.getItem("demandas:escopo") as "minhas" | "equipe")) || "equipe",
   );
+  const [filtroResponsavel, setFiltroResponsavel] = useState<string>("todos");
 
   const { data, refetch } = useQuery({
     queryKey: ["demandas", "kanban", escopo],
     queryFn: () => listarDemandas({ data: { escopo } }),
+  });
+
+  const { data: responsaveis } = useQuery({
+    queryKey: ["demandas", "responsaveis-equipe"],
+    queryFn: () => listarResponsaveisEquipe(),
+    staleTime: 5 * 60_000,
   });
 
   // Relógio compartilhado — evita 1 timer por card.
