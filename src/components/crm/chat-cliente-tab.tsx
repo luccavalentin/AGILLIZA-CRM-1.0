@@ -501,7 +501,7 @@ export function ChatClienteTab({
   acoes?: React.ReactNode;
 }) {
   const flutuante = useFloatingChat();
-  const estaFlutuando = flutuante?.clienteId === clienteId;
+  const estaFlutuando = flutuante?.kind === "cliente" && flutuante.clienteId === clienteId;
 
   // A janela flutuante só vale para a conversa do próprio usuário.
   if (somenteLeitura) {

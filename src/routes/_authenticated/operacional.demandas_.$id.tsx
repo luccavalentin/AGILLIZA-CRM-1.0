@@ -1,12 +1,10 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { type ReactNode } from "react";
 import { toast } from "sonner";
 import {
   ArrowLeft,
-  Send,
-  MessageCircle,
   User,
   FileText,
   Calculator,
@@ -19,18 +17,16 @@ import {
 import { assertModuloPermitido } from "@/lib/route-guards";
 import {
   obterDemanda,
-  comentarDemanda,
   moverStatusDemanda,
-  marcarDemandaLida,
   transicaoDemandaPermitida,
   type DemandaStatus,
 } from "@/lib/operacional/demandas.functions";
+import { DemandaChatTab } from "@/components/operacional/demanda-chat";
 import { TransferirDialog } from "@/components/operacional/transferir-dialog";
 import { EditarDemandaDialog } from "@/components/operacional/editar-demanda-dialog";
 import { statusDemanda } from "@/components/operacional/status";
 import { PriorityChip, OpAvatar } from "@/components/operacional/ui";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -39,9 +35,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { supabase } from "@/integrations/supabase/client";
-import { getMinhaSessao } from "@/lib/session.functions";
-import { useIncomingChatSound } from "@/hooks/use-chat-sound";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/operacional/demandas_/$id")({
@@ -70,87 +63,12 @@ function fmtDia(iso: string): string {
 function Pagina() {
   const { id } = useParams({ from: "/_authenticated/operacional/demandas_/$id" });
   const qc = useQueryClient();
-  const comentarFn = useServerFn(comentarDemanda);
   const moverFn = useServerFn(moverStatusDemanda);
-  const marcarLidaFn = useServerFn(marcarDemandaLida);
-
-  const { data: sessao } = useQuery({
-    queryKey: ["minha-sessao"],
-    queryFn: () => getMinhaSessao(),
-    staleTime: 5 * 60_000,
-  });
-  const meuId = sessao?.profile?.id ?? null;
 
   const { data, refetch } = useQuery({
     queryKey: ["demanda", id],
     queryFn: () => obterDemanda({ data: { id } }),
   });
-
-  // Realtime nas mensagens
-  useEffect(() => {
-    const canal = supabase
-      .channel(`demanda:${id}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "demanda_mensagens", filter: `demanda_id=eq.${id}` },
-        () => refetch(),
-      )
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "demandas", filter: `id=eq.${id}` },
-        () => refetch(),
-      )
-      .subscribe();
-    return () => {
-      supabase.removeChannel(canal);
-    };
-  }, [id, refetch]);
-
-  // Marca como lida ao abrir e sempre que chega mensagem nova
-  const ultimaMsgIdRef = useRef<string | null>(null);
-  useEffect(() => {
-    const msgs = data?.mensagens ?? [];
-    const ultima = msgs[msgs.length - 1]?.id ?? null;
-    if (ultima !== ultimaMsgIdRef.current) {
-      ultimaMsgIdRef.current = ultima;
-      marcarLidaFn({ data: { demanda_id: id } }).catch(() => {});
-      qc.invalidateQueries({ queryKey: ["demandas"] });
-    }
-  }, [data?.mensagens, id, marcarLidaFn, qc]);
-
-  // Som + piscar menu quando chega mensagem de outro autor
-  const chatItens = useMemo(
-    () =>
-      (data?.mensagens ?? []).map((m: any) => ({
-        id: m.id as string,
-        mine: m.autor_id === meuId,
-      })),
-    [data?.mensagens, meuId],
-  );
-  useIncomingChatSound(chatItens, id);
-
-  // Auto-scroll ao fim
-  const fimRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    fimRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [data?.mensagens?.length]);
-
-  const [texto, setTexto] = useState("");
-  const [enviando, setEnviando] = useState(false);
-  async function enviar() {
-    const corpo = texto.trim();
-    if (!corpo) return;
-    setEnviando(true);
-    try {
-      await comentarFn({ data: { demanda_id: id, corpo, visivel_cliente: false } });
-      setTexto("");
-      refetch();
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Falha ao enviar mensagem.");
-    } finally {
-      setEnviando(false);
-    }
-  }
 
   async function trocarStatus(novo: DemandaStatus) {
     if (!data?.demanda) return;
@@ -348,151 +266,15 @@ function Pagina() {
         </div>
       </aside>
 
-      {/* ============ Coluna direita: chat realtime (padrão do chat do cliente) ============ */}
-      <section className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-border/60 bg-card shadow-[0_1px_2px_rgba(0,0,0,0.04),0_18px_50px_-30px_color-mix(in_oklab,var(--brand-azul-profundo)_45%,transparent)] sm:rounded-3xl">
-        {/* Cabeçalho estilo chat do cliente */}
-        <header className="flex shrink-0 items-center gap-3 border-b border-border/60 bg-gradient-to-r from-primary to-[var(--brand-azul-escuro)] px-4 py-3 text-primary-foreground">
-          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary-foreground/15 ring-1 ring-primary-foreground/25">
-            <MessageCircle className="h-5 w-5" />
-          </div>
-          <div className="min-w-0 flex-1 leading-tight">
-            <p className="truncate text-sm font-semibold sm:text-base">Conversa da demanda</p>
-            <span className="flex items-center gap-1.5 text-[11px] text-primary-foreground/80">
-              <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-300/70" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
-              </span>
-              <span className="truncate">
-                {(data.mensagens ?? []).length} {(data.mensagens ?? []).length === 1 ? "mensagem" : "mensagens"} · tempo real
-              </span>
-            </span>
-          </div>
-          <Badge
-            variant="outline"
-            className="hidden shrink-0 border-primary-foreground/30 bg-primary-foreground/10 text-[10px] font-semibold uppercase tracking-wider text-primary-foreground sm:inline-flex"
-          >
-            {d.numero ?? "DEM-—"}
-          </Badge>
-        </header>
-
-        <div className="chat-surface flex-1 space-y-1 overflow-y-auto overflow-x-hidden px-3 py-4 sm:px-5">
-          {(data.mensagens ?? []).length === 0 && (
-            <div className="flex h-full flex-col items-center justify-center gap-3 py-10 text-center">
-              <span className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary">
-                <MessageCircle className="h-6 w-6" />
-              </span>
-              <div>
-                <p className="text-sm font-medium text-foreground">Nenhuma mensagem ainda</p>
-                <p className="mt-0.5 text-xs text-muted-foreground">
-                  Envie a primeira mensagem para iniciar a conversa.
-                </p>
-              </div>
-            </div>
-          )}
-          {(data.mensagens ?? []).map((m: any, i: number) => {
-            const msgs = data.mensagens as any[];
-            const anterior = msgs[i - 1];
-            const proxima = msgs[i + 1];
-            const minha = m.autor_id === meuId;
-            const mostrarDia = !anterior || fmtDia(anterior.created_at) !== fmtDia(m.created_at);
-            const mesmoAutorAntes = !mostrarDia && anterior?.autor_id === m.autor_id;
-            const mesmoAutorDepois =
-              proxima?.autor_id === m.autor_id &&
-              fmtDia(proxima?.created_at ?? "") === fmtDia(m.created_at);
-            return (
-              <div key={m.id}>
-                {mostrarDia && (
-                  <div className="my-3 flex items-center justify-center">
-                    <span className="rounded-full bg-background/80 px-3 py-1 text-[11px] font-medium text-muted-foreground shadow-sm ring-1 ring-border/50 backdrop-blur">
-                      {fmtDia(m.created_at)}
-                    </span>
-                  </div>
-                )}
-                <div
-                  className={cn(
-                    "flex min-w-0 items-end gap-2",
-                    minha ? "flex-row-reverse" : "flex-row",
-                    mesmoAutorAntes ? "mt-0.5" : "mt-2",
-                  )}
-                >
-                  {!minha &&
-                    (mesmoAutorDepois ? (
-                      <span className="size-7 shrink-0" />
-                    ) : (
-                      <OpAvatar nome={m.nome_autor} className="size-7 text-[10px]" />
-                    ))}
-                  <div
-                    className={cn(
-                      "flex min-w-0 max-w-[82%] flex-col sm:max-w-[78%]",
-                      minha ? "items-end" : "items-start",
-                    )}
-                  >
-                    {!mesmoAutorAntes && (
-                      <span
-                        className={cn(
-                          "mb-0.5 px-1 text-[10.5px] font-semibold uppercase tracking-wide",
-                          minha ? "text-primary/80" : "text-muted-foreground",
-                        )}
-                      >
-                        {m.nome_autor ?? (minha ? "Eu" : "—")}
-                      </span>
-                    )}
-                    <div
-                      className={cn(
-                        "chat-bubble overflow-hidden px-3.5 py-2 text-sm leading-relaxed",
-                        minha
-                          ? "rounded-2xl rounded-br-md bg-primary text-primary-foreground"
-                          : "rounded-2xl rounded-bl-md border border-chat-them-border bg-chat-them text-chat-them-foreground",
-                        mesmoAutorAntes && (minha ? "rounded-tr-md" : "rounded-tl-md"),
-                      )}
-                    >
-                      <p className="whitespace-pre-wrap break-words">{m.corpo}</p>
-                    </div>
-                    <span
-                      className={cn(
-                        "mt-0.5 px-1 text-[10px] tabular-nums text-muted-foreground",
-                      )}
-                    >
-                      {fmtHora(m.created_at)}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-          <div ref={fimRef} />
-        </div>
-
-        <form
-          className="flex shrink-0 items-end gap-1.5 border-t border-border/60 bg-background/95 p-2.5 backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:p-3"
-          onSubmit={(e) => {
-            e.preventDefault();
-            enviar();
+      <section className="min-h-0">
+        <DemandaChatTab
+          demandaId={id}
+          info={{
+            numero: d.numero,
+            titulo: d.titulo,
+            statusLabel: cfg.label,
           }}
-        >
-          <Textarea
-            value={texto}
-            onChange={(e) => setTexto(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                enviar();
-              }
-            }}
-            placeholder="Escreva uma mensagem…"
-            rows={1}
-            className="max-h-32 min-h-10 min-w-0 flex-1 resize-none rounded-2xl bg-muted/50 px-4 py-2.5"
-          />
-          <Button
-            type="submit"
-            size="icon"
-            className="h-10 w-10 shrink-0 rounded-full"
-            disabled={enviando || !texto.trim()}
-            aria-label="Enviar mensagem"
-          >
-            <Send className="h-5 w-5" />
-          </Button>
-        </form>
+        />
       </section>
     </div>
   );
@@ -503,9 +285,9 @@ function Linha({
   label,
   children,
 }: {
-  icone: React.ReactNode;
+  icone: ReactNode;
   label: string;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
     <div className="flex items-center gap-2 text-xs">
@@ -524,7 +306,7 @@ function VinculoRow({
   sub,
   to,
 }: {
-  icone: React.ReactNode;
+  icone: ReactNode;
   label: string;
   sub?: string | null;
   to: string;
