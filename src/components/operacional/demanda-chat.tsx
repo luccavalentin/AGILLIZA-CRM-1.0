@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Check, CheckCheck, Loader2, Maximize2, Search, Send } from "lucide-react";
+import { Check, CheckCheck, Loader2, Maximize2, MessageCircle, Search, Send } from "lucide-react";
 import { toast } from "sonner";
 import {
   abrirDemandaChatFlutuante,
