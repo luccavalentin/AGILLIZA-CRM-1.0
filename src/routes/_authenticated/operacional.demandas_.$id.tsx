@@ -162,11 +162,22 @@ function Pagina() {
             ? "text-warning"
             : "text-muted-foreground";
   const slaVencido = restante !== null && restante < 0 && d.status !== "concluida";
+  const slaVencidoHa = slaVencido && restante !== null ? formatarTempoAberto(new Date(Date.now() + restante).toISOString()) : null;
 
   const tempoAberto = formatarTempoAberto(
     d.created_at ?? d.criado_em,
     d.concluida_em,
   );
+
+  // Tom preenchido do status para o pill principal (destaque como no reference).
+  const statusPillCls: Record<string, string> = {
+    aberta: "bg-primary/10 text-primary ring-1 ring-inset ring-primary/25",
+    em_andamento: "bg-primary text-primary-foreground",
+    aguardando: "bg-warning/15 text-warning ring-1 ring-inset ring-warning/30",
+    concluida: "bg-success/15 text-success ring-1 ring-inset ring-success/30",
+    cancelada: "bg-muted text-muted-foreground ring-1 ring-inset ring-border",
+  };
+  const statusCls = statusPillCls[d.status as string] ?? statusPillCls.aberta;
 
   return (
     <div className="mx-auto grid min-h-[calc(100vh-6rem)] max-w-[1400px] gap-5 p-4 md:p-6 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
@@ -193,7 +204,9 @@ function Pagina() {
               {copiado ? <Check className="size-3" /> : <Copy className="size-3" />}
             </button>
             <PriorityChip prioridade={d.prioridade} />
-            <Badge variant="outline" className="rounded-full">{cfg.label}</Badge>
+            <span className={cn("inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold", statusCls)}>
+              {cfg.label}
+            </span>
           </div>
           <h1 className="mt-3 text-lg font-bold leading-tight text-foreground">{d.titulo}</h1>
           {d.descricao && (
@@ -214,7 +227,7 @@ function Pagina() {
             <div className="flex items-start gap-2 text-xs">
               <span className="flex w-24 shrink-0 items-center gap-1.5 pt-0.5 text-muted-foreground">
                 {slaVencido ? (
-                  <AlertTriangle className="h-3.5 w-3.5" />
+                  <AlertTriangle className="h-3.5 w-3.5 text-destructive" />
                 ) : d.status === "concluida" ? (
                   <CheckCircle2 className="h-3.5 w-3.5" />
                 ) : (
@@ -224,15 +237,16 @@ function Pagina() {
               </span>
               <div className="flex-1">
                 <p className={cn("text-sm font-semibold tabular-nums", slaTone)}>
-                  {slaVencido ? "Vencido há " : ""}
-                  {d.prazo_sla
-                    ? new Date(d.prazo_sla).toLocaleString("pt-BR", {
-                        day: "2-digit",
-                        month: "2-digit",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })
-                    : "Sem prazo"}
+                  {slaVencido
+                    ? `Vencido há ${slaVencidoHa}`
+                    : d.prazo_sla
+                      ? new Date(d.prazo_sla).toLocaleString("pt-BR", {
+                          day: "2-digit",
+                          month: "2-digit",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })
+                      : "Sem prazo"}
                 </p>
                 {d.prazo_sla && (
                   <p className="text-[11px] text-muted-foreground">
@@ -249,6 +263,7 @@ function Pagina() {
             </div>
           </div>
         </div>
+
 
         {/* Vínculos */}
         {(d.cliente_id || d.proposta_id || d.simulacao_id) && (
