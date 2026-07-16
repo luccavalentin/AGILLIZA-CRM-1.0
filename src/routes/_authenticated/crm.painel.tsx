@@ -345,13 +345,17 @@ function Pagina() {
             `${ct.nome_cliente ?? ""} ${ct.numero_cliente ?? ""} ${ct.numero_proposta ?? ""} ${ct.nome_banco ?? ""}`.toLowerCase();
           if (!alvoStr.includes(termoContrato)) return false;
         }
-        const dia = ct.contrato_emitido_em ?? null;
+        // Normaliza para YYYY-MM-DD antes de comparar. Sem isso, colunas com
+        // horário (ex.: "2026-07-16T15:00:00Z") comparadas contra o filtro
+        // "YYYY-MM-DD" excluíam o próprio dia final por comparação lexical.
+        const dia = ct.contrato_emitido_em ? String(ct.contrato_emitido_em).slice(0, 10) : null;
         if (contratoDesde && (!dia || dia < contratoDesde)) return false;
         if (contratoAte && (!dia || dia > contratoAte)) return false;
         return true;
       }),
     [contratos, termoContrato, contratoDesde, contratoAte],
   );
+
   const dadosFiltrados = useMemo(
     () =>
       (data ?? []).map((s) => ({
