@@ -5,6 +5,7 @@ import {
 } from "@/components/shared/floating-chat-store";
 import { ChatClienteConversa } from "@/components/crm/chat-cliente-tab";
 import { DemandaChatConversa } from "@/components/operacional/demanda-chat";
+import { DmConversa } from "@/components/operacional/central-chat/dm-conversa";
 
 /**
  * Host global da conversa flutuante. Fica montado no layout raiz, então a
@@ -27,6 +28,20 @@ export function FloatingChatHost() {
             demandaId={flutuante.demandaId}
             info={flutuante.info}
           />
+        </div>
+      </FloatingWindow>
+    );
+  }
+
+  if (flutuante.kind === "dm") {
+    return (
+      <FloatingWindow
+        title={`Mensagem · ${flutuante.info?.nome ?? "Colega"}`}
+        onClose={fecharChatFlutuante}
+        startMinimized={flutuante.minimized}
+      >
+        <div className="h-full min-h-[24rem]">
+          <DmConversa key={flutuante.conversaId} conversaId={flutuante.conversaId} />
         </div>
       </FloatingWindow>
     );
