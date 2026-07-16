@@ -121,6 +121,15 @@ export function DetalheSimulacoes({
                     <span>Imóvel {formatBRL(s.valor_imovel)}</span>
                     <span>Financ. {formatBRL(Number(s.valor_financiamento) || 0)}</span>
                     <span>{s.prazo ? `${s.prazo} meses` : "—"}</span>
+                    {s.sistema_amortizacao && (
+                      <span className="inline-flex items-center rounded-md bg-muted px-1.5 py-0.5 font-semibold uppercase tracking-wide text-[10px] text-foreground/80 ring-1 ring-inset ring-border">
+                        {s.sistema_amortizacao === "B"
+                          ? "SAC + PRICE"
+                          : s.sistema_amortizacao === "P"
+                            ? "PRICE"
+                            : "SAC"}
+                      </span>
+                    )}
                     {Array.isArray(s.bancos) && s.bancos.length > 0 && (
                       <span>
                         {s.bancos.length} banco{s.bancos.length > 1 ? "s" : ""}

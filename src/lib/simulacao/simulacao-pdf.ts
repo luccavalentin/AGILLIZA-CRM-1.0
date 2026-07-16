@@ -185,6 +185,17 @@ function sistemaAmortizacaoLabel(
   return normalizarSistemaAmortizacao(apiValor, requisitado);
 }
 
+/** Descobre a tabela (SAC/PRICE) usada por um banco desta simulação.
+ *  Usa a etiqueta `_sistema` colocada pelo backend em obterSimulacao (modo
+ *  "Ambos"), caindo para o retorno do banco e por fim para o sistema
+ *  solicitado na simulação. */
+function sistemaDoBanco(b: any, s: any): string {
+  if (b?._sistema === "SAC" || b?._sistema === "PRICE") return b._sistema;
+  const d = extrairDetalheBanco(b?.raw_response);
+  const norm = normalizarSistemaAmortizacao(d?.sistemaAmortizacao, s?.sistema_amortizacao);
+  return norm === "SAC" || norm === "PRICE" ? norm : "—";
+}
+
 /**
  * Grade de "Informações do Financiamento".
  * Só exibe o que vem diretamente do retorno do banco (ou o que o próprio usuário
@@ -374,7 +385,8 @@ function anexarDetalhesBancos(doc: jsPDF, pageW: number, pageH: number, s: any, 
 
   lista.forEach((b) => {
     const d = extrairDetalheBanco(b?.raw_response);
-    const nomeBanco = b?.nome_banco ?? "Banco";
+    const sist = sistemaDoBanco(b, s);
+    const nomeBanco = `${b?.nome_banco ?? "Banco"}${sist !== "—" ? ` — ${sist}` : ""}`;
     const parcelas = d?.parcelas ?? [];
 
     doc.addPage("a4", "landscape");
@@ -569,17 +581,28 @@ export function baixarSimulacaoPDF(input: SimulacaoPdfInput) {
   ];
 
 
+  const sistemasBancos = Array.from(
+    new Set((bancos ?? []).map((b) => sistemaDoBanco(b, s)).filter((v) => v === "SAC" || v === "PRICE")),
+  );
+  const isMista = s.sistema_amortizacao === "B" || sistemasBancos.length > 1;
+  const sistemaKpi = isMista
+    ? "SAC + PRICE"
+    : s.sistema_amortizacao === "P"
+      ? "PRICE"
+      : "SAC";
+
   const kpis: ReportKpi[] = [
     { label: "Valor do imóvel", valor: formatBRL(s.valor_imovel) },
     { label: "Financiamento", valor: formatBRL(s.valor_financiamento) },
     { label: "Entrada", valor: formatBRL(s.valor_entrada) },
     { label: "Prazo", valor: s.prazo ? `${s.prazo} meses` : "—" },
-    { label: "Sistema", valor: s.sistema_amortizacao === "P" ? "PRICE" : "SAC" },
+    { label: "Sistema", valor: sistemaKpi },
     { label: "FGTS", valor: s.utiliza_fgts === "S" ? "Sim" : "Não" },
   ];
 
   const columns: ReportColumn[] = [
     { key: "banco", label: "Banco" },
+    ...(isMista ? [{ key: "tabela", label: "Tabela" } as ReportColumn] : []),
     { key: "situacao", label: "Situação" },
     { key: "parcela", label: "Parcela", align: "right" },
     { key: "taxa", label: "Taxa a.a.", align: "right" },
@@ -589,6 +612,7 @@ export function baixarSimulacaoPDF(input: SimulacaoPdfInput) {
 
   const rows: ReportRow[] = (bancos ?? []).map((b) => ({
     banco: b.nome_banco ?? "—",
+    ...(isMista ? { tabela: sistemaDoBanco(b, s) } : {}),
     situacao: LABEL_STATUS_BANCO[b.status_banco ?? ""] ?? (b.status_banco || "—"),
     parcela: b.valor_parcela != null ? formatBRL(b.valor_parcela) : "—",
     taxa: b.taxa_juros_ano != null ? formatPercent(b.taxa_juros_ano / 100) : "—",
@@ -652,7 +676,8 @@ export function baixarSimulacaoSimplificadaPDF({
     y = drawDisclaimerTopo(doc, pageW, y);
     y = drawTituloExtrato(doc, pageW, s, y, docLabel, dataLabel);
 
-    y = drawFaixaBanco(doc, pageW, b?.nome_banco ?? "Banco", y);
+    const sistB = sistemaDoBanco(b, s);
+    y = drawFaixaBanco(doc, pageW, `${b?.nome_banco ?? "Banco"}${sistB !== "—" ? ` — ${sistB}` : ""}`, y);
     y = drawDadosCliente(doc, pageW, s, y);
     y = drawInfoFinanciamento(doc, pageW, s, b, d, y);
 
@@ -717,7 +742,8 @@ function criarDocSimulacaoDetalhada({
     if (idx > 0) doc.addPage();
     drawPageBackground(doc, pageW, pageH);
     const d = extrairDetalheBanco(b?.raw_response);
-    const nomeBanco = b?.nome_banco ?? "Banco";
+    const sist = sistemaDoBanco(b, s);
+    const nomeBanco = `${b?.nome_banco ?? "Banco"}${sist !== "—" ? ` — ${sist}` : ""}`;
 
     drawClienteHeader(doc, pageW);
     let y = HEADER_H + 20;
