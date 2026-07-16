@@ -674,5 +674,5 @@ export function baixarPropostaOficialPDF({
   const numero = String(proposta?.numero_proposta ?? "").trim();
   const descritivo = nomeDescritivo(proposta, bancos);
   const nome = [numero, "Ficha", descritivo].filter(Boolean).join(" - ");
-  exportPDF(doc, nome || "Ficha da Proposta");
+  doc.save(`${nome || "Ficha da Proposta"}.pdf`);
 }
