@@ -55,6 +55,7 @@ export type Database = {
       }
       admin_api_integrations: {
         Row: {
+          api_key: string | null
           ativo: boolean
           base_url: string | null
           chave: string
@@ -69,6 +70,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          api_key?: string | null
           ativo?: boolean
           base_url?: string | null
           chave: string
@@ -83,6 +85,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          api_key?: string | null
           ativo?: boolean
           base_url?: string | null
           chave?: string
