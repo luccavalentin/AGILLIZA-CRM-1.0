@@ -78,14 +78,12 @@ import { Route as AuthenticatedCrmChatRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedContaSegurancaRouteImport } from './routes/_authenticated/conta.seguranca'
 import { Route as AuthenticatedContaPerfilRouteImport } from './routes/_authenticated/conta.perfil'
 import { Route as AuthenticatedContaNotificacoesRouteImport } from './routes/_authenticated/conta.notificacoes'
-import { Route as AuthenticatedAdminSlaRouteImport } from './routes/_authenticated/admin.sla'
 import { Route as AuthenticatedAdminRegrasModulosRouteImport } from './routes/_authenticated/admin.regras-modulos'
 import { Route as AuthenticatedAdminPessoasRouteImport } from './routes/_authenticated/admin.pessoas'
 import { Route as AuthenticatedAdminParametrosRouteImport } from './routes/_authenticated/admin.parametros'
 import { Route as AuthenticatedAdminNotificacoesRouteImport } from './routes/_authenticated/admin.notificacoes'
 import { Route as AuthenticatedAdminIntegracoesRouteImport } from './routes/_authenticated/admin.integracoes'
 import { Route as AuthenticatedAdminComprasRouteImport } from './routes/_authenticated/admin.compras'
-import { Route as AuthenticatedAdminComissoesRouteImport } from './routes/_authenticated/admin.comissoes'
 import { Route as AuthenticatedAdminBancosRouteImport } from './routes/_authenticated/admin.bancos'
 import { Route as AuthenticatedAdminBackupRouteImport } from './routes/_authenticated/admin.backup'
 import { Route as AuthenticatedAdminAuditoriaRouteImport } from './routes/_authenticated/admin.auditoria'
@@ -491,11 +489,6 @@ const AuthenticatedContaNotificacoesRoute =
     path: '/conta/notificacoes',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedAdminSlaRoute = AuthenticatedAdminSlaRouteImport.update({
-  id: '/admin/sla',
-  path: '/admin/sla',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 const AuthenticatedAdminRegrasModulosRoute =
   AuthenticatedAdminRegrasModulosRouteImport.update({
     id: '/admin/regras-modulos',
@@ -530,12 +523,6 @@ const AuthenticatedAdminComprasRoute =
   AuthenticatedAdminComprasRouteImport.update({
     id: '/admin/compras',
     path: '/admin/compras',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedAdminComissoesRoute =
-  AuthenticatedAdminComissoesRouteImport.update({
-    id: '/admin/comissoes',
-    path: '/admin/comissoes',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedAdminBancosRoute =
@@ -677,14 +664,12 @@ export interface FileRoutesByFullPath {
   '/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
   '/admin/backup': typeof AuthenticatedAdminBackupRoute
   '/admin/bancos': typeof AuthenticatedAdminBancosRoute
-  '/admin/comissoes': typeof AuthenticatedAdminComissoesRoute
   '/admin/compras': typeof AuthenticatedAdminComprasRoute
   '/admin/integracoes': typeof AuthenticatedAdminIntegracoesRoute
   '/admin/notificacoes': typeof AuthenticatedAdminNotificacoesRoute
   '/admin/parametros': typeof AuthenticatedAdminParametrosRoute
   '/admin/pessoas': typeof AuthenticatedAdminPessoasRoute
   '/admin/regras-modulos': typeof AuthenticatedAdminRegrasModulosRoute
-  '/admin/sla': typeof AuthenticatedAdminSlaRoute
   '/conta/notificacoes': typeof AuthenticatedContaNotificacoesRoute
   '/conta/perfil': typeof AuthenticatedContaPerfilRoute
   '/conta/seguranca': typeof AuthenticatedContaSegurancaRoute
@@ -771,14 +756,12 @@ export interface FileRoutesByTo {
   '/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
   '/admin/backup': typeof AuthenticatedAdminBackupRoute
   '/admin/bancos': typeof AuthenticatedAdminBancosRoute
-  '/admin/comissoes': typeof AuthenticatedAdminComissoesRoute
   '/admin/compras': typeof AuthenticatedAdminComprasRoute
   '/admin/integracoes': typeof AuthenticatedAdminIntegracoesRoute
   '/admin/notificacoes': typeof AuthenticatedAdminNotificacoesRoute
   '/admin/parametros': typeof AuthenticatedAdminParametrosRoute
   '/admin/pessoas': typeof AuthenticatedAdminPessoasRoute
   '/admin/regras-modulos': typeof AuthenticatedAdminRegrasModulosRoute
-  '/admin/sla': typeof AuthenticatedAdminSlaRoute
   '/conta/notificacoes': typeof AuthenticatedContaNotificacoesRoute
   '/conta/perfil': typeof AuthenticatedContaPerfilRoute
   '/conta/seguranca': typeof AuthenticatedContaSegurancaRoute
@@ -869,14 +852,12 @@ export interface FileRoutesById {
   '/_authenticated/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
   '/_authenticated/admin/backup': typeof AuthenticatedAdminBackupRoute
   '/_authenticated/admin/bancos': typeof AuthenticatedAdminBancosRoute
-  '/_authenticated/admin/comissoes': typeof AuthenticatedAdminComissoesRoute
   '/_authenticated/admin/compras': typeof AuthenticatedAdminComprasRoute
   '/_authenticated/admin/integracoes': typeof AuthenticatedAdminIntegracoesRoute
   '/_authenticated/admin/notificacoes': typeof AuthenticatedAdminNotificacoesRoute
   '/_authenticated/admin/parametros': typeof AuthenticatedAdminParametrosRoute
   '/_authenticated/admin/pessoas': typeof AuthenticatedAdminPessoasRoute
   '/_authenticated/admin/regras-modulos': typeof AuthenticatedAdminRegrasModulosRoute
-  '/_authenticated/admin/sla': typeof AuthenticatedAdminSlaRoute
   '/_authenticated/conta/notificacoes': typeof AuthenticatedContaNotificacoesRoute
   '/_authenticated/conta/perfil': typeof AuthenticatedContaPerfilRoute
   '/_authenticated/conta/seguranca': typeof AuthenticatedContaSegurancaRoute
@@ -967,14 +948,12 @@ export interface FileRouteTypes {
     | '/admin/auditoria'
     | '/admin/backup'
     | '/admin/bancos'
-    | '/admin/comissoes'
     | '/admin/compras'
     | '/admin/integracoes'
     | '/admin/notificacoes'
     | '/admin/parametros'
     | '/admin/pessoas'
     | '/admin/regras-modulos'
-    | '/admin/sla'
     | '/conta/notificacoes'
     | '/conta/perfil'
     | '/conta/seguranca'
@@ -1061,14 +1040,12 @@ export interface FileRouteTypes {
     | '/admin/auditoria'
     | '/admin/backup'
     | '/admin/bancos'
-    | '/admin/comissoes'
     | '/admin/compras'
     | '/admin/integracoes'
     | '/admin/notificacoes'
     | '/admin/parametros'
     | '/admin/pessoas'
     | '/admin/regras-modulos'
-    | '/admin/sla'
     | '/conta/notificacoes'
     | '/conta/perfil'
     | '/conta/seguranca'
@@ -1158,14 +1135,12 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/auditoria'
     | '/_authenticated/admin/backup'
     | '/_authenticated/admin/bancos'
-    | '/_authenticated/admin/comissoes'
     | '/_authenticated/admin/compras'
     | '/_authenticated/admin/integracoes'
     | '/_authenticated/admin/notificacoes'
     | '/_authenticated/admin/parametros'
     | '/_authenticated/admin/pessoas'
     | '/_authenticated/admin/regras-modulos'
-    | '/_authenticated/admin/sla'
     | '/_authenticated/conta/notificacoes'
     | '/_authenticated/conta/perfil'
     | '/_authenticated/conta/seguranca'
@@ -1722,13 +1697,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedContaNotificacoesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/admin/sla': {
-      id: '/_authenticated/admin/sla'
-      path: '/admin/sla'
-      fullPath: '/admin/sla'
-      preLoaderRoute: typeof AuthenticatedAdminSlaRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/admin/regras-modulos': {
       id: '/_authenticated/admin/regras-modulos'
       path: '/admin/regras-modulos'
@@ -1769,13 +1737,6 @@ declare module '@tanstack/react-router' {
       path: '/admin/compras'
       fullPath: '/admin/compras'
       preLoaderRoute: typeof AuthenticatedAdminComprasRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/admin/comissoes': {
-      id: '/_authenticated/admin/comissoes'
-      path: '/admin/comissoes'
-      fullPath: '/admin/comissoes'
-      preLoaderRoute: typeof AuthenticatedAdminComissoesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/admin/bancos': {
@@ -1994,14 +1955,12 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminAuditoriaRoute: typeof AuthenticatedAdminAuditoriaRoute
   AuthenticatedAdminBackupRoute: typeof AuthenticatedAdminBackupRoute
   AuthenticatedAdminBancosRoute: typeof AuthenticatedAdminBancosRoute
-  AuthenticatedAdminComissoesRoute: typeof AuthenticatedAdminComissoesRoute
   AuthenticatedAdminComprasRoute: typeof AuthenticatedAdminComprasRoute
   AuthenticatedAdminIntegracoesRoute: typeof AuthenticatedAdminIntegracoesRoute
   AuthenticatedAdminNotificacoesRoute: typeof AuthenticatedAdminNotificacoesRoute
   AuthenticatedAdminParametrosRoute: typeof AuthenticatedAdminParametrosRoute
   AuthenticatedAdminPessoasRoute: typeof AuthenticatedAdminPessoasRoute
   AuthenticatedAdminRegrasModulosRoute: typeof AuthenticatedAdminRegrasModulosRoute
-  AuthenticatedAdminSlaRoute: typeof AuthenticatedAdminSlaRoute
   AuthenticatedContaNotificacoesRoute: typeof AuthenticatedContaNotificacoesRoute
   AuthenticatedContaPerfilRoute: typeof AuthenticatedContaPerfilRoute
   AuthenticatedContaSegurancaRoute: typeof AuthenticatedContaSegurancaRoute
@@ -2054,14 +2013,12 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminAuditoriaRoute: AuthenticatedAdminAuditoriaRoute,
   AuthenticatedAdminBackupRoute: AuthenticatedAdminBackupRoute,
   AuthenticatedAdminBancosRoute: AuthenticatedAdminBancosRoute,
-  AuthenticatedAdminComissoesRoute: AuthenticatedAdminComissoesRoute,
   AuthenticatedAdminComprasRoute: AuthenticatedAdminComprasRoute,
   AuthenticatedAdminIntegracoesRoute: AuthenticatedAdminIntegracoesRoute,
   AuthenticatedAdminNotificacoesRoute: AuthenticatedAdminNotificacoesRoute,
   AuthenticatedAdminParametrosRoute: AuthenticatedAdminParametrosRoute,
   AuthenticatedAdminPessoasRoute: AuthenticatedAdminPessoasRoute,
   AuthenticatedAdminRegrasModulosRoute: AuthenticatedAdminRegrasModulosRoute,
-  AuthenticatedAdminSlaRoute: AuthenticatedAdminSlaRoute,
   AuthenticatedContaNotificacoesRoute: AuthenticatedContaNotificacoesRoute,
   AuthenticatedContaPerfilRoute: AuthenticatedContaPerfilRoute,
   AuthenticatedContaSegurancaRoute: AuthenticatedContaSegurancaRoute,
