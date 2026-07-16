@@ -73,7 +73,9 @@ export const listarTarefas = createServerFn({ method: "GET" })
       query = query.or(orParts.join(","));
     }
     if (data.status) query = query.eq("status", data.status as any);
+    if (data.cliente_id) query = query.eq("cliente_id", data.cliente_id);
     if (data.q) query = query.ilike("titulo", `%${data.q.trim()}%`);
+
     const { data: itens, error } = await query;
     if (error) throw new Error(error.message);
     const rows = (itens ?? []) as any[];
