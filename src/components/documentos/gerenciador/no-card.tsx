@@ -74,6 +74,19 @@ export function NoCard({
         <DropdownMenuItem onClick={() => onMover(no)}>
           <Move className="mr-2 h-4 w-4" /> Mover
         </DropdownMenuItem>
+        {podeAlternarMenu ? (
+          <DropdownMenuItem onClick={() => onAlternarMenu!(no)}>
+            {no.mostrar_no_menu ? (
+              <>
+                <EyeOff className="mr-2 h-4 w-4" /> Ocultar do menu lateral
+              </>
+            ) : (
+              <>
+                <Eye className="mr-2 h-4 w-4" /> Mostrar no menu lateral
+              </>
+            )}
+          </DropdownMenuItem>
+        ) : null}
         <DropdownMenuSeparator />
         <DropdownMenuItem
           className="text-destructive focus:text-destructive"
