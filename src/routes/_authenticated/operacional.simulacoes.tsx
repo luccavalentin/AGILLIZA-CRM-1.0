@@ -803,116 +803,14 @@ function Pagina() {
       </div>
 
       {/* Enviar proposta: escolher UM banco por vez */}
-      <Dialog open={!!envio} onOpenChange={(o) => !o && setEnvio(null)}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Enviar proposta</DialogTitle>
-            <DialogDescription>
-              Envie a proposta{" "}
-              {envio?.numero ? `da simulação ${envio.numero}` : ""} para cada banco individualmente.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-2">
-            {envioCarregando ? (
-              <p className="py-6 text-center text-sm text-muted-foreground">Carregando bancos…</p>
-            ) : (envio?.bancos.length ?? 0) === 0 ? (
-              <p className="py-6 text-center text-sm text-muted-foreground">
-                Nenhum banco simulado disponível para envio.
-              </p>
-            ) : (
-              envio?.bancos.map((b: any) => {
-                const criada = propostasCriadas.find((p) => p.simulacao_banco_id === b.id);
-                const esteEnviando = enviandoBancoId === b.id;
-                const cor = corDoBanco(b.nome_banco);
-                return (
-                  <div
-                    key={b.id}
-                    style={criada ? { borderColor: cor } : undefined}
-                    className={cn(
-                      "flex items-center gap-3 rounded-lg border bg-card p-3 transition-colors",
-                      criada ? "border-2" : "border-border",
-                    )}
-                  >
-                    <BancoLogo nome={b.nome_banco} size="lg" className="shrink-0" />
-                    <span className="min-w-0 flex-1">
-                      <span className="flex items-center gap-1.5">
-                        <span className="min-w-0 truncate text-sm font-semibold text-foreground">
-                          {b.nome_banco}
-                        </span>
-                        {(() => {
-                          // Prioriza o sistema REQUISITADO na simulação. O retorno
-                          // da API (sistema_amortizacao_banco) é usado só como
-                          // fallback porque o Santander devolve "SAC" mesmo em
-                          // simulações executadas em PRICE.
-                          const req = String(b.sistema_amortizacao ?? "").toUpperCase();
-                          const api = String(b.sistema_amortizacao_banco ?? "").toUpperCase();
-                          const sis =
-                            req === "P" || req.includes("PRICE")
-                              ? "PRICE"
-                              : req === "S" || req.includes("SAC")
-                                ? "SAC"
-                                : api === "P" || api.includes("PRICE")
-                                  ? "PRICE"
-                                  : api === "S" || api.includes("SAC")
-                                    ? "SAC"
-                                    : null;
-                          if (!sis) return null;
-                          return (
-                            <span className="inline-flex h-5 shrink-0 items-center rounded-[5px] border border-primary/25 bg-primary/[0.08] px-1.5 text-[9px] font-semibold uppercase leading-none tracking-wide text-primary">
-                              {sis}
-                            </span>
-                          );
-                        })()}
-                      </span>
-                      {b.valor_parcela != null && (
-                        <span className="block text-xs text-muted-foreground">
-                          Parcela {formatBRL(b.valor_parcela)}
-                        </span>
-                      )}
-                    </span>
-                    {criada ? (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setEnvio(null);
-                          router.navigate({
-                            to: "/operacional/propostas/$id",
-                            params: { id: criada.proposta_id },
-                            search: { complementar: 1 },
-                          });
-                        }}
-                      >
-                        Abrir {criada.numero}
-                      </Button>
-                    ) : (
-                      <Button
-                        size="sm"
-                        onClick={() => enviarBancoIndividual(b)}
-                        disabled={!!enviandoBancoId}
-                      >
-                        <Send className="mr-1.5 h-3.5 w-3.5" />
-                        {esteEnviando ? "Enviando…" : "Enviar"}
-                      </Button>
-                    )}
-                  </div>
-                );
-              })
-            )}
-          </div>
-
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setEnvio(null)}
-              disabled={!!enviandoBancoId}
-            >
-              Fechar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <EnviarPropostaDialog
+        envio={envio}
+        onClose={() => setEnvio(null)}
+        carregando={envioCarregando}
+        enviandoBancoId={enviandoBancoId}
+        propostasCriadas={propostasCriadas}
+        onEnviarBanco={enviarBancoIndividual}
+      />
 
       <SelecionarBancosPdfDialog
         open={!!detalhePdf}
