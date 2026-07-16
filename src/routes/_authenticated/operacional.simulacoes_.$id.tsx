@@ -415,7 +415,6 @@ function Pagina() {
                       <ResumoCelula
                         rotulo="Renda exigida — SAC"
                         valor={formatBRL(rendaSac.rendaMinima)}
-                        detalhe={rendaSac.bancoNome ?? "maior retorno bancário"}
                         destaque
                       />
                     )}
@@ -423,7 +422,6 @@ function Pagina() {
                       <ResumoCelula
                         rotulo="Renda exigida — PRICE"
                         valor={formatBRL(rendaPrice.rendaMinima)}
-                        detalhe={rendaPrice.bancoNome ?? "maior retorno bancário"}
                         destaque
                       />
                     )}
@@ -433,7 +431,6 @@ function Pagina() {
                     <ResumoCelula
                       rotulo="Renda exigida"
                       valor={formatBRL(rendaBancos.rendaMinima)}
-                      detalhe={rendaBancos.bancoNome ?? "maior retorno bancário"}
                       destaque
                     />
                   )
