@@ -11,12 +11,9 @@ import { ajustarPrazoPorIdade, prazoMaximoPorIdade } from "@/lib/simulacao/prazo
 import {
   listarBancosAtivos,
   listarOperacoes,
-  criarSimulacao,
-  enviarSimulacaoBanco,
   obterSimulacao,
   obterClienteCRM,
 } from "@/lib/simulacao/simulacoes.functions";
-import { criarProposta } from "@/lib/propostas/propostas.functions";
 import {
   EMAIL_PADRAO,
   ESTADO_INICIAL,
