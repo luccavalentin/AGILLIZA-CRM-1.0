@@ -150,6 +150,7 @@ export type Database = {
           created_at: string
           criado_por: string | null
           id: string
+          mostrar_no_menu: boolean
           nome: string
           parent_id: string | null
           storage_path: string | null
@@ -163,6 +164,7 @@ export type Database = {
           created_at?: string
           criado_por?: string | null
           id?: string
+          mostrar_no_menu?: boolean
           nome: string
           parent_id?: string | null
           storage_path?: string | null
@@ -176,6 +178,7 @@ export type Database = {
           created_at?: string
           criado_por?: string | null
           id?: string
+          mostrar_no_menu?: boolean
           nome?: string
           parent_id?: string | null
           storage_path?: string | null
