@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -26,10 +26,13 @@ import { listarColegas } from "@/lib/operacional/shared.functions";
 export function TransferirDialog({
   demandaId,
   onTransferida,
+  trigger,
 }: {
   demandaId: string;
   onTransferida: () => void;
+  trigger?: ReactNode;
 }) {
+
   const [aberto, setAberto] = useState(false);
   const [novo, setNovo] = useState("");
   const [motivo, setMotivo] = useState("");
@@ -62,10 +65,13 @@ export function TransferirDialog({
   return (
     <Dialog open={aberto} onOpenChange={setAberto}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
-          Transferir
-        </Button>
+        {trigger ?? (
+          <Button variant="outline" size="sm">
+            Transferir
+          </Button>
+        )}
       </DialogTrigger>
+
       <DialogContent className="w-[calc(100%-2rem)] sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Transferir demanda</DialogTitle>

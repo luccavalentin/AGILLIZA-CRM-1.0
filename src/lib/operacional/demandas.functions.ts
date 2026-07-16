@@ -753,3 +753,54 @@ export const editarDemanda = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+export const adicionarParticipantesDemanda = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        id: z.string().uuid(),
+        user_ids: z.array(z.string().uuid()).min(1),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }): Promise<{ ok: true }> => {
+    const { supabase, userId } = context;
+    const atual = await papelNaDemanda(supabase, data.id, userId);
+    if (!atual.souCriador && !atual.souResponsavel) {
+      throw new Error("Apenas quem enviou ou recebeu a demanda pode adicionar participantes.");
+    }
+    // Valida que os usuários estão no mesmo ecossistema
+    const { data: usuarios } = await supabase
+      .from("profiles")
+      .select("id")
+      .in("id", data.user_ids)
+      .eq("correspondente_id", atual.correspondente_id);
+    if ((usuarios ?? []).length !== data.user_ids.length) {
+      throw new Error("Há participantes fora do seu ecossistema.");
+    }
+    const rows = data.user_ids.map((u) => ({ demanda_id: data.id, user_id: u }));
+    const { error } = await supabase
+      .from("demanda_participantes")
+      .upsert(rows as any, { onConflict: "demanda_id,user_id" });
+    if (error) throw new Error(error.message);
+    await supabase.from("demanda_historico").insert({
+      demanda_id: data.id,
+      ator_id: userId,
+      acao: "participantes_adicionados",
+      detalhe: `${data.user_ids.length} participante(s) adicionado(s)`,
+    });
+    for (const p of data.user_ids) {
+      if (p === userId) continue;
+      await supabase.rpc("emitir_notificacao", {
+        _user_id: p,
+        _corr: atual.correspondente_id,
+        _tipo: "demanda.participante_adicionado",
+        _titulo: "Você foi adicionado a uma demanda",
+        _corpo: atual.titulo,
+        _link: "/operacional/demandas/" + data.id,
+      });
+    }
+    return { ok: true };
+  });
+
+

@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Pencil } from "lucide-react";
+
 import {
   Dialog,
   DialogContent,
@@ -29,6 +30,7 @@ type Prioridade = "p1" | "p2" | "p3";
 export function EditarDemandaDialog({
   demanda,
   onSalva,
+  trigger,
 }: {
   demanda: {
     id: string;
@@ -38,7 +40,9 @@ export function EditarDemandaDialog({
     sla_horas: number | null;
   };
   onSalva: () => void;
+  trigger?: ReactNode;
 }) {
+
   const [aberto, setAberto] = useState(false);
   const [titulo, setTitulo] = useState(demanda.titulo);
   const [descricao, setDescricao] = useState(demanda.descricao ?? "");
@@ -91,10 +95,13 @@ export function EditarDemandaDialog({
   return (
     <Dialog open={aberto} onOpenChange={abrir}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
-          <Pencil className="mr-1 h-3.5 w-3.5" /> Editar
-        </Button>
+        {trigger ?? (
+          <Button variant="outline" size="sm">
+            <Pencil className="mr-1 h-3.5 w-3.5" /> Editar
+          </Button>
+        )}
       </DialogTrigger>
+
       <DialogContent className="w-[calc(100%-2rem)] sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Editar demanda</DialogTitle>
