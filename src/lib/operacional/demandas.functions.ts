@@ -406,6 +406,21 @@ export const criarDemanda = createServerFn({ method: "POST" })
         .from("demanda_participantes")
         .insert(participantes.map((u) => ({ demanda_id: nova.id, user_id: u })));
     }
+
+    // Notifica responsável e participantes sobre a nova demanda.
+    const destinatarios = new Set<string>();
+    if (data.responsavel_id && data.responsavel_id !== userId) destinatarios.add(data.responsavel_id);
+    for (const p of participantes) if (p !== userId) destinatarios.add(p);
+    for (const uid of destinatarios) {
+      await supabase.rpc("emitir_notificacao", {
+        _user_id: uid,
+        _corr: corr,
+        _tipo: "demanda.criada",
+        _titulo: "Nova demanda: " + data.titulo,
+        _corpo: data.descricao ?? "",
+        _link: "/operacional/demandas/" + nova.id,
+      });
+    }
     return { id: nova.id as string };
   });
 
