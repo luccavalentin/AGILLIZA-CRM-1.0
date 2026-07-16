@@ -153,8 +153,20 @@ const TABS = [
 type Tab = (typeof TABS)[number];
 
 const TAB_LABELS: Partial<Record<Tab, string>> = {
-  ENVIAR_BANCO: "Enviar documentos para o banco",
-  FUP: "Follow-up de acompanhamento",
+  ENVIAR_BANCO: "Enviar ao banco",
+  FUP: "Follow-up",
+};
+
+const TAB_ICONS: Record<Tab, React.ComponentType<{ className?: string }>> = {
+  RESUMO: LayoutDashboard,
+  COMPRADORES: Users,
+  VENDEDORES: Store,
+  IQ: ClipboardList,
+  IMÓVEL: Home,
+  DOCUMENTOS: FolderOpen,
+  ENVIAR_BANCO: Upload,
+  ATIVIDADES: Activity,
+  FUP: MessageSquare,
 };
 
 /** Formata data/hora em pt-BR (ex.: "12/07/2026 14:30"). */
