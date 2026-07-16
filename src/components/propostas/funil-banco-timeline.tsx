@@ -26,9 +26,11 @@ export type EtapaBanco = {
 export function FunilBancoTimeline({
   etapas,
   statusProposta,
+  bancoReprovado,
 }: {
   etapas?: EtapaBanco[] | null;
   statusProposta?: string | null;
+  bancoReprovado?: string | null;
 }) {
   const lista = Array.isArray(etapas)
     ? [...etapas].filter((e) => e?.nome).sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0))
