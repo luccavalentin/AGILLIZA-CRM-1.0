@@ -40,23 +40,22 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { SimulacaoStatusBadge } from "@/components/simulacao/status-badge";
-import { BancosSimulados } from "@/components/simulacao/bancos-simulados";
 import { SelecionarBancosPdfDialog } from "@/components/simulacao/selecionar-bancos-pdf-dialog";
 import { formatBRL } from "@/lib/simulacao/format";
 import { listarColegas } from "@/lib/operacional/shared.functions";
-import { UsuarioCombobox } from "@/components/operacional/usuario-combobox";
 import {
-  AcoesSimulacao,
   DetalheSimulacoes,
-  ProdutoBadge,
   statusLabel,
 } from "@/components/simulacao/lista-detalhe";
 import {
   EnviarPropostaDialog,
-  type EnvioEstado,
-  type PropostaCriada,
 } from "@/components/simulacao/enviar-proposta-dialog";
-import { KpiDetalheDialog, type KpiItem } from "@/components/simulacao/kpi-detalhe-dialog";
+import { KpiDetalheDialog } from "@/components/simulacao/kpi-detalhe-dialog";
+import { FiltrosLista } from "@/components/simulacao/lista-page/filtros-lista";
+import { TabelaSimulacoes } from "@/components/simulacao/lista-page/tabela-simulacoes";
+import { CartoesSimulacoes } from "@/components/simulacao/lista-page/cartoes-simulacoes";
+import type { HandlersLinha } from "@/components/simulacao/lista-page/tipos";
+
 
 /** Primeiro e último dia do mês atual como intervalo ISO (filtro padrão). */
 function intervaloMesAtual(): { inicio: string; fim: string } {
