@@ -1,111 +1,34 @@
 import { useMemo, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Link, useRouter } from "@tanstack/react-router";
-import {
-  Archive,
-  ArrowLeft,
-  Loader2,
-  Maximize2,
-  MessageCircle,
-  MessagesSquare,
-  Pin,
-  Plus,
-  Search,
-  UserCircle2,
-  Users,
-} from "lucide-react";
-import { toast } from "sonner";
-import {
-  abrirChatFlutuante,
-  abrirDemandaChatFlutuante,
-  abrirDmFlutuante,
-} from "@/components/shared/floating-chat-store";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useRouter } from "@tanstack/react-router";
+import { Archive, ArrowLeft, Loader2, MessageCircle, MessagesSquare, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ChatClienteConversa } from "@/components/crm/chat-cliente-tab";
-import { DemandaChatConversa } from "@/components/operacional/demanda-chat";
-import { DmConversa } from "@/components/operacional/central-chat/dm-conversa";
 import {
-  buscarColegasDm,
-  iniciarDm,
   listarThreadsCentral,
-  type ThreadCentral,
   type ThreadKind,
 } from "@/lib/chats/central.functions";
-import {
-  ConversaMenuAcoes,
-  EtiquetasPills,
-} from "@/components/shared/conversa-menu-acoes";
 import {
   listarEstadoChatDoUsuario,
   listarEtiquetas,
   listarVinculosEtiqueta,
-  type ChatTipo,
   type EstadoChat,
   type EtiquetaChat,
 } from "@/lib/chats/gestao.functions";
-import { cn } from "@/lib/utils";
-
-function chaveConversa(kind: ChatTipo | ThreadKind, id: string) {
-  return `${kind}-${id}`;
-}
-
-function iniciais(nome?: string | null): string {
-  if (!nome) return "?";
-  return nome
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((p) => p[0]?.toUpperCase() ?? "")
-    .join("");
-}
-
-function tempoRelativo(iso: string | null): string {
-  if (!iso) return "";
-  const d = new Date(iso);
-  const agora = new Date();
-  const diff = (agora.getTime() - d.getTime()) / 1000;
-  if (diff < 60) return "agora";
-  if (diff < 3600) return `${Math.floor(diff / 60)} min`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)} h`;
-  const dias = Math.floor(diff / 86400);
-  if (dias < 7) return `${dias} d`;
-  return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
-}
-
-const RÓTULOS: Record<ThreadKind, { label: string; icon: typeof Users }> = {
-  dm: { label: "Direta", icon: UserCircle2 },
-  cliente: { label: "Cliente", icon: MessageCircle },
-  demanda: { label: "Demanda", icon: MessagesSquare },
-};
-
-type SelecionadoState =
-  | { kind: "dm"; conversaId: string; nome: string | null }
-  | { kind: "cliente"; clienteId: string; nome: string | null; foto: string | null }
-  | {
-      kind: "demanda";
-      demandaId: string;
-      numero: string | null;
-      titulo: string | null;
-      interlocutorNome: string | null;
-      interlocutorFoto: string | null;
-    }
-  | null;
+import {
+  chaveConversa,
+  ehSelecionado,
+  threadParaSelecionado,
+  type SelecionadoState,
+} from "./helpers";
+import { ThreadItem } from "./thread-item";
+import { IniciarDmInline, NovaConversaDialog } from "./iniciar-dm";
+import { PainelConversa } from "./painel-conversa";
 
 export function CentralChatPage() {
   const listarFn = useServerFn(listarThreadsCentral);
@@ -173,12 +96,8 @@ export function CentralChatPage() {
         };
       })
       .filter((r) => !r.oculto)
-      .filter((r) =>
-        aba === "arquivadas" ? r.arquivado : !r.arquivado,
-      )
-      .filter((r) =>
-        aba === "todos" || aba === "arquivadas" ? true : r.th.kind === aba,
-      )
+      .filter((r) => (aba === "arquivadas" ? r.arquivado : !r.arquivado))
+      .filter((r) => (aba === "todos" || aba === "arquivadas" ? true : r.th.kind === aba))
       .filter((r) => {
         if (!t) return true;
         const th = r.th;
@@ -224,9 +143,7 @@ export function CentralChatPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {totalNaoLidas > 0 && (
-            <Badge className="rounded-full">{totalNaoLidas} não lidas</Badge>
-          )}
+          {totalNaoLidas > 0 && <Badge className="rounded-full">{totalNaoLidas} não lidas</Badge>}
           <NovaConversaDialog
             onCriado={(conv) =>
               setSelecionado({ kind: "dm", conversaId: conv.id, nome: conv.nome })
@@ -260,9 +177,7 @@ export function CentralChatPage() {
                 <TabsTrigger value="demanda">Demandas</TabsTrigger>
                 <TabsTrigger value="arquivadas" className="gap-1">
                   <Archive className="size-3" />
-                  {totalArquivadas > 0 && (
-                    <span className="text-[10px]">{totalArquivadas}</span>
-                  )}
+                  {totalArquivadas > 0 && <span className="text-[10px]">{totalArquivadas}</span>}
                 </TabsTrigger>
               </TabsList>
             </Tabs>
@@ -323,489 +238,15 @@ export function CentralChatPage() {
                 </p>
               </div>
             </Card>
-          ) : selecionado.kind === "dm" ? (
-            <div className="flex h-full min-h-0 flex-col overflow-hidden">
-              <div className="mb-2 flex items-center gap-3 rounded-lg border bg-card px-3 py-2">
-                <Avatar className="size-10 border border-border/60">
-                  <AvatarFallback className="bg-primary text-xs font-semibold text-primary-foreground">
-                    {iniciais(selecionado.nome)}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[10px] font-semibold uppercase tracking-wide text-sky-600 dark:text-sky-400">
-                    Mensagem direta
-                  </p>
-                  <p className="truncate text-sm font-semibold text-foreground">
-                    Conversando com {selecionado.nome ?? "colega"}
-                  </p>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-1.5"
-                  onClick={() =>
-                    abrirDmFlutuante(selecionado.conversaId, { nome: selecionado.nome })
-                  }
-                >
-                  <Maximize2 className="size-3.5" />
-                  <span className="hidden sm:inline">Soltar chat</span>
-                </Button>
-                <ConversaMenuAcoes
-                  chatTipo="dm"
-                  chatId={selecionado.conversaId}
-                  arquivado={!!estadoPor.get(chaveConversa("dm", selecionado.conversaId))?.arquivado_em}
-                  fixado={!!estadoPor.get(chaveConversa("dm", selecionado.conversaId))?.pinado_em}
-                  apelidoAtual={estadoPor.get(chaveConversa("dm", selecionado.conversaId))?.apelido ?? null}
-                  nomeReferencia={selecionado.nome}
-                  etiquetaIds={etiquetaPor.get(chaveConversa("dm", selecionado.conversaId)) ?? []}
-                />
-              </div>
-              <div className="min-h-0 flex-1">
-                <DmConversa conversaId={selecionado.conversaId} />
-              </div>
-            </div>
-          ) : selecionado.kind === "cliente" ? (
-            <div className="flex h-full min-h-0 flex-col overflow-hidden">
-              <div className="mb-2 flex items-center gap-3 rounded-lg border bg-card px-3 py-2">
-                <Avatar className="size-10 border border-border/60">
-                  {selecionado.foto && <AvatarImage src={selecionado.foto} alt={selecionado.nome ?? ""} />}
-                  <AvatarFallback className="bg-success text-xs font-semibold text-success-foreground">
-                    {iniciais(selecionado.nome)}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[10px] font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
-                    Cliente
-                  </p>
-                  <p className="truncate text-sm font-semibold text-foreground">
-                    Conversando com {selecionado.nome ?? "cliente"}
-                  </p>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-1.5"
-                  onClick={() =>
-                    abrirChatFlutuante(selecionado.clienteId, { nome: selecionado.nome ?? "Cliente" })
-                  }
-                >
-                  <Maximize2 className="size-3.5" />
-                  <span className="hidden sm:inline">Soltar chat</span>
-                </Button>
-                <ConversaMenuAcoes
-                  chatTipo="cliente"
-                  chatId={selecionado.clienteId}
-                  arquivado={!!estadoPor.get(chaveConversa("cliente", selecionado.clienteId))?.arquivado_em}
-                  fixado={!!estadoPor.get(chaveConversa("cliente", selecionado.clienteId))?.pinado_em}
-                  apelidoAtual={estadoPor.get(chaveConversa("cliente", selecionado.clienteId))?.apelido ?? null}
-                  nomeReferencia={selecionado.nome}
-                  etiquetaIds={etiquetaPor.get(chaveConversa("cliente", selecionado.clienteId)) ?? []}
-                />
-              </div>
-              <div className="min-h-0 flex-1">
-                <ChatClienteConversa
-                  clienteId={selecionado.clienteId}
-                  info={{ nome: selecionado.nome ?? "Cliente" }}
-                />
-              </div>
-            </div>
           ) : (
-            <div className="flex h-full min-h-0 flex-col overflow-hidden">
-              <div className="mb-2 flex items-center gap-3 rounded-lg border bg-card px-3 py-2">
-                <Avatar className="size-10 border border-border/60">
-                  {selecionado.interlocutorFoto && (
-                    <AvatarImage
-                      src={selecionado.interlocutorFoto}
-                      alt={selecionado.interlocutorNome ?? "Usuário"}
-                    />
-                  )}
-                  <AvatarFallback className="bg-warning text-xs font-semibold text-warning-foreground">
-                    {iniciais(selecionado.interlocutorNome ?? selecionado.numero ?? "DE")}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[10px] font-semibold uppercase tracking-wide text-warning">
-                    Demanda · {selecionado.numero ?? "—"}
-                  </p>
-                  <p className="truncate text-sm font-semibold text-foreground">
-                    Conversando com {selecionado.interlocutorNome ?? "usuário da demanda"}
-                  </p>
-                  <p className="truncate text-xs text-muted-foreground">
-                    {selecionado.titulo ?? "Chat da demanda"}
-                  </p>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-1.5"
-                  onClick={() =>
-                    abrirDemandaChatFlutuante(selecionado.demandaId, {
-                      numero: selecionado.numero,
-                      titulo: selecionado.titulo,
-                      interlocutorNome: selecionado.interlocutorNome,
-                      interlocutorFoto: selecionado.interlocutorFoto,
-                    })
-                  }
-                >
-                  <Maximize2 className="size-3.5" />
-                  <span className="hidden sm:inline">Soltar chat</span>
-                </Button>
-                <Button asChild variant="outline" size="sm">
-                  <Link to="/operacional/demandas/$id" params={{ id: selecionado.demandaId }}>
-                    Abrir demanda
-                  </Link>
-                </Button>
-                <ConversaMenuAcoes
-                  chatTipo="demanda"
-                  chatId={selecionado.demandaId}
-                  arquivado={!!estadoPor.get(chaveConversa("demanda", selecionado.demandaId))?.arquivado_em}
-                  fixado={!!estadoPor.get(chaveConversa("demanda", selecionado.demandaId))?.pinado_em}
-                  apelidoAtual={estadoPor.get(chaveConversa("demanda", selecionado.demandaId))?.apelido ?? null}
-                  nomeReferencia={selecionado.interlocutorNome ?? selecionado.titulo ?? selecionado.numero}
-                  etiquetaIds={etiquetaPor.get(chaveConversa("demanda", selecionado.demandaId)) ?? []}
-                />
-              </div>
-              <div className="min-h-0 flex-1">
-                <DemandaChatConversa
-                  demandaId={selecionado.demandaId}
-                  info={{
-                    numero: selecionado.numero,
-                    titulo: selecionado.titulo,
-                    interlocutorNome: selecionado.interlocutorNome,
-                    interlocutorFoto: selecionado.interlocutorFoto,
-                  }}
-                />
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ehSelecionado(sel: SelecionadoState, t: ThreadCentral): boolean {
-  if (!sel) return false;
-  if (sel.kind !== t.kind) return false;
-  if (sel.kind === "dm" && t.kind === "dm") return sel.conversaId === t.id;
-  if (sel.kind === "cliente" && t.kind === "cliente") return sel.clienteId === t.id;
-  if (sel.kind === "demanda" && t.kind === "demanda") return sel.demandaId === t.id;
-  return false;
-}
-
-function threadParaSelecionado(t: ThreadCentral): SelecionadoState {
-  if (t.kind === "dm") return { kind: "dm", conversaId: t.id, nome: t.titulo };
-  if (t.kind === "cliente")
-    return { kind: "cliente", clienteId: t.id, nome: t.titulo, foto: t.avatar_url ?? null };
-  return {
-    kind: "demanda",
-    demandaId: t.id,
-    numero: t.subtitulo,
-    titulo: t.demanda_titulo ?? null,
-    interlocutorNome: t.interlocutor_nome ?? t.titulo ?? null,
-    interlocutorFoto: t.interlocutor_foto ?? t.avatar_url ?? null,
-  };
-}
-
-function ThreadItem({
-  thread,
-  selecionado,
-  onClick,
-  apelido,
-  fixado,
-  arquivado,
-  etiquetas,
-  etiquetaIds,
-}: {
-  thread: ThreadCentral;
-  selecionado: boolean;
-  onClick: () => void;
-  apelido: string | null;
-  fixado: boolean;
-  arquivado: boolean;
-  etiquetas: EtiquetaChat[];
-  etiquetaIds: string[];
-}) {
-  const rot = RÓTULOS[thread.kind];
-  const Icon = rot.icon;
-
-  const nomeBase =
-    thread.kind === "demanda"
-      ? thread.interlocutor_nome?.trim() || thread.titulo || "Usuário da demanda"
-      : thread.titulo;
-  const nomePrincipal = apelido?.trim() || nomeBase;
-
-  const contexto =
-    thread.kind === "demanda"
-      ? [thread.subtitulo?.trim(), thread.demanda_titulo?.trim()].filter(Boolean).join(" · ") || null
-      : null;
-
-  const badgeClasses: Record<ThreadKind, string> = {
-    dm: "bg-primary text-primary-foreground",
-    cliente: "bg-success text-success-foreground",
-    demanda: "bg-warning text-warning-foreground",
-  };
-
-  return (
-    <div
-      className={cn(
-        "group relative flex w-full items-start gap-3 px-3 py-2.5 text-left transition-colors hover:bg-muted/60",
-        selecionado && "bg-primary/10 hover:bg-primary/10",
-      )}
-    >
-      <button
-        type="button"
-        onClick={onClick}
-        className="flex flex-1 items-start gap-3 text-left"
-      >
-        <Avatar className="size-10 border border-border/60">
-          {thread.avatar_url && <AvatarImage src={thread.avatar_url} alt={nomePrincipal} />}
-          <AvatarFallback className="bg-primary/15 text-xs font-semibold text-primary">
-            {iniciais(nomePrincipal)}
-          </AvatarFallback>
-        </Avatar>
-        <div className="min-w-0 flex-1">
-          <div className="mb-0.5 flex items-center gap-1.5">
-            <span
-              className={cn(
-                "inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
-                badgeClasses[thread.kind],
-              )}
-            >
-              <Icon className="size-3" />
-              {rot.label}
-            </span>
-            {fixado && <Pin className="size-3 text-primary" />}
-            {arquivado && <Archive className="size-3 text-muted-foreground" />}
-            <span className="ml-auto shrink-0 text-[10px] text-muted-foreground">
-              {tempoRelativo(thread.ultima_em)}
-            </span>
-          </div>
-          <p className="truncate text-sm font-semibold text-foreground">
-            {thread.kind === "demanda" ? `Conversando com ${nomePrincipal}` : nomePrincipal}
-          </p>
-          {contexto && (
-            <p className="truncate text-[11px] text-muted-foreground/90">{contexto}</p>
-          )}
-          <p className="truncate text-xs text-muted-foreground">
-            {thread.ultima_mensagem?.trim() || "Sem mensagens ainda"}
-          </p>
-          {etiquetas.length > 0 && (
-            <div className="mt-1">
-              <EtiquetasPills etiquetas={etiquetas} />
-            </div>
-          )}
-        </div>
-      </button>
-      <div className="flex flex-col items-end gap-1">
-        {thread.nao_lidas > 0 && (
-          <Badge className="h-5 min-w-5 rounded-full px-1.5 text-[10px]">
-            {thread.nao_lidas}
-          </Badge>
-        )}
-        <ConversaMenuAcoes
-          chatTipo={thread.kind as ChatTipo}
-          chatId={thread.id}
-          arquivado={arquivado}
-          fixado={fixado}
-          apelidoAtual={apelido}
-          nomeReferencia={nomeBase}
-          etiquetaIds={etiquetaIds}
-          compact
-        />
-      </div>
-    </div>
-  );
-}
-
-function NovaConversaDialog({
-  onCriado,
-}: {
-  onCriado: (v: { id: string; nome: string | null }) => void;
-}) {
-  const [aberto, setAberto] = useState(false);
-  const [termo, setTermo] = useState("");
-  const buscarFn = useServerFn(buscarColegasDm);
-  const iniciarFn = useServerFn(iniciarDm);
-  const qc = useQueryClient();
-
-  const { data: colegas, isLoading } = useQuery({
-    queryKey: ["dm-colegas", termo],
-    queryFn: () => buscarFn({ data: { termo } }),
-    enabled: aberto,
-  });
-
-  const iniciar = useMutation({
-    mutationFn: (other: { id: string; nome: string | null }) =>
-      iniciarFn({ data: { other_id: other.id } }).then((r) => ({ id: r.id, nome: other.nome })),
-    onSuccess: (r) => {
-      qc.invalidateQueries({ queryKey: ["threads-central"] });
-      setAberto(false);
-      onCriado(r);
-    },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Falha ao iniciar conversa."),
-  });
-
-  return (
-    <Dialog open={aberto} onOpenChange={setAberto}>
-      <DialogTrigger asChild>
-        <Button className="gap-2">
-          <Plus className="size-4" /> Nova mensagem
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>Iniciar mensagem direta</DialogTitle>
-          <DialogDescription>Escolha um colega para começar a conversa.</DialogDescription>
-        </DialogHeader>
-        <div className="space-y-3">
-          <div className="relative">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              autoFocus
-              value={termo}
-              onChange={(e) => setTermo(e.target.value)}
-              placeholder="Buscar por nome…"
-              className="pl-9"
+            <PainelConversa
+              selecionado={selecionado}
+              estadoPor={estadoPor}
+              etiquetaPor={etiquetaPor}
             />
-          </div>
-          <ScrollArea className="h-64 rounded-md border">
-            {isLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="size-5 animate-spin text-muted-foreground" />
-              </div>
-            ) : !colegas?.length ? (
-              <p className="px-4 py-6 text-center text-sm text-muted-foreground">
-                Nenhum colega encontrado.
-              </p>
-            ) : (
-              <ul className="divide-y">
-                {colegas.map((c) => (
-                  <li key={c.id}>
-                    <button
-                      type="button"
-                      onClick={() => iniciar.mutate({ id: c.id, nome: c.nome })}
-                      disabled={iniciar.isPending}
-                      className="flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-muted/60"
-                    >
-                      <Avatar className="size-9 border border-border/60">
-                        {c.foto_url && <AvatarImage src={c.foto_url} alt={c.nome ?? ""} />}
-                        <AvatarFallback className="bg-primary/15 text-xs font-semibold text-primary">
-                          {iniciais(c.nome)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium">{c.nome ?? "Sem nome"}</p>
-                        <p className="truncate text-xs text-muted-foreground">{c.email ?? ""}</p>
-                      </div>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </ScrollArea>
-        </div>
-        <DialogFooter>
-          <Button variant="ghost" onClick={() => setAberto(false)}>
-            Cancelar
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function IniciarDmInline({
-  onCriado,
-}: {
-  onCriado: (v: { id: string; nome: string | null }) => void;
-}) {
-  const [termo, setTermo] = useState("");
-  const [aberto, setAberto] = useState(false);
-  const buscarFn = useServerFn(buscarColegasDm);
-  const iniciarFn = useServerFn(iniciarDm);
-  const qc = useQueryClient();
-
-  const { data: colegas, isLoading } = useQuery({
-    queryKey: ["dm-colegas-inline", termo],
-    queryFn: () => buscarFn({ data: { termo } }),
-    enabled: aberto,
-  });
-
-  const iniciar = useMutation({
-    mutationFn: (other: { id: string; nome: string | null }) =>
-      iniciarFn({ data: { other_id: other.id } }).then((r) => ({
-        id: r.id,
-        nome: other.nome,
-      })),
-    onSuccess: (r) => {
-      qc.invalidateQueries({ queryKey: ["threads-central"] });
-      setTermo("");
-      setAberto(false);
-      onCriado(r);
-    },
-    onError: (e) =>
-      toast.error(e instanceof Error ? e.message : "Falha ao iniciar conversa."),
-  });
-
-  return (
-    <div className="relative">
-      <div className="relative">
-        <Plus className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-primary" />
-        <Input
-          value={termo}
-          onChange={(e) => {
-            setTermo(e.target.value);
-            setAberto(true);
-          }}
-          onFocus={() => setAberto(true)}
-          onBlur={() => setTimeout(() => setAberto(false), 150)}
-          placeholder="Nova conversa: digite o nome do usuário…"
-          className="border-primary/30 bg-primary/5 pl-9 placeholder:text-primary/70 focus-visible:border-primary"
-        />
-      </div>
-      {aberto && (
-        <div className="absolute left-0 right-0 top-full z-40 mt-1 max-h-72 overflow-auto rounded-md border bg-popover shadow-lg">
-          {isLoading ? (
-            <div className="flex items-center justify-center py-6">
-              <Loader2 className="size-4 animate-spin text-muted-foreground" />
-            </div>
-          ) : !colegas?.length ? (
-            <p className="px-4 py-5 text-center text-xs text-muted-foreground">
-              {termo ? "Nenhum usuário encontrado." : "Comece a digitar o nome…"}
-            </p>
-          ) : (
-            <ul className="divide-y">
-              {colegas.map((c) => (
-                <li key={c.id}>
-                  <button
-                    type="button"
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => iniciar.mutate({ id: c.id, nome: c.nome })}
-                    disabled={iniciar.isPending}
-                    className="flex w-full items-center gap-3 px-3 py-2 text-left transition-colors hover:bg-muted/60"
-                  >
-                    <Avatar className="size-8 border border-border/60">
-                      {c.foto_url && <AvatarImage src={c.foto_url} alt={c.nome ?? ""} />}
-                      <AvatarFallback className="bg-primary/15 text-[10px] font-semibold text-primary">
-                        {iniciais(c.nome)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium">
-                        {c.nome ?? "Sem nome"}
-                      </p>
-                      <p className="truncate text-xs text-muted-foreground">
-                        {c.email ?? ""}
-                      </p>
-                    </div>
-                  </button>
-                </li>
-              ))}
-            </ul>
           )}
         </div>
-      )}
+      </div>
     </div>
   );
 }
