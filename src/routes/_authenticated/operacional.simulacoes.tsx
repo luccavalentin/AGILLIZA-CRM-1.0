@@ -461,28 +461,7 @@ function Pagina() {
       </div>
 
       {/* Detalhe do KPI clicado */}
-      <Dialog open={!!kpiAberto} onOpenChange={(o) => !o && setKpiAberto(null)}>
-        <DialogContent className="max-h-[85vh] overflow-hidden sm:max-w-lg">
-          {(() => {
-            const k = kpis.find((x) => x.id === kpiAberto);
-            if (!k) return null;
-            return (
-              <>
-                <DialogHeader>
-                  <DialogTitle className="flex items-center gap-2">
-                    <span className="grid size-8 place-items-center rounded-lg bg-primary/10 text-primary ring-1 ring-inset ring-primary/15">
-                      <k.icon className="size-4" />
-                    </span>
-                    {k.label}
-                  </DialogTitle>
-                  <DialogDescription>Valor atual: {k.valor}</DialogDescription>
-                </DialogHeader>
-                <div className="overflow-y-auto pr-1">{k.detalhe}</div>
-              </>
-            );
-          })()}
-        </DialogContent>
-      </Dialog>
+      <KpiDetalheDialog kpis={kpis} aberto={kpiAberto} onClose={() => setKpiAberto(null)} />
 
 
       {/* Barra de filtros */}
