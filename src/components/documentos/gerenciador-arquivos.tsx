@@ -532,6 +532,7 @@ export function GerenciadorArquivos({
                 onRenomear={setRenomeando}
                 onMover={setMovendo}
                 onExcluir={setExcluindo}
+                onAlternarMenu={alternarMostrarNoMenu}
               />
             ))}
           </div>
