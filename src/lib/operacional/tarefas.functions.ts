@@ -6,12 +6,13 @@ import { listarClienteIdsParceiroDoUsuario } from "@/lib/escopo";
 export type TarefaStatus = "aberta" | "em_andamento" | "concluida" | "cancelada";
 export type Prioridade = "p1" | "p2" | "p3";
 
-/** Transições válidas de status de tarefa. */
+/** Transições válidas de status de tarefa. Movimentação livre entre colunas. */
+const TODOS_STATUS_TAREFA: TarefaStatus[] = ["aberta", "em_andamento", "concluida", "cancelada"];
 const TRANSICOES: Record<TarefaStatus, TarefaStatus[]> = {
-  aberta: ["em_andamento", "concluida", "cancelada"],
-  em_andamento: ["aberta", "concluida", "cancelada"],
-  concluida: ["em_andamento"],
-  cancelada: ["aberta"],
+  aberta: TODOS_STATUS_TAREFA,
+  em_andamento: TODOS_STATUS_TAREFA,
+  concluida: TODOS_STATUS_TAREFA,
+  cancelada: TODOS_STATUS_TAREFA,
 };
 
 export function transicaoTarefaPermitida(de: TarefaStatus, para: TarefaStatus): boolean {
