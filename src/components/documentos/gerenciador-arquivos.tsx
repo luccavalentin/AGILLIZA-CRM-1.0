@@ -122,6 +122,13 @@ export function GerenciadorArquivos({
     queryFn: () => fnCaminho({ data: { id: pasta } }),
   });
 
+  const resultadosGlobais = useQuery({
+    queryKey: ["arquivos-busca-global", termoGlobal],
+    queryFn: () => fnPesquisar({ data: { termo: termoGlobal } }),
+    enabled: buscaGlobalAberta && termoGlobal.trim().length >= 2,
+    staleTime: 15_000,
+  });
+
   const filtrados = useMemo(() => {
     const q = busca.trim().toLowerCase();
     const lista = nos.data ?? [];
