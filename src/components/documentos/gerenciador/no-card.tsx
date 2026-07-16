@@ -1,5 +1,7 @@
 import {
   Download,
+  Eye,
+  EyeOff,
   Folder,
   FolderOpen,
   MoreVertical,
@@ -27,6 +29,7 @@ export interface NoCardProps {
   onRenomear: (no: ArquivoNo) => void;
   onMover: (no: ArquivoNo) => void;
   onExcluir: (no: ArquivoNo) => void;
+  onAlternarMenu?: (no: ArquivoNo) => void;
 }
 
 /** Card de um único nó (pasta ou arquivo) com o menu de ações. */
@@ -37,9 +40,12 @@ export function NoCard({
   onRenomear,
   onMover,
   onExcluir,
+  onAlternarMenu,
 }: NoCardProps) {
   const arq = no.tipo === "arquivo" ? estiloArquivo(no.content_type, no.nome) : null;
   const Icon = arq?.Icon;
+  const podeAlternarMenu =
+    no.tipo === "pasta" && no.parent_id === null && !!onAlternarMenu;
 
   const menu = (
     <DropdownMenu>
@@ -68,6 +74,19 @@ export function NoCard({
         <DropdownMenuItem onClick={() => onMover(no)}>
           <Move className="mr-2 h-4 w-4" /> Mover
         </DropdownMenuItem>
+        {podeAlternarMenu ? (
+          <DropdownMenuItem onClick={() => onAlternarMenu!(no)}>
+            {no.mostrar_no_menu ? (
+              <>
+                <EyeOff className="mr-2 h-4 w-4" /> Ocultar do menu lateral
+              </>
+            ) : (
+              <>
+                <Eye className="mr-2 h-4 w-4" /> Mostrar no menu lateral
+              </>
+            )}
+          </DropdownMenuItem>
+        ) : null}
         <DropdownMenuSeparator />
         <DropdownMenuItem
           className="text-destructive focus:text-destructive"

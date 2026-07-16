@@ -10,6 +10,7 @@ import {
   HardDrive,
   LayoutGrid,
   List,
+  Search,
   Upload,
   UploadCloud,
 } from "lucide-react";
@@ -28,7 +29,10 @@ import {
   moverNo,
   urlArquivo,
   listarPastas,
+  definirMostrarNoMenu,
+  pesquisarArquivos,
   type ArquivoNo,
+  type ResultadoPesquisa,
 } from "@/lib/documentos/arquivos.functions";
 import { VisualizadorArquivo } from "@/components/comum/visualizador-arquivo";
 import { sanitizePath, formatBytes } from "./gerenciador/arquivo-utils";
@@ -40,6 +44,14 @@ import {
   NovaPastaDialog,
   RenomearDialog,
 } from "./gerenciador/dialogos-arquivo";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 
 export interface GerenciadorArquivosProps {
   /** Pasta inicial (id) ao montar. */
@@ -83,6 +95,8 @@ export function GerenciadorArquivos({
   const [dragging, setDragging] = useState(false);
   const [visualizando, setVisualizando] = useState<{ url: string; nome: string } | null>(null);
   const [vista, setVista] = useState<"grade" | "lista">("grade");
+  const [buscaGlobalAberta, setBuscaGlobalAberta] = useState(false);
+  const [termoGlobal, setTermoGlobal] = useState("");
 
   const inputArquivos = useRef<HTMLInputElement>(null);
   const inputPasta = useRef<HTMLInputElement>(null);
@@ -96,6 +110,8 @@ export function GerenciadorArquivos({
   const fnMover = useServerFn(moverNo);
   const fnUrl = useServerFn(urlArquivo);
   const fnListarPastas = useServerFn(listarPastas);
+  const fnDefinirMostrar = useServerFn(definirMostrarNoMenu);
+  const fnPesquisar = useServerFn(pesquisarArquivos);
 
   const nos = useQuery({
     queryKey: ["arquivos", pasta],
@@ -104,6 +120,13 @@ export function GerenciadorArquivos({
   const trilha = useQuery({
     queryKey: ["arquivos-trilha", pasta],
     queryFn: () => fnCaminho({ data: { id: pasta } }),
+  });
+
+  const resultadosGlobais = useQuery({
+    queryKey: ["arquivos-busca-global", termoGlobal],
+    queryFn: () => fnPesquisar({ data: { termo: termoGlobal } }),
+    enabled: buscaGlobalAberta && termoGlobal.trim().length >= 2,
+    staleTime: 15_000,
   });
 
   const filtrados = useMemo(() => {
@@ -266,6 +289,38 @@ export function GerenciadorArquivos({
     [movendo, fnMover, invalidar],
   );
 
+  const alternarMostrarNoMenu = useCallback(
+    async (no: ArquivoNo) => {
+      try {
+        const novo = !no.mostrar_no_menu;
+        await fnDefinirMostrar({ data: { id: no.id, mostrar: novo } });
+        invalidar();
+        toast.success(novo ? "Pasta fixada no menu lateral." : "Pasta removida do menu lateral.");
+      } catch (e: any) {
+        toast.error(e?.message ?? "Falha ao alternar visibilidade.");
+      }
+    },
+    [fnDefinirMostrar, invalidar],
+  );
+
+  const abrirResultadoGlobal = useCallback(
+    async (r: ResultadoPesquisa) => {
+      setBuscaGlobalAberta(false);
+      if (r.tipo === "pasta") {
+        setPasta(r.id);
+        return;
+      }
+      setPasta(r.parent_id);
+      try {
+        const { url, nome } = await fnUrl({ data: { id: r.id } });
+        setVisualizando({ url, nome });
+      } catch (e: any) {
+        toast.error(e?.message ?? "Não foi possível abrir o arquivo.");
+      }
+    },
+    [setPasta, fnUrl],
+  );
+
   function onDrop(e: React.DragEvent) {
     e.preventDefault();
     setDragging(false);
@@ -378,6 +433,17 @@ export function GerenciadorArquivos({
             </span>
           )}
         </div>
+        <div className="flex items-center gap-2">
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => {
+            setTermoGlobal("");
+            setBuscaGlobalAberta(true);
+          }}
+        >
+          <Search className="mr-2 h-4 w-4" /> Buscar em todos
+        </Button>
         <div className="inline-flex rounded-lg border border-border/60 bg-card p-0.5 shadow-sm">
           <button
             type="button"
@@ -407,6 +473,7 @@ export function GerenciadorArquivos({
           >
             <List className="h-4 w-4" />
           </button>
+        </div>
         </div>
       </div>
 
@@ -465,6 +532,7 @@ export function GerenciadorArquivos({
                 onRenomear={setRenomeando}
                 onMover={setMovendo}
                 onExcluir={setExcluindo}
+                onAlternarMenu={alternarMostrarNoMenu}
               />
             ))}
           </div>
@@ -498,6 +566,73 @@ export function GerenciadorArquivos({
         open={!!visualizando}
         onOpenChange={(o) => !o && setVisualizando(null)}
       />
+
+      <Dialog open={buscaGlobalAberta} onOpenChange={setBuscaGlobalAberta}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Buscar em todos os arquivos</DialogTitle>
+            <DialogDescription>
+              Pesquisa pastas e arquivos em toda a árvore de documentos.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                autoFocus
+                value={termoGlobal}
+                onChange={(e) => setTermoGlobal(e.target.value)}
+                placeholder="Digite pelo menos 2 caracteres…"
+                className="pl-9"
+              />
+            </div>
+            <div className="max-h-[50vh] overflow-y-auto rounded-lg border border-border/60">
+              {termoGlobal.trim().length < 2 ? (
+                <p className="p-6 text-center text-sm text-muted-foreground">
+                  Digite para pesquisar em todo o repositório.
+                </p>
+              ) : resultadosGlobais.isLoading ? (
+                <p className="p-6 text-center text-sm text-muted-foreground">Buscando…</p>
+              ) : (resultadosGlobais.data ?? []).length === 0 ? (
+                <p className="p-6 text-center text-sm text-muted-foreground">
+                  Nenhum resultado encontrado.
+                </p>
+              ) : (
+                <ul className="divide-y divide-border/60">
+                  {(resultadosGlobais.data ?? []).map((r) => (
+                    <li key={r.id}>
+                      <button
+                        type="button"
+                        onClick={() => abrirResultadoGlobal(r)}
+                        className="flex w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-muted/50"
+                      >
+                        <span className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                          {r.tipo === "pasta" ? (
+                            <Folder className="h-4 w-4" />
+                          ) : (
+                            <FileText className="h-4 w-4" />
+                          )}
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-sm font-medium text-foreground">
+                            {r.nome}
+                          </span>
+                          <span className="block truncate text-xs text-muted-foreground">
+                            {r.caminho}
+                            {r.tipo === "arquivo" && r.tamanho
+                              ? ` · ${formatBytes(r.tamanho)}`
+                              : ""}
+                          </span>
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

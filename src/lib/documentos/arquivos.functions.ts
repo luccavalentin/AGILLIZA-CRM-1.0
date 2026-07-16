@@ -13,6 +13,7 @@ export interface ArquivoNo {
   created_at: string;
   criado_por: string | null;
   criado_por_nome: string | null;
+  mostrar_no_menu: boolean;
 }
 
 export interface Migalha {
@@ -75,7 +76,7 @@ export const listarNos = createServerFn({ method: "GET" })
       let query = supabase
         .from("arquivos_nos")
         .select(
-          "id, parent_id, tipo, nome, storage_path, content_type, tamanho, created_at, criado_por",
+          "id, parent_id, tipo, nome, storage_path, content_type, tamanho, created_at, criado_por, mostrar_no_menu",
         )
         .eq("correspondente_id", corr);
       query = data.parent_id ? query.eq("parent_id", data.parent_id) : query.is("parent_id", null);
@@ -96,7 +97,7 @@ export const listarNos = createServerFn({ method: "GET" })
     })) as ArquivoNo[];
   });
 
-/** Lista apenas as pastas da raiz (para exibir como submenus no menu Documentos). */
+/** Lista apenas as pastas raiz marcadas para aparecer no menu lateral. */
 export const listarPastasRaiz = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<{ id: string; nome: string }[]> => {
@@ -108,10 +109,99 @@ export const listarPastasRaiz = createServerFn({ method: "GET" })
       .select("id, nome")
       .eq("correspondente_id", corr)
       .eq("tipo", "pasta")
+      .eq("mostrar_no_menu", true)
       .is("parent_id", null)
       .order("nome", { ascending: true });
     if (error) throw new Error(error.message);
     return (rows ?? []) as { id: string; nome: string }[];
+  });
+
+/** Marca/desmarca uma pasta para aparecer no menu lateral. */
+export const definirMostrarNoMenu = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z.object({ id: z.string().uuid(), mostrar: z.boolean() }).parse(data),
+  )
+  .handler(async ({ context, data }) => {
+    const { supabase, userId } = context;
+    const corr = await correspondenteDoUsuario(supabase, userId);
+    if (!corr) throw new Error("Sem correspondente.");
+    const { error } = await supabase
+      .from("arquivos_nos")
+      .update({ mostrar_no_menu: data.mostrar })
+      .eq("id", data.id)
+      .eq("correspondente_id", corr)
+      .eq("tipo", "pasta");
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export interface ResultadoPesquisa {
+  id: string;
+  tipo: "pasta" | "arquivo";
+  nome: string;
+  parent_id: string | null;
+  content_type: string | null;
+  tamanho: number | null;
+  caminho: string;
+}
+
+/** Pesquisa global por nome em pastas e arquivos, retornando o caminho até o nó. */
+export const pesquisarArquivos = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z.object({ termo: z.string().trim().min(1).max(200) }).parse(data),
+  )
+  .handler(async ({ context, data }): Promise<ResultadoPesquisa[]> => {
+    const { supabase, userId } = context;
+    const corr = await correspondenteDoUsuario(supabase, userId);
+    if (!corr) return [];
+
+    // Busca itens que casam com o termo e todas as pastas do correspondente
+    // (para reconstruir o caminho sem N+1 queries).
+    const [matchRes, pastasRes] = await Promise.all([
+      supabase
+        .from("arquivos_nos")
+        .select("id, tipo, nome, parent_id, content_type, tamanho")
+        .eq("correspondente_id", corr)
+        .ilike("nome", `%${data.termo}%`)
+        .order("tipo", { ascending: true })
+        .order("nome", { ascending: true })
+        .limit(200),
+      supabase
+        .from("arquivos_nos")
+        .select("id, nome, parent_id")
+        .eq("correspondente_id", corr)
+        .eq("tipo", "pasta")
+        .limit(10000),
+    ]);
+    if (matchRes.error) throw new Error(matchRes.error.message);
+    const pastas = (pastasRes.data ?? []) as {
+      id: string;
+      nome: string;
+      parent_id: string | null;
+    }[];
+    const mapa = new Map(pastas.map((p) => [p.id, p]));
+    const caminhoDe = (parentId: string | null): string => {
+      const partes: string[] = [];
+      let atual: string | null = parentId;
+      for (let i = 0; i < 50 && atual; i++) {
+        const n = mapa.get(atual);
+        if (!n) break;
+        partes.unshift(n.nome);
+        atual = n.parent_id;
+      }
+      return partes.length ? partes.join(" / ") : "Início";
+    };
+    return ((matchRes.data ?? []) as any[]).map((r) => ({
+      id: r.id,
+      tipo: r.tipo,
+      nome: r.nome,
+      parent_id: r.parent_id,
+      content_type: r.content_type,
+      tamanho: r.tamanho,
+      caminho: caminhoDe(r.parent_id),
+    }));
   });
 
 /** Cria uma pasta. Se já existir uma pasta com o mesmo nome no nível, retorna a existente. */
