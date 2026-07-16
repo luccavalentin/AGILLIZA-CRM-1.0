@@ -26,10 +26,13 @@ import { listarColegas } from "@/lib/operacional/shared.functions";
 export function TransferirDialog({
   demandaId,
   onTransferida,
+  trigger,
 }: {
   demandaId: string;
   onTransferida: () => void;
+  trigger?: ReactNode;
 }) {
+
   const [aberto, setAberto] = useState(false);
   const [novo, setNovo] = useState("");
   const [motivo, setMotivo] = useState("");
