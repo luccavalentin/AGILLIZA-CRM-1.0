@@ -54,10 +54,10 @@ export function SimulacaoPreviewDialog({ simulacaoId, open, onOpenChange }: Prop
 
   async function baixarDetalhado() {
     if (!sim) return;
-    const { baixarSimulacaoDetalhadaPDF } = await import(
+    const { baixarSimulacoesDetalhadasZipPDF } = await import(
       "@/lib/simulacao/simulacao-pdf"
     );
-    baixarSimulacaoDetalhadaPDF({ simulacao: sim, bancos });
+    await baixarSimulacoesDetalhadasZipPDF({ simulacao: sim, bancos });
   }
 
   async function baixarConsolidado() {
@@ -205,7 +205,7 @@ export function SimulacaoPreviewDialog({ simulacaoId, open, onOpenChange }: Prop
               onClick={baixarDetalhado}
               disabled={!sim || bancos.length === 0}
             >
-              <Download className="mr-1 size-4" /> Baixar PDF detalhado
+              <Download className="mr-1 size-4" /> Baixar PDFs detalhados
             </Button>
           </div>
         </DialogFooter>
