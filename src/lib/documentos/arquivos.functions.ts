@@ -76,7 +76,7 @@ export const listarNos = createServerFn({ method: "GET" })
       let query = supabase
         .from("arquivos_nos")
         .select(
-          "id, parent_id, tipo, nome, storage_path, content_type, tamanho, created_at, criado_por",
+          "id, parent_id, tipo, nome, storage_path, content_type, tamanho, created_at, criado_por, mostrar_no_menu",
         )
         .eq("correspondente_id", corr);
       query = data.parent_id ? query.eq("parent_id", data.parent_id) : query.is("parent_id", null);
