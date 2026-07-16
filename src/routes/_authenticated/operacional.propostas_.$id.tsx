@@ -810,10 +810,18 @@ function TabResumo({
   }
 
   const bancosEnviados = (bancos ?? []).filter((b) => bancoJaEnviado(b));
+  const bancoReprovado =
+    (bancos ?? []).find(
+      (b: any) => b.situacao_credito === "reprovado" || b.status_banco === "credito_recusado",
+    )?.nome_banco ?? null;
 
   return (
     <div className="space-y-5">
-      <FunilBancoTimeline etapas={proposta.etapas_banco} statusProposta={proposta.status} />
+      <FunilBancoTimeline
+        etapas={proposta.etapas_banco}
+        statusProposta={proposta.status}
+        bancoReprovado={bancoReprovado}
+      />
 
 
 

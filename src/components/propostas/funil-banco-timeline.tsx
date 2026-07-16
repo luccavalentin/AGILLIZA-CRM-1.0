@@ -1,5 +1,7 @@
 import { Check, Lock, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { BancoLogo } from "@/components/bancos/banco-logo";
+import { corDoBanco } from "@/lib/bancos/cores";
 
 export type EtapaBanco = {
   id: number | null;
@@ -24,9 +26,11 @@ export type EtapaBanco = {
 export function FunilBancoTimeline({
   etapas,
   statusProposta,
+  bancoReprovado,
 }: {
   etapas?: EtapaBanco[] | null;
   statusProposta?: string | null;
+  bancoReprovado?: string | null;
 }) {
   const lista = Array.isArray(etapas)
     ? [...etapas].filter((e) => e?.nome).sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0))
@@ -217,6 +221,7 @@ export function FunilBancoTimeline({
                         label="Reprovado"
                         state={reprovado ? "ativo" : decisaoPendente ? "aguardando" : "descartado"}
                         caption="Encerra o fluxo"
+                        banco={reprovado ? bancoReprovado ?? null : null}
                       />
                     </div>
                   )}
@@ -239,11 +244,13 @@ function DecisionCard({
   label,
   state,
   caption,
+  banco,
 }: {
   tone: "success" | "danger";
   label: string;
   state: "ativo" | "aguardando" | "descartado";
   caption: string;
+  banco?: string | null;
 }) {
   const ativo = state === "ativo";
   const descartado = state === "descartado";
@@ -327,6 +334,23 @@ function DecisionCard({
           </p>
         </div>
       </div>
+      {ativo && banco && (
+        <div className="mt-2 flex items-center gap-2 rounded-md border border-rose-500/30 bg-rose-500/[0.06] px-2 py-1.5">
+          <BancoLogo nome={banco} size="sm" className="shrink-0" />
+          <div className="min-w-0 flex-1">
+            <p className="text-[9px] font-bold uppercase tracking-wider text-rose-700/80 dark:text-rose-300/80 leading-none">
+              Banco que recusou
+            </p>
+            <p
+              className="mt-0.5 truncate text-[12px] font-semibold leading-tight"
+              style={{ color: corDoBanco(banco) }}
+              title={banco}
+            >
+              {banco}
+            </p>
+          </div>
+        </div>
+      )}
       <span className="sr-only">{statusLabel}</span>
     </div>
   );
