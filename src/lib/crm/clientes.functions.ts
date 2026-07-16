@@ -195,7 +195,7 @@ export const estatisticasClientes = createServerFn({ method: "GET" })
         )
         .eq("ativo", true);
       if (orMinhas) q = q.or(orMinhas);
-      const { data: rows, count } = await q;
+      const { data: rows, count } = await q.limit(10000);
       const list = (rows ?? []) as any[];
       const portal_ativo = list.filter((r) => r.portal_acesso_ativo).length;
       const em_andamento = list.filter((r) => {
