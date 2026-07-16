@@ -968,7 +968,7 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
         });
         idsGerados.push(id);
         await Promise.all(
-          f.bancos_sac_ids.map(async (bid) => {
+          f.bancos_sac_ids.map(async (bid: string) => {
             try {
               await enviarSimulacaoBanco({ data: { simulacao_id: id, banco_ids: [bid] } });
             } catch (e) {
