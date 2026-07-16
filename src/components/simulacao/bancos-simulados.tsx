@@ -43,9 +43,14 @@ export function BancosSimulados({
 }
 
 function normalizarSistema(banco: BancoResumoChip): "SAC" | "PRICE" | null {
-  const valor = String(
-    banco.sistema_amortizacao_banco ?? banco.sistema_amortizacao ?? "",
-  ).toUpperCase();
+  // O sistema requisitado na simulação é a fonte da verdade: alguns bancos
+  // (ex.: Santander) devolvem o rótulo padrão "SAC" no retorno da API mesmo
+  // quando a simulação foi executada em PRICE. Priorizamos o campo da
+  // simulação para não confundir o usuário.
+  const requisitado = String(banco.sistema_amortizacao ?? "").toUpperCase();
+  if (requisitado === "P" || requisitado.includes("PRICE")) return "PRICE";
+  if (requisitado === "S" || requisitado.includes("SAC")) return "SAC";
+  const valor = String(banco.sistema_amortizacao_banco ?? "").toUpperCase();
   if (valor === "P" || valor.includes("PRICE")) return "PRICE";
   if (valor === "S" || valor.includes("SAC")) return "SAC";
   return null;
