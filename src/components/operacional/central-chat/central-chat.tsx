@@ -246,11 +246,17 @@ export function CentralChatPage() {
               />
             </div>
             <Tabs value={aba} onValueChange={(v) => setAba(v as any)}>
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className="grid w-full grid-cols-5">
                 <TabsTrigger value="todos">Tudo</TabsTrigger>
                 <TabsTrigger value="dm">Diretas</TabsTrigger>
                 <TabsTrigger value="cliente">Clientes</TabsTrigger>
                 <TabsTrigger value="demanda">Demandas</TabsTrigger>
+                <TabsTrigger value="arquivadas" className="gap-1">
+                  <Archive className="size-3" />
+                  {totalArquivadas > 0 && (
+                    <span className="text-[10px]">{totalArquivadas}</span>
+                  )}
+                </TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
