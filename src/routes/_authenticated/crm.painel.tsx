@@ -411,8 +411,15 @@ function Pagina() {
         if (v) set.add(v);
       }),
     );
-    if (campo === "responsavel_nome" || campo === "analista_nome") {
+    if (campo === "responsavel_nome") {
+      // Responsável = qualquer membro interno cadastrado.
       (equipeInterna ?? []).forEach((m) => m.nome && set.add(m.nome));
+    } else if (campo === "analista_nome") {
+      // Analista = somente quem tem o papel "analista".
+      (equipeInterna ?? [])
+        .filter((m) => (m.papeis ?? []).includes("analista"))
+        .forEach((m) => m.nome && set.add(m.nome));
+
     } else if (campo === "corretor_nome") {
       (parceirosCadastrados ?? [])
         .filter((p) => (p.tipo_pessoa ?? "").toLowerCase() === "corretor")
