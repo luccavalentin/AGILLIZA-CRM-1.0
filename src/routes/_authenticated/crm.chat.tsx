@@ -73,8 +73,12 @@ import { PainelChatCliente } from "@/components/crm/chat-cliente/painel-cliente"
 export const Route = createFileRoute("/_authenticated/crm/chat")({
   head: () => ({ meta: [{ title: "Chat e Follow-up Cliente — Agilliza" }] }),
   beforeLoad: () => assertModuloPermitido("crm.clientes"),
+  validateSearch: (s: Record<string, unknown>) => ({
+    c: typeof s.c === "string" ? s.c : undefined,
+  }),
   component: Pagina,
 });
+
 
 const CORES = [
   { id: "blue", nome: "Azul" },
@@ -338,7 +342,13 @@ function Pagina() {
         }
       : null;
 
+  const search = Route.useSearch();
   useEffect(() => {
+    if (search.c) {
+      const alvo = (conversas ?? []).find((c) => c.cliente_id === search.c);
+      abrirConversa(search.c, alvo?.atendente_id ?? null);
+      return;
+    }
     // Auto-seleciona a primeira conversa apenas no desktop; no mobile o usuário
     // escolhe na lista (padrão master-detail) para a tela não pular direto ao chat.
     const ehDesktop =
@@ -347,7 +357,8 @@ function Pagina() {
     if (ehDesktop && !selecionado && (conversas?.length ?? 0) > 0) {
       abrirConversa(conversas![0].cliente_id, conversas![0].atendente_id);
     }
-  }, [conversas, selecionado]);
+  }, [conversas, selecionado, search.c]);
+
 
 
   const contadores = useMemo(() => {

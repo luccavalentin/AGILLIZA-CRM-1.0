@@ -1,10 +1,9 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import { toast } from "sonner";
+import { useRouter } from "@tanstack/react-router";
+import { MessageSquare } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { signalIncomingChat } from "@/components/shared/chat-alert-store";
-import {
-  abrirChatFlutuante,
-  abrirDemandaChatFlutuante,
-} from "@/components/shared/floating-chat-store";
 
 interface Props {
   /** ID do usuário logado — usado para não abrir chat quando ele mesmo é o autor. */
@@ -12,16 +11,16 @@ interface Props {
 }
 
 /**
- * Observador global (montado no shell interno): escuta novas mensagens de
- * QUALQUER chat (cliente e demanda) e, além de disparar o alerta (som + pisca
- * do menu), abre AUTOMATICAMENTE a janela flutuante do chat na tela do
- * destinatário — independentemente da rota atual.
- *
- * A entrega via Supabase Realtime respeita RLS, então só recebemos linhas às
- * quais o usuário logado tem acesso; ainda filtramos autor === eu para não
- * reabrir chat por mensagens que o próprio usuário enviou.
+ * Observador global: escuta novas mensagens de qualquer chat (cliente e
+ * demanda), dispara alerta (som + pisca do menu) e mostra um card compacto
+ * (toast) preservando a privacidade — só nº da demanda / nome do cliente e
+ * um botão "Ver" que leva para a tela original do chat.
  */
 export function ChatAlertWatcher({ meuId }: Props) {
+  const router = useRouter();
+  // Evita disparar múltiplos toasts para a mesma mensagem em StrictMode.
+  const vistos = useRef<Set<string>>(new Set());
+
   useEffect(() => {
     const canalCliente = supabase
       .channel("chat:alerta-global-cliente")
@@ -32,23 +31,40 @@ export function ChatAlertWatcher({ meuId }: Props) {
           schema: "public",
           table: "cliente_app_mensagens",
         },
-        (payload) => {
+        async (payload) => {
           const row = payload.new as {
             id?: string;
             cliente_id?: string | null;
             atendente_id?: string | null;
             remetente_tipo?: string | null;
           };
-          // Só mensagens recebidas (do cliente), não as enviadas pelo time.
           if (!row?.id || row.remetente_tipo === "time") return;
+          if (vistos.current.has(row.id)) return;
+          vistos.current.add(row.id);
           signalIncomingChat(row.id);
-          // Abre a janela flutuante para o atendente destinatário.
-          if (
-            row.cliente_id &&
-            (!row.atendente_id || !meuId || row.atendente_id === meuId)
-          ) {
-            abrirChatFlutuante(row.cliente_id);
-          }
+          if (!row.cliente_id) return;
+          if (row.atendente_id && meuId && row.atendente_id !== meuId) return;
+
+          const { data: cli } = await supabase
+            .from("clientes")
+            .select("nome")
+            .eq("id", row.cliente_id)
+            .maybeSingle();
+          const nome = (cli?.nome as string | null) ?? "Cliente";
+
+          const clienteId = row.cliente_id;
+          toast("Nova mensagem", {
+            description: `Cliente · ${nome}`,
+            icon: <MessageSquare className="h-4 w-4" />,
+            action: {
+              label: "Ver",
+              onClick: () =>
+                router.navigate({
+                  to: "/crm/chat",
+                  search: { c: clienteId },
+                }),
+            },
+          });
         },
       )
       .subscribe();
@@ -62,17 +78,37 @@ export function ChatAlertWatcher({ meuId }: Props) {
           schema: "public",
           table: "demanda_mensagens",
         },
-        (payload) => {
+        async (payload) => {
           const row = payload.new as {
             id?: string;
             demanda_id?: string | null;
             autor_id?: string | null;
           };
           if (!row?.id || !row.demanda_id) return;
-          // Ignora mensagens escritas pelo próprio usuário.
           if (meuId && row.autor_id === meuId) return;
+          if (vistos.current.has(row.id)) return;
+          vistos.current.add(row.id);
           signalIncomingChat(row.id);
-          abrirDemandaChatFlutuante(row.demanda_id);
+
+          const { data: dem } = await supabase
+            .from("demandas")
+            .select("numero, titulo")
+            .eq("id", row.demanda_id)
+            .maybeSingle();
+          const numero = (dem?.numero as string | null) ?? "—";
+          const demandaId = row.demanda_id;
+          toast("Nova mensagem", {
+            description: `Demanda · ${numero}`,
+            icon: <MessageSquare className="h-4 w-4" />,
+            action: {
+              label: "Ver",
+              onClick: () =>
+                router.navigate({
+                  to: "/operacional/demandas/$id",
+                  params: { id: demandaId },
+                }),
+            },
+          });
         },
       )
       .subscribe();
@@ -81,7 +117,7 @@ export function ChatAlertWatcher({ meuId }: Props) {
       supabase.removeChannel(canalCliente);
       supabase.removeChannel(canalDemanda);
     };
-  }, [meuId]);
+  }, [meuId, router]);
 
   return null;
 }
