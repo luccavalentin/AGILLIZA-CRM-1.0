@@ -386,12 +386,9 @@ export const criarCliente = createServerFn({ method: "POST" })
       .eq("documento", data.documento)
       .maybeSingle();
     if (existente?.id) {
-      // Só reaproveita se o solicitante tiver permissão de edição sobre este cliente
+      // Só reaproveita se o solicitante tiver permissão de edição
       // (evita que um criador sobrescreva silenciosamente o cadastro de outro).
-      const podeEditar = await podeAcao(supabase, userId, "crm.clientes", "edit", {
-        responsavelId: existente.responsavel_id ?? undefined,
-        criadorId: existente.criador_id ?? undefined,
-      });
+      const podeEditar = await podeAcao(supabase, userId, "crm.clientes", "edit");
       if (!podeEditar) {
         throw new Error(
           "Já existe um cliente com este documento e você não tem permissão para editá-lo. Peça ao responsável para atualizar o cadastro.",
@@ -415,9 +412,8 @@ export const criarCliente = createServerFn({ method: "POST" })
       await supabaseAdmin.from("cliente_historico").insert({
         cliente_id: existente.id,
         tipo: "sistema",
-        titulo: "Cadastro reaproveitado",
-        descricao: `Dados atualizados via novo cadastro com o mesmo documento.`,
-        usuario_id: userId,
+        descricao: "Dados atualizados via novo cadastro com o mesmo documento.",
+        ator_id: userId,
       });
       return { id: existente.id };
     }
