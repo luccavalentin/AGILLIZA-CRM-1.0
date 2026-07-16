@@ -566,6 +566,73 @@ export function GerenciadorArquivos({
         open={!!visualizando}
         onOpenChange={(o) => !o && setVisualizando(null)}
       />
+
+      <Dialog open={buscaGlobalAberta} onOpenChange={setBuscaGlobalAberta}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Buscar em todos os arquivos</DialogTitle>
+            <DialogDescription>
+              Pesquisa pastas e arquivos em toda a árvore de documentos.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                autoFocus
+                value={termoGlobal}
+                onChange={(e) => setTermoGlobal(e.target.value)}
+                placeholder="Digite pelo menos 2 caracteres…"
+                className="pl-9"
+              />
+            </div>
+            <div className="max-h-[50vh] overflow-y-auto rounded-lg border border-border/60">
+              {termoGlobal.trim().length < 2 ? (
+                <p className="p-6 text-center text-sm text-muted-foreground">
+                  Digite para pesquisar em todo o repositório.
+                </p>
+              ) : resultadosGlobais.isLoading ? (
+                <p className="p-6 text-center text-sm text-muted-foreground">Buscando…</p>
+              ) : (resultadosGlobais.data ?? []).length === 0 ? (
+                <p className="p-6 text-center text-sm text-muted-foreground">
+                  Nenhum resultado encontrado.
+                </p>
+              ) : (
+                <ul className="divide-y divide-border/60">
+                  {(resultadosGlobais.data ?? []).map((r) => (
+                    <li key={r.id}>
+                      <button
+                        type="button"
+                        onClick={() => abrirResultadoGlobal(r)}
+                        className="flex w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-muted/50"
+                      >
+                        <span className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                          {r.tipo === "pasta" ? (
+                            <Folder className="h-4 w-4" />
+                          ) : (
+                            <FileText className="h-4 w-4" />
+                          )}
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-sm font-medium text-foreground">
+                            {r.nome}
+                          </span>
+                          <span className="block truncate text-xs text-muted-foreground">
+                            {r.caminho}
+                            {r.tipo === "arquivo" && r.tamanho
+                              ? ` · ${formatBytes(r.tamanho)}`
+                              : ""}
+                          </span>
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
