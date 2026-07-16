@@ -848,25 +848,34 @@ export async function baixarSimulacoesDetalhadasAgrupadasZipPDF(
   if (gruposValidos.length === 0) throw new Error("Nenhum banco disponível para gerar PDF.");
 
   let total = 0;
+  let falhas = 0;
   const nomesUsados = new Set<string>();
 
   for (const g of gruposValidos) {
     for (const banco of g.bancos) {
-      const base = `${nomeDescritivo(g.simulacao, [banco])}.pdf`;
-      const filename = nomeArquivoUnico(base, nomesUsados);
-      const { doc } = criarDocSimulacaoDetalhada({
-        simulacao: g.simulacao,
-        bancos: [banco],
-        filePrefix: filename.replace(/\.pdf$/i, ""),
-      });
-      baixarBlob(doc.output("blob"), filename);
-      total += 1;
-      // Intervalo entre downloads: o Chromium ignora/renomeia arquivos
-      // quando múltiplos <a download> são disparados no mesmo tick.
-      await new Promise((r) => setTimeout(r, 450));
+      try {
+        const base = `${nomeDescritivo(g.simulacao, [banco])}.pdf`;
+        const filename = nomeArquivoUnico(base, nomesUsados);
+        const { doc } = criarDocSimulacaoDetalhada({
+          simulacao: g.simulacao,
+          bancos: [banco],
+          filePrefix: filename.replace(/\.pdf$/i, ""),
+        });
+        baixarBlob(doc.output("blob"), filename);
+        total += 1;
+        // Intervalo entre downloads: o Chromium ignora/renomeia arquivos
+        // quando múltiplos <a download> são disparados no mesmo tick.
+        await new Promise((r) => setTimeout(r, 450));
+      } catch (err) {
+        falhas += 1;
+        console.error("[PDF] falha ao gerar PDF do banco", banco?.nome_banco, err);
+      }
     }
   }
 
+  if (total === 0 && falhas > 0) {
+    throw new Error(`Falha ao gerar ${falhas} PDF${falhas === 1 ? "" : "s"}.`);
+  }
   return total;
 }
 
