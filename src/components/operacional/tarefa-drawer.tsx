@@ -136,6 +136,14 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
   return (
     <Dialog open={!!id} onOpenChange={(o: boolean) => !o && onClose()}>
       <DialogContent className="max-w-3xl max-h-[92dvh] overflow-hidden p-0 sm:p-0">
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Fechar"
+          className="absolute right-3 top-3 z-30 inline-flex h-8 w-8 items-center justify-center rounded-full bg-background/90 text-muted-foreground shadow ring-1 ring-border/60 backdrop-blur transition hover:bg-background hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+        >
+          <X className="h-4 w-4" />
+        </button>
         {t && (
           <div className="relative">
             {/* Marca d'água centralizada */}
@@ -389,31 +397,42 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
                 </section>
 
                 {/* Comentários */}
-                <section className="space-y-2.5 rounded-xl border border-border/60 bg-card/70 p-4 backdrop-blur">
-                  <h3 className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
-                    <MessageSquare className="h-4 w-4 text-primary" /> Comentários
-                  </h3>
+                <section className="space-y-3 rounded-xl border-2 border-primary/30 bg-primary/[0.04] p-4 shadow-sm ring-1 ring-primary/10 backdrop-blur">
+                  <div className="flex items-center justify-between">
+                    <h3 className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+                      <MessageSquare className="h-4 w-4 text-primary" /> Comentários
+                    </h3>
+                    <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary tabular-nums">
+                      {(data?.comentarios ?? []).length}
+                    </span>
+                  </div>
                   <div className="space-y-2">
-                    {(data?.comentarios ?? []).map((c: any) => (
-                      <div key={c.id} className="rounded-lg border border-border/50 bg-background/60 p-2.5 text-sm">
-                        <div className="mb-1 flex items-center justify-between text-xs text-muted-foreground">
-                          <span className="font-medium text-foreground">{c.nome_autor ?? "—"}</span>
-                          <span className="tabular-nums">{fmtData(c.created_at)}</span>
+                    {(data?.comentarios ?? []).length === 0 ? (
+                      <p className="text-xs text-muted-foreground">Nenhum comentário ainda. Seja o primeiro a comentar.</p>
+                    ) : (
+                      data!.comentarios.map((c: any) => (
+                        <div
+                          key={c.id}
+                          className="rounded-lg border border-border/60 bg-background p-3 text-sm shadow-sm ring-1 ring-primary/5 border-l-4 border-l-primary"
+                        >
+                          <div className="mb-1.5 flex items-center justify-between text-xs">
+                            <span className="font-semibold text-foreground">{c.nome_autor ?? "—"}</span>
+                            <span className="text-muted-foreground tabular-nums">{fmtData(c.created_at)}</span>
+                          </div>
+                          <p className="whitespace-pre-wrap leading-relaxed text-foreground">{c.corpo}</p>
                         </div>
-                        <p className="whitespace-pre-wrap text-foreground">{c.corpo}</p>
-                      </div>
-                    ))}
+                      ))
+                    )}
                   </div>
                   <Textarea
                     value={comentario}
                     onChange={(e) => setComentario(e.target.value)}
                     rows={2}
                     placeholder="Escreva um comentário…"
-                    className="bg-background/70"
+                    className="bg-background"
                   />
                   <Button
                     size="sm"
-                    variant="secondary"
                     disabled={!comentario.trim()}
                     onClick={async () => {
                       await comentarFn({ data: { task_id: t.id, corpo: comentario } });
