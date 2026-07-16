@@ -128,18 +128,17 @@ function drawTituloExtrato(
   titulo = "Extrato da Simulação de Financiamento",
   dataLabel = "Data da Simulação",
 ): number {
-  const topPad = 12; // garante folga acima do título (jsPDF usa baseline)
   doc.setTextColor(P.destaque);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(14);
-  doc.text(titulo, pageW / 2, y + topPad, { align: "center" });
+  doc.text(titulo, pageW / 2, y, { align: "center" });
   doc.setTextColor(P.cinza);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
-  doc.text(`${dataLabel}: ${dataTxt(s.created_at ?? new Date())}`, pageW / 2, y + topPad + 12, {
+  doc.text(`${dataLabel}: ${dataTxt(s.created_at ?? new Date())}`, pageW / 2, y + 12, {
     align: "center",
   });
-  return y + topPad + 24;
+  return y + 24;
 }
 
 /** Caixa formal com os dados do cliente em destaque. */
@@ -376,26 +375,12 @@ function drawDisclaimer(doc: jsPDF, pageW: number, y: number) {
  * Retorna o novo `y` após o bloco.
  */
 function drawDisclaimerTopo(doc: jsPDF, pageW: number, y: number): number {
-  const w = pageW - MARGIN * 2;
-  const padX = 12;
-  const padY = 8;
-  const lineH = 9;
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(7);
-  const linhas = doc.splitTextToSize(DISCLAIMER, w - padX * 2 - 6) as string[];
-  const boxH = padY * 2 + linhas.length * lineH;
-
-  // Caixa suave com barra de destaque à esquerda
-  doc.setFillColor(P.card);
-  doc.setDrawColor(P.borda);
-  doc.setLineWidth(0.5);
-  doc.roundedRect(MARGIN, y, w, boxH, 4, 4, "FD");
-  doc.setFillColor(P.coral);
-  doc.rect(MARGIN, y + 4, 3, boxH - 8, "F");
-
+  doc.setFontSize(7.5);
   doc.setTextColor(P.cinza);
-  doc.text(linhas, MARGIN + padX + 3, y + padY + lineH - 2, { lineHeightFactor: 1.25 });
-  return y + boxH + 18;
+  doc.text(DISCLAIMER, MARGIN, y, { maxWidth: pageW - MARGIN * 2, lineHeightFactor: 1.4 });
+  const linhas = doc.splitTextToSize(DISCLAIMER, pageW - MARGIN * 2) as string[];
+  return y + linhas.length * 9 + 6;
 }
 
 
