@@ -550,26 +550,7 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
 
   function puxarConjugeDoCRM() {
     if (!crmVinculado) return;
-    setF((prev) => {
-      // Se o titular está com estado civil de casal, mantém; senão assume casado.
-      const ecTitular =
-        prev.estado_civil === "CA" || prev.estado_civil === "UE" ? prev.estado_civil : "CA";
-      return {
-        ...prev,
-        possui_conjuge: true,
-        compoe_renda: prev.compoe_renda || Number(crmVinculado.conjuge_renda) > 0,
-        estado_civil: ecTitular,
-        estado_civil_conjuge: ecTitular,
-        nome_conjuge: crmVinculado.conjuge_nome ?? "",
-        cpf_conjuge: crmVinculado.conjuge_cpf ? maskCpfCnpj(crmVinculado.conjuge_cpf) : "",
-        renda_conjuge: crmVinculado.conjuge_renda ?? 0,
-        data_nascimento_conjuge: crmVinculado.conjuge_data_nascimento ?? "",
-        email_conjuge: crmVinculado.conjuge_email || EMAIL_PADRAO,
-        celular_conjuge: crmVinculado.conjuge_celular
-          ? maskCelular(crmVinculado.conjuge_celular)
-          : "",
-      };
-    });
+    setF((prev) => patchPuxarConjugeCRM(prev, crmVinculado));
     toast.success("Dados do cônjuge puxados do cadastro do CRM.");
   }
 
@@ -584,23 +565,7 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
 
   /** Inverte titular ⇄ cônjuge. */
   function inverterPrincipal() {
-    setF((prev) => ({
-      ...prev,
-      nome_cliente: prev.nome_conjuge ?? "",
-      cpf_cnpj: prev.cpf_conjuge ?? "",
-      renda_total: Number(prev.renda_conjuge) || 0,
-      data_nascimento: prev.data_nascimento_conjuge ?? "",
-      estado_civil: prev.estado_civil_conjuge || prev.estado_civil,
-      email: prev.email_conjuge || EMAIL_PADRAO,
-      celular: prev.celular_conjuge ?? "",
-      nome_conjuge: prev.nome_cliente ?? "",
-      cpf_conjuge: prev.cpf_cnpj ?? "",
-      renda_conjuge: Number(prev.renda_total) || 0,
-      data_nascimento_conjuge: prev.data_nascimento ?? "",
-      estado_civil_conjuge: prev.estado_civil || prev.estado_civil_conjuge,
-      email_conjuge: prev.email || EMAIL_PADRAO,
-      celular_conjuge: prev.celular ?? "",
-    }));
+    setF(patchInverterPrincipal);
     setInvertido((v) => !v);
     setErros({});
     toast.success("Titular e cônjuge invertidos. Confira os dados obrigatórios.");
@@ -608,41 +573,19 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
 
   /** Seleciona o titular a partir de um cliente do CRM. */
   function selecionarClienteCRM(c: any) {
-    const ecOriginal = estadoCivilCrmParaCodigo(c.estado_civil);
-    const conjugePreenchido = Boolean(c.conjuge_nome || c.conjuge_cpf || c.conjuge_renda);
-    // Se há cônjuge cadastrado, o titular é considerado casado (mantém CA/UE se já for de casal).
-    const ec =
-      ecOriginal === "CA" || ecOriginal === "UE"
-        ? ecOriginal
-        : conjugePreenchido
-          ? "CA"
-          : ecOriginal;
-    const temConjuge = ec === "CA" || ec === "UE";
-    setF((prev) => ({
-      ...prev,
-      cliente_id: c.id,
-      nome_cliente: c.nome ?? "",
-      cpf_cnpj: c.documento ? maskCpfCnpj(c.documento) : "",
-      email: c.email || EMAIL_PADRAO,
-      celular: c.telefone_celular ? maskCelular(c.telefone_celular) : "",
-      data_nascimento: c.data_nascimento ?? "",
-      estado_civil: ec || prev.estado_civil,
-      renda_total: c.renda_total_declarada ?? prev.renda_total,
-      possui_conjuge: temConjuge,
-      compoe_renda: prev.compoe_renda || (temConjuge && Number(c.conjuge_renda) > 0),
-      nome_conjuge: c.conjuge_nome ?? "",
-      cpf_conjuge: c.conjuge_cpf ? maskCpfCnpj(c.conjuge_cpf) : "",
-      renda_conjuge: c.conjuge_renda ?? 0,
-      data_nascimento_conjuge: c.conjuge_data_nascimento ?? "",
-      email_conjuge: c.conjuge_email || EMAIL_PADRAO,
-      celular_conjuge: c.conjuge_celular ? maskCelular(c.conjuge_celular) : "",
-      // O cônjuge herda o mesmo estado civil de casal do titular.
-      estado_civil_conjuge: temConjuge ? ec : (prev.estado_civil_conjuge ?? ""),
-    }));
-    setCadastroNome(c.nome ?? "");
+    let resumo: { temConjugePreenchido: boolean; nomeCadastro: string } = {
+      temConjugePreenchido: false,
+      nomeCadastro: "",
+    };
+    setF((prev) => {
+      const { next, temConjugePreenchido, nomeCadastro } = patchSelecionarClienteCRM(prev, c);
+      resumo = { temConjugePreenchido, nomeCadastro };
+      return next;
+    });
+    setCadastroNome(resumo.nomeCadastro);
     setInvertido(false);
     toast.success(
-      conjugePreenchido
+      resumo.temConjugePreenchido
         ? "Dados do cliente e do cônjuge preenchidos."
         : "Dados do cliente preenchidos.",
     );
@@ -650,29 +593,12 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
 
   /** Remove o vínculo do titular com o cadastro do CRM. */
   function limparTitular() {
-    setF((prev) => ({
-      ...prev,
-      cliente_id: null,
-      nome_cliente: "",
-      cpf_cnpj: "",
-      email: EMAIL_PADRAO,
-      celular: "",
-      data_nascimento: "",
-      estado_civil: "",
-      renda_total: 0,
-      possui_conjuge: false,
-      compoe_renda: false,
-      nome_conjuge: "",
-      cpf_conjuge: "",
-      renda_conjuge: 0,
-      data_nascimento_conjuge: "",
-      email_conjuge: EMAIL_PADRAO,
-      celular_conjuge: "",
-    }));
+    setF(patchLimparTitular);
     setCadastroNome(null);
     setInvertido(false);
     toast.info("Titular removido. Pesquise outro cliente ou preencha manualmente.");
   }
+
 
   /** Marca/desmarca o financiamento das despesas (padrão 5% do imóvel). */
   function alternarFinanciarDespesas(marcado: boolean) {
