@@ -1,10 +1,21 @@
 import { useSyncExternalStore } from "react";
 import type { ChatClienteInfo } from "@/components/crm/chat-cliente-tab";
 
-export interface FloatingChatState {
-  clienteId: string;
-  info?: ChatClienteInfo;
-}
+export type FloatingChatState =
+  | {
+      kind: "cliente";
+      clienteId: string;
+      info?: ChatClienteInfo;
+    }
+  | {
+      kind: "demanda";
+      demandaId: string;
+      info?: {
+        numero?: string | null;
+        titulo?: string | null;
+        statusLabel?: string | null;
+      };
+    };
 
 let estado: FloatingChatState | null = null;
 const ouvintes = new Set<() => void>();
@@ -15,7 +26,16 @@ function emitir() {
 
 /** Abre (ou troca) a conversa do cliente em janela flutuante global. */
 export function abrirChatFlutuante(clienteId: string, info?: ChatClienteInfo) {
-  estado = { clienteId, info };
+  estado = { kind: "cliente", clienteId, info };
+  emitir();
+}
+
+/** Abre (ou troca) a conversa de uma demanda em janela flutuante global. */
+export function abrirDemandaChatFlutuante(
+  demandaId: string,
+  info?: Extract<FloatingChatState, { kind: "demanda" }>["info"],
+) {
+  estado = { kind: "demanda", demandaId, info };
   emitir();
 }
 

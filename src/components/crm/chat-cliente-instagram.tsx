@@ -259,7 +259,7 @@ function ConversaComSoltar({
   info?: ChatClienteInfo;
 }) {
   const flutuante = useFloatingChat();
-  const estaFlutuando = flutuante?.clienteId === clienteId;
+  const estaFlutuando = flutuante?.kind === "cliente" && flutuante.clienteId === clienteId;
 
   if (estaFlutuando) {
     return (
