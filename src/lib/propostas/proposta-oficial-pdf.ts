@@ -628,7 +628,7 @@ export function baixarPropostaOficialPDF(input: Input) {
   const bancos = Array.isArray(input?.bancos) ? input.bancos : [];
   const envolvidos = Array.isArray(input?.envolvidos) ? input.envolvidos : [];
   const documentos = Array.isArray(input?.documentos) ? input.documentos : [];
-  const followups = Array.isArray(input?.followups) ? input.followups : [];
+  void input?.followups;
 
   P = getPdfPalette();
   const doc = new jsPDF({ unit: "pt", format: "a4", orientation: "portrait" });
