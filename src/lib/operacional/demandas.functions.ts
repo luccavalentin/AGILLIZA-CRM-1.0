@@ -406,6 +406,21 @@ export const criarDemanda = createServerFn({ method: "POST" })
         .from("demanda_participantes")
         .insert(participantes.map((u) => ({ demanda_id: nova.id, user_id: u })));
     }
+
+    // Notifica responsável e participantes sobre a nova demanda.
+    const destinatarios = new Set<string>();
+    if (data.responsavel_id && data.responsavel_id !== userId) destinatarios.add(data.responsavel_id);
+    for (const p of participantes) if (p !== userId) destinatarios.add(p);
+    for (const uid of destinatarios) {
+      await supabase.rpc("emitir_notificacao", {
+        _user_id: uid,
+        _corr: corr,
+        _tipo: "demanda.criada",
+        _titulo: "Nova demanda: " + data.titulo,
+        _corpo: data.descricao ?? "",
+        _link: "/operacional/demandas/" + nova.id,
+      });
+    }
     return { id: nova.id as string };
   });
 
@@ -465,7 +480,7 @@ export const moverStatusDemanda = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const { data: atual } = await supabase
       .from("demandas")
-      .select("status")
+      .select("status, titulo, correspondente_id, criador_id, responsavel_id")
       .eq("id", data.id)
       .single();
     if (!atual) throw new Error("Demanda não encontrada.");
@@ -482,6 +497,28 @@ export const moverStatusDemanda = createServerFn({ method: "POST" })
     await supabase
       .from("demanda_historico")
       .insert({ demanda_id: data.id, ator_id: userId, acao: "status", detalhe: data.status });
+
+    // Notifica a contraparte (criador ↔ responsável) e participantes.
+    const { data: parts } = await supabase
+      .from("demanda_participantes")
+      .select("user_id")
+      .eq("demanda_id", data.id);
+    const destinatarios = new Set<string>();
+    if (atual.criador_id && atual.criador_id !== userId) destinatarios.add(atual.criador_id as string);
+    if (atual.responsavel_id && atual.responsavel_id !== userId) destinatarios.add(atual.responsavel_id as string);
+    for (const p of (parts ?? []) as any[]) {
+      if (p.user_id && p.user_id !== userId) destinatarios.add(p.user_id);
+    }
+    for (const uid of destinatarios) {
+      await supabase.rpc("emitir_notificacao", {
+        _user_id: uid,
+        _corr: atual.correspondente_id as string,
+        _tipo: "demanda.status",
+        _titulo: "Demanda atualizada: " + (atual.titulo ?? ""),
+        _corpo: "Status: " + data.status,
+        _link: "/operacional/demandas/" + data.id,
+      });
+    }
     return { ok: true };
   });
 
@@ -515,14 +552,37 @@ export const comentarDemanda = createServerFn({ method: "POST" })
     });
     if (error) throw new Error(error.message);
 
-    // Espelha comentários públicos no chat do App do Cliente, quando a demanda tem cliente vinculado.
-    if (data.visivel_cliente) {
-      const { data: dem } = await supabase
-        .from("demandas")
-        .select("cliente_id, correspondente_id")
-        .eq("id", data.demanda_id)
-        .maybeSingle();
-      if (dem?.cliente_id) {
+    // Notifica os envolvidos (criador, responsável e participantes) exceto o autor.
+    const { data: dem } = await supabase
+      .from("demandas")
+      .select("titulo, cliente_id, correspondente_id, criador_id, responsavel_id")
+      .eq("id", data.demanda_id)
+      .maybeSingle();
+    if (dem) {
+      const { data: parts } = await supabase
+        .from("demanda_participantes")
+        .select("user_id")
+        .eq("demanda_id", data.demanda_id);
+      const destinatarios = new Set<string>();
+      if (dem.criador_id && dem.criador_id !== userId) destinatarios.add(dem.criador_id as string);
+      if (dem.responsavel_id && dem.responsavel_id !== userId) destinatarios.add(dem.responsavel_id as string);
+      for (const p of (parts ?? []) as any[]) {
+        if (p.user_id && p.user_id !== userId) destinatarios.add(p.user_id);
+      }
+      const preview = (data.corpo || "(arquivo)").slice(0, 140);
+      for (const uid of destinatarios) {
+        await supabase.rpc("emitir_notificacao", {
+          _user_id: uid,
+          _corr: dem.correspondente_id as string,
+          _tipo: "demanda.mensagem",
+          _titulo: "Nova mensagem: " + (dem.titulo ?? "demanda"),
+          _corpo: preview,
+          _link: "/operacional/demandas/" + data.demanda_id,
+        });
+      }
+
+      // Espelha comentários públicos no chat do App do Cliente, quando a demanda tem cliente vinculado.
+      if (data.visivel_cliente && dem.cliente_id) {
         await supabase.rpc("portal_time_responder", {
           _cid: dem.cliente_id,
           _msg: data.corpo || "(arquivo)",
