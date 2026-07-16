@@ -1504,7 +1504,7 @@ export const runReport = createServerFn({ method: "POST" })
       ];
 
       return {
-        titulo: "Relatório gerencial",
+        titulo: "Relatório gerencial de operações",
         descricao:
           "Visão consolidada por banco, tipo, analistas, imobiliária e fase.",
         modulo: "Gerencial",
@@ -1906,7 +1906,7 @@ export const runReport = createServerFn({ method: "POST" })
 
     async function relFinanceiro(): Promise<ReportResult> {
       const filtrarStatus = (q: any) => (filtros.status ? q.eq("status", filtros.status) : q);
-      const [pag, rec] = await Promise.all([
+      const [pag, rec, repasses, comUsr] = await Promise.all([
         filtrarStatus(
           supabase
             .from("financial_payables")
@@ -1923,6 +1923,20 @@ export const runReport = createServerFn({ method: "POST" })
             .lte("created_at", ateFim)
             .limit(5000),
         ).then((r: any) => r.data ?? []),
+        (supabase as any)
+          .from("comissoes")
+          .select("valor_bruto,split_parceiro,split_interno,status,usuario_responsavel_id,nome_banco,created_at")
+          .gte("created_at", de)
+          .lte("created_at", ateFim)
+          .limit(5000)
+          .then((r: any) => r.data ?? []),
+        (supabase as any)
+          .from("comissoes_usuario")
+          .select("valor_comissao,valor_base,percentual,status,usuario_id,tipo_vinculo,banco_nome,numero_proposta,created_at")
+          .gte("created_at", de)
+          .lte("created_at", ateFim)
+          .limit(5000)
+          .then((r: any) => r.data ?? []),
       ]);
       const hoje = new Date();
       const hojeStr = hoje.toISOString().slice(0, 10);
@@ -2023,9 +2037,96 @@ export const runReport = createServerFn({ method: "POST" })
         .sort((a: any, b: any) => a.vencimento.localeCompare(b.vencimento))
         .slice(0, 10);
 
+      // Repasses (comissões do correspondente) no período.
+      const repassePrev = repasses.reduce(
+        (s: number, c: any) => s + (Number(c.valor_bruto) || 0),
+        0,
+      );
+      const repassePago = repasses
+        .filter((c: any) => c.status === "paga_parceiro" || c.status === "encerrada")
+        .reduce((s: number, c: any) => s + (Number(c.valor_bruto) || 0), 0);
+      const repasseAberto = repassePrev - repassePago;
+      const repassePorBanco = new Map<string, number>();
+      repasses.forEach((c: any) =>
+        repassePorBanco.set(
+          c.nome_banco ?? "—",
+          (repassePorBanco.get(c.nome_banco ?? "—") ?? 0) + (Number(c.valor_bruto) || 0),
+        ),
+      );
+
+      // Comissões por usuário (analistas, corretores, imobiliária, comercial etc.)
+      const comPagas = comUsr.filter((c: any) => c.status === "paga");
+      const comAPagar = comUsr.filter((c: any) => c.status === "a_pagar");
+      const comTotal = comUsr.reduce(
+        (s: number, c: any) => s + (Number(c.valor_comissao) || 0),
+        0,
+      );
+      const comPagoValor = comPagas.reduce(
+        (s: number, c: any) => s + (Number(c.valor_comissao) || 0),
+        0,
+      );
+      const comAPagarValor = comAPagar.reduce(
+        (s: number, c: any) => s + (Number(c.valor_comissao) || 0),
+        0,
+      );
+
+      const comPorUsuario = new Map<string, number>();
+      comUsr.forEach((c: any) => {
+        const k = c.usuario_id ?? "—";
+        comPorUsuario.set(k, (comPorUsuario.get(k) ?? 0) + (Number(c.valor_comissao) || 0));
+      });
+      const comPorVinculo = new Map<string, number>();
+      comUsr.forEach((c: any) => {
+        const k = c.tipo_vinculo ?? "outro";
+        comPorVinculo.set(k, (comPorVinculo.get(k) ?? 0) + (Number(c.valor_comissao) || 0));
+      });
+      const nomesCom = await nomesUsuarios(
+        Array.from(new Set(comUsr.map((c: any) => c.usuario_id).filter(Boolean))) as string[],
+      );
+
+      if (repassePorBanco.size > 0) {
+        charts.push({
+          titulo: "Repasses por banco",
+          subtitulo: "Comissões previstas por instituição no período",
+          tipo: "barh",
+          moeda: true,
+          dados: [...repassePorBanco.entries()]
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 10)
+            .map(([label, valor]) => ({ label, valor })),
+        });
+      }
+      if (comPorUsuario.size > 0) {
+        charts.push({
+          titulo: "Comissões por usuário",
+          subtitulo: "Ranking de comissões geradas no período",
+          tipo: "barh",
+          moeda: true,
+          dados: [...comPorUsuario.entries()]
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 10)
+            .map(([k, v]) => ({ label: nomesCom.get(k) ?? "—", valor: v })),
+        });
+      }
+      if (comPorVinculo.size > 0) {
+        charts.push({
+          titulo: "Comissões por tipo de vínculo",
+          subtitulo: "Distribuição entre corretor, imobiliária, analista e demais",
+          tipo: "donut",
+          moeda: true,
+          dados: [...comPorVinculo.entries()]
+            .sort((a, b) => b[1] - a[1])
+            .map(([k, v]) => ({
+              label: (k as string).replace(/_/g, " ").replace(/^./, (s) => s.toUpperCase()),
+              valor: v,
+            })),
+        });
+      }
+
       return {
-        titulo: "Relatório financeiro",
-        descricao: "Posição de caixa, recebimentos, pagamentos e inadimplência.",
+        titulo: "Relatório financeiro consolidado",
+        descricao:
+          "Contas a pagar e receber, fluxo de caixa, repasses e comissões por usuário — tudo em uma única visão.",
         modulo: "Financeiro",
         kpis: [
           {
@@ -2064,10 +2165,34 @@ export const runReport = createServerFn({ method: "POST" })
             tone: cobertura >= 100 ? "success" : "warning",
             hint: `Inadimplência ${inadimplencia.toFixed(1)}%`,
           },
+          {
+            label: "Repasse previsto",
+            valor: brl(repassePrev),
+            tone: "brand",
+            hint: `${repasses.length} contrato(s)`,
+          },
+          {
+            label: "Repasse pago",
+            valor: brl(repassePago),
+            tone: "success",
+            hint: repasseAberto > 0 ? `${brl(repasseAberto)} em aberto` : "Sem pendências",
+          },
+          {
+            label: "Comissões usuários",
+            valor: brl(comTotal),
+            tone: "neutral",
+            hint: `${comUsr.length} lançamento(s)`,
+          },
+          {
+            label: "Comissões pagas",
+            valor: brl(comPagoValor),
+            tone: "success",
+            hint: comAPagarValor > 0 ? `${brl(comAPagarValor)} a pagar` : "Em dia",
+          },
         ],
         charts,
-        tabelas:
-          proximos.length > 0
+        tabelas: [
+          ...(proximos.length > 0
             ? [
                 {
                   titulo: "Agenda de caixa",
@@ -2096,7 +2221,60 @@ export const runReport = createServerFn({ method: "POST" })
                   ],
                 },
               ]
-            : undefined,
+            : []),
+          ...(repassePorBanco.size > 0
+            ? [
+                {
+                  titulo: "Repasses do correspondente",
+                  descricao: "Comissões geradas ao correspondente por banco.",
+                  tabelas: [
+                    {
+                      titulo: "Total por banco",
+                      columns: [
+                        { key: "banco", label: "Banco" },
+                        {
+                          key: "valor",
+                          label: "Repasse",
+                          align: "right" as const,
+                          footer: "sum" as const,
+                          format: "brl" as const,
+                        },
+                      ],
+                      rows: [...repassePorBanco.entries()]
+                        .sort((a, b) => b[1] - a[1])
+                        .map(([banco, valor]) => ({ banco, valor })),
+                    },
+                  ],
+                },
+              ]
+            : []),
+          ...(comPorUsuario.size > 0
+            ? [
+                {
+                  titulo: "Comissões por usuário",
+                  descricao: "Comissões geradas para corretores, imobiliária, analistas e comercial.",
+                  tabelas: [
+                    {
+                      titulo: "Total por usuário",
+                      columns: [
+                        { key: "usuario", label: "Usuário" },
+                        {
+                          key: "valor",
+                          label: "Comissão",
+                          align: "right" as const,
+                          footer: "sum" as const,
+                          format: "brl" as const,
+                        },
+                      ],
+                      rows: [...comPorUsuario.entries()]
+                        .sort((a, b) => b[1] - a[1])
+                        .map(([k, valor]) => ({ usuario: nomesCom.get(k) ?? "—", valor })),
+                    },
+                  ],
+                },
+              ]
+            : []),
+        ],
         columns: [
           { key: "tipo", label: "Tipo" },
           { key: "descricao", label: "Descrição" },
