@@ -206,7 +206,37 @@ export function CentralChatPage() {
               </div>
             </Card>
           ) : selecionado.kind === "dm" ? (
-            <DmConversa conversaId={selecionado.conversaId} />
+            <div className="flex h-full min-h-0 flex-col overflow-hidden">
+              <div className="mb-2 flex items-center gap-3 rounded-lg border bg-card px-3 py-2">
+                <Avatar className="size-10 border border-border/60">
+                  <AvatarFallback className="bg-sky-600 text-xs font-semibold text-white">
+                    {iniciais(selecionado.nome)}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-sky-600 dark:text-sky-400">
+                    Mensagem direta
+                  </p>
+                  <p className="truncate text-sm font-semibold text-foreground">
+                    Conversando com {selecionado.nome ?? "colega"}
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5"
+                  onClick={() =>
+                    abrirDmFlutuante(selecionado.conversaId, { nome: selecionado.nome })
+                  }
+                >
+                  <Maximize2 className="size-3.5" />
+                  <span className="hidden sm:inline">Soltar chat</span>
+                </Button>
+              </div>
+              <div className="min-h-0 flex-1">
+                <DmConversa conversaId={selecionado.conversaId} />
+              </div>
+            </div>
           ) : selecionado.kind === "cliente" ? (
             <div className="flex h-full min-h-0 flex-col overflow-hidden">
               <div className="mb-2 flex items-center gap-3 rounded-lg border bg-card px-3 py-2">
@@ -224,6 +254,17 @@ export function CentralChatPage() {
                     Conversando com {selecionado.nome ?? "cliente"}
                   </p>
                 </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5"
+                  onClick={() =>
+                    abrirChatFlutuante(selecionado.clienteId, { nome: selecionado.nome ?? "Cliente" })
+                  }
+                >
+                  <Maximize2 className="size-3.5" />
+                  <span className="hidden sm:inline">Soltar chat</span>
+                </Button>
               </div>
               <div className="min-h-0 flex-1">
                 <ChatClienteConversa
@@ -248,6 +289,20 @@ export function CentralChatPage() {
                     {selecionado.titulo ?? "Chat da demanda"}
                   </p>
                 </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5"
+                  onClick={() =>
+                    abrirDemandaChatFlutuante(selecionado.demandaId, {
+                      numero: selecionado.numero,
+                      titulo: selecionado.titulo,
+                    })
+                  }
+                >
+                  <Maximize2 className="size-3.5" />
+                  <span className="hidden sm:inline">Soltar chat</span>
+                </Button>
                 <Button asChild variant="outline" size="sm">
                   <Link to="/operacional/demandas/$id" params={{ id: selecionado.demandaId }}>
                     Abrir demanda
