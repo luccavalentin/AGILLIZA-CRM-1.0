@@ -10,6 +10,11 @@ import {
   CheckCircle2,
   X,
   Users,
+  Inbox,
+  Hourglass,
+  Flame,
+  Bell,
+  ChevronRight,
 } from "lucide-react";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { listarDemandas, type DemandaStatus } from "@/lib/operacional/demandas.functions";
@@ -49,34 +54,38 @@ function fmtData(iso: string | null): string {
 function SlaChip({ prazo, status }: { prazo: string | null; status: DemandaStatus }) {
   if (status === "concluida")
     return (
-      <span className="inline-flex items-center gap-1 text-xs text-success">
+      <span className="inline-flex items-center gap-1 rounded-full bg-success/10 px-2 py-0.5 text-[10.5px] font-medium text-success">
         <CheckCircle2 className="h-3 w-3" /> Concluída
       </span>
     );
   if (status === "cancelada")
-    return <span className="text-xs text-muted-foreground">Cancelada</span>;
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10.5px] text-muted-foreground">
+        Cancelada
+      </span>
+    );
   if (!prazo)
     return (
-      <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+      <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10.5px] text-muted-foreground">
         <Clock className="h-3 w-3" /> Sem prazo
       </span>
     );
   const restante = new Date(prazo).getTime() - Date.now();
   if (restante < 0)
     return (
-      <span className="inline-flex items-center gap-1 text-xs font-medium text-destructive">
+      <span className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-2 py-0.5 text-[10.5px] font-semibold text-destructive">
         <AlertTriangle className="h-3 w-3" /> SLA vencido
       </span>
     );
   if (restante < 24 * 3600_000)
     return (
-      <span className="inline-flex items-center gap-1 text-xs text-warning">
+      <span className="inline-flex items-center gap-1 rounded-full bg-warning/10 px-2 py-0.5 text-[10.5px] font-medium text-warning">
         <Clock className="h-3 w-3" /> &lt; 24h
       </span>
     );
   const dias = Math.ceil(restante / 86_400_000);
   return (
-    <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+    <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10.5px] text-muted-foreground">
       <Clock className="h-3 w-3" /> {dias}d
     </span>
   );
@@ -99,7 +108,6 @@ function Pagina() {
     queryFn: () => listarDemandas({ data: { escopo } }),
   });
 
-  // Tipos de usuário únicos entre responsáveis (para filtro).
   const tiposDisponiveis = useMemo(() => {
     const set = new Set<string>();
     (itens ?? []).forEach((d) => {
@@ -140,22 +148,22 @@ function Pagina() {
   }, [itens]);
 
   return (
-    <div className="space-y-4 p-4 md:p-6">
-      {/* Header — refinado, uma única linha */}
-      <div className="flex flex-wrap items-end justify-between gap-3 border-b border-border/60 pb-4">
+    <div className="space-y-5 p-4 md:p-6">
+      {/* Hero */}
+      <div className="op-hero grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 p-5 md:p-6">
         <div className="min-w-0">
-          <p className="text-[10.5px] font-semibold uppercase tracking-[0.16em] text-primary/70">
+          <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary/80">
             Operacional
-          </p>
-          <h1 className="mt-0.5 text-2xl font-semibold tracking-tight text-foreground">
+          </span>
+          <h1 className="mt-0.5 truncate text-2xl font-bold tracking-tight text-foreground md:text-[26px]">
             Demandas
           </h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">
-            Envie tarefas para colegas e converse em tempo real.
+          <p className="mt-1 text-sm text-muted-foreground">
+            Distribua tarefas, acompanhe SLAs e converse com o time em tempo real.
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button asChild variant="outline" size="sm">
+        <div className="flex shrink-0 items-center gap-2">
+          <Button asChild variant="outline" size="sm" className="bg-card/60 backdrop-blur">
             <Link to="/operacional/demandas/kanban">
               <Kanban className="mr-1.5 h-4 w-4" /> Kanban
             </Link>
@@ -164,16 +172,16 @@ function Pagina() {
         </div>
       </div>
 
-      {/* KPIs — inline, discretos */}
-      <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
-        <Kpi label="Ativas" valor={kpis.abertas} tone="primary" />
-        <Kpi label="Aguardando" valor={kpis.aguardando} tone="warning" />
-        <Kpi label="Vencidas" valor={kpis.vencidas} tone="destructive" />
-        <Kpi label="Não lidas" valor={kpis.naoLidas} tone="info" />
+      {/* KPIs */}
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <Kpi label="Ativas" valor={kpis.abertas} tone="primary" icon={Inbox} />
+        <Kpi label="Aguardando" valor={kpis.aguardando} tone="warning" icon={Hourglass} />
+        <Kpi label="Vencidas" valor={kpis.vencidas} tone="destructive" icon={Flame} />
+        <Kpi label="Não lidas" valor={kpis.naoLidas} tone="info" icon={Bell} />
       </div>
 
       {/* Filtros */}
-      <div className="flex flex-col gap-2.5 rounded-xl border border-border/60 bg-card/70 p-2.5 backdrop-blur md:flex-row md:items-center">
+      <div className="flex flex-col gap-3 rounded-2xl border border-border/60 bg-card/80 p-3 shadow-sm backdrop-blur md:flex-row md:items-center">
         <Tabs
           value={escopo}
           onValueChange={(v) => {
@@ -182,23 +190,23 @@ function Pagina() {
             if (typeof window !== "undefined") localStorage.setItem("demandas:escopo", val);
           }}
         >
-          <TabsList className="h-8 rounded-md">
-            <TabsTrigger value="minhas" className="rounded-sm text-xs">
+          <TabsList className="h-9 rounded-lg">
+            <TabsTrigger value="minhas" className="rounded-md text-xs">
               Minhas
             </TabsTrigger>
-            <TabsTrigger value="geral" className="rounded-sm text-xs">
+            <TabsTrigger value="geral" className="rounded-md text-xs">
               Gerais
             </TabsTrigger>
           </TabsList>
         </Tabs>
 
         <div className="relative flex-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Buscar por título, número, cliente ou responsável…"
-            className="h-9 pl-9 text-sm"
+            className="h-9 rounded-lg pl-9 text-sm"
           />
           {q && (
             <button
@@ -213,7 +221,7 @@ function Pagina() {
 
         {tiposDisponiveis.length > 0 && (
           <Select value={tipoFiltro} onValueChange={setTipoFiltro}>
-            <SelectTrigger className="h-9 w-full text-xs md:w-[190px]">
+            <SelectTrigger className="h-9 w-full rounded-lg text-xs md:w-[200px]">
               <Users className="mr-1 h-3.5 w-3.5 text-muted-foreground" />
               <SelectValue placeholder="Tipo de usuário" />
             </SelectTrigger>
@@ -228,7 +236,7 @@ function Pagina() {
           </Select>
         )}
 
-        <div className="flex flex-wrap gap-1">
+        <div className="flex flex-wrap gap-1.5">
           {(["todas", "aberta", "em_andamento", "aguardando", "concluida"] as const).map((s) => {
             const ativo = statusFiltro === s;
             const label = s === "todas" ? "Todas" : statusDemanda(s as DemandaStatus).label;
@@ -237,10 +245,10 @@ function Pagina() {
                 key={s}
                 onClick={() => setStatusFiltro(s)}
                 className={cn(
-                  "rounded-md border px-2.5 py-1 text-[11px] font-medium transition",
+                  "rounded-full border px-3 py-1 text-[11px] font-medium transition-all",
                   ativo
-                    ? "border-primary bg-primary text-primary-foreground"
-                    : "border-border/60 bg-background text-muted-foreground hover:bg-muted",
+                    ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                    : "border-border/60 bg-background text-muted-foreground hover:border-primary/30 hover:text-foreground",
                 )}
               >
                 {label}
@@ -251,16 +259,20 @@ function Pagina() {
       </div>
 
       {/* Lista */}
-      <div className="space-y-1.5">
+      <div className="space-y-2">
         {isLoading && (
-          <p className="rounded-lg border border-dashed border-border/60 bg-card p-8 text-center text-sm text-muted-foreground">
-            Carregando…
+          <p className="rounded-2xl border border-dashed border-border/60 bg-card p-10 text-center text-sm text-muted-foreground">
+            Carregando demandas…
           </p>
         )}
         {!isLoading && filtrados.length === 0 && (
-          <p className="rounded-lg border border-dashed border-border/60 bg-card p-8 text-center text-sm text-muted-foreground">
-            Nenhuma demanda encontrada.
-          </p>
+          <div className="rounded-2xl border border-dashed border-border/60 bg-card p-10 text-center">
+            <Inbox className="mx-auto h-8 w-8 text-muted-foreground/50" />
+            <p className="mt-3 text-sm font-medium text-foreground">Nenhuma demanda encontrada</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Ajuste os filtros ou crie uma nova demanda.
+            </p>
+          </div>
         )}
         {filtrados.map((d) => {
           const cfg = statusDemanda(d.status as DemandaStatus);
@@ -270,36 +282,45 @@ function Pagina() {
               onClick={() =>
                 navigate({ to: "/operacional/demandas/$id", params: { id: d.id } })
               }
-              className="group flex w-full items-start gap-3 rounded-xl border border-border/60 bg-card p-3.5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
+              className="group relative flex w-full items-start gap-3 overflow-hidden rounded-2xl border border-border/60 bg-card p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg"
             >
-              <span className={cn("mt-0.5 h-full w-0.5 shrink-0 self-stretch rounded-full", TONE_BAR[cfg.tone])} />
-              <div className="min-w-0 flex-1">
+              <span
+                className={cn(
+                  "absolute inset-y-0 left-0 w-1 rounded-r-full",
+                  TONE_BAR[cfg.tone],
+                )}
+              />
+              <div className="min-w-0 flex-1 pl-2">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="font-mono text-[10.5px] font-semibold uppercase tracking-wider text-muted-foreground">
                     {d.numero ?? "DEM-—"}
                   </span>
                   <PriorityChip prioridade={d.prioridade} />
-                  <Badge variant="outline" className="text-[10px]">
+                  <Badge
+                    variant="outline"
+                    className="border-border/70 bg-muted/40 text-[10px] font-medium"
+                  >
                     {cfg.label}
                   </Badge>
                   {d.nao_lidas > 0 && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold text-primary-foreground">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold text-primary-foreground shadow-sm">
                       <MessageCircle className="h-3 w-3" /> {d.nao_lidas}
                     </span>
                   )}
                 </div>
-                <p className="mt-1 truncate text-sm font-semibold text-foreground">{d.titulo}</p>
-                <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                <p className="mt-1.5 truncate text-sm font-semibold text-foreground">
+                  {d.titulo}
+                </p>
+                <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
                   {d.nome_cliente && <span className="truncate">👤 {d.nome_cliente}</span>}
                   {d.numero_proposta && <span>📄 {d.numero_proposta}</span>}
                   {d.numero_simulacao && <span>🧮 {d.numero_simulacao}</span>}
                 </div>
               </div>
               <div className="flex shrink-0 flex-col items-end gap-1.5">
-                <div className="flex items-center gap-1.5">
-                  <OpAvatar nome={d.nome_responsavel} className="size-6 text-[10px]" />
+                <div className="flex items-center gap-2">
                   <div className="max-w-[10rem] truncate text-right">
-                    <p className="truncate text-xs font-medium text-foreground">
+                    <p className="truncate text-xs font-semibold text-foreground">
                       {d.nome_responsavel ?? "—"}
                     </p>
                     {d.tipo_responsavel && (
@@ -308,6 +329,7 @@ function Pagina() {
                       </p>
                     )}
                   </div>
+                  <OpAvatar nome={d.nome_responsavel} className="size-7 text-[10px]" />
                 </div>
                 <SlaChip prazo={d.prazo_sla} status={d.status as DemandaStatus} />
                 {d.ultima_mensagem_em && (
@@ -316,6 +338,7 @@ function Pagina() {
                   </span>
                 )}
               </div>
+              <ChevronRight className="mt-1 hidden h-4 w-4 shrink-0 text-muted-foreground/40 transition group-hover:text-primary md:block" />
             </button>
           );
         })}
@@ -336,25 +359,60 @@ function Kpi({
   label,
   valor,
   tone,
+  icon: Icon,
 }: {
   label: string;
   valor: number;
   tone: "primary" | "warning" | "destructive" | "info";
+  icon: React.ComponentType<{ className?: string }>;
 }) {
-  const toneCls =
-    tone === "primary"
-      ? "text-primary"
-      : tone === "warning"
-        ? "text-warning"
-        : tone === "destructive"
-          ? "text-destructive"
-          : "text-info";
+  const toneMap = {
+    primary: {
+      text: "text-primary",
+      bg: "bg-primary/10",
+      border: "border-primary/20",
+    },
+    warning: {
+      text: "text-warning",
+      bg: "bg-warning/10",
+      border: "border-warning/20",
+    },
+    destructive: {
+      text: "text-destructive",
+      bg: "bg-destructive/10",
+      border: "border-destructive/20",
+    },
+    info: {
+      text: "text-info",
+      bg: "bg-info/10",
+      border: "border-info/20",
+    },
+  } as const;
+  const t = toneMap[tone];
   return (
-    <div className="flex items-center justify-between rounded-lg border border-border/60 bg-card px-3.5 py-2.5">
-      <p className="text-[10.5px] font-semibold uppercase tracking-wider text-muted-foreground">
-        {label}
-      </p>
-      <p className={cn("text-lg font-semibold tabular-nums", toneCls)}>{valor}</p>
+    <div
+      className={cn(
+        "group relative flex items-center gap-3 overflow-hidden rounded-2xl border bg-card px-4 py-3 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md",
+        t.border,
+      )}
+    >
+      <div
+        className={cn(
+          "grid size-10 shrink-0 place-items-center rounded-xl",
+          t.bg,
+          t.text,
+        )}
+      >
+        <Icon className="h-5 w-5" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-[10.5px] font-semibold uppercase tracking-wider text-muted-foreground">
+          {label}
+        </p>
+        <p className={cn("text-2xl font-bold tabular-nums leading-none mt-1", t.text)}>
+          {valor}
+        </p>
+      </div>
     </div>
   );
 }

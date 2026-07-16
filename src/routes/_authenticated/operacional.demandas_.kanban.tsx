@@ -265,16 +265,16 @@ function Pagina() {
 
   return (
     <div className="space-y-5 p-4 md:p-6">
-      <div className="op-hero grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 p-5">
+      <div className="op-hero grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 p-5 md:p-6">
         <div className="min-w-0">
-          <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary/80">
+          <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary/80">
             Operacional
           </span>
-          <h1 className="truncate text-xl font-bold tracking-tight text-foreground">
+          <h1 className="mt-0.5 truncate text-2xl font-bold tracking-tight text-foreground md:text-[26px]">
             Kanban de Demandas
           </h1>
-          <p className="text-sm text-muted-foreground">
-            Arraste os cards entre etapas permitidas.
+          <p className="mt-1 text-sm text-muted-foreground">
+            Arraste os cards entre etapas permitidas para atualizar o status.
           </p>
         </div>
         <Button asChild variant="outline" size="sm" className="bg-card/60 backdrop-blur">
@@ -284,7 +284,7 @@ function Pagina() {
         </Button>
       </div>
 
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-border/60 bg-card/80 p-3 shadow-sm backdrop-blur">
         <Tabs
           value={escopo}
           onValueChange={(v) => {
@@ -293,14 +293,14 @@ function Pagina() {
             if (typeof window !== "undefined") localStorage.setItem("demandas:escopo", val);
           }}
         >
-          <TabsList className="h-10 rounded-xl">
-            <TabsTrigger value="minhas" className="rounded-lg">Minhas</TabsTrigger>
-            <TabsTrigger value="equipe" className="rounded-lg">Gerais</TabsTrigger>
+          <TabsList className="h-9 rounded-lg">
+            <TabsTrigger value="minhas" className="rounded-md text-xs">Minhas</TabsTrigger>
+            <TabsTrigger value="equipe" className="rounded-md text-xs">Gerais</TabsTrigger>
           </TabsList>
         </Tabs>
 
         <Select value={filtroResponsavel} onValueChange={setFiltroResponsavel}>
-          <SelectTrigger className="h-10 w-full max-w-[260px] rounded-xl sm:w-[260px]">
+          <SelectTrigger className="h-9 w-full max-w-[260px] rounded-lg text-xs sm:w-[260px]">
             <SelectValue placeholder="Filtrar por responsável" />
           </SelectTrigger>
           <SelectContent>
@@ -326,7 +326,7 @@ function Pagina() {
         )}
       </div>
 
-      <div className="grid grid-cols-1 gap-4 pb-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 pb-3 sm:grid-cols-2 xl:grid-cols-5">
         {COLUNAS.map((col) => {
           const cfg = statusDemanda(col);
           const doStatus = porStatus.get(col) ?? [];
@@ -337,34 +337,42 @@ function Pagina() {
               onDragOver={(e) => e.preventDefault()}
               onDrop={() => soltar(col)}
               className={cn(
-                "flex min-w-0 flex-col rounded-2xl border border-border/60 bg-muted/30 transition-all",
+                "group/col flex min-w-0 flex-col overflow-hidden rounded-2xl border border-border/60 bg-muted/25 shadow-sm transition-all",
                 alvo && "border-primary/60 bg-primary/5 ring-2 ring-primary/30",
               )}
             >
-              {/* Header */}
-              <div className="flex items-center justify-between gap-2 border-b border-border/50 px-4 py-3">
-                <span className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                  <span className={cn("size-2 rounded-full", TONE_BAR[cfg.tone])} />
-                  {cfg.label}
-                  <span className="ml-1 text-xs font-medium tabular-nums text-muted-foreground">
-                    {doStatus.length}
+              {/* Header com barra de tom */}
+              <div className="relative border-b border-border/50 bg-card/60 px-4 py-3 backdrop-blur">
+                <span
+                  className={cn(
+                    "absolute inset-x-0 top-0 h-0.5",
+                    TONE_BAR[cfg.tone],
+                  )}
+                />
+                <div className="flex items-center justify-between gap-2">
+                  <span className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                    <span className={cn("size-2 rounded-full", TONE_BAR[cfg.tone])} />
+                    {cfg.label}
+                    <span className="ml-0.5 rounded-full bg-muted px-1.5 py-0.5 text-[10.5px] font-semibold tabular-nums text-muted-foreground">
+                      {doStatus.length}
+                    </span>
                   </span>
-                </span>
-                <button
-                  type="button"
-                  className="rounded-md p-1 text-muted-foreground/70 opacity-0 transition hover:bg-muted hover:text-foreground group-hover:opacity-100"
-                  aria-label="Opções da coluna"
-                >
-                  <MoreHorizontal className="h-4 w-4" />
-                </button>
+                  <button
+                    type="button"
+                    className="rounded-md p-1 text-muted-foreground/60 opacity-0 transition hover:bg-muted hover:text-foreground group-hover/col:opacity-100"
+                    aria-label="Opções da coluna"
+                  >
+                    <MoreHorizontal className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
 
               {/* Cards */}
               <div className="brand-scroll flex-1 space-y-2.5 p-2.5">
                 {doStatus.length === 0 && (
-                  <p className="rounded-lg border border-dashed border-border/60 bg-background/40 px-2 py-6 text-center text-xs text-muted-foreground/70">
-                    Sem demandas
-                  </p>
+                  <div className="rounded-xl border border-dashed border-border/60 bg-background/40 px-2 py-8 text-center">
+                    <p className="text-[11px] text-muted-foreground/70">Sem demandas</p>
+                  </div>
                 )}
                 {doStatus.map((d) => (
                   <KanbanCard
@@ -379,13 +387,13 @@ function Pagina() {
               </div>
 
               {/* Footer — criar demanda */}
-              <div className="border-t border-border/50 p-2">
+              <div className="border-t border-border/50 bg-card/40 p-2">
                 <NovaDemandaDialog
                   onCriada={() => refetch()}
                   trigger={
                     <button
                       type="button"
-                      className="flex w-full items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-medium text-muted-foreground transition hover:bg-muted hover:text-primary"
+                      className="flex w-full items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-medium text-muted-foreground transition hover:bg-primary/10 hover:text-primary"
                     >
                       <Plus className="h-3.5 w-3.5" /> Criar demanda
                     </button>
