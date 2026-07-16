@@ -47,13 +47,11 @@ export function ChatAlertWatcher({ meuId }: Props) {
 
           const { data: cli } = await supabase
             .from("clientes")
-            .select("nome, razao_social")
+            .select("nome")
             .eq("id", row.cliente_id)
             .maybeSingle();
-          const nome =
-            (cli?.nome as string | null) ??
-            (cli?.razao_social as string | null) ??
-            "Cliente";
+          const nome = (cli?.nome as string | null) ?? "Cliente";
+
           const clienteId = row.cliente_id;
           toast("Nova mensagem", {
             description: `Cliente · ${nome}`,
