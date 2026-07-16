@@ -10,6 +10,7 @@ import {
   HardDrive,
   LayoutGrid,
   List,
+  Search,
   Upload,
   UploadCloud,
 } from "lucide-react";
