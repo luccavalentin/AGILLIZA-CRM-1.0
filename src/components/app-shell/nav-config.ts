@@ -346,9 +346,18 @@ export const navInterno: NavGroup[] = [
         to: "/relatorios/gerencial",
         perm: { modulo: "relatorios.geral" },
         children: [
-          { label: "Relatório gerencial", icon: LayoutDashboard, to: "/relatorios/gerencial" },
+          {
+            label: "Relatório gerencial de operações",
+            icon: LayoutDashboard,
+            to: "/relatorios/gerencial",
+          },
+          {
+            label: "Relatório financeiro",
+            icon: Wallet,
+            to: "/relatorios/financeiros",
+            perm: { modulo: "relatorios.geral" },
+          },
         ],
-
       },
     ],
   },
