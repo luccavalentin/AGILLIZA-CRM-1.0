@@ -1,9 +1,11 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Link } from "@tanstack/react-router";
+import { Link, useRouter } from "@tanstack/react-router";
 import {
+  ArrowLeft,
   Loader2,
+  Maximize2,
   MessageCircle,
   MessagesSquare,
   Plus,
@@ -12,6 +14,11 @@ import {
   Users,
 } from "lucide-react";
 import { toast } from "sonner";
+import {
+  abrirChatFlutuante,
+  abrirDemandaChatFlutuante,
+  abrirDmFlutuante,
+} from "@/components/shared/floating-chat-store";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -102,8 +109,18 @@ export function CentralChatPage() {
 
   const totalNaoLidas = (threads ?? []).reduce((acc, t) => acc + (t.nao_lidas ?? 0), 0);
 
+  const router = useRouter();
+
   return (
     <div className="mx-auto flex h-[calc(100vh-9rem)] w-full max-w-[1400px] flex-col gap-4 px-4 py-4 lg:px-6">
+      <Button
+        variant="ghost"
+        size="sm"
+        className="w-fit gap-2 text-muted-foreground hover:text-foreground"
+        onClick={() => router.history.back()}
+      >
+        <ArrowLeft className="h-4 w-4" /> Voltar
+      </Button>
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Central de Conversas</h1>
@@ -189,7 +206,37 @@ export function CentralChatPage() {
               </div>
             </Card>
           ) : selecionado.kind === "dm" ? (
-            <DmConversa conversaId={selecionado.conversaId} />
+            <div className="flex h-full min-h-0 flex-col overflow-hidden">
+              <div className="mb-2 flex items-center gap-3 rounded-lg border bg-card px-3 py-2">
+                <Avatar className="size-10 border border-border/60">
+                  <AvatarFallback className="bg-sky-600 text-xs font-semibold text-white">
+                    {iniciais(selecionado.nome)}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-sky-600 dark:text-sky-400">
+                    Mensagem direta
+                  </p>
+                  <p className="truncate text-sm font-semibold text-foreground">
+                    Conversando com {selecionado.nome ?? "colega"}
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5"
+                  onClick={() =>
+                    abrirDmFlutuante(selecionado.conversaId, { nome: selecionado.nome })
+                  }
+                >
+                  <Maximize2 className="size-3.5" />
+                  <span className="hidden sm:inline">Soltar chat</span>
+                </Button>
+              </div>
+              <div className="min-h-0 flex-1">
+                <DmConversa conversaId={selecionado.conversaId} />
+              </div>
+            </div>
           ) : selecionado.kind === "cliente" ? (
             <div className="flex h-full min-h-0 flex-col overflow-hidden">
               <div className="mb-2 flex items-center gap-3 rounded-lg border bg-card px-3 py-2">
@@ -207,6 +254,17 @@ export function CentralChatPage() {
                     Conversando com {selecionado.nome ?? "cliente"}
                   </p>
                 </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5"
+                  onClick={() =>
+                    abrirChatFlutuante(selecionado.clienteId, { nome: selecionado.nome ?? "Cliente" })
+                  }
+                >
+                  <Maximize2 className="size-3.5" />
+                  <span className="hidden sm:inline">Soltar chat</span>
+                </Button>
               </div>
               <div className="min-h-0 flex-1">
                 <ChatClienteConversa
@@ -231,6 +289,20 @@ export function CentralChatPage() {
                     {selecionado.titulo ?? "Chat da demanda"}
                   </p>
                 </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5"
+                  onClick={() =>
+                    abrirDemandaChatFlutuante(selecionado.demandaId, {
+                      numero: selecionado.numero,
+                      titulo: selecionado.titulo,
+                    })
+                  }
+                >
+                  <Maximize2 className="size-3.5" />
+                  <span className="hidden sm:inline">Soltar chat</span>
+                </Button>
                 <Button asChild variant="outline" size="sm">
                   <Link to="/operacional/demandas/$id" params={{ id: selecionado.demandaId }}>
                     Abrir demanda
