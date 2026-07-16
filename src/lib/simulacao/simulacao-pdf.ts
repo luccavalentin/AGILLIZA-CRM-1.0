@@ -742,7 +742,8 @@ function criarDocSimulacaoDetalhada({
     if (idx > 0) doc.addPage();
     drawPageBackground(doc, pageW, pageH);
     const d = extrairDetalheBanco(b?.raw_response);
-    const nomeBanco = b?.nome_banco ?? "Banco";
+    const sist = sistemaDoBanco(b, s);
+    const nomeBanco = `${b?.nome_banco ?? "Banco"}${sist !== "—" ? ` — ${sist}` : ""}`;
 
     drawClienteHeader(doc, pageW);
     let y = HEADER_H + 20;
