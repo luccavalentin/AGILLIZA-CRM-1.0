@@ -525,14 +525,8 @@ export function ConversaMenuAcoesLive({
   align?: "start" | "end" | "center";
   compact?: boolean;
 }) {
-  const estadoFn = useServerFn(
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    require("@/lib/chats/gestao.functions").listarEstadoChatDoUsuario,
-  );
-  const vincFn = useServerFn(
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    require("@/lib/chats/gestao.functions").listarVinculosEtiqueta,
-  );
+  const estadoFn = useServerFn(listarEstadoChatDoUsuario);
+  const vincFn = useServerFn(listarVinculosEtiqueta);
 
   const { data: estados } = useQuery({
     queryKey: ["chat-estado-usuario"],
