@@ -31,6 +31,12 @@ import {
   aceitaBancoNaOperacao as aceitaBancoNaOperacaoPuro,
   mensagemBancoIncompativel as mensagemBancoIncompativelPuro,
 } from "./use-simulacao-completa/bancos-helpers";
+import {
+  calcularEntradaSugerida,
+  calcularPorEntrada,
+  calcularPorFinanciamento,
+  calcularPorParcela,
+} from "./use-simulacao-completa/calculos";
 
 export type { Form };
 
