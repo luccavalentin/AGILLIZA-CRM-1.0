@@ -1084,20 +1084,26 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
         }
         setConcluidos(1);
       } else {
-        for (let i = 0; i < idsBancos.length; i++) {
-          try {
-            await enviarSimulacaoBanco({
-              data: { simulacao_id: id, banco_ids: [idsBancos[i]] },
-            });
-          } catch (e) {
-            toast.error(
-              e instanceof Error
-                ? e.message
-                : "Falha ao enviar a um dos bancos. Você pode reenviar na tela da simulação.",
-            );
-          }
-          setConcluidos(i + 1);
-        }
+        let feitos = 0;
+        await Promise.all(
+          idsBancos.map(async (bid: string) => {
+            try {
+              await enviarSimulacaoBanco({
+                data: { simulacao_id: id, banco_ids: [bid] },
+              });
+            } catch (e) {
+              toast.error(
+                e instanceof Error
+                  ? e.message
+                  : "Falha ao enviar a um dos bancos. Você pode reenviar na tela da simulação.",
+              );
+            } finally {
+              feitos++;
+              setConcluidos(feitos);
+            }
+          }),
+        );
+
       }
 
       // Fluxo "Nova Proposta": após simular, cria a proposta a partir da
