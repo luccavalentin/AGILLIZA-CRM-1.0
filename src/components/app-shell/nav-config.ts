@@ -199,6 +199,12 @@ export const navInterno: NavGroup[] = [
           },
         ],
       },
+      {
+        label: "Chats",
+        icon: MessagesSquare,
+        to: "/operacional/chats",
+        perm: { modulo: "operacional.demandas" },
+      },
     ],
   },
   {
