@@ -676,7 +676,8 @@ export function baixarSimulacaoSimplificadaPDF({
     y = drawDisclaimerTopo(doc, pageW, y);
     y = drawTituloExtrato(doc, pageW, s, y, docLabel, dataLabel);
 
-    y = drawFaixaBanco(doc, pageW, b?.nome_banco ?? "Banco", y);
+    const sistB = sistemaDoBanco(b, s);
+    y = drawFaixaBanco(doc, pageW, `${b?.nome_banco ?? "Banco"}${sistB !== "—" ? ` — ${sistB}` : ""}`, y);
     y = drawDadosCliente(doc, pageW, s, y);
     y = drawInfoFinanciamento(doc, pageW, s, b, d, y);
 
