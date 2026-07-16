@@ -1022,12 +1022,16 @@ export const obterFluxoCaixa = createServerFn({ method: "GET" })
       supabase
         .from("financial_receivables")
         .select("valor, valor_pago, vencimento")
-        .in("status", abertos),
+        .in("status", abertos)
+        .limit(50000),
       supabase
         .from("financial_payables")
         .select("valor, valor_pago, vencimento")
-        .in("status", abertos),
+        .in("status", abertos)
+        .limit(50000),
     ]);
+    if (rec.error) throw new Error(`Falha ao carregar fluxo de caixa: ${rec.error.message}`);
+    if (pay.error) throw new Error(`Falha ao carregar fluxo de caixa: ${pay.error.message}`);
 
     const chave = (iso: string): string => {
       const d = new Date(iso + "T00:00:00");
