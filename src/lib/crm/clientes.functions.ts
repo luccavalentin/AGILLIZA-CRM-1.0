@@ -381,16 +381,44 @@ export const criarCliente = createServerFn({ method: "POST" })
     // "vincula" o cliente já cadastrado, atualizando os campos informados).
     const { data: existente } = await supabaseAdmin
       .from("clientes")
-      .select("id")
+      .select("id, responsavel_id, criador_id")
       .eq("correspondente_id", me.correspondente_id)
       .eq("documento", data.documento)
       .maybeSingle();
     if (existente?.id) {
+      // Só reaproveita se o solicitante tiver permissão de edição sobre este cliente
+      // (evita que um criador sobrescreva silenciosamente o cadastro de outro).
+      const podeEditar = await podeAcao(supabase, userId, "crm.clientes", "edit", {
+        responsavelId: existente.responsavel_id ?? undefined,
+        criadorId: existente.criador_id ?? undefined,
+      });
+      if (!podeEditar) {
+        throw new Error(
+          "Já existe um cliente com este documento e você não tem permissão para editá-lo. Peça ao responsável para atualizar o cadastro.",
+        );
+      }
       const { error: upErr } = await supabaseAdmin
         .from("clientes")
         .update(campos)
         .eq("id", existente.id);
       if (upErr) throw upErr;
+      const { registrarAuditoria } = await import("@/lib/admin/audit.server");
+      await registrarAuditoria({
+        supabase,
+        userId,
+        correspondenteId: me.correspondente_id,
+        acao: "cliente.atualizar",
+        entidade: "clientes",
+        entidadeId: existente.id,
+        payloadNovo: { motivo: "reaproveitamento_por_documento", nome: data.nome },
+      });
+      await supabaseAdmin.from("cliente_historico").insert({
+        cliente_id: existente.id,
+        tipo: "sistema",
+        titulo: "Cadastro reaproveitado",
+        descricao: `Dados atualizados via novo cadastro com o mesmo documento.`,
+        usuario_id: userId,
+      });
       return { id: existente.id };
     }
 
