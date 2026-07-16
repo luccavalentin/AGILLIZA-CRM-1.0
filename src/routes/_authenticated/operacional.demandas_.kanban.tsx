@@ -284,19 +284,47 @@ function Pagina() {
         </Button>
       </div>
 
-      <Tabs
-        value={escopo}
-        onValueChange={(v) => {
-          const val = v as "minhas" | "equipe";
-          setEscopo(val);
-          if (typeof window !== "undefined") localStorage.setItem("demandas:escopo", val);
-        }}
-      >
-        <TabsList className="h-10 rounded-xl">
-          <TabsTrigger value="minhas" className="rounded-lg">Minhas</TabsTrigger>
-          <TabsTrigger value="equipe" className="rounded-lg">Gerais</TabsTrigger>
-        </TabsList>
-      </Tabs>
+      <div className="flex flex-wrap items-center gap-3">
+        <Tabs
+          value={escopo}
+          onValueChange={(v) => {
+            const val = v as "minhas" | "equipe";
+            setEscopo(val);
+            if (typeof window !== "undefined") localStorage.setItem("demandas:escopo", val);
+          }}
+        >
+          <TabsList className="h-10 rounded-xl">
+            <TabsTrigger value="minhas" className="rounded-lg">Minhas</TabsTrigger>
+            <TabsTrigger value="equipe" className="rounded-lg">Gerais</TabsTrigger>
+          </TabsList>
+        </Tabs>
+
+        <Select value={filtroResponsavel} onValueChange={setFiltroResponsavel}>
+          <SelectTrigger className="h-10 w-full max-w-[260px] rounded-xl sm:w-[260px]">
+            <SelectValue placeholder="Filtrar por responsável" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="todos">Todos os responsáveis</SelectItem>
+            <SelectItem value="sem">Sem responsável</SelectItem>
+            {(responsaveis ?? []).map((r) => (
+              <SelectItem key={r.id} value={r.id}>
+                {r.nome}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {filtroResponsavel !== "todos" && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-9"
+            onClick={() => setFiltroResponsavel("todos")}
+          >
+            Limpar filtro
+          </Button>
+        )}
+      </div>
 
       <div className="grid grid-cols-1 gap-4 pb-3 sm:grid-cols-2 xl:grid-cols-4">
         {COLUNAS.map((col) => {
