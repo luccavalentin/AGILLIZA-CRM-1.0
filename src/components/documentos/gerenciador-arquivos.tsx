@@ -95,6 +95,8 @@ export function GerenciadorArquivos({
   const [dragging, setDragging] = useState(false);
   const [visualizando, setVisualizando] = useState<{ url: string; nome: string } | null>(null);
   const [vista, setVista] = useState<"grade" | "lista">("grade");
+  const [buscaGlobalAberta, setBuscaGlobalAberta] = useState(false);
+  const [termoGlobal, setTermoGlobal] = useState("");
 
   const inputArquivos = useRef<HTMLInputElement>(null);
   const inputPasta = useRef<HTMLInputElement>(null);
