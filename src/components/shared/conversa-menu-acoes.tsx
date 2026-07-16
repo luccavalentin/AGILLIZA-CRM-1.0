@@ -533,15 +533,17 @@ export function ConversaMenuAcoesLive({
     queryFn: () => estadoFn(),
   });
   const { data: vinc } = useQuery({
-    queryKey: ["chat-etiqueta-vinculos", chatTipo, chatId],
-    queryFn: () => vincFn({ data: { chat_tipo: chatTipo, chat_id: chatId } }),
+    queryKey: ["chat-etiqueta-vinculos"],
+    queryFn: () => vincFn(),
     enabled: suportaEtiquetas,
   });
 
   const estado = (estados ?? []).find(
     (e: any) => e.chat_tipo === chatTipo && e.chat_id === chatId,
   );
-  const etiquetaIds = ((vinc ?? []) as any[]).map((v) => v.etiqueta_id ?? v.id);
+  const etiquetaIds = ((vinc ?? []) as any[])
+    .filter((v) => v.chat_tipo === chatTipo && v.chat_id === chatId)
+    .map((v) => v.etiqueta_id);
 
   return (
     <ConversaMenuAcoes
