@@ -15,7 +15,9 @@ import {
   Tag,
   Check,
   Circle,
+  AlertOctagon,
 } from "lucide-react";
+
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -39,14 +41,20 @@ const TABS = [
 
 type TabId = (typeof TABS)[number]["id"];
 
-/** Cinco macro-etapas exibidas no stepper do painel. Cada uma agrupa os
- * códigos internos da tabela pipeline_stages. */
+/** Cinco macro-etapas do fluxo real (state machine da proposta):
+ *  Simulação → Crédito (envio+análise no banco) → Documentação (após
+ *  aprovado, coleta e organização) → Vistoria & Jurídico (engenharia +
+ *  análise jurídica) → Contrato. `credito_recusado` encerra o fluxo. */
 const MACRO_STAGES = [
   { key: "simulacao", label: "Simulação", codes: ["cadastro_basico", "cadastro_completo", "simulacao"] },
-  { key: "documentacao", label: "Documentação", codes: ["coleta_documentos"] },
-  { key: "analise", label: "Análise", codes: ["engenharia_vistoria", "analise_juridica", "credito_enviado"] },
-  { key: "proposta", label: "Proposta", codes: ["credito_aprovado"] },
-  { key: "contratacao", label: "Contratação", codes: ["contrato_emitido"] },
+  { key: "credito", label: "Crédito", codes: ["credito_enviado"] },
+  {
+    key: "documentacao",
+    label: "Documentação",
+    codes: ["credito_aprovado", "coleta_documentos", "aguardando_documentos"],
+  },
+  { key: "vistoria", label: "Vistoria & Jurídico", codes: ["engenharia_vistoria", "analise_juridica"] },
+  { key: "contratacao", label: "Contrato", codes: ["contrato_emitido"] },
 ] as const;
 
 function macroIndexOf(codigo: string | null): number {
@@ -56,6 +64,7 @@ function macroIndexOf(codigo: string | null): number {
   }
   return 0;
 }
+
 
 function formatarBRL(v: number | null): string {
   if (v == null) return "—";
@@ -100,18 +109,35 @@ function BotaoAcao({
   );
 }
 
-function Stepper({ atualIdx }: { atualIdx: number }) {
+function Stepper({
+  atualIdx,
+  encerradaMotivo,
+}: {
+  atualIdx: number;
+  encerradaMotivo: "recusado" | "cancelada" | null;
+}) {
   return (
     <div>
       <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
         Status e etapa
       </p>
-      <Badge
-        variant="secondary"
-        className="mb-3 rounded-full border-primary/20 bg-primary/10 px-2.5 py-0.5 text-[11px] font-medium text-primary"
-      >
-        {MACRO_STAGES[atualIdx]?.label ?? "Em análise"}
-      </Badge>
+      {encerradaMotivo ? (
+        <Badge
+          variant="secondary"
+          className="mb-3 inline-flex items-center gap-1 rounded-full border-destructive/25 bg-destructive/10 px-2.5 py-0.5 text-[11px] font-medium text-destructive"
+        >
+          <AlertOctagon className="size-3" />
+          {encerradaMotivo === "recusado" ? "Crédito recusado — encerrada" : "Proposta cancelada"}
+        </Badge>
+      ) : (
+        <Badge
+          variant="secondary"
+          className="mb-3 rounded-full border-primary/20 bg-primary/10 px-2.5 py-0.5 text-[11px] font-medium text-primary"
+        >
+          {MACRO_STAGES[atualIdx]?.label ?? "Em análise"}
+        </Badge>
+      )}
+
       <div className="flex items-start justify-between gap-1">
         {MACRO_STAGES.map((s, i) => {
           const feito = i < atualIdx;
@@ -187,6 +213,13 @@ export function PainelChatCliente({
   }, [data?.celular]);
 
   const atualIdx = useMemo(() => macroIndexOf(data?.etapa_codigo ?? null), [data?.etapa_codigo]);
+  const encerradaMotivo = useMemo<"recusado" | "cancelada" | null>(() => {
+    const st = (data?.proposta?.status ?? "").toLowerCase();
+    if (st.includes("recusad") || st.includes("reprovad")) return "recusado";
+    if (st.includes("cancelad")) return "cancelada";
+    return null;
+  }, [data?.proposta?.status]);
+
 
   return (
     <Card className="flex h-full min-h-0 flex-col overflow-hidden border-border/60 shadow-sm">
@@ -358,7 +391,7 @@ export function PainelChatCliente({
 
 
             {/* Status e etapa (stepper) */}
-            <Stepper atualIdx={atualIdx} />
+            <Stepper atualIdx={atualIdx} encerradaMotivo={encerradaMotivo} />
 
             {/* Ações rápidas */}
             <div>
