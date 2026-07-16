@@ -18,68 +18,21 @@ import {
   obterClienteCRM,
 } from "@/lib/simulacao/simulacoes.functions";
 import { criarProposta } from "@/lib/propostas/propostas.functions";
+import {
+  EMAIL_PADRAO,
+  ESTADO_INICIAL,
+  type Banco,
+  type Form,
+  type OpcoesHook,
+} from "./use-simulacao-completa/state";
+import {
+  aceitaPrice,
+  calcularRestricaoEspecial,
+  aceitaBancoNaOperacao as aceitaBancoNaOperacaoPuro,
+  mensagemBancoIncompativel as mensagemBancoIncompativelPuro,
+} from "./use-simulacao-completa/bancos-helpers";
 
-export type Form = Record<string, any>;
-
-/**
- * E-mail pré-preenchido em cadastros de titular e cônjuge para agilizar testes
- * e operação com atendimento centralizado. O usuário pode alterar livremente.
- */
-const EMAIL_PADRAO = "thiago@agilliza.net.br";
-
-interface Banco {
-  id: string;
-  nome_banco?: string | null;
-  codigo_banco?: number | string | null;
-  flag_padrao?: boolean | null;
-}
-
-const ESTADO_INICIAL: Form = {
-  produto: "financiamento_imobiliario",
-  tipo_imovel: "",
-  uso_imovel: "",
-  situacao_imovel: "",
-  uf: "",
-  valor_imovel: 0,
-  valor_entrada: 0,
-  valor_financiamento: 0,
-  simular_por_parcela: false,
-  parcela_alvo: 0,
-
-  prazo: 360,
-  utiliza_fgts: "N",
-  fg_financiar_despesas: false,
-  valor_despesas_financiadas: 0,
-  sistema_amortizacao: "S",
-  nome_cliente: "",
-  cpf_cnpj: "",
-  renda_total: 0,
-  renda_price: 0,
-  data_nascimento: "",
-  estado_civil: "",
-  email: EMAIL_PADRAO,
-  celular: "",
-  possui_conjuge: false,
-  compoe_renda: false,
-  bancos_ids: [] as string[],
-  bancos_sac_ids: [] as string[],
-  bancos_price_ids: [] as string[],
-  consentimento_lgpd: false,
-  consentimento_scr: false,
-  email_verificado_em: null,
-};
-
-/** Bancos que operam pelo sistema PRICE (Tabela Price). Hoje: Bradesco (237) e Santander (33). */
-function aceitaPrice(b: { codigo_banco?: number | string | null; nome_banco?: string | null }) {
-  const cod = String(b.codigo_banco ?? "").replace(/^0+/, "");
-  const nome = (b.nome_banco ?? "").toLowerCase();
-  return cod === "237" || cod === "33" || nome.includes("bradesco") || nome.includes("santander");
-}
-
-interface OpcoesHook {
-  duplicar?: string;
-  modoProposta: boolean;
-}
+export type { Form };
 
 /**
  * Concentra todo o estado, regras de negócio e efeitos da simulação completa.
