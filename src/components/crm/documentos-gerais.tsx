@@ -3,46 +3,20 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
   Building2,
-  Folder,
-  FolderOpen,
   ChevronLeft,
   ChevronRight,
-  Users,
-  FileText,
-  ClipboardList,
-  Search,
-  UserCog,
   Briefcase,
   IdCard,
-  X,
   Trash2,
-  LayoutGrid,
-  List,
-  SlidersHorizontal,
-  Shield,
-  Lock,
   FolderKanban,
+  UserCog,
   Users2,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
-import { DocumentosTab } from "@/components/crm/documentos-tab";
 import {
   explorarDocumentosGerais,
   SEM_COMERCIAL_LABEL,
@@ -66,11 +40,16 @@ import {
   type PastaTipo,
   type Visao,
 } from "@/components/crm/documentos-gerais/helpers";
-import { FiltroPesquisa } from "@/components/crm/documentos-gerais/filtro-pesquisa";
 import { Paginador } from "@/components/crm/documentos-gerais/paginador";
 import { CardPasta } from "@/components/crm/documentos-gerais/card-pasta";
 import { CardCliente } from "@/components/crm/documentos-gerais/card-cliente";
-import { FichaDialog } from "@/components/crm/documentos-gerais/ficha-dialog";
+import { DocumentosHero } from "@/components/crm/documentos-gerais/hero";
+import { IconePasta } from "@/components/crm/documentos-gerais/icone-pasta";
+import { FichaClienteView } from "@/components/crm/documentos-gerais/ficha-cliente-view";
+import { FiltrosBar } from "@/components/crm/documentos-gerais/filtros-bar";
+import { SecaoHeader } from "@/components/crm/documentos-gerais/secao-header";
+import { FaixaSeguranca } from "@/components/crm/documentos-gerais/faixa-seguranca";
+import { SheetFiltrosAvancados } from "@/components/crm/documentos-gerais/sheet-filtros-avancados";
 
 export function DocumentosGerais() {
   const explorar = useServerFn(explorarDocumentosGerais);
@@ -109,38 +88,25 @@ export function DocumentosGerais() {
     filtroCorr !== "todos" ||
     filtroAnalista !== "todos";
 
-  // Predicado por dimensão — permite calcular quais clientes ficam se
-  // ignorarmos apenas o filtro daquela dimensão (afunilamento progressivo).
-  const matchBusca = (c: DGCliente) => {
-    const q = busca.trim().toLowerCase();
-    if (!q) return true;
-    return (
-      c.nome.toLowerCase().includes(q) ||
-      (c.numero_cliente ?? "").toLowerCase().includes(q) ||
-      (c.documento ?? "").includes(q)
-    );
-  };
-  const matchComercial = (c: DGCliente) =>
-    filtroComercial === "todos" || c.comercial_id === filtroComercial;
-  const matchImob = (c: DGCliente) => {
-    if (filtroImob === "todas") return true;
-    if (filtroImob === "comercial") return !c.imobiliaria_id;
-    return c.imobiliaria_id === filtroImob;
-  };
-  const matchCorr = (c: DGCliente) => filtroCorr === "todos" || c.corretor_id === filtroCorr;
-  const matchAnalista = (c: DGCliente) =>
-    filtroAnalista === "todos" || c.analista_id === filtroAnalista;
-
   const clientesFiltrados = useMemo(() => {
-    return clientes.filter(
-      (c) =>
-        matchBusca(c) &&
-        matchComercial(c) &&
-        matchImob(c) &&
-        matchCorr(c) &&
-        matchAnalista(c),
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const q = busca.trim().toLowerCase();
+    return clientes.filter((c) => {
+      const matchBusca =
+        !q ||
+        c.nome.toLowerCase().includes(q) ||
+        (c.numero_cliente ?? "").toLowerCase().includes(q) ||
+        (c.documento ?? "").includes(q);
+      const matchComercial = filtroComercial === "todos" || c.comercial_id === filtroComercial;
+      const matchImob =
+        filtroImob === "todas"
+          ? true
+          : filtroImob === "comercial"
+            ? !c.imobiliaria_id
+            : c.imobiliaria_id === filtroImob;
+      const matchCorr = filtroCorr === "todos" || c.corretor_id === filtroCorr;
+      const matchAnalista = filtroAnalista === "todos" || c.analista_id === filtroAnalista;
+      return matchBusca && matchComercial && matchImob && matchCorr && matchAnalista;
+    });
   }, [clientes, busca, filtroComercial, filtroImob, filtroCorr, filtroAnalista]);
 
   const resumo = useMemo(() => {
@@ -314,42 +280,6 @@ export function DocumentosGerais() {
   const pastasNivel = atual ? atual.subpastas : arvore;
   const clientesNivel = atual && atual.subpastas.length === 0 ? atual.clientes : [];
 
-  function limparFiltros() {
-    setBusca("");
-    setFiltroComercial("todos");
-    setFiltroImob("todas");
-    setFiltroCorr("todos");
-    setFiltroAnalista("todos");
-    setPagina(1);
-  }
-
-  function abrirCliente(c: DGCliente) {
-    setCliente(c);
-    setFichaAberta(false);
-  }
-
-  function IconePasta({ tipo, aberta }: { tipo: PastaTipo; aberta?: boolean }) {
-    const conf: Record<PastaTipo, { Icon: typeof Folder; classe: string }> = {
-      raiz: { Icon: FolderKanban, classe: "from-primary/20 to-primary/5 text-primary" },
-      comercial: { Icon: Briefcase, classe: "from-primary/20 to-primary/5 text-primary" },
-      imob: { Icon: Building2, classe: "from-primary/20 to-primary/5 text-primary" },
-      corretor: { Icon: IdCard, classe: "from-primary/20 to-primary/5 text-primary" },
-      analista: { Icon: UserCog, classe: "from-primary/20 to-primary/5 text-primary" },
-    };
-    const { Icon, classe } = conf[tipo];
-    return (
-      <span
-        className={cn(
-          "flex size-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br shadow-inner ring-1 ring-inset ring-border/40",
-          classe,
-        )}
-      >
-        {aberta ? <FolderOpen className="h-5 w-5" /> : <Icon className="h-5 w-5" />}
-      </span>
-    );
-  }
-
-  // ⚠️ Todos os hooks devem ser chamados ANTES de qualquer early return.
   const clientesOrdenadosPre = useMemo(() => {
     const lista = [...clientesFiltrados];
     lista.sort((a, b) => {
@@ -374,59 +304,30 @@ export function DocumentosGerais() {
     return base;
   }, [pastasNivel, ordem]);
 
+  function limparFiltros() {
+    setBusca("");
+    setFiltroComercial("todos");
+    setFiltroImob("todas");
+    setFiltroCorr("todos");
+    setFiltroAnalista("todos");
+    setPagina(1);
+  }
+
+  function abrirCliente(c: DGCliente) {
+    setCliente(c);
+    setFichaAberta(false);
+  }
+
   // ===== Ficha do cliente selecionado =====
   if (cliente) {
     return (
-      <div className="space-y-4">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <button className="hover:text-foreground" onClick={() => setCliente(null)}>
-            Documentos Gerais
-          </button>
-          <ChevronRight className="h-4 w-4" />
-          <span className="font-medium text-foreground">{titulo(cliente.nome)}</span>
-        </div>
-
-        <div className="relative overflow-hidden rounded-2xl border border-border/60 bg-gradient-to-br from-primary/10 via-card to-card p-5 shadow-sm">
-          <span className="pointer-events-none absolute -right-16 -top-16 size-48 rounded-full bg-primary/10 blur-3xl" />
-          <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-4">
-              <span className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary/70 text-primary-foreground shadow-lg ring-1 ring-inset ring-primary/30">
-                <FolderOpen className="h-7 w-7" />
-              </span>
-              <div className="min-w-0">
-                <p className="truncate text-lg font-semibold text-foreground">{titulo(cliente.nome)}</p>
-                <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
-                  {cliente.numero_cliente && (
-                    <span className="inline-flex items-center gap-1">
-                      <IdCard className="h-3 w-3" /> {cliente.numero_cliente}
-                    </span>
-                  )}
-                  <span className="inline-flex items-center gap-1">
-                    <FileText className="h-3 w-3" /> {cliente.total_documentos} documento(s)
-                  </span>
-                </p>
-              </div>
-            </div>
-            <Button
-              size="lg"
-              onClick={() => setFichaAberta(true)}
-              className="group relative w-full overflow-hidden bg-gradient-to-r from-primary to-primary/80 shadow-md transition-all hover:shadow-lg hover:brightness-110 sm:w-auto"
-            >
-              <span className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/25 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
-              <ClipboardList className="mr-2 h-4 w-4" /> Consultar ficha
-            </Button>
-          </div>
-        </div>
-
-        <DocumentosTab clienteId={cliente.cliente_id} />
-
-        <FichaDialog
-          clienteId={cliente.cliente_id}
-          clienteNome={cliente.nome}
-          open={fichaAberta}
-          onOpenChange={setFichaAberta}
-        />
-      </div>
+      <FichaClienteView
+        cliente={cliente}
+        fichaAberta={fichaAberta}
+        onVoltar={() => setCliente(null)}
+        onAbrirFicha={() => setFichaAberta(true)}
+        onFecharFicha={setFichaAberta}
+      />
     );
   }
 
@@ -486,77 +387,11 @@ export function DocumentosGerais() {
               : aba === "corretor"
                 ? "Corretores"
                 : "Analistas"
-          : trilha[trilha.length - 1]?.nome ?? "Pastas";
+          : (trilha[trilha.length - 1]?.nome ?? "Pastas");
 
   return (
     <div className="space-y-5">
-      {/* ==================== HERO ==================== */}
-      <div className="relative overflow-hidden rounded-2xl border border-border/70 bg-card shadow-sm">
-        <span
-          aria-hidden
-          className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent"
-        />
-        <span
-          aria-hidden
-          className="pointer-events-none absolute -right-32 -top-32 size-80 rounded-full opacity-60 blur-3xl"
-          style={{ background: "color-mix(in oklab, var(--primary) 10%, transparent)" }}
-        />
-        <div className="relative grid gap-6 p-5 md:p-7 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
-          <div className="min-w-0">
-            <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-primary">
-              <span className="inline-block h-1 w-6 rounded-full bg-primary" />
-              CRM · Documentos
-            </p>
-            <h1 className="mt-2 text-2xl font-semibold leading-tight tracking-tight text-foreground md:text-[28px]">
-              Documentos Gerais
-            </h1>
-            <p className="mt-1.5 max-w-xl text-sm text-muted-foreground">
-              Organizados por Comercial → Imobiliária → Corretor → Cliente, com a
-              documentação de cada cliente.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:min-w-[600px]">
-            {[
-              { Icon: Folder, label: "Pastas", valor: kpis.pastas, aba: null as Aba | null },
-              { Icon: FileText, label: "Documentos", valor: kpis.documentos, aba: null },
-              { Icon: Users, label: "Clientes", valor: kpis.clientes, aba: "cliente" as Aba },
-              { Icon: FolderKanban, label: "Itens", valor: kpis.itens, aba: null },
-            ].map(({ Icon, label, valor, aba: destinoAba }) => (
-              <button
-                key={label}
-                type="button"
-                onClick={() => destinoAba && trocarAba(destinoAba)}
-                className={cn(
-                  "group relative flex flex-col justify-between overflow-hidden rounded-xl border border-border/60 bg-background/60 p-3.5 text-left backdrop-blur-sm transition-all",
-                  destinoAba
-                    ? "cursor-pointer hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md hover:shadow-primary/[0.06]"
-                    : "cursor-default",
-                )}
-              >
-                <span
-                  aria-hidden
-                  className="pointer-events-none absolute left-0 top-0 h-full w-[3px] bg-primary/70"
-                />
-                <div className="flex items-center justify-between">
-                  <span
-                    className="inline-flex size-7 items-center justify-center rounded-md text-primary"
-                    style={{ background: "color-mix(in oklab, var(--primary) 10%, transparent)" }}
-                  >
-                    <Icon className="h-3.5 w-3.5" strokeWidth={2} />
-                  </span>
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                    {label}
-                  </p>
-                </div>
-                <p className="mt-2 font-mono text-[26px] font-semibold leading-none tracking-tight tabular-nums text-foreground">
-                  {valor.toLocaleString("pt-BR")}
-                </p>
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
+      <DocumentosHero kpis={kpis} onTrocarAba={trocarAba} />
 
       {/* ==================== TABS (underline) ==================== */}
       <div className="border-b border-border/60">
@@ -608,99 +443,26 @@ export function DocumentosGerais() {
         </Card>
       ) : (
         <>
-          {/* ==================== FILTROS ==================== */}
-          <div className="flex flex-wrap items-center gap-2.5">
-            <div className="relative min-w-[240px] flex-1">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Buscar cliente por nome, documento ou e-mail…"
-                value={busca}
-                onChange={(e) => {
-                  setBusca(e.target.value);
-                  setPagina(1);
-                }}
-                className="h-10 pl-9 pr-9"
-              />
-              {busca && (
-                <button
-                  type="button"
-                  aria-label="Limpar busca"
-                  onClick={() => {
-                    setBusca("");
-                    setPagina(1);
-                  }}
-                  className="absolute right-2 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              )}
-            </div>
-            <FiltroPesquisa
-              label="Comercial"
-              value={filtroComercial}
-              todosValue="todos"
-              todosLabel="Todos os comerciais"
-              placeholder="Pesquisar comercial..."
-              opcoes={comerciaisBase}
-              onChange={(v) => {
-                setFiltroComercial(v);
-                setPagina(1);
-              }}
-            />
-            <FiltroPesquisa
-              label="Imobiliária"
-              value={filtroImob}
-              todosValue="todas"
-              todosLabel="Todas as imobiliárias"
-              placeholder="Pesquisar imobiliária..."
-              opcoes={imobiliariasFiltro}
-              opcoesFixas={[{ id: "comercial", nome: SEM_IMOB }]}
-              onChange={(v) => {
-                setFiltroImob(v);
-                setPagina(1);
-              }}
-            />
-            <FiltroPesquisa
-              label="Corretor"
-              value={filtroCorr}
-              todosValue="todos"
-              todosLabel="Todos os corretores"
-              placeholder="Pesquisar corretor..."
-              opcoes={corretoresFiltro}
-              onChange={(v) => {
-                setFiltroCorr(v);
-                setPagina(1);
-              }}
-            />
-            <FiltroPesquisa
-              label="Analista"
-              value={filtroAnalista}
-              todosValue="todos"
-              todosLabel="Todos os analistas"
-              placeholder="Pesquisar analista..."
-              opcoes={analistasFiltro}
-              onChange={(v) => {
-                setFiltroAnalista(v);
-                setPagina(1);
-              }}
-            />
-            {filtrando && (
-              <Button
-                variant="ghost"
-                className="h-10 gap-2 text-muted-foreground hover:text-foreground"
-                onClick={limparFiltros}
-              >
-                <X className="h-4 w-4" /> Limpar
-              </Button>
-            )}
-            <Button
-              variant="outline"
-              className="h-10 gap-2"
-              onClick={() => setFiltrosSheet(true)}
-            >
-              <SlidersHorizontal className="h-4 w-4" /> Filtros
-            </Button>
-          </div>
+          <FiltrosBar
+            busca={busca}
+            onBusca={setBusca}
+            filtroComercial={filtroComercial}
+            setFiltroComercial={setFiltroComercial}
+            filtroImob={filtroImob}
+            setFiltroImob={setFiltroImob}
+            filtroCorr={filtroCorr}
+            setFiltroCorr={setFiltroCorr}
+            filtroAnalista={filtroAnalista}
+            setFiltroAnalista={setFiltroAnalista}
+            comerciais={comerciaisBase}
+            imobiliarias={imobiliariasFiltro}
+            corretores={corretoresFiltro}
+            analistas={analistasFiltro}
+            filtrando={filtrando}
+            onLimpar={limparFiltros}
+            onAbrirSheet={() => setFiltrosSheet(true)}
+            onPagina={setPagina}
+          />
 
           {/* Breadcrumb (quando navegando em pastas) */}
           {aba !== "cliente" && trilha.length > 0 && (
@@ -728,57 +490,14 @@ export function DocumentosGerais() {
             </div>
           )}
 
-          {/* ==================== SECTION HEADER ==================== */}
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <h2 className="text-sm font-semibold text-foreground">{secaoTitulo}</h2>
-              <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
-                {totalItens.toLocaleString("pt-BR")}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="hidden text-xs text-muted-foreground sm:inline">Ordenar por:</span>
-              <Select value={ordem} onValueChange={(v) => setOrdem(v as OrdemChave)}>
-                <SelectTrigger className="h-9 w-[160px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="nome-asc">Nome (A-Z)</SelectItem>
-                  <SelectItem value="nome-desc">Nome (Z-A)</SelectItem>
-                  <SelectItem value="docs-desc">Mais documentos</SelectItem>
-                  <SelectItem value="docs-asc">Menos documentos</SelectItem>
-                </SelectContent>
-              </Select>
-              <div className="flex overflow-hidden rounded-lg border border-border/60">
-                <button
-                  type="button"
-                  onClick={() => setModo("grid")}
-                  aria-label="Grade"
-                  className={cn(
-                    "grid size-9 place-items-center transition-colors",
-                    modo === "grid"
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-card text-muted-foreground hover:bg-muted",
-                  )}
-                >
-                  <LayoutGrid className="h-4 w-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setModo("lista")}
-                  aria-label="Lista"
-                  className={cn(
-                    "grid size-9 place-items-center border-l border-border/60 transition-colors",
-                    modo === "lista"
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-card text-muted-foreground hover:bg-muted",
-                  )}
-                >
-                  <List className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-          </div>
+          <SecaoHeader
+            titulo={secaoTitulo}
+            total={totalItens}
+            ordem={ordem}
+            setOrdem={setOrdem}
+            modo={modo}
+            setModo={setModo}
+          />
 
           {/* ==================== CONTEÚDO ==================== */}
           {isLoading ? (
@@ -833,7 +552,6 @@ export function DocumentosGerais() {
             </div>
           )}
 
-          {/* ==================== PAGINAÇÃO ==================== */}
           {totalItens > POR_PAGINA && (
             <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
               <p className="text-xs text-muted-foreground">
@@ -850,85 +568,22 @@ export function DocumentosGerais() {
         </>
       )}
 
-      {/* ==================== FAIXA DE SEGURANÇA ==================== */}
-      <div className="grid gap-3 rounded-2xl border border-border/60 bg-muted/30 p-4 md:grid-cols-2">
-        <div className="flex items-start gap-3">
-          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
-            <Shield className="h-5 w-5" />
-          </span>
-          <div>
-            <p className="text-sm font-semibold text-foreground">
-              Seus documentos sempre seguros
-            </p>
-            <p className="text-xs text-muted-foreground">
-              Armazenamento criptografado e acesso controlado por permissões.
-            </p>
-          </div>
-        </div>
-        <div className="flex items-start gap-3 md:justify-end">
-          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
-            <Lock className="h-5 w-5" />
-          </span>
-          <div>
-            <p className="text-sm font-semibold text-foreground">Controle de acesso</p>
-            <p className="text-xs text-muted-foreground">
-              Permissões granulares por perfil e nível de acesso.
-            </p>
-          </div>
-        </div>
-      </div>
+      <FaixaSeguranca />
 
-      {/* Sheet: Filtros avançados (limpar) */}
-      <Sheet open={filtrosSheet} onOpenChange={setFiltrosSheet}>
-        <SheetContent side="right" className="w-full sm:max-w-md">
-          <SheetHeader>
-            <SheetTitle>Filtros avançados</SheetTitle>
-          </SheetHeader>
-          <div className="mt-6 space-y-4">
-            <div>
-              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Filtros ativos
-              </p>
-              <div className="flex flex-wrap gap-1.5">
-                {filtroComercial !== "todos" && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">
-                    Comercial:{" "}
-                    {titulo(comerciaisBase.find((cm) => cm.id === filtroComercial)?.nome ?? "")}
-                  </span>
-                )}
-                {filtroImob !== "todas" && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">
-                    Imobiliária:{" "}
-                    {filtroImob === "comercial"
-                      ? SEM_IMOB
-                      : titulo(imobiliariasFiltro.find((i) => i.id === filtroImob)?.nome ?? "")}
-                  </span>
-                )}
-                {filtroCorr !== "todos" && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">
-                    Corretor:{" "}
-                    {titulo(corretoresFiltro.find((c) => c.id === filtroCorr)?.nome ?? "")}
-                  </span>
-                )}
-                {filtroAnalista !== "todos" && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">
-                    Analista:{" "}
-                    {titulo(analistasFiltro.find((a) => a.id === filtroAnalista)?.nome ?? "")}
-                  </span>
-                )}
-                {!filtrando && (
-                  <span className="text-xs text-muted-foreground">Nenhum filtro ativo.</span>
-                )}
-              </div>
-            </div>
-            {filtrando && (
-              <Button variant="outline" onClick={limparFiltros} className="w-full gap-2">
-                <X className="h-4 w-4" /> Limpar todos os filtros
-              </Button>
-            )}
-          </div>
-        </SheetContent>
-      </Sheet>
+      <SheetFiltrosAvancados
+        open={filtrosSheet}
+        onOpenChange={setFiltrosSheet}
+        filtroComercial={filtroComercial}
+        filtroImob={filtroImob}
+        filtroCorr={filtroCorr}
+        filtroAnalista={filtroAnalista}
+        comerciais={comerciaisBase}
+        imobiliarias={imobiliariasFiltro}
+        corretores={corretoresFiltro}
+        analistas={analistasFiltro}
+        filtrando={filtrando}
+        onLimpar={limparFiltros}
+      />
 
       {/* Sheet: Arquivos personalizados */}
       <Sheet open={arquivosAberto} onOpenChange={setArquivosAberto}>
