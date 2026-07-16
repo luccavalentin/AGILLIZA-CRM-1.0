@@ -110,6 +110,8 @@ export function GerenciadorArquivos({
   const fnMover = useServerFn(moverNo);
   const fnUrl = useServerFn(urlArquivo);
   const fnListarPastas = useServerFn(listarPastas);
+  const fnDefinirMostrar = useServerFn(definirMostrarNoMenu);
+  const fnPesquisar = useServerFn(pesquisarArquivos);
 
   const nos = useQuery({
     queryKey: ["arquivos", pasta],
