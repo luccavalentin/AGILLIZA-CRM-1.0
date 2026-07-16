@@ -238,6 +238,11 @@ export function CentralChatPage() {
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-[22rem_minmax(0,1fr)]">
         <Card className="flex min-h-0 flex-col overflow-hidden">
           <div className="space-y-3 border-b p-3">
+            <IniciarDmInline
+              onCriado={(conv) =>
+                setSelecionado({ kind: "dm", conversaId: conv.id, nome: conv.nome })
+              }
+            />
             <div className="relative">
               <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
