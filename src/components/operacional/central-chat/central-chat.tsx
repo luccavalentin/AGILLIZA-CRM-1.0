@@ -345,6 +345,15 @@ export function CentralChatPage() {
                   <Maximize2 className="size-3.5" />
                   <span className="hidden sm:inline">Soltar chat</span>
                 </Button>
+                <ConversaMenuAcoes
+                  chatTipo="dm"
+                  chatId={selecionado.conversaId}
+                  arquivado={!!estadoPor.get(chaveConversa("dm", selecionado.conversaId))?.arquivado_em}
+                  fixado={!!estadoPor.get(chaveConversa("dm", selecionado.conversaId))?.pinado_em}
+                  apelidoAtual={estadoPor.get(chaveConversa("dm", selecionado.conversaId))?.apelido ?? null}
+                  nomeReferencia={selecionado.nome}
+                  etiquetaIds={etiquetaPor.get(chaveConversa("dm", selecionado.conversaId)) ?? []}
+                />
               </div>
               <div className="min-h-0 flex-1">
                 <DmConversa conversaId={selecionado.conversaId} />
