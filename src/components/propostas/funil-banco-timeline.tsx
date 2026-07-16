@@ -1,5 +1,7 @@
 import { Check, Lock, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { BancoLogo } from "@/components/bancos/banco-logo";
+import { corDoBanco } from "@/lib/bancos/cores";
 
 export type EtapaBanco = {
   id: number | null;
