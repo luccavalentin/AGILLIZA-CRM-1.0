@@ -45,7 +45,23 @@ import {
   type ThreadCentral,
   type ThreadKind,
 } from "@/lib/chats/central.functions";
+import {
+  ConversaMenuAcoes,
+  EtiquetasPills,
+} from "@/components/shared/conversa-menu-acoes";
+import {
+  listarEstadoChatDoUsuario,
+  listarEtiquetas,
+  listarVinculosEtiqueta,
+  type ChatTipo,
+  type EstadoChat,
+  type EtiquetaChat,
+} from "@/lib/chats/gestao.functions";
 import { cn } from "@/lib/utils";
+
+function chaveConversa(kind: ChatTipo | ThreadKind, id: string) {
+  return `${kind}-${id}`;
+}
 
 function iniciais(nome?: string | null): string {
   if (!nome) return "?";
