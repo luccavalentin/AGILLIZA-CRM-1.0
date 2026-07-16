@@ -138,14 +138,21 @@ const KanbanCard = memo(function KanbanCard({
   onDragEnd: () => void;
   onOpen: (id: string) => void;
 }) {
+  const prioBar =
+    d.prioridade === "p1"
+      ? "bg-destructive"
+      : d.prioridade === "p2"
+        ? "bg-warning"
+        : "bg-muted-foreground/40";
   return (
     <div
       draggable
       onDragStart={() => onDragStart(d.id, d.status as DemandaStatus)}
       onDragEnd={onDragEnd}
       onClick={() => onOpen(d.id)}
-      className="group cursor-pointer rounded-xl border border-border/70 bg-card p-3.5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md active:cursor-grabbing"
+      className="group relative cursor-pointer overflow-hidden rounded-xl border border-border/70 bg-card p-3.5 pl-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg active:cursor-grabbing"
     >
+      <span className={cn("absolute inset-y-2 left-0 w-1 rounded-r-full", prioBar)} aria-hidden />
       <div className="flex items-center justify-between gap-2">
         <span className="font-mono text-[10.5px] font-semibold uppercase tracking-wider text-muted-foreground/80">
           {d.numero ?? "DEM-—"}
@@ -158,13 +165,15 @@ const KanbanCard = memo(function KanbanCard({
       {d.nome_cliente && (
         <p className="mt-0.5 truncate text-xs text-muted-foreground">{d.nome_cliente}</p>
       )}
-      <div className="mt-2.5 flex items-center gap-1.5">
-        <OpAvatar nome={d.nome_responsavel} className="size-5 text-[9px]" />
-        <span className="truncate text-xs text-muted-foreground">
-          {d.nome_responsavel ?? "Sem responsável"}
-        </span>
+      <div className="mt-2.5 flex items-center justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-1.5">
+          <OpAvatar nome={d.nome_responsavel} className="size-6 text-[9px]" />
+          <span className="truncate text-xs font-medium text-foreground/80">
+            {d.nome_responsavel ?? "Sem responsável"}
+          </span>
+        </div>
       </div>
-      <div className="mt-2.5 border-t border-border/60 pt-2 text-xs tabular-nums">
+      <div className="mt-2.5 border-t border-border/60 pt-2 text-[11px] tabular-nums">
         <SlaLine d={d} now={now} />
       </div>
     </div>
