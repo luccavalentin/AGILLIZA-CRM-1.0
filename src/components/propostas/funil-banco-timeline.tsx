@@ -244,11 +244,13 @@ function DecisionCard({
   label,
   state,
   caption,
+  banco,
 }: {
   tone: "success" | "danger";
   label: string;
   state: "ativo" | "aguardando" | "descartado";
   caption: string;
+  banco?: string | null;
 }) {
   const ativo = state === "ativo";
   const descartado = state === "descartado";
