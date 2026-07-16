@@ -268,9 +268,9 @@ function ThreadItem({
     thread.kind === "demanda" ? thread.titulo?.trim() || null : null;
 
   const badgeClasses: Record<ThreadKind, string> = {
-    dm: "bg-sky-500/15 text-sky-700 dark:text-sky-300",
-    cliente: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
-    demanda: "bg-amber-500/15 text-amber-700 dark:text-amber-300",
+    dm: "bg-sky-600 text-white dark:bg-sky-500",
+    cliente: "bg-emerald-600 text-white dark:bg-emerald-500",
+    demanda: "bg-amber-600 text-white dark:bg-amber-500",
   };
 
   return (
