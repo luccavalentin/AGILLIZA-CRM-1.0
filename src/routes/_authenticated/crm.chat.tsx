@@ -73,8 +73,12 @@ import { PainelChatCliente } from "@/components/crm/chat-cliente/painel-cliente"
 export const Route = createFileRoute("/_authenticated/crm/chat")({
   head: () => ({ meta: [{ title: "Chat e Follow-up Cliente — Agilliza" }] }),
   beforeLoad: () => assertModuloPermitido("crm.clientes"),
+  validateSearch: (s: Record<string, unknown>) => ({
+    c: typeof s.c === "string" ? s.c : undefined,
+  }),
   component: Pagina,
 });
+
 
 const CORES = [
   { id: "blue", nome: "Azul" },
