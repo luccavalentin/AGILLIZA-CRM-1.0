@@ -17,17 +17,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import type { AuditoriaLinha } from "@/lib/admin/auditoria.functions";
-import { exportarCsv, rotuloEntidade, TODOS, type Filtros } from "./helpers";
+import { exportarCsv, rotuloEntidade, type Filtros } from "./helpers";
 
 type OpcoesData = {
   atores?: { id: string; nome: string }[];
