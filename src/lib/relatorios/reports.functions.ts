@@ -1504,7 +1504,7 @@ export const runReport = createServerFn({ method: "POST" })
       ];
 
       return {
-        titulo: "Relatório gerencial",
+        titulo: "Relatório gerencial de operações",
         descricao:
           "Visão consolidada por banco, tipo, analistas, imobiliária e fase.",
         modulo: "Gerencial",
