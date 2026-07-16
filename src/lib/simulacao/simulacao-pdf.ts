@@ -696,7 +696,7 @@ export function baixarSimulacaoSimplificadaPDF({
     drawFooter(doc, pageW, pageH, p, total);
   }
 
-  return salvar(doc, s, "simplificada", lista);
+  return salvar(doc, s, "simplificada", lista, filePrefix);
 }
 
 /** Monta o extrato detalhado: cabeçalho + TODAS as parcelas, um banco por folha. */
