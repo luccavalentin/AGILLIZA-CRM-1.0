@@ -30,6 +30,7 @@ type Prioridade = "p1" | "p2" | "p3";
 export function EditarDemandaDialog({
   demanda,
   onSalva,
+  trigger,
 }: {
   demanda: {
     id: string;
@@ -39,7 +40,9 @@ export function EditarDemandaDialog({
     sla_horas: number | null;
   };
   onSalva: () => void;
+  trigger?: ReactNode;
 }) {
+
   const [aberto, setAberto] = useState(false);
   const [titulo, setTitulo] = useState(demanda.titulo);
   const [descricao, setDescricao] = useState(demanda.descricao ?? "");
