@@ -92,10 +92,13 @@ export function CardCliente({
               {c.nome.trim().charAt(0).toUpperCase()}
             </span>
             <span className="min-w-0 flex-1">
-              <span className="block truncate text-sm font-semibold text-foreground transition-colors group-hover/card:text-primary">
+              <span
+                className="block break-words text-sm font-semibold leading-tight text-foreground transition-colors group-hover/card:text-primary [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] overflow-hidden"
+                title={c.nome}
+              >
                 {c.nome}
               </span>
-              <span className="block font-mono text-[11px] text-muted-foreground">
+              <span className="mt-0.5 block font-mono text-[11px] text-muted-foreground">
                 {c.numero_cliente}
               </span>
             </span>
@@ -126,25 +129,35 @@ export function CardCliente({
           </DropdownMenu>
         </div>
         <div className="mt-2.5 space-y-1">
-          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-            <User className="size-3 shrink-0 text-primary/70" />
-            <span className="truncate">
+          <div className="flex items-start gap-1.5 text-[11px] leading-snug text-muted-foreground">
+            <User className="mt-0.5 size-3 shrink-0 text-primary/70" />
+            <span
+              className="min-w-0 flex-1 break-words [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] overflow-hidden"
+              title={c.responsavel_nome ?? "—"}
+            >
               <span className="font-medium text-foreground/80">Resp:</span>{" "}
               {c.responsavel_nome ?? "—"}
             </span>
           </div>
           {c.analista_nome && (
-            <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-              <UserCheck className="size-3 shrink-0 text-primary/70" />
-              <span className="truncate">
-                <span className="font-medium text-foreground/80">Analista:</span> {c.analista_nome}
+            <div className="flex items-start gap-1.5 text-[11px] leading-snug text-muted-foreground">
+              <UserCheck className="mt-0.5 size-3 shrink-0 text-primary/70" />
+              <span
+                className="min-w-0 flex-1 break-words [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] overflow-hidden"
+                title={c.analista_nome}
+              >
+                <span className="font-medium text-foreground/80">Analista:</span>{" "}
+                {c.analista_nome}
               </span>
             </div>
           )}
           {(c.corretor_nome || c.imobiliaria_nome) && (
-            <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-              <Building2 className="size-3 shrink-0 text-primary/70" />
-              <span className="truncate">
+            <div className="flex items-start gap-1.5 text-[11px] leading-snug text-muted-foreground">
+              <Building2 className="mt-0.5 size-3 shrink-0 text-primary/70" />
+              <span
+                className="min-w-0 flex-1 break-words [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] overflow-hidden"
+                title={[c.corretor_nome, c.imobiliaria_nome].filter(Boolean).join(" · ")}
+              >
                 {c.corretor_nome ?? c.imobiliaria_nome}
                 {c.corretor_nome && c.imobiliaria_nome && (
                   <span className="text-muted-foreground/70">
@@ -157,9 +170,10 @@ export function CardCliente({
           )}
           <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
             <Clock className="size-3 shrink-0" />
-            Atualizado {tempoRelativo(c.pipeline_atualizado_em)}
+            <span className="truncate">Atualizado {tempoRelativo(c.pipeline_atualizado_em)}</span>
           </div>
         </div>
+
         {c.numero_simulacao && (
           <div className="mt-2 flex flex-wrap items-center gap-1.5 border-t border-border/60 pt-2">
             <Link
