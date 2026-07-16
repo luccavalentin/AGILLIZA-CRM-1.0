@@ -658,9 +658,9 @@ function AcoesTopo({
               baixarPropostaOficialPDF({
                 proposta,
                 bancos: bancos ?? [],
-                envolvidos: (data as any)?.envolvidos ?? [],
-                documentos: (data as any)?.documentos ?? [],
-                followups: (data as any)?.followups ?? [],
+                envolvidos: envolvidos ?? [],
+                documentos: documentos ?? [],
+                followups: followups ?? [],
               });
             }}
           >
