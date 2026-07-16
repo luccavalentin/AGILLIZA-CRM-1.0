@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Check, CheckCheck, Loader2, Maximize2, MessageCircle, Search, Send, X } from "lucide-react";
+import { Check, CheckCheck, Loader2, Maximize2, MessageCircle, Search, Send } from "lucide-react";
 import { toast } from "sonner";
 import {
   abrirDemandaChatFlutuante,
@@ -179,13 +179,11 @@ export function DemandaChatConversa({
   }, [(data as any)?.mensagens, demandaId, marcarLidaFn, qc]);
 
   const mensagens = ((data as any)?.mensagens ?? []) as any[];
-  useIncomingChatSound(
-    useMemo(
-      () => mensagens.map((m) => ({ id: m.id as string, mine: m.autor_id === meuId })),
-      [mensagens, meuId],
-    ),
-    demandaId,
+  const chatItens = useMemo(
+    () => mensagens.map((m) => ({ id: m.id as string, mine: m.autor_id === meuId })),
+    [mensagens, meuId],
   );
+  useIncomingChatSound(chatItens, demandaId);
 
   useEffect(() => {
     if (!buscaAberta) fimRef.current?.scrollIntoView({ behavior: "smooth" });
