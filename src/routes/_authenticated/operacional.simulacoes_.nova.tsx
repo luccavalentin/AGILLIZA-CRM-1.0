@@ -232,6 +232,7 @@ function Pagina() {
               comparativo={comparativo}
               valorFinanciamento={w.valor_financiamento}
               prazoMeses={w.prazo_meses}
+              sistema={w.sistema_amortizacao === "P" ? "PRICE" : "SAC"}
               baixando={baixando}
               onBaixar={baixarSimulacao}
               onEnviar={irParaCompleta}
