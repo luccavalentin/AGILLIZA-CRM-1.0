@@ -939,7 +939,7 @@ function rendaNecessaria(s: any, bancos: any[]): number | null {
  * Nome de arquivo descritivo pedido pela operação, ex.:
  * "Bradesco,Caixa-SAC-C e V 420k - Finan 350k - 420 meses - renda 28k".
  */
-function nomeDescritivo(s: any, bancos: any[]): string {
+export function nomeDescritivo(s: any, bancos: any[]): string {
   const nomes = bancos.map((b) => b?.nome_banco).filter(Boolean);
   const bancoTxt = nomes.length ? Array.from(new Set(nomes)).join(",") : "Simulacao";
   const tabela = tabelaLabel(s, bancos);
