@@ -178,6 +178,11 @@ function Pagina() {
     cancelada: "bg-muted text-muted-foreground ring-1 ring-inset ring-border",
   };
   const statusCls = statusPillCls[d.status as string] ?? statusPillCls.aberta;
+  const interlocutorDemandaNome = data.permissoes?.sou_criador
+    ? data.nome_responsavel
+    : data.permissoes?.sou_responsavel
+      ? data.nome_criador
+      : data.nome_responsavel ?? data.nome_criador;
 
   return (
     <div className="mx-auto grid min-h-[calc(100vh-6rem)] max-w-[1400px] gap-5 p-4 md:p-6 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
@@ -438,7 +443,14 @@ function Pagina() {
                   variant="outline"
                   size="sm"
                   className="h-8 gap-1.5"
-                  onClick={() => abrirDemandaChatFlutuante(id, { numero: d.numero, titulo: d.titulo, statusLabel: cfg.label })}
+                  onClick={() =>
+                    abrirDemandaChatFlutuante(id, {
+                      numero: d.numero,
+                      titulo: d.titulo,
+                      statusLabel: cfg.label,
+                      interlocutorNome: interlocutorDemandaNome,
+                    })
+                  }
                 >
                   <Maximize2 className="h-3.5 w-3.5" /> Soltar chat
                 </Button>
@@ -474,7 +486,12 @@ function Pagina() {
               ) : (
                 <DemandaChatConversa
                   demandaId={id}
-                  info={{ numero: d.numero, titulo: d.titulo, statusLabel: cfg.label }}
+                  info={{
+                    numero: d.numero,
+                    titulo: d.titulo,
+                    statusLabel: cfg.label,
+                    interlocutorNome: interlocutorDemandaNome,
+                  }}
                 />
               )
             )}
