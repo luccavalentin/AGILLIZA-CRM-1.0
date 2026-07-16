@@ -52,6 +52,16 @@ export function abrirDemandaChatFlutuante(
   emitir();
 }
 
+/** Abre (ou troca) uma mensagem direta (DM) em janela flutuante global. */
+export function abrirDmFlutuante(
+  conversaId: string,
+  info?: Extract<FloatingChatState, { kind: "dm" }>["info"],
+  opts?: { minimized?: boolean },
+) {
+  estado = { kind: "dm", conversaId, info, minimized: opts?.minimized };
+  emitir();
+}
+
 /** Fecha a janela flutuante global. */
 export function fecharChatFlutuante() {
   estado = null;
