@@ -18,13 +18,14 @@ interface Props {
   comparativo: Comparativo[];
   valorFinanciamento: number;
   prazoMeses: number;
+  sistema?: "SAC" | "PRICE";
   baixando: boolean;
   onBaixar: () => void;
   onEnviar: () => void;
 }
 
 export const ResultadoRapido = forwardRef<HTMLDivElement, Props>(function ResultadoRapido(
-  { comparativo, valorFinanciamento, prazoMeses, baixando, onBaixar, onEnviar },
+  { comparativo, valorFinanciamento, prazoMeses, sistema = "SAC", baixando, onBaixar, onEnviar },
   ref,
 ) {
   return (
@@ -40,7 +41,7 @@ export const ResultadoRapido = forwardRef<HTMLDivElement, Props>(function Result
               Resultado — Simulação rápida
             </h2>
             <span className="rounded-full bg-muted px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground">
-              SAC · {prazoMeses} meses
+              {sistema} · {prazoMeses} meses
             </span>
           </div>
           <p className="mt-0.5 text-xs text-muted-foreground">
