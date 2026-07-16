@@ -1,4 +1,4 @@
-import { Check, Lock } from "lucide-react";
+import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export interface StageItem {
@@ -72,9 +72,8 @@ export function PipelineTimeline({
           const concluida = s.ordem < atualOrdem;
           const atual = s.ordem === atualOrdem;
           const alcancada = s.ordem <= atualOrdem;
-          // Etapas ainda não iniciadas ficam bloqueadas (cadeado) e
-          // só destravam conforme a proposta avança/retorna.
-          const bloqueada = s.ordem > atualOrdem;
+          // Etapas futuras permanecem clicáveis para permitir avançar o fluxo manualmente.
+          const futura = s.ordem > atualOrdem;
 
           const node = (
             <span
@@ -84,10 +83,9 @@ export function PipelineTimeline({
                 concluida && "border-success bg-success text-success-foreground",
                 atual &&
                   "border-primary bg-primary text-primary-foreground ring-[6px] ring-primary/25 shadow-[0_0_24px_-4px_var(--primary)] animate-pulse",
-                bloqueada && "border-dashed border-border bg-muted/40 text-muted-foreground/60",
+                futura && "border-border bg-background text-muted-foreground",
                 onSelecionar &&
                   !atual &&
-                  !bloqueada &&
                   "group-hover:border-primary group-hover:text-primary group-hover:ring-4 group-hover:ring-primary/10",
               )}
             >
@@ -95,8 +93,6 @@ export function PipelineTimeline({
                 <Check className="size-4" aria-hidden />
               ) : atual ? (
                 <span className="size-2.5 rounded-full bg-primary-foreground" aria-hidden />
-              ) : bloqueada ? (
-                <Lock className="size-3.5" aria-hidden />
               ) : (
                 i + 1
               )}
@@ -125,14 +121,11 @@ export function PipelineTimeline({
               className={cn(
                 "mt-2 w-full text-balance break-words text-center text-[11px] leading-tight transition-colors",
                 atual ? "font-bold text-primary" : "text-muted-foreground",
-                bloqueada && "text-muted-foreground/60",
               )}
             >
               {s.nome}
             </span>
           );
-
-
 
           const conector =
             i > 0 ? (
@@ -144,7 +137,6 @@ export function PipelineTimeline({
                 aria-hidden
               />
             ) : null;
-
 
           const inner = (
             <>
@@ -158,15 +150,12 @@ export function PipelineTimeline({
           const wrapperClasses =
             "group relative flex min-w-[104px] flex-1 flex-col items-center px-1.5 pt-6";
 
-
-
           if (onSelecionar) {
-            const travada = bloqueada;
             return (
               <button
                 key={s.codigo}
                 type="button"
-                disabled={disabled || atual || travada}
+                disabled={disabled || atual}
                 onClick={() => onSelecionar(s.codigo)}
                 className={cn(
                   wrapperClasses,
@@ -175,9 +164,9 @@ export function PipelineTimeline({
                 title={
                   atual
                     ? "Etapa atual"
-                    : travada
-                      ? "Etapa bloqueada — será liberada quando a proposta avançar até aqui"
-                      : `Mover para "${s.nome}"`
+                    : futura
+                      ? `Avançar para "${s.nome}"`
+                      : `Voltar para "${s.nome}"`
                 }
               >
                 {inner}
