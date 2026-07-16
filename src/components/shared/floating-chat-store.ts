@@ -17,6 +17,12 @@ export type FloatingChatState =
         statusLabel?: string | null;
       };
       minimized?: boolean;
+    }
+  | {
+      kind: "dm";
+      conversaId: string;
+      info?: { nome?: string | null };
+      minimized?: boolean;
     };
 
 let estado: FloatingChatState | null = null;
