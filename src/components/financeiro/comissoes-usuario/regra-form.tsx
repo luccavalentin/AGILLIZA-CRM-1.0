@@ -1,0 +1,302 @@
+import { useEffect, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+  GATILHOS_COMISSAO,
+  TIPOS_VINCULO_COMISSAO,
+  listarBancosComissao,
+  listarUsuariosComissionaveis,
+  salvarRegraComissaoUsuario,
+  type RegraComissaoUsuario,
+  type TipoVinculoComissao,
+} from "@/lib/financeiro/comissoes-usuario.functions";
+
+interface Props {
+  aberto: boolean;
+  onFechar: () => void;
+  tipoInicial: TipoVinculoComissao;
+  regra?: RegraComissaoUsuario | null;
+}
+
+export function RegraComissaoUsuarioForm({ aberto, onFechar, tipoInicial, regra }: Props) {
+  const qc = useQueryClient();
+  const [usuarioId, setUsuarioId] = useState("");
+  const [tipoVinculo, setTipoVinculo] = useState<TipoVinculoComissao>(tipoInicial);
+  const [gatilho, setGatilho] = useState<string>("contrato_emitido");
+  const [baseCalculo, setBaseCalculo] = useState<"valor_contrato" | "percentual_repasse">(
+    "valor_contrato",
+  );
+  const [percentual, setPercentual] = useState<string>("");
+  const [bancoNome, setBancoNome] = useState<string>("__todos__");
+  const [produto, setProduto] = useState<string>("__todos__");
+  const [vigIni, setVigIni] = useState<string>("");
+  const [vigFim, setVigFim] = useState<string>("");
+  const [ativo, setAtivo] = useState<boolean>(true);
+  const [observacao, setObservacao] = useState<string>("");
+
+  useEffect(() => {
+    if (!aberto) return;
+    if (regra) {
+      setUsuarioId(regra.usuario_id);
+      setTipoVinculo(regra.tipo_vinculo);
+      setGatilho(regra.gatilho);
+      setBaseCalculo(regra.base_calculo);
+      setPercentual(String(regra.percentual));
+      setBancoNome(regra.banco_nome ?? "__todos__");
+      setProduto(regra.produto ?? "__todos__");
+      setVigIni(regra.vigencia_inicio ?? "");
+      setVigFim(regra.vigencia_fim ?? "");
+      setAtivo(regra.ativo);
+      setObservacao(regra.observacao ?? "");
+    } else {
+      setUsuarioId("");
+      setTipoVinculo(tipoInicial);
+      setGatilho("contrato_emitido");
+      setBaseCalculo("valor_contrato");
+      setPercentual("");
+      setBancoNome("__todos__");
+      setProduto("__todos__");
+      setVigIni("");
+      setVigFim("");
+      setAtivo(true);
+      setObservacao("");
+    }
+  }, [aberto, regra, tipoInicial]);
+
+  const { data: usuarios } = useQuery({
+    queryKey: ["fin-com-usr-usuarios"],
+    queryFn: () => listarUsuariosComissionaveis(),
+    enabled: aberto,
+  });
+  const { data: bancos } = useQuery({
+    queryKey: ["fin-com-usr-bancos"],
+    queryFn: () => listarBancosComissao(),
+    enabled: aberto,
+  });
+
+  const salvar = useMutation({
+    mutationFn: () =>
+      salvarRegraComissaoUsuario({
+        data: {
+          id: regra?.id,
+          usuario_id: usuarioId,
+          tipo_vinculo: tipoVinculo,
+          gatilho: gatilho as never,
+          base_calculo: baseCalculo,
+          percentual: Number(percentual.replace(",", ".")) || 0,
+          banco_nome: bancoNome === "__todos__" ? null : bancoNome,
+          produto: produto === "__todos__" ? null : produto,
+          vigencia_inicio: vigIni || null,
+          vigencia_fim: vigFim || null,
+          ativo,
+          observacao: observacao || null,
+        },
+      }),
+    onSuccess: () => {
+      toast.success(regra ? "Regra atualizada." : "Regra criada.");
+      qc.invalidateQueries({ queryKey: ["fin-com-usr-regras"] });
+      onFechar();
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Falha ao salvar regra."),
+  });
+
+  const podeSalvar = usuarioId && percentual && Number(percentual.replace(",", ".")) >= 0;
+
+  return (
+    <Dialog open={aberto} onOpenChange={(o) => (!o ? onFechar() : null)}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>{regra ? "Editar regra" : "Nova regra de comissão"}</DialogTitle>
+          <DialogDescription>
+            Defina quanto o usuário recebe por contrato. Deixe banco/produto vazios para valer em todos.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="sm:col-span-2 space-y-1.5">
+            <Label>Usuário</Label>
+            <Select value={usuarioId} onValueChange={setUsuarioId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione o usuário comissionado" />
+              </SelectTrigger>
+              <SelectContent>
+                {(usuarios ?? []).map((u) => (
+                  <SelectItem key={u.id} value={u.id}>
+                    {u.nome ?? u.email ?? u.id}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Tipo de vínculo</Label>
+            <Select value={tipoVinculo} onValueChange={(v) => setTipoVinculo(v as TipoVinculoComissao)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {TIPOS_VINCULO_COMISSAO.map((t) => (
+                  <SelectItem key={t.valor} value={t.valor}>
+                    {t.rotulo}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Gatilho</Label>
+            <Select value={gatilho} onValueChange={setGatilho}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {GATILHOS_COMISSAO.map((g) => (
+                  <SelectItem key={g.valor} value={g.valor}>
+                    {g.rotulo}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="sm:col-span-2 space-y-2">
+            <Label>Base de cálculo</Label>
+            <RadioGroup
+              value={baseCalculo}
+              onValueChange={(v) => setBaseCalculo(v as typeof baseCalculo)}
+              className="grid gap-2 sm:grid-cols-2"
+            >
+              <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-border p-3 hover:bg-accent">
+                <RadioGroupItem value="valor_contrato" className="mt-0.5" />
+                <div>
+                  <div className="text-sm font-medium">% do valor do contrato</div>
+                  <div className="text-xs text-muted-foreground">
+                    Calcula sobre o valor financiado da proposta.
+                  </div>
+                </div>
+              </label>
+              <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-border p-3 hover:bg-accent">
+                <RadioGroupItem value="percentual_repasse" className="mt-0.5" />
+                <div>
+                  <div className="text-sm font-medium">% do repasse</div>
+                  <div className="text-xs text-muted-foreground">
+                    Calcula sobre o repasse que o correspondente recebeu do banco.
+                  </div>
+                </div>
+              </label>
+            </RadioGroup>
+            {baseCalculo === "percentual_repasse" && (
+              <p className="rounded-md bg-primary/[0.04] px-3 py-2 text-xs text-muted-foreground">
+                Exemplo: repasse de R$ 10.000 × 20% = R$ 2.000 para este usuário.
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Percentual (%)</Label>
+            <Input
+              inputMode="decimal"
+              placeholder="Ex.: 10"
+              value={percentual}
+              onChange={(e) => setPercentual(e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Banco</Label>
+            <Select value={bancoNome} onValueChange={setBancoNome}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__todos__">Todos os bancos</SelectItem>
+                {(bancos ?? []).map((b) => (
+                  <SelectItem key={b} value={b}>
+                    {b}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Produto</Label>
+            <Select value={produto} onValueChange={setProduto}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__todos__">Todos os produtos</SelectItem>
+                <SelectItem value="financiamento">Financiamento</SelectItem>
+                <SelectItem value="home_equity">Home Equity</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Vigência início</Label>
+            <Input type="date" value={vigIni} onChange={(e) => setVigIni(e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Vigência fim</Label>
+            <Input type="date" value={vigFim} onChange={(e) => setVigFim(e.target.value)} />
+          </div>
+
+          <div className="sm:col-span-2 space-y-1.5">
+            <Label>Observação</Label>
+            <Textarea
+              rows={2}
+              value={observacao}
+              onChange={(e) => setObservacao(e.target.value)}
+              placeholder="Opcional"
+            />
+          </div>
+
+          <div className="sm:col-span-2 flex items-center justify-between rounded-lg border border-border p-3">
+            <div>
+              <div className="text-sm font-medium">Regra ativa</div>
+              <div className="text-xs text-muted-foreground">
+                Se desligada, deixa de gerar novos lançamentos.
+              </div>
+            </div>
+            <Switch checked={ativo} onCheckedChange={setAtivo} />
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="ghost" onClick={onFechar}>
+            Cancelar
+          </Button>
+          <Button onClick={() => salvar.mutate()} disabled={!podeSalvar || salvar.isPending}>
+            {salvar.isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
+            Salvar
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
