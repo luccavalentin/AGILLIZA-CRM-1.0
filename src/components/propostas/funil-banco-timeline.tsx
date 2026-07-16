@@ -221,6 +221,7 @@ export function FunilBancoTimeline({
                         label="Reprovado"
                         state={reprovado ? "ativo" : decisaoPendente ? "aguardando" : "descartado"}
                         caption="Encerra o fluxo"
+                        banco={reprovado ? bancoReprovado ?? null : null}
                       />
                     </div>
                   )}
