@@ -131,14 +131,14 @@ function drawTituloExtrato(
   doc.setTextColor(P.destaque);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(14);
-  doc.text(titulo, MARGIN, y);
-  doc.setTextColor(P.texto);
-  doc.setFont("helvetica", "bold");
+  doc.text(titulo, pageW / 2, y, { align: "center" });
+  doc.setTextColor(P.cinza);
+  doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
-  doc.text(`${dataLabel}: ${dataTxt(s.created_at ?? new Date())}`, pageW - MARGIN, y, {
-    align: "right",
+  doc.text(`${dataLabel}: ${dataTxt(s.created_at ?? new Date())}`, pageW / 2, y + 12, {
+    align: "center",
   });
-  return y + 12;
+  return y + 22;
 }
 
 /** Caixa formal com os dados do cliente em destaque. */
