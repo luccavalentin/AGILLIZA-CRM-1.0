@@ -21,6 +21,7 @@ import {
   fecharChatFlutuante,
   useFloatingChat,
 } from "@/components/shared/floating-chat-store";
+import { ConversaMenuAcoesLive } from "@/components/shared/conversa-menu-acoes";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -286,16 +287,23 @@ function ConversaComSoltar({
 
   return (
     <div className="relative h-full min-h-0">
-      <button
-        type="button"
-        onClick={() => abrirChatFlutuante(clienteId, info)}
-        title="Soltar em janela flutuante"
-        aria-label="Soltar em janela flutuante"
-        className="absolute right-3 top-3 z-20 inline-flex items-center gap-1.5 rounded-lg border border-primary/30 bg-primary px-2.5 py-1.5 text-xs font-semibold text-primary-foreground shadow-md transition-all hover:bg-primary/90 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-      >
-        <Maximize2 className="size-3.5" />
-        <span className="hidden sm:inline">Soltar chat</span>
-      </button>
+      <div className="absolute right-3 top-3 z-20 flex items-center gap-1.5">
+        <button
+          type="button"
+          onClick={() => abrirChatFlutuante(clienteId, info)}
+          title="Soltar em janela flutuante"
+          aria-label="Soltar em janela flutuante"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-primary/30 bg-primary px-2.5 py-1.5 text-xs font-semibold text-primary-foreground shadow-md transition-all hover:bg-primary/90 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+        >
+          <Maximize2 className="size-3.5" />
+          <span className="hidden sm:inline">Soltar chat</span>
+        </button>
+        <ConversaMenuAcoesLive
+          chatTipo="cliente"
+          chatId={clienteId}
+          nomeReferencia={info?.nome ?? null}
+        />
+      </div>
       <ChatClienteConversa clienteId={clienteId} info={info} />
     </div>
   );

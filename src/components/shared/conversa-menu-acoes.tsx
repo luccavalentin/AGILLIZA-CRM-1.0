@@ -52,7 +52,9 @@ import {
   criarEtiqueta,
   definirEtiquetasConversa,
   fixarConversa,
+  listarEstadoChatDoUsuario,
   listarEtiquetas,
+  listarVinculosEtiqueta,
   ocultarConversa,
   renomearConversa,
   type ChatTipo,
@@ -497,5 +499,65 @@ export function EtiquetasPills({
         </Badge>
       ))}
     </div>
+  );
+}
+
+/**
+ * Versão "auto-suficiente" do menu de ações: carrega o próprio estado do
+ * chat (arquivado/fixado/apelido/etiquetas) para o usuário logado. Use nos
+ * cabeçalhos dos chats standalone (ficha de cliente, detalhe de demanda,
+ * janelas soltas) para que todas as configurações fiquem na tela do chat.
+ */
+export function ConversaMenuAcoesLive({
+  chatTipo,
+  chatId,
+  nomeReferencia = null,
+  suportaEtiquetas = true,
+  permitirExcluir = true,
+  align = "end",
+  compact = false,
+}: {
+  chatTipo: ChatTipo;
+  chatId: string;
+  nomeReferencia?: string | null;
+  suportaEtiquetas?: boolean;
+  permitirExcluir?: boolean;
+  align?: "start" | "end" | "center";
+  compact?: boolean;
+}) {
+  const estadoFn = useServerFn(listarEstadoChatDoUsuario);
+  const vincFn = useServerFn(listarVinculosEtiqueta);
+
+  const { data: estados } = useQuery({
+    queryKey: ["chat-estado-usuario"],
+    queryFn: () => estadoFn(),
+  });
+  const { data: vinc } = useQuery({
+    queryKey: ["chat-etiqueta-vinculos"],
+    queryFn: () => vincFn(),
+    enabled: suportaEtiquetas,
+  });
+
+  const estado = (estados ?? []).find(
+    (e: any) => e.chat_tipo === chatTipo && e.chat_id === chatId,
+  );
+  const etiquetaIds = ((vinc ?? []) as any[])
+    .filter((v) => v.chat_tipo === chatTipo && v.chat_id === chatId)
+    .map((v) => v.etiqueta_id);
+
+  return (
+    <ConversaMenuAcoes
+      chatTipo={chatTipo}
+      chatId={chatId}
+      arquivado={!!estado?.arquivado_em}
+      fixado={!!estado?.pinado_em}
+      apelidoAtual={estado?.apelido ?? null}
+      nomeReferencia={nomeReferencia}
+      etiquetaIds={etiquetaIds}
+      suportaEtiquetas={suportaEtiquetas}
+      permitirExcluir={permitirExcluir}
+      align={align}
+      compact={compact}
+    />
   );
 }
