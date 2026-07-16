@@ -42,6 +42,10 @@ import {
   patchPuxarConjugeCRM,
   patchInverterPrincipal,
 } from "./use-simulacao-completa/cliente-crm";
+import {
+  executarEnvioAmbos,
+  executarEnvioSimples,
+} from "./use-simulacao-completa/envio";
 
 export type { Form };
 
