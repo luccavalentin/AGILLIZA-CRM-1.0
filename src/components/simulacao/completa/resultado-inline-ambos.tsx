@@ -591,7 +591,8 @@ function BaixarPdfsButton({ dataSac, dataPrice }: { dataSac: any; dataPrice: any
       else toast.error("Não foi possível gerar os PDFs.");
     } catch (e) {
       console.error("[baixar PDF] módulo", e);
-      toast.error("Não foi possível gerar os PDFs.");
+      const msg = e instanceof Error ? e.message : "";
+      toast.error(msg ? `Não foi possível gerar os PDFs: ${msg}` : "Não foi possível gerar os PDFs.");
     } finally {
       setBaixando(false);
     }
