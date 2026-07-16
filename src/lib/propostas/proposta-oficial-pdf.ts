@@ -574,50 +574,6 @@ function tabelaDocumentos(doc: jsPDF, pageW: number, documentos: any[], y: numbe
   return (doc as any).lastAutoTable.finalY + 14;
 }
 
-function tabelaFollowups(doc: jsPDF, pageW: number, followups: any[], y: number): number {
-  doc.setTextColor(P.destaque);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(12);
-  doc.text("Follow-ups e próximos passos", MARGIN, y);
-  y += 6;
-
-  const linhas =
-    (followups ?? []).slice(0, 40).map((f) => [
-      dataTxt(f.data_previsao ?? f.created_at),
-      up(f.tipo ?? "—"),
-      f.titulo ?? "—",
-      f.comentario ?? "—",
-    ]) ?? [];
-
-  autoTable(doc, {
-    startY: y + 4,
-    head: [["Data", "Tipo", "Título", "Comentário"]],
-    body: linhas.length
-      ? linhas
-      : [["—", "—", "Nenhum follow-up registrado.", "—"]],
-    margin: { left: MARGIN, right: MARGIN },
-    styles: {
-      font: "helvetica",
-      fontSize: 8,
-      cellPadding: 4,
-      textColor: P.texto,
-      lineColor: P.borda,
-      lineWidth: 0.3,
-    },
-    headStyles: {
-      fillColor: P.azul,
-      textColor: "#FFFFFF",
-      fontStyle: "bold",
-      fontSize: 8,
-    },
-    alternateRowStyles: { fillColor: P.card },
-    columnStyles: {
-      0: { cellWidth: 62 },
-      1: { cellWidth: 70, fontStyle: "bold" },
-    },
-  });
-  return (doc as any).lastAutoTable.finalY + 10;
-}
 
 /* -------------------------------------------------------------------------- */
 /* API                                                                         */
@@ -628,7 +584,7 @@ export function baixarPropostaOficialPDF(input: Input) {
   const bancos = Array.isArray(input?.bancos) ? input.bancos : [];
   const envolvidos = Array.isArray(input?.envolvidos) ? input.envolvidos : [];
   const documentos = Array.isArray(input?.documentos) ? input.documentos : [];
-  const followups = Array.isArray(input?.followups) ? input.followups : [];
+  void input?.followups;
 
   P = getPdfPalette();
   const doc = new jsPDF({ unit: "pt", format: "a4", orientation: "portrait" });
@@ -644,7 +600,15 @@ export function baixarPropostaOficialPDF(input: Input) {
     }
   };
 
-  // ---------------- Página 1 : ficha da proposta ----------------
+  const FOOTER_RESERVA = 60;
+  const ensureSpace = (yAtual: number, necessario: number): number => {
+    if (yAtual + necessario <= pageH - FOOTER_RESERVA) return yAtual;
+    doc.addPage();
+    safe(() => drawHeader(doc, pageW), undefined);
+    return HEADER_H + 24;
+  };
+
+  // ---------------- Ficha da proposta (fluxo contínuo) ----------------
   safe(() => drawHeader(doc, pageW), undefined);
   let y = HEADER_H + 24;
   y = safe(() => drawTituloProposta(doc, pageW, proposta, y), y + 20);
@@ -652,25 +616,13 @@ export function baixarPropostaOficialPDF(input: Input) {
   y = safe(() => drawImovel(doc, pageW, proposta, y), y + 80);
   y = safe(() => drawEtapas(doc, pageW, proposta, y), y + 60);
 
-  // ---------------- Página 2 : proponentes ----------------
-  doc.addPage();
-  safe(() => drawHeader(doc, pageW), undefined);
-  y = HEADER_H + 24;
-  safe(() => tabelaProponentes(doc, pageW, envolvidos, y), 0);
+  // Proponentes — segue no fluxo, quebra página só se não couber o cabeçalho + 1 linha
+  y = ensureSpace(y, 120);
+  y = safe(() => tabelaProponentes(doc, pageW, envolvidos, y), y);
 
-  // ---------------- Página 3 : documentação ----------------
-  doc.addPage();
-  safe(() => drawHeader(doc, pageW), undefined);
-  y = HEADER_H + 24;
-  safe(() => tabelaDocumentos(doc, pageW, documentos, y), 0);
-
-  // ---------------- Página 4 : follow-ups ----------------
-  if (followups.length) {
-    doc.addPage();
-    safe(() => drawHeader(doc, pageW), undefined);
-    y = HEADER_H + 24;
-    safe(() => tabelaFollowups(doc, pageW, followups, y), 0);
-  }
+  // Checklist de documentação — mesma lógica
+  y = ensureSpace(y, 120);
+  y = safe(() => tabelaDocumentos(doc, pageW, documentos, y), y);
 
   // Rodapé em todas as páginas
   const total = doc.getNumberOfPages();
