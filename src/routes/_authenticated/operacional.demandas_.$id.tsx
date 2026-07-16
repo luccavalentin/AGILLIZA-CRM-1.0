@@ -349,24 +349,41 @@ function Pagina() {
       </aside>
 
       {/* ============ Coluna direita: chat realtime (padrão do chat do cliente) ============ */}
-      <section className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-border/60 bg-card shadow-sm">
-        <header className="flex items-center gap-2 border-b border-border/60 bg-card/80 px-4 py-3 backdrop-blur">
-          <MessageCircle className="h-4 w-4 text-primary" />
-          <span className="text-sm font-semibold">Conversa da demanda</span>
-          <span className="ml-auto text-xs text-muted-foreground">
-            {(data.mensagens ?? []).length} mensagens
-          </span>
+      <section className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-border/60 bg-card shadow-[0_1px_2px_rgba(0,0,0,0.04),0_18px_50px_-30px_color-mix(in_oklab,var(--brand-azul-profundo)_45%,transparent)] sm:rounded-3xl">
+        {/* Cabeçalho estilo chat do cliente */}
+        <header className="flex shrink-0 items-center gap-3 border-b border-border/60 bg-gradient-to-r from-primary to-[var(--brand-azul-escuro)] px-4 py-3 text-primary-foreground">
+          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary-foreground/15 ring-1 ring-primary-foreground/25">
+            <MessageCircle className="h-5 w-5" />
+          </div>
+          <div className="min-w-0 flex-1 leading-tight">
+            <p className="truncate text-sm font-semibold sm:text-base">Conversa da demanda</p>
+            <span className="flex items-center gap-1.5 text-[11px] text-primary-foreground/80">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-300/70" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+              </span>
+              <span className="truncate">
+                {(data.mensagens ?? []).length} {(data.mensagens ?? []).length === 1 ? "mensagem" : "mensagens"} · tempo real
+              </span>
+            </span>
+          </div>
+          <Badge
+            variant="outline"
+            className="hidden shrink-0 border-primary-foreground/30 bg-primary-foreground/10 text-[10px] font-semibold uppercase tracking-wider text-primary-foreground sm:inline-flex"
+          >
+            {d.numero ?? "DEM-—"}
+          </Badge>
         </header>
 
-        <div className="chat-surface flex-1 space-y-1 overflow-y-auto overflow-x-hidden p-3 sm:p-4">
+        <div className="chat-surface flex-1 space-y-1 overflow-y-auto overflow-x-hidden px-3 py-4 sm:px-5">
           {(data.mensagens ?? []).length === 0 && (
-            <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
-              <div className="flex size-14 items-center justify-center rounded-full bg-primary/10 text-primary">
-                <MessageCircle className="size-7" />
-              </div>
+            <div className="flex h-full flex-col items-center justify-center gap-3 py-10 text-center">
+              <span className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <MessageCircle className="h-6 w-6" />
+              </span>
               <div>
                 <p className="text-sm font-medium text-foreground">Nenhuma mensagem ainda</p>
-                <p className="text-xs text-muted-foreground">
+                <p className="mt-0.5 text-xs text-muted-foreground">
                   Envie a primeira mensagem para iniciar a conversa.
                 </p>
               </div>
@@ -386,52 +403,58 @@ function Pagina() {
               <div key={m.id}>
                 {mostrarDia && (
                   <div className="my-3 flex items-center justify-center">
-                    <span className="rounded-full bg-background/80 px-3 py-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground shadow-sm ring-1 ring-border/50 backdrop-blur">
+                    <span className="rounded-full bg-background/80 px-3 py-1 text-[11px] font-medium text-muted-foreground shadow-sm ring-1 ring-border/50 backdrop-blur">
                       {fmtDia(m.created_at)}
                     </span>
                   </div>
                 )}
                 <div
                   className={cn(
-                    "flex min-w-0 items-end gap-1.5 sm:gap-2",
-                    minha ? "justify-end" : "justify-start",
+                    "flex min-w-0 items-end gap-2",
+                    minha ? "flex-row-reverse" : "flex-row",
                     mesmoAutorAntes ? "mt-0.5" : "mt-2",
                   )}
                 >
                   {!minha &&
                     (mesmoAutorDepois ? (
-                      <span className="size-6 shrink-0" />
+                      <span className="size-7 shrink-0" />
                     ) : (
-                      <OpAvatar nome={m.nome_autor} className="size-6 text-[10px]" />
+                      <OpAvatar nome={m.nome_autor} className="size-7 text-[10px]" />
                     ))}
                   <div
                     className={cn(
-                      "chat-bubble min-w-0 max-w-[calc(100%-3.25rem)] overflow-hidden px-3 py-2 text-sm sm:max-w-[78%] sm:px-3.5",
-                      minha
-                        ? "rounded-2xl rounded-br-md bg-primary text-primary-foreground"
-                        : "rounded-2xl rounded-bl-md border border-chat-them-border bg-chat-them text-chat-them-foreground",
-                      mesmoAutorAntes && (minha ? "rounded-tr-md" : "rounded-tl-md"),
+                      "flex min-w-0 max-w-[82%] flex-col sm:max-w-[78%]",
+                      minha ? "items-end" : "items-start",
                     )}
                   >
                     {!mesmoAutorAntes && (
-                      <p
+                      <span
                         className={cn(
-                          "mb-0.5 text-[11px] font-semibold",
-                          minha ? "text-primary-foreground/90" : "text-chat-them-foreground/80",
+                          "mb-0.5 px-1 text-[10.5px] font-semibold uppercase tracking-wide",
+                          minha ? "text-primary/80" : "text-muted-foreground",
                         )}
                       >
                         {m.nome_autor ?? (minha ? "Eu" : "—")}
-                      </p>
+                      </span>
                     )}
-                    <p className="whitespace-pre-wrap break-words leading-relaxed">{m.corpo}</p>
                     <div
                       className={cn(
-                        "mt-1 flex items-center justify-end gap-1 text-[10px] tabular-nums",
-                        minha ? "text-primary-foreground/70" : "text-chat-them-foreground/60",
+                        "chat-bubble overflow-hidden px-3.5 py-2 text-sm leading-relaxed",
+                        minha
+                          ? "rounded-2xl rounded-br-md bg-primary text-primary-foreground"
+                          : "rounded-2xl rounded-bl-md border border-chat-them-border bg-chat-them text-chat-them-foreground",
+                        mesmoAutorAntes && (minha ? "rounded-tr-md" : "rounded-tl-md"),
                       )}
                     >
-                      <span>{fmtHora(m.created_at)}</span>
+                      <p className="whitespace-pre-wrap break-words">{m.corpo}</p>
                     </div>
+                    <span
+                      className={cn(
+                        "mt-0.5 px-1 text-[10px] tabular-nums text-muted-foreground",
+                      )}
+                    >
+                      {fmtHora(m.created_at)}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -440,32 +463,36 @@ function Pagina() {
           <div ref={fimRef} />
         </div>
 
-        <footer className="border-t border-border/60 bg-card/80 p-3 backdrop-blur">
-          <div className="flex items-end gap-2">
-            <Textarea
-              value={texto}
-              onChange={(e) => setTexto(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  enviar();
-                }
-              }}
-              placeholder="Escreva uma mensagem…  (Enter para enviar, Shift+Enter para nova linha)"
-              rows={2}
-              className="resize-none rounded-xl bg-background/70"
-            />
-            <Button
-              onClick={enviar}
-              disabled={enviando || !texto.trim()}
-              size="icon"
-              className="size-10 shrink-0 rounded-full"
-              aria-label="Enviar"
-            >
-              <Send className="h-4 w-4" />
-            </Button>
-          </div>
-        </footer>
+        <form
+          className="flex shrink-0 items-end gap-1.5 border-t border-border/60 bg-background/95 p-2.5 backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:p-3"
+          onSubmit={(e) => {
+            e.preventDefault();
+            enviar();
+          }}
+        >
+          <Textarea
+            value={texto}
+            onChange={(e) => setTexto(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                enviar();
+              }
+            }}
+            placeholder="Escreva uma mensagem…"
+            rows={1}
+            className="max-h-32 min-h-10 min-w-0 flex-1 resize-none rounded-2xl bg-muted/50 px-4 py-2.5"
+          />
+          <Button
+            type="submit"
+            size="icon"
+            className="h-10 w-10 shrink-0 rounded-full"
+            disabled={enviando || !texto.trim()}
+            aria-label="Enviar mensagem"
+          >
+            <Send className="h-5 w-5" />
+          </Button>
+        </form>
       </section>
     </div>
   );
