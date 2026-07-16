@@ -2,7 +2,7 @@ import { ShieldCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { AuditoriaLinha } from "@/lib/admin/auditoria.functions";
-import { classificar, fmtHora, TOM_CLASSES } from "./helpers";
+import { classificar, fmtHora, rotuloEntidade, TOM_CLASSES } from "./helpers";
 
 export function VazioAuditoria({ temFiltro }: { temFiltro: boolean }) {
   return (
