@@ -1,8 +1,8 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
-import { Fragment, useEffect, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ArrowLeft, ArrowLeftRight, RefreshCw, Copy, Download, ChevronDown, Pencil, Trash2, Calculator, Home, Landmark, UserRound, History, CheckCircle2, XCircle, Send, Plus, CircleDot } from "lucide-react";
+import { ArrowLeft, ArrowLeftRight, RefreshCw, Copy, Download, ChevronDown, Pencil, Trash2, Calculator, Home, Landmark, UserRound } from "lucide-react";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { supabase } from "@/integrations/supabase/client";
 import { ConfirmDelete } from "@/components/shared/confirm-delete";
@@ -40,26 +40,19 @@ import { SimulacaoStatusBadge, BancoStatusBadge } from "@/components/simulacao/s
 import { DetalheBancoDialog } from "@/components/simulacao/detalhe-banco-dialog";
 import { SelecionarBancosPdfDialog } from "@/components/simulacao/selecionar-bancos-pdf-dialog";
 import { formatBRL, formatPercent } from "@/lib/simulacao/format";
-import { extrairDetalheBanco } from "@/lib/simulacao/detalhe-banco";
 import { rendaMinimaPelosBancos } from "@/lib/simulacao/renda";
+import {
+  AmortizacaoTag,
+  Campo,
+  GrupoDados,
+  MobileStat,
+  ResumoCelula,
+  estadoCivilLabel,
+  totalFinanciado,
+} from "@/components/simulacao/detalhe-page/ui";
+import { HistoricoTimeline } from "@/components/simulacao/detalhe-page/historico-timeline";
 
-/** Valor total financiado do banco (financiamento + despesas/tarifas financiadas). */
-function totalFinanciado(b: any): number | null {
-  const d = extrairDetalheBanco(b?.raw_response);
-  return d?.financiamentoTotal ?? d?.valorFinanciamento ?? b?.valor_financiamento_max ?? null;
-}
 
-function AmortizacaoTag({ sistema }: { sistema: "SAC" | "PRICE" }) {
-  return (
-    <span
-      className="inline-flex h-5 items-center rounded-[5px] border border-primary/25 bg-primary/[0.08] px-1.5 text-[9px] font-semibold uppercase leading-none tracking-wide text-primary"
-      title={`Tabela ${sistema}`}
-      aria-label={`Tabela ${sistema}`}
-    >
-      {sistema}
-    </span>
-  );
-}
 
 
 export const Route = createFileRoute("/_authenticated/operacional/simulacoes_/$id")({
