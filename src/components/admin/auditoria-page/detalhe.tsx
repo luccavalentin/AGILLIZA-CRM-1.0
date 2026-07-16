@@ -98,9 +98,9 @@ export function DetalheAuditoria({
                   {registro.entidade && (
                     <LinhaDetalhe
                       icon={Activity}
-                      rotulo="Entidade"
+                      rotulo="Tela / Entidade"
                       valor={
-                        registro.entidade +
+                        rotuloEntidade(registro.entidade) +
                         (registro.entidade_id ? ` · ${registro.entidade_id}` : "")
                       }
                     />
