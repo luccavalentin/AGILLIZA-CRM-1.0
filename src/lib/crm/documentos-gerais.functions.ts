@@ -206,18 +206,27 @@ export const explorarDocumentosGerais = createServerFn({ method: "GET" })
         analista_id: anaId,
         analista_nome: anaNome,
       };
-    });
+    // Amplia a lista de analistas para incluir TODO criador de cliente,
+    // mesmo que o perfil não esteja tipado como analista/role=analista.
+    // Regra do produto: "todo cliente cadastrado tem um analista" — então
+    // o criador é o analista da pasta e precisa aparecer no explorador.
+    for (const c of listaClientes) {
+      const anaId = (c as any).criador_id as string | null;
+      if (!anaId || analistasBaseMap.has(anaId)) continue;
+      const nome = nomesParceiros.get(anaId) ?? "—";
+      analistasBaseMap.set(anaId, nome);
+    }
+    const analistasBaseFinal = Array.from(analistasBaseMap, ([id, nome]) => ({ id, nome })).sort(
+      ordenarNome,
+    );
 
-    // Cada dropdown/aba lista TODOS os usuários cadastrados naquele papel
-    // (por `tipo_pessoa` ou `user_roles.role`), independentemente de haver
-    // clientes vinculados. Analistas ficam restritos ao cadastro — criadores
-    // que não são analistas de fato não aparecem aqui.
     return {
       clientes: clientesResp,
       imobiliarias: imobiliariasBase,
       corretores: corretoresBase,
       comerciais,
-      analistas: analistasBase,
+      analistas: analistasBaseFinal,
+
     };
   });
 
