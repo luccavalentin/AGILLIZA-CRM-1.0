@@ -1533,6 +1533,71 @@ export type Database = {
         }
         Relationships: []
       }
+      comissao_regras_usuario: {
+        Row: {
+          ativo: boolean
+          banco_nome: string | null
+          base_calculo: Database["public"]["Enums"]["comissao_base_calculo"]
+          correspondente_id: string
+          created_at: string
+          criador_id: string | null
+          gatilho: Database["public"]["Enums"]["comissao_gatilho"]
+          id: string
+          observacao: string | null
+          percentual: number
+          produto: string | null
+          tipo_vinculo: Database["public"]["Enums"]["comissao_tipo_vinculo"]
+          updated_at: string
+          usuario_id: string
+          vigencia_fim: string | null
+          vigencia_inicio: string | null
+        }
+        Insert: {
+          ativo?: boolean
+          banco_nome?: string | null
+          base_calculo?: Database["public"]["Enums"]["comissao_base_calculo"]
+          correspondente_id: string
+          created_at?: string
+          criador_id?: string | null
+          gatilho?: Database["public"]["Enums"]["comissao_gatilho"]
+          id?: string
+          observacao?: string | null
+          percentual: number
+          produto?: string | null
+          tipo_vinculo?: Database["public"]["Enums"]["comissao_tipo_vinculo"]
+          updated_at?: string
+          usuario_id: string
+          vigencia_fim?: string | null
+          vigencia_inicio?: string | null
+        }
+        Update: {
+          ativo?: boolean
+          banco_nome?: string | null
+          base_calculo?: Database["public"]["Enums"]["comissao_base_calculo"]
+          correspondente_id?: string
+          created_at?: string
+          criador_id?: string | null
+          gatilho?: Database["public"]["Enums"]["comissao_gatilho"]
+          id?: string
+          observacao?: string | null
+          percentual?: number
+          produto?: string | null
+          tipo_vinculo?: Database["public"]["Enums"]["comissao_tipo_vinculo"]
+          updated_at?: string
+          usuario_id?: string
+          vigencia_fim?: string | null
+          vigencia_inicio?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comissao_regras_usuario_usuario_id_fkey"
+            columns: ["usuario_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       comissoes: {
         Row: {
           banco_codigo: string | null
@@ -1610,6 +1675,101 @@ export type Database = {
             columns: ["regra_id"]
             isOneToOne: false
             referencedRelation: "comissao_regras"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      comissoes_usuario: {
+        Row: {
+          banco_nome: string | null
+          base_calculo: Database["public"]["Enums"]["comissao_base_calculo"]
+          correspondente_id: string
+          created_at: string
+          gatilho: Database["public"]["Enums"]["comissao_gatilho"]
+          id: string
+          numero_proposta: string | null
+          observacao: string | null
+          payable_id: string | null
+          percentual: number
+          produto: string | null
+          proposta_id: string
+          regra_id: string | null
+          status: Database["public"]["Enums"]["comissao_usuario_status"]
+          tipo_vinculo: Database["public"]["Enums"]["comissao_tipo_vinculo"]
+          updated_at: string
+          usuario_id: string
+          valor_base: number
+          valor_comissao: number
+        }
+        Insert: {
+          banco_nome?: string | null
+          base_calculo?: Database["public"]["Enums"]["comissao_base_calculo"]
+          correspondente_id: string
+          created_at?: string
+          gatilho?: Database["public"]["Enums"]["comissao_gatilho"]
+          id?: string
+          numero_proposta?: string | null
+          observacao?: string | null
+          payable_id?: string | null
+          percentual?: number
+          produto?: string | null
+          proposta_id: string
+          regra_id?: string | null
+          status?: Database["public"]["Enums"]["comissao_usuario_status"]
+          tipo_vinculo?: Database["public"]["Enums"]["comissao_tipo_vinculo"]
+          updated_at?: string
+          usuario_id: string
+          valor_base?: number
+          valor_comissao?: number
+        }
+        Update: {
+          banco_nome?: string | null
+          base_calculo?: Database["public"]["Enums"]["comissao_base_calculo"]
+          correspondente_id?: string
+          created_at?: string
+          gatilho?: Database["public"]["Enums"]["comissao_gatilho"]
+          id?: string
+          numero_proposta?: string | null
+          observacao?: string | null
+          payable_id?: string | null
+          percentual?: number
+          produto?: string | null
+          proposta_id?: string
+          regra_id?: string | null
+          status?: Database["public"]["Enums"]["comissao_usuario_status"]
+          tipo_vinculo?: Database["public"]["Enums"]["comissao_tipo_vinculo"]
+          updated_at?: string
+          usuario_id?: string
+          valor_base?: number
+          valor_comissao?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comissoes_usuario_payable_id_fkey"
+            columns: ["payable_id"]
+            isOneToOne: false
+            referencedRelation: "financial_payables"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comissoes_usuario_proposta_id_fkey"
+            columns: ["proposta_id"]
+            isOneToOne: false
+            referencedRelation: "propostas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comissoes_usuario_regra_id_fkey"
+            columns: ["regra_id"]
+            isOneToOne: false
+            referencedRelation: "comissao_regras_usuario"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comissoes_usuario_usuario_id_fkey"
+            columns: ["usuario_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -5500,6 +5660,10 @@ export type Database = {
         Args: { _prop_id: string }
         Returns: string
       }
+      calcular_comissoes_usuario_proposta: {
+        Args: { _prop_id: string }
+        Returns: number
+      }
       can_view_global_reports: { Args: { _user_id: string }; Returns: boolean }
       can_view_team_reports: { Args: { _user_id: string }; Returns: boolean }
       cliente_cadastro_esta_completo: {
@@ -5737,8 +5901,23 @@ export type Database = {
         | "divorciado"
         | "viuvo"
       cliente_origem: "direto" | "parceiro" | "indicacao" | "importacao"
+      comissao_base_calculo: "valor_contrato" | "percentual_repasse"
+      comissao_gatilho:
+        | "contrato_emitido"
+        | "credito_aprovado"
+        | "assinatura_contrato"
+        | "registro_imovel"
+        | "manual"
       comissao_regra_tipo: "percentual" | "fixo"
       comissao_status: "a_receber" | "recebida" | "paga_parceiro" | "encerrada"
+      comissao_tipo_vinculo:
+        | "corretor"
+        | "imobiliaria"
+        | "parceiro"
+        | "comercial_agilliza"
+        | "analista"
+        | "outro"
+      comissao_usuario_status: "a_pagar" | "paga" | "cancelada"
       demanda_status:
         | "aberta"
         | "em_andamento"
@@ -5971,8 +6150,25 @@ export const Constants = {
         "viuvo",
       ],
       cliente_origem: ["direto", "parceiro", "indicacao", "importacao"],
+      comissao_base_calculo: ["valor_contrato", "percentual_repasse"],
+      comissao_gatilho: [
+        "contrato_emitido",
+        "credito_aprovado",
+        "assinatura_contrato",
+        "registro_imovel",
+        "manual",
+      ],
       comissao_regra_tipo: ["percentual", "fixo"],
       comissao_status: ["a_receber", "recebida", "paga_parceiro", "encerrada"],
+      comissao_tipo_vinculo: [
+        "corretor",
+        "imobiliaria",
+        "parceiro",
+        "comercial_agilliza",
+        "analista",
+        "outro",
+      ],
+      comissao_usuario_status: ["a_pagar", "paga", "cancelada"],
       demanda_status: [
         "aberta",
         "em_andamento",
