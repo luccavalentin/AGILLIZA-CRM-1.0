@@ -670,17 +670,6 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
     await executarEnvio();
   }
 
-  const envioCtx = {
-    get f() { return f; },
-    get idOperacao() { return idOperacao; },
-    modoProposta,
-    router,
-    setErros,
-    setEnviando,
-    setConcluidos,
-    setSimulacaoResultadoId,
-    setSimulacaoResultadoIdPrice,
-  };
 
   async function enviarAmbos() {
     await executarEnvioAmbos({
