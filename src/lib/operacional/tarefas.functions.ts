@@ -52,9 +52,11 @@ export const listarTarefas = createServerFn({ method: "GET" })
         escopo: z.enum(["todas", "minhas", "equipe"]).default("todas"),
         status: z.string().optional(),
         q: z.string().optional(),
+        cliente_id: z.string().uuid().optional(),
       })
       .parse(data),
   )
+
   .handler(async ({ context, data }): Promise<TarefaItem[]> => {
     const { supabase, userId } = context;
     let query = supabase
