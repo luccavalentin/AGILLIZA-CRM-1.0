@@ -871,8 +871,8 @@ export async function baixarSimulacoesDetalhadasAgrupadasZipPDF(
   const primeira = gruposValidos[0]?.simulacao;
   const ref = primeira?.numero_simulacao ? ` ${primeira.numero_simulacao}` : "";
   const outBytes = await merged.save();
-  // ArrayBuffer copy para evitar tipos incompatíveis em alguns runtimes.
-  const ab = outBytes.buffer.slice(outBytes.byteOffset, outBytes.byteOffset + outBytes.byteLength);
+  const ab = new ArrayBuffer(outBytes.byteLength);
+  new Uint8Array(ab).set(outBytes);
   const blob = new Blob([ab], { type: "application/pdf" });
   baixarBlob(blob, `${sanitizarNomeArquivo(`Simulação${ref} — detalhada`)}.pdf`);
   return total;
