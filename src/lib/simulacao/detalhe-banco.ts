@@ -63,13 +63,18 @@ export function normalizarSistemaAmortizacao(
   apiValor: string | null | undefined,
   requisitado?: string | null,
 ): string {
+  // Prioridade: o sistema requisitado na simulação. O retorno da API é
+  // usado apenas quando não há requisitado. Motivo: Santander (e alguns
+  // outros) devolvem descrições padrão contendo "SAC" mesmo em simulações
+  // executadas em PRICE.
+  const req = (requisitado ?? "").toUpperCase();
+  if (req === "P" || req.includes("PRICE")) return "PRICE";
+  if (req === "S" || req.includes("SAC")) return "SAC";
   const up = (apiValor ?? "").toUpperCase();
   if (up.includes("PRICE")) return "PRICE";
   if (up.includes("SAC")) return "SAC";
   if (up === "S") return "SAC";
   if (up === "P") return "PRICE";
-  if (requisitado === "P") return "PRICE";
-  if (requisitado === "S") return "SAC";
   return "—";
 }
 

@@ -232,12 +232,12 @@ function produtoLabel(p: string | null | undefined): string {
 }
 
 function sistemaDoBanco(b: any): string {
-  const s = String(
-    b?._sistema ??
-      b?.sistema_amortizacao_banco ??
-      b?.sistema_amortizacao ??
-      "",
-  ).toUpperCase();
+  // Prioriza o sistema requisitado na simulação: alguns bancos (ex.: Santander)
+  // devolvem descrição "SAC" no retorno mesmo quando a simulação foi PRICE.
+  const req = String(b?._sistema ?? b?.sistema_amortizacao ?? "").toUpperCase();
+  if (req.includes("PRICE") || req === "P") return "PRICE";
+  if (req.includes("SAC") || req === "S") return "SAC";
+  const s = String(b?.sistema_amortizacao_banco ?? "").toUpperCase();
   if (s.includes("PRICE") || s === "P") return "PRICE";
   if (s.includes("SAC") || s === "S") return "SAC";
   return "—";
