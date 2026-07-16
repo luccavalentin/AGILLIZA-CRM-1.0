@@ -217,7 +217,7 @@ export function CentralChatPage() {
             <div className="flex h-full min-h-0 flex-col overflow-hidden">
               <div className="mb-2 flex items-center gap-3 rounded-lg border bg-card px-3 py-2">
                 <Avatar className="size-10 border border-border/60">
-                  <AvatarFallback className="bg-sky-600 text-xs font-semibold text-white">
+                  <AvatarFallback className="bg-primary text-xs font-semibold text-primary-foreground">
                     {iniciais(selecionado.nome)}
                   </AvatarFallback>
                 </Avatar>
@@ -250,7 +250,7 @@ export function CentralChatPage() {
               <div className="mb-2 flex items-center gap-3 rounded-lg border bg-card px-3 py-2">
                 <Avatar className="size-10 border border-border/60">
                   {selecionado.foto && <AvatarImage src={selecionado.foto} alt={selecionado.nome ?? ""} />}
-                  <AvatarFallback className="bg-emerald-600 text-xs font-semibold text-white">
+                  <AvatarFallback className="bg-success text-xs font-semibold text-success-foreground">
                     {iniciais(selecionado.nome)}
                   </AvatarFallback>
                 </Avatar>
