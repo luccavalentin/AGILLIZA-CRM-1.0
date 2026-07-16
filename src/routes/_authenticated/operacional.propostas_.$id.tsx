@@ -104,6 +104,11 @@ import {
 } from "@/components/proposta/participante-form";
 import { ClienteSecao } from "@/components/proposta/cliente-secoes";
 import { AbaEnviarBanco } from "@/components/proposta/aba-enviar-banco";
+import { TabIq } from "@/components/proposta/tabs/tab-iq";
+import { TabImovel } from "@/components/proposta/tabs/tab-imovel";
+import { TabDocumentos } from "@/components/proposta/tabs/tab-documentos";
+import { TabAtividades } from "@/components/proposta/tabs/tab-atividades";
+import { TabFup } from "@/components/proposta/tabs/tab-fup";
 
 type SituacaoBanco = (typeof SITUACOES_BANCO)[number];
 
