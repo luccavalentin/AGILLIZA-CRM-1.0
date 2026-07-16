@@ -3,21 +3,10 @@ import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
-  Search,
   Calculator,
-  MoreHorizontal,
-  Eye,
-  Copy,
-  Trash2,
-  Download,
-  Pencil,
-  Send,
   ListChecks,
   Building2,
   Clock,
-  Wallet,
-  User as UserIcon,
-  Undo2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { assertModuloPermitido } from "@/lib/route-guards";
@@ -29,17 +18,7 @@ import {
 } from "@/lib/simulacao/simulacoes.functions";
 import { criarProposta } from "@/lib/propostas/propostas.functions";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { SimulacaoStatusBadge } from "@/components/simulacao/status-badge";
+
 import { SelecionarBancosPdfDialog } from "@/components/simulacao/selecionar-bancos-pdf-dialog";
 import { formatBRL } from "@/lib/simulacao/format";
 import { listarColegas } from "@/lib/operacional/shared.functions";
