@@ -6,14 +6,15 @@
 
 export interface HandlersLinha {
   onVer: (id: string) => void;
-  onEditar: (id: string) => void;
-  onBaixarComparativo: (id: string) => void;
-  onBaixarDetalhada: (id: string) => void;
+  onEditar: (id: string) => void | Promise<void>;
+  onBaixarComparativo: (id: string) => void | Promise<void>;
+  onBaixarDetalhada: (id: string) => void | Promise<void>;
   onDuplicar: (id: string) => void;
-  onEnviarProposta: (id: string, numero: string) => void;
-  onExcluir: (id: string) => void;
-  onRestaurar: (id: string) => void;
+  onEnviarProposta: (id: string, numero: string) => void | Promise<void>;
+  onExcluir: (id: string) => void | Promise<void>;
+  onRestaurar: (id: string) => void | Promise<void>;
 }
+
 
 export function formatDataHoraBR(v?: string | null): string {
   if (!v) return "—";
