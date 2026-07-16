@@ -8,6 +8,7 @@ import {
   fecharChatFlutuante,
   useFloatingChat,
 } from "@/components/shared/floating-chat-store";
+import { ConversaMenuAcoesLive } from "@/components/shared/conversa-menu-acoes";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
