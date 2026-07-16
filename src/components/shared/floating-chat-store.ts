@@ -15,6 +15,8 @@ export type FloatingChatState =
         numero?: string | null;
         titulo?: string | null;
         statusLabel?: string | null;
+        interlocutorNome?: string | null;
+        interlocutorFoto?: string | null;
       };
       minimized?: boolean;
     }

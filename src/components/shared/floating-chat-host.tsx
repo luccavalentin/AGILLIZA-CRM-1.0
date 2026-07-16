@@ -18,7 +18,7 @@ export function FloatingChatHost() {
   if (flutuante.kind === "demanda") {
     return (
       <FloatingWindow
-        title={`Demanda · ${flutuante.info?.numero ?? "Conversa"}`}
+        title={`Demanda · ${flutuante.info?.interlocutorNome ?? flutuante.info?.numero ?? "Usuário"}`}
         onClose={fecharChatFlutuante}
         startMinimized={flutuante.minimized}
       >

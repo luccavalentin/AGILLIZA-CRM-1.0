@@ -79,7 +79,14 @@ const RÓTULOS: Record<ThreadKind, { label: string; icon: typeof Users }> = {
 type SelecionadoState =
   | { kind: "dm"; conversaId: string; nome: string | null }
   | { kind: "cliente"; clienteId: string; nome: string | null; foto: string | null }
-  | { kind: "demanda"; demandaId: string; numero: string | null; titulo: string | null }
+  | {
+      kind: "demanda";
+      demandaId: string;
+      numero: string | null;
+      titulo: string | null;
+      interlocutorNome: string | null;
+      interlocutorFoto: string | null;
+    }
   | null;
 
 export function CentralChatPage() {
@@ -103,6 +110,7 @@ export function CentralChatPage() {
           ? true
           : th.titulo.toLowerCase().includes(t) ||
             (th.subtitulo?.toLowerCase().includes(t) ?? false) ||
+            (th.demanda_titulo?.toLowerCase().includes(t) ?? false) ||
             (th.ultima_mensagem?.toLowerCase().includes(t) ?? false),
       );
   }, [threads, aba, termo]);
@@ -209,7 +217,7 @@ export function CentralChatPage() {
             <div className="flex h-full min-h-0 flex-col overflow-hidden">
               <div className="mb-2 flex items-center gap-3 rounded-lg border bg-card px-3 py-2">
                 <Avatar className="size-10 border border-border/60">
-                  <AvatarFallback className="bg-sky-600 text-xs font-semibold text-white">
+                  <AvatarFallback className="bg-primary text-xs font-semibold text-primary-foreground">
                     {iniciais(selecionado.nome)}
                   </AvatarFallback>
                 </Avatar>
@@ -242,7 +250,7 @@ export function CentralChatPage() {
               <div className="mb-2 flex items-center gap-3 rounded-lg border bg-card px-3 py-2">
                 <Avatar className="size-10 border border-border/60">
                   {selecionado.foto && <AvatarImage src={selecionado.foto} alt={selecionado.nome ?? ""} />}
-                  <AvatarFallback className="bg-emerald-600 text-xs font-semibold text-white">
+                  <AvatarFallback className="bg-success text-xs font-semibold text-success-foreground">
                     {iniciais(selecionado.nome)}
                   </AvatarFallback>
                 </Avatar>
@@ -277,15 +285,24 @@ export function CentralChatPage() {
             <div className="flex h-full min-h-0 flex-col overflow-hidden">
               <div className="mb-2 flex items-center gap-3 rounded-lg border bg-card px-3 py-2">
                 <Avatar className="size-10 border border-border/60">
-                  <AvatarFallback className="bg-amber-600 text-xs font-semibold text-white">
-                    {iniciais(selecionado.numero ?? "DE")}
+                  {selecionado.interlocutorFoto && (
+                    <AvatarImage
+                      src={selecionado.interlocutorFoto}
+                      alt={selecionado.interlocutorNome ?? "Usuário"}
+                    />
+                  )}
+                  <AvatarFallback className="bg-warning text-xs font-semibold text-warning-foreground">
+                    {iniciais(selecionado.interlocutorNome ?? selecionado.numero ?? "DE")}
                   </AvatarFallback>
                 </Avatar>
                 <div className="min-w-0 flex-1">
-                  <p className="text-[10px] font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400">
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-warning">
                     Demanda · {selecionado.numero ?? "—"}
                   </p>
                   <p className="truncate text-sm font-semibold text-foreground">
+                    Conversando com {selecionado.interlocutorNome ?? "usuário da demanda"}
+                  </p>
+                  <p className="truncate text-xs text-muted-foreground">
                     {selecionado.titulo ?? "Chat da demanda"}
                   </p>
                 </div>
@@ -297,6 +314,8 @@ export function CentralChatPage() {
                     abrirDemandaChatFlutuante(selecionado.demandaId, {
                       numero: selecionado.numero,
                       titulo: selecionado.titulo,
+                      interlocutorNome: selecionado.interlocutorNome,
+                      interlocutorFoto: selecionado.interlocutorFoto,
                     })
                   }
                 >
@@ -312,7 +331,12 @@ export function CentralChatPage() {
               <div className="min-h-0 flex-1">
                 <DemandaChatConversa
                   demandaId={selecionado.demandaId}
-                  info={{ numero: selecionado.numero, titulo: selecionado.titulo }}
+                  info={{
+                    numero: selecionado.numero,
+                    titulo: selecionado.titulo,
+                    interlocutorNome: selecionado.interlocutorNome,
+                    interlocutorFoto: selecionado.interlocutorFoto,
+                  }}
                 />
               </div>
             </div>
@@ -336,7 +360,14 @@ function threadParaSelecionado(t: ThreadCentral): SelecionadoState {
   if (t.kind === "dm") return { kind: "dm", conversaId: t.id, nome: t.titulo };
   if (t.kind === "cliente")
     return { kind: "cliente", clienteId: t.id, nome: t.titulo, foto: t.avatar_url ?? null };
-  return { kind: "demanda", demandaId: t.id, numero: t.subtitulo, titulo: t.titulo };
+  return {
+    kind: "demanda",
+    demandaId: t.id,
+    numero: t.subtitulo,
+    titulo: t.demanda_titulo ?? null,
+    interlocutorNome: t.interlocutor_nome ?? t.titulo ?? null,
+    interlocutorFoto: t.interlocutor_foto ?? t.avatar_url ?? null,
+  };
 }
 
 function ThreadItem({
@@ -351,25 +382,21 @@ function ThreadItem({
   const rot = RÓTULOS[thread.kind];
   const Icon = rot.icon;
 
-  // Nome de exibição principal — a "pessoa" com quem se conversa.
-  //  - DM: nome do colega (thread.titulo)
-  //  - Cliente: nome do cliente (thread.titulo)
-  //  - Demanda: número da demanda (identificação clara, não o título)
+  // Nome de exibição principal — a pessoa com quem se conversa.
   const nomePrincipal =
     thread.kind === "demanda"
-      ? thread.subtitulo?.trim() || "Demanda"
+      ? thread.interlocutor_nome?.trim() || thread.titulo || "Usuário da demanda"
       : thread.titulo;
 
-  // Linha secundária de contexto (aparece antes da última mensagem):
-  //  - Demanda: mostra o título da demanda
-  //  - Cliente/DM: sem contexto extra
   const contexto =
-    thread.kind === "demanda" ? thread.titulo?.trim() || null : null;
+    thread.kind === "demanda"
+      ? [thread.subtitulo?.trim(), thread.demanda_titulo?.trim()].filter(Boolean).join(" · ") || null
+      : null;
 
   const badgeClasses: Record<ThreadKind, string> = {
-    dm: "bg-sky-600 text-white dark:bg-sky-500",
-    cliente: "bg-emerald-600 text-white dark:bg-emerald-500",
-    demanda: "bg-amber-600 text-white dark:bg-amber-500",
+    dm: "bg-primary text-primary-foreground",
+    cliente: "bg-success text-success-foreground",
+    demanda: "bg-warning text-warning-foreground",
   };
 
   return (
@@ -402,7 +429,9 @@ function ThreadItem({
             {tempoRelativo(thread.ultima_em)}
           </span>
         </div>
-        <p className="truncate text-sm font-semibold text-foreground">{nomePrincipal}</p>
+        <p className="truncate text-sm font-semibold text-foreground">
+          {thread.kind === "demanda" ? `Conversando com ${nomePrincipal}` : nomePrincipal}
+        </p>
         {contexto && (
           <p className="truncate text-[11px] text-muted-foreground/90">{contexto}</p>
         )}
