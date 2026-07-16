@@ -889,31 +889,42 @@ export const obterKpisFinanceiros = createServerFn({ method: "GET" })
 
     const abertos = ["aberta", "parcial"] as any;
 
+    // Limite alto (50k) para agregações; sem `.limit()`, o Supabase silencia em 1000 linhas
+    // e sub-estima os KPIs. Idealmente migrar para sum() no banco quando o volume crescer.
+    const CAP = 50000;
     const [recAll, payAll, recRealizado, payRealizado, inadim] = await Promise.all([
       supabase
         .from("financial_receivables")
         .select("valor, valor_pago, vencimento, banco_nome, status")
-        .in("status", abertos),
+        .in("status", abertos)
+        .limit(CAP),
       supabase
         .from("financial_payables")
         .select("valor, valor_pago, vencimento, status, categoria:financial_categories(nome)")
-        .in("status", abertos),
+        .in("status", abertos)
+        .limit(CAP),
       supabase
         .from("financial_receivables")
         .select("valor_pago, data_pagamento, banco_nome")
         .in("status", ["paga", "parcial"] as any)
-        .gte("data_pagamento", dozeStr),
+        .gte("data_pagamento", dozeStr)
+        .limit(CAP),
       supabase
         .from("financial_payables")
         .select("valor_pago, data_pagamento, categoria:financial_categories(nome)")
         .in("status", ["paga", "parcial"] as any)
-        .gte("data_pagamento", dozeStr),
+        .gte("data_pagamento", dozeStr)
+        .limit(CAP),
       supabase
         .from("financial_receivables")
         .select("valor, valor_pago")
         .in("status", abertos)
-        .lt("vencimento", inadimStr),
+        .lt("vencimento", inadimStr)
+        .limit(CAP),
     ]);
+    for (const r of [recAll, payAll, recRealizado, payRealizado, inadim]) {
+      if (r.error) throw new Error(`Falha ao carregar indicadores financeiros: ${r.error.message}`);
+    }
 
     const saldoAberto = (r: any) => Number(r.valor) - Number(r.valor_pago);
 
