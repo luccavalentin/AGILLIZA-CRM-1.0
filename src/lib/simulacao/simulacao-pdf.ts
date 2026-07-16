@@ -144,16 +144,34 @@ function drawTituloExtrato(
 /** Caixa formal com os dados do cliente em destaque. */
 function drawDadosCliente(doc: jsPDF, pageW: number, s: any, y: number): number {
   const w = pageW - MARGIN * 2;
-  const boxH = 44;
+  const boxH = 64;
+
+  // Faixa de rótulo "DADOS DO CLIENTE"
+  doc.setFillColor(P.destaque);
+  doc.roundedRect(MARGIN, y, w, 14, 4, 4, "F");
+  // Máscara para cantos inferiores retos
+  doc.setFillColor(P.destaque);
+  doc.rect(MARGIN, y + 7, w, 7, "F");
+  doc.setTextColor(P.headText ?? "#FFFFFF");
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8);
+  doc.text("DADOS DO CLIENTE", MARGIN + 10, y + 10);
+
+  // Corpo da caixa
+  const bodyY = y + 14;
+  const bodyH = boxH - 14;
   doc.setFillColor(P.card);
   doc.setDrawColor(P.borda);
-  doc.setLineWidth(0.5);
-  doc.roundedRect(MARGIN, y, w, boxH, 4, 4, "FD");
+  doc.setLineWidth(0.6);
+  doc.roundedRect(MARGIN, bodyY, w, bodyH, 4, 4, "FD");
+  // Reforço superior reto para casar com a faixa
+  doc.rect(MARGIN, bodyY, w, 2, "F");
+  // Barra lateral coral em destaque
   doc.setFillColor(P.coral);
-  doc.rect(MARGIN, y + 8, 3, boxH - 16, "F");
+  doc.rect(MARGIN, bodyY + 6, 4, bodyH - 12, "F");
 
-  const colX = [MARGIN + 14, MARGIN + w * 0.5, MARGIN + w * 0.75];
-  const rotulos = ["CLIENTE", "DATA DE NASCIMENTO", "CPF / CNPJ"];
+  const colX = [MARGIN + 16, MARGIN + w * 0.5, MARGIN + w * 0.75];
+  const rotulos = ["NOME", "DATA DE NASCIMENTO", "CPF / CNPJ"];
   const valores = [
     (s.nome_cliente ?? "—").toString().toUpperCase(),
     dataTxt(s.data_nascimento),
@@ -163,14 +181,17 @@ function drawDadosCliente(doc: jsPDF, pageW: number, s: any, y: number): number 
     doc.setTextColor(P.cinza);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(6.5);
-    doc.text(r, colX[i], y + 16);
+    doc.text(r, colX[i], bodyY + 16);
     doc.setTextColor(P.destaque);
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(i === 0 ? 11 : 10);
-    doc.text(String(valores[i]), colX[i], y + 32, { maxWidth: (i === 0 ? w * 0.5 : w * 0.25) - 16 });
+    doc.setFontSize(i === 0 ? 13 : 11);
+    doc.text(String(valores[i]), colX[i], bodyY + 34, {
+      maxWidth: (i === 0 ? w * 0.5 : w * 0.25) - 20,
+    });
   });
-  return y + boxH + 12;
+  return y + boxH + 14;
 }
+
 
 /** Formata em BRL, mas devolve "—" quando o valor não veio da API (evita inventar R$ 0,00). */
 function brlOuTraco(v: number | null | undefined): string {
