@@ -110,8 +110,15 @@ import { TabDocumentos } from "@/components/proposta/tabs/tab-documentos";
 import { TabAtividades } from "@/components/proposta/tabs/tab-atividades";
 import { TabFup } from "@/components/proposta/tabs/tab-fup";
 import { TabEnvolvidos } from "@/components/proposta/tabs/tab-envolvidos";
+import { TabResumo } from "@/components/proposta/tabs/tab-resumo";
+import { AcoesTopo } from "@/components/proposta/acoes-topo";
 import { DetalhamentoBancoDialog } from "@/components/proposta/dialogs/detalhamento-banco-dialog";
 import { EnvioResultadoDialog } from "@/components/proposta/dialogs/envio-resultado-dialog";
+import {
+  SITUACAO_BANCO_LABEL,
+  SITUACAO_BANCO_TONE,
+  type SituacaoBanco,
+} from "@/components/proposta/situacao-banco-labels";
 
 type SituacaoBanco = (typeof SITUACOES_BANCO)[number];
 
@@ -528,7 +535,7 @@ function Kpi({ label, valor }: { label: string; valor: React.ReactNode }) {
   );
 }
 
-function MetricaBanco_UNUSED() { return null; }
+
 
 /* ===== Detalhamento da situação de crédito por banco ===== */
 
