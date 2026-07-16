@@ -42,33 +42,7 @@ import {
 import { SimulacaoStatusBadge } from "@/components/simulacao/status-badge";
 import { BancosSimulados } from "@/components/simulacao/bancos-simulados";
 import { SelecionarBancosPdfDialog } from "@/components/simulacao/selecionar-bancos-pdf-dialog";
-import { BancoLogo } from "@/components/bancos/banco-logo";
-import { corDoBanco } from "@/lib/bancos/cores";
-import { cn } from "@/lib/utils";
-import { Checkbox } from "@/components/ui/checkbox";
-import { ConfirmDelete } from "@/components/shared/confirm-delete";
 import { formatBRL } from "@/lib/simulacao/format";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-} from "@/components/ui/dropdown-menu";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { listarColegas } from "@/lib/operacional/shared.functions";
 import { UsuarioCombobox } from "@/components/operacional/usuario-combobox";
 import {
@@ -77,6 +51,12 @@ import {
   ProdutoBadge,
   statusLabel,
 } from "@/components/simulacao/lista-detalhe";
+import {
+  EnviarPropostaDialog,
+  type EnvioEstado,
+  type PropostaCriada,
+} from "@/components/simulacao/enviar-proposta-dialog";
+import { KpiDetalheDialog, type KpiItem } from "@/components/simulacao/kpi-detalhe-dialog";
 
 /** Primeiro e último dia do mês atual como intervalo ISO (filtro padrão). */
 function intervaloMesAtual(): { inicio: string; fim: string } {
