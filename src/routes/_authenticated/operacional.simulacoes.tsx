@@ -464,342 +464,46 @@ function Pagina() {
 
 
       {/* Barra de filtros */}
-      <div className="flex flex-col gap-3 rounded-xl border border-border/60 bg-card p-3 lg:flex-row lg:items-center lg:justify-between">
-        <Tabs value={escopo} onValueChange={(v) => setEscopo(v as "todas" | "minhas")}>
-          <TabsList className="h-9 w-full lg:w-auto">
-            <TabsTrigger value="todas" className="flex-1 lg:flex-none">Gerais</TabsTrigger>
-            <TabsTrigger value="minhas" className="flex-1 lg:flex-none">Minhas</TabsTrigger>
-          </TabsList>
-        </Tabs>
-        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-          <form
-            className="flex items-center gap-2"
-            onSubmit={(e) => {
-              e.preventDefault();
-              setBusca(q);
-            }}
-          >
-            <div className="relative flex-1 sm:flex-none">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                className="h-9 w-full pl-9 sm:w-60"
-                placeholder="Número, cliente ou documento"
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-              />
-            </div>
-            <Button type="submit" variant="secondary" size="sm" className="h-9 shrink-0">
-              Buscar
-            </Button>
-          </form>
-          {escopo === "todas" && (
-            <UsuarioCombobox
-              value={responsavel}
-              onValueChange={setResponsavel}
-              usuarios={colegas ?? []}
-              className="h-9 w-full sm:w-56"
-            />
-          )}
-          <div className="flex items-center gap-2">
-            <Input
-              type="date"
-              aria-label="De"
-              value={desde}
-              onChange={(e) => setDesde(e.target.value)}
-              className="h-9 w-full sm:w-36"
-            />
-            <span className="text-xs text-muted-foreground">até</span>
-            <Input
-              type="date"
-              aria-label="Até"
-              value={ate}
-              onChange={(e) => setAte(e.target.value)}
-              className="h-9 w-full sm:w-36"
-            />
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-9 shrink-0"
-              onClick={() => {
-                setDesde(padrao.inicio);
-                setAte(padrao.fim);
-                setResponsavel("todos");
-              }}
-            >
-              Limpar
-            </Button>
-            <Button
-              variant={verExcluidas ? "default" : "outline"}
-              size="sm"
-              className="h-9 shrink-0"
-              onClick={() => setVerExcluidas((v) => !v)}
-              title="Ver simulações excluídas"
-            >
-              <Trash2 className="mr-1.5 h-3.5 w-3.5" />
-              {verExcluidas ? "Ver ativas" : "Excluídas"}
-            </Button>
-          </div>
-        </div>
-      </div>
-
-
-
-
-      {/* Ações reutilizáveis por item */}
-      {(() => null)()}
+      <FiltrosLista
+        escopo={escopo}
+        setEscopo={setEscopo}
+        q={q}
+        setQ={setQ}
+        onBuscar={() => setBusca(q)}
+        responsavel={responsavel}
+        setResponsavel={setResponsavel}
+        colegas={colegas}
+        desde={desde}
+        setDesde={setDesde}
+        ate={ate}
+        setAte={setAte}
+        onLimpar={() => {
+          setDesde(padrao.inicio);
+          setAte(padrao.fim);
+          setResponsavel("todos");
+        }}
+        verExcluidas={verExcluidas}
+        toggleExcluidas={() => setVerExcluidas((v) => !v)}
+      />
 
       {/* Tabela (telas médias e maiores) */}
-      <div className="hidden overflow-x-auto rounded-lg border border-border/60 bg-card md:block">
-        <Table>
-          <TableHeader>
-            <TableRow className="border-border/60 bg-muted/50 hover:bg-muted/50">
-              <TableHead className="h-10 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Número</TableHead>
-              <TableHead className="h-10 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Cliente</TableHead>
-              <TableHead className="h-10 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Produto</TableHead>
-              <TableHead className="h-10 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Bancos simulados</TableHead>
-              <TableHead className="h-10 text-right text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Valor imóvel</TableHead>
-              <TableHead className="h-10 text-right text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Prazo</TableHead>
-              <TableHead className="h-10 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Status</TableHead>
-              <TableHead className="h-10 w-12 text-right text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Ações</TableHead>
-            </TableRow>
-          </TableHeader>
-
-          <TableBody>
-            {isLoading &&
-              Array.from({ length: 6 }).map((_, i) => (
-                <TableRow key={`sk-${i}`} className="border-border/50">
-                  {Array.from({ length: 8 }).map((__, j) => (
-                    <TableCell key={j} className="py-3.5">
-                      <div
-                        className="h-4 animate-pulse rounded bg-muted"
-                        style={{ width: `${[60, 80, 55, 70, 65, 45, 55, 30][j]}%` }}
-                      />
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))}
-            {!isLoading && (data?.itens.length ?? 0) === 0 && (
-              <TableRow>
-                <TableCell colSpan={8}>
-                  <div className="flex flex-col items-center gap-3 py-12 text-center">
-                    <Calculator className="h-8 w-8 text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground">Nenhuma simulação encontrada.</p>
-                    <Button asChild size="sm">
-                      <Link to="/operacional/simulacoes/completa">Criar primeira simulação</Link>
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            )}
-            {data?.itens.map((s) => (
-              <TableRow
-                key={s.id}
-                className="group cursor-pointer border-border/50 transition-colors odd:bg-muted/[0.18] hover:bg-primary/[0.06]"
-                onClick={() => (verExcluidas ? undefined : handleEditar(s.id))}
-              >
-                <TableCell className="py-3.5">
-                  <span className="inline-flex items-center rounded-md bg-primary/5 px-2 py-0.5 font-mono text-[13px] font-semibold text-primary ring-1 ring-inset ring-primary/10 transition-colors group-hover:bg-primary/10">
-                    {s.numero_simulacao}
-                  </span>
-                </TableCell>
-
-                <TableCell className="py-3.5 font-medium text-foreground">
-                  {s.nome_cliente ?? "—"}
-                  {escopo === "todas" && s.nome_responsavel && (
-                    <span className="mt-0.5 flex items-center gap-1 text-[11px] font-normal text-muted-foreground">
-                      <UserIcon className="h-3 w-3 shrink-0" />
-                      <span className="truncate">{s.nome_responsavel}</span>
-                    </span>
-                  )}
-                  {verExcluidas && (
-                    <span className="mt-1 block text-[11px] font-normal text-destructive">
-                      Excluída por {s.nome_excluidor ?? "—"} · {formatDataHora(s.deleted_at)}
-                      {s.deleted_motivo ? ` · ${s.deleted_motivo}` : ""}
-                    </span>
-                  )}
-                </TableCell>
-                <TableCell className="py-3.5">
-                  <ProdutoBadge produto={s.produto} />
-                </TableCell>
-                <TableCell className="py-3.5">
-                  <BancosSimulados bancos={s.bancos} />
-                </TableCell>
-                <TableCell className="py-3.5 text-right font-semibold tabular-nums text-foreground">
-                  {formatBRL(s.valor_imovel)}
-                </TableCell>
-                <TableCell className="py-3.5 text-right tabular-nums text-muted-foreground">
-                  {s.prazo ? `${s.prazo} meses` : "—"}
-                </TableCell>
-                <TableCell>
-                  <SimulacaoStatusBadge status={s.status} />
-                </TableCell>
-                <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                  {verExcluidas ? (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-8 rounded-lg"
-                      onClick={() => handleRestaurar(s.id)}
-                    >
-                      <Undo2 className="mr-1 h-3.5 w-3.5" /> Restaurar
-                    </Button>
-                  ) : (
-                    <div className="flex items-center justify-end gap-1">
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-8 w-8 text-muted-foreground hover:text-primary"
-                        title="Ver detalhes"
-                        aria-label="Ver detalhes da simulação"
-                        onClick={() =>
-                          router.navigate({
-                            to: "/operacional/simulacoes/$id",
-                            params: { id: s.id },
-                          })
-                        }
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <AcoesSimulacao
-                        onVisualizar={() =>
-                          router.navigate({
-                            to: "/operacional/simulacoes/$id",
-                            params: { id: s.id },
-                          })
-                        }
-                        onEditar={() => handleEditar(s.id)}
-                        onBaixarComparativo={() => handleBaixarComparativo(s.id)}
-                        onBaixarDetalhada={() => handleBaixarDetalhada(s.id)}
-                        onDuplicar={() => handleDuplicar(s.id)}
-                        onEnviarProposta={() => handleEnviarProposta(s.id, s.numero_simulacao)}
-                        onExcluir={() => handleExcluir(s.id)}
-                        numero={s.numero_simulacao}
-                      />
-                    </div>
-                  )}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+      <TabelaSimulacoes
+        itens={data?.itens ?? []}
+        isLoading={isLoading}
+        escopo={escopo}
+        verExcluidas={verExcluidas}
+        handlers={handlersLinha}
+      />
 
       {/* Cartões (telas pequenas) */}
-      <div className="space-y-3 md:hidden">
-        {isLoading &&
-          Array.from({ length: 4 }).map((_, i) => (
-            <div key={`skm-${i}`} className="rounded-xl border border-border/60 bg-card p-4 shadow-sm">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0 flex-1 space-y-2">
-                  <div className="h-4 w-24 animate-pulse rounded bg-muted" />
-                  <div className="h-3 w-40 animate-pulse rounded bg-muted/70" />
-                </div>
-                <div className="h-6 w-20 animate-pulse rounded-full bg-muted" />
-              </div>
-              <div className="mt-4 h-14 animate-pulse rounded-lg bg-muted/50" />
-            </div>
-          ))}
-        {!isLoading && (data?.itens.length ?? 0) === 0 && (
-          <div className="flex flex-col items-center gap-3 rounded-lg border border-border py-12 text-center">
-            <Calculator className="h-8 w-8 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">Nenhuma simulação encontrada.</p>
-            <Button asChild size="sm">
-              <Link to="/operacional/simulacoes/completa">Criar primeira simulação</Link>
-            </Button>
-          </div>
-        )}
-        {data?.itens.map((s) => (
-          <div
-            key={s.id}
-            className="cursor-pointer rounded-xl border border-border/60 bg-card p-4 shadow-sm transition-all active:scale-[0.99]"
-            onClick={() => (verExcluidas ? undefined : handleEditar(s.id))}
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="font-mono font-semibold text-primary">{s.numero_simulacao}</p>
-                <p className="truncate text-sm font-medium text-foreground">{s.nome_cliente ?? "—"}</p>
-                {escopo === "todas" && s.nome_responsavel && (
-                  <p className="mt-0.5 flex items-center gap-1 text-[11px] text-muted-foreground">
-                    <UserIcon className="h-3 w-3 shrink-0" />
-                    <span className="truncate">{s.nome_responsavel}</span>
-                  </p>
-                )}
-                {verExcluidas && (
-                  <p className="mt-1 text-[11px] font-medium text-destructive">
-                    Excluída por {s.nome_excluidor ?? "—"} · {formatDataHora(s.deleted_at)}
-                    {s.deleted_motivo ? ` · ${s.deleted_motivo}` : ""}
-                  </p>
-                )}
-              </div>
-              <div className="flex shrink-0 items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                <SimulacaoStatusBadge status={s.status} />
-                {verExcluidas ? (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-8 rounded-lg"
-                    onClick={() => handleRestaurar(s.id)}
-                  >
-                    <Undo2 className="mr-1 h-3.5 w-3.5" /> Restaurar
-                  </Button>
-                ) : (
-                  <>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-8 w-8 text-muted-foreground hover:text-primary"
-                      title="Ver detalhes"
-                      aria-label="Ver detalhes da simulação"
-                      onClick={() =>
-                        router.navigate({
-                          to: "/operacional/simulacoes/$id",
-                          params: { id: s.id },
-                        })
-                      }
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    <AcoesSimulacao
-                      onVisualizar={() =>
-                        router.navigate({
-                          to: "/operacional/simulacoes/$id",
-                          params: { id: s.id },
-                        })
-                      }
-                      onEditar={() => handleEditar(s.id)}
-                      onBaixarComparativo={() => handleBaixarComparativo(s.id)}
-                      onBaixarDetalhada={() => handleBaixarDetalhada(s.id)}
-                      onDuplicar={() => handleDuplicar(s.id)}
-                      onEnviarProposta={() => handleEnviarProposta(s.id, s.numero_simulacao)}
-                      onExcluir={() => handleExcluir(s.id)}
-                      numero={s.numero_simulacao}
-                    />
-                  </>
-                )}
-              </div>
-            </div>
+      <CartoesSimulacoes
+        itens={data?.itens ?? []}
+        isLoading={isLoading}
+        escopo={escopo}
+        verExcluidas={verExcluidas}
+        handlers={handlersLinha}
+      />
 
-            <div className="mt-3 flex items-center gap-2">
-              <ProdutoBadge produto={s.produto} />
-              <span className="text-xs tabular-nums text-muted-foreground">
-                {s.prazo ? `${s.prazo} meses` : "—"}
-              </span>
-            </div>
-
-            <div className="mt-3 rounded-lg bg-muted/40 px-3 py-2">
-              <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Valor do imóvel</p>
-              <p className="font-mono text-lg font-semibold tabular-nums text-foreground">
-                {formatBRL(s.valor_imovel)}
-              </p>
-            </div>
-
-            <div className="mt-3">
-              <p className="mb-1 text-[11px] uppercase tracking-wide text-muted-foreground">Bancos simulados</p>
-              <BancosSimulados bancos={s.bancos} />
-            </div>
-          </div>
-        ))}
-      </div>
 
       {/* Enviar proposta: escolher UM banco por vez */}
       <EnviarPropostaDialog
