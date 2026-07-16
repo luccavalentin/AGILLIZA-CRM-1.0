@@ -530,14 +530,37 @@ export const comentarDemanda = createServerFn({ method: "POST" })
     });
     if (error) throw new Error(error.message);
 
-    // Espelha comentários públicos no chat do App do Cliente, quando a demanda tem cliente vinculado.
-    if (data.visivel_cliente) {
-      const { data: dem } = await supabase
-        .from("demandas")
-        .select("cliente_id, correspondente_id")
-        .eq("id", data.demanda_id)
-        .maybeSingle();
-      if (dem?.cliente_id) {
+    // Notifica os envolvidos (criador, responsável e participantes) exceto o autor.
+    const { data: dem } = await supabase
+      .from("demandas")
+      .select("titulo, cliente_id, correspondente_id, criador_id, responsavel_id")
+      .eq("id", data.demanda_id)
+      .maybeSingle();
+    if (dem) {
+      const { data: parts } = await supabase
+        .from("demanda_participantes")
+        .select("user_id")
+        .eq("demanda_id", data.demanda_id);
+      const destinatarios = new Set<string>();
+      if (dem.criador_id && dem.criador_id !== userId) destinatarios.add(dem.criador_id as string);
+      if (dem.responsavel_id && dem.responsavel_id !== userId) destinatarios.add(dem.responsavel_id as string);
+      for (const p of (parts ?? []) as any[]) {
+        if (p.user_id && p.user_id !== userId) destinatarios.add(p.user_id);
+      }
+      const preview = (data.corpo || "(arquivo)").slice(0, 140);
+      for (const uid of destinatarios) {
+        await supabase.rpc("emitir_notificacao", {
+          _user_id: uid,
+          _corr: dem.correspondente_id as string,
+          _tipo: "demanda.mensagem",
+          _titulo: "Nova mensagem: " + (dem.titulo ?? "demanda"),
+          _corpo: preview,
+          _link: "/operacional/demandas/" + data.demanda_id,
+        });
+      }
+
+      // Espelha comentários públicos no chat do App do Cliente, quando a demanda tem cliente vinculado.
+      if (data.visivel_cliente && dem.cliente_id) {
         await supabase.rpc("portal_time_responder", {
           _cid: dem.cliente_id,
           _msg: data.corpo || "(arquivo)",
