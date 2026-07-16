@@ -10,7 +10,7 @@ export function CardVendedor({
 }: {
   v: any;
   onEditar: (v: any) => void;
-  onExcluir: (id: string) => void;
+  onExcluir: (id: string) => Promise<void>;
 }) {
   return (
     <Card>
