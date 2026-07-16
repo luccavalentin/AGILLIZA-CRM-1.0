@@ -351,7 +351,7 @@ function Pagina() {
                 : `Ativa há ${diasDesde} dia(s)`}
             </p>
           </div>
-          <AcoesTopo proposta={p} propostaId={id} bancos={data.bancos} onCadastroIncompleto={onCadastroIncompleto} />
+          <AcoesTopo proposta={p} propostaId={id} bancos={data.bancos} envolvidos={data.envolvidos} documentos={data.documentos} followups={data.followups} onCadastroIncompleto={onCadastroIncompleto} />
         </div>
 
         {/* KPIs */}
@@ -507,11 +507,17 @@ function AcoesTopo({
   proposta,
   propostaId,
   bancos,
+  envolvidos,
+  documentos,
+  followups,
   onCadastroIncompleto,
 }: {
   proposta: any;
   propostaId: string;
   bancos: any[];
+  envolvidos?: any[];
+  documentos?: any[];
+  followups?: any[];
   onCadastroIncompleto?: () => void;
 }) {
   const qc = useQueryClient();
@@ -645,12 +651,28 @@ function AcoesTopo({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-72">
+          <DropdownMenuLabel>Documentos da proposta</DropdownMenuLabel>
+          <DropdownMenuItem
+            onClick={async () => {
+              const { baixarPropostaOficialPDF } = await import("@/lib/propostas/proposta-oficial-pdf");
+              baixarPropostaOficialPDF({
+                proposta,
+                bancos: bancos ?? [],
+                envolvidos: envolvidos ?? [],
+                documentos: documentos ?? [],
+                followups: followups ?? [],
+              });
+            }}
+          >
+            Ficha da proposta (cadastro, checklist, etapas)
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
           <DropdownMenuLabel>Extrato para o cliente</DropdownMenuLabel>
           <DropdownMenuItem
             onClick={() => baixarPropostaDetalhadaPDF({ proposta, bancos })}
             disabled={(bancos ?? []).length === 0}
           >
-            Proposta detalhada (todas as parcelas)
+            Cronograma detalhado (todas as parcelas)
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
