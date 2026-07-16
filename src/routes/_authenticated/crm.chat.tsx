@@ -1,38 +1,20 @@
 import { useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
   MessagesSquare,
   Search,
-  Loader2,
-  ArrowRight,
   ArrowLeft,
   Tag,
-  Plus,
-  Trash2,
-  AlarmClock,
   BellRing,
   Timer,
-  Check,
-  ChevronDown,
-  GitBranch,
-  Archive,
-  ArchiveRestore,
   Users,
 } from "lucide-react";
-import { toast } from "sonner";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -50,25 +32,15 @@ import {
   buscarClientesApp,
 } from "@/lib/crm/chat-cliente.functions";
 import {
-  getPipelineStages,
-  getClientePipeline,
-  moverEtapa,
-} from "@/lib/crm/clientes.functions";
-import {
   listarEtiquetasChat,
-  criarEtiquetaChat,
-  excluirEtiquetaChat,
-  definirEtiquetasCliente,
-  getChatMeta,
-  salvarChatMeta,
   overviewGestaoChat,
-  definirArquivamentoConversa,
   type ChatEtiqueta,
 } from "@/lib/crm/chat-gestao.functions";
 import { ChatConfigSheet } from "@/components/shared/chat-config-sheet";
 import { PainelChatCliente } from "@/components/crm/chat-cliente/painel-cliente";
-
-
+import { MaisAcoesGestao } from "@/components/crm/chat/barra-gestao";
+import { TagChip } from "@/components/crm/chat/tag-chip";
+import { iniciais, rotuloDia, type FiltroChat } from "@/components/crm/chat/helpers";
 
 export const Route = createFileRoute("/_authenticated/crm/chat")({
   head: () => ({ meta: [{ title: "Chat e Follow-up Cliente — Agilliza" }] }),
@@ -78,81 +50,6 @@ export const Route = createFileRoute("/_authenticated/crm/chat")({
   }),
   component: Pagina,
 });
-
-
-const CORES = [
-  { id: "blue", nome: "Azul" },
-  { id: "green", nome: "Verde" },
-  { id: "amber", nome: "Âmbar" },
-  { id: "red", nome: "Vermelho" },
-  { id: "purple", nome: "Roxo" },
-  { id: "slate", nome: "Cinza" },
-] as const;
-
-type FiltroChat = "todas" | "nao_lidas" | "sla" | "lembrete" | "arquivadas";
-
-function _formatarHoraLegacy(iso: string): string {
-  return new Date(iso).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo",  
-    day: "2-digit",
-    month: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-void _formatarHoraLegacy;
-
-function rotuloDia(iso: string): string {
-  const d = new Date(iso);
-  const hoje = new Date();
-  const ontem = new Date();
-  ontem.setDate(hoje.getDate() - 1);
-  const mesmoDia = (a: Date, b: Date) =>
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate();
-  if (mesmoDia(d, hoje)) return "Hoje";
-  if (mesmoDia(d, ontem)) return "Ontem";
-  return d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo",  
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
-}
-
-function iniciais(nome?: string | null): string {
-  if (!nome) return "?";
-  const partes = nome.trim().split(/\s+/);
-  const primeira = partes[0]?.[0] ?? "";
-  const ultima = partes.length > 1 ? partes[partes.length - 1][0] : "";
-  return (primeira + ultima).toUpperCase();
-}
-
-function TagChip({
-  etiqueta,
-  onRemove,
-}: {
-  etiqueta: ChatEtiqueta;
-  onRemove?: () => void;
-}) {
-  return (
-    <span className={cn("chat-tag", `chat-tag-${etiqueta.cor}`)}>
-      {etiqueta.nome}
-      {onRemove && (
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onRemove();
-          }}
-          className="opacity-70 hover:opacity-100"
-          aria-label={`Remover ${etiqueta.nome}`}
-        >
-          ×
-        </button>
-      )}
-    </span>
-  );
-}
 
 
 
