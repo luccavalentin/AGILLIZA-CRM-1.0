@@ -159,7 +159,7 @@ export const salvarConfigIA = createServerFn({ method: "POST" })
       .eq("chave", CHAVE_IA)
       .maybeSingle();
 
-    const payload: Record<string, unknown> = {
+    const payload = {
       correspondente_id: corr,
       chave: CHAVE_IA,
       nome: data.nome,
@@ -173,11 +173,10 @@ export const salvarConfigIA = createServerFn({ method: "POST" })
         prompt_scan: data.prompt_scan,
       },
       updated_at: new Date().toISOString(),
+      ...(typeof data.api_key === "string" && data.api_key.trim().length > 0
+        ? { api_key: data.api_key.trim() }
+        : {}),
     };
-    // Só sobrescreve a chave quando o usuário digitou uma nova.
-    if (typeof data.api_key === "string" && data.api_key.trim().length > 0) {
-      payload.api_key = data.api_key.trim();
-    }
 
     const q = existente
       ? supabase.from("admin_api_integrations").update(payload).eq("id", existente.id)
