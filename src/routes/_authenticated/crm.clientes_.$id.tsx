@@ -262,8 +262,10 @@ function Pagina() {
             { v: "documentos", label: "Documentos", Icon: FileText },
             { v: "negocios", label: "Negócios", Icon: Handshake },
             { v: "mensagens", label: "App cliente", Icon: MessageCircle },
+            { v: "atividades", label: "Demandas & Tarefas", Icon: Activity },
             { v: "interacoes", label: "Registro de interações", Icon: History },
             { v: "historico", label: "Histórico", Icon: History },
+
           ] as const;
           const atual = secoes.find((s) => s.v === aba) ?? secoes[0];
           return (
