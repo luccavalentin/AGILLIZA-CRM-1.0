@@ -136,6 +136,14 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
   return (
     <Dialog open={!!id} onOpenChange={(o: boolean) => !o && onClose()}>
       <DialogContent className="max-w-3xl max-h-[92dvh] overflow-hidden p-0 sm:p-0">
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Fechar"
+          className="absolute right-3 top-3 z-30 inline-flex h-8 w-8 items-center justify-center rounded-full bg-background/90 text-muted-foreground shadow ring-1 ring-border/60 backdrop-blur transition hover:bg-background hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+        >
+          <X className="h-4 w-4" />
+        </button>
         {t && (
           <div className="relative">
             {/* Marca d'água centralizada */}
