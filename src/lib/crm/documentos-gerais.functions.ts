@@ -206,6 +206,9 @@ export const explorarDocumentosGerais = createServerFn({ method: "GET" })
         analista_id: anaId,
         analista_nome: anaNome,
       };
+    });
+
+
     // Amplia a lista de analistas para incluir TODO criador de cliente,
     // mesmo que o perfil não esteja tipado como analista/role=analista.
     // Regra do produto: "todo cliente cadastrado tem um analista" — então
