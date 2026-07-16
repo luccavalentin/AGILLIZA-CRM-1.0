@@ -1042,6 +1042,9 @@ export const anexarDocumento = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const { supabase, userId } = context;
+    if (!(await podeAcao(supabase, userId, "crm.clientes", "edit"))) {
+      throw new Error("Sem permissão para anexar documentos deste cliente.");
+    }
     const { count } = await supabase
       .from("cliente_documentos")
       .select("id", { count: "exact", head: true })
