@@ -251,6 +251,28 @@ function ThreadItem({
 }) {
   const rot = RÓTULOS[thread.kind];
   const Icon = rot.icon;
+
+  // Nome de exibição principal — a "pessoa" com quem se conversa.
+  //  - DM: nome do colega (thread.titulo)
+  //  - Cliente: nome do cliente (thread.titulo)
+  //  - Demanda: número da demanda (identificação clara, não o título)
+  const nomePrincipal =
+    thread.kind === "demanda"
+      ? thread.subtitulo?.trim() || "Demanda"
+      : thread.titulo;
+
+  // Linha secundária de contexto (aparece antes da última mensagem):
+  //  - Demanda: mostra o título da demanda
+  //  - Cliente/DM: sem contexto extra
+  const contexto =
+    thread.kind === "demanda" ? thread.titulo?.trim() || null : null;
+
+  const badgeClasses: Record<ThreadKind, string> = {
+    dm: "bg-sky-500/15 text-sky-700 dark:text-sky-300",
+    cliente: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
+    demanda: "bg-amber-500/15 text-amber-700 dark:text-amber-300",
+  };
+
   return (
     <button
       type="button"
@@ -261,24 +283,33 @@ function ThreadItem({
       )}
     >
       <Avatar className="size-10 border border-border/60">
-        {thread.avatar_url && <AvatarImage src={thread.avatar_url} alt={thread.titulo} />}
+        {thread.avatar_url && <AvatarImage src={thread.avatar_url} alt={nomePrincipal} />}
         <AvatarFallback className="bg-primary/15 text-xs font-semibold text-primary">
-          {iniciais(thread.titulo)}
+          {iniciais(nomePrincipal)}
         </AvatarFallback>
       </Avatar>
       <div className="min-w-0 flex-1">
-        <div className="flex items-baseline justify-between gap-2">
-          <p className="truncate text-sm font-semibold text-foreground">{thread.titulo}</p>
-          <span className="shrink-0 text-[10px] text-muted-foreground">
+        <div className="mb-0.5 flex items-center gap-1.5">
+          <span
+            className={cn(
+              "inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
+              badgeClasses[thread.kind],
+            )}
+          >
+            <Icon className="size-3" />
+            {rot.label}
+          </span>
+          <span className="ml-auto shrink-0 text-[10px] text-muted-foreground">
             {tempoRelativo(thread.ultima_em)}
           </span>
         </div>
-        <div className="flex items-center gap-2">
-          <Icon className="size-3 shrink-0 text-muted-foreground" />
-          <p className="truncate text-xs text-muted-foreground">
-            {thread.ultima_mensagem?.trim() || rot.label}
-          </p>
-        </div>
+        <p className="truncate text-sm font-semibold text-foreground">{nomePrincipal}</p>
+        {contexto && (
+          <p className="truncate text-[11px] text-muted-foreground/90">{contexto}</p>
+        )}
+        <p className="truncate text-xs text-muted-foreground">
+          {thread.ultima_mensagem?.trim() || "Sem mensagens ainda"}
+        </p>
       </div>
       {thread.nao_lidas > 0 && (
         <Badge className="mt-1 h-5 min-w-5 rounded-full px-1.5 text-[10px]">
