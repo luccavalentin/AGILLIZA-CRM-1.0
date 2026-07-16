@@ -185,6 +185,17 @@ function sistemaAmortizacaoLabel(
   return normalizarSistemaAmortizacao(apiValor, requisitado);
 }
 
+/** Descobre a tabela (SAC/PRICE) usada por um banco desta simulação.
+ *  Usa a etiqueta `_sistema` colocada pelo backend em obterSimulacao (modo
+ *  "Ambos"), caindo para o retorno do banco e por fim para o sistema
+ *  solicitado na simulação. */
+function sistemaDoBanco(b: any, s: any): string {
+  if (b?._sistema === "SAC" || b?._sistema === "PRICE") return b._sistema;
+  const d = extrairDetalheBanco(b?.raw_response);
+  const norm = normalizarSistemaAmortizacao(d?.sistemaAmortizacao, s?.sistema_amortizacao);
+  return norm === "SAC" || norm === "PRICE" ? norm : "—";
+}
+
 /**
  * Grade de "Informações do Financiamento".
  * Só exibe o que vem diretamente do retorno do banco (ou o que o próprio usuário
