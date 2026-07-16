@@ -31,7 +31,7 @@ import {
   Building2,
   ShoppingCart,
   MessagesSquare,
-  Timer,
+  
   Landmark,
   Cpu,
   ClipboardList,
