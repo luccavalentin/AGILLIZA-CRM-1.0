@@ -26,6 +26,8 @@ import {
   Lock,
   FolderKanban,
   Users2,
+  Check,
+  ChevronsUpDown,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -38,6 +40,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import {
   Dialog,
   DialogContent,
@@ -249,52 +260,6 @@ export function DocumentosGerais() {
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clientes, busca, filtroComercial, filtroImob, filtroCorr, filtroAnalista]);
-
-  // Opções de cada dropdown consideram todos os filtros exceto o próprio,
-  // fazendo o painel afunilar progressivamente conforme a pesquisa avança.
-  const opcoesComerciais = useMemo(() => {
-    const ids = new Set(
-      clientes
-        .filter((c) => matchBusca(c) && matchImob(c) && matchCorr(c) && matchAnalista(c))
-        .map((c) => c.comercial_id)
-        .filter((v): v is string => !!v),
-    );
-    return comerciaisBase.filter((cm) => ids.has(cm.id) || cm.id === filtroComercial);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [clientes, comerciaisBase, busca, filtroImob, filtroCorr, filtroAnalista, filtroComercial]);
-
-  const opcoesImobiliarias = useMemo(() => {
-    const ids = new Set(
-      clientes
-        .filter((c) => matchBusca(c) && matchComercial(c) && matchCorr(c) && matchAnalista(c))
-        .map((c) => c.imobiliaria_id)
-        .filter((v): v is string => !!v),
-    );
-    return imobiliariasFiltro.filter((i) => ids.has(i.id) || i.id === filtroImob);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [clientes, imobiliariasFiltro, busca, filtroComercial, filtroCorr, filtroAnalista, filtroImob]);
-
-  const opcoesCorretores = useMemo(() => {
-    const ids = new Set(
-      clientes
-        .filter((c) => matchBusca(c) && matchComercial(c) && matchImob(c) && matchAnalista(c))
-        .map((c) => c.corretor_id)
-        .filter((v): v is string => !!v),
-    );
-    return corretoresFiltro.filter((co) => ids.has(co.id) || co.id === filtroCorr);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [clientes, corretoresFiltro, busca, filtroComercial, filtroImob, filtroAnalista, filtroCorr]);
-
-  const opcoesAnalistas = useMemo(() => {
-    const ids = new Set(
-      clientes
-        .filter((c) => matchBusca(c) && matchComercial(c) && matchImob(c) && matchCorr(c))
-        .map((c) => c.analista_id)
-        .filter((v): v is string => !!v),
-    );
-    return analistasFiltro.filter((a) => ids.has(a.id) || a.id === filtroAnalista);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [clientes, analistasFiltro, busca, filtroComercial, filtroImob, filtroCorr, filtroAnalista]);
 
   // Visão geral (KPIs) — sempre sobre a base completa, para dar contexto no topo.
   const resumo = useMemo(() => {
@@ -829,83 +794,55 @@ export function DocumentosGerais() {
                 </button>
               )}
             </div>
-            <Select
+            <FiltroPesquisa
+              label="Comercial"
               value={filtroComercial}
-              onValueChange={(v) => {
+              todosValue="todos"
+              todosLabel="Todos os comerciais"
+              placeholder="Pesquisar comercial..."
+              opcoes={comerciaisBase}
+              onChange={(v) => {
                 setFiltroComercial(v);
                 setPagina(1);
               }}
-            >
-              <SelectTrigger className="h-10 w-[180px]">
-                <SelectValue placeholder="Todos os comerciais" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos os comerciais</SelectItem>
-                {comerciaisBase.map((cm) => (
-                  <SelectItem key={cm.id} value={cm.id}>
-                    {titulo(cm.nome)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select
+            />
+            <FiltroPesquisa
+              label="Imobiliária"
               value={filtroImob}
-              onValueChange={(v) => {
+              todosValue="todas"
+              todosLabel="Todas as imobiliárias"
+              placeholder="Pesquisar imobiliária..."
+              opcoes={imobiliariasFiltro}
+              opcoesFixas={[{ id: "comercial", nome: SEM_IMOB }]}
+              onChange={(v) => {
                 setFiltroImob(v);
                 setPagina(1);
               }}
-            >
-              <SelectTrigger className="h-10 w-[180px]">
-                <SelectValue placeholder="Todas as imobiliárias" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todas">Todas as imobiliárias</SelectItem>
-                <SelectItem value="comercial">{SEM_IMOB}</SelectItem>
-                {imobiliariasFiltro.map((i) => (
-                  <SelectItem key={i.id} value={i.id}>
-                    {titulo(i.nome)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select
+            />
+            <FiltroPesquisa
+              label="Corretor"
               value={filtroCorr}
-              onValueChange={(v) => {
+              todosValue="todos"
+              todosLabel="Todos os corretores"
+              placeholder="Pesquisar corretor..."
+              opcoes={corretoresFiltro}
+              onChange={(v) => {
                 setFiltroCorr(v);
                 setPagina(1);
               }}
-            >
-              <SelectTrigger className="h-10 w-[180px]">
-                <SelectValue placeholder="Todos os corretores" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos os corretores</SelectItem>
-                {corretoresFiltro.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {titulo(c.nome)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select
+            />
+            <FiltroPesquisa
+              label="Analista"
               value={filtroAnalista}
-              onValueChange={(v) => {
+              todosValue="todos"
+              todosLabel="Todos os analistas"
+              placeholder="Pesquisar analista..."
+              opcoes={analistasFiltro}
+              onChange={(v) => {
                 setFiltroAnalista(v);
                 setPagina(1);
               }}
-            >
-              <SelectTrigger className="h-10 w-[180px]">
-                <SelectValue placeholder="Todos os analistas" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos os analistas</SelectItem>
-                {analistasFiltro.map((a) => (
-                  <SelectItem key={a.id} value={a.id}>
-                    {titulo(a.nome)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            />
             {filtrando && (
               <Button
                 variant="ghost"
@@ -1140,6 +1077,14 @@ export function DocumentosGerais() {
                     )}
                   </span>
                 )}
+                {filtroAnalista !== "todos" && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">
+                    Analista:{" "}
+                    {titulo(
+                      analistasFiltro.find((a) => a.id === filtroAnalista)?.nome ?? "",
+                    )}
+                  </span>
+                )}
                 {!filtrando && (
                   <span className="text-xs text-muted-foreground">Nenhum filtro ativo.</span>
                 )}
@@ -1168,6 +1113,112 @@ export function DocumentosGerais() {
         </SheetContent>
       </Sheet>
     </div>
+  );
+}
+
+type FiltroOpcao = { id: string; nome: string };
+
+function FiltroPesquisa({
+  label,
+  value,
+  todosValue,
+  todosLabel,
+  placeholder,
+  opcoes,
+  opcoesFixas = [],
+  onChange,
+}: {
+  label: string;
+  value: string;
+  todosValue: string;
+  todosLabel: string;
+  placeholder: string;
+  opcoes: FiltroOpcao[];
+  opcoesFixas?: FiltroOpcao[];
+  onChange: (value: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const itens = useMemo(() => {
+    const map = new Map<string, FiltroOpcao>();
+    for (const item of opcoesFixas) map.set(item.id, item);
+    for (const item of opcoes) map.set(item.id, item);
+    return Array.from(map.values()).sort((a, b) =>
+      titulo(a.nome).localeCompare(titulo(b.nome), "pt-BR"),
+    );
+  }, [opcoes, opcoesFixas]);
+  const selecionado = value === todosValue ? todosLabel : titulo(itens.find((i) => i.id === value)?.nome);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          role="combobox"
+          aria-expanded={open}
+          aria-label={label}
+          className={cn(
+            "group flex h-10 min-w-[210px] max-w-full flex-1 items-center justify-between gap-2 rounded-xl border border-border/70 bg-card px-3 text-left text-sm shadow-sm transition-all sm:flex-none lg:w-[220px]",
+            "hover:border-primary/35 hover:bg-accent/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+            value === todosValue ? "text-muted-foreground" : "text-foreground",
+          )}
+        >
+          <span className="min-w-0 flex-1 truncate">
+            {selecionado && selecionado !== "—" ? selecionado : todosLabel}
+          </span>
+          <ChevronsUpDown className="size-4 shrink-0 text-muted-foreground transition-colors group-hover:text-primary" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent
+        align="start"
+        className="w-[--radix-popover-trigger-width] overflow-hidden rounded-xl border-border/70 p-0 shadow-lg"
+      >
+        <Command
+          filter={(itemValue, search) => {
+            const normalize = (s: string) =>
+              s
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "")
+                .toLowerCase();
+            return normalize(itemValue).includes(normalize(search)) ? 1 : 0;
+          }}
+        >
+          <CommandInput placeholder={placeholder} className="h-10" />
+          <CommandList className="max-h-72">
+            <CommandEmpty>Nenhum resultado encontrado.</CommandEmpty>
+            <CommandGroup>
+              <CommandItem
+                value={todosLabel}
+                onSelect={() => {
+                  onChange(todosValue);
+                  setOpen(false);
+                }}
+                className="py-2.5"
+              >
+                <Check className={cn("size-4", value === todosValue ? "opacity-100" : "opacity-0")} />
+                <span className="truncate font-medium">{todosLabel}</span>
+              </CommandItem>
+              {itens.map((item) => {
+                const nome = titulo(item.nome);
+                return (
+                  <CommandItem
+                    key={item.id}
+                    value={`${nome} ${item.id}`}
+                    onSelect={() => {
+                      onChange(item.id);
+                      setOpen(false);
+                    }}
+                    className="py-2.5"
+                  >
+                    <Check className={cn("size-4", value === item.id ? "opacity-100" : "opacity-0")} />
+                    <span className="truncate">{nome}</span>
+                  </CommandItem>
+                );
+              })}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
   );
 }
 
