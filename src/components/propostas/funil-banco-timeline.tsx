@@ -334,6 +334,23 @@ function DecisionCard({
           </p>
         </div>
       </div>
+      {ativo && banco && (
+        <div className="mt-2 flex items-center gap-2 rounded-md border border-rose-500/30 bg-rose-500/[0.06] px-2 py-1.5">
+          <BancoLogo nome={banco} size="sm" className="shrink-0" />
+          <div className="min-w-0 flex-1">
+            <p className="text-[9px] font-bold uppercase tracking-wider text-rose-700/80 dark:text-rose-300/80 leading-none">
+              Banco que recusou
+            </p>
+            <p
+              className="mt-0.5 truncate text-[12px] font-semibold leading-tight"
+              style={{ color: corDoBanco(banco) }}
+              title={banco}
+            >
+              {banco}
+            </p>
+          </div>
+        </div>
+      )}
       <span className="sr-only">{statusLabel}</span>
     </div>
   );
