@@ -73,7 +73,7 @@ export function TimelineAuditoria({
                         <span className={cn("size-1.5 rounded-full", c.dot)} />
                         {r.acao_label}
                       </span>
-                      {r.entidade && <span className="capitalize">{r.entidade}</span>}
+                      {r.entidade && <span>{rotuloEntidade(r.entidade)}</span>}
                       {r.ip && <span className="tabular-nums">IP {r.ip}</span>}
                     </div>
                   </div>
