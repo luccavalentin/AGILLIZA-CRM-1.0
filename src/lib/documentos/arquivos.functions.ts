@@ -13,6 +13,7 @@ export interface ArquivoNo {
   created_at: string;
   criado_por: string | null;
   criado_por_nome: string | null;
+  mostrar_no_menu: boolean;
 }
 
 export interface Migalha {
