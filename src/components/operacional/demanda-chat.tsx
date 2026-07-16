@@ -141,7 +141,7 @@ export function DemandaChatConversa({
   });
   const meuId = sessao?.profile?.id ?? null;
   const meuNome = sessao?.profile?.nome?.trim() || "Eu";
-  const queryKey = ["demanda", demandaId];
+  const queryKey = useMemo(() => ["demanda", demandaId] as const, [demandaId]);
 
   const { data, isLoading } = useQuery({
     queryKey,
@@ -165,7 +165,7 @@ export function DemandaChatConversa({
     return () => {
       supabase.removeChannel(canal);
     };
-  }, [demandaId, qc]);
+  }, [demandaId, qc, queryKey]);
 
   const ultimaMsgIdRef = useRef<string | null>(null);
   useEffect(() => {
@@ -176,7 +176,7 @@ export function DemandaChatConversa({
       marcarLidaFn({ data: { demanda_id: demandaId } }).catch(() => {});
       qc.invalidateQueries({ queryKey: ["demandas"] });
     }
-  }, [(data as any)?.mensagens, demandaId, marcarLidaFn, qc]);
+  }, [(data as any)?.mensagens, demandaId, marcarLidaFn, qc, queryKey]);
 
   const mensagens = ((data as any)?.mensagens ?? []) as any[];
   const chatItens = useMemo(
