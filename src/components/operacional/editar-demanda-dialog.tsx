@@ -95,10 +95,13 @@ export function EditarDemandaDialog({
   return (
     <Dialog open={aberto} onOpenChange={abrir}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
-          <Pencil className="mr-1 h-3.5 w-3.5" /> Editar
-        </Button>
+        {trigger ?? (
+          <Button variant="outline" size="sm">
+            <Pencil className="mr-1 h-3.5 w-3.5" /> Editar
+          </Button>
+        )}
       </DialogTrigger>
+
       <DialogContent className="w-[calc(100%-2rem)] sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Editar demanda</DialogTitle>
