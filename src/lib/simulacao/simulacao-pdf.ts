@@ -376,18 +376,13 @@ function drawDisclaimer(doc: jsPDF, pageW: number, y: number) {
  */
 function drawDisclaimerTopo(doc: jsPDF, pageW: number, y: number): number {
   const w = pageW - MARGIN * 2;
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(7.5);
-  const linhas = doc.splitTextToSize(DISCLAIMER, w - 20) as string[];
-  const lineH = 9.5;
-  const boxH = linhas.length * lineH + 14;
-  doc.setFillColor(P.card);
-  doc.setDrawColor(P.coral);
-  doc.setLineWidth(0.8);
-  doc.roundedRect(MARGIN, y, w, boxH, 3, 3, "FD");
-  doc.setTextColor(P.texto);
-  doc.text(linhas, MARGIN + 10, y + 12, { lineHeightFactor: 1.35 });
-  return y + boxH + 14;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(6.5);
+  const linhas = doc.splitTextToSize(DISCLAIMER, w) as string[];
+  const lineH = 8;
+  doc.setTextColor(P.cinza);
+  doc.text(linhas, MARGIN, y + 6, { lineHeightFactor: 1.3 });
+  return y + linhas.length * lineH + 10;
 }
 
 
