@@ -499,6 +499,24 @@ export const atualizarCliente = createServerFn({ method: "POST" })
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const { supabase, userId } = context;
     const { id, ...campos } = data;
+
+    // Bloqueia troca de documento para um valor já usado por outro cliente do
+    // mesmo correspondente (mensagem amigável em vez de erro 23505 do Postgres).
+    const { data: me } = await supabase.rpc("correspondente_do_usuario", { _user_id: userId });
+    const correspondenteId = (me as string | null) ?? null;
+    if (correspondenteId && campos.documento) {
+      const { data: colisao } = await supabase
+        .from("clientes")
+        .select("id")
+        .eq("correspondente_id", correspondenteId)
+        .eq("documento", campos.documento)
+        .neq("id", id)
+        .maybeSingle();
+      if (colisao?.id) {
+        throw new Error("Já existe outro cliente com este documento neste correspondente.");
+      }
+    }
+
     const { error } = await supabase
       .from("clientes")
       .update({
