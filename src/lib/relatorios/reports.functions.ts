@@ -2037,9 +2037,96 @@ export const runReport = createServerFn({ method: "POST" })
         .sort((a: any, b: any) => a.vencimento.localeCompare(b.vencimento))
         .slice(0, 10);
 
+      // Repasses (comissões do correspondente) no período.
+      const repassePrev = repasses.reduce(
+        (s: number, c: any) => s + (Number(c.valor_bruto) || 0),
+        0,
+      );
+      const repassePago = repasses
+        .filter((c: any) => c.status === "paga_parceiro" || c.status === "encerrada")
+        .reduce((s: number, c: any) => s + (Number(c.valor_bruto) || 0), 0);
+      const repasseAberto = repassePrev - repassePago;
+      const repassePorBanco = new Map<string, number>();
+      repasses.forEach((c: any) =>
+        repassePorBanco.set(
+          c.nome_banco ?? "—",
+          (repassePorBanco.get(c.nome_banco ?? "—") ?? 0) + (Number(c.valor_bruto) || 0),
+        ),
+      );
+
+      // Comissões por usuário (analistas, corretores, imobiliária, comercial etc.)
+      const comPagas = comUsr.filter((c: any) => c.status === "paga");
+      const comAPagar = comUsr.filter((c: any) => c.status === "a_pagar");
+      const comTotal = comUsr.reduce(
+        (s: number, c: any) => s + (Number(c.valor_comissao) || 0),
+        0,
+      );
+      const comPagoValor = comPagas.reduce(
+        (s: number, c: any) => s + (Number(c.valor_comissao) || 0),
+        0,
+      );
+      const comAPagarValor = comAPagar.reduce(
+        (s: number, c: any) => s + (Number(c.valor_comissao) || 0),
+        0,
+      );
+
+      const comPorUsuario = new Map<string, number>();
+      comUsr.forEach((c: any) => {
+        const k = c.usuario_id ?? "—";
+        comPorUsuario.set(k, (comPorUsuario.get(k) ?? 0) + (Number(c.valor_comissao) || 0));
+      });
+      const comPorVinculo = new Map<string, number>();
+      comUsr.forEach((c: any) => {
+        const k = c.tipo_vinculo ?? "outro";
+        comPorVinculo.set(k, (comPorVinculo.get(k) ?? 0) + (Number(c.valor_comissao) || 0));
+      });
+      const nomesCom = await nomesUsuarios(
+        Array.from(new Set(comUsr.map((c: any) => c.usuario_id).filter(Boolean))) as string[],
+      );
+
+      if (repassePorBanco.size > 0) {
+        charts.push({
+          titulo: "Repasses por banco",
+          subtitulo: "Comissões previstas por instituição no período",
+          tipo: "barh",
+          moeda: true,
+          dados: [...repassePorBanco.entries()]
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 10)
+            .map(([label, valor]) => ({ label, valor })),
+        });
+      }
+      if (comPorUsuario.size > 0) {
+        charts.push({
+          titulo: "Comissões por usuário",
+          subtitulo: "Ranking de comissões geradas no período",
+          tipo: "barh",
+          moeda: true,
+          dados: [...comPorUsuario.entries()]
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 10)
+            .map(([k, v]) => ({ label: nomesCom.get(k) ?? "—", valor: v })),
+        });
+      }
+      if (comPorVinculo.size > 0) {
+        charts.push({
+          titulo: "Comissões por tipo de vínculo",
+          subtitulo: "Distribuição entre corretor, imobiliária, analista e demais",
+          tipo: "donut",
+          moeda: true,
+          dados: [...comPorVinculo.entries()]
+            .sort((a, b) => b[1] - a[1])
+            .map(([k, v]) => ({
+              label: (k as string).replace(/_/g, " ").replace(/^./, (s) => s.toUpperCase()),
+              valor: v,
+            })),
+        });
+      }
+
       return {
-        titulo: "Relatório financeiro",
-        descricao: "Posição de caixa, recebimentos, pagamentos e inadimplência.",
+        titulo: "Relatório financeiro consolidado",
+        descricao:
+          "Contas a pagar e receber, fluxo de caixa, repasses e comissões por usuário — tudo em uma única visão.",
         modulo: "Financeiro",
         kpis: [
           {
