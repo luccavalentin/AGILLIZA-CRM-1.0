@@ -16,7 +16,9 @@ import {
   Handshake,
   History,
   LayoutDashboard,
+  Activity,
 } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -32,6 +34,8 @@ import { PipelineTimeline } from "@/components/crm/pipeline-timeline";
 import { ClienteForm } from "@/components/crm/cliente-form";
 import { DocumentosTab } from "@/components/crm/documentos-tab";
 import { InteracoesTab } from "@/components/crm/interacoes-tab";
+import { AtividadesClienteTab } from "@/components/crm/atividades-cliente-tab";
+
 import { VinculoTab } from "@/components/crm/vinculo-tab";
 import { ChatClienteInstagram } from "@/components/crm/chat-cliente-instagram";
 import { SimulacaoPreviewDialog } from "@/components/simulacao/simulacao-preview-dialog";
@@ -258,8 +262,10 @@ function Pagina() {
             { v: "documentos", label: "Documentos", Icon: FileText },
             { v: "negocios", label: "Negócios", Icon: Handshake },
             { v: "mensagens", label: "App cliente", Icon: MessageCircle },
+            { v: "atividades", label: "Demandas & Tarefas", Icon: Activity },
             { v: "interacoes", label: "Registro de interações", Icon: History },
             { v: "historico", label: "Histórico", Icon: History },
+
           ] as const;
           const atual = secoes.find((s) => s.v === aba) ?? secoes[0];
           return (
@@ -624,7 +630,12 @@ function Pagina() {
 
 
 
+        <TabsContent value="atividades" className="mt-4">
+          <AtividadesClienteTab clienteId={id} />
+        </TabsContent>
+
         <TabsContent value="interacoes" className="mt-4">
+
           <InteracoesTab clienteId={id} />
         </TabsContent>
 

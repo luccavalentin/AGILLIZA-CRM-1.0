@@ -108,9 +108,11 @@ export const listarDemandas = createServerFn({ method: "GET" })
         escopo: z.enum(["minhas", "geral", "equipe"]).default("geral"),
         status: z.string().optional(),
         q: z.string().optional(),
+        cliente_id: z.string().uuid().optional(),
       })
       .parse(data),
   )
+
   .handler(async ({ context, data }): Promise<DemandaItem[]> => {
     const { supabase, userId } = context;
 
@@ -141,10 +143,12 @@ export const listarDemandas = createServerFn({ method: "GET" })
       query = query.or(orParts.join(","));
     }
     if (data.status) query = query.eq("status", data.status as any);
+    if (data.cliente_id) query = query.eq("cliente_id", data.cliente_id);
     if (data.q) {
       const t = data.q.trim();
       query = query.or(`titulo.ilike.%${t}%,numero.ilike.%${t}%`);
     }
+
 
     const { data: itens, error } = await query;
     if (error) throw new Error(error.message);
