@@ -1,8 +1,6 @@
-import { FolderClosed, Users } from "lucide-react";
-import { Plus } from "lucide-react";
+import { FolderClosed, Plus, Users } from "lucide-react";
 import type { PainelStage } from "@/lib/crm/clientes.functions";
 import { ICONES_ETAPA, type PainelClienteItem } from "./utils";
-import { CardCliente } from "./card-cliente";
 
 interface Props {
   stage: PainelStage;
@@ -17,7 +15,13 @@ interface Props {
   renderCard: (cliente: PainelClienteItem) => React.ReactNode;
 }
 
-/** Coluna individual (etapa) da esteira do CRM. */
+/**
+ * Coluna individual (etapa) da esteira do CRM.
+ *
+ * Regra de rolagem: a coluna NÃO tem `overflow-y-auto` — ela cresce com o
+ * conteúdo e a página inteira rola naturalmente. Isso evita o "trava do
+ * wheel" quando o cursor está sobre uma coluna com muitos cards.
+ */
 export function ColunaEsteira({
   stage,
   ordem,
@@ -30,19 +34,31 @@ export function ColunaEsteira({
   renderCard,
 }: Props) {
   const temClientes = stage.clientes.length > 0;
+  const Icone = ICONES_ETAPA[stage.codigo] ?? Users;
   return (
     <div
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
       onDrop={onDrop}
-      className={`group relative flex min-h-[24rem] min-w-0 flex-col rounded-2xl border bg-card shadow-sm transition-shadow duration-200 hover:shadow-md sm:max-h-[calc(100dvh-18rem)] ${
-        ehAlvoArrasto ? "border-primary ring-2 ring-primary/40" : "border-border"
+      className={`group relative flex min-h-[22rem] min-w-0 flex-col overflow-hidden rounded-2xl border bg-card/95 shadow-sm backdrop-blur-sm transition-[box-shadow,border-color,transform] duration-200 hover:-translate-y-0.5 hover:shadow-lg ${
+        ehAlvoArrasto
+          ? "border-primary ring-2 ring-primary/40"
+          : "border-border/70 hover:border-primary/40"
       }`}
     >
-      <div className="flex items-center justify-between gap-2 border-b border-border px-3.5 py-3">
-        <div className="flex min-w-0 items-center gap-2">
-          <span className="grid size-6 shrink-0 place-items-center rounded-md bg-primary text-[11px] font-bold tabular-nums text-primary-foreground">
-            {ordem}
+      {/* Faixa colorida superior — dá identidade visual à etapa */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary via-primary/60 to-primary/20"
+      />
+
+      <div className="relative flex items-center justify-between gap-2 border-b border-border/60 bg-gradient-to-br from-primary/[0.04] via-card to-card px-3.5 py-3">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <span className="relative grid size-7 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary ring-1 ring-inset ring-primary/20">
+            <Icone className="size-3.5" strokeWidth={2.25} />
+            <span className="absolute -right-1 -top-1 grid size-4 place-items-center rounded-full bg-primary text-[9px] font-bold leading-none text-primary-foreground shadow-sm">
+              {ordem}
+            </span>
           </span>
           <span className="min-w-0 truncate text-sm font-semibold tracking-tight text-foreground">
             {stage.nome}
@@ -53,7 +69,7 @@ export function ColunaEsteira({
           onClick={() => temClientes && onAbrirEtapa()}
           disabled={!temClientes}
           title={temClientes ? "Ver clientes desta etapa" : undefined}
-          className={`min-w-6 rounded-full px-2 py-0.5 text-xs font-bold tabular-nums transition-colors ${
+          className={`min-w-7 rounded-full px-2 py-0.5 text-[11px] font-bold tabular-nums transition-colors ${
             temClientes
               ? "cursor-pointer bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground"
               : "cursor-default text-muted-foreground"
@@ -62,19 +78,17 @@ export function ColunaEsteira({
           {stage.clientes.length}
         </button>
       </div>
-      <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overscroll-contain p-3">
+
+      <div className="flex flex-1 flex-col gap-2 p-3">
         {!temClientes ? (
           <div
-            className={`flex min-h-[12rem] flex-1 flex-col items-center justify-center gap-2 rounded-lg border border-dashed py-8 text-center transition-colors ${
+            className={`flex min-h-[12rem] flex-1 flex-col items-center justify-center gap-2 rounded-xl border border-dashed py-8 text-center transition-colors ${
               ehAlvoArrasto
                 ? "border-primary/60 bg-primary/5 text-primary"
-                : "border-transparent text-muted-foreground"
+                : "border-border/50 text-muted-foreground"
             }`}
           >
-            {(() => {
-              const Icone = ICONES_ETAPA[stage.codigo] ?? Users;
-              return <Icone className="size-6 opacity-40" />;
-            })()}
+            <Icone className="size-6 opacity-40" />
             <span className="text-xs">
               {ehAlvoArrasto ? "Solte aqui" : "Nenhum cliente nesta etapa"}
             </span>
@@ -83,10 +97,11 @@ export function ColunaEsteira({
           stage.clientes.map((c) => renderCard(c))
         )}
       </div>
+
       <button
         type="button"
         onClick={onAdicionarCliente}
-        className="flex w-full items-center justify-center gap-1.5 border-t border-border px-3 py-2.5 text-xs font-semibold text-primary transition-colors hover:bg-primary/5"
+        className="flex w-full items-center justify-center gap-1.5 border-t border-border/60 bg-muted/20 px-3 py-2.5 text-xs font-semibold text-primary transition-colors hover:bg-primary/10"
       >
         <Plus className="size-3.5" />
         Adicionar cliente
@@ -108,7 +123,7 @@ export function PastaArquivados({
       type="button"
       onClick={onAbrir}
       title="Abrir arquivo de contratos emitidos"
-      className="group/arq relative flex min-h-[18rem] min-w-0 flex-col items-center justify-center gap-3 overflow-hidden rounded-2xl border border-primary/25 bg-gradient-to-br from-primary/5 via-card to-primary/10 p-5 text-center shadow-sm ring-1 ring-inset ring-primary/5 transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-lg"
+      className="group/arq relative flex min-h-[22rem] min-w-0 flex-col items-center justify-center gap-3 overflow-hidden rounded-2xl border border-primary/25 bg-gradient-to-br from-primary/5 via-card to-primary/10 p-5 text-center shadow-sm ring-1 ring-inset ring-primary/5 transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-lg"
     >
       <span className="relative grid size-12 place-items-center rounded-2xl bg-primary/10 text-primary shadow-inner transition-colors duration-200 group-hover/arq:bg-primary group-hover/arq:text-primary-foreground">
         <FolderClosed className="size-6" />
