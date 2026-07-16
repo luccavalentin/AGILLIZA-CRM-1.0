@@ -81,17 +81,28 @@ export function ChatAlertWatcher({ meuId }: Props) {
           vistos.current.add(row.id);
           signalIncomingChat(row.id);
 
-          const { data: dem } = await supabase
+          const [{ data: dem }, { data: autor }] = await Promise.all([
+            supabase
             .from("demandas")
-            .select("numero, titulo")
+              .select("numero, titulo")
             .eq("id", row.demanda_id)
-            .maybeSingle();
+              .maybeSingle(),
+            row.autor_id
+              ? supabase
+                  .from("profiles")
+                  .select("nome, foto_url")
+                  .eq("id", row.autor_id)
+                  .maybeSingle()
+              : Promise.resolve({ data: null }),
+          ]);
           const numero = (dem?.numero as string | null) ?? "—";
           const titulo = (dem?.titulo as string | null) ?? null;
+          const interlocutorNome = (autor?.nome as string | null) ?? null;
+          const interlocutorFoto = (autor?.foto_url as string | null) ?? null;
 
           abrirDemandaChatFlutuante(
             row.demanda_id,
-            { numero, titulo },
+            { numero, titulo, interlocutorNome, interlocutorFoto },
             { minimized: true },
           );
         },
