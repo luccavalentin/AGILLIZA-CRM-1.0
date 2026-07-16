@@ -310,6 +310,12 @@ export const navInterno: NavGroup[] = [
         perm: { modulo: "financeiro.comissoes" },
       },
       {
+        label: "Comissões (usuários)",
+        icon: Percent,
+        to: "/financeiro/comissoes-usuario",
+        perm: { modulo: "financeiro.comissoes" },
+      },
+      {
         label: "Configurações",
         icon: SlidersHorizontal,
         to: "/financeiro/configuracoes",
