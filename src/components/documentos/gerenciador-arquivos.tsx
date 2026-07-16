@@ -29,7 +29,10 @@ import {
   moverNo,
   urlArquivo,
   listarPastas,
+  definirMostrarNoMenu,
+  pesquisarArquivos,
   type ArquivoNo,
+  type ResultadoPesquisa,
 } from "@/lib/documentos/arquivos.functions";
 import { VisualizadorArquivo } from "@/components/comum/visualizador-arquivo";
 import { sanitizePath, formatBytes } from "./gerenciador/arquivo-utils";
