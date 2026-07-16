@@ -150,22 +150,21 @@ export const opcoesAuditoria = createServerFn({ method: "GET" })
 
     const acoes = new Set<string>();
     const entidades = new Set<string>();
-    const atorIds = new Set<string>();
     (rows ?? []).forEach((r: any) => {
       if (r.acao) acoes.add(r.acao);
       if (r.entidade) entidades.add(r.entidade);
-      if (r.user_id) atorIds.add(r.user_id);
     });
 
-    const atores: { id: string; nome: string }[] = [];
-    if (atorIds.size > 0) {
-      const { data: profs } = await supabase
-        .from("profiles")
-        .select("id, nome")
-        .in("id", [...atorIds]);
-      (profs ?? []).forEach((p: any) => atores.push({ id: p.id, nome: p.nome ?? "—" }));
-    }
-    atores.sort((a, b) => a.nome.localeCompare(b.nome));
+    // Listar TODOS os usuários do correspondente (ativos + inativos),
+    // não apenas os que já apareceram no log.
+    const { data: profs } = await supabase
+      .from("profiles")
+      .select("id, nome")
+      .eq("correspondente_id", corr);
+    const atores = (profs ?? [])
+      .map((p: any) => ({ id: p.id as string, nome: (p.nome as string) ?? "—" }))
+      .sort((a: { nome: string }, b: { nome: string }) => a.nome.localeCompare(b.nome));
+
 
     return {
       atores,
