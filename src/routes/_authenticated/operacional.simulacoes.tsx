@@ -218,15 +218,15 @@ function Pagina() {
   }
 
   async function handleEditar(id: string) {
-    try {
-      const { simulacao } = await obter({ data: { id } });
-      sessionStorage.setItem("simulacao_wizard", JSON.stringify(simulacao));
-      toast.info("Dados carregados no formulário para edição.");
-      router.navigate({ to: "/operacional/simulacoes/completa" });
-    } catch {
-      toast.error("Não foi possível abrir a simulação para edição.");
-    }
+    // "Editar" gera uma nova simulação a partir dos dados desta, sem herdar
+    // IDs, número, operação bancária, e-mail verificado, PDFs ou bancos já
+    // simulados. Reutiliza o fluxo de duplicação para isolamento total.
+    router.navigate({
+      to: "/operacional/simulacoes/completa",
+      search: { duplicar: id },
+    });
   }
+
 
   async function handleEnviarProposta(id: string, numero: string) {
     setEnvio({ id, numero, bancos: [] });

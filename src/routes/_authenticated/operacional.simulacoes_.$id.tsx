@@ -173,15 +173,16 @@ function Pagina() {
   }
 
   function editar() {
-    if (!data) return;
-    try {
-      sessionStorage.setItem("simulacao_wizard", JSON.stringify(data.simulacao));
-      toast.info("Dados carregados no formulário para edição.");
-      router.navigate({ to: "/operacional/simulacoes/completa" });
-    } catch {
-      toast.error("Não foi possível abrir a simulação para edição.");
-    }
+    // "Editar" gera uma NOVA simulação a partir dos dados desta, sem herdar
+    // IDs, número, operação HomeFin, e-mail verificado, PDFs ou bancos já
+    // simulados. Usa o mesmo fluxo de "Duplicar" (mapeamento explícito de
+    // campos no wizard) para garantir isolamento total da simulação anterior.
+    router.navigate({
+      to: "/operacional/simulacoes/completa",
+      search: { duplicar: id },
+    });
   }
+
 
   async function excluir() {
     try {
