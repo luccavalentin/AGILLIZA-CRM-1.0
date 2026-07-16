@@ -65,10 +65,13 @@ export function TransferirDialog({
   return (
     <Dialog open={aberto} onOpenChange={setAberto}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
-          Transferir
-        </Button>
+        {trigger ?? (
+          <Button variant="outline" size="sm">
+            Transferir
+          </Button>
+        )}
       </DialogTrigger>
+
       <DialogContent className="w-[calc(100%-2rem)] sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Transferir demanda</DialogTitle>
