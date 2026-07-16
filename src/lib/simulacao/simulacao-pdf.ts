@@ -824,39 +824,58 @@ export function baixarSimulacaoDetalhadaPDF(input: SimulacaoPdfInput) {
   return doc;
 }
 
-/** Baixa vários PDFs detalhados em um único arquivo ZIP, evitando bloqueio de múltiplos downloads pelo navegador. */
+/**
+ * Baixa TODOS os bancos simulados em um ÚNICO arquivo PDF (uma folha por banco).
+ * Substitui a antiga geração em ZIP — o usuário quer PDF, não pacote compactado.
+ */
 export async function baixarSimulacoesDetalhadasZipPDF(input: SimulacaoPdfInput) {
-  return baixarSimulacoesDetalhadasAgrupadasZipPDF([{ simulacao: input.simulacao, bancos: input.bancos }]);
+  return baixarSimulacoesDetalhadasAgrupadasZipPDF([
+    { simulacao: input.simulacao, bancos: input.bancos },
+  ]);
 }
 
-/** Baixa PDFs detalhados de uma ou mais simulações em um único ZIP. */
+/** Baixa PDFs detalhados de uma ou mais simulações em um ÚNICO PDF (páginas concatenadas). */
 export async function baixarSimulacoesDetalhadasAgrupadasZipPDF(
   grupos: Array<{ simulacao: any; bancos: any[] }>,
 ) {
-  const itens = grupos.flatMap((grupo) =>
-    bancosParaExtrato(grupo.bancos).map((banco) => ({ simulacao: grupo.simulacao, banco })),
-  );
+  const gruposValidos = grupos
+    .map((g) => ({ simulacao: g.simulacao, bancos: bancosParaExtrato(g.bancos) }))
+    .filter((g) => g.bancos.length > 0);
 
-  if (itens.length === 0) throw new Error("Nenhum banco disponível para gerar PDF.");
-  if (itens.length === 1) {
-    baixarSimulacaoDetalhadaPDF({ simulacao: itens[0].simulacao, bancos: [itens[0].banco] });
-    return 1;
+  if (gruposValidos.length === 0) throw new Error("Nenhum banco disponível para gerar PDF.");
+
+  // Grupo único: usa direto o fluxo detalhado (já concatena N bancos em N páginas).
+  if (gruposValidos.length === 1) {
+    baixarSimulacaoDetalhadaPDF({
+      simulacao: gruposValidos[0].simulacao,
+      bancos: gruposValidos[0].bancos,
+    });
+    return gruposValidos[0].bancos.length;
   }
 
-  const JSZip = (await import("jszip")).default;
-  const zip = new JSZip();
-  const nomesUsados = new Set<string>();
+  // Múltiplas simulações (ex.: SAC + PRICE): renderiza cada uma como PDF
+  // detalhado e mescla tudo em um único documento com pdf-lib.
+  const { PDFDocument } = await import("pdf-lib");
+  const merged = await PDFDocument.create();
+  let total = 0;
 
-  itens.forEach(({ simulacao, banco }) => {
-    const { doc, nome } = criarDocSimulacaoDetalhada({ simulacao, bancos: [banco] });
-    zip.file(nomeArquivoUnico(`${nome}.pdf`, nomesUsados), doc.output("arraybuffer"));
-  });
+  for (const g of gruposValidos) {
+    const { doc } = criarDocSimulacaoDetalhada({ simulacao: g.simulacao, bancos: g.bancos });
+    const bytes = doc.output("arraybuffer");
+    const src = await PDFDocument.load(bytes);
+    const pages = await merged.copyPages(src, src.getPageIndices());
+    pages.forEach((p) => merged.addPage(p));
+    total += g.bancos.length;
+  }
 
-  const primeira = itens[0]?.simulacao;
+  const primeira = gruposValidos[0]?.simulacao;
   const ref = primeira?.numero_simulacao ? ` ${primeira.numero_simulacao}` : "";
-  const blob = await zip.generateAsync({ type: "blob" });
-  baixarBlob(blob, `${sanitizarNomeArquivo(`PDFs simulação${ref}`)}.zip`);
-  return itens.length;
+  const outBytes = await merged.save();
+  // ArrayBuffer copy para evitar tipos incompatíveis em alguns runtimes.
+  const ab = outBytes.buffer.slice(outBytes.byteOffset, outBytes.byteOffset + outBytes.byteLength);
+  const blob = new Blob([ab], { type: "application/pdf" });
+  baixarBlob(blob, `${sanitizarNomeArquivo(`Simulação${ref} — detalhada`)}.pdf`);
+  return total;
 }
 
 /** Abrevia um valor monetário em "k"/"mi" para uso no nome do arquivo. */
