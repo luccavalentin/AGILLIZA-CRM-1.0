@@ -861,6 +861,9 @@ export async function baixarSimulacoesDetalhadasAgrupadasZipPDF(
       });
       baixarBlob(doc.output("blob"), filename);
       total += 1;
+      // Intervalo entre downloads: o Chromium ignora/renomeia arquivos
+      // quando múltiplos <a download> são disparados no mesmo tick.
+      await new Promise((r) => setTimeout(r, 450));
     }
   }
 
