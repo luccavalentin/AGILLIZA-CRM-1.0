@@ -458,34 +458,54 @@ function Pagina() {
 
       </div>
 
-      {/* Tabs */}
-      <div className="-mx-1 flex snap-x snap-mandatory gap-1 overflow-x-auto scroll-px-4 border-b border-border px-1 pb-px [scrollbar-width:thin]">
-        {TABS.map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={cn(
-              "shrink-0 snap-start whitespace-nowrap border-b-2 px-3 py-2 text-xs font-semibold uppercase tracking-wide transition-colors",
-              tab === t
-                ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground hover:text-foreground",
-            )}
-          >
-            {TAB_LABELS[t] ?? t}
-          </button>
-        ))}
+      {/* Tabs — barra sofisticada com ícones, gradient underline e halo do ativo */}
+      <div className="relative rounded-xl border border-border/70 bg-gradient-to-b from-card to-muted/30 p-1.5 shadow-sm">
+        <div className="flex snap-x snap-mandatory gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {TABS.map((t) => {
+            const Icone = TAB_ICONS[t];
+            const ativo = tab === t;
+            return (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                className={cn(
+                  "group relative flex shrink-0 snap-start items-center gap-2 whitespace-nowrap rounded-lg px-3.5 py-2 text-[11px] font-bold uppercase tracking-wider transition-all duration-300",
+                  ativo
+                    ? "bg-primary text-primary-foreground shadow-[0_4px_14px_-4px_hsl(var(--primary)/0.5)] ring-1 ring-primary/30"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                )}
+              >
+                <Icone
+                  className={cn(
+                    "h-3.5 w-3.5 shrink-0 transition-transform duration-300",
+                    ativo ? "scale-110" : "group-hover:scale-110",
+                  )}
+                />
+                <span>{TAB_LABELS[t] ?? t}</span>
+                {ativo && (
+                  <span
+                    aria-hidden
+                    className="pointer-events-none absolute inset-x-3 bottom-0.5 h-[2px] rounded-full bg-gradient-to-r from-transparent via-primary-foreground/80 to-transparent"
+                  />
+                )}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
 
-      {tab === "RESUMO" && <TabResumo proposta={p} bancos={data.bancos} propostaId={id} />}
-      {tab === "COMPRADORES" && <ClienteSecao clienteId={p.cliente_id} propostaId={id} secao="comprador" destacarObrigatorios={destacarObrigatorios} onSalvoComprador={autoEnviar ? enviarAposComplementar : () => setTab("RESUMO")} />}
-      {tab === "VENDEDORES" && <ClienteSecao clienteId={p.cliente_id} propostaId={id} secao="vendedores" />}
-      {tab === "IQ" && <ClienteSecao clienteId={p.cliente_id} propostaId={id} secao="iq" />}
-      {tab === "IMÓVEL" && <ClienteSecao clienteId={p.cliente_id} propostaId={id} secao="imovel" />}
-      {tab === "DOCUMENTOS" && <ClienteSecao clienteId={p.cliente_id} propostaId={id} secao="documentos" />}
-      {tab === "ENVIAR_BANCO" && <AbaEnviarBanco clienteId={p.cliente_id} propostaId={id} />}
-      {tab === "ATIVIDADES" && <TabAtividades historico={data.historico} />}
-      {tab === "FUP" && <TabFup propostaId={id} followups={data.followups} />}
+      <div key={tab} className="animate-fade-in">
+        {tab === "RESUMO" && <TabResumo proposta={p} bancos={data.bancos} propostaId={id} />}
+        {tab === "COMPRADORES" && <ClienteSecao clienteId={p.cliente_id} propostaId={id} secao="comprador" destacarObrigatorios={destacarObrigatorios} onSalvoComprador={autoEnviar ? enviarAposComplementar : () => setTab("RESUMO")} />}
+        {tab === "VENDEDORES" && <ClienteSecao clienteId={p.cliente_id} propostaId={id} secao="vendedores" />}
+        {tab === "IQ" && <ClienteSecao clienteId={p.cliente_id} propostaId={id} secao="iq" />}
+        {tab === "IMÓVEL" && <ClienteSecao clienteId={p.cliente_id} propostaId={id} secao="imovel" />}
+        {tab === "DOCUMENTOS" && <ClienteSecao clienteId={p.cliente_id} propostaId={id} secao="documentos" />}
+        {tab === "ENVIAR_BANCO" && <AbaEnviarBanco clienteId={p.cliente_id} propostaId={id} />}
+        {tab === "ATIVIDADES" && <TabAtividades historico={data.historico} />}
+        {tab === "FUP" && <TabFup propostaId={id} followups={data.followups} />}
+      </div>
 
     </div>
   );
