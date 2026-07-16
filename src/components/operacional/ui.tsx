@@ -98,13 +98,28 @@ export function OpStat({
 }
 
 
-/** Chip de prioridade discreto. */
+/** Chip de prioridade preenchido (P1/P2/P3 · rótulo). */
 export function PriorityChip({ prioridade }: { prioridade: Prioridade }) {
   const p = PRIORIDADE[prioridade];
+  const suf: Record<Prioridade, string> = {
+    p1: "Urgente",
+    p2: "Alta",
+    p3: "Normal",
+  };
+  const classes: Record<Prioridade, string> = {
+    p1: "bg-destructive/15 text-destructive ring-1 ring-inset ring-destructive/30",
+    p2: "bg-warning/15 text-warning ring-1 ring-inset ring-warning/30",
+    p3: "bg-muted text-muted-foreground ring-1 ring-inset ring-border",
+  };
   return (
-    <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
-      <span className={cn("size-1.5 rounded-[2px]", p.bar)} />
-      {p.label}
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-semibold",
+        classes[prioridade],
+      )}
+    >
+      <span className={cn("size-1.5 rounded-full", p.bar)} />
+      {p.label} · {suf[prioridade]}
     </span>
   );
 }
