@@ -9,7 +9,7 @@ import {
 } from "@/lib/crm/clientes.functions";
 import type { Categoria, GrupoChecklist } from "./types";
 
-type Dados = { cliente?: { documentos_checklist?: unknown; utiliza_fgts?: boolean | null } };
+type Dados = { cliente?: { documentos_checklist?: unknown; utiliza_fgts?: boolean | null } | null };
 
 export function useChecklistState(clienteId: string, data: Dados | undefined) {
   const qc = useQueryClient();
