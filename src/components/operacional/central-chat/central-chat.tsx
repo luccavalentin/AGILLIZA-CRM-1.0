@@ -271,15 +271,27 @@ export function CentralChatPage() {
               </div>
             ) : (
               <ul className="divide-y">
-                {filtradas.map((t) => (
-                  <li key={`${t.kind}-${t.id}`}>
-                    <ThreadItem
-                      thread={t}
-                      selecionado={ehSelecionado(selecionado, t)}
-                      onClick={() => setSelecionado(threadParaSelecionado(t))}
-                    />
-                  </li>
-                ))}
+                {filtradas.map((r) => {
+                  const t = r.th;
+                  const chave = chaveConversa(t.kind, t.id);
+                  const etiquetasDaConv = (etiquetaPor.get(chave) ?? [])
+                    .map((id) => catalogoEtiquetas.get(id))
+                    .filter(Boolean) as EtiquetaChat[];
+                  return (
+                    <li key={chave}>
+                      <ThreadItem
+                        thread={t}
+                        selecionado={ehSelecionado(selecionado, t)}
+                        onClick={() => setSelecionado(threadParaSelecionado(t))}
+                        apelido={r.apelido}
+                        fixado={r.fixado}
+                        arquivado={r.arquivado}
+                        etiquetas={etiquetasDaConv}
+                        etiquetaIds={etiquetaPor.get(chave) ?? []}
+                      />
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </ScrollArea>
