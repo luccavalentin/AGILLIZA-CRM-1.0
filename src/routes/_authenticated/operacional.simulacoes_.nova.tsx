@@ -110,14 +110,36 @@ function Pagina() {
           sistema_amortizacao: w.sistema_amortizacao,
           created_at: new Date().toISOString(),
         },
-        bancos: comparativo.map((c) => ({
-          nome_banco: c.nome_banco,
-          status_banco: "simulada",
-          valor_parcela: c.resultado.primeira_parcela,
-          taxa_juros_ano: c.taxa_ano * 100,
-          prazo_pagamento_max: w.prazo_meses,
-          valor_financiamento_max: w.valor_financiamento,
-        })),
+        bancos: comparativo.map((c) => {
+          const sistemaCode = w.sistema_amortizacao === "P" ? "P" : "S";
+          return {
+            nome_banco: c.nome_banco,
+            status_banco: "simulada",
+            valor_parcela: c.resultado.primeira_parcela,
+            taxa_juros_ano: c.taxa_ano * 100,
+            prazo_pagamento_max: w.prazo_meses,
+            valor_financiamento_max: w.valor_financiamento,
+            _sistema: sistemaCode === "P" ? "PRICE" : "SAC",
+            // raw_response sintético para o extrator gerar parcelas, CET,
+            // taxa mensal, tipo/plano — mesmos campos que o Bradesco devolve.
+            raw_response: {
+              simulacao: {
+                codigoSistemaAmortizacaoSimulacao: sistemaCode,
+                codigoSistemaAmortizacaoBanco: sistemaCode,
+                prazoPagamentoBanco: w.prazo_meses,
+                prazoPagamentoSimulacao: w.prazo_meses,
+                valorFinanciamentoBanco: w.valor_financiamento,
+                valorFinanciamentoSimulacao: w.valor_financiamento,
+                valorTotalFinanciamento: w.valor_financiamento,
+                valorImovel: w.valor_imovel,
+                valorEntrada: w.valor_entrada,
+                taxaJurosAnoBanco: c.taxa_ano * 100,
+                taxaJurosAnoSimulacao: c.taxa_ano * 100,
+                valorParcelaBanco: c.resultado.primeira_parcela,
+              },
+            },
+          };
+        }),
       });
     } catch {
       toast.error("Não foi possível gerar o PDF da simulação.");
@@ -210,6 +232,7 @@ function Pagina() {
               comparativo={comparativo}
               valorFinanciamento={w.valor_financiamento}
               prazoMeses={w.prazo_meses}
+              sistema={w.sistema_amortizacao === "P" ? "PRICE" : "SAC"}
               baixando={baixando}
               onBaixar={baixarSimulacao}
               onEnviar={irParaCompleta}

@@ -18,13 +18,14 @@ interface Props {
   comparativo: Comparativo[];
   valorFinanciamento: number;
   prazoMeses: number;
+  sistema?: "SAC" | "PRICE";
   baixando: boolean;
   onBaixar: () => void;
   onEnviar: () => void;
 }
 
 export const ResultadoRapido = forwardRef<HTMLDivElement, Props>(function ResultadoRapido(
-  { comparativo, valorFinanciamento, prazoMeses, baixando, onBaixar, onEnviar },
+  { comparativo, valorFinanciamento, prazoMeses, sistema = "SAC", baixando, onBaixar, onEnviar },
   ref,
 ) {
   return (
@@ -40,7 +41,7 @@ export const ResultadoRapido = forwardRef<HTMLDivElement, Props>(function Result
               Resultado — Simulação rápida
             </h2>
             <span className="rounded-full bg-muted px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground">
-              SAC · {prazoMeses} meses
+              {sistema} · {prazoMeses} meses
             </span>
           </div>
           <p className="mt-0.5 text-xs text-muted-foreground">
@@ -138,17 +139,15 @@ function BancoResultadoCard({
         )}
       </div>
 
-      <dl className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs">
-        <Info label="Parcela" value={formatBRL(c.resultado.primeira_parcela)} emphasis />
+      <dl className="flex flex-col divide-y divide-border/60 rounded-lg border border-border/50 bg-muted/20">
+        <Info label="Parcela inicial" value={formatBRL(c.resultado.primeira_parcela)} emphasis />
         <Info label="Taxa a.a." value={formatPercent(c.taxa_ano)} />
-        <Info label="Prazo" value={`${prazoMeses}m`} />
+        <Info label="Prazo" value={`${prazoMeses} meses`} />
         <Info label="Financ. máx" value={formatBRL(valorFinanciamento)} />
+        <Info label="Última parcela" value={formatBRL(c.resultado.ultima_parcela)} />
       </dl>
 
-      <div className="mt-auto flex items-center justify-between gap-2 pt-1">
-        <span className="text-[11px] text-muted-foreground">
-          Última parcela {formatBRL(c.resultado.ultima_parcela)}
-        </span>
+      <div className="mt-auto flex items-center justify-end pt-1">
         <Button size="sm" variant="ghost" className="h-8 gap-1 px-2 text-xs" onClick={onEnviar}>
           <Send className="h-3 w-3" /> Enviar
         </Button>
@@ -159,12 +158,12 @@ function BancoResultadoCard({
 
 function Info({ label, value, emphasis }: { label: string; value: string; emphasis?: boolean }) {
   return (
-    <div className="flex flex-col">
+    <div className="flex items-baseline justify-between gap-3 px-3 py-2">
       <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</dt>
       <dd
         className={cn(
-          "text-sm tabular-nums text-foreground",
-          emphasis ? "font-semibold" : "font-medium",
+          "truncate text-right text-sm tabular-nums text-foreground",
+          emphasis ? "font-semibold text-primary" : "font-medium",
         )}
       >
         {value}
