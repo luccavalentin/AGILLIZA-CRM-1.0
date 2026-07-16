@@ -16,7 +16,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import type { AuditoriaLinha } from "@/lib/admin/auditoria.functions";
-import { classificar, diffPayload, fmtDataHora, TOM_CLASSES } from "./helpers";
+import { classificar, diffPayload, fmtDataHora, rotuloEntidade, TOM_CLASSES } from "./helpers";
 
 function LinhaDetalhe({
   icon: Icone,
@@ -98,9 +98,9 @@ export function DetalheAuditoria({
                   {registro.entidade && (
                     <LinhaDetalhe
                       icon={Activity}
-                      rotulo="Entidade"
+                      rotulo="Tela / Entidade"
                       valor={
-                        registro.entidade +
+                        rotuloEntidade(registro.entidade) +
                         (registro.entidade_id ? ` · ${registro.entidade_id}` : "")
                       }
                     />
