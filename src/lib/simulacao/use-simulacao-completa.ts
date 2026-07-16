@@ -3,11 +3,10 @@ import { useRouter } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { estadoCivilCrmParaCodigo } from "@/lib/propostas/dominios";
 import { avaliarRendaMinima, TAXA_MIP_MES, TAXA_DFI_MES, TAXA_ADMIN_MES } from "@/lib/simulacao/renda";
 import { taxaAnoDeBanco } from "@/lib/simulacao/simulacao-rapida";
 import { completaSchema } from "@/lib/simulacao/schemas";
-import { maskCpfCnpj, maskCelular, formatBRL } from "@/lib/simulacao/format";
+import { formatBRL } from "@/lib/simulacao/format";
 import { ajustarPrazoPorIdade, prazoMaximoPorIdade } from "@/lib/simulacao/prazo";
 import {
   listarBancosAtivos,
