@@ -11,11 +11,19 @@ import {
   transicaoDemandaPermitida,
   type DemandaStatus,
 } from "@/lib/operacional/demandas.functions";
+import { listarResponsaveisEquipe } from "@/lib/propostas/propostas.functions";
 import { statusDemanda, TONE_BAR } from "@/components/operacional/status";
 import { PriorityChip, OpAvatar } from "@/components/operacional/ui";
 import { NovaDemandaDialog } from "@/components/operacional/nova-demanda-dialog";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
 type DemandaItem = Awaited<ReturnType<typeof listarDemandas>>[number];
@@ -182,10 +190,17 @@ function Pagina() {
   const [escopo, setEscopo] = useState<"minhas" | "equipe">(
     () => (typeof window !== "undefined" && (localStorage.getItem("demandas:escopo") as "minhas" | "equipe")) || "equipe",
   );
+  const [filtroResponsavel, setFiltroResponsavel] = useState<string>("todos");
 
   const { data, refetch } = useQuery({
     queryKey: ["demandas", "kanban", escopo],
     queryFn: () => listarDemandas({ data: { escopo } }),
+  });
+
+  const { data: responsaveis } = useQuery({
+    queryKey: ["demandas", "responsaveis-equipe"],
+    queryFn: () => listarResponsaveisEquipe(),
+    staleTime: 5 * 60_000,
   });
 
   // Relógio compartilhado — evita 1 timer por card.
@@ -235,7 +250,12 @@ function Pagina() {
     [moverFn, qc],
   );
 
-  const itens = useMemo(() => data ?? [], [data]);
+  const itens = useMemo(() => {
+    const base = data ?? [];
+    if (filtroResponsavel === "todos") return base;
+    if (filtroResponsavel === "sem") return base.filter((d) => !d.responsavel_id);
+    return base.filter((d) => d.responsavel_id === filtroResponsavel);
+  }, [data, filtroResponsavel]);
   const porStatus = useMemo(() => {
     const mapa = new Map<DemandaStatus, DemandaItem[]>();
     for (const col of COLUNAS) mapa.set(col, []);
@@ -264,19 +284,47 @@ function Pagina() {
         </Button>
       </div>
 
-      <Tabs
-        value={escopo}
-        onValueChange={(v) => {
-          const val = v as "minhas" | "equipe";
-          setEscopo(val);
-          if (typeof window !== "undefined") localStorage.setItem("demandas:escopo", val);
-        }}
-      >
-        <TabsList className="h-10 rounded-xl">
-          <TabsTrigger value="minhas" className="rounded-lg">Minhas</TabsTrigger>
-          <TabsTrigger value="equipe" className="rounded-lg">Gerais</TabsTrigger>
-        </TabsList>
-      </Tabs>
+      <div className="flex flex-wrap items-center gap-3">
+        <Tabs
+          value={escopo}
+          onValueChange={(v) => {
+            const val = v as "minhas" | "equipe";
+            setEscopo(val);
+            if (typeof window !== "undefined") localStorage.setItem("demandas:escopo", val);
+          }}
+        >
+          <TabsList className="h-10 rounded-xl">
+            <TabsTrigger value="minhas" className="rounded-lg">Minhas</TabsTrigger>
+            <TabsTrigger value="equipe" className="rounded-lg">Gerais</TabsTrigger>
+          </TabsList>
+        </Tabs>
+
+        <Select value={filtroResponsavel} onValueChange={setFiltroResponsavel}>
+          <SelectTrigger className="h-10 w-full max-w-[260px] rounded-xl sm:w-[260px]">
+            <SelectValue placeholder="Filtrar por responsável" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="todos">Todos os responsáveis</SelectItem>
+            <SelectItem value="sem">Sem responsável</SelectItem>
+            {(responsaveis ?? []).map((r) => (
+              <SelectItem key={r.id} value={r.id}>
+                {r.nome}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {filtroResponsavel !== "todos" && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-9"
+            onClick={() => setFiltroResponsavel("todos")}
+          >
+            Limpar filtro
+          </Button>
+        )}
+      </div>
 
       <div className="grid grid-cols-1 gap-4 pb-3 sm:grid-cols-2 xl:grid-cols-4">
         {COLUNAS.map((col) => {
