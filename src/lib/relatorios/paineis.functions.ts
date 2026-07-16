@@ -454,6 +454,20 @@ export const getPanelDados = createServerFn({ method: "POST" })
       ]);
       if (sims.error) throw new Error(sims.error.message);
       if (props.error) throw new Error(props.error.message);
+      // Erros das demais tabelas são logados; a falta de dado zera o card, mas
+      // agora fica rastreável em vez de silenciosamente virar 0.
+      for (const [nome, res] of [
+        ["clientes", clientesRes],
+        ["demandas", demRes],
+        ["tasks", tkRes],
+        ["financial_receivables", recRes],
+        ["financial_payables", payRes],
+        ["cliente_pipeline", pipeRes],
+      ] as const) {
+        if (res.error) console.error(`[panel:visao-geral] erro em ${nome}: ${res.error.message}`);
+      }
+
+
 
 
       const simRows = (sims.data ?? []) as any[];

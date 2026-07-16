@@ -17,11 +17,19 @@ export function usePipelineRealtime() {
   const channelName = useRef(`cliente-pipeline-sync-${Math.random().toString(36).slice(2)}`);
 
   useEffect(() => {
+    // Debounce: várias mutações consecutivas (ex.: envio de proposta que muda
+    // status + created followup + updated pipeline) disparam vários eventos em
+    // sequência. Coalescemos em uma única invalidação por burst.
+    let timer: ReturnType<typeof setTimeout> | null = null;
     const invalidar = () => {
-      qc.invalidateQueries({ queryKey: ["crm-painel"] });
-      qc.invalidateQueries({ queryKey: ["clientes"] });
-      qc.invalidateQueries({ queryKey: ["cliente-pipeline"] });
-      qc.invalidateQueries({ queryKey: ["cliente"] });
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => {
+        qc.invalidateQueries({ queryKey: ["crm-painel"] });
+        qc.invalidateQueries({ queryKey: ["clientes"] });
+        qc.invalidateQueries({ queryKey: ["cliente-pipeline"] });
+        qc.invalidateQueries({ queryKey: ["cliente"] });
+        timer = null;
+      }, 400);
     };
 
     const channel = supabase
@@ -44,6 +52,7 @@ export function usePipelineRealtime() {
 
 
     return () => {
+      if (timer) clearTimeout(timer);
       supabase.removeChannel(channel);
     };
   }, [qc]);

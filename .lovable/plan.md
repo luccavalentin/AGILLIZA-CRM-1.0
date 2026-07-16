@@ -1,101 +1,90 @@
+# Auditoria — Etapa 12 (Painel Inicial) e CRM de Clientes
 
-## O que muda
+Antes de iniciar, alinhar escopo e ordem de execução. O trabalho será entregue em **2 passes independentes** (Painel primeiro, depois CRM), cada um seguindo o mesmo protocolo obrigatório do prompt.
 
-Hoje o sistema já calcula uma comissão única por proposta (`comissoes` + trigger `on_proposta_contrato_emitido`) e gera 1 Receber (banco → correspondente) + 1 Pagar (repasse ao parceiro). Isso continua funcionando como "Repasse".
+---
 
-Vou criar acima disso uma camada de **Comissões por usuário**, muito parecida com Repasses, mas com N destinatários por contrato, cada um com sua % configurada por aba (Corretor, Imobiliária, Analista, Comercial Agilliza etc.).
+## Escopo mapeado
 
-## Modelo de dados
+**Painel Inicial** (Etapa 12) — arquivos identificados:
+- `src/routes/_authenticated/dashboard.tsx` — painel principal (Correspondente + Parceiro via matriz de permissões)
+- `src/routes/_authenticated/visao-geral.painel.tsx` — visão consolidada
+- `src/routes/_authenticated/crm.painel.tsx` · `operacional.painel.tsx` · `financeiro.painel.tsx` — painéis modulares acionados pelos atalhos
+- Componentes de KPI/Card/Gráfico em `src/components/dashboard/*` e `src/components/paineis/*`
+- Server functions em `src/lib/dashboard/*.functions.ts` / `src/lib/paineis/*`
+- Realtime: canais `notificacoes`, `demandas`, `propostas`, `simulacoes`
 
-Duas tabelas novas + reaproveitar `financial_payables` (mesma tela de Contas a Pagar, filtrada por "Comissão").
+**CRM de Clientes** — arquivos identificados:
+- `crm.clientes.tsx` (lista) · `crm.clientes_.$id.tsx` (ficha) · `crm.clientes_.novo.tsx` (novo)
+- `crm.painel.tsx` · `crm.chat.tsx` · `crm.documentos.tsx` · `crm.parceiros.tsx` · `crm.scan-ia.tsx`
+- Componentes: `src/components/crm/*` (pipeline, timeline, ficha, documentos, interações, historico)
+- Server fns: `src/lib/crm/*.functions.ts` (clientes, pipeline, documentos, interações, historico)
+- Tabelas Supabase: `clientes`, `cliente_enderecos`, `cliente_pipeline`, `cliente_pipeline_historico`, `cliente_historico`, `cliente_interacoes`, `cliente_documentos`, `cliente_documento_pastas`, `cliente_imoveis`, `cliente_vendedores`, `cliente_parceiros`, `cliente_portal_acessos`, `pipeline_stages`
 
-### `comissao_regras_usuario` (regra por usuário)
-Configuração persistente, editável em `/financeiro/comissoes/regras`.
+---
 
-- `usuario_id` (FK profiles) — o comissionado
-- `tipo_vinculo` — enum: `corretor` | `imobiliaria` | `parceiro` | `comercial_agilliza` | `analista` | `outro` (só rótulo/aba)
-- `gatilho` — enum: `contrato_emitido` (default) | `credito_aprovado` | `assinatura_contrato` | `registro_imovel` | `manual`
-- `base_calculo` — enum: `valor_contrato` | `percentual_repasse`
-- `percentual` — numeric — quando `valor_contrato` = % do valor financiado; quando `percentual_repasse` = % em cima do repasse do correspondente (não do bruto do banco)
-- `banco_nome` — text NULL (regra por banco; NULL = todos)
-- `produto` — text NULL (financiamento, home_equity etc.; NULL = todos)
-- `vigencia_inicio`, `vigencia_fim`, `ativo`
-- `observacao`
+## Protocolo aplicado em cada pass
 
-RLS: leitura/escrita apenas para `usuario_pode_financeiro`, escopo `correspondente_do_usuario`.
+Para cada tela do escopo:
 
-### `comissoes_usuario` (uma linha por (proposta × usuário))
-Uma comissão gerada por proposta+destinatário. Distinta de `comissoes` (que é a comissão-mãe do correspondente).
+1. **Auditoria de código** — leitura completa dos arquivos, server fns e queries.
+2. **Bugs & correções** — lista de achados com `problema → arquivo → causa → solução → validação` (formato pedido no item 1 do prompt).
+3. **Validação de dados reais** — para cada card/KPI/gráfico/lista: tabela de origem, campos, cálculo, escopo (RLS), filtros, comportamento vazio/erro. Zero mock.
+4. **Refatoração dirigida** — extração de componentes reutilizáveis, hooks, services, remoção de duplicações, tipagem, constantes centralizadas. Sem reescrever o que já está bom.
+5. **UX/UI/A11y/Responsivo** — refino sem alterar identidade visual (tokens da marca preservados). Estados vazio/loading/erro. Foco de teclado. `aria-*`. Mobile-first (375/768/1280).
+6. **Paridade Correspondente ↔ Parceiro** — confirmar que ambos usam a mesma tela, componentes e layout, com diferença apenas em `permissions`/`escopo`. Onde houver duplicata, unificar.
+7. **RLS & permissões** — auditoria das policies das tabelas envolvidas com `supabase--read_query`; validar que o filtro no frontend tem contrapartida no banco.
+8. **Checklist de QA** — checklist específico da tela (não genérico), no formato do item 6 do prompt, entregue ao final de cada pass.
 
-- `proposta_id`, `usuario_id`, `regra_id`
-- `gatilho`, `base_calculo`, `percentual`
-- `valor_base` (valor cheio do contrato OU repasse do correspondente conforme base)
-- `valor_comissao`
-- `status` — `a_pagar` | `paga` | `cancelada`
-- `payable_id` (FK financial_payables — mesma tabela do Repasse)
-- `banco_nome`, `produto`, `numero_proposta` (denormalizados p/ relatório)
+---
 
-RLS igual à `comissoes`.
+## Ordem de execução proposta
 
-## Cálculo
+### Pass 1 — Painel Inicial (Etapa 12)
 
-Função `calcular_comissoes_usuario_proposta(_prop_id uuid)`:
+```text
+1. Mapear cada elemento visual → fonte de dados real  (matriz origem × cálculo × escopo)
+2. Auditar dashboard.tsx + server fns de KPI  (achados + correções)
+3. Auditar painéis modulares (crm/operacional/financeiro/visao-geral)  (paridade + reuso)
+4. Realtime: verificar canais, cleanup, invalidations sem storm
+5. Refino UX: hierarquia de cards, skeletons, empty states, responsivo
+6. Paridade Correspondente/Parceiro via matriz de permissões
+7. Checklist QA do Painel
+```
 
-1. Só roda quando `propostas.status = 'contrato_emitido'` (por enquanto; o campo `gatilho` cobre extensões futuras).
-2. Para cada regra ativa cujo `gatilho`+`banco`+`produto` casa, calcula:
-   - `valor_contrato`: `percentual * valor_financiamento / 100`
-   - `percentual_repasse`: pega `comissoes.valor_bruto` (repasse do correspondente pelo banco naquele contrato) e faz `percentual * valor_bruto / 100`
-3. Insere em `comissoes_usuario` (evita duplicidade por (proposta_id, usuario_id, regra_id)).
-4. Cria linha em `financial_payables` com descrição "Comissão contrato PRO-xxxx — {nome usuário}", `parceiro_id = usuario_id`, `vencimento = hoje+35d`, categoria "Comissão".
-5. Registra em `financial_audit_logs`.
+### Pass 2 — CRM de Clientes
 
-Trigger `on_proposta_contrato_emitido` ganha uma chamada extra: depois de `calcular_comissao_proposta` (que garante que `comissoes.valor_bruto` já existe = base do repasse), chama `calcular_comissoes_usuario_proposta`.
+```text
+1. Lista (crm.clientes.tsx): busca, filtros (parceiro/responsável/status/pipeline), paginação, ordenação, contadores
+2. Novo/Editar (crm.clientes_.novo.tsx + ficha): validação CPF/CNPJ, duplicidade, máscaras, endereço, vínculos
+3. Ficha (crm.clientes_.$id.tsx): abas (dados, endereço, imóveis, vendedores, documentos, simulações, propostas, demandas, histórico, portal, LGPD)
+4. Pipeline/esteira: transições, histórico, stepper (sem cadeados — já entregue)
+5. Documentos do cliente: pastas hierárquicas, upload, permissões do bucket
+6. Interações & histórico: registro real, timeline, filtros por tipo
+7. Portal do cliente: geração de acesso, reset, status
+8. Scan IA (integração): leitura, campos extraídos, auditoria
+9. RLS: policies de clientes/pipeline/documentos por escopo (próprios/parceiro/equipe/todos/personalizado)
+10. Paridade Correspondente/Parceiro
+11. Checklist QA do CRM
+```
 
-Também exponho server fn `recalcularComissoesProposta` para o financeiro re-rodar manualmente após editar regras.
+---
 
-## UI — `/financeiro/comissoes`
+## Entregáveis por pass
 
-Duas rotas, com abas no header:
+- **Relatório de bugs corrigidos** no formato exigido (problema/arquivo/causa/solução/validação/risco).
+- **Matriz de dados reais** por tela (elemento → tabela → campos → cálculo → escopo → filtros).
+- **Diffs de refatoração** com justificativa curta.
+- **Checklist QA** específico da tela com os agrupamentos exigidos (acesso, formulários, listagens, cards, integrações, interface, segurança).
+- **Nota de riscos residuais** e follow-ups.
 
-### `/financeiro/comissoes/lancamentos`
-Lista de `comissoes_usuario` (visual idêntico à tela de Repasses):
-- Filtros: usuário, banco, status, período, gatilho.
-- Colunas: nº proposta, cliente, banco, usuário comissionado, tipo vínculo, base, %, valor, status, vencimento.
-- Ação: "Marcar paga" (integra com `financial_payables.status`), "Recalcular", "Cancelar".
-- Botão "Exportar XLSX/PDF" (reaproveita `report-exports`).
+---
 
-### `/financeiro/comissoes/regras`
-CRUD de `comissao_regras_usuario` com **abas por `tipo_vinculo`** (Corretores | Imobiliárias | Analistas | Comercial Agilliza | Parceiros | Outros). Cada aba lista os usuários com regras + botão "Nova regra".
+## Confirmações antes de começar
 
-Form da regra (Dialog):
-- Usuário (ComboSelect com filtro pelo tipo/aba)
-- Tipo de vínculo (pré-preenchido pela aba)
-- Gatilho (select)
-- Base de cálculo (radio: "Valor do contrato" | "% do repasse do correspondente")
-- Percentual (0-100)
-- Banco (opcional — todos por default)
-- Produto (opcional)
-- Vigência início/fim
-- Ativo (switch)
+1. **Ordem OK?** Painel primeiro, CRM depois — cada pass entregue completo (código + relatório + QA) antes de iniciar o próximo. Ou prefere CRM antes?
+2. **Migrações de schema** — se durante a auditoria eu identificar RLS/policy/coluna faltando, posso propor migração via `supabase--migration` (com aprovação por migração)?
+3. **Escopo do "Painel Inicial"** — considero `dashboard.tsx` como principal e trato `visao-geral/crm/operacional/financeiro.painel` como painéis modulares dentro do mesmo pass. Confirma?
+4. **Refino visual** — mantenho tokens/paleta atuais (Agilliza `#000F9F`, dark+light). Sem redesign completo, só refinamento de hierarquia/spacing/estados. Confirma?
 
-Ao trocar "Base" para "% do repasse", mostra dica: "O cálculo usa o repasse que o correspondente recebeu do banco (valor bruto de `comissoes`). Ex.: repasse R$ 10.000 × 20% = R$ 2.000 para este usuário."
-
-## Menu
-
-Em `/financeiro`, adicionar sub-item "Comissões" ao lado de "Repasses" (Contas a Pagar já existe). Guard: `can_view_financial` / `usuario_pode_financeiro`.
-
-## Detalhes técnicos
-
-- Migração cria as 2 tabelas + enums + trigger + função de cálculo, com GRANT authenticated/service_role e RLS por correspondente.
-- Server fns em `src/lib/financeiro/comissoes-usuario.functions.ts` (listar, criar/editar regra, listar regras, recalcular, marcar paga/cancelada).
-- Componentes: `src/components/financeiro/comissoes-usuario/` (`lancamentos-tabela.tsx`, `regras-abas.tsx`, `regra-form.tsx`).
-- Rotas `src/routes/_authenticated/financeiro.comissoes.lancamentos.tsx` e `.regras.tsx`.
-- Zero mock, tudo Supabase + realtime nas mudanças de status.
-
-## Fora de escopo (não faço agora)
-
-- Mudar o repasse-mãe existente (`comissoes` + trigger atual) — segue como está.
-- Cronograma de pagamento parcelado da comissão (fica como 1 payable único; pode ser evoluído depois).
-- Aprovações multi-nível antes de virar payable.
-
-Confirma que sigo com essa modelagem?
+Após seu OK nessas 4 perguntas, inicio o Pass 1 (Painel) imediatamente sem novas confirmações intermediárias.

@@ -195,7 +195,7 @@ export const estatisticasClientes = createServerFn({ method: "GET" })
         )
         .eq("ativo", true);
       if (orMinhas) q = q.or(orMinhas);
-      const { data: rows, count } = await q;
+      const { data: rows, count } = await q.limit(10000);
       const list = (rows ?? []) as any[];
       const portal_ativo = list.filter((r) => r.portal_acesso_ativo).length;
       const em_andamento = list.filter((r) => {
@@ -381,16 +381,40 @@ export const criarCliente = createServerFn({ method: "POST" })
     // "vincula" o cliente já cadastrado, atualizando os campos informados).
     const { data: existente } = await supabaseAdmin
       .from("clientes")
-      .select("id")
+      .select("id, responsavel_id, criador_id")
       .eq("correspondente_id", me.correspondente_id)
       .eq("documento", data.documento)
       .maybeSingle();
     if (existente?.id) {
+      // Só reaproveita se o solicitante tiver permissão de edição
+      // (evita que um criador sobrescreva silenciosamente o cadastro de outro).
+      const podeEditar = await podeAcao(supabase, userId, "crm.clientes", "edit");
+      if (!podeEditar) {
+        throw new Error(
+          "Já existe um cliente com este documento e você não tem permissão para editá-lo. Peça ao responsável para atualizar o cadastro.",
+        );
+      }
       const { error: upErr } = await supabaseAdmin
         .from("clientes")
         .update(campos)
         .eq("id", existente.id);
       if (upErr) throw upErr;
+      const { registrarAuditoria } = await import("@/lib/admin/audit.server");
+      await registrarAuditoria({
+        supabase,
+        userId,
+        correspondenteId: me.correspondente_id,
+        acao: "cliente.atualizar",
+        entidade: "clientes",
+        entidadeId: existente.id,
+        payloadNovo: { motivo: "reaproveitamento_por_documento", nome: data.nome },
+      });
+      await supabaseAdmin.from("cliente_historico").insert({
+        cliente_id: existente.id,
+        tipo: "sistema",
+        descricao: "Dados atualizados via novo cadastro com o mesmo documento.",
+        ator_id: userId,
+      });
       return { id: existente.id };
     }
 
@@ -475,6 +499,24 @@ export const atualizarCliente = createServerFn({ method: "POST" })
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const { supabase, userId } = context;
     const { id, ...campos } = data;
+
+    // Bloqueia troca de documento para um valor já usado por outro cliente do
+    // mesmo correspondente (mensagem amigável em vez de erro 23505 do Postgres).
+    const { data: me } = await supabase.rpc("correspondente_do_usuario", { _user_id: userId });
+    const correspondenteId = (me as string | null) ?? null;
+    if (correspondenteId && campos.documento) {
+      const { data: colisao } = await supabase
+        .from("clientes")
+        .select("id")
+        .eq("correspondente_id", correspondenteId)
+        .eq("documento", campos.documento)
+        .neq("id", id)
+        .maybeSingle();
+      if (colisao?.id) {
+        throw new Error("Já existe outro cliente com este documento neste correspondente.");
+      }
+    }
+
     const { error } = await supabase
       .from("clientes")
       .update({
@@ -671,7 +713,7 @@ export const listarPainel = createServerFn({ method: "GET" })
       }
       q = q.or(partes.join(","));
     }
-    const { data: rows, error: e2 } = await q.order("nome").returns<any[]>();
+    const { data: rows, error: e2 } = await q.order("nome").limit(10000).returns<any[]>();
     if (e2) throw e2;
 
     const filtradas = (rows ?? []).filter((r: any) => {
@@ -1018,6 +1060,9 @@ export const anexarDocumento = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const { supabase, userId } = context;
+    if (!(await podeAcao(supabase, userId, "crm.clientes", "edit"))) {
+      throw new Error("Sem permissão para anexar documentos deste cliente.");
+    }
     const { count } = await supabase
       .from("cliente_documentos")
       .select("id", { count: "exact", head: true })
@@ -1435,18 +1480,24 @@ export const buscarClientesCRM = createServerFn({ method: "GET" })
     return rows ?? [];
   });
 
-/** Exclui um cliente (e seus registros dependentes via cascata). */
+/**
+ * Exclui um cliente por soft delete (`deleted_at`) e propaga o soft delete para
+ * simulações, propostas, demandas e tasks vinculadas. Não apaga fisicamente
+ * nenhum registro financeiro (comissões/recebíveis/pagáveis continuam íntegros
+ * e permanecem contabilizados até que sejam explicitamente cancelados no
+ * módulo financeiro). Um administrador pode restaurar tudo pela aba "Excluídos".
+ */
 export const excluirCliente = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .inputValidator((d: unknown) =>
+    z.object({ id: z.string().uuid(), motivo: z.string().max(500).optional() }).parse(d),
+  )
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const { supabase, userId } = context;
     const cid = data.id;
 
     // Permite excluir se: (a) tem permissão explícita no módulo, OU
-    // (b) é o próprio criador do cliente. A RLS do banco já autoriza o criador,
-    // mas fazíamos aqui uma checagem restrita a admin/gestor que barrava
-    // analistas/comerciais de excluírem seus próprios cadastros.
+    // (b) é o próprio criador do cliente.
     const permitido = await podeAcao(supabase, userId, "crm.clientes", "delete");
     if (!permitido) {
       const { data: dono } = await supabase
@@ -1459,52 +1510,24 @@ export const excluirCliente = createServerFn({ method: "POST" })
       }
     }
 
-    // Usa o cliente administrativo para remover cliente e dependências mesmo
-    // quando a RLS restringiria o DELETE em cascata.
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const agora = new Date().toISOString();
+    const motivo = data.motivo ?? "Cliente excluído pelo CRM.";
 
-
-    // Propostas do cliente -> limpa comissões/recebíveis vinculados antes.
-    const { data: props } = await supabaseAdmin
-      .from("propostas")
-      .select("id")
-      .eq("cliente_id", cid);
-    const propIds = (props ?? []).map((p: any) => p.id);
-    if (propIds.length > 0) {
-      await supabaseAdmin.from("comissoes").delete().in("proposta_id", propIds);
-      await supabaseAdmin.from("financial_receivables").delete().in("proposta_id", propIds);
+    // Soft delete em cascata (mesmo padrão de limparVinculoEsteira).
+    for (const tabela of ["propostas", "simulacoes", "demandas", "tasks"] as const) {
+      await supabaseAdmin
+        .from(tabela)
+        .update({ deleted_at: agora, deleted_by: userId, deleted_motivo: motivo } as any)
+        .eq("cliente_id", cid)
+        .is("deleted_at", null);
     }
 
-    // Remove todos os registros dependentes que referenciam este cliente.
-    const tabelasDependentes = [
-      "cliente_app_acessos",
-      "cliente_app_mensagens",
-      "cliente_app_notificacoes",
-      "cliente_documento_pastas",
-      "cliente_documentos",
-      "cliente_enderecos",
-      "cliente_historico",
-      "cliente_imoveis",
-      "cliente_interacoes",
-      "cliente_parceiros",
-      "cliente_pipeline",
-      "cliente_pipeline_historico",
-      "cliente_portal_acessos",
-      "cliente_vendedores",
-      "crm_chat_cliente_etiquetas",
-      "crm_chat_meta",
-      "demandas",
-      "proposta_envolvidos",
-      "propostas",
-      "scan_ia_leituras",
-      "simulacoes",
-      "tasks",
-    ] as const;
-    for (const tabela of tabelasDependentes) {
-      await supabaseAdmin.from(tabela as any).delete().eq("cliente_id", cid);
-    }
-
-    const { error } = await supabaseAdmin.from("clientes").delete().eq("id", cid);
+    // Soft delete do próprio cliente.
+    const { error } = await supabaseAdmin
+      .from("clientes")
+      .update({ deleted_at: agora, deleted_by: userId, deleted_motivo: motivo } as any)
+      .eq("id", cid);
     if (error) throw error;
 
     const { data: corr } = await supabase.rpc("correspondente_do_usuario", { _user_id: userId });
@@ -1515,7 +1538,8 @@ export const excluirCliente = createServerFn({ method: "POST" })
       correspondenteId: corr ?? null,
       acao: "cliente.excluir",
       entidade: "clientes",
-      entidadeId: data.id,
+      entidadeId: cid,
+      payloadNovo: { motivo, tipo: "soft_delete" },
     });
     return { ok: true };
   });
