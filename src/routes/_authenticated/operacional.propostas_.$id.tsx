@@ -86,7 +86,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ChevronDown, Clock, Check, LayoutDashboard, Users, Store, ClipboardList, Home, FolderOpen, Send, Activity, MessageSquare } from "lucide-react";
+import { ChevronDown, Clock, Check, LayoutDashboard, Users, Store, ClipboardList, Home, FolderOpen, Upload, Activity, MessageSquare } from "lucide-react";
 import {
   baixarPropostaSimplificadaPDF,
   baixarPropostaDetalhadaPDF,
