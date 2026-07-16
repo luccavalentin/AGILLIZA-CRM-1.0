@@ -110,6 +110,7 @@ export function CentralChatPage() {
           ? true
           : th.titulo.toLowerCase().includes(t) ||
             (th.subtitulo?.toLowerCase().includes(t) ?? false) ||
+            (th.demanda_titulo?.toLowerCase().includes(t) ?? false) ||
             (th.ultima_mensagem?.toLowerCase().includes(t) ?? false),
       );
   }, [threads, aba, termo]);
