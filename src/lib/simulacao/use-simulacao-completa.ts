@@ -1016,19 +1016,23 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
           },
         });
         idsGerados.push(id);
-        for (const bid of f.bancos_price_ids) {
-          try {
-            await enviarSimulacaoBanco({ data: { simulacao_id: id, banco_ids: [bid] } });
-          } catch (e) {
-            toast.error(
-              e instanceof Error
-                ? e.message
-                : "Falha ao enviar a um banco (PRICE). Você pode reenviar na tela da simulação.",
-            );
-          }
-          done++;
-          setConcluidos(done);
-        }
+        await Promise.all(
+          f.bancos_price_ids.map(async (bid: string) => {
+            try {
+              await enviarSimulacaoBanco({ data: { simulacao_id: id, banco_ids: [bid] } });
+            } catch (e) {
+              toast.error(
+                e instanceof Error
+                  ? e.message
+                  : "Falha ao enviar a um banco (PRICE). Você pode reenviar na tela da simulação.",
+              );
+            } finally {
+              done++;
+              setConcluidos(done);
+            }
+          }),
+        );
+
       }
 
       sessionStorage.removeItem("simulacao_wizard");
