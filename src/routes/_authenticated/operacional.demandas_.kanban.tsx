@@ -11,11 +11,19 @@ import {
   transicaoDemandaPermitida,
   type DemandaStatus,
 } from "@/lib/operacional/demandas.functions";
+import { listarResponsaveisEquipe } from "@/lib/propostas/propostas.functions";
 import { statusDemanda, TONE_BAR } from "@/components/operacional/status";
 import { PriorityChip, OpAvatar } from "@/components/operacional/ui";
 import { NovaDemandaDialog } from "@/components/operacional/nova-demanda-dialog";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
 type DemandaItem = Awaited<ReturnType<typeof listarDemandas>>[number];
