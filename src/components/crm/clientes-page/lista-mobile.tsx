@@ -12,7 +12,7 @@ type Props = {
   isLoading: boolean;
   itens: ClienteItem[];
   navigateToFicha: (id: string) => void;
-  handleExcluir: (id: string) => void | Promise<void>;
+  handleExcluir: (id: string) => Promise<void>;
 };
 
 export function ListaMobile({ isLoading, itens, navigateToFicha, handleExcluir }: Props) {

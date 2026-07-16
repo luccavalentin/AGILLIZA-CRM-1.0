@@ -24,7 +24,7 @@ type Props = {
   pagina: number;
   setPagina: (updater: (p: number) => number) => void;
   navigateToFicha: (id: string) => void;
-  handleExcluir: (id: string) => void | Promise<void>;
+  handleExcluir: (id: string) => Promise<void>;
 };
 
 export function ListaDesktop({
