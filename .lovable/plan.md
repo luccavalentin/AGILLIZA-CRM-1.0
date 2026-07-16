@@ -1,100 +1,62 @@
-# Central de Conversas — Operacional › Chats
+## Objetivo
 
-Hub único inspirado em Teams/WhatsApp com todos os históricos de conversa do usuário, unificando design, som, "digitando…", flutuante e realtime.
+Padronizar a gestão de conversas em todos os chats do sistema — Central de Conversas (DM), Chat do Cliente (CRM), Chat de Demandas e Chat do Portal do Cliente — com as ações: **Arquivar / Desarquivar, Excluir, Editar (renomear/apelido), Etiquetar (marcadores coloridos)**, além de **pesquisa por palavra-chave** (no assunto e no conteúdo das mensagens).
 
-## Localização
-- Novo item de menu em **Operacional › Chats** (rota `/operacional/chats`), logo abaixo de "Demandas".
-- Mantém o item "Chat" do CRM e as conversas dentro de cada demanda funcionando (a central apenas reúne tudo).
+## Escopo
 
-## Estrutura da tela
-Layout de 3 colunas (Teams-like), responsivo (mobile empilha lista → conversa):
+### 1. Banco de dados (migração única)
+- Nova tabela genérica `chat_gestao` (por usuário + tipo de chat + id do chat):
+  - `usuario_id`, `chat_tipo` (`dm | cliente | demanda | portal_cliente`), `chat_id`, `arquivado_em`, `excluido_em` (soft delete só para o usuário), `apelido`, `pinado_em`, timestamps.
+- Nova tabela `chat_etiquetas` (globais por organização, com nome + cor).
+- Nova tabela `chat_etiqueta_vinculos` (`etiqueta_id`, `chat_tipo`, `chat_id`).
+- Migrar `crm_chat_etiquetas` e `crm_chat_cliente_etiquetas` existentes para o novo modelo, mantendo compatibilidade da tela `/crm/chat`.
+- Índices por `(usuario_id, chat_tipo, arquivado_em, excluido_em)` e busca full-text (`tsvector`) em `dm_mensagens`, `cliente_app_mensagens`, `demanda_mensagens` para pesquisa por palavra-chave.
+- RLS: cada usuário só vê/gerencia sua própria linha de `chat_gestao`; etiquetas visíveis para todos os autenticados; admin gerencia catálogo.
+
+### 2. Server functions (`src/lib/chats/gestao.functions.ts`)
+- `arquivarConversa / desarquivarConversa`
+- `excluirConversa` (soft delete por usuário; admin pode excluir "para todos" nos casos DM)
+- `renomearConversa` (define apelido pessoal)
+- `criarEtiqueta / listarEtiquetas / editarEtiqueta / excluirEtiqueta`
+- `aplicarEtiqueta / removerEtiqueta`
+- `pesquisarConversas({ q, tipos, incluirArquivadas, etiquetas })` — busca unificada em títulos e mensagens usando `tsvector` + `websearch_to_tsquery('portuguese', ...)`.
+- Atualizar `listarThreadsCentral` para respeitar `arquivado_em/excluido_em` e trazer etiquetas + apelido.
+
+### 3. UI compartilhada
+- Novo componente `ConversaMenuAcoes` (dropdown com Arquivar, Excluir, Renomear, Etiquetar, Fixar) usado em:
+  - Central de Conversas (`central-chat.tsx`) — item da lista + cabeçalho.
+  - Chat de Cliente (`chat-cliente-instagram.tsx` e `/crm/chat`).
+  - Chat de Demandas (`demanda-chat.tsx`).
+  - Portal do Cliente (`chat-cliente.tsx`).
+  - Janelas flutuantes (`floating-chat-host.tsx`) — menu no header.
+- Novo `EtiquetaPicker` (popover multi-seleção com cores + criação inline).
+- Nova aba/filtro **Arquivadas** e chip de **Etiquetas** na sidebar da Central.
+- Barra de pesquisa da Central passa a debounced + busca em mensagens; destaque do trecho encontrado.
+- Renomear = edição inline do título da conversa (apelido pessoal, não altera o nome global).
+
+### 4. Portal do Cliente
+- Ícone de opções ao lado do chat com **Arquivar** e **Limpar histórico (para mim)**; sem exclusão global.
+
+## Detalhes técnicos
 
 ```text
-┌───────────────┬──────────────────────────────────┐
-│ Sidebar       │  Cabeçalho da conversa           │
-│ ┌───────────┐ │  Nome · status · ações           │
-│ │ Abas      │ ├──────────────────────────────────┤
-│ │ Tudo /    │ │                                  │
-│ │ Diretas / │ │  Mensagens (mesmo design de      │
-│ │ Clientes/ │ │  chat-cliente-tab: bolhas,       │
-│ │ Demandas  │ │  âncoras, "digitando…", som)     │
-│ ├───────────┤ │                                  │
-│ │ Busca     │ ├──────────────────────────────────┤
-│ │ + Nova DM │ │  Composer                        │
-│ ├───────────┤ │                                  │
-│ │ Lista de  │ │                                  │
-│ │ threads   │ │                                  │
-│ └───────────┘ │                                  │
-└───────────────┴──────────────────────────────────┘
+chat_gestao (usuario_id, chat_tipo, chat_id)  ── 1..n ── chat_etiqueta_vinculos ── n..1 ── chat_etiquetas
+                     │
+                     └── arquivado_em / excluido_em / apelido / pinado_em
 ```
 
-**Abas** na sidebar:
-1. **Tudo** — feed misto ordenado por última mensagem.
-2. **Diretas** — DMs entre usuários internos (novo).
-3. **Clientes** — reaproveita `crm_chat_meta` + `cliente_app_mensagens`.
-4. **Demandas** — threads via `demanda_mensagens`.
+- Full-text: coluna gerada `search_tsv tsvector` em cada tabela de mensagens + índice GIN.
+- Feature flag não necessária — retrocompat via migração das tabelas `crm_chat_*`.
+- Papéis: qualquer usuário arquiva/renomeia/etiqueta sua própria visão; excluir mensagens de outros exige `admin` (via `has_role`).
+- Realtime: canal atual continua; nova subscription para `chat_gestao` do próprio usuário para refletir arquivamento em múltiplas abas.
 
-Cada item mostra: avatar/iniciais, nome, prévia da última mensagem, timestamp relativo, badge de não lidas.
+## Fora de escopo
+- Encaminhar mensagens, silenciar por período, exportar conversa (podem entrar depois).
+- Reordenar etiquetas por drag-and-drop.
 
-**"+ Nova conversa"** abre popover com busca de colegas (`profiles` do mesmo `correspondente_id`, com login habilitado) — clique inicia/abre DM 1:1.
-
-## Backend (nova estrutura para DMs internas)
-
-Nova migration cria:
-
-- `dm_conversas` — conversa entre 2+ usuários internos.
-- `dm_participantes` — vínculo user↔conversa + `ultima_leitura_em` (badge de não lidas).
-- `dm_mensagens` — mensagens (texto + anexo opcional já no bucket existente).
-- Função `dm_get_or_create_1on1(_other uuid)` — SECURITY DEFINER, garante conversa única por par.
-- Trigger `dm_after_insert_mensagem` — dispara `emitir_notificacao` para o outro participante.
-- RLS: participante lê/escreve; escopo pelo `correspondente_id` do criador.
-- `ALTER PUBLICATION supabase_realtime ADD TABLE dm_mensagens, dm_conversas, dm_participantes` para realtime.
-
-Server functions em `src/lib/chats/central.functions.ts`:
-- `listarThreadsCentral()` — retorna união (DMs, clientes, demandas) já ordenada + contadores de não lidas.
-- `buscarColegas(termo)` — autocomplete para DM nova.
-- `iniciarDM(other_user_id)` — chama `dm_get_or_create_1on1`.
-- `listarMensagensDM(conversa_id)`, `enviarMensagemDM(conversa_id, texto, anexo?)`, `marcarLidoDM(conversa_id)`.
-
-## Frontend
-
-Novos arquivos:
-- `src/routes/_authenticated/operacional.chats.tsx` — rota principal.
-- `src/components/operacional/central-chat/sidebar-threads.tsx` — abas + lista + busca + nova DM.
-- `src/components/operacional/central-chat/dm-conversa.tsx` — motor de conversa DM (mesmo visual das outras).
-- `src/lib/chats/central.functions.ts` — server functions listadas acima.
-- `src/hooks/use-dm-realtime.ts` — subscribe em `dm_mensagens`.
-
-Reaproveita:
-- `ChatClienteConversa` para threads de cliente.
-- `DemandaChatConversa` para threads de demanda.
-- `useIncomingChatSound`, `useChatTyping`, `signalIncomingChat` (já globais).
-- `abrirChatFlutuante` / `abrirDemandaChatFlutuante` + novo `abrirDMFlutuante` no `floating-chat-store` (adiciona `kind: "dm"`).
-
-Menu (`nav-config`): adicionar entrada "Chats" sob Operacional, com badge de não lidas somado.
-
-## Recursos incluídos no v1
-- Design unificado das 3 conversas (mesma bolha/composer/tokens).
-- Busca de colegas para iniciar DM (autocomplete).
-- Realtime de mensagens + "digitando…" + som + pisca-menu (já existentes, plugados na DM).
-- Contador de não lidas por thread e agregado.
-- Anexos usando bucket existente `chat-anexos` (mesma UX das outras conversas).
-- Botão "Soltar chat" → janela flutuante global.
-
-## Fora do v1 (avisar ao usuário)
-- Grupos internos (N usuários).
-- Menções `@usuario` com notificação específica.
-- Presença online / última vez visto.
-- Busca full-text em todas as threads (v1 tem busca por nome da thread).
-
-Se preferir incluir alguma dessas no v1, me avise antes de eu executar.
-
-## Passos de execução
-1. Rodar migration das tabelas DM + RLS + realtime + função `dm_get_or_create_1on1`.
-2. Criar server functions + hook realtime.
-3. Criar rota `/operacional/chats` + componentes da central.
-4. Estender `floating-chat-store` com `kind: "dm"` e `FloatingChatHost`.
-5. Adicionar item no menu + badge agregado.
-6. Typecheck.
-
-Confirma que posso executar? (Se quiser grupos/menções/presença no v1, diz agora — dobra o escopo, mas faço junto.)
+## Entregáveis
+1. Migração SQL (tabelas + índices + RLS + tsvector + backfill das etiquetas do CRM).
+2. `src/lib/chats/gestao.functions.ts` + atualização de `central.functions.ts`.
+3. Componentes: `ConversaMenuAcoes`, `EtiquetaPicker`, `PesquisaConversas`.
+4. Integração nos 5 pontos de chat citados + janela flutuante.
+5. Verificação: `tsgo`, teste manual das ações em cada chat.
