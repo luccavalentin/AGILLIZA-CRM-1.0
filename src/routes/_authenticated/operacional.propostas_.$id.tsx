@@ -507,11 +507,17 @@ function AcoesTopo({
   proposta,
   propostaId,
   bancos,
+  envolvidos,
+  documentos,
+  followups,
   onCadastroIncompleto,
 }: {
   proposta: any;
   propostaId: string;
   bancos: any[];
+  envolvidos?: any[];
+  documentos?: any[];
+  followups?: any[];
   onCadastroIncompleto?: () => void;
 }) {
   const qc = useQueryClient();
