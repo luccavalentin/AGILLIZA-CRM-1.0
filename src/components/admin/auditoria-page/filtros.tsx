@@ -217,66 +217,36 @@ export function BarraFiltros({
               </div>
               <div className="space-y-1">
                 <Label className="text-xs">Usuário</Label>
-                <Select
-                  value={rascunho.userId || TODOS}
-                  onValueChange={(v) =>
-                    setRascunho((s) => ({ ...s, userId: v === TODOS ? "" : v }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Todos" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={TODOS}>Todos os usuários</SelectItem>
-                    {(opcoes?.atores ?? []).map((a) => (
-                      <SelectItem key={a.id} value={a.id}>
-                        {a.nome}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <ComboFiltro
+                  valor={rascunho.userId}
+                  onChange={(v) => setRascunho((s) => ({ ...s, userId: v }))}
+                  opcoes={(opcoes?.atores ?? []).map((a) => ({ valor: a.id, rotulo: a.nome }))}
+                  placeholder="Todos os usuários"
+                  vazio="Nenhum usuário encontrado."
+                />
               </div>
               <div className="space-y-1">
                 <Label className="text-xs">Tipo de operação</Label>
-                <Select
-                  value={rascunho.acao || TODOS}
-                  onValueChange={(v) =>
-                    setRascunho((s) => ({ ...s, acao: v === TODOS ? "" : v }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Todas" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={TODOS}>Todas as operações</SelectItem>
-                    {(opcoes?.acoes ?? []).map((a) => (
-                      <SelectItem key={a.valor} value={a.valor}>
-                        {a.rotulo}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <ComboFiltro
+                  valor={rascunho.acao}
+                  onChange={(v) => setRascunho((s) => ({ ...s, acao: v }))}
+                  opcoes={opcoes?.acoes ?? []}
+                  placeholder="Todas as operações"
+                  vazio="Nenhuma operação encontrada."
+                />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs">Entidade</Label>
-                <Select
-                  value={rascunho.entidade || TODOS}
-                  onValueChange={(v) =>
-                    setRascunho((s) => ({ ...s, entidade: v === TODOS ? "" : v }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Todas" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={TODOS}>Todas as entidades</SelectItem>
-                    {(opcoes?.entidades ?? []).map((e) => (
-                      <SelectItem key={e} value={e}>
-                        {e}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label className="text-xs">Tela / Entidade</Label>
+                <ComboFiltro
+                  valor={rascunho.entidade}
+                  onChange={(v) => setRascunho((s) => ({ ...s, entidade: v }))}
+                  opcoes={(opcoes?.entidades ?? []).map((e) => ({
+                    valor: e,
+                    rotulo: rotuloEntidade(e),
+                  }))}
+                  placeholder="Todas as telas"
+                  vazio="Nenhuma tela encontrada."
+                />
               </div>
             </div>
             <div className="mt-4 flex flex-wrap items-center gap-2">
