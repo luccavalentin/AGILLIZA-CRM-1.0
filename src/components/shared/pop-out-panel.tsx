@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import { createPortal } from "react-dom";
 import { Maximize2, Minimize2, Minus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useChatFlash, stopFlash } from "@/components/shared/chat-alert-store";
 
 
 interface PopOutPanelProps {
@@ -111,6 +112,11 @@ export function FloatingWindow({
     };
   });
   const [minimized, setMinimized] = useState(startMinimized);
+  const flashing = useChatFlash();
+  const blink = flashing && minimized;
+  useEffect(() => {
+    if (!minimized) stopFlash();
+  }, [minimized]);
   const dragRef = useRef<{ dx: number; dy: number } | null>(null);
 
   const onPointerMove = useCallback(
@@ -188,6 +194,7 @@ export function FloatingWindow({
           ? "h-auto border-primary/60 ring-2 ring-primary/40 shadow-[0_12px_40px_-12px_color-mix(in_oklab,var(--primary)_55%,transparent)]"
           : "border-primary/40 ring-1 ring-primary/20",
         !minimized && (mobileExpanded ? "" : "min-h-[20rem] resize"),
+        blink && "chat-blink",
       )}
     >
       <div

@@ -3,9 +3,11 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Bell, CheckCheck, Trash2 } from "lucide-react";
+import { Bell, CheckCheck, Trash2, Settings2, Inbox } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { NotificationSettings } from "@/components/shared/notification-settings";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -135,69 +137,95 @@ function Pagina() {
       <AdminHero
         icon={<Bell className="h-5 w-5" />}
         titulo="Notificações"
-        descricao="Central de avisos do sistema."
-        acoes={
-          <>
-          {naoLidas.length > 0 && (
-            <Button variant="outline" size="sm" onClick={() => marcarTodas.mutate()}>
-              <CheckCheck className="mr-1 h-4 w-4" /> Marcar todas como lidas
-            </Button>
-          )}
-          {itens.length > 0 && (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="outline" size="sm" disabled={limpar.isPending}>
-                  <Trash2 className="mr-1 h-4 w-4" /> Limpar
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Limpar notificações?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Todas as suas notificações serão excluídas permanentemente. Esta ação não pode
-                    ser desfeita.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                  <AlertDialogAction onClick={() => limpar.mutate()}>
-                    Limpar tudo
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          )}
-          </>
-        }
+        descricao="Central de avisos do sistema e preferências de alerta."
       />
 
+      <Tabs defaultValue="lista" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="lista">
+            <Inbox className="mr-1.5 h-4 w-4" /> Notificações
+            {naoLidas.length > 0 && (
+              <span className="ml-2 rounded-full bg-primary px-1.5 text-[10px] font-semibold text-primary-foreground">
+                {naoLidas.length}
+              </span>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="config">
+            <Settings2 className="mr-1.5 h-4 w-4" /> Configurações
+          </TabsTrigger>
+        </TabsList>
 
-      {isLoading ? (
-        <p className="py-12 text-center text-sm text-muted-foreground">Carregando…</p>
-      ) : itens.length === 0 ? (
-        <Card className="p-12 text-center text-sm text-muted-foreground">
-          Você não tem notificações.
-        </Card>
-      ) : (
-        <div className="space-y-6">
-          {naoLidas.length > 0 && (
-            <Card className="overflow-hidden">
-              <p className="border-b bg-muted/50 px-4 py-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                Não lidas ({naoLidas.length})
-              </p>
-              {naoLidas.map(renderItem)}
-            </Card>
+        <TabsContent value="lista" className="space-y-4">
+          {(naoLidas.length > 0 || itens.length > 0) && (
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              {naoLidas.length > 0 && (
+                <Button variant="outline" size="sm" onClick={() => marcarTodas.mutate()}>
+                  <CheckCheck className="mr-1 h-4 w-4" /> Marcar todas como lidas
+                </Button>
+              )}
+              {itens.length > 0 && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="outline" size="sm" disabled={limpar.isPending}>
+                      <Trash2 className="mr-1 h-4 w-4" /> Limpar
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Limpar notificações?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Todas as suas notificações serão excluídas permanentemente. Esta ação não pode
+                        ser desfeita.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction onClick={() => limpar.mutate()}>
+                        Limpar tudo
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+            </div>
           )}
-          {lidas.length > 0 && (
-            <Card className="overflow-hidden">
-              <p className="border-b bg-muted/50 px-4 py-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                Lidas
-              </p>
-              {lidas.map(renderItem)}
+
+          {isLoading ? (
+            <p className="py-12 text-center text-sm text-muted-foreground">Carregando…</p>
+          ) : itens.length === 0 ? (
+            <Card className="p-12 text-center text-sm text-muted-foreground">
+              Você não tem notificações.
             </Card>
+          ) : (
+            <div className="space-y-6">
+              {naoLidas.length > 0 && (
+                <Card className="overflow-hidden">
+                  <p className="border-b bg-muted/50 px-4 py-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    Não lidas ({naoLidas.length})
+                  </p>
+                  {naoLidas.map(renderItem)}
+                </Card>
+              )}
+              {lidas.length > 0 && (
+                <Card className="overflow-hidden">
+                  <p className="border-b bg-muted/50 px-4 py-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    Lidas
+                  </p>
+                  {lidas.map(renderItem)}
+                </Card>
+              )}
+            </div>
           )}
-        </div>
-      )}
+        </TabsContent>
+
+        <TabsContent value="config">
+          <p className="mb-4 text-sm text-muted-foreground">
+            Defina quais alertas você quer receber e quais devem tocar som. As preferências valem
+            neste navegador.
+          </p>
+          <NotificationSettings />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
