@@ -480,7 +480,7 @@ export const moverStatusDemanda = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const { data: atual } = await supabase
       .from("demandas")
-      .select("status")
+      .select("status, titulo, correspondente_id, criador_id, responsavel_id")
       .eq("id", data.id)
       .single();
     if (!atual) throw new Error("Demanda não encontrada.");
@@ -497,6 +497,28 @@ export const moverStatusDemanda = createServerFn({ method: "POST" })
     await supabase
       .from("demanda_historico")
       .insert({ demanda_id: data.id, ator_id: userId, acao: "status", detalhe: data.status });
+
+    // Notifica a contraparte (criador ↔ responsável) e participantes.
+    const { data: parts } = await supabase
+      .from("demanda_participantes")
+      .select("user_id")
+      .eq("demanda_id", data.id);
+    const destinatarios = new Set<string>();
+    if (atual.criador_id && atual.criador_id !== userId) destinatarios.add(atual.criador_id as string);
+    if (atual.responsavel_id && atual.responsavel_id !== userId) destinatarios.add(atual.responsavel_id as string);
+    for (const p of (parts ?? []) as any[]) {
+      if (p.user_id && p.user_id !== userId) destinatarios.add(p.user_id);
+    }
+    for (const uid of destinatarios) {
+      await supabase.rpc("emitir_notificacao", {
+        _user_id: uid,
+        _corr: atual.correspondente_id as string,
+        _tipo: "demanda.status",
+        _titulo: "Demanda atualizada: " + (atual.titulo ?? ""),
+        _corpo: "Status: " + data.status,
+        _link: "/operacional/demandas/" + data.id,
+      });
+    }
     return { ok: true };
   });
 
