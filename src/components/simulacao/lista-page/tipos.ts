@@ -11,7 +11,7 @@ export interface HandlersLinha {
   onBaixarDetalhada: (id: string) => void | Promise<void>;
   onDuplicar: (id: string) => void;
   onEnviarProposta: (id: string, numero: string) => void | Promise<void>;
-  onExcluir: (id: string) => void | Promise<void>;
+  onExcluir: (id: string) => Promise<void>;
   onRestaurar: (id: string) => void | Promise<void>;
 }
 
