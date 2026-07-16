@@ -47,7 +47,7 @@ import { AdicionarParticipanteDialog } from "@/components/operacional/adicionar-
 import { statusDemanda } from "@/components/operacional/status";
 import { PriorityChip, OpAvatar } from "@/components/operacional/ui";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+
 import {
   Select,
   SelectContent,
