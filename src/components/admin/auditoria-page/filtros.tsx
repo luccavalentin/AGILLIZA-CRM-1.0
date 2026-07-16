@@ -1,4 +1,4 @@
-import { ChevronDown, Download, Filter, Search, X } from "lucide-react";
+import { Check, ChevronDown, ChevronsUpDown, Download, Filter, Search, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -6,8 +6,17 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -15,15 +24,105 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 import type { AuditoriaLinha } from "@/lib/admin/auditoria.functions";
-import { exportarCsv, TODOS, type Filtros } from "./helpers";
+import { exportarCsv, rotuloEntidade, TODOS, type Filtros } from "./helpers";
 
 type OpcoesData = {
   atores?: { id: string; nome: string }[];
   acoes?: { valor: string; rotulo: string }[];
   entidades?: string[];
 };
+
+/**
+ * Combobox pesquisável para os filtros da Auditoria. Aceita pares
+ * {valor, rotulo} e permite limpar a seleção com o ícone X.
+ */
+function ComboFiltro({
+  valor,
+  onChange,
+  opcoes,
+  placeholder,
+  vazio = "Nenhum resultado.",
+}: {
+  valor: string;
+  onChange: (v: string) => void;
+  opcoes: { valor: string; rotulo: string }[];
+  placeholder: string;
+  vazio?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const rotuloAtual = opcoes.find((o) => o.valor === valor)?.rotulo ?? "";
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <div className="relative">
+        <PopoverTrigger asChild>
+          <Button
+            type="button"
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className={cn(
+              "w-full justify-between font-normal pr-9",
+              !valor && "text-muted-foreground",
+            )}
+          >
+            <span className="truncate">{rotuloAtual || placeholder}</span>
+            {!valor && <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />}
+          </Button>
+        </PopoverTrigger>
+        {valor && (
+          <button
+            type="button"
+            aria-label="Limpar seleção"
+            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-sm p-0.5 opacity-60 hover:opacity-100"
+            onPointerDown={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onChange("");
+            }}
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+        <Command>
+          <CommandInput placeholder="Buscar…" />
+          <CommandList>
+            <CommandEmpty>{vazio}</CommandEmpty>
+            <CommandGroup>
+              {opcoes.map((o) => (
+                <CommandItem
+                  key={o.valor}
+                  value={`${o.rotulo} ${o.valor}`}
+                  onSelect={() => {
+                    onChange(o.valor);
+                    setOpen(false);
+                  }}
+                >
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4",
+                      valor === o.valor ? "opacity-100" : "opacity-0",
+                    )}
+                  />
+                  {o.rotulo}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 
 export function BarraFiltros({
   rascunho,
