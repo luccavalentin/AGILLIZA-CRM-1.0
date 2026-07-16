@@ -5564,6 +5564,7 @@ export type Database = {
       is_dia_util: { Args: { _corr: string; _d: string }; Returns: boolean }
       is_equipe_interna: { Args: { _user_id: string }; Returns: boolean }
       is_interno: { Args: { _user_id: string }; Returns: boolean }
+      listar_minhas_notificacoes: { Args: never; Returns: Json }
       mask_pii_jsonb: { Args: { _data: Json }; Returns: Json }
       notificar_cliente_portal: {
         Args: {

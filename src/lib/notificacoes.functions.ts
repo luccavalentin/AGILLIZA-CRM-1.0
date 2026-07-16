@@ -17,31 +17,24 @@ export interface ResumoNotificacoes {
   naoLidas: number;
 }
 
-/** Lista as últimas notificações do usuário e a contagem de não lidas. */
+/** Lista as últimas notificações do usuário e a contagem de não lidas.
+ * Chama uma única RPC que devolve `{itens, naoLidas}` — evita ida dupla ao
+ * banco a cada invalidate disparado pela subscription realtime. */
 export const listarNotificacoes = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<ResumoNotificacoes> => {
-    const { supabase, userId } = context;
-
-    const [{ data: itens }, { count }] = await Promise.all([
-      supabase
-        .from("notificacoes")
-        .select("id, tipo, titulo, corpo, link, lida, created_at")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false })
-        .limit(10),
-      supabase
-        .from("notificacoes")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", userId)
-        .eq("lida", false),
-    ]);
-
+    const { supabase } = context;
+    const { data, error } = await supabase.rpc("listar_minhas_notificacoes");
+    if (error) {
+      return { itens: [], naoLidas: 0 };
+    }
+    const payload = (data ?? {}) as { itens?: Notificacao[]; naoLidas?: number };
     return {
-      itens: (itens ?? []) as Notificacao[],
-      naoLidas: count ?? 0,
+      itens: (payload.itens ?? []) as Notificacao[],
+      naoLidas: payload.naoLidas ?? 0,
     };
   });
+
 
 /** Lista todas as notificações do usuário (para a central de notificações). */
 export const listarTodasNotificacoes = createServerFn({ method: "GET" })
