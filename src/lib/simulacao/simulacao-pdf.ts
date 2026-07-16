@@ -861,6 +861,9 @@ export async function baixarSimulacoesDetalhadasAgrupadasZipPDF(
       });
       baixarBlob(doc.output("blob"), filename);
       total += 1;
+      // Intervalo entre downloads: o Chromium ignora/renomeia arquivos
+      // quando múltiplos <a download> são disparados no mesmo tick.
+      await new Promise((r) => setTimeout(r, 450));
     }
   }
 
@@ -878,8 +881,13 @@ function abreviarValor(v: number | null | undefined): string {
   return `${Math.round(k)}k`;
 }
 
-/** Sistema de amortização em rótulo curto (SAC/PRICE) para o nome do arquivo. */
+/** Sistema de amortização em rótulo curto (SAC/PRICE) para o nome do arquivo.
+ * Prioriza o sistema requisitado por banco (b._sistema) — necessário para o
+ * caso "Ambos (SAC + PRICE)" em que o mesmo banco aparece duas vezes. */
 function tabelaLabel(s: any, bancos: any[]): string {
+  const req = String(bancos?.[0]?._sistema ?? "").toUpperCase();
+  if (req.includes("PRICE") || req === "P") return "PRICE";
+  if (req.includes("SAC") || req === "S") return "SAC";
   const d = bancos.map((b) => extrairDetalheBanco(b?.raw_response)).find(Boolean);
   return normalizarSistemaAmortizacao(d?.sistemaAmortizacao, s.sistema_amortizacao) || "-";
 }
