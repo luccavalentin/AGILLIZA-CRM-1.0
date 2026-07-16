@@ -31,7 +31,7 @@ import {
   Building2,
   ShoppingCart,
   MessagesSquare,
-  Timer,
+  
   Landmark,
   Cpu,
   ClipboardList,
@@ -389,18 +389,6 @@ export const navInterno: NavGroup[] = [
             icon: Cpu,
             to: "/admin/apis-ia",
             perm: { modulo: "admin.integracoes" },
-          },
-          {
-            label: "Regras de repasse",
-            icon: Percent,
-            to: "/admin/comissoes",
-            perm: { modulo: "admin.comissoes" },
-          },
-          {
-            label: "SLA & Feriados",
-            icon: Timer,
-            to: "/admin/sla",
-            perm: { modulo: "admin.sla" },
           },
           {
             label: "Backup",
