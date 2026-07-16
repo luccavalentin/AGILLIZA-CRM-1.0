@@ -107,31 +107,100 @@ type SelecionadoState =
 
 export function CentralChatPage() {
   const listarFn = useServerFn(listarThreadsCentral);
+  const listarEstadoFn = useServerFn(listarEstadoChatDoUsuario);
+  const listarVinculosFn = useServerFn(listarVinculosEtiqueta);
+  const listarEtiquetasFn = useServerFn(listarEtiquetas);
   const { data: threads, isLoading } = useQuery({
     queryKey: ["threads-central"],
     queryFn: () => listarFn(),
     refetchInterval: 15_000,
   });
+  const { data: estados } = useQuery({
+    queryKey: ["chat-estado-usuario"],
+    queryFn: () => listarEstadoFn(),
+    refetchInterval: 30_000,
+  });
+  const { data: vinculos } = useQuery({
+    queryKey: ["chat-etiqueta-vinculos"],
+    queryFn: () => listarVinculosFn(),
+    refetchInterval: 30_000,
+  });
+  const { data: etiquetas } = useQuery({
+    queryKey: ["chat-etiquetas"],
+    queryFn: () => listarEtiquetasFn(),
+  });
 
-  const [aba, setAba] = useState<"todos" | ThreadKind>("todos");
+  const estadoPor = useMemo(() => {
+    const m = new Map<string, EstadoChat>();
+    for (const e of estados ?? []) m.set(chaveConversa(e.chat_tipo, e.chat_id), e);
+    return m;
+  }, [estados]);
+
+  const etiquetaPor = useMemo(() => {
+    const m = new Map<string, string[]>();
+    for (const v of vinculos ?? []) {
+      const k = chaveConversa(v.chat_tipo, v.chat_id);
+      const arr = m.get(k) ?? [];
+      arr.push(v.etiqueta_id);
+      m.set(k, arr);
+    }
+    return m;
+  }, [vinculos]);
+
+  const catalogoEtiquetas = useMemo(() => {
+    const m = new Map<string, EtiquetaChat>();
+    for (const e of etiquetas ?? []) m.set(e.id, e);
+    return m;
+  }, [etiquetas]);
+
+  const [aba, setAba] = useState<"todos" | ThreadKind | "arquivadas">("todos");
   const [termo, setTermo] = useState("");
   const [selecionado, setSelecionado] = useState<SelecionadoState>(null);
 
   const filtradas = useMemo(() => {
     const t = termo.trim().toLowerCase();
-    return (threads ?? [])
-      .filter((th) => (aba === "todos" ? true : th.kind === aba))
-      .filter((th) =>
-        !t
-          ? true
-          : th.titulo.toLowerCase().includes(t) ||
-            (th.subtitulo?.toLowerCase().includes(t) ?? false) ||
-            (th.demanda_titulo?.toLowerCase().includes(t) ?? false) ||
-            (th.ultima_mensagem?.toLowerCase().includes(t) ?? false),
-      );
-  }, [threads, aba, termo]);
+    const list = (threads ?? [])
+      .map((th) => {
+        const st = estadoPor.get(chaveConversa(th.kind, th.id));
+        return {
+          th,
+          arquivado: !!st?.arquivado_em,
+          oculto: !!st?.oculto_em,
+          fixado: !!st?.pinado_em,
+          apelido: st?.apelido ?? null,
+        };
+      })
+      .filter((r) => !r.oculto)
+      .filter((r) =>
+        aba === "arquivadas" ? r.arquivado : !r.arquivado,
+      )
+      .filter((r) =>
+        aba === "todos" || aba === "arquivadas" ? true : r.th.kind === aba,
+      )
+      .filter((r) => {
+        if (!t) return true;
+        const th = r.th;
+        return (
+          th.titulo.toLowerCase().includes(t) ||
+          (r.apelido?.toLowerCase().includes(t) ?? false) ||
+          (th.subtitulo?.toLowerCase().includes(t) ?? false) ||
+          (th.demanda_titulo?.toLowerCase().includes(t) ?? false) ||
+          (th.ultima_mensagem?.toLowerCase().includes(t) ?? false)
+        );
+      });
+    list.sort((a, b) => {
+      if (a.fixado !== b.fixado) return a.fixado ? -1 : 1;
+      const ta = a.th.ultima_em ? new Date(a.th.ultima_em).getTime() : 0;
+      const tb = b.th.ultima_em ? new Date(b.th.ultima_em).getTime() : 0;
+      return tb - ta;
+    });
+    return list;
+  }, [threads, aba, termo, estadoPor]);
 
   const totalNaoLidas = (threads ?? []).reduce((acc, t) => acc + (t.nao_lidas ?? 0), 0);
+  const totalArquivadas = (threads ?? []).filter(
+    (t) => estadoPor.get(chaveConversa(t.kind, t.id))?.arquivado_em,
+  ).length;
 
   const router = useRouter();
 
