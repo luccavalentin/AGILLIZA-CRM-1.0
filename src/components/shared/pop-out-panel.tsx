@@ -112,6 +112,11 @@ export function FloatingWindow({
     };
   });
   const [minimized, setMinimized] = useState(startMinimized);
+  const flashing = useChatFlash();
+  const blink = flashing && minimized;
+  useEffect(() => {
+    if (!minimized) stopFlash();
+  }, [minimized]);
   const dragRef = useRef<{ dx: number; dy: number } | null>(null);
 
   const onPointerMove = useCallback(
