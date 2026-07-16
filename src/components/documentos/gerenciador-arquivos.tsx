@@ -289,6 +289,38 @@ export function GerenciadorArquivos({
     [movendo, fnMover, invalidar],
   );
 
+  const alternarMostrarNoMenu = useCallback(
+    async (no: ArquivoNo) => {
+      try {
+        const novo = !no.mostrar_no_menu;
+        await fnDefinirMostrar({ data: { id: no.id, mostrar: novo } });
+        invalidar();
+        toast.success(novo ? "Pasta fixada no menu lateral." : "Pasta removida do menu lateral.");
+      } catch (e: any) {
+        toast.error(e?.message ?? "Falha ao alternar visibilidade.");
+      }
+    },
+    [fnDefinirMostrar, invalidar],
+  );
+
+  const abrirResultadoGlobal = useCallback(
+    async (r: ResultadoPesquisa) => {
+      setBuscaGlobalAberta(false);
+      if (r.tipo === "pasta") {
+        setPasta(r.id);
+        return;
+      }
+      setPasta(r.parent_id);
+      try {
+        const { url, nome } = await fnUrl({ data: { id: r.id } });
+        setVisualizando({ url, nome });
+      } catch (e: any) {
+        toast.error(e?.message ?? "Não foi possível abrir o arquivo.");
+      }
+    },
+    [setPasta, fnUrl],
+  );
+
   function onDrop(e: React.DragEvent) {
     e.preventDefault();
     setDragging(false);
