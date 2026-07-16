@@ -25,16 +25,6 @@ export const Route = createFileRoute("/_authenticated/operacional/simulacoes_/no
 
 function Pagina() {
   const router = useRouter();
-  const {
-    w,
-    set,
-    valido,
-    maxPrazoIdade,
-    entradaSugerida,
-    aplicarEntradaSugerida,
-    definirPrazo,
-  } = useWizardSimulacao();
-
   const [mostrarRapida, setMostrarRapida] = useState(false);
   const [baixando, setBaixando] = useState(false);
   const resultadoRef = useRef<HTMLDivElement>(null);
@@ -51,6 +41,26 @@ function Pagina() {
     staleTime: 1000 * 60 * 30,
   });
 
+  const melhorTaxaAno = useMemo(() => {
+    if (!bancos || bancos.length === 0) return 0.1299;
+    return Math.min(...bancos.map((b) => taxaAnoDeBanco(b.codigo_banco, taxasReais)));
+  }, [bancos, taxasReais]);
+
+  const {
+    w,
+    set,
+    valido,
+    ltvMax,
+    maxPrazoIdade,
+    entradaSugerida,
+    aplicarEntradaSugerida,
+    aplicarValorImovel,
+    aplicarPorEntrada,
+    aplicarPorFinanciamento,
+    aplicarPorParcela,
+    definirPrazo,
+  } = useWizardSimulacao(melhorTaxaAno);
+
   const comparativo = useMemo(() => {
     if (!bancos || !mostrarRapida) return [];
     return compararBancosRapido(
@@ -60,17 +70,26 @@ function Pagina() {
         nome_banco: b.nome_banco,
         taxa_ano: taxaAnoDeBanco(b.codigo_banco, taxasReais),
       })),
-      { valor_financiamento: w.valor_financiamento, prazo_meses: w.prazo_meses, sistema: "S" },
+      {
+        valor_financiamento: w.valor_financiamento,
+        prazo_meses: w.prazo_meses,
+        sistema: w.sistema_amortizacao,
+      },
     );
-  }, [bancos, taxasReais, mostrarRapida, w.valor_financiamento, w.prazo_meses]);
-
-  const melhorTaxaAno = useMemo(() => {
-    if (!bancos || bancos.length === 0) return 0.1299;
-    return Math.min(...bancos.map((b) => taxaAnoDeBanco(b.codigo_banco, taxasReais)));
-  }, [bancos, taxasReais]);
+  }, [
+    bancos,
+    taxasReais,
+    mostrarRapida,
+    w.valor_financiamento,
+    w.prazo_meses,
+    w.sistema_amortizacao,
+  ]);
 
   function irParaCompleta() {
-    sessionStorage.setItem("simulacao_wizard", JSON.stringify({ ...w, prazo: w.prazo_meses }));
+    sessionStorage.setItem(
+      "simulacao_wizard",
+      JSON.stringify({ ...w, prazo: w.prazo_meses }),
+    );
     router.navigate({ to: "/operacional/simulacoes/completa" });
   }
 
@@ -88,7 +107,7 @@ function Pagina() {
           valor_financiamento: w.valor_financiamento,
           valor_entrada: w.valor_entrada,
           prazo: w.prazo_meses,
-          sistema_amortizacao: "S",
+          sistema_amortizacao: w.sistema_amortizacao,
           created_at: new Date().toISOString(),
         },
         bancos: comparativo.map((c) => ({
@@ -126,11 +145,11 @@ function Pagina() {
   void PRAZO_MIN;
 
   return (
-    <div className="mx-auto w-full max-w-6xl p-4 md:p-6 lg:p-8">
+    <div className="mx-auto w-full max-w-none space-y-4 p-4 md:p-6 lg:p-8">
       <Button
         variant="ghost"
         size="sm"
-        className="-ml-2 mb-4 w-fit text-muted-foreground"
+        className="-ml-2 w-fit text-muted-foreground"
         onClick={() =>
           router.history.canGoBack()
             ? router.history.back()
@@ -145,15 +164,20 @@ function Pagina() {
           "grid gap-4 lg:gap-6",
           mostrarRapida
             ? "lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] lg:items-start"
-            : "mx-auto max-w-3xl",
+            : "grid-cols-1",
         )}
       >
         <div className="flex min-w-0 flex-col gap-4">
           <FormularioSimulacao
             w={w}
             set={set}
+            ltvMax={ltvMax}
             entradaSugerida={entradaSugerida}
             aplicarEntradaSugerida={aplicarEntradaSugerida}
+            aplicarValorImovel={aplicarValorImovel}
+            aplicarPorEntrada={aplicarPorEntrada}
+            aplicarPorFinanciamento={aplicarPorFinanciamento}
+            aplicarPorParcela={aplicarPorParcela}
             definirPrazo={definirPrazo}
             maxPrazoIdade={maxPrazoIdade}
             melhorTaxaAno={melhorTaxaAno}
