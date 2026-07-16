@@ -574,50 +574,6 @@ function tabelaDocumentos(doc: jsPDF, pageW: number, documentos: any[], y: numbe
   return (doc as any).lastAutoTable.finalY + 14;
 }
 
-function tabelaFollowups(doc: jsPDF, pageW: number, followups: any[], y: number): number {
-  doc.setTextColor(P.destaque);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(12);
-  doc.text("Follow-ups e próximos passos", MARGIN, y);
-  y += 6;
-
-  const linhas =
-    (followups ?? []).slice(0, 40).map((f) => [
-      dataTxt(f.data_previsao ?? f.created_at),
-      up(f.tipo ?? "—"),
-      f.titulo ?? "—",
-      f.comentario ?? "—",
-    ]) ?? [];
-
-  autoTable(doc, {
-    startY: y + 4,
-    head: [["Data", "Tipo", "Título", "Comentário"]],
-    body: linhas.length
-      ? linhas
-      : [["—", "—", "Nenhum follow-up registrado.", "—"]],
-    margin: { left: MARGIN, right: MARGIN },
-    styles: {
-      font: "helvetica",
-      fontSize: 8,
-      cellPadding: 4,
-      textColor: P.texto,
-      lineColor: P.borda,
-      lineWidth: 0.3,
-    },
-    headStyles: {
-      fillColor: P.azul,
-      textColor: "#FFFFFF",
-      fontStyle: "bold",
-      fontSize: 8,
-    },
-    alternateRowStyles: { fillColor: P.card },
-    columnStyles: {
-      0: { cellWidth: 62 },
-      1: { cellWidth: 70, fontStyle: "bold" },
-    },
-  });
-  return (doc as any).lastAutoTable.finalY + 10;
-}
 
 /* -------------------------------------------------------------------------- */
 /* API                                                                         */
