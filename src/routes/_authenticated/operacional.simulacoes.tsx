@@ -380,7 +380,20 @@ function Pagina() {
     },
   ];
 
+  const handlersLinha: HandlersLinha = {
+    onVer: (id) =>
+      router.navigate({ to: "/operacional/simulacoes/$id", params: { id } }),
+    onEditar: handleEditar,
+    onBaixarComparativo: handleBaixarComparativo,
+    onBaixarDetalhada: handleBaixarDetalhada,
+    onDuplicar: handleDuplicar,
+    onEnviarProposta: handleEnviarProposta,
+    onExcluir: handleExcluir,
+    onRestaurar: handleRestaurar,
+  };
+
   return (
+
 
     <div className="mx-auto w-full max-w-[1600px] space-y-5 p-4 md:p-6">
       {/* Cabeçalho */}
