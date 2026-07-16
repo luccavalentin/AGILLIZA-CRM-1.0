@@ -403,43 +403,63 @@ function Pagina() {
                   Nenhuma simulação para este cliente.
                 </p>
               ) : (
-                negocios!.simulacoes.map((s) => (
-                  <button
-                    key={s.id}
-                    type="button"
-                    onClick={() => setPreviewSimId(s.id)}
-                    className="group relative flex w-full flex-wrap items-center justify-between gap-3 overflow-hidden rounded-xl border border-border bg-card p-3.5 pl-4 text-left text-sm shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
-                  >
-                    <span
-                      aria-hidden
-                      className="absolute inset-y-0 left-0 w-1 bg-primary/70"
-                    />
-                    <div className="flex min-w-0 items-center gap-3">
-                      <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
-                        <FileText className="size-5" />
-                      </span>
-                      <div className="min-w-0">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="font-semibold text-foreground">
-                            {s.produto === "home_equity" ? "Home Equity" : "Financiamento"}
+                negocios!.simulacoes.map((s) => {
+                  const primeiro = s.bancos?.[0] ?? null;
+                  const cor = primeiro ? corDoBanco(primeiro) : "hsl(var(--primary))";
+                  return (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => setPreviewSimId(s.id)}
+                      className="group relative flex w-full flex-wrap items-center justify-between gap-3 overflow-hidden rounded-xl border border-border bg-card p-3.5 pl-4 text-left text-sm shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
+                      style={{ ["--banco-cor" as string]: cor }}
+                    >
+                      <span
+                        aria-hidden
+                        className="absolute inset-y-0 left-0 w-1"
+                        style={{ backgroundColor: cor }}
+                      />
+                      <div className="flex min-w-0 items-center gap-3">
+                        <span
+                          className="grid size-10 shrink-0 place-items-center rounded-lg"
+                          style={{ backgroundColor: primeiro ? `${cor}14` : "hsl(var(--primary) / 0.10)" }}
+                        >
+                          {primeiro ? (
+                            <BancoLogo nome={primeiro} size="lg" />
+                          ) : (
+                            <FileText className="size-5 text-primary" />
+                          )}
+                        </span>
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="font-semibold" style={{ color: primeiro ? cor : undefined }}>
+                              {primeiro
+                                ? s.bancos.length > 1
+                                  ? `${primeiro} +${s.bancos.length - 1}`
+                                  : primeiro
+                                : s.produto === "home_equity"
+                                  ? "Home Equity"
+                                  : "Financiamento"}
+                            </span>
+                            <SimulacaoStatusBadge status={s.status ?? "—"} />
+                          </div>
+                          <span className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
+                            {s.numero_simulacao ?? "—"}
                           </span>
-                          <SimulacaoStatusBadge status={s.status ?? "—"} />
                         </div>
-                        <span className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
-                          {s.numero_simulacao ?? "—"}
+                      </div>
+                      <div className="text-right">
+                        <div className="text-base font-bold tabular-nums text-foreground">
+                          {fmtValor(s.valor_financiamento)}
+                        </div>
+                        <span className="text-[11px] text-muted-foreground">
+                          Valor do financiamento
                         </span>
                       </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-base font-bold tabular-nums text-foreground">
-                        {fmtValor(s.valor_financiamento)}
-                      </div>
-                      <span className="text-[11px] text-muted-foreground">
-                        Valor do financiamento
-                      </span>
-                    </div>
-                  </button>
-                ))
+                    </button>
+                  );
+                })
+
               )}
             </CardContent>
           </Card>
