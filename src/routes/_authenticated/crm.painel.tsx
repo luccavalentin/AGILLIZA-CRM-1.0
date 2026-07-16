@@ -87,7 +87,14 @@ function Pagina() {
   function aplicarPeriodo(p: string) {
     setPeriodo(p);
     const hoje = new Date();
-    const fmt = (dt: Date) => dt.toISOString().slice(0, 10);
+    // Formata como YYYY-MM-DD em fuso local (não UTC), evitando deslocamento
+    // de 1 dia quando o usuário está em UTC-3 e roda de tarde/noite.
+    const fmt = (dt: Date) => {
+      const y = dt.getFullYear();
+      const m = String(dt.getMonth() + 1).padStart(2, "0");
+      const d = String(dt.getDate()).padStart(2, "0");
+      return `${y}-${m}-${d}`;
+    };
     if (p === "todos") {
       setDesde("");
       setAte("");
@@ -109,6 +116,7 @@ function Pagina() {
       setAte(fmt(new Date(hoje.getFullYear(), 11, 31)));
     }
   }
+
 
   function limparTodosFiltros() {
     setPeriodo("todos");
