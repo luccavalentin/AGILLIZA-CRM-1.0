@@ -93,7 +93,7 @@ export const listarRegrasComissaoUsuario = createServerFn({ method: "GET" })
       .select("*")
       .eq("correspondente_id", corr)
       .order("created_at", { ascending: false });
-    if (data.tipo_vinculo) query = query.eq("tipo_vinculo", data.tipo_vinculo);
+    if (data.tipo_vinculo) query = query.eq("tipo_vinculo", data.tipo_vinculo as TipoVinculoComissao);
     if (typeof data.ativo === "boolean") query = query.eq("ativo", data.ativo);
     const { data: regras, error } = await query;
     if (error) throw new Error(error.message);
