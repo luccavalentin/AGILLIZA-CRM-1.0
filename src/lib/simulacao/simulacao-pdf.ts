@@ -567,7 +567,6 @@ export function baixarSimulacaoPDF(input: SimulacaoPdfInput) {
 
 
   const meta = [
-    `Nº ${s.numero_simulacao ?? "—"}`,
     `Cliente: ${s.nome_cliente ?? "—"}`,
     `Produto: ${produto}`,
     `UF: ${s.uf ?? "—"}`,
@@ -575,10 +574,10 @@ export function baixarSimulacaoPDF(input: SimulacaoPdfInput) {
 
   const docInfo = [
     { label: "Data da simulação", value: dataTxt(s.created_at ?? new Date()) },
-    { label: "Nº da simulação", value: String(s.numero_simulacao ?? "—") },
     { label: "Cliente", value: (s.nome_cliente ?? "—").toString() },
     { label: "CPF / CNPJ", value: s.cpf_cnpj ?? "—" },
   ];
+
 
 
   const sistemasBancos = Array.from(
