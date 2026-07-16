@@ -645,12 +645,28 @@ function AcoesTopo({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-72">
+          <DropdownMenuLabel>Documentos da proposta</DropdownMenuLabel>
+          <DropdownMenuItem
+            onClick={async () => {
+              const { baixarPropostaOficialPDF } = await import("@/lib/propostas/proposta-oficial-pdf");
+              baixarPropostaOficialPDF({
+                proposta,
+                bancos: bancos ?? [],
+                envolvidos: (data as any)?.envolvidos ?? [],
+                documentos: (data as any)?.documentos ?? [],
+                followups: (data as any)?.followups ?? [],
+              });
+            }}
+          >
+            Ficha da proposta (cadastro, checklist, etapas)
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
           <DropdownMenuLabel>Extrato para o cliente</DropdownMenuLabel>
           <DropdownMenuItem
             onClick={() => baixarPropostaDetalhadaPDF({ proposta, bancos })}
             disabled={(bancos ?? []).length === 0}
           >
-            Proposta detalhada (todas as parcelas)
+            Cronograma detalhado (todas as parcelas)
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
