@@ -198,7 +198,13 @@ export const excluirCreditoMatricula = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const supabase = context.supabase as any;
-    const { error } = await supabase.from("matricula_creditos").delete().eq("id", data.id);
+    const { userId } = context;
+    const corr = await correspondenteDoUsuario(supabase, userId);
+    const { error } = await supabase
+      .from("matricula_creditos")
+      .delete()
+      .eq("id", data.id)
+      .eq("correspondente_id", corr);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -247,10 +253,13 @@ export const atualizarSolicitacaoMatricula = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => solicitacaoSchema.extend({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const supabase = context.supabase as any;
+    const { userId } = context;
+    const corr = await correspondenteDoUsuario(supabase, userId);
     const { data: atual, error: erroBusca } = await supabase
       .from("matricula_solicitacoes")
       .select("reembolsado,reembolsado_em")
       .eq("id", data.id)
+      .eq("correspondente_id", corr)
       .single();
     if (erroBusca) throw new Error(erroBusca.message);
     const novoReembolsado = data.reembolsado ?? false;
@@ -271,7 +280,8 @@ export const atualizarSolicitacaoMatricula = createServerFn({ method: "POST" })
         data_pagto_reembolso: data.data_pagto_reembolso || null,
         observacao: data.observacao ?? null,
       })
-      .eq("id", data.id);
+      .eq("id", data.id)
+      .eq("correspondente_id", corr);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -284,13 +294,16 @@ export const alternarReembolsoMatricula = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const supabase = context.supabase as any;
+    const { userId } = context;
+    const corr = await correspondenteDoUsuario(supabase, userId);
     const { error } = await supabase
       .from("matricula_solicitacoes")
       .update({
         reembolsado: data.reembolsado,
         reembolsado_em: data.reembolsado ? new Date().toISOString() : null,
       })
-      .eq("id", data.id);
+      .eq("id", data.id)
+      .eq("correspondente_id", corr);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -301,7 +314,13 @@ export const excluirSolicitacaoMatricula = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const supabase = context.supabase as any;
-    const { error } = await supabase.from("matricula_solicitacoes").delete().eq("id", data.id);
+    const { userId } = context;
+    const corr = await correspondenteDoUsuario(supabase, userId);
+    const { error } = await supabase
+      .from("matricula_solicitacoes")
+      .delete()
+      .eq("id", data.id)
+      .eq("correspondente_id", corr);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
