@@ -70,6 +70,17 @@ export const criarFormulario = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }): Promise<FormularioBancario> => {
     const { supabase, userId } = context;
+    validarPdf(data.content_type, data.tamanho);
+
+    // Duplicidade por nome + banco
+    const { data: dup } = await supabase
+      .from("formularios_bancarios")
+      .select("id")
+      .eq("banco", data.banco)
+      .ilike("nome", data.nome)
+      .maybeSingle();
+    if (dup) throw new Error("Já existe um formulário com esse nome neste banco.");
+
     const { data: row, error } = await supabase
       .from("formularios_bancarios")
       .insert({
