@@ -254,6 +254,23 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
     }
   }
 
+  async function solicitarCorrecao(doc: any) {
+    const observacao = window.prompt(
+      `Descreva o que precisa ser corrigido em "${doc.nome_arquivo}":`,
+      "",
+    );
+    if (observacao === null) return;
+    try {
+      await revisar({
+        data: { id: doc.id, status: "pendente", observacao: observacao.trim() || null },
+      });
+      toast.success("Correção solicitada.");
+      qc.invalidateQueries({ queryKey: ["cliente-docs", clienteId] });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao solicitar correção.");
+    }
+  }
+
   function abrirEdicao(d: any) {
     setEditDoc(d);
     setEditCategoria(d.categoria);
