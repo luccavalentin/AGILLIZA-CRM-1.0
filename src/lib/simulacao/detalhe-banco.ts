@@ -206,9 +206,14 @@ export function extrairDetalheBanco(raw: unknown): DetalheBanco | null {
   const desc = (r.descricaoRespostaBanco ?? {}) as Record<string, any>;
   if ((!desc || typeof desc !== "object") && typeof r !== "object") return null;
 
+  // Prioriza o código do sistema efetivamente processado pelo banco
+  // (codigoSistemaAmortizacaoBanco = "S" ou "P"). O texto descritivo
+  // (amortizationType) fica só como fallback, porque bancos como o Santander
+  // devolvem "ATUALIZAVEL TR/SAC" mesmo em simulações PRICE — se ele vencesse,
+  // o cálculo local geraria parcelas SAC no PDF de uma simulação PRICE.
   const sistema = normalizarSistemaAmortizacao(
-    desc.amortizationType ?? r.codigoSistemaAmortizacaoBanco ?? r.codigoSistemaAmortizacaoSimulacao,
-    r.codigoSistemaAmortizacaoSimulacao,
+    desc.amortizationType,
+    r.codigoSistemaAmortizacaoBanco ?? r.codigoSistemaAmortizacaoSimulacao,
   );
 
   // Bradesco devolve campos em português dentro de descricaoRespostaBanco:
