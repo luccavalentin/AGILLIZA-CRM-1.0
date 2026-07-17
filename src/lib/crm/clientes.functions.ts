@@ -692,7 +692,7 @@ export const listarPainel = createServerFn({ method: "GET" })
     let q = supabase
       .from("clientes")
       .select(
-        sel(`id, nome, numero_cliente, responsavel_id, criador_id,
+        sel(`id, nome, numero_cliente, responsavel_id, criador_id, created_at,
              vistoria_agendada_em, vistoria_concluida_em, contrato_emitido_em,
              responsavel:profiles!clientes_responsavel_id_fkey(nome),
              analista:profiles!clientes_criador_id_fkey(nome),
