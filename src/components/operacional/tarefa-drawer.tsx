@@ -18,6 +18,7 @@ import {
   obterTarefa,
   toggleChecklistItem,
   comentarTarefa,
+  excluirComentarioTarefa,
   concluirTarefa,
   listarTagsTarefa,
   criarTagTarefa,
@@ -58,6 +59,7 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
 
   const toggleFn = useServerFn(toggleChecklistItem);
   const comentarFn = useServerFn(comentarTarefa);
+  const excluirComentarioFn = useServerFn(excluirComentarioTarefa);
   const concluirFn = useServerFn(concluirTarefa);
   const criarTagFn = useServerFn(criarTagTarefa);
   const alternarTagFn = useServerFn(alternarTagTarefa);
@@ -362,35 +364,39 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
                       data!.anexos.map((a: any) => (
                         <div
                           key={a.id}
-                          className="flex items-center gap-2 rounded-lg border border-border/60 bg-background/60 px-2.5 py-1.5 text-sm transition hover:border-border hover:bg-background"
+                          className="flex items-start gap-2 rounded-lg border border-border/60 bg-background/60 px-2.5 py-1.5 text-sm transition hover:border-border hover:bg-background"
                         >
-                          <Paperclip className="h-4 w-4 shrink-0 text-muted-foreground" />
+                          <Paperclip className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
                           <div className="min-w-0 flex-1">
-                            <p className="truncate text-foreground">{a.nome}</p>
+                            <p className="break-all text-foreground leading-snug" title={a.nome}>
+                              {a.nome}
+                            </p>
                             <p className="text-xs text-muted-foreground">
                               {a.nome_autor ?? "—"} · {fmtTamanho(a.tamanho)} ·{" "}
                               {fmtData(a.created_at)}
                             </p>
                           </div>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7"
-                            onClick={() => baixarAnexo(a.storage_path, a.nome)}
-                          >
-                            <Download className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 text-destructive"
-                            onClick={async () => {
-                              await removerAnexoFn({ data: { id: a.id } });
-                              invalidar();
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          <div className="flex shrink-0 items-center gap-0.5 self-start">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7"
+                              onClick={() => baixarAnexo(a.storage_path, a.nome)}
+                            >
+                              <Download className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-destructive"
+                              onClick={async () => {
+                                await removerAnexoFn({ data: { id: a.id } });
+                                invalidar();
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
                       ))
                     )}
@@ -411,18 +417,41 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
                     {(data?.comentarios ?? []).length === 0 ? (
                       <p className="text-xs text-muted-foreground">Nenhum comentário ainda. Seja o primeiro a comentar.</p>
                     ) : (
-                      data!.comentarios.map((c: any) => (
-                        <div
-                          key={c.id}
-                          className="rounded-lg border border-border/60 bg-background p-3 text-sm shadow-sm ring-1 ring-primary/5 border-l-4 border-l-primary"
-                        >
-                          <div className="mb-1.5 flex items-center justify-between text-xs">
-                            <span className="font-semibold text-foreground">{c.nome_autor ?? "—"}</span>
-                            <span className="text-muted-foreground tabular-nums">{fmtData(c.created_at)}</span>
+                      data!.comentarios.map((c: any) => {
+                        const proprio = c.autor_id && c.autor_id === (data as any)?.usuario_atual_id;
+                        return (
+                          <div
+                            key={c.id}
+                            className="group rounded-lg border border-border/60 bg-background p-3 text-sm shadow-sm ring-1 ring-primary/5 border-l-4 border-l-primary"
+                          >
+                            <div className="mb-1.5 flex items-center justify-between gap-2 text-xs">
+                              <span className="font-semibold text-foreground">{c.nome_autor ?? "—"}</span>
+                              <div className="flex items-center gap-2">
+                                <span className="text-muted-foreground tabular-nums">{fmtData(c.created_at)}</span>
+                                {proprio && (
+                                  <button
+                                    type="button"
+                                    aria-label="Excluir comentário"
+                                    onClick={async () => {
+                                      if (!confirm("Excluir este comentário?")) return;
+                                      try {
+                                        await excluirComentarioFn({ data: { id: c.id } });
+                                        invalidar();
+                                      } catch (e) {
+                                        toast.error(e instanceof Error ? e.message : "Falha ao excluir.");
+                                      }
+                                    }}
+                                    className="inline-flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground opacity-0 transition hover:bg-destructive/10 hover:text-destructive focus:opacity-100 group-hover:opacity-100"
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                            <p className="whitespace-pre-wrap leading-relaxed text-foreground">{c.corpo}</p>
                           </div>
-                          <p className="whitespace-pre-wrap leading-relaxed text-foreground">{c.corpo}</p>
-                        </div>
-                      ))
+                        );
+                      })
                     )}
                   </div>
                   <Textarea

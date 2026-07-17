@@ -168,6 +168,7 @@ export const obterTarefa = createServerFn({ method: "GET" })
     const nomes = await nomesPorId(supabase, uids);
     return {
       tarefa: tarefa.data,
+      usuario_atual_id: context.userId,
       nome_responsavel: tarefa.data?.responsavel_id
         ? (nomes.get(tarefa.data.responsavel_id) ?? null)
         : null,
@@ -404,6 +405,26 @@ export const comentarTarefa = createServerFn({ method: "POST" })
     const { error } = await supabase
       .from("task_comments")
       .insert({ task_id: data.task_id, autor_id: userId, corpo: data.corpo });
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+/** Exclui um comentário próprio da tarefa. */
+export const excluirComentarioTarefa = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ context, data }): Promise<{ ok: true }> => {
+    const { supabase, userId } = context;
+    const { data: com } = await supabase
+      .from("task_comments")
+      .select("id, autor_id, task_id")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (!com) throw new Error("Comentário não encontrado.");
+    if ((com as any).autor_id !== userId) {
+      throw new Error("Você só pode excluir os próprios comentários.");
+    }
+    const { error } = await supabase.from("task_comments").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
