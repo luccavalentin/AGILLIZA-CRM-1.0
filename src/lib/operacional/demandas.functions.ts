@@ -105,10 +105,13 @@ export const listarDemandas = createServerFn({ method: "GET" })
   .inputValidator((data) =>
     z
       .object({
-        escopo: z.enum(["minhas", "geral", "equipe"]).default("geral"),
+        escopo: z.enum(["minhas", "geral"]).default("geral"),
         status: z.string().optional(),
+        prioridade: z.enum(["p1", "p2", "p3"]).optional(),
+        responsavel_id: z.string().uuid().optional(),
         q: z.string().optional(),
         cliente_id: z.string().uuid().optional(),
+        ordem: z.enum(["recentes", "prazo", "prioridade"]).default("recentes"),
       })
       .parse(data),
   )
@@ -133,21 +136,35 @@ export const listarDemandas = createServerFn({ method: "GET" })
       .select(
         "id, numero, tipo, titulo, descricao, status, prioridade, cliente_id, proposta_id, simulacao_id, responsavel_id, criador_id, prazo_sla, sla_inicio, concluida_em, escalonada, created_at, clientes(nome), propostas(numero_proposta), simulacoes(numero_simulacao)",
       )
-      .order("created_at", { ascending: false })
       .limit(300);
 
+    if (data.ordem === "prazo") {
+      query = query.order("prazo_sla", { ascending: true, nullsFirst: false });
+    } else if (data.ordem === "prioridade") {
+      query = query
+        .order("prioridade", { ascending: true })
+        .order("prazo_sla", { ascending: true, nullsFirst: false });
+    } else {
+      query = query.order("created_at", { ascending: false });
+    }
+
     if (data.escopo === "minhas") {
+      // PostgREST usa vírgula como separador de OR, portanto `in.(a,b)` colide
+      // dentro de `.or(...)`. Emitimos uma condição `eq.` por id.
       const orParts = [`criador_id.eq.${userId}`, `responsavel_id.eq.${userId}`];
-      if (idsParticipante.length) orParts.push(`id.in.(${idsParticipante.join(",")})`);
-      if (partnerClienteIds.length) orParts.push(`cliente_id.in.(${partnerClienteIds.join(",")})`);
+      for (const did of idsParticipante) orParts.push(`id.eq.${did}`);
+      for (const cid of partnerClienteIds) orParts.push(`cliente_id.eq.${cid}`);
       query = query.or(orParts.join(","));
     }
     if (data.status) query = query.eq("status", data.status as any);
+    if (data.prioridade) query = query.eq("prioridade", data.prioridade);
+    if (data.responsavel_id) query = query.eq("responsavel_id", data.responsavel_id);
     if (data.cliente_id) query = query.eq("cliente_id", data.cliente_id);
     if (data.q) {
       const t = data.q.trim();
       query = query.or(`titulo.ilike.%${t}%,numero.ilike.%${t}%`);
     }
+
 
 
     const { data: itens, error } = await query;
