@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
 import { toast } from "sonner";
@@ -38,6 +38,15 @@ interface Props {
 function totalFinanciado(b: any): number | null {
   const d = extrairDetalheBanco(b?.raw_response);
   return d?.financiamentoTotal ?? d?.valorFinanciamento ?? b?.valor_financiamento_max ?? null;
+}
+
+function bancosDaSimulacaoAtual(data: any): any[] {
+  const lista = ((data?.bancos as any[]) ?? []);
+  const simId = data?.simulacao?.id;
+  if (!simId || lista.length <= 1) return lista;
+  const simIds = new Set(lista.map((b) => b?.simulacao_id).filter(Boolean));
+  if (simIds.size <= 1 || !simIds.has(simId)) return lista;
+  return lista.filter((b) => b?.simulacao_id === simId);
 }
 
 function AmortizacaoTag({ sistema }: { sistema: "SAC" | "PRICE" }) {
@@ -106,59 +115,12 @@ export function ResultadoInlineAmbos({ simulacaoIdSac, simulacaoIdPrice, onFecha
   const qc = useQueryClient();
   const [reenviandoBanco, setReenviandoBanco] = useState<string | null>(null);
   const [criandoBanco, setCriandoBanco] = useState<string | null>(null);
-  const jaBaixou = useRef(false);
 
   const qSac = useSimQuery(simulacaoIdSac);
   const qPrice = useSimQuery(simulacaoIdPrice);
 
   const dataSac = qSac.data as any;
   const dataPrice = qPrice.data as any;
-
-  // Auto-download de PDFs individuais quando ambos concluíram
-  useEffect(() => {
-    if (jaBaixou.current) return;
-    const dataSet = [dataSac, dataPrice].filter(Boolean);
-    if (dataSet.length === 0) return;
-    // Exigimos que as ativas estejam prontas
-    const ativas = [
-      simulacaoIdSac ? dataSac : null,
-      simulacaoIdPrice ? dataPrice : null,
-    ].filter(Boolean) as any[];
-    if (ativas.length < (simulacaoIdSac ? 1 : 0) + (simulacaoIdPrice ? 1 : 0)) return;
-
-    const todosBancos = ativas.flatMap((d) => (d.bancos as any[]) ?? []);
-    if (todosBancos.length === 0) return;
-    const proc = todosBancos.some(
-      (b) => b.status_banco === "aguardando" || b.status_banco === "enviando",
-    );
-    if (proc) return;
-    const simulados = todosBancos.filter((b) => b.status_banco === "simulada");
-    if (simulados.length === 0) return;
-    jaBaixou.current = true;
-    (async () => {
-      let okCount = 0;
-      let errCount = 0;
-      try {
-        const { baixarSimulacoesDetalhadasAgrupadasZipPDF } = await import("@/lib/simulacao/simulacao-pdf");
-        okCount = await baixarSimulacoesDetalhadasAgrupadasZipPDF(
-          ativas.map((d) => ({
-            simulacao: d.simulacao,
-            bancos: ((d.bancos as any[]) ?? []).filter((b) => b.status_banco === "simulada"),
-          })),
-        );
-      } catch (err) {
-        console.error("[auto-download PDF] falha ao carregar módulo", err);
-      }
-      if (okCount > 0) {
-        toast.success(
-          `Simulação realizada. ${okCount} PDF${okCount === 1 ? "" : "s"} liberado${okCount === 1 ? "" : "s"} para download.` +
-            (errCount > 0 ? ` (${errCount} com falha — use o botão Baixar PDFs)` : ""),
-        );
-      } else if (errCount > 0) {
-        toast.warning("Alguns PDFs não puderam ser baixados automaticamente. Use o botão Baixar PDFs.");
-      }
-    })();
-  }, [dataSac, dataPrice, simulacaoIdSac, simulacaoIdPrice]);
 
   async function reenviarBanco(simId: string, bancoId: string) {
     setReenviandoBanco(bancoId);
@@ -220,12 +182,12 @@ export function ResultadoInlineAmbos({ simulacaoIdSac, simulacaoIdPrice, onFecha
   };
   const linhas: Linha[] = [];
   if (dataSac) {
-    for (const b of (dataSac.bancos as any[]) ?? []) {
+    for (const b of bancosDaSimulacaoAtual(dataSac)) {
       linhas.push({ sistema: "SAC", simId: dataSac.simulacao.id, simulacao: dataSac.simulacao, banco: b });
     }
   }
   if (dataPrice) {
-    for (const b of (dataPrice.bancos as any[]) ?? []) {
+    for (const b of bancosDaSimulacaoAtual(dataPrice)) {
       linhas.push({ sistema: "PRICE", simId: dataPrice.simulacao.id, simulacao: dataPrice.simulacao, banco: b });
     }
   }
@@ -569,7 +531,7 @@ function BaixarPdfsButton({ dataSac, dataPrice }: { dataSac: any; dataPrice: any
   const [baixando, setBaixando] = useState(false);
   const ativos = [dataSac, dataPrice].filter(Boolean) as any[];
   const totalOk = ativos.reduce(
-    (acc, d) => acc + ((d.bancos as any[]) ?? []).filter((b) => b.status_banco === "simulada").length,
+    (acc, d) => acc + bancosDaSimulacaoAtual(d).filter((b) => b.status_banco === "simulada").length,
     0,
   );
   const desabilitado = totalOk === 0 || baixando;
@@ -584,7 +546,7 @@ function BaixarPdfsButton({ dataSac, dataPrice }: { dataSac: any; dataPrice: any
       ok = await baixarSimulacoesDetalhadasAgrupadasZipPDF(
         ativos.map((d) => ({
           simulacao: d.simulacao,
-          bancos: ((d.bancos as any[]) ?? []).filter((b) => b.status_banco === "simulada"),
+          bancos: bancosDaSimulacaoAtual(d).filter((b) => b.status_banco === "simulada"),
         })),
       );
       if (ok > 0) toast.success(`${ok} PDF${ok === 1 ? "" : "s"} gerado${ok === 1 ? "" : "s"}.${err > 0 ? ` (${err} falharam)` : ""}`);
