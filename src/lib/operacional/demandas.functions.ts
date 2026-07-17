@@ -509,11 +509,14 @@ export const moverStatusDemanda = createServerFn({ method: "POST" })
       throw new Error(`Transição de status inválida: ${atual.status} → ${data.status}.`);
     }
     const patch: Record<string, unknown> = { status: data.status };
+    // Carimba/limpa `concluida_em` para reabertura consistente em relatórios/SLA.
     if (data.status === "concluida") patch.concluida_em = new Date().toISOString();
+    else if (atual.status === "concluida") patch.concluida_em = null;
     const { error } = await supabase
       .from("demandas")
       .update(patch as any)
       .eq("id", data.id);
+
     if (error) throw new Error(error.message);
     await supabase
       .from("demanda_historico")
