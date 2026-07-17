@@ -745,7 +745,13 @@ export const listarSimulacoes = createServerFn({ method: "GET" })
     return { itens, total };
   });
 
-/** ===== Duplicar simulação ===== */
+/** ===== Duplicar simulação =====
+ * Cria uma nova simulação a partir de outra, isolando TODO estado
+ * transacional/telemétrico da origem: números de oportunidade da integração
+ * bancária, verificação de e-mail, IP de consentimento, agrupador de par
+ * SAC+PRICE, timestamps de auditoria, soft-delete e retornos anteriores.
+ * Sem isso a duplicata "herdava" a mesma oportunidade da API, ficava presa
+ * ao grupo SAC/PRICE original ou ressuscitava linhas excluídas. */
 export const duplicarSimulacao = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
@@ -755,26 +761,49 @@ export const duplicarSimulacao = createServerFn({ method: "POST" })
       .from("simulacoes")
       .select("*")
       .eq("id", data.id)
+      .is("deleted_at", null)
       .maybeSingle();
     if (error) throw new Error(error.message);
     if (!orig) throw new Error("Simulação não encontrada.");
 
     const {
-      id,
-      numero_simulacao,
-      created_at,
-      updated_at,
-      status,
-      homefin_id_oportunidade,
-      codigo_oportunidade_homefin,
-      ultimo_envio_em,
-      ultimo_erro,
+      id: _id,
+      numero_simulacao: _num,
+      created_at: _c,
+      updated_at: _u,
+      status: _st,
+      // Integração bancária: não pode ser reaproveitada — cada simulação
+      // nova cria a própria oportunidade e ids no provedor.
+      homefin_id_oportunidade: _hop,
+      codigo_oportunidade_homefin: _coh,
+      ultimo_envio_em: _uee,
+      ultimo_erro: _ue,
+      // Vínculo de par SAC+PRICE: uma duplicata é sempre "individual".
+      agrupador_id: _agp,
+      // Auditoria / verificação: precisam ser recoletadas nesta simulação.
+      email_verificado_em: _eve,
+      email_verificado_por: _evp,
+      consentimento_ip: _cip,
+      consentimento_em: _cem,
+      // Soft delete: nunca ressuscitar como ativa.
+      deleted_at: _da,
+      deleted_by: _db,
+      deleted_motivo: _dm,
       ...resto
     } = orig as any;
+    // Descarta descartáveis (silencia eslint):
+    void _id; void _num; void _c; void _u; void _st; void _hop; void _coh;
+    void _uee; void _ue; void _agp; void _eve; void _evp; void _cip; void _cem;
+    void _da; void _db; void _dm;
 
     const { data: nova, error: errNova } = await supabase
       .from("simulacoes")
-      .insert({ ...resto, status: "rascunho", usuario_criador_id: userId })
+      .insert({
+        ...resto,
+        status: "rascunho",
+        usuario_criador_id: userId,
+        usuario_responsavel_id: userId,
+      })
       .select("id, numero_simulacao")
       .single();
     if (errNova) throw new Error(errNova.message);
@@ -790,8 +819,15 @@ export const duplicarSimulacao = createServerFn({ method: "POST" })
           bancos.map((b) => ({ ...b, simulacao_id: nova.id, status_banco: "aguardando" as const })),
         );
     }
+    await supabase.from("simulacao_historico").insert({
+      simulacao_id: nova.id,
+      tipo: "cadastro",
+      descricao: `Duplicada da simulação ${(orig as any).numero_simulacao ?? data.id.slice(0, 8)}`,
+      ator_id: userId,
+    });
     return { id: nova.id, numero_simulacao: nova.numero_simulacao };
   });
+
 
 /** ===== Enviar à integração bancária ===== */
 export const enviarSimulacaoBanco = createServerFn({ method: "POST" })
