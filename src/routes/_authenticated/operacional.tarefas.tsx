@@ -13,8 +13,10 @@ import {
   Clock,
   Check,
   User2,
+  Download,
 } from "lucide-react";
 import { toast } from "sonner";
+import { baixarTarefasPDF } from "@/lib/operacional/export-pdf";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import {
   listarTarefas,
@@ -181,6 +183,25 @@ function Pagina() {
               <Link to="/operacional/tarefas/kanban">
                 <KanbanSquare className="mr-1.5 h-4 w-4" /> Kanban
               </Link>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="bg-card/60 backdrop-blur"
+              disabled={itens.length === 0}
+              onClick={() => {
+                try {
+                  baixarTarefasPDF({
+                    tarefas: itens,
+                    escopo: escopo === "minhas" ? "Minhas tarefas" : "Todas as tarefas",
+                  });
+                  toast.success("PDF gerado com sucesso.");
+                } catch {
+                  toast.error("Não foi possível gerar o PDF.");
+                }
+              }}
+            >
+              <Download className="mr-1.5 h-4 w-4" /> Baixar PDF
             </Button>
             <NovaTarefaDialog onCriada={refetch} />
           </>
