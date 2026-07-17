@@ -27,6 +27,19 @@ export interface FormularioBancario {
 
 const bancoSchema = z.enum(BANCOS_FORMULARIO);
 
+/** Limite físico de tamanho de PDF (25 MB) validado no servidor. */
+const MAX_PDF_BYTES = 25 * 1024 * 1024;
+const PDF_MIME = "application/pdf";
+
+function validarPdf(content_type: string | null | undefined, tamanho: number | null | undefined) {
+  if (content_type && content_type !== PDF_MIME) {
+    throw new Error("Apenas arquivos PDF são aceitos.");
+  }
+  if (typeof tamanho === "number" && tamanho > MAX_PDF_BYTES) {
+    throw new Error("Arquivo excede o limite de 25 MB.");
+  }
+}
+
 /** Lista todos os formulários bancários. */
 export const listarFormularios = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
