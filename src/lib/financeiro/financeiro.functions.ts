@@ -543,12 +543,14 @@ export const cancelarConta = createServerFn({ method: "POST" })
     const correspondente_id = await correspondenteId(supabase, userId);
     const { data: atual } = await supabase
       .from(TABELA[data.tipo])
-      .select("status")
+      .select("status, valor_pago")
       .eq("id", data.id)
       .single();
     if (!atual) throw new Error("Conta não encontrada.");
     if (atual.status === "cancelada") throw new Error("Conta já está cancelada.");
     if (atual.status === "estornada") throw new Error("Conta estornada não pode ser cancelada.");
+    if (Number(atual.valor_pago) > 0)
+      throw new Error("Conta com pagamentos não pode ser cancelada. Estorne antes.");
     const { error } = await supabase
       .from(TABELA[data.tipo])
       .update({ status: "cancelada", estorno_motivo: data.motivo })
