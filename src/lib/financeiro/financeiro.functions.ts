@@ -830,15 +830,21 @@ export const excluirConfig = createServerFn({ method: "POST" })
       .parse(data),
   )
   .handler(async ({ context, data }): Promise<{ ok: true; desativado: boolean }> => {
-    const { supabase } = context;
+    const { supabase, userId } = context;
+    const correspondente_id = await correspondenteId(supabase, userId);
     const tabela = CONFIG_TABELA[data.entidade] as any;
     // Tenta excluir; se houver vínculos (FK), apenas desativa para preservar histórico.
-    const { error } = await supabase.from(tabela).delete().eq("id", data.id);
+    const { error } = await supabase
+      .from(tabela)
+      .delete()
+      .eq("id", data.id)
+      .eq("correspondente_id", correspondente_id);
     if (error) {
       const { error: err2 } = await supabase
         .from(tabela)
         .update({ ativo: false } as any)
-        .eq("id", data.id);
+        .eq("id", data.id)
+        .eq("correspondente_id", correspondente_id);
       if (err2) throw new Error(err2.message);
       return { ok: true, desativado: true };
     }
