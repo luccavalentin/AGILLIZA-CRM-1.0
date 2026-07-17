@@ -43,9 +43,19 @@ export async function enviarSimulacaoImpl({
     .from("simulacoes")
     .select("*")
     .eq("id", simulacaoId)
+    .is("deleted_at", null)
     .maybeSingle();
   if (error) throw new Error(error.message);
   if (!sim) throw new Error("Simulação não encontrada.");
+
+  // Trava anti-duplicidade: se um envio começou há menos de 45s e ainda não
+  // concluiu, retorna sem duplicar (evita corrida em clique duplo/realtime).
+  if (sim.status === "enviando" && sim.ultimo_envio_em) {
+    const inicio = new Date(sim.ultimo_envio_em).getTime();
+    if (Number.isFinite(inicio) && Date.now() - inicio < 45_000) {
+      throw new Error("Um envio ao banco já está em andamento. Aguarde a conclusão.");
+    }
+  }
 
   // Regras de negócio
   if (!sim.consentimento_lgpd || !sim.consentimento_scr) {
@@ -56,6 +66,7 @@ export async function enviarSimulacaoImpl({
   if (!sim.id_operacao_homefin) {
     throw new Error("Selecione a operação antes de enviar ao banco.");
   }
+
 
   // Todos os bancos selecionados (usados para registrar a oportunidade completa).
   const { data: bancosSelecionados } = await supabase
@@ -358,7 +369,18 @@ export async function enviarSimulacaoImpl({
             valor_parcela_max: dadosApi?.valorParcelaBancoMax ?? null,
             codigo_indexador: dadosApi?.codigoIndexadorBanco ?? null,
             valor_iof: dadosApi?.valorIofBanco ?? null,
-            sistema_amortizacao_banco: dadosApi?.codigoSistemaAmortizacaoBanco ?? null,
+            // A API devolve `codigoSistemaAmortizacaoBanco` ora como string
+            // ("S"/"P"), ora como objeto `{ id: "S" }` — normalizamos para
+            // string curta antes de persistir na coluna texto.
+            sistema_amortizacao_banco: (() => {
+              const v = dadosApi?.codigoSistemaAmortizacaoBanco;
+              if (v == null) return null;
+              if (typeof v === "string") return v;
+              if (typeof v === "object" && "id" in (v as any))
+                return String((v as any).id ?? "") || null;
+              return String(v);
+            })(),
+
           })
           .eq("id", b.id);
         return { banco_id: b.banco_id, status: "simulada" as const };
