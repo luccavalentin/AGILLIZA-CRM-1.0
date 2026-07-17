@@ -257,7 +257,7 @@ function drawInfoFinanciamento(
     },
     {
       label: "Sistema de amortização",
-      valor: sistemaAmortizacaoLabel(d?.sistemaAmortizacao, s.sistema_amortizacao),
+      valor: sistemaDoBanco(b, s),
     },
     { label: "Taxa efetiva anual", valor: pctTxt(d?.taxaJurosAno ?? b?.taxa_juros_ano) },
     { label: "Taxa de juros mensal", valor: pctTxt(d?.taxaJurosMes, "a.m.") },
