@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Plus, Paperclip, Download, Trash2, Tag as TagIcon, X, Calendar, User, Building2, CheckCircle2, MessageSquare, ListChecks, History } from "lucide-react";
+import { Plus, Paperclip, Download, Trash2, Tag as TagIcon, X, Calendar, User, Building2, CheckCircle2, MessageSquare, ListChecks, History, ChevronDown, ChevronUp } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import brandSymbol from "@/assets/brand/agilliza-symbol-oficial.png";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -51,6 +51,7 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
   const [comentario, setComentario] = useState("");
   const [novaTag, setNovaTag] = useState("");
   const [corTag, setCorTag] = useState(CORES[0]);
+  const [historicoAberto, setHistoricoAberto] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [visualizando, setVisualizando] = useState<{ url: string; nome: string } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -446,24 +447,41 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
 
                 {/* Histórico */}
                 {(data?.historico ?? []).length > 0 && (
-                  <section className="space-y-1.5 rounded-xl border border-border/60 bg-card/70 p-4 backdrop-blur">
-                    <h3 className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
-                      <History className="h-4 w-4 text-primary" /> Histórico
-                    </h3>
-                    <div className="space-y-1">
-                      {data!.historico.map((h: any) => (
-                        <div
-                          key={h.id}
-                          className="flex items-center justify-between border-b border-border/40 py-1 text-xs text-muted-foreground last:border-b-0"
-                        >
-                          <span>
-                            {h.acao}
-                            {h.detalhe ? ` — ${h.detalhe}` : ""}
-                          </span>
-                          <span className="tabular-nums">{fmtData(h.created_at)}</span>
-                        </div>
-                      ))}
-                    </div>
+                  <section className="rounded-xl border border-border/60 bg-card/70 backdrop-blur">
+                    <button
+                      type="button"
+                      onClick={() => setHistoricoAberto((v) => !v)}
+                      className="flex w-full items-center justify-between gap-2 p-4 text-sm font-semibold text-foreground transition-colors hover:bg-muted/40 rounded-xl"
+                      aria-expanded={historicoAberto}
+                    >
+                      <span className="flex items-center gap-1.5">
+                        <History className="h-4 w-4 text-primary" /> Histórico
+                        <span className="ml-1 text-xs font-normal text-muted-foreground">
+                          ({data!.historico.length})
+                        </span>
+                      </span>
+                      {historicoAberto ? (
+                        <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </button>
+                    {historicoAberto && (
+                      <div className="space-y-1 px-4 pb-4">
+                        {data!.historico.map((h: any) => (
+                          <div
+                            key={h.id}
+                            className="flex items-center justify-between border-b border-border/40 py-1 text-xs text-muted-foreground last:border-b-0"
+                          >
+                            <span>
+                              {h.acao}
+                              {h.detalhe ? ` — ${h.detalhe}` : ""}
+                            </span>
+                            <span className="tabular-nums">{fmtData(h.created_at)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </section>
                 )}
               </div>
