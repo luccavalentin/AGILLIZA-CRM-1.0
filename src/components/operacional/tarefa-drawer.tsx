@@ -18,6 +18,7 @@ import {
   obterTarefa,
   toggleChecklistItem,
   comentarTarefa,
+  excluirComentarioTarefa,
   concluirTarefa,
   listarTagsTarefa,
   criarTagTarefa,
