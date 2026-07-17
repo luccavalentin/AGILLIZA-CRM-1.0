@@ -336,6 +336,18 @@ export const moverNo = createServerFn({ method: "POST" })
     const destino = data.novo_parent_id ?? null;
     if (destino === data.id) throw new Error("Destino inválido.");
 
+    // Valida que o destino é uma pasta do mesmo correspondente.
+    if (destino) {
+      const { data: pai } = await supabase
+        .from("arquivos_nos")
+        .select("tipo")
+        .eq("id", destino)
+        .eq("correspondente_id", corr)
+        .maybeSingle();
+      if (!pai) throw new Error("Pasta de destino não encontrada.");
+      if (pai.tipo !== "pasta") throw new Error("Destino precisa ser uma pasta.");
+    }
+
     // Impede mover uma pasta para dentro de si mesma (descendente): isso
     // criaria um ciclo e tornaria a subárvore inacessível a partir da raiz.
     if (destino) {
