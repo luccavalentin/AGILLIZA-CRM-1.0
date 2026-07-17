@@ -945,16 +945,34 @@ export const atualizarDadosProposta = createServerFn({ method: "POST" })
       throw new Error("A proposta não pode ser editada neste status.");
     }
     const patch = { ...data.patch };
-    delete (patch as any).id;
-    delete (patch as any).status;
-    delete (patch as any).correspondente_id;
+    // Campos sensíveis nunca podem ser sobrescritos por edição de dados:
+    // identidade da proposta, escopo do correspondente, soft-delete, chaves
+    // externas da integração bancária e carimbos de auditoria.
+    for (const k of [
+      "id",
+      "status",
+      "correspondente_id",
+      "numero_proposta",
+      "deleted_at",
+      "deleted_by",
+      "deleted_motivo",
+      "homefin_id_oportunidade",
+      "homefin_id_simulacao",
+      "codigo_oportunidade_homefin",
+      "created_at",
+      "updated_at",
+      "enviada_em",
+      "contrato_emitido_em",
+    ]) delete (patch as any)[k];
     const { error } = await supabase
       .from("propostas")
       .update(patch as any)
-      .eq("id", data.id);
+      .eq("id", data.id)
+      .is("deleted_at", null);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
 
 /** ===== Selecionar banco vencedor ===== */
 export const selecionarBancoProposta = createServerFn({ method: "POST" })
