@@ -198,7 +198,13 @@ export const excluirCreditoMatricula = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const supabase = context.supabase as any;
-    const { error } = await supabase.from("matricula_creditos").delete().eq("id", data.id);
+    const { userId } = context;
+    const corr = await correspondenteDoUsuario(supabase, userId);
+    const { error } = await supabase
+      .from("matricula_creditos")
+      .delete()
+      .eq("id", data.id)
+      .eq("correspondente_id", corr);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
