@@ -376,7 +376,15 @@ export const baixarConta = createServerFn({ method: "POST" })
     if (e1) throw new Error(e1.message);
     if (conta.status === "cancelada" || conta.status === "estornada")
       throw new Error("Conta não pode ser baixada.");
+    if (conta.status === "paga")
+      throw new Error("Conta já está totalmente paga.");
 
+    const saldoDevedor = Number(conta.valor) - Number(conta.valor_pago);
+    if (data.valor > saldoDevedor + 0.005) {
+      throw new Error(
+        `Valor da baixa (${data.valor.toFixed(2)}) maior que o saldo devedor (${saldoDevedor.toFixed(2)}).`,
+      );
+    }
     const novoPago = Number(conta.valor_pago) + data.valor;
     const quitada = novoPago >= Number(conta.valor) - 0.005;
     const novoStatus = quitada ? "paga" : "parcial";
