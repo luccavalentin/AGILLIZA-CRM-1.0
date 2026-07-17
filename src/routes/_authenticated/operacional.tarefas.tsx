@@ -13,8 +13,10 @@ import {
   Clock,
   Check,
   User2,
+  Download,
 } from "lucide-react";
 import { toast } from "sonner";
+import { baixarTarefasPDF } from "@/lib/operacional/export-pdf";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import {
   listarTarefas,
