@@ -818,12 +818,23 @@ export const replicarProposta = createServerFn({ method: "POST" })
       "updated_at",
       "status",
       "enviada_em",
+      "contrato_emitido_em",
       "motivo_cancelamento",
       "simulacao_id",
       "homefin_id_oportunidade",
       "homefin_id_simulacao",
       "codigo_oportunidade_homefin",
+      "numero_proposta_banco",
+      "detalhe_status_atual",
+      "status_atualizado_em",
+      "ultima_sincronizacao_em",
+      "ultimo_erro",
+      "etapas_banco",
+      "deleted_at",
+      "deleted_by",
+      "deleted_motivo",
     ]);
+
     const snapshot: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(origem)) {
       if (!naoCopiar.has(k)) snapshot[k] = v;
