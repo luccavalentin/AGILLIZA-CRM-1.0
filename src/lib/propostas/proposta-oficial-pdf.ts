@@ -763,7 +763,7 @@ export function baixarPropostaOficialPDF(input: Input) {
 
   // Checklist de documentação — mesma lógica
   y = ensureSpace(y, 120);
-  y = safe(() => tabelaDocumentos(doc, pageW, documentos, y), y);
+  y = safe(() => tabelaDocumentos(doc, pageW, documentos, envolvidos, y), y);
 
   // Rodapé em todas as páginas
   const total = doc.getNumberOfPages();
