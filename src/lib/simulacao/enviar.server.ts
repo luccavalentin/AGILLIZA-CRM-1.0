@@ -43,9 +43,19 @@ export async function enviarSimulacaoImpl({
     .from("simulacoes")
     .select("*")
     .eq("id", simulacaoId)
+    .is("deleted_at", null)
     .maybeSingle();
   if (error) throw new Error(error.message);
   if (!sim) throw new Error("Simulação não encontrada.");
+
+  // Trava anti-duplicidade: se um envio começou há menos de 45s e ainda não
+  // concluiu, retorna sem duplicar (evita corrida em clique duplo/realtime).
+  if (sim.status === "enviando" && sim.ultimo_envio_em) {
+    const inicio = new Date(sim.ultimo_envio_em).getTime();
+    if (Number.isFinite(inicio) && Date.now() - inicio < 45_000) {
+      throw new Error("Um envio ao banco já está em andamento. Aguarde a conclusão.");
+    }
+  }
 
   // Regras de negócio
   if (!sim.consentimento_lgpd || !sim.consentimento_scr) {
@@ -56,6 +66,7 @@ export async function enviarSimulacaoImpl({
   if (!sim.id_operacao_homefin) {
     throw new Error("Selecione a operação antes de enviar ao banco.");
   }
+
 
   // Todos os bancos selecionados (usados para registrar a oportunidade completa).
   const { data: bancosSelecionados } = await supabase
