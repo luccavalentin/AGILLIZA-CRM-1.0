@@ -30,7 +30,10 @@ export interface TarefaItem {
   nome_cliente: string | null;
   responsavel_id: string | null;
   nome_responsavel: string | null;
+  criador_id: string | null;
+  nome_solicitante: string | null;
   created_at: string;
+  concluida_em: string | null;
 }
 
 async function nomesPorId(
@@ -50,10 +53,13 @@ export const listarTarefas = createServerFn({ method: "GET" })
   .inputValidator((data) =>
     z
       .object({
-        escopo: z.enum(["todas", "minhas", "equipe"]).default("todas"),
+        escopo: z.enum(["todas", "minhas"]).default("todas"),
         status: z.string().optional(),
+        prioridade: z.enum(["p1", "p2", "p3"]).optional(),
+        responsavel_id: z.string().uuid().optional(),
         q: z.string().optional(),
         cliente_id: z.string().uuid().optional(),
+        ordem: z.enum(["prazo", "prioridade", "recentes"]).default("recentes"),
       })
       .parse(data),
   )
@@ -63,17 +69,35 @@ export const listarTarefas = createServerFn({ method: "GET" })
     let query = supabase
       .from("tasks")
       .select(
-        "id, numero, titulo, status, prioridade, prazo, cliente_id, responsavel_id, created_at, clientes(nome)",
+        "id, numero, titulo, status, prioridade, prazo, cliente_id, responsavel_id, criador_id, created_at, concluida_em, clientes(nome)",
       )
-      .order("created_at", { ascending: false })
       .limit(300);
+
+    // Ordenação. `prioridade` é enum p1<p2<p3, então ascending já ordena
+    // corretamente da mais alta (p1) para a mais baixa (p3).
+    if (data.ordem === "prazo") {
+      query = query.order("prazo", { ascending: true, nullsFirst: false });
+    } else if (data.ordem === "prioridade") {
+      query = query
+        .order("prioridade", { ascending: true })
+        .order("prazo", { ascending: true, nullsFirst: false });
+    } else {
+      query = query.order("created_at", { ascending: false });
+    }
+
     if (data.escopo === "minhas") {
+      // O escopo "minhas" combina três origens: sou responsável, criei ou o
+      // cliente da tarefa está entre os meus (parceria). Como `.or()` usa
+      // vírgula como separador, evitamos `in.(...)` (que colide) e listamos
+      // cada cliente como uma condição `eq.`
       const partnerIds = await listarClienteIdsParceiroDoUsuario(supabase, userId);
       const orParts = [`responsavel_id.eq.${userId}`, `criador_id.eq.${userId}`];
-      if (partnerIds.length) orParts.push(`cliente_id.in.(${partnerIds.join(",")})`);
+      for (const cid of partnerIds) orParts.push(`cliente_id.eq.${cid}`);
       query = query.or(orParts.join(","));
     }
     if (data.status) query = query.eq("status", data.status as any);
+    if (data.prioridade) query = query.eq("prioridade", data.prioridade);
+    if (data.responsavel_id) query = query.eq("responsavel_id", data.responsavel_id);
     if (data.cliente_id) query = query.eq("cliente_id", data.cliente_id);
     if (data.q) query = query.ilike("titulo", `%${data.q.trim()}%`);
 
@@ -82,7 +106,7 @@ export const listarTarefas = createServerFn({ method: "GET" })
     const rows = (itens ?? []) as any[];
     const nomes = await nomesPorId(
       supabase,
-      rows.map((r) => r.responsavel_id),
+      rows.flatMap((r) => [r.responsavel_id, r.criador_id]),
     );
     return rows.map((r) => ({
       id: r.id,
@@ -95,9 +119,13 @@ export const listarTarefas = createServerFn({ method: "GET" })
       nome_cliente: r.clientes?.nome ?? null,
       responsavel_id: r.responsavel_id,
       nome_responsavel: r.responsavel_id ? (nomes.get(r.responsavel_id) ?? null) : null,
+      criador_id: r.criador_id,
+      nome_solicitante: r.criador_id ? (nomes.get(r.criador_id) ?? null) : null,
       created_at: r.created_at,
+      concluida_em: r.concluida_em ?? null,
     }));
   });
+
 
 export const obterTarefa = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
