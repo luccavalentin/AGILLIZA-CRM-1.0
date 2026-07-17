@@ -2438,11 +2438,16 @@ export const runReport = createServerFn({ method: "POST" })
       if (!ids.length) return out;
       const { data } = await supabase
         .from("profiles")
-        .select("id,nome,tipo_pessoa")
+        .select("id,nome,tipo_pessoa,tipos_pessoa")
         .in("id", ids);
-      (data ?? []).forEach((p: any) =>
-        out.set(p.id, { nome: p.nome ?? "—", tipo: p.tipo_pessoa ?? null }),
-      );
+      (data ?? []).forEach((p: any) => {
+        // Preferir "imobiliaria"/"corretor" quando presentes em tipos_pessoa
+        // (multi-tipo), caindo para tipo_pessoa primário caso contrário.
+        const arr: string[] = Array.isArray(p.tipos_pessoa) ? p.tipos_pessoa.filter(Boolean) : [];
+        const tipo =
+          arr.find((t) => t === "imobiliaria" || t === "corretor") ?? p.tipo_pessoa ?? null;
+        out.set(p.id, { nome: p.nome ?? "—", tipo });
+      });
       return out;
     }
   });
