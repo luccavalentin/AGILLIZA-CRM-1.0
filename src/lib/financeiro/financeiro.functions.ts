@@ -803,7 +803,8 @@ export const atualizarConfig = createServerFn({ method: "POST" })
       .parse(data),
   )
   .handler(async ({ context, data }): Promise<{ ok: true }> => {
-    const { supabase } = context;
+    const { supabase, userId } = context;
+    const correspondente_id = await correspondenteId(supabase, userId);
     const patch: Record<string, unknown> = {};
     if (data.nome !== undefined) patch.nome = data.nome;
     if (data.ativo !== undefined) patch.ativo = data.ativo;
@@ -812,7 +813,8 @@ export const atualizarConfig = createServerFn({ method: "POST" })
     const { error } = await supabase
       .from(CONFIG_TABELA[data.entidade] as any)
       .update(patch as any)
-      .eq("id", data.id);
+      .eq("id", data.id)
+      .eq("correspondente_id", correspondente_id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
