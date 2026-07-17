@@ -417,18 +417,41 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
                     {(data?.comentarios ?? []).length === 0 ? (
                       <p className="text-xs text-muted-foreground">Nenhum comentário ainda. Seja o primeiro a comentar.</p>
                     ) : (
-                      data!.comentarios.map((c: any) => (
-                        <div
-                          key={c.id}
-                          className="rounded-lg border border-border/60 bg-background p-3 text-sm shadow-sm ring-1 ring-primary/5 border-l-4 border-l-primary"
-                        >
-                          <div className="mb-1.5 flex items-center justify-between text-xs">
-                            <span className="font-semibold text-foreground">{c.nome_autor ?? "—"}</span>
-                            <span className="text-muted-foreground tabular-nums">{fmtData(c.created_at)}</span>
+                      data!.comentarios.map((c: any) => {
+                        const proprio = c.autor_id && c.autor_id === (data as any)?.usuario_atual_id;
+                        return (
+                          <div
+                            key={c.id}
+                            className="group rounded-lg border border-border/60 bg-background p-3 text-sm shadow-sm ring-1 ring-primary/5 border-l-4 border-l-primary"
+                          >
+                            <div className="mb-1.5 flex items-center justify-between gap-2 text-xs">
+                              <span className="font-semibold text-foreground">{c.nome_autor ?? "—"}</span>
+                              <div className="flex items-center gap-2">
+                                <span className="text-muted-foreground tabular-nums">{fmtData(c.created_at)}</span>
+                                {proprio && (
+                                  <button
+                                    type="button"
+                                    aria-label="Excluir comentário"
+                                    onClick={async () => {
+                                      if (!confirm("Excluir este comentário?")) return;
+                                      try {
+                                        await excluirComentarioFn({ data: { id: c.id } });
+                                        invalidar();
+                                      } catch (e) {
+                                        toast.error(e instanceof Error ? e.message : "Falha ao excluir.");
+                                      }
+                                    }}
+                                    className="inline-flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground opacity-0 transition hover:bg-destructive/10 hover:text-destructive focus:opacity-100 group-hover:opacity-100"
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                            <p className="whitespace-pre-wrap leading-relaxed text-foreground">{c.corpo}</p>
                           </div>
-                          <p className="whitespace-pre-wrap leading-relaxed text-foreground">{c.corpo}</p>
-                        </div>
-                      ))
+                        );
+                      })
                     )}
                   </div>
                   <Textarea
