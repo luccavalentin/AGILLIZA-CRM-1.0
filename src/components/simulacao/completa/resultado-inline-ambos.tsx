@@ -40,6 +40,15 @@ function totalFinanciado(b: any): number | null {
   return d?.financiamentoTotal ?? d?.valorFinanciamento ?? b?.valor_financiamento_max ?? null;
 }
 
+function bancosDaSimulacaoAtual(data: any): any[] {
+  const lista = ((data?.bancos as any[]) ?? []);
+  const simId = data?.simulacao?.id;
+  if (!simId || lista.length <= 1) return lista;
+  const simIds = new Set(lista.map((b) => b?.simulacao_id).filter(Boolean));
+  if (simIds.size <= 1 || !simIds.has(simId)) return lista;
+  return lista.filter((b) => b?.simulacao_id === simId);
+}
+
 function AmortizacaoTag({ sistema }: { sistema: "SAC" | "PRICE" }) {
   return (
     <span
@@ -173,12 +182,12 @@ export function ResultadoInlineAmbos({ simulacaoIdSac, simulacaoIdPrice, onFecha
   };
   const linhas: Linha[] = [];
   if (dataSac) {
-    for (const b of (dataSac.bancos as any[]) ?? []) {
+    for (const b of bancosDaSimulacaoAtual(dataSac)) {
       linhas.push({ sistema: "SAC", simId: dataSac.simulacao.id, simulacao: dataSac.simulacao, banco: b });
     }
   }
   if (dataPrice) {
-    for (const b of (dataPrice.bancos as any[]) ?? []) {
+    for (const b of bancosDaSimulacaoAtual(dataPrice)) {
       linhas.push({ sistema: "PRICE", simId: dataPrice.simulacao.id, simulacao: dataPrice.simulacao, banco: b });
     }
   }
@@ -522,7 +531,7 @@ function BaixarPdfsButton({ dataSac, dataPrice }: { dataSac: any; dataPrice: any
   const [baixando, setBaixando] = useState(false);
   const ativos = [dataSac, dataPrice].filter(Boolean) as any[];
   const totalOk = ativos.reduce(
-    (acc, d) => acc + ((d.bancos as any[]) ?? []).filter((b) => b.status_banco === "simulada").length,
+    (acc, d) => acc + bancosDaSimulacaoAtual(d).filter((b) => b.status_banco === "simulada").length,
     0,
   );
   const desabilitado = totalOk === 0 || baixando;
@@ -537,7 +546,7 @@ function BaixarPdfsButton({ dataSac, dataPrice }: { dataSac: any; dataPrice: any
       ok = await baixarSimulacoesDetalhadasAgrupadasZipPDF(
         ativos.map((d) => ({
           simulacao: d.simulacao,
-          bancos: ((d.bancos as any[]) ?? []).filter((b) => b.status_banco === "simulada"),
+          bancos: bancosDaSimulacaoAtual(d).filter((b) => b.status_banco === "simulada"),
         })),
       );
       if (ok > 0) toast.success(`${ok} PDF${ok === 1 ? "" : "s"} gerado${ok === 1 ? "" : "s"}.${err > 0 ? ` (${err} falharam)` : ""}`);
