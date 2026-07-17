@@ -259,6 +259,12 @@ export const navInterno: NavGroup[] = [
             to: "/formularios/dps",
             perm: { modulo: "documentos.formularios" },
           },
+          {
+            label: "Papel Timbrado",
+            icon: FileText,
+            to: "/formularios/papel-timbrado",
+            perm: { modulo: "documentos.formularios" },
+          },
         ],
       },
       {
