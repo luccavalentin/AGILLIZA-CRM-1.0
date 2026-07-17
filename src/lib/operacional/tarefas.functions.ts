@@ -290,7 +290,7 @@ export const moverStatusTarefa = createServerFn({ method: "POST" })
     // funcionarem corretamente ao reabrir tarefas.
     if (data.status === "concluida") patch.concluida_em = new Date().toISOString();
     else if (atual.status === "concluida") patch.concluida_em = null;
-    const { error } = await supabase.from("tasks").update(patch).eq("id", data.id);
+    const { error } = await supabase.from("tasks").update(patch as any).eq("id", data.id);
     if (error) throw new Error(error.message);
     await supabase
       .from("task_history")
