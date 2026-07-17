@@ -105,7 +105,13 @@ export const listarDemandas = createServerFn({ method: "GET" })
   .inputValidator((data) =>
     z
       .object({
-        escopo: z.enum(["minhas", "geral"]).default("geral"),
+        // "equipe" é mantido como sinônimo de "geral" para compatibilidade
+        // com o Kanban antigo; o back-end trata ambos como o escopo global.
+        escopo: z
+          .enum(["minhas", "geral", "equipe"])
+          .default("geral")
+          .transform((v) => (v === "equipe" ? "geral" : v)),
+
         status: z.string().optional(),
         prioridade: z.enum(["p1", "p2", "p3"]).optional(),
         responsavel_id: z.string().uuid().optional(),
