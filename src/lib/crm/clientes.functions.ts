@@ -1607,16 +1607,30 @@ export const excluirCliente = createServerFn({ method: "POST" })
       }
     }
 
+    // Defesa em profundidade: resolve o tenant do cliente pela sessão do
+    // usuário (RLS) antes de usar o admin client no soft delete em cascata,
+    // impedindo que um cliente_id de outro tenant seja atingido.
+    const { data: cliTenant, error: eTenant } = await supabase
+      .from("clientes")
+      .select("correspondente_id")
+      .eq("id", cid)
+      .maybeSingle();
+    if (eTenant) throw eTenant;
+    if (!cliTenant) throw new Error("Cliente não encontrado.");
+    const correspondenteId = (cliTenant as any).correspondente_id as string;
+
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const agora = new Date().toISOString();
     const motivo = data.motivo ?? "Cliente excluído pelo CRM.";
 
-    // Soft delete em cascata (mesmo padrão de limparVinculoEsteira).
+    // Soft delete em cascata (mesmo padrão de limparVinculoEsteira), sempre
+    // com filtro por correspondente_id como defesa em profundidade.
     for (const tabela of ["propostas", "simulacoes", "demandas", "tasks"] as const) {
       await supabaseAdmin
         .from(tabela)
         .update({ deleted_at: agora, deleted_by: userId, deleted_motivo: motivo } as any)
         .eq("cliente_id", cid)
+        .eq("correspondente_id", correspondenteId)
         .is("deleted_at", null);
     }
 
@@ -1624,8 +1638,10 @@ export const excluirCliente = createServerFn({ method: "POST" })
     const { error } = await supabaseAdmin
       .from("clientes")
       .update({ deleted_at: agora, deleted_by: userId, deleted_motivo: motivo } as any)
-      .eq("id", cid);
+      .eq("id", cid)
+      .eq("correspondente_id", correspondenteId);
     if (error) throw error;
+
 
     const { data: corr } = await supabase.rpc("correspondente_do_usuario", { _user_id: userId });
     const { registrarAuditoria } = await import("@/lib/admin/audit.server");
