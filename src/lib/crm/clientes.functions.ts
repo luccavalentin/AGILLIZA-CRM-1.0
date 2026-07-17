@@ -718,7 +718,10 @@ export const listarPainel = createServerFn({ method: "GET" })
 
     const filtradas = (rows ?? []).filter((r: any) => {
       if (!desde && !ate) return true;
-      const atualizado = r.cliente_pipeline?.ultima_atualizacao_em;
+      // Usa a última atualização da esteira; sem histórico, cai para created_at
+      // do cliente para não ocultar cadastros recém-criados no filtro por período.
+      const atualizado =
+        r.cliente_pipeline?.ultima_atualizacao_em ?? r.created_at ?? null;
       if (!atualizado) return false;
       const t = new Date(atualizado).getTime();
       if (desde && t < desde) return false;
