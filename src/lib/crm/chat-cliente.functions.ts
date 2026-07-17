@@ -440,6 +440,15 @@ export const editarChatCliente = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
+    // Captura o estado anterior para a trilha de auditoria (LGPD/compliance).
+    const { data: antes } = await supabase
+      .from("cliente_app_mensagens")
+      .select("id, cliente_id, mensagem")
+      .eq("id", data.id)
+      .eq("remetente_tipo", "time")
+      .eq("remetente_id", userId)
+      .is("excluida_em", null)
+      .maybeSingle();
     // Cada usuário só edita as próprias mensagens.
     const { error } = await supabase
       .from("cliente_app_mensagens")
@@ -449,6 +458,19 @@ export const editarChatCliente = createServerFn({ method: "POST" })
       .eq("remetente_id", userId)
       .is("excluida_em", null);
     if (error) throw new Error(error.message);
+    if (antes) {
+      const { registrarAuditoria } = await import("@/lib/admin/audit.server");
+      await registrarAuditoria({
+        supabase,
+        userId,
+        correspondenteId: null,
+        acao: "chat.mensagem.editar",
+        entidade: "cliente_app_mensagens",
+        entidadeId: data.id,
+        payloadAnterior: { mensagem: (antes as any).mensagem },
+        payloadNovo: { mensagem: data.mensagem.trim(), cliente_id: (antes as any).cliente_id },
+      });
+    }
     return { ok: true };
   });
 
@@ -458,6 +480,13 @@ export const excluirChatCliente = createServerFn({ method: "POST" })
   .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
+    const { data: antes } = await supabase
+      .from("cliente_app_mensagens")
+      .select("id, cliente_id, mensagem")
+      .eq("id", data.id)
+      .eq("remetente_tipo", "time")
+      .eq("remetente_id", userId)
+      .maybeSingle();
     // Cada usuário só exclui as próprias mensagens.
     const { error } = await supabase
       .from("cliente_app_mensagens")
@@ -466,6 +495,21 @@ export const excluirChatCliente = createServerFn({ method: "POST" })
       .eq("remetente_tipo", "time")
       .eq("remetente_id", userId);
     if (error) throw new Error(error.message);
+    if (antes) {
+      const { registrarAuditoria } = await import("@/lib/admin/audit.server");
+      await registrarAuditoria({
+        supabase,
+        userId,
+        correspondenteId: null,
+        acao: "chat.mensagem.excluir",
+        entidade: "cliente_app_mensagens",
+        entidadeId: data.id,
+        payloadAnterior: {
+          mensagem: (antes as any).mensagem,
+          cliente_id: (antes as any).cliente_id,
+        },
+      });
+    }
     return { ok: true };
   });
 
@@ -698,6 +742,20 @@ export const adicionarParticipanteChat = createServerFn({ method: "POST" })
       { onConflict: "cliente_id,atendente_id,usuario_id" },
     );
     if (error) throw new Error(error.message);
+    const { registrarAuditoria } = await import("@/lib/admin/audit.server");
+    await registrarAuditoria({
+      supabase,
+      userId,
+      correspondenteId: null,
+      acao: "chat.participante.adicionar",
+      entidade: "crm_chat_participantes",
+      entidadeId: data.cliente_id,
+      payloadNovo: {
+        cliente_id: data.cliente_id,
+        atendente_id: data.atendente_id,
+        usuario_id: data.usuario_id,
+      },
+    });
     return { ok: true };
   });
 
@@ -714,7 +772,7 @@ export const removerParticipanteChat = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
-    const { supabase } = context;
+    const { supabase, userId } = context;
     const { error } = await supabase
       .from("crm_chat_participantes")
       .delete()
@@ -722,6 +780,20 @@ export const removerParticipanteChat = createServerFn({ method: "POST" })
       .eq("atendente_id", data.atendente_id)
       .eq("usuario_id", data.usuario_id);
     if (error) throw new Error(error.message);
+    const { registrarAuditoria } = await import("@/lib/admin/audit.server");
+    await registrarAuditoria({
+      supabase,
+      userId,
+      correspondenteId: null,
+      acao: "chat.participante.remover",
+      entidade: "crm_chat_participantes",
+      entidadeId: data.cliente_id,
+      payloadAnterior: {
+        cliente_id: data.cliente_id,
+        atendente_id: data.atendente_id,
+        usuario_id: data.usuario_id,
+      },
+    });
     return { ok: true };
   });
 

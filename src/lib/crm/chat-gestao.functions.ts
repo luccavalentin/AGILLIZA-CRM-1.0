@@ -106,6 +106,11 @@ export const definirEtiquetasCliente = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const corr = await correspondenteDoUsuario(supabase, userId);
 
+    const { data: antes } = await supabase
+      .from("crm_chat_cliente_etiquetas")
+      .select("etiqueta_id")
+      .eq("cliente_id", data.cliente_id);
+
     const { error: delErr } = await supabase
       .from("crm_chat_cliente_etiquetas")
       .delete()
@@ -123,6 +128,18 @@ export const definirEtiquetasCliente = createServerFn({ method: "POST" })
         .insert(linhas);
       if (insErr) throw new Error(insErr.message);
     }
+
+    const { registrarAuditoria } = await import("@/lib/admin/audit.server");
+    await registrarAuditoria({
+      supabase,
+      userId,
+      correspondenteId: corr,
+      acao: "chat.etiquetas.definir",
+      entidade: "crm_chat_cliente_etiquetas",
+      entidadeId: data.cliente_id,
+      payloadAnterior: { etiqueta_ids: (antes ?? []).map((r: any) => r.etiqueta_id) },
+      payloadNovo: { etiqueta_ids: data.etiqueta_ids },
+    });
     return { ok: true };
   });
 
@@ -175,6 +192,16 @@ export const definirArquivamentoConversa = createServerFn({ method: "POST" })
       { onConflict: "cliente_id" },
     );
     if (error) throw new Error(error.message);
+    const { registrarAuditoria } = await import("@/lib/admin/audit.server");
+    await registrarAuditoria({
+      supabase,
+      userId,
+      correspondenteId: corr,
+      acao: data.arquivado ? "chat.conversa.arquivar" : "chat.conversa.desarquivar",
+      entidade: "crm_chat_meta",
+      entidadeId: data.cliente_id,
+      payloadNovo: { arquivado: data.arquivado },
+    });
     return { ok: true, arquivado: data.arquivado };
   });
 
@@ -199,6 +226,11 @@ export const salvarChatMeta = createServerFn({ method: "POST" })
   .handler(async ({ data, context }): Promise<ChatMeta> => {
     const { supabase, userId } = context;
     const corr = await correspondenteDoUsuario(supabase, userId);
+    const { data: antes } = await supabase
+      .from("crm_chat_meta")
+      .select("sla_atualizacao_horas, lembrete_em, lembrete_nota")
+      .eq("cliente_id", data.cliente_id)
+      .maybeSingle();
     const { data: row, error } = await supabase
       .from("crm_chat_meta")
       .upsert(
@@ -216,6 +248,21 @@ export const salvarChatMeta = createServerFn({ method: "POST" })
       )
       .single();
     if (error) throw new Error(error.message);
+    const { registrarAuditoria } = await import("@/lib/admin/audit.server");
+    await registrarAuditoria({
+      supabase,
+      userId,
+      correspondenteId: corr,
+      acao: "chat.meta.salvar",
+      entidade: "crm_chat_meta",
+      entidadeId: data.cliente_id,
+      payloadAnterior: (antes as any) ?? null,
+      payloadNovo: {
+        sla_atualizacao_horas: data.sla_atualizacao_horas,
+        lembrete_em: data.lembrete_em,
+        lembrete_nota: data.lembrete_nota,
+      },
+    });
     return row as ChatMeta;
   });
 

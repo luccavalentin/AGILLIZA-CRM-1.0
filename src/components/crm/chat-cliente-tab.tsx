@@ -108,8 +108,13 @@ export function ChatClienteConversa({
 
   useEffect(() => {
     if (somenteLeitura) return; // não marca lida em thread de outro atendente
+    // Evita PATCH desnecessário quando não há mensagens do cliente sem leitura.
+    const temNaoLidas = (mensagens ?? []).some(
+      (m) => m.remetente_tipo === "cliente" && !m.lida_em,
+    );
+    if (!temNaoLidas) return;
     marcarLido({ data: { cliente_id: clienteId } }).catch(() => {});
-  }, [clienteId, marcarLido, mensagens?.length, somenteLeitura]);
+  }, [clienteId, marcarLido, mensagens, somenteLeitura]);
 
 
   useEffect(() => {
