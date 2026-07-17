@@ -408,6 +408,26 @@ export const comentarTarefa = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+/** Exclui um comentário próprio da tarefa. */
+export const excluirComentarioTarefa = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ context, data }): Promise<{ ok: true }> => {
+    const { supabase, userId } = context;
+    const { data: com } = await supabase
+      .from("task_comments")
+      .select("id, autor_id, task_id")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (!com) throw new Error("Comentário não encontrado.");
+    if ((com as any).autor_id !== userId) {
+      throw new Error("Você só pode excluir os próprios comentários.");
+    }
+    const { error } = await supabase.from("task_comments").delete().eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
 /** Exclui uma tarefa. Registra snapshot em `task_audit_logs` antes de remover. */
 export const excluirTarefa = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
