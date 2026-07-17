@@ -8,6 +8,10 @@ import { resolveBancoBrand } from "@/lib/relatorios/banco-brand";
 import { getPdfPalette, type PdfPalette } from "@/lib/relatorios/pdf-theme";
 import { ORDEM_STATUS, type PropostaStatus } from "@/lib/propostas/state-machine";
 import { nomeDescritivo } from "@/lib/simulacao/simulacao-pdf";
+import {
+  TIPOS_DOCUMENTO_POR_CATEGORIA,
+  type CategoriaDocumento,
+} from "@/lib/crm/documento-tipos";
 
 /**
  * PDF **oficial da proposta** — focado na proposta em si (cadastro dos
