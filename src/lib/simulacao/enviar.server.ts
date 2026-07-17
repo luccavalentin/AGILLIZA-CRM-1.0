@@ -369,7 +369,18 @@ export async function enviarSimulacaoImpl({
             valor_parcela_max: dadosApi?.valorParcelaBancoMax ?? null,
             codigo_indexador: dadosApi?.codigoIndexadorBanco ?? null,
             valor_iof: dadosApi?.valorIofBanco ?? null,
-            sistema_amortizacao_banco: dadosApi?.codigoSistemaAmortizacaoBanco ?? null,
+            // A API devolve `codigoSistemaAmortizacaoBanco` ora como string
+            // ("S"/"P"), ora como objeto `{ id: "S" }` — normalizamos para
+            // string curta antes de persistir na coluna texto.
+            sistema_amortizacao_banco: (() => {
+              const v = dadosApi?.codigoSistemaAmortizacaoBanco;
+              if (v == null) return null;
+              if (typeof v === "string") return v;
+              if (typeof v === "object" && "id" in (v as any))
+                return String((v as any).id ?? "") || null;
+              return String(v);
+            })(),
+
           })
           .eq("id", b.id);
         return { banco_id: b.banco_id, status: "simulada" as const };
