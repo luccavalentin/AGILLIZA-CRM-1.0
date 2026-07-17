@@ -484,8 +484,21 @@ export const transferirDemanda = createServerFn({ method: "POST" })
       _corpo: data.motivo,
       _link: "/operacional/demandas/" + data.id,
     });
+    // Também avisa o responsável anterior (perdeu a titularidade), quando não é
+    // o próprio autor da transferência.
+    if (anterior && anterior !== userId && anterior !== data.novo_responsavel_id) {
+      await supabase.rpc("emitir_notificacao", {
+        _user_id: anterior,
+        _corr: atual.correspondente_id,
+        _tipo: "demanda.transferida",
+        _titulo: "Demanda transferida para outra pessoa",
+        _corpo: data.motivo,
+        _link: "/operacional/demandas/" + data.id,
+      });
+    }
     return { ok: true };
   });
+
 
 export const moverStatusDemanda = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
