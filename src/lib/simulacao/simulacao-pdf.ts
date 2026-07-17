@@ -378,10 +378,13 @@ function drawDisclaimerTopo(doc: jsPDF, pageW: number, y: number): number {
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7.5);
   doc.setTextColor(P.cinza);
-  doc.text(DISCLAIMER, MARGIN, y, { maxWidth: pageW - MARGIN * 2, lineHeightFactor: 1.4 });
   const linhas = doc.splitTextToSize(DISCLAIMER, pageW - MARGIN * 2) as string[];
-  return y + linhas.length * 9 + 6;
+  const alturaLinha = 7.5 * 1.4; // fontSize × lineHeightFactor (≈10.5pt)
+  doc.text(linhas, MARGIN, y, { lineHeightFactor: 1.4 });
+  // Espaço extra abaixo do aviso para separar visualmente do título "Extrato".
+  return y + linhas.length * alturaLinha + 18;
 }
+
 
 
 
