@@ -400,6 +400,14 @@ export const enviarMensagemDm = createServerFn({ method: "POST" })
       .eq("id", userId)
       .single();
     if (!me?.correspondente_id) throw new Error("Sem correspondente.");
+    // Bloqueia envio se o usuário não é participante da conversa.
+    const { data: part } = await supabase
+      .from("dm_participantes")
+      .select("user_id")
+      .eq("conversa_id", data.conversa_id)
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (!part) throw new Error("Sem acesso a esta conversa.");
     const { error } = await supabase.from("dm_mensagens").insert({
       conversa_id: data.conversa_id,
       autor_id: userId,
