@@ -30,7 +30,10 @@ export interface TarefaItem {
   nome_cliente: string | null;
   responsavel_id: string | null;
   nome_responsavel: string | null;
+  criador_id: string | null;
+  nome_solicitante: string | null;
   created_at: string;
+  concluida_em: string | null;
 }
 
 async function nomesPorId(
@@ -50,10 +53,13 @@ export const listarTarefas = createServerFn({ method: "GET" })
   .inputValidator((data) =>
     z
       .object({
-        escopo: z.enum(["todas", "minhas", "equipe"]).default("todas"),
+        escopo: z.enum(["todas", "minhas"]).default("todas"),
         status: z.string().optional(),
+        prioridade: z.enum(["p1", "p2", "p3"]).optional(),
+        responsavel_id: z.string().uuid().optional(),
         q: z.string().optional(),
         cliente_id: z.string().uuid().optional(),
+        ordem: z.enum(["prazo", "prioridade", "recentes"]).default("recentes"),
       })
       .parse(data),
   )
@@ -63,17 +69,35 @@ export const listarTarefas = createServerFn({ method: "GET" })
     let query = supabase
       .from("tasks")
       .select(
-        "id, numero, titulo, status, prioridade, prazo, cliente_id, responsavel_id, created_at, clientes(nome)",
+        "id, numero, titulo, status, prioridade, prazo, cliente_id, responsavel_id, criador_id, created_at, concluida_em, clientes(nome)",
       )
-      .order("created_at", { ascending: false })
       .limit(300);
+
+    // Ordenação. `prioridade` é enum p1<p2<p3, então ascending já ordena
+    // corretamente da mais alta (p1) para a mais baixa (p3).
+    if (data.ordem === "prazo") {
+      query = query.order("prazo", { ascending: true, nullsFirst: false });
+    } else if (data.ordem === "prioridade") {
+      query = query
+        .order("prioridade", { ascending: true })
+        .order("prazo", { ascending: true, nullsFirst: false });
+    } else {
+      query = query.order("created_at", { ascending: false });
+    }
+
     if (data.escopo === "minhas") {
+      // O escopo "minhas" combina três origens: sou responsável, criei ou o
+      // cliente da tarefa está entre os meus (parceria). Como `.or()` usa
+      // vírgula como separador, evitamos `in.(...)` (que colide) e listamos
+      // cada cliente como uma condição `eq.`
       const partnerIds = await listarClienteIdsParceiroDoUsuario(supabase, userId);
       const orParts = [`responsavel_id.eq.${userId}`, `criador_id.eq.${userId}`];
-      if (partnerIds.length) orParts.push(`cliente_id.in.(${partnerIds.join(",")})`);
+      for (const cid of partnerIds) orParts.push(`cliente_id.eq.${cid}`);
       query = query.or(orParts.join(","));
     }
     if (data.status) query = query.eq("status", data.status as any);
+    if (data.prioridade) query = query.eq("prioridade", data.prioridade);
+    if (data.responsavel_id) query = query.eq("responsavel_id", data.responsavel_id);
     if (data.cliente_id) query = query.eq("cliente_id", data.cliente_id);
     if (data.q) query = query.ilike("titulo", `%${data.q.trim()}%`);
 
@@ -82,7 +106,7 @@ export const listarTarefas = createServerFn({ method: "GET" })
     const rows = (itens ?? []) as any[];
     const nomes = await nomesPorId(
       supabase,
-      rows.map((r) => r.responsavel_id),
+      rows.flatMap((r) => [r.responsavel_id, r.criador_id]),
     );
     return rows.map((r) => ({
       id: r.id,
@@ -95,9 +119,13 @@ export const listarTarefas = createServerFn({ method: "GET" })
       nome_cliente: r.clientes?.nome ?? null,
       responsavel_id: r.responsavel_id,
       nome_responsavel: r.responsavel_id ? (nomes.get(r.responsavel_id) ?? null) : null,
+      criador_id: r.criador_id,
+      nome_solicitante: r.criador_id ? (nomes.get(r.criador_id) ?? null) : null,
       created_at: r.created_at,
+      concluida_em: r.concluida_em ?? null,
     }));
   });
+
 
 export const obterTarefa = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -250,21 +278,39 @@ export const moverStatusTarefa = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const { data: atual } = await supabase
       .from("tasks")
-      .select("status")
+      .select("status, criador_id, responsavel_id, correspondente_id, titulo")
       .eq("id", data.id)
       .single();
     if (!atual) throw new Error("Tarefa não encontrada.");
     if (!transicaoTarefaPermitida(atual.status as TarefaStatus, data.status)) {
       throw new Error(`Transição de status inválida: ${atual.status} → ${data.status}.`);
     }
-    const { error } = await supabase
-      .from("tasks")
-      .update({ status: data.status })
-      .eq("id", data.id);
+    const patch: Record<string, unknown> = { status: data.status };
+    // Carimba/limpa `concluida_em` conforme a transição, para relatórios e SLA
+    // funcionarem corretamente ao reabrir tarefas.
+    if (data.status === "concluida") patch.concluida_em = new Date().toISOString();
+    else if (atual.status === "concluida") patch.concluida_em = null;
+    const { error } = await supabase.from("tasks").update(patch as any).eq("id", data.id);
     if (error) throw new Error(error.message);
     await supabase
       .from("task_history")
       .insert({ task_id: data.id, ator_id: userId, acao: "status", detalhe: data.status });
+    // Notifica o solicitante quando a tarefa é concluída por outra pessoa.
+    if (
+      data.status === "concluida" &&
+      atual.criador_id &&
+      atual.criador_id !== userId &&
+      atual.correspondente_id
+    ) {
+      await supabase.rpc("emitir_notificacao", {
+        _user_id: atual.criador_id,
+        _corr: atual.correspondente_id,
+        _tipo: "tarefa.concluida",
+        _titulo: "Tarefa concluída: " + (atual.titulo ?? ""),
+        _corpo: "A tarefa que você criou foi concluída.",
+        _link: "/operacional/tarefas",
+      });
+    }
     return { ok: true };
   });
 
@@ -275,7 +321,7 @@ export const concluirTarefa = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const { data: atual } = await supabase
       .from("tasks")
-      .select("status")
+      .select("status, criador_id, correspondente_id, titulo")
       .eq("id", data.id)
       .single();
     if (!atual) throw new Error("Tarefa não encontrada.");
@@ -284,14 +330,56 @@ export const concluirTarefa = createServerFn({ method: "POST" })
     }
     const { error } = await supabase
       .from("tasks")
-      .update({ status: "concluida" })
+      .update({ status: "concluida", concluida_em: new Date().toISOString() })
       .eq("id", data.id);
     if (error) throw new Error(error.message);
     await supabase
       .from("task_history")
       .insert({ task_id: data.id, ator_id: userId, acao: "concluida" });
+    if (atual.criador_id && atual.criador_id !== userId && atual.correspondente_id) {
+      await supabase.rpc("emitir_notificacao", {
+        _user_id: atual.criador_id,
+        _corr: atual.correspondente_id,
+        _tipo: "tarefa.concluida",
+        _titulo: "Tarefa concluída: " + (atual.titulo ?? ""),
+        _corpo: "A tarefa que você criou foi concluída.",
+        _link: "/operacional/tarefas",
+      });
+    }
     return { ok: true };
   });
+
+/** Edita campos básicos da tarefa. Não altera status/criador/número. */
+export const atualizarTarefa = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        id: z.string().uuid(),
+        titulo: z.string().min(2).optional(),
+        descricao: z.string().nullable().optional(),
+        prioridade: z.enum(["p1", "p2", "p3"]).optional(),
+        prazo: z.string().nullable().optional(),
+        cliente_id: z.string().uuid().nullable().optional(),
+        responsavel_id: z.string().uuid().nullable().optional(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ context, data }): Promise<{ ok: true }> => {
+    const { supabase, userId } = context;
+    const { id, ...patch } = data;
+    if (Object.keys(patch).length === 0) return { ok: true };
+    const { error } = await supabase
+      .from("tasks")
+      .update(patch as any)
+      .eq("id", id);
+    if (error) throw new Error(error.message);
+    await supabase
+      .from("task_history")
+      .insert({ task_id: id, ator_id: userId, acao: "editada" });
+    return { ok: true };
+  });
+
 
 export const toggleChecklistItem = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -320,15 +408,31 @@ export const comentarTarefa = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-/** Exclui uma tarefa. */
+/** Exclui uma tarefa. Registra snapshot em `task_audit_logs` antes de remover. */
 export const excluirTarefa = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
-    const { error } = await context.supabase.from("tasks").delete().eq("id", data.id);
+    const { supabase, userId } = context;
+    const { data: snap } = await supabase
+      .from("tasks")
+      .select("*")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (snap) {
+      await supabase.from("task_audit_logs").insert({
+        correspondente_id: (snap as any).correspondente_id ?? null,
+        task_id: data.id,
+        ator_id: userId,
+        acao: "excluida",
+        dados: snap as any,
+      });
+    }
+    const { error } = await supabase.from("tasks").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
 
 /* ------------------------- Tags (etiquetas) ------------------------- */
 
