@@ -742,6 +742,20 @@ export const adicionarParticipanteChat = createServerFn({ method: "POST" })
       { onConflict: "cliente_id,atendente_id,usuario_id" },
     );
     if (error) throw new Error(error.message);
+    const { registrarAuditoria } = await import("@/lib/admin/audit.server");
+    await registrarAuditoria({
+      supabase,
+      userId,
+      correspondenteId: null,
+      acao: "chat.participante.adicionar",
+      entidade: "crm_chat_participantes",
+      entidadeId: data.cliente_id,
+      payloadNovo: {
+        cliente_id: data.cliente_id,
+        atendente_id: data.atendente_id,
+        usuario_id: data.usuario_id,
+      },
+    });
     return { ok: true };
   });
 
@@ -758,7 +772,7 @@ export const removerParticipanteChat = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
-    const { supabase } = context;
+    const { supabase, userId } = context;
     const { error } = await supabase
       .from("crm_chat_participantes")
       .delete()
@@ -766,6 +780,20 @@ export const removerParticipanteChat = createServerFn({ method: "POST" })
       .eq("atendente_id", data.atendente_id)
       .eq("usuario_id", data.usuario_id);
     if (error) throw new Error(error.message);
+    const { registrarAuditoria } = await import("@/lib/admin/audit.server");
+    await registrarAuditoria({
+      supabase,
+      userId,
+      correspondenteId: null,
+      acao: "chat.participante.remover",
+      entidade: "crm_chat_participantes",
+      entidadeId: data.cliente_id,
+      payloadAnterior: {
+        cliente_id: data.cliente_id,
+        atendente_id: data.atendente_id,
+        usuario_id: data.usuario_id,
+      },
+    });
     return { ok: true };
   });
 
