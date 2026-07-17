@@ -67,7 +67,28 @@ export const iniciarDm = createServerFn({ method: "POST" })
     z.object({ other_id: z.string().uuid() }).parse(d),
   )
   .handler(async ({ data, context }) => {
-    const { supabase } = context;
+    const { supabase, userId } = context;
+    if (data.other_id === userId) {
+      throw new Error("Não é possível iniciar conversa consigo mesmo.");
+    }
+    // Defesa em profundidade: exige que os dois usuários pertençam ao mesmo
+    // correspondente e estejam ativos antes de chamar o RPC.
+    const { data: pares, error: errPar } = await supabase
+      .from("profiles")
+      .select("id, correspondente_id, ativo, login_habilitado")
+      .in("id", [userId, data.other_id]);
+    if (errPar) throw new Error(errPar.message);
+    const eu = (pares ?? []).find((p: any) => p.id === userId) as any;
+    const ele = (pares ?? []).find((p: any) => p.id === data.other_id) as any;
+    if (!eu?.correspondente_id || !ele?.correspondente_id) {
+      throw new Error("Usuário indisponível para conversa.");
+    }
+    if (eu.correspondente_id !== ele.correspondente_id) {
+      throw new Error("Usuário fora do seu correspondente.");
+    }
+    if (ele.ativo === false || ele.login_habilitado === false) {
+      throw new Error("Usuário desativado.");
+    }
     const { data: conv, error } = await supabase.rpc("dm_get_or_create_1on1", {
       _other: data.other_id,
     });
@@ -379,6 +400,14 @@ export const enviarMensagemDm = createServerFn({ method: "POST" })
       .eq("id", userId)
       .single();
     if (!me?.correspondente_id) throw new Error("Sem correspondente.");
+    // Bloqueia envio se o usuário não é participante da conversa.
+    const { data: part } = await supabase
+      .from("dm_participantes")
+      .select("user_id")
+      .eq("conversa_id", data.conversa_id)
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (!part) throw new Error("Sem acesso a esta conversa.");
     const { error } = await supabase.from("dm_mensagens").insert({
       conversa_id: data.conversa_id,
       autor_id: userId,
