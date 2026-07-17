@@ -278,21 +278,39 @@ export const moverStatusTarefa = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const { data: atual } = await supabase
       .from("tasks")
-      .select("status")
+      .select("status, criador_id, responsavel_id, correspondente_id, titulo")
       .eq("id", data.id)
       .single();
     if (!atual) throw new Error("Tarefa não encontrada.");
     if (!transicaoTarefaPermitida(atual.status as TarefaStatus, data.status)) {
       throw new Error(`Transição de status inválida: ${atual.status} → ${data.status}.`);
     }
-    const { error } = await supabase
-      .from("tasks")
-      .update({ status: data.status })
-      .eq("id", data.id);
+    const patch: Record<string, unknown> = { status: data.status };
+    // Carimba/limpa `concluida_em` conforme a transição, para relatórios e SLA
+    // funcionarem corretamente ao reabrir tarefas.
+    if (data.status === "concluida") patch.concluida_em = new Date().toISOString();
+    else if (atual.status === "concluida") patch.concluida_em = null;
+    const { error } = await supabase.from("tasks").update(patch).eq("id", data.id);
     if (error) throw new Error(error.message);
     await supabase
       .from("task_history")
       .insert({ task_id: data.id, ator_id: userId, acao: "status", detalhe: data.status });
+    // Notifica o solicitante quando a tarefa é concluída por outra pessoa.
+    if (
+      data.status === "concluida" &&
+      atual.criador_id &&
+      atual.criador_id !== userId &&
+      atual.correspondente_id
+    ) {
+      await supabase.rpc("emitir_notificacao", {
+        _user_id: atual.criador_id,
+        _corr: atual.correspondente_id,
+        _tipo: "tarefa.concluida",
+        _titulo: "Tarefa concluída: " + (atual.titulo ?? ""),
+        _corpo: "A tarefa que você criou foi concluída.",
+        _link: "/operacional/tarefas",
+      });
+    }
     return { ok: true };
   });
 
@@ -303,7 +321,7 @@ export const concluirTarefa = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const { data: atual } = await supabase
       .from("tasks")
-      .select("status")
+      .select("status, criador_id, correspondente_id, titulo")
       .eq("id", data.id)
       .single();
     if (!atual) throw new Error("Tarefa não encontrada.");
@@ -312,14 +330,56 @@ export const concluirTarefa = createServerFn({ method: "POST" })
     }
     const { error } = await supabase
       .from("tasks")
-      .update({ status: "concluida" })
+      .update({ status: "concluida", concluida_em: new Date().toISOString() })
       .eq("id", data.id);
     if (error) throw new Error(error.message);
     await supabase
       .from("task_history")
       .insert({ task_id: data.id, ator_id: userId, acao: "concluida" });
+    if (atual.criador_id && atual.criador_id !== userId && atual.correspondente_id) {
+      await supabase.rpc("emitir_notificacao", {
+        _user_id: atual.criador_id,
+        _corr: atual.correspondente_id,
+        _tipo: "tarefa.concluida",
+        _titulo: "Tarefa concluída: " + (atual.titulo ?? ""),
+        _corpo: "A tarefa que você criou foi concluída.",
+        _link: "/operacional/tarefas",
+      });
+    }
     return { ok: true };
   });
+
+/** Edita campos básicos da tarefa. Não altera status/criador/número. */
+export const atualizarTarefa = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        id: z.string().uuid(),
+        titulo: z.string().min(2).optional(),
+        descricao: z.string().nullable().optional(),
+        prioridade: z.enum(["p1", "p2", "p3"]).optional(),
+        prazo: z.string().nullable().optional(),
+        cliente_id: z.string().uuid().nullable().optional(),
+        responsavel_id: z.string().uuid().nullable().optional(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ context, data }): Promise<{ ok: true }> => {
+    const { supabase, userId } = context;
+    const { id, ...patch } = data;
+    if (Object.keys(patch).length === 0) return { ok: true };
+    const { error } = await supabase
+      .from("tasks")
+      .update(patch as any)
+      .eq("id", id);
+    if (error) throw new Error(error.message);
+    await supabase
+      .from("task_history")
+      .insert({ task_id: id, ator_id: userId, acao: "editada" });
+    return { ok: true };
+  });
+
 
 export const toggleChecklistItem = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
