@@ -501,16 +501,156 @@ function statusDocLabel(v: string | null | undefined): { label: string; fill: st
   return { label: v ? String(v) : "—", fill: P.card, text: P.texto };
 }
 
-function tabelaDocumentos(doc: jsPDF, pageW: number, documentos: any[], y: number): number {
+/** Deriva os grupos de documentação esperados a partir dos envolvidos. */
+function categoriasEsperadas(envolvidos: any[]): CategoriaDocumento[] {
+  const cats: CategoriaDocumento[] = [];
+  const tem = (fn: (e: any) => boolean) => (envolvidos ?? []).some(fn);
+  const civilCasado = (e: any) => {
+    const c = String(e?.estado_civil ?? "").toLowerCase();
+    return c === "casado" || c === "uniao_estavel";
+  };
+  const isComprador = (e: any) => {
+    const q = String(e?.tipo_qualificacao ?? "").toLowerCase();
+    return q === "titular" || q === "comprador" || q === "coobrigado" || q === "";
+  };
+  const isVendedor = (e: any) => String(e?.tipo_qualificacao ?? "").toLowerCase() === "vendedor";
+  const isConjuge = (e: any) => String(e?.tipo_qualificacao ?? "").toLowerCase() === "conjuge";
+
+  if (tem(isComprador) || (envolvidos ?? []).length === 0) cats.push("comprador");
+  if (tem(isConjuge) || tem((e) => isComprador(e) && civilCasado(e))) cats.push("conjuge");
+  if (tem(isVendedor)) {
+    cats.push("vendedor");
+    if (tem((e) => isVendedor(e) && civilCasado(e))) cats.push("vendedor_conjuge");
+  }
+  cats.push("imovel");
+  return cats;
+}
+
+const LABEL_CATEGORIA: Record<CategoriaDocumento, string> = {
+  comprador: "Comprador",
+  conjuge: "Cônjuge",
+  vendedor: "Vendedor",
+  vendedor_conjuge: "Cônjuge do vendedor",
+  imovel: "Imóvel",
+  outros: "Outros",
+};
+
+/** Normaliza texto p/ matching aproximado (sem acento, minúsculo, sem pontuação). */
+function slug(v: unknown): string {
+  return String(v ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+/** Confere se um documento enviado casa com um item esperado do checklist. */
+function docCasaComTipo(doc: any, tipoEsperado: string, categoria: CategoriaDocumento): boolean {
+  const esperado = slug(tipoEsperado);
+  const alvo = slug(`${doc?.tipo_documento ?? ""} ${doc?.nome_documento ?? ""}`);
+  if (!esperado || !alvo) return false;
+  // Marcadores comuns dos códigos curtos usados no upload.
+  const sinonimos: Array<[string, string[]]> = [
+    ["documento de identidade", ["rg", "cnh", "identidade", "cpf"]],
+    ["comprovante de endereco", ["comp endereco", "comp end", "endereco"]],
+    ["irpf completo com recibo", ["ir", "irpf", "imposto de renda"]],
+    ["ctps digital completa", ["ctps", "carteira"]],
+    ["extrato atualizado do fgts", ["fgts", "extrato fgts"]],
+    ["matricula atualizada com certidao de onus", ["matricula", "onus"]],
+    ["capa do iptu ou certidao de valor venal", ["iptu", "valor venal"]],
+    ["certidao de estado civil", ["cert nasc", "cert cas", "certidao"]],
+    ["cnd condominial", ["cnd", "condominio"]],
+    ["contrato social", ["contrato social"]],
+    ["cartao cnpj", ["cnpj"]],
+  ];
+  if (alvo.includes(esperado) || esperado.includes(alvo)) return true;
+  for (const [chave, alts] of sinonimos) {
+    if (esperado.startsWith(chave.slice(0, 20)) || chave.includes(esperado.slice(0, 20))) {
+      if (alts.some((a) => alvo.includes(a))) {
+        // além do match textual, respeita categoria/parte se informada.
+        const parte = slug(doc?.parte ?? "");
+        if (!parte) return true;
+        if (categoria === "comprador" && (parte.includes("comprador") || parte.startsWith("c"))) return true;
+        if (categoria === "conjuge" && parte.includes("conjuge")) return true;
+        if (categoria === "vendedor" && parte.includes("vendedor")) return true;
+        if (categoria === "imovel" && parte.includes("imovel")) return true;
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+function tabelaDocumentos(
+  doc: jsPDF,
+  pageW: number,
+  documentos: any[],
+  envolvidos: any[],
+  y: number,
+): number {
   doc.setTextColor(P.destaque);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(12);
   doc.text("Checklist de documentação", MARGIN, y);
   y += 4;
 
-  const totais = (documentos ?? []).reduce(
-    (acc, d) => {
-      const s = statusDocLabel(d.status).label;
+  // 1) Constrói o checklist esperado a partir dos envolvidos.
+  const cats = categoriasEsperadas(envolvidos);
+  const enviados = Array.isArray(documentos) ? [...documentos] : [];
+  const utilizados = new Set<number>();
+
+  const linhas: Array<{
+    tipo: string;
+    parte: string;
+    obrigatorio: string;
+    status: string;
+    enviado_em: unknown;
+  }> = [];
+
+  for (const cat of cats) {
+    for (const tipoEsperado of TIPOS_DOCUMENTO_POR_CATEGORIA[cat] ?? []) {
+      const idx = enviados.findIndex(
+        (d, i) => !utilizados.has(i) && docCasaComTipo(d, tipoEsperado, cat),
+      );
+      if (idx >= 0) {
+        utilizados.add(idx);
+        const d = enviados[idx];
+        linhas.push({
+          tipo: tipoEsperado,
+          parte: LABEL_CATEGORIA[cat],
+          obrigatorio: "Sim",
+          status: String(d?.status ?? "enviado"),
+          enviado_em: d?.enviado_em ?? d?.created_at,
+        });
+      } else {
+        linhas.push({
+          tipo: tipoEsperado,
+          parte: LABEL_CATEGORIA[cat],
+          obrigatorio: "Sim",
+          status: "pendente",
+          enviado_em: null,
+        });
+      }
+    }
+  }
+
+  // 2) Documentos enviados que não bateram com nenhum item esperado → "Outros".
+  enviados.forEach((d, i) => {
+    if (utilizados.has(i)) return;
+    linhas.push({
+      tipo: String(d?.tipo_documento ?? d?.nome_documento ?? "Outro documento"),
+      parte: d?.parte ? up(d.parte) : LABEL_CATEGORIA.outros,
+      obrigatorio: d?.obrigatorio ? "Sim" : "Não",
+      status: String(d?.status ?? "enviado"),
+      enviado_em: d?.enviado_em ?? d?.created_at,
+    });
+  });
+
+  // 3) Totais por situação.
+  const totais = linhas.reduce(
+    (acc, l) => {
+      const s = statusDocLabel(l.status).label;
       acc[s] = (acc[s] ?? 0) + 1;
       acc.total += 1;
       return acc;
@@ -528,24 +668,20 @@ function tabelaDocumentos(doc: jsPDF, pageW: number, documentos: any[], y: numbe
   doc.text(legendas, MARGIN, y + 8);
   y += 12;
 
-  const linhas =
-    (documentos ?? []).map((d) => {
-      const st = statusDocLabel(d.status);
-      return [
-        up(d.tipo_documento ?? d.nome_documento ?? "—"),
-        d.parte ? up(d.parte) : "—",
-        d.obrigatorio ? "Sim" : "Não",
-        st.label,
-        dataTxt(d.enviado_em),
-      ];
-    }) ?? [];
+  const corpo = linhas.map((l) => [
+    l.tipo,
+    l.parte,
+    l.obrigatorio,
+    statusDocLabel(l.status).label,
+    dataTxt(l.enviado_em),
+  ]);
 
   autoTable(doc, {
     startY: y,
     head: [["Documento", "Parte", "Obrigatório", "Situação", "Enviado em"]],
-    body: linhas.length
-      ? linhas
-      : [["—", "Nenhum documento cadastrado ainda.", "—", "—", "—"]],
+    body: corpo.length
+      ? corpo
+      : [["—", "Nenhum item de checklist aplicável.", "—", "—", "—"]],
     margin: { left: MARGIN, right: MARGIN },
     styles: {
       font: "helvetica",
@@ -563,13 +699,14 @@ function tabelaDocumentos(doc: jsPDF, pageW: number, documentos: any[], y: numbe
     },
     alternateRowStyles: { fillColor: P.card },
     columnStyles: {
+      1: { cellWidth: 82 },
       2: { cellWidth: 62, halign: "center" },
       3: { cellWidth: 74, halign: "center", fontStyle: "bold" },
       4: { cellWidth: 68 },
     },
     didParseCell: (data) => {
       if (data.section === "body" && data.column.index === 3) {
-        const st = statusDocLabel((documentos ?? [])[data.row.index]?.status);
+        const st = statusDocLabel(linhas[data.row.index]?.status);
         (data.cell.styles as any).fillColor = st.fill;
         (data.cell.styles as any).textColor = st.text;
       }
