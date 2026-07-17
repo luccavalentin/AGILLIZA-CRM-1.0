@@ -41,36 +41,28 @@ export function SelecionarBancosPdfDialog({
   const [selecionados, setSelecionados] = useState<Record<string, boolean>>({});
   const [gerando, setGerando] = useState(false);
 
-  const bancosExibidos = useMemo(() => {
-    const lista = bancos ?? [];
-    if (modo !== "detalhada" || !simulacao?.id) return lista;
-    const simIds = new Set(lista.map((b) => b?.simulacao_id).filter(Boolean));
-    if (simIds.size <= 1 || !simIds.has(simulacao.id)) return lista;
-    return lista.filter((b) => b?.simulacao_id === simulacao.id);
-  }, [bancos, modo, simulacao?.id]);
-
   useEffect(() => {
     if (open) {
       const inicial: Record<string, boolean> = {};
-      (bancosExibidos ?? []).forEach((b, i) => {
+      (bancos ?? []).forEach((b, i) => {
         // No modo detalhada começa desmarcado (usuário escolhe qual quer);
         // no consolidado começa com todos marcados.
         inicial[b.id ?? String(i)] = modo === "consolidado";
       });
       setSelecionados(inicial);
     }
-  }, [open, bancosExibidos, modo]);
+  }, [open, bancos, modo]);
 
   const escolhidos = useMemo(
-    () => (bancosExibidos ?? []).filter((b, i) => selecionados[b.id ?? String(i)]),
-    [bancosExibidos, selecionados],
+    () => (bancos ?? []).filter((b, i) => selecionados[b.id ?? String(i)]),
+    [bancos, selecionados],
   );
 
-  const todosMarcados = (bancosExibidos ?? []).length > 0 && escolhidos.length === (bancosExibidos ?? []).length;
+  const todosMarcados = (bancos ?? []).length > 0 && escolhidos.length === (bancos ?? []).length;
 
   function alternarTodos() {
     const novo: Record<string, boolean> = {};
-    (bancosExibidos ?? []).forEach((b, i) => {
+    (bancos ?? []).forEach((b, i) => {
       novo[b.id ?? String(i)] = !todosMarcados;
     });
     setSelecionados(novo);
@@ -119,7 +111,7 @@ export function SelecionarBancosPdfDialog({
             <Checkbox checked={todosMarcados} onCheckedChange={alternarTodos} />
             <span className="text-sm font-medium text-foreground">Selecionar todos</span>
           </label>
-          {(bancosExibidos ?? []).map((b, i) => {
+          {(bancos ?? []).map((b, i) => {
             const key = b.id ?? String(i);
             const sistema = sistemaDoBanco(b);
             return (
