@@ -408,15 +408,31 @@ export const comentarTarefa = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-/** Exclui uma tarefa. */
+/** Exclui uma tarefa. Registra snapshot em `task_audit_logs` antes de remover. */
 export const excluirTarefa = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
-    const { error } = await context.supabase.from("tasks").delete().eq("id", data.id);
+    const { supabase, userId } = context;
+    const { data: snap } = await supabase
+      .from("tasks")
+      .select("*")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (snap) {
+      await supabase.from("task_audit_logs").insert({
+        correspondente_id: (snap as any).correspondente_id ?? null,
+        task_id: data.id,
+        ator_id: userId,
+        acao: "excluida",
+        dados: snap as any,
+      });
+    }
+    const { error } = await supabase.from("tasks").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
 
 /* ------------------------- Tags (etiquetas) ------------------------- */
 
