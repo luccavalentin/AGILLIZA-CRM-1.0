@@ -15,7 +15,10 @@ import {
   Flame,
   Bell,
   ChevronRight,
+  Download,
 } from "lucide-react";
+import { toast } from "sonner";
+import { baixarDemandasPDF } from "@/lib/operacional/export-pdf";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { listarDemandas, type DemandaStatus } from "@/lib/operacional/demandas.functions";
 import { statusDemanda, TONE_BAR } from "@/components/operacional/status";
