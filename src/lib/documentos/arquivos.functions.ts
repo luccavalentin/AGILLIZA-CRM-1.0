@@ -292,6 +292,24 @@ export const renomearNo = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const corr = await correspondenteDoUsuario(supabase, userId);
     if (!corr) throw new Error("Sem correspondente.");
+    // Bloqueia duplicidade de nome no mesmo nível/tipo.
+    const { data: alvo } = await supabase
+      .from("arquivos_nos")
+      .select("parent_id, tipo")
+      .eq("id", data.id)
+      .eq("correspondente_id", corr)
+      .maybeSingle();
+    if (!alvo) throw new Error("Item não encontrado.");
+    let q = supabase
+      .from("arquivos_nos")
+      .select("id")
+      .eq("correspondente_id", corr)
+      .eq("tipo", alvo.tipo)
+      .eq("nome", data.nome)
+      .neq("id", data.id);
+    q = alvo.parent_id ? q.eq("parent_id", alvo.parent_id) : q.is("parent_id", null);
+    const { data: dup } = await q.maybeSingle();
+    if (dup?.id) throw new Error("Já existe um item com esse nome neste local.");
     const { error } = await supabase
       .from("arquivos_nos")
       .update({ nome: data.nome })
