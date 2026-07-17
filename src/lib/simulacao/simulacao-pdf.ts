@@ -669,6 +669,22 @@ function bancosParaExtrato(bancos: any[]): any[] {
   return validos.length ? validos : (bancos ?? []);
 }
 
+/**
+ * Quando uma simulação faz parte do modo "Ambos", algumas telas carregam os
+ * bancos das duas simulações irmãs para comparação. Para PDF detalhado, porém,
+ * deve baixar somente a tabela da simulação aberta/solicitada — nunca SAC e
+ * PRICE juntos para o mesmo banco.
+ */
+function bancosDaTabelaSolicitada(s: any, bancos: any[]): any[] {
+  const lista = bancos ?? [];
+  if (lista.length <= 1) return lista;
+  const simId = s?.id;
+  if (!simId) return lista;
+  const simIds = new Set(lista.map((b) => b?.simulacao_id).filter(Boolean));
+  if (simIds.size <= 1 || !simIds.has(simId)) return lista;
+  return lista.filter((b) => b?.simulacao_id === simId);
+}
+
 /** Baixa o extrato simplificado: cabeçalho com CET/CESH/taxas + resumo, um banco por folha. */
 export function baixarSimulacaoSimplificadaPDF({
   simulacao: s,
@@ -677,7 +693,7 @@ export function baixarSimulacaoSimplificadaPDF({
   filePrefix,
   dataLabel,
 }: SimulacaoPdfInput) {
-  const lista = bancosParaExtrato(bancos);
+  const lista = bancosParaExtrato(bancosDaTabelaSolicitada(s, bancos));
   P = getPdfPalette();
   const doc = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
   const pageW = doc.internal.pageSize.getWidth();
@@ -748,7 +764,7 @@ function criarDocSimulacaoDetalhada({
   filePrefix,
   dataLabel,
 }: SimulacaoPdfInput) {
-  const lista = bancosParaExtrato(bancos);
+  const lista = bancosParaExtrato(bancosDaTabelaSolicitada(s, bancos));
   P = getPdfPalette();
   const doc = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
   const pageW = doc.internal.pageSize.getWidth();
@@ -884,7 +900,10 @@ export async function baixarSimulacoesDetalhadasAgrupadasZipPDF(
   grupos: Array<{ simulacao: any; bancos: any[] }>,
 ) {
   const gruposValidos = grupos
-    .map((g) => ({ simulacao: g.simulacao, bancos: bancosParaExtrato(g.bancos) }))
+    .map((g) => ({
+      simulacao: g.simulacao,
+      bancos: bancosParaExtrato(bancosDaTabelaSolicitada(g.simulacao, g.bancos)),
+    }))
     .filter((g) => g.bancos.length > 0);
 
   if (gruposValidos.length === 0) throw new Error("Nenhum banco disponível para gerar PDF.");
