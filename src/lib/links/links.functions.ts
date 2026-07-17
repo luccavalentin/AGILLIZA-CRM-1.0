@@ -13,11 +13,23 @@ export interface LinkUtil {
   updated_at: string;
 }
 
-/** Normaliza a URL garantindo um esquema http(s). */
+/** Normaliza a URL garantindo esquema http(s) e bloqueando esquemas perigosos. */
 function normalizarUrl(url: string): string {
   const v = url.trim();
-  if (/^https?:\/\//i.test(v)) return v;
-  return `https://${v}`;
+  // Bloqueia esquemas potencialmente perigosos (XSS / phishing local)
+  if (/^\s*(javascript|data|vbscript|file):/i.test(v)) {
+    throw new Error("Esquema de URL não permitido.");
+  }
+  const withScheme = /^https?:\/\//i.test(v) ? v : `https://${v}`;
+  try {
+    const u = new URL(withScheme);
+    if (u.protocol !== "http:" && u.protocol !== "https:") {
+      throw new Error("Somente URLs http(s) são permitidas.");
+    }
+    return u.toString();
+  } catch {
+    throw new Error("URL inválida.");
+  }
 }
 
 /** Lista todos os links do repositório. */
