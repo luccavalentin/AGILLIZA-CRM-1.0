@@ -1090,8 +1090,32 @@ export const excluirConta = createServerFn({ method: "POST" })
     z.object({ tipo: z.enum(["pagar", "receber"]), id: z.string().uuid() }).parse(d),
   )
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
-    const { error } = await context.supabase.from(TABELA[data.tipo]).delete().eq("id", data.id);
+    const { supabase, userId } = context;
+    const correspondente_id = await correspondenteId(supabase, userId);
+    const { data: atual, error: e0 } = await supabase
+      .from(TABELA[data.tipo])
+      .select("valor_pago, status, descricao, valor")
+      .eq("id", data.id)
+      .eq("correspondente_id", correspondente_id)
+      .single();
+    if (e0) throw new Error(e0.message);
+    if (!atual) throw new Error("Conta não encontrada.");
+    if (Number(atual.valor_pago) > 0)
+      throw new Error("Conta com pagamentos não pode ser excluída. Estorne antes.");
+    const { error } = await supabase
+      .from(TABELA[data.tipo])
+      .delete()
+      .eq("id", data.id)
+      .eq("correspondente_id", correspondente_id);
     if (error) throw error;
+    await registrarAuditoria(
+      supabase,
+      correspondente_id,
+      `conta_${data.tipo}`,
+      data.id,
+      "excluida",
+      { descricao: atual.descricao, valor: Number(atual.valor), status: atual.status },
+    );
     return { ok: true };
   });
 
