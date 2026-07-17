@@ -171,6 +171,25 @@ function Pagina() {
               <Kanban className="mr-1.5 h-4 w-4" /> Kanban
             </Link>
           </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="bg-card/60 backdrop-blur"
+            disabled={(filtrados?.length ?? 0) === 0}
+            onClick={() => {
+              try {
+                baixarDemandasPDF({
+                  demandas: filtrados,
+                  escopo: escopo === "minhas" ? "Minhas demandas" : "Demandas gerais",
+                });
+                toast.success("PDF gerado com sucesso.");
+              } catch {
+                toast.error("Não foi possível gerar o PDF.");
+              }
+            }}
+          >
+            <Download className="mr-1.5 h-4 w-4" /> Baixar PDF
+          </Button>
           <NovaDemandaDialog onCriada={() => refetch()} />
         </div>
       </div>
