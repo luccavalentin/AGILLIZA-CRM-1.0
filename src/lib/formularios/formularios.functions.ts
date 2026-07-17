@@ -27,6 +27,19 @@ export interface FormularioBancario {
 
 const bancoSchema = z.enum(BANCOS_FORMULARIO);
 
+/** Limite físico de tamanho de PDF (25 MB) validado no servidor. */
+const MAX_PDF_BYTES = 25 * 1024 * 1024;
+const PDF_MIME = "application/pdf";
+
+function validarPdf(content_type: string | null | undefined, tamanho: number | null | undefined) {
+  if (content_type && content_type !== PDF_MIME) {
+    throw new Error("Apenas arquivos PDF são aceitos.");
+  }
+  if (typeof tamanho === "number" && tamanho > MAX_PDF_BYTES) {
+    throw new Error("Arquivo excede o limite de 25 MB.");
+  }
+}
+
 /** Lista todos os formulários bancários. */
 export const listarFormularios = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -57,6 +70,17 @@ export const criarFormulario = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }): Promise<FormularioBancario> => {
     const { supabase, userId } = context;
+    validarPdf(data.content_type, data.tamanho);
+
+    // Duplicidade por nome + banco
+    const { data: dup } = await supabase
+      .from("formularios_bancarios")
+      .select("id")
+      .eq("banco", data.banco)
+      .ilike("nome", data.nome)
+      .maybeSingle();
+    if (dup) throw new Error("Já existe um formulário com esse nome neste banco.");
+
     const { data: row, error } = await supabase
       .from("formularios_bancarios")
       .insert({
@@ -92,6 +116,7 @@ export const atualizarFormulario = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }): Promise<FormularioBancario> => {
     const { supabase } = context;
+    if (data.novo_storage_path) validarPdf(data.content_type, data.tamanho);
 
     const { data: atual, error: erroBusca } = await supabase
       .from("formularios_bancarios")
@@ -99,6 +124,16 @@ export const atualizarFormulario = createServerFn({ method: "POST" })
       .eq("id", data.id)
       .single();
     if (erroBusca) throw new Error(erroBusca.message);
+
+    // Duplicidade por nome + banco (ignora o próprio registro)
+    const { data: dup } = await supabase
+      .from("formularios_bancarios")
+      .select("id")
+      .eq("banco", data.banco)
+      .ilike("nome", data.nome)
+      .neq("id", data.id)
+      .maybeSingle();
+    if (dup) throw new Error("Já existe um formulário com esse nome neste banco.");
 
     const patch: {
       nome: string;
