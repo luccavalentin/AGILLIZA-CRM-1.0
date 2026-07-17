@@ -292,6 +292,24 @@ export const renomearNo = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const corr = await correspondenteDoUsuario(supabase, userId);
     if (!corr) throw new Error("Sem correspondente.");
+    // Bloqueia duplicidade de nome no mesmo nível/tipo.
+    const { data: alvo } = await supabase
+      .from("arquivos_nos")
+      .select("parent_id, tipo")
+      .eq("id", data.id)
+      .eq("correspondente_id", corr)
+      .maybeSingle();
+    if (!alvo) throw new Error("Item não encontrado.");
+    let q = supabase
+      .from("arquivos_nos")
+      .select("id")
+      .eq("correspondente_id", corr)
+      .eq("tipo", alvo.tipo)
+      .eq("nome", data.nome)
+      .neq("id", data.id);
+    q = alvo.parent_id ? q.eq("parent_id", alvo.parent_id) : q.is("parent_id", null);
+    const { data: dup } = await q.maybeSingle();
+    if (dup?.id) throw new Error("Já existe um item com esse nome neste local.");
     const { error } = await supabase
       .from("arquivos_nos")
       .update({ nome: data.nome })
@@ -317,6 +335,18 @@ export const moverNo = createServerFn({ method: "POST" })
     if (!corr) throw new Error("Sem correspondente.");
     const destino = data.novo_parent_id ?? null;
     if (destino === data.id) throw new Error("Destino inválido.");
+
+    // Valida que o destino é uma pasta do mesmo correspondente.
+    if (destino) {
+      const { data: pai } = await supabase
+        .from("arquivos_nos")
+        .select("tipo")
+        .eq("id", destino)
+        .eq("correspondente_id", corr)
+        .maybeSingle();
+      if (!pai) throw new Error("Pasta de destino não encontrada.");
+      if (pai.tipo !== "pasta") throw new Error("Destino precisa ser uma pasta.");
+    }
 
     // Impede mover uma pasta para dentro de si mesma (descendente): isso
     // criaria um ciclo e tornaria a subárvore inacessível a partir da raiz.
