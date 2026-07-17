@@ -1227,7 +1227,7 @@ export const urlDocumento = createServerFn({ method: "POST" })
     return { url: signed.signedUrl };
   });
 
-/** Edita metadados do documento (categoria/tipo). */
+/** Edita metadados do documento (categoria, tipo, pasta, validade). */
 export const editarDocumento = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
@@ -1244,6 +1244,12 @@ export const editarDocumento = createServerFn({ method: "POST" })
         ]),
         pasta_id: z.string().uuid().optional().nullable(),
         tipo_documento: z.string().min(1),
+        // ISO date (YYYY-MM-DD) — nula limpa a validade.
+        expira_em: z
+          .string()
+          .regex(/^\d{4}-\d{2}-\d{2}$/)
+          .optional()
+          .nullable(),
       })
       .parse(d),
   )
@@ -1252,12 +1258,31 @@ export const editarDocumento = createServerFn({ method: "POST" })
     if (!(await podeAcao(supabase, userId, "crm.clientes", "edit"))) {
       throw new Error("Você não tem permissão para editar documentos.");
     }
+    const { data: antes } = await supabase
+      .from("cliente_documentos")
+      .select("categoria, tipo_documento, pasta_id, expira_em, status")
+      .eq("id", data.id)
+      .maybeSingle();
     const patch: Record<string, unknown> = {
       categoria: data.categoria,
       tipo_documento: data.tipo_documento,
     };
     if (data.pasta_id !== undefined) patch.pasta_id = data.pasta_id;
-    const { error } = await supabase.from("cliente_documentos").update(patch as any).eq("id", data.id);
+    if (data.expira_em !== undefined) {
+      patch.expira_em = data.expira_em;
+      // Se a validade passou e o doc não estava reprovado, marca como expirado.
+      if (
+        data.expira_em &&
+        data.expira_em < new Date().toISOString().slice(0, 10) &&
+        (antes as any)?.status !== "reprovado"
+      ) {
+        patch.status = "expirado";
+      }
+    }
+    const { error } = await supabase
+      .from("cliente_documentos")
+      .update(patch as any)
+      .eq("id", data.id);
     if (error) throw error;
     const { registrarAuditoria } = await import("@/lib/admin/audit.server");
     await registrarAuditoria({
@@ -1268,7 +1293,8 @@ export const editarDocumento = createServerFn({ method: "POST" })
       entidade: "cliente_documentos",
       entidadeId: data.id,
       descricao: `editou o documento "${data.tipo_documento}"`,
-      payloadNovo: { tipo: data.tipo_documento },
+      payloadAnterior: (antes as any) ?? null,
+      payloadNovo: patch,
     });
     return { ok: true };
   });
