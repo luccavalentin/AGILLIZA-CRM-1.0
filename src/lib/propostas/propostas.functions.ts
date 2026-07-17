@@ -233,9 +233,11 @@ export const obterProposta = createServerFn({ method: "GET" })
       .from("propostas")
       .select("*")
       .eq("id", data.id)
+      .is("deleted_at", null)
       .maybeSingle();
     if (error) throw new Error(error.message);
     if (!proposta) throw new Error("Proposta não encontrada.");
+
 
     const [bancos, envolvidos, documentos, followups, historico] = await Promise.all([
       supabase.from("proposta_bancos").select("*").eq("proposta_id", data.id).order("created_at"),
