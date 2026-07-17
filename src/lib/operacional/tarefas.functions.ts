@@ -168,6 +168,7 @@ export const obterTarefa = createServerFn({ method: "GET" })
     const nomes = await nomesPorId(supabase, uids);
     return {
       tarefa: tarefa.data,
+      usuario_atual_id: context.userId,
       nome_responsavel: tarefa.data?.responsavel_id
         ? (nomes.get(tarefa.data.responsavel_id) ?? null)
         : null,
