@@ -364,35 +364,39 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
                       data!.anexos.map((a: any) => (
                         <div
                           key={a.id}
-                          className="flex items-center gap-2 rounded-lg border border-border/60 bg-background/60 px-2.5 py-1.5 text-sm transition hover:border-border hover:bg-background"
+                          className="flex items-start gap-2 rounded-lg border border-border/60 bg-background/60 px-2.5 py-1.5 text-sm transition hover:border-border hover:bg-background"
                         >
-                          <Paperclip className="h-4 w-4 shrink-0 text-muted-foreground" />
+                          <Paperclip className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
                           <div className="min-w-0 flex-1">
-                            <p className="truncate text-foreground">{a.nome}</p>
+                            <p className="break-all text-foreground leading-snug" title={a.nome}>
+                              {a.nome}
+                            </p>
                             <p className="text-xs text-muted-foreground">
                               {a.nome_autor ?? "—"} · {fmtTamanho(a.tamanho)} ·{" "}
                               {fmtData(a.created_at)}
                             </p>
                           </div>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7"
-                            onClick={() => baixarAnexo(a.storage_path, a.nome)}
-                          >
-                            <Download className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 text-destructive"
-                            onClick={async () => {
-                              await removerAnexoFn({ data: { id: a.id } });
-                              invalidar();
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          <div className="flex shrink-0 items-center gap-0.5 self-start">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7"
+                              onClick={() => baixarAnexo(a.storage_path, a.nome)}
+                            >
+                              <Download className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-destructive"
+                              onClick={async () => {
+                                await removerAnexoFn({ data: { id: a.id } });
+                                invalidar();
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
                       ))
                     )}
