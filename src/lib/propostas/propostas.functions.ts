@@ -233,9 +233,11 @@ export const obterProposta = createServerFn({ method: "GET" })
       .from("propostas")
       .select("*")
       .eq("id", data.id)
+      .is("deleted_at", null)
       .maybeSingle();
     if (error) throw new Error(error.message);
     if (!proposta) throw new Error("Proposta não encontrada.");
+
 
     const [bancos, envolvidos, documentos, followups, historico] = await Promise.all([
       supabase.from("proposta_bancos").select("*").eq("proposta_id", data.id).order("created_at"),
@@ -816,12 +818,23 @@ export const replicarProposta = createServerFn({ method: "POST" })
       "updated_at",
       "status",
       "enviada_em",
+      "contrato_emitido_em",
       "motivo_cancelamento",
       "simulacao_id",
       "homefin_id_oportunidade",
       "homefin_id_simulacao",
       "codigo_oportunidade_homefin",
+      "numero_proposta_banco",
+      "detalhe_status_atual",
+      "status_atualizado_em",
+      "ultima_sincronizacao_em",
+      "ultimo_erro",
+      "etapas_banco",
+      "deleted_at",
+      "deleted_by",
+      "deleted_motivo",
     ]);
+
     const snapshot: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(origem)) {
       if (!naoCopiar.has(k)) snapshot[k] = v;
@@ -943,16 +956,34 @@ export const atualizarDadosProposta = createServerFn({ method: "POST" })
       throw new Error("A proposta não pode ser editada neste status.");
     }
     const patch = { ...data.patch };
-    delete (patch as any).id;
-    delete (patch as any).status;
-    delete (patch as any).correspondente_id;
+    // Campos sensíveis nunca podem ser sobrescritos por edição de dados:
+    // identidade da proposta, escopo do correspondente, soft-delete, chaves
+    // externas da integração bancária e carimbos de auditoria.
+    for (const k of [
+      "id",
+      "status",
+      "correspondente_id",
+      "numero_proposta",
+      "deleted_at",
+      "deleted_by",
+      "deleted_motivo",
+      "homefin_id_oportunidade",
+      "homefin_id_simulacao",
+      "codigo_oportunidade_homefin",
+      "created_at",
+      "updated_at",
+      "enviada_em",
+      "contrato_emitido_em",
+    ]) delete (patch as any)[k];
     const { error } = await supabase
       .from("propostas")
       .update(patch as any)
-      .eq("id", data.id);
+      .eq("id", data.id)
+      .is("deleted_at", null);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
 
 /** ===== Selecionar banco vencedor ===== */
 export const selecionarBancoProposta = createServerFn({ method: "POST" })
