@@ -101,7 +101,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       // Segurança: promove automaticamente qualquer recurso http:// para https://,
       // evitando "conteúdo misto" que faz o navegador exibir o site como "não seguro".
       {
-        "http-equiv": "Content-Security-Policy",
+        httpEquiv: "Content-Security-Policy",
         content: "upgrade-insecure-requests",
       },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
