@@ -106,6 +106,11 @@ export const definirEtiquetasCliente = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const corr = await correspondenteDoUsuario(supabase, userId);
 
+    const { data: antes } = await supabase
+      .from("crm_chat_cliente_etiquetas")
+      .select("etiqueta_id")
+      .eq("cliente_id", data.cliente_id);
+
     const { error: delErr } = await supabase
       .from("crm_chat_cliente_etiquetas")
       .delete()
@@ -123,6 +128,18 @@ export const definirEtiquetasCliente = createServerFn({ method: "POST" })
         .insert(linhas);
       if (insErr) throw new Error(insErr.message);
     }
+
+    const { registrarAuditoria } = await import("@/lib/admin/audit.server");
+    await registrarAuditoria({
+      supabase,
+      userId,
+      correspondenteId: corr,
+      acao: "chat.etiquetas.definir",
+      entidade: "crm_chat_cliente_etiquetas",
+      entidadeId: data.cliente_id,
+      payloadAnterior: { etiqueta_ids: (antes ?? []).map((r: any) => r.etiqueta_id) },
+      payloadNovo: { etiqueta_ids: data.etiqueta_ids },
+    });
     return { ok: true };
   });
 
