@@ -1,21 +1,35 @@
-import { Check, Download, FileText, Pencil, Trash2, User, X } from "lucide-react";
+import { AlertTriangle, Check, Download, FileText, MessageSquareWarning, Pencil, Trash2, User, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ToneBadge } from "@/components/crm/tone-badge";
 import { CATEGORIA_LABEL, statusTone, type Categoria } from "./types";
+
+/** Formata data ISO (YYYY-MM-DD) em pt-BR sem conversão de fuso. */
+function formatarValidade(iso: string): string {
+  const [a, m, d] = iso.split("-");
+  return `${d}/${m}/${a}`;
+}
+
+/** true quando `expira_em` é menor que hoje (comparação lexicográfica em ISO). */
+function estaVencido(iso: string): boolean {
+  return iso < new Date().toISOString().slice(0, 10);
+}
 
 export function LinhaDocumento({
   doc,
   onBaixar,
   onEditar,
   onMarcar,
+  onSolicitarCorrecao,
   onExcluir,
 }: {
   doc: any;
   onBaixar: (storage_path: string, nome: string) => void;
   onEditar: (d: any) => void;
   onMarcar: (id: string, status: "aprovado" | "reprovado") => void;
+  onSolicitarCorrecao: (d: any) => void;
   onExcluir: (d: any) => void;
 }) {
+  const vencido = doc.expira_em ? estaVencido(doc.expira_em) : false;
   return (
     <div className="flex flex-col gap-3 rounded-lg border border-border bg-card p-3 sm:flex-row sm:items-center">
       <button
@@ -33,12 +47,27 @@ export function LinhaDocumento({
             {CATEGORIA_LABEL[doc.categoria as Categoria]} · {doc.tipo_documento} · v
             {doc.versao}
           </p>
-          {doc.enviado_por_nome ? (
-            <span className="mt-1 inline-flex max-w-full items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
-              <User className="size-3 shrink-0" />
-              <span className="truncate">Enviado por {doc.enviado_por_nome}</span>
-            </span>
-          ) : null}
+          <div className="mt-1 flex flex-wrap items-center gap-1.5">
+            {doc.enviado_por_nome ? (
+              <span className="inline-flex max-w-full items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+                <User className="size-3 shrink-0" />
+                <span className="truncate">Enviado por {doc.enviado_por_nome}</span>
+              </span>
+            ) : null}
+            {doc.expira_em ? (
+              <span
+                className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                  vencido
+                    ? "bg-destructive/10 text-destructive"
+                    : "bg-muted text-muted-foreground"
+                }`}
+              >
+                {vencido ? <AlertTriangle className="size-3" /> : null}
+                {vencido ? "Vencido em " : "Vence em "}
+                {formatarValidade(doc.expira_em)}
+              </span>
+            ) : null}
+          </div>
         </div>
       </button>
 
@@ -62,6 +91,14 @@ export function LinhaDocumento({
           title="Aprovar"
         >
           <Check className="size-4 text-success" />
+        </Button>
+        <Button
+          size="icon"
+          variant="ghost"
+          onClick={() => onSolicitarCorrecao(doc)}
+          title="Solicitar correção"
+        >
+          <MessageSquareWarning className="size-4 text-warning" />
         </Button>
         <Button
           size="icon"

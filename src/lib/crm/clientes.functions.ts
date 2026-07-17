@@ -1136,22 +1136,75 @@ export const listarDocumentos = createServerFn({ method: "GET" })
     }));
   });
 
-/** Aprova/reprova documento. */
+/** Aprova / reprova / solicita correção de um documento. */
 export const revisarDocumento = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
-    z.object({ id: z.string().uuid(), status: z.enum(["aprovado", "reprovado"]) }).parse(d),
+    z
+      .object({
+        id: z.string().uuid(),
+        status: z.enum(["aprovado", "reprovado", "pendente"]),
+        observacao: z.string().trim().max(500).optional().nullable(),
+      })
+      .parse(d),
   )
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const { supabase, userId } = context;
     if (!(await podeAcao(supabase, userId, "crm.clientes", "edit"))) {
       throw new Error("Você não tem permissão para revisar documentos.");
     }
+    const { data: antes } = await supabase
+      .from("cliente_documentos")
+      .select("id, cliente_id, nome_arquivo, status")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (!antes) throw new Error("Documento não encontrado.");
+    // "pendente" (solicitação de correção) limpa o carimbo de aprovação para
+    // não confundir com um estado revisado no dashboard/relatórios.
+    const patch: Record<string, unknown> = { status: data.status };
+    if (data.status === "aprovado" || data.status === "reprovado") {
+      patch.aprovado_por = userId;
+      patch.aprovado_em = new Date().toISOString();
+    } else {
+      patch.aprovado_por = null;
+      patch.aprovado_em = null;
+    }
     const { error } = await supabase
       .from("cliente_documentos")
-      .update({ status: data.status, aprovado_por: userId, aprovado_em: new Date().toISOString() })
+      .update(patch as any)
       .eq("id", data.id);
     if (error) throw error;
+    const descricaoHist =
+      data.status === "aprovado"
+        ? `Documento aprovado: ${(antes as any).nome_arquivo}`
+        : data.status === "reprovado"
+          ? `Documento reprovado: ${(antes as any).nome_arquivo}`
+          : `Correção solicitada no documento: ${(antes as any).nome_arquivo}`;
+    await supabase.from("cliente_historico").insert({
+      cliente_id: (antes as any).cliente_id,
+      tipo: "documento",
+      descricao: data.observacao
+        ? `${descricaoHist} — ${data.observacao}`
+        : descricaoHist,
+      ator_id: userId,
+    });
+    const { registrarAuditoria } = await import("@/lib/admin/audit.server");
+    await registrarAuditoria({
+      supabase,
+      userId,
+      correspondenteId: null,
+      acao:
+        data.status === "aprovado"
+          ? "documento.aprovar"
+          : data.status === "reprovado"
+            ? "documento.reprovar"
+            : "documento.solicitar_correcao",
+      entidade: "cliente_documentos",
+      entidadeId: data.id,
+      descricao: descricaoHist,
+      payloadAnterior: { status: (antes as any).status },
+      payloadNovo: { status: data.status, observacao: data.observacao ?? null },
+    });
     return { ok: true };
   });
 
@@ -1174,7 +1227,7 @@ export const urlDocumento = createServerFn({ method: "POST" })
     return { url: signed.signedUrl };
   });
 
-/** Edita metadados do documento (categoria/tipo). */
+/** Edita metadados do documento (categoria, tipo, pasta, validade). */
 export const editarDocumento = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
@@ -1191,6 +1244,12 @@ export const editarDocumento = createServerFn({ method: "POST" })
         ]),
         pasta_id: z.string().uuid().optional().nullable(),
         tipo_documento: z.string().min(1),
+        // ISO date (YYYY-MM-DD) — nula limpa a validade.
+        expira_em: z
+          .string()
+          .regex(/^\d{4}-\d{2}-\d{2}$/)
+          .optional()
+          .nullable(),
       })
       .parse(d),
   )
@@ -1199,12 +1258,31 @@ export const editarDocumento = createServerFn({ method: "POST" })
     if (!(await podeAcao(supabase, userId, "crm.clientes", "edit"))) {
       throw new Error("Você não tem permissão para editar documentos.");
     }
+    const { data: antes } = await supabase
+      .from("cliente_documentos")
+      .select("categoria, tipo_documento, pasta_id, expira_em, status")
+      .eq("id", data.id)
+      .maybeSingle();
     const patch: Record<string, unknown> = {
       categoria: data.categoria,
       tipo_documento: data.tipo_documento,
     };
     if (data.pasta_id !== undefined) patch.pasta_id = data.pasta_id;
-    const { error } = await supabase.from("cliente_documentos").update(patch as any).eq("id", data.id);
+    if (data.expira_em !== undefined) {
+      patch.expira_em = data.expira_em;
+      // Se a validade passou e o doc não estava reprovado, marca como expirado.
+      if (
+        data.expira_em &&
+        data.expira_em < new Date().toISOString().slice(0, 10) &&
+        (antes as any)?.status !== "reprovado"
+      ) {
+        patch.status = "expirado";
+      }
+    }
+    const { error } = await supabase
+      .from("cliente_documentos")
+      .update(patch as any)
+      .eq("id", data.id);
     if (error) throw error;
     const { registrarAuditoria } = await import("@/lib/admin/audit.server");
     await registrarAuditoria({
@@ -1215,7 +1293,8 @@ export const editarDocumento = createServerFn({ method: "POST" })
       entidade: "cliente_documentos",
       entidadeId: data.id,
       descricao: `editou o documento "${data.tipo_documento}"`,
-      payloadNovo: { tipo: data.tipo_documento },
+      payloadAnterior: (antes as any) ?? null,
+      payloadNovo: patch,
     });
     return { ok: true };
   });
