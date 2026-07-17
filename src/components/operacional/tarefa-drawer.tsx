@@ -59,6 +59,7 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
 
   const toggleFn = useServerFn(toggleChecklistItem);
   const comentarFn = useServerFn(comentarTarefa);
+  const excluirComentarioFn = useServerFn(excluirComentarioTarefa);
   const concluirFn = useServerFn(concluirTarefa);
   const criarTagFn = useServerFn(criarTagTarefa);
   const alternarTagFn = useServerFn(alternarTagTarefa);
