@@ -376,7 +376,15 @@ export const baixarConta = createServerFn({ method: "POST" })
     if (e1) throw new Error(e1.message);
     if (conta.status === "cancelada" || conta.status === "estornada")
       throw new Error("Conta não pode ser baixada.");
+    if (conta.status === "paga")
+      throw new Error("Conta já está totalmente paga.");
 
+    const saldoDevedor = Number(conta.valor) - Number(conta.valor_pago);
+    if (data.valor > saldoDevedor + 0.005) {
+      throw new Error(
+        `Valor da baixa (${data.valor.toFixed(2)}) maior que o saldo devedor (${saldoDevedor.toFixed(2)}).`,
+      );
+    }
     const novoPago = Number(conta.valor_pago) + data.valor;
     const quitada = novoPago >= Number(conta.valor) - 0.005;
     const novoStatus = quitada ? "paga" : "parcial";
@@ -535,12 +543,14 @@ export const cancelarConta = createServerFn({ method: "POST" })
     const correspondente_id = await correspondenteId(supabase, userId);
     const { data: atual } = await supabase
       .from(TABELA[data.tipo])
-      .select("status")
+      .select("status, valor_pago")
       .eq("id", data.id)
       .single();
     if (!atual) throw new Error("Conta não encontrada.");
     if (atual.status === "cancelada") throw new Error("Conta já está cancelada.");
     if (atual.status === "estornada") throw new Error("Conta estornada não pode ser cancelada.");
+    if (Number(atual.valor_pago) > 0)
+      throw new Error("Conta com pagamentos não pode ser cancelada. Estorne antes.");
     const { error } = await supabase
       .from(TABELA[data.tipo])
       .update({ status: "cancelada", estorno_motivo: data.motivo })
@@ -793,7 +803,8 @@ export const atualizarConfig = createServerFn({ method: "POST" })
       .parse(data),
   )
   .handler(async ({ context, data }): Promise<{ ok: true }> => {
-    const { supabase } = context;
+    const { supabase, userId } = context;
+    const correspondente_id = await correspondenteId(supabase, userId);
     const patch: Record<string, unknown> = {};
     if (data.nome !== undefined) patch.nome = data.nome;
     if (data.ativo !== undefined) patch.ativo = data.ativo;
@@ -802,7 +813,8 @@ export const atualizarConfig = createServerFn({ method: "POST" })
     const { error } = await supabase
       .from(CONFIG_TABELA[data.entidade] as any)
       .update(patch as any)
-      .eq("id", data.id);
+      .eq("id", data.id)
+      .eq("correspondente_id", correspondente_id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -818,15 +830,21 @@ export const excluirConfig = createServerFn({ method: "POST" })
       .parse(data),
   )
   .handler(async ({ context, data }): Promise<{ ok: true; desativado: boolean }> => {
-    const { supabase } = context;
+    const { supabase, userId } = context;
+    const correspondente_id = await correspondenteId(supabase, userId);
     const tabela = CONFIG_TABELA[data.entidade] as any;
     // Tenta excluir; se houver vínculos (FK), apenas desativa para preservar histórico.
-    const { error } = await supabase.from(tabela).delete().eq("id", data.id);
+    const { error } = await supabase
+      .from(tabela)
+      .delete()
+      .eq("id", data.id)
+      .eq("correspondente_id", correspondente_id);
     if (error) {
       const { error: err2 } = await supabase
         .from(tabela)
         .update({ ativo: false } as any)
-        .eq("id", data.id);
+        .eq("id", data.id)
+        .eq("correspondente_id", correspondente_id);
       if (err2) throw new Error(err2.message);
       return { ok: true, desativado: true };
     }
@@ -1080,8 +1098,32 @@ export const excluirConta = createServerFn({ method: "POST" })
     z.object({ tipo: z.enum(["pagar", "receber"]), id: z.string().uuid() }).parse(d),
   )
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
-    const { error } = await context.supabase.from(TABELA[data.tipo]).delete().eq("id", data.id);
+    const { supabase, userId } = context;
+    const correspondente_id = await correspondenteId(supabase, userId);
+    const { data: atual, error: e0 } = await supabase
+      .from(TABELA[data.tipo])
+      .select("valor_pago, status, descricao, valor")
+      .eq("id", data.id)
+      .eq("correspondente_id", correspondente_id)
+      .single();
+    if (e0) throw new Error(e0.message);
+    if (!atual) throw new Error("Conta não encontrada.");
+    if (Number(atual.valor_pago) > 0)
+      throw new Error("Conta com pagamentos não pode ser excluída. Estorne antes.");
+    const { error } = await supabase
+      .from(TABELA[data.tipo])
+      .delete()
+      .eq("id", data.id)
+      .eq("correspondente_id", correspondente_id);
     if (error) throw error;
+    await registrarAuditoria(
+      supabase,
+      correspondente_id,
+      `conta_${data.tipo}`,
+      data.id,
+      "excluida",
+      { descricao: atual.descricao, valor: Number(atual.valor), status: atual.status },
+    );
     return { ok: true };
   });
 
