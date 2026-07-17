@@ -502,6 +502,7 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
               onBaixar={baixar}
               onEditar={abrirEdicao}
               onMarcar={marcar}
+              onSolicitarCorrecao={solicitarCorrecao}
               onExcluir={setDelDoc}
             />
           ))}
