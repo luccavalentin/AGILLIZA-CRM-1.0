@@ -1474,6 +1474,18 @@ export const limparVinculoEsteira = createServerFn({ method: "POST" })
     const agora = new Date().toISOString();
     const motivo = "Vínculo removido pelo painel do CRM.";
 
+    // Defesa em profundidade: resolve o tenant (correspondente_id) do cliente
+    // pelo cliente autenticado (respeita RLS) e usa como filtro adicional no
+    // soft delete em cascata para impedir qualquer vazamento entre tenants.
+    const { data: cliTenant, error: eTenant } = await context.supabase
+      .from("clientes")
+      .select("correspondente_id")
+      .eq("id", data.cliente_id)
+      .maybeSingle();
+    if (eTenant) throw eTenant;
+    if (!cliTenant) throw new Error("Cliente não encontrado.");
+    const correspondenteId = (cliTenant as any).correspondente_id as string;
+
     // Soft delete das propostas ativas do cliente (preserva histórico e permite
     // restauração na aba "Excluídas"). Não apagamos comissões/recebíveis: eles
     // permanecem vinculados e voltam a valer caso a proposta seja restaurada.
@@ -1481,6 +1493,7 @@ export const limparVinculoEsteira = createServerFn({ method: "POST" })
       .from("propostas")
       .update({ deleted_at: agora, deleted_by: userId, deleted_motivo: motivo })
       .eq("cliente_id", data.cliente_id)
+      .eq("correspondente_id", correspondenteId)
       .is("deleted_at", null);
     if (eProp) throw eProp;
 
@@ -1489,8 +1502,10 @@ export const limparVinculoEsteira = createServerFn({ method: "POST" })
       .from("simulacoes")
       .update({ deleted_at: agora, deleted_by: userId, deleted_motivo: motivo } as any)
       .eq("cliente_id", data.cliente_id)
+      .eq("correspondente_id", correspondenteId)
       .is("deleted_at", null);
     if (eSim) throw eSim;
+
 
     const { error } = await context.supabase.rpc("cliente_pipeline_definir", {
       _cliente_id: data.cliente_id,
