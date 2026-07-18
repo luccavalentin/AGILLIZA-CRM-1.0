@@ -256,6 +256,8 @@ export const runReport = createServerFn({ method: "POST" })
           return await relDemandas("demandas");
         case "tarefas":
           return await relTarefas();
+        case "operacional-simulacoes":
+          return await relOperacionalSimulacoes();
         case "financeiros":
           return await relFinanceiro();
         case "comissoes":
