@@ -1654,7 +1654,7 @@ export const runReport = createServerFn({ method: "POST" })
 
       // Filtros server-side (banco, produto, status, faixa de valor, busca textual).
       const buscaLc = filtros.busca?.trim().toLowerCase();
-      const props = todas.filter((p) => {
+      let props = todas.filter((p) => {
         if (filtros.banco && (p.nome_banco ?? "") !== filtros.banco) return false;
         if (filtros.produto && (p.produto ?? "") !== filtros.produto) return false;
         if (filtros.status && p.status !== filtros.status) return false;
