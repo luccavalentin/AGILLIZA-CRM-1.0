@@ -2680,6 +2680,7 @@ const REPORTS_DISPONIVEIS = [
   "financeiros",
   "app-cliente",
   "operacionais",
+  "operacional-simulacoes",
 ] as const;
 
 /** Lista relatórios base disponíveis para o construtor de personalizados. */
