@@ -358,9 +358,51 @@ export const navInterno: NavGroup[] = [
             to: "/relatorios/gerencial",
           },
           {
-            label: "Relatório operacional de simulações",
+            label: "Relatório operacional consolidado",
             icon: LayoutDashboard,
-            to: "/relatorios/operacional-simulacoes",
+            to: "/relatorios/operacional-consolidado",
+            perm: { modulo: "relatorios.geral" },
+          },
+          {
+            label: "Simulações",
+            icon: LayoutDashboard,
+            to: "/relatorios/simulacoes",
+            perm: { modulo: "relatorios.geral" },
+          },
+          {
+            label: "Propostas enviadas",
+            icon: LayoutDashboard,
+            to: "/relatorios/propostas-enviadas",
+            perm: { modulo: "relatorios.geral" },
+          },
+          {
+            label: "Propostas aprovadas",
+            icon: LayoutDashboard,
+            to: "/relatorios/propostas-aprovadas",
+            perm: { modulo: "relatorios.geral" },
+          },
+          {
+            label: "Propostas recusadas",
+            icon: LayoutDashboard,
+            to: "/relatorios/propostas-recusadas",
+            perm: { modulo: "relatorios.geral" },
+          },
+          {
+            label: "Demandas",
+            icon: LayoutDashboard,
+            to: "/relatorios/demandas",
+            perm: { modulo: "relatorios.geral" },
+          },
+          {
+            label: "Tarefas",
+            icon: LayoutDashboard,
+            to: "/relatorios/tarefas",
+            perm: { modulo: "relatorios.geral" },
+          },
+          {
+            label: "Clientes / CRM",
+            icon: LayoutDashboard,
+            to: "/relatorios/crm",
             perm: { modulo: "relatorios.geral" },
           },
           {
