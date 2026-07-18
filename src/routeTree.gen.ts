@@ -48,6 +48,7 @@ import { Route as AuthenticatedRelatoriosPropostasRouteImport } from './routes/_
 import { Route as AuthenticatedRelatoriosPersonalizadosRouteImport } from './routes/_authenticated/relatorios.personalizados'
 import { Route as AuthenticatedRelatoriosPainelGeralRouteImport } from './routes/_authenticated/relatorios.painel-geral'
 import { Route as AuthenticatedRelatoriosOperacionalSimulacoesRouteImport } from './routes/_authenticated/relatorios.operacional-simulacoes'
+import { Route as AuthenticatedRelatoriosOperacionalConsolidadoRouteImport } from './routes/_authenticated/relatorios.operacional-consolidado'
 import { Route as AuthenticatedRelatoriosOperacionaisRouteImport } from './routes/_authenticated/relatorios.operacionais'
 import { Route as AuthenticatedRelatoriosGerencialRouteImport } from './routes/_authenticated/relatorios.gerencial'
 import { Route as AuthenticatedRelatoriosFinanceirosRouteImport } from './routes/_authenticated/relatorios.financeiros'
@@ -314,6 +315,12 @@ const AuthenticatedRelatoriosOperacionalSimulacoesRoute =
   AuthenticatedRelatoriosOperacionalSimulacoesRouteImport.update({
     id: '/operacional-simulacoes',
     path: '/operacional-simulacoes',
+    getParentRoute: () => AuthenticatedRelatoriosRoute,
+  } as any)
+const AuthenticatedRelatoriosOperacionalConsolidadoRoute =
+  AuthenticatedRelatoriosOperacionalConsolidadoRouteImport.update({
+    id: '/operacional-consolidado',
+    path: '/operacional-consolidado',
     getParentRoute: () => AuthenticatedRelatoriosRoute,
   } as any)
 const AuthenticatedRelatoriosOperacionaisRoute =
@@ -732,6 +739,7 @@ export interface FileRoutesByFullPath {
   '/relatorios/financeiros': typeof AuthenticatedRelatoriosFinanceirosRoute
   '/relatorios/gerencial': typeof AuthenticatedRelatoriosGerencialRoute
   '/relatorios/operacionais': typeof AuthenticatedRelatoriosOperacionaisRoute
+  '/relatorios/operacional-consolidado': typeof AuthenticatedRelatoriosOperacionalConsolidadoRoute
   '/relatorios/operacional-simulacoes': typeof AuthenticatedRelatoriosOperacionalSimulacoesRoute
   '/relatorios/painel-geral': typeof AuthenticatedRelatoriosPainelGeralRoute
   '/relatorios/personalizados': typeof AuthenticatedRelatoriosPersonalizadosRoute
@@ -828,6 +836,7 @@ export interface FileRoutesByTo {
   '/relatorios/financeiros': typeof AuthenticatedRelatoriosFinanceirosRoute
   '/relatorios/gerencial': typeof AuthenticatedRelatoriosGerencialRoute
   '/relatorios/operacionais': typeof AuthenticatedRelatoriosOperacionaisRoute
+  '/relatorios/operacional-consolidado': typeof AuthenticatedRelatoriosOperacionalConsolidadoRoute
   '/relatorios/operacional-simulacoes': typeof AuthenticatedRelatoriosOperacionalSimulacoesRoute
   '/relatorios/painel-geral': typeof AuthenticatedRelatoriosPainelGeralRoute
   '/relatorios/personalizados': typeof AuthenticatedRelatoriosPersonalizadosRoute
@@ -928,6 +937,7 @@ export interface FileRoutesById {
   '/_authenticated/relatorios/financeiros': typeof AuthenticatedRelatoriosFinanceirosRoute
   '/_authenticated/relatorios/gerencial': typeof AuthenticatedRelatoriosGerencialRoute
   '/_authenticated/relatorios/operacionais': typeof AuthenticatedRelatoriosOperacionaisRoute
+  '/_authenticated/relatorios/operacional-consolidado': typeof AuthenticatedRelatoriosOperacionalConsolidadoRoute
   '/_authenticated/relatorios/operacional-simulacoes': typeof AuthenticatedRelatoriosOperacionalSimulacoesRoute
   '/_authenticated/relatorios/painel-geral': typeof AuthenticatedRelatoriosPainelGeralRoute
   '/_authenticated/relatorios/personalizados': typeof AuthenticatedRelatoriosPersonalizadosRoute
@@ -1028,6 +1038,7 @@ export interface FileRouteTypes {
     | '/relatorios/financeiros'
     | '/relatorios/gerencial'
     | '/relatorios/operacionais'
+    | '/relatorios/operacional-consolidado'
     | '/relatorios/operacional-simulacoes'
     | '/relatorios/painel-geral'
     | '/relatorios/personalizados'
@@ -1124,6 +1135,7 @@ export interface FileRouteTypes {
     | '/relatorios/financeiros'
     | '/relatorios/gerencial'
     | '/relatorios/operacionais'
+    | '/relatorios/operacional-consolidado'
     | '/relatorios/operacional-simulacoes'
     | '/relatorios/painel-geral'
     | '/relatorios/personalizados'
@@ -1223,6 +1235,7 @@ export interface FileRouteTypes {
     | '/_authenticated/relatorios/financeiros'
     | '/_authenticated/relatorios/gerencial'
     | '/_authenticated/relatorios/operacionais'
+    | '/_authenticated/relatorios/operacional-consolidado'
     | '/_authenticated/relatorios/operacional-simulacoes'
     | '/_authenticated/relatorios/painel-geral'
     | '/_authenticated/relatorios/personalizados'
@@ -1537,6 +1550,13 @@ declare module '@tanstack/react-router' {
       path: '/operacional-simulacoes'
       fullPath: '/relatorios/operacional-simulacoes'
       preLoaderRoute: typeof AuthenticatedRelatoriosOperacionalSimulacoesRouteImport
+      parentRoute: typeof AuthenticatedRelatoriosRoute
+    }
+    '/_authenticated/relatorios/operacional-consolidado': {
+      id: '/_authenticated/relatorios/operacional-consolidado'
+      path: '/operacional-consolidado'
+      fullPath: '/relatorios/operacional-consolidado'
+      preLoaderRoute: typeof AuthenticatedRelatoriosOperacionalConsolidadoRouteImport
       parentRoute: typeof AuthenticatedRelatoriosRoute
     }
     '/_authenticated/relatorios/operacionais': {
@@ -1976,6 +1996,7 @@ interface AuthenticatedRelatoriosRouteChildren {
   AuthenticatedRelatoriosFinanceirosRoute: typeof AuthenticatedRelatoriosFinanceirosRoute
   AuthenticatedRelatoriosGerencialRoute: typeof AuthenticatedRelatoriosGerencialRoute
   AuthenticatedRelatoriosOperacionaisRoute: typeof AuthenticatedRelatoriosOperacionaisRoute
+  AuthenticatedRelatoriosOperacionalConsolidadoRoute: typeof AuthenticatedRelatoriosOperacionalConsolidadoRoute
   AuthenticatedRelatoriosOperacionalSimulacoesRoute: typeof AuthenticatedRelatoriosOperacionalSimulacoesRoute
   AuthenticatedRelatoriosPainelGeralRoute: typeof AuthenticatedRelatoriosPainelGeralRoute
   AuthenticatedRelatoriosPersonalizadosRoute: typeof AuthenticatedRelatoriosPersonalizadosRoute
@@ -2009,6 +2030,8 @@ const AuthenticatedRelatoriosRouteChildren: AuthenticatedRelatoriosRouteChildren
       AuthenticatedRelatoriosGerencialRoute,
     AuthenticatedRelatoriosOperacionaisRoute:
       AuthenticatedRelatoriosOperacionaisRoute,
+    AuthenticatedRelatoriosOperacionalConsolidadoRoute:
+      AuthenticatedRelatoriosOperacionalConsolidadoRoute,
     AuthenticatedRelatoriosOperacionalSimulacoesRoute:
       AuthenticatedRelatoriosOperacionalSimulacoesRoute,
     AuthenticatedRelatoriosPainelGeralRoute:

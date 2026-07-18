@@ -115,6 +115,9 @@ function statusOpcoesPorCodigo(codigo: string): { value: string; label: string }
     case "gerencial":
     case "propostas":
     case "operacionais":
+    case "propostas-enviadas":
+    case "propostas-aprovadas":
+    case "propostas-recusadas":
       return filtrarPropostas();
     case "simulacoes":
       return opcoes(STATUS_SIMULACAO_LABEL);
