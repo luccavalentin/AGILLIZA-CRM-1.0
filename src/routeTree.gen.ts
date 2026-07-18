@@ -41,15 +41,10 @@ import { Route as ApiPublicSyncPropostasRouteImport } from './routes/api/public/
 import { Route as AuthenticatedVisaoGeralPainelRouteImport } from './routes/_authenticated/visao-geral.painel'
 import { Route as AuthenticatedRelatoriosTarefasRouteImport } from './routes/_authenticated/relatorios.tarefas'
 import { Route as AuthenticatedRelatoriosSimulacoesRouteImport } from './routes/_authenticated/relatorios.simulacoes'
-import { Route as AuthenticatedRelatoriosPropostasRecusadasRouteImport } from './routes/_authenticated/relatorios.propostas-recusadas'
-import { Route as AuthenticatedRelatoriosPropostasEnviadasRouteImport } from './routes/_authenticated/relatorios.propostas-enviadas'
-import { Route as AuthenticatedRelatoriosPropostasAprovadasRouteImport } from './routes/_authenticated/relatorios.propostas-aprovadas'
 import { Route as AuthenticatedRelatoriosPropostasRouteImport } from './routes/_authenticated/relatorios.propostas'
 import { Route as AuthenticatedRelatoriosPersonalizadosRouteImport } from './routes/_authenticated/relatorios.personalizados'
 import { Route as AuthenticatedRelatoriosPainelGeralRouteImport } from './routes/_authenticated/relatorios.painel-geral'
-import { Route as AuthenticatedRelatoriosOperacionalSimulacoesRouteImport } from './routes/_authenticated/relatorios.operacional-simulacoes'
-import { Route as AuthenticatedRelatoriosOperacionalConsolidadoRouteImport } from './routes/_authenticated/relatorios.operacional-consolidado'
-import { Route as AuthenticatedRelatoriosOperacionaisRouteImport } from './routes/_authenticated/relatorios.operacionais'
+import { Route as AuthenticatedRelatoriosOperacionalRouteImport } from './routes/_authenticated/relatorios.operacional'
 import { Route as AuthenticatedRelatoriosGerencialRouteImport } from './routes/_authenticated/relatorios.gerencial'
 import { Route as AuthenticatedRelatoriosFinanceirosRouteImport } from './routes/_authenticated/relatorios.financeiros'
 import { Route as AuthenticatedRelatoriosExportacoesRouteImport } from './routes/_authenticated/relatorios.exportacoes'
@@ -275,24 +270,6 @@ const AuthenticatedRelatoriosSimulacoesRoute =
     path: '/simulacoes',
     getParentRoute: () => AuthenticatedRelatoriosRoute,
   } as any)
-const AuthenticatedRelatoriosPropostasRecusadasRoute =
-  AuthenticatedRelatoriosPropostasRecusadasRouteImport.update({
-    id: '/propostas-recusadas',
-    path: '/propostas-recusadas',
-    getParentRoute: () => AuthenticatedRelatoriosRoute,
-  } as any)
-const AuthenticatedRelatoriosPropostasEnviadasRoute =
-  AuthenticatedRelatoriosPropostasEnviadasRouteImport.update({
-    id: '/propostas-enviadas',
-    path: '/propostas-enviadas',
-    getParentRoute: () => AuthenticatedRelatoriosRoute,
-  } as any)
-const AuthenticatedRelatoriosPropostasAprovadasRoute =
-  AuthenticatedRelatoriosPropostasAprovadasRouteImport.update({
-    id: '/propostas-aprovadas',
-    path: '/propostas-aprovadas',
-    getParentRoute: () => AuthenticatedRelatoriosRoute,
-  } as any)
 const AuthenticatedRelatoriosPropostasRoute =
   AuthenticatedRelatoriosPropostasRouteImport.update({
     id: '/propostas',
@@ -311,22 +288,10 @@ const AuthenticatedRelatoriosPainelGeralRoute =
     path: '/painel-geral',
     getParentRoute: () => AuthenticatedRelatoriosRoute,
   } as any)
-const AuthenticatedRelatoriosOperacionalSimulacoesRoute =
-  AuthenticatedRelatoriosOperacionalSimulacoesRouteImport.update({
-    id: '/operacional-simulacoes',
-    path: '/operacional-simulacoes',
-    getParentRoute: () => AuthenticatedRelatoriosRoute,
-  } as any)
-const AuthenticatedRelatoriosOperacionalConsolidadoRoute =
-  AuthenticatedRelatoriosOperacionalConsolidadoRouteImport.update({
-    id: '/operacional-consolidado',
-    path: '/operacional-consolidado',
-    getParentRoute: () => AuthenticatedRelatoriosRoute,
-  } as any)
-const AuthenticatedRelatoriosOperacionaisRoute =
-  AuthenticatedRelatoriosOperacionaisRouteImport.update({
-    id: '/operacionais',
-    path: '/operacionais',
+const AuthenticatedRelatoriosOperacionalRoute =
+  AuthenticatedRelatoriosOperacionalRouteImport.update({
+    id: '/operacional',
+    path: '/operacional',
     getParentRoute: () => AuthenticatedRelatoriosRoute,
   } as any)
 const AuthenticatedRelatoriosGerencialRoute =
@@ -738,15 +703,10 @@ export interface FileRoutesByFullPath {
   '/relatorios/exportacoes': typeof AuthenticatedRelatoriosExportacoesRoute
   '/relatorios/financeiros': typeof AuthenticatedRelatoriosFinanceirosRoute
   '/relatorios/gerencial': typeof AuthenticatedRelatoriosGerencialRoute
-  '/relatorios/operacionais': typeof AuthenticatedRelatoriosOperacionaisRoute
-  '/relatorios/operacional-consolidado': typeof AuthenticatedRelatoriosOperacionalConsolidadoRoute
-  '/relatorios/operacional-simulacoes': typeof AuthenticatedRelatoriosOperacionalSimulacoesRoute
+  '/relatorios/operacional': typeof AuthenticatedRelatoriosOperacionalRoute
   '/relatorios/painel-geral': typeof AuthenticatedRelatoriosPainelGeralRoute
   '/relatorios/personalizados': typeof AuthenticatedRelatoriosPersonalizadosRoute
   '/relatorios/propostas': typeof AuthenticatedRelatoriosPropostasRoute
-  '/relatorios/propostas-aprovadas': typeof AuthenticatedRelatoriosPropostasAprovadasRoute
-  '/relatorios/propostas-enviadas': typeof AuthenticatedRelatoriosPropostasEnviadasRoute
-  '/relatorios/propostas-recusadas': typeof AuthenticatedRelatoriosPropostasRecusadasRoute
   '/relatorios/simulacoes': typeof AuthenticatedRelatoriosSimulacoesRoute
   '/relatorios/tarefas': typeof AuthenticatedRelatoriosTarefasRoute
   '/visao-geral/painel': typeof AuthenticatedVisaoGeralPainelRoute
@@ -835,15 +795,10 @@ export interface FileRoutesByTo {
   '/relatorios/exportacoes': typeof AuthenticatedRelatoriosExportacoesRoute
   '/relatorios/financeiros': typeof AuthenticatedRelatoriosFinanceirosRoute
   '/relatorios/gerencial': typeof AuthenticatedRelatoriosGerencialRoute
-  '/relatorios/operacionais': typeof AuthenticatedRelatoriosOperacionaisRoute
-  '/relatorios/operacional-consolidado': typeof AuthenticatedRelatoriosOperacionalConsolidadoRoute
-  '/relatorios/operacional-simulacoes': typeof AuthenticatedRelatoriosOperacionalSimulacoesRoute
+  '/relatorios/operacional': typeof AuthenticatedRelatoriosOperacionalRoute
   '/relatorios/painel-geral': typeof AuthenticatedRelatoriosPainelGeralRoute
   '/relatorios/personalizados': typeof AuthenticatedRelatoriosPersonalizadosRoute
   '/relatorios/propostas': typeof AuthenticatedRelatoriosPropostasRoute
-  '/relatorios/propostas-aprovadas': typeof AuthenticatedRelatoriosPropostasAprovadasRoute
-  '/relatorios/propostas-enviadas': typeof AuthenticatedRelatoriosPropostasEnviadasRoute
-  '/relatorios/propostas-recusadas': typeof AuthenticatedRelatoriosPropostasRecusadasRoute
   '/relatorios/simulacoes': typeof AuthenticatedRelatoriosSimulacoesRoute
   '/relatorios/tarefas': typeof AuthenticatedRelatoriosTarefasRoute
   '/visao-geral/painel': typeof AuthenticatedVisaoGeralPainelRoute
@@ -936,15 +891,10 @@ export interface FileRoutesById {
   '/_authenticated/relatorios/exportacoes': typeof AuthenticatedRelatoriosExportacoesRoute
   '/_authenticated/relatorios/financeiros': typeof AuthenticatedRelatoriosFinanceirosRoute
   '/_authenticated/relatorios/gerencial': typeof AuthenticatedRelatoriosGerencialRoute
-  '/_authenticated/relatorios/operacionais': typeof AuthenticatedRelatoriosOperacionaisRoute
-  '/_authenticated/relatorios/operacional-consolidado': typeof AuthenticatedRelatoriosOperacionalConsolidadoRoute
-  '/_authenticated/relatorios/operacional-simulacoes': typeof AuthenticatedRelatoriosOperacionalSimulacoesRoute
+  '/_authenticated/relatorios/operacional': typeof AuthenticatedRelatoriosOperacionalRoute
   '/_authenticated/relatorios/painel-geral': typeof AuthenticatedRelatoriosPainelGeralRoute
   '/_authenticated/relatorios/personalizados': typeof AuthenticatedRelatoriosPersonalizadosRoute
   '/_authenticated/relatorios/propostas': typeof AuthenticatedRelatoriosPropostasRoute
-  '/_authenticated/relatorios/propostas-aprovadas': typeof AuthenticatedRelatoriosPropostasAprovadasRoute
-  '/_authenticated/relatorios/propostas-enviadas': typeof AuthenticatedRelatoriosPropostasEnviadasRoute
-  '/_authenticated/relatorios/propostas-recusadas': typeof AuthenticatedRelatoriosPropostasRecusadasRoute
   '/_authenticated/relatorios/simulacoes': typeof AuthenticatedRelatoriosSimulacoesRoute
   '/_authenticated/relatorios/tarefas': typeof AuthenticatedRelatoriosTarefasRoute
   '/_authenticated/visao-geral/painel': typeof AuthenticatedVisaoGeralPainelRoute
@@ -1037,15 +987,10 @@ export interface FileRouteTypes {
     | '/relatorios/exportacoes'
     | '/relatorios/financeiros'
     | '/relatorios/gerencial'
-    | '/relatorios/operacionais'
-    | '/relatorios/operacional-consolidado'
-    | '/relatorios/operacional-simulacoes'
+    | '/relatorios/operacional'
     | '/relatorios/painel-geral'
     | '/relatorios/personalizados'
     | '/relatorios/propostas'
-    | '/relatorios/propostas-aprovadas'
-    | '/relatorios/propostas-enviadas'
-    | '/relatorios/propostas-recusadas'
     | '/relatorios/simulacoes'
     | '/relatorios/tarefas'
     | '/visao-geral/painel'
@@ -1134,15 +1079,10 @@ export interface FileRouteTypes {
     | '/relatorios/exportacoes'
     | '/relatorios/financeiros'
     | '/relatorios/gerencial'
-    | '/relatorios/operacionais'
-    | '/relatorios/operacional-consolidado'
-    | '/relatorios/operacional-simulacoes'
+    | '/relatorios/operacional'
     | '/relatorios/painel-geral'
     | '/relatorios/personalizados'
     | '/relatorios/propostas'
-    | '/relatorios/propostas-aprovadas'
-    | '/relatorios/propostas-enviadas'
-    | '/relatorios/propostas-recusadas'
     | '/relatorios/simulacoes'
     | '/relatorios/tarefas'
     | '/visao-geral/painel'
@@ -1234,15 +1174,10 @@ export interface FileRouteTypes {
     | '/_authenticated/relatorios/exportacoes'
     | '/_authenticated/relatorios/financeiros'
     | '/_authenticated/relatorios/gerencial'
-    | '/_authenticated/relatorios/operacionais'
-    | '/_authenticated/relatorios/operacional-consolidado'
-    | '/_authenticated/relatorios/operacional-simulacoes'
+    | '/_authenticated/relatorios/operacional'
     | '/_authenticated/relatorios/painel-geral'
     | '/_authenticated/relatorios/personalizados'
     | '/_authenticated/relatorios/propostas'
-    | '/_authenticated/relatorios/propostas-aprovadas'
-    | '/_authenticated/relatorios/propostas-enviadas'
-    | '/_authenticated/relatorios/propostas-recusadas'
     | '/_authenticated/relatorios/simulacoes'
     | '/_authenticated/relatorios/tarefas'
     | '/_authenticated/visao-geral/painel'
@@ -1503,27 +1438,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRelatoriosSimulacoesRouteImport
       parentRoute: typeof AuthenticatedRelatoriosRoute
     }
-    '/_authenticated/relatorios/propostas-recusadas': {
-      id: '/_authenticated/relatorios/propostas-recusadas'
-      path: '/propostas-recusadas'
-      fullPath: '/relatorios/propostas-recusadas'
-      preLoaderRoute: typeof AuthenticatedRelatoriosPropostasRecusadasRouteImport
-      parentRoute: typeof AuthenticatedRelatoriosRoute
-    }
-    '/_authenticated/relatorios/propostas-enviadas': {
-      id: '/_authenticated/relatorios/propostas-enviadas'
-      path: '/propostas-enviadas'
-      fullPath: '/relatorios/propostas-enviadas'
-      preLoaderRoute: typeof AuthenticatedRelatoriosPropostasEnviadasRouteImport
-      parentRoute: typeof AuthenticatedRelatoriosRoute
-    }
-    '/_authenticated/relatorios/propostas-aprovadas': {
-      id: '/_authenticated/relatorios/propostas-aprovadas'
-      path: '/propostas-aprovadas'
-      fullPath: '/relatorios/propostas-aprovadas'
-      preLoaderRoute: typeof AuthenticatedRelatoriosPropostasAprovadasRouteImport
-      parentRoute: typeof AuthenticatedRelatoriosRoute
-    }
     '/_authenticated/relatorios/propostas': {
       id: '/_authenticated/relatorios/propostas'
       path: '/propostas'
@@ -1545,25 +1459,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRelatoriosPainelGeralRouteImport
       parentRoute: typeof AuthenticatedRelatoriosRoute
     }
-    '/_authenticated/relatorios/operacional-simulacoes': {
-      id: '/_authenticated/relatorios/operacional-simulacoes'
-      path: '/operacional-simulacoes'
-      fullPath: '/relatorios/operacional-simulacoes'
-      preLoaderRoute: typeof AuthenticatedRelatoriosOperacionalSimulacoesRouteImport
-      parentRoute: typeof AuthenticatedRelatoriosRoute
-    }
-    '/_authenticated/relatorios/operacional-consolidado': {
-      id: '/_authenticated/relatorios/operacional-consolidado'
-      path: '/operacional-consolidado'
-      fullPath: '/relatorios/operacional-consolidado'
-      preLoaderRoute: typeof AuthenticatedRelatoriosOperacionalConsolidadoRouteImport
-      parentRoute: typeof AuthenticatedRelatoriosRoute
-    }
-    '/_authenticated/relatorios/operacionais': {
-      id: '/_authenticated/relatorios/operacionais'
-      path: '/operacionais'
-      fullPath: '/relatorios/operacionais'
-      preLoaderRoute: typeof AuthenticatedRelatoriosOperacionaisRouteImport
+    '/_authenticated/relatorios/operacional': {
+      id: '/_authenticated/relatorios/operacional'
+      path: '/operacional'
+      fullPath: '/relatorios/operacional'
+      preLoaderRoute: typeof AuthenticatedRelatoriosOperacionalRouteImport
       parentRoute: typeof AuthenticatedRelatoriosRoute
     }
     '/_authenticated/relatorios/gerencial': {
@@ -1995,15 +1895,10 @@ interface AuthenticatedRelatoriosRouteChildren {
   AuthenticatedRelatoriosExportacoesRoute: typeof AuthenticatedRelatoriosExportacoesRoute
   AuthenticatedRelatoriosFinanceirosRoute: typeof AuthenticatedRelatoriosFinanceirosRoute
   AuthenticatedRelatoriosGerencialRoute: typeof AuthenticatedRelatoriosGerencialRoute
-  AuthenticatedRelatoriosOperacionaisRoute: typeof AuthenticatedRelatoriosOperacionaisRoute
-  AuthenticatedRelatoriosOperacionalConsolidadoRoute: typeof AuthenticatedRelatoriosOperacionalConsolidadoRoute
-  AuthenticatedRelatoriosOperacionalSimulacoesRoute: typeof AuthenticatedRelatoriosOperacionalSimulacoesRoute
+  AuthenticatedRelatoriosOperacionalRoute: typeof AuthenticatedRelatoriosOperacionalRoute
   AuthenticatedRelatoriosPainelGeralRoute: typeof AuthenticatedRelatoriosPainelGeralRoute
   AuthenticatedRelatoriosPersonalizadosRoute: typeof AuthenticatedRelatoriosPersonalizadosRoute
   AuthenticatedRelatoriosPropostasRoute: typeof AuthenticatedRelatoriosPropostasRoute
-  AuthenticatedRelatoriosPropostasAprovadasRoute: typeof AuthenticatedRelatoriosPropostasAprovadasRoute
-  AuthenticatedRelatoriosPropostasEnviadasRoute: typeof AuthenticatedRelatoriosPropostasEnviadasRoute
-  AuthenticatedRelatoriosPropostasRecusadasRoute: typeof AuthenticatedRelatoriosPropostasRecusadasRoute
   AuthenticatedRelatoriosSimulacoesRoute: typeof AuthenticatedRelatoriosSimulacoesRoute
   AuthenticatedRelatoriosTarefasRoute: typeof AuthenticatedRelatoriosTarefasRoute
   AuthenticatedRelatoriosIndexRoute: typeof AuthenticatedRelatoriosIndexRoute
@@ -2028,24 +1923,14 @@ const AuthenticatedRelatoriosRouteChildren: AuthenticatedRelatoriosRouteChildren
       AuthenticatedRelatoriosFinanceirosRoute,
     AuthenticatedRelatoriosGerencialRoute:
       AuthenticatedRelatoriosGerencialRoute,
-    AuthenticatedRelatoriosOperacionaisRoute:
-      AuthenticatedRelatoriosOperacionaisRoute,
-    AuthenticatedRelatoriosOperacionalConsolidadoRoute:
-      AuthenticatedRelatoriosOperacionalConsolidadoRoute,
-    AuthenticatedRelatoriosOperacionalSimulacoesRoute:
-      AuthenticatedRelatoriosOperacionalSimulacoesRoute,
+    AuthenticatedRelatoriosOperacionalRoute:
+      AuthenticatedRelatoriosOperacionalRoute,
     AuthenticatedRelatoriosPainelGeralRoute:
       AuthenticatedRelatoriosPainelGeralRoute,
     AuthenticatedRelatoriosPersonalizadosRoute:
       AuthenticatedRelatoriosPersonalizadosRoute,
     AuthenticatedRelatoriosPropostasRoute:
       AuthenticatedRelatoriosPropostasRoute,
-    AuthenticatedRelatoriosPropostasAprovadasRoute:
-      AuthenticatedRelatoriosPropostasAprovadasRoute,
-    AuthenticatedRelatoriosPropostasEnviadasRoute:
-      AuthenticatedRelatoriosPropostasEnviadasRoute,
-    AuthenticatedRelatoriosPropostasRecusadasRoute:
-      AuthenticatedRelatoriosPropostasRecusadasRoute,
     AuthenticatedRelatoriosSimulacoesRoute:
       AuthenticatedRelatoriosSimulacoesRoute,
     AuthenticatedRelatoriosTarefasRoute: AuthenticatedRelatoriosTarefasRoute,
