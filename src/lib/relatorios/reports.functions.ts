@@ -115,6 +115,9 @@ function statusOpcoesPorCodigo(codigo: string): { value: string; label: string }
     case "gerencial":
     case "propostas":
     case "operacionais":
+    case "propostas-enviadas":
+    case "propostas-aprovadas":
+    case "propostas-recusadas":
       return filtrarPropostas();
     case "simulacoes":
       return opcoes(STATUS_SIMULACAO_LABEL);
@@ -249,6 +252,12 @@ export const runReport = createServerFn({ method: "POST" })
         case "propostas":
         case "operacionais":
           return await relPropostas();
+        case "propostas-enviadas":
+          return await relPropostas("enviadas");
+        case "propostas-aprovadas":
+          return await relPropostas("aprovadas");
+        case "propostas-recusadas":
+          return await relPropostas("recusadas");
         case "crm":
         case "clientes":
           return await relClientes();
@@ -256,6 +265,7 @@ export const runReport = createServerFn({ method: "POST" })
           return await relDemandas("demandas");
         case "tarefas":
           return await relTarefas();
+        case "operacional-consolidado":
         case "operacional-simulacoes":
           return await relOperacionalSimulacoes();
         case "financeiros":
@@ -1613,7 +1623,9 @@ export const runReport = createServerFn({ method: "POST" })
       };
     }
 
-    async function relPropostas(): Promise<ReportResult> {
+    async function relPropostas(
+      grupo?: "enviadas" | "aprovadas" | "recusadas",
+    ): Promise<ReportResult> {
       if (statusEhFiltroSimulacao(filtros.status)) {
         const [sims, opcoesOperacionais] = await Promise.all([
           fetchSimulacoesRelatorio({ rascunhoComoModulo: true }),
@@ -1645,7 +1657,7 @@ export const runReport = createServerFn({ method: "POST" })
 
       // Filtros server-side (banco, produto, status, faixa de valor, busca textual).
       const buscaLc = filtros.busca?.trim().toLowerCase();
-      const props = todas.filter((p) => {
+      let props = todas.filter((p) => {
         if (filtros.banco && (p.nome_banco ?? "") !== filtros.banco) return false;
         if (filtros.produto && (p.produto ?? "") !== filtros.produto) return false;
         if (filtros.status && p.status !== filtros.status) return false;
@@ -1659,6 +1671,43 @@ export const runReport = createServerFn({ method: "POST" })
         }
         return true;
       });
+
+      // Grupo (variantes: propostas-enviadas / -aprovadas / -recusadas) — filtra as linhas
+      // antes dos agregados para que KPIs, gráficos e tabela reflitam apenas o recorte.
+      const STATUS_ENVIADAS = new Set([
+        "enviada_banco",
+        "em_analise_credito",
+        "aguardando_documentos",
+        "engenharia_vistoria",
+        "analise_juridica",
+      ]);
+      const STATUS_APROVADAS = new Set(["credito_aprovado", "contrato_emitido", "registrado"]);
+      const STATUS_RECUSADAS = new Set(["credito_recusado"]);
+      const propsGrupo =
+        grupo === "enviadas"
+          ? props.filter((p) => STATUS_ENVIADAS.has(p.status))
+          : grupo === "aprovadas"
+            ? props.filter((p) => STATUS_APROVADAS.has(p.status))
+            : grupo === "recusadas"
+              ? props.filter((p) => STATUS_RECUSADAS.has(p.status))
+              : props;
+      props = propsGrupo;
+
+      const TITULO_GRUPO: Record<string, { titulo: string; descricao: string }> = {
+        enviadas: {
+          titulo: "Relatório de propostas enviadas",
+          descricao: "Propostas enviadas ao banco (em análise, documentação, engenharia, jurídico).",
+        },
+        aprovadas: {
+          titulo: "Relatório de propostas aprovadas",
+          descricao: "Propostas com crédito aprovado, contrato emitido ou registrado.",
+        },
+        recusadas: {
+          titulo: "Relatório de propostas recusadas",
+          descricao: "Propostas recusadas pelo banco no período.",
+        },
+      };
+      const tituloGrupo = grupo ? TITULO_GRUPO[grupo] : null;
 
       const enviadas = props.filter((p) => p.status !== "rascunho");
       const emAnalise = props.filter((p) =>
@@ -1696,8 +1745,10 @@ export const runReport = createServerFn({ method: "POST" })
       );
 
       return {
-        titulo: "Relatório de propostas",
-        descricao: "Status, bancos, produtos e volumes das propostas no período.",
+        titulo: tituloGrupo?.titulo ?? "Relatório de propostas",
+        descricao:
+          tituloGrupo?.descricao ??
+          "Status, bancos, produtos e volumes das propostas no período.",
         modulo: "Propostas",
         kpis: [
           { label: "Total", valor: int(props.length), tone: "neutral" },
