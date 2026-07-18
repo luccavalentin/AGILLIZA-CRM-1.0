@@ -45,7 +45,7 @@ function Pagina() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 shadow-[var(--shadow-card)] sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4 shadow-[var(--shadow-card)]">
         <div className="flex items-center gap-3">
           <span className="grid size-10 place-items-center rounded-xl bg-primary/8 text-primary ring-1 ring-inset ring-primary/12">
             <BarChart3 className="h-5 w-5" />
@@ -59,14 +59,17 @@ function Pagina() {
             </p>
           </div>
         </div>
-        <div className="w-full sm:w-80">
+        <div className="flex flex-col gap-1.5 border-t border-border pt-3">
+          <label className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+            Tipo de relatório
+          </label>
           <Select
             value={tipo}
             onValueChange={(v) =>
               navigate({ to: ".", search: { tipo: v }, replace: true })
             }
           >
-            <SelectTrigger className="h-10 w-full">
+            <SelectTrigger className="h-10 w-full sm:max-w-md">
               <SelectValue placeholder="Escolher relatório" />
             </SelectTrigger>
             <SelectContent>
