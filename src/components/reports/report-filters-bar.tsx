@@ -117,15 +117,27 @@ export function ReportFiltersBar({
     (filtros.imobiliarias?.length ?? 0) > 0;
 
   return (
-    <div className="space-y-2.5 rounded-xl border border-border bg-card p-3.5 shadow-[var(--shadow-card)]">
-      <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-        <SlidersHorizontal className="h-3.5 w-3.5 text-primary" />
-        Filtros de pesquisa
+    <div className="space-y-3 rounded-xl border border-border bg-card p-3.5 shadow-[var(--shadow-card)]">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+          <SlidersHorizontal className="h-3.5 w-3.5 text-primary" />
+          Filtros de pesquisa
+        </div>
+        {temAlgum && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 text-xs"
+            onClick={() => onChange({ periodo: filtros.periodo, escopo: filtros.escopo })}
+          >
+            Limpar
+          </Button>
+        )}
       </div>
-      <div className="flex flex-wrap items-center gap-2">
 
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         <Select value={filtros.periodo} onValueChange={(v) => set({ periodo: v as Periodo })}>
-          <SelectTrigger className="h-9 w-44">
+          <SelectTrigger className="h-9 w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -137,22 +149,22 @@ export function ReportFiltersBar({
           </SelectContent>
         </Select>
 
-        {/* Intervalo de datas sempre disponível; ao editar, o período vira personalizado. */}
-        <div className="flex flex-wrap items-center gap-1">
+        {/* Intervalo de datas — ocupa uma célula do grid; inputs dividem o espaço */}
+        <div className="flex items-center gap-1.5">
           <Input
             type="date"
             aria-label="Data inicial"
             value={filtros.de ?? ""}
             onChange={(e) => set({ periodo: "custom", de: e.target.value || undefined })}
-            className="h-9 w-[calc(50%-1.25rem)] min-w-[140px] sm:w-40"
+            className="h-9 min-w-0 flex-1"
           />
-          <span className="text-xs text-muted-foreground">até</span>
+          <span className="shrink-0 text-xs text-muted-foreground">até</span>
           <Input
             type="date"
             aria-label="Data final"
             value={filtros.ate ?? ""}
             onChange={(e) => set({ periodo: "custom", ate: e.target.value || undefined })}
-            className="h-9 w-[calc(50%-1.25rem)] min-w-[140px] sm:w-40"
+            className="h-9 min-w-0 flex-1"
           />
         </div>
 
@@ -162,7 +174,7 @@ export function ReportFiltersBar({
             selected={filtros.bancos ?? []}
             onChange={(v) => set({ bancos: v })}
             placeholder="Bancos"
-            className="w-44"
+            className="w-full"
           />
         )}
         {!!analistas?.length && (
@@ -171,7 +183,7 @@ export function ReportFiltersBar({
             selected={filtros.analistas ?? []}
             onChange={(v) => set({ analistas: v })}
             placeholder="Analista"
-            className="w-44"
+            className="w-full"
           />
         )}
         {!!comerciais?.length && (
@@ -180,7 +192,7 @@ export function ReportFiltersBar({
             selected={filtros.comerciais ?? []}
             onChange={(v) => set({ comerciais: v })}
             placeholder="Comercial Agilliza"
-            className="w-52"
+            className="w-full"
           />
         )}
         {!!corretores?.length && (
@@ -189,7 +201,7 @@ export function ReportFiltersBar({
             selected={filtros.corretores ?? []}
             onChange={(v) => set({ corretores: v })}
             placeholder="Corretor"
-            className="w-44"
+            className="w-full"
           />
         )}
         {!!imobiliarias?.length && (
@@ -198,7 +210,7 @@ export function ReportFiltersBar({
             selected={filtros.imobiliarias ?? []}
             onChange={(v) => set({ imobiliarias: v })}
             placeholder="Imobiliária"
-            className="w-48"
+            className="w-full"
           />
         )}
 
@@ -207,7 +219,7 @@ export function ReportFiltersBar({
             value={filtros.produto ?? "__all"}
             onValueChange={(v) => set({ produto: v === "__all" ? undefined : v })}
           >
-            <SelectTrigger className="h-9 w-52">
+            <SelectTrigger className="h-9 w-full">
               <SelectValue placeholder="Produto" />
             </SelectTrigger>
             <SelectContent>
@@ -225,7 +237,7 @@ export function ReportFiltersBar({
             value={filtros.status ?? "__all"}
             onValueChange={(v) => set({ status: v === "__all" ? undefined : v })}
           >
-            <SelectTrigger className="h-9 w-48">
+            <SelectTrigger className="h-9 w-full">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
@@ -243,40 +255,33 @@ export function ReportFiltersBar({
           value={filtros.busca ?? ""}
           onChange={(e) => set({ busca: e.target.value || undefined })}
           placeholder="Buscar…"
-          className="h-9 w-48"
+          className="h-9 w-full"
         />
 
-        <Input
-          value={filtros.valorMin ?? ""}
-          onChange={(e) => {
-            const valor = e.target.value.replace(/\D/g, "");
-            set({ valorMin: valor ? Number(valor) : undefined });
-          }}
-          inputMode="numeric"
-          placeholder="Valor mín."
-          className="h-9 w-32"
-        />
-        <Input
-          value={filtros.valorMax ?? ""}
-          onChange={(e) => {
-            const valor = e.target.value.replace(/\D/g, "");
-            set({ valorMax: valor ? Number(valor) : undefined });
-          }}
-          inputMode="numeric"
-          placeholder="Valor máx."
-          className="h-9 w-32"
-        />
-
-        {temAlgum && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onChange({ periodo: filtros.periodo, escopo: filtros.escopo })}
-          >
-            Limpar
-          </Button>
-        )}
+        <div className="flex items-center gap-1.5">
+          <Input
+            value={filtros.valorMin ?? ""}
+            onChange={(e) => {
+              const valor = e.target.value.replace(/\D/g, "");
+              set({ valorMin: valor ? Number(valor) : undefined });
+            }}
+            inputMode="numeric"
+            placeholder="Valor mín."
+            className="h-9 min-w-0 flex-1"
+          />
+          <Input
+            value={filtros.valorMax ?? ""}
+            onChange={(e) => {
+              const valor = e.target.value.replace(/\D/g, "");
+              set({ valorMax: valor ? Number(valor) : undefined });
+            }}
+            inputMode="numeric"
+            placeholder="Valor máx."
+            className="h-9 min-w-0 flex-1"
+          />
+        </div>
       </div>
+
 
       {temAlgum && (
         <div className="flex flex-wrap gap-1.5">
