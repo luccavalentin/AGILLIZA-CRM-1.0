@@ -358,6 +358,12 @@ export const navInterno: NavGroup[] = [
             to: "/relatorios/gerencial",
           },
           {
+            label: "Relatório operacional de simulações",
+            icon: LayoutDashboard,
+            to: "/relatorios/operacional-simulacoes",
+            perm: { modulo: "relatorios.geral" },
+          },
+          {
             label: "Relatório financeiro",
             icon: Wallet,
             to: "/relatorios/financeiros",
