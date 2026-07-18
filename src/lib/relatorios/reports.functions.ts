@@ -1669,6 +1669,26 @@ export const runReport = createServerFn({ method: "POST" })
         return true;
       });
 
+      // Grupo (variantes: propostas-enviadas / -aprovadas / -recusadas) — filtra as linhas
+      // antes dos agregados para que KPIs, gráficos e tabela reflitam apenas o recorte.
+      const STATUS_ENVIADAS = new Set([
+        "enviada_banco",
+        "em_analise_credito",
+        "aguardando_documentos",
+        "engenharia_vistoria",
+        "analise_juridica",
+      ]);
+      const STATUS_APROVADAS = new Set(["credito_aprovado", "contrato_emitido", "registrado"]);
+      const STATUS_RECUSADAS = new Set(["credito_recusado"]);
+      const propsGrupo =
+        grupo === "enviadas"
+          ? props.filter((p) => STATUS_ENVIADAS.has(p.status))
+          : grupo === "aprovadas"
+            ? props.filter((p) => STATUS_APROVADAS.has(p.status))
+            : grupo === "recusadas"
+              ? props.filter((p) => STATUS_RECUSADAS.has(p.status))
+              : props;
+
       const enviadas = props.filter((p) => p.status !== "rascunho");
       const emAnalise = props.filter((p) =>
         [
