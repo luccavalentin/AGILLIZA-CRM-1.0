@@ -249,6 +249,12 @@ export const runReport = createServerFn({ method: "POST" })
         case "propostas":
         case "operacionais":
           return await relPropostas();
+        case "propostas-enviadas":
+          return await relPropostas("enviadas");
+        case "propostas-aprovadas":
+          return await relPropostas("aprovadas");
+        case "propostas-recusadas":
+          return await relPropostas("recusadas");
         case "crm":
         case "clientes":
           return await relClientes();
@@ -256,6 +262,7 @@ export const runReport = createServerFn({ method: "POST" })
           return await relDemandas("demandas");
         case "tarefas":
           return await relTarefas();
+        case "operacional-consolidado":
         case "operacional-simulacoes":
           return await relOperacionalSimulacoes();
         case "financeiros":
