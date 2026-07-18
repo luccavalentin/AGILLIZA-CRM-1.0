@@ -49,6 +49,7 @@ import { Route as AuthenticatedRelatoriosPersonalizadosRouteImport } from './rou
 import { Route as AuthenticatedRelatoriosPainelGeralRouteImport } from './routes/_authenticated/relatorios.painel-geral'
 import { Route as AuthenticatedRelatoriosOperacionalSimulacoesRouteImport } from './routes/_authenticated/relatorios.operacional-simulacoes'
 import { Route as AuthenticatedRelatoriosOperacionalConsolidadoRouteImport } from './routes/_authenticated/relatorios.operacional-consolidado'
+import { Route as AuthenticatedRelatoriosOperacionalRouteImport } from './routes/_authenticated/relatorios.operacional'
 import { Route as AuthenticatedRelatoriosOperacionaisRouteImport } from './routes/_authenticated/relatorios.operacionais'
 import { Route as AuthenticatedRelatoriosGerencialRouteImport } from './routes/_authenticated/relatorios.gerencial'
 import { Route as AuthenticatedRelatoriosFinanceirosRouteImport } from './routes/_authenticated/relatorios.financeiros'
@@ -321,6 +322,12 @@ const AuthenticatedRelatoriosOperacionalConsolidadoRoute =
   AuthenticatedRelatoriosOperacionalConsolidadoRouteImport.update({
     id: '/operacional-consolidado',
     path: '/operacional-consolidado',
+    getParentRoute: () => AuthenticatedRelatoriosRoute,
+  } as any)
+const AuthenticatedRelatoriosOperacionalRoute =
+  AuthenticatedRelatoriosOperacionalRouteImport.update({
+    id: '/operacional',
+    path: '/operacional',
     getParentRoute: () => AuthenticatedRelatoriosRoute,
   } as any)
 const AuthenticatedRelatoriosOperacionaisRoute =
@@ -739,6 +746,7 @@ export interface FileRoutesByFullPath {
   '/relatorios/financeiros': typeof AuthenticatedRelatoriosFinanceirosRoute
   '/relatorios/gerencial': typeof AuthenticatedRelatoriosGerencialRoute
   '/relatorios/operacionais': typeof AuthenticatedRelatoriosOperacionaisRoute
+  '/relatorios/operacional': typeof AuthenticatedRelatoriosOperacionalRoute
   '/relatorios/operacional-consolidado': typeof AuthenticatedRelatoriosOperacionalConsolidadoRoute
   '/relatorios/operacional-simulacoes': typeof AuthenticatedRelatoriosOperacionalSimulacoesRoute
   '/relatorios/painel-geral': typeof AuthenticatedRelatoriosPainelGeralRoute
@@ -836,6 +844,7 @@ export interface FileRoutesByTo {
   '/relatorios/financeiros': typeof AuthenticatedRelatoriosFinanceirosRoute
   '/relatorios/gerencial': typeof AuthenticatedRelatoriosGerencialRoute
   '/relatorios/operacionais': typeof AuthenticatedRelatoriosOperacionaisRoute
+  '/relatorios/operacional': typeof AuthenticatedRelatoriosOperacionalRoute
   '/relatorios/operacional-consolidado': typeof AuthenticatedRelatoriosOperacionalConsolidadoRoute
   '/relatorios/operacional-simulacoes': typeof AuthenticatedRelatoriosOperacionalSimulacoesRoute
   '/relatorios/painel-geral': typeof AuthenticatedRelatoriosPainelGeralRoute
@@ -937,6 +946,7 @@ export interface FileRoutesById {
   '/_authenticated/relatorios/financeiros': typeof AuthenticatedRelatoriosFinanceirosRoute
   '/_authenticated/relatorios/gerencial': typeof AuthenticatedRelatoriosGerencialRoute
   '/_authenticated/relatorios/operacionais': typeof AuthenticatedRelatoriosOperacionaisRoute
+  '/_authenticated/relatorios/operacional': typeof AuthenticatedRelatoriosOperacionalRoute
   '/_authenticated/relatorios/operacional-consolidado': typeof AuthenticatedRelatoriosOperacionalConsolidadoRoute
   '/_authenticated/relatorios/operacional-simulacoes': typeof AuthenticatedRelatoriosOperacionalSimulacoesRoute
   '/_authenticated/relatorios/painel-geral': typeof AuthenticatedRelatoriosPainelGeralRoute
@@ -1038,6 +1048,7 @@ export interface FileRouteTypes {
     | '/relatorios/financeiros'
     | '/relatorios/gerencial'
     | '/relatorios/operacionais'
+    | '/relatorios/operacional'
     | '/relatorios/operacional-consolidado'
     | '/relatorios/operacional-simulacoes'
     | '/relatorios/painel-geral'
@@ -1135,6 +1146,7 @@ export interface FileRouteTypes {
     | '/relatorios/financeiros'
     | '/relatorios/gerencial'
     | '/relatorios/operacionais'
+    | '/relatorios/operacional'
     | '/relatorios/operacional-consolidado'
     | '/relatorios/operacional-simulacoes'
     | '/relatorios/painel-geral'
@@ -1235,6 +1247,7 @@ export interface FileRouteTypes {
     | '/_authenticated/relatorios/financeiros'
     | '/_authenticated/relatorios/gerencial'
     | '/_authenticated/relatorios/operacionais'
+    | '/_authenticated/relatorios/operacional'
     | '/_authenticated/relatorios/operacional-consolidado'
     | '/_authenticated/relatorios/operacional-simulacoes'
     | '/_authenticated/relatorios/painel-geral'
@@ -1557,6 +1570,13 @@ declare module '@tanstack/react-router' {
       path: '/operacional-consolidado'
       fullPath: '/relatorios/operacional-consolidado'
       preLoaderRoute: typeof AuthenticatedRelatoriosOperacionalConsolidadoRouteImport
+      parentRoute: typeof AuthenticatedRelatoriosRoute
+    }
+    '/_authenticated/relatorios/operacional': {
+      id: '/_authenticated/relatorios/operacional'
+      path: '/operacional'
+      fullPath: '/relatorios/operacional'
+      preLoaderRoute: typeof AuthenticatedRelatoriosOperacionalRouteImport
       parentRoute: typeof AuthenticatedRelatoriosRoute
     }
     '/_authenticated/relatorios/operacionais': {
@@ -1996,6 +2016,7 @@ interface AuthenticatedRelatoriosRouteChildren {
   AuthenticatedRelatoriosFinanceirosRoute: typeof AuthenticatedRelatoriosFinanceirosRoute
   AuthenticatedRelatoriosGerencialRoute: typeof AuthenticatedRelatoriosGerencialRoute
   AuthenticatedRelatoriosOperacionaisRoute: typeof AuthenticatedRelatoriosOperacionaisRoute
+  AuthenticatedRelatoriosOperacionalRoute: typeof AuthenticatedRelatoriosOperacionalRoute
   AuthenticatedRelatoriosOperacionalConsolidadoRoute: typeof AuthenticatedRelatoriosOperacionalConsolidadoRoute
   AuthenticatedRelatoriosOperacionalSimulacoesRoute: typeof AuthenticatedRelatoriosOperacionalSimulacoesRoute
   AuthenticatedRelatoriosPainelGeralRoute: typeof AuthenticatedRelatoriosPainelGeralRoute
@@ -2030,6 +2051,8 @@ const AuthenticatedRelatoriosRouteChildren: AuthenticatedRelatoriosRouteChildren
       AuthenticatedRelatoriosGerencialRoute,
     AuthenticatedRelatoriosOperacionaisRoute:
       AuthenticatedRelatoriosOperacionaisRoute,
+    AuthenticatedRelatoriosOperacionalRoute:
+      AuthenticatedRelatoriosOperacionalRoute,
     AuthenticatedRelatoriosOperacionalConsolidadoRoute:
       AuthenticatedRelatoriosOperacionalConsolidadoRoute,
     AuthenticatedRelatoriosOperacionalSimulacoesRoute:
@@ -2247,13 +2270,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
