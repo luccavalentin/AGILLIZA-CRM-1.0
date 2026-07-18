@@ -1906,6 +1906,163 @@ export const runReport = createServerFn({ method: "POST" })
       };
     }
 
+    async function relOperacionalSimulacoes(): Promise<ReportResult> {
+      // Consolida a operação por data: simulações, aprovações (propostas), tarefas e demandas.
+      const [sims, props, tarefas, demandas] = await Promise.all([
+        fetchAll(
+          "simulacoes",
+          "id,numero_simulacao,nome_cliente,tipo_simulacao,status,produto,valor_financiamento,usuario_responsavel_id,analista_id,comercial_id,parceiro_id,created_at",
+          "created_at",
+          "usuario_responsavel_id",
+        ),
+        fetchAll(
+          "propostas",
+          "id,numero_proposta,nome_cliente,status,valor_financiamento,valor_financiamento_aprovado,nome_banco,produto,usuario_responsavel_id,analista_id,comercial_id,parceiro_id,created_at",
+          "created_at",
+          "usuario_responsavel_id",
+        ),
+        fetchAll(
+          "tasks",
+          "id,numero,titulo,status,prioridade,prazo,concluida_em,responsavel_id,created_at",
+          "created_at",
+          "responsavel_id",
+        ),
+        fetchAll(
+          "demandas",
+          "id,numero,titulo,status,prioridade,prazo_sla,concluida_em,responsavel_id,created_at",
+          "created_at",
+          "responsavel_id",
+        ),
+      ]);
+
+      const agora = new Date();
+
+      // Simulações
+      const simuladas = sims.filter((s) =>
+        ["simulada", "parcialmente_simulada", "promovida"].includes(s.status),
+      ).length;
+
+      // Aprovações (crédito aprovado + contratos emitidos + registrados)
+      const aprovadas = props.filter((p) =>
+        ["credito_aprovado", "contrato_emitido", "registrado"].includes(p.status),
+      );
+      const recusadas = props.filter((p) => p.status === "credito_recusado").length;
+      const decididas = aprovadas.length + recusadas;
+      const taxaAprov = decididas ? (aprovadas.length / decididas) * 100 : 0;
+      const volumeAprovado = aprovadas.reduce(
+        (s, p) => s + (p.valor_financiamento_aprovado ?? p.valor_financiamento ?? 0),
+        0,
+      );
+
+      // Tarefas
+      const tarefasConcluidas = tarefas.filter((t) => t.status === "concluida").length;
+      const tarefasAbertas = tarefas.filter(
+        (t) => !["concluida", "cancelada"].includes(t.status),
+      ).length;
+      const tarefasAtrasadas = tarefas.filter(
+        (t) =>
+          !["concluida", "cancelada"].includes(t.status) && t.prazo && new Date(t.prazo) < agora,
+      ).length;
+
+      // Demandas
+      const demandasConcluidas = demandas.filter((d) => d.status === "concluida").length;
+      const demandasAbertas = demandas.filter(
+        (d) => !["concluida", "cancelada"].includes(d.status),
+      ).length;
+      const demandasSlaVencido = demandas.filter(
+        (d) =>
+          !["concluida", "cancelada"].includes(d.status) &&
+          d.prazo_sla &&
+          new Date(d.prazo_sla) < agora,
+      ).length;
+
+      // Distribuição por módulo
+      const modMap = new Map<string, number>();
+      modMap.set("Simulações", sims.length);
+      modMap.set("Propostas", props.length);
+      modMap.set("Tarefas", tarefas.length);
+      modMap.set("Demandas", demandas.length);
+
+      // Série mensal unificada (contagem de eventos por mês)
+      const eventos = [
+        ...sims.map((s) => ({ data: s.created_at as string })),
+        ...props.map((p) => ({ data: p.created_at as string })),
+        ...tarefas.map((t) => ({ data: t.created_at as string })),
+        ...demandas.map((d) => ({ data: d.created_at as string })),
+      ];
+
+      // Linhas consolidadas (top 500 por data desc)
+      const linhasSim = sims.map((s) => ({
+        modulo: "Simulação",
+        numero: s.numero_simulacao,
+        titulo: s.nome_cliente ?? "—",
+        status: STATUS_SIMULACAO_LABEL[s.status] ?? s.status,
+        valor: s.valor_financiamento ?? 0,
+        created_at: s.created_at,
+      }));
+      const linhasProp = props.map((p) => ({
+        modulo: "Proposta",
+        numero: p.numero_proposta,
+        titulo: p.nome_cliente ?? "—",
+        status: rotuloStatus(p.status),
+        valor: p.valor_financiamento_aprovado ?? p.valor_financiamento ?? 0,
+        created_at: p.created_at,
+      }));
+      const linhasTk = tarefas.map((t) => ({
+        modulo: "Tarefa",
+        numero: t.numero,
+        titulo: t.titulo,
+        status: STATUS_TAREFA_LABEL[t.status] ?? t.status,
+        valor: 0,
+        created_at: t.created_at,
+      }));
+      const linhasDem = demandas.map((d) => ({
+        modulo: "Demanda",
+        numero: d.numero,
+        titulo: d.titulo,
+        status: STATUS_DEMANDA_LABEL[d.status] ?? d.status,
+        valor: 0,
+        created_at: d.created_at,
+      }));
+      const rows = [...linhasSim, ...linhasProp, ...linhasTk, ...linhasDem]
+        .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)))
+        .slice(0, 1000);
+
+      return {
+        titulo: "Relatório operacional de simulações",
+        descricao:
+          "Visão consolidada da operação por data: simulações, aprovações, tarefas e demandas.",
+        modulo: "Operacional",
+        kpis: [
+          { label: "Simulações", valor: int(sims.length), hint: `${int(simuladas)} simuladas`, tone: "brand" },
+          { label: "Aprovações", valor: int(aprovadas.length), hint: `Taxa ${pct(taxaAprov)}`, tone: "success" },
+          { label: "Volume aprovado", valor: brl(volumeAprovado), tone: "success" },
+          { label: "Tarefas", valor: int(tarefas.length), hint: `${int(tarefasAbertas)} abertas · ${int(tarefasAtrasadas)} atrasadas`, tone: tarefasAtrasadas > 0 ? "danger" : "neutral" },
+          { label: "Tarefas concluídas", valor: int(tarefasConcluidas), tone: "success" },
+          { label: "Demandas", valor: int(demandas.length), hint: `${int(demandasAbertas)} abertas · ${int(demandasSlaVencido)} SLA vencido`, tone: demandasSlaVencido > 0 ? "danger" : "neutral" },
+          { label: "Demandas concluídas", valor: int(demandasConcluidas), tone: "success" },
+        ],
+        charts: [
+          { titulo: "Distribuição por módulo", tipo: "barh", dados: topN(modMap, 4) },
+          {
+            titulo: "Evolução mensal — eventos operacionais",
+            subtitulo: "Simulações + Propostas + Tarefas + Demandas",
+            tipo: "line",
+            dados: serieMensal(eventos),
+          },
+        ],
+        columns: [
+          { key: "modulo", label: "Módulo" },
+          { key: "numero", label: "Número" },
+          { key: "titulo", label: "Título / Cliente" },
+          { key: "status", label: "Status" },
+          { key: "valor", label: "Valor", align: "right", format: "brl" },
+          { key: "created_at", label: "Data", format: "date" },
+        ],
+        rows,
+      };
+    }
+
     async function relFinanceiro(): Promise<ReportResult> {
       const filtrarStatus = (q: any) => (filtros.status ? q.eq("status", filtros.status) : q);
       const [pag, rec, repasses, comUsr] = await Promise.all([
