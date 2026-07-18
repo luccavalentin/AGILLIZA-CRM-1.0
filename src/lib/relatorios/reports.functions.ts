@@ -1688,6 +1688,23 @@ export const runReport = createServerFn({ method: "POST" })
             : grupo === "recusadas"
               ? props.filter((p) => STATUS_RECUSADAS.has(p.status))
               : props;
+      props = propsGrupo;
+
+      const TITULO_GRUPO: Record<string, { titulo: string; descricao: string }> = {
+        enviadas: {
+          titulo: "Relatório de propostas enviadas",
+          descricao: "Propostas enviadas ao banco (em análise, documentação, engenharia, jurídico).",
+        },
+        aprovadas: {
+          titulo: "Relatório de propostas aprovadas",
+          descricao: "Propostas com crédito aprovado, contrato emitido ou registrado.",
+        },
+        recusadas: {
+          titulo: "Relatório de propostas recusadas",
+          descricao: "Propostas recusadas pelo banco no período.",
+        },
+      };
+      const tituloGrupo = grupo ? TITULO_GRUPO[grupo] : null;
 
       const enviadas = props.filter((p) => p.status !== "rascunho");
       const emAnalise = props.filter((p) =>
