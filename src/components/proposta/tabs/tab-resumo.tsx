@@ -120,7 +120,10 @@ export function TabResumo({
   const bancoReprovado =
     (bancos ?? []).find(
       (b: any) => b.situacao_credito === "reprovado" || b.status_banco === "credito_recusado",
-    )?.nome_banco ?? null;
+    )?.nome_banco ??
+    (status === "credito_recusado"
+      ? ((bancos ?? []).find((b: any) => bancoJaEnviado(b))?.nome_banco ?? null)
+      : null);
 
   return (
     <div className="space-y-5">
