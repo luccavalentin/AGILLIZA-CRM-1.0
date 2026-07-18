@@ -1742,8 +1742,10 @@ export const runReport = createServerFn({ method: "POST" })
       );
 
       return {
-        titulo: "Relatório de propostas",
-        descricao: "Status, bancos, produtos e volumes das propostas no período.",
+        titulo: tituloGrupo?.titulo ?? "Relatório de propostas",
+        descricao:
+          tituloGrupo?.descricao ??
+          "Status, bancos, produtos e volumes das propostas no período.",
         modulo: "Propostas",
         kpis: [
           { label: "Total", valor: int(props.length), tone: "neutral" },
