@@ -41,6 +41,7 @@ import { Route as ApiPublicSyncPropostasRouteImport } from './routes/api/public/
 import { Route as AuthenticatedVisaoGeralPainelRouteImport } from './routes/_authenticated/visao-geral.painel'
 import { Route as AuthenticatedRelatoriosTarefasRouteImport } from './routes/_authenticated/relatorios.tarefas'
 import { Route as AuthenticatedRelatoriosSimulacoesRouteImport } from './routes/_authenticated/relatorios.simulacoes'
+import { Route as AuthenticatedRelatoriosPropostasRecusadasRouteImport } from './routes/_authenticated/relatorios.propostas-recusadas'
 import { Route as AuthenticatedRelatoriosPropostasEnviadasRouteImport } from './routes/_authenticated/relatorios.propostas-enviadas'
 import { Route as AuthenticatedRelatoriosPropostasAprovadasRouteImport } from './routes/_authenticated/relatorios.propostas-aprovadas'
 import { Route as AuthenticatedRelatoriosPropostasRouteImport } from './routes/_authenticated/relatorios.propostas'
@@ -271,6 +272,12 @@ const AuthenticatedRelatoriosSimulacoesRoute =
   AuthenticatedRelatoriosSimulacoesRouteImport.update({
     id: '/simulacoes',
     path: '/simulacoes',
+    getParentRoute: () => AuthenticatedRelatoriosRoute,
+  } as any)
+const AuthenticatedRelatoriosPropostasRecusadasRoute =
+  AuthenticatedRelatoriosPropostasRecusadasRouteImport.update({
+    id: '/propostas-recusadas',
+    path: '/propostas-recusadas',
     getParentRoute: () => AuthenticatedRelatoriosRoute,
   } as any)
 const AuthenticatedRelatoriosPropostasEnviadasRoute =
@@ -731,6 +738,7 @@ export interface FileRoutesByFullPath {
   '/relatorios/propostas': typeof AuthenticatedRelatoriosPropostasRoute
   '/relatorios/propostas-aprovadas': typeof AuthenticatedRelatoriosPropostasAprovadasRoute
   '/relatorios/propostas-enviadas': typeof AuthenticatedRelatoriosPropostasEnviadasRoute
+  '/relatorios/propostas-recusadas': typeof AuthenticatedRelatoriosPropostasRecusadasRoute
   '/relatorios/simulacoes': typeof AuthenticatedRelatoriosSimulacoesRoute
   '/relatorios/tarefas': typeof AuthenticatedRelatoriosTarefasRoute
   '/visao-geral/painel': typeof AuthenticatedVisaoGeralPainelRoute
@@ -826,6 +834,7 @@ export interface FileRoutesByTo {
   '/relatorios/propostas': typeof AuthenticatedRelatoriosPropostasRoute
   '/relatorios/propostas-aprovadas': typeof AuthenticatedRelatoriosPropostasAprovadasRoute
   '/relatorios/propostas-enviadas': typeof AuthenticatedRelatoriosPropostasEnviadasRoute
+  '/relatorios/propostas-recusadas': typeof AuthenticatedRelatoriosPropostasRecusadasRoute
   '/relatorios/simulacoes': typeof AuthenticatedRelatoriosSimulacoesRoute
   '/relatorios/tarefas': typeof AuthenticatedRelatoriosTarefasRoute
   '/visao-geral/painel': typeof AuthenticatedVisaoGeralPainelRoute
@@ -925,6 +934,7 @@ export interface FileRoutesById {
   '/_authenticated/relatorios/propostas': typeof AuthenticatedRelatoriosPropostasRoute
   '/_authenticated/relatorios/propostas-aprovadas': typeof AuthenticatedRelatoriosPropostasAprovadasRoute
   '/_authenticated/relatorios/propostas-enviadas': typeof AuthenticatedRelatoriosPropostasEnviadasRoute
+  '/_authenticated/relatorios/propostas-recusadas': typeof AuthenticatedRelatoriosPropostasRecusadasRoute
   '/_authenticated/relatorios/simulacoes': typeof AuthenticatedRelatoriosSimulacoesRoute
   '/_authenticated/relatorios/tarefas': typeof AuthenticatedRelatoriosTarefasRoute
   '/_authenticated/visao-geral/painel': typeof AuthenticatedVisaoGeralPainelRoute
@@ -1024,6 +1034,7 @@ export interface FileRouteTypes {
     | '/relatorios/propostas'
     | '/relatorios/propostas-aprovadas'
     | '/relatorios/propostas-enviadas'
+    | '/relatorios/propostas-recusadas'
     | '/relatorios/simulacoes'
     | '/relatorios/tarefas'
     | '/visao-geral/painel'
@@ -1119,6 +1130,7 @@ export interface FileRouteTypes {
     | '/relatorios/propostas'
     | '/relatorios/propostas-aprovadas'
     | '/relatorios/propostas-enviadas'
+    | '/relatorios/propostas-recusadas'
     | '/relatorios/simulacoes'
     | '/relatorios/tarefas'
     | '/visao-geral/painel'
@@ -1217,6 +1229,7 @@ export interface FileRouteTypes {
     | '/_authenticated/relatorios/propostas'
     | '/_authenticated/relatorios/propostas-aprovadas'
     | '/_authenticated/relatorios/propostas-enviadas'
+    | '/_authenticated/relatorios/propostas-recusadas'
     | '/_authenticated/relatorios/simulacoes'
     | '/_authenticated/relatorios/tarefas'
     | '/_authenticated/visao-geral/painel'
@@ -1475,6 +1488,13 @@ declare module '@tanstack/react-router' {
       path: '/simulacoes'
       fullPath: '/relatorios/simulacoes'
       preLoaderRoute: typeof AuthenticatedRelatoriosSimulacoesRouteImport
+      parentRoute: typeof AuthenticatedRelatoriosRoute
+    }
+    '/_authenticated/relatorios/propostas-recusadas': {
+      id: '/_authenticated/relatorios/propostas-recusadas'
+      path: '/propostas-recusadas'
+      fullPath: '/relatorios/propostas-recusadas'
+      preLoaderRoute: typeof AuthenticatedRelatoriosPropostasRecusadasRouteImport
       parentRoute: typeof AuthenticatedRelatoriosRoute
     }
     '/_authenticated/relatorios/propostas-enviadas': {
@@ -1962,6 +1982,7 @@ interface AuthenticatedRelatoriosRouteChildren {
   AuthenticatedRelatoriosPropostasRoute: typeof AuthenticatedRelatoriosPropostasRoute
   AuthenticatedRelatoriosPropostasAprovadasRoute: typeof AuthenticatedRelatoriosPropostasAprovadasRoute
   AuthenticatedRelatoriosPropostasEnviadasRoute: typeof AuthenticatedRelatoriosPropostasEnviadasRoute
+  AuthenticatedRelatoriosPropostasRecusadasRoute: typeof AuthenticatedRelatoriosPropostasRecusadasRoute
   AuthenticatedRelatoriosSimulacoesRoute: typeof AuthenticatedRelatoriosSimulacoesRoute
   AuthenticatedRelatoriosTarefasRoute: typeof AuthenticatedRelatoriosTarefasRoute
   AuthenticatedRelatoriosIndexRoute: typeof AuthenticatedRelatoriosIndexRoute
@@ -2000,6 +2021,8 @@ const AuthenticatedRelatoriosRouteChildren: AuthenticatedRelatoriosRouteChildren
       AuthenticatedRelatoriosPropostasAprovadasRoute,
     AuthenticatedRelatoriosPropostasEnviadasRoute:
       AuthenticatedRelatoriosPropostasEnviadasRoute,
+    AuthenticatedRelatoriosPropostasRecusadasRoute:
+      AuthenticatedRelatoriosPropostasRecusadasRoute,
     AuthenticatedRelatoriosSimulacoesRoute:
       AuthenticatedRelatoriosSimulacoesRoute,
     AuthenticatedRelatoriosTarefasRoute: AuthenticatedRelatoriosTarefasRoute,
