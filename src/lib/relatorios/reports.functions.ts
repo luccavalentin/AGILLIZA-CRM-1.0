@@ -1620,7 +1620,9 @@ export const runReport = createServerFn({ method: "POST" })
       };
     }
 
-    async function relPropostas(): Promise<ReportResult> {
+    async function relPropostas(
+      grupo?: "enviadas" | "aprovadas" | "recusadas",
+    ): Promise<ReportResult> {
       if (statusEhFiltroSimulacao(filtros.status)) {
         const [sims, opcoesOperacionais] = await Promise.all([
           fetchSimulacoesRelatorio({ rascunhoComoModulo: true }),
