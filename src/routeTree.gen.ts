@@ -39,6 +39,7 @@ import { Route as AuthenticatedRelatoriosIndexRouteImport } from './routes/_auth
 import { Route as AuthenticatedFormulariosIndexRouteImport } from './routes/_authenticated/formularios.index'
 import { Route as ApiPublicSyncPropostasRouteImport } from './routes/api/public/sync-propostas'
 import { Route as AuthenticatedVisaoGeralPainelRouteImport } from './routes/_authenticated/visao-geral.painel'
+import { Route as AuthenticatedRhFuncionariosRouteImport } from './routes/_authenticated/rh.funcionarios'
 import { Route as AuthenticatedRelatoriosTarefasRouteImport } from './routes/_authenticated/relatorios.tarefas'
 import { Route as AuthenticatedRelatoriosSimulacoesRouteImport } from './routes/_authenticated/relatorios.simulacoes'
 import { Route as AuthenticatedRelatoriosPropostasRouteImport } from './routes/_authenticated/relatorios.propostas'
@@ -88,6 +89,8 @@ import { Route as AuthenticatedAdminBancosRouteImport } from './routes/_authenti
 import { Route as AuthenticatedAdminBackupRouteImport } from './routes/_authenticated/admin.backup'
 import { Route as AuthenticatedAdminAuditoriaRouteImport } from './routes/_authenticated/admin.auditoria'
 import { Route as AuthenticatedAdminApisIaRouteImport } from './routes/_authenticated/admin.apis-ia'
+import { Route as AuthenticatedRhFuncionariosNovoRouteImport } from './routes/_authenticated/rh.funcionarios_.novo'
+import { Route as AuthenticatedRhFuncionariosIdRouteImport } from './routes/_authenticated/rh.funcionarios_.$id'
 import { Route as AuthenticatedOperacionalTarefasKanbanRouteImport } from './routes/_authenticated/operacional.tarefas_.kanban'
 import { Route as AuthenticatedOperacionalTarefasCalendarioRouteImport } from './routes/_authenticated/operacional.tarefas_.calendario'
 import { Route as AuthenticatedOperacionalSimulacoesNovaRouteImport } from './routes/_authenticated/operacional.simulacoes_.nova'
@@ -257,6 +260,12 @@ const AuthenticatedVisaoGeralPainelRoute =
     id: '/visao-geral/painel',
     path: '/visao-geral/painel',
     getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedRhFuncionariosRoute =
+  AuthenticatedRhFuncionariosRouteImport.update({
+    id: '/funcionarios',
+    path: '/funcionarios',
+    getParentRoute: () => AuthenticatedRhRoute,
   } as any)
 const AuthenticatedRelatoriosTarefasRoute =
   AuthenticatedRelatoriosTarefasRouteImport.update({
@@ -549,6 +558,18 @@ const AuthenticatedAdminApisIaRoute =
     path: '/admin/apis-ia',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedRhFuncionariosNovoRoute =
+  AuthenticatedRhFuncionariosNovoRouteImport.update({
+    id: '/funcionarios_/novo',
+    path: '/funcionarios/novo',
+    getParentRoute: () => AuthenticatedRhRoute,
+  } as any)
+const AuthenticatedRhFuncionariosIdRoute =
+  AuthenticatedRhFuncionariosIdRouteImport.update({
+    id: '/funcionarios_/$id',
+    path: '/funcionarios/$id',
+    getParentRoute: () => AuthenticatedRhRoute,
+  } as any)
 const AuthenticatedOperacionalTarefasKanbanRoute =
   AuthenticatedOperacionalTarefasKanbanRouteImport.update({
     id: '/operacional/tarefas_/kanban',
@@ -649,7 +670,7 @@ export interface FileRoutesByFullPath {
   '/matriculas': typeof AuthenticatedMatriculasRoute
   '/parceiro-inicio': typeof AuthenticatedParceiroInicioRoute
   '/relatorios': typeof AuthenticatedRelatoriosRouteWithChildren
-  '/rh': typeof AuthenticatedRhRoute
+  '/rh': typeof AuthenticatedRhRouteWithChildren
   '/cliente/acompanhar-minha-proposta': typeof ClienteAcompanharMinhaPropostaRoute
   '/cliente/chat': typeof ClienteChatRoute
   '/cliente/logout': typeof ClienteLogoutRoute
@@ -709,6 +730,7 @@ export interface FileRoutesByFullPath {
   '/relatorios/propostas': typeof AuthenticatedRelatoriosPropostasRoute
   '/relatorios/simulacoes': typeof AuthenticatedRelatoriosSimulacoesRoute
   '/relatorios/tarefas': typeof AuthenticatedRelatoriosTarefasRoute
+  '/rh/funcionarios': typeof AuthenticatedRhFuncionariosRoute
   '/visao-geral/painel': typeof AuthenticatedVisaoGeralPainelRoute
   '/api/public/sync-propostas': typeof ApiPublicSyncPropostasRoute
   '/formularios/': typeof AuthenticatedFormulariosIndexRoute
@@ -727,6 +749,8 @@ export interface FileRoutesByFullPath {
   '/operacional/simulacoes/nova': typeof AuthenticatedOperacionalSimulacoesNovaRoute
   '/operacional/tarefas/calendario': typeof AuthenticatedOperacionalTarefasCalendarioRoute
   '/operacional/tarefas/kanban': typeof AuthenticatedOperacionalTarefasKanbanRoute
+  '/rh/funcionarios/$id': typeof AuthenticatedRhFuncionariosIdRoute
+  '/rh/funcionarios/novo': typeof AuthenticatedRhFuncionariosNovoRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -741,7 +765,7 @@ export interface FileRoutesByTo {
   '/links': typeof AuthenticatedLinksRoute
   '/matriculas': typeof AuthenticatedMatriculasRoute
   '/parceiro-inicio': typeof AuthenticatedParceiroInicioRoute
-  '/rh': typeof AuthenticatedRhRoute
+  '/rh': typeof AuthenticatedRhRouteWithChildren
   '/cliente/acompanhar-minha-proposta': typeof ClienteAcompanharMinhaPropostaRoute
   '/cliente/chat': typeof ClienteChatRoute
   '/cliente/logout': typeof ClienteLogoutRoute
@@ -801,6 +825,7 @@ export interface FileRoutesByTo {
   '/relatorios/propostas': typeof AuthenticatedRelatoriosPropostasRoute
   '/relatorios/simulacoes': typeof AuthenticatedRelatoriosSimulacoesRoute
   '/relatorios/tarefas': typeof AuthenticatedRelatoriosTarefasRoute
+  '/rh/funcionarios': typeof AuthenticatedRhFuncionariosRoute
   '/visao-geral/painel': typeof AuthenticatedVisaoGeralPainelRoute
   '/api/public/sync-propostas': typeof ApiPublicSyncPropostasRoute
   '/formularios': typeof AuthenticatedFormulariosIndexRoute
@@ -819,6 +844,8 @@ export interface FileRoutesByTo {
   '/operacional/simulacoes/nova': typeof AuthenticatedOperacionalSimulacoesNovaRoute
   '/operacional/tarefas/calendario': typeof AuthenticatedOperacionalTarefasCalendarioRoute
   '/operacional/tarefas/kanban': typeof AuthenticatedOperacionalTarefasKanbanRoute
+  '/rh/funcionarios/$id': typeof AuthenticatedRhFuncionariosIdRoute
+  '/rh/funcionarios/novo': typeof AuthenticatedRhFuncionariosNovoRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -837,7 +864,7 @@ export interface FileRoutesById {
   '/_authenticated/matriculas': typeof AuthenticatedMatriculasRoute
   '/_authenticated/parceiro-inicio': typeof AuthenticatedParceiroInicioRoute
   '/_authenticated/relatorios': typeof AuthenticatedRelatoriosRouteWithChildren
-  '/_authenticated/rh': typeof AuthenticatedRhRoute
+  '/_authenticated/rh': typeof AuthenticatedRhRouteWithChildren
   '/cliente/acompanhar-minha-proposta': typeof ClienteAcompanharMinhaPropostaRoute
   '/cliente/chat': typeof ClienteChatRoute
   '/cliente/logout': typeof ClienteLogoutRoute
@@ -897,6 +924,7 @@ export interface FileRoutesById {
   '/_authenticated/relatorios/propostas': typeof AuthenticatedRelatoriosPropostasRoute
   '/_authenticated/relatorios/simulacoes': typeof AuthenticatedRelatoriosSimulacoesRoute
   '/_authenticated/relatorios/tarefas': typeof AuthenticatedRelatoriosTarefasRoute
+  '/_authenticated/rh/funcionarios': typeof AuthenticatedRhFuncionariosRoute
   '/_authenticated/visao-geral/painel': typeof AuthenticatedVisaoGeralPainelRoute
   '/api/public/sync-propostas': typeof ApiPublicSyncPropostasRoute
   '/_authenticated/formularios/': typeof AuthenticatedFormulariosIndexRoute
@@ -915,6 +943,8 @@ export interface FileRoutesById {
   '/_authenticated/operacional/simulacoes_/nova': typeof AuthenticatedOperacionalSimulacoesNovaRoute
   '/_authenticated/operacional/tarefas_/calendario': typeof AuthenticatedOperacionalTarefasCalendarioRoute
   '/_authenticated/operacional/tarefas_/kanban': typeof AuthenticatedOperacionalTarefasKanbanRoute
+  '/_authenticated/rh/funcionarios_/$id': typeof AuthenticatedRhFuncionariosIdRoute
+  '/_authenticated/rh/funcionarios_/novo': typeof AuthenticatedRhFuncionariosNovoRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -993,6 +1023,7 @@ export interface FileRouteTypes {
     | '/relatorios/propostas'
     | '/relatorios/simulacoes'
     | '/relatorios/tarefas'
+    | '/rh/funcionarios'
     | '/visao-geral/painel'
     | '/api/public/sync-propostas'
     | '/formularios/'
@@ -1011,6 +1042,8 @@ export interface FileRouteTypes {
     | '/operacional/simulacoes/nova'
     | '/operacional/tarefas/calendario'
     | '/operacional/tarefas/kanban'
+    | '/rh/funcionarios/$id'
+    | '/rh/funcionarios/novo'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -1085,6 +1118,7 @@ export interface FileRouteTypes {
     | '/relatorios/propostas'
     | '/relatorios/simulacoes'
     | '/relatorios/tarefas'
+    | '/rh/funcionarios'
     | '/visao-geral/painel'
     | '/api/public/sync-propostas'
     | '/formularios'
@@ -1103,6 +1137,8 @@ export interface FileRouteTypes {
     | '/operacional/simulacoes/nova'
     | '/operacional/tarefas/calendario'
     | '/operacional/tarefas/kanban'
+    | '/rh/funcionarios/$id'
+    | '/rh/funcionarios/novo'
   id:
     | '__root__'
     | '/'
@@ -1180,6 +1216,7 @@ export interface FileRouteTypes {
     | '/_authenticated/relatorios/propostas'
     | '/_authenticated/relatorios/simulacoes'
     | '/_authenticated/relatorios/tarefas'
+    | '/_authenticated/rh/funcionarios'
     | '/_authenticated/visao-geral/painel'
     | '/api/public/sync-propostas'
     | '/_authenticated/formularios/'
@@ -1198,6 +1235,8 @@ export interface FileRouteTypes {
     | '/_authenticated/operacional/simulacoes_/nova'
     | '/_authenticated/operacional/tarefas_/calendario'
     | '/_authenticated/operacional/tarefas_/kanban'
+    | '/_authenticated/rh/funcionarios_/$id'
+    | '/_authenticated/rh/funcionarios_/novo'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -1423,6 +1462,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/visao-geral/painel'
       preLoaderRoute: typeof AuthenticatedVisaoGeralPainelRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/rh/funcionarios': {
+      id: '/_authenticated/rh/funcionarios'
+      path: '/funcionarios'
+      fullPath: '/rh/funcionarios'
+      preLoaderRoute: typeof AuthenticatedRhFuncionariosRouteImport
+      parentRoute: typeof AuthenticatedRhRoute
     }
     '/_authenticated/relatorios/tarefas': {
       id: '/_authenticated/relatorios/tarefas'
@@ -1767,6 +1813,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminApisIaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/rh/funcionarios_/novo': {
+      id: '/_authenticated/rh/funcionarios_/novo'
+      path: '/funcionarios/novo'
+      fullPath: '/rh/funcionarios/novo'
+      preLoaderRoute: typeof AuthenticatedRhFuncionariosNovoRouteImport
+      parentRoute: typeof AuthenticatedRhRoute
+    }
+    '/_authenticated/rh/funcionarios_/$id': {
+      id: '/_authenticated/rh/funcionarios_/$id'
+      path: '/funcionarios/$id'
+      fullPath: '/rh/funcionarios/$id'
+      preLoaderRoute: typeof AuthenticatedRhFuncionariosIdRouteImport
+      parentRoute: typeof AuthenticatedRhRoute
+    }
     '/_authenticated/operacional/tarefas_/kanban': {
       id: '/_authenticated/operacional/tarefas_/kanban'
       path: '/operacional/tarefas/kanban'
@@ -1942,6 +2002,22 @@ const AuthenticatedRelatoriosRouteWithChildren =
     AuthenticatedRelatoriosRouteChildren,
   )
 
+interface AuthenticatedRhRouteChildren {
+  AuthenticatedRhFuncionariosRoute: typeof AuthenticatedRhFuncionariosRoute
+  AuthenticatedRhFuncionariosIdRoute: typeof AuthenticatedRhFuncionariosIdRoute
+  AuthenticatedRhFuncionariosNovoRoute: typeof AuthenticatedRhFuncionariosNovoRoute
+}
+
+const AuthenticatedRhRouteChildren: AuthenticatedRhRouteChildren = {
+  AuthenticatedRhFuncionariosRoute: AuthenticatedRhFuncionariosRoute,
+  AuthenticatedRhFuncionariosIdRoute: AuthenticatedRhFuncionariosIdRoute,
+  AuthenticatedRhFuncionariosNovoRoute: AuthenticatedRhFuncionariosNovoRoute,
+}
+
+const AuthenticatedRhRouteWithChildren = AuthenticatedRhRoute._addFileChildren(
+  AuthenticatedRhRouteChildren,
+)
+
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedDocumentosRoute: typeof AuthenticatedDocumentosRoute
@@ -1950,7 +2026,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedMatriculasRoute: typeof AuthenticatedMatriculasRoute
   AuthenticatedParceiroInicioRoute: typeof AuthenticatedParceiroInicioRoute
   AuthenticatedRelatoriosRoute: typeof AuthenticatedRelatoriosRouteWithChildren
-  AuthenticatedRhRoute: typeof AuthenticatedRhRoute
+  AuthenticatedRhRoute: typeof AuthenticatedRhRouteWithChildren
   AuthenticatedAdminApisIaRoute: typeof AuthenticatedAdminApisIaRoute
   AuthenticatedAdminAuditoriaRoute: typeof AuthenticatedAdminAuditoriaRoute
   AuthenticatedAdminBackupRoute: typeof AuthenticatedAdminBackupRoute
@@ -2008,7 +2084,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedMatriculasRoute: AuthenticatedMatriculasRoute,
   AuthenticatedParceiroInicioRoute: AuthenticatedParceiroInicioRoute,
   AuthenticatedRelatoriosRoute: AuthenticatedRelatoriosRouteWithChildren,
-  AuthenticatedRhRoute: AuthenticatedRhRoute,
+  AuthenticatedRhRoute: AuthenticatedRhRouteWithChildren,
   AuthenticatedAdminApisIaRoute: AuthenticatedAdminApisIaRoute,
   AuthenticatedAdminAuditoriaRoute: AuthenticatedAdminAuditoriaRoute,
   AuthenticatedAdminBackupRoute: AuthenticatedAdminBackupRoute,
@@ -2132,13 +2208,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
