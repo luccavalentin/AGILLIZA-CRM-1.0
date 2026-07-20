@@ -41,7 +41,40 @@ import {
   listarCargos,
   listarDepartamentos,
 } from "@/lib/rh/cargos-departamentos.functions";
-import { OPCOES_UF } from "@/components/crm/cliente-form/constants";
+import { mascararCep, apenasDigitosCep, consultarCep } from "@/lib/cep";
+import {
+  mascararCPF,
+  mascararTelefone,
+  validarCPF,
+  validarEmail,
+  validarTelefone,
+  soDigitos,
+} from "@/lib/crm/documento";
+import { InputAutocomplete } from "@/components/ui/input-autocomplete";
+
+const OPCOES_ORGAO_EMISSOR = [
+  "SSP", "SSP/SP", "SSP/RJ", "SSP/MG", "SSP/RS", "SSP/PR", "SSP/SC", "SSP/BA",
+  "SSP/PE", "SSP/CE", "SSP/GO", "SSP/DF", "SSP/ES", "SSP/PA", "SSP/AM",
+  "DETRAN", "PC", "PM", "IFP", "IIRGD", "IGP", "PTC", "CNIG", "MRE", "MJ",
+  "OAB", "CRM", "CREA", "CRC", "CRO", "CRP", "CRF", "COREN",
+];
+
+const OPCOES_NACIONALIDADE = [
+  "Brasileira", "Portuguesa", "Argentina", "Uruguaia", "Paraguaia", "Chilena",
+  "Boliviana", "Peruana", "Colombiana", "Venezuelana", "Equatoriana",
+  "Espanhola", "Italiana", "Francesa", "Alemã", "Inglesa", "Americana",
+  "Canadense", "Mexicana", "Japonesa", "Chinesa", "Coreana", "Angolana",
+  "Moçambicana", "Cabo-verdiana", "Haitiana", "Outra",
+];
+
+const OPCOES_ESTADO_CIVIL = [
+  { v: "solteiro", l: "Solteiro(a)" },
+  { v: "casado", l: "Casado(a)" },
+  { v: "divorciado", l: "Divorciado(a)" },
+  { v: "separado", l: "Separado(a)" },
+  { v: "viuvo", l: "Viúvo(a)" },
+  { v: "uniao_estavel", l: "União estável" },
+];
 import { mascararCep, apenasDigitosCep, consultarCep } from "@/lib/cep";
 
 const STATUS_LABEL: Record<StatusFuncionario, string> = {
