@@ -506,6 +506,9 @@ export interface UsuarioVinculavel {
   id: string;
   nome: string | null;
   email: string | null;
+  telefone: string | null;
+  documento: string | null;
+  foto_url: string | null;
   ja_vinculado_a: string | null; // id do funcionário atual que já usa este user, se houver
 }
 
@@ -521,7 +524,7 @@ export const listarUsuariosVinculaveis = createServerFn({ method: "GET" })
     if (!correspondenteId) return [];
     const { data: profs, error } = await supabase
       .from("profiles")
-      .select("id, nome, email")
+      .select("id, nome, email, telefone, documento, foto_url")
       .eq("correspondente_id", correspondenteId)
       .order("nome", { ascending: true });
     if (error) throw new Error(error.message);
@@ -541,6 +544,9 @@ export const listarUsuariosVinculaveis = createServerFn({ method: "GET" })
       id: p.id,
       nome: p.nome,
       email: p.email,
+      telefone: p.telefone ?? null,
+      documento: p.documento ?? null,
+      foto_url: p.foto_url ?? null,
       ja_vinculado_a:
         mapa.get(p.id) && mapa.get(p.id) !== data.funcionario_id ? mapa.get(p.id)! : null,
     }));
