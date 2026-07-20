@@ -45,6 +45,7 @@ import {
   type FolhaItem,
 } from "@/lib/rh/folha.functions";
 import { formatBRL } from "@/lib/financeiro/format";
+import { YearPicker } from "@/components/rh/year-picker";
 
 const MESES = [
   "Jan", "Fev", "Mar", "Abr", "Mai", "Jun",

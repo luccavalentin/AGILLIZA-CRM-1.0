@@ -34,6 +34,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { FuncionarioPicker } from "@/components/rh/funcionario-picker";
+import { YearPicker } from "@/components/rh/year-picker";
 import { formatBRL } from "@/lib/financeiro/format";
 import type { LancamentoStatus, RhLancamento } from "@/lib/rh/submodulos.functions";
 
