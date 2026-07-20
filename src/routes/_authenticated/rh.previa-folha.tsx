@@ -45,6 +45,7 @@ import {
   type FolhaItem,
 } from "@/lib/rh/folha.functions";
 import { formatBRL } from "@/lib/financeiro/format";
+import { YearPicker } from "@/components/rh/year-picker";
 
 const MESES = [
   "Jan", "Fev", "Mar", "Abr", "Mai", "Jun",
@@ -223,12 +224,7 @@ function Pagina() {
           </div>
           <div className="space-y-1.5">
             <Label>Ano</Label>
-            <Select value={String(ano)} onValueChange={(v) => setAno(Number(v))}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {anos.map((a) => <SelectItem key={a} value={String(a)}>{a}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <YearPicker value={ano} onChange={setAno} />
           </div>
         </CardContent>
       </Card>

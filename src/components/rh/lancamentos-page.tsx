@@ -34,6 +34,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { FuncionarioPicker } from "@/components/rh/funcionario-picker";
+import { YearPicker } from "@/components/rh/year-picker";
 import { formatBRL } from "@/lib/financeiro/format";
 import type { LancamentoStatus, RhLancamento } from "@/lib/rh/submodulos.functions";
 
@@ -170,17 +171,10 @@ export function LancamentosPage({
                 </div>
                 <div className="space-y-1.5">
                   <Label>Competência (ano)</Label>
-                  <Select
-                    value={String(form.competencia_ano)}
-                    onValueChange={(v) => setForm((p) => ({ ...p, competencia_ano: Number(v) }))}
-                  >
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {anos.map((a) => (
-                        <SelectItem key={a} value={String(a)}>{a}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <YearPicker
+                    value={form.competencia_ano}
+                    onChange={(a) => setForm((p) => ({ ...p, competencia_ano: a }))}
+                  />
                 </div>
               </div>
               <div className="space-y-1.5">
@@ -220,12 +214,7 @@ export function LancamentosPage({
           </div>
           <div className="space-y-1.5">
             <Label>Ano</Label>
-            <Select value={String(filtroAno)} onValueChange={(v) => setFiltroAno(Number(v))}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {anos.map((a) => <SelectItem key={a} value={String(a)}>{a}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <YearPicker value={filtroAno} onChange={setFiltroAno} />
           </div>
         </CardContent>
       </Card>

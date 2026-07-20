@@ -34,6 +34,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { FuncionarioPicker } from "@/components/rh/funcionario-picker";
+import { YearPicker } from "@/components/rh/year-picker";
 import {
   anexarHolerite,
   gerarUrlAssinada,
@@ -253,15 +254,10 @@ function Pagina() {
                   </div>
                   <div className="space-y-1.5">
                     <Label>Ano</Label>
-                    <Select
-                      value={String(gerarForm.ano)}
-                      onValueChange={(v) => setGerarForm((p) => ({ ...p, ano: Number(v) }))}
-                    >
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {anos.map((a) => <SelectItem key={a} value={String(a)}>{a}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
+                    <YearPicker
+                      value={gerarForm.ano}
+                      onChange={(a) => setGerarForm((p) => ({ ...p, ano: a }))}
+                    />
                   </div>
                 </div>
               </div>
@@ -308,12 +304,10 @@ function Pagina() {
                 </div>
                 <div className="space-y-1.5">
                   <Label>Ano</Label>
-                  <Select value={String(form.ano)} onValueChange={(v) => setForm((p) => ({ ...p, ano: Number(v) }))}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {anos.map((a) => <SelectItem key={a} value={String(a)}>{a}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                  <YearPicker
+                    value={form.ano}
+                    onChange={(a) => setForm((p) => ({ ...p, ano: a }))}
+                  />
                 </div>
               </div>
               <div className="space-y-1.5">
@@ -350,12 +344,7 @@ function Pagina() {
         <CardContent className="grid gap-3 p-4 sm:grid-cols-2">
           <div className="space-y-1.5">
             <Label>Ano</Label>
-            <Select value={String(filtroAno)} onValueChange={(v) => setFiltroAno(Number(v))}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {anos.map((a) => <SelectItem key={a} value={String(a)}>{a}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <YearPicker value={filtroAno} onChange={setFiltroAno} />
           </div>
           <div className="space-y-1.5">
             <Label>Mês</Label>
