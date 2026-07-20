@@ -172,12 +172,20 @@ function ChatPage() {
             atendente={selecionado}
             altura="h-[calc(100dvh-10rem)] min-h-[520px]"
             podeVoltar={(atendentes?.length ?? 0) > 1}
+      {/* Coluna 2 — Thread */}
+      <section className={cn("min-w-0", mostrarThreadMobile ? "block" : "hidden lg:block")}>
+        {selecionado ? (
+          <ThreadChat
+            key={selecionado.atendente_id}
+            atendente={selecionado}
+            altura="h-[calc(100dvh-10rem)] min-h-[520px]"
+            podeVoltar={true}
             onVoltar={() => setSelId(null)}
             headerExtras={<ChatConfigSheet />}
             quickActions={<AcoesRapidas />}
           />
         ) : (
-          <div className="flex h-[calc(100dvh-10rem)] min-h-[520px] items-center justify-center rounded-2xl border border-dashed border-border/60 bg-card text-center">
+          <div className="hidden h-[calc(100dvh-10rem)] min-h-[520px] items-center justify-center rounded-2xl border border-dashed border-border/60 bg-card text-center lg:flex">
             <div className="max-w-sm space-y-2 px-6">
               <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary">
                 <MessageCircle className="h-6 w-6" />
@@ -191,8 +199,8 @@ function ChatPage() {
         )}
       </section>
 
-      {/* Coluna 3 — Contexto do atendimento */}
-      <aside className="flex min-w-0 flex-col gap-3 lg:h-[calc(100dvh-10rem)] lg:overflow-y-auto">
+      {/* Coluna 3 — Contexto do atendimento (só desktop) */}
+      <aside className="hidden min-w-0 flex-col gap-3 lg:flex lg:h-[calc(100dvh-10rem)] lg:overflow-y-auto">
         <CardResumo visao={visao ?? null} selecionado={selecionado} />
         <CardProgresso visao={visao ?? null} />
         <CardDocumentos docs={docs ?? []} />
