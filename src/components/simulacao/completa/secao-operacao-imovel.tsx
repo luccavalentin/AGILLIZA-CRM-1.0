@@ -55,8 +55,12 @@ export function SecaoOperacaoImovel({ ctx }: { ctx: SimulacaoCompletaCtx }) {
     const cep = mascararCep(valor);
     set("cep_imovel", cep);
     if (!cepValido(cep)) return;
-    const endereco = await consultarCep(cep);
-    if (endereco?.uf) set("uf", endereco.uf);
+    try {
+      const endereco = await consultarCep(cep);
+      if (endereco?.uf) set("uf", endereco.uf);
+    } catch {
+      // Mantém o CEP digitado; a UF pode ser preenchida manualmente.
+    }
   }
 
 
