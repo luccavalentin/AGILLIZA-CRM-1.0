@@ -246,10 +246,16 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
     }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ltvMax]);
+  // Home Equity: prazo máximo operacional de 240 meses (regra das IFs).
+  const prazoMaxOperacional = useMemo(() => {
+    const restr = restricaoEspecial.ativo ? restricaoEspecial.prazoMax : 420;
+    const he = isHomeEquity ? 240 : 420;
+    return Math.min(restr, he);
+  }, [restricaoEspecial, isHomeEquity]);
   const prazoMaximo = useMemo(() => {
     const idade = maxPrazoIdade ?? 420;
-    return restricaoEspecial.ativo ? Math.min(idade, restricaoEspecial.prazoMax) : idade;
-  }, [maxPrazoIdade, restricaoEspecial]);
+    return Math.min(idade, prazoMaxOperacional);
+  }, [maxPrazoIdade, prazoMaxOperacional]);
   const financiamentoMaximo = useMemo(
     () => Math.floor((Number(f.valor_imovel) || 0) * ltvMax),
     [f.valor_imovel, ltvMax],
