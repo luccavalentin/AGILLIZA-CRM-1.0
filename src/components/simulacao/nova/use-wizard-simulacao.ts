@@ -77,7 +77,7 @@ export function useWizardSimulacao(melhorTaxaAno = 0.1199) {
   function aplicarValorImovel(valor: number) {
     setW((prev) => {
       const imovel = Math.max(0, Number(valor) || 0);
-      const entrada = Math.round(imovel * (1 - ltvMax));
+      const entrada = Math.round(imovel * pctEntradaSugerida);
       return {
         ...prev,
         valor_imovel: imovel,
