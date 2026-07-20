@@ -244,13 +244,22 @@ export function FormularioSimulacao({
           </p>
         </div>
 
-        <div className="space-y-2 md:col-span-2">
-          <Label>Renda familiar mensal (opcional)</Label>
+        <div id="campo-renda-familiar" ref={rendaRef} className="space-y-2 md:col-span-2 scroll-mt-24">
+          <Label>
+            Renda familiar mensal {isPrice ? <span className="text-destructive">*</span> : <span className="text-muted-foreground">(opcional)</span>}
+          </Label>
           <CurrencyInput
+            ref={rendaInputRef}
             value={w.renda_familiar}
             onChange={(v) => set("renda_familiar", v)}
             placeholder="0,00"
+            className={isPrice && (!w.renda_familiar || w.renda_familiar <= 0) ? "border-destructive focus-visible:ring-destructive" : undefined}
           />
+          {isPrice && (!w.renda_familiar || w.renda_familiar <= 0) && (
+            <p className="text-xs font-medium text-destructive">
+              Informe a renda familiar para simular na tabela PRICE.
+            </p>
+          )}
           {w.valor_financiamento > 0 && w.prazo_meses >= PRAZO_MIN ? (
             <DicaRendaMinima
               valorFinanciamento={w.valor_financiamento}
