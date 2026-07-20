@@ -74,7 +74,7 @@ const REGRA_VAZIA: RegraForm = {
   faixa_min: 0,
   faixa_max: null,
   tipo: "percentual",
-  valor: 1,
+  valor: 0,
   percentual_parceiro: 0,
   percentual_interno: 100,
   vigencia_inicio: "",
