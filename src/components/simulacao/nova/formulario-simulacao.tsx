@@ -49,6 +49,21 @@ export function FormularioSimulacao({
 }: Props) {
   const pctEntrada = Math.round((1 - ltvMax) * 100);
   const pctFin = Math.round(ltvMax * 100);
+  const isPrice = w.sistema_amortizacao === "P";
+  const rendaRef = useRef<HTMLDivElement>(null);
+  const rendaInputRef = useRef<HTMLInputElement>(null);
+  const jaFocou = useRef(false);
+
+  useEffect(() => {
+    if (isPrice && (!w.renda_familiar || w.renda_familiar <= 0) && !jaFocou.current) {
+      jaFocou.current = true;
+      setTimeout(() => {
+        rendaRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+        rendaInputRef.current?.focus();
+      }, 120);
+    }
+    if (!isPrice) jaFocou.current = false;
+  }, [isPrice, w.renda_familiar]);
 
   return (
     <Card className="overflow-hidden">
