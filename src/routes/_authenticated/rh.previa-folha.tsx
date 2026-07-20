@@ -113,7 +113,7 @@ function Pagina() {
 
   const anos = [hoje.getFullYear() - 1, hoje.getFullYear(), hoje.getFullYear() + 1];
   const jaFechada = (historico.data ?? []).some(
-    (c) => c.mes === mes && c.ano === ano && (c.status === "fechada" || c.status === "paga"),
+    (c) => c.mes === mes && c.ano === ano && c.status === "fechada",
   );
 
   return (
