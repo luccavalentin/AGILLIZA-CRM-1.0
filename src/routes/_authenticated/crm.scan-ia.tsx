@@ -197,8 +197,58 @@ function Pagina() {
             <p className="text-sm">Nenhuma leitura ainda. Envie um documento para começar.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-          <Table className="min-w-[760px]">
+          <>
+          {/* Mobile: cards */}
+          <ul className="divide-y md:hidden">
+            {leituras.data!.map((l) => (
+              <li key={l.id} className="space-y-2 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-foreground">
+                      {l.tipo_documento ?? "—"}
+                    </p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {new Date(l.created_at).toLocaleString("pt-BR")}
+                    </p>
+                  </div>
+                  <StatusBadge status={l.status} />
+                </div>
+                {l.status === "erro" && l.erro ? (
+                  <p className="text-xs text-destructive">{l.erro}</p>
+                ) : null}
+                <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                  <span className="truncate">{l.criador_nome ?? "—"}</span>
+                  <span className="shrink-0">{l.total_campos} campos</span>
+                </div>
+                <div className="flex flex-wrap justify-end gap-2 pt-1">
+                  {(l.status === "erro" || l.status === "pendente") && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={processar.isPending}
+                      onClick={() => processar.mutate(l.id)}
+                    >
+                      Reprocessar
+                    </Button>
+                  )}
+                  <Button asChild variant="ghost" size="sm">
+                    <Link to="/crm/scan-ia/$id" params={{ id: l.id }}>
+                      Revisar <ChevronRight className="ml-1 h-4 w-4" />
+                    </Link>
+                  </Button>
+                  <ConfirmDelete
+                    titulo="Excluir leitura"
+                    descricao="A leitura e seus campos serão removidos. A exclusão fica registrada nos logs de auditoria."
+                    onConfirm={() => excluir.mutateAsync(l.id).then(() => undefined)}
+                  />
+                </div>
+              </li>
+            ))}
+          </ul>
+
+          {/* md+: table */}
+          <div className="hidden overflow-x-auto md:block">
+          <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Documento</TableHead>
@@ -253,6 +303,8 @@ function Pagina() {
             </TableBody>
           </Table>
           </div>
+          </>
+
         )}
       </div>
     </div>
