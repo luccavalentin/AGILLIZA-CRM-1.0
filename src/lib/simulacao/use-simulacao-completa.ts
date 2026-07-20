@@ -246,10 +246,16 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
     }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ltvMax]);
+  // Home Equity: prazo máximo operacional de 240 meses (regra das IFs).
+  const prazoMaxOperacional = useMemo(() => {
+    const restr = restricaoEspecial.ativo ? restricaoEspecial.prazoMax : 420;
+    const he = isHomeEquity ? 240 : 420;
+    return Math.min(restr, he);
+  }, [restricaoEspecial, isHomeEquity]);
   const prazoMaximo = useMemo(() => {
     const idade = maxPrazoIdade ?? 420;
-    return restricaoEspecial.ativo ? Math.min(idade, restricaoEspecial.prazoMax) : idade;
-  }, [maxPrazoIdade, restricaoEspecial]);
+    return Math.min(idade, prazoMaxOperacional);
+  }, [maxPrazoIdade, prazoMaxOperacional]);
   const financiamentoMaximo = useMemo(
     () => Math.floor((Number(f.valor_imovel) || 0) * ltvMax),
     [f.valor_imovel, ltvMax],
@@ -283,6 +289,9 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
       toast.warning(
         `${restricaoEspecial.motivo}: prazo máximo de ${restricaoEspecial.prazoMax} meses.`,
       );
+    } else if (isHomeEquity && final > 240) {
+      final = 240;
+      toast.warning("Home Equity: prazo máximo de 240 meses.");
     } else if (ajustado && mensagem) {
       toast.warning(mensagem);
     }
@@ -309,10 +318,7 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
         const b = (bancos ?? []).find((x) => x.id === id);
         return b ? aceitaBancoNaOperacao(b) : false;
       });
-      const prazoClamp =
-        restricaoEspecial.ativo && prev.prazo > restricaoEspecial.prazoMax
-          ? restricaoEspecial.prazoMax
-          : prev.prazo;
+      const prazoClamp = Math.min(prev.prazo, prazoMaxOperacional);
       const mudouBancos = bancosFiltrados.length !== prev.bancos_ids.length;
       const mudouPrazo = prazoClamp !== prev.prazo;
       if (!mudouBancos && !mudouPrazo) return prev;
@@ -327,14 +333,19 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
           toast.info("Bancos incompatíveis com a operação foram removidos.");
         }
       }
-      if (mudouPrazo)
-        toast.info(
-          `${restricaoEspecial.motivo}: prazo ajustado para ${restricaoEspecial.prazoMax} meses.`,
-        );
+      if (mudouPrazo) {
+        if (isHomeEquity && prazoClamp === 240) {
+          toast.info("Home Equity: prazo ajustado para 240 meses.");
+        } else if (restricaoEspecial.ativo) {
+          toast.info(
+            `${restricaoEspecial.motivo}: prazo ajustado para ${restricaoEspecial.prazoMax} meses.`,
+          );
+        }
+      }
       return { ...prev, bancos_ids: bancosFiltrados, prazo: prazoClamp };
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [restricaoEspecial.ativo, restricaoEspecial.apenasBradesco, isHomeEquity, bancos]);
+  }, [restricaoEspecial.ativo, restricaoEspecial.apenasBradesco, isHomeEquity, bancos, prazoMaxOperacional]);
 
 
   // Mantém as despesas coladas no percentual e respeita o teto de LTV.
