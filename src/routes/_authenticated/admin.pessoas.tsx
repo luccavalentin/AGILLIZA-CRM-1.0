@@ -239,7 +239,7 @@ function PessoasPage() {
             </div>
 
             <div className="mt-4 overflow-x-auto rounded-lg border bg-background">
-              <Table>
+              <Table className="min-w-[760px]">
                 <TableHeader>
                   <TableRow>
                     <TableHead>Nome</TableHead>
