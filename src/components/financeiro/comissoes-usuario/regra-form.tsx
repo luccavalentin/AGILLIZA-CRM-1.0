@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Check, ChevronsUpDown, Loader2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -23,6 +23,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import { cn } from "@/lib/utils";
 import {
   GATILHOS_COMISSAO,
   TIPOS_VINCULO_COMISSAO,
@@ -32,6 +42,17 @@ import {
   type RegraComissaoUsuario,
   type TipoVinculoComissao,
 } from "@/lib/financeiro/comissoes-usuario.functions";
+
+const TIPOS_VINCULO_VALIDOS = new Set(TIPOS_VINCULO_COMISSAO.map((t) => t.valor));
+
+function inferirTipoVinculo(tipoPessoa: string | null | undefined): TipoVinculoComissao {
+  const slug = (tipoPessoa ?? "").toLowerCase();
+  if (TIPOS_VINCULO_VALIDOS.has(slug as TipoVinculoComissao)) {
+    return slug as TipoVinculoComissao;
+  }
+  return "outro";
+}
+
 
 interface Props {
   aberto: boolean;
@@ -43,6 +64,7 @@ interface Props {
 export function RegraComissaoUsuarioForm({ aberto, onFechar, tipoInicial, regra }: Props) {
   const qc = useQueryClient();
   const [usuarioId, setUsuarioId] = useState("");
+  const [usuarioOpen, setUsuarioOpen] = useState(false);
   const [tipoVinculo, setTipoVinculo] = useState<TipoVinculoComissao>(tipoInicial);
   const [gatilho, setGatilho] = useState<string>("contrato_emitido");
   const [baseCalculo, setBaseCalculo] = useState<"valor_contrato" | "percentual_repasse">(
@@ -95,6 +117,10 @@ export function RegraComissaoUsuarioForm({ aberto, onFechar, tipoInicial, regra 
     queryFn: () => listarBancosComissao(),
     enabled: aberto,
   });
+  const usuarioSelecionado = useMemo(
+    () => (usuarios ?? []).find((u) => u.id === usuarioId) ?? null,
+    [usuarios, usuarioId],
+  );
 
   const salvar = useMutation({
     mutationFn: () =>
@@ -137,18 +163,70 @@ export function RegraComissaoUsuarioForm({ aberto, onFechar, tipoInicial, regra 
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="sm:col-span-2 space-y-1.5">
             <Label>Usuário</Label>
-            <Select value={usuarioId} onValueChange={setUsuarioId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione o usuário comissionado" />
-              </SelectTrigger>
-              <SelectContent>
-                {(usuarios ?? []).map((u) => (
-                  <SelectItem key={u.id} value={u.id}>
-                    {u.nome ?? u.email ?? u.id}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Popover open={usuarioOpen} onOpenChange={setUsuarioOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  role="combobox"
+                  className={cn(
+                    "w-full justify-between font-normal",
+                    !usuarioSelecionado && "text-muted-foreground",
+                  )}
+                >
+                  <span className="truncate">
+                    {usuarioSelecionado
+                      ? usuarioSelecionado.nome ?? usuarioSelecionado.email ?? usuarioSelecionado.id
+                      : "Selecione ou digite o nome do usuário"}
+                  </span>
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent
+                className="w-[--radix-popover-trigger-width] p-0"
+                align="start"
+              >
+                <Command
+                  filter={(value, search) =>
+                    value.toLowerCase().includes(search.toLowerCase()) ? 1 : 0
+                  }
+                >
+                  <CommandInput placeholder="Digite nome, e-mail ou iniciais…" />
+                  <CommandList>
+                    <CommandEmpty>Nenhum usuário encontrado.</CommandEmpty>
+                    <CommandGroup>
+                      {(usuarios ?? []).map((u) => {
+                        const label = u.nome ?? u.email ?? u.id;
+                        return (
+                          <CommandItem
+                            key={u.id}
+                            value={`${label} ${u.email ?? ""}`}
+                            onSelect={() => {
+                              setUsuarioId(u.id);
+                              if (!regra) setTipoVinculo(inferirTipoVinculo(u.tipo_pessoa));
+                              setUsuarioOpen(false);
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                usuarioId === u.id ? "opacity-100" : "opacity-0",
+                              )}
+                            />
+                            <div className="flex flex-col">
+                              <span>{label}</span>
+                              {u.email && u.nome && (
+                                <span className="text-xs text-muted-foreground">{u.email}</span>
+                              )}
+                            </div>
+                          </CommandItem>
+                        );
+                      })}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
 
           <div className="space-y-1.5">
@@ -166,6 +244,7 @@ export function RegraComissaoUsuarioForm({ aberto, onFechar, tipoInicial, regra 
               </SelectContent>
             </Select>
           </div>
+
 
           <div className="space-y-1.5">
             <Label>Gatilho</Label>
