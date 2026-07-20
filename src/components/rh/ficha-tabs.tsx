@@ -78,38 +78,41 @@ export function FichaDocumentos({ funcionarioId }: { funcionarioId: string }) {
   }
 
   return (
-    <Chrome titulo="Documentos" atalho={{ to: "/rh/documentos", label: "Gerenciar" }}>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Tipo</TableHead>
-            <TableHead>Descrição</TableHead>
-            <TableHead>Arquivo</TableHead>
-            <TableHead>Validade</TableHead>
-            <TableHead className="w-[80px]"></TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {q.isLoading && <Empty>Carregando…</Empty>}
-          {!q.isLoading && (q.data?.length ?? 0) === 0 && (
-            <Empty>Nenhum documento anexado.</Empty>
-          )}
-          {q.data?.map((d) => (
-            <TableRow key={d.id}>
-              <TableCell className="font-medium">{d.tipo}</TableCell>
-              <TableCell className="max-w-[280px] truncate">{d.descricao ?? "—"}</TableCell>
-              <TableCell className="max-w-[220px] truncate">{d.arquivo_nome}</TableCell>
-              <TableCell>{fmtDate(d.validade)}</TableCell>
-              <TableCell className="text-right">
-                <Button size="icon" variant="ghost" onClick={() => baixar(d.arquivo_path)}>
-                  <Download className="h-4 w-4" />
-                </Button>
-              </TableCell>
+    <div className="space-y-4">
+      <ChecklistClt funcionarioId={funcionarioId} />
+      <Chrome titulo="Documentos anexados" atalho={{ to: "/rh/documentos", label: "Gerenciar" }}>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Tipo</TableHead>
+              <TableHead>Descrição</TableHead>
+              <TableHead>Arquivo</TableHead>
+              <TableHead>Validade</TableHead>
+              <TableHead className="w-[80px]"></TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </Chrome>
+          </TableHeader>
+          <TableBody>
+            {q.isLoading && <Empty>Carregando…</Empty>}
+            {!q.isLoading && (q.data?.length ?? 0) === 0 && (
+              <Empty>Nenhum documento anexado.</Empty>
+            )}
+            {q.data?.map((d) => (
+              <TableRow key={d.id}>
+                <TableCell className="font-medium">{d.tipo}</TableCell>
+                <TableCell className="max-w-[280px] truncate">{d.descricao ?? "—"}</TableCell>
+                <TableCell className="max-w-[220px] truncate">{d.arquivo_nome}</TableCell>
+                <TableCell>{fmtDate(d.validade)}</TableCell>
+                <TableCell className="text-right">
+                  <Button size="icon" variant="ghost" onClick={() => baixar(d.arquivo_path)}>
+                    <Download className="h-4 w-4" />
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Chrome>
+    </div>
   );
 }
 
