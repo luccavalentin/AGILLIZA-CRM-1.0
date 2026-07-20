@@ -150,22 +150,24 @@ export function SecaoOperacaoImovel({ ctx }: { ctx: SimulacaoCompletaCtx }) {
           </Select>
           <Erro erros={erros} campo="uf" />
         </Campo>
-        <div id="campo-cep-imovel">
-          <Campo label={<>CEP do imóvel {f.produto === "home_equity" && <Ast />}</>}>
-            <Input
-              inputMode="numeric"
-              autoComplete="postal-code"
-              value={f.cep_imovel ?? ""}
-              onChange={(e) => void alterarCepImovel(e.target.value)}
-              placeholder="00000-000"
-              aria-invalid={!!erros.cep_imovel}
-            />
-            <p className="text-xs text-muted-foreground">
-              Necessário em Home Equity para cálculo da garantia e seguro.
-            </p>
-            <Erro erros={erros} campo="cep_imovel" />
-          </Campo>
-        </div>
+        {f.produto === "home_equity" && (
+          <div id="campo-cep-imovel">
+            <Campo label={<>CEP do imóvel <Ast /></>}>
+              <Input
+                inputMode="numeric"
+                autoComplete="postal-code"
+                value={f.cep_imovel ?? ""}
+                onChange={(e) => void alterarCepImovel(e.target.value)}
+                placeholder="00000-000"
+                aria-invalid={!!erros.cep_imovel}
+              />
+              <p className="text-xs text-muted-foreground">
+                Necessário para cálculo da garantia e seguro em Home Equity.
+              </p>
+              <Erro erros={erros} campo="cep_imovel" />
+            </Campo>
+          </div>
+        )}
       </div>
 
       <Separator className="border-border/60" />
