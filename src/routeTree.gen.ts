@@ -27,7 +27,6 @@ import { Route as ClientePerfilRouteImport } from './routes/cliente.perfil'
 import { Route as ClienteLogoutRouteImport } from './routes/cliente.logout'
 import { Route as ClienteChatRouteImport } from './routes/cliente.chat'
 import { Route as ClienteAcompanharMinhaPropostaRouteImport } from './routes/cliente.acompanhar-minha-proposta'
-import { Route as AuthenticatedRhRouteImport } from './routes/_authenticated/rh'
 import { Route as AuthenticatedRelatoriosRouteImport } from './routes/_authenticated/relatorios'
 import { Route as AuthenticatedParceiroInicioRouteImport } from './routes/_authenticated/parceiro-inicio'
 import { Route as AuthenticatedMatriculasRouteImport } from './routes/_authenticated/matriculas'
@@ -35,6 +34,7 @@ import { Route as AuthenticatedLinksRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedFormulariosRouteImport } from './routes/_authenticated/formularios'
 import { Route as AuthenticatedDocumentosRouteImport } from './routes/_authenticated/documentos'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedRhIndexRouteImport } from './routes/_authenticated/rh.index'
 import { Route as AuthenticatedRelatoriosIndexRouteImport } from './routes/_authenticated/relatorios.index'
 import { Route as AuthenticatedFormulariosIndexRouteImport } from './routes/_authenticated/formularios.index'
 import { Route as ApiPublicSyncPropostasRouteImport } from './routes/api/public/sync-propostas'
@@ -208,11 +208,6 @@ const ClienteAcompanharMinhaPropostaRoute =
     path: '/acompanhar-minha-proposta',
     getParentRoute: () => ClienteRoute,
   } as any)
-const AuthenticatedRhRoute = AuthenticatedRhRouteImport.update({
-  id: '/rh',
-  path: '/rh',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 const AuthenticatedRelatoriosRoute = AuthenticatedRelatoriosRouteImport.update({
   id: '/relatorios',
   path: '/relatorios',
@@ -250,6 +245,11 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedRhIndexRoute = AuthenticatedRhIndexRouteImport.update({
+  id: '/rh/',
+  path: '/rh/',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedRelatoriosIndexRoute =
   AuthenticatedRelatoriosIndexRouteImport.update({
     id: '/',
@@ -275,80 +275,80 @@ const AuthenticatedVisaoGeralPainelRoute =
   } as any)
 const AuthenticatedRhRelatoriosRoute =
   AuthenticatedRhRelatoriosRouteImport.update({
-    id: '/relatorios',
-    path: '/relatorios',
-    getParentRoute: () => AuthenticatedRhRoute,
+    id: '/rh/relatorios',
+    path: '/rh/relatorios',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedRhPreviaFolhaRoute =
   AuthenticatedRhPreviaFolhaRouteImport.update({
-    id: '/previa-folha',
-    path: '/previa-folha',
-    getParentRoute: () => AuthenticatedRhRoute,
+    id: '/rh/previa-folha',
+    path: '/rh/previa-folha',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedRhHoleritesRoute =
   AuthenticatedRhHoleritesRouteImport.update({
-    id: '/holerites',
-    path: '/holerites',
-    getParentRoute: () => AuthenticatedRhRoute,
+    id: '/rh/holerites',
+    path: '/rh/holerites',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedRhFuncionariosRoute =
   AuthenticatedRhFuncionariosRouteImport.update({
-    id: '/funcionarios',
-    path: '/funcionarios',
-    getParentRoute: () => AuthenticatedRhRoute,
+    id: '/rh/funcionarios',
+    path: '/rh/funcionarios',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedRhFeriasRoute = AuthenticatedRhFeriasRouteImport.update({
-  id: '/ferias',
-  path: '/ferias',
-  getParentRoute: () => AuthenticatedRhRoute,
+  id: '/rh/ferias',
+  path: '/rh/ferias',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedRhFaltasOcorrenciasRoute =
   AuthenticatedRhFaltasOcorrenciasRouteImport.update({
-    id: '/faltas-ocorrencias',
-    path: '/faltas-ocorrencias',
-    getParentRoute: () => AuthenticatedRhRoute,
+    id: '/rh/faltas-ocorrencias',
+    path: '/rh/faltas-ocorrencias',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedRhDocumentosRoute =
   AuthenticatedRhDocumentosRouteImport.update({
-    id: '/documentos',
-    path: '/documentos',
-    getParentRoute: () => AuthenticatedRhRoute,
+    id: '/rh/documentos',
+    path: '/rh/documentos',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedRhDescontosRoute =
   AuthenticatedRhDescontosRouteImport.update({
-    id: '/descontos',
-    path: '/descontos',
-    getParentRoute: () => AuthenticatedRhRoute,
+    id: '/rh/descontos',
+    path: '/rh/descontos',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedRhConfiguracoesRoute =
   AuthenticatedRhConfiguracoesRouteImport.update({
-    id: '/configuracoes',
-    path: '/configuracoes',
-    getParentRoute: () => AuthenticatedRhRoute,
+    id: '/rh/configuracoes',
+    path: '/rh/configuracoes',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedRhBeneficiosRoute =
   AuthenticatedRhBeneficiosRouteImport.update({
-    id: '/beneficios',
-    path: '/beneficios',
-    getParentRoute: () => AuthenticatedRhRoute,
+    id: '/rh/beneficios',
+    path: '/rh/beneficios',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedRhAtestadosRoute =
   AuthenticatedRhAtestadosRouteImport.update({
-    id: '/atestados',
-    path: '/atestados',
-    getParentRoute: () => AuthenticatedRhRoute,
+    id: '/rh/atestados',
+    path: '/rh/atestados',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedRhAlteracoesSalariaisRoute =
   AuthenticatedRhAlteracoesSalariaisRouteImport.update({
-    id: '/alteracoes-salariais',
-    path: '/alteracoes-salariais',
-    getParentRoute: () => AuthenticatedRhRoute,
+    id: '/rh/alteracoes-salariais',
+    path: '/rh/alteracoes-salariais',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedRhAdiantamentosRoute =
   AuthenticatedRhAdiantamentosRouteImport.update({
-    id: '/adiantamentos',
-    path: '/adiantamentos',
-    getParentRoute: () => AuthenticatedRhRoute,
+    id: '/rh/adiantamentos',
+    path: '/rh/adiantamentos',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedRelatoriosTarefasRoute =
   AuthenticatedRelatoriosTarefasRouteImport.update({
@@ -643,15 +643,15 @@ const AuthenticatedAdminApisIaRoute =
   } as any)
 const AuthenticatedRhFuncionariosNovoRoute =
   AuthenticatedRhFuncionariosNovoRouteImport.update({
-    id: '/funcionarios_/novo',
-    path: '/funcionarios/novo',
-    getParentRoute: () => AuthenticatedRhRoute,
+    id: '/rh/funcionarios_/novo',
+    path: '/rh/funcionarios/novo',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedRhFuncionariosIdRoute =
   AuthenticatedRhFuncionariosIdRouteImport.update({
-    id: '/funcionarios_/$id',
-    path: '/funcionarios/$id',
-    getParentRoute: () => AuthenticatedRhRoute,
+    id: '/rh/funcionarios_/$id',
+    path: '/rh/funcionarios/$id',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedOperacionalTarefasKanbanRoute =
   AuthenticatedOperacionalTarefasKanbanRouteImport.update({
@@ -753,7 +753,6 @@ export interface FileRoutesByFullPath {
   '/matriculas': typeof AuthenticatedMatriculasRoute
   '/parceiro-inicio': typeof AuthenticatedParceiroInicioRoute
   '/relatorios': typeof AuthenticatedRelatoriosRouteWithChildren
-  '/rh': typeof AuthenticatedRhRouteWithChildren
   '/cliente/acompanhar-minha-proposta': typeof ClienteAcompanharMinhaPropostaRoute
   '/cliente/chat': typeof ClienteChatRoute
   '/cliente/logout': typeof ClienteLogoutRoute
@@ -830,6 +829,7 @@ export interface FileRoutesByFullPath {
   '/api/public/sync-propostas': typeof ApiPublicSyncPropostasRoute
   '/formularios/': typeof AuthenticatedFormulariosIndexRoute
   '/relatorios/': typeof AuthenticatedRelatoriosIndexRoute
+  '/rh/': typeof AuthenticatedRhIndexRoute
   '/crm/clientes/$id': typeof AuthenticatedCrmClientesIdRoute
   '/crm/clientes/novo': typeof AuthenticatedCrmClientesNovoRoute
   '/crm/scan-ia/$id': typeof AuthenticatedCrmScanIaIdRoute
@@ -860,7 +860,6 @@ export interface FileRoutesByTo {
   '/links': typeof AuthenticatedLinksRoute
   '/matriculas': typeof AuthenticatedMatriculasRoute
   '/parceiro-inicio': typeof AuthenticatedParceiroInicioRoute
-  '/rh': typeof AuthenticatedRhRouteWithChildren
   '/cliente/acompanhar-minha-proposta': typeof ClienteAcompanharMinhaPropostaRoute
   '/cliente/chat': typeof ClienteChatRoute
   '/cliente/logout': typeof ClienteLogoutRoute
@@ -937,6 +936,7 @@ export interface FileRoutesByTo {
   '/api/public/sync-propostas': typeof ApiPublicSyncPropostasRoute
   '/formularios': typeof AuthenticatedFormulariosIndexRoute
   '/relatorios': typeof AuthenticatedRelatoriosIndexRoute
+  '/rh': typeof AuthenticatedRhIndexRoute
   '/crm/clientes/$id': typeof AuthenticatedCrmClientesIdRoute
   '/crm/clientes/novo': typeof AuthenticatedCrmClientesNovoRoute
   '/crm/scan-ia/$id': typeof AuthenticatedCrmScanIaIdRoute
@@ -971,7 +971,6 @@ export interface FileRoutesById {
   '/_authenticated/matriculas': typeof AuthenticatedMatriculasRoute
   '/_authenticated/parceiro-inicio': typeof AuthenticatedParceiroInicioRoute
   '/_authenticated/relatorios': typeof AuthenticatedRelatoriosRouteWithChildren
-  '/_authenticated/rh': typeof AuthenticatedRhRouteWithChildren
   '/cliente/acompanhar-minha-proposta': typeof ClienteAcompanharMinhaPropostaRoute
   '/cliente/chat': typeof ClienteChatRoute
   '/cliente/logout': typeof ClienteLogoutRoute
@@ -1048,6 +1047,7 @@ export interface FileRoutesById {
   '/api/public/sync-propostas': typeof ApiPublicSyncPropostasRoute
   '/_authenticated/formularios/': typeof AuthenticatedFormulariosIndexRoute
   '/_authenticated/relatorios/': typeof AuthenticatedRelatoriosIndexRoute
+  '/_authenticated/rh/': typeof AuthenticatedRhIndexRoute
   '/_authenticated/crm/clientes_/$id': typeof AuthenticatedCrmClientesIdRoute
   '/_authenticated/crm/clientes_/novo': typeof AuthenticatedCrmClientesNovoRoute
   '/_authenticated/crm/scan-ia_/$id': typeof AuthenticatedCrmScanIaIdRoute
@@ -1082,7 +1082,6 @@ export interface FileRouteTypes {
     | '/matriculas'
     | '/parceiro-inicio'
     | '/relatorios'
-    | '/rh'
     | '/cliente/acompanhar-minha-proposta'
     | '/cliente/chat'
     | '/cliente/logout'
@@ -1159,6 +1158,7 @@ export interface FileRouteTypes {
     | '/api/public/sync-propostas'
     | '/formularios/'
     | '/relatorios/'
+    | '/rh/'
     | '/crm/clientes/$id'
     | '/crm/clientes/novo'
     | '/crm/scan-ia/$id'
@@ -1189,7 +1189,6 @@ export interface FileRouteTypes {
     | '/links'
     | '/matriculas'
     | '/parceiro-inicio'
-    | '/rh'
     | '/cliente/acompanhar-minha-proposta'
     | '/cliente/chat'
     | '/cliente/logout'
@@ -1266,6 +1265,7 @@ export interface FileRouteTypes {
     | '/api/public/sync-propostas'
     | '/formularios'
     | '/relatorios'
+    | '/rh'
     | '/crm/clientes/$id'
     | '/crm/clientes/novo'
     | '/crm/scan-ia/$id'
@@ -1299,7 +1299,6 @@ export interface FileRouteTypes {
     | '/_authenticated/matriculas'
     | '/_authenticated/parceiro-inicio'
     | '/_authenticated/relatorios'
-    | '/_authenticated/rh'
     | '/cliente/acompanhar-minha-proposta'
     | '/cliente/chat'
     | '/cliente/logout'
@@ -1376,6 +1375,7 @@ export interface FileRouteTypes {
     | '/api/public/sync-propostas'
     | '/_authenticated/formularios/'
     | '/_authenticated/relatorios/'
+    | '/_authenticated/rh/'
     | '/_authenticated/crm/clientes_/$id'
     | '/_authenticated/crm/clientes_/novo'
     | '/_authenticated/crm/scan-ia_/$id'
@@ -1534,13 +1534,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ClienteAcompanharMinhaPropostaRouteImport
       parentRoute: typeof ClienteRoute
     }
-    '/_authenticated/rh': {
-      id: '/_authenticated/rh'
-      path: '/rh'
-      fullPath: '/rh'
-      preLoaderRoute: typeof AuthenticatedRhRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/relatorios': {
       id: '/_authenticated/relatorios'
       path: '/relatorios'
@@ -1590,6 +1583,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/rh/': {
+      id: '/_authenticated/rh/'
+      path: '/rh'
+      fullPath: '/rh/'
+      preLoaderRoute: typeof AuthenticatedRhIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/relatorios/': {
       id: '/_authenticated/relatorios/'
       path: '/'
@@ -1620,94 +1620,94 @@ declare module '@tanstack/react-router' {
     }
     '/_authenticated/rh/relatorios': {
       id: '/_authenticated/rh/relatorios'
-      path: '/relatorios'
+      path: '/rh/relatorios'
       fullPath: '/rh/relatorios'
       preLoaderRoute: typeof AuthenticatedRhRelatoriosRouteImport
-      parentRoute: typeof AuthenticatedRhRoute
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/rh/previa-folha': {
       id: '/_authenticated/rh/previa-folha'
-      path: '/previa-folha'
+      path: '/rh/previa-folha'
       fullPath: '/rh/previa-folha'
       preLoaderRoute: typeof AuthenticatedRhPreviaFolhaRouteImport
-      parentRoute: typeof AuthenticatedRhRoute
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/rh/holerites': {
       id: '/_authenticated/rh/holerites'
-      path: '/holerites'
+      path: '/rh/holerites'
       fullPath: '/rh/holerites'
       preLoaderRoute: typeof AuthenticatedRhHoleritesRouteImport
-      parentRoute: typeof AuthenticatedRhRoute
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/rh/funcionarios': {
       id: '/_authenticated/rh/funcionarios'
-      path: '/funcionarios'
+      path: '/rh/funcionarios'
       fullPath: '/rh/funcionarios'
       preLoaderRoute: typeof AuthenticatedRhFuncionariosRouteImport
-      parentRoute: typeof AuthenticatedRhRoute
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/rh/ferias': {
       id: '/_authenticated/rh/ferias'
-      path: '/ferias'
+      path: '/rh/ferias'
       fullPath: '/rh/ferias'
       preLoaderRoute: typeof AuthenticatedRhFeriasRouteImport
-      parentRoute: typeof AuthenticatedRhRoute
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/rh/faltas-ocorrencias': {
       id: '/_authenticated/rh/faltas-ocorrencias'
-      path: '/faltas-ocorrencias'
+      path: '/rh/faltas-ocorrencias'
       fullPath: '/rh/faltas-ocorrencias'
       preLoaderRoute: typeof AuthenticatedRhFaltasOcorrenciasRouteImport
-      parentRoute: typeof AuthenticatedRhRoute
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/rh/documentos': {
       id: '/_authenticated/rh/documentos'
-      path: '/documentos'
+      path: '/rh/documentos'
       fullPath: '/rh/documentos'
       preLoaderRoute: typeof AuthenticatedRhDocumentosRouteImport
-      parentRoute: typeof AuthenticatedRhRoute
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/rh/descontos': {
       id: '/_authenticated/rh/descontos'
-      path: '/descontos'
+      path: '/rh/descontos'
       fullPath: '/rh/descontos'
       preLoaderRoute: typeof AuthenticatedRhDescontosRouteImport
-      parentRoute: typeof AuthenticatedRhRoute
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/rh/configuracoes': {
       id: '/_authenticated/rh/configuracoes'
-      path: '/configuracoes'
+      path: '/rh/configuracoes'
       fullPath: '/rh/configuracoes'
       preLoaderRoute: typeof AuthenticatedRhConfiguracoesRouteImport
-      parentRoute: typeof AuthenticatedRhRoute
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/rh/beneficios': {
       id: '/_authenticated/rh/beneficios'
-      path: '/beneficios'
+      path: '/rh/beneficios'
       fullPath: '/rh/beneficios'
       preLoaderRoute: typeof AuthenticatedRhBeneficiosRouteImport
-      parentRoute: typeof AuthenticatedRhRoute
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/rh/atestados': {
       id: '/_authenticated/rh/atestados'
-      path: '/atestados'
+      path: '/rh/atestados'
       fullPath: '/rh/atestados'
       preLoaderRoute: typeof AuthenticatedRhAtestadosRouteImport
-      parentRoute: typeof AuthenticatedRhRoute
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/rh/alteracoes-salariais': {
       id: '/_authenticated/rh/alteracoes-salariais'
-      path: '/alteracoes-salariais'
+      path: '/rh/alteracoes-salariais'
       fullPath: '/rh/alteracoes-salariais'
       preLoaderRoute: typeof AuthenticatedRhAlteracoesSalariaisRouteImport
-      parentRoute: typeof AuthenticatedRhRoute
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/rh/adiantamentos': {
       id: '/_authenticated/rh/adiantamentos'
-      path: '/adiantamentos'
+      path: '/rh/adiantamentos'
       fullPath: '/rh/adiantamentos'
       preLoaderRoute: typeof AuthenticatedRhAdiantamentosRouteImport
-      parentRoute: typeof AuthenticatedRhRoute
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/relatorios/tarefas': {
       id: '/_authenticated/relatorios/tarefas'
@@ -2054,17 +2054,17 @@ declare module '@tanstack/react-router' {
     }
     '/_authenticated/rh/funcionarios_/novo': {
       id: '/_authenticated/rh/funcionarios_/novo'
-      path: '/funcionarios/novo'
+      path: '/rh/funcionarios/novo'
       fullPath: '/rh/funcionarios/novo'
       preLoaderRoute: typeof AuthenticatedRhFuncionariosNovoRouteImport
-      parentRoute: typeof AuthenticatedRhRoute
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/rh/funcionarios_/$id': {
       id: '/_authenticated/rh/funcionarios_/$id'
-      path: '/funcionarios/$id'
+      path: '/rh/funcionarios/$id'
       fullPath: '/rh/funcionarios/$id'
       preLoaderRoute: typeof AuthenticatedRhFuncionariosIdRouteImport
-      parentRoute: typeof AuthenticatedRhRoute
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/operacional/tarefas_/kanban': {
       id: '/_authenticated/operacional/tarefas_/kanban'
@@ -2241,47 +2241,6 @@ const AuthenticatedRelatoriosRouteWithChildren =
     AuthenticatedRelatoriosRouteChildren,
   )
 
-interface AuthenticatedRhRouteChildren {
-  AuthenticatedRhAdiantamentosRoute: typeof AuthenticatedRhAdiantamentosRoute
-  AuthenticatedRhAlteracoesSalariaisRoute: typeof AuthenticatedRhAlteracoesSalariaisRoute
-  AuthenticatedRhAtestadosRoute: typeof AuthenticatedRhAtestadosRoute
-  AuthenticatedRhBeneficiosRoute: typeof AuthenticatedRhBeneficiosRoute
-  AuthenticatedRhConfiguracoesRoute: typeof AuthenticatedRhConfiguracoesRoute
-  AuthenticatedRhDescontosRoute: typeof AuthenticatedRhDescontosRoute
-  AuthenticatedRhDocumentosRoute: typeof AuthenticatedRhDocumentosRoute
-  AuthenticatedRhFaltasOcorrenciasRoute: typeof AuthenticatedRhFaltasOcorrenciasRoute
-  AuthenticatedRhFeriasRoute: typeof AuthenticatedRhFeriasRoute
-  AuthenticatedRhFuncionariosRoute: typeof AuthenticatedRhFuncionariosRoute
-  AuthenticatedRhHoleritesRoute: typeof AuthenticatedRhHoleritesRoute
-  AuthenticatedRhPreviaFolhaRoute: typeof AuthenticatedRhPreviaFolhaRoute
-  AuthenticatedRhRelatoriosRoute: typeof AuthenticatedRhRelatoriosRoute
-  AuthenticatedRhFuncionariosIdRoute: typeof AuthenticatedRhFuncionariosIdRoute
-  AuthenticatedRhFuncionariosNovoRoute: typeof AuthenticatedRhFuncionariosNovoRoute
-}
-
-const AuthenticatedRhRouteChildren: AuthenticatedRhRouteChildren = {
-  AuthenticatedRhAdiantamentosRoute: AuthenticatedRhAdiantamentosRoute,
-  AuthenticatedRhAlteracoesSalariaisRoute:
-    AuthenticatedRhAlteracoesSalariaisRoute,
-  AuthenticatedRhAtestadosRoute: AuthenticatedRhAtestadosRoute,
-  AuthenticatedRhBeneficiosRoute: AuthenticatedRhBeneficiosRoute,
-  AuthenticatedRhConfiguracoesRoute: AuthenticatedRhConfiguracoesRoute,
-  AuthenticatedRhDescontosRoute: AuthenticatedRhDescontosRoute,
-  AuthenticatedRhDocumentosRoute: AuthenticatedRhDocumentosRoute,
-  AuthenticatedRhFaltasOcorrenciasRoute: AuthenticatedRhFaltasOcorrenciasRoute,
-  AuthenticatedRhFeriasRoute: AuthenticatedRhFeriasRoute,
-  AuthenticatedRhFuncionariosRoute: AuthenticatedRhFuncionariosRoute,
-  AuthenticatedRhHoleritesRoute: AuthenticatedRhHoleritesRoute,
-  AuthenticatedRhPreviaFolhaRoute: AuthenticatedRhPreviaFolhaRoute,
-  AuthenticatedRhRelatoriosRoute: AuthenticatedRhRelatoriosRoute,
-  AuthenticatedRhFuncionariosIdRoute: AuthenticatedRhFuncionariosIdRoute,
-  AuthenticatedRhFuncionariosNovoRoute: AuthenticatedRhFuncionariosNovoRoute,
-}
-
-const AuthenticatedRhRouteWithChildren = AuthenticatedRhRoute._addFileChildren(
-  AuthenticatedRhRouteChildren,
-)
-
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedDocumentosRoute: typeof AuthenticatedDocumentosRoute
@@ -2290,7 +2249,6 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedMatriculasRoute: typeof AuthenticatedMatriculasRoute
   AuthenticatedParceiroInicioRoute: typeof AuthenticatedParceiroInicioRoute
   AuthenticatedRelatoriosRoute: typeof AuthenticatedRelatoriosRouteWithChildren
-  AuthenticatedRhRoute: typeof AuthenticatedRhRouteWithChildren
   AuthenticatedAdminApisIaRoute: typeof AuthenticatedAdminApisIaRoute
   AuthenticatedAdminAuditoriaRoute: typeof AuthenticatedAdminAuditoriaRoute
   AuthenticatedAdminBackupRoute: typeof AuthenticatedAdminBackupRoute
@@ -2323,7 +2281,21 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedOperacionalPropostasRoute: typeof AuthenticatedOperacionalPropostasRoute
   AuthenticatedOperacionalSimulacoesRoute: typeof AuthenticatedOperacionalSimulacoesRoute
   AuthenticatedOperacionalTarefasRoute: typeof AuthenticatedOperacionalTarefasRoute
+  AuthenticatedRhAdiantamentosRoute: typeof AuthenticatedRhAdiantamentosRoute
+  AuthenticatedRhAlteracoesSalariaisRoute: typeof AuthenticatedRhAlteracoesSalariaisRoute
+  AuthenticatedRhAtestadosRoute: typeof AuthenticatedRhAtestadosRoute
+  AuthenticatedRhBeneficiosRoute: typeof AuthenticatedRhBeneficiosRoute
+  AuthenticatedRhConfiguracoesRoute: typeof AuthenticatedRhConfiguracoesRoute
+  AuthenticatedRhDescontosRoute: typeof AuthenticatedRhDescontosRoute
+  AuthenticatedRhDocumentosRoute: typeof AuthenticatedRhDocumentosRoute
+  AuthenticatedRhFaltasOcorrenciasRoute: typeof AuthenticatedRhFaltasOcorrenciasRoute
+  AuthenticatedRhFeriasRoute: typeof AuthenticatedRhFeriasRoute
+  AuthenticatedRhFuncionariosRoute: typeof AuthenticatedRhFuncionariosRoute
+  AuthenticatedRhHoleritesRoute: typeof AuthenticatedRhHoleritesRoute
+  AuthenticatedRhPreviaFolhaRoute: typeof AuthenticatedRhPreviaFolhaRoute
+  AuthenticatedRhRelatoriosRoute: typeof AuthenticatedRhRelatoriosRoute
   AuthenticatedVisaoGeralPainelRoute: typeof AuthenticatedVisaoGeralPainelRoute
+  AuthenticatedRhIndexRoute: typeof AuthenticatedRhIndexRoute
   AuthenticatedCrmClientesIdRoute: typeof AuthenticatedCrmClientesIdRoute
   AuthenticatedCrmClientesNovoRoute: typeof AuthenticatedCrmClientesNovoRoute
   AuthenticatedCrmScanIaIdRoute: typeof AuthenticatedCrmScanIaIdRoute
@@ -2338,6 +2310,8 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedOperacionalSimulacoesNovaRoute: typeof AuthenticatedOperacionalSimulacoesNovaRoute
   AuthenticatedOperacionalTarefasCalendarioRoute: typeof AuthenticatedOperacionalTarefasCalendarioRoute
   AuthenticatedOperacionalTarefasKanbanRoute: typeof AuthenticatedOperacionalTarefasKanbanRoute
+  AuthenticatedRhFuncionariosIdRoute: typeof AuthenticatedRhFuncionariosIdRoute
+  AuthenticatedRhFuncionariosNovoRoute: typeof AuthenticatedRhFuncionariosNovoRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -2348,7 +2322,6 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedMatriculasRoute: AuthenticatedMatriculasRoute,
   AuthenticatedParceiroInicioRoute: AuthenticatedParceiroInicioRoute,
   AuthenticatedRelatoriosRoute: AuthenticatedRelatoriosRouteWithChildren,
-  AuthenticatedRhRoute: AuthenticatedRhRouteWithChildren,
   AuthenticatedAdminApisIaRoute: AuthenticatedAdminApisIaRoute,
   AuthenticatedAdminAuditoriaRoute: AuthenticatedAdminAuditoriaRoute,
   AuthenticatedAdminBackupRoute: AuthenticatedAdminBackupRoute,
@@ -2388,7 +2361,22 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedOperacionalSimulacoesRoute:
     AuthenticatedOperacionalSimulacoesRoute,
   AuthenticatedOperacionalTarefasRoute: AuthenticatedOperacionalTarefasRoute,
+  AuthenticatedRhAdiantamentosRoute: AuthenticatedRhAdiantamentosRoute,
+  AuthenticatedRhAlteracoesSalariaisRoute:
+    AuthenticatedRhAlteracoesSalariaisRoute,
+  AuthenticatedRhAtestadosRoute: AuthenticatedRhAtestadosRoute,
+  AuthenticatedRhBeneficiosRoute: AuthenticatedRhBeneficiosRoute,
+  AuthenticatedRhConfiguracoesRoute: AuthenticatedRhConfiguracoesRoute,
+  AuthenticatedRhDescontosRoute: AuthenticatedRhDescontosRoute,
+  AuthenticatedRhDocumentosRoute: AuthenticatedRhDocumentosRoute,
+  AuthenticatedRhFaltasOcorrenciasRoute: AuthenticatedRhFaltasOcorrenciasRoute,
+  AuthenticatedRhFeriasRoute: AuthenticatedRhFeriasRoute,
+  AuthenticatedRhFuncionariosRoute: AuthenticatedRhFuncionariosRoute,
+  AuthenticatedRhHoleritesRoute: AuthenticatedRhHoleritesRoute,
+  AuthenticatedRhPreviaFolhaRoute: AuthenticatedRhPreviaFolhaRoute,
+  AuthenticatedRhRelatoriosRoute: AuthenticatedRhRelatoriosRoute,
   AuthenticatedVisaoGeralPainelRoute: AuthenticatedVisaoGeralPainelRoute,
+  AuthenticatedRhIndexRoute: AuthenticatedRhIndexRoute,
   AuthenticatedCrmClientesIdRoute: AuthenticatedCrmClientesIdRoute,
   AuthenticatedCrmClientesNovoRoute: AuthenticatedCrmClientesNovoRoute,
   AuthenticatedCrmScanIaIdRoute: AuthenticatedCrmScanIaIdRoute,
@@ -2414,6 +2402,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
     AuthenticatedOperacionalTarefasCalendarioRoute,
   AuthenticatedOperacionalTarefasKanbanRoute:
     AuthenticatedOperacionalTarefasKanbanRoute,
+  AuthenticatedRhFuncionariosIdRoute: AuthenticatedRhFuncionariosIdRoute,
+  AuthenticatedRhFuncionariosNovoRoute: AuthenticatedRhFuncionariosNovoRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
