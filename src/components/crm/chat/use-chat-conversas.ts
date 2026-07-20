@@ -121,16 +121,22 @@ export function useChatConversas() {
   });
 
   // Sincroniza a lista em tempo real quando qualquer mensagem chega/sai.
+  // Rajadas (insert + update de read_at) são coalescidas em uma única
+  // invalidação por burst.
   useEffect(() => {
+    const { schedule, cancel } = createDebouncedInvalidator(() =>
+      qc.invalidateQueries({ queryKey }),
+    );
     const canal = supabase
       .channel("chat-conversas")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "cliente_app_mensagens" },
-        () => qc.invalidateQueries({ queryKey }),
+        schedule,
       )
       .subscribe();
     return () => {
+      cancel();
       supabase.removeChannel(canal);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
