@@ -340,9 +340,50 @@ export async function enviarSimulacaoImpl({
           ctx,
         );
 
-
         const dados = integ ?? simResp;
         const dadosApi = dados?.simulacao ?? dados?.data ?? dados;
+
+        // Detecção de retorno vazio: alguns bancos (ex.: Santander em Home
+        // Equity) respondem à /integracao sem processar a simulação, deixando
+        // valorParcelaBanco / taxaJurosAnoBanco / valorFinanciamentoBanco em
+        // null ou zero. Sem esse guard o registro fica marcado como "simulada"
+        // mas exibe zeros/vazio na UI. Marcamos como "erro" com mensagem clara
+        // e mostramos qualquer descricaoRespostaBanco devolvida pelo banco.
+        const parcelaRetorno =
+          dadosApi?.valorParcelaBanco ??
+          dadosApi?.valorParcelaBancoMax ??
+          dadosApi?.valorParcelaSimulacao;
+        const taxaRetorno =
+          dadosApi?.taxaJurosAnoBanco ?? dadosApi?.taxaCetAnoBanco;
+        const financRetorno =
+          dadosApi?.valorFinanciamentoBanco ?? dadosApi?.valorFinanciamentoBancoMax;
+        const semParcela = parcelaRetorno == null || Number(parcelaRetorno) <= 0;
+        const semTaxa = taxaRetorno == null || Number(taxaRetorno) <= 0;
+        const semFinanc = financRetorno == null || Number(financRetorno) <= 0;
+        if (semParcela && semTaxa && semFinanc) {
+          const desc = dadosApi?.descricaoRespostaBanco;
+          const motivoBanco =
+            typeof desc === "string" && desc.trim()
+              ? desc.trim()
+              : typeof desc === "object" && desc && "mensagem" in (desc as any)
+                ? String((desc as any).mensagem ?? "")
+                : "";
+          const msg = motivoBanco
+            ? `O banco não retornou valores para esta simulação: ${motivoBanco}`
+            : `O banco não retornou valores para esta operação. Verifique se ${String(b.nome_banco ?? "o banco")} opera este produto ou tente reenviar.`;
+          await supabase
+            .from("simulacao_bancos")
+            .update({
+              homefin_id_simulacao_banco: idSimulacao,
+              status_banco: "erro",
+              mensagem_banco: msg,
+              raw_response: dados,
+              simulado_em: new Date().toISOString(),
+            })
+            .eq("id", b.id);
+          return { banco_id: b.banco_id, status: "erro" as const, mensagem: msg };
+        }
+
 
         await supabase
           .from("simulacao_bancos")
