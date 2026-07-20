@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Receipt, Upload, Download } from "lucide-react";
+import { Receipt, Upload, Download, FileDown, Sparkles } from "lucide-react";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -39,6 +39,8 @@ import {
   gerarUrlAssinada,
   listarHolerites,
 } from "@/lib/rh/submodulos.functions";
+import { listarItensFolha, listarAjustes } from "@/lib/rh/folha.functions";
+import { gerarHoleritePdf } from "@/lib/rh/holerite-pdf";
 import { formatBRL } from "@/lib/financeiro/format";
 
 const MESES = [
@@ -57,6 +59,10 @@ function Pagina() {
   const fnList = useServerFn(listarHolerites);
   const fnAnexar = useServerFn(anexarHolerite);
   const fnUrl = useServerFn(gerarUrlAssinada);
+  const fnListarItens = useServerFn(listarItensFolha);
+  const fnListarAjustes = useServerFn(listarAjustes);
+
+
 
   const hoje = new Date();
   const [filtroAno, setFiltroAno] = useState(hoje.getFullYear());
