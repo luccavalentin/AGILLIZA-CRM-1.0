@@ -1,11 +1,13 @@
 import { createFileRoute, useParams } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Loader2 } from "lucide-react";
+import { Loader2, Printer } from "lucide-react";
+import { toast } from "sonner";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import {
   obterFuncionario,
   listarHistoricoFuncionario,
+  listarDependentes,
 } from "@/lib/rh/funcionarios.functions";
 import { FuncionarioForm } from "@/components/rh/funcionario-form";
 import {
@@ -18,6 +20,8 @@ import {
 import { FichaDependentes } from "@/components/rh/ficha-dependentes";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { gerarFichaFuncionarioPdf } from "@/lib/rh/ficha-pdf";
 
 export const Route = createFileRoute("/_authenticated/rh/funcionarios_/$id")({
   head: () => ({ meta: [{ title: "Funcionário — Agilliza" }] }),
