@@ -347,8 +347,8 @@ export function FuncionarioForm({ inicial }: { inicial?: Funcionario | null }) {
                               const next = { ...prev, user_id: u.id };
                               // Pré-cadastro: preenche automaticamente campos vazios com dados do usuário.
                               if (!prev.nome && u.nome) next.nome = u.nome;
-                              if (!prev.cpf && u.documento) next.cpf = u.documento;
-                              if (!prev.telefone && u.telefone) next.telefone = u.telefone;
+                              if (!prev.cpf && u.documento) next.cpf = mascararCPF(u.documento);
+                              if (!prev.telefone && u.telefone) next.telefone = mascararTelefone(u.telefone);
                               if (!prev.email_corporativo && u.email) next.email_corporativo = u.email;
                               return next;
                             });
