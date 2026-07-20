@@ -82,6 +82,12 @@ function Pagina() {
 
   return (
     <div className="space-y-4">
+      <div className="mx-auto flex w-full max-w-[1400px] items-center justify-end gap-2 px-3 pt-4 sm:px-4 md:px-6">
+        <Button variant="outline" onClick={imprimirFicha}>
+          <Printer className="mr-2 h-4 w-4" />
+          Imprimir ficha (PDF)
+        </Button>
+      </div>
       <FuncionarioForm inicial={q.data} />
 
       <div className="mx-auto w-full max-w-[1400px] px-3 pb-8 sm:px-4 md:px-6">
