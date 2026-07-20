@@ -438,7 +438,7 @@ function Pagina() {
                   <TableHead>Competência</TableHead>
                   <TableHead>Arquivo</TableHead>
                   <TableHead>Valor líquido</TableHead>
-                  <TableHead className="text-right w-[80px]">Ações</TableHead>
+                  <TableHead className="text-right w-[160px]">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -449,12 +449,27 @@ function Pagina() {
                     <TableCell className="max-w-[240px] truncate">{h.arquivo_nome}</TableCell>
                     <TableCell>{h.valor_liquido !== null ? formatBRL(h.valor_liquido) : "—"}</TableCell>
                     <TableCell className="text-right">
-                      <Button size="icon" variant="ghost" onClick={() => abrir(h.arquivo_path)}>
-                        <Download className="h-4 w-4" />
-                      </Button>
+                      <div className="flex justify-end gap-1">
+                        <Button size="icon" variant="ghost" title="Visualizar" onClick={() => abrir(h.arquivo_path)}>
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button size="icon" variant="ghost" title="Baixar" onClick={() => baixar(h.arquivo_path, h.arquivo_nome)}>
+                          <Download className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          title="Recalcular (CLT) e substituir"
+                          onClick={() => regerar.mutate({ funcionario_id: h.funcionario_id, mes: h.mes, ano: h.ano })}
+                          disabled={regerar.isPending}
+                        >
+                          <RefreshCw className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
+
                 {(!q.data || q.data.length === 0) && (
                   <TableRow>
                     <TableCell colSpan={5} className="py-10 text-center text-sm text-muted-foreground">
