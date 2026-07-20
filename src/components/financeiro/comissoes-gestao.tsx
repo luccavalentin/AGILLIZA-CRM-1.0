@@ -301,8 +301,9 @@ export function SecaoRegrasComissao() {
                   type="number"
                   min={0}
                   step={1000}
-                  value={form.faixa_min}
-                  onChange={(e) => setForm((f) => ({ ...f, faixa_min: Number(e.target.value) }))}
+                  placeholder="0"
+                  value={form.faixa_min || ""}
+                  onChange={(e) => setForm((f) => ({ ...f, faixa_min: e.target.value === "" ? 0 : Number(e.target.value) }))}
                 />
               </div>
               <div className="space-y-1.5">
