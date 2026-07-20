@@ -32,6 +32,176 @@ function num(v: unknown): number {
   return Number.isFinite(n) ? n : 0;
 }
 
+function soDigitos(v: unknown): string | undefined {
+  const s = String(v ?? "").replace(/\D/g, "");
+  return s.length ? s : undefined;
+}
+
+function textoLivreParaBanco(v: unknown): string | undefined {
+  const s = String(v ?? "")
+    .replace(/\((?:a|o)\)/gi, "")
+    .replace(/[(){}[\]]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return s || undefined;
+}
+
+function primeiroTexto(...valores: unknown[]): string | undefined {
+  for (const v of valores) {
+    const s = String(v ?? "").trim();
+    if (s) return s;
+  }
+  return undefined;
+}
+
+function normalizarSexo(v: unknown): string | undefined {
+  const s = String(v ?? "").trim().toUpperCase();
+  if (s === "M" || s.startsWith("MASC")) return "M";
+  if (s === "F" || s.startsWith("FEM")) return "F";
+  return undefined;
+}
+
+async function consultarCepSeguro(cep: string | undefined): Promise<{
+  logradouro?: string;
+  bairro?: string;
+  municipio?: string;
+  uf?: string;
+}> {
+  if (!cep || cep.length !== 8) return {};
+  try {
+    const resp = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+    const dados = await resp.json();
+    if (!resp.ok || dados?.erro) return {};
+    return {
+      logradouro: primeiroTexto(dados.logradouro),
+      bairro: primeiroTexto(dados.bairro),
+      municipio: primeiroTexto(dados.localidade),
+      uf: primeiroTexto(dados.uf),
+    };
+  } catch {
+    return {};
+  }
+}
+
+async function montarEnderecoParticipante(sim: any, cliente: any) {
+  const cep = soDigitos(
+    sim.cep_imovel ??
+      cliente?.imovel_cep ??
+      cliente?.cep ??
+      cliente?.endereco_cep,
+  );
+  const viaCep = await consultarCepSeguro(cep);
+  return {
+    cep,
+    logradouro: primeiroTexto(
+      cliente?.logradouro,
+      cliente?.endereco,
+      cliente?.imovel_logradouro,
+      viaCep.logradouro,
+    ),
+    numeroLogradouro: primeiroTexto(
+      cliente?.numero,
+      cliente?.numero_logradouro,
+      cliente?.imovel_numero,
+      "S/N",
+    ),
+    complementoLogradouro: primeiroTexto(cliente?.complemento, cliente?.imovel_complemento),
+    bairro: primeiroTexto(cliente?.bairro, cliente?.imovel_bairro, viaCep.bairro),
+    municipio: primeiroTexto(cliente?.cidade, cliente?.municipio, cliente?.imovel_cidade, viaCep.municipio),
+    uf: primeiroTexto(cliente?.uf, cliente?.imovel_uf, sim.uf, viaCep.uf),
+  };
+}
+
+async function garantirDadosParticipantesSimulacao({
+  sim,
+  cliente,
+  idOportunidade,
+  ctx,
+}: {
+  sim: any;
+  cliente: any;
+  idOportunidade: string;
+  ctx: { simulacao_id: string; correspondente_id: any };
+}) {
+  let participantes: any[] = [];
+  try {
+    const resp = await chamarIntegracao<any>(
+      `/oportunidade/${idOportunidade}`,
+      "GET",
+      undefined,
+      ctx,
+    );
+    const op = resp?.oportunidade ?? resp ?? {};
+    participantes = Array.isArray(op?.participantes) ? op.participantes : [];
+  } catch {
+    return;
+  }
+  if (participantes.length === 0) return;
+
+  const endereco = await montarEnderecoParticipante(sim, cliente);
+  const cpfTitular = soDigitos(sim.cpf_cnpj);
+  const cpfConjuge = soDigitos(sim.cpf_conjuge);
+
+  for (const part of participantes) {
+    if (!part?.idParticipante) continue;
+    const cpf = soDigitos(part?.cpfCnpj);
+    const ehConjuge = Boolean(cpf && cpfConjuge && cpf === cpfConjuge);
+    const ehTitular = !ehConjuge && (!cpf || !cpfTitular || cpf === cpfTitular);
+    if (!ehTitular && !ehConjuge) continue;
+
+    const payload: Record<string, unknown> = {
+      tipoSituacao: part?.tipoSituacao ?? "A",
+      nomeParticipante: part?.nomeParticipante ?? (ehConjuge ? sim.nome_conjuge : sim.nome_cliente),
+      tipoQualificacao: part?.tipoQualificacao ?? (ehConjuge ? "CJ" : "CO"),
+      tipoPessoa: part?.tipoPessoa ?? ((cpf?.length ?? cpfTitular?.length ?? 0) > 11 ? "J" : "F"),
+      cpfCnpj: cpf ?? (ehConjuge ? cpfConjuge : cpfTitular),
+      dataNascimento:
+        part?.dataNascimento ??
+        (ehConjuge ? sim.data_nascimento_conjuge : sim.data_nascimento) ??
+        cliente?.data_nascimento,
+      tipoEstadoCivil:
+        part?.tipoEstadoCivil ??
+        (ehConjuge ? sim.estado_civil_conjuge : sim.estado_civil) ??
+        cliente?.estado_civil,
+      tipoRegimeCasamento: part?.tipoRegimeCasamento ?? sim.regime_casamento ?? undefined,
+      tipoSexo: part?.tipoSexo ?? normalizarSexo(cliente?.sexo),
+      tipoDocumentoIdentidade:
+        part?.tipoDocumentoIdentidade ?? cliente?.tipo_documento_identidade ?? undefined,
+      numeroDocumento: part?.numeroDocumento ?? cliente?.numero_documento ?? undefined,
+      orgaoExpedidor: part?.orgaoExpedidor ?? cliente?.orgao_expedidor ?? undefined,
+      ufExpedicao: part?.ufExpedicao ?? cliente?.uf_expedicao ?? undefined,
+      dataExpedicao: part?.dataExpedicao ?? cliente?.data_expedicao ?? undefined,
+      nomeProfissao:
+        textoLivreParaBanco(cliente?.profissao) ||
+        textoLivreParaBanco(part?.nomeProfissao) ||
+        "Não informado",
+      nomeEmpresaProfissao:
+        textoLivreParaBanco(cliente?.empresa) ||
+        textoLivreParaBanco(part?.nomeEmpresaProfissao) ||
+        "Não informado",
+      nomeMae: part?.nomeMae ?? cliente?.mae ?? undefined,
+      renda: part?.renda ?? (ehConjuge ? sim.renda_conjuge : sim.renda_total) ?? cliente?.renda_total_declarada,
+      email: part?.email ?? (ehConjuge ? sim.email_conjuge : sim.email) ?? cliente?.email,
+      celular: part?.celular ?? soDigitos(ehConjuge ? sim.celular_conjuge : sim.celular),
+      utilizaFgts: part?.utilizaFgts ?? sim.utiliza_fgts ?? "N",
+      fgAutorizacaoDados: true,
+      ...endereco,
+    };
+
+    try {
+      await chamarIntegracao<any>(
+        `/oportunidade/${idOportunidade}/participante/${part.idParticipante}`,
+        "PUT",
+        payload,
+        ctx,
+      );
+    } catch {
+      // A falha na complementação não deve impedir os demais bancos; o retorno
+      // vazio será tratado por banco e permitirá reenvio após corrigir cadastro.
+    }
+  }
+}
+
 export async function enviarSimulacaoImpl({
   simulacaoId,
   userId,
@@ -164,6 +334,21 @@ export async function enviarSimulacaoImpl({
     // Identificadores do parceiro/regional/usuário vêm da autenticação da integração
     const auth = await obterToken();
 
+    let cliente: any = null;
+    if (sim.cliente_id) {
+      const { data } = await supabase
+        .from("clientes")
+        .select("*")
+        .eq("id", sim.cliente_id)
+        .maybeSingle();
+      cliente = data;
+    }
+    if (sim.produto === "home_equity" && !soDigitos(sim.cep_imovel ?? cliente?.imovel_cep ?? cliente?.cep)) {
+      throw new Error(
+        "Informe o CEP do imóvel antes de reenviar Home Equity ao banco. Sem esse dado o banco não calcula a garantia e retorna a simulação vazia.",
+      );
+    }
+
     // 1) Oportunidade (idempotência: reutiliza se já existe)
     let idOportunidade = sim.homefin_id_oportunidade as string | null;
 
@@ -254,6 +439,10 @@ export async function enviarSimulacaoImpl({
           e instanceof Error ? e.message : String(e),
         );
       }
+    }
+
+    if (idOportunidade) {
+      await garantirDadosParticipantesSimulacao({ sim, cliente, idOportunidade, ctx });
     }
 
 

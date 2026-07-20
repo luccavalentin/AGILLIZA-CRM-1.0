@@ -32,6 +32,8 @@ export function patchSelecionarClienteCRM(prev: Form, c: any): {
     data_nascimento: c.data_nascimento ?? "",
     estado_civil: ec || prev.estado_civil,
     renda_total: c.renda_total_declarada ?? prev.renda_total,
+    cep_imovel: c.imovel_cep ?? prev.cep_imovel,
+    uf: c.imovel_uf ?? prev.uf,
     possui_conjuge: temConjuge,
     compoe_renda: prev.compoe_renda || (temConjuge && Number(c.conjuge_renda) > 0),
     nome_conjuge: c.conjuge_nome ?? "",

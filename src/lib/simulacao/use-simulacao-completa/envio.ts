@@ -7,7 +7,7 @@
  * ciclo de vida do React e serem testáveis isoladamente.
  */
 import { toast } from "sonner";
-import { completaSchema } from "@/lib/simulacao/schemas";
+import { completaSchema, validarCepImovelHomeEquity } from "@/lib/simulacao/schemas";
 import {
   criarSimulacao,
   enviarSimulacaoBanco,
@@ -30,6 +30,22 @@ interface CtxBase {
   setSimulacaoResultadoIdPrice: (v: string | null) => void;
 }
 
+function bloquearSemCepHomeEquity(f: Form, setErros: (v: Record<string, string>) => void): boolean {
+  const msg = validarCepImovelHomeEquity(f as any);
+  if (!msg) return false;
+  setErros({ cep_imovel: msg });
+  toast.error(msg);
+  if (typeof document !== "undefined") {
+    const el = document.getElementById("campo-cep-imovel");
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    setTimeout(() => {
+      const input = el?.querySelector("input") as HTMLInputElement | null;
+      input?.focus();
+    }, 300);
+  }
+  return true;
+}
+
 /**
  * Envio no modo "Ambos": cria uma simulação SAC (com renda_total) e uma
  * simulação PRICE (com renda_price). Cada simulação usa somente os bancos
@@ -38,6 +54,7 @@ interface CtxBase {
  */
 export async function executarEnvioAmbos(ctx: CtxBase): Promise<void> {
   const { f, idOperacao, setErros, setEnviando, setConcluidos } = ctx;
+  if (bloquearSemCepHomeEquity(f, setErros)) return;
   const novosErros: Record<string, string> = {};
   if (!(Number(f.renda_price) > 0)) {
     novosErros.renda_price = "Informe a renda para o sistema PRICE.";
@@ -188,6 +205,7 @@ export async function executarEnvioAmbos(ctx: CtxBase): Promise<void> {
 /** Envio padrão (SAC ou PRICE isolado). */
 export async function executarEnvioSimples(ctx: CtxBase): Promise<void> {
   const { f, idOperacao, modoProposta, router, setErros, setEnviando, setConcluidos } = ctx;
+  if (bloquearSemCepHomeEquity(f, setErros)) return;
   const parsed = completaSchema.safeParse({ ...f, id_operacao_homefin: idOperacao });
   if (!parsed.success) {
     toast.error("Revise os campos destacados.");
