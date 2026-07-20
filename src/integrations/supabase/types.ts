@@ -2512,6 +2512,8 @@ export type Database = {
           fornecedor: string | null
           id: string
           numero: string | null
+          origem_ref: string | null
+          origem_tipo: string | null
           parceiro_id: string | null
           parcela_numero: number | null
           parcelas: number | null
@@ -2543,6 +2545,8 @@ export type Database = {
           fornecedor?: string | null
           id?: string
           numero?: string | null
+          origem_ref?: string | null
+          origem_tipo?: string | null
           parceiro_id?: string | null
           parcela_numero?: number | null
           parcelas?: number | null
@@ -2574,6 +2578,8 @@ export type Database = {
           fornecedor?: string | null
           id?: string
           numero?: string | null
+          origem_ref?: string | null
+          origem_tipo?: string | null
           parceiro_id?: string | null
           parcela_numero?: number | null
           parcelas?: number | null
@@ -4937,6 +4943,66 @@ export type Database = {
           },
         ]
       }
+      rh_documentos_checklist: {
+        Row: {
+          correspondente_id: string
+          created_at: string
+          documento_id: string | null
+          funcionario_id: string
+          id: string
+          obrigatorio: boolean
+          observacoes: string | null
+          rotulo: string
+          status: string
+          tipo: string
+          updated_at: string
+          validade: string | null
+        }
+        Insert: {
+          correspondente_id: string
+          created_at?: string
+          documento_id?: string | null
+          funcionario_id: string
+          id?: string
+          obrigatorio?: boolean
+          observacoes?: string | null
+          rotulo: string
+          status?: string
+          tipo: string
+          updated_at?: string
+          validade?: string | null
+        }
+        Update: {
+          correspondente_id?: string
+          created_at?: string
+          documento_id?: string | null
+          funcionario_id?: string
+          id?: string
+          obrigatorio?: boolean
+          observacoes?: string | null
+          rotulo?: string
+          status?: string
+          tipo?: string
+          updated_at?: string
+          validade?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rh_documentos_checklist_documento_id_fkey"
+            columns: ["documento_id"]
+            isOneToOne: false
+            referencedRelation: "rh_documentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rh_documentos_checklist_funcionario_id_fkey"
+            columns: ["funcionario_id"]
+            isOneToOne: false
+            referencedRelation: "rh_funcionarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rh_ferias: {
         Row: {
           abono_dias: number
@@ -5295,11 +5361,14 @@ export type Database = {
           data_nascimento: string | null
           deletado_em: string | null
           departamento_id: string | null
+          dia_pagamento_adiantamento: number | null
+          dia_pagamento_salario: number | null
           email_corporativo: string | null
           email_pessoal: string | null
           estado_civil: string | null
           fim_experiencia: string | null
           foto_url: string | null
+          gerar_contas_pagar_automatico: boolean
           gestor_id: string | null
           id: string
           jornada_descricao: string | null
@@ -5354,11 +5423,14 @@ export type Database = {
           data_nascimento?: string | null
           deletado_em?: string | null
           departamento_id?: string | null
+          dia_pagamento_adiantamento?: number | null
+          dia_pagamento_salario?: number | null
           email_corporativo?: string | null
           email_pessoal?: string | null
           estado_civil?: string | null
           fim_experiencia?: string | null
           foto_url?: string | null
+          gerar_contas_pagar_automatico?: boolean
           gestor_id?: string | null
           id?: string
           jornada_descricao?: string | null
@@ -5413,11 +5485,14 @@ export type Database = {
           data_nascimento?: string | null
           deletado_em?: string | null
           departamento_id?: string | null
+          dia_pagamento_adiantamento?: number | null
+          dia_pagamento_salario?: number | null
           email_corporativo?: string | null
           email_pessoal?: string | null
           estado_civil?: string | null
           fim_experiencia?: string | null
           foto_url?: string | null
+          gerar_contas_pagar_automatico?: boolean
           gestor_id?: string | null
           id?: string
           jornada_descricao?: string | null
@@ -6863,6 +6938,11 @@ export type Database = {
             }
             Returns: string
           }
+      rh_atualizar_status_experiencia: { Args: never; Returns: number }
+      rh_semear_checklist_clt: {
+        Args: { _func_id: string }
+        Returns: undefined
+      }
       usuario_escopo_dados: {
         Args: { _modulo: string; _user_id: string }
         Returns: Database["public"]["Enums"]["escopo_dados"]

@@ -1,11 +1,13 @@
 import { createFileRoute, useParams } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Loader2 } from "lucide-react";
+import { Loader2, Printer } from "lucide-react";
+import { toast } from "sonner";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import {
   obterFuncionario,
   listarHistoricoFuncionario,
+  listarDependentes,
 } from "@/lib/rh/funcionarios.functions";
 import { FuncionarioForm } from "@/components/rh/funcionario-form";
 import {
@@ -18,6 +20,8 @@ import {
 import { FichaDependentes } from "@/components/rh/ficha-dependentes";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { gerarFichaFuncionarioPdf } from "@/lib/rh/ficha-pdf";
 
 export const Route = createFileRoute("/_authenticated/rh/funcionarios_/$id")({
   head: () => ({ meta: [{ title: "Funcionário — Agilliza" }] }),
@@ -29,6 +33,7 @@ function Pagina() {
   const { id } = useParams({ strict: false }) as { id: string };
   const fnObter = useServerFn(obterFuncionario);
   const fnHist = useServerFn(listarHistoricoFuncionario);
+  const fnDeps = useServerFn(listarDependentes);
 
   const q = useQuery({
     queryKey: ["rh-funcionario", id],
@@ -39,6 +44,30 @@ function Pagina() {
     queryKey: ["rh-funcionario-historico", id],
     queryFn: () => fnHist({ data: { funcionario_id: id } }),
   });
+
+  async function imprimirFicha() {
+    if (!q.data) return;
+    try {
+      const deps = await fnDeps({ data: { funcionario_id: id } });
+      const { blob, filename } = gerarFichaFuncionarioPdf({
+        funcionario: q.data,
+        dependentes: deps.map((d) => ({
+          nome: d.nome,
+          parentesco: d.parentesco,
+          cpf: d.cpf,
+          data_nascimento: d.data_nascimento,
+        })),
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha ao gerar a ficha.");
+    }
+  }
 
   if (q.isLoading) {
     return (
@@ -53,6 +82,12 @@ function Pagina() {
 
   return (
     <div className="space-y-4">
+      <div className="mx-auto flex w-full max-w-[1400px] items-center justify-end gap-2 px-3 pt-4 sm:px-4 md:px-6">
+        <Button variant="outline" onClick={imprimirFicha}>
+          <Printer className="mr-2 h-4 w-4" />
+          Imprimir ficha (PDF)
+        </Button>
+      </div>
       <FuncionarioForm inicial={q.data} />
 
       <div className="mx-auto w-full max-w-[1400px] px-3 pb-8 sm:px-4 md:px-6">
