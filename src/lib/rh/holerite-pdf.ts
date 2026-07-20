@@ -164,7 +164,7 @@ export function gerarHoleritePdf(input: HoleriteInput): { blob: Blob; filename: 
       fontStyle: "bold",
     },
     bodyStyles: { fontSize: 9, textColor: P.destaque as any, cellPadding: 5 },
-    alternateRowStyles: { fillColor: P.zebra as any },
+    alternateRowStyles: { fillColor: P.card as any },
     columnStyles: {
       0: { cellWidth: (pageW - 64) * 0.32 },
       1: { cellWidth: (pageW - 64) * 0.18, halign: "right" },
