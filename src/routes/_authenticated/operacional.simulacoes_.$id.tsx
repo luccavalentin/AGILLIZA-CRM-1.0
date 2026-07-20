@@ -74,7 +74,17 @@ function Pagina() {
 
   async function reenviar() {
     try {
-      await enviarSimulacaoBanco({ data: { simulacao_id: id } });
+      const bancosSelecionados = (data?.bancos ?? [])
+        .filter((b: any) => b.selecionado !== false)
+        .map((b: any) => b.banco_id)
+        .filter(Boolean);
+      if (bancosSelecionados.length > 0) {
+        for (const bancoId of bancosSelecionados) {
+          await enviarSimulacaoBanco({ data: { simulacao_id: id, banco_ids: [bancoId] } });
+        }
+      } else {
+        await enviarSimulacaoBanco({ data: { simulacao_id: id } });
+      }
       toast.success("Reenviado ao banco.");
       qc.invalidateQueries({ queryKey: ["simulacao", id] });
     } catch (e) {
@@ -100,7 +110,17 @@ function Pagina() {
     try {
       await inverterTitularSimulacao({ data: { id } });
       if (reenviarBancos) {
-        await enviarSimulacaoBanco({ data: { simulacao_id: id } });
+        const bancosSelecionados = (data?.bancos ?? [])
+          .filter((b: any) => b.selecionado !== false)
+          .map((b: any) => b.banco_id)
+          .filter(Boolean);
+        if (bancosSelecionados.length > 0) {
+          for (const bancoId of bancosSelecionados) {
+            await enviarSimulacaoBanco({ data: { simulacao_id: id, banco_ids: [bancoId] } });
+          }
+        } else {
+          await enviarSimulacaoBanco({ data: { simulacao_id: id } });
+        }
         toast.success("Titular invertido e simulação reenviada aos bancos.");
       } else {
         toast.success("Titular e cônjuge invertidos.");
@@ -122,7 +142,7 @@ function Pagina() {
 
   function editar() {
     // "Editar" gera uma NOVA simulação a partir dos dados desta, sem herdar
-    // IDs, número, operação HomeFin, e-mail verificado, PDFs ou bancos já
+    // IDs, número, operação bancária, e-mail verificado, PDFs ou bancos já
     // simulados. Usa o mesmo fluxo de "Duplicar" (mapeamento explícito de
     // campos no wizard) para garantir isolamento total da simulação anterior.
     router.navigate({

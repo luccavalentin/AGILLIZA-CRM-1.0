@@ -123,8 +123,7 @@ export async function executarEnvioAmbos(ctx: CtxBase): Promise<void> {
         },
       });
       idsGerados.push(id);
-      await Promise.all(
-        f.bancos_sac_ids.map(async (bid: string) => {
+      for (const bid of f.bancos_sac_ids) {
           try {
             await enviarSimulacaoBanco({ data: { simulacao_id: id, banco_ids: [bid] } });
           } catch (e) {
@@ -137,8 +136,7 @@ export async function executarEnvioAmbos(ctx: CtxBase): Promise<void> {
             done++;
             setConcluidos(done);
           }
-        }),
-      );
+      }
     }
 
     // Simulação PRICE (usa a renda específica para PRICE como renda_total)
@@ -171,8 +169,7 @@ export async function executarEnvioAmbos(ctx: CtxBase): Promise<void> {
         },
       });
       idsGerados.push(id);
-      await Promise.all(
-        f.bancos_price_ids.map(async (bid: string) => {
+      for (const bid of f.bancos_price_ids) {
           try {
             await enviarSimulacaoBanco({ data: { simulacao_id: id, banco_ids: [bid] } });
           } catch (e) {
@@ -185,8 +182,7 @@ export async function executarEnvioAmbos(ctx: CtxBase): Promise<void> {
             done++;
             setConcluidos(done);
           }
-        }),
-      );
+      }
     }
 
     sessionStorage.removeItem("simulacao_wizard");
@@ -240,8 +236,7 @@ export async function executarEnvioSimples(ctx: CtxBase): Promise<void> {
       setConcluidos(1);
     } else {
       let feitos = 0;
-      await Promise.all(
-        idsBancos.map(async (bid: string) => {
+      for (const bid of idsBancos) {
           try {
             await enviarSimulacaoBanco({ data: { simulacao_id: id, banco_ids: [bid] } });
           } catch (e) {
@@ -254,8 +249,7 @@ export async function executarEnvioSimples(ctx: CtxBase): Promise<void> {
             feitos++;
             setConcluidos(feitos);
           }
-        }),
-      );
+      }
     }
 
     // Fluxo "Nova Proposta": após simular, cria a proposta e redireciona.

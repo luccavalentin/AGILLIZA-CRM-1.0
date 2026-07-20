@@ -61,6 +61,45 @@ function normalizarSexo(v: unknown): string | undefined {
   return undefined;
 }
 
+const ROTA_SANTANDER_HOME_EQUITY = {
+  idOperacao: 6,
+  idBanco: 96,
+  codigoBanco: 9004,
+  nomeBanco: "Somahome",
+};
+
+function codigoBancoNormalizado(banco: any): string {
+  return String(banco?.codigo_banco ?? banco?.codigoBanco ?? "").replace(/^0+/, "");
+}
+
+function usarRotaSantanderHomeEquity(sim: any, banco: any): boolean {
+  const codigo = codigoBancoNormalizado(banco);
+  const nome = String(banco?.nome_banco ?? banco?.nomeBanco ?? "").toLowerCase();
+  return sim?.produto === "home_equity" && (codigo === "33" || nome.includes("santander"));
+}
+
+function bancoPayloadOportunidade(sim: any, banco: any) {
+  if (usarRotaSantanderHomeEquity(sim, banco)) {
+    return {
+      idBanco: ROTA_SANTANDER_HOME_EQUITY.idBanco,
+      codigoBanco: ROTA_SANTANDER_HOME_EQUITY.codigoBanco,
+      nomeBanco: ROTA_SANTANDER_HOME_EQUITY.nomeBanco,
+      flagSimulacao: "S",
+    };
+  }
+  return {
+    idBanco: banco.homefin_id_banco,
+    codigoBanco: banco.codigo_banco,
+    nomeBanco: banco.nome_banco,
+    flagSimulacao: "S",
+  };
+}
+
+function idBancoParaSimulacao(sim: any, banco: any): number | null {
+  if (usarRotaSantanderHomeEquity(sim, banco)) return ROTA_SANTANDER_HOME_EQUITY.idBanco;
+  return banco.homefin_id_banco ?? null;
+}
+
 async function consultarCepSeguro(cep: string | undefined): Promise<{
   logradouro?: string;
   bairro?: string;
@@ -274,7 +313,7 @@ export async function enviarSimulacaoImpl({
   const correspondente_id = sim.correspondente_id;
 
   // ===== Financiar despesas =====
-  // A API HomeFin espera a flag como string "S"/"N" (nunca booleano) e, quando
+  // A API da integração espera a flag como string "S"/"N" (nunca booleano) e, quando
   // marcada, os valores de despesas e o total financiado (financiamento + despesas).
   const financiarDespesas = Boolean(sim.fg_financiar_despesas);
   const fgFinanciarDespesas = financiarDespesas ? "S" : "N";
@@ -377,13 +416,25 @@ export async function enviarSimulacaoImpl({
       }
     }
 
+    const usaRotaSantanderHomeEquity =
+      bancos.length === 1 && usarRotaSantanderHomeEquity(sim, bancos[0]);
+
     // 1) Oportunidade (idempotência: reutiliza se já existe)
-    let idOportunidade = sim.homefin_id_oportunidade as string | null;
+    // Santander em Home Equity usa a rota operacional Somahome; oportunidades
+    // antigas criadas como Home Equity comum ficam sem retorno. Para reenvio,
+    // criamos uma nova oportunidade na operação correta.
+    let idOportunidade = usaRotaSantanderHomeEquity
+      ? null
+      : (sim.homefin_id_oportunidade as string | null);
 
     // Campos que dependem da simulação atual e podem ter mudado desde a
     // primeira criação da oportunidade (ex.: usuário marcou "financiar despesas"
     // e reenviou). Precisam ser sincronizados também no reenvio, senão o banco
     // continua recebendo os valores antigos.
+    const idOperacaoIntegracao = usaRotaSantanderHomeEquity
+      ? ROTA_SANTANDER_HOME_EQUITY.idOperacao
+      : sim.id_operacao_homefin;
+
     const dadosOportunidade: Record<string, unknown> = {
       tipoImovel: { id: sim.tipo_imovel },
       usoImovel: { id: sim.uso_imovel },
@@ -412,19 +463,14 @@ export async function enviarSimulacaoImpl({
 
     if (!idOportunidade) {
       const payload: Record<string, unknown> = {
-        operacao: { idOperacao: String(sim.id_operacao_homefin) },
+        operacao: { idOperacao: String(idOperacaoIntegracao) },
         ...(auth.idRegional ? { regional: { idRegional: auth.idRegional } } : {}),
         ...(auth.idParceiro ? { parceiro: { idParceiro: auth.idParceiro } } : {}),
         ...(auth.idUsuarioParceiro
           ? { usuarioParceiro: { idUsuarioParceiro: auth.idUsuarioParceiro } }
           : {}),
         ...dadosOportunidade,
-        bancos: bancosSelecionados.map((b: any) => ({
-          idBanco: b.homefin_id_banco,
-          codigoBanco: b.codigo_banco,
-          nomeBanco: b.nome_banco,
-          flagSimulacao: "S",
-        })),
+        bancos: bancos.map((b: any) => bancoPayloadOportunidade(sim, b)),
         cpfCnpj: (sim.cpf_cnpj ?? "").replace(/\D/g, ""),
         nome: sim.nome_cliente,
         rendaTotal: num(sim.renda_total),
@@ -497,14 +543,14 @@ export async function enviarSimulacaoImpl({
           valorFinanciamento: num(sim.valor_financiamento),
           prazo: num(sim.prazo),
           codigoSistemaAmortizacaoBanco: { id: sim.sistema_amortizacao ?? "S" },
-          banco: { idBanco: b.homefin_id_banco },
+          banco: { idBanco: idBancoParaSimulacao(sim, b) },
           fgFinanciarDespesas,
           valorDespesasFinanciadas,
           valorTotalFinanciamento,
           fgAutorizacaoDados: true,
         };
         console.log(
-          "Payload enviado para criar simulação HomeFin:",
+          "Payload enviado para criar simulação bancária:",
           JSON.stringify(simPayload),
         );
         const simResp = await chamarIntegracao<any>(
@@ -515,7 +561,7 @@ export async function enviarSimulacaoImpl({
         );
         const idSimulacao = String(simResp?.idSimulacao ?? "");
 
-        // PUT completo da simulação: garante que a HomeFin persista os campos de
+        // PUT completo da simulação: garante que a integração persista os campos de
         // despesas financiadas ANTES da integração bancária. Enviamos o payload
         // completo (não parcial) para não apagar/ignorar demais campos.
         const putPayload = {
@@ -529,7 +575,7 @@ export async function enviarSimulacaoImpl({
           fgAutorizacaoDados: true,
         };
         console.log(
-          "Payload enviado para atualizar simulação HomeFin:",
+          "Payload enviado para atualizar simulação bancária:",
           JSON.stringify(putPayload),
           "fgFinanciarDespesas:",
           fgFinanciarDespesas,
@@ -545,11 +591,11 @@ export async function enviarSimulacaoImpl({
           ctx,
         );
         console.log(
-          "Retorno atualização simulação HomeFin:",
+          "Retorno atualização simulação bancária:",
           JSON.stringify(putResp),
         );
 
-        // Confirma que a HomeFin persistiu a flag antes de integrar ao banco.
+        // Confirma que a integração persistiu a flag antes de enviar ao banco.
         if (financiarDespesas) {
           const persistido =
             putResp?.simulacao?.fgFinanciarDespesas ?? putResp?.fgFinanciarDespesas;
