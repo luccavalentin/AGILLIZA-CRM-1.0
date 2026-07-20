@@ -318,10 +318,7 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
         const b = (bancos ?? []).find((x) => x.id === id);
         return b ? aceitaBancoNaOperacao(b) : false;
       });
-      const prazoClamp =
-        restricaoEspecial.ativo && prev.prazo > restricaoEspecial.prazoMax
-          ? restricaoEspecial.prazoMax
-          : prev.prazo;
+      const prazoClamp = Math.min(prev.prazo, prazoMaxOperacional);
       const mudouBancos = bancosFiltrados.length !== prev.bancos_ids.length;
       const mudouPrazo = prazoClamp !== prev.prazo;
       if (!mudouBancos && !mudouPrazo) return prev;
@@ -336,14 +333,19 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
           toast.info("Bancos incompatíveis com a operação foram removidos.");
         }
       }
-      if (mudouPrazo)
-        toast.info(
-          `${restricaoEspecial.motivo}: prazo ajustado para ${restricaoEspecial.prazoMax} meses.`,
-        );
+      if (mudouPrazo) {
+        if (isHomeEquity && prazoClamp === 240) {
+          toast.info("Home Equity: prazo ajustado para 240 meses.");
+        } else if (restricaoEspecial.ativo) {
+          toast.info(
+            `${restricaoEspecial.motivo}: prazo ajustado para ${restricaoEspecial.prazoMax} meses.`,
+          );
+        }
+      }
       return { ...prev, bancos_ids: bancosFiltrados, prazo: prazoClamp };
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [restricaoEspecial.ativo, restricaoEspecial.apenasBradesco, isHomeEquity, bancos]);
+  }, [restricaoEspecial.ativo, restricaoEspecial.apenasBradesco, isHomeEquity, bancos, prazoMaxOperacional]);
 
 
   // Mantém as despesas coladas no percentual e respeita o teto de LTV.
