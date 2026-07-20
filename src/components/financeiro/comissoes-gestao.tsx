@@ -345,8 +345,9 @@ export function SecaoRegrasComissao() {
                   type="number"
                   min={0}
                   step={form.tipo === "percentual" ? 0.1 : 100}
-                  value={form.valor}
-                  onChange={(e) => setForm((f) => ({ ...f, valor: Number(e.target.value) }))}
+                  placeholder="0"
+                  value={form.valor || ""}
+                  onChange={(e) => setForm((f) => ({ ...f, valor: e.target.value === "" ? 0 : Number(e.target.value) }))}
                 />
               </div>
             </div>
@@ -357,9 +358,10 @@ export function SecaoRegrasComissao() {
                   type="number"
                   min={0}
                   max={100}
-                  value={form.percentual_parceiro}
+                  placeholder="0"
+                  value={form.percentual_parceiro || ""}
                   onChange={(e) => {
-                    const p = Number(e.target.value);
+                    const p = e.target.value === "" ? 0 : Number(e.target.value);
                     setForm((f) => ({
                       ...f,
                       percentual_parceiro: p,
