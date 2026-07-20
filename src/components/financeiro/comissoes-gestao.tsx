@@ -428,7 +428,7 @@ export function SimuladorComissao() {
   const simular = useServerFn(simularComissao);
   const [banco, setBanco] = useState(TODOS_BANCOS);
   const [produto, setProduto] = useState("todos");
-  const [valor, setValor] = useState<number>(300000);
+  const [valor, setValor] = useState<number>(0);
   const [resultado, setResultado] = useState<SimulacaoComissaoResultado | null>(null);
 
   const { data: bancos } = useQuery({
