@@ -77,6 +77,13 @@ export const completaSchema = z.object({
 
 export type CompletaDados = z.infer<typeof completaSchema>;
 
+export function validarCepImovelHomeEquity(d: Pick<CompletaDados, "produto" | "cep_imovel">) {
+  if (d.produto !== "home_equity") return null;
+  return d.cep_imovel?.replace(/\D/g, "").length === 8
+    ? null
+    : "Informe o CEP do imóvel para Home Equity.";
+}
+
 export const ESTADOS_CIVIS = [
   { value: "S", label: "Solteiro(a)" },
   { value: "CA", label: "Casado(a)" },

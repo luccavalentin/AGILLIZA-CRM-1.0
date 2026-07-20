@@ -33,6 +33,7 @@ export const ESTADO_INICIAL: Form = {
   uso_imovel: "",
   situacao_imovel: "",
   uf: "",
+  cep_imovel: "",
   valor_imovel: 0,
   valor_entrada: 0,
   valor_financiamento: 0,

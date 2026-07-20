@@ -12,6 +12,7 @@ import {
 import { CurrencyInput } from "@/components/simulacao/currency-input";
 import { JogadaNumerosDialog } from "@/components/simulacao/jogada-numeros-dialog";
 import { Campo, Ast, Erro } from "@/components/simulacao/completa/campo";
+import { cepValido, consultarCep, mascararCep } from "@/lib/cep";
 import { formatBRL } from "@/lib/simulacao/format";
 import { formatarMeses } from "@/lib/simulacao/prazo";
 import {
@@ -49,6 +50,18 @@ export function SecaoOperacaoImovel({ ctx }: { ctx: SimulacaoCompletaCtx }) {
     pctDespesas,
     modoProposta,
   } = ctx;
+
+  async function alterarCepImovel(valor: string) {
+    const cep = mascararCep(valor);
+    set("cep_imovel", cep);
+    if (!cepValido(cep)) return;
+    try {
+      const endereco = await consultarCep(cep);
+      if (endereco?.uf) set("uf", endereco.uf);
+    } catch {
+      // Mantém o CEP digitado; a UF pode ser preenchida manualmente.
+    }
+  }
 
 
   return (
@@ -137,6 +150,22 @@ export function SecaoOperacaoImovel({ ctx }: { ctx: SimulacaoCompletaCtx }) {
           </Select>
           <Erro erros={erros} campo="uf" />
         </Campo>
+        <div id="campo-cep-imovel">
+          <Campo label={<>CEP do imóvel {f.produto === "home_equity" && <Ast />}</>}>
+            <Input
+              inputMode="numeric"
+              autoComplete="postal-code"
+              value={f.cep_imovel ?? ""}
+              onChange={(e) => void alterarCepImovel(e.target.value)}
+              placeholder="00000-000"
+              aria-invalid={!!erros.cep_imovel}
+            />
+            <p className="text-xs text-muted-foreground">
+              Necessário em Home Equity para cálculo da garantia e seguro.
+            </p>
+            <Erro erros={erros} campo="cep_imovel" />
+          </Campo>
+        </div>
       </div>
 
       <Separator className="border-border/60" />
