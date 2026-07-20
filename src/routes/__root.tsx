@@ -16,6 +16,7 @@ import { RealtimeAuthSync } from "@/components/shared/realtime-auth-sync";
 
 import appCss from "../styles.css?url";
 import { reportError } from "../lib/error-reporting";
+import { iniciarLimpezaBadge } from "../lib/host-badge-cleaner";
 
 function NotFoundComponent() {
   return (
@@ -153,6 +154,10 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+
+  useEffect(() => {
+    return iniciarLimpezaBadge();
+  }, []);
 
   useEffect(() => {
     // Recarrega uma única vez quando um chunk dinâmico antigo (deploy anterior)
