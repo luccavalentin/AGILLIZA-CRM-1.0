@@ -125,6 +125,16 @@ export function gerarHoleritePdf(input: HoleriteInput): { blob: Blob; filename: 
       .filter((a) => a.tipo === "provento")
       .forEach((a) => proventos.push({ desc: a.descricao, ref: "avulso", valor: a.valor }));
   }
+  if ((d.inss ?? 0) > 0) {
+    descontos.push({ desc: "INSS", ref: "tab. progressiva", valor: d.inss ?? 0 });
+  }
+  if ((d.irrf ?? 0) > 0) {
+    descontos.push({
+      desc: "IRRF",
+      ref: (d.dependentes_ir ?? 0) > 0 ? `${d.dependentes_ir} dep.` : "tab. mensal",
+      valor: d.irrf ?? 0,
+    });
+  }
   if ((d.beneficios_desconto ?? 0) > 0) {
     descontos.push({ desc: "Benefícios (desconto)", ref: "—", valor: d.beneficios_desconto ?? 0 });
   }
@@ -139,6 +149,7 @@ export function gerarHoleritePdf(input: HoleriteInput): { blob: Blob; filename: 
       .filter((a) => a.tipo === "desconto")
       .forEach((a) => descontos.push({ desc: a.descricao, ref: "avulso", valor: a.valor }));
   }
+
 
   const totalProv = proventos.reduce((s, r) => s + r.valor, 0);
   const totalDesc = descontos.reduce((s, r) => s + r.valor, 0);
