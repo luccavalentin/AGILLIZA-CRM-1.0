@@ -48,19 +48,29 @@ export function useWizardSimulacao(melhorTaxaAno = 0.1199) {
     setW((prev) => ({ ...prev, [k]: v }));
   }
 
-  // Reajusta entrada/financiamento ao mudar de produto (LTV muda).
+  // Reajusta entrada/financiamento ao mudar de produto (LTV muda) e aplica
+  // o prazo máximo operacional do produto (Home Equity = 240 meses).
   useEffect(() => {
     const imovel = Number(w.valor_imovel) || 0;
-    if (imovel <= 0) return;
     const finMax = Math.floor(imovel * ltvMax);
-    if ((Number(w.valor_financiamento) || 0) <= finMax) return;
-    setW((prev) => ({
-      ...prev,
-      valor_financiamento: finMax,
-      valor_entrada: Math.max(0, imovel - finMax),
-    }));
+    const prazoMaxProduto = w.produto === "home_equity" ? 240 : PRAZO_MAX;
+    setW((prev) => {
+      const precisaClampFin = imovel > 0 && (Number(prev.valor_financiamento) || 0) > finMax;
+      const precisaClampPrazo = prev.prazo_meses > prazoMaxProduto;
+      if (!precisaClampFin && !precisaClampPrazo) return prev;
+      return {
+        ...prev,
+        ...(precisaClampFin
+          ? { valor_financiamento: finMax, valor_entrada: Math.max(0, imovel - finMax) }
+          : {}),
+        ...(precisaClampPrazo ? { prazo_meses: prazoMaxProduto } : {}),
+      };
+    });
+    if (w.produto === "home_equity" && w.prazo_meses > 240) {
+      toast.info("Home Equity: prazo máximo de 240 meses.");
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ltvMax]);
+  }, [w.produto]);
 
   function aplicarValorImovel(valor: number) {
     setW((prev) => {
