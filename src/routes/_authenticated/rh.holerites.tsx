@@ -342,7 +342,9 @@ function Pagina() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
+
 
       <Card>
         <CardContent className="grid gap-3 p-4 sm:grid-cols-2">
