@@ -1,74 +1,89 @@
-# Módulo — Gestão de Pessoas e RH
+# Automação CLT no módulo de RH
 
-Escopo grande (15 subtelas, 13+ tabelas, integração bidirecional com Financeiro). Vou entregar em **5 fases incrementais**, cada uma funcional e navegável, sem quebrar o que já existe. A rota placeholder `/rh` já existe e será substituída pelo módulo real.
+Hoje o RH tem campos soltos (status, documentos, férias, folha) sem regras da CLT amarrando tudo. Vou consolidar toda a vida do funcionário dentro da **ficha**, aplicar automações baseadas em datas e integrar com Contas a Pagar.
 
-## Arquitetura reaproveitada (sem duplicar nada)
+## 1. Status automático por experiência (CLT art. 445)
 
-- **Rotas**: `src/routes/_authenticated/rh.*.tsx` (padrão dot-nested, como `crm.*` e `financeiro.*`).
-- **Server functions**: `src/lib/rh/*.functions.ts` com `createServerFn` + `requireSupabaseAuth` (padrão de `pessoas.functions.ts`).
-- **Componentes**: usar `Card`, `Table`, `Dialog`, `ComboSelect`, `date-input`, `PainelView`, `ReportsView`, `ReportFiltersBar`, `GerenciadorArquivos`, `StatusBadge`, `ReportKpiCard` — nada novo estilizado à parte.
-- **Permissões**: adicionar módulo `rh.*` em `CATALOGO_MODULOS` (`src/lib/admin/regras-modulos.functions.ts`) com ações `view/create/edit/delete/export` e escopo (`todos/equipe/proprios/personalizado`). `filterNavByPermissions` já pega automático.
-- **RLS**: todas as tabelas com `correspondente_id`, políticas usando `usuario_tem_permissao('rh.*', ...)` + `usuario_escopo_inclui_dono`. Grants padrão.
-- **Auditoria**: `registrar_auditoria` existente (`entidade='rh.*'`). Aparece automaticamente em `/admin/auditoria` — só adiciono os labels amigáveis no mapa da tela.
-- **Anexos**: bucket privado novo `rh-documentos` seguindo padrão dos existentes.
-- **Notificações in-app**: `emitir_notificacao` para docs vencendo, férias aprovadas, competência fechada.
-- **Integração financeira**: adicionar colunas `rh_origem jsonb` + `rh_funcionario_id uuid` em `financial_payables` e `financial_receivables` (não altera telas atuais — colunas opcionais). Ao fechar competência → gera lançamentos com `rh_origem`. Trigger em `financial_payables.status='paga'` marca `rh_competencia_pagamentos.status`.
-- **PDFs / XLSX**: `report-pdf.ts`, `report-xlsx.ts`, `export-pdf.ts` já existentes.
-- **Design**: tokens semânticos + `#000F9F`, dark+light. Sem novo componente visual.
+- Novo campo `fim_experiencia` continua manual, mas o padrão vira **admissão + 90 dias** (45+45) quando não preenchido.
+- Função SQL `rh_atualizar_status_experiencia()` diária:
+  - Se `status = 'experiencia'` e `fim_experiencia < hoje` e não há demissão → vira `ativo`.
+  - Se `status = 'ativo'` e admissão < 90 dias e sem `fim_experiencia` explícito → vira `experiencia`.
+- Chip visual na ficha: "Em experiência até DD/MM (faltam X dias)" com cor de alerta quando faltar ≤ 15 dias.
+- Trigger no INSERT: se `fim_experiencia` vazio, calcula automaticamente.
 
-## Fase 1 — Base + Funcionários (primeira entrega)
+## 2. Documentos CLT dentro da ficha
 
-Migração cria:
-- `rh_cargos`, `rh_departamentos` (referência do tenant).
-- `rh_funcionarios` (dados pessoais, profissionais, bancários, jornada, status, admissão, cargo, depto, gestor_id, salário atual).
-- `rh_dependentes`.
-- `rh_funcionario_historico` (append-only via trigger em UPDATE).
-- Sequência `rh_funcionario_seq` → `FUN-000001`.
-- Índices + Grants + RLS + policies.
-- Adição de `rh.*` em `CATALOGO_MODULOS`.
-- Item no menu lateral "Gestão de Pessoas e RH" com os 15 subitens (só os da Fase 1 já funcionais — os demais aparecem com placeholder "Em breve" nativo, igual outros módulos, até a fase correspondente).
+Sai a rota avulsa `/rh/documentos` do menu (mantém rota só para uso interno) e passa a viver na aba **Documentos** da ficha (já existe). Adiciono um **checklist CLT obrigatório** semeado ao criar o funcionário:
 
-Telas:
-- `/rh` → **Dashboard** com KPIs (ativos/afastados/férias/experiência/docs pendentes/vencidos/faltas mês/atestados) e gráficos (recharts).
-- `/rh/funcionarios` → lista (busca, filtros status/cargo/depto, cards no mobile / tabela no desktop, export PDF).
-- `/rh/funcionarios/novo` → wizard 4 passos (Pessoais → Profissionais → Bancários → Dependentes).
-- `/rh/funcionarios/$id` → ficha em tabs (Resumo, Dependentes, Documentos, Benefícios, Férias, Ocorrências, Holerites, Histórico, Auditoria). Tabs da Fase 2+ ficam com empty state até chegar.
+- RG/CNH, CPF, CTPS, PIS/PASEP, Título de eleitor, Comprovante de residência
+- Certidão de nascimento/casamento, Certificado de reservista (M), Foto 3x4
+- Exame admissional (ASO) — com validade
+- Ficha de dependentes (se houver)
+- Contrato de trabalho e Termo de experiência
+- Vale-transporte / opção de VT
 
-## Fase 2 — Documentos + Faltas/Ocorrências + Atestados
+Cada item da ficha tem: obrigatório?, status (`pendente|entregue|vencido`), validade (para ASO/CNH), arquivo. Painel no topo da aba com "X de Y documentos entregues" e alertas de vencimento.
 
-- `rh_documentos` (categoria, storage_path, validade, situação; alerta por vencimento).
-- `rh_ocorrencias` (falta/atraso/saída antecipada/hora extra/advertência/suspensão/ausência just./ausência injust./folga/outro; `impacta_folha`, competência, doc anexo).
-- Atestado = ocorrência tipo `atestado` com CID e dias.
-- Telas: `/rh/documentos`, `/rh/faltas-ocorrencias`, `/rh/atestados`.
-- Cron `api/public/rh-cron` diário → marca docs próximos do vencimento e emite notificação.
+## 3. Férias automáticas (CLT art. 130)
 
-## Fase 3 — Férias + Benefícios + Alterações Salariais
+- Cria-se automaticamente o **período aquisitivo** no INSERT do funcionário: 12 meses após admissão.
+- Job diário calcula:
+  - `dias_direito` = 30 (com faltas ≤ 5), 24 (6-14), 18 (15-23), 12 (24-32), 0 (>32) — puxando de `rh_ocorrencias` tipo falta injustificada.
+  - `limite_concessivo` = fim do aquisitivo + 12 meses. Passou → chip "vencidas — dobro".
+- Aba **Férias** da ficha mostra períodos, dias disponíveis e programação. Botão "Programar férias" já existe; passo a preencher automaticamente o próximo período.
 
-- `rh_ferias` (aquisitivo, concessivo, saldo, solicitação, aprovação, programação, aviso, recibo).
-- `rh_beneficios` (catálogo do tenant) + `rh_funcionario_beneficios` (vínculo com valor/período).
-- `rh_alteracoes_salariais` (histórico imutável, motivo, documento, responsável).
-- Telas correspondentes.
+## 4. Dia de pagamento → Contas a Pagar
 
-## Fase 4 — Adiantamentos + Descontos + Prévia da Folha + Integração Financeira
+Na ficha, novo grupo **Pagamento**:
+- `dia_pagamento_salario` (1–31, padrão 5 — limite CLT art. 459)
+- `dia_pagamento_adiantamento` (opcional, padrão 20)
+- `gerar_contas_pagar_automatico` (bool)
 
-- `rh_adiantamentos` (valor, parcelas, competência, situação).
-- `rh_descontos` (avulsos por competência).
-- `rh_competencias` (mês/ano, status aberta/fechada, fechada_em/por).
-- `/rh/adiantamentos`, `/rh/descontos`, `/rh/alteracoes-salariais`, `/rh/previa-folha`.
-- **Fechar competência** → gera `financial_payables` (salários, benefícios, adiantamentos líquidos, previsão de férias) com `rh_origem = {tipo, funcionario_id, competencia}` e `rh_funcionario_id`. Ressarcimentos → `financial_receivables`. Baixa da conta atualiza `rh_competencia_pagamentos.status` via trigger. Aviso obrigatório: "Prévia — cálculo oficial fica com a contabilidade".
+Server fn `gerarContasPagarSalarios(competencia)`:
+- Para cada funcionário ativo com `gerar_contas_pagar_automatico=true`, cria em `financial_payables` um lançamento com vencimento no próximo dia útil ≥ dia configurado, valor = salário líquido da prévia (ou bruto se ainda não fechada), categoria "Folha de pagamento", favorecido = funcionário.
+- Idempotente por `(funcionario_id, competencia)` via nova coluna `origem_ref`.
+- Botão manual na página **Prévia da folha** ("Gerar contas a pagar") + job mensal opcional.
 
-## Fase 5 — Holerites + Relatórios + Configurações + Auditoria
+Adiantamentos e descontos que já existem passam a virar linhas separadas em Contas a Pagar quando marcados como "pagar via financeiro".
 
-- `rh_holerites` (holerite/recibo/férias/rescisão anexados por funcionário/competência).
-- `/rh/holerites`, `/rh/relatorios`, `/rh/configuracoes` (cargos, deptos, catálogo de benefícios, regras de alerta).
-- Relatórios reutilizam `ReportsView` + engine `runReport` + `report_definitions` (Funcionários, Documentação, Benefícios, Férias, Faltas, Ocorrências, Adiantamentos, Descontos, Holerites, Custos com pessoal, Prévia). Export PDF/XLSX já pronto.
-- Labels amigáveis das entidades `rh.*` em `/admin/auditoria`.
+## 5. Ficha completa em PDF (marca d'água Agilliza)
 
-## Confirmações antes de começar
+Novo `src/lib/rh/ficha-funcionario-pdf.ts` (jsPDF, retrato):
+- Cabeçalho com logo Agilliza + dados do ecossistema (razão social, CNPJ).
+- Foto 3x4 do funcionário + dados pessoais, documentos, endereço, dados bancários.
+- Vínculo (cargo, departamento, gestor, admissão, salário atual, tipo de contrato).
+- Histórico salarial e de cargos.
+- Lista de documentos entregues + validades.
+- Férias (períodos aquisitivos e gozados).
+- Marca d'água diagonal "AGILLIZA — CONFIDENCIAL" em cinza claro em todas as páginas.
+- Rodapé com data de emissão e nome do usuário.
 
-1. **Faseamento**: aceita entregar em 5 fases (Fase 1 já agora, próximas conforme você validar)?
-2. **Papéis**: `admin` e `correspondente` acesso total (default); `gestor` acesso total ao RH; `financeiro` leitura em Prévia/Custos/Holerites. Ninguém mais vê o módulo até você liberar por matriz de permissões em `/admin/pessoas`. Ok?
-3. **Integração financeira**: adicionar `rh_origem jsonb` e `rh_funcionario_id uuid` (nullable) em `financial_payables`/`financial_receivables` — sem alterar telas atuais. Ok?
-4. **Migrações**: como o módulo cria muitas tabelas, cada fase terá uma migração dedicada (aprovação por fase). Ok?
+Botão **"Imprimir ficha completa"** no topo da ficha (`rh.funcionarios_.$id.tsx`).
 
-Assinale “ok, comece Fase 1” (ou aponte ajustes) e eu já executo a migração + as telas da Fase 1.
+## 6. Armazenamento
+
+Documentos usam o bucket `rh-documentos` já existente (path `funcionario/{id}/…`). Nada muda de storage; só o fluxo de anexar passa a ser feito dentro da aba, sem tela avulsa.
+
+## Detalhes técnicos
+
+**Migração** (uma única):
+- `rh_funcionarios`: `dia_pagamento_salario int`, `dia_pagamento_adiantamento int`, `gerar_contas_pagar_automatico bool default false`.
+- `rh_documentos_checklist` (id, funcionario_id, tipo, obrigatorio, status, documento_id fk, validade, updated_at) + grants + RLS por correspondente.
+- `financial_payables`: `origem_tipo text`, `origem_ref text` (para idempotência da folha).
+- Função `public.rh_semear_checklist_clt(func_id uuid)` chamada em trigger AFTER INSERT.
+- Função `public.rh_atualizar_status_experiencia()` (agendada por pg_cron diário) + trigger BEFORE INSERT que define `fim_experiencia` padrão.
+- Função `public.rh_semear_periodo_aquisitivo(func_id uuid)` em trigger AFTER INSERT.
+
+**Server fns** (`src/lib/rh/`):
+- `checklist.functions.ts`: listar/atualizar itens do checklist.
+- `ferias-auto.functions.ts`: recalcular dias de direito, listar períodos.
+- `folha-contas-pagar.functions.ts`: `gerarContasPagarSalarios`.
+- `ficha-pdf.functions.ts`: agrega dados para PDF.
+
+**UI**:
+- `ficha-tabs.tsx`: aba Documentos ganha checklist obrigatório no topo; aba Férias mostra períodos aquisitivos; nova aba **Pagamento** com dia + toggle contas a pagar.
+- `rh.funcionarios_.$id.tsx`: botão "Imprimir ficha".
+- `rh.previa-folha.tsx`: botão "Gerar contas a pagar do mês".
+- Menu: `Documentos` e `Férias` avulsos do RH ficam ocultos (redirect para dentro da ficha ou lista simples só de leitura).
+
+Sem mocks, tudo real via Supabase, respeitando RLS por correspondente.
