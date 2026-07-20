@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Check, ChevronsUpDown, Loader2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -23,6 +23,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import { cn } from "@/lib/utils";
 import {
   GATILHOS_COMISSAO,
   TIPOS_VINCULO_COMISSAO,
@@ -32,6 +42,17 @@ import {
   type RegraComissaoUsuario,
   type TipoVinculoComissao,
 } from "@/lib/financeiro/comissoes-usuario.functions";
+
+const TIPOS_VINCULO_VALIDOS = new Set(TIPOS_VINCULO_COMISSAO.map((t) => t.valor));
+
+function inferirTipoVinculo(tipoPessoa: string | null | undefined): TipoVinculoComissao {
+  const slug = (tipoPessoa ?? "").toLowerCase();
+  if (TIPOS_VINCULO_VALIDOS.has(slug as TipoVinculoComissao)) {
+    return slug as TipoVinculoComissao;
+  }
+  return "outro";
+}
+
 
 interface Props {
   aberto: boolean;
