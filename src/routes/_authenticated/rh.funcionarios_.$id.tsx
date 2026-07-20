@@ -33,6 +33,7 @@ function Pagina() {
   const { id } = useParams({ strict: false }) as { id: string };
   const fnObter = useServerFn(obterFuncionario);
   const fnHist = useServerFn(listarHistoricoFuncionario);
+  const fnDeps = useServerFn(listarDependentes);
 
   const q = useQuery({
     queryKey: ["rh-funcionario", id],
@@ -43,6 +44,30 @@ function Pagina() {
     queryKey: ["rh-funcionario-historico", id],
     queryFn: () => fnHist({ data: { funcionario_id: id } }),
   });
+
+  async function imprimirFicha() {
+    if (!q.data) return;
+    try {
+      const deps = await fnDeps({ data: { funcionario_id: id } });
+      const { blob, filename } = gerarFichaFuncionarioPdf({
+        funcionario: q.data,
+        dependentes: deps.map((d) => ({
+          nome: d.nome,
+          parentesco: d.parentesco,
+          cpf: d.cpf,
+          data_nascimento: d.data_nascimento,
+        })),
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha ao gerar a ficha.");
+    }
+  }
 
   if (q.isLoading) {
     return (
