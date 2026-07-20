@@ -42,6 +42,7 @@ import {
   listarDepartamentos,
 } from "@/lib/rh/cargos-departamentos.functions";
 import { OPCOES_UF } from "@/components/crm/cliente-form/constants";
+import { mascararCep, apenasDigitosCep, consultarCep } from "@/lib/cep";
 
 const STATUS_LABEL: Record<StatusFuncionario, string> = {
   ativo: "Ativo",
