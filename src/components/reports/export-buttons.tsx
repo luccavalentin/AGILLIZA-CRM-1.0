@@ -57,8 +57,10 @@ export function ExportButtons({
         orient,
       );
       await log("pdf");
-    } catch {
+    } catch (e) {
+      console.error("[exportPDF]", e);
       toast.error("Falha ao gerar PDF.");
+
     } finally {
       setBusy(false);
     }
