@@ -1,16 +1,22 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { UserRound } from "lucide-react";
+import { Minus } from "lucide-react";
 import { assertModuloPermitido } from "@/lib/route-guards";
-import { ModuloPlaceholder } from "@/components/app-shell/modulo-placeholder";
+import { LancamentosPage } from "@/components/rh/lancamentos-page";
+import { listarDescontos, registrarDesconto } from "@/lib/rh/submodulos.functions";
 
 export const Route = createFileRoute("/_authenticated/rh/descontos")({
-  head: () => ({ meta: [{ title: "RH — Agilliza" }] }),
-  beforeLoad: () => assertModuloPermitido("rh.dashboard"),
+  head: () => ({ meta: [{ title: "Descontos — Agilliza" }] }),
+  beforeLoad: () => assertModuloPermitido("rh.descontos"),
   component: () => (
-    <ModuloPlaceholder
-      icon={UserRound}
-      titulo="Gestão de Pessoas e RH"
-      descricao="Este submódulo faz parte da próxima etapa do RH."
+    <LancamentosPage
+      titulo="Descontos"
+      descricao="Descontos diversos aplicados na folha (danos, faltas, empréstimos)."
+      icon={Minus}
+      queryKey="rh-descontos"
+      listarFn={listarDescontos}
+      salvarFn={registrarDesconto}
+      labelBotao="Novo desconto"
+      labelValor="Valor do desconto"
     />
   ),
 });
