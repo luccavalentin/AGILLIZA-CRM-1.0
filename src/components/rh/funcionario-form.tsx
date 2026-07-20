@@ -141,6 +141,30 @@ export function FuncionarioForm({ inicial }: { inicial?: Funcionario | null }) {
   const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) =>
     setF((prev) => ({ ...prev, [k]: v }));
 
+  const [buscandoCep, setBuscandoCep] = useState(false);
+  async function buscarCep(raw: string) {
+    if (apenasDigitosCep(raw).length !== 8) return;
+    setBuscandoCep(true);
+    try {
+      const end = await consultarCep(raw);
+      if (!end) {
+        toast.error("CEP não encontrado.");
+        return;
+      }
+      setF((p) => ({
+        ...p,
+        logradouro: p.logradouro || end.logradouro,
+        bairro: p.bairro || end.bairro,
+        cidade: p.cidade || end.cidade,
+        uf: p.uf || end.uf,
+      }));
+    } catch {
+      toast.error("Não foi possível consultar o CEP.");
+    } finally {
+      setBuscandoCep(false);
+    }
+  }
+
   const mut = useMutation({
     mutationFn: async (payload: FuncionarioInput) => {
       if (payload.id) {
