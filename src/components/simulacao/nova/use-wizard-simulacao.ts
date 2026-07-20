@@ -116,12 +116,15 @@ export function useWizardSimulacao(melhorTaxaAno = 0.1199) {
 
   const maxPrazoIdade = useMemo(() => prazoMaximoPorIdade(w.data_nascimento), [w.data_nascimento]);
 
+  const prazoMaxProduto = w.produto === "home_equity" ? 240 : PRAZO_MAX;
+  const prazoMaxEfetivo = Math.min(maxPrazoIdade ?? PRAZO_MAX, prazoMaxProduto);
+
   const valido =
     w.valor_imovel > 0 &&
     w.valor_financiamento > 0 &&
     w.data_nascimento !== "" &&
     w.prazo_meses >= PRAZO_MIN &&
-    w.prazo_meses <= (maxPrazoIdade ?? PRAZO_MAX);
+    w.prazo_meses <= prazoMaxEfetivo;
 
   function definirPrazo(valor: number) {
     if (!Number.isFinite(valor) || valor <= 0) {
