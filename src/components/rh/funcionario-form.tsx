@@ -170,6 +170,9 @@ export function FuncionarioForm({ inicial }: { inicial?: Funcionario | null }) {
     banco_pix: inicial?.banco_pix ?? "",
     observacoes: inicial?.observacoes ?? "",
     user_id: (inicial as any)?.user_id ?? null,
+    dia_pagamento_salario: (inicial as any)?.dia_pagamento_salario ?? 5,
+    dia_pagamento_adiantamento: (inicial as any)?.dia_pagamento_adiantamento ?? null,
+    gerar_contas_pagar_automatico: (inicial as any)?.gerar_contas_pagar_automatico ?? false,
   }));
 
   const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) =>
