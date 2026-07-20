@@ -50,13 +50,13 @@ function drawWatermark(doc: jsPDF, palette: PdfPalette) {
   doc.setGState?.(new (doc as any).GState({ opacity: 0.06 }));
   doc.setFont("helvetica", "bold");
   doc.setFontSize(90);
-  doc.setTextColor(palette.headerBg ?? "#000F9F");
+  doc.setTextColor(palette.azul);
   doc.text("AGILLIZA", pageW / 2, pageH / 2, {
     align: "center",
     angle: 30,
   });
   doc.restoreGraphicsState?.();
-  doc.setTextColor(palette.text ?? "#0F172A");
+  doc.setTextColor(palette.texto);
 }
 
 export function gerarFichaFuncionarioPdf(input: {
