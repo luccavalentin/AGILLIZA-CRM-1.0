@@ -416,14 +416,21 @@ export async function enviarSimulacaoImpl({
       }
     }
 
+    const usaRotaSantanderHomeEquity = bancos.some((b: any) => usarRotaSantanderHomeEquity(sim, b));
+
     // 1) Oportunidade (idempotência: reutiliza se já existe)
-    let idOportunidade = sim.homefin_id_oportunidade as string | null;
+    // Santander em Home Equity usa a rota operacional Somahome; oportunidades
+    // antigas criadas como Home Equity comum ficam sem retorno. Para reenvio,
+    // criamos uma nova oportunidade na operação correta.
+    let idOportunidade = usaRotaSantanderHomeEquity
+      ? null
+      : (sim.homefin_id_oportunidade as string | null);
 
     // Campos que dependem da simulação atual e podem ter mudado desde a
     // primeira criação da oportunidade (ex.: usuário marcou "financiar despesas"
     // e reenviou). Precisam ser sincronizados também no reenvio, senão o banco
     // continua recebendo os valores antigos.
-    const idOperacaoIntegracao = bancos.some((b: any) => usarRotaSantanderHomeEquity(sim, b))
+    const idOperacaoIntegracao = usaRotaSantanderHomeEquity
       ? ROTA_SANTANDER_HOME_EQUITY.idOperacao
       : sim.id_operacao_homefin;
 
@@ -462,7 +469,7 @@ export async function enviarSimulacaoImpl({
           ? { usuarioParceiro: { idUsuarioParceiro: auth.idUsuarioParceiro } }
           : {}),
         ...dadosOportunidade,
-        bancos: bancosSelecionados.map((b: any) => bancoPayloadOportunidade(sim, b)),
+        bancos: bancos.map((b: any) => bancoPayloadOportunidade(sim, b)),
         cpfCnpj: (sim.cpf_cnpj ?? "").replace(/\D/g, ""),
         nome: sim.nome_cliente,
         rendaTotal: num(sim.renda_total),
