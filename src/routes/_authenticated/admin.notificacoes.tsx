@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { createDebouncedInvalidator } from "@/lib/realtime-debounce";
 import { SwipeToDelete } from "@/components/app-shell/swipe-to-delete";
 import {
   listarTodasNotificacoes,
@@ -56,14 +57,16 @@ function Pagina() {
   });
 
   useEffect(() => {
+    const { schedule, cancel } = createDebouncedInvalidator(() => {
+      queryClient.invalidateQueries({ queryKey: ["notificacoes"] });
+      queryClient.invalidateQueries({ queryKey: ["notificacoes", "todas"] });
+    });
     const canal = supabase
       .channel("notif:central")
-      .on("postgres_changes", { event: "*", schema: "public", table: "notificacoes" }, () => {
-        queryClient.invalidateQueries({ queryKey: ["notificacoes"] });
-        queryClient.invalidateQueries({ queryKey: ["notificacoes", "todas"] });
-      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "notificacoes" }, schedule)
       .subscribe();
     return () => {
+      cancel();
       supabase.removeChannel(canal);
     };
   }, [queryClient]);
