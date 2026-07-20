@@ -23,7 +23,7 @@ import { PanelHeader, SectionTitle, PanelCard } from "@/components/common/dashbo
 import { Button } from "@/components/ui/button";
 import { formatBRL } from "@/lib/financeiro/format";
 
-export const Route = createFileRoute("/_authenticated/rh")({
+export const Route = createFileRoute("/_authenticated/rh/")({
   head: () => ({ meta: [{ title: "Gestão de Pessoas e RH — Agilliza" }] }),
   beforeLoad: () => assertModuloPermitido("rh.dashboard"),
   component: Pagina,
