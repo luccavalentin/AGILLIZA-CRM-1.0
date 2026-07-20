@@ -8,6 +8,13 @@ import {
   listarHistoricoFuncionario,
 } from "@/lib/rh/funcionarios.functions";
 import { FuncionarioForm } from "@/components/rh/funcionario-form";
+import {
+  FichaDocumentos,
+  FichaBeneficios,
+  FichaFerias,
+  FichaOcorrencias,
+  FichaHolerites,
+} from "@/components/rh/ficha-tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
