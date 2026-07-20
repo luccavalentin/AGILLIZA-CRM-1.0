@@ -210,6 +210,17 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
 
   const isHomeEquity = f.produto === "home_equity";
 
+  // Home Equity sempre usa imóvel já existente como garantia. Mantém esse
+  // ajuste restrito ao produto HE para não alterar o financiamento imobiliário.
+  useEffect(() => {
+    if (!isHomeEquity || f.situacao_imovel === "U") return;
+    setF((prev) =>
+      prev.produto === "home_equity" && prev.situacao_imovel !== "U"
+        ? { ...prev, situacao_imovel: "U" }
+        : prev,
+    );
+  }, [isHomeEquity, f.situacao_imovel]);
+
   function aceitaBancoNaOperacao(b: { codigo_banco?: number | string | null; nome_banco?: string | null }) {
     return aceitaBancoNaOperacaoPuro(b, { isHomeEquity, restricao: restricaoEspecial });
   }
