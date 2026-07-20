@@ -289,6 +289,7 @@ export const CATALOGO_MODULOS: ModuloCatalogo[] = [
       { acao: "view", label: "Ver" },
       { acao: "create", label: "Gerar" },
     ],
+  },
   {
     grupo: "Gestão de Pessoas e RH",
     modulo: "rh.dashboard",
