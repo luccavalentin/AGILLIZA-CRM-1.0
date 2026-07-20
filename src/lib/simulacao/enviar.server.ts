@@ -262,6 +262,7 @@ export async function enviarSimulacaoImpl({
   supabase,
   bancoIds,
 }: EnviarArgs): Promise<EnviarResultado> {
+  const envioPorBanco = Boolean(bancoIds && bancoIds.length > 0);
   const { data: sim, error } = await supabase
     .from("simulacoes")
     .select("*")
@@ -271,9 +272,10 @@ export async function enviarSimulacaoImpl({
   if (error) throw new Error(error.message);
   if (!sim) throw new Error("Simulação não encontrada.");
 
-  // Trava anti-duplicidade: se um envio começou há menos de 45s e ainda não
-  // concluiu, retorna sem duplicar (evita corrida em clique duplo/realtime).
-  if (sim.status === "enviando" && sim.ultimo_envio_em) {
+  // Trava anti-duplicidade: mantém bloqueio para o envio geral, mas libera
+  // chamadas por banco. O fluxo em lote chama um banco por vez; bloquear aqui
+  // deixava o segundo banco preso em "aguardando" até o usuário reenviar.
+  if (!envioPorBanco && sim.status === "enviando" && sim.ultimo_envio_em) {
     const inicio = new Date(sim.ultimo_envio_em).getTime();
     if (Number.isFinite(inicio) && Date.now() - inicio < 45_000) {
       throw new Error("Um envio ao banco já está em andamento. Aguarde a conclusão.");
