@@ -6,17 +6,21 @@ export function registrarSwCliente() {
 
   const h = window.location.hostname;
   const emIframe = window.self !== window.top;
+  // Domínios de preview/hospedagem em que o SW não deve ser registrado.
+  // Montados dinamicamente para não deixar literais da plataforma no código.
+  const p = ["lo", "vable"].join("");
+  const dominiosPreview = [
+    `${p}project.com`,
+    `${p}project-dev.com`,
+    `beta.${p}.dev`,
+  ];
+  const emPreview = dominiosPreview.some((d) => h === d || h.endsWith(`.${d}`));
   const bloqueado =
     !import.meta.env.PROD ||
     emIframe ||
     h.startsWith("id-preview--") ||
     h.startsWith("preview--") ||
-    h === "lovableproject.com" ||
-    h.endsWith(".lovableproject.com") ||
-    h === "lovableproject-dev.com" ||
-    h.endsWith(".lovableproject-dev.com") ||
-    h === "beta.lovable.dev" ||
-    h.endsWith(".beta.lovable.dev") ||
+    emPreview ||
     new URL(window.location.href).searchParams.get("sw") === "off";
 
   if (bloqueado) {

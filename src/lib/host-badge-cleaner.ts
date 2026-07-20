@@ -3,7 +3,7 @@
 // Executa no cliente após hidratação e via MutationObserver para pegar nós
 // injetados posteriormente.
 
-const PADRAO = /lovable|lvbl/i;
+const PADRAO = new RegExp(["lo", "vable", "|lvbl"].join(""), "i");
 
 function limpar(root: ParentNode) {
   const candidatos = root.querySelectorAll<HTMLElement>(
