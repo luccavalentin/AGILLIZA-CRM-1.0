@@ -241,12 +241,25 @@ export const obterFuncionario = createServerFn({ method: "GET" })
         .maybeSingle();
       gestor_nome = g?.nome ?? null;
     }
+    let user_nome: string | null = null;
+    let user_email: string | null = null;
+    if ((row as any).user_id) {
+      const { data: u } = await supabase
+        .from("profiles")
+        .select("nome, email")
+        .eq("id", (row as any).user_id)
+        .maybeSingle();
+      user_nome = u?.nome ?? null;
+      user_email = u?.email ?? null;
+    }
     return {
       ...(row as any),
       salario_atual: Number(row.salario_atual ?? 0),
       cargo_nome: (row as any).rh_cargos?.nome ?? null,
       departamento_nome: (row as any).rh_departamentos?.nome ?? null,
       gestor_nome,
+      user_nome,
+      user_email,
     } as Funcionario;
   });
 
