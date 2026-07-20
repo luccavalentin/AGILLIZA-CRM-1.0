@@ -423,6 +423,10 @@ export async function enviarSimulacaoImpl({
     // primeira criação da oportunidade (ex.: usuário marcou "financiar despesas"
     // e reenviou). Precisam ser sincronizados também no reenvio, senão o banco
     // continua recebendo os valores antigos.
+    const idOperacaoIntegracao = bancos.some((b: any) => usarRotaSantanderHomeEquity(sim, b))
+      ? ROTA_SANTANDER_HOME_EQUITY.idOperacao
+      : sim.id_operacao_homefin;
+
     const dadosOportunidade: Record<string, unknown> = {
       tipoImovel: { id: sim.tipo_imovel },
       usoImovel: { id: sim.uso_imovel },
@@ -451,19 +455,14 @@ export async function enviarSimulacaoImpl({
 
     if (!idOportunidade) {
       const payload: Record<string, unknown> = {
-        operacao: { idOperacao: String(sim.id_operacao_homefin) },
+        operacao: { idOperacao: String(idOperacaoIntegracao) },
         ...(auth.idRegional ? { regional: { idRegional: auth.idRegional } } : {}),
         ...(auth.idParceiro ? { parceiro: { idParceiro: auth.idParceiro } } : {}),
         ...(auth.idUsuarioParceiro
           ? { usuarioParceiro: { idUsuarioParceiro: auth.idUsuarioParceiro } }
           : {}),
         ...dadosOportunidade,
-        bancos: bancosSelecionados.map((b: any) => ({
-          idBanco: b.homefin_id_banco,
-          codigoBanco: b.codigo_banco,
-          nomeBanco: b.nome_banco,
-          flagSimulacao: "S",
-        })),
+        bancos: bancosSelecionados.map((b: any) => bancoPayloadOportunidade(sim, b)),
         cpfCnpj: (sim.cpf_cnpj ?? "").replace(/\D/g, ""),
         nome: sim.nome_cliente,
         rendaTotal: num(sim.renda_total),
@@ -536,7 +535,7 @@ export async function enviarSimulacaoImpl({
           valorFinanciamento: num(sim.valor_financiamento),
           prazo: num(sim.prazo),
           codigoSistemaAmortizacaoBanco: { id: sim.sistema_amortizacao ?? "S" },
-          banco: { idBanco: b.homefin_id_banco },
+          banco: { idBanco: idBancoParaSimulacao(sim, b) },
           fgFinanciarDespesas,
           valorDespesasFinanciadas,
           valorTotalFinanciamento,
