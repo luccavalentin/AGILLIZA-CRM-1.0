@@ -61,6 +61,45 @@ function normalizarSexo(v: unknown): string | undefined {
   return undefined;
 }
 
+const ROTA_SANTANDER_HOME_EQUITY = {
+  idOperacao: 6,
+  idBanco: 96,
+  codigoBanco: 9004,
+  nomeBanco: "Somahome",
+};
+
+function codigoBancoNormalizado(banco: any): string {
+  return String(banco?.codigo_banco ?? banco?.codigoBanco ?? "").replace(/^0+/, "");
+}
+
+function usarRotaSantanderHomeEquity(sim: any, banco: any): boolean {
+  const codigo = codigoBancoNormalizado(banco);
+  const nome = String(banco?.nome_banco ?? banco?.nomeBanco ?? "").toLowerCase();
+  return sim?.produto === "home_equity" && (codigo === "33" || nome.includes("santander"));
+}
+
+function bancoPayloadOportunidade(sim: any, banco: any) {
+  if (usarRotaSantanderHomeEquity(sim, banco)) {
+    return {
+      idBanco: ROTA_SANTANDER_HOME_EQUITY.idBanco,
+      codigoBanco: ROTA_SANTANDER_HOME_EQUITY.codigoBanco,
+      nomeBanco: ROTA_SANTANDER_HOME_EQUITY.nomeBanco,
+      flagSimulacao: "S",
+    };
+  }
+  return {
+    idBanco: banco.homefin_id_banco,
+    codigoBanco: banco.codigo_banco,
+    nomeBanco: banco.nome_banco,
+    flagSimulacao: "S",
+  };
+}
+
+function idBancoParaSimulacao(sim: any, banco: any): number | null {
+  if (usarRotaSantanderHomeEquity(sim, banco)) return ROTA_SANTANDER_HOME_EQUITY.idBanco;
+  return banco.homefin_id_banco ?? null;
+}
+
 async function consultarCepSeguro(cep: string | undefined): Promise<{
   logradouro?: string;
   bairro?: string;
