@@ -165,14 +165,6 @@ function ChatPage() {
       </aside>
 
       {/* Coluna 2 — Thread */}
-      <section className="min-w-0">
-        {selecionado ? (
-          <ThreadChat
-            key={selecionado.atendente_id}
-            atendente={selecionado}
-            altura="h-[calc(100dvh-10rem)] min-h-[520px]"
-            podeVoltar={(atendentes?.length ?? 0) > 1}
-      {/* Coluna 2 — Thread */}
       <section className={cn("min-w-0", mostrarThreadMobile ? "block" : "hidden lg:block")}>
         {selecionado ? (
           <ThreadChat
