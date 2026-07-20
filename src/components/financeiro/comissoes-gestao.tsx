@@ -495,8 +495,9 @@ export function SimuladorComissao() {
               type="number"
               min={0}
               step={1000}
-              value={valor}
-              onChange={(e) => setValor(Number(e.target.value))}
+              placeholder="Digite o valor"
+              value={valor || ""}
+              onChange={(e) => setValor(e.target.value === "" ? 0 : Number(e.target.value))}
             />
           </div>
         </div>
