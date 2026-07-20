@@ -269,7 +269,16 @@ export function FuncionarioForm({ inicial }: { inicial?: Funcionario | null }) {
                           disabled={bloqueado}
                           onSelect={() => {
                             if (bloqueado) return;
-                            set("user_id", u.id);
+                            setF((prev) => {
+                              const next = { ...prev, user_id: u.id };
+                              // Pré-cadastro: preenche automaticamente campos vazios com dados do usuário.
+                              if (!prev.nome && u.nome) next.nome = u.nome;
+                              if (!prev.cpf && u.documento) next.cpf = u.documento;
+                              if (!prev.telefone && u.telefone) next.telefone = u.telefone;
+                              if (!prev.email_corporativo && u.email) next.email_corporativo = u.email;
+                              return next;
+                            });
+                            toast.success("Dados do usuário aplicados aos campos vazios.");
                             setUsuarioOpen(false);
                           }}
                         >
