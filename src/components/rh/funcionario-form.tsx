@@ -72,12 +72,18 @@ export function FuncionarioForm({ inicial }: { inicial?: Funcionario | null }) {
   const atualizar = useServerFn(atualizarFuncionario);
   const fnCargos = useServerFn(listarCargos);
   const fnDeptos = useServerFn(listarDepartamentos);
+  const fnUsuarios = useServerFn(listarUsuariosVinculaveis);
 
   const cargos = useQuery({ queryKey: ["rh-cargos"], queryFn: () => fnCargos() });
   const deptos = useQuery({ queryKey: ["rh-departamentos"], queryFn: () => fnDeptos() });
+  const usuarios = useQuery({
+    queryKey: ["rh-usuarios-vinculaveis", inicial?.id ?? null],
+    queryFn: () => fnUsuarios({ data: { funcionario_id: inicial?.id } }),
+  });
 
   const [erros, setErros] = useState<Set<string>>(new Set());
   const [tab, setTab] = useState("pessoal");
+  const [usuarioOpen, setUsuarioOpen] = useState(false);
   const [f, setF] = useState<FuncionarioInput & { salario_atual_str: string }>(() => ({
     id: inicial?.id,
     nome: inicial?.nome ?? "",
