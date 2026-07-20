@@ -74,7 +74,7 @@ const REGRA_VAZIA: RegraForm = {
   faixa_min: 0,
   faixa_max: null,
   tipo: "percentual",
-  valor: 1,
+  valor: 0,
   percentual_parceiro: 0,
   percentual_interno: 100,
   vigencia_inicio: "",
@@ -301,8 +301,9 @@ export function SecaoRegrasComissao() {
                   type="number"
                   min={0}
                   step={1000}
-                  value={form.faixa_min}
-                  onChange={(e) => setForm((f) => ({ ...f, faixa_min: Number(e.target.value) }))}
+                  placeholder="0"
+                  value={form.faixa_min || ""}
+                  onChange={(e) => setForm((f) => ({ ...f, faixa_min: e.target.value === "" ? 0 : Number(e.target.value) }))}
                 />
               </div>
               <div className="space-y-1.5">
@@ -344,8 +345,9 @@ export function SecaoRegrasComissao() {
                   type="number"
                   min={0}
                   step={form.tipo === "percentual" ? 0.1 : 100}
-                  value={form.valor}
-                  onChange={(e) => setForm((f) => ({ ...f, valor: Number(e.target.value) }))}
+                  placeholder="0"
+                  value={form.valor || ""}
+                  onChange={(e) => setForm((f) => ({ ...f, valor: e.target.value === "" ? 0 : Number(e.target.value) }))}
                 />
               </div>
             </div>
@@ -356,9 +358,10 @@ export function SecaoRegrasComissao() {
                   type="number"
                   min={0}
                   max={100}
-                  value={form.percentual_parceiro}
+                  placeholder="0"
+                  value={form.percentual_parceiro || ""}
                   onChange={(e) => {
-                    const p = Number(e.target.value);
+                    const p = e.target.value === "" ? 0 : Number(e.target.value);
                     setForm((f) => ({
                       ...f,
                       percentual_parceiro: p,
@@ -425,7 +428,7 @@ export function SimuladorComissao() {
   const simular = useServerFn(simularComissao);
   const [banco, setBanco] = useState(TODOS_BANCOS);
   const [produto, setProduto] = useState("todos");
-  const [valor, setValor] = useState<number>(300000);
+  const [valor, setValor] = useState<number>(0);
   const [resultado, setResultado] = useState<SimulacaoComissaoResultado | null>(null);
 
   const { data: bancos } = useQuery({
@@ -492,8 +495,9 @@ export function SimuladorComissao() {
               type="number"
               min={0}
               step={1000}
-              value={valor}
-              onChange={(e) => setValor(Number(e.target.value))}
+              placeholder="Digite o valor"
+              value={valor || ""}
+              onChange={(e) => setValor(e.target.value === "" ? 0 : Number(e.target.value))}
             />
           </div>
         </div>
