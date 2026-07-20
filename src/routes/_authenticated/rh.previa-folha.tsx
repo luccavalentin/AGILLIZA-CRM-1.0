@@ -51,7 +51,6 @@ const STATUS_TONE: Record<StatusCompetencia, string> = {
   aberta: "bg-muted text-muted-foreground",
   conferida: "bg-blue-500/15 text-blue-700 dark:text-blue-300",
   fechada: "bg-primary/15 text-primary",
-  paga: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
   cancelada: "bg-destructive/15 text-destructive",
 };
 
