@@ -32,10 +32,16 @@ export interface HoleriteInput {
     descontos_lancados?: number;
     proventos_avulsos?: number;
     descontos_avulsos?: number;
+    inss?: number;
+    irrf?: number;
+    base_irrf?: number;
+    fgts?: number;
+    dependentes_ir?: number;
   };
   ajustes?: Array<{ tipo: "provento" | "desconto"; descricao: string; valor: number }>;
   liquido: number;
 }
+
 
 function fmtCpf(cpf?: string | null): string {
   if (!cpf) return "—";
