@@ -43,6 +43,40 @@ import {
 } from "@/lib/rh/cargos-departamentos.functions";
 import { OPCOES_UF } from "@/components/crm/cliente-form/constants";
 import { mascararCep, apenasDigitosCep, consultarCep } from "@/lib/cep";
+import {
+  mascararCPF,
+  mascararTelefone,
+  validarCPF,
+  validarEmail,
+  validarTelefone,
+  soDigitos,
+} from "@/lib/crm/documento";
+import { InputAutocomplete } from "@/components/ui/input-autocomplete";
+
+const OPCOES_ORGAO_EMISSOR = [
+  "SSP", "SSP/SP", "SSP/RJ", "SSP/MG", "SSP/RS", "SSP/PR", "SSP/SC", "SSP/BA",
+  "SSP/PE", "SSP/CE", "SSP/GO", "SSP/DF", "SSP/ES", "SSP/PA", "SSP/AM",
+  "DETRAN", "PC", "PM", "IFP", "IIRGD", "IGP", "PTC", "CNIG", "MRE", "MJ",
+  "OAB", "CRM", "CREA", "CRC", "CRO", "CRP", "CRF", "COREN",
+];
+
+const OPCOES_NACIONALIDADE = [
+  "Brasileira", "Portuguesa", "Argentina", "Uruguaia", "Paraguaia", "Chilena",
+  "Boliviana", "Peruana", "Colombiana", "Venezuelana", "Equatoriana",
+  "Espanhola", "Italiana", "Francesa", "Alemã", "Inglesa", "Americana",
+  "Canadense", "Mexicana", "Japonesa", "Chinesa", "Coreana", "Angolana",
+  "Moçambicana", "Cabo-verdiana", "Haitiana", "Outra",
+];
+
+const OPCOES_ESTADO_CIVIL = [
+  { v: "solteiro", l: "Solteiro(a)" },
+  { v: "casado", l: "Casado(a)" },
+  { v: "divorciado", l: "Divorciado(a)" },
+  { v: "separado", l: "Separado(a)" },
+  { v: "viuvo", l: "Viúvo(a)" },
+  { v: "uniao_estavel", l: "União estável" },
+];
+
 
 const STATUS_LABEL: Record<StatusFuncionario, string> = {
   ativo: "Ativo",
@@ -186,11 +220,26 @@ export function FuncionarioForm({ inicial }: { inicial?: Funcionario | null }) {
   function validar(): boolean {
     const req = new Set<string>();
     if (!f.nome.trim()) req.add("nome");
-    if (f.cpf.replace(/\D/g, "").length < 11) req.add("cpf");
+    if (!validarCPF(f.cpf)) req.add("cpf");
     if (!f.data_admissao) req.add("data_admissao");
+    if (f.email_pessoal && !validarEmail(f.email_pessoal)) req.add("email_pessoal");
+    if (f.email_corporativo && !validarEmail(f.email_corporativo))
+      req.add("email_corporativo");
+    if (f.telefone && !validarTelefone(f.telefone)) req.add("telefone");
     setErros(req);
     if (req.size > 0) {
-      toast.error("Preencha os campos obrigatórios.");
+      const msg = req.has("nome")
+        ? "Informe o nome do funcionário."
+        : req.has("cpf")
+          ? "CPF inválido."
+          : req.has("data_admissao")
+            ? "Informe a data de admissão."
+            : req.has("email_pessoal") || req.has("email_corporativo")
+              ? "E-mail inválido."
+              : req.has("telefone")
+                ? "Telefone inválido."
+                : "Verifique os campos destacados.";
+      toast.error(msg);
       setTab(req.has("data_admissao") ? "profissional" : "pessoal");
       return false;
     }
@@ -201,6 +250,8 @@ export function FuncionarioForm({ inicial }: { inicial?: Funcionario | null }) {
     if (!validar()) return;
     const payload: FuncionarioInput = {
       ...f,
+      cpf: soDigitos(f.cpf),
+      telefone: f.telefone ? soDigitos(f.telefone) : f.telefone,
       salario_atual: Number(f.salario_atual_str.replace(/[^0-9,]/g, "").replace(",", ".") || 0),
     };
     delete (payload as any).salario_atual_str;
@@ -298,8 +349,8 @@ export function FuncionarioForm({ inicial }: { inicial?: Funcionario | null }) {
                               const next = { ...prev, user_id: u.id };
                               // Pré-cadastro: preenche automaticamente campos vazios com dados do usuário.
                               if (!prev.nome && u.nome) next.nome = u.nome;
-                              if (!prev.cpf && u.documento) next.cpf = u.documento;
-                              if (!prev.telefone && u.telefone) next.telefone = u.telefone;
+                              if (!prev.cpf && u.documento) next.cpf = mascararCPF(u.documento);
+                              if (!prev.telefone && u.telefone) next.telefone = mascararTelefone(u.telefone);
                               if (!prev.email_corporativo && u.email) next.email_corporativo = u.email;
                               return next;
                             });
@@ -368,8 +419,11 @@ export function FuncionarioForm({ inicial }: { inicial?: Funcionario | null }) {
                   CPF <span className="text-destructive">*</span>
                 </Label>
                 <Input
+                  inputMode="numeric"
+                  maxLength={14}
+                  placeholder="000.000.000-00"
                   value={f.cpf}
-                  onChange={(e) => set("cpf", e.target.value)}
+                  onChange={(e) => set("cpf", mascararCPF(e.target.value))}
                   className={errClass("cpf")}
                 />
               </div>
@@ -379,7 +433,13 @@ export function FuncionarioForm({ inicial }: { inicial?: Funcionario | null }) {
               </div>
               <div className="space-y-1.5">
                 <Label>Órgão emissor</Label>
-                <Input value={f.rg_orgao ?? ""} onChange={(e) => set("rg_orgao", e.target.value)} />
+                <InputAutocomplete
+                  value={f.rg_orgao ?? ""}
+                  onValueChange={(v) => set("rg_orgao", v)}
+                  options={OPCOES_ORGAO_EMISSOR}
+                  placeholder="Digite ou selecione"
+                  transform={(v) => v.toUpperCase()}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>Data de nascimento</Label>
@@ -401,11 +461,26 @@ export function FuncionarioForm({ inicial }: { inicial?: Funcionario | null }) {
               </div>
               <div className="space-y-1.5">
                 <Label>Estado civil</Label>
-                <Input value={f.estado_civil ?? ""} onChange={(e) => set("estado_civil", e.target.value)} />
+                <Select
+                  value={f.estado_civil ?? ""}
+                  onValueChange={(v) => set("estado_civil", v)}
+                >
+                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectContent>
+                    {OPCOES_ESTADO_CIVIL.map((o) => (
+                      <SelectItem key={o.v} value={o.v}>{o.l}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-1.5">
                 <Label>Nacionalidade</Label>
-                <Input value={f.nacionalidade ?? ""} onChange={(e) => set("nacionalidade", e.target.value)} />
+                <InputAutocomplete
+                  value={f.nacionalidade ?? ""}
+                  onValueChange={(v) => set("nacionalidade", v)}
+                  options={OPCOES_NACIONALIDADE}
+                  placeholder="Digite ou selecione"
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>Naturalidade</Label>
@@ -423,13 +498,23 @@ export function FuncionarioForm({ inicial }: { inicial?: Funcionario | null }) {
                 <Label>E-mail pessoal</Label>
                 <Input
                   type="email"
+                  inputMode="email"
+                  placeholder="nome@exemplo.com"
                   value={f.email_pessoal ?? ""}
                   onChange={(e) => set("email_pessoal", e.target.value)}
+                  className={errClass("email_pessoal")}
                 />
               </div>
               <div className="space-y-1.5">
                 <Label>Telefone</Label>
-                <Input value={f.telefone ?? ""} onChange={(e) => set("telefone", e.target.value)} />
+                <Input
+                  inputMode="tel"
+                  maxLength={15}
+                  placeholder="(00) 00000-0000"
+                  value={f.telefone ?? ""}
+                  onChange={(e) => set("telefone", mascararTelefone(e.target.value))}
+                  className={errClass("telefone")}
+                />
               </div>
             </CardContent>
           </Card>
@@ -608,8 +693,11 @@ export function FuncionarioForm({ inicial }: { inicial?: Funcionario | null }) {
                 <Label>E-mail corporativo</Label>
                 <Input
                   type="email"
+                  inputMode="email"
+                  placeholder="nome@empresa.com"
                   value={f.email_corporativo ?? ""}
                   onChange={(e) => set("email_corporativo", e.target.value)}
+                  className={errClass("email_corporativo")}
                 />
               </div>
               <div className="space-y-1.5">
