@@ -250,6 +250,8 @@ export function FuncionarioForm({ inicial }: { inicial?: Funcionario | null }) {
     if (!validar()) return;
     const payload: FuncionarioInput = {
       ...f,
+      cpf: soDigitos(f.cpf),
+      telefone: f.telefone ? soDigitos(f.telefone) : f.telefone,
       salario_atual: Number(f.salario_atual_str.replace(/[^0-9,]/g, "").replace(",", ".") || 0),
     };
     delete (payload as any).salario_atual_str;
