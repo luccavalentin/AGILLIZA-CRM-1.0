@@ -4,7 +4,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Loader2, Save, ArrowLeft } from "lucide-react";
+import { Loader2, Save, ArrowLeft, Check, ChevronsUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,9 +18,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import { cn } from "@/lib/utils";
 import {
   criarFuncionario,
   atualizarFuncionario,
+  listarUsuariosVinculaveis,
   type Funcionario,
   type FuncionarioInput,
   type StatusFuncionario,
@@ -61,12 +72,18 @@ export function FuncionarioForm({ inicial }: { inicial?: Funcionario | null }) {
   const atualizar = useServerFn(atualizarFuncionario);
   const fnCargos = useServerFn(listarCargos);
   const fnDeptos = useServerFn(listarDepartamentos);
+  const fnUsuarios = useServerFn(listarUsuariosVinculaveis);
 
   const cargos = useQuery({ queryKey: ["rh-cargos"], queryFn: () => fnCargos() });
   const deptos = useQuery({ queryKey: ["rh-departamentos"], queryFn: () => fnDeptos() });
+  const usuarios = useQuery({
+    queryKey: ["rh-usuarios-vinculaveis", inicial?.id ?? null],
+    queryFn: () => fnUsuarios({ data: { funcionario_id: inicial?.id } }),
+  });
 
   const [erros, setErros] = useState<Set<string>>(new Set());
   const [tab, setTab] = useState("pessoal");
+  const [usuarioOpen, setUsuarioOpen] = useState(false);
   const [f, setF] = useState<FuncionarioInput & { salario_atual_str: string }>(() => ({
     id: inicial?.id,
     nome: inicial?.nome ?? "",
@@ -117,6 +134,7 @@ export function FuncionarioForm({ inicial }: { inicial?: Funcionario | null }) {
     banco_tipo_conta: inicial?.banco_tipo_conta ?? "corrente",
     banco_pix: inicial?.banco_pix ?? "",
     observacoes: inicial?.observacoes ?? "",
+    user_id: (inicial as any)?.user_id ?? null,
   }));
 
   const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) =>
@@ -467,6 +485,99 @@ export function FuncionarioForm({ inicial }: { inicial?: Funcionario | null }) {
                   value={f.salario_desde ?? ""}
                   onChange={(e) => set("salario_desde", e.target.value)}
                 />
+              </div>
+              <div className="space-y-1.5 md:col-span-3">
+                <Label>Usuário do sistema vinculado</Label>
+                <Popover open={usuarioOpen} onOpenChange={setUsuarioOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      role="combobox"
+                      className={cn(
+                        "w-full justify-between font-normal",
+                        !f.user_id && "text-muted-foreground",
+                      )}
+                    >
+                      <span className="truncate">
+                        {(() => {
+                          if (!f.user_id) return "Nenhum usuário vinculado";
+                          const u = (usuarios.data ?? []).find((x) => x.id === f.user_id);
+                          return u?.nome ?? u?.email ?? f.user_id;
+                        })()}
+                      </span>
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent
+                    className="w-[--radix-popover-trigger-width] p-0"
+                    align="start"
+                  >
+                    <Command
+                      filter={(value, search) =>
+                        value.toLowerCase().includes(search.toLowerCase()) ? 1 : 0
+                      }
+                    >
+                      <CommandInput placeholder="Buscar por nome, e-mail ou iniciais…" />
+                      <CommandList>
+                        <CommandEmpty>Nenhum usuário encontrado.</CommandEmpty>
+                        <CommandGroup>
+                          <CommandItem
+                            value="__nenhum__ sem vínculo"
+                            onSelect={() => {
+                              set("user_id", null);
+                              setUsuarioOpen(false);
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                !f.user_id ? "opacity-100" : "opacity-0",
+                              )}
+                            />
+                            <span className="text-muted-foreground">
+                              Nenhum (sem vínculo)
+                            </span>
+                          </CommandItem>
+                          {(usuarios.data ?? []).map((u) => {
+                            const label = u.nome ?? u.email ?? u.id;
+                            const bloqueado = !!u.ja_vinculado_a;
+                            return (
+                              <CommandItem
+                                key={u.id}
+                                value={`${label} ${u.email ?? ""}`}
+                                disabled={bloqueado}
+                                onSelect={() => {
+                                  if (bloqueado) return;
+                                  set("user_id", u.id);
+                                  setUsuarioOpen(false);
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    f.user_id === u.id ? "opacity-100" : "opacity-0",
+                                  )}
+                                />
+                                <div className="flex flex-col">
+                                  <span>{label}</span>
+                                  <span className="text-xs text-muted-foreground">
+                                    {u.email}
+                                    {bloqueado && " · já vinculado a outro funcionário"}
+                                  </span>
+                                </div>
+                              </CommandItem>
+                            );
+                          })}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+                <p className="text-xs text-muted-foreground">
+                  Vincula este funcionário a uma conta de acesso ao sistema. Cada usuário só
+                  pode ser vinculado a um funcionário ativo.
+                </p>
               </div>
               <div className="space-y-1.5 md:col-span-3">
                 <Label>Observações</Label>

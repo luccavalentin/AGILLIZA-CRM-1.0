@@ -75,6 +75,9 @@ export interface Funcionario extends FuncionarioLista {
   banco_pix: string | null;
   observacoes: string | null;
   ativo: boolean;
+  user_id: string | null;
+  user_nome: string | null;
+  user_email: string | null;
 }
 
 const funcionarioSchema = z.object({
@@ -131,6 +134,7 @@ const funcionarioSchema = z.object({
   banco_pix: z.string().optional().nullable(),
 
   observacoes: z.string().optional().nullable(),
+  user_id: z.string().uuid().optional().nullable(),
 });
 
 export type FuncionarioInput = z.infer<typeof funcionarioSchema>;
@@ -237,12 +241,25 @@ export const obterFuncionario = createServerFn({ method: "GET" })
         .maybeSingle();
       gestor_nome = g?.nome ?? null;
     }
+    let user_nome: string | null = null;
+    let user_email: string | null = null;
+    if ((row as any).user_id) {
+      const { data: u } = await supabase
+        .from("profiles")
+        .select("nome, email")
+        .eq("id", (row as any).user_id)
+        .maybeSingle();
+      user_nome = u?.nome ?? null;
+      user_email = u?.email ?? null;
+    }
     return {
       ...(row as any),
       salario_atual: Number(row.salario_atual ?? 0),
       cargo_nome: (row as any).rh_cargos?.nome ?? null,
       departamento_nome: (row as any).rh_departamentos?.nome ?? null,
       gestor_nome,
+      user_nome,
+      user_email,
     } as Funcionario;
   });
 
@@ -482,3 +499,50 @@ export const listarHistoricoFuncionario = createServerFn({ method: "GET" })
       ator_nome: r.ator_id ? (nomes.get(r.ator_id) ?? null) : null,
     })) as HistoricoItem[];
   });
+
+// ------------ Usuários vinculáveis --------------------------------------
+
+export interface UsuarioVinculavel {
+  id: string;
+  nome: string | null;
+  email: string | null;
+  ja_vinculado_a: string | null; // id do funcionário atual que já usa este user, se houver
+}
+
+/** Lista usuários (profiles) do ecossistema que podem ser vinculados a um funcionário. */
+export const listarUsuariosVinculaveis = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) =>
+    z.object({ funcionario_id: z.string().uuid().optional() }).default({}).parse(data ?? {}),
+  )
+  .handler(async ({ data, context }): Promise<UsuarioVinculavel[]> => {
+    const { supabase, userId } = context;
+    const correspondenteId = await correspondenteDoUsuario(supabase, userId);
+    if (!correspondenteId) return [];
+    const { data: profs, error } = await supabase
+      .from("profiles")
+      .select("id, nome, email")
+      .eq("correspondente_id", correspondenteId)
+      .order("nome", { ascending: true });
+    if (error) throw new Error(error.message);
+
+    const { data: usados } = await supabase
+      .from("rh_funcionarios")
+      .select("id, user_id")
+      .eq("correspondente_id", correspondenteId)
+      .is("deletado_em", null)
+      .not("user_id", "is", null);
+    const mapa = new Map<string, string>();
+    (usados ?? []).forEach((r: any) => {
+      if (r.user_id) mapa.set(r.user_id, r.id);
+    });
+
+    return (profs ?? []).map((p: any) => ({
+      id: p.id,
+      nome: p.nome,
+      email: p.email,
+      ja_vinculado_a:
+        mapa.get(p.id) && mapa.get(p.id) !== data.funcionario_id ? mapa.get(p.id)! : null,
+    }));
+  });
+
