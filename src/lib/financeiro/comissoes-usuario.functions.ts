@@ -15,9 +15,6 @@ export type TipoVinculoComissao = (typeof TIPOS_VINCULO_COMISSAO)[number]["valor
 
 export const GATILHOS_COMISSAO = [
   { valor: "contrato_emitido", rotulo: "Contrato emitido" },
-  { valor: "credito_aprovado", rotulo: "Crédito aprovado" },
-  { valor: "assinatura_contrato", rotulo: "Assinatura do contrato" },
-  { valor: "registro_imovel", rotulo: "Registro do imóvel" },
   { valor: "manual", rotulo: "Manual" },
 ] as const;
 
@@ -144,9 +141,6 @@ export const salvarRegraComissaoUsuario = createServerFn({ method: "POST" })
         ]),
         gatilho: z.enum([
           "contrato_emitido",
-          "credito_aprovado",
-          "assinatura_contrato",
-          "registro_imovel",
           "manual",
         ]),
         base_calculo: z.enum(["valor_contrato", "percentual_repasse"]),

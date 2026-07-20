@@ -28,13 +28,12 @@ export const Route = createFileRoute("/_authenticated/financeiro/comissoes")({
   ),
 });
 
-const STATUS = ["", "a_receber", "recebida", "paga_parceiro", "encerrada"];
+const STATUS = ["", "a_receber", "recebida", "paga_parceiro"];
 const STATUS_LABEL: Record<string, string> = {
   "": "Todos",
   a_receber: "A receber",
   recebida: "Recebidos",
   paga_parceiro: "Pagos parceiro",
-  encerrada: "Encerrados",
 };
 
 function Pagina() {
