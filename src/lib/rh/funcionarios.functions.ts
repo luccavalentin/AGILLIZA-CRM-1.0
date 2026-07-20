@@ -138,6 +138,9 @@ const funcionarioSchema = z.object({
 
   observacoes: z.string().optional().nullable(),
   user_id: z.string().uuid().optional().nullable(),
+  dia_pagamento_salario: z.number().int().min(1).max(31).optional().nullable(),
+  dia_pagamento_adiantamento: z.number().int().min(1).max(31).optional().nullable(),
+  gerar_contas_pagar_automatico: z.boolean().optional().default(false),
 });
 
 export type FuncionarioInput = z.infer<typeof funcionarioSchema>;
