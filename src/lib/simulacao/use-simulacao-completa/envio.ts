@@ -240,8 +240,7 @@ export async function executarEnvioSimples(ctx: CtxBase): Promise<void> {
       setConcluidos(1);
     } else {
       let feitos = 0;
-      await Promise.all(
-        idsBancos.map(async (bid: string) => {
+      for (const bid of idsBancos) {
           try {
             await enviarSimulacaoBanco({ data: { simulacao_id: id, banco_ids: [bid] } });
           } catch (e) {
@@ -254,8 +253,7 @@ export async function executarEnvioSimples(ctx: CtxBase): Promise<void> {
             feitos++;
             setConcluidos(feitos);
           }
-        }),
-      );
+      }
     }
 
     // Fluxo "Nova Proposta": após simular, cria a proposta e redireciona.
