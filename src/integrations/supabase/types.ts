@@ -4570,6 +4570,145 @@ export type Database = {
         }
         Relationships: []
       }
+      rh_adiantamentos: {
+        Row: {
+          competencia_ano: number
+          competencia_mes: number
+          correspondente_id: string
+          created_at: string
+          data: string
+          descricao: string | null
+          funcionario_id: string
+          id: string
+          status: Database["public"]["Enums"]["rh_lancamento_status"]
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          competencia_ano: number
+          competencia_mes: number
+          correspondente_id: string
+          created_at?: string
+          data?: string
+          descricao?: string | null
+          funcionario_id: string
+          id?: string
+          status?: Database["public"]["Enums"]["rh_lancamento_status"]
+          updated_at?: string
+          valor: number
+        }
+        Update: {
+          competencia_ano?: number
+          competencia_mes?: number
+          correspondente_id?: string
+          created_at?: string
+          data?: string
+          descricao?: string | null
+          funcionario_id?: string
+          id?: string
+          status?: Database["public"]["Enums"]["rh_lancamento_status"]
+          updated_at?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rh_adiantamentos_funcionario_id_fkey"
+            columns: ["funcionario_id"]
+            isOneToOne: false
+            referencedRelation: "rh_funcionarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rh_alteracoes_salariais: {
+        Row: {
+          aprovado_por: string | null
+          correspondente_id: string
+          created_at: string
+          funcionario_id: string
+          id: string
+          motivo: string | null
+          salario_anterior: number
+          salario_novo: number
+          tipo: string | null
+          updated_at: string
+          vigencia: string
+        }
+        Insert: {
+          aprovado_por?: string | null
+          correspondente_id: string
+          created_at?: string
+          funcionario_id: string
+          id?: string
+          motivo?: string | null
+          salario_anterior?: number
+          salario_novo: number
+          tipo?: string | null
+          updated_at?: string
+          vigencia: string
+        }
+        Update: {
+          aprovado_por?: string | null
+          correspondente_id?: string
+          created_at?: string
+          funcionario_id?: string
+          id?: string
+          motivo?: string | null
+          salario_anterior?: number
+          salario_novo?: number
+          tipo?: string | null
+          updated_at?: string
+          vigencia?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rh_alteracoes_salariais_funcionario_id_fkey"
+            columns: ["funcionario_id"]
+            isOneToOne: false
+            referencedRelation: "rh_funcionarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rh_beneficios_tipos: {
+        Row: {
+          ativo: boolean
+          correspondente_id: string
+          created_at: string
+          desconto_padrao: number
+          descricao: string | null
+          id: string
+          natureza: string
+          nome: string
+          updated_at: string
+          valor_padrao: number
+        }
+        Insert: {
+          ativo?: boolean
+          correspondente_id: string
+          created_at?: string
+          desconto_padrao?: number
+          descricao?: string | null
+          id?: string
+          natureza?: string
+          nome: string
+          updated_at?: string
+          valor_padrao?: number
+        }
+        Update: {
+          ativo?: boolean
+          correspondente_id?: string
+          created_at?: string
+          desconto_padrao?: number
+          descricao?: string | null
+          id?: string
+          natureza?: string
+          nome?: string
+          updated_at?: string
+          valor_padrao?: number
+        }
+        Relationships: []
+      }
       rh_cargos: {
         Row: {
           ativo: boolean
@@ -4685,6 +4824,354 @@ export type Database = {
             columns: ["funcionario_id"]
             isOneToOne: false
             referencedRelation: "rh_funcionarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rh_descontos: {
+        Row: {
+          competencia_ano: number
+          competencia_mes: number
+          correspondente_id: string
+          created_at: string
+          data: string
+          funcionario_id: string
+          id: string
+          motivo: string | null
+          status: Database["public"]["Enums"]["rh_lancamento_status"]
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          competencia_ano: number
+          competencia_mes: number
+          correspondente_id: string
+          created_at?: string
+          data?: string
+          funcionario_id: string
+          id?: string
+          motivo?: string | null
+          status?: Database["public"]["Enums"]["rh_lancamento_status"]
+          updated_at?: string
+          valor: number
+        }
+        Update: {
+          competencia_ano?: number
+          competencia_mes?: number
+          correspondente_id?: string
+          created_at?: string
+          data?: string
+          funcionario_id?: string
+          id?: string
+          motivo?: string | null
+          status?: Database["public"]["Enums"]["rh_lancamento_status"]
+          updated_at?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rh_descontos_funcionario_id_fkey"
+            columns: ["funcionario_id"]
+            isOneToOne: false
+            referencedRelation: "rh_funcionarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rh_documentos: {
+        Row: {
+          arquivo_nome: string
+          arquivo_path: string
+          ativo: boolean
+          correspondente_id: string
+          created_at: string
+          descricao: string | null
+          funcionario_id: string
+          id: string
+          mime_type: string | null
+          tamanho_bytes: number | null
+          tipo: string
+          updated_at: string
+          uploaded_by: string | null
+          validade: string | null
+        }
+        Insert: {
+          arquivo_nome: string
+          arquivo_path: string
+          ativo?: boolean
+          correspondente_id: string
+          created_at?: string
+          descricao?: string | null
+          funcionario_id: string
+          id?: string
+          mime_type?: string | null
+          tamanho_bytes?: number | null
+          tipo: string
+          updated_at?: string
+          uploaded_by?: string | null
+          validade?: string | null
+        }
+        Update: {
+          arquivo_nome?: string
+          arquivo_path?: string
+          ativo?: boolean
+          correspondente_id?: string
+          created_at?: string
+          descricao?: string | null
+          funcionario_id?: string
+          id?: string
+          mime_type?: string | null
+          tamanho_bytes?: number | null
+          tipo?: string
+          updated_at?: string
+          uploaded_by?: string | null
+          validade?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rh_documentos_funcionario_id_fkey"
+            columns: ["funcionario_id"]
+            isOneToOne: false
+            referencedRelation: "rh_funcionarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rh_ferias: {
+        Row: {
+          abono_dias: number
+          adiantar_13o: boolean
+          aprovado_em: string | null
+          aprovado_por: string | null
+          correspondente_id: string
+          created_at: string
+          data_fim: string | null
+          data_inicio: string | null
+          dias_gozados: number
+          funcionario_id: string
+          id: string
+          observacoes: string | null
+          periodo_aquisitivo_fim: string
+          periodo_aquisitivo_inicio: string
+          status: Database["public"]["Enums"]["rh_ferias_status"]
+          updated_at: string
+        }
+        Insert: {
+          abono_dias?: number
+          adiantar_13o?: boolean
+          aprovado_em?: string | null
+          aprovado_por?: string | null
+          correspondente_id: string
+          created_at?: string
+          data_fim?: string | null
+          data_inicio?: string | null
+          dias_gozados?: number
+          funcionario_id: string
+          id?: string
+          observacoes?: string | null
+          periodo_aquisitivo_fim: string
+          periodo_aquisitivo_inicio: string
+          status?: Database["public"]["Enums"]["rh_ferias_status"]
+          updated_at?: string
+        }
+        Update: {
+          abono_dias?: number
+          adiantar_13o?: boolean
+          aprovado_em?: string | null
+          aprovado_por?: string | null
+          correspondente_id?: string
+          created_at?: string
+          data_fim?: string | null
+          data_inicio?: string | null
+          dias_gozados?: number
+          funcionario_id?: string
+          id?: string
+          observacoes?: string | null
+          periodo_aquisitivo_fim?: string
+          periodo_aquisitivo_inicio?: string
+          status?: Database["public"]["Enums"]["rh_ferias_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rh_ferias_funcionario_id_fkey"
+            columns: ["funcionario_id"]
+            isOneToOne: false
+            referencedRelation: "rh_funcionarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rh_folha_competencias: {
+        Row: {
+          ano: number
+          correspondente_id: string
+          created_at: string
+          fechada_em: string | null
+          fechada_por: string | null
+          id: string
+          mes: number
+          observacoes: string | null
+          status: Database["public"]["Enums"]["rh_folha_status"]
+          total_descontos: number
+          total_liquido: number
+          total_proventos: number
+          updated_at: string
+        }
+        Insert: {
+          ano: number
+          correspondente_id: string
+          created_at?: string
+          fechada_em?: string | null
+          fechada_por?: string | null
+          id?: string
+          mes: number
+          observacoes?: string | null
+          status?: Database["public"]["Enums"]["rh_folha_status"]
+          total_descontos?: number
+          total_liquido?: number
+          total_proventos?: number
+          updated_at?: string
+        }
+        Update: {
+          ano?: number
+          correspondente_id?: string
+          created_at?: string
+          fechada_em?: string | null
+          fechada_por?: string | null
+          id?: string
+          mes?: number
+          observacoes?: string | null
+          status?: Database["public"]["Enums"]["rh_folha_status"]
+          total_descontos?: number
+          total_liquido?: number
+          total_proventos?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      rh_folha_itens: {
+        Row: {
+          competencia_id: string
+          correspondente_id: string
+          created_at: string
+          detalhamento: Json
+          funcionario_id: string
+          id: string
+          liquido: number
+          observacoes: string | null
+          outras_provisoes: number
+          salario_base: number
+          total_adiantamentos: number
+          total_beneficios: number
+          total_descontos: number
+          updated_at: string
+        }
+        Insert: {
+          competencia_id: string
+          correspondente_id: string
+          created_at?: string
+          detalhamento?: Json
+          funcionario_id: string
+          id?: string
+          liquido?: number
+          observacoes?: string | null
+          outras_provisoes?: number
+          salario_base?: number
+          total_adiantamentos?: number
+          total_beneficios?: number
+          total_descontos?: number
+          updated_at?: string
+        }
+        Update: {
+          competencia_id?: string
+          correspondente_id?: string
+          created_at?: string
+          detalhamento?: Json
+          funcionario_id?: string
+          id?: string
+          liquido?: number
+          observacoes?: string | null
+          outras_provisoes?: number
+          salario_base?: number
+          total_adiantamentos?: number
+          total_beneficios?: number
+          total_descontos?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rh_folha_itens_competencia_id_fkey"
+            columns: ["competencia_id"]
+            isOneToOne: false
+            referencedRelation: "rh_folha_competencias"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rh_folha_itens_funcionario_id_fkey"
+            columns: ["funcionario_id"]
+            isOneToOne: false
+            referencedRelation: "rh_funcionarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rh_funcionario_beneficios: {
+        Row: {
+          ativo: boolean
+          correspondente_id: string
+          created_at: string
+          desconto: number
+          funcionario_id: string
+          id: string
+          observacoes: string | null
+          tipo_id: string
+          updated_at: string
+          valor: number
+          vigencia_fim: string | null
+          vigencia_inicio: string
+        }
+        Insert: {
+          ativo?: boolean
+          correspondente_id: string
+          created_at?: string
+          desconto?: number
+          funcionario_id: string
+          id?: string
+          observacoes?: string | null
+          tipo_id: string
+          updated_at?: string
+          valor?: number
+          vigencia_fim?: string | null
+          vigencia_inicio?: string
+        }
+        Update: {
+          ativo?: boolean
+          correspondente_id?: string
+          created_at?: string
+          desconto?: number
+          funcionario_id?: string
+          id?: string
+          observacoes?: string | null
+          tipo_id?: string
+          updated_at?: string
+          valor?: number
+          vigencia_fim?: string | null
+          vigencia_inicio?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rh_funcionario_beneficios_funcionario_id_fkey"
+            columns: ["funcionario_id"]
+            isOneToOne: false
+            referencedRelation: "rh_funcionarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rh_funcionario_beneficios_tipo_id_fkey"
+            columns: ["tipo_id"]
+            isOneToOne: false
+            referencedRelation: "rh_beneficios_tipos"
             referencedColumns: ["id"]
           },
         ]
@@ -4921,6 +5408,128 @@ export type Database = {
             columns: ["departamento_id"]
             isOneToOne: false
             referencedRelation: "rh_departamentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rh_holerites: {
+        Row: {
+          ano: number
+          arquivo_nome: string
+          arquivo_path: string
+          competencia_id: string | null
+          correspondente_id: string
+          created_at: string
+          funcionario_id: string
+          gerado_por: string | null
+          id: string
+          mes: number
+          updated_at: string
+          valor_liquido: number | null
+        }
+        Insert: {
+          ano: number
+          arquivo_nome: string
+          arquivo_path: string
+          competencia_id?: string | null
+          correspondente_id: string
+          created_at?: string
+          funcionario_id: string
+          gerado_por?: string | null
+          id?: string
+          mes: number
+          updated_at?: string
+          valor_liquido?: number | null
+        }
+        Update: {
+          ano?: number
+          arquivo_nome?: string
+          arquivo_path?: string
+          competencia_id?: string | null
+          correspondente_id?: string
+          created_at?: string
+          funcionario_id?: string
+          gerado_por?: string | null
+          id?: string
+          mes?: number
+          updated_at?: string
+          valor_liquido?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rh_holerites_competencia_id_fkey"
+            columns: ["competencia_id"]
+            isOneToOne: false
+            referencedRelation: "rh_folha_competencias"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rh_holerites_funcionario_id_fkey"
+            columns: ["funcionario_id"]
+            isOneToOne: false
+            referencedRelation: "rh_funcionarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rh_ocorrencias: {
+        Row: {
+          abonada: boolean
+          arquivo_nome: string | null
+          arquivo_path: string | null
+          cid: string | null
+          correspondente_id: string
+          created_at: string
+          criado_por: string | null
+          data_fim: string | null
+          data_inicio: string
+          dias: number | null
+          funcionario_id: string
+          id: string
+          justificativa: string | null
+          tipo: Database["public"]["Enums"]["rh_ocorrencia_tipo"]
+          updated_at: string
+        }
+        Insert: {
+          abonada?: boolean
+          arquivo_nome?: string | null
+          arquivo_path?: string | null
+          cid?: string | null
+          correspondente_id: string
+          created_at?: string
+          criado_por?: string | null
+          data_fim?: string | null
+          data_inicio: string
+          dias?: number | null
+          funcionario_id: string
+          id?: string
+          justificativa?: string | null
+          tipo: Database["public"]["Enums"]["rh_ocorrencia_tipo"]
+          updated_at?: string
+        }
+        Update: {
+          abonada?: boolean
+          arquivo_nome?: string | null
+          arquivo_path?: string | null
+          cid?: string | null
+          correspondente_id?: string
+          created_at?: string
+          criado_por?: string | null
+          data_fim?: string | null
+          data_inicio?: string
+          dias?: number | null
+          funcionario_id?: string
+          id?: string
+          justificativa?: string | null
+          tipo?: Database["public"]["Enums"]["rh_ocorrencia_tipo"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rh_ocorrencias_funcionario_id_fkey"
+            columns: ["funcionario_id"]
+            isOneToOne: false
+            referencedRelation: "rh_funcionarios"
             referencedColumns: ["id"]
           },
         ]
@@ -6348,6 +6957,22 @@ export type Database = {
         | "separacao_total"
         | "participacao_final"
         | "nao_aplicavel"
+      rh_ferias_status:
+        | "planejada"
+        | "aprovada"
+        | "em_curso"
+        | "concluida"
+        | "cancelada"
+      rh_folha_status: "aberta" | "conferida" | "fechada" | "cancelada"
+      rh_lancamento_status: "previsto" | "descontado" | "pago" | "cancelado"
+      rh_ocorrencia_tipo:
+        | "falta"
+        | "atestado"
+        | "advertencia"
+        | "licenca"
+        | "suspensao"
+        | "elogio"
+        | "outro"
       rh_status_funcionario:
         | "ativo"
         | "experiencia"
@@ -6613,6 +7238,24 @@ export const Constants = {
         "separacao_total",
         "participacao_final",
         "nao_aplicavel",
+      ],
+      rh_ferias_status: [
+        "planejada",
+        "aprovada",
+        "em_curso",
+        "concluida",
+        "cancelada",
+      ],
+      rh_folha_status: ["aberta", "conferida", "fechada", "cancelada"],
+      rh_lancamento_status: ["previsto", "descontado", "pago", "cancelado"],
+      rh_ocorrencia_tipo: [
+        "falta",
+        "atestado",
+        "advertencia",
+        "licenca",
+        "suspensao",
+        "elogio",
+        "outro",
       ],
       rh_status_funcionario: [
         "ativo",
