@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { ArrowLeft, Search, RotateCcw, KanbanSquare, User, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { createDebouncedInvalidator } from "@/lib/realtime-debounce";
 import { BancoLogo } from "@/components/bancos/banco-logo";
 import { corDoBanco } from "@/lib/bancos/cores";
 import { assertModuloPermitido } from "@/lib/route-guards";
