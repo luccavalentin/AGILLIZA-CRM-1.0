@@ -200,11 +200,11 @@ export function LancamentosPage({
       </div>
 
       <Card>
-        <CardContent className="grid gap-3 p-4 sm:grid-cols-2">
+        <CardContent className="flex flex-wrap items-end gap-4 p-4">
           <div className="space-y-1.5">
             <Label>Mês</Label>
             <Select value={String(filtroMes)} onValueChange={(v) => setFiltroMes(Number(v))}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {MESES.map((m, i) => (
                   <SelectItem key={m} value={String(i + 1)}>{m}</SelectItem>
