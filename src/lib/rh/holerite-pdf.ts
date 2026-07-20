@@ -32,10 +32,16 @@ export interface HoleriteInput {
     descontos_lancados?: number;
     proventos_avulsos?: number;
     descontos_avulsos?: number;
+    inss?: number;
+    irrf?: number;
+    base_irrf?: number;
+    fgts?: number;
+    dependentes_ir?: number;
   };
   ajustes?: Array<{ tipo: "provento" | "desconto"; descricao: string; valor: number }>;
   liquido: number;
 }
+
 
 function fmtCpf(cpf?: string | null): string {
   if (!cpf) return "—";
@@ -119,6 +125,16 @@ export function gerarHoleritePdf(input: HoleriteInput): { blob: Blob; filename: 
       .filter((a) => a.tipo === "provento")
       .forEach((a) => proventos.push({ desc: a.descricao, ref: "avulso", valor: a.valor }));
   }
+  if ((d.inss ?? 0) > 0) {
+    descontos.push({ desc: "INSS", ref: "tab. progressiva", valor: d.inss ?? 0 });
+  }
+  if ((d.irrf ?? 0) > 0) {
+    descontos.push({
+      desc: "IRRF",
+      ref: (d.dependentes_ir ?? 0) > 0 ? `${d.dependentes_ir} dep.` : "tab. mensal",
+      valor: d.irrf ?? 0,
+    });
+  }
   if ((d.beneficios_desconto ?? 0) > 0) {
     descontos.push({ desc: "Benefícios (desconto)", ref: "—", valor: d.beneficios_desconto ?? 0 });
   }
@@ -133,6 +149,7 @@ export function gerarHoleritePdf(input: HoleriteInput): { blob: Blob; filename: 
       .filter((a) => a.tipo === "desconto")
       .forEach((a) => descontos.push({ desc: a.descricao, ref: "avulso", valor: a.valor }));
   }
+
 
   const totalProv = proventos.reduce((s, r) => s + r.valor, 0);
   const totalDesc = descontos.reduce((s, r) => s + r.valor, 0);
@@ -204,7 +221,37 @@ export function gerarHoleritePdf(input: HoleriteInput): { blob: Blob; filename: 
     48,
     y + 42,
   );
-  y += netH + 24;
+  y += netH + 14;
+
+  // Bases de cálculo (INSS/IRRF/FGTS) — informativo, exigido em recibo CLT
+  const baseInss = Math.min(input.salario_base + (d.proventos_avulsos ?? 0), 8157.41);
+  const baseIrrf = d.base_irrf ?? 0;
+  const fgts = d.fgts ?? 0;
+  doc.setDrawColor(P.borda);
+  doc.setFillColor(P.card);
+  doc.roundedRect(32, y, pageW - 64, 34, 5, 5, "FD");
+  doc.setTextColor(P.cinza);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(7);
+  const bcols = [
+    { l: "BASE INSS", v: formatBRL(baseInss) },
+    { l: "BASE IRRF", v: formatBRL(baseIrrf) },
+    { l: "FGTS DO MÊS", v: formatBRL(fgts) },
+    { l: "FGTS ACUM. (informativo)", v: "—" },
+  ];
+  const bw = (pageW - 64) / bcols.length;
+  bcols.forEach((c, i) => {
+    const cx = 32 + i * bw + 12;
+    doc.setTextColor(P.cinza);
+    doc.setFontSize(7);
+    doc.text(c.l, cx, y + 12);
+    doc.setTextColor(P.destaque);
+    doc.setFontSize(10);
+    doc.text(c.v, cx, y + 26);
+  });
+  y += 34 + 12;
+
+
 
   // Assinaturas
   const assinY = pageH - 130;

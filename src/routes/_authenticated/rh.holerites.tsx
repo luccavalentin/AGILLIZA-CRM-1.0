@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Receipt, Upload, Download, FileDown, Sparkles } from "lucide-react";
+import { Receipt, Upload, Download, FileDown, Sparkles, Eye, RefreshCw } from "lucide-react";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -128,6 +128,70 @@ function Pagina() {
     const { url } = await fnUrl({ data: { path, expira_em: 300 } });
     window.open(url, "_blank", "noopener");
   }
+
+  async function baixar(path: string, nome: string) {
+    const { url } = await fnUrl({ data: { path, expira_em: 300 } });
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = nome;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+
+  const regerar = useMutation({
+    mutationFn: async (row: { funcionario_id: string; mes: number; ano: number }) => {
+      const { competencia_id, itens } = await fnListarItens({ data: { mes: row.mes, ano: row.ano } });
+      if (!competencia_id) throw new Error("Competência não está fechada.");
+      const it = itens.find((x) => x.funcionario_id === row.funcionario_id);
+      if (!it) throw new Error("Funcionário não encontrado na competência.");
+      const ajustes = await fnListarAjustes({ data: { mes: row.mes, ano: row.ano } });
+      const meus = ajustes
+        .filter((a) => a.funcionario_id === row.funcionario_id)
+        .map((a) => ({ tipo: a.tipo, descricao: a.descricao, valor: a.valor }));
+      const user = (await supabase.auth.getUser()).data.user;
+      if (!user) throw new Error("Sessão expirada.");
+      const prof = await supabase.from("profiles").select("correspondente_id").eq("id", user.id).maybeSingle();
+      const cid = prof.data?.correspondente_id as string | undefined;
+      if (!cid) throw new Error("Correspondente não encontrado.");
+      const { blob, filename } = gerarHoleritePdf({
+        competencia: { mes: row.mes, ano: row.ano },
+        funcionario: {
+          nome: it.funcionario_nome,
+          numero: it.funcionario_numero,
+          cpf: it.funcionario_cpf,
+          cargo: it.cargo,
+          departamento: it.departamento,
+        },
+        salario_base: it.salario_base,
+        detalhamento: it.detalhamento,
+        ajustes: meus,
+        liquido: it.liquido,
+      });
+      const path = `${cid}/holerites/${row.funcionario_id}/${row.ano}-${String(row.mes).padStart(2, "0")}.pdf`;
+      const { error } = await supabase.storage
+        .from("rh-documentos")
+        .upload(path, blob, { contentType: "application/pdf", upsert: true });
+      if (error) throw new Error(error.message);
+      await fnAnexar({
+        data: {
+          funcionario_id: row.funcionario_id,
+          mes: row.mes,
+          ano: row.ano,
+          competencia_id,
+          arquivo_path: path,
+          arquivo_nome: filename,
+          valor_liquido: it.liquido,
+        },
+      });
+    },
+    onSuccess: () => {
+      toast.success("Holerite recalculado (CLT).");
+      qc.invalidateQueries({ queryKey: ["rh-holerites"] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Falha ao recalcular."),
+  });
+
 
   // Gera holerites em PDF para toda uma competência já fechada
   const [openGerar, setOpenGerar] = useState(false);
@@ -374,7 +438,7 @@ function Pagina() {
                   <TableHead>Competência</TableHead>
                   <TableHead>Arquivo</TableHead>
                   <TableHead>Valor líquido</TableHead>
-                  <TableHead className="text-right w-[80px]">Ações</TableHead>
+                  <TableHead className="text-right w-[160px]">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -385,12 +449,27 @@ function Pagina() {
                     <TableCell className="max-w-[240px] truncate">{h.arquivo_nome}</TableCell>
                     <TableCell>{h.valor_liquido !== null ? formatBRL(h.valor_liquido) : "—"}</TableCell>
                     <TableCell className="text-right">
-                      <Button size="icon" variant="ghost" onClick={() => abrir(h.arquivo_path)}>
-                        <Download className="h-4 w-4" />
-                      </Button>
+                      <div className="flex justify-end gap-1">
+                        <Button size="icon" variant="ghost" title="Visualizar" onClick={() => abrir(h.arquivo_path)}>
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button size="icon" variant="ghost" title="Baixar" onClick={() => baixar(h.arquivo_path, h.arquivo_nome)}>
+                          <Download className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          title="Recalcular (CLT) e substituir"
+                          onClick={() => regerar.mutate({ funcionario_id: h.funcionario_id, mes: h.mes, ano: h.ano })}
+                          disabled={regerar.isPending}
+                        >
+                          <RefreshCw className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
+
                 {(!q.data || q.data.length === 0) && (
                   <TableRow>
                     <TableCell colSpan={5} className="py-10 text-center text-sm text-muted-foreground">
