@@ -223,7 +223,7 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
   const ltvMax = restricaoEspecial.ativo
     ? restricaoEspecial.ltvMax
     : isHomeEquity
-      ? 0.6
+      ? 0.7
       : 0.8;
   // Mantém a ref sincronizada para handlers criados antes desta linha.
   ltvMaxRef.current = ltvMax;
