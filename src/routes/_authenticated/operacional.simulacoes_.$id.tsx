@@ -78,11 +78,13 @@ function Pagina() {
         .filter((b: any) => b.selecionado !== false)
         .map((b: any) => b.banco_id)
         .filter(Boolean);
-      await enviarSimulacaoBanco({
-        data: bancosSelecionados.length === 1
-          ? { simulacao_id: id, banco_ids: [bancosSelecionados[0]] }
-          : { simulacao_id: id },
-      });
+      if (bancosSelecionados.length > 0) {
+        for (const bancoId of bancosSelecionados) {
+          await enviarSimulacaoBanco({ data: { simulacao_id: id, banco_ids: [bancoId] } });
+        }
+      } else {
+        await enviarSimulacaoBanco({ data: { simulacao_id: id } });
+      }
       toast.success("Reenviado ao banco.");
       qc.invalidateQueries({ queryKey: ["simulacao", id] });
     } catch (e) {
@@ -112,11 +114,13 @@ function Pagina() {
           .filter((b: any) => b.selecionado !== false)
           .map((b: any) => b.banco_id)
           .filter(Boolean);
-        await enviarSimulacaoBanco({
-          data: bancosSelecionados.length === 1
-            ? { simulacao_id: id, banco_ids: [bancosSelecionados[0]] }
-            : { simulacao_id: id },
-        });
+        if (bancosSelecionados.length > 0) {
+          for (const bancoId of bancosSelecionados) {
+            await enviarSimulacaoBanco({ data: { simulacao_id: id, banco_ids: [bancoId] } });
+          }
+        } else {
+          await enviarSimulacaoBanco({ data: { simulacao_id: id } });
+        }
         toast.success("Titular invertido e simulação reenviada aos bancos.");
       } else {
         toast.success("Titular e cônjuge invertidos.");
