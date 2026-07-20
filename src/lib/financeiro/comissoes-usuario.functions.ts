@@ -141,9 +141,6 @@ export const salvarRegraComissaoUsuario = createServerFn({ method: "POST" })
         ]),
         gatilho: z.enum([
           "contrato_emitido",
-          "credito_aprovado",
-          "assinatura_contrato",
-          "registro_imovel",
           "manual",
         ]),
         base_calculo: z.enum(["valor_contrato", "percentual_repasse"]),
