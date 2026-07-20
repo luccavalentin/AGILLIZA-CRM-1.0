@@ -54,10 +54,10 @@ export const listarBancosParaComissao = createServerFn({ method: "GET" })
   .handler(async ({ context }): Promise<{ codigo: string; nome: string }[]> => {
     const { data, error } = await context.supabase
       .from("vw_bancos_ativos")
-      .select("codigo, nome")
-      .order("nome", { ascending: true });
+      .select("codigo_banco, nome_banco")
+      .order("nome_banco", { ascending: true });
     if (error) throw new Error(error.message);
-    return (data ?? []).map((b: any) => ({ codigo: String(b.codigo ?? ""), nome: b.nome ?? "" }));
+    return (data ?? []).map((b: any) => ({ codigo: String(b.codigo_banco ?? ""), nome: b.nome_banco ?? "" }));
   });
 
 const regraSchema = z.object({
