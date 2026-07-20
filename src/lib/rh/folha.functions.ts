@@ -140,96 +140,9 @@ export const previaFolha = createServerFn({ method: "GET" })
       })
       .parse(data),
   )
-  .handler(async ({ data, context }): Promise<FolhaItem[]> => {
-    return calcularPrevia(context.supabase, data.mes, data.ano);
-  });
-
-const _oldPreviaFolha = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) =>
-    z
-      .object({
-        mes: z.number().min(1).max(12),
-        ano: z.number().min(2020).max(2100),
-      })
-      .parse(data),
-  )
-  .handler(async ({ data, context }): Promise<FolhaItem[]> => {
-    const { supabase } = context;
-    const { data: funcs } = await supabase
-      .from("rh_funcionarios")
-      .select("id, nome, salario_atual, rh_cargos(nome)")
-      .is("deletado_em", null)
-      .neq("status", "desligado")
-      .order("nome");
-
-    const ids = (funcs ?? []).map((f: any) => f.id);
-    if (ids.length === 0) return [];
-
-    const [{ data: bens }, { data: adis }, { data: descs }] = await Promise.all([
-      supabase
-        .from("rh_funcionario_beneficios")
-        .select("funcionario_id, valor, desconto")
-        .in("funcionario_id", ids)
-        .eq("ativo", true),
-      supabase
-        .from("rh_adiantamentos")
-        .select("funcionario_id, valor")
-        .in("funcionario_id", ids)
-        .eq("competencia_mes", data.mes)
-        .eq("competencia_ano", data.ano)
-        .neq("status", "cancelado"),
-      supabase
-        .from("rh_descontos")
-        .select("funcionario_id, valor")
-        .in("funcionario_id", ids)
-        .eq("competencia_mes", data.mes)
-        .eq("competencia_ano", data.ano)
-        .neq("status", "cancelado"),
-    ]);
-
-    const bensBy = new Map<string, { valor: number; desconto: number }>();
-    (bens ?? []).forEach((b: any) => {
-      const cur = bensBy.get(b.funcionario_id) ?? { valor: 0, desconto: 0 };
-      cur.valor += Number(b.valor ?? 0);
-      cur.desconto += Number(b.desconto ?? 0);
-      bensBy.set(b.funcionario_id, cur);
-    });
-
-    const somaPor = (rows: any[] | null | undefined) => {
-      const m = new Map<string, number>();
-      (rows ?? []).forEach((r: any) =>
-        m.set(r.funcionario_id, (m.get(r.funcionario_id) ?? 0) + Number(r.valor ?? 0)),
-      );
-      return m;
-    };
-    const adiBy = somaPor(adis);
-    const desBy = somaPor(descs);
-
-    return (funcs ?? []).map((f: any) => {
-      const salario = Number(f.salario_atual ?? 0);
-      const b = bensBy.get(f.id) ?? { valor: 0, desconto: 0 };
-      const adi = adiBy.get(f.id) ?? 0;
-      const des = desBy.get(f.id) ?? 0;
-      const proventos = salario + b.valor;
-      const descontos = b.desconto + adi + des;
-      return {
-        funcionario_id: f.id,
-        funcionario_nome: f.nome,
-        cargo: f.rh_cargos?.nome ?? null,
-        salario_base: salario,
-        proventos,
-        descontos,
-        liquido: proventos - descontos,
-        detalhes: {
-          beneficios_valor: b.valor,
-          beneficios_desconto: b.desconto,
-          adiantamentos: adi,
-          descontos_lancados: des,
-        },
-      };
-    });
-  });
+  .handler(async ({ data, context }) =>
+    calcularPrevia(context.supabase, data.mes, data.ano),
+  );
 
 export const listarCompetencias = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -269,14 +182,10 @@ export const fecharCompetencia = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const cid = await correspondenteId(context.supabase, context.userId);
-    // Recalcula a prévia diretamente aqui para consistência
-    const previa = await previaFolha({
-      data: { mes: data.mes, ano: data.ano },
-    } as never);
-    if (!previa || previa.length === 0) {
+    const previa = await calcularPrevia(context.supabase, data.mes, data.ano);
+    if (previa.length === 0) {
       throw new Error("Não há funcionários ativos para essa competência.");
     }
-
     const totais = previa.reduce(
       (acc, i) => {
         acc.proventos += i.proventos;
@@ -287,7 +196,6 @@ export const fecharCompetencia = createServerFn({ method: "POST" })
       { proventos: 0, descontos: 0, liquido: 0 },
     );
 
-    // Cria competência
     const { data: comp, error: cErr } = await context.supabase
       .from("rh_folha_competencias")
       .upsert(
@@ -295,7 +203,7 @@ export const fecharCompetencia = createServerFn({ method: "POST" })
           correspondente_id: cid,
           mes: data.mes,
           ano: data.ano,
-          status: "fechada",
+          status: "fechada" as StatusCompetencia,
           total_proventos: totais.proventos,
           total_descontos: totais.descontos,
           total_liquido: totais.liquido,
@@ -310,7 +218,6 @@ export const fecharCompetencia = createServerFn({ method: "POST" })
     if (cErr) throw new Error(cErr.message);
     const compId = comp!.id as string;
 
-    // Limpa itens anteriores e insere os novos
     await context.supabase.from("rh_folha_itens").delete().eq("competencia_id", compId);
     const itens = previa.map((i) => ({
       correspondente_id: cid,
@@ -326,7 +233,6 @@ export const fecharCompetencia = createServerFn({ method: "POST" })
     const { error: iErr } = await context.supabase.from("rh_folha_itens").insert(itens);
     if (iErr) throw new Error(iErr.message);
 
-    // Cria contas a pagar (uma por funcionário)
     const mesLabel = String(data.mes).padStart(2, "0");
     const payables = previa
       .filter((i) => i.liquido > 0)
