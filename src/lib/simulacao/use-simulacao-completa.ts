@@ -289,6 +289,9 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
       toast.warning(
         `${restricaoEspecial.motivo}: prazo máximo de ${restricaoEspecial.prazoMax} meses.`,
       );
+    } else if (isHomeEquity && final > 240) {
+      final = 240;
+      toast.warning("Home Equity: prazo máximo de 240 meses.");
     } else if (ajustado && mensagem) {
       toast.warning(mensagem);
     }
