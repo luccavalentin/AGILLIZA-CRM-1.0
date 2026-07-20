@@ -134,6 +134,7 @@ const funcionarioSchema = z.object({
   banco_pix: z.string().optional().nullable(),
 
   observacoes: z.string().optional().nullable(),
+  user_id: z.string().uuid().optional().nullable(),
 });
 
 export type FuncionarioInput = z.infer<typeof funcionarioSchema>;
