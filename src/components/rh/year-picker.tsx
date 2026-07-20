@@ -53,7 +53,7 @@ export function YearPicker({
   );
 
   return (
-    <div className={cn("relative", className)}>
+    <div className={cn("relative inline-block w-32", className)}>
       <Input
         id={id}
         type="text"
