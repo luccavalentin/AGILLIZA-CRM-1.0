@@ -42,9 +42,8 @@ export function useWizardSimulacao(melhorTaxaAno = 0.1199) {
   });
 
   // LTV por produto — mesma regra da simulação completa.
-  const ltvMax = w.produto === "home_equity" ? 0.6 : 0.8;
-  // Entrada sugerida por produto: HE = 30% do imóvel (LTV máx permanece 60%).
-  const pctEntradaSugerida = w.produto === "home_equity" ? 0.3 : 1 - ltvMax;
+  const ltvMax = w.produto === "home_equity" ? 0.7 : 0.8;
+  const pctEntradaSugerida = 1 - ltvMax;
 
   function set<K extends keyof WizardState>(k: K, v: WizardState[K]) {
     setW((prev) => ({ ...prev, [k]: v }));
