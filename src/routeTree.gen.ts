@@ -39,7 +39,19 @@ import { Route as AuthenticatedRelatoriosIndexRouteImport } from './routes/_auth
 import { Route as AuthenticatedFormulariosIndexRouteImport } from './routes/_authenticated/formularios.index'
 import { Route as ApiPublicSyncPropostasRouteImport } from './routes/api/public/sync-propostas'
 import { Route as AuthenticatedVisaoGeralPainelRouteImport } from './routes/_authenticated/visao-geral.painel'
+import { Route as AuthenticatedRhRelatoriosRouteImport } from './routes/_authenticated/rh.relatorios'
+import { Route as AuthenticatedRhPreviaFolhaRouteImport } from './routes/_authenticated/rh.previa-folha'
+import { Route as AuthenticatedRhHoleritesRouteImport } from './routes/_authenticated/rh.holerites'
 import { Route as AuthenticatedRhFuncionariosRouteImport } from './routes/_authenticated/rh.funcionarios'
+import { Route as AuthenticatedRhFeriasRouteImport } from './routes/_authenticated/rh.ferias'
+import { Route as AuthenticatedRhFaltasOcorrenciasRouteImport } from './routes/_authenticated/rh.faltas-ocorrencias'
+import { Route as AuthenticatedRhDocumentosRouteImport } from './routes/_authenticated/rh.documentos'
+import { Route as AuthenticatedRhDescontosRouteImport } from './routes/_authenticated/rh.descontos'
+import { Route as AuthenticatedRhConfiguracoesRouteImport } from './routes/_authenticated/rh.configuracoes'
+import { Route as AuthenticatedRhBeneficiosRouteImport } from './routes/_authenticated/rh.beneficios'
+import { Route as AuthenticatedRhAtestadosRouteImport } from './routes/_authenticated/rh.atestados'
+import { Route as AuthenticatedRhAlteracoesSalariaisRouteImport } from './routes/_authenticated/rh.alteracoes-salariais'
+import { Route as AuthenticatedRhAdiantamentosRouteImport } from './routes/_authenticated/rh.adiantamentos'
 import { Route as AuthenticatedRelatoriosTarefasRouteImport } from './routes/_authenticated/relatorios.tarefas'
 import { Route as AuthenticatedRelatoriosSimulacoesRouteImport } from './routes/_authenticated/relatorios.simulacoes'
 import { Route as AuthenticatedRelatoriosPropostasRouteImport } from './routes/_authenticated/relatorios.propostas'
@@ -261,10 +273,81 @@ const AuthenticatedVisaoGeralPainelRoute =
     path: '/visao-geral/painel',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedRhRelatoriosRoute =
+  AuthenticatedRhRelatoriosRouteImport.update({
+    id: '/relatorios',
+    path: '/relatorios',
+    getParentRoute: () => AuthenticatedRhRoute,
+  } as any)
+const AuthenticatedRhPreviaFolhaRoute =
+  AuthenticatedRhPreviaFolhaRouteImport.update({
+    id: '/previa-folha',
+    path: '/previa-folha',
+    getParentRoute: () => AuthenticatedRhRoute,
+  } as any)
+const AuthenticatedRhHoleritesRoute =
+  AuthenticatedRhHoleritesRouteImport.update({
+    id: '/holerites',
+    path: '/holerites',
+    getParentRoute: () => AuthenticatedRhRoute,
+  } as any)
 const AuthenticatedRhFuncionariosRoute =
   AuthenticatedRhFuncionariosRouteImport.update({
     id: '/funcionarios',
     path: '/funcionarios',
+    getParentRoute: () => AuthenticatedRhRoute,
+  } as any)
+const AuthenticatedRhFeriasRoute = AuthenticatedRhFeriasRouteImport.update({
+  id: '/ferias',
+  path: '/ferias',
+  getParentRoute: () => AuthenticatedRhRoute,
+} as any)
+const AuthenticatedRhFaltasOcorrenciasRoute =
+  AuthenticatedRhFaltasOcorrenciasRouteImport.update({
+    id: '/faltas-ocorrencias',
+    path: '/faltas-ocorrencias',
+    getParentRoute: () => AuthenticatedRhRoute,
+  } as any)
+const AuthenticatedRhDocumentosRoute =
+  AuthenticatedRhDocumentosRouteImport.update({
+    id: '/documentos',
+    path: '/documentos',
+    getParentRoute: () => AuthenticatedRhRoute,
+  } as any)
+const AuthenticatedRhDescontosRoute =
+  AuthenticatedRhDescontosRouteImport.update({
+    id: '/descontos',
+    path: '/descontos',
+    getParentRoute: () => AuthenticatedRhRoute,
+  } as any)
+const AuthenticatedRhConfiguracoesRoute =
+  AuthenticatedRhConfiguracoesRouteImport.update({
+    id: '/configuracoes',
+    path: '/configuracoes',
+    getParentRoute: () => AuthenticatedRhRoute,
+  } as any)
+const AuthenticatedRhBeneficiosRoute =
+  AuthenticatedRhBeneficiosRouteImport.update({
+    id: '/beneficios',
+    path: '/beneficios',
+    getParentRoute: () => AuthenticatedRhRoute,
+  } as any)
+const AuthenticatedRhAtestadosRoute =
+  AuthenticatedRhAtestadosRouteImport.update({
+    id: '/atestados',
+    path: '/atestados',
+    getParentRoute: () => AuthenticatedRhRoute,
+  } as any)
+const AuthenticatedRhAlteracoesSalariaisRoute =
+  AuthenticatedRhAlteracoesSalariaisRouteImport.update({
+    id: '/alteracoes-salariais',
+    path: '/alteracoes-salariais',
+    getParentRoute: () => AuthenticatedRhRoute,
+  } as any)
+const AuthenticatedRhAdiantamentosRoute =
+  AuthenticatedRhAdiantamentosRouteImport.update({
+    id: '/adiantamentos',
+    path: '/adiantamentos',
     getParentRoute: () => AuthenticatedRhRoute,
   } as any)
 const AuthenticatedRelatoriosTarefasRoute =
@@ -730,7 +813,19 @@ export interface FileRoutesByFullPath {
   '/relatorios/propostas': typeof AuthenticatedRelatoriosPropostasRoute
   '/relatorios/simulacoes': typeof AuthenticatedRelatoriosSimulacoesRoute
   '/relatorios/tarefas': typeof AuthenticatedRelatoriosTarefasRoute
+  '/rh/adiantamentos': typeof AuthenticatedRhAdiantamentosRoute
+  '/rh/alteracoes-salariais': typeof AuthenticatedRhAlteracoesSalariaisRoute
+  '/rh/atestados': typeof AuthenticatedRhAtestadosRoute
+  '/rh/beneficios': typeof AuthenticatedRhBeneficiosRoute
+  '/rh/configuracoes': typeof AuthenticatedRhConfiguracoesRoute
+  '/rh/descontos': typeof AuthenticatedRhDescontosRoute
+  '/rh/documentos': typeof AuthenticatedRhDocumentosRoute
+  '/rh/faltas-ocorrencias': typeof AuthenticatedRhFaltasOcorrenciasRoute
+  '/rh/ferias': typeof AuthenticatedRhFeriasRoute
   '/rh/funcionarios': typeof AuthenticatedRhFuncionariosRoute
+  '/rh/holerites': typeof AuthenticatedRhHoleritesRoute
+  '/rh/previa-folha': typeof AuthenticatedRhPreviaFolhaRoute
+  '/rh/relatorios': typeof AuthenticatedRhRelatoriosRoute
   '/visao-geral/painel': typeof AuthenticatedVisaoGeralPainelRoute
   '/api/public/sync-propostas': typeof ApiPublicSyncPropostasRoute
   '/formularios/': typeof AuthenticatedFormulariosIndexRoute
@@ -825,7 +920,19 @@ export interface FileRoutesByTo {
   '/relatorios/propostas': typeof AuthenticatedRelatoriosPropostasRoute
   '/relatorios/simulacoes': typeof AuthenticatedRelatoriosSimulacoesRoute
   '/relatorios/tarefas': typeof AuthenticatedRelatoriosTarefasRoute
+  '/rh/adiantamentos': typeof AuthenticatedRhAdiantamentosRoute
+  '/rh/alteracoes-salariais': typeof AuthenticatedRhAlteracoesSalariaisRoute
+  '/rh/atestados': typeof AuthenticatedRhAtestadosRoute
+  '/rh/beneficios': typeof AuthenticatedRhBeneficiosRoute
+  '/rh/configuracoes': typeof AuthenticatedRhConfiguracoesRoute
+  '/rh/descontos': typeof AuthenticatedRhDescontosRoute
+  '/rh/documentos': typeof AuthenticatedRhDocumentosRoute
+  '/rh/faltas-ocorrencias': typeof AuthenticatedRhFaltasOcorrenciasRoute
+  '/rh/ferias': typeof AuthenticatedRhFeriasRoute
   '/rh/funcionarios': typeof AuthenticatedRhFuncionariosRoute
+  '/rh/holerites': typeof AuthenticatedRhHoleritesRoute
+  '/rh/previa-folha': typeof AuthenticatedRhPreviaFolhaRoute
+  '/rh/relatorios': typeof AuthenticatedRhRelatoriosRoute
   '/visao-geral/painel': typeof AuthenticatedVisaoGeralPainelRoute
   '/api/public/sync-propostas': typeof ApiPublicSyncPropostasRoute
   '/formularios': typeof AuthenticatedFormulariosIndexRoute
@@ -924,7 +1031,19 @@ export interface FileRoutesById {
   '/_authenticated/relatorios/propostas': typeof AuthenticatedRelatoriosPropostasRoute
   '/_authenticated/relatorios/simulacoes': typeof AuthenticatedRelatoriosSimulacoesRoute
   '/_authenticated/relatorios/tarefas': typeof AuthenticatedRelatoriosTarefasRoute
+  '/_authenticated/rh/adiantamentos': typeof AuthenticatedRhAdiantamentosRoute
+  '/_authenticated/rh/alteracoes-salariais': typeof AuthenticatedRhAlteracoesSalariaisRoute
+  '/_authenticated/rh/atestados': typeof AuthenticatedRhAtestadosRoute
+  '/_authenticated/rh/beneficios': typeof AuthenticatedRhBeneficiosRoute
+  '/_authenticated/rh/configuracoes': typeof AuthenticatedRhConfiguracoesRoute
+  '/_authenticated/rh/descontos': typeof AuthenticatedRhDescontosRoute
+  '/_authenticated/rh/documentos': typeof AuthenticatedRhDocumentosRoute
+  '/_authenticated/rh/faltas-ocorrencias': typeof AuthenticatedRhFaltasOcorrenciasRoute
+  '/_authenticated/rh/ferias': typeof AuthenticatedRhFeriasRoute
   '/_authenticated/rh/funcionarios': typeof AuthenticatedRhFuncionariosRoute
+  '/_authenticated/rh/holerites': typeof AuthenticatedRhHoleritesRoute
+  '/_authenticated/rh/previa-folha': typeof AuthenticatedRhPreviaFolhaRoute
+  '/_authenticated/rh/relatorios': typeof AuthenticatedRhRelatoriosRoute
   '/_authenticated/visao-geral/painel': typeof AuthenticatedVisaoGeralPainelRoute
   '/api/public/sync-propostas': typeof ApiPublicSyncPropostasRoute
   '/_authenticated/formularios/': typeof AuthenticatedFormulariosIndexRoute
@@ -1023,7 +1142,19 @@ export interface FileRouteTypes {
     | '/relatorios/propostas'
     | '/relatorios/simulacoes'
     | '/relatorios/tarefas'
+    | '/rh/adiantamentos'
+    | '/rh/alteracoes-salariais'
+    | '/rh/atestados'
+    | '/rh/beneficios'
+    | '/rh/configuracoes'
+    | '/rh/descontos'
+    | '/rh/documentos'
+    | '/rh/faltas-ocorrencias'
+    | '/rh/ferias'
     | '/rh/funcionarios'
+    | '/rh/holerites'
+    | '/rh/previa-folha'
+    | '/rh/relatorios'
     | '/visao-geral/painel'
     | '/api/public/sync-propostas'
     | '/formularios/'
@@ -1118,7 +1249,19 @@ export interface FileRouteTypes {
     | '/relatorios/propostas'
     | '/relatorios/simulacoes'
     | '/relatorios/tarefas'
+    | '/rh/adiantamentos'
+    | '/rh/alteracoes-salariais'
+    | '/rh/atestados'
+    | '/rh/beneficios'
+    | '/rh/configuracoes'
+    | '/rh/descontos'
+    | '/rh/documentos'
+    | '/rh/faltas-ocorrencias'
+    | '/rh/ferias'
     | '/rh/funcionarios'
+    | '/rh/holerites'
+    | '/rh/previa-folha'
+    | '/rh/relatorios'
     | '/visao-geral/painel'
     | '/api/public/sync-propostas'
     | '/formularios'
@@ -1216,7 +1359,19 @@ export interface FileRouteTypes {
     | '/_authenticated/relatorios/propostas'
     | '/_authenticated/relatorios/simulacoes'
     | '/_authenticated/relatorios/tarefas'
+    | '/_authenticated/rh/adiantamentos'
+    | '/_authenticated/rh/alteracoes-salariais'
+    | '/_authenticated/rh/atestados'
+    | '/_authenticated/rh/beneficios'
+    | '/_authenticated/rh/configuracoes'
+    | '/_authenticated/rh/descontos'
+    | '/_authenticated/rh/documentos'
+    | '/_authenticated/rh/faltas-ocorrencias'
+    | '/_authenticated/rh/ferias'
     | '/_authenticated/rh/funcionarios'
+    | '/_authenticated/rh/holerites'
+    | '/_authenticated/rh/previa-folha'
+    | '/_authenticated/rh/relatorios'
     | '/_authenticated/visao-geral/painel'
     | '/api/public/sync-propostas'
     | '/_authenticated/formularios/'
@@ -1463,11 +1618,95 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedVisaoGeralPainelRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/rh/relatorios': {
+      id: '/_authenticated/rh/relatorios'
+      path: '/relatorios'
+      fullPath: '/rh/relatorios'
+      preLoaderRoute: typeof AuthenticatedRhRelatoriosRouteImport
+      parentRoute: typeof AuthenticatedRhRoute
+    }
+    '/_authenticated/rh/previa-folha': {
+      id: '/_authenticated/rh/previa-folha'
+      path: '/previa-folha'
+      fullPath: '/rh/previa-folha'
+      preLoaderRoute: typeof AuthenticatedRhPreviaFolhaRouteImport
+      parentRoute: typeof AuthenticatedRhRoute
+    }
+    '/_authenticated/rh/holerites': {
+      id: '/_authenticated/rh/holerites'
+      path: '/holerites'
+      fullPath: '/rh/holerites'
+      preLoaderRoute: typeof AuthenticatedRhHoleritesRouteImport
+      parentRoute: typeof AuthenticatedRhRoute
+    }
     '/_authenticated/rh/funcionarios': {
       id: '/_authenticated/rh/funcionarios'
       path: '/funcionarios'
       fullPath: '/rh/funcionarios'
       preLoaderRoute: typeof AuthenticatedRhFuncionariosRouteImport
+      parentRoute: typeof AuthenticatedRhRoute
+    }
+    '/_authenticated/rh/ferias': {
+      id: '/_authenticated/rh/ferias'
+      path: '/ferias'
+      fullPath: '/rh/ferias'
+      preLoaderRoute: typeof AuthenticatedRhFeriasRouteImport
+      parentRoute: typeof AuthenticatedRhRoute
+    }
+    '/_authenticated/rh/faltas-ocorrencias': {
+      id: '/_authenticated/rh/faltas-ocorrencias'
+      path: '/faltas-ocorrencias'
+      fullPath: '/rh/faltas-ocorrencias'
+      preLoaderRoute: typeof AuthenticatedRhFaltasOcorrenciasRouteImport
+      parentRoute: typeof AuthenticatedRhRoute
+    }
+    '/_authenticated/rh/documentos': {
+      id: '/_authenticated/rh/documentos'
+      path: '/documentos'
+      fullPath: '/rh/documentos'
+      preLoaderRoute: typeof AuthenticatedRhDocumentosRouteImport
+      parentRoute: typeof AuthenticatedRhRoute
+    }
+    '/_authenticated/rh/descontos': {
+      id: '/_authenticated/rh/descontos'
+      path: '/descontos'
+      fullPath: '/rh/descontos'
+      preLoaderRoute: typeof AuthenticatedRhDescontosRouteImport
+      parentRoute: typeof AuthenticatedRhRoute
+    }
+    '/_authenticated/rh/configuracoes': {
+      id: '/_authenticated/rh/configuracoes'
+      path: '/configuracoes'
+      fullPath: '/rh/configuracoes'
+      preLoaderRoute: typeof AuthenticatedRhConfiguracoesRouteImport
+      parentRoute: typeof AuthenticatedRhRoute
+    }
+    '/_authenticated/rh/beneficios': {
+      id: '/_authenticated/rh/beneficios'
+      path: '/beneficios'
+      fullPath: '/rh/beneficios'
+      preLoaderRoute: typeof AuthenticatedRhBeneficiosRouteImport
+      parentRoute: typeof AuthenticatedRhRoute
+    }
+    '/_authenticated/rh/atestados': {
+      id: '/_authenticated/rh/atestados'
+      path: '/atestados'
+      fullPath: '/rh/atestados'
+      preLoaderRoute: typeof AuthenticatedRhAtestadosRouteImport
+      parentRoute: typeof AuthenticatedRhRoute
+    }
+    '/_authenticated/rh/alteracoes-salariais': {
+      id: '/_authenticated/rh/alteracoes-salariais'
+      path: '/alteracoes-salariais'
+      fullPath: '/rh/alteracoes-salariais'
+      preLoaderRoute: typeof AuthenticatedRhAlteracoesSalariaisRouteImport
+      parentRoute: typeof AuthenticatedRhRoute
+    }
+    '/_authenticated/rh/adiantamentos': {
+      id: '/_authenticated/rh/adiantamentos'
+      path: '/adiantamentos'
+      fullPath: '/rh/adiantamentos'
+      preLoaderRoute: typeof AuthenticatedRhAdiantamentosRouteImport
       parentRoute: typeof AuthenticatedRhRoute
     }
     '/_authenticated/relatorios/tarefas': {
@@ -2003,13 +2242,38 @@ const AuthenticatedRelatoriosRouteWithChildren =
   )
 
 interface AuthenticatedRhRouteChildren {
+  AuthenticatedRhAdiantamentosRoute: typeof AuthenticatedRhAdiantamentosRoute
+  AuthenticatedRhAlteracoesSalariaisRoute: typeof AuthenticatedRhAlteracoesSalariaisRoute
+  AuthenticatedRhAtestadosRoute: typeof AuthenticatedRhAtestadosRoute
+  AuthenticatedRhBeneficiosRoute: typeof AuthenticatedRhBeneficiosRoute
+  AuthenticatedRhConfiguracoesRoute: typeof AuthenticatedRhConfiguracoesRoute
+  AuthenticatedRhDescontosRoute: typeof AuthenticatedRhDescontosRoute
+  AuthenticatedRhDocumentosRoute: typeof AuthenticatedRhDocumentosRoute
+  AuthenticatedRhFaltasOcorrenciasRoute: typeof AuthenticatedRhFaltasOcorrenciasRoute
+  AuthenticatedRhFeriasRoute: typeof AuthenticatedRhFeriasRoute
   AuthenticatedRhFuncionariosRoute: typeof AuthenticatedRhFuncionariosRoute
+  AuthenticatedRhHoleritesRoute: typeof AuthenticatedRhHoleritesRoute
+  AuthenticatedRhPreviaFolhaRoute: typeof AuthenticatedRhPreviaFolhaRoute
+  AuthenticatedRhRelatoriosRoute: typeof AuthenticatedRhRelatoriosRoute
   AuthenticatedRhFuncionariosIdRoute: typeof AuthenticatedRhFuncionariosIdRoute
   AuthenticatedRhFuncionariosNovoRoute: typeof AuthenticatedRhFuncionariosNovoRoute
 }
 
 const AuthenticatedRhRouteChildren: AuthenticatedRhRouteChildren = {
+  AuthenticatedRhAdiantamentosRoute: AuthenticatedRhAdiantamentosRoute,
+  AuthenticatedRhAlteracoesSalariaisRoute:
+    AuthenticatedRhAlteracoesSalariaisRoute,
+  AuthenticatedRhAtestadosRoute: AuthenticatedRhAtestadosRoute,
+  AuthenticatedRhBeneficiosRoute: AuthenticatedRhBeneficiosRoute,
+  AuthenticatedRhConfiguracoesRoute: AuthenticatedRhConfiguracoesRoute,
+  AuthenticatedRhDescontosRoute: AuthenticatedRhDescontosRoute,
+  AuthenticatedRhDocumentosRoute: AuthenticatedRhDocumentosRoute,
+  AuthenticatedRhFaltasOcorrenciasRoute: AuthenticatedRhFaltasOcorrenciasRoute,
+  AuthenticatedRhFeriasRoute: AuthenticatedRhFeriasRoute,
   AuthenticatedRhFuncionariosRoute: AuthenticatedRhFuncionariosRoute,
+  AuthenticatedRhHoleritesRoute: AuthenticatedRhHoleritesRoute,
+  AuthenticatedRhPreviaFolhaRoute: AuthenticatedRhPreviaFolhaRoute,
+  AuthenticatedRhRelatoriosRoute: AuthenticatedRhRelatoriosRoute,
   AuthenticatedRhFuncionariosIdRoute: AuthenticatedRhFuncionariosIdRoute,
   AuthenticatedRhFuncionariosNovoRoute: AuthenticatedRhFuncionariosNovoRoute,
 }
