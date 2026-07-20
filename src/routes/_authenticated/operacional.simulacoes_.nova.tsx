@@ -149,6 +149,13 @@ function Pagina() {
   }
 
   function simularRapida() {
+    if (w.sistema_amortizacao === "P" && (!w.renda_familiar || w.renda_familiar <= 0)) {
+      toast.error("Informe a renda familiar mensal para simular na tabela PRICE.");
+      const el = document.getElementById("campo-renda-familiar");
+      el?.scrollIntoView({ behavior: "smooth", block: "center" });
+      setTimeout(() => el?.querySelector("input")?.focus(), 400);
+      return;
+    }
     jaBaixou.current = false;
     setMostrarRapida(true);
   }
