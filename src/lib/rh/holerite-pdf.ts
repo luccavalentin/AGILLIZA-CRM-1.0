@@ -221,7 +221,37 @@ export function gerarHoleritePdf(input: HoleriteInput): { blob: Blob; filename: 
     48,
     y + 42,
   );
-  y += netH + 24;
+  y += netH + 14;
+
+  // Bases de cálculo (INSS/IRRF/FGTS) — informativo, exigido em recibo CLT
+  const baseInss = Math.min(input.salario_base + (d.proventos_avulsos ?? 0), 8157.41);
+  const baseIrrf = d.base_irrf ?? 0;
+  const fgts = d.fgts ?? 0;
+  doc.setDrawColor(P.borda);
+  doc.setFillColor(P.card);
+  doc.roundedRect(32, y, pageW - 64, 34, 5, 5, "FD");
+  doc.setTextColor(P.cinza);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(7);
+  const bcols = [
+    { l: "BASE INSS", v: formatBRL(baseInss) },
+    { l: "BASE IRRF", v: formatBRL(baseIrrf) },
+    { l: "FGTS DO MÊS", v: formatBRL(fgts) },
+    { l: "FGTS ACUM. (informativo)", v: "—" },
+  ];
+  const bw = (pageW - 64) / bcols.length;
+  bcols.forEach((c, i) => {
+    const cx = 32 + i * bw + 12;
+    doc.setTextColor(P.cinza);
+    doc.setFontSize(7);
+    doc.text(c.l, cx, y + 12);
+    doc.setTextColor(P.destaque);
+    doc.setFontSize(10);
+    doc.text(c.v, cx, y + 26);
+  });
+  y += 34 + 12;
+
+
 
   // Assinaturas
   const assinY = pageH - 130;
