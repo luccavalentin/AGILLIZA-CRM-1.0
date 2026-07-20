@@ -1,5 +1,5 @@
 // Registro guardado do service worker do App do Cliente.
-// NUNCA registra em preview/iframe/dev — apenas no app publicado.
+// NUNCA registra em preview/iframe/dev — apenas no domínio publicado (produção).
 export function registrarSwCliente() {
   if (typeof window === "undefined") return;
   if (!("serviceWorker" in navigator)) return;
