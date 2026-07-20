@@ -146,7 +146,7 @@ function Pagina() {
       />
 
       <div className="overflow-x-auto rounded-lg border border-border">
-        <Table>
+        <Table className="min-w-[760px]">
           <TableHeader>
             <TableRow>
               <TableHead>Nº</TableHead>
