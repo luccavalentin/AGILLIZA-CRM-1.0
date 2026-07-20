@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { ClipboardList, Lock, CheckCircle2 } from "lucide-react";
+import { ClipboardList, Lock, CheckCircle2, Plus, Trash2, Pencil } from "lucide-react";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,7 +38,11 @@ import {
   fecharCompetencia,
   listarCompetencias,
   previaFolha,
+  listarAjustes,
+  salvarAjuste,
+  excluirAjuste,
   type StatusCompetencia,
+  type FolhaItem,
 } from "@/lib/rh/folha.functions";
 import { formatBRL } from "@/lib/financeiro/format";
 
@@ -65,6 +69,9 @@ function Pagina() {
   const fnPrevia = useServerFn(previaFolha);
   const fnCompetencias = useServerFn(listarCompetencias);
   const fnFechar = useServerFn(fecharCompetencia);
+  const fnListarAjustes = useServerFn(listarAjustes);
+  const fnSalvarAjuste = useServerFn(salvarAjuste);
+  const fnExcluirAjuste = useServerFn(excluirAjuste);
 
   const hoje = new Date();
   const [mes, setMes] = useState(hoje.getMonth() + 1);
@@ -78,6 +85,15 @@ function Pagina() {
   });
   const [observacoes, setObservacoes] = useState("");
 
+  // Estado do painel de ajustes
+  const [ajustesFunc, setAjustesFunc] = useState<FolhaItem | null>(null);
+  const [ajusteForm, setAjusteForm] = useState({
+    tipo: "provento" as "provento" | "desconto",
+    descricao: "",
+    valor: 0,
+    id: undefined as string | undefined,
+  });
+
   const previa = useQuery({
     queryKey: ["rh-previa-folha", mes, ano],
     queryFn: () => fnPrevia({ data: { mes, ano } }),
@@ -86,6 +102,15 @@ function Pagina() {
   const historico = useQuery({
     queryKey: ["rh-competencias"],
     queryFn: () => fnCompetencias(),
+  });
+
+  const ajustes = useQuery({
+    queryKey: ["rh-ajustes", mes, ano, ajustesFunc?.funcionario_id],
+    enabled: !!ajustesFunc,
+    queryFn: () =>
+      fnListarAjustes({
+        data: { mes, ano, funcionario_id: ajustesFunc!.funcionario_id },
+      }),
   });
 
   const fechar = useMutation({
@@ -101,14 +126,54 @@ function Pagina() {
     onError: (e: any) => toast.error(e?.message ?? "Falha ao fechar competência."),
   });
 
-  const totais = (previa.data ?? []).reduce(
-    (acc, i) => {
-      acc.proventos += i.proventos;
-      acc.descontos += i.descontos;
-      acc.liquido += i.liquido;
-      return acc;
+  const salvarAj = useMutation({
+    mutationFn: async () => {
+      if (!ajustesFunc) return;
+      if (!ajusteForm.descricao.trim()) throw new Error("Informe a descrição.");
+      if (ajusteForm.valor <= 0) throw new Error("Valor deve ser maior que zero.");
+      await fnSalvarAjuste({
+        data: {
+          id: ajusteForm.id,
+          funcionario_id: ajustesFunc.funcionario_id,
+          mes,
+          ano,
+          tipo: ajusteForm.tipo,
+          descricao: ajusteForm.descricao.trim(),
+          valor: ajusteForm.valor,
+        },
+      });
     },
-    { proventos: 0, descontos: 0, liquido: 0 },
+    onSuccess: () => {
+      toast.success("Ajuste salvo.");
+      setAjusteForm({ tipo: "provento", descricao: "", valor: 0, id: undefined });
+      qc.invalidateQueries({ queryKey: ["rh-ajustes"] });
+      qc.invalidateQueries({ queryKey: ["rh-previa-folha", mes, ano] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Falha ao salvar ajuste."),
+  });
+
+  const removerAj = useMutation({
+    mutationFn: (id: string) => fnExcluirAjuste({ data: { id } }),
+    onSuccess: () => {
+      toast.success("Ajuste removido.");
+      qc.invalidateQueries({ queryKey: ["rh-ajustes"] });
+      qc.invalidateQueries({ queryKey: ["rh-previa-folha", mes, ano] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Falha ao remover."),
+  });
+
+  const totais = useMemo(
+    () =>
+      (previa.data ?? []).reduce(
+        (acc, i) => {
+          acc.proventos += i.proventos;
+          acc.descontos += i.descontos;
+          acc.liquido += i.liquido;
+          return acc;
+        },
+        { proventos: 0, descontos: 0, liquido: 0 },
+      ),
+    [previa.data],
   );
 
   const anos = [hoje.getFullYear() - 1, hoje.getFullYear(), hoje.getFullYear() + 1];
@@ -124,7 +189,7 @@ function Pagina() {
             <ClipboardList className="h-5 w-5 text-primary" /> Prévia da folha
           </h1>
           <p className="text-sm text-muted-foreground">
-            Consolida salários, benefícios e descontos por competência antes do fechamento.
+            Consolida salários, benefícios, descontos e ajustes avulsos por competência.
           </p>
         </div>
         <Button
@@ -185,30 +250,54 @@ function Pagina() {
                   <TableHead className="text-right">Benefícios</TableHead>
                   <TableHead className="text-right">Descontos</TableHead>
                   <TableHead className="text-right">Adiantamentos</TableHead>
+                  <TableHead className="text-right">Ajustes</TableHead>
                   <TableHead className="text-right">Líquido</TableHead>
+                  <TableHead className="w-[60px]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {(previa.data ?? []).map((i) => (
-                  <TableRow key={i.funcionario_id}>
-                    <TableCell className="font-medium">{i.funcionario_nome}</TableCell>
-                    <TableCell className="text-xs text-muted-foreground">{i.cargo ?? "—"}</TableCell>
-                    <TableCell className="text-right">{formatBRL(i.salario_base)}</TableCell>
-                    <TableCell className="text-right text-emerald-600">
-                      {formatBRL(i.detalhes.beneficios_valor)}
-                    </TableCell>
-                    <TableCell className="text-right text-destructive">
-                      -{formatBRL(i.detalhes.beneficios_desconto + i.detalhes.descontos_lancados)}
-                    </TableCell>
-                    <TableCell className="text-right text-destructive">
-                      -{formatBRL(i.detalhes.adiantamentos)}
-                    </TableCell>
-                    <TableCell className="text-right font-semibold">{formatBRL(i.liquido)}</TableCell>
-                  </TableRow>
-                ))}
+                {(previa.data ?? []).map((i) => {
+                  const ajProv = i.detalhes.proventos_avulsos ?? 0;
+                  const ajDesc = i.detalhes.descontos_avulsos ?? 0;
+                  const saldoAj = ajProv - ajDesc;
+                  return (
+                    <TableRow key={i.funcionario_id}>
+                      <TableCell className="font-medium">{i.funcionario_nome}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground">{i.cargo ?? "—"}</TableCell>
+                      <TableCell className="text-right">{formatBRL(i.salario_base)}</TableCell>
+                      <TableCell className="text-right text-emerald-600">
+                        {formatBRL(i.detalhes.beneficios_valor)}
+                      </TableCell>
+                      <TableCell className="text-right text-destructive">
+                        -{formatBRL(i.detalhes.beneficios_desconto + i.detalhes.descontos_lancados)}
+                      </TableCell>
+                      <TableCell className="text-right text-destructive">
+                        -{formatBRL(i.detalhes.adiantamentos)}
+                      </TableCell>
+                      <TableCell className={`text-right ${saldoAj > 0 ? "text-emerald-600" : saldoAj < 0 ? "text-destructive" : "text-muted-foreground"}`}>
+                        {saldoAj === 0 ? "—" : (saldoAj > 0 ? "+" : "") + formatBRL(saldoAj)}
+                      </TableCell>
+                      <TableCell className="text-right font-semibold">{formatBRL(i.liquido)}</TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          disabled={jaFechada}
+                          onClick={() => {
+                            setAjustesFunc(i);
+                            setAjusteForm({ tipo: "provento", descricao: "", valor: 0, id: undefined });
+                          }}
+                          title="Ajustes avulsos"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
                 {(!previa.data || previa.data.length === 0) && (
                   <TableRow>
-                    <TableCell colSpan={7} className="py-10 text-center text-sm text-muted-foreground">
+                    <TableCell colSpan={9} className="py-10 text-center text-sm text-muted-foreground">
                       Nenhum funcionário ativo nesta competência.
                     </TableCell>
                   </TableRow>
@@ -221,10 +310,11 @@ function Pagina() {
                     <TableCell colSpan={2} className="text-right">
                       Proventos: {formatBRL(totais.proventos)}
                     </TableCell>
-                    <TableCell colSpan={2} className="text-right">
+                    <TableCell colSpan={3} className="text-right">
                       Descontos: {formatBRL(totais.descontos)}
                     </TableCell>
                     <TableCell className="text-right font-bold">{formatBRL(totais.liquido)}</TableCell>
+                    <TableCell />
                   </TableRow>
                 </TableFooter>
               )}
@@ -277,6 +367,126 @@ function Pagina() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Diálogo de ajustes por funcionário */}
+      <Dialog open={!!ajustesFunc} onOpenChange={(o) => !o && setAjustesFunc(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>
+              Ajustes avulsos · {ajustesFunc?.funcionario_nome} · {MESES[mes - 1]}/{ano}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="grid gap-3 rounded-md border border-border/60 bg-muted/30 p-3 sm:grid-cols-[140px_1fr_140px_auto]">
+              <div className="space-y-1.5">
+                <Label className="text-xs">Tipo</Label>
+                <Select
+                  value={ajusteForm.tipo}
+                  onValueChange={(v) => setAjusteForm((p) => ({ ...p, tipo: v as any }))}
+                >
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="provento">Provento (+)</SelectItem>
+                    <SelectItem value="desconto">Desconto (−)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Descrição</Label>
+                <Input
+                  value={ajusteForm.descricao}
+                  onChange={(e) => setAjusteForm((p) => ({ ...p, descricao: e.target.value }))}
+                  placeholder="Ex.: Comissão sobre venda, Vale-transporte, Bonificação"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Valor (R$)</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={ajusteForm.valor || ""}
+                  onChange={(e) => setAjusteForm((p) => ({ ...p, valor: Number(e.target.value) }))}
+                />
+              </div>
+              <div className="flex items-end">
+                <Button
+                  onClick={() => salvarAj.mutate()}
+                  disabled={salvarAj.isPending}
+                  className="w-full sm:w-auto"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  {ajusteForm.id ? "Atualizar" : "Adicionar"}
+                </Button>
+              </div>
+            </div>
+
+            <div className="rounded-md border border-border/60">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[110px]">Tipo</TableHead>
+                    <TableHead>Descrição</TableHead>
+                    <TableHead className="text-right">Valor</TableHead>
+                    <TableHead className="w-[90px]"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {(ajustes.data ?? []).map((a) => (
+                    <TableRow key={a.id}>
+                      <TableCell>
+                        <Badge className={a.tipo === "provento" ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300" : "bg-destructive/15 text-destructive"}>
+                          {a.tipo === "provento" ? "Provento" : "Desconto"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-sm">{a.descricao}</TableCell>
+                      <TableCell className="text-right font-medium">{formatBRL(a.valor)}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-1">
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() =>
+                              setAjusteForm({
+                                tipo: a.tipo,
+                                descricao: a.descricao,
+                                valor: a.valor,
+                                id: a.id,
+                              })
+                            }
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => removerAj.mutate(a.id)}
+                            disabled={removerAj.isPending}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {(!ajustes.data || ajustes.data.length === 0) && (
+                    <TableRow>
+                      <TableCell colSpan={4} className="py-6 text-center text-sm text-muted-foreground">
+                        Nenhum ajuste avulso nesta competência.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAjustesFunc(null)}>Fechar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={openFechar} onOpenChange={setOpenFechar}>
         <DialogContent>
