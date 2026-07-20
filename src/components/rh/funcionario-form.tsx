@@ -722,6 +722,7 @@ export function FuncionarioForm({ inicial }: { inicial?: Funcionario | null }) {
               </div>
 
 
+
               <div className="space-y-1.5 md:col-span-3">
                 <Label>Observações</Label>
                 <Textarea
@@ -732,6 +733,59 @@ export function FuncionarioForm({ inicial }: { inicial?: Funcionario | null }) {
               </div>
             </CardContent>
           </Card>
+
+          <Card className="mt-4">
+            <CardHeader>
+              <CardTitle className="text-base">Pagamento (CLT)</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+              <div className="space-y-1.5">
+                <Label>Dia de pagamento do salário</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={31}
+                  placeholder="Ex.: 5"
+                  value={f.dia_pagamento_salario ?? ""}
+                  onChange={(e) =>
+                    set("dia_pagamento_salario", e.target.value ? Number(e.target.value) : null)
+                  }
+                />
+                <p className="text-[11px] text-muted-foreground">
+                  Limite legal CLT: até o 5º dia útil do mês seguinte.
+                </p>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Dia do adiantamento (opcional)</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={31}
+                  placeholder="Ex.: 20"
+                  value={f.dia_pagamento_adiantamento ?? ""}
+                  onChange={(e) =>
+                    set(
+                      "dia_pagamento_adiantamento",
+                      e.target.value ? Number(e.target.value) : null,
+                    )
+                  }
+                />
+              </div>
+              <div className="flex items-center gap-3 pt-6">
+                <input
+                  id="gerar-cp"
+                  type="checkbox"
+                  className="h-4 w-4 rounded border-input"
+                  checked={!!f.gerar_contas_pagar_automatico}
+                  onChange={(e) => set("gerar_contas_pagar_automatico", e.target.checked)}
+                />
+                <Label htmlFor="gerar-cp" className="cursor-pointer">
+                  Gerar Conta a Pagar automaticamente ao fechar a folha
+                </Label>
+              </div>
+            </CardContent>
+          </Card>
+
         </TabsContent>
 
         <TabsContent value="bancario" className="mt-4">
