@@ -64,6 +64,7 @@ interface Props {
 export function RegraComissaoUsuarioForm({ aberto, onFechar, tipoInicial, regra }: Props) {
   const qc = useQueryClient();
   const [usuarioId, setUsuarioId] = useState("");
+  const [usuarioOpen, setUsuarioOpen] = useState(false);
   const [tipoVinculo, setTipoVinculo] = useState<TipoVinculoComissao>(tipoInicial);
   const [gatilho, setGatilho] = useState<string>("contrato_emitido");
   const [baseCalculo, setBaseCalculo] = useState<"valor_contrato" | "percentual_repasse">(
