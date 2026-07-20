@@ -5002,6 +5002,56 @@ export type Database = {
           },
         ]
       }
+      rh_folha_ajustes: {
+        Row: {
+          ano: number
+          correspondente_id: string
+          created_at: string
+          criado_por: string | null
+          descricao: string
+          funcionario_id: string
+          id: string
+          mes: number
+          tipo: string
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          ano: number
+          correspondente_id: string
+          created_at?: string
+          criado_por?: string | null
+          descricao: string
+          funcionario_id: string
+          id?: string
+          mes: number
+          tipo: string
+          updated_at?: string
+          valor: number
+        }
+        Update: {
+          ano?: number
+          correspondente_id?: string
+          created_at?: string
+          criado_por?: string | null
+          descricao?: string
+          funcionario_id?: string
+          id?: string
+          mes?: number
+          tipo?: string
+          updated_at?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rh_folha_ajustes_funcionario_id_fkey"
+            columns: ["funcionario_id"]
+            isOneToOne: false
+            referencedRelation: "rh_funcionarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rh_folha_competencias: {
         Row: {
           ano: number

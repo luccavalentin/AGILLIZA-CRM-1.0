@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Receipt, Upload, Download } from "lucide-react";
+import { Receipt, Upload, Download, FileDown, Sparkles } from "lucide-react";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -39,6 +39,8 @@ import {
   gerarUrlAssinada,
   listarHolerites,
 } from "@/lib/rh/submodulos.functions";
+import { listarItensFolha, listarAjustes } from "@/lib/rh/folha.functions";
+import { gerarHoleritePdf } from "@/lib/rh/holerite-pdf";
 import { formatBRL } from "@/lib/financeiro/format";
 
 const MESES = [
@@ -57,6 +59,10 @@ function Pagina() {
   const fnList = useServerFn(listarHolerites);
   const fnAnexar = useServerFn(anexarHolerite);
   const fnUrl = useServerFn(gerarUrlAssinada);
+  const fnListarItens = useServerFn(listarItensFolha);
+  const fnListarAjustes = useServerFn(listarAjustes);
+
+
 
   const hoje = new Date();
   const [filtroAno, setFiltroAno] = useState(hoje.getFullYear());
@@ -122,6 +128,85 @@ function Pagina() {
     window.open(url, "_blank", "noopener");
   }
 
+  // Gera holerites em PDF para toda uma competência já fechada
+  const [openGerar, setOpenGerar] = useState(false);
+  const [gerarForm, setGerarForm] = useState({ mes: hoje.getMonth() + 1, ano: hoje.getFullYear() });
+
+  const gerar = useMutation({
+    mutationFn: async () => {
+      const { competencia_id, itens } = await fnListarItens({
+        data: { mes: gerarForm.mes, ano: gerarForm.ano },
+      });
+      if (!competencia_id) {
+        throw new Error("Competência ainda não foi fechada. Feche a competência antes de gerar holerites.");
+      }
+      if (!itens.length) throw new Error("Sem itens nessa competência.");
+
+      // Busca ajustes uma vez só (a descrição individual é útil no PDF)
+      const ajustes = await fnListarAjustes({
+        data: { mes: gerarForm.mes, ano: gerarForm.ano },
+      });
+      const ajustesPorFunc = new Map<string, Array<{ tipo: "provento" | "desconto"; descricao: string; valor: number }>>();
+      ajustes.forEach((a) => {
+        const arr = ajustesPorFunc.get(a.funcionario_id) ?? [];
+        arr.push({ tipo: a.tipo, descricao: a.descricao, valor: a.valor });
+        ajustesPorFunc.set(a.funcionario_id, arr);
+      });
+
+      const user = (await supabase.auth.getUser()).data.user;
+      if (!user) throw new Error("Sessão expirada.");
+      const prof = await supabase
+        .from("profiles")
+        .select("correspondente_id")
+        .eq("id", user.id)
+        .maybeSingle();
+      const cid = prof.data?.correspondente_id as string | undefined;
+      if (!cid) throw new Error("Correspondente não encontrado.");
+
+      let gerados = 0;
+      for (const it of itens) {
+        const { blob, filename } = gerarHoleritePdf({
+          competencia: { mes: gerarForm.mes, ano: gerarForm.ano },
+          funcionario: {
+            nome: it.funcionario_nome,
+            numero: it.funcionario_numero,
+            cpf: it.funcionario_cpf,
+            cargo: it.cargo,
+            departamento: it.departamento,
+          },
+          salario_base: it.salario_base,
+          detalhamento: it.detalhamento,
+          ajustes: ajustesPorFunc.get(it.funcionario_id) ?? [],
+          liquido: it.liquido,
+        });
+        const path = `${cid}/holerites/${it.funcionario_id}/${gerarForm.ano}-${String(gerarForm.mes).padStart(2, "0")}.pdf`;
+        const { error } = await supabase.storage
+          .from("rh-documentos")
+          .upload(path, blob, { contentType: "application/pdf", upsert: true });
+        if (error) throw new Error(`Falha no upload: ${error.message}`);
+        await fnAnexar({
+          data: {
+            funcionario_id: it.funcionario_id,
+            mes: gerarForm.mes,
+            ano: gerarForm.ano,
+            competencia_id,
+            arquivo_path: path,
+            arquivo_nome: filename,
+            valor_liquido: it.liquido,
+          },
+        });
+        gerados++;
+      }
+      return gerados;
+    },
+    onSuccess: (n) => {
+      toast.success(`${n} holerite(s) gerado(s) e anexado(s).`);
+      qc.invalidateQueries({ queryKey: ["rh-holerites"] });
+      setOpenGerar(false);
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Falha ao gerar holerites."),
+  });
+
   const anos = [hoje.getFullYear() - 2, hoje.getFullYear() - 1, hoje.getFullYear(), hoje.getFullYear() + 1];
 
   return (
@@ -132,15 +217,71 @@ function Pagina() {
             <Receipt className="h-5 w-5 text-primary" /> Holerites e recibos
           </h1>
           <p className="text-sm text-muted-foreground">
-            Anexe o PDF do holerite por competência. Cada funcionário recebe um por mês.
+            Gere holerites automaticamente a partir da folha fechada, ou anexe um PDF externo.
           </p>
         </div>
+        <div className="flex flex-wrap gap-2">
+          <Dialog open={openGerar} onOpenChange={setOpenGerar}>
+            <DialogTrigger asChild>
+              <Button variant="outline">
+                <Sparkles className="mr-2 h-4 w-4" /> Gerar da competência
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Gerar holerites em PDF</DialogTitle>
+              </DialogHeader>
+              <div className="grid gap-3">
+                <p className="text-sm text-muted-foreground">
+                  A competência precisa estar <strong>fechada</strong> na Prévia da Folha.
+                  Um PDF será gerado, anexado e armazenado por funcionário.
+                </p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label>Mês</Label>
+                    <Select
+                      value={String(gerarForm.mes)}
+                      onValueChange={(v) => setGerarForm((p) => ({ ...p, mes: Number(v) }))}
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {MESES.map((m, i) => (
+                          <SelectItem key={m} value={String(i + 1)}>{m}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Ano</Label>
+                    <Select
+                      value={String(gerarForm.ano)}
+                      onValueChange={(v) => setGerarForm((p) => ({ ...p, ano: Number(v) }))}
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {anos.map((a) => <SelectItem key={a} value={String(a)}>{a}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setOpenGerar(false)}>Cancelar</Button>
+                <Button onClick={() => gerar.mutate()} disabled={gerar.isPending}>
+                  <FileDown className="mr-2 h-4 w-4" />
+                  {gerar.isPending ? "Gerando…" : "Gerar e anexar"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button>
               <Upload className="mr-2 h-4 w-4" /> Anexar holerite
             </Button>
           </DialogTrigger>
+
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Anexar holerite</DialogTitle>
@@ -201,7 +342,9 @@ function Pagina() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
+
 
       <Card>
         <CardContent className="grid gap-3 p-4 sm:grid-cols-2">
