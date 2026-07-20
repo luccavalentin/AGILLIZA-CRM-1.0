@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Receipt, Upload, Download, FileDown, Sparkles } from "lucide-react";
+import { Receipt, Upload, Download, FileDown, Sparkles, Eye, RefreshCw } from "lucide-react";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
