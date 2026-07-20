@@ -20,6 +20,7 @@ import {
   listarHolerites,
   gerarUrlAssinada,
 } from "@/lib/rh/submodulos.functions";
+import { ChecklistClt } from "@/components/rh/checklist-clt";
 import { formatBRL } from "@/lib/financeiro/format";
 
 function fmtDate(iso: string | null | undefined) {
