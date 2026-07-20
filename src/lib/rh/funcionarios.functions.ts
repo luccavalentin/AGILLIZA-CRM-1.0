@@ -75,6 +75,9 @@ export interface Funcionario extends FuncionarioLista {
   banco_pix: string | null;
   observacoes: string | null;
   ativo: boolean;
+  user_id: string | null;
+  user_nome: string | null;
+  user_email: string | null;
 }
 
 const funcionarioSchema = z.object({
