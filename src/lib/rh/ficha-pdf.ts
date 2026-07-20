@@ -116,7 +116,7 @@ export function gerarFichaFuncionarioPdf(input: {
   autoTable(doc, {
     startY: y,
     theme: "plain",
-    styles: { font: "helvetica", fontSize: 9.5, cellPadding: 4, textColor: P.text },
+    styles: { font: "helvetica", fontSize: 9.5, cellPadding: 4, textColor: P.texto },
     columnStyles: { 0: { fontStyle: "bold", cellWidth: 130 } },
     body: linhas,
     didDrawPage: () => drawWatermark(doc, P),
@@ -134,7 +134,7 @@ export function gerarFichaFuncionarioPdf(input: {
   autoTable(doc, {
     startY: y,
     theme: "plain",
-    styles: { font: "helvetica", fontSize: 9.5, cellPadding: 4, textColor: P.text },
+    styles: { font: "helvetica", fontSize: 9.5, cellPadding: 4, textColor: P.texto },
     columnStyles: { 0: { fontStyle: "bold", cellWidth: 130 } },
     body: [
       ["Matrícula", f.matricula ?? "—"],
@@ -169,7 +169,7 @@ export function gerarFichaFuncionarioPdf(input: {
   autoTable(doc, {
     startY: y,
     theme: "plain",
-    styles: { font: "helvetica", fontSize: 9.5, cellPadding: 4, textColor: P.text },
+    styles: { font: "helvetica", fontSize: 9.5, cellPadding: 4, textColor: P.texto },
     columnStyles: { 0: { fontStyle: "bold", cellWidth: 130 } },
     body: [
       ["Banco", f.banco_nome ?? "—"],
@@ -189,7 +189,7 @@ export function gerarFichaFuncionarioPdf(input: {
     autoTable(doc, {
       startY: y,
       theme: "striped",
-      styles: { font: "helvetica", fontSize: 9, cellPadding: 4, textColor: P.text },
+      styles: { font: "helvetica", fontSize: 9, cellPadding: 4, textColor: P.texto },
       headStyles: { fillColor: P.azul, textColor: "#FFFFFF" },
       head: [["Nome", "Parentesco", "CPF", "Nascimento"]],
       body: input.dependentes.map((d) => [
