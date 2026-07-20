@@ -129,8 +129,14 @@ export function useWizardSimulacao(melhorTaxaAno = 0.1199) {
       return;
     }
     const { prazo, ajustado, mensagem } = ajustarPrazoPorIdade(valor, w.data_nascimento);
-    if (ajustado && mensagem) toast.warning(mensagem);
-    set("prazo_meses", prazo);
+    let final = prazo;
+    if (w.produto === "home_equity" && final > 240) {
+      final = 240;
+      toast.warning("Home Equity: prazo máximo de 240 meses.");
+    } else if (ajustado && mensagem) {
+      toast.warning(mensagem);
+    }
+    set("prazo_meses", final);
   }
 
   useEffect(() => {
