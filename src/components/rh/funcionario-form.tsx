@@ -41,6 +41,7 @@ import {
   listarCargos,
   listarDepartamentos,
 } from "@/lib/rh/cargos-departamentos.functions";
+import { OPCOES_UF } from "@/components/crm/cliente-form/constants";
 import { mascararCep, apenasDigitosCep, consultarCep } from "@/lib/cep";
 import {
   mascararCPF,
@@ -75,7 +76,7 @@ const OPCOES_ESTADO_CIVIL = [
   { v: "viuvo", l: "Viúvo(a)" },
   { v: "uniao_estavel", l: "União estável" },
 ];
-import { mascararCep, apenasDigitosCep, consultarCep } from "@/lib/cep";
+
 
 const STATUS_LABEL: Record<StatusFuncionario, string> = {
   ativo: "Ativo",
