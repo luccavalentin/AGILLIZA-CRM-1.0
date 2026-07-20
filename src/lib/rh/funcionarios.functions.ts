@@ -499,3 +499,50 @@ export const listarHistoricoFuncionario = createServerFn({ method: "GET" })
       ator_nome: r.ator_id ? (nomes.get(r.ator_id) ?? null) : null,
     })) as HistoricoItem[];
   });
+
+// ------------ Usuários vinculáveis --------------------------------------
+
+export interface UsuarioVinculavel {
+  id: string;
+  nome: string | null;
+  email: string | null;
+  ja_vinculado_a: string | null; // id do funcionário atual que já usa este user, se houver
+}
+
+/** Lista usuários (profiles) do ecossistema que podem ser vinculados a um funcionário. */
+export const listarUsuariosVinculaveis = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) =>
+    z.object({ funcionario_id: z.string().uuid().optional() }).default({}).parse(data ?? {}),
+  )
+  .handler(async ({ data, context }): Promise<UsuarioVinculavel[]> => {
+    const { supabase, userId } = context;
+    const correspondenteId = await correspondenteDoUsuario(supabase, userId);
+    if (!correspondenteId) return [];
+    const { data: profs, error } = await supabase
+      .from("profiles")
+      .select("id, nome, email")
+      .eq("correspondente_id", correspondenteId)
+      .order("nome", { ascending: true });
+    if (error) throw new Error(error.message);
+
+    const { data: usados } = await supabase
+      .from("rh_funcionarios")
+      .select("id, user_id")
+      .eq("correspondente_id", correspondenteId)
+      .is("deletado_em", null)
+      .not("user_id", "is", null);
+    const mapa = new Map<string, string>();
+    (usados ?? []).forEach((r: any) => {
+      if (r.user_id) mapa.set(r.user_id, r.id);
+    });
+
+    return (profs ?? []).map((p: any) => ({
+      id: p.id,
+      nome: p.nome,
+      email: p.email,
+      ja_vinculado_a:
+        mapa.get(p.id) && mapa.get(p.id) !== data.funcionario_id ? mapa.get(p.id)! : null,
+    }));
+  });
+
