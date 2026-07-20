@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { createDebouncedInvalidator } from "@/lib/realtime-debounce";
 import { SwipeToDelete } from "@/components/app-shell/swipe-to-delete";
 import {
   listarTodasNotificacoes,
