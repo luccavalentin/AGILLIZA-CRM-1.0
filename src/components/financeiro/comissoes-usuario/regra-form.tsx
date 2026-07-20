@@ -117,6 +117,10 @@ export function RegraComissaoUsuarioForm({ aberto, onFechar, tipoInicial, regra 
     queryFn: () => listarBancosComissao(),
     enabled: aberto,
   });
+  const usuarioSelecionado = useMemo(
+    () => (usuarios ?? []).find((u) => u.id === usuarioId) ?? null,
+    [usuarios, usuarioId],
+  );
 
   const salvar = useMutation({
     mutationFn: () =>
