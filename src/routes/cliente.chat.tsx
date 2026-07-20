@@ -88,10 +88,19 @@ function ChatPage() {
     [atendentes, selId],
   );
 
+  // Comportamento mobile/tablet estilo WhatsApp: só mostra lista OU thread por vez.
+  // ≥lg (1024px): 3 colunas simultâneas.
+  const mostrarThreadMobile = selId != null;
+
   return (
-    <div className="grid gap-3 lg:grid-cols-[300px_minmax(0,1fr)_320px] xl:grid-cols-[320px_minmax(0,1fr)_340px]">
+    <div className="grid gap-3 lg:grid-cols-[280px_minmax(0,1fr)_300px] xl:grid-cols-[320px_minmax(0,1fr)_340px]">
       {/* Coluna 1 — Conversas */}
-      <aside className="flex flex-col overflow-hidden rounded-2xl border border-border/60 bg-card shadow-[0_1px_2px_rgba(0,0,0,0.04),0_18px_50px_-30px_color-mix(in_oklab,var(--brand-azul-profundo)_45%,transparent)] h-[calc(100dvh-10rem)] min-h-[520px]">
+      <aside
+        className={cn(
+          "flex-col overflow-hidden rounded-2xl border border-border/60 bg-card shadow-[0_1px_2px_rgba(0,0,0,0.04),0_18px_50px_-30px_color-mix(in_oklab,var(--brand-azul-profundo)_45%,transparent)] h-[calc(100dvh-10rem)] min-h-[520px] lg:flex",
+          mostrarThreadMobile ? "hidden" : "flex",
+        )}
+      >
         <div className="flex items-center justify-between border-b border-border/60 px-4 py-3">
           <p className="text-base font-semibold text-foreground">Conversas</p>
           <Button variant="outline" size="icon" className="h-8 w-8 rounded-md" aria-label="Nova conversa">
@@ -156,19 +165,19 @@ function ChatPage() {
       </aside>
 
       {/* Coluna 2 — Thread */}
-      <section className="min-w-0">
+      <section className={cn("min-w-0", mostrarThreadMobile ? "block" : "hidden lg:block")}>
         {selecionado ? (
           <ThreadChat
             key={selecionado.atendente_id}
             atendente={selecionado}
             altura="h-[calc(100dvh-10rem)] min-h-[520px]"
-            podeVoltar={(atendentes?.length ?? 0) > 1}
+            podeVoltar={true}
             onVoltar={() => setSelId(null)}
             headerExtras={<ChatConfigSheet />}
             quickActions={<AcoesRapidas />}
           />
         ) : (
-          <div className="flex h-[calc(100dvh-10rem)] min-h-[520px] items-center justify-center rounded-2xl border border-dashed border-border/60 bg-card text-center">
+          <div className="hidden h-[calc(100dvh-10rem)] min-h-[520px] items-center justify-center rounded-2xl border border-dashed border-border/60 bg-card text-center lg:flex">
             <div className="max-w-sm space-y-2 px-6">
               <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary">
                 <MessageCircle className="h-6 w-6" />
@@ -182,8 +191,8 @@ function ChatPage() {
         )}
       </section>
 
-      {/* Coluna 3 — Contexto do atendimento */}
-      <aside className="flex min-w-0 flex-col gap-3 lg:h-[calc(100dvh-10rem)] lg:overflow-y-auto">
+      {/* Coluna 3 — Contexto do atendimento (só desktop) */}
+      <aside className="hidden min-w-0 flex-col gap-3 lg:flex lg:h-[calc(100dvh-10rem)] lg:overflow-y-auto">
         <CardResumo visao={visao ?? null} selecionado={selecionado} />
         <CardProgresso visao={visao ?? null} />
         <CardDocumentos docs={docs ?? []} />
