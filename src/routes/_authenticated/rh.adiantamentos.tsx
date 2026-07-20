@@ -1,16 +1,22 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { UserRound } from "lucide-react";
+import { Wallet } from "lucide-react";
 import { assertModuloPermitido } from "@/lib/route-guards";
-import { ModuloPlaceholder } from "@/components/app-shell/modulo-placeholder";
+import { LancamentosPage } from "@/components/rh/lancamentos-page";
+import { listarAdiantamentos, registrarAdiantamento } from "@/lib/rh/submodulos.functions";
 
 export const Route = createFileRoute("/_authenticated/rh/adiantamentos")({
-  head: () => ({ meta: [{ title: "RH — Agilliza" }] }),
-  beforeLoad: () => assertModuloPermitido("rh.dashboard"),
+  head: () => ({ meta: [{ title: "Adiantamentos — Agilliza" }] }),
+  beforeLoad: () => assertModuloPermitido("rh.adiantamentos"),
   component: () => (
-    <ModuloPlaceholder
-      icon={UserRound}
-      titulo="Gestão de Pessoas e RH"
-      descricao="Este submódulo faz parte da próxima etapa do RH."
+    <LancamentosPage
+      titulo="Adiantamentos"
+      descricao="Vales e adiantamentos concedidos, com desconto na folha da competência."
+      icon={Wallet}
+      queryKey="rh-adiantamentos"
+      listarFn={listarAdiantamentos}
+      salvarFn={registrarAdiantamento}
+      labelBotao="Novo adiantamento"
+      labelValor="Valor do vale"
     />
   ),
 });
