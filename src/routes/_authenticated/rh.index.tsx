@@ -2,17 +2,16 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
-  UserRound,
   UsersRound,
   UserCheck,
   UserMinus,
   UserPlus,
   Plane,
-  FileClock,
   AlertTriangle,
+  FileClock,
   Wallet,
-  TrendingUp,
 } from "lucide-react";
+
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
@@ -85,24 +84,15 @@ function Pagina() {
       />
 
       <SectionTitle>Quadro de funcionários</SectionTitle>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <ReportKpiCard titulo="Ativos" valor={String(data?.ativos ?? 0)} icon={UserCheck} tone="success" to="/rh/funcionarios" />
-        <ReportKpiCard titulo="Em experiência" valor={String(data?.experiencia ?? 0)} icon={UserRound} tone="warning" to="/rh/funcionarios" />
         <ReportKpiCard titulo="Afastados" valor={String(data?.afastados ?? 0)} icon={UserMinus} tone="danger" to="/rh/funcionarios" />
         <ReportKpiCard titulo="Em férias" valor={String(data?.ferias ?? 0)} icon={Plane} tone="brand" to="/rh/funcionarios" />
         <ReportKpiCard titulo="Quadro total" valor={String((data?.ativos ?? 0) + (data?.experiencia ?? 0) + (data?.afastados ?? 0) + (data?.ferias ?? 0))} icon={UsersRound} tone="brand" to="/rh/funcionarios" />
       </div>
 
-      <SectionTitle>Documentação e ocorrências</SectionTitle>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-        <ReportKpiCard titulo="Documentos pendentes" valor={String(data?.documentosPendentes ?? 0)} icon={FileClock} tone="warning" />
-        <ReportKpiCard titulo="Documentos vencidos" valor={String(data?.documentosVencidos ?? 0)} icon={AlertTriangle} tone="danger" />
-        <ReportKpiCard titulo="Faltas no mês" valor={String(data?.faltasMes ?? 0)} icon={AlertTriangle} tone="warning" />
-        <ReportKpiCard titulo="Atestados no mês" valor={String(data?.atestadosMes ?? 0)} icon={FileClock} tone="warning" />
-      </div>
-
-      <SectionTitle>Custos e competência</SectionTitle>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+      <SectionTitle>Financeiro do mês</SectionTitle>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <ReportKpiCard
           titulo="Custo mensal estimado"
           valor={formatBRL(data?.custoMensalEstimado ?? 0)}
@@ -111,9 +101,10 @@ function Pagina() {
           sub="Soma dos salários atuais"
         />
         <ReportKpiCard titulo="Férias programadas" valor={String(data?.feriasProgramadas ?? 0)} icon={Plane} tone="brand" />
-        <ReportKpiCard titulo="Holerites pendentes" valor={String(data?.holeritesPendentes ?? 0)} icon={FileClock} tone="warning" />
-        <ReportKpiCard titulo="Competências abertas" valor={String(data?.competenciasAbertas ?? 0)} icon={TrendingUp} tone="brand" />
+        <ReportKpiCard titulo="Faltas no mês" valor={String(data?.faltasMes ?? 0)} icon={AlertTriangle} tone="warning" />
+        <ReportKpiCard titulo="Atestados no mês" valor={String(data?.atestadosMes ?? 0)} icon={FileClock} tone="warning" />
       </div>
+
 
       <SectionTitle>Movimentação do quadro</SectionTitle>
       <PanelCard titulo="Admissões vs. desligamentos" subtitulo="Últimos 12 meses">

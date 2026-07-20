@@ -343,9 +343,8 @@ export const navInterno: NavGroup[] = [
           { label: "Dashboard", icon: Gauge, to: "/rh", perm: { modulo: "rh.dashboard" } },
           { label: "Funcionários", icon: Users, to: "/rh/funcionarios", perm: { modulo: "rh.funcionarios" } },
           { label: "Novo funcionário", icon: UserRound, to: "/rh/funcionarios/novo", perm: { modulo: "rh.funcionarios" } },
-          { label: "Documentos", icon: FolderOpen, to: "/rh/documentos", perm: { modulo: "rh.documentos" } },
-          { label: "Faltas e Ocorrências", icon: ListChecks, to: "/rh/faltas-ocorrencias", perm: { modulo: "rh.ocorrencias" } },
-          { label: "Atestados", icon: FileText, to: "/rh/atestados", perm: { modulo: "rh.ocorrencias" } },
+          // Documentos, Faltas/Ocorrências e Atestados ficam dentro da ficha do funcionário
+
           { label: "Férias", icon: CalendarDays, to: "/rh/ferias", perm: { modulo: "rh.ferias" } },
           { label: "Benefícios", icon: Percent, to: "/rh/beneficios", perm: { modulo: "rh.beneficios" } },
           { label: "Adiantamentos", icon: Wallet, to: "/rh/adiantamentos", perm: { modulo: "rh.adiantamentos" } },
