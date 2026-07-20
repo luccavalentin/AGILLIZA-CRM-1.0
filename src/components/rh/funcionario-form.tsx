@@ -220,11 +220,26 @@ export function FuncionarioForm({ inicial }: { inicial?: Funcionario | null }) {
   function validar(): boolean {
     const req = new Set<string>();
     if (!f.nome.trim()) req.add("nome");
-    if (f.cpf.replace(/\D/g, "").length < 11) req.add("cpf");
+    if (!validarCPF(f.cpf)) req.add("cpf");
     if (!f.data_admissao) req.add("data_admissao");
+    if (f.email_pessoal && !validarEmail(f.email_pessoal)) req.add("email_pessoal");
+    if (f.email_corporativo && !validarEmail(f.email_corporativo))
+      req.add("email_corporativo");
+    if (f.telefone && !validarTelefone(f.telefone)) req.add("telefone");
     setErros(req);
     if (req.size > 0) {
-      toast.error("Preencha os campos obrigatórios.");
+      const msg = req.has("nome")
+        ? "Informe o nome do funcionário."
+        : req.has("cpf")
+          ? "CPF inválido."
+          : req.has("data_admissao")
+            ? "Informe a data de admissão."
+            : req.has("email_pessoal") || req.has("email_corporativo")
+              ? "E-mail inválido."
+              : req.has("telefone")
+                ? "Telefone inválido."
+                : "Verifique os campos destacados.";
+      toast.error(msg);
       setTab(req.has("data_admissao") ? "profissional" : "pessoal");
       return false;
     }
