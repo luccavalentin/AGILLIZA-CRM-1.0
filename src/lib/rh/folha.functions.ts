@@ -91,7 +91,7 @@ async function calcularPrevia(
     .order("nome");
   const ids = (funcs ?? []).map((f: any) => f.id);
   if (ids.length === 0) return [];
-  const [{ data: bens }, { data: adis }, { data: descs }, { data: ajus }] =
+  const [{ data: bens }, { data: adis }, { data: descs }, { data: ajus }, { data: deps }] =
     await Promise.all([
       supabase
         .from("rh_funcionario_beneficios")
@@ -118,6 +118,11 @@ async function calcularPrevia(
         .in("funcionario_id", ids)
         .eq("mes", mes)
         .eq("ano", ano),
+      supabase
+        .from("rh_dependentes")
+        .select("funcionario_id, ir")
+        .in("funcionario_id", ids)
+        .eq("ir", true),
     ]);
   const bensBy = new Map<string, { valor: number; desconto: number }>();
   (bens ?? []).forEach((b: any) => {
@@ -141,6 +146,10 @@ async function calcularPrevia(
     const alvo = a.tipo === "provento" ? ajProv : ajDesc;
     alvo.set(a.funcionario_id, (alvo.get(a.funcionario_id) ?? 0) + Number(a.valor ?? 0));
   });
+  const depsBy = new Map<string, number>();
+  (deps ?? []).forEach((d: any) => {
+    depsBy.set(d.funcionario_id, (depsBy.get(d.funcionario_id) ?? 0) + 1);
+  });
   return (funcs ?? []).map((f: any) => {
     const salario = Number(f.salario_atual ?? 0);
     const b = bensBy.get(f.id) ?? { valor: 0, desconto: 0 };
@@ -148,8 +157,15 @@ async function calcularPrevia(
     const des = desBy.get(f.id) ?? 0;
     const provAv = ajProv.get(f.id) ?? 0;
     const descAv = ajDesc.get(f.id) ?? 0;
+    const depIR = depsBy.get(f.id) ?? 0;
+    // Base tributável CLT: salário + proventos avulsos (benefícios em geral
+    // não são tributáveis; se algum benefício for tributável, deve ser
+    // lançado como ajuste "provento").
+    const bruto = salario + provAv;
+    const clt = calcularCLT(bruto, depIR, 0);
     const proventos = salario + b.valor + provAv;
-    const descontos = b.desconto + adi + des + descAv;
+    const descontos =
+      b.desconto + adi + des + descAv + clt.inss + clt.irrf;
     return {
       funcionario_id: f.id,
       funcionario_nome: f.nome,
@@ -165,10 +181,16 @@ async function calcularPrevia(
         descontos_lancados: des,
         proventos_avulsos: provAv,
         descontos_avulsos: descAv,
+        inss: clt.inss,
+        irrf: clt.irrf,
+        base_irrf: clt.base_irrf,
+        fgts: clt.fgts,
+        dependentes_ir: depIR,
       },
     };
   });
 }
+
 
 /** Calcula a prévia dinamicamente para uma competência (não persiste). */
 export const previaFolha = createServerFn({ method: "GET" })
