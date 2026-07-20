@@ -11,7 +11,6 @@ export type StatusCompetencia =
   | "aberta"
   | "conferida"
   | "fechada"
-  | "paga"
   | "cancelada";
 
 export interface FolhaItem {
