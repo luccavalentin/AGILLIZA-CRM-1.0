@@ -313,7 +313,7 @@ export async function enviarSimulacaoImpl({
   const correspondente_id = sim.correspondente_id;
 
   // ===== Financiar despesas =====
-  // A API HomeFin espera a flag como string "S"/"N" (nunca booleano) e, quando
+  // A API da integração espera a flag como string "S"/"N" (nunca booleano) e, quando
   // marcada, os valores de despesas e o total financiado (financiamento + despesas).
   const financiarDespesas = Boolean(sim.fg_financiar_despesas);
   const fgFinanciarDespesas = financiarDespesas ? "S" : "N";
@@ -550,7 +550,7 @@ export async function enviarSimulacaoImpl({
           fgAutorizacaoDados: true,
         };
         console.log(
-          "Payload enviado para criar simulação HomeFin:",
+          "Payload enviado para criar simulação bancária:",
           JSON.stringify(simPayload),
         );
         const simResp = await chamarIntegracao<any>(
@@ -561,7 +561,7 @@ export async function enviarSimulacaoImpl({
         );
         const idSimulacao = String(simResp?.idSimulacao ?? "");
 
-        // PUT completo da simulação: garante que a HomeFin persista os campos de
+        // PUT completo da simulação: garante que a integração persista os campos de
         // despesas financiadas ANTES da integração bancária. Enviamos o payload
         // completo (não parcial) para não apagar/ignorar demais campos.
         const putPayload = {
@@ -575,7 +575,7 @@ export async function enviarSimulacaoImpl({
           fgAutorizacaoDados: true,
         };
         console.log(
-          "Payload enviado para atualizar simulação HomeFin:",
+          "Payload enviado para atualizar simulação bancária:",
           JSON.stringify(putPayload),
           "fgFinanciarDespesas:",
           fgFinanciarDespesas,
@@ -591,11 +591,11 @@ export async function enviarSimulacaoImpl({
           ctx,
         );
         console.log(
-          "Retorno atualização simulação HomeFin:",
+          "Retorno atualização simulação bancária:",
           JSON.stringify(putResp),
         );
 
-        // Confirma que a HomeFin persistiu a flag antes de integrar ao banco.
+        // Confirma que a integração persistiu a flag antes de enviar ao banco.
         if (financiarDespesas) {
           const persistido =
             putResp?.simulacao?.fgFinanciarDespesas ?? putResp?.fgFinanciarDespesas;
