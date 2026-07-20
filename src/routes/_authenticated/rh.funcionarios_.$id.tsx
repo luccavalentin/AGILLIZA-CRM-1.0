@@ -15,6 +15,7 @@ import {
   FichaOcorrencias,
   FichaHolerites,
 } from "@/components/rh/ficha-tabs";
+import { FichaDependentes } from "@/components/rh/ficha-dependentes";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -58,6 +59,7 @@ function Pagina() {
         <Tabs defaultValue="historico">
           <TabsList className="flex flex-wrap">
             <TabsTrigger value="historico">Histórico</TabsTrigger>
+            <TabsTrigger value="dependentes">Dependentes</TabsTrigger>
             <TabsTrigger value="documentos">Documentos</TabsTrigger>
             <TabsTrigger value="beneficios">Benefícios</TabsTrigger>
             <TabsTrigger value="ferias">Férias</TabsTrigger>
@@ -102,6 +104,9 @@ function Pagina() {
             </Card>
           </TabsContent>
 
+          <TabsContent value="dependentes" className="mt-4">
+            <FichaDependentes funcionarioId={id} />
+          </TabsContent>
           <TabsContent value="documentos" className="mt-4">
             <FichaDocumentos funcionarioId={id} />
           </TabsContent>
