@@ -42,7 +42,8 @@ export function useWizardSimulacao(melhorTaxaAno = 0.1199) {
   });
 
   // LTV por produto — mesma regra da simulação completa.
-  const ltvMax = w.produto === "home_equity" ? 0.6 : 0.8;
+  const ltvMax = w.produto === "home_equity" ? 0.7 : 0.8;
+  const pctEntradaSugerida = 1 - ltvMax;
 
   function set<K extends keyof WizardState>(k: K, v: WizardState[K]) {
     setW((prev) => ({ ...prev, [k]: v }));
@@ -75,7 +76,7 @@ export function useWizardSimulacao(melhorTaxaAno = 0.1199) {
   function aplicarValorImovel(valor: number) {
     setW((prev) => {
       const imovel = Math.max(0, Number(valor) || 0);
-      const entrada = Math.round(imovel * (1 - ltvMax));
+      const entrada = Math.round(imovel * pctEntradaSugerida);
       return {
         ...prev,
         valor_imovel: imovel,
@@ -88,7 +89,7 @@ export function useWizardSimulacao(melhorTaxaAno = 0.1199) {
   function aplicarEntradaSugerida() {
     setW((prev) => ({
       ...prev,
-      ...(calcularEntradaSugerida(prev.valor_imovel || 0, ltvMax) as Partial<WizardState>),
+      ...(calcularEntradaSugerida(prev.valor_imovel || 0, ltvMax, pctEntradaSugerida) as Partial<WizardState>),
     }));
   }
 
@@ -112,7 +113,7 @@ export function useWizardSimulacao(melhorTaxaAno = 0.1199) {
     setW((prev) => ({ ...prev, ...(patch as Partial<WizardState>) }));
   }
 
-  const entradaSugerida = Math.round((w.valor_imovel || 0) * (1 - ltvMax));
+  const entradaSugerida = Math.round((w.valor_imovel || 0) * pctEntradaSugerida);
 
   const maxPrazoIdade = useMemo(() => prazoMaximoPorIdade(w.data_nascimento), [w.data_nascimento]);
 

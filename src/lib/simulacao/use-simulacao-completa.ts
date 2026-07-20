@@ -202,7 +202,7 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
   // Restrições operacionais por tipo de operação:
   //  - Terreno (TE/TC): apenas Bradesco opera, LTV 70%, prazo máx 240 meses.
   //  - Imóvel comercial (uso "C"): todos os bancos operam, LTV 70%, prazo máx 240 meses.
-  //  - Home Equity: Itaú não opera; LTV 60%.
+  //  - Home Equity: Itaú não opera; LTV 70% (entrada mínima 30%).
   const restricaoEspecial = useMemo(
     () => calcularRestricaoEspecial(f),
     [f.tipo_imovel, f.uso_imovel],
@@ -223,7 +223,7 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
   const ltvMax = restricaoEspecial.ativo
     ? restricaoEspecial.ltvMax
     : isHomeEquity
-      ? 0.6
+      ? 0.7
       : 0.8;
   // Mantém a ref sincronizada para handlers criados antes desta linha.
   ltvMaxRef.current = ltvMax;
