@@ -416,7 +416,8 @@ export async function enviarSimulacaoImpl({
       }
     }
 
-    const usaRotaSantanderHomeEquity = bancos.some((b: any) => usarRotaSantanderHomeEquity(sim, b));
+    const usaRotaSantanderHomeEquity =
+      bancos.length === 1 && usarRotaSantanderHomeEquity(sim, bancos[0]);
 
     // 1) Oportunidade (idempotência: reutiliza se já existe)
     // Santander em Home Equity usa a rota operacional Somahome; oportunidades
