@@ -78,6 +78,9 @@ export interface Funcionario extends FuncionarioLista {
   user_id: string | null;
   user_nome: string | null;
   user_email: string | null;
+  dia_pagamento_salario: number | null;
+  dia_pagamento_adiantamento: number | null;
+  gerar_contas_pagar_automatico: boolean;
 }
 
 const funcionarioSchema = z.object({
