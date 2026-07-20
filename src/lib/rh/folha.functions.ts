@@ -45,8 +45,14 @@ export interface FolhaItem {
     descontos_lancados: number;
     proventos_avulsos: number;
     descontos_avulsos: number;
+    inss: number;
+    irrf: number;
+    base_irrf: number;
+    fgts: number;
+    dependentes_ir: number;
   };
 }
+
 
 export interface FolhaCompetencia {
   id: string;
