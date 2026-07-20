@@ -112,6 +112,20 @@ async function montarEnderecoParticipante(sim: any, cliente: any) {
   };
 }
 
+async function montarEnderecoImovelGarantia(sim: any, cliente: any) {
+  const cep = soDigitos(sim.cep_imovel ?? cliente?.imovel_cep);
+  const viaCep = await consultarCepSeguro(cep);
+  return {
+    cep,
+    logradouro: primeiroTexto(cliente?.imovel_logradouro, viaCep.logradouro),
+    numeroLogradouro: primeiroTexto(cliente?.imovel_numero, "S/N"),
+    complementoLogradouro: primeiroTexto(cliente?.imovel_complemento),
+    bairro: primeiroTexto(cliente?.imovel_bairro, viaCep.bairro),
+    municipio: primeiroTexto(cliente?.imovel_cidade, viaCep.municipio),
+    uf: primeiroTexto(cliente?.imovel_uf, sim.uf, viaCep.uf),
+  };
+}
+
 async function garantirDadosParticipantesSimulacao({
   sim,
   cliente,
@@ -343,10 +357,24 @@ export async function enviarSimulacaoImpl({
         .maybeSingle();
       cliente = data;
     }
-    if (sim.produto === "home_equity" && !soDigitos(sim.cep_imovel ?? cliente?.imovel_cep ?? cliente?.cep)) {
-      throw new Error(
-        "Informe o CEP do imóvel antes de reenviar Home Equity ao banco. Sem esse dado o banco não calcula a garantia e retorna a simulação vazia.",
-      );
+    const enderecoImovelGarantia =
+      sim.produto === "home_equity" ? await montarEnderecoImovelGarantia(sim, cliente) : null;
+    if (sim.produto === "home_equity") {
+      if (!enderecoImovelGarantia?.cep) {
+        throw new Error(
+          "Informe o CEP do imóvel antes de reenviar Home Equity ao banco. Sem esse dado o banco não calcula a garantia e retorna a simulação vazia.",
+        );
+      }
+      if (
+        !enderecoImovelGarantia.logradouro ||
+        !enderecoImovelGarantia.bairro ||
+        !enderecoImovelGarantia.municipio ||
+        !enderecoImovelGarantia.uf
+      ) {
+        throw new Error(
+          "Complete ou corrija o CEP do imóvel para Home Equity. O banco exige endereço completo da garantia para retornar a simulação.",
+        );
+      }
     }
 
     // 1) Oportunidade (idempotência: reutiliza se já existe)
@@ -360,6 +388,17 @@ export async function enviarSimulacaoImpl({
       tipoImovel: { id: sim.tipo_imovel },
       usoImovel: { id: sim.uso_imovel },
       uf: { codigo: sim.uf },
+      ...(enderecoImovelGarantia
+        ? {
+            cep: enderecoImovelGarantia.cep,
+            logradouro: enderecoImovelGarantia.logradouro,
+            numeroLogradouro: enderecoImovelGarantia.numeroLogradouro,
+            complementoLogradouro: enderecoImovelGarantia.complementoLogradouro,
+            bairro: enderecoImovelGarantia.bairro,
+            municipio: enderecoImovelGarantia.municipio,
+            uf: { codigo: enderecoImovelGarantia.uf ?? sim.uf },
+          }
+        : {}),
       situacaoImovel: { codigo: sim.situacao_imovel },
       valorImovel: num(sim.valor_imovel),
       valorFinanciamento: num(sim.valor_financiamento),
