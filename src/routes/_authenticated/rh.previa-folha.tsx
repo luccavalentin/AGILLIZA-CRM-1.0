@@ -223,12 +223,7 @@ function Pagina() {
           </div>
           <div className="space-y-1.5">
             <Label>Ano</Label>
-            <Select value={String(ano)} onValueChange={(v) => setAno(Number(v))}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {anos.map((a) => <SelectItem key={a} value={String(a)}>{a}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <YearPicker value={ano} onChange={setAno} />
           </div>
         </CardContent>
       </Card>
