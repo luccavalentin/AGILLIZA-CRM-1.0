@@ -151,16 +151,21 @@ function Pagina() {
 
   // Comunicação em tempo real com a proposta: qualquer mudança de status/etapa
   // (via ficha, sincronização com o banco ou outro usuário) atualiza o Kanban.
+  // Coalescemos rajadas (trigger + update em cascata) numa única invalidação.
   useEffect(() => {
+    const { schedule, cancel } = createDebouncedInvalidator(() =>
+      qc.invalidateQueries({ queryKey: ["propostas"] }),
+    );
     const canal = supabase
       .channel("kanban:propostas")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "propostas" },
-        () => qc.invalidateQueries({ queryKey: ["propostas"] }),
+        schedule,
       )
       .subscribe();
     return () => {
+      cancel();
       supabase.removeChannel(canal);
     };
   }, [qc]);
