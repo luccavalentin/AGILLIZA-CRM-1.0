@@ -8,6 +8,13 @@ import {
   listarHistoricoFuncionario,
 } from "@/lib/rh/funcionarios.functions";
 import { FuncionarioForm } from "@/components/rh/funcionario-form";
+import {
+  FichaDocumentos,
+  FichaBeneficios,
+  FichaFerias,
+  FichaOcorrencias,
+  FichaHolerites,
+} from "@/components/rh/ficha-tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -95,15 +102,21 @@ function Pagina() {
             </Card>
           </TabsContent>
 
-          {(["documentos", "beneficios", "ferias", "ocorrencias", "holerites"] as const).map((k) => (
-            <TabsContent key={k} value={k} className="mt-4">
-              <Card>
-                <CardContent className="py-10 text-center text-sm text-muted-foreground">
-                  Este módulo será habilitado na próxima etapa do sistema.
-                </CardContent>
-              </Card>
-            </TabsContent>
-          ))}
+          <TabsContent value="documentos" className="mt-4">
+            <FichaDocumentos funcionarioId={id} />
+          </TabsContent>
+          <TabsContent value="beneficios" className="mt-4">
+            <FichaBeneficios funcionarioId={id} />
+          </TabsContent>
+          <TabsContent value="ferias" className="mt-4">
+            <FichaFerias funcionarioId={id} />
+          </TabsContent>
+          <TabsContent value="ocorrencias" className="mt-4">
+            <FichaOcorrencias funcionarioId={id} />
+          </TabsContent>
+          <TabsContent value="holerites" className="mt-4">
+            <FichaHolerites funcionarioId={id} />
+          </TabsContent>
         </Tabs>
       </div>
     </div>
