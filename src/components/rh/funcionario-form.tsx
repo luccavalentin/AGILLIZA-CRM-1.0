@@ -402,8 +402,11 @@ export function FuncionarioForm({ inicial }: { inicial?: Funcionario | null }) {
                   CPF <span className="text-destructive">*</span>
                 </Label>
                 <Input
+                  inputMode="numeric"
+                  maxLength={14}
+                  placeholder="000.000.000-00"
                   value={f.cpf}
-                  onChange={(e) => set("cpf", e.target.value)}
+                  onChange={(e) => set("cpf", mascararCPF(e.target.value))}
                   className={errClass("cpf")}
                 />
               </div>
@@ -413,7 +416,13 @@ export function FuncionarioForm({ inicial }: { inicial?: Funcionario | null }) {
               </div>
               <div className="space-y-1.5">
                 <Label>Órgão emissor</Label>
-                <Input value={f.rg_orgao ?? ""} onChange={(e) => set("rg_orgao", e.target.value)} />
+                <InputAutocomplete
+                  value={f.rg_orgao ?? ""}
+                  onValueChange={(v) => set("rg_orgao", v)}
+                  options={OPCOES_ORGAO_EMISSOR}
+                  placeholder="Digite ou selecione"
+                  transform={(v) => v.toUpperCase()}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>Data de nascimento</Label>
@@ -435,11 +444,26 @@ export function FuncionarioForm({ inicial }: { inicial?: Funcionario | null }) {
               </div>
               <div className="space-y-1.5">
                 <Label>Estado civil</Label>
-                <Input value={f.estado_civil ?? ""} onChange={(e) => set("estado_civil", e.target.value)} />
+                <Select
+                  value={f.estado_civil ?? ""}
+                  onValueChange={(v) => set("estado_civil", v)}
+                >
+                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectContent>
+                    {OPCOES_ESTADO_CIVIL.map((o) => (
+                      <SelectItem key={o.v} value={o.v}>{o.l}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-1.5">
                 <Label>Nacionalidade</Label>
-                <Input value={f.nacionalidade ?? ""} onChange={(e) => set("nacionalidade", e.target.value)} />
+                <InputAutocomplete
+                  value={f.nacionalidade ?? ""}
+                  onValueChange={(v) => set("nacionalidade", v)}
+                  options={OPCOES_NACIONALIDADE}
+                  placeholder="Digite ou selecione"
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>Naturalidade</Label>
@@ -457,13 +481,23 @@ export function FuncionarioForm({ inicial }: { inicial?: Funcionario | null }) {
                 <Label>E-mail pessoal</Label>
                 <Input
                   type="email"
+                  inputMode="email"
+                  placeholder="nome@exemplo.com"
                   value={f.email_pessoal ?? ""}
                   onChange={(e) => set("email_pessoal", e.target.value)}
+                  className={errClass("email_pessoal")}
                 />
               </div>
               <div className="space-y-1.5">
                 <Label>Telefone</Label>
-                <Input value={f.telefone ?? ""} onChange={(e) => set("telefone", e.target.value)} />
+                <Input
+                  inputMode="tel"
+                  maxLength={15}
+                  placeholder="(00) 00000-0000"
+                  value={f.telefone ?? ""}
+                  onChange={(e) => set("telefone", mascararTelefone(e.target.value))}
+                  className={errClass("telefone")}
+                />
               </div>
             </CardContent>
           </Card>
