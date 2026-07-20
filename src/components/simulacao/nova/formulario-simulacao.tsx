@@ -1,4 +1,5 @@
 import { Calculator } from "lucide-react";
+import { useEffect, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -48,6 +49,21 @@ export function FormularioSimulacao({
 }: Props) {
   const pctEntrada = Math.round((1 - ltvMax) * 100);
   const pctFin = Math.round(ltvMax * 100);
+  const isPrice = w.sistema_amortizacao === "P";
+  const rendaRef = useRef<HTMLDivElement>(null);
+  const rendaInputRef = useRef<HTMLInputElement>(null);
+  const jaFocou = useRef(false);
+
+  useEffect(() => {
+    if (isPrice && (!w.renda_familiar || w.renda_familiar <= 0) && !jaFocou.current) {
+      jaFocou.current = true;
+      setTimeout(() => {
+        rendaRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+        rendaInputRef.current?.focus();
+      }, 120);
+    }
+    if (!isPrice) jaFocou.current = false;
+  }, [isPrice, w.renda_familiar]);
 
   return (
     <Card className="overflow-hidden">
@@ -228,13 +244,22 @@ export function FormularioSimulacao({
           </p>
         </div>
 
-        <div className="space-y-2 md:col-span-2">
-          <Label>Renda familiar mensal (opcional)</Label>
+        <div id="campo-renda-familiar" ref={rendaRef} className="space-y-2 md:col-span-2 scroll-mt-24">
+          <Label>
+            Renda familiar mensal {isPrice ? <span className="text-destructive">*</span> : <span className="text-muted-foreground">(opcional)</span>}
+          </Label>
           <CurrencyInput
+            ref={rendaInputRef}
             value={w.renda_familiar}
             onChange={(v) => set("renda_familiar", v)}
             placeholder="0,00"
+            className={isPrice && (!w.renda_familiar || w.renda_familiar <= 0) ? "border-destructive focus-visible:ring-destructive" : undefined}
           />
+          {isPrice && (!w.renda_familiar || w.renda_familiar <= 0) && (
+            <p className="text-xs font-medium text-destructive">
+              Informe a renda familiar para simular na tabela PRICE.
+            </p>
+          )}
           {w.valor_financiamento > 0 && w.prazo_meses >= PRAZO_MIN ? (
             <DicaRendaMinima
               valorFinanciamento={w.valor_financiamento}
