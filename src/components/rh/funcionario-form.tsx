@@ -42,6 +42,7 @@ import {
   listarDepartamentos,
 } from "@/lib/rh/cargos-departamentos.functions";
 import { OPCOES_UF } from "@/components/crm/cliente-form/constants";
+import { mascararCep, apenasDigitosCep, consultarCep } from "@/lib/cep";
 
 const STATUS_LABEL: Record<StatusFuncionario, string> = {
   ativo: "Ativo",
@@ -139,6 +140,30 @@ export function FuncionarioForm({ inicial }: { inicial?: Funcionario | null }) {
 
   const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) =>
     setF((prev) => ({ ...prev, [k]: v }));
+
+  const [buscandoCep, setBuscandoCep] = useState(false);
+  async function buscarCep(raw: string) {
+    if (apenasDigitosCep(raw).length !== 8) return;
+    setBuscandoCep(true);
+    try {
+      const end = await consultarCep(raw);
+      if (!end) {
+        toast.error("CEP não encontrado.");
+        return;
+      }
+      setF((p) => ({
+        ...p,
+        logradouro: p.logradouro || end.logradouro,
+        bairro: p.bairro || end.bairro,
+        cidade: p.cidade || end.cidade,
+        uf: p.uf || end.uf,
+      }));
+    } catch {
+      toast.error("Não foi possível consultar o CEP.");
+    } finally {
+      setBuscandoCep(false);
+    }
+  }
 
   const mut = useMutation({
     mutationFn: async (payload: FuncionarioInput) => {
@@ -418,7 +443,23 @@ export function FuncionarioForm({ inicial }: { inicial?: Funcionario | null }) {
             <CardContent className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
               <div className="space-y-1.5">
                 <Label>CEP</Label>
-                <Input value={f.cep ?? ""} onChange={(e) => set("cep", e.target.value)} />
+                <div className="relative">
+                  <Input
+                    inputMode="numeric"
+                    maxLength={9}
+                    placeholder="00000-000"
+                    value={f.cep ?? ""}
+                    onChange={(e) => {
+                      const m = mascararCep(e.target.value);
+                      set("cep", m);
+                      if (apenasDigitosCep(m).length === 8) buscarCep(m);
+                    }}
+                    onBlur={(e) => buscarCep(e.target.value)}
+                  />
+                  {buscandoCep && (
+                    <Loader2 className="absolute right-3 top-1/2 size-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+                  )}
+                </div>
               </div>
               <div className="space-y-1.5 md:col-span-2">
                 <Label>Logradouro</Label>
