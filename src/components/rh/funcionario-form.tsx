@@ -691,8 +691,11 @@ export function FuncionarioForm({ inicial }: { inicial?: Funcionario | null }) {
                 <Label>E-mail corporativo</Label>
                 <Input
                   type="email"
+                  inputMode="email"
+                  placeholder="nome@empresa.com"
                   value={f.email_corporativo ?? ""}
                   onChange={(e) => set("email_corporativo", e.target.value)}
+                  className={errClass("email_corporativo")}
                 />
               </div>
               <div className="space-y-1.5">
