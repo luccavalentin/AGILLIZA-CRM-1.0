@@ -15,9 +15,13 @@ import type { Form } from "./state";
  * Sugere uma entrada compatível com o LTV vigente, mantendo o valor de
  * imóvel corrente. Retorna o patch a aplicar sobre o form atual.
  */
-export function calcularEntradaSugerida(valorImovel: number, ltvMax: number): Partial<Form> {
-  const pctEntrada = 1 - ltvMax;
-  const entrada = Math.round((valorImovel || 0) * pctEntrada);
+export function calcularEntradaSugerida(
+  valorImovel: number,
+  ltvMax: number,
+  pctEntrada?: number,
+): Partial<Form> {
+  const pct = pctEntrada ?? 1 - ltvMax;
+  const entrada = Math.round((valorImovel || 0) * pct);
   return {
     valor_entrada: entrada,
     valor_financiamento: Math.max(0, (valorImovel || 0) - entrada),
