@@ -208,6 +208,99 @@ export function FuncionarioForm({ inicial }: { inicial?: Funcionario | null }) {
         </Button>
       </div>
 
+      <Card className="border-primary/30 bg-primary/5">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Vincular a usuário do sistema</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <Popover open={usuarioOpen} onOpenChange={setUsuarioOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                role="combobox"
+                className={cn(
+                  "w-full justify-between bg-background font-normal",
+                  !f.user_id && "text-muted-foreground",
+                )}
+              >
+                <span className="truncate">
+                  {(() => {
+                    if (!f.user_id) return "Nenhum usuário vinculado — clique para escolher";
+                    const u = (usuarios.data ?? []).find((x) => x.id === f.user_id);
+                    return u?.nome ?? u?.email ?? f.user_id;
+                  })()}
+                </span>
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+              <Command
+                filter={(value, search) =>
+                  value.toLowerCase().includes(search.toLowerCase()) ? 1 : 0
+                }
+              >
+                <CommandInput placeholder="Buscar por nome, e-mail ou iniciais…" />
+                <CommandList>
+                  <CommandEmpty>Nenhum usuário encontrado.</CommandEmpty>
+                  <CommandGroup>
+                    <CommandItem
+                      value="__nenhum__ sem vínculo"
+                      onSelect={() => {
+                        set("user_id", null);
+                        setUsuarioOpen(false);
+                      }}
+                    >
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4",
+                          !f.user_id ? "opacity-100" : "opacity-0",
+                        )}
+                      />
+                      <span className="text-muted-foreground">Nenhum (sem vínculo)</span>
+                    </CommandItem>
+                    {(usuarios.data ?? []).map((u) => {
+                      const label = u.nome ?? u.email ?? u.id;
+                      const bloqueado = !!u.ja_vinculado_a;
+                      return (
+                        <CommandItem
+                          key={u.id}
+                          value={`${label} ${u.email ?? ""}`}
+                          disabled={bloqueado}
+                          onSelect={() => {
+                            if (bloqueado) return;
+                            set("user_id", u.id);
+                            setUsuarioOpen(false);
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              f.user_id === u.id ? "opacity-100" : "opacity-0",
+                            )}
+                          />
+                          <div className="flex flex-col">
+                            <span>{label}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {u.email}
+                              {bloqueado && " · já vinculado a outro funcionário"}
+                            </span>
+                          </div>
+                        </CommandItem>
+                      );
+                    })}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+          <p className="text-xs text-muted-foreground">
+            Associa a ficha do funcionário a uma conta de acesso. Cada usuário só pode ser
+            vinculado a um funcionário ativo.
+          </p>
+        </CardContent>
+      </Card>
+
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList className="flex flex-wrap">
           <TabsTrigger value="pessoal">Dados pessoais</TabsTrigger>
@@ -486,99 +579,8 @@ export function FuncionarioForm({ inicial }: { inicial?: Funcionario | null }) {
                   onChange={(e) => set("salario_desde", e.target.value)}
                 />
               </div>
-              <div className="space-y-1.5 md:col-span-3">
-                <Label>Usuário do sistema vinculado</Label>
-                <Popover open={usuarioOpen} onOpenChange={setUsuarioOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      role="combobox"
-                      className={cn(
-                        "w-full justify-between font-normal",
-                        !f.user_id && "text-muted-foreground",
-                      )}
-                    >
-                      <span className="truncate">
-                        {(() => {
-                          if (!f.user_id) return "Nenhum usuário vinculado";
-                          const u = (usuarios.data ?? []).find((x) => x.id === f.user_id);
-                          return u?.nome ?? u?.email ?? f.user_id;
-                        })()}
-                      </span>
-                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent
-                    className="w-[--radix-popover-trigger-width] p-0"
-                    align="start"
-                  >
-                    <Command
-                      filter={(value, search) =>
-                        value.toLowerCase().includes(search.toLowerCase()) ? 1 : 0
-                      }
-                    >
-                      <CommandInput placeholder="Buscar por nome, e-mail ou iniciais…" />
-                      <CommandList>
-                        <CommandEmpty>Nenhum usuário encontrado.</CommandEmpty>
-                        <CommandGroup>
-                          <CommandItem
-                            value="__nenhum__ sem vínculo"
-                            onSelect={() => {
-                              set("user_id", null);
-                              setUsuarioOpen(false);
-                            }}
-                          >
-                            <Check
-                              className={cn(
-                                "mr-2 h-4 w-4",
-                                !f.user_id ? "opacity-100" : "opacity-0",
-                              )}
-                            />
-                            <span className="text-muted-foreground">
-                              Nenhum (sem vínculo)
-                            </span>
-                          </CommandItem>
-                          {(usuarios.data ?? []).map((u) => {
-                            const label = u.nome ?? u.email ?? u.id;
-                            const bloqueado = !!u.ja_vinculado_a;
-                            return (
-                              <CommandItem
-                                key={u.id}
-                                value={`${label} ${u.email ?? ""}`}
-                                disabled={bloqueado}
-                                onSelect={() => {
-                                  if (bloqueado) return;
-                                  set("user_id", u.id);
-                                  setUsuarioOpen(false);
-                                }}
-                              >
-                                <Check
-                                  className={cn(
-                                    "mr-2 h-4 w-4",
-                                    f.user_id === u.id ? "opacity-100" : "opacity-0",
-                                  )}
-                                />
-                                <div className="flex flex-col">
-                                  <span>{label}</span>
-                                  <span className="text-xs text-muted-foreground">
-                                    {u.email}
-                                    {bloqueado && " · já vinculado a outro funcionário"}
-                                  </span>
-                                </div>
-                              </CommandItem>
-                            );
-                          })}
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
-                <p className="text-xs text-muted-foreground">
-                  Vincula este funcionário a uma conta de acesso ao sistema. Cada usuário só
-                  pode ser vinculado a um funcionário ativo.
-                </p>
-              </div>
+
+
               <div className="space-y-1.5 md:col-span-3">
                 <Label>Observações</Label>
                 <Textarea
