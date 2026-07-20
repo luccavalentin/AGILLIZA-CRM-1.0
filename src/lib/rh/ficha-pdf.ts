@@ -127,7 +127,7 @@ export function gerarFichaFuncionarioPdf(input: {
   // Bloco profissional.
   doc.setFont("helvetica", "bold");
   doc.setFontSize(11);
-  doc.setTextColor(P.text);
+  doc.setTextColor(P.texto);
   doc.text("Dados profissionais", 32, y);
   y += 6;
 
@@ -190,7 +190,7 @@ export function gerarFichaFuncionarioPdf(input: {
       startY: y,
       theme: "striped",
       styles: { font: "helvetica", fontSize: 9, cellPadding: 4, textColor: P.text },
-      headStyles: { fillColor: P.headerBg ?? "#000F9F", textColor: "#FFFFFF" },
+      headStyles: { fillColor: P.azul, textColor: "#FFFFFF" },
       head: [["Nome", "Parentesco", "CPF", "Nascimento"]],
       body: input.dependentes.map((d) => [
         d.nome,
@@ -207,7 +207,7 @@ export function gerarFichaFuncionarioPdf(input: {
   for (let i = 1; i <= total; i++) {
     doc.setPage(i);
     doc.setFontSize(8);
-    doc.setTextColor(P.muted ?? "#64748B");
+    doc.setTextColor(P.cinza);
     const emitido = new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
     doc.text(
       `Agilliza · Ficha funcional confidencial — Emitido em ${emitido}`,
