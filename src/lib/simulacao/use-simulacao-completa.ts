@@ -347,6 +347,31 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [restricaoEspecial.ativo, restricaoEspecial.apenasBradesco, isHomeEquity, bancos, prazoMaxOperacional]);
 
+  // Ambos SAC+PRICE: se a renda do titular já cobre a renda mínima exigida
+  // no PRICE, pré-preenche o campo "Renda familiar — PRICE" com o mesmo valor
+  // (o usuário pode alterar depois). Só age enquanto o campo estiver vazio.
+  useEffect(() => {
+    if (f.sistema_amortizacao !== "B") return;
+    const rendaTotal = Number(f.renda_total) || 0;
+    const rendaPrice = Number(f.renda_price) || 0;
+    if (rendaTotal <= 0 || rendaPrice > 0) return;
+    if (!(Number(f.valor_financiamento) > 0) || !(Number(f.prazo) > 0)) return;
+    const av = avaliarRendaMinima({
+      valor_imovel: f.valor_imovel,
+      valor_financiamento: f.valor_financiamento,
+      prazo_meses: f.prazo,
+      taxa_ano: melhorTaxaAno,
+      sistema: "P",
+      renda_informada: rendaTotal,
+    });
+    if (av && rendaTotal >= av.rendaMinima) {
+      setF((prev) => (Number(prev.renda_price) > 0 ? prev : { ...prev, renda_price: rendaTotal }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [f.sistema_amortizacao, f.renda_total, f.valor_financiamento, f.valor_imovel, f.prazo, melhorTaxaAno]);
+
+
+
 
   // Mantém as despesas coladas no percentual e respeita o teto de LTV.
   useEffect(() => {
