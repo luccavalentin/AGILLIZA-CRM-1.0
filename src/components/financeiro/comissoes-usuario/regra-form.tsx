@@ -158,18 +158,70 @@ export function RegraComissaoUsuarioForm({ aberto, onFechar, tipoInicial, regra 
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="sm:col-span-2 space-y-1.5">
             <Label>Usuário</Label>
-            <Select value={usuarioId} onValueChange={setUsuarioId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione o usuário comissionado" />
-              </SelectTrigger>
-              <SelectContent>
-                {(usuarios ?? []).map((u) => (
-                  <SelectItem key={u.id} value={u.id}>
-                    {u.nome ?? u.email ?? u.id}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Popover open={usuarioOpen} onOpenChange={setUsuarioOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  role="combobox"
+                  className={cn(
+                    "w-full justify-between font-normal",
+                    !usuarioSelecionado && "text-muted-foreground",
+                  )}
+                >
+                  <span className="truncate">
+                    {usuarioSelecionado
+                      ? usuarioSelecionado.nome ?? usuarioSelecionado.email ?? usuarioSelecionado.id
+                      : "Selecione ou digite o nome do usuário"}
+                  </span>
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent
+                className="w-[--radix-popover-trigger-width] p-0"
+                align="start"
+              >
+                <Command
+                  filter={(value, search) =>
+                    value.toLowerCase().includes(search.toLowerCase()) ? 1 : 0
+                  }
+                >
+                  <CommandInput placeholder="Digite nome, e-mail ou iniciais…" />
+                  <CommandList>
+                    <CommandEmpty>Nenhum usuário encontrado.</CommandEmpty>
+                    <CommandGroup>
+                      {(usuarios ?? []).map((u) => {
+                        const label = u.nome ?? u.email ?? u.id;
+                        return (
+                          <CommandItem
+                            key={u.id}
+                            value={`${label} ${u.email ?? ""}`}
+                            onSelect={() => {
+                              setUsuarioId(u.id);
+                              if (!regra) setTipoVinculo(inferirTipoVinculo(u.tipo_pessoa));
+                              setUsuarioOpen(false);
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                usuarioId === u.id ? "opacity-100" : "opacity-0",
+                              )}
+                            />
+                            <div className="flex flex-col">
+                              <span>{label}</span>
+                              {u.email && u.nome && (
+                                <span className="text-xs text-muted-foreground">{u.email}</span>
+                              )}
+                            </div>
+                          </CommandItem>
+                        );
+                      })}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
 
           <div className="space-y-1.5">
@@ -187,6 +239,7 @@ export function RegraComissaoUsuarioForm({ aberto, onFechar, tipoInicial, regra 
               </SelectContent>
             </Select>
           </div>
+
 
           <div className="space-y-1.5">
             <Label>Gatilho</Label>
