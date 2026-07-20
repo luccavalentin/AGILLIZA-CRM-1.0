@@ -142,7 +142,7 @@ function Pagina() {
 
   function editar() {
     // "Editar" gera uma NOVA simulação a partir dos dados desta, sem herdar
-    // IDs, número, operação HomeFin, e-mail verificado, PDFs ou bancos já
+    // IDs, número, operação bancária, e-mail verificado, PDFs ou bancos já
     // simulados. Usa o mesmo fluxo de "Duplicar" (mapeamento explícito de
     // campos no wizard) para garantir isolamento total da simulação anterior.
     router.navigate({
