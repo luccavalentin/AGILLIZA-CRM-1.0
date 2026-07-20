@@ -290,6 +290,126 @@ export const CATALOGO_MODULOS: ModuloCatalogo[] = [
       { acao: "create", label: "Gerar" },
     ],
   },
+  {
+    grupo: "Gestão de Pessoas e RH",
+    modulo: "rh.dashboard",
+    label: "Dashboard de RH",
+    acoes: [{ acao: "view", label: "Ver" }],
+  },
+  {
+    grupo: "Gestão de Pessoas e RH",
+    modulo: "rh.funcionarios",
+    label: "Funcionários",
+    acoes: [
+      { acao: "view", label: "Ver" },
+      { acao: "create", label: "Criar" },
+      { acao: "edit", label: "Editar" },
+      { acao: "delete", label: "Excluir" },
+      { acao: "export", label: "Exportar" },
+    ],
+  },
+  {
+    grupo: "Gestão de Pessoas e RH",
+    modulo: "rh.documentos",
+    label: "Documentos do funcionário",
+    acoes: [
+      { acao: "view", label: "Ver" },
+      { acao: "create", label: "Enviar" },
+      { acao: "delete", label: "Excluir" },
+    ],
+  },
+  {
+    grupo: "Gestão de Pessoas e RH",
+    modulo: "rh.ocorrencias",
+    label: "Faltas, atestados e ocorrências",
+    acoes: [
+      { acao: "view", label: "Ver" },
+      { acao: "create", label: "Registrar" },
+      { acao: "edit", label: "Editar" },
+    ],
+  },
+  {
+    grupo: "Gestão de Pessoas e RH",
+    modulo: "rh.ferias",
+    label: "Férias",
+    acoes: [
+      { acao: "view", label: "Ver" },
+      { acao: "create", label: "Programar" },
+      { acao: "edit", label: "Aprovar / editar" },
+    ],
+  },
+  {
+    grupo: "Gestão de Pessoas e RH",
+    modulo: "rh.beneficios",
+    label: "Benefícios",
+    acoes: [
+      { acao: "view", label: "Ver" },
+      { acao: "edit", label: "Configurar" },
+    ],
+  },
+  {
+    grupo: "Gestão de Pessoas e RH",
+    modulo: "rh.adiantamentos",
+    label: "Adiantamentos",
+    acoes: [
+      { acao: "view", label: "Ver" },
+      { acao: "create", label: "Registrar" },
+    ],
+  },
+  {
+    grupo: "Gestão de Pessoas e RH",
+    modulo: "rh.descontos",
+    label: "Descontos",
+    acoes: [
+      { acao: "view", label: "Ver" },
+      { acao: "create", label: "Registrar" },
+    ],
+  },
+  {
+    grupo: "Gestão de Pessoas e RH",
+    modulo: "rh.salariais",
+    label: "Alterações salariais",
+    acoes: [
+      { acao: "view", label: "Ver" },
+      { acao: "create", label: "Registrar" },
+    ],
+  },
+  {
+    grupo: "Gestão de Pessoas e RH",
+    modulo: "rh.previa_folha",
+    label: "Prévia da folha",
+    acoes: [
+      { acao: "view", label: "Ver" },
+      { acao: "export", label: "Exportar" },
+    ],
+  },
+  {
+    grupo: "Gestão de Pessoas e RH",
+    modulo: "rh.holerites",
+    label: "Holerites e recibos",
+    acoes: [
+      { acao: "view", label: "Ver" },
+      { acao: "create", label: "Anexar" },
+    ],
+  },
+  {
+    grupo: "Gestão de Pessoas e RH",
+    modulo: "rh.relatorios",
+    label: "Relatórios de RH",
+    acoes: [
+      { acao: "view", label: "Ver" },
+      { acao: "export", label: "Exportar" },
+    ],
+  },
+  {
+    grupo: "Gestão de Pessoas e RH",
+    modulo: "rh.configuracoes",
+    label: "Configurações do RH",
+    acoes: [
+      { acao: "view", label: "Ver" },
+      { acao: "edit", label: "Editar" },
+    ],
+  },
 ];
 
 export interface PermissaoAtual {

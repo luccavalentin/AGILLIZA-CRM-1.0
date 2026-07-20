@@ -1,34 +1,167 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { UserRound } from "lucide-react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import {
+  UserRound,
+  UsersRound,
+  UserCheck,
+  UserMinus,
+  UserPlus,
+  Plane,
+  FileClock,
+  AlertTriangle,
+  Wallet,
+  TrendingUp,
+} from "lucide-react";
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
+} from "recharts";
+import { assertModuloPermitido } from "@/lib/route-guards";
+import { obterKpisRh } from "@/lib/rh/dashboard.functions";
+import { ReportKpiCard } from "@/components/financeiro/kpi-card";
+import { PanelHeader, SectionTitle, PanelCard } from "@/components/common/dashboard";
+import { Button } from "@/components/ui/button";
+import { formatBRL } from "@/lib/financeiro/format";
 
 export const Route = createFileRoute("/_authenticated/rh")({
-  head: () => ({
-    meta: [{ title: "Gestão de Pessoas e RH — Agilliza" }],
-  }),
+  head: () => ({ meta: [{ title: "Gestão de Pessoas e RH — Agilliza" }] }),
+  beforeLoad: () => assertModuloPermitido("rh.dashboard"),
   component: Pagina,
+  errorComponent: () => (
+    <div className="p-6 text-sm text-muted-foreground">Não foi possível carregar o painel.</div>
+  ),
 });
 
+function mesLabel(iso: string) {
+  const [y, m] = iso.split("-");
+  return `${m}/${y.slice(2)}`;
+}
+
 function Pagina() {
+  const fn = useServerFn(obterKpisRh);
+  const { data, isLoading, dataUpdatedAt } = useQuery({
+    queryKey: ["rh-kpis"],
+    queryFn: () => fn(),
+  });
+
+  const admissoes = (data?.admissoesUltimos12 ?? []).map((r) => ({ ...r, label: mesLabel(r.mes) }));
+  const desligamentos = (data?.desligamentosUltimos12 ?? []).map((r) => ({
+    ...r,
+    label: mesLabel(r.mes),
+  }));
+  const evolucao = admissoes.map((a, i) => ({
+    label: a.label,
+    admissoes: a.total,
+    desligamentos: desligamentos[i]?.total ?? 0,
+  }));
+
+  const atualizado = dataUpdatedAt
+    ? new Date(dataUpdatedAt).toLocaleTimeString("pt-BR", {
+        timeZone: "America/Sao_Paulo",
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : undefined;
+
   return (
-    <div className="mx-auto flex min-h-[70vh] w-full max-w-[1400px] flex-col items-center justify-center gap-6 p-6">
-      <div className="flex flex-col items-center gap-4 text-center">
-        <span className="grid size-20 place-items-center rounded-2xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/20">
-          <UserRound className="h-10 w-10" />
-        </span>
-        <h1 className="text-2xl font-bold tracking-tight text-foreground md:text-3xl">
-          Gestão de Pessoas e RH
-        </h1>
-        <span
-          className="inline-flex items-center gap-2 rounded-full border-2 border-yellow-400 bg-yellow-300/90 px-6 py-2 text-lg font-bold uppercase tracking-widest text-yellow-950 shadow-lg animate-pulse"
-          role="status"
-          aria-live="polite"
-        >
-          Em breve
-        </span>
-        <p className="max-w-md text-sm text-muted-foreground">
-          Este módulo está em desenvolvimento e ficará disponível em breve.
-        </p>
+    <div className="mx-auto w-full max-w-[1600px] space-y-6 p-3 sm:p-4 md:space-y-8 md:p-6">
+      <PanelHeader
+        eyebrow="Gestão de Pessoas e RH · Painel"
+        titulo="Gestão de Pessoas e RH"
+        descricao="Quadro de funcionários, custos e movimentações do período."
+        atualizadoEm={atualizado}
+        actions={
+          <div className="flex flex-wrap gap-2">
+            <Button asChild variant="outline" size="sm">
+              <Link to="/rh/funcionarios">Ver funcionários</Link>
+            </Button>
+            <Button asChild size="sm">
+              <Link to="/rh/funcionarios/novo">
+                <UserPlus className="mr-2 h-4 w-4" /> Novo funcionário
+              </Link>
+            </Button>
+          </div>
+        }
+      />
+
+      <SectionTitle>Quadro de funcionários</SectionTitle>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        <ReportKpiCard titulo="Ativos" valor={String(data?.ativos ?? 0)} icon={UserCheck} tone="success" to="/rh/funcionarios" />
+        <ReportKpiCard titulo="Em experiência" valor={String(data?.experiencia ?? 0)} icon={UserRound} tone="warning" to="/rh/funcionarios" />
+        <ReportKpiCard titulo="Afastados" valor={String(data?.afastados ?? 0)} icon={UserMinus} tone="danger" to="/rh/funcionarios" />
+        <ReportKpiCard titulo="Em férias" valor={String(data?.ferias ?? 0)} icon={Plane} tone="brand" to="/rh/funcionarios" />
+        <ReportKpiCard titulo="Quadro total" valor={String((data?.ativos ?? 0) + (data?.experiencia ?? 0) + (data?.afastados ?? 0) + (data?.ferias ?? 0))} icon={UsersRound} tone="brand" to="/rh/funcionarios" />
       </div>
+
+      <SectionTitle>Documentação e ocorrências</SectionTitle>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+        <ReportKpiCard titulo="Documentos pendentes" valor={String(data?.documentosPendentes ?? 0)} icon={FileClock} tone="warning" />
+        <ReportKpiCard titulo="Documentos vencidos" valor={String(data?.documentosVencidos ?? 0)} icon={AlertTriangle} tone="danger" />
+        <ReportKpiCard titulo="Faltas no mês" valor={String(data?.faltasMes ?? 0)} icon={AlertTriangle} tone="warning" />
+        <ReportKpiCard titulo="Atestados no mês" valor={String(data?.atestadosMes ?? 0)} icon={FileClock} tone="warning" />
+      </div>
+
+      <SectionTitle>Custos e competência</SectionTitle>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+        <ReportKpiCard
+          titulo="Custo mensal estimado"
+          valor={formatBRL(data?.custoMensalEstimado ?? 0)}
+          icon={Wallet}
+          tone="brand"
+          sub="Soma dos salários atuais"
+        />
+        <ReportKpiCard titulo="Férias programadas" valor={String(data?.feriasProgramadas ?? 0)} icon={Plane} tone="brand" />
+        <ReportKpiCard titulo="Holerites pendentes" valor={String(data?.holeritesPendentes ?? 0)} icon={FileClock} tone="warning" />
+        <ReportKpiCard titulo="Competências abertas" valor={String(data?.competenciasAbertas ?? 0)} icon={TrendingUp} tone="brand" />
+      </div>
+
+      <SectionTitle>Movimentação do quadro</SectionTitle>
+      <PanelCard titulo="Admissões vs. desligamentos" subtitulo="Últimos 12 meses">
+        <div className="h-72 w-full">
+          {isLoading ? (
+            <p className="text-sm text-muted-foreground">Carregando…</p>
+          ) : (
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={evolucao}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="label" tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" />
+                <YAxis tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" width={40} allowDecimals={false} />
+                <Tooltip
+                  contentStyle={{
+                    background: "hsl(var(--card))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: 8,
+                  }}
+                />
+                <Legend />
+                <Bar dataKey="admissoes" name="Admissões" fill="var(--chart-3)" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="desligamentos" name="Desligamentos" fill="var(--chart-5)" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+      </PanelCard>
+
+      <SectionTitle>Distribuição por departamento</SectionTitle>
+      <PanelCard titulo="Quadro por departamento" subtitulo="Excluindo desligados">
+        <div className="h-72 w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={data?.quadroPorDepartamento ?? []} layout="vertical">
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis type="number" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" allowDecimals={false} />
+              <YAxis type="category" dataKey="nome" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" width={140} />
+              <Tooltip
+                contentStyle={{
+                  background: "hsl(var(--card))",
+                  border: "1px solid hsl(var(--border))",
+                  borderRadius: 8,
+                }}
+              />
+              <Bar dataKey="total" name="Funcionários" fill="var(--chart-1)" radius={[0, 4, 4, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </PanelCard>
     </div>
   );
 }

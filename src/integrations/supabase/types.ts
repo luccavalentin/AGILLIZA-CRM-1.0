@@ -4570,6 +4570,361 @@ export type Database = {
         }
         Relationships: []
       }
+      rh_cargos: {
+        Row: {
+          ativo: boolean
+          cbo: string | null
+          correspondente_id: string
+          created_at: string
+          descricao: string | null
+          id: string
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          cbo?: string | null
+          correspondente_id: string
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          cbo?: string | null
+          correspondente_id?: string
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      rh_departamentos: {
+        Row: {
+          ativo: boolean
+          correspondente_id: string
+          created_at: string
+          id: string
+          nome: string
+          responsavel_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          correspondente_id: string
+          created_at?: string
+          id?: string
+          nome: string
+          responsavel_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          correspondente_id?: string
+          created_at?: string
+          id?: string
+          nome?: string
+          responsavel_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      rh_dependentes: {
+        Row: {
+          correspondente_id: string
+          cpf: string | null
+          created_at: string
+          data_nascimento: string | null
+          funcionario_id: string
+          id: string
+          ir: boolean
+          nome: string
+          observacoes: string | null
+          parentesco: string
+          plano_saude: boolean
+          salario_familia: boolean
+          updated_at: string
+        }
+        Insert: {
+          correspondente_id: string
+          cpf?: string | null
+          created_at?: string
+          data_nascimento?: string | null
+          funcionario_id: string
+          id?: string
+          ir?: boolean
+          nome: string
+          observacoes?: string | null
+          parentesco: string
+          plano_saude?: boolean
+          salario_familia?: boolean
+          updated_at?: string
+        }
+        Update: {
+          correspondente_id?: string
+          cpf?: string | null
+          created_at?: string
+          data_nascimento?: string | null
+          funcionario_id?: string
+          id?: string
+          ir?: boolean
+          nome?: string
+          observacoes?: string | null
+          parentesco?: string
+          plano_saude?: boolean
+          salario_familia?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rh_dependentes_funcionario_id_fkey"
+            columns: ["funcionario_id"]
+            isOneToOne: false
+            referencedRelation: "rh_funcionarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rh_funcionario_historico: {
+        Row: {
+          ator_id: string | null
+          campo: string
+          correspondente_id: string
+          created_at: string
+          funcionario_id: string
+          id: string
+          motivo: string | null
+          valor_anterior: string | null
+          valor_novo: string | null
+        }
+        Insert: {
+          ator_id?: string | null
+          campo: string
+          correspondente_id: string
+          created_at?: string
+          funcionario_id: string
+          id?: string
+          motivo?: string | null
+          valor_anterior?: string | null
+          valor_novo?: string | null
+        }
+        Update: {
+          ator_id?: string | null
+          campo?: string
+          correspondente_id?: string
+          created_at?: string
+          funcionario_id?: string
+          id?: string
+          motivo?: string | null
+          valor_anterior?: string | null
+          valor_novo?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rh_funcionario_historico_funcionario_id_fkey"
+            columns: ["funcionario_id"]
+            isOneToOne: false
+            referencedRelation: "rh_funcionarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rh_funcionarios: {
+        Row: {
+          ativo: boolean
+          bairro: string | null
+          banco_agencia: string | null
+          banco_conta: string | null
+          banco_nome: string | null
+          banco_pix: string | null
+          banco_tipo_conta: string | null
+          cargo_id: string | null
+          cep: string | null
+          cidade: string | null
+          complemento: string | null
+          correspondente_id: string
+          cpf: string
+          created_at: string
+          criador_id: string | null
+          ctps_numero: string | null
+          ctps_serie: string | null
+          ctps_uf: string | null
+          data_admissao: string
+          data_demissao: string | null
+          data_nascimento: string | null
+          deletado_em: string | null
+          departamento_id: string | null
+          email_corporativo: string | null
+          email_pessoal: string | null
+          estado_civil: string | null
+          fim_experiencia: string | null
+          foto_url: string | null
+          gestor_id: string | null
+          id: string
+          jornada_descricao: string | null
+          jornada_horas_semanais: number | null
+          logradouro: string | null
+          matricula: string | null
+          motivo_demissao: string | null
+          nacionalidade: string | null
+          naturalidade: string | null
+          nome: string
+          nome_mae: string | null
+          nome_pai: string | null
+          nome_social: string | null
+          numero: string
+          numero_endereco: string | null
+          observacoes: string | null
+          pis: string | null
+          rg: string | null
+          rg_orgao: string | null
+          rg_uf: string | null
+          salario_atual: number
+          salario_desde: string | null
+          sexo: string | null
+          status: Database["public"]["Enums"]["rh_status_funcionario"]
+          telefone: string | null
+          tipo_contrato: Database["public"]["Enums"]["rh_tipo_contrato"]
+          uf: string | null
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          bairro?: string | null
+          banco_agencia?: string | null
+          banco_conta?: string | null
+          banco_nome?: string | null
+          banco_pix?: string | null
+          banco_tipo_conta?: string | null
+          cargo_id?: string | null
+          cep?: string | null
+          cidade?: string | null
+          complemento?: string | null
+          correspondente_id: string
+          cpf: string
+          created_at?: string
+          criador_id?: string | null
+          ctps_numero?: string | null
+          ctps_serie?: string | null
+          ctps_uf?: string | null
+          data_admissao: string
+          data_demissao?: string | null
+          data_nascimento?: string | null
+          deletado_em?: string | null
+          departamento_id?: string | null
+          email_corporativo?: string | null
+          email_pessoal?: string | null
+          estado_civil?: string | null
+          fim_experiencia?: string | null
+          foto_url?: string | null
+          gestor_id?: string | null
+          id?: string
+          jornada_descricao?: string | null
+          jornada_horas_semanais?: number | null
+          logradouro?: string | null
+          matricula?: string | null
+          motivo_demissao?: string | null
+          nacionalidade?: string | null
+          naturalidade?: string | null
+          nome: string
+          nome_mae?: string | null
+          nome_pai?: string | null
+          nome_social?: string | null
+          numero: string
+          numero_endereco?: string | null
+          observacoes?: string | null
+          pis?: string | null
+          rg?: string | null
+          rg_orgao?: string | null
+          rg_uf?: string | null
+          salario_atual?: number
+          salario_desde?: string | null
+          sexo?: string | null
+          status?: Database["public"]["Enums"]["rh_status_funcionario"]
+          telefone?: string | null
+          tipo_contrato?: Database["public"]["Enums"]["rh_tipo_contrato"]
+          uf?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          bairro?: string | null
+          banco_agencia?: string | null
+          banco_conta?: string | null
+          banco_nome?: string | null
+          banco_pix?: string | null
+          banco_tipo_conta?: string | null
+          cargo_id?: string | null
+          cep?: string | null
+          cidade?: string | null
+          complemento?: string | null
+          correspondente_id?: string
+          cpf?: string
+          created_at?: string
+          criador_id?: string | null
+          ctps_numero?: string | null
+          ctps_serie?: string | null
+          ctps_uf?: string | null
+          data_admissao?: string
+          data_demissao?: string | null
+          data_nascimento?: string | null
+          deletado_em?: string | null
+          departamento_id?: string | null
+          email_corporativo?: string | null
+          email_pessoal?: string | null
+          estado_civil?: string | null
+          fim_experiencia?: string | null
+          foto_url?: string | null
+          gestor_id?: string | null
+          id?: string
+          jornada_descricao?: string | null
+          jornada_horas_semanais?: number | null
+          logradouro?: string | null
+          matricula?: string | null
+          motivo_demissao?: string | null
+          nacionalidade?: string | null
+          naturalidade?: string | null
+          nome?: string
+          nome_mae?: string | null
+          nome_pai?: string | null
+          nome_social?: string | null
+          numero?: string
+          numero_endereco?: string | null
+          observacoes?: string | null
+          pis?: string | null
+          rg?: string | null
+          rg_orgao?: string | null
+          rg_uf?: string | null
+          salario_atual?: number
+          salario_desde?: string | null
+          sexo?: string | null
+          status?: Database["public"]["Enums"]["rh_status_funcionario"]
+          telefone?: string | null
+          tipo_contrato?: Database["public"]["Enums"]["rh_tipo_contrato"]
+          uf?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rh_funcionarios_cargo_id_fkey"
+            columns: ["cargo_id"]
+            isOneToOne: false
+            referencedRelation: "rh_cargos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rh_funcionarios_departamento_id_fkey"
+            columns: ["departamento_id"]
+            isOneToOne: false
+            referencedRelation: "rh_departamentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       scan_ia_auditoria: {
         Row: {
           acao: string
@@ -5993,6 +6348,19 @@ export type Database = {
         | "separacao_total"
         | "participacao_final"
         | "nao_aplicavel"
+      rh_status_funcionario:
+        | "ativo"
+        | "experiencia"
+        | "afastado"
+        | "ferias"
+        | "desligado"
+      rh_tipo_contrato:
+        | "clt"
+        | "pj"
+        | "estagio"
+        | "autonomo"
+        | "temporario"
+        | "aprendiz"
       simulacao_banco_status: "aguardando" | "simulada" | "erro" | "expirada"
       simulacao_status:
         | "rascunho"
@@ -6245,6 +6613,21 @@ export const Constants = {
         "separacao_total",
         "participacao_final",
         "nao_aplicavel",
+      ],
+      rh_status_funcionario: [
+        "ativo",
+        "experiencia",
+        "afastado",
+        "ferias",
+        "desligado",
+      ],
+      rh_tipo_contrato: [
+        "clt",
+        "pj",
+        "estagio",
+        "autonomo",
+        "temporario",
+        "aprendiz",
       ],
       simulacao_banco_status: ["aguardando", "simulada", "erro", "expirada"],
       simulacao_status: [
