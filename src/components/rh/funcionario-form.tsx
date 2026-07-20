@@ -443,7 +443,23 @@ export function FuncionarioForm({ inicial }: { inicial?: Funcionario | null }) {
             <CardContent className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
               <div className="space-y-1.5">
                 <Label>CEP</Label>
-                <Input value={f.cep ?? ""} onChange={(e) => set("cep", e.target.value)} />
+                <div className="relative">
+                  <Input
+                    inputMode="numeric"
+                    maxLength={9}
+                    placeholder="00000-000"
+                    value={f.cep ?? ""}
+                    onChange={(e) => {
+                      const m = mascararCep(e.target.value);
+                      set("cep", m);
+                      if (apenasDigitosCep(m).length === 8) buscarCep(m);
+                    }}
+                    onBlur={(e) => buscarCep(e.target.value)}
+                  />
+                  {buscandoCep && (
+                    <Loader2 className="absolute right-3 top-1/2 size-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+                  )}
+                </div>
               </div>
               <div className="space-y-1.5 md:col-span-2">
                 <Label>Logradouro</Label>
