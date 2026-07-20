@@ -317,7 +317,7 @@ function Acompanhar() {
         </div>
 
         {/* STAT CARDS BOTTOM */}
-        <div className="grid grid-cols-2 gap-2.5 sm:gap-3 md:grid-cols-3 xl:grid-cols-5">
+        <div className="grid grid-cols-2 gap-2.5 sm:gap-3 md:grid-cols-3 lg:grid-cols-5">
           <MiniStat icon={ClipboardCheck} valor={String(concluidas)} label="Etapas concluídas" hint={`${Math.round((concluidas / total) * 100)}% do processo`} />
           <MiniStat icon={ListChecks} valor={String(restantes)} label="Etapas restantes" hint={`${Math.round((restantes / total) * 100)}% do processo`} />
           <MiniStat icon={FileText} valor={String(documentos_pendentes)} label="Documentos pendentes" linkLabel={documentos_pendentes ? "Ver documentos" : "Tudo em dia"} to="/cliente/chat" />
