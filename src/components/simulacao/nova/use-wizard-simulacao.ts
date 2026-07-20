@@ -114,7 +114,7 @@ export function useWizardSimulacao(melhorTaxaAno = 0.1199) {
     setW((prev) => ({ ...prev, ...(patch as Partial<WizardState>) }));
   }
 
-  const entradaSugerida = Math.round((w.valor_imovel || 0) * (1 - ltvMax));
+  const entradaSugerida = Math.round((w.valor_imovel || 0) * pctEntradaSugerida);
 
   const maxPrazoIdade = useMemo(() => prazoMaximoPorIdade(w.data_nascimento), [w.data_nascimento]);
 
