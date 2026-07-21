@@ -42,7 +42,11 @@ export function useAdaptadorDm({
   const listarFn = useServerFn(listarMensagensDm);
   const enviarFn = useServerFn(enviarMensagemDm);
   const marcarFn = useServerFn(marcarDmLida);
+  const editarFn = useServerFn(editarMensagemDm);
+  const excluirFn = useServerFn(excluirMensagemDm);
+  const reagirFn = useServerFn(reagirMensagem);
   const sessaoFn = useServerFn(getMinhaSessao);
+
 
   const { data: sessao } = useQuery({
     queryKey: ["minha-sessao"],
