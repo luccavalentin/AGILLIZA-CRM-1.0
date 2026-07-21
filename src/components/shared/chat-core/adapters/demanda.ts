@@ -35,7 +35,11 @@ export function useAdaptadorDemanda({
   const listarFn = useServerFn(listarChatDemanda);
   const comentarFn = useServerFn(comentarDemanda);
   const marcarLidaFn = useServerFn(marcarDemandaLida);
+  const editarFn = useServerFn(editarChatDemanda);
+  const excluirFn = useServerFn(excluirChatDemanda);
+  const reagirFn = useServerFn(reagirMensagem);
   const sessaoFn = useServerFn(getMinhaSessao);
+
 
   const { data: sessao } = useQuery({
     queryKey: ["minha-sessao"],
