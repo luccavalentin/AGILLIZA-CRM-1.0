@@ -369,6 +369,33 @@ export type Database = {
           },
         ]
       }
+      chat_reacoes: {
+        Row: {
+          created_at: string
+          emoji: string
+          id: string
+          mensagem_id: string
+          origem: string
+          usuario_id: string
+        }
+        Insert: {
+          created_at?: string
+          emoji: string
+          id?: string
+          mensagem_id: string
+          origem: string
+          usuario_id: string
+        }
+        Update: {
+          created_at?: string
+          emoji?: string
+          id?: string
+          mensagem_id?: string
+          origem?: string
+          usuario_id?: string
+        }
+        Relationships: []
+      }
       cliente_app_acessos: {
         Row: {
           cliente_id: string | null
@@ -2048,7 +2075,10 @@ export type Database = {
           corpo: string
           created_at: string
           demanda_id: string
+          editada_em: string | null
+          excluida_em: string | null
           id: string
+          responde_a: string | null
           search_tsv: unknown
           visivel_cliente: boolean
         }
@@ -2060,7 +2090,10 @@ export type Database = {
           corpo: string
           created_at?: string
           demanda_id: string
+          editada_em?: string | null
+          excluida_em?: string | null
           id?: string
+          responde_a?: string | null
           search_tsv?: unknown
           visivel_cliente?: boolean
         }
@@ -2072,7 +2105,10 @@ export type Database = {
           corpo?: string
           created_at?: string
           demanda_id?: string
+          editada_em?: string | null
+          excluida_em?: string | null
           id?: string
+          responde_a?: string | null
           search_tsv?: unknown
           visivel_cliente?: boolean
         }
@@ -2082,6 +2118,13 @@ export type Database = {
             columns: ["demanda_id"]
             isOneToOne: false
             referencedRelation: "demandas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "demanda_mensagens_responde_a_fkey"
+            columns: ["responde_a"]
+            isOneToOne: false
+            referencedRelation: "demanda_mensagens"
             referencedColumns: ["id"]
           },
         ]
@@ -2262,7 +2305,10 @@ export type Database = {
           conversa_id: string
           correspondente_id: string
           created_at: string
+          editada_em: string | null
+          excluida_em: string | null
           id: string
+          responde_a: string | null
           search_tsv: unknown
           texto: string | null
         }
@@ -2274,7 +2320,10 @@ export type Database = {
           conversa_id: string
           correspondente_id: string
           created_at?: string
+          editada_em?: string | null
+          excluida_em?: string | null
           id?: string
+          responde_a?: string | null
           search_tsv?: unknown
           texto?: string | null
         }
@@ -2286,7 +2335,10 @@ export type Database = {
           conversa_id?: string
           correspondente_id?: string
           created_at?: string
+          editada_em?: string | null
+          excluida_em?: string | null
           id?: string
+          responde_a?: string | null
           search_tsv?: unknown
           texto?: string | null
         }
@@ -2303,6 +2355,13 @@ export type Database = {
             columns: ["conversa_id"]
             isOneToOne: false
             referencedRelation: "dm_conversas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dm_mensagens_responde_a_fkey"
+            columns: ["responde_a"]
+            isOneToOne: false
+            referencedRelation: "dm_mensagens"
             referencedColumns: ["id"]
           },
         ]
