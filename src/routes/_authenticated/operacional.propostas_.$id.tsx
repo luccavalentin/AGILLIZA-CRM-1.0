@@ -244,20 +244,12 @@ function Pagina() {
   }, [id, propostaStatus, sincronizarAutoFn, qc]);
 
 
-  // Ao chegar de "Criar proposta", abre o cadastro complementar automaticamente
-  // e marca a proposta para envio automático assim que o formulário for fechado.
-  useEffect(() => {
-    if (complementar === 1) {
-      setTab("COMPRADORES");
-      setAutoAbrir(true);
-      setAutoEnviar(true);
-    }
-  }, [complementar]);
-
-  // Envia a proposta ao banco imediatamente após o fechamento do cadastro
-  // complementar (quando a proposta veio do fluxo "Criar proposta").
+  // Envia a proposta ao banco de forma automática (usado tanto após salvar o
+  // cadastro complementar quanto quando o cadastro já veio pronto do CRM).
+  const enviouAutoRef = useRef(false);
   async function enviarAposComplementar() {
-    if (!autoEnviar) return;
+    if (enviouAutoRef.current) return;
+    enviouAutoRef.current = true;
     setAutoEnviar(false);
     setEnviandoAuto(true);
     const tid = toast.loading("Enviando proposta ao banco…");
@@ -275,10 +267,52 @@ function Pagina() {
       setTab("RESUMO");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Falha ao enviar ao banco.", { id: tid });
+      // Se o envio falhar (ex.: cadastro incompleto detectado no servidor),
+      // permite nova tentativa.
+      enviouAutoRef.current = false;
     } finally {
       setEnviandoAuto(false);
     }
   }
+
+  // Ao chegar de "Criar proposta": se o cadastro do titular (e do cônjuge,
+  // quando existir) já está completo, dispara o envio direto ao banco.
+  // Só abre o formulário complementar quando algum campo obrigatório está
+  // pendente — evita a etapa de "validação" quando tudo já veio do CRM.
+  useEffect(() => {
+    if (complementar !== 1) return;
+    if (!data) return; // aguarda os envolvidos carregarem
+    if (enviouAutoRef.current) return;
+    const envolvidos = (data.envolvidos ?? []) as any[];
+    const titular = envolvidos.find(
+      (e: any) => !e.conjuge_de && (e.tipo_qualificacao === "CO" || e.tipo_qualificacao === "TI"),
+    );
+    const conjuge = titular
+      ? envolvidos.find((e: any) => String(e.conjuge_de ?? "") === String(titular.id))
+      : envolvidos.find((e: any) => e.conjuge_de);
+    const titularOk = titular ? participanteCompleto(titular) : false;
+    // Cônjuge só precisa de nome/CPF/nascimento — o restante é enviado no bloco
+    // "nomeConjuge/..." da oportunidade e não exige cadastro completo.
+    const conjugeOk = !conjuge || Boolean(conjuge.nome && conjuge.cpf_cnpj);
+    if (titularOk && conjugeOk) {
+      // Cadastro já completo (veio do CRM): dispara o envio direto, sem
+      // passar pelo formulário de validação.
+      setAutoAbrir(false);
+      // Limpa a flag da URL para que o efeito não reexecute em rerenders.
+      router.navigate({
+        to: "/operacional/propostas/$id",
+        params: { id },
+        search: {},
+        replace: true,
+      });
+      void enviarAposComplementar();
+    } else {
+      setTab("COMPRADORES");
+      setAutoAbrir(true);
+      setAutoEnviar(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [complementar, data]);
 
 
 

@@ -616,7 +616,9 @@ export const criarProposta = createServerFn({ method: "POST" })
 
         // Cônjuge/coproponente já cadastrado na ficha do cliente entra como
         // envolvido vinculado ao titular (conjuge_de), para o formulário já vir preenchido.
-        const ehCasado = ["casado", "uniao_estavel"].includes(String(c.estado_civil ?? ""));
+        const ehCasado =
+          ["casado", "uniao_estavel"].includes(String(c.estado_civil ?? "")) ||
+          Boolean(c.conjuge_nome || c.conjuge_cpf);
         if (insTit?.id && ehCasado && (c.conjuge_nome || c.conjuge_cpf)) {
           const { error: conjugeErr } = await supabaseAdmin.from("proposta_envolvidos").insert({
             proposta_id: inserted.id,
