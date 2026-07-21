@@ -92,6 +92,15 @@ function sanitizarNumeroDocumento(v: unknown): string | undefined {
   return s.length ? s : undefined;
 }
 
+function enumBancoId(v: unknown): string | undefined {
+  if (v == null || v === "") return undefined;
+  if (typeof v === "object" && "id" in (v as Record<string, unknown>)) {
+    return enumBancoId((v as Record<string, unknown>).id);
+  }
+  const s = String(v).trim();
+  return s.length ? s : undefined;
+}
+
 /**
  * Detecta o cenário em que a integração devolveu "erro" mas a proposta
  * NUNCA foi de fato efetivada na esteira do banco (falha de integração).
