@@ -442,10 +442,21 @@ export async function enviarPropostaImpl({
   // Itaú recusando por validação) não impede o envio dos demais.
   const enviarBancoIntegracao = async (b: any): Promise<EnviarResultado["bancos"][number]> => {
     try {
+      // Antes de reenviar, verifica se a simulação vinculada ao banco já foi
+      // "consumida" por uma tentativa anterior (tipoSituacao "R" ou "A"). O
+      // provedor não permite reprocessar a mesma simulação: nesse caso criamos
+      // uma NOVA simulação com os mesmos parâmetros e passamos a usá-la.
+      const idSimulacaoUsar = await renovarSimulacaoSeConsumida({
+        idOportunidade: prop.homefin_id_oportunidade,
+        pb: b,
+        propostaId,
+        ctx,
+        supabase,
+      });
       const resp = await chamarIntegracao<any>(
         `/oportunidade/${prop.homefin_id_oportunidade}/incluir-proposta-integracao`,
         "POST",
-        { idSimulacao: b.homefin_id_simulacao_banco ?? prop.homefin_id_simulacao },
+        { idSimulacao: idSimulacaoUsar },
         ctx,
       );
 
