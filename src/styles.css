@@ -958,8 +958,8 @@ iframe[src*="lvbl" i] {
   background: #eef2ff;
 }
 .dps-box {
-  width: 12px;
-  height: 12px;
+  width: 14px;
+  height: 14px;
   border: 1.4px solid #16294f;
   border-radius: 2px;
   display: inline-flex;
@@ -967,10 +967,18 @@ iframe[src*="lvbl" i] {
   justify-content: center;
   line-height: 1;
   position: relative;
+  background: #fff;
 }
 .dps-box-marcado {
-  background: #16294f;
-  color: #fff;
+  background: #fff;
+  color: #16294f;
+}
+.dps-box-x {
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1;
+  margin-top: -2px;
+  color: #16294f;
 }
 .dps-box-x {
   font-size: 12px;
