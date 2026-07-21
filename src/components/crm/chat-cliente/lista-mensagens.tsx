@@ -224,7 +224,38 @@ export function ListaMensagens({
                       </span>
                     )}
                   </div>
+
+                  {/* Reações agrupadas (Fase 6) */}
+                  {!excluida && m.reacoes && m.reacoes.length > 0 && (
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {m.reacoes.map((r) => (
+                        <button
+                          key={r.emoji}
+                          type="button"
+                          onClick={
+                            podeReagir ? () => onReagir!(m.id, r.emoji) : undefined
+                          }
+                          className={cn(
+                            "inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[11px] leading-none transition-colors",
+                            r.mine
+                              ? doTime
+                                ? "border-primary-foreground/60 bg-primary-foreground/20 text-primary-foreground"
+                                : "border-primary/50 bg-primary/15 text-primary"
+                              : doTime
+                                ? "border-primary-foreground/25 bg-primary-foreground/10 text-primary-foreground/85"
+                                : "border-border/60 bg-background/70 text-foreground/80 hover:bg-muted",
+                            !podeReagir && "cursor-default",
+                          )}
+                          aria-label={`${r.count} ${r.emoji}`}
+                        >
+                          <span className="text-sm leading-none">{r.emoji}</span>
+                          <span className="tabular-nums">{r.count}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
+
 
                 {/* Ações para mensagens do peer (só responder/copiar) */}
                 {!doTime && !excluida && !otimista && (
