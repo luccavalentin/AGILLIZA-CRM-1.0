@@ -115,6 +115,9 @@ function SlaChip({ prazo, status }: { prazo: string | null; status: DemandaStatu
 
 function Pagina() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const excluirFn = useServerFn(excluirDemanda);
+  const sessaoFn = useServerFn(getMinhaSessao);
   const [escopo, setEscopo] = useState<"minhas" | "geral">(
     () =>
       (typeof window !== "undefined" &&
@@ -124,11 +127,36 @@ function Pagina() {
   const [q, setQ] = useState("");
   const [statusFiltro, setStatusFiltro] = useState<DemandaStatus | "todas">("todas");
   const [tipoFiltro, setTipoFiltro] = useState<string>("todos");
+  const [excluirId, setExcluirId] = useState<string | null>(null);
+  const [excluindo, setExcluindo] = useState(false);
+
+  const { data: sessao } = useQuery({
+    queryKey: ["minha-sessao"],
+    queryFn: () => sessaoFn(),
+    staleTime: 5 * 60_000,
+  });
+  const meuId = sessao?.profile?.id ?? null;
 
   const { data: itens, isLoading, refetch } = useQuery({
     queryKey: ["demandas", "lista", escopo],
     queryFn: () => listarDemandas({ data: { escopo } }),
   });
+
+  async function confirmarExclusao() {
+    if (!excluirId) return;
+    setExcluindo(true);
+    try {
+      await excluirFn({ data: { id: excluirId } });
+      toast.success("Demanda excluída.");
+      queryClient.invalidateQueries({ queryKey: ["demandas"] });
+      setExcluirId(null);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Não foi possível excluir a demanda.");
+    } finally {
+      setExcluindo(false);
+    }
+  }
+
 
   const tiposDisponiveis = useMemo(() => {
     const set = new Set<string>();
