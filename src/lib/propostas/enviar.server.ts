@@ -1370,12 +1370,15 @@ export async function sincronizarPropostaImpl({
     .eq("id", propostaId);
 
   if (mudouStatus) {
+    const ehErroIntegracao = novoStatus === "erro_envio" && algumFalhaIntegracao;
     await supabase.from("proposta_historico").insert({
       proposta_id: propostaId,
-      tipo_evento: "sincronizacao",
-      descricao: nomeEtapa
-        ? `Atualização do banco: ${nomeEtapa}`
-        : "Situação atualizada pelo banco",
+      tipo_evento: ehErroIntegracao ? "erro_envio" : "sincronizacao",
+      descricao: ehErroIntegracao
+        ? `Falha na integração com o banco (${bancosComFalhaIntegracao.join(", ") || "banco"}). A proposta não foi efetivada. Reenvie para retomar o processo.`
+        : nomeEtapa
+          ? `Atualização do banco: ${nomeEtapa}`
+          : "Situação atualizada pelo banco",
       status_anterior: prop.status as any,
       status_novo: novoStatus as any,
       ator_id: userId,
