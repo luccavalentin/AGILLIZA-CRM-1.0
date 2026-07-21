@@ -244,15 +244,32 @@ function Pagina() {
   }, [id, propostaStatus, sincronizarAutoFn, qc]);
 
 
-  // Ao chegar de "Criar proposta", abre o cadastro complementar automaticamente
-  // e marca a proposta para envio automático assim que o formulário for fechado.
+  // Ao chegar de "Criar proposta": se o cadastro do titular (e do cônjuge,
+  // quando existir) já está completo, dispara o envio direto ao banco.
+  // Só abre o formulário complementar quando algum campo obrigatório está
+  // pendente — evita a etapa de "validação" quando tudo já veio do CRM.
   useEffect(() => {
-    if (complementar === 1) {
+    if (complementar !== 1) return;
+    if (!data) return; // aguarda os envolvidos carregarem
+    const envolvidos = (data.envolvidos ?? []) as any[];
+    const titular = envolvidos.find(
+      (e: any) => !e.conjuge_de && (e.tipo_qualificacao === "CO" || e.tipo_qualificacao === "TI"),
+    );
+    const conjuge = titular
+      ? envolvidos.find((e: any) => String(e.conjuge_de ?? "") === String(titular.id))
+      : envolvidos.find((e: any) => e.conjuge_de);
+    const titularOk = titular ? participanteCompleto(titular) : false;
+    // Cônjuge só precisa de nome/CPF/nascimento — o restante é enviado no bloco
+    // "nomeConjuge/..." da oportunidade e não exige o cadastro completo.
+    const conjugeOk = !conjuge || Boolean(conjuge.nome && conjuge.cpf_cnpj);
+    if (titularOk && conjugeOk) {
+      setAutoEnviar(true);
+    } else {
       setTab("COMPRADORES");
       setAutoAbrir(true);
       setAutoEnviar(true);
     }
-  }, [complementar]);
+  }, [complementar, data]);
 
   // Envia a proposta ao banco imediatamente após o fechamento do cadastro
   // complementar (quando a proposta veio do fluxo "Criar proposta").
