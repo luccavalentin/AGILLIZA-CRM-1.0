@@ -30,6 +30,8 @@ import { tempoRelativo, type PainelClienteItem } from "./utils";
 interface Props {
   cliente: PainelClienteItem;
   stageCodigo: string;
+  /** Card apenas leitura: sem arrasto (etapas sincronizadas pela proposta). */
+  readOnly?: boolean;
   onDragStart: () => void;
   onDragEnd: () => void;
   clicavel: () => boolean;
