@@ -562,8 +562,15 @@ export async function enviarPropostaImpl({
   };
 
   // Alguns bancos (ex.: Itaú) rejeitam a proposta quando o proponente está sem
-  // endereço (proponents[0].address.state). Garantimos o endereço do(s)
-  // participante(s) na oportunidade ANTES de incluir as propostas.
+  // endereço (proponents[0].address.state) OU quando o bloco de cônjuge não
+  // acompanha uma oportunidade cujo titular é casado (erro "spouse: O campo
+  // deve ser informado"). Sincronizamos ambos ANTES de incluir as propostas.
+  await sincronizarConjugeOportunidade({
+    prop,
+    idOportunidade: prop.homefin_id_oportunidade,
+    ctx,
+    supabase,
+  });
   await garantirEnderecoParticipantes({ prop, idOportunidade: prop.homefin_id_oportunidade, ctx, supabase });
 
   const resultados: EnviarResultado["bancos"] = [];
