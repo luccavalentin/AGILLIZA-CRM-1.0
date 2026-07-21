@@ -82,6 +82,43 @@ function soDigitos(v: unknown): string | undefined {
 }
 
 /**
+ * Remove máscara/pontuação de números de documento (RG/CNH/RNE...) antes de
+ * enviar ao banco. O Bradesco em particular rejeita silenciosamente valores
+ * com pontos/hífens (ex.: "333.312.398-36"): precisa ir só com caracteres
+ * alfanuméricos. Preservamos letras porque alguns tipos (ex.: RNE) as usam.
+ */
+function sanitizarNumeroDocumento(v: unknown): string | undefined {
+  const s = String(v ?? "").replace(/[^0-9A-Za-z]/g, "").trim();
+  return s.length ? s : undefined;
+}
+
+/**
+ * Detecta o cenário em que a integração devolveu "recusa" mas a proposta
+ * NUNCA foi de fato efetivada na esteira do banco (falha de integração).
+ * Critério (validado em produção com Bradesco):
+ *   - tipoSituacao ∈ {"R","E"}
+ *   - sem codigoSimulacaoBanco (token real devolvido pelo banco)
+ *   - codigoSituacaoBanco vazio OU código de FASE DE SIMULAÇÃO (ex.: "01.03")
+ *   - retornoIntegracao null (sem mensagem real do banco)
+ * Recusa real (Santander "514 - ...", Itaú "3", etc.) NÃO cai aqui.
+ */
+export function ehFalhaIntegracaoBanco(sim: any): boolean {
+  const tipo = String(sim?.tipoSituacao ?? "").toUpperCase().charAt(0);
+  if (tipo !== "R" && tipo !== "E") return false;
+  const codigoSim = String(sim?.codigoSimulacaoBanco ?? "").trim();
+  if (codigoSim) return false;
+  const retorno = sim?.retornoIntegracao ?? sim?.descricaoRespostaBanco?.retornoIntegracao;
+  if (retorno != null && String(retorno).trim() !== "") return false;
+  const codigoSit = String(sim?.codigoSituacaoBanco ?? "").trim();
+  if (!codigoSit) return true;
+  // Códigos de fase de simulação (ex.: "01.03", "1.03") — não são decisão de crédito
+  return /^0?1\.\d/.test(codigoSit);
+}
+
+const MSG_FALHA_INTEGRACAO =
+  "A proposta não foi efetivada no banco (falha na integração). Reenvie para retomar o processo.";
+
+/**
  * Normaliza textos livres antes de enviar ao banco. O usuário pode preencher
  * livremente, mas alguns bancos recusam caracteres como parênteses em campos
  * de ocupação (ex.: "Administrador(a)").
@@ -123,6 +160,91 @@ function envolvidoEnvioCompleto(e: any): boolean {
   return Boolean(base && pessoais);
 }
 
+
+/**
+ * Verifica no provedor se a simulação vinculada ao banco ainda pode ser usada
+ * na inclusão da proposta. Simulações com tipoSituacao "R" (recusada) ou "A"
+ * (aprovada) já foram consumidas — o provedor não permite reprocessá-las.
+ * Nesses casos criamos uma NOVA simulação com os mesmos parâmetros e passamos
+ * a apontar `proposta_bancos.homefin_id_simulacao_banco` para ela.
+ * Retorna o `idSimulacao` (numérico) a ser usado no envio ao banco.
+ */
+async function renovarSimulacaoSeConsumida({
+  idOportunidade,
+  pb,
+  propostaId,
+  ctx,
+  supabase,
+}: {
+  idOportunidade: string;
+  pb: any;
+  propostaId: string;
+  ctx: { simulacao_id: any; proposta_id: string; correspondente_id: any };
+  supabase: SupabaseClient<any, any, any>;
+}): Promise<number> {
+  const idAtual = pb.homefin_id_simulacao_banco;
+  if (!idAtual) {
+    throw new Error(
+      `Banco ${pb.nome_banco ?? ""} não tem simulação vinculada. Refaça a simulação antes de enviar.`,
+    );
+  }
+  let sim: any = null;
+  try {
+    const resp = await chamarIntegracao<any>(
+      `/oportunidade/${idOportunidade}`,
+      "GET",
+      undefined,
+      ctx,
+    );
+    const op = resp?.oportunidade ?? resp ?? {};
+    const simulacoes: any[] = Array.isArray(op?.simulacoes) ? op.simulacoes : [];
+    sim = simulacoes.find((s) => String(s?.idSimulacao) === String(idAtual)) ?? null;
+  } catch {
+    // Sem informação da simulação, segue com o id atual — o próprio POST vai falhar caso já esteja consumida.
+    return Number(idAtual);
+  }
+  if (!sim) return Number(idAtual);
+  const tipo = String(sim?.tipoSituacao ?? "").toUpperCase().charAt(0);
+  if (tipo !== "R" && tipo !== "A") return Number(idAtual);
+
+  // Simulação já consumida: criar nova com os mesmos parâmetros.
+  const idBanco = sim?.banco?.idBanco ?? sim?.idBanco;
+  const novoPayload: Record<string, unknown> = {
+    valorImovel: sim?.valorImovel,
+    valorFinanciamento: sim?.valorFinanciamento,
+    prazo: sim?.prazo,
+    codigoSistemaAmortizacaoBanco: sim?.codigoSistemaAmortizacaoBanco ?? { id: "S" },
+    banco: idBanco ? { idBanco } : sim?.banco,
+    fgFinanciarDespesas: sim?.fgFinanciarDespesas,
+    valorDespesasFinanciadas: sim?.valorDespesasFinanciadas,
+    valorTotalFinanciamento: sim?.valorTotalFinanciamento,
+    fgAutorizacaoDados: true,
+  };
+  const novaResp = await chamarIntegracao<any>(
+    `/oportunidade/${idOportunidade}/simulacao`,
+    "POST",
+    novoPayload,
+    ctx,
+  );
+  const novoId = Number(novaResp?.idSimulacao ?? novaResp?.data?.idSimulacao ?? 0);
+  if (!novoId) {
+    throw new Error(
+      `Não foi possível criar uma nova simulação para reenviar ao ${pb.nome_banco ?? "banco"}. Refaça a simulação e tente novamente.`,
+    );
+  }
+  await supabase
+    .from("proposta_bancos")
+    .update({ homefin_id_simulacao_banco: String(novoId) } as any)
+    .eq("id", pb.id);
+  // Reflete a nova simulação em memória para o restante do envio.
+  pb.homefin_id_simulacao_banco = String(novoId);
+  await supabase.from("proposta_historico").insert({
+    proposta_id: propostaId,
+    tipo_evento: "sincronizacao",
+    descricao: `Nova simulação gerada para reenviar ao ${pb.nome_banco ?? "banco"} (a anterior já havia sido consumida).`,
+  });
+  return novoId;
+}
 
 
 /**
@@ -231,7 +353,7 @@ async function garantirEnderecoParticipantes({
       tipoSexo: part?.tipoSexo ?? env?.tipo_sexo ?? undefined,
       tipoDocumentoIdentidade:
         part?.tipoDocumentoIdentidade ?? env?.tipo_documento_identidade ?? undefined,
-      numeroDocumento: part?.numeroDocumento ?? env?.numero_documento ?? undefined,
+      numeroDocumento: sanitizarNumeroDocumento(part?.numeroDocumento ?? env?.numero_documento),
       orgaoExpedidor: part?.orgaoExpedidor ?? env?.orgao_expedidor ?? undefined,
       ufExpedicao: part?.ufExpedicao ?? env?.uf_expedicao ?? undefined,
       dataExpedicao: part?.dataExpedicao ?? env?.data_expedicao ?? undefined,
@@ -405,10 +527,21 @@ export async function enviarPropostaImpl({
   // Itaú recusando por validação) não impede o envio dos demais.
   const enviarBancoIntegracao = async (b: any): Promise<EnviarResultado["bancos"][number]> => {
     try {
+      // Antes de reenviar, verifica se a simulação vinculada ao banco já foi
+      // "consumida" por uma tentativa anterior (tipoSituacao "R" ou "A"). O
+      // provedor não permite reprocessar a mesma simulação: nesse caso criamos
+      // uma NOVA simulação com os mesmos parâmetros e passamos a usá-la.
+      const idSimulacaoUsar = await renovarSimulacaoSeConsumida({
+        idOportunidade: prop.homefin_id_oportunidade,
+        pb: b,
+        propostaId,
+        ctx,
+        supabase,
+      });
       const resp = await chamarIntegracao<any>(
         `/oportunidade/${prop.homefin_id_oportunidade}/incluir-proposta-integracao`,
         "POST",
-        { idSimulacao: b.homefin_id_simulacao_banco ?? prop.homefin_id_simulacao },
+        { idSimulacao: idSimulacaoUsar },
         ctx,
       );
 
@@ -730,11 +863,17 @@ function statusInternoBanco(
   tipo: string,
   temErro: boolean,
   codigoSituacaoBanco?: string | null,
+  sim?: any,
 ): {
   banco: string;
   proposta: PropostaStatus | "credito_recusado" | null;
 } {
   if (temErro) return { banco: "erro", proposta: null };
+
+  // Falha de integração (Bradesco: "R"/"E" sem token do banco e código de fase
+  // de simulação): a proposta NÃO chegou ao banco. Trata como erro recuperável,
+  // NÃO como recusa de crédito.
+  if (sim && ehFalhaIntegracaoBanco(sim)) return { banco: "erro", proposta: null };
 
   const codigo = normalizarTexto(codigoSituacaoBanco);
   const codigoNumerico = String(codigoSituacaoBanco ?? "").replace(/\D/g, "");
@@ -768,8 +907,10 @@ function statusInternoBanco(
     case "P":
       return { banco: "erro", proposta: null };
     case "E":
-      // "E" observado como enviada/em análise quando não há erro de retorno.
-      return { banco: "em_analise", proposta: "em_analise_credito" };
+      // "E" observado sem retorno real do banco = erro de integração
+      // (falha silenciosa). Falha completa é capturada por ehFalhaIntegracaoBanco
+      // acima; aqui, sem sim, mantemos o comportamento conservador de erro.
+      return { banco: "erro", proposta: null };
     case "S":
       return { banco: "enviada", proposta: "em_analise_credito" };
     default:
@@ -794,8 +935,9 @@ function situacaoBancoDeTipo(
   tipo: string,
   codigoSituacaoBanco?: string | null,
   temErro = false,
+  sim?: any,
 ): string {
-  const mapa = statusInternoBanco(tipo, temErro, codigoSituacaoBanco);
+  const mapa = statusInternoBanco(tipo, temErro, codigoSituacaoBanco, sim);
   if (mapa.banco === "aprovada" || mapa.banco === "aprovado") return "aprovado";
   if (mapa.banco === "recusada" || mapa.banco === "recusado") return "recusado";
   if (mapa.banco === "condicionado") return "condicionado";
@@ -975,7 +1117,7 @@ function protocoloBanco(sim: any): string | null {
 
 function prioridadeSimulacao(sim: any, exata: boolean): number {
   const erroMsg = extrairErroRetorno(sim?.retornoIntegracao ?? sim?.descricaoRespostaBanco?.retornoIntegracao);
-  const mapa = statusInternoBanco(sim?.tipoSituacao, Boolean(erroMsg), sim?.codigoSituacaoBanco);
+  const mapa = statusInternoBanco(sim?.tipoSituacao, Boolean(erroMsg), sim?.codigoSituacaoBanco, sim);
   const statusScore =
     mapa.proposta === "credito_aprovado"
       ? 80
@@ -1098,7 +1240,9 @@ export async function sincronizarPropostaImpl({
   let algumEmAnalise = false;
   let algumRecusado = false;
   let algumErro = false;
+  let algumFalhaIntegracao = false;
   const errosBanco: string[] = [];
+  const bancosComFalhaIntegracao: string[] = [];
   let simEscolhida: any = null;
   let numeroPropostaBanco: string | null = null;
 
@@ -1109,18 +1253,17 @@ export async function sincronizarPropostaImpl({
     let erroMsg = extrairErroRetorno(
       sim.retornoIntegracao ?? sim.descricaoRespostaBanco?.retornoIntegracao,
     );
-    // Detecção adicional: quando o banco marca tipoSituacao "E" (erro) e a
-    // simulação NÃO tem timestamps de envio/retorno ao banco, a proposta
-    // nunca chegou de fato ao banco — deve virar erro visível (não ficar
-    // eternamente "em análise" no polling).
-    const tipoStr = String(sim?.tipoSituacao ?? "").toUpperCase().charAt(0);
-    const nuncaEnviada =
-      sim?.dataHoraEnvioIntegracao == null && sim?.dataHoraRetornoIntegracao == null;
-    if (!erroMsg && tipoStr === "E" && nuncaEnviada) {
-      erroMsg =
-        "A proposta não chegou a ser recebida pelo banco (falha na integração). Reenvie para retomar o processo.";
+    // Falha de integração (Bradesco/etc.): tipoSituacao "R"/"E" sem token real
+    // do banco (codigoSimulacaoBanco), retornoIntegracao null e código apenas
+    // de fase de simulação. NÃO é recusa de crédito — é falha silenciosa da
+    // integração; deve virar erro visível e permitir reenvio.
+    const falhaIntegracao = ehFalhaIntegracaoBanco(sim);
+    if (falhaIntegracao) {
+      erroMsg = MSG_FALHA_INTEGRACAO;
+      algumFalhaIntegracao = true;
+      bancosComFalhaIntegracao.push(pb.nome_banco ?? "Banco");
     }
-    const mapa = statusInternoBanco(sim.tipoSituacao, Boolean(erroMsg), sim.codigoSituacaoBanco);
+    const mapa = statusInternoBanco(sim.tipoSituacao, Boolean(erroMsg), sim.codigoSituacaoBanco, sim);
 
 
     if (mapa.proposta === "credito_aprovado") algumAprovado = true;
@@ -1139,14 +1282,19 @@ export async function sincronizarPropostaImpl({
         sim.tipoSituacao,
         sim.codigoSituacaoBanco,
         Boolean(erroMsg),
+        sim,
       ),
       mensagem_banco: erroMsg ? sanitizarMensagemErro(erroMsg) : null,
       raw_response: sim,
     };
     // Salva apenas o número REAL da proposta no banco. Códigos de oportunidade
-    // ou simulação são referências técnicas e não devem aparecer como “Nº banco”.
-    const numeroReal = numeroPropostaBancoReal(sim);
-    if (numeroReal) {
+    // ou simulação são referências técnicas e não devem aparecer como "Nº banco".
+    // Em falha de integração, NUNCA gravar protocolo: a proposta não existe na
+    // esteira real do banco, então qualquer código devolvido é fantasma.
+    const numeroReal = falhaIntegracao ? null : numeroPropostaBancoReal(sim);
+    if (falhaIntegracao) {
+      patchBanco.numero_proposta_banco = null;
+    } else if (numeroReal) {
       patchBanco.numero_proposta_banco = numeroReal;
       if (!numeroPropostaBanco || sim.bancoEscolhido === "S" || mapa.proposta === "credito_aprovado") {
         numeroPropostaBanco = numeroReal;
@@ -1210,12 +1358,28 @@ export async function sincronizarPropostaImpl({
     // laço acima nunca o seleciona — precisa ser tratado explicitamente aqui a
     // partir de QUALQUER sinal (bancos, etapa do funil ou atividade), senão a
     // proposta fica presa em "em_analise_credito" e o polling roda para sempre.
+    // EXCEÇÃO: quando o único sinal de "recusa" vem de uma FALHA DE INTEGRAÇÃO
+    // (Bradesco: recusa fantasma sem token do banco), NÃO marca recusado —
+    // vira erro_envio para o operador reenviar.
     const houveRecusa =
       statusBancos === "credito_recusado" ||
       statusEtapa === "credito_recusado" ||
       statusAtividade.status === "credito_recusado";
     if (!novoStatus && houveRecusa && prop.status !== "credito_recusado") {
       novoStatus = "credito_recusado";
+    }
+    // Falha de integração sem outro desfecho positivo: força erro_envio para
+    // habilitar reenvio (não é recusa de crédito real).
+    if (
+      algumFalhaIntegracao &&
+      !algumAprovado &&
+      !algumEmAnalise &&
+      !algumRecusado &&
+      novoStatus !== "credito_aprovado" &&
+      novoStatus !== "em_analise_credito" &&
+      novoStatus !== "contrato_emitido"
+    ) {
+      novoStatus = "erro_envio";
     }
   }
 
@@ -1258,7 +1422,14 @@ export async function sincronizarPropostaImpl({
   if (funilBanco.length > 0) patch.etapas_banco = funilBanco;
   const escolhida = simEscolhida ?? {};
   const numeroOportunidadeBanco = numeroBancoDaOportunidade(op);
-  if (numeroPropostaBanco || numeroOportunidadeBanco) {
+  // Em falha de integração pura (sem nenhum banco realmente efetivado),
+  // não persistir "Nº banco" — o código devolvido é fantasma, não existe
+  // proposta na esteira do banco.
+  const soFalhaIntegracao =
+    algumFalhaIntegracao && !algumAprovado && !algumEmAnalise && !algumRecusado;
+  if (soFalhaIntegracao) {
+    patch.numero_proposta_banco = null;
+  } else if (numeroPropostaBanco || numeroOportunidadeBanco) {
     patch.numero_proposta_banco = numeroPropostaBanco ?? numeroOportunidadeBanco;
   }
   else if (numeroAtualEhReferenciaTecnica({ numero_proposta_banco: prop.numero_proposta_banco }, escolhida)) {
@@ -1295,12 +1466,15 @@ export async function sincronizarPropostaImpl({
     .eq("id", propostaId);
 
   if (mudouStatus) {
+    const ehErroIntegracao = novoStatus === "erro_envio" && algumFalhaIntegracao;
     await supabase.from("proposta_historico").insert({
       proposta_id: propostaId,
-      tipo_evento: "sincronizacao",
-      descricao: nomeEtapa
-        ? `Atualização do banco: ${nomeEtapa}`
-        : "Situação atualizada pelo banco",
+      tipo_evento: ehErroIntegracao ? "erro_envio" : "sincronizacao",
+      descricao: ehErroIntegracao
+        ? `Falha na integração com o banco (${bancosComFalhaIntegracao.join(", ") || "banco"}). A proposta não foi efetivada. Reenvie para retomar o processo.`
+        : nomeEtapa
+          ? `Atualização do banco: ${nomeEtapa}`
+          : "Situação atualizada pelo banco",
       status_anterior: prop.status as any,
       status_novo: novoStatus as any,
       ator_id: userId,
@@ -1683,6 +1857,8 @@ export async function adicionarParticipanteImpl({
     tipoPessoa: participante.tipoPessoa ?? (cpfCnpj.length > 11 ? "J" : "F"),
     ...participante,
     cpfCnpj,
+    numeroDocumento: sanitizarNumeroDocumento(participante.numeroDocumento),
+    numeroDocumentoConjuge: sanitizarNumeroDocumento(participante.numeroDocumentoConjuge),
     celular: soDigitosStr(participante.celular),
     cep: soDigitosStr(participante.cep),
     fgAutorizacaoDados: participante.fgAutorizacaoDados ?? true,
