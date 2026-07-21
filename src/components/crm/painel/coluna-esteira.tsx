@@ -1,4 +1,4 @@
-import { FolderClosed, Plus, Users } from "lucide-react";
+import { FolderClosed, Lock, Plus, Users } from "lucide-react";
 import type { PainelStage } from "@/lib/crm/clientes.functions";
 import { ICONES_ETAPA, type PainelClienteItem } from "./utils";
 
@@ -7,6 +7,8 @@ interface Props {
   ordem: number;
   ehAlvoArrasto: boolean;
   arrastando: boolean;
+  /** Coluna sincronizada pela proposta — sem arrasto/drop. */
+  readOnly?: boolean;
   onDragOver: (e: React.DragEvent) => void;
   onDragLeave: (e: React.DragEvent) => void;
   onDrop: (e: React.DragEvent) => void;
