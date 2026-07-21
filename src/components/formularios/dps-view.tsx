@@ -427,7 +427,12 @@ function DpsDocumento({
                           </p>
                           <SimNao valor={respostas[chave] ?? null} onChange={(v) => marcar(chave, v)} />
                         </div>
-                        {p.numero === 4 && <div className="dps-esclareca">Esclareça:</div>}
+                        {p.numero === 4 && (
+                          <EsclarecaCampo
+                            valor={esclarecimentos[chave] ?? ""}
+                            onChange={(v) => setEsclarecimento(chave, v)}
+                          />
+                        )}
                         {s.nota && <p className="dps-nota">{s.nota}</p>}
                       </div>
                     );
