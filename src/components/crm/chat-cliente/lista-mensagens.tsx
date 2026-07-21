@@ -232,8 +232,10 @@ export function ListaMensagens({
                     lado="cliente"
                     onReply={podeResponder ? () => iniciarResposta(m) : undefined}
                     onCopy={() => copiar(m)}
+                    onReagir={podeReagir ? (e) => onReagir!(m.id, e) : undefined}
                   />
                 )}
+
               </div>
             </div>
           );
