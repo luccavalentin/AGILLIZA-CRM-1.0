@@ -1092,6 +1092,26 @@ iframe[src*="lvbl" i] {
   .dps-q {
     padding: 5px 0;
   }
+  /* Preserva a caixa Sim/Não marcada na impressão. */
+  .dps-box,
+  .dps-box-marcado {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .dps-opt-btn:hover {
+    background: transparent;
+  }
+  /* Inputs impressos sem foco/borda extra e sem placeholder. */
+  .dps-campo-input,
+  .dps-input-inline,
+  .dps-input-assinatura {
+    outline: none !important;
+  }
+  .dps-campo-input::placeholder,
+  .dps-input-inline::placeholder,
+  .dps-input-assinatura::placeholder {
+    color: transparent !important;
+  }
 }
 
 /* Cores de etiquetas do chat do CRM (evita cores cruas no TSX) */
