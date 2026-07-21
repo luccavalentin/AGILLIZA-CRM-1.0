@@ -1680,8 +1680,9 @@ export interface EnviarDocumentosResultado {
   enviados: number;
   total: number;
   sucesso: { nome: string; participante?: string | null }[];
-  erros: { nome: string; motivo: string }[];
+  erros: { nome: string; motivo: string; participante?: string | null }[];
 }
+
 
 /** Normaliza texto para comparação (sem acento, minúsculo). */
 function normTexto(v: unknown): string {
