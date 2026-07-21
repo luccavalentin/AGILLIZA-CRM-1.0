@@ -81,14 +81,15 @@ const GRUPOS: Grupo[] = [
   },
 ];
 
-function ehPdf(d: { mime_type?: string | null; nome_arquivo?: string | null }): boolean {
-  return (
-    (d.mime_type ? d.mime_type.includes("pdf") : false) ||
-    String(d.nome_arquivo ?? "")
-      .toLowerCase()
-      .endsWith(".pdf")
-  );
+function ehFormatoBanco(d: { mime_type?: string | null; nome_arquivo?: string | null }): boolean {
+  const mime = String(d.mime_type ?? "").toLowerCase();
+  const nome = String(d.nome_arquivo ?? "").toLowerCase();
+  if (mime.includes("pdf") || nome.endsWith(".pdf")) return true;
+  if (mime.includes("jpeg") || mime.includes("jpg") || nome.endsWith(".jpg") || nome.endsWith(".jpeg")) return true;
+  if (mime.includes("png") || nome.endsWith(".png")) return true;
+  return false;
 }
+
 
 export function AbaEnviarBanco({
   clienteId,
@@ -113,7 +114,7 @@ export function AbaEnviarBanco({
     enviados: number;
     total: number;
     sucesso: { nome: string; participante?: string | null }[];
-    erros: { nome: string; motivo: string }[];
+    erros: { nome: string; motivo: string; participante?: string | null }[];
   } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -132,7 +133,7 @@ export function AbaEnviarBanco({
   }, [docs]);
 
   const totalPdfs = useMemo(
-    () => ((docs ?? []) as any[]).filter((d) => ehPdf(d)).length,
+    () => ((docs ?? []) as any[]).filter((d) => ehFormatoBanco(d)).length,
     [docs],
   );
 
@@ -257,10 +258,11 @@ export function AbaEnviarBanco({
       <div className="flex items-start gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2.5 text-sm">
         <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
         <p className="text-muted-foreground">
-          <span className="font-medium text-foreground">Somente PDF é aceito pelo banco.</span>{" "}
-          Os documentos listados abaixo devem ser anexados pelo módulo{" "}
-          <span className="font-medium text-foreground">Documentos</span> do cliente.
+          <span className="font-medium text-foreground">O banco aceita PDF, JPG e PNG (até 10 MB).</span>{" "}
+          Os documentos de todos os participantes (comprador, cônjuge, coproponente e vendedor) são enviados automaticamente para a vaga do dono, quando cadastrados no módulo{" "}
+          <span className="font-medium text-foreground">Documentos</span> do cliente correspondente.
         </p>
+
       </div>
 
       {/* Ação de envio */}
@@ -276,9 +278,10 @@ export function AbaEnviarBanco({
               </p>
               <p className="text-muted-foreground">
                 {totalPdfs > 0
-                  ? `${totalPdfs} documento(s) em PDF prontos para envio.`
-                  : "Nenhum documento em PDF disponível ainda."}
+                  ? `${totalPdfs} documento(s) em PDF/JPG/PNG prontos para envio.`
+                  : "Nenhum documento em PDF/JPG/PNG disponível ainda."}
               </p>
+
             </div>
           </div>
           <Button
@@ -293,32 +296,70 @@ export function AbaEnviarBanco({
       </Card>
 
       {/* Resultado do último envio */}
-      {resultado && (
-        <Card>
-          <CardContent className="space-y-2 p-4 text-sm">
-            <p className="font-medium text-foreground">
-              Resultado do envio — {resultado.enviados}/{resultado.total} enviado(s)
-            </p>
-            {resultado.sucesso.map((s, i) => (
-              <div key={`s-${i}`} className="flex items-center gap-2 text-muted-foreground">
-                <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                <span className="truncate">
-                  {s.nome}
-                  {s.participante ? ` — ${s.participante}` : ""}
+      {resultado && (() => {
+        const semVaga = resultado.erros.filter((er) =>
+          /sem vaga|sem correspond/i.test(er.motivo),
+        );
+        const recusados = resultado.erros.filter((er) => !semVaga.includes(er));
+        return (
+          <Card>
+            <CardContent className="space-y-3 p-4 text-sm">
+              <div className="flex flex-wrap items-center gap-3 border-b border-border pb-2">
+                <p className="font-medium text-foreground">Resultado do envio</p>
+                <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-400">
+                  {resultado.enviados} enviado(s)
+                </span>
+                <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-400">
+                  {semVaga.length} sem vaga
+                </span>
+                <span className="rounded-full bg-destructive/15 px-2 py-0.5 text-xs font-medium text-destructive">
+                  {recusados.length} recusado(s) pelo banco
                 </span>
               </div>
-            ))}
-            {resultado.erros.map((er, i) => (
-              <div key={`e-${i}`} className="flex items-start gap-2 text-muted-foreground">
-                <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
-                <span>
-                  <span className="text-foreground">{er.nome}</span> — {er.motivo}
-                </span>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      )}
+              {resultado.sucesso.map((s, i) => (
+                <div key={`s-${i}`} className="flex items-center gap-2 text-muted-foreground">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                  <span className="truncate">
+                    <span className="text-foreground">{s.nome}</span>
+                    {s.participante ? ` — ${s.participante}` : ""}
+                  </span>
+                </div>
+              ))}
+              {semVaga.length > 0 && (
+                <div className="space-y-1 rounded-md border border-amber-500/30 bg-amber-500/5 p-2">
+                  <p className="text-xs font-medium text-amber-700 dark:text-amber-400">
+                    Documentos sem vaga correspondente
+                  </p>
+                  {semVaga.map((er, i) => (
+                    <div key={`sv-${i}`} className="flex items-start gap-2 text-muted-foreground">
+                      <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                      <span>
+                        <span className="text-foreground">{er.nome}</span>
+                        {er.participante ? ` — ${er.participante}` : ""} — {er.motivo}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {recusados.length > 0 && (
+                <div className="space-y-1 rounded-md border border-destructive/30 bg-destructive/5 p-2">
+                  <p className="text-xs font-medium text-destructive">Recusados pelo banco</p>
+                  {recusados.map((er, i) => (
+                    <div key={`rc-${i}`} className="flex items-start gap-2 text-muted-foreground">
+                      <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+                      <span>
+                        <span className="text-foreground">{er.nome}</span>
+                        {er.participante ? ` — ${er.participante}` : ""} — {er.motivo}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        );
+      })()}
+
 
       {/* Documentos consolidados por tipo */}
       {isLoading ? (
@@ -360,7 +401,7 @@ export function AbaEnviarBanco({
                 ) : (
                   <ul className="divide-y divide-border">
                     {g.itens.map((d: any) => {
-                      const pdf = ehPdf(d);
+                      const pdf = ehFormatoBanco(d);
                       return (
                         <li
                           key={d.id}
@@ -375,7 +416,7 @@ export function AbaEnviarBanco({
                               <span>{d.tipo_documento}</span>
                               {!pdf && (
                                 <span className="rounded bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-medium text-amber-600 dark:text-amber-400">
-                                  não é PDF
+                                  formato não aceito
                                 </span>
                               )}
                               {d.situacao_integracao === "enviado" && (
