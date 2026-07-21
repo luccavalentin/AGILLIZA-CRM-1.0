@@ -99,6 +99,13 @@ export interface ChatAdapter {
   excluir(p: { id: string }): Promise<unknown>;
   marcarLido(): Promise<unknown>;
 
+  /** Origem para chat_reacoes (obrigatório quando `reagir` estiver habilitado). */
+  origem?: ChatOrigem;
+  /** Toggle de reação (Fase 6). */
+  reagir?(p: { mensagem_id: string; emoji: string }): Promise<unknown>;
+
+
+
   /** Canal Postgres Changes (nome do canal + bindings tabela/filtro). */
   realtime: {
     channel: string;
