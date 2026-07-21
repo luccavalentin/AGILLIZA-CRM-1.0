@@ -34,6 +34,15 @@ import {
 } from "@/components/crm/painel/dialogs";
 import type { Arrasto } from "@/components/crm/painel/utils";
 
+/**
+ * Etapas COMERCIAIS da esteira (pré-proposta) — arrasto manual liberado.
+ * As demais etapas (credito_enviado em diante) são sincronizadas pelos
+ * triggers proposta_sincronizar_esteira / simulacao_sincronizar_esteira e
+ * ficam somente-leitura no CRM: quem move é o kanban de propostas.
+ */
+const ETAPAS_COMERCIAIS = new Set(["cadastro_basico", "cadastro_completo", "simulacao"]);
+const etapaEhComercial = (codigo: string) => ETAPAS_COMERCIAIS.has(codigo);
+
 export const Route = createFileRoute("/_authenticated/crm/painel")({
   head: () => ({ meta: [{ title: "Painel da esteira — Agilliza" }] }),
   beforeLoad: () => assertModuloPermitido("crm.clientes"),
@@ -172,6 +181,15 @@ function Pagina() {
     setArrasto(null);
     setAlvo(null);
     if (!info || info.origem === codigoDestino) return;
+
+    // Etapas 4-9 são sincronizadas pela proposta — sem arrasto manual.
+    if (!etapaEhComercial(info.origem) || !etapaEhComercial(codigoDestino)) {
+      toast.info(
+        "Esta etapa é atualizada automaticamente pela proposta. Movimente pelo kanban de propostas.",
+      );
+      return;
+    }
+
 
     const anterior = qc.getQueryData<PainelStage[]>(queryKey);
     let clienteMovido: PainelStage["clientes"][number] | undefined;
@@ -497,15 +515,21 @@ function Pagina() {
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 lg:gap-4">
-          {dadosFiltrados.map((stage, idx) => (
+          {dadosFiltrados.map((stage, idx) => {
+            const readOnly = !etapaEhComercial(stage.codigo);
+            return (
             <Fragment key={stage.codigo}>
               <ColunaEsteira
                 stage={stage}
                 ordem={idx + 1}
                 ehAlvoArrasto={alvo === stage.codigo && arrasto?.origem !== stage.codigo}
                 arrastando={arrasto?.origem === stage.codigo}
+                readOnly={readOnly}
                 onDragOver={(e) => {
                   if (!arrasto) return;
+                  // Bloqueia highlight visual em colunas somente-leitura ou
+                  // quando o arrasto vem de uma etapa de outro território.
+                  if (readOnly || !etapaEhComercial(arrasto.origem)) return;
                   e.preventDefault();
                   if (alvo !== stage.codigo) setAlvo(stage.codigo);
                 }}
@@ -527,6 +551,7 @@ function Pagina() {
                     key={c.id}
                     cliente={c}
                     stageCodigo={stage.codigo}
+                    readOnly={readOnly}
                     onDragStart={() => {
                       arrastouRef.current = true;
                       setArrasto({ clienteId: c.id, origem: stage.codigo });
@@ -560,7 +585,8 @@ function Pagina() {
                 />
               )}
             </Fragment>
-          ))}
+            );
+          })}
         </div>
       )}
 

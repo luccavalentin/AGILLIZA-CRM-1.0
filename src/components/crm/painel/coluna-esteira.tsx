@@ -1,4 +1,4 @@
-import { FolderClosed, Plus, Users } from "lucide-react";
+import { FolderClosed, Lock, Plus, Users } from "lucide-react";
 import type { PainelStage } from "@/lib/crm/clientes.functions";
 import { ICONES_ETAPA, type PainelClienteItem } from "./utils";
 
@@ -7,6 +7,8 @@ interface Props {
   ordem: number;
   ehAlvoArrasto: boolean;
   arrastando: boolean;
+  /** Coluna sincronizada pela proposta — sem arrasto/drop. */
+  readOnly?: boolean;
   onDragOver: (e: React.DragEvent) => void;
   onDragLeave: (e: React.DragEvent) => void;
   onDrop: (e: React.DragEvent) => void;
@@ -26,6 +28,7 @@ export function ColunaEsteira({
   stage,
   ordem,
   ehAlvoArrasto,
+  readOnly = false,
   onDragOver,
   onDragLeave,
   onDrop,
@@ -79,6 +82,16 @@ export function ColunaEsteira({
         </button>
       </div>
 
+      {readOnly && (
+        <div
+          className="flex items-center gap-1.5 border-b border-border/60 bg-muted/30 px-3.5 py-1.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground"
+          title="Esta etapa é atualizada automaticamente pela proposta."
+        >
+          <Lock className="size-3" strokeWidth={2.25} />
+          <span className="truncate">Sincronizado com a proposta</span>
+        </div>
+      )}
+
       <div className="flex flex-1 flex-col gap-2 p-3">
         {!temClientes ? (
           <div
@@ -98,14 +111,16 @@ export function ColunaEsteira({
         )}
       </div>
 
-      <button
-        type="button"
-        onClick={onAdicionarCliente}
-        className="flex w-full items-center justify-center gap-1.5 border-t border-border/60 bg-muted/20 px-3 py-2.5 text-xs font-semibold text-primary transition-colors hover:bg-primary/10"
-      >
-        <Plus className="size-3.5" />
-        Adicionar cliente
-      </button>
+      {!readOnly && (
+        <button
+          type="button"
+          onClick={onAdicionarCliente}
+          className="flex w-full items-center justify-center gap-1.5 border-t border-border/60 bg-muted/20 px-3 py-2.5 text-xs font-semibold text-primary transition-colors hover:bg-primary/10"
+        >
+          <Plus className="size-3.5" />
+          Adicionar cliente
+        </button>
+      )}
     </div>
   );
 }

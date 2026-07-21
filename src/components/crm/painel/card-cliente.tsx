@@ -30,6 +30,8 @@ import { tempoRelativo, type PainelClienteItem } from "./utils";
 interface Props {
   cliente: PainelClienteItem;
   stageCodigo: string;
+  /** Card apenas leitura: sem arrasto (etapas sincronizadas pela proposta). */
+  readOnly?: boolean;
   onDragStart: () => void;
   onDragEnd: () => void;
   clicavel: () => boolean;
@@ -44,6 +46,7 @@ interface Props {
 export function CardCliente({
   cliente: c,
   stageCodigo,
+  readOnly = false,
   onDragStart,
   onDragEnd,
   clicavel,
@@ -69,14 +72,20 @@ export function CardCliente({
 
   return (
     <div
-      draggable
+      draggable={!readOnly}
       onDragStart={(e) => {
+        if (readOnly) {
+          e.preventDefault();
+          return;
+        }
         e.dataTransfer.effectAllowed = "move";
         e.dataTransfer.setData("text/plain", c.id);
         onDragStart();
       }}
       onDragEnd={onDragEnd}
-      className="cursor-grab rounded-xl border border-border bg-card transition-[border-color,box-shadow] duration-150 hover:border-primary/40 hover:shadow-sm active:cursor-grabbing"
+      className={`rounded-xl border border-border bg-card transition-[border-color,box-shadow] duration-150 hover:border-primary/40 hover:shadow-sm ${
+        readOnly ? "cursor-default" : "cursor-grab active:cursor-grabbing"
+      }`}
     >
       <div className="p-3">
         <div className="flex items-start gap-2.5">
