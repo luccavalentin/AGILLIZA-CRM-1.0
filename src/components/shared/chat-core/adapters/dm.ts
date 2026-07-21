@@ -80,9 +80,10 @@ export function useAdaptadorDm({
       peerNomeCitacao: info?.nome?.trim() || "Colega",
 
       capabilities: {
-        responder: false,
-        editar: false,
-        excluir: false,
+        responder: true,
+        editar: true,
+        excluir: true,
+        reagir: true,
         notaInterna: false,
         tarefa: false,
         retorno: false,
@@ -95,7 +96,7 @@ export function useAdaptadorDm({
 
       listar: async () => {
         const raw = await listarFn({ data: { conversa_id: conversaId } });
-        return (raw ?? []).map<ChatMensagem>((m) => ({
+        return (raw ?? []).map<ChatMensagem>((m: any) => ({
           id: m.id,
           remetente_tipo: m.autor_id === meuId ? "time" : "peer",
           remetente_id: m.autor_id,
@@ -106,40 +107,44 @@ export function useAdaptadorDm({
           anexo_is_imagem: false,
           lida_em: null,
           criada_em: m.created_at,
-          editada_em: null,
-          excluida_em: null,
-          responde_a: null,
+          editada_em: m.editada_em ?? null,
+          excluida_em: m.excluida_em ?? null,
+          responde_a: m.responde_a ?? null,
           interna: false,
-          citacao: null,
-          reacoes: [],
+          citacao: m.citacao ?? null,
+          reacoes: m.reacoes ?? [],
         }));
-
       },
       responder: async (p) => {
         await enviarFn({
-          data: { conversa_id: conversaId, texto: p.mensagem ?? "" },
+          data: {
+            conversa_id: conversaId,
+            texto: p.mensagem ?? "",
+            responde_a: p.responde_a ?? null,
+          },
         });
-        // Invalida a lista de threads para atualizar a prévia/contagem.
         qc.invalidateQueries({ queryKey: ["threads-central"] });
       },
-      editar: async () => {
-        throw new Error("Edição indisponível em mensagens diretas.");
-      },
-      excluir: async () => {
-        throw new Error("Exclusão indisponível em mensagens diretas.");
-      },
+      editar: (p) => editarFn({ data: { id: p.id, texto: p.mensagem } }),
+      excluir: (p) => excluirFn({ data: p }),
       marcarLido: async () => {
         await marcarFn({ data: { conversa_id: conversaId } });
         qc.invalidateQueries({ queryKey: ["threads-central"] });
       },
+
+      origem: "dm",
+      reagir: (p) =>
+        reagirFn({ data: { origem: "dm", mensagem_id: p.mensagem_id, emoji: p.emoji } }),
 
       realtime: {
         channel: `dm:${conversaId}`,
         bindings: [
           { table: "dm_mensagens", filter: `conversa_id=eq.${conversaId}` },
           { table: "dm_conversas", filter: `id=eq.${conversaId}` },
+          { table: "chat_reacoes", filter: `origem=eq.dm` },
         ],
       },
+
 
       // Um papel único por usuário permite múltiplos "digitando" simultâneos.
       typing: { id: conversaId, myRole: meuId ?? "eu" },
