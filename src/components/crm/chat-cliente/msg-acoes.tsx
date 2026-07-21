@@ -1,4 +1,5 @@
-import { Copy, MoreVertical, Pencil, Reply, Trash2 } from "lucide-react";
+import { useState } from "react";
+import { Copy, MoreVertical, Pencil, Reply, SmilePlus, Trash2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -6,7 +7,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+
+/** Emojis oferecidos no seletor de reações (Fase 6). */
+export const EMOJIS_REACAO = ["👍", "❤️", "😂", "😮", "😢", "🎉"] as const;
 
 /** Menu de ações que aparece ao passar o mouse sobre a mensagem. */
 export function MsgAcoes({
@@ -15,13 +20,16 @@ export function MsgAcoes({
   onEdit,
   onCopy,
   onDelete,
+  onReagir,
 }: {
   lado: "time" | "cliente";
   onReply?: () => void;
   onEdit?: () => void;
   onCopy?: () => void;
   onDelete?: () => void;
+  onReagir?: (emoji: string) => void;
 }) {
+  const [aberto, setAberto] = useState(false);
   return (
     <div
       className={cn(
@@ -29,7 +37,45 @@ export function MsgAcoes({
         lado === "time" ? "order-first" : "",
       )}
     >
-      {/* Resposta rápida — 1 clique, sem abrir menu (fluido) */}
+      {/* Reagir rápido — abre o seletor de emojis */}
+      {onReagir && (
+        <Popover open={aberto} onOpenChange={setAberto}>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              aria-label="Reagir"
+              title="Reagir"
+              className="hidden size-7 items-center justify-center rounded-full text-muted-foreground opacity-0 transition-opacity hover:bg-muted hover:text-primary group-hover:opacity-100 focus:opacity-100 data-[state=open]:opacity-100 sm:flex"
+            >
+              <SmilePlus className="size-4" />
+            </button>
+          </PopoverTrigger>
+          <PopoverContent
+            side="top"
+            align={lado === "time" ? "end" : "start"}
+            className="z-[140] w-auto rounded-full border border-border/60 bg-background/95 p-1 shadow-lg"
+            style={{ zIndex: 140 }}
+          >
+            <div className="flex items-center gap-0.5">
+              {EMOJIS_REACAO.map((e) => (
+                <button
+                  key={e}
+                  type="button"
+                  onClick={() => {
+                    onReagir(e);
+                    setAberto(false);
+                  }}
+                  className="rounded-full px-1.5 py-1 text-lg leading-none transition-transform hover:scale-125"
+                  aria-label={`Reagir com ${e}`}
+                >
+                  {e}
+                </button>
+              ))}
+            </div>
+          </PopoverContent>
+        </Popover>
+      )}
+      {/* Resposta rápida — 1 clique, sem abrir menu */}
       {onReply && (
         <button
           type="button"
