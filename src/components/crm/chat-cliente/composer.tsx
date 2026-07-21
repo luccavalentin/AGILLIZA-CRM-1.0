@@ -341,36 +341,42 @@ export function ChatComposer({
         {/* Rodapé de ações */}
         <div className="flex min-w-0 items-center justify-between gap-2 px-2 pb-2.5 sm:px-3 sm:pb-3">
           <div className="flex min-w-0 items-center gap-1 overflow-x-auto">
-            <RespostasRapidas
-              contexto={contextoResposta}
-              onEscolher={onEscolherResposta}
-            />
-            <Button
-              type="button"
-              onClick={() => fileRef.current?.click()}
-              disabled={bloqueiaEnvio}
-              size="icon"
-              variant="ghost"
-              className="size-9 shrink-0 rounded-lg text-muted-foreground"
-              title="Anexar imagem ou documento"
-            >
-              {enviandoAnexo ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <Paperclip className="size-4" />
-              )}
-            </Button>
-            <Button
-              type="button"
-              onClick={() => docFileRef.current?.click()}
-              disabled={bloqueiaEnvio}
-              size="icon"
-              variant="ghost"
-              className="size-9 shrink-0 rounded-lg text-muted-foreground"
-              title="Anexar documento"
-            >
-              <FileText className="size-4" />
-            </Button>
+            {capRespostas && (
+              <RespostasRapidas
+                contexto={contextoResposta}
+                onEscolher={onEscolherResposta}
+              />
+            )}
+            {capAnexo && (
+              <>
+                <Button
+                  type="button"
+                  onClick={() => fileRef.current?.click()}
+                  disabled={bloqueiaEnvio}
+                  size="icon"
+                  variant="ghost"
+                  className="size-9 shrink-0 rounded-lg text-muted-foreground"
+                  title="Anexar imagem ou documento"
+                >
+                  {enviandoAnexo ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <Paperclip className="size-4" />
+                  )}
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() => docFileRef.current?.click()}
+                  disabled={bloqueiaEnvio}
+                  size="icon"
+                  variant="ghost"
+                  className="size-9 shrink-0 rounded-lg text-muted-foreground"
+                  title="Anexar documento"
+                >
+                  <FileText className="size-4" />
+                </Button>
+              </>
+            )}
 
             <Popover>
               <PopoverTrigger asChild>
