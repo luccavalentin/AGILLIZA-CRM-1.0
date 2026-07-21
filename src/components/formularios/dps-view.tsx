@@ -316,13 +316,20 @@ function DpsDocumento({
 
   const respostasIniciais = useMemo(() => iniciarRespostas(), []);
   const [respostas, setRespostas] = useState<Record<string, Resposta>>(respostasIniciais);
+  const [esclarecimentos, setEsclarecimentos] = useState<Record<string, string>>({});
+  const [assinaturaNome, setAssinaturaNome] = useState("");
 
   function marcar(chave: string, valor: Resposta) {
     setRespostas((r) => ({ ...r, [chave]: valor }));
   }
 
+  function setEsclarecimento(chave: string, texto: string) {
+    setEsclarecimentos((e) => ({ ...e, [chave]: texto }));
+  }
+
   function limparRespostas() {
     setRespostas(iniciarRespostas());
+    setEsclarecimentos({});
   }
 
   return (
@@ -401,7 +408,12 @@ function DpsDocumento({
                   />
                 )}
               </div>
-              {p.esclareca && <div className="dps-esclareca">Esclareça:</div>}
+              {p.esclareca && (
+                <EsclarecaCampo
+                  valor={esclarecimentos[String(p.numero)] ?? ""}
+                  onChange={(v) => setEsclarecimento(String(p.numero), v)}
+                />
+              )}
               {p.nota && <p className="dps-nota">{p.nota}</p>}
               {p.subitens && (
                 <div className="dps-sub">
@@ -415,7 +427,12 @@ function DpsDocumento({
                           </p>
                           <SimNao valor={respostas[chave] ?? null} onChange={(v) => marcar(chave, v)} />
                         </div>
-                        {p.numero === 4 && <div className="dps-esclareca">Esclareça:</div>}
+                        {p.numero === 4 && (
+                          <EsclarecaCampo
+                            valor={esclarecimentos[chave] ?? ""}
+                            onChange={(v) => setEsclarecimento(chave, v)}
+                          />
+                        )}
                         {s.nota && <p className="dps-nota">{s.nota}</p>}
                       </div>
                     );
@@ -482,7 +499,13 @@ function DpsDocumento({
               <p>Local e data</p>
             </div>
             <div>
-              <span className="dps-linha" />
+              <input
+                type="text"
+                value={assinaturaNome}
+                onChange={(e) => setAssinaturaNome(e.target.value)}
+                className="dps-input-assinatura"
+                placeholder="Nome do proponente"
+              />
               <p>Assinatura do proponente</p>
             </div>
           </div>
@@ -519,6 +542,26 @@ function CampoEditavel({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         className="dps-campo-input"
+      />
+    </div>
+  );
+}
+
+function EsclarecaCampo({
+  valor,
+  onChange,
+}: {
+  valor: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <div className="dps-esclareca">
+      <span className="dps-esclareca-label">Esclareça:</span>
+      <textarea
+        value={valor}
+        onChange={(e) => onChange(e.target.value)}
+        className="dps-esclareca-input"
+        rows={2}
       />
     </div>
   );
