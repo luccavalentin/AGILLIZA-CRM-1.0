@@ -278,9 +278,10 @@ export function AbaEnviarBanco({
               </p>
               <p className="text-muted-foreground">
                 {totalPdfs > 0
-                  ? `${totalPdfs} documento(s) em PDF prontos para envio.`
-                  : "Nenhum documento em PDF disponível ainda."}
+                  ? `${totalPdfs} documento(s) em PDF/JPG/PNG prontos para envio.`
+                  : "Nenhum documento em PDF/JPG/PNG disponível ainda."}
               </p>
+
             </div>
           </div>
           <Button
