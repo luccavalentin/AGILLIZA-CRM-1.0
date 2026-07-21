@@ -1262,12 +1262,28 @@ export async function sincronizarPropostaImpl({
     // laço acima nunca o seleciona — precisa ser tratado explicitamente aqui a
     // partir de QUALQUER sinal (bancos, etapa do funil ou atividade), senão a
     // proposta fica presa em "em_analise_credito" e o polling roda para sempre.
+    // EXCEÇÃO: quando o único sinal de "recusa" vem de uma FALHA DE INTEGRAÇÃO
+    // (Bradesco: recusa fantasma sem token do banco), NÃO marca recusado —
+    // vira erro_envio para o operador reenviar.
     const houveRecusa =
       statusBancos === "credito_recusado" ||
       statusEtapa === "credito_recusado" ||
       statusAtividade.status === "credito_recusado";
     if (!novoStatus && houveRecusa && prop.status !== "credito_recusado") {
       novoStatus = "credito_recusado";
+    }
+    // Falha de integração sem outro desfecho positivo: força erro_envio para
+    // habilitar reenvio (não é recusa de crédito real).
+    if (
+      algumFalhaIntegracao &&
+      !algumAprovado &&
+      !algumEmAnalise &&
+      !algumRecusado &&
+      novoStatus !== "credito_aprovado" &&
+      novoStatus !== "em_analise_credito" &&
+      novoStatus !== "contrato_emitido"
+    ) {
+      novoStatus = "erro_envio";
     }
   }
 
