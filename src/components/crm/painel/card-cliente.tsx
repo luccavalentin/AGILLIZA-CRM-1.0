@@ -46,6 +46,7 @@ interface Props {
 export function CardCliente({
   cliente: c,
   stageCodigo,
+  readOnly = false,
   onDragStart,
   onDragEnd,
   clicavel,
