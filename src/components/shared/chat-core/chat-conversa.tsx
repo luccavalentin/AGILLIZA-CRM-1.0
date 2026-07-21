@@ -376,6 +376,7 @@ export function ChatConversaCore({ adapter }: { adapter: ChatAdapter }) {
     responder: capabilities.responder ?? true,
     editar: capabilities.editar ?? true,
     excluir: capabilities.excluir ?? true,
+    reagir: capabilities.reagir ?? true,
     notaInterna: capabilities.notaInterna ?? true,
     tarefa: capabilities.tarefa ?? true,
     retorno: capabilities.retorno ?? true,
@@ -383,6 +384,7 @@ export function ChatConversaCore({ adapter }: { adapter: ChatAdapter }) {
     respostasRapidas: capabilities.respostasRapidas ?? true,
     audio: capabilities.audio ?? true,
   };
+
   const headerBuscaProps = {
     buscaAberta,
     toggleBusca: () => {
