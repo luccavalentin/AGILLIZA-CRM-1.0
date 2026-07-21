@@ -32,7 +32,10 @@ import {
   clienteListarNotificacoes,
   clienteListarAtendentes,
 } from "@/lib/portal/cliente.functions";
+import { ClienteChatWatcher } from "@/components/cliente/cliente-chat-watcher";
+import { ClienteChatFlutuante } from "@/components/cliente/cliente-chat-flutuante";
 import { cn } from "@/lib/utils";
+
 
 const STORAGE_KEY = "agilliza-cliente-sidebar-collapsed";
 
