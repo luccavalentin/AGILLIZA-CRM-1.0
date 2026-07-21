@@ -1042,12 +1042,19 @@ function statusInternoBanco(
     case "N":
       return { banco: "em_analise", proposta: "em_analise_credito" };
     case "P":
-      return { banco: "erro", proposta: null };
     case "E":
-      // "E" observado sem retorno real do banco = erro de integração
-      // (falha silenciosa). Falha completa é capturada por ehFalhaIntegracaoBanco
-      // acima; aqui, sem sim, mantemos o comportamento conservador de erro.
+      // Docs: "P" = Erro ao Enviar Proposta. Porém, se o banco já devolveu
+      // o `codigoOportunidadeBanco`, a proposta CHEGOU no banco (comum no
+      // Bradesco no primeiro retorno). Tratamos como em_analise para não
+      // sinalizar erro fantasma ao usuário.
+      if (sim && String(sim?.codigoOportunidadeBanco ?? "").trim()) {
+        return { banco: "em_analise", proposta: "em_analise_credito" };
+      }
+      if (sim && numeroPropostaBancoReal(sim)) {
+        return { banco: "em_analise", proposta: "em_analise_credito" };
+      }
       return { banco: "erro", proposta: null };
+
     case "S":
       return { banco: "enviada", proposta: "em_analise_credito" };
     default:
