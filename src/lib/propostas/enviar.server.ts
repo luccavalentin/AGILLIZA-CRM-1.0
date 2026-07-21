@@ -268,7 +268,7 @@ async function garantirEnderecoParticipantes({
       tipoSexo: part?.tipoSexo ?? env?.tipo_sexo ?? undefined,
       tipoDocumentoIdentidade:
         part?.tipoDocumentoIdentidade ?? env?.tipo_documento_identidade ?? undefined,
-      numeroDocumento: part?.numeroDocumento ?? env?.numero_documento ?? undefined,
+      numeroDocumento: sanitizarNumeroDocumento(part?.numeroDocumento ?? env?.numero_documento),
       orgaoExpedidor: part?.orgaoExpedidor ?? env?.orgao_expedidor ?? undefined,
       ufExpedicao: part?.ufExpedicao ?? env?.uf_expedicao ?? undefined,
       dataExpedicao: part?.dataExpedicao ?? env?.data_expedicao ?? undefined,
