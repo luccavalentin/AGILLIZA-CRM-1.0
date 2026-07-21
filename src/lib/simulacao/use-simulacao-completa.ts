@@ -101,9 +101,15 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
     }
   }, [duplicar]);
 
-  // pré-preenche a partir da simulação duplicada (novo nº é gerado ao salvar)
+  // pré-preenche a partir da simulação duplicada (novo nº é gerado ao salvar).
+  // Usa uma ref para garantir que o prefill só rode UMA vez — sem isso, um
+  // refetch do react-query (foco de janela, invalidação) sobrescreveria as
+  // escolhas do usuário, como a lista de bancos, com os valores da origem.
+  const prefillOrigemAplicadoRef = useRef(false);
   useEffect(() => {
     if (!origem?.simulacao) return;
+    if (prefillOrigemAplicadoRef.current) return;
+    prefillOrigemAplicadoRef.current = true;
     const s = origem.simulacao as any;
     const valorImovel = Number(s.valor_imovel) || 0;
     const valorFin = Number(s.valor_financiamento) || 0;
