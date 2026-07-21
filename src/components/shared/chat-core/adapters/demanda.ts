@@ -6,8 +6,12 @@ import {
   comentarDemanda,
   listarChatDemanda,
   marcarDemandaLida,
+  editarChatDemanda,
+  excluirChatDemanda,
 } from "@/lib/operacional/demandas.functions";
+import { reagirMensagem } from "@/lib/chat-core/reacoes.functions";
 import { getMinhaSessao } from "@/lib/session.functions";
+
 import type { ChatAdapter, ChatClienteInfo, ContextoResposta } from "../types";
 
 /**
