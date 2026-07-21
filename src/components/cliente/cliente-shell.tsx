@@ -281,7 +281,9 @@ export function ClienteShell({
 
   return (
     <TooltipProvider delayDuration={200}>
+      <ClienteChatWatcher />
       <div className="flex min-h-[100dvh] w-full bg-muted/40">
+
         {/* Sidebar desktop */}
         <aside
           className={cn(
