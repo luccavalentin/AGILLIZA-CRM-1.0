@@ -398,6 +398,8 @@ export function ClienteShell({
           </footer>
         </div>
       </div>
+      <ClienteChatFlutuante />
+
     </TooltipProvider>
   );
 }
