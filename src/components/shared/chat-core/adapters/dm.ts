@@ -5,8 +5,12 @@ import {
   enviarMensagemDm,
   listarMensagensDm,
   marcarDmLida,
+  editarMensagemDm,
+  excluirMensagemDm,
 } from "@/lib/chats/central.functions";
+import { reagirMensagem } from "@/lib/chat-core/reacoes.functions";
 import { getMinhaSessao } from "@/lib/session.functions";
+
 import type {
   ChatAdapter,
   ChatClienteInfo,
