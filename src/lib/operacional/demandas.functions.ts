@@ -718,6 +718,7 @@ export const comentarDemanda = createServerFn({ method: "POST" })
         anexo_path: z.string().optional().nullable(),
         anexo_nome: z.string().optional().nullable(),
         anexo_tamanho: z.number().int().nonnegative().optional().nullable(),
+        responde_a: z.string().uuid().optional().nullable(),
       })
       .refine((d) => d.corpo.trim().length > 0 || !!d.anexo_path, {
         message: "Mensagem vazia.",
@@ -734,7 +735,9 @@ export const comentarDemanda = createServerFn({ method: "POST" })
       anexo_path: data.anexo_path ?? null,
       anexo_nome: data.anexo_nome ?? null,
       anexo_tamanho: data.anexo_tamanho ?? null,
+      responde_a: data.responde_a ?? null,
     });
+
     if (error) throw new Error(error.message);
 
     // Notifica os envolvidos (criador, responsável e participantes) exceto o autor.
