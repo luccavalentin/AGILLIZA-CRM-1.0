@@ -93,18 +93,32 @@ function sanitizarNumeroDocumento(v: unknown): string | undefined {
 }
 
 /**
- * Detecta o cenário em que a integração devolveu "recusa" mas a proposta
+ * Detecta o cenário em que a integração devolveu "erro" mas a proposta
  * NUNCA foi de fato efetivada na esteira do banco (falha de integração).
- * Critério (validado em produção com Bradesco):
- *   - tipoSituacao ∈ {"R","E"}
- *   - sem codigoSimulacaoBanco (token real devolvido pelo banco)
- *   - codigoSituacaoBanco vazio OU código de FASE DE SIMULAÇÃO (ex.: "01.03")
- *   - retornoIntegracao null (sem mensagem real do banco)
- * Recusa real (Santander "514 - ...", Itaú "3", etc.) NÃO cai aqui.
+ *
+ * Docs oficiais (swagger Homefin) — tipoSituacao:
+ *   S = Sem Integração · P = Erro ao Enviar Proposta · N = Em Análise ·
+ *   A = Crédito Aprovado · R = Crédito Recusado.
+ *
+ * Regras:
+ *  - "R" (Recusa) é decisão REAL de crédito — nunca é falha de integração.
+ *  - Só considera falha quando tipoSituacao ∈ {"P","E"} (erro ao enviar).
+ *  - Se o banco já devolveu `codigoOportunidadeBanco` (ou número real de
+ *    proposta), a proposta CHEGOU no banco (mesmo que Bradesco tenha
+ *    devolvido "P" no primeiro retorno) — não é falha de integração.
+ *  - Sem token do banco (`codigoSimulacaoBanco`), sem `retornoIntegracao`
+ *    e com `codigoSituacaoBanco` vazio ou de fase de simulação: falha.
  */
 export function ehFalhaIntegracaoBanco(sim: any): boolean {
   const tipo = String(sim?.tipoSituacao ?? "").toUpperCase().charAt(0);
-  if (tipo !== "R" && tipo !== "E") return false;
+  if (tipo !== "P" && tipo !== "E") return false;
+  // Se o banco devolveu um identificador da oportunidade/proposta, a
+  // proposta foi efetivamente recebida na esteira do banco. Tratamos como
+  // "em análise" (retorno pode demorar — ex.: Bradesco tem SLA de 15 min).
+  const opBanco = String(sim?.codigoOportunidadeBanco ?? "").trim();
+  if (opBanco) return false;
+  const numeroReal = numeroPropostaBancoReal(sim);
+  if (numeroReal) return false;
   const codigoSim = String(sim?.codigoSimulacaoBanco ?? "").trim();
   if (codigoSim) return false;
   const retorno = sim?.retornoIntegracao ?? sim?.descricaoRespostaBanco?.retornoIntegracao;
@@ -114,6 +128,7 @@ export function ehFalhaIntegracaoBanco(sim: any): boolean {
   // Códigos de fase de simulação (ex.: "01.03", "1.03") — não são decisão de crédito
   return /^0?1\.\d/.test(codigoSit);
 }
+
 
 const MSG_FALHA_INTEGRACAO =
   "A proposta não foi efetivada no banco (falha na integração). Reenvie para retomar o processo.";
