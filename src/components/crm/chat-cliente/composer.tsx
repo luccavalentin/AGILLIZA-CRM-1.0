@@ -216,37 +216,39 @@ export function ChatComposer({
         isNota ? "border-amber-500/40 bg-amber-500/[0.03]" : "border-border/60",
       )}
     >
-      {/* Abas do compositor */}
-      <div className="flex items-center gap-1 overflow-x-auto px-2 pt-2 sm:px-3">
-        {ABAS.map((t) => {
-          const ativo = aba === t.id;
-          return (
-            <button
-              key={t.id}
-              type="button"
-              onClick={() => setAba(t.id)}
-              className={cn(
-                "relative shrink-0 rounded-md px-2.5 py-2 text-xs font-medium transition-colors sm:px-3",
-                ativo
-                  ? t.id === "nota"
-                    ? "text-amber-600 dark:text-amber-400"
-                    : "text-primary"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {t.label}
-              {ativo && (
-                <span
-                  className={cn(
-                    "absolute inset-x-2 -bottom-px h-0.5 rounded-full",
-                    t.id === "nota" ? "bg-amber-500" : "bg-primary",
-                  )}
-                />
-              )}
-            </button>
-          );
-        })}
-      </div>
+      {/* Abas do compositor (só quando há mais de uma) */}
+      {ABAS.length > 1 && (
+        <div className="flex items-center gap-1 overflow-x-auto px-2 pt-2 sm:px-3">
+          {ABAS.map((t) => {
+            const ativo = aba === t.id;
+            return (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => setAba(t.id)}
+                className={cn(
+                  "relative shrink-0 rounded-md px-2.5 py-2 text-xs font-medium transition-colors sm:px-3",
+                  ativo
+                    ? t.id === "nota"
+                      ? "text-amber-600 dark:text-amber-400"
+                      : "text-primary"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {t.label}
+                {ativo && (
+                  <span
+                    className={cn(
+                      "absolute inset-x-2 -bottom-px h-0.5 rounded-full",
+                      t.id === "nota" ? "bg-amber-500" : "bg-primary",
+                    )}
+                  />
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       <div
         className={cn(
