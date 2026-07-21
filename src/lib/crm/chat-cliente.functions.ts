@@ -1,6 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { carregarReacoes, type ReacaoAgrupada } from "@/lib/chat-core/reacoes.functions";
+
 
 export interface ChatMensagem {
   id: string;
