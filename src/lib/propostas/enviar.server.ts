@@ -255,113 +255,12 @@ async function renovarSimulacaoSeConsumida({
 }
 
 
-/**
- * Sincroniza o bloco de cônjuge (nome/CPF/renda/estado civil/data nascimento)
- * na OPORTUNIDADE. Sem isso, oportunidades criadas quando o titular ainda não
- * tinha cônjuge cadastrado continuam sem o bloco, e alguns bancos (Itaú)
- * rejeitam a inclusão com "spouse: O campo deve ser informado".
- */
-async function sincronizarConjugeOportunidade({
-  prop,
-  idOportunidade,
-  ctx,
-  supabase,
-}: {
-  prop: any;
-  idOportunidade: string;
-  ctx: { simulacao_id: any; proposta_id: string; correspondente_id: any };
-  supabase: SupabaseClient<any, any, any>;
-}): Promise<void> {
-  let sim: any = null;
-  if (prop.simulacao_id) {
-    const { data } = await supabase
-      .from("simulacoes")
-      .select("possui_conjuge, nome_conjuge, cpf_conjuge, email_conjuge, celular_conjuge, renda_conjuge, data_nascimento_conjuge, estado_civil, estado_civil_conjuge, compoe_renda")
-      .eq("id", prop.simulacao_id)
-      .maybeSingle();
-    sim = data;
-  }
-  const { data: envolvidos } = await supabase
-    .from("proposta_envolvidos")
-    .select("*")
-    .eq("proposta_id", prop.id);
-  const principal = (envolvidos ?? []).find(
-    (e: any) => !e.conjuge_de && soDigitos(e.cpf_cnpj) === soDigitos(prop.cpf_cnpj),
-  );
-  const conjuge = principal
-    ? (envolvidos ?? []).find((e: any) => String(e.conjuge_de ?? "") === String(principal.id))
-    : (envolvidos ?? []).find((e: any) => e.conjuge_de);
-
-  // Fallback: cadastro do cliente no CRM (quando a proposta foi criada antes
-  // do cônjuge ser cadastrado, ou quando o envolvido cônjuge ainda não foi
-  // gerado — trazemos os dados diretamente da ficha do cliente).
-  let cli: any = null;
-  if (prop.cliente_id) {
-    const { data: c } = await supabase
-      .from("clientes")
-      .select(
-        "estado_civil, conjuge_nome, conjuge_cpf, conjuge_email, conjuge_celular, conjuge_renda, conjuge_data_nascimento",
-      )
-      .eq("id", prop.cliente_id)
-      .maybeSingle();
-    cli = c;
-  }
-
-  const estadoCivilCli = cli?.estado_civil
-    ? (["casado", "uniao_estavel"].includes(String(cli.estado_civil))
-        ? cli.estado_civil === "casado"
-          ? "CA"
-          : "UE"
-        : null)
-    : null;
-  const estadoCivil = sim?.estado_civil ?? prop.estado_civil ?? estadoCivilCli ?? null;
-  const casado =
-    Boolean(sim?.possui_conjuge) ||
-    ["CA", "UE"].includes(String(estadoCivil ?? "")) ||
-    Boolean(cli?.conjuge_nome || cli?.conjuge_cpf);
-  if (!casado) return;
-  const nome = sim?.nome_conjuge ?? conjuge?.nome ?? cli?.conjuge_nome ?? prop.nome_conjuge;
-  const cpf = soDigitos(
-    sim?.cpf_conjuge ?? conjuge?.cpf_cnpj ?? cli?.conjuge_cpf ?? prop.cpf_conjuge,
-  );
-  if (!nome || !cpf) {
-    throw new Error(
-      "Cadastro do cônjuge incompleto. Informe nome e CPF do cônjuge antes de enviar ao banco.",
-    );
-  }
-  const payload: Record<string, unknown> = {
-    tipoEstadoCivil: estadoCivil ? { id: estadoCivil } : undefined,
-    fgCompoeRenda: Boolean(sim?.compoe_renda ?? conjuge?.renda ?? cli?.conjuge_renda),
-    nomeConjuge: nome ?? undefined,
-    cpfConjuge: cpf ?? undefined,
-    emailConjuge: sim?.email_conjuge ?? conjuge?.email ?? cli?.conjuge_email ?? undefined,
-    celularConjuge: soDigitos(
-      sim?.celular_conjuge ?? conjuge?.celular ?? cli?.conjuge_celular,
-    ),
-    rendaConjuge:
-      sim?.renda_conjuge ?? conjuge?.renda ?? cli?.conjuge_renda ?? undefined,
-    dataNascimentoConjuge:
-      sim?.data_nascimento_conjuge ??
-      conjuge?.data_nascimento ??
-      cli?.conjuge_data_nascimento ??
-      undefined,
-    tipoEstadoCivilConjuge: sim?.estado_civil_conjuge
-      ? { id: sim.estado_civil_conjuge }
-      : conjuge?.estado_civil
-        ? { id: conjuge.estado_civil }
-        : estadoCivil
-          ? { id: estadoCivil }
-          : undefined,
-  };
-  try {
-    await chamarIntegracao<any>(`/oportunidade/${idOportunidade}`, "PUT", payload, ctx);
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    throw new Error(
-      `Não foi possível sincronizar os dados do cônjuge antes do envio: ${sanitizarMensagemErro(msg)}`,
-    );
-  }
-}
+// Observação: a sincronização de cônjuge no nível da OPORTUNIDADE foi removida.
+// O `PUT /oportunidade` só aceita valorImovel/valorFinanciamento/prazo; enviar
+// campos de cônjuge nesse endpoint faz o provedor interpretar como
+// `spouse: false` e o Itaú devolve "spouse: O campo deve ser informado".
+// Os campos de cônjuge são enviados no PUT do PARTICIPANTE titular
+// (garantirEnderecoParticipantes) como strings simples, conforme a API oficial.
 
 
 /**
