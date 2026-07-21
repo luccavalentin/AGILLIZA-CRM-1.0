@@ -265,7 +265,7 @@ function SimNao({
             title={marcado ? "Clique para desmarcar" : `Marcar ${op === "sim" ? "Sim" : "Não"}`}
           >
             <span className={`dps-box${marcado ? " dps-box-marcado" : ""}`}>
-              {marcado && <span className="dps-box-x">×</span>}
+              {marcado && <span className="dps-box-x">✕</span>}
             </span>
             {op === "sim" ? "Sim" : "Não"}
           </button>
