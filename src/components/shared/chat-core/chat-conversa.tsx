@@ -71,24 +71,20 @@ export function ChatConversaCore({ adapter }: { adapter: ChatAdapter }) {
   }, [adapter, mensagens, mineTipo, somenteLeitura]);
 
   useEffect(() => {
-    const canal = supabase
-      .channel(adapter.realtime.channel)
-      .on(
+    let canal = supabase.channel(adapter.realtime.channel);
+    for (const b of adapter.realtime.bindings) {
+      canal = canal.on(
         "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: adapter.realtime.table,
-          filter: adapter.realtime.filter,
-        },
+        { event: "*", schema: "public", table: b.table, filter: b.filter },
         () => qc.invalidateQueries({ queryKey }),
-      )
-      .subscribe();
+      );
+    }
+    canal.subscribe();
     return () => {
       supabase.removeChannel(canal);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [adapter.realtime.channel, adapter.realtime.table, adapter.realtime.filter, qc]);
+  }, [adapter.realtime.channel, qc]);
 
   useIncomingChatSound(
     mensagens?.map((m) => ({ id: m.id, mine: m.remetente_tipo === mineTipo })),
@@ -331,20 +327,44 @@ export function ChatConversaCore({ adapter }: { adapter: ChatAdapter }) {
     return lista.filter((m) => (m.mensagem ?? "").toLowerCase().includes(t));
   }, [mensagens, buscaMsg, buscaAberta]);
 
+  const capabilities = adapter.capabilities ?? {};
+  const cap = {
+    responder: capabilities.responder ?? true,
+    editar: capabilities.editar ?? true,
+    excluir: capabilities.excluir ?? true,
+    notaInterna: capabilities.notaInterna ?? true,
+    tarefa: capabilities.tarefa ?? true,
+    retorno: capabilities.retorno ?? true,
+    anexo: capabilities.anexo ?? true,
+    respostasRapidas: capabilities.respostasRapidas ?? true,
+    audio: capabilities.audio ?? true,
+  };
+  const headerBuscaProps = {
+    buscaAberta,
+    toggleBusca: () => {
+      setBuscaAberta((v) => !v);
+      setBuscaMsg("");
+    },
+    buscaMsg,
+    setBuscaMsg,
+    acoes,
+  };
+
   return (
     <Card className="flex h-full min-w-0 flex-col overflow-hidden border-border/60 shadow-sm">
-      <ChatClienteHeader
-        info={info}
-        clienteId={headerClienteId}
-        acoes={acoes}
-        buscaAberta={buscaAberta}
-        toggleBusca={() => {
-          setBuscaAberta((v) => !v);
-          setBuscaMsg("");
-        }}
-        buscaMsg={buscaMsg}
-        setBuscaMsg={setBuscaMsg}
-      />
+      {adapter.renderHeader ? (
+        adapter.renderHeader(headerBuscaProps)
+      ) : (
+        <ChatClienteHeader
+          info={info}
+          clienteId={headerClienteId}
+          acoes={acoes}
+          buscaAberta={headerBuscaProps.buscaAberta}
+          toggleBusca={headerBuscaProps.toggleBusca}
+          buscaMsg={headerBuscaProps.buscaMsg}
+          setBuscaMsg={headerBuscaProps.setBuscaMsg}
+        />
+      )}
 
       <ListaMensagens
         filtradas={filtradas}
@@ -358,6 +378,11 @@ export function ChatConversaCore({ adapter }: { adapter: ChatAdapter }) {
         iniciarEdicao={iniciarEdicao}
         copiar={copiar}
         onExcluir={setConfirmarExcluir}
+        capabilities={{
+          responder: cap.responder,
+          editar: cap.editar,
+          excluir: cap.excluir,
+        }}
       />
 
       {somenteLeitura ? (
@@ -375,7 +400,7 @@ export function ChatConversaCore({ adapter }: { adapter: ChatAdapter }) {
           onEscolherResposta={(t) => setTexto((prev) => (prev ? `${prev} ${t}` : t))}
           fileRef={fileRef}
           onAnexo={handleAnexo}
-          enviarArquivo={enviarArquivoDireto}
+          enviarArquivo={cap.audio ? enviarArquivoDireto : undefined}
           enviandoAnexo={enviandoAnexo}
           enviarPending={enviar.isPending || criarTarefaMut.isPending}
           salvarEdicaoPending={salvarEdicao.isPending}
@@ -393,6 +418,14 @@ export function ChatConversaCore({ adapter }: { adapter: ChatAdapter }) {
             if (e.key === "Escape") cancelarComposer();
           }}
           submeter={submeter}
+          capabilities={{
+            notaInterna: cap.notaInterna,
+            tarefa: cap.tarefa,
+            retorno: cap.retorno,
+            anexo: cap.anexo,
+            respostasRapidas: cap.respostasRapidas,
+            audio: cap.audio,
+          }}
         />
       )}
 

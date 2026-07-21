@@ -19,6 +19,7 @@ export function ListaMensagens({
   iniciarEdicao,
   copiar,
   onExcluir,
+  capabilities,
 }: {
   filtradas: ChatMensagem[];
   isLoading: boolean;
@@ -31,7 +32,16 @@ export function ListaMensagens({
   iniciarEdicao: (m: ChatMensagem) => void;
   copiar: (m: ChatMensagem) => void;
   onExcluir: (m: ChatMensagem) => void;
+  /** Capacidades da conversa. Defaults: tudo habilitado. */
+  capabilities?: {
+    responder?: boolean;
+    editar?: boolean;
+    excluir?: boolean;
+  };
 }) {
+  const podeResponder = capabilities?.responder ?? true;
+  const podeEditar = capabilities?.editar ?? true;
+  const podeExcluir = capabilities?.excluir ?? true;
   return (
     <div className="chat-surface min-w-0 flex-1 space-y-1 overflow-y-auto overflow-x-hidden p-2.5 sm:p-4">
       {isLoading ? (
@@ -93,10 +103,10 @@ export function ListaMensagens({
                 {podeGerenciar && (
                   <MsgAcoes
                     lado="time"
-                    onReply={() => iniciarResposta(m)}
-                    onEdit={() => iniciarEdicao(m)}
+                    onReply={podeResponder ? () => iniciarResposta(m) : undefined}
+                    onEdit={podeEditar ? () => iniciarEdicao(m) : undefined}
                     onCopy={() => copiar(m)}
-                    onDelete={() => onExcluir(m)}
+                    onDelete={podeExcluir ? () => onExcluir(m) : undefined}
                   />
                 )}
 
@@ -209,11 +219,11 @@ export function ListaMensagens({
                   </div>
                 </div>
 
-                {/* Ações para mensagens do cliente (só responder/copiar) */}
+                {/* Ações para mensagens do peer (só responder/copiar) */}
                 {!doTime && !excluida && !otimista && (
                   <MsgAcoes
                     lado="cliente"
-                    onReply={() => iniciarResposta(m)}
+                    onReply={podeResponder ? () => iniciarResposta(m) : undefined}
                     onCopy={() => copiar(m)}
                   />
                 )}

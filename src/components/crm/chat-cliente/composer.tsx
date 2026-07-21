@@ -23,7 +23,7 @@ import { RespostasRapidas } from "./respostas-rapidas";
 
 type AbaId = "mensagem" | "nota" | "tarefa" | "retorno";
 
-const ABAS: { id: AbaId; label: string }[] = [
+const TODAS_ABAS: { id: AbaId; label: string }[] = [
   { id: "mensagem", label: "Mensagem" },
   { id: "nota", label: "Nota interna" },
   { id: "tarefa", label: "Tarefa" },
@@ -60,6 +60,7 @@ export function ChatComposer({
   onChangeTexto,
   onKeyDown,
   submeter,
+  capabilities,
 }: {
   respondendo: ChatMensagem | null;
   editando: ChatMensagem | null;
@@ -78,7 +79,33 @@ export function ChatComposer({
   onChangeTexto: (v: string) => void;
   onKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
   submeter: (payload: ComposerSubmitPayload) => void;
+  /** Recursos disponíveis (defaults: tudo habilitado). */
+  capabilities?: {
+    notaInterna?: boolean;
+    tarefa?: boolean;
+    retorno?: boolean;
+    anexo?: boolean;
+    respostasRapidas?: boolean;
+    audio?: boolean;
+  };
 }) {
+  const capNota = capabilities?.notaInterna ?? true;
+  const capTarefa = capabilities?.tarefa ?? true;
+  const capRetorno = capabilities?.retorno ?? true;
+  const capAnexo = capabilities?.anexo ?? true;
+  const capRespostas = capabilities?.respostasRapidas ?? true;
+  const capAudio = capabilities?.audio ?? true;
+
+  const ABAS = useMemo(
+    () =>
+      TODAS_ABAS.filter((t) => {
+        if (t.id === "nota") return capNota;
+        if (t.id === "tarefa") return capTarefa;
+        if (t.id === "retorno") return capRetorno;
+        return true;
+      }),
+    [capNota, capTarefa, capRetorno],
+  );
   const [aba, setAba] = useState<AbaId>("mensagem");
   const [prazo, setPrazo] = useState<string>("");
   const [gravando, setGravando] = useState(false);
@@ -189,37 +216,39 @@ export function ChatComposer({
         isNota ? "border-amber-500/40 bg-amber-500/[0.03]" : "border-border/60",
       )}
     >
-      {/* Abas do compositor */}
-      <div className="flex items-center gap-1 overflow-x-auto px-2 pt-2 sm:px-3">
-        {ABAS.map((t) => {
-          const ativo = aba === t.id;
-          return (
-            <button
-              key={t.id}
-              type="button"
-              onClick={() => setAba(t.id)}
-              className={cn(
-                "relative shrink-0 rounded-md px-2.5 py-2 text-xs font-medium transition-colors sm:px-3",
-                ativo
-                  ? t.id === "nota"
-                    ? "text-amber-600 dark:text-amber-400"
-                    : "text-primary"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {t.label}
-              {ativo && (
-                <span
-                  className={cn(
-                    "absolute inset-x-2 -bottom-px h-0.5 rounded-full",
-                    t.id === "nota" ? "bg-amber-500" : "bg-primary",
-                  )}
-                />
-              )}
-            </button>
-          );
-        })}
-      </div>
+      {/* Abas do compositor (só quando há mais de uma) */}
+      {ABAS.length > 1 && (
+        <div className="flex items-center gap-1 overflow-x-auto px-2 pt-2 sm:px-3">
+          {ABAS.map((t) => {
+            const ativo = aba === t.id;
+            return (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => setAba(t.id)}
+                className={cn(
+                  "relative shrink-0 rounded-md px-2.5 py-2 text-xs font-medium transition-colors sm:px-3",
+                  ativo
+                    ? t.id === "nota"
+                      ? "text-amber-600 dark:text-amber-400"
+                      : "text-primary"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {t.label}
+                {ativo && (
+                  <span
+                    className={cn(
+                      "absolute inset-x-2 -bottom-px h-0.5 rounded-full",
+                      t.id === "nota" ? "bg-amber-500" : "bg-primary",
+                    )}
+                  />
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       <div
         className={cn(
@@ -312,36 +341,42 @@ export function ChatComposer({
         {/* Rodapé de ações */}
         <div className="flex min-w-0 items-center justify-between gap-2 px-2 pb-2.5 sm:px-3 sm:pb-3">
           <div className="flex min-w-0 items-center gap-1 overflow-x-auto">
-            <RespostasRapidas
-              contexto={contextoResposta}
-              onEscolher={onEscolherResposta}
-            />
-            <Button
-              type="button"
-              onClick={() => fileRef.current?.click()}
-              disabled={bloqueiaEnvio}
-              size="icon"
-              variant="ghost"
-              className="size-9 shrink-0 rounded-lg text-muted-foreground"
-              title="Anexar imagem ou documento"
-            >
-              {enviandoAnexo ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <Paperclip className="size-4" />
-              )}
-            </Button>
-            <Button
-              type="button"
-              onClick={() => docFileRef.current?.click()}
-              disabled={bloqueiaEnvio}
-              size="icon"
-              variant="ghost"
-              className="size-9 shrink-0 rounded-lg text-muted-foreground"
-              title="Anexar documento"
-            >
-              <FileText className="size-4" />
-            </Button>
+            {capRespostas && (
+              <RespostasRapidas
+                contexto={contextoResposta}
+                onEscolher={onEscolherResposta}
+              />
+            )}
+            {capAnexo && (
+              <>
+                <Button
+                  type="button"
+                  onClick={() => fileRef.current?.click()}
+                  disabled={bloqueiaEnvio}
+                  size="icon"
+                  variant="ghost"
+                  className="size-9 shrink-0 rounded-lg text-muted-foreground"
+                  title="Anexar imagem ou documento"
+                >
+                  {enviandoAnexo ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <Paperclip className="size-4" />
+                  )}
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() => docFileRef.current?.click()}
+                  disabled={bloqueiaEnvio}
+                  size="icon"
+                  variant="ghost"
+                  className="size-9 shrink-0 rounded-lg text-muted-foreground"
+                  title="Anexar documento"
+                >
+                  <FileText className="size-4" />
+                </Button>
+              </>
+            )}
 
             <Popover>
               <PopoverTrigger asChild>
