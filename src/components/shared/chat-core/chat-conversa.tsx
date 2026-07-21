@@ -137,7 +137,10 @@ export function ChatConversaCore({ adapter }: { adapter: ChatAdapter }) {
               texto: alvo.mensagem?.trim() || "Anexo",
             }
           : null,
+        reacoes: [],
       };
+
+
       qc.setQueryData<ChatMensagem[]>(queryKey, [...(anterior ?? []), otimista]);
       setTexto("");
       setRespondendo(null);
@@ -180,6 +183,47 @@ export function ChatConversaCore({ adapter }: { adapter: ChatAdapter }) {
       toast.error(`Não foi possível excluir: ${motivo}`);
     },
   });
+
+  const meuIdReacao = adapter.typing.myRole; // não é o user_id real, então usamos "mine" só p/ o toggle otimista.
+  const reagirMut = useMutation({
+    mutationFn: (p: { mensagem_id: string; emoji: string }) => {
+      if (!adapter.reagir) throw new Error("Reações indisponíveis nesta conversa.");
+      return adapter.reagir(p);
+    },
+    onMutate: async (p) => {
+      await qc.cancelQueries({ queryKey });
+      const anterior = qc.getQueryData<ChatMensagem[]>(queryKey);
+      qc.setQueryData<ChatMensagem[]>(queryKey, (lista) =>
+        (lista ?? []).map((m) => {
+          if (m.id !== p.mensagem_id) return m;
+          const idx = m.reacoes.findIndex((r) => r.emoji === p.emoji);
+          const proximas = [...m.reacoes];
+          if (idx >= 0) {
+            const cur = proximas[idx];
+            if (cur.mine) {
+              const cnt = cur.count - 1;
+              if (cnt <= 0) proximas.splice(idx, 1);
+              else proximas[idx] = { ...cur, count: cnt, mine: false };
+            } else {
+              proximas[idx] = { ...cur, count: cur.count + 1, mine: true };
+            }
+          } else {
+            proximas.push({ emoji: p.emoji, count: 1, mine: true, usuarios: [] });
+          }
+          return { ...m, reacoes: proximas };
+        }),
+      );
+      return { anterior };
+    },
+    onError: (err, _p, ctx) => {
+      if (ctx?.anterior) qc.setQueryData(queryKey, ctx.anterior);
+      const motivo = err instanceof Error ? err.message : String(err);
+      toast.error(`Não foi possível reagir: ${motivo}`);
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey }),
+  });
+  void meuIdReacao;
+
 
   const criarTarefaMut = useMutation({
     mutationFn: (payload: { titulo: string; prazo?: string; retorno?: boolean }) => {
@@ -332,6 +376,7 @@ export function ChatConversaCore({ adapter }: { adapter: ChatAdapter }) {
     responder: capabilities.responder ?? true,
     editar: capabilities.editar ?? true,
     excluir: capabilities.excluir ?? true,
+    reagir: capabilities.reagir ?? true,
     notaInterna: capabilities.notaInterna ?? true,
     tarefa: capabilities.tarefa ?? true,
     retorno: capabilities.retorno ?? true,
@@ -339,6 +384,7 @@ export function ChatConversaCore({ adapter }: { adapter: ChatAdapter }) {
     respostasRapidas: capabilities.respostasRapidas ?? true,
     audio: capabilities.audio ?? true,
   };
+
   const headerBuscaProps = {
     buscaAberta,
     toggleBusca: () => {
@@ -378,12 +424,19 @@ export function ChatConversaCore({ adapter }: { adapter: ChatAdapter }) {
         iniciarEdicao={iniciarEdicao}
         copiar={copiar}
         onExcluir={setConfirmarExcluir}
+        onReagir={
+          cap.reagir && adapter.reagir
+            ? (mensagem_id, emoji) => reagirMut.mutate({ mensagem_id, emoji })
+            : undefined
+        }
         capabilities={{
           responder: cap.responder,
           editar: cap.editar,
           excluir: cap.excluir,
+          reagir: cap.reagir && !!adapter.reagir,
         }}
       />
+
 
       {somenteLeitura ? (
         <div className="border-t border-border/60 bg-muted/30 px-4 py-3 text-center text-xs text-muted-foreground">

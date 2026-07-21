@@ -2,6 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { listarClienteIdsParceiroDoUsuario } from "@/lib/escopo";
+import { carregarReacoes } from "@/lib/chat-core/reacoes.functions";
+
 
 export type DemandaStatus = "aberta" | "em_andamento" | "aguardando" | "concluida" | "cancelada";
 export type Prioridade = "p1" | "p2" | "p3";
@@ -365,7 +367,9 @@ export const listarChatDemanda = createServerFn({ method: "GET" })
     const [{ data: msgs, error }, { data: leitura }] = await Promise.all([
       supabase
         .from("demanda_mensagens")
-        .select("id, autor_id, corpo, anexo_path, anexo_nome, created_at")
+        .select(
+          "id, autor_id, corpo, anexo_path, anexo_nome, created_at, editada_em, excluida_em, responde_a",
+        )
         .eq("demanda_id", data.demanda_id)
         .order("created_at"),
       supabase
@@ -381,12 +385,19 @@ export const listarChatDemanda = createServerFn({ method: "GET" })
       lista.map((m) => m.autor_id),
     );
 
-    // Última leitura por qualquer usuário DIFERENTE do autor de cada mensagem —
-    // usada para marcar "lida pelo peer" nas próprias mensagens.
     const leituraPorUsuario = new Map<string, string>();
     for (const l of (leitura ?? []) as any[]) {
       if (l.user_id) leituraPorUsuario.set(l.user_id as string, l.lida_em as string);
     }
+
+    const porId = new Map<string, any>();
+    for (const m of lista) porId.set(m.id as string, m);
+    const reacoes = await carregarReacoes(
+      supabase,
+      userId,
+      "demanda",
+      lista.map((m) => m.id as string),
+    );
 
     const resultado = await Promise.all(
       lista.map(async (m) => {
@@ -405,8 +416,6 @@ export const listarChatDemanda = createServerFn({ method: "GET" })
           anexoImg = IMG_EXT_DEM.test(String(m.anexo_path));
         }
 
-        // "Lida" para mim: existe pelo menos um leitor diferente do autor
-        // com timestamp posterior à mensagem.
         let lidaEm: string | null = null;
         if (m.autor_id === userId) {
           for (const [uid, ts] of leituraPorUsuario) {
@@ -416,6 +425,7 @@ export const listarChatDemanda = createServerFn({ method: "GET" })
           }
         }
 
+        const alvo = m.responde_a ? porId.get(m.responde_a as string) : null;
         return {
           id: m.id as string,
           remetente_tipo: m.autor_id === userId ? "time" : "peer",
@@ -427,17 +437,59 @@ export const listarChatDemanda = createServerFn({ method: "GET" })
           anexo_is_imagem: anexoImg,
           lida_em: lidaEm,
           criada_em: m.created_at as string,
-          editada_em: null,
-          excluida_em: null,
-          responde_a: null,
+          editada_em: (m.editada_em as string | null) ?? null,
+          excluida_em: (m.excluida_em as string | null) ?? null,
+          responde_a: (m.responde_a as string | null) ?? null,
           interna: false,
-          citacao: null,
+          citacao: alvo
+            ? {
+                autor: nomes.get(alvo.autor_id as string) ?? "Usuário",
+                texto: alvo.excluida_em
+                  ? "Mensagem excluída"
+                  : (alvo.corpo?.trim() || "Anexo"),
+              }
+            : null,
+          reacoes: reacoes.get(m.id as string) ?? [],
         };
       }),
     );
 
     return resultado;
   });
+
+/** Edita o texto da própria mensagem em uma demanda. */
+export const editarChatDemanda = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { id: string; mensagem: string }) =>
+    z.object({ id: z.string().uuid(), mensagem: z.string().trim().min(1).max(4000) }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { error } = await supabase
+      .from("demanda_mensagens")
+      .update({ corpo: data.mensagem.trim(), editada_em: new Date().toISOString() })
+      .eq("id", data.id)
+      .eq("autor_id", userId)
+      .is("excluida_em", null);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+/** Exclui (suave) a própria mensagem em uma demanda. */
+export const excluirChatDemanda = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { error } = await supabase
+      .from("demanda_mensagens")
+      .update({ excluida_em: new Date().toISOString() })
+      .eq("id", data.id)
+      .eq("autor_id", userId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
 
 
 
@@ -666,6 +718,7 @@ export const comentarDemanda = createServerFn({ method: "POST" })
         anexo_path: z.string().optional().nullable(),
         anexo_nome: z.string().optional().nullable(),
         anexo_tamanho: z.number().int().nonnegative().optional().nullable(),
+        responde_a: z.string().uuid().optional().nullable(),
       })
       .refine((d) => d.corpo.trim().length > 0 || !!d.anexo_path, {
         message: "Mensagem vazia.",
@@ -682,7 +735,9 @@ export const comentarDemanda = createServerFn({ method: "POST" })
       anexo_path: data.anexo_path ?? null,
       anexo_nome: data.anexo_nome ?? null,
       anexo_tamanho: data.anexo_tamanho ?? null,
+      responde_a: data.responde_a ?? null,
     });
+
     if (error) throw new Error(error.message);
 
     // Notifica os envolvidos (criador, responsável e participantes) exceto o autor.

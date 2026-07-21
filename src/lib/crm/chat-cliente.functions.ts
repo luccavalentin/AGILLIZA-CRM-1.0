@@ -1,6 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { carregarReacoes, type ReacaoAgrupada } from "@/lib/chat-core/reacoes.functions";
+
 
 export interface ChatMensagem {
   id: string;
@@ -20,7 +22,10 @@ export interface ChatMensagem {
   interna: boolean;
   /** Prévia da mensagem citada (quando responde_a aponta para outra mensagem). */
   citacao: { autor: string; texto: string } | null;
+  /** Reações agrupadas por emoji (Fase 6). */
+  reacoes: ReacaoAgrupada[];
 }
+
 
 const IMG_EXT = /\.(png|jpe?g|gif|webp|bmp|heic|heif|svg)$/i;
 
@@ -328,6 +333,12 @@ export const listarChatCliente = createServerFn({ method: "GET" })
     }
 
     const comAnexo = await resolverAnexosChat(supabase, lista);
+    const reacoes = await carregarReacoes(
+      supabase,
+      userId,
+      "cliente",
+      lista.map((m) => m.id),
+    );
     return comAnexo.map((m) => {
       const alvo = m.responde_a ? porId.get(m.responde_a) : null;
       return {
@@ -344,9 +355,11 @@ export const listarChatCliente = createServerFn({ method: "GET" })
                 : (alvo.mensagem?.trim() || "Anexo"),
             }
           : null,
+        reacoes: reacoes.get(m.id) ?? [],
       };
     });
   });
+
 
 /** Envia uma mensagem ao cliente como time e notifica o cliente no App. */
 export const responderChatCliente = createServerFn({ method: "POST" })

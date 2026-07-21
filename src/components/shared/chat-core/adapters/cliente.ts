@@ -12,6 +12,8 @@ import {
 } from "@/lib/crm/chat-cliente.functions";
 import { criarTarefa } from "@/lib/operacional/tarefas.functions";
 import { getMinhaSessao } from "@/lib/session.functions";
+import { reagirMensagem } from "@/lib/chat-core/reacoes.functions";
+
 import type { ChatAdapter, ChatClienteInfo, ContextoResposta } from "../types";
 
 /**
@@ -44,6 +46,8 @@ export function useAdaptadorCliente({
   const contextoFn = useServerFn(obterContextoChatCliente);
   const sessaoFn = useServerFn(getMinhaSessao);
   const criarTarefaFn = useServerFn(criarTarefa);
+  const reagirFn = useServerFn(reagirMensagem);
+
 
   const { data: sessao } = useQuery({
     queryKey: ["minha-sessao"],
@@ -104,6 +108,11 @@ export function useAdaptadorCliente({
       excluir: (p) => excluir({ data: p }),
       marcarLido: () => marcarLido({ data: { cliente_id: clienteId } }),
 
+      origem: "cliente",
+      reagir: (p) =>
+        reagirFn({ data: { origem: "cliente", mensagem_id: p.mensagem_id, emoji: p.emoji } }),
+      capabilities: { reagir: true },
+
       realtime: {
         channel: `chat-cli:${clienteId}`,
         bindings: [
@@ -111,8 +120,10 @@ export function useAdaptadorCliente({
             table: "cliente_app_mensagens",
             filter: `cliente_id=eq.${clienteId}`,
           },
+          { table: "chat_reacoes", filter: `origem=eq.cliente` },
         ],
       },
+
 
       typing: { id: clienteId, myRole: "time" },
 
@@ -156,6 +167,8 @@ export function useAdaptadorCliente({
       excluir,
       marcarLido,
       criarTarefaFn,
+      reagirFn,
+
     ],
   );
 }

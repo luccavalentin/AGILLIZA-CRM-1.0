@@ -6,8 +6,12 @@ import {
   comentarDemanda,
   listarChatDemanda,
   marcarDemandaLida,
+  editarChatDemanda,
+  excluirChatDemanda,
 } from "@/lib/operacional/demandas.functions";
+import { reagirMensagem } from "@/lib/chat-core/reacoes.functions";
 import { getMinhaSessao } from "@/lib/session.functions";
+
 import type { ChatAdapter, ChatClienteInfo, ContextoResposta } from "../types";
 
 /**
@@ -31,7 +35,11 @@ export function useAdaptadorDemanda({
   const listarFn = useServerFn(listarChatDemanda);
   const comentarFn = useServerFn(comentarDemanda);
   const marcarLidaFn = useServerFn(marcarDemandaLida);
+  const editarFn = useServerFn(editarChatDemanda);
+  const excluirFn = useServerFn(excluirChatDemanda);
+  const reagirFn = useServerFn(reagirMensagem);
   const sessaoFn = useServerFn(getMinhaSessao);
+
 
   const { data: sessao } = useQuery({
     queryKey: ["minha-sessao"],
@@ -66,9 +74,10 @@ export function useAdaptadorDemanda({
       peerNomeCitacao: info?.nome?.trim() || "Usuário",
 
       capabilities: {
-        responder: false,
-        editar: false,
-        excluir: false,
+        responder: true,
+        editar: true,
+        excluir: true,
+        reagir: true,
         notaInterna: false,
         tarefa: false,
         retorno: false,
@@ -90,23 +99,26 @@ export function useAdaptadorDemanda({
             corpo: p.mensagem ?? "",
             visivel_cliente: false,
             anexo_path: p.anexo_path ?? null,
+            responde_a: p.responde_a ?? null,
           },
         }),
-      editar: async () => {
-        throw new Error("Edição indisponível em demandas.");
-      },
-      excluir: async () => {
-        throw new Error("Exclusão indisponível em demandas.");
-      },
+      editar: (p) => editarFn({ data: p }),
+      excluir: (p) => excluirFn({ data: p }),
       marcarLido: () => marcarLidaFn({ data: { demanda_id: demandaId } }),
+
+      origem: "demanda",
+      reagir: (p) =>
+        reagirFn({ data: { origem: "demanda", mensagem_id: p.mensagem_id, emoji: p.emoji } }),
 
       realtime: {
         channel: `demanda:${demandaId}`,
         bindings: [
           { table: "demanda_mensagens", filter: `demanda_id=eq.${demandaId}` },
           { table: "demandas", filter: `id=eq.${demandaId}` },
+          { table: "chat_reacoes", filter: `origem=eq.demanda` },
         ],
       },
+
 
       // Papel único por usuário — permite múltiplos participantes digitando.
       typing: { id: demandaId, myRole: meuId ?? "eu" },
@@ -136,6 +148,10 @@ export function useAdaptadorDemanda({
       listarFn,
       comentarFn,
       marcarLidaFn,
+      editarFn,
+      excluirFn,
+      reagirFn,
+
     ],
   );
 }

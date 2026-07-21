@@ -1,6 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { carregarReacoes } from "@/lib/chat-core/reacoes.functions";
+
 
 // =============================================================================
 // Central de Conversas — server functions
@@ -362,33 +364,60 @@ export const listarMensagensDm = createServerFn({ method: "POST" })
     z.object({ conversa_id: z.string().uuid() }).parse(d),
   )
   .handler(async ({ data, context }) => {
-    const { supabase } = context;
+    const { supabase, userId } = context;
     const { data: msgs, error } = await supabase
       .from("dm_mensagens")
-      .select("id, conversa_id, autor_id, texto, anexo_url, anexo_nome, created_at, profiles:autor_id(nome, foto_url)")
+      .select(
+        "id, conversa_id, autor_id, texto, anexo_url, anexo_nome, created_at, editada_em, excluida_em, responde_a, profiles:autor_id(nome, foto_url)",
+      )
       .eq("conversa_id", data.conversa_id)
       .order("created_at", { ascending: true });
     if (error) throw new Error(error.message);
-    return (msgs ?? []).map((m: any) => ({
-      id: m.id as string,
-      autor_id: m.autor_id as string,
-      autor_nome: (m.profiles?.nome as string | null) ?? null,
-      autor_foto: (m.profiles?.foto_url as string | null) ?? null,
-      texto: (m.texto as string | null) ?? null,
-      anexo_url: (m.anexo_url as string | null) ?? null,
-      anexo_nome: (m.anexo_nome as string | null) ?? null,
-      created_at: m.created_at as string,
-    }));
+    const lista = (msgs ?? []) as any[];
+    const porId = new Map<string, any>();
+    for (const m of lista) porId.set(m.id as string, m);
+    const reacoes = await carregarReacoes(
+      supabase,
+      userId,
+      "dm",
+      lista.map((m) => m.id as string),
+    );
+    return lista.map((m) => {
+      const alvo = m.responde_a ? porId.get(m.responde_a as string) : null;
+      return {
+        id: m.id as string,
+        autor_id: m.autor_id as string,
+        autor_nome: (m.profiles?.nome as string | null) ?? null,
+        autor_foto: (m.profiles?.foto_url as string | null) ?? null,
+        texto: (m.texto as string | null) ?? null,
+        anexo_url: (m.anexo_url as string | null) ?? null,
+        anexo_nome: (m.anexo_nome as string | null) ?? null,
+        created_at: m.created_at as string,
+        editada_em: (m.editada_em as string | null) ?? null,
+        excluida_em: (m.excluida_em as string | null) ?? null,
+        responde_a: (m.responde_a as string | null) ?? null,
+        citacao: alvo
+          ? {
+              autor: (alvo.profiles?.nome as string | null) ?? "Usuário",
+              texto: alvo.excluida_em
+                ? "Mensagem excluída"
+                : (alvo.texto?.trim() || "Anexo"),
+            }
+          : null,
+        reacoes: reacoes.get(m.id as string) ?? [],
+      };
+    });
   });
 
 /** Envia mensagem em uma DM. */
 export const enviarMensagemDm = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { conversa_id: string; texto: string }) =>
+  .inputValidator((d: { conversa_id: string; texto: string; responde_a?: string | null }) =>
     z
       .object({
         conversa_id: z.string().uuid(),
         texto: z.string().min(1).max(4000),
+        responde_a: z.string().uuid().optional().nullable(),
       })
       .parse(d),
   )
@@ -400,7 +429,6 @@ export const enviarMensagemDm = createServerFn({ method: "POST" })
       .eq("id", userId)
       .single();
     if (!me?.correspondente_id) throw new Error("Sem correspondente.");
-    // Bloqueia envio se o usuário não é participante da conversa.
     const { data: part } = await supabase
       .from("dm_participantes")
       .select("user_id")
@@ -413,10 +441,45 @@ export const enviarMensagemDm = createServerFn({ method: "POST" })
       autor_id: userId,
       correspondente_id: me.correspondente_id,
       texto: data.texto,
+      responde_a: data.responde_a ?? null,
     });
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+/** Edita o texto da própria mensagem em uma DM. */
+export const editarMensagemDm = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { id: string; texto: string }) =>
+    z.object({ id: z.string().uuid(), texto: z.string().trim().min(1).max(4000) }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { error } = await supabase
+      .from("dm_mensagens")
+      .update({ texto: data.texto.trim(), editada_em: new Date().toISOString() })
+      .eq("id", data.id)
+      .eq("autor_id", userId)
+      .is("excluida_em", null);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+/** Exclui (suave) a própria mensagem em uma DM. */
+export const excluirMensagemDm = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { error } = await supabase
+      .from("dm_mensagens")
+      .update({ excluida_em: new Date().toISOString() })
+      .eq("id", data.id)
+      .eq("autor_id", userId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
 
 /** Marca a DM como lida (atualiza ultima_leitura_em do próprio participante). */
 export const marcarDmLida = createServerFn({ method: "POST" })

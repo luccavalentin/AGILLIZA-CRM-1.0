@@ -2,8 +2,10 @@ import type { ReactNode } from "react";
 import type { ChatMensagem } from "@/lib/crm/chat-cliente.functions";
 import type { ContextoResposta } from "@/lib/crm/respostas-rapidas";
 import type { ChatClienteInfo } from "@/components/crm/chat-cliente/utils";
+import type { ChatOrigem } from "@/lib/chat-core/reacoes.functions";
 
-export type { ChatMensagem, ChatClienteInfo, ContextoResposta };
+export type { ChatMensagem, ChatClienteInfo, ContextoResposta, ChatOrigem };
+
 
 export type ChatSendPayload = {
   mensagem?: string;
@@ -23,6 +25,8 @@ export interface ChatCapabilities {
   editar?: boolean;
   /** Permite excluir (suave) mensagens próprias. */
   excluir?: boolean;
+  /** Permite reagir com emoji (Fase 6). */
+  reagir?: boolean;
   /** Aba "Nota interna". */
   notaInterna?: boolean;
   /** Aba "Tarefa". */
@@ -36,6 +40,7 @@ export interface ChatCapabilities {
   /** Gravar/enviar áudio. */
   audio?: boolean;
 }
+
 
 export interface ChatHeaderRenderProps {
   buscaAberta: boolean;
@@ -93,6 +98,13 @@ export interface ChatAdapter {
   editar(p: { id: string; mensagem: string }): Promise<unknown>;
   excluir(p: { id: string }): Promise<unknown>;
   marcarLido(): Promise<unknown>;
+
+  /** Origem para chat_reacoes (obrigatório quando `reagir` estiver habilitado). */
+  origem?: ChatOrigem;
+  /** Toggle de reação (Fase 6). */
+  reagir?(p: { mensagem_id: string; emoji: string }): Promise<unknown>;
+
+
 
   /** Canal Postgres Changes (nome do canal + bindings tabela/filtro). */
   realtime: {

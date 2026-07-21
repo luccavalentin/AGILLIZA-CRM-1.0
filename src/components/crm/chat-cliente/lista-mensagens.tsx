@@ -19,6 +19,7 @@ export function ListaMensagens({
   iniciarEdicao,
   copiar,
   onExcluir,
+  onReagir,
   capabilities,
 }: {
   filtradas: ChatMensagem[];
@@ -32,16 +33,20 @@ export function ListaMensagens({
   iniciarEdicao: (m: ChatMensagem) => void;
   copiar: (m: ChatMensagem) => void;
   onExcluir: (m: ChatMensagem) => void;
+  onReagir?: (mensagem_id: string, emoji: string) => void;
   /** Capacidades da conversa. Defaults: tudo habilitado. */
   capabilities?: {
     responder?: boolean;
     editar?: boolean;
     excluir?: boolean;
+    reagir?: boolean;
   };
 }) {
   const podeResponder = capabilities?.responder ?? true;
   const podeEditar = capabilities?.editar ?? true;
   const podeExcluir = capabilities?.excluir ?? true;
+  const podeReagir = (capabilities?.reagir ?? true) && !!onReagir;
+
   return (
     <div className="chat-surface min-w-0 flex-1 space-y-1 overflow-y-auto overflow-x-hidden p-2.5 sm:p-4">
       {isLoading ? (
@@ -107,8 +112,10 @@ export function ListaMensagens({
                     onEdit={podeEditar ? () => iniciarEdicao(m) : undefined}
                     onCopy={() => copiar(m)}
                     onDelete={podeExcluir ? () => onExcluir(m) : undefined}
+                    onReagir={podeReagir ? (e) => onReagir!(m.id, e) : undefined}
                   />
                 )}
+
 
 
                 <div
@@ -217,7 +224,38 @@ export function ListaMensagens({
                       </span>
                     )}
                   </div>
+
+                  {/* Reações agrupadas (Fase 6) */}
+                  {!excluida && m.reacoes && m.reacoes.length > 0 && (
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {m.reacoes.map((r) => (
+                        <button
+                          key={r.emoji}
+                          type="button"
+                          onClick={
+                            podeReagir ? () => onReagir!(m.id, r.emoji) : undefined
+                          }
+                          className={cn(
+                            "inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[11px] leading-none transition-colors",
+                            r.mine
+                              ? doTime
+                                ? "border-primary-foreground/60 bg-primary-foreground/20 text-primary-foreground"
+                                : "border-primary/50 bg-primary/15 text-primary"
+                              : doTime
+                                ? "border-primary-foreground/25 bg-primary-foreground/10 text-primary-foreground/85"
+                                : "border-border/60 bg-background/70 text-foreground/80 hover:bg-muted",
+                            !podeReagir && "cursor-default",
+                          )}
+                          aria-label={`${r.count} ${r.emoji}`}
+                        >
+                          <span className="text-sm leading-none">{r.emoji}</span>
+                          <span className="tabular-nums">{r.count}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
+
 
                 {/* Ações para mensagens do peer (só responder/copiar) */}
                 {!doTime && !excluida && !otimista && (
@@ -225,8 +263,10 @@ export function ListaMensagens({
                     lado="cliente"
                     onReply={podeResponder ? () => iniciarResposta(m) : undefined}
                     onCopy={() => copiar(m)}
+                    onReagir={podeReagir ? (e) => onReagir!(m.id, e) : undefined}
                   />
                 )}
+
               </div>
             </div>
           );
