@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
 import {
   Search,
@@ -16,11 +17,17 @@ import {
   Bell,
   ChevronRight,
   Download,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { baixarDemandasPDF } from "@/lib/operacional/export-pdf";
 import { assertModuloPermitido } from "@/lib/route-guards";
-import { listarDemandas, type DemandaStatus } from "@/lib/operacional/demandas.functions";
+import {
+  listarDemandas,
+  excluirDemanda,
+  type DemandaStatus,
+} from "@/lib/operacional/demandas.functions";
+import { getMinhaSessao } from "@/lib/session.functions";
 import { statusDemanda, TONE_BAR } from "@/components/operacional/status";
 import { PriorityChip, OpAvatar } from "@/components/operacional/ui";
 import { NovaDemandaDialog } from "@/components/operacional/nova-demanda-dialog";
@@ -35,7 +42,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
+
 
 export const Route = createFileRoute("/_authenticated/operacional/demandas")({
   head: () => ({ meta: [{ title: "Demandas — Agilliza" }] }),
