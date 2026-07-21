@@ -416,7 +416,7 @@ export function AbaEnviarBanco({
                               <span>{d.tipo_documento}</span>
                               {!pdf && (
                                 <span className="rounded bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-medium text-amber-600 dark:text-amber-400">
-                                  não é PDF
+                                  formato não aceito
                                 </span>
                               )}
                               {d.situacao_integracao === "enviado" && (
