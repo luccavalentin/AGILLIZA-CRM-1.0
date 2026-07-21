@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
-type Papel = "time" | "cliente";
+type Papel = string;
 
 /**
  * Indicador de "está digitando…" bidirecional via Supabase Realtime broadcast.
