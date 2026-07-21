@@ -284,6 +284,19 @@ export function ReportFiltersBar({
         </div>
       </div>
 
+      <div className="flex justify-end">
+        <Button
+          type="button"
+          size="sm"
+          onClick={() => (onApply ?? onChange)(filtros)}
+          className="h-9 bg-primary px-5 text-primary-foreground hover:bg-primary/90"
+        >
+          Aplicar filtros
+        </Button>
+      </div>
+
+
+
 
       {temAlgum && (
         <div className="flex flex-wrap gap-1.5">
