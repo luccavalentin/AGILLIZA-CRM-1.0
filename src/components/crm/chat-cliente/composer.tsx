@@ -23,7 +23,7 @@ import { RespostasRapidas } from "./respostas-rapidas";
 
 type AbaId = "mensagem" | "nota" | "tarefa" | "retorno";
 
-const ABAS: { id: AbaId; label: string }[] = [
+const TODAS_ABAS: { id: AbaId; label: string }[] = [
   { id: "mensagem", label: "Mensagem" },
   { id: "nota", label: "Nota interna" },
   { id: "tarefa", label: "Tarefa" },
