@@ -106,8 +106,12 @@ export function useAdaptadorCliente({
 
       realtime: {
         channel: `chat-cli:${clienteId}`,
-        table: "cliente_app_mensagens",
-        filter: `cliente_id=eq.${clienteId}`,
+        bindings: [
+          {
+            table: "cliente_app_mensagens",
+            filter: `cliente_id=eq.${clienteId}`,
+          },
+        ],
       },
 
       typing: { id: clienteId, myRole: "time" },
