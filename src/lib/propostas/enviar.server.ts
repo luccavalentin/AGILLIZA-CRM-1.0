@@ -298,6 +298,20 @@ async function garantirEnderecoParticipantes({
     cliente = data;
   }
 
+  // Simulação vinculada — necessária para preencher os dados de cônjuge quando
+  // o proponente principal é casado. Sem isso, alguns bancos (Itaú) rejeitam a
+  // inclusão da proposta com o erro `spouse: O campo deve ser informado`.
+  let sim: any = null;
+  if (prop.simulacao_id) {
+    const { data } = await supabase
+      .from("simulacoes")
+      .select("*")
+      .eq("id", prop.simulacao_id)
+      .maybeSingle();
+    sim = data;
+  }
+  const ESTADOS_COM_CONJUGE = new Set(["CA", "UE"]);
+
   for (const part of participantes) {
     const cpf = soDigitos(part?.cpfCnpj);
     const env = (envolvidos ?? []).find((e: any) => soDigitos(e.cpf_cnpj) === cpf);
@@ -324,20 +338,55 @@ async function garantirEnderecoParticipantes({
       textoLivreParaBanco(part?.nomeEmpresaProfissao) ||
       "Não informado";
 
-    // Chamamos a API quando falta estado civil, UF, profissão ou empresa (os
-    // campos que mais derrubam a validação dos bancos). Se todos já estão
-    // presentes no participante, nada a fazer.
+    // Dados do cônjuge — obrigatórios em alguns bancos quando o proponente
+    // principal está casado ou em união estável. Sempre reenviamos, pois a
+    // oportunidade pode ter sido criada sem esses campos.
+    const casado =
+      ehPrincipal &&
+      (Boolean(sim?.possui_conjuge) || ESTADOS_COM_CONJUGE.has(String(estadoCivil ?? "")));
+    const dadosConjuge = casado
+      ? {
+          nomeConjuge:
+            part?.nomeConjuge ?? sim?.nome_conjuge ?? env?.nome_conjuge ?? src?.nome_conjuge ?? undefined,
+          cpfConjuge:
+            soDigitos(part?.cpfConjuge ?? sim?.cpf_conjuge ?? env?.cpf_conjuge ?? src?.cpf_conjuge),
+          dataNascimentoConjuge:
+            part?.dataNascimentoConjuge ??
+            sim?.data_nascimento_conjuge ??
+            env?.data_nascimento_conjuge ??
+            src?.data_nascimento_conjuge ??
+            undefined,
+          tipoEstadoCivilConjuge:
+            part?.tipoEstadoCivilConjuge ?? sim?.estado_civil_conjuge ?? estadoCivil ?? undefined,
+          rendaConjuge:
+            part?.rendaConjuge ?? sim?.renda_conjuge ?? env?.renda_conjuge ?? undefined,
+        }
+      : {};
+
+    // Chamamos a API quando falta estado civil, UF, profissão, empresa ou dados
+    // de cônjuge (campos que mais derrubam a validação dos bancos). Se todos já
+    // estão presentes no participante, nada a fazer.
     const faltaEstadoCivil = !(part?.tipoEstadoCivil && String(part.tipoEstadoCivil).trim());
     const faltaUf = !(part?.uf && String(part.uf).trim());
     const faltaProfissao = !(part?.nomeProfissao && String(part.nomeProfissao).trim());
     const faltaEmpresa = !(part?.nomeEmpresaProfissao && String(part.nomeEmpresaProfissao).trim());
+    const faltaConjuge = casado && !(part?.nomeConjuge && part?.cpfConjuge);
     // Quando temos um envolvido cadastrado no sistema, sempre sincronizamos os
     // dados complementares (documento, sexo, FGTS, endereço) com o banco.
     const temEnvolvido = Boolean(env);
-    if (!temEnvolvido && !faltaEstadoCivil && !faltaUf && !faltaProfissao && !faltaEmpresa) continue;
+    if (!temEnvolvido && !faltaEstadoCivil && !faltaUf && !faltaProfissao && !faltaEmpresa && !faltaConjuge)
+      continue;
     // Sem meios de preencher estado civil ou UF, não adianta chamar a API —
     // profissão/empresa sempre têm fallback, então não bloqueiam.
-    if (faltaEstadoCivil && !estadoCivil && faltaUf && !uf && !faltaProfissao && !faltaEmpresa)
+    if (
+      faltaEstadoCivil &&
+      !estadoCivil &&
+      faltaUf &&
+      !uf &&
+      !faltaProfissao &&
+      !faltaEmpresa &&
+      !faltaConjuge
+    )
       continue;
 
     const payload: Record<string, unknown> = {
@@ -372,6 +421,7 @@ async function garantirEnderecoParticipantes({
       bairro: env?.bairro ?? prop.bairro_imovel ?? undefined,
       municipio: env?.municipio ?? prop.cidade_imovel ?? undefined,
       uf: uf ?? undefined,
+      ...dadosConjuge,
     };
 
 
@@ -387,6 +437,7 @@ async function garantirEnderecoParticipantes({
     }
   }
 }
+
 
 
 
