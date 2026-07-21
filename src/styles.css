@@ -945,12 +945,38 @@ iframe[src*="lvbl" i] {
   font-size: 11.5px;
   font-weight: 600;
 }
+.dps-opt-btn {
+  background: transparent;
+  border: 0;
+  padding: 2px 4px;
+  cursor: pointer;
+  border-radius: 4px;
+  color: inherit;
+  font-family: inherit;
+}
+.dps-opt-btn:hover {
+  background: #eef2ff;
+}
 .dps-box {
   width: 12px;
   height: 12px;
   border: 1.4px solid #16294f;
   border-radius: 2px;
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  position: relative;
+}
+.dps-box-marcado {
+  background: #16294f;
+  color: #fff;
+}
+.dps-box-x {
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+  margin-top: -2px;
 }
 .dps-esclareca {
   margin-top: 4px;
