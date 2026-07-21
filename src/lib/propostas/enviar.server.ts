@@ -82,6 +82,43 @@ function soDigitos(v: unknown): string | undefined {
 }
 
 /**
+ * Remove máscara/pontuação de números de documento (RG/CNH/RNE...) antes de
+ * enviar ao banco. O Bradesco em particular rejeita silenciosamente valores
+ * com pontos/hífens (ex.: "333.312.398-36"): precisa ir só com caracteres
+ * alfanuméricos. Preservamos letras porque alguns tipos (ex.: RNE) as usam.
+ */
+function sanitizarNumeroDocumento(v: unknown): string | undefined {
+  const s = String(v ?? "").replace(/[^0-9A-Za-z]/g, "").trim();
+  return s.length ? s : undefined;
+}
+
+/**
+ * Detecta o cenário em que a integração devolveu "recusa" mas a proposta
+ * NUNCA foi de fato efetivada na esteira do banco (falha de integração).
+ * Critério (validado em produção com Bradesco):
+ *   - tipoSituacao ∈ {"R","E"}
+ *   - sem codigoSimulacaoBanco (token real devolvido pelo banco)
+ *   - codigoSituacaoBanco vazio OU código de FASE DE SIMULAÇÃO (ex.: "01.03")
+ *   - retornoIntegracao null (sem mensagem real do banco)
+ * Recusa real (Santander "514 - ...", Itaú "3", etc.) NÃO cai aqui.
+ */
+export function ehFalhaIntegracaoBanco(sim: any): boolean {
+  const tipo = String(sim?.tipoSituacao ?? "").toUpperCase().charAt(0);
+  if (tipo !== "R" && tipo !== "E") return false;
+  const codigoSim = String(sim?.codigoSimulacaoBanco ?? "").trim();
+  if (codigoSim) return false;
+  const retorno = sim?.retornoIntegracao ?? sim?.descricaoRespostaBanco?.retornoIntegracao;
+  if (retorno != null && String(retorno).trim() !== "") return false;
+  const codigoSit = String(sim?.codigoSituacaoBanco ?? "").trim();
+  if (!codigoSit) return true;
+  // Códigos de fase de simulação (ex.: "01.03", "1.03") — não são decisão de crédito
+  return /^0?1\.\d/.test(codigoSit);
+}
+
+const MSG_FALHA_INTEGRACAO =
+  "A proposta não foi efetivada no banco (falha na integração). Reenvie para retomar o processo.";
+
+/**
  * Normaliza textos livres antes de enviar ao banco. O usuário pode preencher
  * livremente, mas alguns bancos recusam caracteres como parênteses em campos
  * de ocupação (ex.: "Administrador(a)").
