@@ -167,6 +167,8 @@ export function useAdaptadorCliente({
       excluir,
       marcarLido,
       criarTarefaFn,
+      reagirFn,
+
     ],
   );
 }
