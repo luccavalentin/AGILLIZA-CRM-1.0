@@ -82,6 +82,16 @@ export function ColunaEsteira({
         </button>
       </div>
 
+      {readOnly && (
+        <div
+          className="flex items-center gap-1.5 border-b border-border/60 bg-muted/30 px-3.5 py-1.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground"
+          title="Esta etapa é atualizada automaticamente pela proposta."
+        >
+          <Lock className="size-3" strokeWidth={2.25} />
+          <span className="truncate">Sincronizado com a proposta</span>
+        </div>
+      )}
+
       <div className="flex flex-1 flex-col gap-2 p-3">
         {!temClientes ? (
           <div
