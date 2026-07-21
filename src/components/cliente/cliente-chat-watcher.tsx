@@ -17,8 +17,10 @@ export function ClienteChatWatcher() {
   const { data: atendentes } = useQuery({
     queryKey: ["cliente", "atendentes"],
     queryFn: () => clienteListarAtendentes(),
-    refetchInterval: (q: any) => (q.state.status === "error" ? false : 8000),
+    refetchInterval: (q: any) => (q.state.status === "error" ? false : 4000),
+    refetchIntervalInBackground: true,
   });
+
 
   const previa = useRef<Map<string, { nao_lidas: number; ultima_em: string | null }> | null>(null);
 
