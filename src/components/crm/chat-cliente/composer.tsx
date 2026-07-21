@@ -60,6 +60,7 @@ export function ChatComposer({
   onChangeTexto,
   onKeyDown,
   submeter,
+  capabilities,
 }: {
   respondendo: ChatMensagem | null;
   editando: ChatMensagem | null;
@@ -78,7 +79,33 @@ export function ChatComposer({
   onChangeTexto: (v: string) => void;
   onKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
   submeter: (payload: ComposerSubmitPayload) => void;
+  /** Recursos disponíveis (defaults: tudo habilitado). */
+  capabilities?: {
+    notaInterna?: boolean;
+    tarefa?: boolean;
+    retorno?: boolean;
+    anexo?: boolean;
+    respostasRapidas?: boolean;
+    audio?: boolean;
+  };
 }) {
+  const capNota = capabilities?.notaInterna ?? true;
+  const capTarefa = capabilities?.tarefa ?? true;
+  const capRetorno = capabilities?.retorno ?? true;
+  const capAnexo = capabilities?.anexo ?? true;
+  const capRespostas = capabilities?.respostasRapidas ?? true;
+  const capAudio = capabilities?.audio ?? true;
+
+  const ABAS = useMemo(
+    () =>
+      TODAS_ABAS.filter((t) => {
+        if (t.id === "nota") return capNota;
+        if (t.id === "tarefa") return capTarefa;
+        if (t.id === "retorno") return capRetorno;
+        return true;
+      }),
+    [capNota, capTarefa, capRetorno],
+  );
   const [aba, setAba] = useState<AbaId>("mensagem");
   const [prazo, setPrazo] = useState<string>("");
   const [gravando, setGravando] = useState(false);
