@@ -316,13 +316,20 @@ function DpsDocumento({
 
   const respostasIniciais = useMemo(() => iniciarRespostas(), []);
   const [respostas, setRespostas] = useState<Record<string, Resposta>>(respostasIniciais);
+  const [esclarecimentos, setEsclarecimentos] = useState<Record<string, string>>({});
+  const [assinaturaNome, setAssinaturaNome] = useState("");
 
   function marcar(chave: string, valor: Resposta) {
     setRespostas((r) => ({ ...r, [chave]: valor }));
   }
 
+  function setEsclarecimento(chave: string, texto: string) {
+    setEsclarecimentos((e) => ({ ...e, [chave]: texto }));
+  }
+
   function limparRespostas() {
     setRespostas(iniciarRespostas());
+    setEsclarecimentos({});
   }
 
   return (
