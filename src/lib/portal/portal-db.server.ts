@@ -22,6 +22,19 @@ export function portalDb() {
   }
   _client = createClient<Database>(url, key, {
     auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
+    // Chaves publishable no formato novo (sb_publishable_...) são opacas, não
+    // JWTs: o PostgREST rejeita com "Expected 3 parts in JWT; got 1" quando
+    // enviadas como Authorization: Bearer. Enviamos apenas via apikey.
+    global: {
+      fetch: (input, init) => {
+        const headers = new Headers(init?.headers);
+        if (key.startsWith("sb_") && headers.get("Authorization") === `Bearer ${key}`) {
+          headers.delete("Authorization");
+        }
+        headers.set("apikey", key);
+        return fetch(input as RequestInfo, { ...init, headers });
+      },
+    },
   });
   return _client;
 }
