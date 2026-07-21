@@ -138,6 +138,8 @@ export function ChatConversaCore({ adapter }: { adapter: ChatAdapter }) {
             }
           : null,
         reacoes: [],
+      };
+
 
       qc.setQueryData<ChatMensagem[]>(queryKey, [...(anterior ?? []), otimista]);
       setTexto("");
