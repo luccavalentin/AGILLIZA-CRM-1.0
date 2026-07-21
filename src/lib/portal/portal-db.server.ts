@@ -8,7 +8,6 @@
  *
  * Server-only: importar apenas dentro de handlers de server functions.
  */
-import type { Database } from "@/integrations/supabase/types";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 type PortalDbClient = typeof supabaseAdmin;
@@ -16,5 +15,3 @@ type PortalDbClient = typeof supabaseAdmin;
 export function portalDb(): PortalDbClient {
   return supabaseAdmin as PortalDbClient;
 }
-
-void ({} as Database);
