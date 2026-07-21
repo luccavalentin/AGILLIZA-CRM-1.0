@@ -90,6 +90,26 @@ export function ColunaLateral({
       : null;
   const statusCls = STATUS_PILL_CLS[d.status as string] ?? STATUS_PILL_CLS.aberta;
 
+  const navigate = useNavigate();
+  const excluirFn = useServerFn(excluirDemanda);
+  const [excluindo, setExcluindo] = useState(false);
+
+  async function confirmarExclusao() {
+    setExcluindo(true);
+    try {
+      await excluirFn({ data: { id } });
+      toast.success("Demanda excluída.");
+      qc.invalidateQueries({ queryKey: ["demandas"] });
+      navigate({ to: "/operacional/demandas" });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao excluir.");
+    } finally {
+      setExcluindo(false);
+    }
+  }
+
+
+
   return (
     <aside className="space-y-4">
       <Button
