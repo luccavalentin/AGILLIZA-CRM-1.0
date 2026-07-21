@@ -65,6 +65,7 @@ export function VisionSelector({
 export function ReportFiltersBar({
   filtros,
   onChange,
+  onApply,
   bancos,
   produtos,
   statuses,
@@ -75,6 +76,7 @@ export function ReportFiltersBar({
 }: {
   filtros: ReportFiltros;
   onChange: (f: ReportFiltros) => void;
+  onApply?: (f: ReportFiltros) => void;
   bancos?: string[];
   produtos?: string[];
   statuses?: { value: string; label: string }[];
