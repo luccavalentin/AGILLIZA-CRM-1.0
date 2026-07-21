@@ -424,12 +424,19 @@ export function ChatConversaCore({ adapter }: { adapter: ChatAdapter }) {
         iniciarEdicao={iniciarEdicao}
         copiar={copiar}
         onExcluir={setConfirmarExcluir}
+        onReagir={
+          cap.reagir && adapter.reagir
+            ? (mensagem_id, emoji) => reagirMut.mutate({ mensagem_id, emoji })
+            : undefined
+        }
         capabilities={{
           responder: cap.responder,
           editar: cap.editar,
           excluir: cap.excluir,
+          reagir: cap.reagir && !!adapter.reagir,
         }}
       />
+
 
       {somenteLeitura ? (
         <div className="border-t border-border/60 bg-muted/30 px-4 py-3 text-center text-xs text-muted-foreground">
