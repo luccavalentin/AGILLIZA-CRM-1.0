@@ -164,7 +164,11 @@ export function useAdaptadorDm({
       listarFn,
       enviarFn,
       marcarFn,
+      editarFn,
+      excluirFn,
+      reagirFn,
       qc,
+
     ],
   );
 }
