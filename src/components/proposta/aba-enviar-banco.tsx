@@ -114,7 +114,7 @@ export function AbaEnviarBanco({
     enviados: number;
     total: number;
     sucesso: { nome: string; participante?: string | null }[];
-    erros: { nome: string; motivo: string }[];
+    erros: { nome: string; motivo: string; participante?: string | null }[];
   } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
