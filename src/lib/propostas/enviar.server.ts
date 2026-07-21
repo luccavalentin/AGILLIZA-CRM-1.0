@@ -1957,7 +1957,7 @@ export async function enviarDocumentosBancoImpl({
     }
   }
 
-  }
+
 
   // Auditoria.
   try {
