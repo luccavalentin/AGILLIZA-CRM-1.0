@@ -333,6 +333,12 @@ export const listarChatCliente = createServerFn({ method: "GET" })
     }
 
     const comAnexo = await resolverAnexosChat(supabase, lista);
+    const reacoes = await carregarReacoes(
+      supabase,
+      userId,
+      "cliente",
+      lista.map((m) => m.id),
+    );
     return comAnexo.map((m) => {
       const alvo = m.responde_a ? porId.get(m.responde_a) : null;
       return {
@@ -349,9 +355,11 @@ export const listarChatCliente = createServerFn({ method: "GET" })
                 : (alvo.mensagem?.trim() || "Anexo"),
             }
           : null,
+        reacoes: reacoes.get(m.id) ?? [],
       };
     });
   });
+
 
 /** Envia uma mensagem ao cliente como time e notifica o cliente no App. */
 export const responderChatCliente = createServerFn({ method: "POST" })
