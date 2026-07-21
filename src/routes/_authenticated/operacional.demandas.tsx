@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
 import {
   Search,
@@ -16,11 +17,17 @@ import {
   Bell,
   ChevronRight,
   Download,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { baixarDemandasPDF } from "@/lib/operacional/export-pdf";
 import { assertModuloPermitido } from "@/lib/route-guards";
-import { listarDemandas, type DemandaStatus } from "@/lib/operacional/demandas.functions";
+import {
+  listarDemandas,
+  excluirDemanda,
+  type DemandaStatus,
+} from "@/lib/operacional/demandas.functions";
+import { getMinhaSessao } from "@/lib/session.functions";
 import { statusDemanda, TONE_BAR } from "@/components/operacional/status";
 import { PriorityChip, OpAvatar } from "@/components/operacional/ui";
 import { NovaDemandaDialog } from "@/components/operacional/nova-demanda-dialog";
@@ -35,7 +42,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
+
 
 export const Route = createFileRoute("/_authenticated/operacional/demandas")({
   head: () => ({ meta: [{ title: "Demandas — Agilliza" }] }),
@@ -96,6 +115,9 @@ function SlaChip({ prazo, status }: { prazo: string | null; status: DemandaStatu
 
 function Pagina() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const excluirFn = useServerFn(excluirDemanda);
+  const sessaoFn = useServerFn(getMinhaSessao);
   const [escopo, setEscopo] = useState<"minhas" | "geral">(
     () =>
       (typeof window !== "undefined" &&
@@ -105,11 +127,36 @@ function Pagina() {
   const [q, setQ] = useState("");
   const [statusFiltro, setStatusFiltro] = useState<DemandaStatus | "todas">("todas");
   const [tipoFiltro, setTipoFiltro] = useState<string>("todos");
+  const [excluirId, setExcluirId] = useState<string | null>(null);
+  const [excluindo, setExcluindo] = useState(false);
+
+  const { data: sessao } = useQuery({
+    queryKey: ["minha-sessao"],
+    queryFn: () => sessaoFn(),
+    staleTime: 5 * 60_000,
+  });
+  const meuId = sessao?.profile?.id ?? null;
 
   const { data: itens, isLoading, refetch } = useQuery({
     queryKey: ["demandas", "lista", escopo],
     queryFn: () => listarDemandas({ data: { escopo } }),
   });
+
+  async function confirmarExclusao() {
+    if (!excluirId) return;
+    setExcluindo(true);
+    try {
+      await excluirFn({ data: { id: excluirId } });
+      toast.success("Demanda excluída.");
+      queryClient.invalidateQueries({ queryKey: ["demandas"] });
+      setExcluirId(null);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Não foi possível excluir a demanda.");
+    } finally {
+      setExcluindo(false);
+    }
+  }
+
 
   const tiposDisponiveis = useMemo(() => {
     const set = new Set<string>();
@@ -298,13 +345,22 @@ function Pagina() {
         )}
         {filtrados.map((d) => {
           const cfg = statusDemanda(d.status as DemandaStatus);
+          const souCriador = Boolean(meuId && d.criador_id === meuId);
+          const abrir = () =>
+            navigate({ to: "/operacional/demandas/$id", params: { id: d.id } });
           return (
-            <button
+            <div
               key={d.id}
-              onClick={() =>
-                navigate({ to: "/operacional/demandas/$id", params: { id: d.id } })
-              }
-              className="group relative flex w-full items-start gap-3 overflow-hidden rounded-2xl border border-border/60 bg-card p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg"
+              role="button"
+              tabIndex={0}
+              onClick={abrir}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  abrir();
+                }
+              }}
+              className="group relative flex w-full cursor-pointer items-start gap-3 overflow-hidden rounded-2xl border border-border/60 bg-card p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
             >
               <span
                 className={cn(
@@ -360,11 +416,54 @@ function Pagina() {
                   </span>
                 )}
               </div>
+              {souCriador && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setExcluirId(d.id);
+                  }}
+                  aria-label="Excluir demanda"
+                  title="Excluir demanda"
+                  className="absolute right-2 top-2 grid size-7 place-items-center rounded-lg text-muted-foreground opacity-0 transition-all hover:bg-destructive/10 hover:text-destructive focus:opacity-100 group-hover:opacity-100"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              )}
               <ChevronRight className="mt-1 hidden h-4 w-4 shrink-0 text-muted-foreground/40 transition group-hover:text-primary md:block" />
-            </button>
+            </div>
           );
         })}
       </div>
+
+      <AlertDialog
+        open={excluirId !== null}
+        onOpenChange={(o) => !o && !excluindo && setExcluirId(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir demanda?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação não pode ser desfeita. Toda a conversa, anexos e histórico
+              serão removidos permanentemente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={excluindo}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={excluindo}
+              onClick={(e) => {
+                e.preventDefault();
+                void confirmarExclusao();
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {excluindo ? "Excluindo…" : "Excluir"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
     </div>
   );
 }
