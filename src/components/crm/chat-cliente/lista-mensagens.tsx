@@ -103,10 +103,10 @@ export function ListaMensagens({
                 {podeGerenciar && (
                   <MsgAcoes
                     lado="time"
-                    onReply={() => iniciarResposta(m)}
-                    onEdit={() => iniciarEdicao(m)}
+                    onReply={podeResponder ? () => iniciarResposta(m) : undefined}
+                    onEdit={podeEditar ? () => iniciarEdicao(m) : undefined}
                     onCopy={() => copiar(m)}
-                    onDelete={() => onExcluir(m)}
+                    onDelete={podeExcluir ? () => onExcluir(m) : undefined}
                   />
                 )}
 
