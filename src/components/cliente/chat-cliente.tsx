@@ -100,7 +100,9 @@ export function ChatCliente({ altura = ALTURA_PADRAO }: { altura?: string }) {
   const { data: atendentes } = useQuery({
     queryKey: ["cliente", "atendentes"],
     queryFn: () => clienteListarAtendentes(),
-    refetchInterval: (q: any) => (q.state.status === "error" ? false : 12000),
+    refetchInterval: (q: any) => (q.state.status === "error" ? false : 4000),
+    refetchIntervalInBackground: true,
+
   });
 
   // Seleção automática quando há apenas um atendente.
