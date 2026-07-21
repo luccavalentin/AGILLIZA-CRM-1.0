@@ -311,7 +311,13 @@ export function exportPDF(
     const limpo = filename.replace(/[\\/:*?"<>|]+/g, "").replace(/\s+/g, " ").trim();
     doc.save(`${limpo}.pdf`);
   } else {
-    const nome = titulo.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+    // Normaliza acentos (NFD) antes do slug para não perder letras (ex.: "operações" -> "operacoes").
+    const nome = titulo
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "");
     doc.save(`agilliza-${nome}.pdf`);
   }
 }
