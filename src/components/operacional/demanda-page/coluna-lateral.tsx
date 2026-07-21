@@ -1,6 +1,10 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
+import { useState } from "react";
+import { toast } from "sonner";
 import type { QueryClient } from "@tanstack/react-query";
 import {
+
   AlertTriangle,
   ArrowLeft,
   Calculator,
@@ -11,12 +15,25 @@ import {
   FileText,
   Pencil,
   Repeat,
+  Trash2,
   User,
   UserPlus,
   Users2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
+
   Select,
   SelectContent,
   SelectItem,
@@ -28,7 +45,7 @@ import { TransferirDialog } from "@/components/operacional/transferir-dialog";
 import { AdicionarParticipanteDialog } from "@/components/operacional/adicionar-participante-dialog";
 import { statusDemanda } from "@/components/operacional/status";
 import { PriorityChip, OpAvatar } from "@/components/operacional/ui";
-import type { DemandaStatus } from "@/lib/operacional/demandas.functions";
+import { excluirDemanda, type DemandaStatus } from "@/lib/operacional/demandas.functions";
 import { cn } from "@/lib/utils";
 import { Linha, VinculoRow } from "./ui";
 import { STATUS_PILL_CLS, formatarTempoAberto } from "./helpers";
@@ -72,6 +89,26 @@ export function ColunaLateral({
       ? formatarTempoAberto(new Date(Date.now() + restante).toISOString())
       : null;
   const statusCls = STATUS_PILL_CLS[d.status as string] ?? STATUS_PILL_CLS.aberta;
+
+  const navigate = useNavigate();
+  const excluirFn = useServerFn(excluirDemanda);
+  const [excluindo, setExcluindo] = useState(false);
+
+  async function confirmarExclusao() {
+    setExcluindo(true);
+    try {
+      await excluirFn({ data: { id } });
+      toast.success("Demanda excluída.");
+      qc.invalidateQueries({ queryKey: ["demandas"] });
+      navigate({ to: "/operacional/demandas" });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao excluir.");
+    } finally {
+      setExcluindo(false);
+    }
+  }
+
+
 
   return (
     <aside className="space-y-4">
@@ -290,6 +327,36 @@ export function ColunaLateral({
                 </Button>
               }
             />
+          )}
+          {data.permissoes?.pode_excluir && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="w-full justify-center gap-2 border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4" /> Excluir demanda
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Excluir esta demanda?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Esta ação é permanente. Mensagens, anexos e histórico da demanda também serão removidos.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel disabled={excluindo}>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction
+                    disabled={excluindo}
+                    onClick={confirmarExclusao}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    {excluindo ? "Excluindo…" : "Excluir"}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           )}
         </div>
       </div>
