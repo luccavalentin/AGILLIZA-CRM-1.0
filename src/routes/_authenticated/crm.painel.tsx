@@ -34,6 +34,15 @@ import {
 } from "@/components/crm/painel/dialogs";
 import type { Arrasto } from "@/components/crm/painel/utils";
 
+/**
+ * Etapas COMERCIAIS da esteira (pré-proposta) — arrasto manual liberado.
+ * As demais etapas (credito_enviado em diante) são sincronizadas pelos
+ * triggers proposta_sincronizar_esteira / simulacao_sincronizar_esteira e
+ * ficam somente-leitura no CRM: quem move é o kanban de propostas.
+ */
+const ETAPAS_COMERCIAIS = new Set(["cadastro_basico", "cadastro_completo", "simulacao"]);
+const etapaEhComercial = (codigo: string) => ETAPAS_COMERCIAIS.has(codigo);
+
 export const Route = createFileRoute("/_authenticated/crm/painel")({
   head: () => ({ meta: [{ title: "Painel da esteira — Agilliza" }] }),
   beforeLoad: () => assertModuloPermitido("crm.clientes"),
