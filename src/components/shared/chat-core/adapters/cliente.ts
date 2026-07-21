@@ -12,6 +12,8 @@ import {
 } from "@/lib/crm/chat-cliente.functions";
 import { criarTarefa } from "@/lib/operacional/tarefas.functions";
 import { getMinhaSessao } from "@/lib/session.functions";
+import { reagirMensagem } from "@/lib/chat-core/reacoes.functions";
+
 import type { ChatAdapter, ChatClienteInfo, ContextoResposta } from "../types";
 
 /**
