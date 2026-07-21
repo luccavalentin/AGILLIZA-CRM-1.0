@@ -103,30 +103,14 @@ function sanitizarNumeroDocumento(v: unknown): string | undefined {
  * Regras:
  *  - "R" (Recusa) é decisão REAL de crédito — nunca é falha de integração.
  *  - Só considera falha quando tipoSituacao ∈ {"P","E"} (erro ao enviar).
- *  - Se o banco já devolveu `codigoOportunidadeBanco` (ou número real de
- *    proposta), a proposta CHEGOU no banco (mesmo que Bradesco tenha
- *    devolvido "P" no primeiro retorno) — não é falha de integração.
- *  - Sem token do banco (`codigoSimulacaoBanco`), sem `retornoIntegracao`
- *    e com `codigoSituacaoBanco` vazio ou de fase de simulação: falha.
+ *  - `codigoOportunidadeBanco` sozinho NÃO confirma sucesso quando o próprio
+ *    retorno veio como erro de envio; o status oficial da API prevalece.
+ *  - `retornoIntegracao` com erro legível mantém a mensagem específica do banco.
  */
 export function ehFalhaIntegracaoBanco(sim: any): boolean {
   const tipo = String(sim?.tipoSituacao ?? "").toUpperCase().charAt(0);
   if (tipo !== "P" && tipo !== "E") return false;
-  // Se o banco devolveu um identificador da oportunidade/proposta, a
-  // proposta foi efetivamente recebida na esteira do banco. Tratamos como
-  // "em análise" (retorno pode demorar — ex.: Bradesco tem SLA de 15 min).
-  const opBanco = String(sim?.codigoOportunidadeBanco ?? "").trim();
-  if (opBanco) return false;
-  const numeroReal = numeroPropostaBancoReal(sim);
-  if (numeroReal) return false;
-  const codigoSim = String(sim?.codigoSimulacaoBanco ?? "").trim();
-  if (codigoSim) return false;
-  const retorno = sim?.retornoIntegracao ?? sim?.descricaoRespostaBanco?.retornoIntegracao;
-  if (retorno != null && String(retorno).trim() !== "") return false;
-  const codigoSit = String(sim?.codigoSituacaoBanco ?? "").trim();
-  if (!codigoSit) return true;
-  // Códigos de fase de simulação (ex.: "01.03", "1.03") — não são decisão de crédito
-  return /^0?1\.\d/.test(codigoSit);
+  return true;
 }
 
 
@@ -1043,16 +1027,6 @@ function statusInternoBanco(
       return { banco: "em_analise", proposta: "em_analise_credito" };
     case "P":
     case "E":
-      // Docs: "P" = Erro ao Enviar Proposta. Porém, se o banco já devolveu
-      // o `codigoOportunidadeBanco`, a proposta CHEGOU no banco (comum no
-      // Bradesco no primeiro retorno). Tratamos como em_analise para não
-      // sinalizar erro fantasma ao usuário.
-      if (sim && String(sim?.codigoOportunidadeBanco ?? "").trim()) {
-        return { banco: "em_analise", proposta: "em_analise_credito" };
-      }
-      if (sim && numeroPropostaBancoReal(sim)) {
-        return { banco: "em_analise", proposta: "em_analise_credito" };
-      }
       return { banco: "erro", proposta: null };
 
     case "S":
@@ -1196,10 +1170,9 @@ function buscarCampoRetorno(obj: unknown, chaves: string[], visitados = new Weak
 /**
  * Número real da proposta no banco. A API devolve, dependendo da instituição:
  *  - `numeroPropostaBanco` / `codigoPropostaBanco` (raro, alguns bancos)
- *  - `codigoOportunidadeBanco` (Bradesco/Itaú — código da oportunidade no banco)
- *  - `codigoSimulacaoBanco` (Santander — referência oficial devolvida pelo banco)
- * Todos vêm DO banco (não são referências internas do sistema), portanto
- * qualquer um deles é um identificador válido para exibição ao usuário.
+  *  - `codigoOportunidadeBanco` quando o retorno está em análise/aprovado
+  * Códigos de simulação são referência técnica da integração e não devem ser
+  * exibidos como número de proposta.
  */
 function numeroPropostaBancoReal(sim: any): string | null {
   const numero = buscarCampoRetorno(sim, [
@@ -1208,7 +1181,6 @@ function numeroPropostaBancoReal(sim: any): string | null {
     "proposalNumber",
     "codigoPropostaBanco",
     "codigoOportunidadeBanco",
-    "codigoSimulacaoBanco",
   ]);
   return numero == null || numero === "" ? null : String(numero);
 }
@@ -1217,7 +1189,6 @@ function referenciaIntegracaoBanco(sim: any): string | null {
   const referencia = buscarCampoRetorno(sim, [
     "codigoOportunidadeBanco",
     "codigoOportunidadeBancoInterno",
-    "codigoSimulacaoBanco",
   ]);
   return referencia == null || referencia === "" ? null : String(referencia);
 }
@@ -1397,25 +1368,10 @@ export async function sincronizarPropostaImpl({
     let erroMsg = extrairErroRetorno(
       sim.retornoIntegracao ?? sim.descricaoRespostaBanco?.retornoIntegracao,
     );
-    // Se o banco já devolveu `codigoOportunidadeBanco`, a proposta CHEGOU
-    // no banco. Uma mensagem transiente (ex.: aviso de validação) NÃO deve
-    // ser sinalizada como "erro de envio" — o banco recebeu e vai retornar
-    // decisão real (Bradesco leva ~15 min). Recusas reais (tipoSituacao "R"
-    // ou códigos de recusa em codigoSituacaoBanco) continuam sendo tratadas
-    // pelo mapa de status abaixo.
-    const tipoSit = String(sim?.tipoSituacao ?? "").toUpperCase().charAt(0);
-    if (
-      erroMsg &&
-      String(sim?.codigoOportunidadeBanco ?? "").trim() &&
-      tipoSit !== "R"
-    ) {
-      erroMsg = null;
-    }
 
-    // Falha de integração (Bradesco/etc.): tipoSituacao "R"/"E" sem token real
-    // do banco (codigoSimulacaoBanco), retornoIntegracao null e código apenas
-    // de fase de simulação. NÃO é recusa de crédito — é falha silenciosa da
-    // integração; deve virar erro visível e permitir reenvio.
+    // Falha/erro de integração: a API define `P` como erro ao enviar proposta
+    // e alguns bancos usam `E` para erro técnico/validação. Não converter esses
+    // retornos em sucesso apenas por haver código externo no payload.
     const falhaIntegracao = ehFalhaIntegracaoBanco(sim);
     if (falhaIntegracao) {
       erroMsg = MSG_FALHA_INTEGRACAO;
