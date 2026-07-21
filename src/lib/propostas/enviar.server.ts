@@ -1326,7 +1326,14 @@ export async function sincronizarPropostaImpl({
   if (funilBanco.length > 0) patch.etapas_banco = funilBanco;
   const escolhida = simEscolhida ?? {};
   const numeroOportunidadeBanco = numeroBancoDaOportunidade(op);
-  if (numeroPropostaBanco || numeroOportunidadeBanco) {
+  // Em falha de integração pura (sem nenhum banco realmente efetivado),
+  // não persistir "Nº banco" — o código devolvido é fantasma, não existe
+  // proposta na esteira do banco.
+  const soFalhaIntegracao =
+    algumFalhaIntegracao && !algumAprovado && !algumEmAnalise && !algumRecusado;
+  if (soFalhaIntegracao) {
+    patch.numero_proposta_banco = null;
+  } else if (numeroPropostaBanco || numeroOportunidadeBanco) {
     patch.numero_proposta_banco = numeroPropostaBanco ?? numeroOportunidadeBanco;
   }
   else if (numeroAtualEhReferenciaTecnica({ numero_proposta_banco: prop.numero_proposta_banco }, escolhida)) {
