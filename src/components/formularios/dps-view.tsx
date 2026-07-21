@@ -546,3 +546,23 @@ function CampoEditavel({
     </div>
   );
 }
+
+function EsclarecaCampo({
+  valor,
+  onChange,
+}: {
+  valor: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <div className="dps-esclareca">
+      <span className="dps-esclareca-label">Esclareça:</span>
+      <textarea
+        value={valor}
+        onChange={(e) => onChange(e.target.value)}
+        className="dps-esclareca-input"
+        rows={2}
+      />
+    </div>
+  );
+}
