@@ -71,24 +71,20 @@ export function ChatConversaCore({ adapter }: { adapter: ChatAdapter }) {
   }, [adapter, mensagens, mineTipo, somenteLeitura]);
 
   useEffect(() => {
-    const canal = supabase
-      .channel(adapter.realtime.channel)
-      .on(
+    let canal = supabase.channel(adapter.realtime.channel);
+    for (const b of adapter.realtime.bindings) {
+      canal = canal.on(
         "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: adapter.realtime.table,
-          filter: adapter.realtime.filter,
-        },
+        { event: "*", schema: "public", table: b.table, filter: b.filter },
         () => qc.invalidateQueries({ queryKey }),
-      )
-      .subscribe();
+      );
+    }
+    canal.subscribe();
     return () => {
       supabase.removeChannel(canal);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [adapter.realtime.channel, adapter.realtime.table, adapter.realtime.filter, qc]);
+  }, [adapter.realtime.channel, qc]);
 
   useIncomingChatSound(
     mensagens?.map((m) => ({ id: m.id, mine: m.remetente_tipo === mineTipo })),
