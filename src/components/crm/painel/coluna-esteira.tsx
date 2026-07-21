@@ -28,6 +28,7 @@ export function ColunaEsteira({
   stage,
   ordem,
   ehAlvoArrasto,
+  readOnly = false,
   onDragOver,
   onDragLeave,
   onDrop,
