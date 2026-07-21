@@ -133,7 +133,7 @@ export function AbaEnviarBanco({
   }, [docs]);
 
   const totalPdfs = useMemo(
-    () => ((docs ?? []) as any[]).filter((d) => ehPdf(d)).length,
+    () => ((docs ?? []) as any[]).filter((d) => ehFormatoBanco(d)).length,
     [docs],
   );
 
@@ -361,7 +361,7 @@ export function AbaEnviarBanco({
                 ) : (
                   <ul className="divide-y divide-border">
                     {g.itens.map((d: any) => {
-                      const pdf = ehPdf(d);
+                      const pdf = ehFormatoBanco(d);
                       return (
                         <li
                           key={d.id}
