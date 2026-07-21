@@ -861,6 +861,55 @@ iframe[src*="lvbl" i] {
   min-height: 20px;
   color: #0f172a;
 }
+.dps-campo-input {
+  border: 0;
+  border-bottom: 1px solid #cbd5e1;
+  padding: 2px 2px 3px;
+  font-size: 12.5px;
+  font-weight: 600;
+  min-height: 20px;
+  color: #0f172a;
+  background: transparent;
+  width: 100%;
+  outline: none;
+  font-family: inherit;
+}
+.dps-campo-input:focus {
+  border-bottom-color: #16294f;
+}
+.dps-input-inline {
+  border: 0;
+  border-bottom: 1px solid #94a3b8;
+  min-width: 90px;
+  height: 18px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #0f172a;
+  background: transparent;
+  outline: none;
+  padding: 0 2px;
+  font-family: inherit;
+}
+.dps-input-inline:focus {
+  border-bottom-color: #16294f;
+}
+.dps-input-assinatura {
+  border: 0;
+  border-bottom: 1px solid #94a3b8;
+  width: 100%;
+  height: 22px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #0f172a;
+  background: transparent;
+  outline: none;
+  padding: 0 2px;
+  font-family: inherit;
+  text-align: center;
+}
+.dps-input-assinatura:focus {
+  border-bottom-color: #16294f;
+}
 
 .dps-perguntas {
   padding: 8px 28px 20px;
