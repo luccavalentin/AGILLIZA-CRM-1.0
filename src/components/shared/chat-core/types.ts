@@ -25,6 +25,8 @@ export interface ChatCapabilities {
   editar?: boolean;
   /** Permite excluir (suave) mensagens próprias. */
   excluir?: boolean;
+  /** Permite reagir com emoji (Fase 6). */
+  reagir?: boolean;
   /** Aba "Nota interna". */
   notaInterna?: boolean;
   /** Aba "Tarefa". */
@@ -38,6 +40,7 @@ export interface ChatCapabilities {
   /** Gravar/enviar áudio. */
   audio?: boolean;
 }
+
 
 export interface ChatHeaderRenderProps {
   buscaAberta: boolean;
