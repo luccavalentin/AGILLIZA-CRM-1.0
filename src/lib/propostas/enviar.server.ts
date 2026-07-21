@@ -92,6 +92,15 @@ function sanitizarNumeroDocumento(v: unknown): string | undefined {
   return s.length ? s : undefined;
 }
 
+function enumBancoId(v: unknown): string | undefined {
+  if (v == null || v === "") return undefined;
+  if (typeof v === "object" && "id" in (v as Record<string, unknown>)) {
+    return enumBancoId((v as Record<string, unknown>).id);
+  }
+  const s = String(v).trim();
+  return s.length ? s : undefined;
+}
+
 /**
  * Detecta o cenário em que a integração devolveu "erro" mas a proposta
  * NUNCA foi de fato efetivada na esteira do banco (falha de integração).
@@ -103,30 +112,14 @@ function sanitizarNumeroDocumento(v: unknown): string | undefined {
  * Regras:
  *  - "R" (Recusa) é decisão REAL de crédito — nunca é falha de integração.
  *  - Só considera falha quando tipoSituacao ∈ {"P","E"} (erro ao enviar).
- *  - Se o banco já devolveu `codigoOportunidadeBanco` (ou número real de
- *    proposta), a proposta CHEGOU no banco (mesmo que Bradesco tenha
- *    devolvido "P" no primeiro retorno) — não é falha de integração.
- *  - Sem token do banco (`codigoSimulacaoBanco`), sem `retornoIntegracao`
- *    e com `codigoSituacaoBanco` vazio ou de fase de simulação: falha.
+ *  - `codigoOportunidadeBanco` sozinho NÃO confirma sucesso quando o próprio
+ *    retorno veio como erro de envio; o status oficial da API prevalece.
+ *  - `retornoIntegracao` com erro legível mantém a mensagem específica do banco.
  */
 export function ehFalhaIntegracaoBanco(sim: any): boolean {
   const tipo = String(sim?.tipoSituacao ?? "").toUpperCase().charAt(0);
   if (tipo !== "P" && tipo !== "E") return false;
-  // Se o banco devolveu um identificador da oportunidade/proposta, a
-  // proposta foi efetivamente recebida na esteira do banco. Tratamos como
-  // "em análise" (retorno pode demorar — ex.: Bradesco tem SLA de 15 min).
-  const opBanco = String(sim?.codigoOportunidadeBanco ?? "").trim();
-  if (opBanco) return false;
-  const numeroReal = numeroPropostaBancoReal(sim);
-  if (numeroReal) return false;
-  const codigoSim = String(sim?.codigoSimulacaoBanco ?? "").trim();
-  if (codigoSim) return false;
-  const retorno = sim?.retornoIntegracao ?? sim?.descricaoRespostaBanco?.retornoIntegracao;
-  if (retorno != null && String(retorno).trim() !== "") return false;
-  const codigoSit = String(sim?.codigoSituacaoBanco ?? "").trim();
-  if (!codigoSit) return true;
-  // Códigos de fase de simulação (ex.: "01.03", "1.03") — não são decisão de crédito
-  return /^0?1\.\d/.test(codigoSit);
+  return true;
 }
 
 
@@ -288,34 +281,50 @@ async function sincronizarConjugeOportunidade({
       .maybeSingle();
     sim = data;
   }
+  const { data: envolvidos } = await supabase
+    .from("proposta_envolvidos")
+    .select("*")
+    .eq("proposta_id", prop.id);
+  const principal = (envolvidos ?? []).find(
+    (e: any) => !e.conjuge_de && soDigitos(e.cpf_cnpj) === soDigitos(prop.cpf_cnpj),
+  );
+  const conjuge = principal
+    ? (envolvidos ?? []).find((e: any) => String(e.conjuge_de ?? "") === String(principal.id))
+    : (envolvidos ?? []).find((e: any) => e.conjuge_de);
   const estadoCivil = sim?.estado_civil ?? prop.estado_civil ?? null;
   const casado =
     Boolean(sim?.possui_conjuge) || ["CA", "UE"].includes(String(estadoCivil ?? ""));
   if (!casado) return;
-  const nome = sim?.nome_conjuge ?? prop.nome_conjuge;
-  const cpf = soDigitos(sim?.cpf_conjuge ?? prop.cpf_conjuge);
-  if (!nome && !cpf) return;
+  const nome = sim?.nome_conjuge ?? conjuge?.nome ?? prop.nome_conjuge;
+  const cpf = soDigitos(sim?.cpf_conjuge ?? conjuge?.cpf_cnpj ?? prop.cpf_conjuge);
+  if (!nome || !cpf) {
+    throw new Error(
+      "Cadastro do cônjuge incompleto. Informe nome e CPF do cônjuge antes de enviar ao banco.",
+    );
+  }
   const payload: Record<string, unknown> = {
     tipoEstadoCivil: estadoCivil ? { id: estadoCivil } : undefined,
-    fgCompoeRenda: Boolean(sim?.compoe_renda),
+    fgCompoeRenda: Boolean(sim?.compoe_renda ?? conjuge?.renda),
     nomeConjuge: nome ?? undefined,
     cpfConjuge: cpf ?? undefined,
-    emailConjuge: sim?.email_conjuge ?? undefined,
-    celularConjuge: soDigitos(sim?.celular_conjuge),
-    rendaConjuge: sim?.renda_conjuge ?? undefined,
-    dataNascimentoConjuge: sim?.data_nascimento_conjuge ?? undefined,
+    emailConjuge: sim?.email_conjuge ?? conjuge?.email ?? undefined,
+    celularConjuge: soDigitos(sim?.celular_conjuge ?? conjuge?.celular),
+    rendaConjuge: sim?.renda_conjuge ?? conjuge?.renda ?? undefined,
+    dataNascimentoConjuge: sim?.data_nascimento_conjuge ?? conjuge?.data_nascimento ?? undefined,
     tipoEstadoCivilConjuge: sim?.estado_civil_conjuge
       ? { id: sim.estado_civil_conjuge }
-      : estadoCivil
-        ? { id: estadoCivil }
-        : undefined,
+      : conjuge?.estado_civil
+        ? { id: conjuge.estado_civil }
+        : estadoCivil
+          ? { id: estadoCivil }
+          : undefined,
   };
   try {
     await chamarIntegracao<any>(`/oportunidade/${idOportunidade}`, "PUT", payload, ctx);
   } catch (e) {
-    console.warn(
-      "Falha ao sincronizar cônjuge na oportunidade (PUT).",
-      e instanceof Error ? e.message : String(e),
+    const msg = e instanceof Error ? e.message : String(e);
+    throw new Error(
+      `Não foi possível sincronizar os dados do cônjuge antes do envio: ${sanitizarMensagemErro(msg)}`,
     );
   }
 }
@@ -350,9 +359,11 @@ async function garantirEnderecoParticipantes({
     );
     const op = resp?.oportunidade ?? resp ?? {};
     participantes = Array.isArray(op?.participantes) ? op.participantes : [];
-  } catch {
-    // Sem a lista de participantes não há como completar os dados; segue o envio.
-    return;
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    throw new Error(
+      `Não foi possível consultar os participantes da oportunidade antes do envio: ${sanitizarMensagemErro(msg)}`,
+    );
   }
   if (participantes.length === 0) return;
 
@@ -396,7 +407,7 @@ async function garantirEnderecoParticipantes({
     const src = ehPrincipal ? cliente : null;
 
     const estadoCivil =
-      part?.tipoEstadoCivil || env?.estado_civil || src?.estado_civil || prop.estado_civil || null;
+      enumBancoId(part?.tipoEstadoCivil) || env?.estado_civil || src?.estado_civil || prop.estado_civil || null;
     const uf = part?.uf || env?.uf || src?.uf || prop.uf || null;
     // Profissão e empresa: prioriza o cadastro atual do sistema sobre o que já
     // está gravado na oportunidade bancária, pois a oportunidade pode conter um
@@ -412,6 +423,16 @@ async function garantirEnderecoParticipantes({
       textoLivreParaBanco(part?.nomeEmpresaProfissao) ||
       "Não informado";
 
+    const conjuge = env
+      ? (envolvidos ?? []).find((e: any) => String(e.conjuge_de ?? "") === String(env.id))
+      : (envolvidos ?? []).find((e: any) => e.conjuge_de);
+    const estadoCivilConjuge =
+      enumBancoId(part?.tipoEstadoCivilConjuge) ||
+      sim?.estado_civil_conjuge ||
+      conjuge?.estado_civil ||
+      estadoCivil ||
+      undefined;
+
     // Dados do cônjuge — obrigatórios em alguns bancos quando o proponente
     // principal está casado ou em união estável. Sempre reenviamos, pois a
     // oportunidade pode ter sido criada sem esses campos.
@@ -421,26 +442,47 @@ async function garantirEnderecoParticipantes({
     const dadosConjuge = casado
       ? {
           nomeConjuge:
-            part?.nomeConjuge ?? sim?.nome_conjuge ?? env?.nome_conjuge ?? src?.nome_conjuge ?? undefined,
+            part?.nomeConjuge ?? sim?.nome_conjuge ?? conjuge?.nome ?? src?.nome_conjuge ?? undefined,
           cpfConjuge:
-            soDigitos(part?.cpfConjuge ?? sim?.cpf_conjuge ?? env?.cpf_conjuge ?? src?.cpf_conjuge),
+            soDigitos(part?.cpfConjuge ?? sim?.cpf_conjuge ?? conjuge?.cpf_cnpj ?? src?.cpf_conjuge),
           dataNascimentoConjuge:
             part?.dataNascimentoConjuge ??
             sim?.data_nascimento_conjuge ??
-            env?.data_nascimento_conjuge ??
+            conjuge?.data_nascimento ??
             src?.data_nascimento_conjuge ??
             undefined,
-          tipoEstadoCivilConjuge:
-            part?.tipoEstadoCivilConjuge ?? sim?.estado_civil_conjuge ?? estadoCivil ?? undefined,
-          rendaConjuge:
-            part?.rendaConjuge ?? sim?.renda_conjuge ?? env?.renda_conjuge ?? undefined,
+          tipoEstadoCivilConjuge: estadoCivilConjuge,
+          tipoDocumentoIdentidadeConjuge:
+            enumBancoId(part?.tipoDocumentoIdentidadeConjuge) ?? conjuge?.tipo_documento_identidade ?? undefined,
+          numeroDocumentoConjuge: sanitizarNumeroDocumento(
+            part?.numeroDocumentoConjuge ?? conjuge?.numero_documento,
+          ),
+          dataExpedicaoConjuge: part?.dataExpedicaoConjuge ?? conjuge?.data_expedicao ?? undefined,
+          orgaoExpedidorConjuge: part?.orgaoExpedidorConjuge ?? conjuge?.orgao_expedidor ?? undefined,
+          ufExpedicaoConjuge: part?.ufExpedicaoConjuge ?? conjuge?.uf_expedicao ?? undefined,
+          nomeProfissaoConjuge:
+            textoLivreParaBanco(part?.nomeProfissaoConjuge) ||
+            textoLivreParaBanco(conjuge?.profissao) ||
+            undefined,
+          rendaConjuge: part?.rendaConjuge ?? sim?.renda_conjuge ?? conjuge?.renda ?? undefined,
+          nomeEmpresaProfissaoConjuge:
+            textoLivreParaBanco(part?.nomeEmpresaProfissaoConjuge) ||
+            textoLivreParaBanco(conjuge?.empresa) ||
+            undefined,
+          tipoSexoConjuge: enumBancoId(part?.tipoSexoConjuge) ?? conjuge?.tipo_sexo ?? undefined,
         }
       : {};
+
+    if (casado && (!(dadosConjuge as any).nomeConjuge || !(dadosConjuge as any).cpfConjuge)) {
+      throw new Error(
+        "Cadastro do cônjuge incompleto. Informe nome e CPF do cônjuge antes de enviar ao banco.",
+      );
+    }
 
     // Chamamos a API quando falta estado civil, UF, profissão, empresa ou dados
     // de cônjuge (campos que mais derrubam a validação dos bancos). Se todos já
     // estão presentes no participante, nada a fazer.
-    const faltaEstadoCivil = !(part?.tipoEstadoCivil && String(part.tipoEstadoCivil).trim());
+    const faltaEstadoCivil = !enumBancoId(part?.tipoEstadoCivil);
     const faltaUf = !(part?.uf && String(part.uf).trim());
     const faltaProfissao = !(part?.nomeProfissao && String(part.nomeProfissao).trim());
     const faltaEmpresa = !(part?.nomeEmpresaProfissao && String(part.nomeEmpresaProfissao).trim());
@@ -464,18 +506,18 @@ async function garantirEnderecoParticipantes({
       continue;
 
     const payload: Record<string, unknown> = {
-      tipoSituacao: part?.tipoSituacao ?? "A",
+      tipoSituacao: enumBancoId(part?.tipoSituacao) ?? "A",
       nomeParticipante: part?.nomeParticipante ?? env?.nome ?? prop.nome_cliente,
-      tipoQualificacao: part?.tipoQualificacao ?? "CO",
-      tipoPessoa: part?.tipoPessoa ?? ((cpf?.length ?? 0) > 11 ? "J" : "F"),
+      tipoQualificacao: enumBancoId(part?.tipoQualificacao) ?? "CO",
+      tipoPessoa: enumBancoId(part?.tipoPessoa) ?? ((cpf?.length ?? 0) > 11 ? "J" : "F"),
       cpfCnpj: cpf,
       dataNascimento:
         part?.dataNascimento ?? env?.data_nascimento ?? src?.data_nascimento ?? prop.data_nascimento ?? undefined,
       tipoEstadoCivil: estadoCivil ?? undefined,
-      tipoRegimeCasamento: part?.tipoRegimeCasamento ?? env?.regime_casamento ?? undefined,
-      tipoSexo: part?.tipoSexo ?? env?.tipo_sexo ?? undefined,
+      tipoRegimeCasamento: enumBancoId(part?.tipoRegimeCasamento) ?? env?.regime_casamento ?? undefined,
+      tipoSexo: enumBancoId(part?.tipoSexo) ?? env?.tipo_sexo ?? undefined,
       tipoDocumentoIdentidade:
-        part?.tipoDocumentoIdentidade ?? env?.tipo_documento_identidade ?? undefined,
+        enumBancoId(part?.tipoDocumentoIdentidade) ?? env?.tipo_documento_identidade ?? undefined,
       numeroDocumento: sanitizarNumeroDocumento(part?.numeroDocumento ?? env?.numero_documento),
       orgaoExpedidor: part?.orgaoExpedidor ?? env?.orgao_expedidor ?? undefined,
       ufExpedicao: part?.ufExpedicao ?? env?.uf_expedicao ?? undefined,
@@ -486,7 +528,7 @@ async function garantirEnderecoParticipantes({
       renda: part?.renda ?? env?.renda ?? src?.renda_total_declarada ?? prop.renda_total ?? undefined,
       email: part?.email ?? env?.email ?? src?.email ?? prop.email ?? undefined,
       celular: part?.celular ?? soDigitos(env?.celular ?? src?.celular) ?? undefined,
-      utilizaFgts: part?.utilizaFgts ?? Boolean(env?.utiliza_fgts) ?? undefined,
+      utilizaFgts: part?.utilizaFgts ?? (env?.utiliza_fgts ? "S" : "N"),
       fgAutorizacaoDados: env?.fg_autorizacao_dados ?? true,
       cep: soDigitos(env?.cep ?? prop.cep_imovel),
       logradouro: env?.logradouro ?? prop.endereco_imovel ?? undefined,
@@ -506,8 +548,11 @@ async function garantirEnderecoParticipantes({
         payload,
         ctx,
       );
-    } catch {
-      // Falha ao completar os dados não deve abortar o envio dos demais bancos.
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      throw new Error(
+        `Não foi possível atualizar os dados complementares do participante antes do envio: ${sanitizarMensagemErro(msg)}`,
+      );
     }
   }
 }
@@ -986,8 +1031,9 @@ function extrairErroRetorno(retorno: unknown): string | null {
   const codigo = obj?.codigo ?? obj?.code ?? null;
   if (codigo) {
     const c = String(codigo).trim();
-    // Códigos que começam com "0"/"200"/"OK"/"SUCC" indicam sucesso.
-    if (c && !/^(0+|200|ok|succ)/i.test(c)) {
+    // Só códigos exatamente positivos indicam sucesso; prefixos como "01.03"
+    // podem ser códigos de fase/erro do banco e não devem ser mascarados.
+    if (c && !(c === "0" || c === "00" || c === "000" || c === "200" || /^(ok|success|sucesso)$/i.test(c))) {
       return `Falha na integração com o banco (código ${c}). A proposta não chegou a ser recebida — reenvie.`;
     }
   }
@@ -1043,16 +1089,6 @@ function statusInternoBanco(
       return { banco: "em_analise", proposta: "em_analise_credito" };
     case "P":
     case "E":
-      // Docs: "P" = Erro ao Enviar Proposta. Porém, se o banco já devolveu
-      // o `codigoOportunidadeBanco`, a proposta CHEGOU no banco (comum no
-      // Bradesco no primeiro retorno). Tratamos como em_analise para não
-      // sinalizar erro fantasma ao usuário.
-      if (sim && String(sim?.codigoOportunidadeBanco ?? "").trim()) {
-        return { banco: "em_analise", proposta: "em_analise_credito" };
-      }
-      if (sim && numeroPropostaBancoReal(sim)) {
-        return { banco: "em_analise", proposta: "em_analise_credito" };
-      }
       return { banco: "erro", proposta: null };
 
     case "S":
@@ -1196,10 +1232,9 @@ function buscarCampoRetorno(obj: unknown, chaves: string[], visitados = new Weak
 /**
  * Número real da proposta no banco. A API devolve, dependendo da instituição:
  *  - `numeroPropostaBanco` / `codigoPropostaBanco` (raro, alguns bancos)
- *  - `codigoOportunidadeBanco` (Bradesco/Itaú — código da oportunidade no banco)
- *  - `codigoSimulacaoBanco` (Santander — referência oficial devolvida pelo banco)
- * Todos vêm DO banco (não são referências internas do sistema), portanto
- * qualquer um deles é um identificador válido para exibição ao usuário.
+  *  - `codigoOportunidadeBanco` quando o retorno está em análise/aprovado
+  * Códigos de simulação são referência técnica da integração e não devem ser
+  * exibidos como número de proposta.
  */
 function numeroPropostaBancoReal(sim: any): string | null {
   const numero = buscarCampoRetorno(sim, [
@@ -1208,7 +1243,6 @@ function numeroPropostaBancoReal(sim: any): string | null {
     "proposalNumber",
     "codigoPropostaBanco",
     "codigoOportunidadeBanco",
-    "codigoSimulacaoBanco",
   ]);
   return numero == null || numero === "" ? null : String(numero);
 }
@@ -1217,7 +1251,6 @@ function referenciaIntegracaoBanco(sim: any): string | null {
   const referencia = buscarCampoRetorno(sim, [
     "codigoOportunidadeBanco",
     "codigoOportunidadeBancoInterno",
-    "codigoSimulacaoBanco",
   ]);
   return referencia == null || referencia === "" ? null : String(referencia);
 }
@@ -1397,25 +1430,10 @@ export async function sincronizarPropostaImpl({
     let erroMsg = extrairErroRetorno(
       sim.retornoIntegracao ?? sim.descricaoRespostaBanco?.retornoIntegracao,
     );
-    // Se o banco já devolveu `codigoOportunidadeBanco`, a proposta CHEGOU
-    // no banco. Uma mensagem transiente (ex.: aviso de validação) NÃO deve
-    // ser sinalizada como "erro de envio" — o banco recebeu e vai retornar
-    // decisão real (Bradesco leva ~15 min). Recusas reais (tipoSituacao "R"
-    // ou códigos de recusa em codigoSituacaoBanco) continuam sendo tratadas
-    // pelo mapa de status abaixo.
-    const tipoSit = String(sim?.tipoSituacao ?? "").toUpperCase().charAt(0);
-    if (
-      erroMsg &&
-      String(sim?.codigoOportunidadeBanco ?? "").trim() &&
-      tipoSit !== "R"
-    ) {
-      erroMsg = null;
-    }
 
-    // Falha de integração (Bradesco/etc.): tipoSituacao "R"/"E" sem token real
-    // do banco (codigoSimulacaoBanco), retornoIntegracao null e código apenas
-    // de fase de simulação. NÃO é recusa de crédito — é falha silenciosa da
-    // integração; deve virar erro visível e permitir reenvio.
+    // Falha/erro de integração: a API define `P` como erro ao enviar proposta
+    // e alguns bancos usam `E` para erro técnico/validação. Não converter esses
+    // retornos em sucesso apenas por haver código externo no payload.
     const falhaIntegracao = ehFalhaIntegracaoBanco(sim);
     if (falhaIntegracao) {
       erroMsg = MSG_FALHA_INTEGRACAO;
