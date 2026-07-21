@@ -72,10 +72,10 @@ export function ExportButtons({
         result.kpis,
         result.columns,
         result.rows,
-        undefined,
-        undefined,
-        undefined,
         nomeArquivo(),
+        undefined,
+        undefined,
+        undefined,
         orient,
       );
       await log("pdf");
