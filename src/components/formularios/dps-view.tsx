@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import {
@@ -10,6 +10,7 @@ import {
   Search,
   Loader2,
   User,
+  Eraser,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -18,7 +19,7 @@ import { buscarClientesCRM } from "@/lib/crm/clientes.functions";
 import { DPS_PERGUNTAS } from "@/lib/formularios/dps-questions";
 import logoLight from "@/assets/brand/agilliza-logo-oficial-light.png";
 
-type Modo = "escolha" | "manual" | "sistema";
+type Modo = "escolha" | "documento";
 
 interface Proponente {
   nome: string;
@@ -28,6 +29,15 @@ interface Proponente {
   telefone_celular: string | null;
   email: string | null;
 }
+
+const PROPONENTE_VAZIO: Proponente = {
+  nome: "",
+  documento: null,
+  data_nascimento: null,
+  estado_civil: null,
+  telefone_celular: null,
+  email: null,
+};
 
 const ESTADO_CIVIL_LABEL: Record<string, string> = {
   solteiro: "Solteiro(a)",
@@ -54,18 +64,18 @@ function fmtData(iso: string | null): string {
 
 export function DpsView() {
   const [modo, setModo] = useState<Modo>("escolha");
-  const [proponente, setProponente] = useState<Proponente | null>(null);
+  const [proponente, setProponente] = useState<Proponente>(PROPONENTE_VAZIO);
+  const [origem, setOrigem] = useState<"branco" | "crm">("branco");
 
-  if (modo === "manual") {
-    return <DpsDocumento proponente={null} onVoltar={() => setModo("escolha")} />;
-  }
-  if (modo === "sistema") {
+  if (modo === "documento") {
     return (
       <DpsDocumento
-        proponente={proponente}
+        proponenteInicial={proponente}
+        origem={origem}
         onVoltar={() => {
           setModo("escolha");
-          setProponente(null);
+          setProponente(PROPONENTE_VAZIO);
+          setOrigem("branco");
         }}
       />
     );
@@ -80,7 +90,8 @@ export function DpsView() {
             DPS · Declaração Pessoal de Saúde
           </h1>
           <p className="text-sm text-muted-foreground">
-            Escolha como deseja gerar a declaração de saúde do proponente.
+            Escolha como deseja gerar a declaração de saúde do proponente. Em qualquer opção
+            você pode editar todos os campos e marcar as respostas na tela antes de imprimir.
           </p>
         </div>
       </div>
@@ -88,23 +99,28 @@ export function DpsView() {
       <div className="grid gap-4 sm:grid-cols-2">
         <button
           type="button"
-          onClick={() => setModo("manual")}
+          onClick={() => {
+            setProponente(PROPONENTE_VAZIO);
+            setOrigem("branco");
+            setModo("documento");
+          }}
           className="group rounded-xl border border-border bg-card p-6 text-left transition hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-lg"
         >
           <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary">
             <PenLine className="h-6 w-6" />
           </div>
-          <h2 className="mb-1 font-semibold text-foreground">Preenchimento manual</h2>
+          <h2 className="mb-1 font-semibold text-foreground">Preencher direto na tela</h2>
           <p className="text-sm text-muted-foreground">
-            Imprima a DPS em branco, com o cabeçalho profissional da Agilliza, para o cliente
-            preencher e assinar à mão.
+            Sem puxar do CRM. Preencha os dados do proponente e marque as respostas aqui mesmo,
+            depois imprima ou salve em PDF.
           </p>
         </button>
 
         <ClientePicker
           onSelecionar={(p) => {
             setProponente(p);
-            setModo("sistema");
+            setOrigem("crm");
+            setModo("documento");
           }}
         />
       </div>
@@ -117,7 +133,6 @@ function ClientePicker({ onSelecionar }: { onSelecionar: (p: Proponente) => void
   const [q, setQ] = useState("");
   const [termo, setTermo] = useState("");
 
-  // Busca "ao digitar" com debounce, sem precisar clicar no botão.
   useEffect(() => {
     const t = setTimeout(() => setTermo(q.trim()), 300);
     return () => clearTimeout(t);
@@ -139,9 +154,10 @@ function ClientePicker({ onSelecionar }: { onSelecionar: (p: Proponente) => void
         <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary">
           <Database className="h-6 w-6" />
         </div>
-        <h2 className="mb-1 font-semibold text-foreground">Preenchimento via sistema</h2>
+        <h2 className="mb-1 font-semibold text-foreground">Puxar dados do CRM</h2>
         <p className="text-sm text-muted-foreground">
-          A mesma DPS, já com os dados principais do cliente puxados automaticamente do CRM.
+          A DPS já vem com os dados principais do cliente pré-carregados. Você ainda pode ajustar
+          qualquer campo antes de imprimir.
         </p>
       </button>
     );
@@ -224,53 +240,123 @@ function ClientePicker({ onSelecionar }: { onSelecionar: (p: Proponente) => void
   );
 }
 
-function SimNao() {
+/** Resposta possível de cada pergunta/subitem da DPS. */
+type Resposta = "sim" | "nao" | null;
+
+/** Toggle clicável de Sim/Não que também imprime como caixinhas marcadas. */
+function SimNao({
+  valor,
+  onChange,
+}: {
+  valor: Resposta;
+  onChange: (v: Resposta) => void;
+}) {
   return (
     <div className="dps-simnao">
-      <span className="dps-opt">
-        <span className="dps-box" /> Sim
-      </span>
-      <span className="dps-opt">
-        <span className="dps-box" /> Não
-      </span>
+      {(["sim", "nao"] as const).map((op) => {
+        const marcado = valor === op;
+        return (
+          <button
+            key={op}
+            type="button"
+            aria-pressed={marcado}
+            onClick={() => onChange(marcado ? null : op)}
+            className="dps-opt dps-opt-btn no-print-outline"
+            title={marcado ? "Clique para desmarcar" : `Marcar ${op === "sim" ? "Sim" : "Não"}`}
+          >
+            <span className={`dps-box${marcado ? " dps-box-marcado" : ""}`}>
+              {marcado && <span className="dps-box-x">×</span>}
+            </span>
+            {op === "sim" ? "Sim" : "Não"}
+          </button>
+        );
+      })}
     </div>
   );
 }
 
+/** Todas as chaves possíveis de respostas — perguntas simples e subitens (ex.: "4a"). */
+function iniciarRespostas(): Record<string, Resposta> {
+  const r: Record<string, Resposta> = {};
+  for (const p of DPS_PERGUNTAS) {
+    if (p.subitens) {
+      for (const s of p.subitens) r[`${p.numero}${s.letra}`] = null;
+    } else {
+      r[String(p.numero)] = null;
+    }
+  }
+  return r;
+}
+
 function DpsDocumento({
-  proponente,
+  proponenteInicial,
+  origem,
   onVoltar,
 }: {
-  proponente: Proponente | null;
+  proponenteInicial: Proponente;
+  origem: "branco" | "crm";
   onVoltar: () => void;
 }) {
+  // Todos os campos são editáveis na tela — vindos do CRM ou em branco.
+  const [nome, setNome] = useState(proponenteInicial.nome ?? "");
+  const [documento, setDocumento] = useState(fmtDoc(proponenteInicial.documento));
+  const [dataNasc, setDataNasc] = useState(fmtData(proponenteInicial.data_nascimento));
+  const [estadoCivil, setEstadoCivil] = useState(
+    proponenteInicial.estado_civil
+      ? (ESTADO_CIVIL_LABEL[proponenteInicial.estado_civil] ?? proponenteInicial.estado_civil)
+      : "",
+  );
+  const [telefone, setTelefone] = useState(proponenteInicial.telefone_celular ?? "");
+  const [email, setEmail] = useState(proponenteInicial.email ?? "");
+  const [peso, setPeso] = useState("");
+  const [altura, setAltura] = useState("");
+  const [medicoNome, setMedicoNome] = useState("");
+  const [medicoTel, setMedicoTel] = useState("");
+  const [localData, setLocalData] = useState("");
+
+  const respostasIniciais = useMemo(() => iniciarRespostas(), []);
+  const [respostas, setRespostas] = useState<Record<string, Resposta>>(respostasIniciais);
+
+  function marcar(chave: string, valor: Resposta) {
+    setRespostas((r) => ({ ...r, [chave]: valor }));
+  }
+
+  function limparRespostas() {
+    setRespostas(iniciarRespostas());
+  }
+
   return (
     <div className="dps-screen">
-      {/* Barra de ações — some na impressão */}
       <div className="dps-toolbar no-print">
         <Button variant="outline" size="sm" onClick={onVoltar}>
           <ArrowLeft className="mr-2 h-4 w-4" />
           Voltar
         </Button>
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          {proponente ? (
+          {origem === "crm" && nome ? (
             <span className="inline-flex items-center gap-1">
-              <Database className="h-4 w-4" /> Dados de {proponente.nome}
+              <Database className="h-4 w-4" /> Dados de {nome}{" "}
+              <span className="text-xs">(editável)</span>
             </span>
           ) : (
             <span className="inline-flex items-center gap-1">
-              <PenLine className="h-4 w-4" /> Formulário em branco
+              <PenLine className="h-4 w-4" /> Preenchimento direto na tela
             </span>
           )}
         </div>
-        <Button size="sm" onClick={() => window.print()}>
-          <Printer className="mr-2 h-4 w-4" />
-          Imprimir / Salvar PDF
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={limparRespostas} title="Limpar marcações Sim/Não">
+            <Eraser className="mr-2 h-4 w-4" />
+            Limpar marcações
+          </Button>
+          <Button size="sm" onClick={() => window.print()}>
+            <Printer className="mr-2 h-4 w-4" />
+            Imprimir / Salvar PDF
+          </Button>
+        </div>
       </div>
 
       <div className="dps-print">
-        {/* Cabeçalho profissional */}
         <header className="dps-header">
           <div className="dps-header-inner">
             <img src={logoLight} alt="Agilliza" className="dps-logo" />
@@ -281,30 +367,26 @@ function DpsDocumento({
           </div>
         </header>
 
-        {/* Identificação do proponente */}
         <section className="dps-ident">
           <div className="dps-ident-row">
-            <Campo label="Nome do proponente" valor={proponente?.nome} span={2} />
-            <Campo label="CPF/CNPJ" valor={fmtDoc(proponente?.documento ?? null)} />
+            <CampoEditavel label="Nome do proponente" valor={nome} onChange={setNome} span={2} />
+            <CampoEditavel label="CPF/CNPJ" valor={documento} onChange={setDocumento} />
           </div>
           <div className="dps-ident-row">
-            <Campo label="Data de nascimento" valor={fmtData(proponente?.data_nascimento ?? null)} />
-            <Campo
-              label="Estado civil"
-              valor={
-                proponente?.estado_civil
-                  ? (ESTADO_CIVIL_LABEL[proponente.estado_civil] ?? proponente.estado_civil)
-                  : ""
-              }
+            <CampoEditavel
+              label="Data de nascimento"
+              valor={dataNasc}
+              onChange={setDataNasc}
+              placeholder="dd/mm/aaaa"
             />
-            <Campo label="Telefone" valor={proponente?.telefone_celular ?? ""} />
+            <CampoEditavel label="Estado civil" valor={estadoCivil} onChange={setEstadoCivil} />
+            <CampoEditavel label="Telefone" valor={telefone} onChange={setTelefone} />
           </div>
           <div className="dps-ident-row">
-            <Campo label="E-mail" valor={proponente?.email ?? ""} span={3} />
+            <CampoEditavel label="E-mail" valor={email} onChange={setEmail} span={3} />
           </div>
         </section>
 
-        {/* Perguntas */}
         <div className="dps-perguntas">
           {DPS_PERGUNTAS.map((p) => (
             <div key={p.numero} className="dps-q">
@@ -312,40 +394,63 @@ function DpsDocumento({
                 <p className="dps-q-text">
                   <b>{p.numero} –</b> {p.texto}
                 </p>
-                {!p.subitens && <SimNao />}
+                {!p.subitens && (
+                  <SimNao
+                    valor={respostas[String(p.numero)] ?? null}
+                    onChange={(v) => marcar(String(p.numero), v)}
+                  />
+                )}
               </div>
               {p.esclareca && <div className="dps-esclareca">Esclareça:</div>}
               {p.nota && <p className="dps-nota">{p.nota}</p>}
               {p.subitens && (
                 <div className="dps-sub">
-                  {p.subitens.map((s) => (
-                    <div key={s.letra} className="dps-subitem">
-                      <div className="dps-q-head">
-                        <p className="dps-q-text">
-                          <b>{s.letra})</b> {s.texto}
-                        </p>
-                        <SimNao />
+                  {p.subitens.map((s) => {
+                    const chave = `${p.numero}${s.letra}`;
+                    return (
+                      <div key={s.letra} className="dps-subitem">
+                        <div className="dps-q-head">
+                          <p className="dps-q-text">
+                            <b>{s.letra})</b> {s.texto}
+                          </p>
+                          <SimNao valor={respostas[chave] ?? null} onChange={(v) => marcar(chave, v)} />
+                        </div>
+                        {p.numero === 4 && <div className="dps-esclareca">Esclareça:</div>}
+                        {s.nota && <p className="dps-nota">{s.nota}</p>}
                       </div>
-                      {p.numero === 4 && <div className="dps-esclareca">Esclareça:</div>}
-                      {s.nota && <p className="dps-nota">{s.nota}</p>}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
           ))}
 
-          {/* Peso/altura e médico */}
           <div className="dps-q">
             <p className="dps-q-text">
               <b>12 –</b> Informe seu peso e altura:
             </p>
             <div className="dps-inline">
-              <span>
-                Peso: <span className="dps-linha dps-linha-sm" /> Kg
+              <span className="dps-inline-item">
+                Peso:{" "}
+                <input
+                  type="text"
+                  value={peso}
+                  onChange={(e) => setPeso(e.target.value)}
+                  className="dps-input-inline"
+                  inputMode="decimal"
+                />{" "}
+                Kg
               </span>
-              <span>
-                Altura: <span className="dps-linha dps-linha-sm" /> m
+              <span className="dps-inline-item">
+                Altura:{" "}
+                <input
+                  type="text"
+                  value={altura}
+                  onChange={(e) => setAltura(e.target.value)}
+                  className="dps-input-inline"
+                  inputMode="decimal"
+                />{" "}
+                m
               </span>
             </div>
           </div>
@@ -355,12 +460,11 @@ function DpsDocumento({
               contato.
             </p>
             <div className="dps-ident-row">
-              <Campo label="Nome" valor="" span={2} />
-              <Campo label="Telefone" valor="" />
+              <CampoEditavel label="Nome" valor={medicoNome} onChange={setMedicoNome} span={2} />
+              <CampoEditavel label="Telefone" valor={medicoTel} onChange={setMedicoTel} />
             </div>
           </div>
 
-          {/* Declaração e assinatura */}
           <p className="dps-declaracao">
             Declaro que as informações acima são verdadeiras e completas, estando ciente de que a
             omissão de informações pode implicar na perda do direito à indenização, bem como no
@@ -368,7 +472,13 @@ function DpsDocumento({
           </p>
           <div className="dps-assinatura">
             <div>
-              <span className="dps-linha" />
+              <input
+                type="text"
+                value={localData}
+                onChange={(e) => setLocalData(e.target.value)}
+                className="dps-input-assinatura"
+                placeholder="Cidade, dd/mm/aaaa"
+              />
               <p>Local e data</p>
             </div>
             <div>
@@ -378,7 +488,6 @@ function DpsDocumento({
           </div>
         </div>
 
-        {/* Rodapé */}
         <footer className="dps-footer">
           <span>📞 (19) 98326-0030</span>
           <span>✉️ contato@agilliza.net.br</span>
@@ -388,11 +497,29 @@ function DpsDocumento({
   );
 }
 
-function Campo({ label, valor, span = 1 }: { label: string; valor?: string; span?: number }) {
+function CampoEditavel({
+  label,
+  valor,
+  onChange,
+  span = 1,
+  placeholder,
+}: {
+  label: string;
+  valor: string;
+  onChange: (v: string) => void;
+  span?: number;
+  placeholder?: string;
+}) {
   return (
     <div className="dps-campo" style={{ gridColumn: `span ${span}` }}>
       <span className="dps-campo-label">{label}</span>
-      <span className="dps-campo-valor">{valor || "\u00A0"}</span>
+      <input
+        type="text"
+        value={valor}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="dps-campo-input"
+      />
     </div>
   );
 }

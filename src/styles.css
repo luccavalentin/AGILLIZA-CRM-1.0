@@ -861,6 +861,55 @@ iframe[src*="lvbl" i] {
   min-height: 20px;
   color: #0f172a;
 }
+.dps-campo-input {
+  border: 0;
+  border-bottom: 1px solid #cbd5e1;
+  padding: 2px 2px 3px;
+  font-size: 12.5px;
+  font-weight: 600;
+  min-height: 20px;
+  color: #0f172a;
+  background: transparent;
+  width: 100%;
+  outline: none;
+  font-family: inherit;
+}
+.dps-campo-input:focus {
+  border-bottom-color: #16294f;
+}
+.dps-input-inline {
+  border: 0;
+  border-bottom: 1px solid #94a3b8;
+  min-width: 90px;
+  height: 18px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #0f172a;
+  background: transparent;
+  outline: none;
+  padding: 0 2px;
+  font-family: inherit;
+}
+.dps-input-inline:focus {
+  border-bottom-color: #16294f;
+}
+.dps-input-assinatura {
+  border: 0;
+  border-bottom: 1px solid #94a3b8;
+  width: 100%;
+  height: 22px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #0f172a;
+  background: transparent;
+  outline: none;
+  padding: 0 2px;
+  font-family: inherit;
+  text-align: center;
+}
+.dps-input-assinatura:focus {
+  border-bottom-color: #16294f;
+}
 
 .dps-perguntas {
   padding: 8px 28px 20px;
@@ -896,12 +945,38 @@ iframe[src*="lvbl" i] {
   font-size: 11.5px;
   font-weight: 600;
 }
+.dps-opt-btn {
+  background: transparent;
+  border: 0;
+  padding: 2px 4px;
+  cursor: pointer;
+  border-radius: 4px;
+  color: inherit;
+  font-family: inherit;
+}
+.dps-opt-btn:hover {
+  background: #eef2ff;
+}
 .dps-box {
   width: 12px;
   height: 12px;
   border: 1.4px solid #16294f;
   border-radius: 2px;
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  position: relative;
+}
+.dps-box-marcado {
+  background: #16294f;
+  color: #fff;
+}
+.dps-box-x {
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+  margin-top: -2px;
 }
 .dps-esclareca {
   margin-top: 4px;
@@ -1016,6 +1091,26 @@ iframe[src*="lvbl" i] {
   }
   .dps-q {
     padding: 5px 0;
+  }
+  /* Preserva a caixa Sim/Não marcada na impressão. */
+  .dps-box,
+  .dps-box-marcado {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .dps-opt-btn:hover {
+    background: transparent;
+  }
+  /* Inputs impressos sem foco/borda extra e sem placeholder. */
+  .dps-campo-input,
+  .dps-input-inline,
+  .dps-input-assinatura {
+    outline: none !important;
+  }
+  .dps-campo-input::placeholder,
+  .dps-input-inline::placeholder,
+  .dps-input-assinatura::placeholder {
+    color: transparent !important;
   }
 }
 
