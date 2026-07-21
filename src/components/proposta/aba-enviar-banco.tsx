@@ -258,10 +258,11 @@ export function AbaEnviarBanco({
       <div className="flex items-start gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2.5 text-sm">
         <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
         <p className="text-muted-foreground">
-          <span className="font-medium text-foreground">Somente PDF é aceito pelo banco.</span>{" "}
-          Os documentos listados abaixo devem ser anexados pelo módulo{" "}
-          <span className="font-medium text-foreground">Documentos</span> do cliente.
+          <span className="font-medium text-foreground">O banco aceita PDF, JPG e PNG (até 10 MB).</span>{" "}
+          Os documentos de todos os participantes (comprador, cônjuge, coproponente e vendedor) são enviados automaticamente para a vaga do dono, quando cadastrados no módulo{" "}
+          <span className="font-medium text-foreground">Documentos</span> do cliente correspondente.
         </p>
+
       </div>
 
       {/* Ação de envio */}
