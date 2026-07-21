@@ -59,7 +59,7 @@ export interface ChatAdapter {
   realtime: { channel: string; table: string; filter: string };
 
   /** Identificador e papel para o hook de "digitando". */
-  typing: { id: string; myRole: string };
+  typing: { id: string; myRole: "time" | "cliente" };
 
   /** Upload de anexo — retorna o path a ser passado em responder({ anexo_path }). */
   uploadAnexo(file: File): Promise<string>;
