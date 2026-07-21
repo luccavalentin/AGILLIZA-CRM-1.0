@@ -45,7 +45,7 @@ import { TransferirDialog } from "@/components/operacional/transferir-dialog";
 import { AdicionarParticipanteDialog } from "@/components/operacional/adicionar-participante-dialog";
 import { statusDemanda } from "@/components/operacional/status";
 import { PriorityChip, OpAvatar } from "@/components/operacional/ui";
-import type { DemandaStatus } from "@/lib/operacional/demandas.functions";
+import { excluirDemanda, type DemandaStatus } from "@/lib/operacional/demandas.functions";
 import { cn } from "@/lib/utils";
 import { Linha, VinculoRow } from "./ui";
 import { STATUS_PILL_CLS, formatarTempoAberto } from "./helpers";
