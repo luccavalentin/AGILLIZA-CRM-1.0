@@ -515,15 +515,21 @@ function Pagina() {
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 lg:gap-4">
-          {dadosFiltrados.map((stage, idx) => (
+          {dadosFiltrados.map((stage, idx) => {
+            const readOnly = !etapaEhComercial(stage.codigo);
+            return (
             <Fragment key={stage.codigo}>
               <ColunaEsteira
                 stage={stage}
                 ordem={idx + 1}
                 ehAlvoArrasto={alvo === stage.codigo && arrasto?.origem !== stage.codigo}
                 arrastando={arrasto?.origem === stage.codigo}
+                readOnly={readOnly}
                 onDragOver={(e) => {
                   if (!arrasto) return;
+                  // Bloqueia highlight visual em colunas somente-leitura ou
+                  // quando o arrasto vem de uma etapa de outro território.
+                  if (readOnly || !etapaEhComercial(arrasto.origem)) return;
                   e.preventDefault();
                   if (alvo !== stage.codigo) setAlvo(stage.codigo);
                 }}
@@ -545,6 +551,7 @@ function Pagina() {
                     key={c.id}
                     cliente={c}
                     stageCodigo={stage.codigo}
+                    readOnly={readOnly}
                     onDragStart={() => {
                       arrastouRef.current = true;
                       setArrasto({ clienteId: c.id, origem: stage.codigo });
