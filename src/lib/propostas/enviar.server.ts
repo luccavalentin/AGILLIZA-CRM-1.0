@@ -248,6 +248,65 @@ async function renovarSimulacaoSeConsumida({
 
 
 /**
+ * Sincroniza o bloco de cônjuge (nome/CPF/renda/estado civil/data nascimento)
+ * na OPORTUNIDADE. Sem isso, oportunidades criadas quando o titular ainda não
+ * tinha cônjuge cadastrado continuam sem o bloco, e alguns bancos (Itaú)
+ * rejeitam a inclusão com "spouse: O campo deve ser informado".
+ */
+async function sincronizarConjugeOportunidade({
+  prop,
+  idOportunidade,
+  ctx,
+  supabase,
+}: {
+  prop: any;
+  idOportunidade: string;
+  ctx: { simulacao_id: any; proposta_id: string; correspondente_id: any };
+  supabase: SupabaseClient<any, any, any>;
+}): Promise<void> {
+  let sim: any = null;
+  if (prop.simulacao_id) {
+    const { data } = await supabase
+      .from("simulacoes")
+      .select("possui_conjuge, nome_conjuge, cpf_conjuge, email_conjuge, celular_conjuge, renda_conjuge, data_nascimento_conjuge, estado_civil, estado_civil_conjuge, compoe_renda")
+      .eq("id", prop.simulacao_id)
+      .maybeSingle();
+    sim = data;
+  }
+  const estadoCivil = sim?.estado_civil ?? prop.estado_civil ?? null;
+  const casado =
+    Boolean(sim?.possui_conjuge) || ["CA", "UE"].includes(String(estadoCivil ?? ""));
+  if (!casado) return;
+  const nome = sim?.nome_conjuge ?? prop.nome_conjuge;
+  const cpf = soDigitos(sim?.cpf_conjuge ?? prop.cpf_conjuge);
+  if (!nome && !cpf) return;
+  const payload: Record<string, unknown> = {
+    tipoEstadoCivil: estadoCivil ? { id: estadoCivil } : undefined,
+    fgCompoeRenda: Boolean(sim?.compoe_renda),
+    nomeConjuge: nome ?? undefined,
+    cpfConjuge: cpf ?? undefined,
+    emailConjuge: sim?.email_conjuge ?? undefined,
+    celularConjuge: soDigitos(sim?.celular_conjuge),
+    rendaConjuge: sim?.renda_conjuge ?? undefined,
+    dataNascimentoConjuge: sim?.data_nascimento_conjuge ?? undefined,
+    tipoEstadoCivilConjuge: sim?.estado_civil_conjuge
+      ? { id: sim.estado_civil_conjuge }
+      : estadoCivil
+        ? { id: estadoCivil }
+        : undefined,
+  };
+  try {
+    await chamarIntegracao<any>(`/oportunidade/${idOportunidade}`, "PUT", payload, ctx);
+  } catch (e) {
+    console.warn(
+      "Falha ao sincronizar cônjuge na oportunidade (PUT).",
+      e instanceof Error ? e.message : String(e),
+    );
+  }
+}
+
+
+/**
  * Garante que o(s) participante(s) da oportunidade tenham os dados obrigatórios
  * exigidos pelos bancos (estado civil / maritalStatus, endereço com UF, data de
  * nascimento e renda). Vários bancos (ex.: Itaú) recusam a proposta quando
@@ -562,8 +621,15 @@ export async function enviarPropostaImpl({
   };
 
   // Alguns bancos (ex.: Itaú) rejeitam a proposta quando o proponente está sem
-  // endereço (proponents[0].address.state). Garantimos o endereço do(s)
-  // participante(s) na oportunidade ANTES de incluir as propostas.
+  // endereço (proponents[0].address.state) OU quando o bloco de cônjuge não
+  // acompanha uma oportunidade cujo titular é casado (erro "spouse: O campo
+  // deve ser informado"). Sincronizamos ambos ANTES de incluir as propostas.
+  await sincronizarConjugeOportunidade({
+    prop,
+    idOportunidade: prop.homefin_id_oportunidade,
+    ctx,
+    supabase,
+  });
   await garantirEnderecoParticipantes({ prop, idOportunidade: prop.homefin_id_oportunidade, ctx, supabase });
 
   const resultados: EnviarResultado["bancos"] = [];

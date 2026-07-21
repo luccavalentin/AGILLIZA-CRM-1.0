@@ -526,10 +526,35 @@ export async function enviarSimulacaoImpl({
       // POST da simulação logo abaixo. Abortar aqui deixaria os bancos presos
       // em "aguardando" para sempre.
       try {
+        // Inclui bloco do cônjuge para que oportunidades criadas antes do
+        // preenchimento do cônjuge passem a carregar os dados no reenvio.
+        // Alguns bancos (Itaú) usam esse bloco para montar o objeto `spouse`
+        // e rejeitam a inclusão quando ele não está presente.
+        const conjugeBloco =
+          sim.possui_conjuge || ["CA", "UE"].includes(String(sim.estado_civil ?? ""))
+            ? {
+                nomeConjuge: sim.nome_conjuge ?? undefined,
+                cpfConjuge: (sim.cpf_conjuge ?? "").replace(/\D/g, "") || undefined,
+                emailConjuge: sim.email_conjuge ?? undefined,
+                celularConjuge: (sim.celular_conjuge ?? "").replace(/\D/g, "") || undefined,
+                rendaConjuge: num(sim.renda_conjuge),
+                dataNascimentoConjuge: sim.data_nascimento_conjuge ?? undefined,
+                tipoEstadoCivilConjuge: sim.estado_civil_conjuge
+                  ? { id: sim.estado_civil_conjuge }
+                  : sim.estado_civil
+                    ? { id: sim.estado_civil }
+                    : undefined,
+              }
+            : {};
         await chamarIntegracao<any>(
           `/oportunidade/${idOportunidade}`,
           "PUT",
-          dadosOportunidade,
+          {
+            ...dadosOportunidade,
+            tipoEstadoCivil: sim.estado_civil ? { id: sim.estado_civil } : undefined,
+            fgCompoeRenda: Boolean(sim.compoe_renda),
+            ...conjugeBloco,
+          },
           ctx,
         );
       } catch (e) {
@@ -538,6 +563,7 @@ export async function enviarSimulacaoImpl({
           e instanceof Error ? e.message : String(e),
         );
       }
+
     }
 
     if (idOportunidade) {
