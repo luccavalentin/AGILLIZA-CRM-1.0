@@ -1144,7 +1144,9 @@ export async function sincronizarPropostaImpl({
   let algumEmAnalise = false;
   let algumRecusado = false;
   let algumErro = false;
+  let algumFalhaIntegracao = false;
   const errosBanco: string[] = [];
+  const bancosComFalhaIntegracao: string[] = [];
   let simEscolhida: any = null;
   let numeroPropostaBanco: string | null = null;
 
@@ -1155,18 +1157,17 @@ export async function sincronizarPropostaImpl({
     let erroMsg = extrairErroRetorno(
       sim.retornoIntegracao ?? sim.descricaoRespostaBanco?.retornoIntegracao,
     );
-    // Detecção adicional: quando o banco marca tipoSituacao "E" (erro) e a
-    // simulação NÃO tem timestamps de envio/retorno ao banco, a proposta
-    // nunca chegou de fato ao banco — deve virar erro visível (não ficar
-    // eternamente "em análise" no polling).
-    const tipoStr = String(sim?.tipoSituacao ?? "").toUpperCase().charAt(0);
-    const nuncaEnviada =
-      sim?.dataHoraEnvioIntegracao == null && sim?.dataHoraRetornoIntegracao == null;
-    if (!erroMsg && tipoStr === "E" && nuncaEnviada) {
-      erroMsg =
-        "A proposta não chegou a ser recebida pelo banco (falha na integração). Reenvie para retomar o processo.";
+    // Falha de integração (Bradesco/etc.): tipoSituacao "R"/"E" sem token real
+    // do banco (codigoSimulacaoBanco), retornoIntegracao null e código apenas
+    // de fase de simulação. NÃO é recusa de crédito — é falha silenciosa da
+    // integração; deve virar erro visível e permitir reenvio.
+    const falhaIntegracao = ehFalhaIntegracaoBanco(sim);
+    if (falhaIntegracao) {
+      erroMsg = MSG_FALHA_INTEGRACAO;
+      algumFalhaIntegracao = true;
+      bancosComFalhaIntegracao.push(pb.nome_banco ?? "Banco");
     }
-    const mapa = statusInternoBanco(sim.tipoSituacao, Boolean(erroMsg), sim.codigoSituacaoBanco);
+    const mapa = statusInternoBanco(sim.tipoSituacao, Boolean(erroMsg), sim.codigoSituacaoBanco, sim);
 
 
     if (mapa.proposta === "credito_aprovado") algumAprovado = true;
@@ -1185,14 +1186,19 @@ export async function sincronizarPropostaImpl({
         sim.tipoSituacao,
         sim.codigoSituacaoBanco,
         Boolean(erroMsg),
+        sim,
       ),
       mensagem_banco: erroMsg ? sanitizarMensagemErro(erroMsg) : null,
       raw_response: sim,
     };
     // Salva apenas o número REAL da proposta no banco. Códigos de oportunidade
-    // ou simulação são referências técnicas e não devem aparecer como “Nº banco”.
-    const numeroReal = numeroPropostaBancoReal(sim);
-    if (numeroReal) {
+    // ou simulação são referências técnicas e não devem aparecer como "Nº banco".
+    // Em falha de integração, NUNCA gravar protocolo: a proposta não existe na
+    // esteira real do banco, então qualquer código devolvido é fantasma.
+    const numeroReal = falhaIntegracao ? null : numeroPropostaBancoReal(sim);
+    if (falhaIntegracao) {
+      patchBanco.numero_proposta_banco = null;
+    } else if (numeroReal) {
       patchBanco.numero_proposta_banco = numeroReal;
       if (!numeroPropostaBanco || sim.bancoEscolhido === "S" || mapa.proposta === "credito_aprovado") {
         numeroPropostaBanco = numeroReal;
