@@ -161,6 +161,91 @@ function envolvidoEnvioCompleto(e: any): boolean {
 }
 
 
+/**
+ * Verifica no provedor se a simulação vinculada ao banco ainda pode ser usada
+ * na inclusão da proposta. Simulações com tipoSituacao "R" (recusada) ou "A"
+ * (aprovada) já foram consumidas — o provedor não permite reprocessá-las.
+ * Nesses casos criamos uma NOVA simulação com os mesmos parâmetros e passamos
+ * a apontar `proposta_bancos.homefin_id_simulacao_banco` para ela.
+ * Retorna o `idSimulacao` (numérico) a ser usado no envio ao banco.
+ */
+async function renovarSimulacaoSeConsumida({
+  idOportunidade,
+  pb,
+  propostaId,
+  ctx,
+  supabase,
+}: {
+  idOportunidade: string;
+  pb: any;
+  propostaId: string;
+  ctx: { simulacao_id: any; proposta_id: string; correspondente_id: any };
+  supabase: SupabaseClient<any, any, any>;
+}): Promise<number> {
+  const idAtual = pb.homefin_id_simulacao_banco;
+  if (!idAtual) {
+    throw new Error(
+      `Banco ${pb.nome_banco ?? ""} não tem simulação vinculada. Refaça a simulação antes de enviar.`,
+    );
+  }
+  let sim: any = null;
+  try {
+    const resp = await chamarIntegracao<any>(
+      `/oportunidade/${idOportunidade}`,
+      "GET",
+      undefined,
+      ctx,
+    );
+    const op = resp?.oportunidade ?? resp ?? {};
+    const simulacoes: any[] = Array.isArray(op?.simulacoes) ? op.simulacoes : [];
+    sim = simulacoes.find((s) => String(s?.idSimulacao) === String(idAtual)) ?? null;
+  } catch {
+    // Sem informação da simulação, segue com o id atual — o próprio POST vai falhar caso já esteja consumida.
+    return Number(idAtual);
+  }
+  if (!sim) return Number(idAtual);
+  const tipo = String(sim?.tipoSituacao ?? "").toUpperCase().charAt(0);
+  if (tipo !== "R" && tipo !== "A") return Number(idAtual);
+
+  // Simulação já consumida: criar nova com os mesmos parâmetros.
+  const idBanco = sim?.banco?.idBanco ?? sim?.idBanco;
+  const novoPayload: Record<string, unknown> = {
+    valorImovel: sim?.valorImovel,
+    valorFinanciamento: sim?.valorFinanciamento,
+    prazo: sim?.prazo,
+    codigoSistemaAmortizacaoBanco: sim?.codigoSistemaAmortizacaoBanco ?? { id: "S" },
+    banco: idBanco ? { idBanco } : sim?.banco,
+    fgFinanciarDespesas: sim?.fgFinanciarDespesas,
+    valorDespesasFinanciadas: sim?.valorDespesasFinanciadas,
+    valorTotalFinanciamento: sim?.valorTotalFinanciamento,
+    fgAutorizacaoDados: true,
+  };
+  const novaResp = await chamarIntegracao<any>(
+    `/oportunidade/${idOportunidade}/simulacao`,
+    "POST",
+    novoPayload,
+    ctx,
+  );
+  const novoId = Number(novaResp?.idSimulacao ?? novaResp?.data?.idSimulacao ?? 0);
+  if (!novoId) {
+    throw new Error(
+      `Não foi possível criar uma nova simulação para reenviar ao ${pb.nome_banco ?? "banco"}. Refaça a simulação e tente novamente.`,
+    );
+  }
+  await supabase
+    .from("proposta_bancos")
+    .update({ homefin_id_simulacao_banco: String(novoId) } as any)
+    .eq("id", pb.id);
+  // Reflete a nova simulação em memória para o restante do envio.
+  pb.homefin_id_simulacao_banco = String(novoId);
+  await supabase.from("proposta_historico").insert({
+    proposta_id: propostaId,
+    tipo_evento: "sincronizacao",
+    descricao: `Nova simulação gerada para reenviar ao ${pb.nome_banco ?? "banco"} (a anterior já havia sido consumida).`,
+  });
+  return novoId;
+}
+
 
 /**
  * Garante que o(s) participante(s) da oportunidade tenham os dados obrigatórios
