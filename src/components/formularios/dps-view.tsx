@@ -499,7 +499,13 @@ function DpsDocumento({
               <p>Local e data</p>
             </div>
             <div>
-              <span className="dps-linha" />
+              <input
+                type="text"
+                value={assinaturaNome}
+                onChange={(e) => setAssinaturaNome(e.target.value)}
+                className="dps-input-assinatura"
+                placeholder="Nome do proponente"
+              />
               <p>Assinatura do proponente</p>
             </div>
           </div>
