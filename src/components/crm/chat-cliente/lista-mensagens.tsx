@@ -112,8 +112,10 @@ export function ListaMensagens({
                     onEdit={podeEditar ? () => iniciarEdicao(m) : undefined}
                     onCopy={() => copiar(m)}
                     onDelete={podeExcluir ? () => onExcluir(m) : undefined}
+                    onReagir={podeReagir ? (e) => onReagir!(m.id, e) : undefined}
                   />
                 )}
+
 
 
                 <div
