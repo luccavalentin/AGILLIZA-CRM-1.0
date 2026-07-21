@@ -19,6 +19,7 @@ export function ListaMensagens({
   iniciarEdicao,
   copiar,
   onExcluir,
+  capabilities,
 }: {
   filtradas: ChatMensagem[];
   isLoading: boolean;
@@ -31,7 +32,16 @@ export function ListaMensagens({
   iniciarEdicao: (m: ChatMensagem) => void;
   copiar: (m: ChatMensagem) => void;
   onExcluir: (m: ChatMensagem) => void;
+  /** Capacidades da conversa. Defaults: tudo habilitado. */
+  capabilities?: {
+    responder?: boolean;
+    editar?: boolean;
+    excluir?: boolean;
+  };
 }) {
+  const podeResponder = capabilities?.responder ?? true;
+  const podeEditar = capabilities?.editar ?? true;
+  const podeExcluir = capabilities?.excluir ?? true;
   return (
     <div className="chat-surface min-w-0 flex-1 space-y-1 overflow-y-auto overflow-x-hidden p-2.5 sm:p-4">
       {isLoading ? (
