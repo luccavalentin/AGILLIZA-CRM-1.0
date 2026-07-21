@@ -81,14 +81,15 @@ const GRUPOS: Grupo[] = [
   },
 ];
 
-function ehPdf(d: { mime_type?: string | null; nome_arquivo?: string | null }): boolean {
-  return (
-    (d.mime_type ? d.mime_type.includes("pdf") : false) ||
-    String(d.nome_arquivo ?? "")
-      .toLowerCase()
-      .endsWith(".pdf")
-  );
+function ehFormatoBanco(d: { mime_type?: string | null; nome_arquivo?: string | null }): boolean {
+  const mime = String(d.mime_type ?? "").toLowerCase();
+  const nome = String(d.nome_arquivo ?? "").toLowerCase();
+  if (mime.includes("pdf") || nome.endsWith(".pdf")) return true;
+  if (mime.includes("jpeg") || mime.includes("jpg") || nome.endsWith(".jpg") || nome.endsWith(".jpeg")) return true;
+  if (mime.includes("png") || nome.endsWith(".png")) return true;
+  return false;
 }
+
 
 export function AbaEnviarBanco({
   clienteId,
