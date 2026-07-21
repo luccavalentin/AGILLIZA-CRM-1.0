@@ -328,6 +328,36 @@ export function ColunaLateral({
               }
             />
           )}
+          {data.permissoes?.pode_excluir && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="w-full justify-center gap-2 border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4" /> Excluir demanda
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Excluir esta demanda?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Esta ação é permanente. Mensagens, anexos e histórico da demanda também serão removidos.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel disabled={excluindo}>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction
+                    disabled={excluindo}
+                    onClick={confirmarExclusao}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    {excluindo ? "Excluindo…" : "Excluir"}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
         </div>
       </div>
     </aside>
