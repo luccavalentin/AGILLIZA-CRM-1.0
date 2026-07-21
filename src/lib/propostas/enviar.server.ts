@@ -719,16 +719,18 @@ export async function enviarPropostaImpl({
     correspondente_id: prop.correspondente_id,
   };
 
-  // Alguns bancos (ex.: Itaú) rejeitam a proposta quando o proponente está sem
-  // endereço (proponents[0].address.state) OU quando o bloco de cônjuge não
-  // acompanha uma oportunidade cujo titular é casado (erro "spouse: O campo
-  // deve ser informado"). Sincronizamos ambos ANTES de incluir as propostas.
-  await sincronizarConjugeOportunidade({
-    prop,
-    idOportunidade: prop.homefin_id_oportunidade,
-    ctx,
-    supabase,
-  });
+  // Alguns bancos (ex.: Itaú) rejeitam a proposta quando o participante titular
+  // está sem endereço (proponents[0].address.state) OU quando os campos de
+  // cônjuge não acompanham o participante casado (erro "spouse: O campo deve
+  // ser informado"). Ambos os cenários são resolvidos pelo PUT no participante
+  // feito em `garantirEnderecoParticipantes` (endereço + nomeConjuge/cpfConjuge/
+  // tipoEstadoCivilConjuge/... como strings simples, formato exigido pela API).
+  //
+  // Importante: o `PUT /oportunidade` da API só aceita valorImovel,
+  // valorFinanciamento e prazo. Enviar um bloco de cônjuge nesse endpoint faz
+  // o provedor interpretar como `spouse: false` e derruba o Itaú com o erro
+  // "spouse: O campo deve ser informado" — por isso NÃO sincronizamos cônjuge
+  // no nível da oportunidade.
   await garantirEnderecoParticipantes({ prop, idOportunidade: prop.homefin_id_oportunidade, ctx, supabase });
 
   const resultados: EnviarResultado["bancos"] = [];
