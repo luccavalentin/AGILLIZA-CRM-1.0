@@ -296,32 +296,70 @@ export function AbaEnviarBanco({
       </Card>
 
       {/* Resultado do último envio */}
-      {resultado && (
-        <Card>
-          <CardContent className="space-y-2 p-4 text-sm">
-            <p className="font-medium text-foreground">
-              Resultado do envio — {resultado.enviados}/{resultado.total} enviado(s)
-            </p>
-            {resultado.sucesso.map((s, i) => (
-              <div key={`s-${i}`} className="flex items-center gap-2 text-muted-foreground">
-                <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                <span className="truncate">
-                  {s.nome}
-                  {s.participante ? ` — ${s.participante}` : ""}
+      {resultado && (() => {
+        const semVaga = resultado.erros.filter((er) =>
+          /sem vaga|sem correspond/i.test(er.motivo),
+        );
+        const recusados = resultado.erros.filter((er) => !semVaga.includes(er));
+        return (
+          <Card>
+            <CardContent className="space-y-3 p-4 text-sm">
+              <div className="flex flex-wrap items-center gap-3 border-b border-border pb-2">
+                <p className="font-medium text-foreground">Resultado do envio</p>
+                <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-400">
+                  {resultado.enviados} enviado(s)
+                </span>
+                <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-400">
+                  {semVaga.length} sem vaga
+                </span>
+                <span className="rounded-full bg-destructive/15 px-2 py-0.5 text-xs font-medium text-destructive">
+                  {recusados.length} recusado(s) pelo banco
                 </span>
               </div>
-            ))}
-            {resultado.erros.map((er, i) => (
-              <div key={`e-${i}`} className="flex items-start gap-2 text-muted-foreground">
-                <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
-                <span>
-                  <span className="text-foreground">{er.nome}</span> — {er.motivo}
-                </span>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      )}
+              {resultado.sucesso.map((s, i) => (
+                <div key={`s-${i}`} className="flex items-center gap-2 text-muted-foreground">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                  <span className="truncate">
+                    <span className="text-foreground">{s.nome}</span>
+                    {s.participante ? ` — ${s.participante}` : ""}
+                  </span>
+                </div>
+              ))}
+              {semVaga.length > 0 && (
+                <div className="space-y-1 rounded-md border border-amber-500/30 bg-amber-500/5 p-2">
+                  <p className="text-xs font-medium text-amber-700 dark:text-amber-400">
+                    Documentos sem vaga correspondente
+                  </p>
+                  {semVaga.map((er, i) => (
+                    <div key={`sv-${i}`} className="flex items-start gap-2 text-muted-foreground">
+                      <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                      <span>
+                        <span className="text-foreground">{er.nome}</span>
+                        {er.participante ? ` — ${er.participante}` : ""} — {er.motivo}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {recusados.length > 0 && (
+                <div className="space-y-1 rounded-md border border-destructive/30 bg-destructive/5 p-2">
+                  <p className="text-xs font-medium text-destructive">Recusados pelo banco</p>
+                  {recusados.map((er, i) => (
+                    <div key={`rc-${i}`} className="flex items-start gap-2 text-muted-foreground">
+                      <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+                      <span>
+                        <span className="text-foreground">{er.nome}</span>
+                        {er.participante ? ` — ${er.participante}` : ""} — {er.motivo}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        );
+      })()}
+
 
       {/* Documentos consolidados por tipo */}
       {isLoading ? (
