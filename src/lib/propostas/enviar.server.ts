@@ -359,9 +359,11 @@ async function garantirEnderecoParticipantes({
     );
     const op = resp?.oportunidade ?? resp ?? {};
     participantes = Array.isArray(op?.participantes) ? op.participantes : [];
-  } catch {
-    // Sem a lista de participantes não há como completar os dados; segue o envio.
-    return;
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    throw new Error(
+      `Não foi possível consultar os participantes da oportunidade antes do envio: ${sanitizarMensagemErro(msg)}`,
+    );
   }
   if (participantes.length === 0) return;
 
@@ -405,7 +407,7 @@ async function garantirEnderecoParticipantes({
     const src = ehPrincipal ? cliente : null;
 
     const estadoCivil =
-      part?.tipoEstadoCivil || env?.estado_civil || src?.estado_civil || prop.estado_civil || null;
+      enumBancoId(part?.tipoEstadoCivil) || env?.estado_civil || src?.estado_civil || prop.estado_civil || null;
     const uf = part?.uf || env?.uf || src?.uf || prop.uf || null;
     // Profissão e empresa: prioriza o cadastro atual do sistema sobre o que já
     // está gravado na oportunidade bancária, pois a oportunidade pode conter um
@@ -421,6 +423,16 @@ async function garantirEnderecoParticipantes({
       textoLivreParaBanco(part?.nomeEmpresaProfissao) ||
       "Não informado";
 
+    const conjuge = env
+      ? (envolvidos ?? []).find((e: any) => String(e.conjuge_de ?? "") === String(env.id))
+      : (envolvidos ?? []).find((e: any) => e.conjuge_de);
+    const estadoCivilConjuge =
+      enumBancoId(part?.tipoEstadoCivilConjuge) ||
+      sim?.estado_civil_conjuge ||
+      conjuge?.estado_civil ||
+      estadoCivil ||
+      undefined;
+
     // Dados do cônjuge — obrigatórios em alguns bancos quando o proponente
     // principal está casado ou em união estável. Sempre reenviamos, pois a
     // oportunidade pode ter sido criada sem esses campos.
@@ -430,26 +442,47 @@ async function garantirEnderecoParticipantes({
     const dadosConjuge = casado
       ? {
           nomeConjuge:
-            part?.nomeConjuge ?? sim?.nome_conjuge ?? env?.nome_conjuge ?? src?.nome_conjuge ?? undefined,
+            part?.nomeConjuge ?? sim?.nome_conjuge ?? conjuge?.nome ?? src?.nome_conjuge ?? undefined,
           cpfConjuge:
-            soDigitos(part?.cpfConjuge ?? sim?.cpf_conjuge ?? env?.cpf_conjuge ?? src?.cpf_conjuge),
+            soDigitos(part?.cpfConjuge ?? sim?.cpf_conjuge ?? conjuge?.cpf_cnpj ?? src?.cpf_conjuge),
           dataNascimentoConjuge:
             part?.dataNascimentoConjuge ??
             sim?.data_nascimento_conjuge ??
-            env?.data_nascimento_conjuge ??
+            conjuge?.data_nascimento ??
             src?.data_nascimento_conjuge ??
             undefined,
-          tipoEstadoCivilConjuge:
-            part?.tipoEstadoCivilConjuge ?? sim?.estado_civil_conjuge ?? estadoCivil ?? undefined,
-          rendaConjuge:
-            part?.rendaConjuge ?? sim?.renda_conjuge ?? env?.renda_conjuge ?? undefined,
+          tipoEstadoCivilConjuge: estadoCivilConjuge,
+          tipoDocumentoIdentidadeConjuge:
+            enumBancoId(part?.tipoDocumentoIdentidadeConjuge) ?? conjuge?.tipo_documento_identidade ?? undefined,
+          numeroDocumentoConjuge: sanitizarNumeroDocumento(
+            part?.numeroDocumentoConjuge ?? conjuge?.numero_documento,
+          ),
+          dataExpedicaoConjuge: part?.dataExpedicaoConjuge ?? conjuge?.data_expedicao ?? undefined,
+          orgaoExpedidorConjuge: part?.orgaoExpedidorConjuge ?? conjuge?.orgao_expedidor ?? undefined,
+          ufExpedicaoConjuge: part?.ufExpedicaoConjuge ?? conjuge?.uf_expedicao ?? undefined,
+          nomeProfissaoConjuge:
+            textoLivreParaBanco(part?.nomeProfissaoConjuge) ||
+            textoLivreParaBanco(conjuge?.profissao) ||
+            undefined,
+          rendaConjuge: part?.rendaConjuge ?? sim?.renda_conjuge ?? conjuge?.renda ?? undefined,
+          nomeEmpresaProfissaoConjuge:
+            textoLivreParaBanco(part?.nomeEmpresaProfissaoConjuge) ||
+            textoLivreParaBanco(conjuge?.empresa) ||
+            undefined,
+          tipoSexoConjuge: enumBancoId(part?.tipoSexoConjuge) ?? conjuge?.tipo_sexo ?? undefined,
         }
       : {};
+
+    if (casado && (!(dadosConjuge as any).nomeConjuge || !(dadosConjuge as any).cpfConjuge)) {
+      throw new Error(
+        "Cadastro do cônjuge incompleto. Informe nome e CPF do cônjuge antes de enviar ao banco.",
+      );
+    }
 
     // Chamamos a API quando falta estado civil, UF, profissão, empresa ou dados
     // de cônjuge (campos que mais derrubam a validação dos bancos). Se todos já
     // estão presentes no participante, nada a fazer.
-    const faltaEstadoCivil = !(part?.tipoEstadoCivil && String(part.tipoEstadoCivil).trim());
+    const faltaEstadoCivil = !enumBancoId(part?.tipoEstadoCivil);
     const faltaUf = !(part?.uf && String(part.uf).trim());
     const faltaProfissao = !(part?.nomeProfissao && String(part.nomeProfissao).trim());
     const faltaEmpresa = !(part?.nomeEmpresaProfissao && String(part.nomeEmpresaProfissao).trim());
@@ -473,18 +506,18 @@ async function garantirEnderecoParticipantes({
       continue;
 
     const payload: Record<string, unknown> = {
-      tipoSituacao: part?.tipoSituacao ?? "A",
+      tipoSituacao: enumBancoId(part?.tipoSituacao) ?? "A",
       nomeParticipante: part?.nomeParticipante ?? env?.nome ?? prop.nome_cliente,
-      tipoQualificacao: part?.tipoQualificacao ?? "CO",
-      tipoPessoa: part?.tipoPessoa ?? ((cpf?.length ?? 0) > 11 ? "J" : "F"),
+      tipoQualificacao: enumBancoId(part?.tipoQualificacao) ?? "CO",
+      tipoPessoa: enumBancoId(part?.tipoPessoa) ?? ((cpf?.length ?? 0) > 11 ? "J" : "F"),
       cpfCnpj: cpf,
       dataNascimento:
         part?.dataNascimento ?? env?.data_nascimento ?? src?.data_nascimento ?? prop.data_nascimento ?? undefined,
       tipoEstadoCivil: estadoCivil ?? undefined,
-      tipoRegimeCasamento: part?.tipoRegimeCasamento ?? env?.regime_casamento ?? undefined,
-      tipoSexo: part?.tipoSexo ?? env?.tipo_sexo ?? undefined,
+      tipoRegimeCasamento: enumBancoId(part?.tipoRegimeCasamento) ?? env?.regime_casamento ?? undefined,
+      tipoSexo: enumBancoId(part?.tipoSexo) ?? env?.tipo_sexo ?? undefined,
       tipoDocumentoIdentidade:
-        part?.tipoDocumentoIdentidade ?? env?.tipo_documento_identidade ?? undefined,
+        enumBancoId(part?.tipoDocumentoIdentidade) ?? env?.tipo_documento_identidade ?? undefined,
       numeroDocumento: sanitizarNumeroDocumento(part?.numeroDocumento ?? env?.numero_documento),
       orgaoExpedidor: part?.orgaoExpedidor ?? env?.orgao_expedidor ?? undefined,
       ufExpedicao: part?.ufExpedicao ?? env?.uf_expedicao ?? undefined,
@@ -495,7 +528,7 @@ async function garantirEnderecoParticipantes({
       renda: part?.renda ?? env?.renda ?? src?.renda_total_declarada ?? prop.renda_total ?? undefined,
       email: part?.email ?? env?.email ?? src?.email ?? prop.email ?? undefined,
       celular: part?.celular ?? soDigitos(env?.celular ?? src?.celular) ?? undefined,
-      utilizaFgts: part?.utilizaFgts ?? Boolean(env?.utiliza_fgts) ?? undefined,
+      utilizaFgts: part?.utilizaFgts ?? (env?.utiliza_fgts ? "S" : "N"),
       fgAutorizacaoDados: env?.fg_autorizacao_dados ?? true,
       cep: soDigitos(env?.cep ?? prop.cep_imovel),
       logradouro: env?.logradouro ?? prop.endereco_imovel ?? undefined,
@@ -515,8 +548,11 @@ async function garantirEnderecoParticipantes({
         payload,
         ctx,
       );
-    } catch {
-      // Falha ao completar os dados não deve abortar o envio dos demais bancos.
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      throw new Error(
+        `Não foi possível atualizar os dados complementares do participante antes do envio: ${sanitizarMensagemErro(msg)}`,
+      );
     }
   }
 }
