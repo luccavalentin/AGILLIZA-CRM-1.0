@@ -1720,6 +1720,8 @@ export async function adicionarParticipanteImpl({
     tipoPessoa: participante.tipoPessoa ?? (cpfCnpj.length > 11 ? "J" : "F"),
     ...participante,
     cpfCnpj,
+    numeroDocumento: sanitizarNumeroDocumento(participante.numeroDocumento),
+    numeroDocumentoConjuge: sanitizarNumeroDocumento(participante.numeroDocumentoConjuge),
     celular: soDigitosStr(participante.celular),
     cep: soDigitosStr(participante.cep),
     fgAutorizacaoDados: participante.fgAutorizacaoDados ?? true,
