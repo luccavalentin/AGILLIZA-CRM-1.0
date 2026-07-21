@@ -46,6 +46,8 @@ export function useAdaptadorCliente({
   const contextoFn = useServerFn(obterContextoChatCliente);
   const sessaoFn = useServerFn(getMinhaSessao);
   const criarTarefaFn = useServerFn(criarTarefa);
+  const reagirFn = useServerFn(reagirMensagem);
+
 
   const { data: sessao } = useQuery({
     queryKey: ["minha-sessao"],
