@@ -93,18 +93,32 @@ function sanitizarNumeroDocumento(v: unknown): string | undefined {
 }
 
 /**
- * Detecta o cenário em que a integração devolveu "recusa" mas a proposta
+ * Detecta o cenário em que a integração devolveu "erro" mas a proposta
  * NUNCA foi de fato efetivada na esteira do banco (falha de integração).
- * Critério (validado em produção com Bradesco):
- *   - tipoSituacao ∈ {"R","E"}
- *   - sem codigoSimulacaoBanco (token real devolvido pelo banco)
- *   - codigoSituacaoBanco vazio OU código de FASE DE SIMULAÇÃO (ex.: "01.03")
- *   - retornoIntegracao null (sem mensagem real do banco)
- * Recusa real (Santander "514 - ...", Itaú "3", etc.) NÃO cai aqui.
+ *
+ * Docs oficiais (swagger Homefin) — tipoSituacao:
+ *   S = Sem Integração · P = Erro ao Enviar Proposta · N = Em Análise ·
+ *   A = Crédito Aprovado · R = Crédito Recusado.
+ *
+ * Regras:
+ *  - "R" (Recusa) é decisão REAL de crédito — nunca é falha de integração.
+ *  - Só considera falha quando tipoSituacao ∈ {"P","E"} (erro ao enviar).
+ *  - Se o banco já devolveu `codigoOportunidadeBanco` (ou número real de
+ *    proposta), a proposta CHEGOU no banco (mesmo que Bradesco tenha
+ *    devolvido "P" no primeiro retorno) — não é falha de integração.
+ *  - Sem token do banco (`codigoSimulacaoBanco`), sem `retornoIntegracao`
+ *    e com `codigoSituacaoBanco` vazio ou de fase de simulação: falha.
  */
 export function ehFalhaIntegracaoBanco(sim: any): boolean {
   const tipo = String(sim?.tipoSituacao ?? "").toUpperCase().charAt(0);
-  if (tipo !== "R" && tipo !== "E") return false;
+  if (tipo !== "P" && tipo !== "E") return false;
+  // Se o banco devolveu um identificador da oportunidade/proposta, a
+  // proposta foi efetivamente recebida na esteira do banco. Tratamos como
+  // "em análise" (retorno pode demorar — ex.: Bradesco tem SLA de 15 min).
+  const opBanco = String(sim?.codigoOportunidadeBanco ?? "").trim();
+  if (opBanco) return false;
+  const numeroReal = numeroPropostaBancoReal(sim);
+  if (numeroReal) return false;
   const codigoSim = String(sim?.codigoSimulacaoBanco ?? "").trim();
   if (codigoSim) return false;
   const retorno = sim?.retornoIntegracao ?? sim?.descricaoRespostaBanco?.retornoIntegracao;
@@ -114,6 +128,7 @@ export function ehFalhaIntegracaoBanco(sim: any): boolean {
   // Códigos de fase de simulação (ex.: "01.03", "1.03") — não são decisão de crédito
   return /^0?1\.\d/.test(codigoSit);
 }
+
 
 const MSG_FALHA_INTEGRACAO =
   "A proposta não foi efetivada no banco (falha na integração). Reenvie para retomar o processo.";
@@ -1027,12 +1042,19 @@ function statusInternoBanco(
     case "N":
       return { banco: "em_analise", proposta: "em_analise_credito" };
     case "P":
-      return { banco: "erro", proposta: null };
     case "E":
-      // "E" observado sem retorno real do banco = erro de integração
-      // (falha silenciosa). Falha completa é capturada por ehFalhaIntegracaoBanco
-      // acima; aqui, sem sim, mantemos o comportamento conservador de erro.
+      // Docs: "P" = Erro ao Enviar Proposta. Porém, se o banco já devolveu
+      // o `codigoOportunidadeBanco`, a proposta CHEGOU no banco (comum no
+      // Bradesco no primeiro retorno). Tratamos como em_analise para não
+      // sinalizar erro fantasma ao usuário.
+      if (sim && String(sim?.codigoOportunidadeBanco ?? "").trim()) {
+        return { banco: "em_analise", proposta: "em_analise_credito" };
+      }
+      if (sim && numeroPropostaBancoReal(sim)) {
+        return { banco: "em_analise", proposta: "em_analise_credito" };
+      }
       return { banco: "erro", proposta: null };
+
     case "S":
       return { banco: "enviada", proposta: "em_analise_credito" };
     default:
@@ -1375,6 +1397,21 @@ export async function sincronizarPropostaImpl({
     let erroMsg = extrairErroRetorno(
       sim.retornoIntegracao ?? sim.descricaoRespostaBanco?.retornoIntegracao,
     );
+    // Se o banco já devolveu `codigoOportunidadeBanco`, a proposta CHEGOU
+    // no banco. Uma mensagem transiente (ex.: aviso de validação) NÃO deve
+    // ser sinalizada como "erro de envio" — o banco recebeu e vai retornar
+    // decisão real (Bradesco leva ~15 min). Recusas reais (tipoSituacao "R"
+    // ou códigos de recusa em codigoSituacaoBanco) continuam sendo tratadas
+    // pelo mapa de status abaixo.
+    const tipoSit = String(sim?.tipoSituacao ?? "").toUpperCase().charAt(0);
+    if (
+      erroMsg &&
+      String(sim?.codigoOportunidadeBanco ?? "").trim() &&
+      tipoSit !== "R"
+    ) {
+      erroMsg = null;
+    }
+
     // Falha de integração (Bradesco/etc.): tipoSituacao "R"/"E" sem token real
     // do banco (codigoSimulacaoBanco), retornoIntegracao null e código apenas
     // de fase de simulação. NÃO é recusa de crédito — é falha silenciosa da
