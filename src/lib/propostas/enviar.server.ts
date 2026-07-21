@@ -1031,8 +1031,9 @@ function extrairErroRetorno(retorno: unknown): string | null {
   const codigo = obj?.codigo ?? obj?.code ?? null;
   if (codigo) {
     const c = String(codigo).trim();
-    // Códigos que começam com "0"/"200"/"OK"/"SUCC" indicam sucesso.
-    if (c && !/^(0+|200|ok|succ)/i.test(c)) {
+    // Só códigos exatamente positivos indicam sucesso; prefixos como "01.03"
+    // podem ser códigos de fase/erro do banco e não devem ser mascarados.
+    if (c && !(c === "0" || c === "00" || c === "000" || c === "200" || /^(ok|success|sucesso)$/i.test(c))) {
       return `Falha na integração com o banco (código ${c}). A proposta não chegou a ser recebida — reenvie.`;
     }
   }
