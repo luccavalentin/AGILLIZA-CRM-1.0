@@ -1397,6 +1397,21 @@ export async function sincronizarPropostaImpl({
     let erroMsg = extrairErroRetorno(
       sim.retornoIntegracao ?? sim.descricaoRespostaBanco?.retornoIntegracao,
     );
+    // Se o banco já devolveu `codigoOportunidadeBanco`, a proposta CHEGOU
+    // no banco. Uma mensagem transiente (ex.: aviso de validação) NÃO deve
+    // ser sinalizada como "erro de envio" — o banco recebeu e vai retornar
+    // decisão real (Bradesco leva ~15 min). Recusas reais (tipoSituacao "R"
+    // ou códigos de recusa em codigoSituacaoBanco) continuam sendo tratadas
+    // pelo mapa de status abaixo.
+    const tipoSit = String(sim?.tipoSituacao ?? "").toUpperCase().charAt(0);
+    if (
+      erroMsg &&
+      String(sim?.codigoOportunidadeBanco ?? "").trim() &&
+      tipoSit !== "R"
+    ) {
+      erroMsg = null;
+    }
+
     // Falha de integração (Bradesco/etc.): tipoSituacao "R"/"E" sem token real
     // do banco (codigoSimulacaoBanco), retornoIntegracao null e código apenas
     // de fase de simulação. NÃO é recusa de crédito — é falha silenciosa da
