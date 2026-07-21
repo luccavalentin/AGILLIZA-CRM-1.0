@@ -558,25 +558,30 @@ export async function enviarPropostaImpl({
     );
   }
 
-  // Cadastro complementar obrigatório: todos os compradores/coproponentes
-  // (CO/TI) precisam estar com os dados completos antes de enviar ao banco.
+  // Cadastro complementar obrigatório: apenas dos compradores/coproponentes
+  // "independentes". Cônjuges vinculados a outro envolvido (`conjuge_de`) são
+  // editados dentro do formulário do titular e enviados ao banco pelo bloco
+  // `nomeConjuge/cpfConjuge/...` da oportunidade — não exigem o mesmo conjunto
+  // completo de campos, então não devem bloquear o envio.
   const { data: compradores } = await supabase
     .from("proposta_envolvidos")
     .select("*")
     .eq("proposta_id", propostaId)
     .in("tipo_qualificacao", ["CO", "TI"]);
-  if (!compradores || compradores.length === 0) {
+  const principais = (compradores ?? []).filter((e: any) => !e.conjuge_de);
+  if (principais.length === 0) {
     throw new Error(
       "Preencha o cadastro complementar do comprador antes de enviar a proposta ao banco.",
     );
   }
-  const incompletos = compradores.filter((e: any) => !envolvidoEnvioCompleto(e));
+  const incompletos = principais.filter((e: any) => !envolvidoEnvioCompleto(e));
   if (incompletos.length > 0) {
     const nomes = incompletos.map((e: any) => e.nome || "sem nome").join(", ");
     throw new Error(
       `Cadastro complementar incompleto para: ${nomes}. Preencha todos os dados obrigatórios antes de enviar.`,
     );
   }
+
 
 
 
