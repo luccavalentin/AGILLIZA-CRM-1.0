@@ -22,7 +22,10 @@ export interface ChatMensagem {
   interna: boolean;
   /** Prévia da mensagem citada (quando responde_a aponta para outra mensagem). */
   citacao: { autor: string; texto: string } | null;
+  /** Reações agrupadas por emoji (Fase 6). */
+  reacoes: ReacaoAgrupada[];
 }
+
 
 const IMG_EXT = /\.(png|jpe?g|gif|webp|bmp|heic|heif|svg)$/i;
 
