@@ -103,7 +103,9 @@ export function useAdaptadorDm({
           responde_a: null,
           interna: false,
           citacao: null,
+          reacoes: [],
         }));
+
       },
       responder: async (p) => {
         await enviarFn({
