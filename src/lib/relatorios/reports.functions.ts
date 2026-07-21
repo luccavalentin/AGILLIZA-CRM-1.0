@@ -1155,6 +1155,35 @@ export const runReport = createServerFn({ method: "POST" })
       for (const s of simulacoesFiltradas) if (s.parceiro_id) parceiroIds.add(s.parceiro_id);
       for (const p of propostasFiltradas) if (p.parceiro_id) parceiroIds.add(p.parceiro_id);
       for (const p of contratosOperacionais) if (p.parceiro_id) parceiroIds.add(p.parceiro_id);
+
+      // Vínculos completos por cliente (imobiliária + corretor) — a proposta/simulação
+      // guarda apenas um `parceiro_id`, então enriquecemos com todos os vínculos do
+      // cadastro do cliente para popular ambas as colunas quando existirem.
+      const clienteIdsAll = new Set<string>();
+      for (const s of simulacoesFiltradas) if (s.cliente_id) clienteIdsAll.add(String(s.cliente_id));
+      for (const p of propostasFiltradas) if (p.cliente_id) clienteIdsAll.add(String(p.cliente_id));
+      for (const p of contratosOperacionais) if (p.cliente_id) clienteIdsAll.add(String(p.cliente_id));
+      const vinculosPorCliente = new Map<string, { imobiliaria_id?: string; corretor_id?: string }>();
+      if (clienteIdsAll.size > 0) {
+        for (let inicio = 0; ; inicio += 1000) {
+          const { data: lote } = await supabase
+            .from("cliente_parceiros")
+            .select("cliente_id, parceiro_id, tipo_vinculo")
+            .in("cliente_id", [...clienteIdsAll])
+            .range(inicio, inicio + 999);
+          const rows = (lote ?? []) as { cliente_id: string; parceiro_id: string | null; tipo_vinculo: string }[];
+          for (const v of rows) {
+            if (!v.parceiro_id) continue;
+            const atual = vinculosPorCliente.get(v.cliente_id) ?? {};
+            if (v.tipo_vinculo === "imobiliaria" && !atual.imobiliaria_id) atual.imobiliaria_id = v.parceiro_id;
+            if (v.tipo_vinculo === "corretor" && !atual.corretor_id) atual.corretor_id = v.parceiro_id;
+            vinculosPorCliente.set(v.cliente_id, atual);
+            parceiroIds.add(v.parceiro_id);
+          }
+          if (rows.length < 1000) break;
+        }
+      }
+
       const [nomes, parceiros] = await Promise.all([
         nomesUsuarios([...idsFaltando]),
         perfisUsuarios([...parceiroIds]),
@@ -1166,12 +1195,17 @@ export const runReport = createServerFn({ method: "POST" })
       const perfilParceiro = (p: any) => (p.parceiro_id ? parceiros.get(p.parceiro_id) : null);
       const nomeParceiro = (p: any) =>
         perfilParceiro(p)?.nome || p.parceiro_nome || nomes.get(p.parceiro_id) || "Não atribuído";
+      const vincDe = (p: any) => (p.cliente_id ? vinculosPorCliente.get(String(p.cliente_id)) : null);
       const nomeImobiliaria = (p: any) => {
+        const vinc = vincDe(p);
+        if (vinc?.imobiliaria_id) return parceiros.get(vinc.imobiliaria_id)?.nome ?? "—";
         const perfil = perfilParceiro(p);
         if (perfil?.tipo === "imobiliaria") return perfil.nome;
         return "—";
       };
       const nomeCorretor = (p: any) => {
+        const vinc = vincDe(p);
+        if (vinc?.corretor_id) return parceiros.get(vinc.corretor_id)?.nome ?? "—";
         const perfil = perfilParceiro(p);
         if (perfil?.tipo === "corretor") return perfil.nome;
         return "—";
