@@ -767,11 +767,17 @@ function statusInternoBanco(
   tipo: string,
   temErro: boolean,
   codigoSituacaoBanco?: string | null,
+  sim?: any,
 ): {
   banco: string;
   proposta: PropostaStatus | "credito_recusado" | null;
 } {
   if (temErro) return { banco: "erro", proposta: null };
+
+  // Falha de integração (Bradesco: "R"/"E" sem token do banco e código de fase
+  // de simulação): a proposta NÃO chegou ao banco. Trata como erro recuperável,
+  // NÃO como recusa de crédito.
+  if (sim && ehFalhaIntegracaoBanco(sim)) return { banco: "erro", proposta: null };
 
   const codigo = normalizarTexto(codigoSituacaoBanco);
   const codigoNumerico = String(codigoSituacaoBanco ?? "").replace(/\D/g, "");
@@ -805,8 +811,10 @@ function statusInternoBanco(
     case "P":
       return { banco: "erro", proposta: null };
     case "E":
-      // "E" observado como enviada/em análise quando não há erro de retorno.
-      return { banco: "em_analise", proposta: "em_analise_credito" };
+      // "E" observado sem retorno real do banco = erro de integração
+      // (falha silenciosa). Falha completa é capturada por ehFalhaIntegracaoBanco
+      // acima; aqui, sem sim, mantemos o comportamento conservador de erro.
+      return { banco: "erro", proposta: null };
     case "S":
       return { banco: "enviada", proposta: "em_analise_credito" };
     default:
@@ -831,8 +839,9 @@ function situacaoBancoDeTipo(
   tipo: string,
   codigoSituacaoBanco?: string | null,
   temErro = false,
+  sim?: any,
 ): string {
-  const mapa = statusInternoBanco(tipo, temErro, codigoSituacaoBanco);
+  const mapa = statusInternoBanco(tipo, temErro, codigoSituacaoBanco, sim);
   if (mapa.banco === "aprovada" || mapa.banco === "aprovado") return "aprovado";
   if (mapa.banco === "recusada" || mapa.banco === "recusado") return "recusado";
   if (mapa.banco === "condicionado") return "condicionado";
