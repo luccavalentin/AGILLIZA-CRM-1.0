@@ -182,6 +182,15 @@ function Pagina() {
     setAlvo(null);
     if (!info || info.origem === codigoDestino) return;
 
+    // Etapas 4-9 são sincronizadas pela proposta — sem arrasto manual.
+    if (!etapaEhComercial(info.origem) || !etapaEhComercial(codigoDestino)) {
+      toast.info(
+        "Esta etapa é atualizada automaticamente pela proposta. Movimente pelo kanban de propostas.",
+      );
+      return;
+    }
+
+
     const anterior = qc.getQueryData<PainelStage[]>(queryKey);
     let clienteMovido: PainelStage["clientes"][number] | undefined;
     if (anterior) {
