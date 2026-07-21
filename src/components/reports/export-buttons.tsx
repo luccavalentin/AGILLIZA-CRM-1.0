@@ -36,6 +36,28 @@ export function ExportButtons({
     }
   }
 
+  // Slug amigável (sem acentos) para nome de arquivo, preservando palavras.
+  function slug(s: string) {
+    return s
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[\\/:*?"<>|]+/g, "")
+      .replace(/\s+/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/(^-|-$)/g, "");
+  }
+
+  function nomeArquivo() {
+    const partes: string[] = [result.titulo];
+    if (filtros.status) {
+      const labelStatus =
+        result.filtrosDisponiveis?.statuses?.find((s) => s.value === filtros.status)?.label ??
+        filtros.status;
+      partes.push(labelStatus);
+    }
+    return `agilliza-${partes.map(slug).filter(Boolean).join("-")}`;
+  }
+
   async function onPDF() {
     setBusy(true);
     try {
@@ -50,7 +72,7 @@ export function ExportButtons({
         result.kpis,
         result.columns,
         result.rows,
-        undefined,
+        nomeArquivo(),
         undefined,
         undefined,
         undefined,
