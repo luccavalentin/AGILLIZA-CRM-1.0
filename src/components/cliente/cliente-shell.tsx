@@ -32,7 +32,10 @@ import {
   clienteListarNotificacoes,
   clienteListarAtendentes,
 } from "@/lib/portal/cliente.functions";
+import { ClienteChatWatcher } from "@/components/cliente/cliente-chat-watcher";
+import { ClienteChatFlutuante } from "@/components/cliente/cliente-chat-flutuante";
 import { cn } from "@/lib/utils";
+
 
 const STORAGE_KEY = "agilliza-cliente-sidebar-collapsed";
 
@@ -278,7 +281,9 @@ export function ClienteShell({
 
   return (
     <TooltipProvider delayDuration={200}>
+      <ClienteChatWatcher />
       <div className="flex min-h-[100dvh] w-full bg-muted/40">
+
         {/* Sidebar desktop */}
         <aside
           className={cn(
@@ -393,6 +398,8 @@ export function ClienteShell({
           </footer>
         </div>
       </div>
+      <ClienteChatFlutuante />
+
     </TooltipProvider>
   );
 }
