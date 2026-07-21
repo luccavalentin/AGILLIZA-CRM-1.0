@@ -263,7 +263,18 @@ function Pagina() {
     // "nomeConjuge/..." da oportunidade e não exige o cadastro completo.
     const conjugeOk = !conjuge || Boolean(conjuge.nome && conjuge.cpf_cnpj);
     if (titularOk && conjugeOk) {
+      // Cadastro já completo (veio do CRM): dispara o envio direto ao banco,
+      // sem passar pelo formulário de validação.
+      setAutoAbrir(false);
       setAutoEnviar(true);
+      // limpa a flag da URL para que o efeito não reexecute em rerenders
+      router.navigate({
+        to: "/operacional/propostas/$id",
+        params: { id },
+        search: {},
+        replace: true,
+      });
+      void enviarAposComplementar();
     } else {
       setTab("COMPRADORES");
       setAutoAbrir(true);
