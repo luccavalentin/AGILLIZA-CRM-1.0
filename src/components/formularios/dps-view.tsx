@@ -408,7 +408,12 @@ function DpsDocumento({
                   />
                 )}
               </div>
-              {p.esclareca && <div className="dps-esclareca">Esclareça:</div>}
+              {p.esclareca && (
+                <EsclarecaCampo
+                  valor={esclarecimentos[String(p.numero)] ?? ""}
+                  onChange={(v) => setEsclarecimento(String(p.numero), v)}
+                />
+              )}
               {p.nota && <p className="dps-nota">{p.nota}</p>}
               {p.subitens && (
                 <div className="dps-sub">
