@@ -219,11 +219,11 @@ export function ListaMensagens({
                   </div>
                 </div>
 
-                {/* Ações para mensagens do cliente (só responder/copiar) */}
+                {/* Ações para mensagens do peer (só responder/copiar) */}
                 {!doTime && !excluida && !otimista && (
                   <MsgAcoes
                     lado="cliente"
-                    onReply={() => iniciarResposta(m)}
+                    onReply={podeResponder ? () => iniciarResposta(m) : undefined}
                     onCopy={() => copiar(m)}
                   />
                 )}
