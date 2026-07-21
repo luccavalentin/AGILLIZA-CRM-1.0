@@ -148,6 +148,10 @@ export function useAdaptadorDemanda({
       listarFn,
       comentarFn,
       marcarLidaFn,
+      editarFn,
+      excluirFn,
+      reagirFn,
+
     ],
   );
 }
