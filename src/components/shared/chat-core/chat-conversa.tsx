@@ -137,7 +137,8 @@ export function ChatConversaCore({ adapter }: { adapter: ChatAdapter }) {
               texto: alvo.mensagem?.trim() || "Anexo",
             }
           : null,
-      };
+        reacoes: [],
+
       qc.setQueryData<ChatMensagem[]>(queryKey, [...(anterior ?? []), otimista]);
       setTexto("");
       setRespondendo(null);
