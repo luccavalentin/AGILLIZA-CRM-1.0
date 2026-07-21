@@ -238,8 +238,20 @@ async function garantirDadosParticipantesSimulacao({
       celular: part?.celular ?? soDigitos(ehConjuge ? sim.celular_conjuge : sim.celular),
       utilizaFgts: part?.utilizaFgts ?? sim.utiliza_fgts ?? "N",
       fgAutorizacaoDados: true,
+      ...(ehTitular && (sim.possui_conjuge || ["CA", "UE"].includes(String(sim.estado_civil ?? "")))
+        ? {
+            nomeConjuge: part?.nomeConjuge ?? sim.nome_conjuge ?? undefined,
+            cpfConjuge: part?.cpfConjuge ?? soDigitos(sim.cpf_conjuge),
+            dataNascimentoConjuge:
+              part?.dataNascimentoConjuge ?? sim.data_nascimento_conjuge ?? undefined,
+            tipoEstadoCivilConjuge:
+              part?.tipoEstadoCivilConjuge ?? sim.estado_civil_conjuge ?? sim.estado_civil ?? undefined,
+            rendaConjuge: part?.rendaConjuge ?? sim.renda_conjuge ?? undefined,
+          }
+        : {}),
       ...endereco,
     };
+
 
     try {
       await chamarIntegracao<any>(
