@@ -351,6 +351,96 @@ export const obterDemanda = createServerFn({ method: "GET" })
     };
   });
 
+const IMG_EXT_DEM = /\.(png|jpe?g|gif|webp|bmp|heic|heif|svg)$/i;
+
+/**
+ * Lista as mensagens de uma demanda no formato do núcleo de chat
+ * (`ChatMensagem[]`). Marca como "time" o autor logado e "peer" os demais.
+ */
+export const listarChatDemanda = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => z.object({ demanda_id: z.string().uuid() }).parse(data))
+  .handler(async ({ context, data }) => {
+    const { supabase, userId } = context;
+    const [{ data: msgs, error }, { data: leitura }] = await Promise.all([
+      supabase
+        .from("demanda_mensagens")
+        .select("id, autor_id, corpo, anexo_path, anexo_nome, created_at")
+        .eq("demanda_id", data.demanda_id)
+        .order("created_at"),
+      supabase
+        .from("demanda_leituras")
+        .select("user_id, lida_em")
+        .eq("demanda_id", data.demanda_id),
+    ]);
+    if (error) throw new Error(error.message);
+
+    const lista = (msgs ?? []) as any[];
+    const nomes = await nomesPorId(
+      supabase,
+      lista.map((m) => m.autor_id),
+    );
+
+    // Última leitura por qualquer usuário DIFERENTE do autor de cada mensagem —
+    // usada para marcar "lida pelo peer" nas próprias mensagens.
+    const leituraPorUsuario = new Map<string, string>();
+    for (const l of (leitura ?? []) as any[]) {
+      if (l.user_id) leituraPorUsuario.set(l.user_id as string, l.lida_em as string);
+    }
+
+    const resultado = await Promise.all(
+      lista.map(async (m) => {
+        let anexoUrl: string | null = null;
+        let anexoNome: string | null = m.anexo_nome ?? null;
+        let anexoImg = false;
+        if (m.anexo_path) {
+          const { data: signed } = await supabase.storage
+            .from("demanda-anexos")
+            .createSignedUrl(m.anexo_path as string, 3600);
+          anexoUrl = signed?.signedUrl ?? null;
+          if (!anexoNome) {
+            const partes = String(m.anexo_path).split("/");
+            anexoNome = partes[partes.length - 1] ?? null;
+          }
+          anexoImg = IMG_EXT_DEM.test(String(m.anexo_path));
+        }
+
+        // "Lida" para mim: existe pelo menos um leitor diferente do autor
+        // com timestamp posterior à mensagem.
+        let lidaEm: string | null = null;
+        if (m.autor_id === userId) {
+          for (const [uid, ts] of leituraPorUsuario) {
+            if (uid !== userId && ts && ts >= (m.created_at as string)) {
+              if (!lidaEm || ts < lidaEm) lidaEm = ts;
+            }
+          }
+        }
+
+        return {
+          id: m.id as string,
+          remetente_tipo: m.autor_id === userId ? "time" : "peer",
+          remetente_id: (m.autor_id as string | null) ?? null,
+          remetente_nome: nomes.get(m.autor_id as string) ?? null,
+          mensagem: (m.corpo as string) ?? "",
+          anexo_url: anexoUrl,
+          anexo_nome: anexoNome,
+          anexo_is_imagem: anexoImg,
+          lida_em: lidaEm,
+          criada_em: m.created_at as string,
+          editada_em: null,
+          excluida_em: null,
+          responde_a: null,
+          interna: false,
+          citacao: null,
+        };
+      }),
+    );
+
+    return resultado;
+  });
+
+
+
 export const criarDemanda = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) =>
