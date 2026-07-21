@@ -1021,7 +1021,7 @@ function protocoloBanco(sim: any): string | null {
 
 function prioridadeSimulacao(sim: any, exata: boolean): number {
   const erroMsg = extrairErroRetorno(sim?.retornoIntegracao ?? sim?.descricaoRespostaBanco?.retornoIntegracao);
-  const mapa = statusInternoBanco(sim?.tipoSituacao, Boolean(erroMsg), sim?.codigoSituacaoBanco);
+  const mapa = statusInternoBanco(sim?.tipoSituacao, Boolean(erroMsg), sim?.codigoSituacaoBanco, sim);
   const statusScore =
     mapa.proposta === "credito_aprovado"
       ? 80
