@@ -585,7 +585,6 @@ function Pagina() {
                 />
               )}
             </Fragment>
-            </Fragment>
             );
           })}
         </div>
