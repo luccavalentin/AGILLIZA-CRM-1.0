@@ -990,8 +990,38 @@ iframe[src*="lvbl" i] {
   margin-top: 4px;
   font-size: 11px;
   color: #475569;
-  border-bottom: 1px solid #cbd5e1;
-  padding-bottom: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.dps-esclareca-label {
+  font-weight: 600;
+  color: #334155;
+}
+.dps-esclareca-input {
+  width: 100%;
+  min-height: 32px;
+  resize: vertical;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  padding: 4px 6px;
+  font-size: 12px;
+  color: #0f172a;
+  background: #fff;
+  outline: none;
+  font-family: inherit;
+}
+.dps-esclareca-input:focus {
+  border-color: #16294f;
+}
+@media print {
+  .dps-esclareca-input {
+    border: 0;
+    border-bottom: 1px solid #94a3b8;
+    border-radius: 0;
+    padding: 0 0 2px;
+    min-height: 22px;
+  }
 }
 .dps-nota {
   margin: 4px 0 0;
