@@ -253,8 +253,10 @@ export function ThreadChat({
   const { data: mensagens } = useQuery({
     queryKey: ["cliente", "mensagens", atendenteId],
     queryFn: () => clienteListarMensagens({ data: { atendente_id: atendenteId } }),
-    refetchInterval: (q: any) => (q.state.status === "error" ? false : 8000),
+    refetchInterval: (q: any) => (q.state.status === "error" ? false : 2500),
+    refetchIntervalInBackground: true,
   });
+
 
   const { peerTyping, notifyTyping, notifyStop } = useChatTyping(atendenteId, "cliente");
 
