@@ -279,20 +279,30 @@ async function renovarSimulacaoSeConsumida({
     fgAutorizacaoDados: true,
   };
   const payloadOportunidadeAtual: Record<string, unknown> = {
-    ...payloadCompleto,
+    valorImovel,
+    valorFinanciamento,
+    prazo,
     tipoEstadoCivil: familiaAtual.estadoCivil ? { id: familiaAtual.estadoCivil } : undefined,
     fgCompoeRenda: familiaAtual.compoeRenda,
+    fgAutorizacaoDados: true,
   };
   // A oportunidade pode ter sido criada quando o cliente ainda estava casado e
   // depois o cadastro foi corrigido para solteiro. Se não sincronizarmos esse
   // estado antes do PUT/POST da simulação, alguns bancos (Itaú) continuam
   // validando `spouse=false` em uma simulação antiga.
-  await chamarIntegracao<any>(
-    `/oportunidade/${idOportunidade}`,
-    "PUT",
-    payloadOportunidadeAtual,
-    ctx,
-  );
+  try {
+    await chamarIntegracao<any>(
+      `/oportunidade/${idOportunidade}`,
+      "PUT",
+      payloadOportunidadeAtual,
+      ctx,
+    );
+  } catch (e) {
+    console.warn(
+      "Falha ao sincronizar estado civil da oportunidade antes do reenvio; prosseguindo com participante/simulação atualizados.",
+      e instanceof Error ? e.message : String(e),
+    );
+  }
 
   const criarNovaSimulacao = async (motivo: string): Promise<number> => {
     const novoPayload: Record<string, unknown> = {
