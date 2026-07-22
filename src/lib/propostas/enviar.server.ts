@@ -236,7 +236,12 @@ async function renovarSimulacaoSeConsumida({
   }
 
   const tipo = String(sim?.tipoSituacao ?? "").toUpperCase().charAt(0);
-  const simConsumida = tipo === "R" || tipo === "A";
+  const erroSimulacaoAtual = erroRetornoIntegracaoResposta(sim);
+  // Além de A/R (simulação já consumida), P/E ou retornoIntegracao com validação
+  // indicam uma simulação bancária contaminada por tentativa anterior. Reusar esse
+  // id mantém o erro preso (ex.: Itaú com spouse=false mesmo após atualizar o
+  // participante para solteiro). Nesses casos criamos uma simulação nova.
+  const simConsumida = tipo === "R" || tipo === "A" || tipo === "P" || tipo === "E" || Boolean(erroSimulacaoAtual);
   const idBanco = sim?.banco?.idBanco ?? sim?.idBanco ?? pb.homefin_id_banco;
   const valorImovel = num(prop.valor_imovel ?? simLocal?.valor_imovel ?? sim?.valorImovel);
   const valorFinanciamento = num(
@@ -272,51 +277,80 @@ async function renovarSimulacaoSeConsumida({
     fgAutorizacaoDados: true,
   };
 
+  const criarNovaSimulacao = async (motivo: string): Promise<number> => {
+    const novoPayload: Record<string, unknown> = {
+      ...payloadCompleto,
+      banco: idBanco ? { idBanco } : sim?.banco,
+    };
+    const novaResp = await chamarIntegracao<any>(
+      `/oportunidade/${idOportunidade}/simulacao`,
+      "POST",
+      novoPayload,
+      ctx,
+    );
+    const erroCriacao = erroRetornoIntegracaoResposta(novaResp);
+    if (erroCriacao) {
+      throw new IntegracaoBancariaError(sanitizarMensagemErro(erroCriacao));
+    }
+    const novoId = Number(novaResp?.idSimulacao ?? novaResp?.data?.idSimulacao ?? 0);
+    if (!novoId) {
+      throw new Error(
+        `Não foi possível criar uma nova simulação para reenviar ao ${pb.nome_banco ?? "banco"}. Refaça a simulação e tente novamente.`,
+      );
+    }
+    const putResp = await chamarIntegracao<any>(
+      `/oportunidade/${idOportunidade}/simulacao/${novoId}`,
+      "PUT",
+      payloadCompleto,
+      ctx,
+    );
+    const erroPut = erroRetornoIntegracaoResposta(putResp);
+    if (erroPut) {
+      throw new IntegracaoBancariaError(sanitizarMensagemErro(erroPut));
+    }
+    await supabase
+      .from("proposta_bancos")
+      .update({ homefin_id_simulacao_banco: String(novoId) } as any)
+      .eq("id", pb.id);
+    // Reflete a nova simulação em memória para o restante do envio.
+    pb.homefin_id_simulacao_banco = String(novoId);
+    await supabase.from("proposta_historico").insert({
+      proposta_id: propostaId,
+      tipo_evento: "sincronizacao",
+      descricao: motivo,
+    });
+    return novoId;
+  };
+
   if (!simConsumida) {
-    await chamarIntegracao<any>(
+    const putResp = await chamarIntegracao<any>(
       `/oportunidade/${idOportunidade}/simulacao/${idAtual}`,
       "PUT",
       payloadCompleto,
       ctx,
     );
+    const erroPut = erroRetornoIntegracaoResposta(putResp);
+    if (erroPut) {
+      return criarNovaSimulacao(
+        `Nova simulação gerada para reenviar ao ${pb.nome_banco ?? "banco"} após a simulação anterior retornar validação pendente.`,
+      );
+    }
     return Number(idAtual);
   }
 
-  // Simulação já consumida: criar nova com os mesmos parâmetros.
-  const novoPayload: Record<string, unknown> = {
-    ...payloadCompleto,
-    banco: idBanco ? { idBanco } : sim?.banco,
-  };
-  const novaResp = await chamarIntegracao<any>(
-    `/oportunidade/${idOportunidade}/simulacao`,
-    "POST",
-    novoPayload,
-    ctx,
+  return criarNovaSimulacao(
+    `Nova simulação gerada para reenviar ao ${pb.nome_banco ?? "banco"} (a anterior já estava encerrada ou com erro de validação).`,
   );
-  const novoId = Number(novaResp?.idSimulacao ?? novaResp?.data?.idSimulacao ?? 0);
-  if (!novoId) {
-    throw new Error(
-      `Não foi possível criar uma nova simulação para reenviar ao ${pb.nome_banco ?? "banco"}. Refaça a simulação e tente novamente.`,
-    );
-  }
-  await chamarIntegracao<any>(
-    `/oportunidade/${idOportunidade}/simulacao/${novoId}`,
-    "PUT",
-    payloadCompleto,
-    ctx,
+}
+
+function erroRetornoIntegracaoResposta(resp: any): string | null {
+  return (
+    extrairErroRetorno(resp?.retornoIntegracao, { codigoApenasComoErro: false }) ??
+    extrairErroRetorno(resp?.descricaoRespostaBanco?.retornoIntegracao, {
+      codigoApenasComoErro: false,
+    }) ??
+    null
   );
-  await supabase
-    .from("proposta_bancos")
-    .update({ homefin_id_simulacao_banco: String(novoId) } as any)
-    .eq("id", pb.id);
-  // Reflete a nova simulação em memória para o restante do envio.
-  pb.homefin_id_simulacao_banco = String(novoId);
-  await supabase.from("proposta_historico").insert({
-    proposta_id: propostaId,
-    tipo_evento: "sincronizacao",
-    descricao: `Nova simulação gerada para reenviar ao ${pb.nome_banco ?? "banco"} (a anterior já havia sido consumida).`,
-  });
-  return novoId;
 }
 
 
