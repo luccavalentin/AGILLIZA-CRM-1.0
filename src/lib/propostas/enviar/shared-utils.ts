@@ -36,3 +36,17 @@ export function normTexto(v: unknown): string {
     .replace(/[^a-z0-9]+/g, " ")
     .trim();
 }
+
+/**
+ * Normalização "leve" — preserva pontuação, colapsa acentos e faz `trim`.
+ * Útil para comparar mensagens de erro / códigos que podem conter espaços,
+ * dois-pontos ou hífens que `normTexto` removeria.
+ */
+export function normalizarTexto(v: unknown): string {
+  return String(v ?? "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
+}
+
