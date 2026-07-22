@@ -210,22 +210,46 @@ async function renovarSimulacaoSeConsumida({
       `Não foi possível confirmar a simulação do ${pb.nome_banco ?? "banco"} antes do envio: ${sanitizarMensagemErro(msg)}`,
     );
   }
-  if (!sim) return Number(idAtual);
-  const tipo = String(sim?.tipoSituacao ?? "").toUpperCase().charAt(0);
-  if (tipo !== "R" && tipo !== "A") return Number(idAtual);
 
-  // Simulação já consumida: criar nova com os mesmos parâmetros.
+  // Payload financeiro oficial para a API. Em tentativas anteriores algumas
+  // simulações de proposta foram criadas sem `valorFinanciamento`/`prazo`; se
+  // reutilizadas, o banco devolve financingValue/period = 0. Por isso TODO
+  // envio sincroniza a simulação antes do POST de inclusão da proposta.
   const { data: simLocal } = ctx.simulacao_id
     ? await supabase
         .from("simulacoes")
-        .select("valor_despesas_financiadas, fg_financiar_despesas")
+        .select("valor_imovel, valor_financiamento, prazo, sistema_amortizacao, valor_despesas_financiadas, fg_financiar_despesas")
         .eq("id", ctx.simulacao_id)
         .maybeSingle()
     : { data: null };
+
+  if (!sim) {
+    const valorImovel = num(prop.valor_imovel ?? simLocal?.valor_imovel);
+    const valorFinanciamento = num(prop.valor_financiamento ?? simLocal?.valor_financiamento);
+    const prazo = num(prop.prazo ?? simLocal?.prazo);
+    if (!(valorImovel > 0) || !(valorFinanciamento > 0) || !(prazo > 0)) {
+      throw new Error(
+        `Dados financeiros incompletos para enviar ao ${pb.nome_banco ?? "banco"}. Revise valor do imóvel, financiamento e prazo.`,
+      );
+    }
+    return Number(idAtual);
+  }
+
+  const tipo = String(sim?.tipoSituacao ?? "").toUpperCase().charAt(0);
+  const simConsumida = tipo === "R" || tipo === "A";
   const idBanco = sim?.banco?.idBanco ?? sim?.idBanco ?? pb.homefin_id_banco;
-  const valorImovel = num(prop.valor_imovel ?? sim?.valorImovel);
-  const valorFinanciamento = num(prop.valor_financiamento ?? sim?.valorFinanciamento ?? sim?.valorTotalFinanciamento);
-  const prazo = num(prop.prazo ?? sim?.prazo ?? sim?.prazoPagamentoSimulacao ?? sim?.prazoPagamentoBanco);
+  const valorImovel = num(prop.valor_imovel ?? simLocal?.valor_imovel ?? sim?.valorImovel);
+  const valorFinanciamento = num(
+    prop.valor_financiamento ??
+      simLocal?.valor_financiamento ??
+      sim?.valorFinanciamentoSimulacao ??
+      sim?.valorFinanciamentoBanco ??
+      sim?.valorFinanciamentoBancoMax ??
+      sim?.valorTotalFinanciamento,
+  );
+  const prazo = num(
+    prop.prazo ?? simLocal?.prazo ?? sim?.prazo ?? sim?.prazoPagamentoSimulacao ?? sim?.prazoPagamentoBanco,
+  );
   if (!(valorImovel > 0) || !(valorFinanciamento > 0) || !(prazo > 0)) {
     throw new Error(
       `Dados financeiros incompletos para reenviar ao ${pb.nome_banco ?? "banco"}. Revise valor do imóvel, financiamento e prazo.`,
@@ -235,18 +259,33 @@ async function renovarSimulacaoSeConsumida({
   const valorDespesasFinanciadas = financiarDespesas
     ? num(simLocal?.valor_despesas_financiadas ?? sim?.valorDespesasFinanciadas)
     : 0;
-  const novoPayload: Record<string, unknown> = {
+  const payloadCompleto: Record<string, unknown> = {
     valorImovel,
     valorFinanciamento,
     prazo,
     codigoSistemaAmortizacaoBanco: {
-      id: sistemaAmortizacaoBanco(prop.sistema_amortizacao ?? sim?.codigoSistemaAmortizacaoBanco),
+      id: sistemaAmortizacaoBanco(prop.sistema_amortizacao ?? simLocal?.sistema_amortizacao ?? sim?.codigoSistemaAmortizacaoBanco),
     },
-    banco: idBanco ? { idBanco } : sim?.banco,
     fgFinanciarDespesas: financiarDespesas ? "S" : "N",
     valorDespesasFinanciadas,
     valorTotalFinanciamento: valorFinanciamento + valorDespesasFinanciadas,
     fgAutorizacaoDados: true,
+  };
+
+  if (!simConsumida) {
+    await chamarIntegracao<any>(
+      `/oportunidade/${idOportunidade}/simulacao/${idAtual}`,
+      "PUT",
+      payloadCompleto,
+      ctx,
+    );
+    return Number(idAtual);
+  }
+
+  // Simulação já consumida: criar nova com os mesmos parâmetros.
+  const novoPayload: Record<string, unknown> = {
+    ...payloadCompleto,
+    banco: idBanco ? { idBanco } : sim?.banco,
   };
   const novaResp = await chamarIntegracao<any>(
     `/oportunidade/${idOportunidade}/simulacao`,
@@ -263,16 +302,7 @@ async function renovarSimulacaoSeConsumida({
   await chamarIntegracao<any>(
     `/oportunidade/${idOportunidade}/simulacao/${novoId}`,
     "PUT",
-    {
-      valorImovel,
-      valorFinanciamento,
-      prazo,
-      codigoSistemaAmortizacaoBanco: novoPayload.codigoSistemaAmortizacaoBanco,
-      fgFinanciarDespesas: novoPayload.fgFinanciarDespesas,
-      valorDespesasFinanciadas,
-      valorTotalFinanciamento: valorFinanciamento + valorDespesasFinanciadas,
-      fgAutorizacaoDados: true,
-    },
+    payloadCompleto,
     ctx,
   );
   await supabase
