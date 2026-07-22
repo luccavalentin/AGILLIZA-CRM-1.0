@@ -1211,3 +1211,5 @@ export {
   type ParticipantePayload,
   type UsuarioParceiroBanco,
 } from "./enviar/participantes-crud.server";
+// Re-export públicos dos helpers de retorno para retrocompatibilidade da API.
+export { ehFalhaIntegracaoBanco, bancoJaEnviado } from "./enviar/helpers-retorno.server";
