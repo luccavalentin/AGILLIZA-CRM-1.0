@@ -11,6 +11,23 @@ import {
 } from "@/lib/simulacao/homefin.server";
 import { transicaoPermitida, type PropostaStatus } from "./state-machine";
 
+import {
+  statusDaEtapa,
+  ehFalhaIntegracaoBanco,
+  MSG_FALHA_INTEGRACAO,
+  extrairErroRetorno,
+  statusInternoBanco,
+  situacaoBancoDeTipo,
+  bancoJaEnviado,
+  numeroPropostaBancoReal,
+  referenciaIntegracaoBanco,
+  numeroBancoDaOportunidade,
+  numeroAtualEhReferenciaTecnica,
+  escolherSimulacaoBanco,
+  statusDaAtividade,
+} from "./enviar/helpers-retorno.server";
+import { normalizarTexto } from "./enviar/shared-utils";
+
 /** Ordem de progressão do funil (para sincronização vinda do banco). */
 const ORDEM_STATUS: PropostaStatus[] = [
   "rascunho",
@@ -23,38 +40,7 @@ const ORDEM_STATUS: PropostaStatus[] = [
   "contrato_emitido",
 ];
 
-/** Deriva o status interno a partir do nome da etapa ativa retornada pelo banco. */
-function statusDaEtapa(nomeEtapa: string | null): PropostaStatus | null {
-  if (!nomeEtapa) return null;
-  const n = nomeEtapa.toLowerCase();
-  // Recusa/negativa de crédito encerra o fluxo — checar ANTES de "aprov"/"análise"
-  // para o status não ficar preso em "em_analise_credito" (polling infinito).
-  if (
-    n.includes("recus") ||
-    n.includes("negad") ||
-    n.includes("negat") ||
-    n.includes("reprov") ||
-    n.includes("indefer") ||
-    n.includes("nao aprov") ||
-    n.includes("não aprov")
-  )
-    return "credito_recusado";
-  if (n.includes("contrato") || n.includes("registr")) return "contrato_emitido";
-  if (n.includes("juríd") || n.includes("jurid") || n.includes("emiss"))
-    return "analise_juridica";
-  if (n.includes("vistoria") || n.includes("engenharia") || n.includes("avaliaç"))
-    return "engenharia_vistoria";
-  if (n.includes("document")) return "aguardando_documentos";
-  if (n.includes("aprov")) return "credito_aprovado";
-  if (
-    n.includes("análise") ||
-    n.includes("analise") ||
-    n.includes("crédito") ||
-    n.includes("credito")
-  )
-    return "em_analise_credito";
-  return null;
-}
+// statusDaEtapa foi extraído para ./enviar/helpers-retorno.server.ts
 
 interface EnviarArgs {
   propostaId: string;
