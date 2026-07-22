@@ -839,59 +839,10 @@ export async function enviarPropostaImpl({
 
 }
 
-export async function enviarFollowupHomefinImpl({
-  propostaId,
-  titulo,
-  comentario,
-  supabase,
-}: {
-  propostaId: string;
-  titulo: string;
-  comentario: string;
-  supabase: SupabaseClient<any, any, any>;
-}): Promise<void> {
-  const { data: prop } = await supabase
-    .from("propostas")
-    .select("homefin_id_oportunidade, simulacao_id, correspondente_id")
-    .eq("id", propostaId)
-    .maybeSingle();
-  if (!prop?.homefin_id_oportunidade) return;
-  await chamarIntegracao<any>(
-    `/oportunidade/${prop.homefin_id_oportunidade}/follow-up`,
-    "POST",
-    { idOportunidade: prop.homefin_id_oportunidade, tipoFup: "E", titulo, comentario },
-    {
-      simulacao_id: prop.simulacao_id,
-      proposta_id: propostaId,
-      correspondente_id: prop.correspondente_id,
-    },
-  );
-}
-
-export async function cancelarPropostaHomefinImpl({
-  propostaId,
-  supabase,
-}: {
-  propostaId: string;
-  supabase: SupabaseClient<any, any, any>;
-}): Promise<void> {
-  const { data: prop } = await supabase
-    .from("propostas")
-    .select("homefin_id_oportunidade, simulacao_id, correspondente_id")
-    .eq("id", propostaId)
-    .maybeSingle();
-  if (!prop?.homefin_id_oportunidade) return;
-  await chamarIntegracao<any>(
-    `/oportunidade/${prop.homefin_id_oportunidade}`,
-    "PUT",
-    { tipoSituacao: "C" },
-    {
-      simulacao_id: prop.simulacao_id,
-      proposta_id: propostaId,
-      correspondente_id: prop.correspondente_id,
-    },
-  );
-}
+export {
+  enviarFollowupHomefinImpl,
+  cancelarPropostaHomefinImpl,
+} from "./enviar/lifecycle.server";
 
 /** Rótulos amigáveis (pt-BR) para os campos que os bancos costumam recusar. */
 const ROTULO_CAMPO: Record<string, string> = {
