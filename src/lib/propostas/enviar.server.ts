@@ -820,7 +820,7 @@ export async function enviarPropostaImpl({
   // a análise em andamento e não deve retroceder.
   let novoStatus = statusAtual;
   if (primeiroEnvio) {
-    novoStatus = sucesso > 0 ? "em_analise_credito" : "erro_envio";
+    novoStatus = sucesso > 0 ? "enviada_banco" : "erro_envio";
     await supabase.from("propostas").update({ status: novoStatus }).eq("id", propostaId);
   }
 
