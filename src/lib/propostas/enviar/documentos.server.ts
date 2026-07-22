@@ -278,8 +278,23 @@ export async function enviarDocumentosBancoImpl({
         { idSimulacao: Number(idSimulacao) },
         ctx,
       );
-    } catch {
-      /* a inclusão final é best-effort; os uploads já foram registrados */
+    } catch (e) {
+      const motivo = sanitizarMensagemErro(e instanceof Error ? e.message : String(e));
+      erros.push({
+        nome: "Finalização dos documentos",
+        motivo,
+        participante: null,
+      });
+      try {
+        await supabase.from("proposta_historico").insert({
+          proposta_id: propostaId,
+          tipo_evento: "erro_envio",
+          descricao: `Documentos enviados, mas a finalização no banco retornou erro: ${motivo}`,
+          ator_id: userId,
+        });
+      } catch {
+        // Histórico é auxiliar; o retorno ao usuário já carrega o erro.
+      }
     }
   }
 

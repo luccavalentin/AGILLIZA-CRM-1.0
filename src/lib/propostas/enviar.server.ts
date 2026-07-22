@@ -67,6 +67,11 @@ function soDigitos(v: unknown): string | undefined {
   return s.length ? s : undefined;
 }
 
+function num(v: unknown): number {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : 0;
+}
+
 /**
  * Remove máscara/pontuação de números de documento (RG/CNH/RNE...) antes de
  * enviar ao banco. O Bradesco em particular rejeita silenciosamente valores
@@ -105,6 +110,12 @@ function estadoCivilBanco(v: unknown): string | undefined {
 function exigeConjugePorEstadoCivil(v: unknown): boolean {
   const ec = estadoCivilBanco(v);
   return ec === "CA" || ec === "UE";
+}
+
+function sistemaAmortizacaoBanco(v: unknown): string {
+  const bruto = enumBancoId(v) ?? "S";
+  const s = String(bruto).trim().toUpperCase().charAt(0);
+  return s === "P" ? "P" : "S";
 }
 
 // ehFalhaIntegracaoBanco / MSG_FALHA_INTEGRACAO foram extraídos para
@@ -163,12 +174,14 @@ function envolvidoEnvioCompleto(e: any): boolean {
  */
 async function renovarSimulacaoSeConsumida({
   idOportunidade,
+  prop,
   pb,
   propostaId,
   ctx,
   supabase,
 }: {
   idOportunidade: string;
+  prop: any;
   pb: any;
   propostaId: string;
   ctx: { simulacao_id: any; proposta_id: string; correspondente_id: any };
@@ -191,25 +204,48 @@ async function renovarSimulacaoSeConsumida({
     const op = resp?.oportunidade ?? resp ?? {};
     const simulacoes: any[] = Array.isArray(op?.simulacoes) ? op.simulacoes : [];
     sim = simulacoes.find((s) => String(s?.idSimulacao) === String(idAtual)) ?? null;
-  } catch {
-    // Sem informação da simulação, segue com o id atual — o próprio POST vai falhar caso já esteja consumida.
-    return Number(idAtual);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    throw new Error(
+      `Não foi possível confirmar a simulação do ${pb.nome_banco ?? "banco"} antes do envio: ${sanitizarMensagemErro(msg)}`,
+    );
   }
   if (!sim) return Number(idAtual);
   const tipo = String(sim?.tipoSituacao ?? "").toUpperCase().charAt(0);
   if (tipo !== "R" && tipo !== "A") return Number(idAtual);
 
   // Simulação já consumida: criar nova com os mesmos parâmetros.
-  const idBanco = sim?.banco?.idBanco ?? sim?.idBanco;
+  const { data: simLocal } = ctx.simulacao_id
+    ? await supabase
+        .from("simulacoes")
+        .select("valor_despesas_financiadas, fg_financiar_despesas")
+        .eq("id", ctx.simulacao_id)
+        .maybeSingle()
+    : { data: null };
+  const idBanco = sim?.banco?.idBanco ?? sim?.idBanco ?? pb.homefin_id_banco;
+  const valorImovel = num(prop.valor_imovel ?? sim?.valorImovel);
+  const valorFinanciamento = num(prop.valor_financiamento ?? sim?.valorFinanciamento ?? sim?.valorTotalFinanciamento);
+  const prazo = num(prop.prazo ?? sim?.prazo ?? sim?.prazoPagamentoSimulacao ?? sim?.prazoPagamentoBanco);
+  if (!(valorImovel > 0) || !(valorFinanciamento > 0) || !(prazo > 0)) {
+    throw new Error(
+      `Dados financeiros incompletos para reenviar ao ${pb.nome_banco ?? "banco"}. Revise valor do imóvel, financiamento e prazo.`,
+    );
+  }
+  const financiarDespesas = Boolean(prop.financia_despesas_cartorarias ?? simLocal?.fg_financiar_despesas);
+  const valorDespesasFinanciadas = financiarDespesas
+    ? num(simLocal?.valor_despesas_financiadas ?? sim?.valorDespesasFinanciadas)
+    : 0;
   const novoPayload: Record<string, unknown> = {
-    valorImovel: sim?.valorImovel,
-    valorFinanciamento: sim?.valorFinanciamento,
-    prazo: sim?.prazo,
-    codigoSistemaAmortizacaoBanco: sim?.codigoSistemaAmortizacaoBanco ?? { id: "S" },
+    valorImovel,
+    valorFinanciamento,
+    prazo,
+    codigoSistemaAmortizacaoBanco: {
+      id: sistemaAmortizacaoBanco(prop.sistema_amortizacao ?? sim?.codigoSistemaAmortizacaoBanco),
+    },
     banco: idBanco ? { idBanco } : sim?.banco,
-    fgFinanciarDespesas: sim?.fgFinanciarDespesas,
-    valorDespesasFinanciadas: sim?.valorDespesasFinanciadas,
-    valorTotalFinanciamento: sim?.valorTotalFinanciamento,
+    fgFinanciarDespesas: financiarDespesas ? "S" : "N",
+    valorDespesasFinanciadas,
+    valorTotalFinanciamento: valorFinanciamento + valorDespesasFinanciadas,
     fgAutorizacaoDados: true,
   };
   const novaResp = await chamarIntegracao<any>(
@@ -224,6 +260,21 @@ async function renovarSimulacaoSeConsumida({
       `Não foi possível criar uma nova simulação para reenviar ao ${pb.nome_banco ?? "banco"}. Refaça a simulação e tente novamente.`,
     );
   }
+  await chamarIntegracao<any>(
+    `/oportunidade/${idOportunidade}/simulacao/${novoId}`,
+    "PUT",
+    {
+      valorImovel,
+      valorFinanciamento,
+      prazo,
+      codigoSistemaAmortizacaoBanco: novoPayload.codigoSistemaAmortizacaoBanco,
+      fgFinanciarDespesas: novoPayload.fgFinanciarDespesas,
+      valorDespesasFinanciadas,
+      valorTotalFinanciamento: valorFinanciamento + valorDespesasFinanciadas,
+      fgAutorizacaoDados: true,
+    },
+    ctx,
+  );
   await supabase
     .from("proposta_bancos")
     .update({ homefin_id_simulacao_banco: String(novoId) } as any)
@@ -588,9 +639,6 @@ export async function enviarPropostaImpl({
   }
   const { data: bancosSel } = await query;
   const bancos = (bancosSel ?? []).filter((b: any) => !bancoJaEnviado(b));
-  if (!bancoId && bancos.length > 1) {
-    throw new Error("Clique no botão Enviar da linha do banco que deseja enviar.");
-  }
   if (bancos.length === 0) {
     throw new Error(
       bancoId
@@ -631,8 +679,6 @@ export async function enviarPropostaImpl({
   // o provedor interpretar como `spouse: false` e derruba o Itaú com o erro
   // "spouse: O campo deve ser informado" — por isso NÃO sincronizamos cônjuge
   // no nível da oportunidade.
-  await garantirEnderecoParticipantes({ prop, idOportunidade: prop.homefin_id_oportunidade, ctx, supabase });
-
   const resultados: EnviarResultado["bancos"] = [];
   let sucesso = 0;
 
@@ -645,12 +691,19 @@ export async function enviarPropostaImpl({
   // Itaú recusando por validação) não impede o envio dos demais.
   const enviarBancoIntegracao = async (b: any): Promise<EnviarResultado["bancos"][number]> => {
     try {
+      await garantirEnderecoParticipantes({
+        prop,
+        idOportunidade: prop.homefin_id_oportunidade,
+        ctx,
+        supabase,
+      });
       // Antes de reenviar, verifica se a simulação vinculada ao banco já foi
       // "consumida" por uma tentativa anterior (tipoSituacao "R" ou "A"). O
       // provedor não permite reprocessar a mesma simulação: nesse caso criamos
       // uma NOVA simulação com os mesmos parâmetros e passamos a usá-la.
       const idSimulacaoUsar = await renovarSimulacaoSeConsumida({
         idOportunidade: prop.homefin_id_oportunidade,
+        prop,
         pb: b,
         propostaId,
         ctx,
@@ -738,7 +791,7 @@ export async function enviarPropostaImpl({
       };
     } catch (e) {
       const msg = sanitizarMensagemErro(
-        e instanceof IntegracaoBancariaError ? e.message : "Falha ao enviar ao banco.",
+        e instanceof Error ? e.message : "Falha ao enviar ao banco.",
       );
       await supabase
         .from("proposta_bancos")
@@ -772,7 +825,7 @@ export async function enviarPropostaImpl({
   // a análise em andamento e não deve retroceder.
   let novoStatus = statusAtual;
   if (primeiroEnvio) {
-    novoStatus = sucesso > 0 ? "em_analise_credito" : "erro_envio";
+    novoStatus = sucesso > 0 ? "enviada_banco" : "erro_envio";
     await supabase.from("propostas").update({ status: novoStatus }).eq("id", propostaId);
   }
 

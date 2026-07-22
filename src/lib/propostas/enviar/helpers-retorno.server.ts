@@ -193,12 +193,14 @@ export function statusInternoBanco(
   banco: string;
   proposta: PropostaStatus | "credito_recusado" | null;
 } {
-  if (temErro) return { banco: "erro", proposta: null };
-
   // Falha de integração (Bradesco: "R"/"E" sem token do banco e código de fase
   // de simulação): a proposta NÃO chegou ao banco. Trata como erro recuperável,
   // NÃO como recusa de crédito.
   if (sim && ehFalhaIntegracaoBanco(sim)) return { banco: "erro", proposta: null };
+
+  const t = String(tipo ?? "")
+    .toUpperCase()
+    .charAt(0);
 
   const codigo = normalizarTexto(codigoSituacaoBanco);
   const codigoNumerico = String(codigoSituacaoBanco ?? "").replace(/\D/g, "");
@@ -219,9 +221,6 @@ export function statusInternoBanco(
   if (codigo.includes("aprov") || codigo.includes("favoravel")) {
     return { banco: "aprovada", proposta: "credito_aprovado" };
   }
-  const t = String(tipo ?? "")
-    .toUpperCase()
-    .charAt(0);
   switch (t) {
     case "A":
       return { banco: "aprovada", proposta: "credito_aprovado" };
@@ -229,12 +228,17 @@ export function statusInternoBanco(
       return { banco: "recusada", proposta: "credito_recusado" };
     case "N":
       return { banco: "em_analise", proposta: "em_analise_credito" };
+  }
+
+  if (temErro) return { banco: "erro", proposta: null };
+
+  switch (t) {
     case "P":
     case "E":
       return { banco: "erro", proposta: null };
 
     case "S":
-      return { banco: "enviada", proposta: "em_analise_credito" };
+      return { banco: "enviada", proposta: null };
     default:
       return { banco: "enviada", proposta: null };
   }
