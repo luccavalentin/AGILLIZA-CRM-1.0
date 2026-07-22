@@ -398,42 +398,46 @@ async function garantirEnderecoParticipantes({
     const dadosConjuge = casado
       ? {
           nomeConjuge:
-            part?.nomeConjuge ?? sim?.nome_conjuge ?? conjuge?.nome ?? src?.conjuge_nome ?? undefined,
+            conjuge?.nome ?? src?.conjuge_nome ?? sim?.nome_conjuge ?? part?.nomeConjuge ?? undefined,
           cpfConjuge:
-            soDigitos(part?.cpfConjuge ?? sim?.cpf_conjuge ?? conjuge?.cpf_cnpj ?? src?.conjuge_cpf),
+            soDigitos(conjuge?.cpf_cnpj ?? src?.conjuge_cpf ?? sim?.cpf_conjuge ?? part?.cpfConjuge),
           dataNascimentoConjuge:
-            part?.dataNascimentoConjuge ??
-            sim?.data_nascimento_conjuge ??
             conjuge?.data_nascimento ??
             src?.conjuge_data_nascimento ??
+            sim?.data_nascimento_conjuge ??
+            part?.dataNascimentoConjuge ??
             undefined,
           tipoEstadoCivilConjuge: estadoCivilConjuge,
           tipoDocumentoIdentidadeConjuge:
-            enumBancoId(part?.tipoDocumentoIdentidadeConjuge) ?? conjuge?.tipo_documento_identidade ?? undefined,
+            enumBancoId(conjuge?.tipo_documento_identidade) ??
+            enumBancoId(src?.conjuge_tipo_documento_identidade) ??
+            enumBancoId(part?.tipoDocumentoIdentidadeConjuge) ??
+            undefined,
           numeroDocumentoConjuge: sanitizarNumeroDocumento(
-            part?.numeroDocumentoConjuge ?? conjuge?.numero_documento ?? src?.conjuge_numero_documento,
+            conjuge?.numero_documento ?? src?.conjuge_numero_documento ?? part?.numeroDocumentoConjuge,
           ),
           dataExpedicaoConjuge:
-            part?.dataExpedicaoConjuge ?? conjuge?.data_expedicao ?? src?.conjuge_data_expedicao ?? undefined,
+            conjuge?.data_expedicao ?? src?.conjuge_data_expedicao ?? part?.dataExpedicaoConjuge ?? undefined,
           orgaoExpedidorConjuge:
-            part?.orgaoExpedidorConjuge ?? conjuge?.orgao_expedidor ?? src?.conjuge_orgao_expedidor ?? undefined,
+            conjuge?.orgao_expedidor ?? src?.conjuge_orgao_expedidor ?? part?.orgaoExpedidorConjuge ?? undefined,
           ufExpedicaoConjuge:
-            part?.ufExpedicaoConjuge ?? conjuge?.uf_expedicao ?? src?.conjuge_uf_expedicao ?? undefined,
+            conjuge?.uf_expedicao ?? src?.conjuge_uf_expedicao ?? part?.ufExpedicaoConjuge ?? undefined,
           nomeProfissaoConjuge:
-            textoLivreParaBanco(part?.nomeProfissaoConjuge) ||
             textoLivreParaBanco(conjuge?.profissao) ||
             textoLivreParaBanco(src?.conjuge_profissao) ||
+            textoLivreParaBanco(part?.nomeProfissaoConjuge) ||
             undefined,
-          rendaConjuge: part?.rendaConjuge ?? sim?.renda_conjuge ?? conjuge?.renda ?? src?.conjuge_renda ?? undefined,
+          rendaConjuge: conjuge?.renda ?? src?.conjuge_renda ?? sim?.renda_conjuge ?? part?.rendaConjuge ?? undefined,
           nomeEmpresaProfissaoConjuge:
-            textoLivreParaBanco(part?.nomeEmpresaProfissaoConjuge) ||
             textoLivreParaBanco(conjuge?.empresa) ||
             textoLivreParaBanco(src?.conjuge_empresa) ||
+            textoLivreParaBanco(part?.nomeEmpresaProfissaoConjuge) ||
             undefined,
           tipoSexoConjuge:
-            enumBancoId(part?.tipoSexoConjuge) ??
             enumBancoId(conjuge?.tipo_sexo) ??
             (src?.conjuge_sexo ? String(src.conjuge_sexo).trim().charAt(0).toUpperCase() : undefined),
+            enumBancoId(part?.tipoSexoConjuge) ??
+            undefined,
         }
       : {};
 
