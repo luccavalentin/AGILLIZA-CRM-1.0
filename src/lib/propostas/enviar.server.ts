@@ -435,7 +435,7 @@ async function garantirEnderecoParticipantes({
             undefined,
           tipoSexoConjuge:
             enumBancoId(conjuge?.tipo_sexo) ??
-            (src?.conjuge_sexo ? String(src.conjuge_sexo).trim().charAt(0).toUpperCase() : undefined),
+            (src?.conjuge_sexo ? String(src.conjuge_sexo).trim().charAt(0).toUpperCase() : undefined) ??
             enumBancoId(part?.tipoSexoConjuge) ??
             undefined,
         }
