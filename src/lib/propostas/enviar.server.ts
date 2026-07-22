@@ -223,6 +223,7 @@ async function renovarSimulacaoSeConsumida({
         .maybeSingle()
     : { data: null };
   const familiaAtual = await dadosFamiliaresAtuaisDaProposta({ prop, propostaId, supabase });
+  await sincronizarSnapshotFamiliarLocal({ prop, ctx, familiaAtual, supabase });
 
   if (!sim) {
     const valorImovel = num(prop.valor_imovel ?? simLocal?.valor_imovel);
@@ -400,12 +401,60 @@ async function dadosFamiliaresAtuaisDaProposta({
 
   return {
     estadoCivil:
-      estadoCivilBanco(principal?.estado_civil) ||
       estadoCivilBanco(cliente?.estado_civil) ||
+      estadoCivilBanco(principal?.estado_civil) ||
       estadoCivilBanco(prop.estado_civil) ||
       undefined,
     compoeRenda: Boolean(prop.compoe_renda),
   };
+}
+
+async function sincronizarSnapshotFamiliarLocal({
+  prop,
+  ctx,
+  familiaAtual,
+  supabase,
+}: {
+  prop: any;
+  ctx: { simulacao_id: any; proposta_id: string; correspondente_id: any };
+  familiaAtual: { estadoCivil: string | undefined; compoeRenda: boolean };
+  supabase: SupabaseClient<any, any, any>;
+}): Promise<void> {
+  if (!familiaAtual.estadoCivil) return;
+  const possuiConjugeAtual = exigeConjugePorEstadoCivil(familiaAtual.estadoCivil);
+  const estadoPropAtual = estadoCivilBanco(prop.estado_civil);
+  if (estadoPropAtual !== familiaAtual.estadoCivil || Boolean(prop.possui_conjuge) !== possuiConjugeAtual) {
+    await supabase
+      .from("propostas")
+      .update({
+        estado_civil: familiaAtual.estadoCivil,
+        possui_conjuge: possuiConjugeAtual,
+        compoe_renda: familiaAtual.compoeRenda,
+      } as any)
+      .eq("id", prop.id);
+    prop.estado_civil = familiaAtual.estadoCivil;
+    prop.possui_conjuge = possuiConjugeAtual;
+    prop.compoe_renda = familiaAtual.compoeRenda;
+  }
+  if (ctx.simulacao_id) {
+    const patchSim: Record<string, unknown> = {
+      estado_civil: familiaAtual.estadoCivil,
+      possui_conjuge: possuiConjugeAtual,
+      compoe_renda: familiaAtual.compoeRenda,
+    };
+    if (!possuiConjugeAtual) {
+      Object.assign(patchSim, {
+        nome_conjuge: null,
+        cpf_conjuge: null,
+        data_nascimento_conjuge: null,
+        email_conjuge: null,
+        celular_conjuge: null,
+        renda_conjuge: null,
+        estado_civil_conjuge: null,
+      });
+    }
+    await supabase.from("simulacoes").update(patchSim as any).eq("id", ctx.simulacao_id);
+  }
 }
 
 
