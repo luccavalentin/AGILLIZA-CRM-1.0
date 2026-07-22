@@ -112,6 +112,12 @@ function exigeConjugePorEstadoCivil(v: unknown): boolean {
   return ec === "CA" || ec === "UE";
 }
 
+function sistemaAmortizacaoBanco(v: unknown): string {
+  const bruto = enumBancoId(v) ?? "S";
+  const s = String(bruto).trim().toUpperCase().charAt(0);
+  return s === "P" ? "P" : "S";
+}
+
 // ehFalhaIntegracaoBanco / MSG_FALHA_INTEGRACAO foram extraídos para
 // ./enviar/helpers-retorno.server.ts e são re-exportados no fim do arquivo.
 
@@ -233,7 +239,9 @@ async function renovarSimulacaoSeConsumida({
     valorImovel,
     valorFinanciamento,
     prazo,
-    codigoSistemaAmortizacaoBanco: { id: prop.sistema_amortizacao ?? sim?.codigoSistemaAmortizacaoBanco?.id ?? sim?.codigoSistemaAmortizacaoBanco ?? "S" },
+    codigoSistemaAmortizacaoBanco: {
+      id: sistemaAmortizacaoBanco(prop.sistema_amortizacao ?? sim?.codigoSistemaAmortizacaoBanco),
+    },
     banco: idBanco ? { idBanco } : sim?.banco,
     fgFinanciarDespesas: financiarDespesas ? "S" : "N",
     valorDespesasFinanciadas,
@@ -631,9 +639,6 @@ export async function enviarPropostaImpl({
   }
   const { data: bancosSel } = await query;
   const bancos = (bancosSel ?? []).filter((b: any) => !bancoJaEnviado(b));
-  if (!bancoId && bancos.length > 1) {
-    throw new Error("Clique no botão Enviar da linha do banco que deseja enviar.");
-  }
   if (bancos.length === 0) {
     throw new Error(
       bancoId
