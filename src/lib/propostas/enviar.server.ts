@@ -107,30 +107,8 @@ function exigeConjugePorEstadoCivil(v: unknown): boolean {
   return ec === "CA" || ec === "UE";
 }
 
-/**
- * Detecta o cenário em que a integração devolveu "erro" mas a proposta
- * NUNCA foi de fato efetivada na esteira do banco (falha de integração).
- *
- * Docs oficiais (swagger Homefin) — tipoSituacao:
- *   S = Sem Integração · P = Erro ao Enviar Proposta · N = Em Análise ·
- *   A = Crédito Aprovado · R = Crédito Recusado.
- *
- * Regras:
- *  - "R" (Recusa) é decisão REAL de crédito — nunca é falha de integração.
- *  - Só considera falha quando tipoSituacao ∈ {"P","E"} (erro ao enviar).
- *  - `codigoOportunidadeBanco` sozinho NÃO confirma sucesso quando o próprio
- *    retorno veio como erro de envio; o status oficial da API prevalece.
- *  - `retornoIntegracao` com erro legível mantém a mensagem específica do banco.
- */
-export function ehFalhaIntegracaoBanco(sim: any): boolean {
-  const tipo = String(sim?.tipoSituacao ?? "").toUpperCase().charAt(0);
-  if (tipo !== "P" && tipo !== "E") return false;
-  return true;
-}
-
-
-const MSG_FALHA_INTEGRACAO =
-  "A proposta não foi efetivada no banco (falha na integração). Reenvie para retomar o processo.";
+// ehFalhaIntegracaoBanco / MSG_FALHA_INTEGRACAO foram extraídos para
+// ./enviar/helpers-retorno.server.ts e são re-exportados no fim do arquivo.
 
 /**
  * Normaliza textos livres antes de enviar ao banco. O usuário pode preencher
