@@ -222,6 +222,7 @@ async function renovarSimulacaoSeConsumida({
         .eq("id", ctx.simulacao_id)
         .maybeSingle()
     : { data: null };
+  const familiaAtual = await dadosFamiliaresAtuaisDaProposta({ prop, propostaId, supabase });
 
   if (!sim) {
     const valorImovel = num(prop.valor_imovel ?? simLocal?.valor_imovel);
@@ -276,6 +277,21 @@ async function renovarSimulacaoSeConsumida({
     valorTotalFinanciamento: valorFinanciamento + valorDespesasFinanciadas,
     fgAutorizacaoDados: true,
   };
+  const payloadOportunidadeAtual: Record<string, unknown> = {
+    ...payloadCompleto,
+    tipoEstadoCivil: familiaAtual.estadoCivil ? { id: familiaAtual.estadoCivil } : undefined,
+    fgCompoeRenda: familiaAtual.compoeRenda,
+  };
+  // A oportunidade pode ter sido criada quando o cliente ainda estava casado e
+  // depois o cadastro foi corrigido para solteiro. Se não sincronizarmos esse
+  // estado antes do PUT/POST da simulação, alguns bancos (Itaú) continuam
+  // validando `spouse=false` em uma simulação antiga.
+  await chamarIntegracao<any>(
+    `/oportunidade/${idOportunidade}`,
+    "PUT",
+    payloadOportunidadeAtual,
+    ctx,
+  );
 
   const criarNovaSimulacao = async (motivo: string): Promise<number> => {
     const novoPayload: Record<string, unknown> = {
@@ -351,6 +367,45 @@ function erroRetornoIntegracaoResposta(resp: any): string | null {
     }) ??
     null
   );
+}
+
+async function dadosFamiliaresAtuaisDaProposta({
+  prop,
+  propostaId,
+  supabase,
+}: {
+  prop: any;
+  propostaId: string;
+  supabase: SupabaseClient<any, any, any>;
+}): Promise<{ estadoCivil: string | undefined; compoeRenda: boolean }> {
+  const { data: principal } = await supabase
+    .from("proposta_envolvidos")
+    .select("estado_civil, compoe_renda")
+    .eq("proposta_id", propostaId)
+    .in("tipo_qualificacao", ["CO", "TI"])
+    .is("conjuge_de", null)
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  let cliente: any = null;
+  if (prop.cliente_id) {
+    const { data } = await supabase
+      .from("clientes")
+      .select("estado_civil")
+      .eq("id", prop.cliente_id)
+      .maybeSingle();
+    cliente = data;
+  }
+
+  return {
+    estadoCivil:
+      estadoCivilBanco(principal?.estado_civil) ||
+      estadoCivilBanco(cliente?.estado_civil) ||
+      estadoCivilBanco(prop.estado_civil) ||
+      undefined,
+    compoeRenda: Boolean(principal?.compoe_renda ?? prop.compoe_renda),
+  };
 }
 
 
