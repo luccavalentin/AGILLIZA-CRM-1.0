@@ -380,7 +380,7 @@ async function dadosFamiliaresAtuaisDaProposta({
 }): Promise<{ estadoCivil: string | undefined; compoeRenda: boolean }> {
   const { data: principal } = await supabase
     .from("proposta_envolvidos")
-    .select("estado_civil, compoe_renda")
+    .select("estado_civil")
     .eq("proposta_id", propostaId)
     .in("tipo_qualificacao", ["CO", "TI"])
     .is("conjuge_de", null)
@@ -404,7 +404,7 @@ async function dadosFamiliaresAtuaisDaProposta({
       estadoCivilBanco(cliente?.estado_civil) ||
       estadoCivilBanco(prop.estado_civil) ||
       undefined,
-    compoeRenda: Boolean(principal?.compoe_renda ?? prop.compoe_renda),
+    compoeRenda: Boolean(prop.compoe_renda),
   };
 }
 
