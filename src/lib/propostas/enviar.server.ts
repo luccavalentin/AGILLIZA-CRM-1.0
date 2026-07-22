@@ -222,6 +222,8 @@ async function renovarSimulacaoSeConsumida({
         .eq("id", ctx.simulacao_id)
         .maybeSingle()
     : { data: null };
+  const familiaAtual = await dadosFamiliaresAtuaisDaProposta({ prop, propostaId, supabase });
+  await sincronizarSnapshotFamiliarLocal({ prop, ctx, familiaAtual, supabase });
 
   if (!sim) {
     const valorImovel = num(prop.valor_imovel ?? simLocal?.valor_imovel);
@@ -236,7 +238,12 @@ async function renovarSimulacaoSeConsumida({
   }
 
   const tipo = String(sim?.tipoSituacao ?? "").toUpperCase().charAt(0);
-  const simConsumida = tipo === "R" || tipo === "A";
+  const erroSimulacaoAtual = erroRetornoIntegracaoResposta(sim);
+  // Além de A/R (simulação já consumida), P/E ou retornoIntegracao com validação
+  // indicam uma simulação bancária contaminada por tentativa anterior. Reusar esse
+  // id mantém o erro preso (ex.: Itaú com spouse=false mesmo após atualizar o
+  // participante para solteiro). Nesses casos criamos uma simulação nova.
+  const simConsumida = tipo === "R" || tipo === "A" || tipo === "P" || tipo === "E" || Boolean(erroSimulacaoAtual);
   const idBanco = sim?.banco?.idBanco ?? sim?.idBanco ?? pb.homefin_id_banco;
   const valorImovel = num(prop.valor_imovel ?? simLocal?.valor_imovel ?? sim?.valorImovel);
   const valorFinanciamento = num(
@@ -271,52 +278,193 @@ async function renovarSimulacaoSeConsumida({
     valorTotalFinanciamento: valorFinanciamento + valorDespesasFinanciadas,
     fgAutorizacaoDados: true,
   };
+  const payloadOportunidadeAtual: Record<string, unknown> = {
+    valorImovel,
+    valorFinanciamento,
+    prazo,
+    tipoEstadoCivil: familiaAtual.estadoCivil ? { id: familiaAtual.estadoCivil } : undefined,
+    fgCompoeRenda: familiaAtual.compoeRenda,
+    fgAutorizacaoDados: true,
+  };
+  // A oportunidade pode ter sido criada quando o cliente ainda estava casado e
+  // depois o cadastro foi corrigido para solteiro. Se não sincronizarmos esse
+  // estado antes do PUT/POST da simulação, alguns bancos (Itaú) continuam
+  // validando `spouse=false` em uma simulação antiga.
+  try {
+    await chamarIntegracao<any>(
+      `/oportunidade/${idOportunidade}`,
+      "PUT",
+      payloadOportunidadeAtual,
+      ctx,
+    );
+  } catch (e) {
+    console.warn(
+      "Falha ao sincronizar estado civil da oportunidade antes do reenvio; prosseguindo com participante/simulação atualizados.",
+      e instanceof Error ? e.message : String(e),
+    );
+  }
+
+  const criarNovaSimulacao = async (motivo: string): Promise<number> => {
+    const novoPayload: Record<string, unknown> = {
+      ...payloadCompleto,
+      banco: idBanco ? { idBanco } : sim?.banco,
+    };
+    const novaResp = await chamarIntegracao<any>(
+      `/oportunidade/${idOportunidade}/simulacao`,
+      "POST",
+      novoPayload,
+      ctx,
+    );
+    const erroCriacao = erroRetornoIntegracaoResposta(novaResp);
+    if (erroCriacao) {
+      throw new IntegracaoBancariaError(sanitizarMensagemErro(erroCriacao));
+    }
+    const novoId = Number(novaResp?.idSimulacao ?? novaResp?.data?.idSimulacao ?? 0);
+    if (!novoId) {
+      throw new Error(
+        `Não foi possível criar uma nova simulação para reenviar ao ${pb.nome_banco ?? "banco"}. Refaça a simulação e tente novamente.`,
+      );
+    }
+    const putResp = await chamarIntegracao<any>(
+      `/oportunidade/${idOportunidade}/simulacao/${novoId}`,
+      "PUT",
+      payloadCompleto,
+      ctx,
+    );
+    const erroPut = erroRetornoIntegracaoResposta(putResp);
+    if (erroPut) {
+      throw new IntegracaoBancariaError(sanitizarMensagemErro(erroPut));
+    }
+    await supabase
+      .from("proposta_bancos")
+      .update({ homefin_id_simulacao_banco: String(novoId) } as any)
+      .eq("id", pb.id);
+    // Reflete a nova simulação em memória para o restante do envio.
+    pb.homefin_id_simulacao_banco = String(novoId);
+    await supabase.from("proposta_historico").insert({
+      proposta_id: propostaId,
+      tipo_evento: "sincronizacao",
+      descricao: motivo,
+    });
+    return novoId;
+  };
 
   if (!simConsumida) {
-    await chamarIntegracao<any>(
+    const putResp = await chamarIntegracao<any>(
       `/oportunidade/${idOportunidade}/simulacao/${idAtual}`,
       "PUT",
       payloadCompleto,
       ctx,
     );
+    const erroPut = erroRetornoIntegracaoResposta(putResp);
+    if (erroPut) {
+      return criarNovaSimulacao(
+        `Nova simulação gerada para reenviar ao ${pb.nome_banco ?? "banco"} após a simulação anterior retornar validação pendente.`,
+      );
+    }
     return Number(idAtual);
   }
 
-  // Simulação já consumida: criar nova com os mesmos parâmetros.
-  const novoPayload: Record<string, unknown> = {
-    ...payloadCompleto,
-    banco: idBanco ? { idBanco } : sim?.banco,
-  };
-  const novaResp = await chamarIntegracao<any>(
-    `/oportunidade/${idOportunidade}/simulacao`,
-    "POST",
-    novoPayload,
-    ctx,
+  return criarNovaSimulacao(
+    `Nova simulação gerada para reenviar ao ${pb.nome_banco ?? "banco"} (a anterior já estava encerrada ou com erro de validação).`,
   );
-  const novoId = Number(novaResp?.idSimulacao ?? novaResp?.data?.idSimulacao ?? 0);
-  if (!novoId) {
-    throw new Error(
-      `Não foi possível criar uma nova simulação para reenviar ao ${pb.nome_banco ?? "banco"}. Refaça a simulação e tente novamente.`,
-    );
+}
+
+function erroRetornoIntegracaoResposta(resp: any): string | null {
+  return (
+    extrairErroRetorno(resp?.retornoIntegracao, { codigoApenasComoErro: false }) ??
+    extrairErroRetorno(resp?.descricaoRespostaBanco?.retornoIntegracao, {
+      codigoApenasComoErro: false,
+    }) ??
+    null
+  );
+}
+
+async function dadosFamiliaresAtuaisDaProposta({
+  prop,
+  propostaId,
+  supabase,
+}: {
+  prop: any;
+  propostaId: string;
+  supabase: SupabaseClient<any, any, any>;
+}): Promise<{ estadoCivil: string | undefined; compoeRenda: boolean }> {
+  const { data: principal } = await supabase
+    .from("proposta_envolvidos")
+    .select("estado_civil")
+    .eq("proposta_id", propostaId)
+    .in("tipo_qualificacao", ["CO", "TI"])
+    .is("conjuge_de", null)
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  let cliente: any = null;
+  if (prop.cliente_id) {
+    const { data } = await supabase
+      .from("clientes")
+      .select("estado_civil")
+      .eq("id", prop.cliente_id)
+      .maybeSingle();
+    cliente = data;
   }
-  await chamarIntegracao<any>(
-    `/oportunidade/${idOportunidade}/simulacao/${novoId}`,
-    "PUT",
-    payloadCompleto,
-    ctx,
-  );
-  await supabase
-    .from("proposta_bancos")
-    .update({ homefin_id_simulacao_banco: String(novoId) } as any)
-    .eq("id", pb.id);
-  // Reflete a nova simulação em memória para o restante do envio.
-  pb.homefin_id_simulacao_banco = String(novoId);
-  await supabase.from("proposta_historico").insert({
-    proposta_id: propostaId,
-    tipo_evento: "sincronizacao",
-    descricao: `Nova simulação gerada para reenviar ao ${pb.nome_banco ?? "banco"} (a anterior já havia sido consumida).`,
-  });
-  return novoId;
+
+  return {
+    estadoCivil:
+      estadoCivilBanco(cliente?.estado_civil) ||
+      estadoCivilBanco(principal?.estado_civil) ||
+      estadoCivilBanco(prop.estado_civil) ||
+      undefined,
+    compoeRenda: Boolean(prop.compoe_renda),
+  };
+}
+
+async function sincronizarSnapshotFamiliarLocal({
+  prop,
+  ctx,
+  familiaAtual,
+  supabase,
+}: {
+  prop: any;
+  ctx: { simulacao_id: any; proposta_id: string; correspondente_id: any };
+  familiaAtual: { estadoCivil: string | undefined; compoeRenda: boolean };
+  supabase: SupabaseClient<any, any, any>;
+}): Promise<void> {
+  if (!familiaAtual.estadoCivil) return;
+  const possuiConjugeAtual = exigeConjugePorEstadoCivil(familiaAtual.estadoCivil);
+  const estadoPropAtual = estadoCivilBanco(prop.estado_civil);
+  if (estadoPropAtual !== familiaAtual.estadoCivil || Boolean(prop.possui_conjuge) !== possuiConjugeAtual) {
+    await supabase
+      .from("propostas")
+      .update({
+        estado_civil: familiaAtual.estadoCivil,
+        possui_conjuge: possuiConjugeAtual,
+        compoe_renda: familiaAtual.compoeRenda,
+      } as any)
+      .eq("id", prop.id);
+    prop.estado_civil = familiaAtual.estadoCivil;
+    prop.possui_conjuge = possuiConjugeAtual;
+    prop.compoe_renda = familiaAtual.compoeRenda;
+  }
+  if (ctx.simulacao_id) {
+    const patchSim: Record<string, unknown> = {
+      estado_civil: familiaAtual.estadoCivil,
+      possui_conjuge: possuiConjugeAtual,
+      compoe_renda: familiaAtual.compoeRenda,
+    };
+    if (!possuiConjugeAtual) {
+      Object.assign(patchSim, {
+        nome_conjuge: null,
+        cpf_conjuge: null,
+        data_nascimento_conjuge: null,
+        email_conjuge: null,
+        celular_conjuge: null,
+        renda_conjuge: null,
+        estado_civil_conjuge: null,
+      });
+    }
+    await supabase.from("simulacoes").update(patchSim as any).eq("id", ctx.simulacao_id);
+  }
 }
 
 
