@@ -969,7 +969,10 @@ function extrairErroRetorno(
     try {
       obj = JSON.parse(retorno);
     } catch {
-      return retorno;
+      const texto = retorno.trim();
+      if (!texto) return null;
+      if (!codigoApenasComoErro && /^[A-Z0-9_.-]{1,16}$/i.test(texto)) return null;
+      return texto;
     }
   }
   if (obj && Array.isArray(obj.fields) && obj.fields.length > 0) {
