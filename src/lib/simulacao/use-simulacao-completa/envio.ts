@@ -127,7 +127,7 @@ export async function executarEnvioAmbos(ctx: CtxBase): Promise<void> {
       // (antes: N × latência sequencial). Cada falha isolada é tratada, sem
       // bloquear o envio aos demais bancos.
       await Promise.allSettled(
-        f.bancos_sac_ids.map((bid) =>
+        f.bancos_sac_ids.map((bid: string) =>
           enviarSimulacaoBanco({ data: { simulacao_id: id, banco_ids: [bid] } })
             .catch((e) => {
               toast.error(
@@ -176,7 +176,7 @@ export async function executarEnvioAmbos(ctx: CtxBase): Promise<void> {
       idsGerados.push(id);
       // Envio paralelo aos bancos PRICE — idem SAC.
       await Promise.allSettled(
-        f.bancos_price_ids.map((bid) =>
+        f.bancos_price_ids.map((bid: string) =>
           enviarSimulacaoBanco({ data: { simulacao_id: id, banco_ids: [bid] } })
             .catch((e) => {
               toast.error(
@@ -245,7 +245,7 @@ export async function executarEnvioSimples(ctx: CtxBase): Promise<void> {
     } else {
       let feitos = 0;
       await Promise.allSettled(
-        idsBancos.map((bid) =>
+        idsBancos.map((bid: string) =>
           enviarSimulacaoBanco({ data: { simulacao_id: id, banco_ids: [bid] } })
             .catch((e) => {
               toast.error(
