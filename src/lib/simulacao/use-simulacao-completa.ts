@@ -702,6 +702,15 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
   }
 
   async function enviar() {
+    const imovel = Number(f.valor_imovel) || 0;
+    const entrada = Number(f.valor_entrada) || 0;
+    const fin = Number(f.valor_financiamento) || 0;
+    if (imovel > 0 && Math.abs(imovel - (entrada + fin)) > 1) {
+      toast.error(
+        `Os valores não batem: entrada (${formatBRL(entrada)}) + financiamento (${formatBRL(fin)}) = ${formatBRL(entrada + fin)}, mas o imóvel vale ${formatBRL(imovel)}. Ajuste antes de enviar.`,
+      );
+      return;
+    }
     if (f.sistema_amortizacao === "B") {
       await enviarAmbos();
       return;
