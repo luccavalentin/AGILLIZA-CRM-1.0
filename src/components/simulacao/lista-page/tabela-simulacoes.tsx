@@ -183,3 +183,85 @@ export function TabelaSimulacoes({
     </div>
   );
 }
+
+/**
+ * Botões inline por banco, personalizados com a cor e o logo da marca.
+ * Renderiza apenas bancos ainda passíveis de envio (status "simulada").
+ * Bancos já enviados aparecem como badge sutil "Enviado".
+ */
+function EnviarBancosInline({
+  bancos,
+  enviandoKey,
+  simulacaoId,
+  onEnviar,
+}: {
+  bancos: any[];
+  enviandoKey: string | null;
+  simulacaoId: string;
+  onEnviar: (banco: any) => void;
+}) {
+  const enviaveis = bancos.filter(
+    (b) => b && b.banco_id && b.status_banco === "simulada",
+  );
+  const jaEnviados = bancos.filter(
+    (b) => b && b.banco_id && b.status_banco && b.status_banco !== "simulada",
+  );
+
+  if (enviaveis.length === 0 && jaEnviados.length === 0) {
+    return <span className="text-xs text-muted-foreground">—</span>;
+  }
+
+  return (
+    <div className="flex flex-wrap items-center justify-end gap-1.5">
+      {enviaveis.map((b: any) => {
+        const cor = corDoBanco(b.nome_banco);
+        const key = `${simulacaoId}:${b.id}`;
+        const enviando = enviandoKey === key;
+        const disabled = !!enviandoKey;
+        return (
+          <button
+            key={b.id}
+            type="button"
+            disabled={disabled}
+            onClick={() => onEnviar(b)}
+            title={`Enviar ao ${b.nome_banco}`}
+            aria-label={`Enviar proposta ao ${b.nome_banco}`}
+            style={{
+              color: cor,
+              borderColor: `${cor}40`,
+              backgroundColor: `${cor}0D`,
+            }}
+            className={cn(
+              "group/btn inline-flex h-8 items-center gap-1.5 rounded-full border px-2.5 text-xs font-semibold transition-all",
+              "hover:shadow-sm hover:brightness-95",
+              "disabled:cursor-not-allowed disabled:opacity-60",
+              enviando && "animate-pulse",
+            )}
+          >
+            <BancoLogo nome={b.nome_banco} size="xs" className="shrink-0 ring-0" />
+            <span className="max-w-[100px] truncate">
+              {enviando ? "Enviando…" : b.nome_banco}
+            </span>
+          </button>
+        );
+      })}
+      {jaEnviados.map((b: any) => {
+        const cor = corDoBanco(b.nome_banco);
+        return (
+          <span
+            key={b.id}
+            title={`Já enviado ao ${b.nome_banco}`}
+            style={{ color: cor, borderColor: `${cor}30` }}
+            className="inline-flex h-8 items-center gap-1.5 rounded-full border bg-muted/40 px-2.5 text-xs font-medium opacity-80"
+          >
+            <BancoLogo nome={b.nome_banco} size="xs" className="shrink-0 ring-0" />
+            <span className="max-w-[80px] truncate">{b.nome_banco}</span>
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              ✓
+            </span>
+          </span>
+        );
+      })}
+    </div>
+  );
+}
