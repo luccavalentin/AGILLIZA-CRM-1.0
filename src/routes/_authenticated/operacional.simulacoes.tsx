@@ -231,8 +231,12 @@ function Pagina() {
         );
       } catch (e) {
         const msg = e instanceof Error ? e.message : "Falha ao enviar ao banco.";
-        toast.error(`Proposta ${res.numero_proposta} criada, mas envio falhou: ${msg}`);
+        toast.error(`Proposta ${res.numero_proposta} criada, mas envio falhou: ${msg}`, {
+          duration: 15000,
+        });
+        console.error("[simulacoes.enviarBancoIndividual] falhou", e);
       }
+
       queryClient.invalidateQueries({ queryKey: ["simulacoes"] });
       queryClient.invalidateQueries({ queryKey: ["propostas"] });
     } catch (e) {

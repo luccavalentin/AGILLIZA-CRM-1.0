@@ -689,7 +689,25 @@ async function garantirEnderecoParticipantes({
 
 
 
-export async function enviarPropostaImpl({
+export async function enviarPropostaImpl(args: EnviarArgs): Promise<EnviarResultado> {
+  try {
+    return await enviarPropostaImplInner(args);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error("[proposta.enviar] falhou", { propostaId: args.propostaId, msg });
+    // Persiste o motivo no próprio registro para que o usuário veja na lista
+    // (o toast pode ser perdido; o campo `ultimo_erro` fica visível).
+    try {
+      await args.supabase
+        .from("propostas")
+        .update({ ultimo_erro: msg })
+        .eq("id", args.propostaId);
+    } catch {}
+    throw e;
+  }
+}
+
+async function enviarPropostaImplInner({
   propostaId,
   userId,
   ip,
@@ -703,6 +721,7 @@ export async function enviarPropostaImpl({
     .maybeSingle();
   if (error) throw new Error(error.message);
   if (!prop) throw new Error("Proposta não encontrada.");
+
 
   if (!prop.homefin_id_oportunidade) {
     throw new Error(
