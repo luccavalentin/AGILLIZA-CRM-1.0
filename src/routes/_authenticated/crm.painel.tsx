@@ -212,10 +212,12 @@ function Pagina() {
     try {
       await mover({ data: { cliente_id: info.clienteId, codigo_destino: codigoDestino } });
       toast.success("Etapa atualizada.");
+      // Marca stale sem refetch imediato — o painel já reflete a mudança pelo
+      // update otimista; próximo foco/navegação buscará dados atualizados.
+      qc.invalidateQueries({ queryKey: ["crm-painel"], refetchType: "none" });
     } catch (e) {
       if (anterior) qc.setQueryData(queryKey, anterior);
       toast.error(e instanceof Error ? e.message : "Falha ao mover o cliente.");
-    } finally {
       qc.invalidateQueries({ queryKey: ["crm-painel"] });
     }
   }
