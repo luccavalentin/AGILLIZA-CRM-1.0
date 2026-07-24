@@ -111,6 +111,32 @@ export const listarPastasDocumentos = createServerFn({ method: "GET" })
       }
     }
 
+    const slugsExistentes = new Set(
+      (pastas ?? []).map((p: any) => p.slug).filter((slug: unknown): slug is string => typeof slug === "string" && slug.length > 0),
+    );
+    const faltantes = PASTAS_PADRAO.filter((p) => !slugsExistentes.has(p.slug));
+    if (faltantes.length > 0) {
+      const corr = await correspondenteDoUsuario(supabase, userId);
+      if (corr) {
+        await supabase.from("cliente_documento_pastas").insert(
+          faltantes.map((p) => ({
+            cliente_id: data.cliente_id,
+            correspondente_id: corr,
+            nome: p.nome,
+            slug: p.slug,
+            ordem: p.ordem,
+          })),
+        );
+        const novo = await supabase
+          .from("cliente_documento_pastas")
+          .select("id, nome, slug, ordem, criado_por, parent_id")
+          .eq("cliente_id", data.cliente_id)
+          .order("ordem", { ascending: true })
+          .order("created_at", { ascending: true });
+        pastas = novo.data ?? [];
+      }
+    }
+
     const { data: docs } = await supabase
       .from("cliente_documentos")
       .select("pasta_id, categoria")

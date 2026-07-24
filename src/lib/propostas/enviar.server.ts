@@ -143,10 +143,6 @@ function envolvidoEnvioCompleto(e: any): boolean {
   const base =
     e.nome &&
     e.cpf_cnpj &&
-    e.tipo_documento_identidade &&
-    e.numero_documento &&
-    e.orgao_expedidor &&
-    e.uf_expedicao &&
     e.profissao &&
     e.renda &&
     e.email &&
@@ -633,12 +629,6 @@ async function garantirEnderecoParticipantes({
             undefined,
         }
       : {};
-
-    if (casado && (!(dadosConjuge as any).nomeConjuge || !(dadosConjuge as any).cpfConjuge)) {
-      throw new Error(
-        "Cadastro do cônjuge incompleto. Informe nome e CPF do cônjuge antes de enviar ao banco.",
-      );
-    }
 
     // Chamamos a API quando falta estado civil, UF, profissão, empresa ou dados
     // de cônjuge (campos que mais derrubam a validação dos bancos). Se todos já

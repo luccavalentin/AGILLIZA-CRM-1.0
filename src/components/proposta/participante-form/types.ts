@@ -143,10 +143,6 @@ export function participanteCompleto(e: any): boolean {
   const base =
     e.nome &&
     e.cpf_cnpj &&
-    e.tipo_documento_identidade &&
-    e.numero_documento &&
-    e.orgao_expedidor &&
-    e.uf_expedicao &&
     e.profissao &&
     e.renda &&
     e.email &&
@@ -178,10 +174,6 @@ export function camposFaltantes(f: ParticipanteForm): Set<string> {
     if (!f.tipo_sexo) faltando.add("tipo_sexo");
     if (!f.estado_civil) faltando.add("estado_civil");
   }
-  if (!f.tipo_documento_identidade) faltando.add("tipo_documento_identidade");
-  if (!f.numero_documento.trim()) faltando.add("numero_documento");
-  if (!f.orgao_expedidor.trim()) faltando.add("orgao_expedidor");
-  if (!f.uf_expedicao) faltando.add("uf_expedicao");
   if (!f.profissao.trim()) faltando.add("profissao");
   if (!f.renda || f.renda <= 0) faltando.add("renda");
   if (!f.email.trim() || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(f.email.trim())) faltando.add("email");

@@ -46,10 +46,9 @@ export function DocumentosChecklist({ clienteId }: { clienteId: string }) {
   } = state;
 
   const cli = data?.cliente;
-  const vend = data?.vendedores?.[0];
+  const vendedores = data?.vendedores ?? [];
+  const vend = vendedores[0];
   const casado = cli?.estado_civil === "casado" || cli?.estado_civil === "uniao_estavel";
-  const vendCasado =
-    vend?.estado_civil === "casado" || vend?.estado_civil === "uniao_estavel";
   const [vendTipoManual, setVendTipoManual] = useState<"PF" | "PJ" | null>(null);
   const vendPJ = vendTipoManual ? vendTipoManual === "PJ" : vend?.tipo_pessoa === "PJ";
 
@@ -62,14 +61,34 @@ export function DocumentosChecklist({ clienteId }: { clienteId: string }) {
     <div className="space-y-4">
       <SecaoComprador state={state} cli={cli} casado={casado} temDoc={temDoc} />
 
-      <SecaoVendedor
-        state={state}
-        vend={vend}
-        vendPJ={vendPJ}
-        vendCasado={vendCasado}
-        setVendTipoManual={setVendTipoManual}
-        temDoc={temDoc}
-      />
+      {vendedores.length > 0 ? (
+        vendedores.map((v: any, index: number) => {
+          const vendedorPJ = vendTipoManual ? vendTipoManual === "PJ" : v?.tipo_pessoa === "PJ";
+          const vendedorCasado = v?.estado_civil === "casado" || v?.estado_civil === "uniao_estavel";
+          return (
+            <SecaoVendedor
+              key={v.id ?? index}
+              state={state}
+              vend={v}
+              vendPJ={vendedorPJ}
+              vendCasado={vendedorCasado}
+              setVendTipoManual={setVendTipoManual}
+              temDoc={temDoc}
+              itemPrefix={`v${index + 1}_`}
+              titulo={v?.nome ? `Checklist do vendedor — ${v.nome}` : undefined}
+            />
+          );
+        })
+      ) : (
+        <SecaoVendedor
+          state={state}
+          vend={vend}
+          vendPJ={vendPJ}
+          vendCasado={false}
+          setVendTipoManual={setVendTipoManual}
+          temDoc={temDoc}
+        />
+      )}
 
       <SecaoImovel state={state} temDoc={temDoc} />
 

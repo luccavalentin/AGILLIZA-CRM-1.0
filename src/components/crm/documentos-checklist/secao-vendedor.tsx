@@ -17,6 +17,8 @@ export function SecaoVendedor({
   vendCasado,
   setVendTipoManual,
   temDoc,
+  itemPrefix = "",
+  titulo,
 }: {
   state: ChecklistState;
   vend: any;
@@ -24,6 +26,8 @@ export function SecaoVendedor({
   vendCasado: boolean;
   setVendTipoManual: (t: "PF" | "PJ") => void;
   temDoc: (c: Categoria, k: string) => boolean;
+  itemPrefix?: string;
+  titulo?: string;
 }) {
   const { check, setManual, custom, addCustom, removeCustom } = state;
   const p = { state, temDoc };
@@ -33,7 +37,7 @@ export function SecaoVendedor({
       <CardHeader>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <CardTitle className="text-base">
-            Checklist do vendedor — {vendPJ ? "Pessoa Jurídica" : "Pessoa Física"}
+            {titulo ?? "Checklist do vendedor"} — {vendPJ ? "Pessoa Jurídica" : "Pessoa Física"}
           </CardTitle>
           <div className="inline-flex items-center gap-1 rounded-lg border border-border p-0.5">
             <button
@@ -64,16 +68,24 @@ export function SecaoVendedor({
         </div>
         {vendPJ ? (
           <>
-            <DocItem {...p} itemKey="v_contrato_social" cat="vendedor" label={T.vendedor[3]} />
-            <DocItem {...p} itemKey="v_cnpj" cat="vendedor" label={T.vendedor[4]} />
-            <DocItem {...p} itemKey="v_doc_socios" cat="vendedor" label={T.vendedor[5]} />
-            <DocItem {...p} itemKey="v_comp_end_pj" cat="vendedor" label={T.vendedor[6]} />
+            <DocItem {...p} itemKey={`${itemPrefix}v_contrato_social`} cat="vendedor" label={T.vendedor[3]} />
+            <DocItem {...p} itemKey={`${itemPrefix}v_cnpj`} cat="vendedor" label={T.vendedor[4]} />
+            <DocItem {...p} itemKey={`${itemPrefix}v_doc_socios`} cat="vendedor" label={T.vendedor[5]} />
+            <DocItem {...p} itemKey={`${itemPrefix}v_comp_end_pj`} cat="vendedor" label={T.vendedor[6]} />
           </>
         ) : (
           <>
-            <DocItem {...p} itemKey="v_doc_id" cat="vendedor" label={T.vendedor[0]} />
-            <DocItem {...p} itemKey="v_comp_end" cat="vendedor" label={T.vendedor[1]} />
-            <DocItem {...p} itemKey="v_cert_ec" cat="vendedor" label={T.vendedor[2]} />
+            <DocItem {...p} itemKey={`${itemPrefix}v_doc_id`} cat="vendedor" label={T.vendedor[0]} />
+            <DocItem {...p} itemKey={`${itemPrefix}v_comp_end`} cat="vendedor" label={T.vendedor[1]} />
+            <DocItem {...p} itemKey={`${itemPrefix}v_cert_ec`} cat="vendedor" label={T.vendedor[2]} />
+            {vendCasado && (
+              <DocItem
+                {...p}
+                itemKey={`${itemPrefix}v_doc_id_conj`}
+                cat="vendedor_conjuge"
+                label={T.vendedor_conjuge[0]}
+              />
+            )}
             <div className="my-2 border-t border-border" />
             <AutoItem label="Profissão" ok={filled(vend?.profissao)} />
             <AutoItem label="Telefone" ok={filled(vend?.telefone_celular)} />
@@ -85,8 +97,8 @@ export function SecaoVendedor({
             {vendCasado && (
               <div className="flex items-center gap-3 py-1.5">
                 <Checkbox
-                  checked={check["v_dados_banc_conj"] === true}
-                  onCheckedChange={(v) => setManual("v_dados_banc_conj", v === true)}
+                  checked={check[`${itemPrefix}v_dados_banc_conj`] === true}
+                  onCheckedChange={(v) => setManual(`${itemPrefix}v_dados_banc_conj`, v === true)}
                 />
                 <span className="flex-1 text-sm text-muted-foreground">
                   Dados bancários do cônjuge do vendedor
