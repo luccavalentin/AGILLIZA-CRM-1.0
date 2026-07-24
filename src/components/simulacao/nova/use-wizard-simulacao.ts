@@ -139,7 +139,11 @@ export function useWizardSimulacao(melhorTaxaAno = 0.1199) {
     w.valor_financiamento > 0 &&
     w.data_nascimento !== "" &&
     w.prazo_meses >= PRAZO_MIN &&
-    w.prazo_meses <= prazoMaxEfetivo;
+    w.prazo_meses <= prazoMaxEfetivo &&
+    w.tipo_imovel !== "" &&
+    w.uso_imovel !== "" &&
+    w.situacao_imovel !== "" &&
+    w.uf !== "";
 
   function definirPrazo(valor: number) {
     if (!Number.isFinite(valor) || valor <= 0) {
