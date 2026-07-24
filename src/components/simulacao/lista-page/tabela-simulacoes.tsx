@@ -127,6 +127,20 @@ export function TabelaSimulacoes({
               </TableCell>
               <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                 {verExcluidas ? (
+                  <span className="text-xs text-muted-foreground">—</span>
+                ) : (
+                  <EnviarBancosInline
+                    bancos={Array.isArray(s.bancos) ? s.bancos : []}
+                    enviandoKey={handlers.enviandoBancoInlineKey ?? null}
+                    simulacaoId={s.id}
+                    onEnviar={(banco) =>
+                      handlers.onEnviarBancoDireto(s.id, s.numero_simulacao, banco)
+                    }
+                  />
+                )}
+              </TableCell>
+              <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                {verExcluidas ? (
                   <Button
                     size="sm"
                     variant="outline"
