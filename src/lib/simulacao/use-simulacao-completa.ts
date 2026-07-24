@@ -327,7 +327,7 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
   // Reajusta o prazo se a data de nascimento reduzir o máximo permitido.
   useEffect(() => {
     if (maxPrazoIdade != null && f.prazo > maxPrazoIdade) {
-      const { mensagem } = ajustarPrazoPorIdade(f.prazo, f.data_nascimento);
+      const { mensagem } = ajustarPrazoPorIdade(f.prazo, f.data_nascimento, datasProponentesPrazo);
       if (mensagem) toast.warning(mensagem);
       set("prazo", maxPrazoIdade);
     }
