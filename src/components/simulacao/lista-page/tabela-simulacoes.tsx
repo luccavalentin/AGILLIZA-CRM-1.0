@@ -60,11 +60,11 @@ export function TabelaSimulacoes({
           {isLoading &&
             Array.from({ length: 6 }).map((_, i) => (
               <TableRow key={`sk-${i}`} className="border-border/50">
-                {Array.from({ length: 8 }).map((__, j) => (
+                {Array.from({ length: 9 }).map((__, j) => (
                   <TableCell key={j} className="py-3.5">
                     <div
                       className="h-4 animate-pulse rounded bg-muted"
-                      style={{ width: `${[60, 80, 55, 70, 65, 45, 55, 30][j]}%` }}
+                      style={{ width: `${[60, 80, 55, 70, 65, 45, 55, 70, 30][j]}%` }}
                     />
                   </TableCell>
                 ))}
@@ -72,7 +72,7 @@ export function TabelaSimulacoes({
             ))}
           {!isLoading && itens.length === 0 && (
             <TableRow>
-              <TableCell colSpan={8}>
+              <TableCell colSpan={9}>
                 <div className="flex flex-col items-center gap-3 py-12 text-center">
                   <Calculator className="h-8 w-8 text-muted-foreground" />
                   <p className="text-sm text-muted-foreground">Nenhuma simulação encontrada.</p>
