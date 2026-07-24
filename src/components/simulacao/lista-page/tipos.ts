@@ -11,6 +11,8 @@ export interface HandlersLinha {
   onBaixarDetalhada: (id: string) => void | Promise<void>;
   onDuplicar: (id: string) => void;
   onEnviarProposta: (id: string, numero: string) => void | Promise<void>;
+  onEnviarBancoDireto: (simulacaoId: string, numero: string, banco: any) => void | Promise<void>;
+  enviandoBancoInlineKey?: string | null;
   onExcluir: (id: string) => Promise<void>;
   onRestaurar: (id: string) => void | Promise<void>;
 }
