@@ -437,8 +437,10 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
    */
   function aplicarPorEntrada(valorEntrada: number) {
     setEntradaTocada(true);
-    const patch = calcularPorEntrada(valorEntrada, ltvMax);
-    setF((prev) => ({ ...prev, ...patch }));
+    setF((prev) => ({
+      ...prev,
+      ...calcularPorEntrada(valorEntrada, ltvMax, Number(prev.valor_imovel) || 0),
+    }));
   }
 
   /**
