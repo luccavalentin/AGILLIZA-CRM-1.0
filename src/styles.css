@@ -1289,3 +1289,89 @@ iframe[src*="lvbl" i] {
   &::-webkit-scrollbar-track { background: transparent; }
 }
 
+/* ────────────────────────────────────────────────────────────────
+   CRM — Transições de página (SOMENTE módulo CRM)
+   ────────────────────────────────────────────────────────────────
+   Anima apenas transform + opacity → composição em GPU, sem custo
+   de layout/paint. Respeita `prefers-reduced-motion` (bloco global
+   no topo deste arquivo) e o opt-out local
+   `html[data-crm-motion="off"]`. */
+
+@keyframes crm-tr-fade {
+  from { opacity: var(--crm-tr-from-opacity, 0); }
+  to   { opacity: 1; }
+}
+@keyframes crm-tr-fade-up {
+  from { opacity: var(--crm-tr-from-opacity, 0); transform: translate3d(0, 12px, 0); }
+  to   { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+@keyframes crm-tr-slide-right {
+  from { opacity: var(--crm-tr-from-opacity, 0); transform: translate3d(-24px, 0, 0); }
+  to   { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+@keyframes crm-tr-slide-left {
+  from { opacity: var(--crm-tr-from-opacity, 0); transform: translate3d(24px, 0, 0); }
+  to   { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+@keyframes crm-tr-slide-up {
+  from { opacity: var(--crm-tr-from-opacity, 0); transform: translate3d(0, 24px, 0); }
+  to   { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+@keyframes crm-tr-slide-down {
+  from { opacity: var(--crm-tr-from-opacity, 0); transform: translate3d(0, -24px, 0); }
+  to   { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+@keyframes crm-tr-zoom-in {
+  from { opacity: var(--crm-tr-from-opacity, 0); transform: scale3d(0.96, 0.96, 1); }
+  to   { opacity: 1; transform: scale3d(1, 1, 1); }
+}
+@keyframes crm-tr-zoom-out {
+  from { opacity: var(--crm-tr-from-opacity, 0); transform: scale3d(1.04, 1.04, 1); }
+  to   { opacity: 1; transform: scale3d(1, 1, 1); }
+}
+@keyframes crm-tr-flip-x {
+  from { opacity: var(--crm-tr-from-opacity, 0); transform: perspective(1200px) rotateX(6deg); }
+  to   { opacity: 1; transform: perspective(1200px) rotateX(0deg); }
+}
+@keyframes crm-tr-flip-y {
+  from { opacity: var(--crm-tr-from-opacity, 0); transform: perspective(1200px) rotateY(6deg); }
+  to   { opacity: 1; transform: perspective(1200px) rotateY(0deg); }
+}
+@keyframes crm-tr-parallax {
+  from { opacity: var(--crm-tr-from-opacity, 0); transform: translate3d(0, 32px, 0) scale3d(0.985, 0.985, 1); }
+  to   { opacity: 1; transform: translate3d(0, 0, 0) scale3d(1, 1, 1); }
+}
+
+.crm-page-transition {
+  /* Sem contain:paint — evitaria sombras/tooltips saírem do container. */
+  will-change: transform, opacity;
+  animation-duration: var(--crm-tr-duration, 320ms);
+  animation-timing-function: var(--crm-tr-easing, cubic-bezier(0.22, 1, 0.36, 1));
+  animation-fill-mode: both;
+}
+.crm-page-transition[data-crm-transition="fade"]         { animation-name: crm-tr-fade; }
+.crm-page-transition[data-crm-transition="fade-up"]      { animation-name: crm-tr-fade-up; }
+.crm-page-transition[data-crm-transition="slide-right"]  { animation-name: crm-tr-slide-right; }
+.crm-page-transition[data-crm-transition="slide-left"]   { animation-name: crm-tr-slide-left; }
+.crm-page-transition[data-crm-transition="slide-up"]     { animation-name: crm-tr-slide-up; }
+.crm-page-transition[data-crm-transition="slide-down"]   { animation-name: crm-tr-slide-down; }
+.crm-page-transition[data-crm-transition="zoom-in"]      { animation-name: crm-tr-zoom-in; }
+.crm-page-transition[data-crm-transition="zoom-out"]     { animation-name: crm-tr-zoom-out; }
+.crm-page-transition[data-crm-transition="flip-x"]       { animation-name: crm-tr-flip-x; }
+.crm-page-transition[data-crm-transition="flip-y"]       { animation-name: crm-tr-flip-y; }
+.crm-page-transition[data-crm-transition="parallax"]     { animation-name: crm-tr-parallax; }
+
+/* Opt-out do usuário (toggle de acessibilidade) — anula a animação
+   sem remover o wrapper. */
+html[data-crm-motion="off"] .crm-page-transition {
+  animation: none !important;
+}
+
+  &::-webkit-scrollbar { width: 8px; height: 8px; }
+  &::-webkit-scrollbar-thumb {
+    background-color: color-mix(in oklab, var(--foreground) 18%, transparent);
+    border-radius: 999px;
+  }
+  &::-webkit-scrollbar-track { background: transparent; }
+}
+
