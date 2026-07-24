@@ -128,20 +128,32 @@ export function useChatConversas() {
     const { schedule, cancel } = createDebouncedInvalidator(() =>
       qc.invalidateQueries({ queryKey }),
     );
-    const canal = supabase
-      .channel("chat-conversas")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "cliente_app_mensagens" },
-        schedule,
-      )
-      .subscribe();
+    let canal: ReturnType<typeof supabase.channel> | null = null;
+    let cancelado = false;
+    (async () => {
+      // Escopo do canal por usuário: sem verTodos filtra por atendente_id
+      // para evitar refetch em toda mensagem do sistema.
+      const { data: userData } = await supabase.auth.getUser();
+      if (cancelado) return;
+      const uid = userData.user?.id;
+      const filter = !verTodos && uid ? { filter: `atendente_id=eq.${uid}` } : {};
+      const nome = uid ? `chat-conversas:${uid}:${verTodos ? "all" : "own"}` : "chat-conversas";
+      canal = supabase
+        .channel(nome)
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "cliente_app_mensagens", ...filter },
+          schedule,
+        )
+        .subscribe();
+    })();
     return () => {
+      cancelado = true;
       cancel();
-      supabase.removeChannel(canal);
+      if (canal) supabase.removeChannel(canal);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [qc]);
+  }, [qc, verTodos]);
 
   const filtradas = useMemo(() => {
     const t = busca.trim().toLowerCase();
