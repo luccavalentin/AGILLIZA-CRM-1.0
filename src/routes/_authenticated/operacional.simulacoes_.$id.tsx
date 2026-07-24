@@ -164,16 +164,16 @@ function Pagina() {
     }
   }
 
-  async function criar(bancoId: string) {
-    setCriandoBanco(bancoId);
+  async function criar(simulacaoBancoId: string) {
+    setCriandoBanco(simulacaoBancoId);
     try {
       const { proposta_id } = await criarProposta({
-        data: { simulacao_id: id, banco_id: bancoId },
+        data: { simulacao_id: id, simulacao_banco_id: simulacaoBancoId },
       });
       // Envia a proposta direto ao banco no mesmo clique.
       try {
         await enviarPropostaHomeFin({
-          data: { proposta_id, banco_id: bancoId },
+          data: { proposta_id },
         });
         toast.success("Proposta enviada ao banco.");
       } catch (envioErr) {
