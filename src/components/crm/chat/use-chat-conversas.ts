@@ -248,7 +248,7 @@ export function useChatConversas() {
         .length,
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [conversas, metasCliente]);
+  }, [conversas, metasCliente, tickMinuto]);
 
   return {
     // estado
