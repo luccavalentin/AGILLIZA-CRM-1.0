@@ -126,10 +126,12 @@ export const listarClientes = createServerFn({ method: "GET" })
 
       if (data.q && data.q.trim()) {
         const term = data.q.trim();
+        const safe = term.replace(/[,()%*]/g, " ").trim();
         const dig = term.replace(/\D/g, "");
-        const ors = [`nome.ilike.%${term}%`, `email.ilike.%${term}%`];
+        const ors: string[] = [];
+        if (safe) ors.push(`nome.ilike.%${safe}%`, `email.ilike.%${safe}%`);
         if (dig) ors.push(`documento.ilike.%${dig}%`);
-        query = query.or(ors.join(","));
+        if (ors.length) query = query.or(ors.join(","));
       }
 
       const { data: rows, count, error } = await query;
@@ -1561,8 +1563,12 @@ export const buscarClientesCRM = createServerFn({ method: "GET" })
   .handler(async ({ data, context }) => {
     const term = data.q.trim();
     if (!term) return [];
+    const podePii = await temPii(context.supabase, context.userId);
+    // Sanitiza caracteres que quebram a sintaxe do filtro .or() do PostgREST.
+    const safe = term.replace(/[,()%*]/g, " ").trim();
+    if (!safe) return [];
     const dig = term.replace(/\D/g, "");
-    const ors = [`nome.ilike.%${term}%`, `email.ilike.%${term}%`];
+    const ors = [`nome.ilike.%${safe}%`, `email.ilike.%${safe}%`];
     if (dig) ors.push(`documento.ilike.%${dig}%`);
     const { data: rows, error } = await context.supabase
       .from("clientes")
@@ -1574,7 +1580,10 @@ export const buscarClientesCRM = createServerFn({ method: "GET" })
       .order("nome")
       .limit(10);
     if (error) throw error;
-    return rows ?? [];
+    return (rows ?? []).map((r: any) => ({
+      ...r,
+      documento: podePii ? r.documento : mascararDocumento(r.documento ?? ""),
+    }));
   });
 
 /**

@@ -127,12 +127,15 @@ export const listarConversasCliente = createServerFn({ method: "GET" })
         cliente_id: string;
         atendente_id: string;
       }[];
-      for (const t of threadsCompart) {
+      if (threadsCompart.length > 0) {
+        // Uma única query com .or() no lugar do N+1 anterior.
+        const filtroOr = threadsCompart
+          .map((t) => `and(cliente_id.eq.${t.cliente_id},atendente_id.eq.${t.atendente_id})`)
+          .join(",");
         const { data: r } = await supabase
           .from("cliente_app_mensagens")
           .select(colunas)
-          .eq("cliente_id", t.cliente_id)
-          .eq("atendente_id", t.atendente_id)
+          .or(filtroOr)
           .order("criada_em", { ascending: false })
           .limit(3000);
         rows = rows.concat(r ?? []);
