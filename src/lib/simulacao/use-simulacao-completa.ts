@@ -308,7 +308,7 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
       set("prazo", 0);
       return;
     }
-    const { prazo, ajustado, mensagem } = ajustarPrazoPorIdade(valor, f.data_nascimento);
+    const { prazo, ajustado, mensagem } = ajustarPrazoPorIdade(valor, f.data_nascimento, datasProponentesPrazo);
     let final = prazo;
     if (restricaoEspecial.ativo && final > restricaoEspecial.prazoMax) {
       final = restricaoEspecial.prazoMax;
