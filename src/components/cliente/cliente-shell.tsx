@@ -304,20 +304,32 @@ export function ClienteShell({
           <div className="sidebar-scroll flex-1 overflow-y-auto">
             <SidebarLinks collapsed={isCollapsed} />
           </div>
+          <div className={cn("border-t border-sidebar-border p-2", isCollapsed ? "px-1" : "px-2")}>
+            <SidebarSignOut collapsed={isCollapsed} onSignOut={onSignOut} />
+          </div>
         </aside>
 
         {/* Drawer mobile */}
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
           <SheetContent
             side="left"
-            className="app-sidebar w-72 border-sidebar-border p-0 text-sidebar-foreground"
+            className="app-sidebar flex w-72 flex-col border-sidebar-border p-0 text-sidebar-foreground"
           >
             <SheetTitle className="sr-only">Menu de navegação</SheetTitle>
             <div className="flex h-16 items-center border-b border-sidebar-border px-4">
               <Logo variant="light" className="h-7" />
             </div>
-            <div className="sidebar-scroll h-[calc(100dvh-4rem)] overflow-y-auto">
+            <div className="sidebar-scroll flex-1 overflow-y-auto">
               <SidebarLinks collapsed={false} onNavigate={() => setMobileOpen(false)} />
+            </div>
+            <div className="border-t border-sidebar-border p-2">
+              <SidebarSignOut
+                collapsed={false}
+                onSignOut={() => {
+                  setMobileOpen(false);
+                  onSignOut();
+                }}
+              />
             </div>
           </SheetContent>
         </Sheet>
@@ -401,5 +413,42 @@ export function ClienteShell({
       <ClienteChatFlutuante />
 
     </TooltipProvider>
+  );
+}
+
+/** Botão "Sair" fixo no rodapé da sidebar do portal do cliente. */
+function SidebarSignOut({
+  collapsed,
+  onSignOut,
+}: {
+  collapsed: boolean;
+  onSignOut: () => void;
+}) {
+  if (collapsed) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            onClick={onSignOut}
+            aria-label="Sair"
+            className="flex h-10 w-full items-center justify-center rounded-md text-sidebar-foreground transition-colors hover:bg-white/15"
+          >
+            <LogOut className="h-[18px] w-[18px]" />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="right">Sair</TooltipContent>
+      </Tooltip>
+    );
+  }
+  return (
+    <button
+      type="button"
+      onClick={onSignOut}
+      className="flex min-h-10 w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-sidebar-foreground transition-colors hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
+    >
+      <LogOut className="h-[18px] w-[18px] shrink-0" />
+      <span className="truncate">Sair</span>
+    </button>
   );
 }
