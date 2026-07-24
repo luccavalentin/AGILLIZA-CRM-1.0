@@ -241,8 +241,10 @@ export function statusInternoBanco(
       return { banco: "em_analise", proposta: "em_analise_credito" };
   }
 
-  if (temErro) return { banco: "erro", proposta: null };
-
+  // Só considera "erro" quando o próprio provedor sinalizou falha de envio
+  // (tipoSituacao P/E). Mensagens em `retornoIntegracao` sem esse sinal são
+  // apenas observações/validações do banco e NÃO devem virar "Erro no envio"
+  // — se a API devolveu tipoSituacao (N/A/R/S), a proposta chegou ao banco.
   switch (t) {
     case "P":
     case "E":
@@ -251,6 +253,8 @@ export function statusInternoBanco(
     case "S":
       return { banco: "enviada", proposta: null };
     default:
+      // Sem tipoSituacao conhecido: assume "enviada" (aguardando retorno).
+      // Preserva a mensagem em `mensagem_banco` sem classificar como erro.
       return { banco: "enviada", proposta: null };
   }
 }
