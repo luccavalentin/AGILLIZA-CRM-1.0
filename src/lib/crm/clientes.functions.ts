@@ -126,10 +126,12 @@ export const listarClientes = createServerFn({ method: "GET" })
 
       if (data.q && data.q.trim()) {
         const term = data.q.trim();
+        const safe = term.replace(/[,()%*]/g, " ").trim();
         const dig = term.replace(/\D/g, "");
-        const ors = [`nome.ilike.%${term}%`, `email.ilike.%${term}%`];
+        const ors: string[] = [];
+        if (safe) ors.push(`nome.ilike.%${safe}%`, `email.ilike.%${safe}%`);
         if (dig) ors.push(`documento.ilike.%${dig}%`);
-        query = query.or(ors.join(","));
+        if (ors.length) query = query.or(ors.join(","));
       }
 
       const { data: rows, count, error } = await query;
