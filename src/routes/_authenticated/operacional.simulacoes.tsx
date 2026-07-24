@@ -212,7 +212,6 @@ function Pagina() {
       const res = await criar({
         data: { simulacao_id: envio.id, simulacao_banco_id: banco.id },
       });
-      toast.success(`Proposta ${res.numero_proposta} criada para ${banco.nome_banco}.`);
       setPropostasCriadas((prev) => [
         ...prev,
         {
@@ -223,6 +222,17 @@ function Pagina() {
           numero: res.numero_proposta,
         },
       ]);
+      // Envia imediatamente ao banco (equivalente ao botão "Enviar ao banco"
+      // da tela de detalhe da proposta).
+      try {
+        const env = await enviarAoBancoFn({ data: { proposta_id: res.proposta_id } });
+        toast.success(
+          `Proposta ${res.numero_proposta} enviada ao ${banco.nome_banco} (${env.status}).`,
+        );
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : "Falha ao enviar ao banco.";
+        toast.error(`Proposta ${res.numero_proposta} criada, mas envio falhou: ${msg}`);
+      }
       queryClient.invalidateQueries({ queryKey: ["simulacoes"] });
       queryClient.invalidateQueries({ queryKey: ["propostas"] });
     } catch (e) {
