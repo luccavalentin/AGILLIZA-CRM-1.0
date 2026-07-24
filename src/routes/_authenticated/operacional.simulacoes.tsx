@@ -385,6 +385,8 @@ function Pagina() {
     onBaixarDetalhada: handleBaixarDetalhada,
     onDuplicar: handleDuplicar,
     onEnviarProposta: handleEnviarProposta,
+    onEnviarBancoDireto: handleEnviarBancoDireto,
+    enviandoBancoInlineKey,
     onExcluir: handleExcluir,
     onRestaurar: handleRestaurar,
   };
