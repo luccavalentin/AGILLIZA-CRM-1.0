@@ -170,25 +170,26 @@ function Pagina() {
       const { proposta_id } = await criarProposta({
         data: { simulacao_id: id, banco_id: bancoId },
       });
-      // Envia a proposta direto ao banco no mesmo clique.
+      // Envia a proposta direto ao banco no mesmo clique — mesmo comportamento
+      // do botão "Enviar ao banco" da ficha da proposta.
+      let enviouOk = false;
+      let erroEnvio: string | null = null;
       try {
-        await enviarPropostaHomeFin({
+        const r = await enviarPropostaHomeFin({
           data: { proposta_id, banco_id: bancoId },
         });
-        toast.success("Proposta enviada ao banco.");
+        enviouOk = true;
+        toast.success(`Proposta enviada (${r?.status ?? "ok"}).`);
       } catch (envioErr) {
-        // Proposta criada, mas faltam dados para o envio — leva o usuário
-        // à ficha para completar e reenviar.
-        toast.warning(
-          envioErr instanceof Error
-            ? `Proposta criada. Complete os dados para enviar: ${envioErr.message}`
-            : "Proposta criada. Complete os dados para enviar ao banco.",
-        );
+        erroEnvio = envioErr instanceof Error ? envioErr.message : "Falha ao enviar ao banco.";
+        toast.error(erroEnvio);
       }
       router.navigate({
         to: "/operacional/propostas/$id",
         params: { id: proposta_id },
-        search: { complementar: 1 },
+        // Só abre o dialog de dados complementares quando o envio falhou
+        // por dados faltantes — sucesso vai direto para a ficha.
+        search: enviouOk || !erroEnvio ? {} : { complementar: 1 },
       });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Falha ao criar proposta.");
