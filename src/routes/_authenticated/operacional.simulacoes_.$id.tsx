@@ -79,13 +79,22 @@ function Pagina() {
         .map((b: any) => b.banco_id)
         .filter(Boolean);
       if (bancosSelecionados.length > 0) {
-        for (const bancoId of bancosSelecionados) {
-          await enviarSimulacaoBanco({ data: { simulacao_id: id, banco_ids: [bancoId] } });
-        }
+        // Paralelo — mesmo padrão do envio inicial (envio.ts). Uma falha
+        // isolada não bloqueia os demais bancos.
+        const resultados = await Promise.allSettled(
+          bancosSelecionados.map((bancoId: string) =>
+            enviarSimulacaoBanco({ data: { simulacao_id: id, banco_ids: [bancoId] } }),
+          ),
+        );
+        const falhas = resultados.filter((r) => r.status === "rejected");
+        if (falhas.length === 0) toast.success("Reenviado ao banco.");
+        else if (falhas.length < resultados.length)
+          toast.warning(`Reenviado parcialmente (${falhas.length} de ${resultados.length} falharam).`);
+        else toast.error("Falha ao reenviar aos bancos.");
       } else {
         await enviarSimulacaoBanco({ data: { simulacao_id: id } });
+        toast.success("Reenviado ao banco.");
       }
-      toast.success("Reenviado ao banco.");
       qc.invalidateQueries({ queryKey: ["simulacao", id] });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Falha ao reenviar.");
@@ -115,13 +124,23 @@ function Pagina() {
           .map((b: any) => b.banco_id)
           .filter(Boolean);
         if (bancosSelecionados.length > 0) {
-          for (const bancoId of bancosSelecionados) {
-            await enviarSimulacaoBanco({ data: { simulacao_id: id, banco_ids: [bancoId] } });
-          }
+          const resultados = await Promise.allSettled(
+            bancosSelecionados.map((bancoId: string) =>
+              enviarSimulacaoBanco({ data: { simulacao_id: id, banco_ids: [bancoId] } }),
+            ),
+          );
+          const falhas = resultados.filter((r) => r.status === "rejected").length;
+          if (falhas === 0)
+            toast.success("Titular invertido e simulação reenviada aos bancos.");
+          else if (falhas < resultados.length)
+            toast.warning(
+              `Titular invertido. Reenvio parcial (${falhas} de ${resultados.length} falharam).`,
+            );
+          else toast.error("Titular invertido, mas o reenvio aos bancos falhou.");
         } else {
           await enviarSimulacaoBanco({ data: { simulacao_id: id } });
+          toast.success("Titular invertido e simulação reenviada ao banco.");
         }
-        toast.success("Titular invertido e simulação reenviada aos bancos.");
       } else {
         toast.success("Titular e cônjuge invertidos.");
       }

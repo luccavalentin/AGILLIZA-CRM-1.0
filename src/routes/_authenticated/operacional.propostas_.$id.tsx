@@ -219,24 +219,41 @@ function Pagina() {
     const terminais = ["contrato_emitido", "cancelada", "credito_recusado", "rascunho"];
     if (!propostaStatus || terminais.includes(propostaStatus)) return;
     let cancelado = false;
+    let falhasSeguidas = 0;
+    let avisouFalha = false;
+    let iv: ReturnType<typeof setInterval> | null = null;
     const tick = async () => {
       if (cancelado) return;
       try {
         const r = await sincronizarAutoFn({ data: { proposta_id: id } });
+        falhasSeguidas = 0;
         if (!cancelado && r?.atualizado) {
           qc.invalidateQueries({ queryKey: ["proposta", id] });
         }
       } catch {
-        // silencioso: mantém o botão manual como fallback visível ao usuário.
+        falhasSeguidas++;
+        // Após 3 falhas seguidas, para de tentar e avisa uma única vez.
+        // Evita spam de requests contra integração indisponível e dá
+        // sinal visível ao usuário para usar o botão manual como fallback.
+        if (falhasSeguidas >= 3 && iv) {
+          clearInterval(iv);
+          iv = null;
+          if (!avisouFalha) {
+            avisouFalha = true;
+            toast.warning(
+              "Sincronização automática indisponível. Use o botão 'Sincronizar' para tentar manualmente.",
+              { duration: 8_000 },
+            );
+          }
+        }
       }
     };
-    // Primeiro disparo imediato após montar, depois a cada 60s.
     const t0 = setTimeout(tick, 2_000);
-    const iv = setInterval(tick, 60_000);
+    iv = setInterval(tick, 60_000);
     return () => {
       cancelado = true;
       clearTimeout(t0);
-      clearInterval(iv);
+      if (iv) clearInterval(iv);
     };
   }, [id, propostaStatus, sincronizarAutoFn, qc]);
 
