@@ -49,20 +49,33 @@ export const Route = createFileRoute("/api/public/sync-propostas")({
         let atualizadas = 0;
         let falhas = 0;
 
-        for (const p of propostas ?? []) {
-          try {
-            const r = await sincronizarPropostaImpl({
-              propostaId: p.id,
-              userId: null as unknown as string,
-              supabase: supabaseAdmin as any,
-            });
-            processadas++;
-            if (r.atualizado) atualizadas++;
-          } catch (e) {
-            falhas++;
-            console.error("[sync-propostas] falha ao sincronizar", p.id, e);
+        // Processa em paralelo com concorrência limitada — o loop sequencial
+        // fazia cada retorno esperar todos os anteriores, atrasando muito
+        // Itaú/Santander que respondem rápido. Concorrência = 8 mantém o
+        // throughput alto sem estourar limites da HomeFin.
+        const fila = [...(propostas ?? [])];
+        const CONCORRENCIA = 8;
+        async function worker() {
+          while (fila.length > 0) {
+            const p = fila.shift();
+            if (!p) break;
+            try {
+              const r = await sincronizarPropostaImpl({
+                propostaId: p.id,
+                userId: null as unknown as string,
+                supabase: supabaseAdmin as any,
+              });
+              processadas++;
+              if (r.atualizado) atualizadas++;
+            } catch (e) {
+              falhas++;
+              console.error("[sync-propostas] falha ao sincronizar", p.id, e);
+            }
           }
         }
+        await Promise.all(
+          Array.from({ length: Math.min(CONCORRENCIA, fila.length) }, () => worker()),
+        );
 
         return Response.json({ ok: true, processadas, atualizadas, falhas });
       },
