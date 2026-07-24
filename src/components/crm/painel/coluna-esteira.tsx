@@ -43,9 +43,9 @@ export function ColunaEsteira({
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
       onDrop={onDrop}
-      className={`group relative flex min-h-[22rem] min-w-0 flex-col overflow-hidden rounded-2xl border bg-card/95 shadow-sm backdrop-blur-sm transition-[box-shadow,border-color,transform] duration-200 hover:-translate-y-0.5 hover:shadow-lg ${
+      className={`group relative flex min-h-[22rem] min-w-0 flex-col overflow-hidden rounded-2xl border bg-card/95 shadow-sm backdrop-blur-sm transition-[box-shadow,border-color] duration-200 hover:shadow-md ${
         ehAlvoArrasto
-          ? "border-primary ring-2 ring-primary/40"
+          ? "border-primary/70 ring-2 ring-primary/30"
           : "border-border/70 hover:border-primary/40"
       }`}
     >
