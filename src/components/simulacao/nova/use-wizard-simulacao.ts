@@ -94,8 +94,10 @@ export function useWizardSimulacao(melhorTaxaAno = 0.1199) {
   }
 
   function aplicarPorEntrada(valorEntrada: number) {
-    const patch = calcularPorEntrada(valorEntrada, ltvMax);
-    setW((prev) => ({ ...prev, ...(patch as Partial<WizardState>) }));
+    setW((prev) => ({
+      ...prev,
+      ...(calcularPorEntrada(valorEntrada, ltvMax, prev.valor_imovel || 0) as Partial<WizardState>),
+    }));
   }
 
   function aplicarPorFinanciamento(valor: number) {
