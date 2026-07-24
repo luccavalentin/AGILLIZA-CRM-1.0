@@ -19,7 +19,7 @@ export function DocumentosChecklist({ clienteId }: { clienteId: string }) {
   const getDados = useServerFn(getChecklistDados);
   const listar = useServerFn(listarDocumentos);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, error } = useQuery({
     queryKey: ["cliente-checklist", clienteId],
     queryFn: () => getDados({ data: { cliente_id: clienteId } }),
   });
@@ -56,6 +56,23 @@ export function DocumentosChecklist({ clienteId }: { clienteId: string }) {
     (docs ?? []).some((d: any) => d.categoria === cat && d.tipo_documento === key);
 
   if (isLoading) return <p className="text-sm text-muted-foreground">Carregando…</p>;
+
+  if (isError) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Checklist de documentação</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-destructive">
+            {error instanceof Error
+              ? error.message
+              : "Não foi possível carregar todos os dados do checklist."}
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-4">
