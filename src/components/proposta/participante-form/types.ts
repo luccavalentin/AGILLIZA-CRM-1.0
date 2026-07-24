@@ -173,6 +173,12 @@ export function camposFaltantes(f: ParticipanteForm): Set<string> {
     if (!f.nome_mae.trim()) faltando.add("nome_mae");
     if (!f.tipo_sexo) faltando.add("tipo_sexo");
     if (!f.estado_civil) faltando.add("estado_civil");
+    // Documento de identidade (RG/CNH/etc.) — obrigatório pela HomeFin.
+    if (!String(f.numero_documento ?? "").trim()) faltando.add("numero_documento");
+    if (!String(f.tipo_documento_identidade ?? "").trim()) faltando.add("tipo_documento_identidade");
+    if (!String(f.orgao_expedidor ?? "").trim()) faltando.add("orgao_expedidor");
+    if (!String(f.uf_expedicao ?? "").trim()) faltando.add("uf_expedicao");
+    if (!f.data_expedicao) faltando.add("data_expedicao");
   }
   if (!f.profissao.trim()) faltando.add("profissao");
   if (!f.renda || f.renda <= 0) faltando.add("renda");

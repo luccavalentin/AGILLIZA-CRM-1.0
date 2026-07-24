@@ -123,20 +123,25 @@ export async function executarEnvioAmbos(ctx: CtxBase): Promise<void> {
         },
       });
       idsGerados.push(id);
-      for (const bid of f.bancos_sac_ids) {
-          try {
-            await enviarSimulacaoBanco({ data: { simulacao_id: id, banco_ids: [bid] } });
-          } catch (e) {
-            toast.error(
-              e instanceof Error
-                ? e.message
-                : "Falha ao enviar a um banco (SAC). Você pode reenviar na tela da simulação.",
-            );
-          } finally {
-            done++;
-            setConcluidos(done);
-          }
-      }
+      // Envio paralelo aos bancos SAC — reduz drasticamente o tempo total
+      // (antes: N × latência sequencial). Cada falha isolada é tratada, sem
+      // bloquear o envio aos demais bancos.
+      await Promise.allSettled(
+        f.bancos_sac_ids.map((bid) =>
+          enviarSimulacaoBanco({ data: { simulacao_id: id, banco_ids: [bid] } })
+            .catch((e) => {
+              toast.error(
+                e instanceof Error
+                  ? e.message
+                  : "Falha ao enviar a um banco (SAC). Você pode reenviar na tela da simulação.",
+              );
+            })
+            .finally(() => {
+              done++;
+              setConcluidos(done);
+            }),
+        ),
+      );
     }
 
     // Simulação PRICE (usa a renda específica para PRICE como renda_total)
@@ -169,20 +174,23 @@ export async function executarEnvioAmbos(ctx: CtxBase): Promise<void> {
         },
       });
       idsGerados.push(id);
-      for (const bid of f.bancos_price_ids) {
-          try {
-            await enviarSimulacaoBanco({ data: { simulacao_id: id, banco_ids: [bid] } });
-          } catch (e) {
-            toast.error(
-              e instanceof Error
-                ? e.message
-                : "Falha ao enviar a um banco (PRICE). Você pode reenviar na tela da simulação.",
-            );
-          } finally {
-            done++;
-            setConcluidos(done);
-          }
-      }
+      // Envio paralelo aos bancos PRICE — idem SAC.
+      await Promise.allSettled(
+        f.bancos_price_ids.map((bid) =>
+          enviarSimulacaoBanco({ data: { simulacao_id: id, banco_ids: [bid] } })
+            .catch((e) => {
+              toast.error(
+                e instanceof Error
+                  ? e.message
+                  : "Falha ao enviar a um banco (PRICE). Você pode reenviar na tela da simulação.",
+              );
+            })
+            .finally(() => {
+              done++;
+              setConcluidos(done);
+            }),
+        ),
+      );
     }
 
     sessionStorage.removeItem("simulacao_wizard");
@@ -236,20 +244,22 @@ export async function executarEnvioSimples(ctx: CtxBase): Promise<void> {
       setConcluidos(1);
     } else {
       let feitos = 0;
-      for (const bid of idsBancos) {
-          try {
-            await enviarSimulacaoBanco({ data: { simulacao_id: id, banco_ids: [bid] } });
-          } catch (e) {
-            toast.error(
-              e instanceof Error
-                ? e.message
-                : "Falha ao enviar a um dos bancos. Você pode reenviar na tela da simulação.",
-            );
-          } finally {
-            feitos++;
-            setConcluidos(feitos);
-          }
-      }
+      await Promise.allSettled(
+        idsBancos.map((bid) =>
+          enviarSimulacaoBanco({ data: { simulacao_id: id, banco_ids: [bid] } })
+            .catch((e) => {
+              toast.error(
+                e instanceof Error
+                  ? e.message
+                  : "Falha ao enviar a um dos bancos. Você pode reenviar na tela da simulação.",
+              );
+            })
+            .finally(() => {
+              feitos++;
+              setConcluidos(feitos);
+            }),
+        ),
+      );
     }
 
     // Fluxo "Nova Proposta": após simular, cria a proposta e redireciona.
