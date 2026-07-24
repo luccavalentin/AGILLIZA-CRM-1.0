@@ -106,8 +106,12 @@ export function ListaDesktop({
               itens.map((c) => (
                 <TableRow
                   key={c.id}
-                  className="group relative cursor-pointer border-border/40 transition-colors hover:bg-primary/[0.035]"
+                  className="crm-focus-ring group relative cursor-pointer border-border/40 transition-colors hover:bg-primary/[0.04]"
                   onClick={() => navigateToFicha(c.id)}
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") navigateToFicha(c.id);
+                  }}
                 >
                   <TableCell className="px-4 py-3.5">
                     <div className="flex items-center gap-3">
