@@ -10,9 +10,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { CurrencyInput } from "@/components/simulacao/currency-input";
 import { DicaRendaMinima } from "@/components/simulacao/dica-renda-minima";
-import { PRODUTOS } from "@/lib/simulacao/schemas";
+import { PRODUTOS, TIPOS_IMOVEL, USOS_IMOVEL, SITUACOES_IMOVEL } from "@/lib/simulacao/schemas";
+import { UFS } from "@/lib/simulacao/format";
 import { formatBRL } from "@/lib/simulacao/format";
 import { formatarMeses } from "@/lib/simulacao/prazo";
 import type { WizardState } from "./use-wizard-simulacao";
