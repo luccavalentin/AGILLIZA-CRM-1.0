@@ -31,7 +31,7 @@ type Props = {
   criandoBanco: string | null;
   onEditar: () => void;
   onReenviarBanco: (bancoId: string) => void;
-  onCriar: (bancoId: string) => void;
+  onCriar: (simulacaoBancoId: string) => void;
 };
 
 export function ComparativoBancos({
@@ -214,10 +214,10 @@ export function ComparativoBancos({
                     <Button
                       size="sm"
                       className="bg-gradient-to-b from-primary to-primary/90 shadow-sm transition-all duration-200 hover:-translate-y-px hover:shadow-md hover:brightness-105 active:translate-y-0 active:scale-[0.98]"
-                      disabled={b.status_banco !== "simulada" || criandoBanco !== null}
-                      onClick={() => onCriar(b.banco_id)}
+                        disabled={b.status_banco !== "simulada" || criandoBanco !== null}
+                        onClick={() => onCriar(b.id)}
                     >
-                      {criandoBanco === b.banco_id ? "Enviando…" : "Enviar Aprovação"}
+                        {criandoBanco === b.id ? "Enviando…" : "Enviar Aprovação"}
                     </Button>
                   )}
                 </div>
@@ -352,9 +352,9 @@ export function ComparativoBancos({
                             size="sm"
                             className="bg-gradient-to-b from-primary to-primary/90 shadow-sm transition-all duration-200 hover:-translate-y-px hover:shadow-md hover:brightness-105 active:translate-y-0 active:scale-[0.98]"
                             disabled={b.status_banco !== "simulada" || criandoBanco !== null}
-                            onClick={() => onCriar(b.banco_id)}
+                            onClick={() => onCriar(b.id)}
                           >
-                            {criandoBanco === b.banco_id ? "Enviando…" : "Enviar Aprovação"}
+                            {criandoBanco === b.id ? "Enviando…" : "Enviar Aprovação"}
                           </Button>
                         )}
                       </div>
