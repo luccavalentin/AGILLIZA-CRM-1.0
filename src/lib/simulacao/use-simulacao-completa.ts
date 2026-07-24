@@ -186,9 +186,18 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
     });
   }
 
+  // Datas adicionais consideradas no cálculo do prazo máximo: quando o cliente
+  // é casado/união estável, o cônjuge entra na conta MESMO sem compor renda —
+  // o banco usa a idade do MAIS VELHO para o teto de idade ao término.
+  const datasProponentesPrazo = useMemo(() => {
+    const extras: string[] = [];
+    if (f.possui_conjuge && f.data_nascimento_conjuge) extras.push(f.data_nascimento_conjuge);
+    return extras;
+  }, [f.possui_conjuge, f.data_nascimento_conjuge]);
+
   const maxPrazoIdade = useMemo(
-    () => prazoMaximoPorIdade(f.data_nascimento),
-    [f.data_nascimento],
+    () => prazoMaximoParaProponentes([f.data_nascimento, ...datasProponentesPrazo]),
+    [f.data_nascimento, datasProponentesPrazo],
   );
 
   const melhorTaxaAno = useMemo(() => {
