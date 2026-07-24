@@ -34,6 +34,7 @@ import { Route as AuthenticatedLinksRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedFormulariosRouteImport } from './routes/_authenticated/formularios'
 import { Route as AuthenticatedDocumentosRouteImport } from './routes/_authenticated/documentos'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedCrmRouteImport } from './routes/_authenticated/crm'
 import { Route as AuthenticatedRhIndexRouteImport } from './routes/_authenticated/rh.index'
 import { Route as AuthenticatedRelatoriosIndexRouteImport } from './routes/_authenticated/relatorios.index'
 import { Route as AuthenticatedFormulariosIndexRouteImport } from './routes/_authenticated/formularios.index'
@@ -243,6 +244,11 @@ const AuthenticatedDocumentosRoute = AuthenticatedDocumentosRouteImport.update({
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedCrmRoute = AuthenticatedCrmRouteImport.update({
+  id: '/crm',
+  path: '/crm',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedRhIndexRoute = AuthenticatedRhIndexRouteImport.update({
@@ -531,37 +537,37 @@ const AuthenticatedFinanceiroComissoesRoute =
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedCrmScanIaRoute = AuthenticatedCrmScanIaRouteImport.update({
-  id: '/crm/scan-ia',
-  path: '/crm/scan-ia',
-  getParentRoute: () => AuthenticatedRouteRoute,
+  id: '/scan-ia',
+  path: '/scan-ia',
+  getParentRoute: () => AuthenticatedCrmRoute,
 } as any)
 const AuthenticatedCrmParceirosRoute =
   AuthenticatedCrmParceirosRouteImport.update({
-    id: '/crm/parceiros',
-    path: '/crm/parceiros',
-    getParentRoute: () => AuthenticatedRouteRoute,
+    id: '/parceiros',
+    path: '/parceiros',
+    getParentRoute: () => AuthenticatedCrmRoute,
   } as any)
 const AuthenticatedCrmPainelRoute = AuthenticatedCrmPainelRouteImport.update({
-  id: '/crm/painel',
-  path: '/crm/painel',
-  getParentRoute: () => AuthenticatedRouteRoute,
+  id: '/painel',
+  path: '/painel',
+  getParentRoute: () => AuthenticatedCrmRoute,
 } as any)
 const AuthenticatedCrmDocumentosRoute =
   AuthenticatedCrmDocumentosRouteImport.update({
-    id: '/crm/documentos',
-    path: '/crm/documentos',
-    getParentRoute: () => AuthenticatedRouteRoute,
+    id: '/documentos',
+    path: '/documentos',
+    getParentRoute: () => AuthenticatedCrmRoute,
   } as any)
 const AuthenticatedCrmClientesRoute =
   AuthenticatedCrmClientesRouteImport.update({
-    id: '/crm/clientes',
-    path: '/crm/clientes',
-    getParentRoute: () => AuthenticatedRouteRoute,
+    id: '/clientes',
+    path: '/clientes',
+    getParentRoute: () => AuthenticatedCrmRoute,
   } as any)
 const AuthenticatedCrmChatRoute = AuthenticatedCrmChatRouteImport.update({
-  id: '/crm/chat',
-  path: '/crm/chat',
-  getParentRoute: () => AuthenticatedRouteRoute,
+  id: '/chat',
+  path: '/chat',
+  getParentRoute: () => AuthenticatedCrmRoute,
 } as any)
 const AuthenticatedContaSegurancaRoute =
   AuthenticatedContaSegurancaRouteImport.update({
@@ -721,21 +727,21 @@ const AuthenticatedOperacionalDemandasIdRoute =
   } as any)
 const AuthenticatedCrmScanIaIdRoute =
   AuthenticatedCrmScanIaIdRouteImport.update({
-    id: '/crm/scan-ia_/$id',
-    path: '/crm/scan-ia/$id',
-    getParentRoute: () => AuthenticatedRouteRoute,
+    id: '/scan-ia_/$id',
+    path: '/scan-ia/$id',
+    getParentRoute: () => AuthenticatedCrmRoute,
   } as any)
 const AuthenticatedCrmClientesNovoRoute =
   AuthenticatedCrmClientesNovoRouteImport.update({
-    id: '/crm/clientes_/novo',
-    path: '/crm/clientes/novo',
-    getParentRoute: () => AuthenticatedRouteRoute,
+    id: '/clientes_/novo',
+    path: '/clientes/novo',
+    getParentRoute: () => AuthenticatedCrmRoute,
   } as any)
 const AuthenticatedCrmClientesIdRoute =
   AuthenticatedCrmClientesIdRouteImport.update({
-    id: '/crm/clientes_/$id',
-    path: '/crm/clientes/$id',
-    getParentRoute: () => AuthenticatedRouteRoute,
+    id: '/clientes_/$id',
+    path: '/clientes/$id',
+    getParentRoute: () => AuthenticatedCrmRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -746,6 +752,7 @@ export interface FileRoutesByFullPath {
   '/parceiro': typeof ParceiroRouteWithChildren
   '/politica-de-privacidade': typeof PoliticaDePrivacidadeRoute
   '/portal': typeof PortalRoute
+  '/crm': typeof AuthenticatedCrmRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/documentos': typeof AuthenticatedDocumentosRoute
   '/formularios': typeof AuthenticatedFormulariosRouteWithChildren
@@ -855,6 +862,7 @@ export interface FileRoutesByTo {
   '/parceiro': typeof ParceiroRouteWithChildren
   '/politica-de-privacidade': typeof PoliticaDePrivacidadeRoute
   '/portal': typeof PortalRoute
+  '/crm': typeof AuthenticatedCrmRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/documentos': typeof AuthenticatedDocumentosRoute
   '/links': typeof AuthenticatedLinksRoute
@@ -964,6 +972,7 @@ export interface FileRoutesById {
   '/parceiro': typeof ParceiroRouteWithChildren
   '/politica-de-privacidade': typeof PoliticaDePrivacidadeRoute
   '/portal': typeof PortalRoute
+  '/_authenticated/crm': typeof AuthenticatedCrmRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/documentos': typeof AuthenticatedDocumentosRoute
   '/_authenticated/formularios': typeof AuthenticatedFormulariosRouteWithChildren
@@ -1075,6 +1084,7 @@ export interface FileRouteTypes {
     | '/parceiro'
     | '/politica-de-privacidade'
     | '/portal'
+    | '/crm'
     | '/dashboard'
     | '/documentos'
     | '/formularios'
@@ -1184,6 +1194,7 @@ export interface FileRouteTypes {
     | '/parceiro'
     | '/politica-de-privacidade'
     | '/portal'
+    | '/crm'
     | '/dashboard'
     | '/documentos'
     | '/links'
@@ -1292,6 +1303,7 @@ export interface FileRouteTypes {
     | '/parceiro'
     | '/politica-de-privacidade'
     | '/portal'
+    | '/_authenticated/crm'
     | '/_authenticated/dashboard'
     | '/_authenticated/documentos'
     | '/_authenticated/formularios'
@@ -1581,6 +1593,13 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/crm': {
+      id: '/_authenticated/crm'
+      path: '/crm'
+      fullPath: '/crm'
+      preLoaderRoute: typeof AuthenticatedCrmRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/rh/': {
@@ -1921,45 +1940,45 @@ declare module '@tanstack/react-router' {
     }
     '/_authenticated/crm/scan-ia': {
       id: '/_authenticated/crm/scan-ia'
-      path: '/crm/scan-ia'
+      path: '/scan-ia'
       fullPath: '/crm/scan-ia'
       preLoaderRoute: typeof AuthenticatedCrmScanIaRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+      parentRoute: typeof AuthenticatedCrmRoute
     }
     '/_authenticated/crm/parceiros': {
       id: '/_authenticated/crm/parceiros'
-      path: '/crm/parceiros'
+      path: '/parceiros'
       fullPath: '/crm/parceiros'
       preLoaderRoute: typeof AuthenticatedCrmParceirosRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+      parentRoute: typeof AuthenticatedCrmRoute
     }
     '/_authenticated/crm/painel': {
       id: '/_authenticated/crm/painel'
-      path: '/crm/painel'
+      path: '/painel'
       fullPath: '/crm/painel'
       preLoaderRoute: typeof AuthenticatedCrmPainelRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+      parentRoute: typeof AuthenticatedCrmRoute
     }
     '/_authenticated/crm/documentos': {
       id: '/_authenticated/crm/documentos'
-      path: '/crm/documentos'
+      path: '/documentos'
       fullPath: '/crm/documentos'
       preLoaderRoute: typeof AuthenticatedCrmDocumentosRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+      parentRoute: typeof AuthenticatedCrmRoute
     }
     '/_authenticated/crm/clientes': {
       id: '/_authenticated/crm/clientes'
-      path: '/crm/clientes'
+      path: '/clientes'
       fullPath: '/crm/clientes'
       preLoaderRoute: typeof AuthenticatedCrmClientesRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+      parentRoute: typeof AuthenticatedCrmRoute
     }
     '/_authenticated/crm/chat': {
       id: '/_authenticated/crm/chat'
-      path: '/crm/chat'
+      path: '/chat'
       fullPath: '/crm/chat'
       preLoaderRoute: typeof AuthenticatedCrmChatRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+      parentRoute: typeof AuthenticatedCrmRoute
     }
     '/_authenticated/conta/seguranca': {
       id: '/_authenticated/conta/seguranca'
@@ -2145,27 +2164,54 @@ declare module '@tanstack/react-router' {
     }
     '/_authenticated/crm/scan-ia_/$id': {
       id: '/_authenticated/crm/scan-ia_/$id'
-      path: '/crm/scan-ia/$id'
+      path: '/scan-ia/$id'
       fullPath: '/crm/scan-ia/$id'
       preLoaderRoute: typeof AuthenticatedCrmScanIaIdRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+      parentRoute: typeof AuthenticatedCrmRoute
     }
     '/_authenticated/crm/clientes_/novo': {
       id: '/_authenticated/crm/clientes_/novo'
-      path: '/crm/clientes/novo'
+      path: '/clientes/novo'
       fullPath: '/crm/clientes/novo'
       preLoaderRoute: typeof AuthenticatedCrmClientesNovoRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+      parentRoute: typeof AuthenticatedCrmRoute
     }
     '/_authenticated/crm/clientes_/$id': {
       id: '/_authenticated/crm/clientes_/$id'
-      path: '/crm/clientes/$id'
+      path: '/clientes/$id'
       fullPath: '/crm/clientes/$id'
       preLoaderRoute: typeof AuthenticatedCrmClientesIdRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+      parentRoute: typeof AuthenticatedCrmRoute
     }
   }
 }
+
+interface AuthenticatedCrmRouteChildren {
+  AuthenticatedCrmChatRoute: typeof AuthenticatedCrmChatRoute
+  AuthenticatedCrmClientesRoute: typeof AuthenticatedCrmClientesRoute
+  AuthenticatedCrmDocumentosRoute: typeof AuthenticatedCrmDocumentosRoute
+  AuthenticatedCrmPainelRoute: typeof AuthenticatedCrmPainelRoute
+  AuthenticatedCrmParceirosRoute: typeof AuthenticatedCrmParceirosRoute
+  AuthenticatedCrmScanIaRoute: typeof AuthenticatedCrmScanIaRoute
+  AuthenticatedCrmClientesIdRoute: typeof AuthenticatedCrmClientesIdRoute
+  AuthenticatedCrmClientesNovoRoute: typeof AuthenticatedCrmClientesNovoRoute
+  AuthenticatedCrmScanIaIdRoute: typeof AuthenticatedCrmScanIaIdRoute
+}
+
+const AuthenticatedCrmRouteChildren: AuthenticatedCrmRouteChildren = {
+  AuthenticatedCrmChatRoute: AuthenticatedCrmChatRoute,
+  AuthenticatedCrmClientesRoute: AuthenticatedCrmClientesRoute,
+  AuthenticatedCrmDocumentosRoute: AuthenticatedCrmDocumentosRoute,
+  AuthenticatedCrmPainelRoute: AuthenticatedCrmPainelRoute,
+  AuthenticatedCrmParceirosRoute: AuthenticatedCrmParceirosRoute,
+  AuthenticatedCrmScanIaRoute: AuthenticatedCrmScanIaRoute,
+  AuthenticatedCrmClientesIdRoute: AuthenticatedCrmClientesIdRoute,
+  AuthenticatedCrmClientesNovoRoute: AuthenticatedCrmClientesNovoRoute,
+  AuthenticatedCrmScanIaIdRoute: AuthenticatedCrmScanIaIdRoute,
+}
+
+const AuthenticatedCrmRouteWithChildren =
+  AuthenticatedCrmRoute._addFileChildren(AuthenticatedCrmRouteChildren)
 
 interface AuthenticatedFormulariosRouteChildren {
   AuthenticatedFormulariosBancoRoute: typeof AuthenticatedFormulariosBancoRoute
@@ -2242,6 +2288,7 @@ const AuthenticatedRelatoriosRouteWithChildren =
   )
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedCrmRoute: typeof AuthenticatedCrmRouteWithChildren
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedDocumentosRoute: typeof AuthenticatedDocumentosRoute
   AuthenticatedFormulariosRoute: typeof AuthenticatedFormulariosRouteWithChildren
@@ -2262,12 +2309,6 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedContaNotificacoesRoute: typeof AuthenticatedContaNotificacoesRoute
   AuthenticatedContaPerfilRoute: typeof AuthenticatedContaPerfilRoute
   AuthenticatedContaSegurancaRoute: typeof AuthenticatedContaSegurancaRoute
-  AuthenticatedCrmChatRoute: typeof AuthenticatedCrmChatRoute
-  AuthenticatedCrmClientesRoute: typeof AuthenticatedCrmClientesRoute
-  AuthenticatedCrmDocumentosRoute: typeof AuthenticatedCrmDocumentosRoute
-  AuthenticatedCrmPainelRoute: typeof AuthenticatedCrmPainelRoute
-  AuthenticatedCrmParceirosRoute: typeof AuthenticatedCrmParceirosRoute
-  AuthenticatedCrmScanIaRoute: typeof AuthenticatedCrmScanIaRoute
   AuthenticatedFinanceiroComissoesRoute: typeof AuthenticatedFinanceiroComissoesRoute
   AuthenticatedFinanceiroComissoesUsuarioRoute: typeof AuthenticatedFinanceiroComissoesUsuarioRoute
   AuthenticatedFinanceiroConfiguracoesRoute: typeof AuthenticatedFinanceiroConfiguracoesRoute
@@ -2296,9 +2337,6 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedRhRelatoriosRoute: typeof AuthenticatedRhRelatoriosRoute
   AuthenticatedVisaoGeralPainelRoute: typeof AuthenticatedVisaoGeralPainelRoute
   AuthenticatedRhIndexRoute: typeof AuthenticatedRhIndexRoute
-  AuthenticatedCrmClientesIdRoute: typeof AuthenticatedCrmClientesIdRoute
-  AuthenticatedCrmClientesNovoRoute: typeof AuthenticatedCrmClientesNovoRoute
-  AuthenticatedCrmScanIaIdRoute: typeof AuthenticatedCrmScanIaIdRoute
   AuthenticatedOperacionalDemandasIdRoute: typeof AuthenticatedOperacionalDemandasIdRoute
   AuthenticatedOperacionalDemandasKanbanRoute: typeof AuthenticatedOperacionalDemandasKanbanRoute
   AuthenticatedOperacionalPropostasIdRoute: typeof AuthenticatedOperacionalPropostasIdRoute
@@ -2315,6 +2353,7 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedCrmRoute: AuthenticatedCrmRouteWithChildren,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedDocumentosRoute: AuthenticatedDocumentosRoute,
   AuthenticatedFormulariosRoute: AuthenticatedFormulariosRouteWithChildren,
@@ -2335,12 +2374,6 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedContaNotificacoesRoute: AuthenticatedContaNotificacoesRoute,
   AuthenticatedContaPerfilRoute: AuthenticatedContaPerfilRoute,
   AuthenticatedContaSegurancaRoute: AuthenticatedContaSegurancaRoute,
-  AuthenticatedCrmChatRoute: AuthenticatedCrmChatRoute,
-  AuthenticatedCrmClientesRoute: AuthenticatedCrmClientesRoute,
-  AuthenticatedCrmDocumentosRoute: AuthenticatedCrmDocumentosRoute,
-  AuthenticatedCrmPainelRoute: AuthenticatedCrmPainelRoute,
-  AuthenticatedCrmParceirosRoute: AuthenticatedCrmParceirosRoute,
-  AuthenticatedCrmScanIaRoute: AuthenticatedCrmScanIaRoute,
   AuthenticatedFinanceiroComissoesRoute: AuthenticatedFinanceiroComissoesRoute,
   AuthenticatedFinanceiroComissoesUsuarioRoute:
     AuthenticatedFinanceiroComissoesUsuarioRoute,
@@ -2377,9 +2410,6 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedRhRelatoriosRoute: AuthenticatedRhRelatoriosRoute,
   AuthenticatedVisaoGeralPainelRoute: AuthenticatedVisaoGeralPainelRoute,
   AuthenticatedRhIndexRoute: AuthenticatedRhIndexRoute,
-  AuthenticatedCrmClientesIdRoute: AuthenticatedCrmClientesIdRoute,
-  AuthenticatedCrmClientesNovoRoute: AuthenticatedCrmClientesNovoRoute,
-  AuthenticatedCrmScanIaIdRoute: AuthenticatedCrmScanIaIdRoute,
   AuthenticatedOperacionalDemandasIdRoute:
     AuthenticatedOperacionalDemandasIdRoute,
   AuthenticatedOperacionalDemandasKanbanRoute:
