@@ -304,20 +304,32 @@ export function ClienteShell({
           <div className="sidebar-scroll flex-1 overflow-y-auto">
             <SidebarLinks collapsed={isCollapsed} />
           </div>
+          <div className={cn("border-t border-sidebar-border p-2", isCollapsed ? "px-1" : "px-2")}>
+            <SidebarSignOut collapsed={isCollapsed} onSignOut={onSignOut} />
+          </div>
         </aside>
 
         {/* Drawer mobile */}
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
           <SheetContent
             side="left"
-            className="app-sidebar w-72 border-sidebar-border p-0 text-sidebar-foreground"
+            className="app-sidebar flex w-72 flex-col border-sidebar-border p-0 text-sidebar-foreground"
           >
             <SheetTitle className="sr-only">Menu de navegação</SheetTitle>
             <div className="flex h-16 items-center border-b border-sidebar-border px-4">
               <Logo variant="light" className="h-7" />
             </div>
-            <div className="sidebar-scroll h-[calc(100dvh-4rem)] overflow-y-auto">
+            <div className="sidebar-scroll flex-1 overflow-y-auto">
               <SidebarLinks collapsed={false} onNavigate={() => setMobileOpen(false)} />
+            </div>
+            <div className="border-t border-sidebar-border p-2">
+              <SidebarSignOut
+                collapsed={false}
+                onSignOut={() => {
+                  setMobileOpen(false);
+                  onSignOut();
+                }}
+              />
             </div>
           </SheetContent>
         </Sheet>
