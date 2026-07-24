@@ -73,6 +73,9 @@ export function ParticipanteDialog({
   useEffect(() => {
     if (tentouEnviar) setErros(camposFaltantes(f));
   }, [f, tentouEnviar]);
+  useEffect(() => {
+    if (tentouEnviar) setErrosC(camposFaltantes(conjuge));
+  }, [conjuge, tentouEnviar]);
 
   const pf = f.tipo_pessoa === "F";
   const permiteConjuge = true;
@@ -148,7 +151,7 @@ export function ParticipanteDialog({
           regime_casamento: f.regime_casamento,
         }
       : null;
-    const faltandoC = new Set<string>();
+    const faltandoC = c ? camposFaltantes(c) : new Set<string>();
     setErrosC(faltandoC);
 
     if (faltando.size > 0 || faltandoC.size > 0) {

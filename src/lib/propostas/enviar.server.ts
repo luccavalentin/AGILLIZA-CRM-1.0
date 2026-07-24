@@ -875,7 +875,7 @@ async function enviarPropostaImplInner({
       patchOk.situacao_banco =
         mapa.banco === "erro"
           ? "em_analise"
-          : situacaoBancoDeTipo(situacaoTipo, resp?.codigoSituacaoBanco, false);
+          : situacaoBancoDeTipo(situacaoTipo, resp?.codigoSituacaoBanco, false, resp);
       const numeroBanco = numeroPropostaBancoReal(resp);
       const referenciaBanco = referenciaIntegracaoBanco(resp);
       if (numeroBanco) patchOk.numero_proposta_banco = numeroBanco;
@@ -1063,6 +1063,7 @@ export async function sincronizarPropostaImpl({
   let simEscolhida: any = null;
   let numeroPropostaBanco: string | null = null;
 
+  const patchesBanco: Array<Record<string, unknown>> = [];
   for (const pb of (bancosProp ?? []) as any[]) {
     const sim = escolherSimulacaoBanco(pb, simulacoes);
     if (!sim) continue;
@@ -1094,6 +1095,7 @@ export async function sincronizarPropostaImpl({
     if (sim.bancoEscolhido === "S" || mapa.proposta === "credito_aprovado") simEscolhida = sim;
 
     const patchBanco: Record<string, unknown> = {
+      id: pb.id,
       status_banco: mapa.banco,
       situacao_banco: situacaoBancoDeTipo(
         sim.tipoSituacao,
@@ -1130,11 +1132,13 @@ export async function sincronizarPropostaImpl({
     if (sim.codigoSistemaAmortizacaoBanco)
       patchBanco.sistema_amortizacao_banco = sim.codigoSistemaAmortizacaoBanco;
     if (sim.codigoIndexadorBanco) patchBanco.codigo_indexador = sim.codigoIndexadorBanco;
-    await supabase
-      .from("proposta_bancos")
-      .update(patchBanco as any)
-      .eq("id", pb.id);
+    patchesBanco.push(patchBanco);
   }
+  // Persistência em lote — reduz N updates sequenciais a um único round-trip.
+  if (patchesBanco.length > 0) {
+    await supabase.from("proposta_bancos").upsert(patchesBanco as any);
+  }
+
 
   // Status candidato a partir dos bancos (melhor desfecho prevalece).
   let statusBancos: PropostaStatus | null = null;

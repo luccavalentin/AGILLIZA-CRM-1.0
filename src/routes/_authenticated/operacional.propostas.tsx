@@ -75,8 +75,10 @@ function Pagina() {
         queryClient.invalidateQueries({ queryKey: ["propostas"] });
       });
     };
+    let cancelado = false;
     let canalRef: any = null;
     import("@/integrations/supabase/client").then(({ supabase }) => {
+      if (cancelado) return;
       canalRef = supabase
         .channel("propostas-lista")
         .on(
@@ -90,8 +92,13 @@ function Pagina() {
           invalidar,
         )
         .subscribe();
+      if (cancelado) {
+        supabase.removeChannel(canalRef);
+        canalRef = null;
+      }
     });
     return () => {
+      cancelado = true;
       if (raf !== null) cancelAnimationFrame(raf);
       if (canalRef) {
         import("@/integrations/supabase/client").then(({ supabase }) =>
