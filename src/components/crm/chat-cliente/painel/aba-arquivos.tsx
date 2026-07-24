@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Link } from "@tanstack/react-router";
 import { ExternalLink, FileText, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { listarDocumentos, urlDocumento } from "@/lib/crm/clientes.functions";
@@ -19,9 +20,13 @@ export function AbaArquivos({ clienteId }: { clienteId: string }) {
   async function abrir(storagePath: string) {
     try {
       const r = await urlFn({ data: { storage_path: storagePath } });
-      if (r?.url) window.open(r.url, "_blank", "noopener");
-    } catch {
-      /* ignore */
+      if (r?.url) {
+        window.open(r.url, "_blank", "noopener");
+      } else {
+        toast.error("Não foi possível abrir o arquivo.");
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Não foi possível abrir o arquivo.");
     }
   }
 

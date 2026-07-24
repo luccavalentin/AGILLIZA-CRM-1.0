@@ -37,11 +37,22 @@ export function useChatConversas() {
   // Visão supervisora: quando ligada, gestores veem também as conversas dos
   // demais atendentes (o back-end ignora para quem não é gestor).
   const [verTodos, setVerTodos] = useState(false);
+  // Tick minutal: SLA e lembrete são baseados em `Date.now()`. Sem este
+  // gatilho, badges "SLA estourado"/"lembrete devido" só se atualizariam
+  // quando outro estado mudasse, deixando o usuário parado com dados velhos.
+  const [tickMinuto, setTickMinuto] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setTickMinuto((n) => n + 1), 60_000);
+    return () => clearInterval(id);
+  }, []);
 
-  function abrirConversa(clienteId: string, atendenteId: string | null) {
-    setSelecionado(clienteId);
-    setAtendenteSel(atendenteId);
-  }
+  const abrirConversa = useMemo(
+    () => (clienteId: string, atendenteId: string | null) => {
+      setSelecionado(clienteId);
+      setAtendenteSel(atendenteId);
+    },
+    [],
+  );
 
   const queryKey = ["conversas-cliente", verTodos] as const;
   const { data: conversas, isLoading } = useQuery({
@@ -187,7 +198,7 @@ export function useChatConversas() {
       lista = lista.filter((c) => lembreteDevido(c.cliente_id));
     return lista;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [conversas, busca, etiquetaFiltro, filtro, etiquetasCliente, metasCliente]);
+  }, [conversas, busca, etiquetaFiltro, filtro, etiquetasCliente, metasCliente, tickMinuto]);
 
   const novosClientes = useMemo(() => {
     if (termoBusca.length < 2) return [];
@@ -237,7 +248,7 @@ export function useChatConversas() {
         .length,
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [conversas, metasCliente]);
+  }, [conversas, metasCliente, tickMinuto]);
 
   return {
     // estado

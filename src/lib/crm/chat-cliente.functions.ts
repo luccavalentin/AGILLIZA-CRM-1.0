@@ -29,32 +29,50 @@ export interface ChatMensagem {
 
 const IMG_EXT = /\.(png|jpe?g|gif|webp|bmp|heic|heif|svg)$/i;
 
-/** Converte caminhos de storage em URLs assinadas temporárias (imagens/docs do chat). */
+/** Converte caminhos de storage em URLs assinadas temporárias (imagens/docs do chat).
+ *
+ * Usa `createSignedUrls` (plural) do Supabase Storage para gerar todas as URLs
+ * em UMA chamada — evita N chamadas HTTP quando a lista tem muitas mensagens
+ * com anexo, reduzindo latência do endpoint `listarChatCliente`.
+ */
 async function resolverAnexosChat<T extends { anexo_url: string | null }>(
   supabase: any,
   lista: T[],
 ): Promise<(T & { anexo_nome: string | null; anexo_is_imagem: boolean })[]> {
-  return Promise.all(
-    lista.map(async (m) => {
-      let anexoUrl: string | null = m.anexo_url ?? null;
-      let anexoNome: string | null = null;
-      if (anexoUrl && !/^https?:\/\//i.test(anexoUrl)) {
-        const partes = anexoUrl.split("/");
-        anexoNome =
-          partes[partes.length - 1]?.replace(/^\d+-[0-9a-f-]+\./i, "arquivo.") ?? null;
-        const { data: signed } = await supabase.storage
-          .from("cliente-documentos")
-          .createSignedUrl(anexoUrl, 3600);
-        anexoUrl = signed?.signedUrl ?? null;
-      }
-      return {
-        ...m,
-        anexo_url: anexoUrl,
-        anexo_nome: anexoNome,
-        anexo_is_imagem: anexoUrl ? IMG_EXT.test(anexoUrl.split("?")[0]) : false,
-      };
-    }),
-  );
+  // Coleta caminhos internos de storage (ignora URLs http já assinadas).
+  const caminhos = new Set<string>();
+  for (const m of lista) {
+    const u = m.anexo_url ?? null;
+    if (u && !/^https?:\/\//i.test(u)) caminhos.add(u);
+  }
+
+  // Gera todas as signed URLs em batch (1 request). Falhas individuais viram null.
+  const mapa = new Map<string, string>();
+  if (caminhos.size > 0) {
+    const { data: assinadas } = await supabase.storage
+      .from("cliente-documentos")
+      .createSignedUrls(Array.from(caminhos), 3600);
+    for (const s of (assinadas ?? []) as Array<{ path: string | null; signedUrl: string | null }>) {
+      if (s.path && s.signedUrl) mapa.set(s.path, s.signedUrl);
+    }
+  }
+
+  return lista.map((m) => {
+    let anexoUrl: string | null = m.anexo_url ?? null;
+    let anexoNome: string | null = null;
+    if (anexoUrl && !/^https?:\/\//i.test(anexoUrl)) {
+      const partes = anexoUrl.split("/");
+      anexoNome =
+        partes[partes.length - 1]?.replace(/^\d+-[0-9a-f-]+\./i, "arquivo.") ?? null;
+      anexoUrl = mapa.get(anexoUrl) ?? null;
+    }
+    return {
+      ...m,
+      anexo_url: anexoUrl,
+      anexo_nome: anexoNome,
+      anexo_is_imagem: anexoUrl ? IMG_EXT.test(anexoUrl.split("?")[0]) : false,
+    };
+  });
 }
 
 export interface ConversaCliente {

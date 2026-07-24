@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ArrowLeft, Save, FileText } from "lucide-react";
@@ -32,15 +32,22 @@ function Pagina() {
   const leitura = useQuery({
     queryKey: ["scan-ia-leitura", id],
     queryFn: () => obterLeitura({ data: { id } }),
+    // Evita que um refetch (foco de janela, invalidação em background) sobrescreva
+    // edições em andamento do formulário antes do salvar.
+    refetchOnWindowFocus: false,
+    staleTime: 5 * 60 * 1000,
   });
 
+  // Só reidrata `valores` quando o ID muda (nova leitura) — não a cada refetch.
+  const hidratadoParaIdRef = useRef<string | null>(null);
   useEffect(() => {
-    if (leitura.data) {
-      const inicial: Record<string, string> = {};
-      for (const c of leitura.data.campos) inicial[c.id] = c.valor ?? "";
-      setValores(inicial);
-    }
-  }, [leitura.data]);
+    if (!leitura.data) return;
+    if (hidratadoParaIdRef.current === id) return;
+    const inicial: Record<string, string> = {};
+    for (const c of leitura.data.campos) inicial[c.id] = c.valor ?? "";
+    setValores(inicial);
+    hidratadoParaIdRef.current = id;
+  }, [leitura.data, id]);
 
   const salvar = useMutation({
     mutationFn: () =>

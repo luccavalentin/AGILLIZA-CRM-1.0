@@ -39,13 +39,32 @@ export function useChecklistState(clienteId: string, data: Dados | undefined) {
     check.__labels && typeof check.__labels === "object" ? check.__labels : {};
   const grupos: GrupoChecklist[] = Array.isArray(check.__grupos) ? check.__grupos : [];
 
+  // Serializa persistências do checklist: se várias mudanças ocorrerem em
+  // sequência (cliques rápidos), cancela a fila anterior e envia sempre o
+  // ESTADO MAIS RECENTE após a resposta corrente — evita "resposta antiga
+  // sobrescreve estado novo" (race condition last-response-wins).
+  const enviandoRef = useRef(false);
+  const pendenteRef = useRef<null | { next: Record<string, any>; fgts: boolean }>(null);
+
   async function persistir(next: Record<string, any>, novoFgts = fgts) {
+    pendenteRef.current = { next, fgts: novoFgts };
+    if (enviandoRef.current) return;
+    enviandoRef.current = true;
     try {
-      await salvar({
-        data: { cliente_id: clienteId, checklist: next, utiliza_fgts: novoFgts },
-      });
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Falha ao salvar checklist.");
+      while (pendenteRef.current) {
+        const payload = pendenteRef.current;
+        pendenteRef.current = null;
+        try {
+          await salvar({
+            data: { cliente_id: clienteId, checklist: payload.next, utiliza_fgts: payload.fgts },
+          });
+        } catch (e) {
+          toast.error(e instanceof Error ? e.message : "Falha ao salvar checklist.");
+          break;
+        }
+      }
+    } finally {
+      enviandoRef.current = false;
     }
   }
 
