@@ -1240,3 +1240,52 @@ iframe[src*="lvbl" i] {
 .lucide.w-3\.5 {
   stroke-width: 1.75px;
 }
+
+/* ────────────────────────────────────────────────────────────────
+   CRM — Utilitários de polimento visual compartilhados
+   ────────────────────────────────────────────────────────────────
+   Refino leve para trazer consistência de foco, elevação e scroll
+   entre Kanban, Chat, Ficha do Cliente e Listas do módulo CRM.
+   Mantém a paleta atual — só padroniza motion + estados. */
+
+/* Anel de foco padrão do CRM (teclado). Aplica em botões, cards
+   clicáveis e linhas de tabela para acessibilidade uniforme. */
+@utility crm-focus-ring {
+  &:focus-visible {
+    outline: none;
+    box-shadow:
+      0 0 0 2px var(--background),
+      0 0 0 4px color-mix(in oklab, var(--primary) 55%, transparent);
+    border-radius: inherit;
+  }
+}
+
+/* Elevação sutil no hover para cards clicáveis. Substitui combos
+   de translate + shadow-lg exagerados que geravam jitter em telas
+   densas (kanban com muitas colunas, listas longas). */
+@utility crm-hover-lift {
+  transition:
+    box-shadow 180ms ease-out,
+    border-color 180ms ease-out,
+    transform 180ms ease-out;
+  &:hover {
+    box-shadow:
+      0 1px 2px -1px color-mix(in oklab, var(--foreground) 8%, transparent),
+      0 4px 12px -4px color-mix(in oklab, var(--foreground) 10%, transparent);
+    border-color: color-mix(in oklab, var(--primary) 30%, var(--border));
+  }
+}
+
+/* Scrollbar fina e discreta para trilhos internos do CRM
+   (lista de conversas, tabs roláveis, colunas). */
+@utility crm-scrollbar-slim {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklab, var(--foreground) 18%, transparent) transparent;
+  &::-webkit-scrollbar { width: 8px; height: 8px; }
+  &::-webkit-scrollbar-thumb {
+    background-color: color-mix(in oklab, var(--foreground) 18%, transparent);
+    border-radius: 999px;
+  }
+  &::-webkit-scrollbar-track { background: transparent; }
+}
+
