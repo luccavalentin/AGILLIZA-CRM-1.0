@@ -20,7 +20,10 @@ import {
   AcoesSimulacao,
   ProdutoBadge,
 } from "@/components/simulacao/lista-detalhe";
+import { BancoLogo } from "@/components/bancos/banco-logo";
+import { corDoBanco } from "@/lib/bancos/cores";
 import { formatBRL } from "@/lib/simulacao/format";
+import { cn } from "@/lib/utils";
 import { formatDataHoraBR, type HandlersLinha } from "./tipos";
 
 export function TabelaSimulacoes({
