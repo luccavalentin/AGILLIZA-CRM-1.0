@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { ArrowLeft, Search, RotateCcw, KanbanSquare, User, Clock } from "lucide-react";
+import { ArrowLeft, Search, RotateCcw, KanbanSquare, User, Clock, FolderOpen } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { createDebouncedInvalidator } from "@/lib/realtime-debounce";
 import { BancoLogo } from "@/components/bancos/banco-logo";
@@ -22,9 +22,13 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { formatBRL, maskCpfCnpj } from "@/lib/simulacao/format";
 import { cn } from "@/lib/utils";
 import { numeroBancoParaExibir } from "@/lib/propostas/numero-banco-display";
+
+/** Máximo de cards visíveis antes de "empilhar" o restante numa pasta com busca. */
+const MAX_VISIVEIS_POR_COLUNA = 6;
 
 export const Route = createFileRoute("/_authenticated/operacional/propostas_/kanban")({
   head: () => ({ meta: [{ title: "Kanban de Propostas — Agilliza" }] }),
@@ -272,6 +276,115 @@ function Pagina() {
   }, [itensFiltrados]);
 
 
+
+  const [pastaAberta, setPastaAberta] = useState<PropostaStatus | null>(null);
+  const [buscaPasta, setBuscaPasta] = useState("");
+
+  function renderCard(c: any, cfg: ReturnType<typeof statusProposta>) {
+    const terminal = STATUS_TERMINAIS.includes(c.status as PropostaStatus);
+    return (
+      <div
+        key={c.id}
+        draggable={!terminal}
+        onDragStart={() =>
+          !terminal && setArrastando({ id: c.id, status: c.status as PropostaStatus })
+        }
+        onDragEnd={() => setArrastando(null)}
+        onClick={() => {
+          setPastaAberta(null);
+          router.navigate({ to: "/operacional/propostas/$id", params: { id: c.id } });
+        }}
+        style={{ "--banco": corDoBanco(c.nome_banco) } as React.CSSProperties}
+        className={cn(
+          "group relative min-w-0 shrink-0 overflow-hidden rounded-xl border border-border bg-card p-3 pl-3.5 text-sm shadow-sm transition hover:-translate-y-0.5 hover:shadow-md",
+          "before:absolute before:inset-y-0 before:left-0 before:w-1 before:bg-[var(--banco)] before:opacity-0 before:transition-opacity hover:before:opacity-100",
+          "hover:border-[color-mix(in_oklab,var(--banco)_45%,transparent)]",
+          terminal ? "cursor-pointer" : "cursor-grab active:cursor-grabbing",
+        )}
+      >
+        <div className="flex items-center gap-2.5">
+          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/10 text-xs font-bold uppercase text-primary">
+            {(c.nome_cliente ?? "?").trim().charAt(0) || "?"}
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold leading-tight text-foreground">
+              {c.nome_cliente ?? "—"}
+            </p>
+            {c.cpf_cnpj && (
+              <p className="truncate text-[11px] tabular-nums text-muted-foreground">
+                {maskCpfCnpj(c.cpf_cnpj)}
+              </p>
+            )}
+          </div>
+        </div>
+
+        <div className="mt-2 flex flex-wrap items-center gap-1.5">
+          <span
+            className={cn(
+              "inline-block rounded-full px-2 py-0.5 text-[10px] font-medium",
+              TONE_BADGE[cfg.tone],
+            )}
+          >
+            {cfg.label}
+          </span>
+          {!terminal && c.status_atualizado_em && (
+            <span className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground">
+              <Clock className="h-2.5 w-2.5" />
+              {tempoNaEtapa(c.status_atualizado_em)}
+            </span>
+          )}
+        </div>
+
+        <div className="mt-2.5 flex flex-wrap items-center gap-1.5 text-[11px]">
+          {(() => {
+            const nb = numeroBancoParaExibir(c.numero_proposta_banco);
+            return nb ? (
+              <>
+                <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[12px] font-bold tabular-nums text-primary">
+                  Nº banco {nb}
+                </span>
+                <span className="tabular-nums text-muted-foreground">Interno #{c.numero_proposta}</span>
+              </>
+            ) : (
+              <span className="rounded bg-muted px-1.5 py-0.5 font-medium tabular-nums text-foreground">
+                #{c.numero_proposta}
+              </span>
+            );
+          })()}
+        </div>
+
+        {escopo === "todas" && c.nome_responsavel && (
+          <div className="mt-2 flex items-center gap-1 text-[11px] text-muted-foreground">
+            <User className="h-3 w-3 shrink-0" />
+            <span className="truncate">{c.nome_responsavel}</span>
+          </div>
+        )}
+
+        <div className="mt-2.5 flex flex-wrap items-center justify-between gap-x-2 gap-y-1 border-t border-border/60 pt-2.5">
+          <span className="flex min-w-0 items-center gap-1.5 text-xs font-medium text-foreground">
+            <BancoLogo nome={c.nome_banco} size="xs" className="shrink-0" />
+            <span className="truncate">{c.nome_banco ?? "—"}</span>
+          </span>
+          <span className="shrink-0 text-sm font-bold tabular-nums text-foreground">
+            {formatBRL(c.valor_financiamento)}
+          </span>
+        </div>
+      </div>
+    );
+  }
+
+  const cardsDaPasta = useMemo(() => {
+    if (!pastaAberta) return [];
+    const todos = cardsPorColuna.get(pastaAberta) ?? [];
+    const q = buscaPasta.trim().toLowerCase();
+    if (!q) return todos;
+    return todos.filter((c: any) =>
+      [c.nome_cliente, c.cpf_cnpj, c.numero_proposta, c.numero_proposta_banco, c.nome_banco, c.nome_responsavel]
+        .filter(Boolean)
+        .some((v) => String(v).toLowerCase().includes(q)),
+    );
+  }, [pastaAberta, cardsPorColuna, buscaPasta]);
+
   return (
     <div className="min-h-[calc(100dvh-var(--app-header,4rem))] space-y-4 p-3 sm:space-y-6 sm:p-4 lg:p-6">
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 sm:items-center">
@@ -381,12 +494,14 @@ function Pagina() {
         {COLUNAS.map((col) => {
           const cfg = statusProposta(col.destino);
           const cards = cardsPorColuna.get(col.destino) ?? [];
+          const visiveis = cards.slice(0, MAX_VISIVEIS_POR_COLUNA);
+          const excedente = cards.length - visiveis.length;
           return (
             <div
               key={col.destino}
               onDragOver={(e) => e.preventDefault()}
               onDrop={() => soltar(col.destino)}
-              className="flex min-h-40 max-h-[30rem] min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-muted/30 shadow-sm"
+              className="flex min-h-40 max-h-[36rem] min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-muted/30 shadow-sm"
             >
               <div className="shrink-0 overflow-hidden rounded-t-xl">
                 <div className={cn("h-[3px]", TONE_BAR[cfg.tone])} />
@@ -400,103 +515,23 @@ function Pagina() {
                 </div>
               </div>
               <div className="flex flex-1 flex-col gap-2 overflow-y-auto p-2 [scrollbar-width:thin]">
-                {cards.map((c) => {
-                  const terminal = STATUS_TERMINAIS.includes(c.status as PropostaStatus);
-                  return (
-                    <div
-                      key={c.id}
-                      draggable={!terminal}
-                      onDragStart={() =>
-                        !terminal && setArrastando({ id: c.id, status: c.status as PropostaStatus })
-                      }
-                      onDragEnd={() => setArrastando(null)}
-                      onClick={() =>
-                        router.navigate({ to: "/operacional/propostas/$id", params: { id: c.id } })
-                      }
-                      style={{ "--banco": corDoBanco(c.nome_banco) } as React.CSSProperties}
-                      className={cn(
-                        "group relative min-w-0 overflow-hidden rounded-xl border border-border bg-card p-3 pl-3.5 text-sm shadow-sm transition hover:-translate-y-0.5 hover:shadow-md",
-                        "before:absolute before:inset-y-0 before:left-0 before:w-1 before:bg-[var(--banco)] before:opacity-0 before:transition-opacity hover:before:opacity-100",
-                        "hover:border-[color-mix(in_oklab,var(--banco)_45%,transparent)]",
-                        terminal ? "cursor-pointer" : "cursor-grab active:cursor-grabbing",
-                      )}
-                    >
-                      {/* Cliente em destaque */}
-                      <div className="flex items-center gap-2.5">
-                        <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/10 text-xs font-bold uppercase text-primary">
-                          {(c.nome_cliente ?? "?").trim().charAt(0) || "?"}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-semibold leading-tight text-foreground">
-                            {c.nome_cliente ?? "—"}
-                          </p>
-                          {c.cpf_cnpj && (
-                            <p className="truncate text-[11px] tabular-nums text-muted-foreground">
-                              {maskCpfCnpj(c.cpf_cnpj)}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Status */}
-                      <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                        <span
-                          className={cn(
-                            "inline-block rounded-full px-2 py-0.5 text-[10px] font-medium",
-                            TONE_BADGE[cfg.tone],
-                          )}
-                        >
-                          {cfg.label}
-                        </span>
-                        {!terminal && c.status_atualizado_em && (
-                          <span className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground">
-                            <Clock className="h-2.5 w-2.5" />
-                            {tempoNaEtapa(c.status_atualizado_em)}
-                          </span>
-                        )}
-                      </div>
-
-
-                      {/* Nº da proposta */}
-                      <div className="mt-2.5 flex flex-wrap items-center gap-1.5 text-[11px]">
-                        {(() => {
-                          const nb = numeroBancoParaExibir(c.numero_proposta_banco);
-                          return nb ? (
-                            <>
-                              <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[12px] font-bold tabular-nums text-primary">
-                                Nº banco {nb}
-                              </span>
-                              <span className="tabular-nums text-muted-foreground">Interno #{c.numero_proposta}</span>
-                            </>
-                          ) : (
-                            <span className="rounded bg-muted px-1.5 py-0.5 font-medium tabular-nums text-foreground">
-                              #{c.numero_proposta}
-                            </span>
-                          );
-                        })()}
-                      </div>
-
-
-                      {escopo === "todas" && c.nome_responsavel && (
-                        <div className="mt-2 flex items-center gap-1 text-[11px] text-muted-foreground">
-                          <User className="h-3 w-3 shrink-0" />
-                          <span className="truncate">{c.nome_responsavel}</span>
-                        </div>
-                      )}
-
-                      {/* Banco + valor */}
-                      <div className="mt-2.5 flex flex-wrap items-center justify-between gap-x-2 gap-y-1 border-t border-border/60 pt-2.5">
-                        <span className="flex min-w-0 items-center gap-1.5 text-xs font-medium text-foreground">
-                          <BancoLogo nome={c.nome_banco} size="xs" className="shrink-0" />
-                          <span className="truncate">{c.nome_banco ?? "—"}</span>
-                        </span>
-                        <span className="shrink-0 text-sm font-bold tabular-nums text-foreground">
-                          {formatBRL(c.valor_financiamento)}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
+                {visiveis.map((c) => renderCard(c, cfg))}
+                {excedente > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBuscaPasta("");
+                      setPastaAberta(col.destino);
+                    }}
+                    className="group flex shrink-0 items-center justify-between gap-2 rounded-xl border border-dashed border-border bg-background/60 px-3 py-2.5 text-xs font-medium text-muted-foreground shadow-sm transition hover:border-primary/40 hover:bg-primary/5 hover:text-foreground"
+                  >
+                    <span className="flex items-center gap-2">
+                      <FolderOpen className="h-4 w-4 text-primary" />
+                      Ver mais {excedente} {excedente === 1 ? "proposta" : "propostas"}
+                    </span>
+                    <Search className="h-3.5 w-3.5 opacity-70 group-hover:opacity-100" />
+                  </button>
+                )}
                 {cards.length === 0 && (
                   <p className="px-1 py-6 text-center text-xs text-muted-foreground">Vazio</p>
                 )}
@@ -505,6 +540,38 @@ function Pagina() {
           );
         })}
       </div>
+
+      <Dialog open={pastaAberta !== null} onOpenChange={(o) => !o && setPastaAberta(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>
+              {pastaAberta ? statusProposta(pastaAberta).label : ""}
+              <span className="ml-2 text-sm font-normal text-muted-foreground">
+                ({(pastaAberta ? cardsPorColuna.get(pastaAberta) ?? [] : []).length} propostas)
+              </span>
+            </DialogTitle>
+          </DialogHeader>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              autoFocus
+              placeholder="Buscar por cliente, CPF/CNPJ ou nº da proposta"
+              value={buscaPasta}
+              onChange={(e) => setBuscaPasta(e.target.value)}
+              className="h-11 rounded-xl pl-9"
+            />
+          </div>
+          <div className="grid max-h-[60vh] grid-cols-1 gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
+            {pastaAberta &&
+              cardsDaPasta.map((c: any) => renderCard(c, statusProposta(pastaAberta)))}
+            {pastaAberta && cardsDaPasta.length === 0 && (
+              <p className="col-span-full py-8 text-center text-sm text-muted-foreground">
+                Nenhuma proposta encontrada.
+              </p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
