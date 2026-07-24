@@ -256,45 +256,6 @@ function Pagina() {
     }
   }
 
-  // Envio direto (inline na tabela) — dispara a criação + envio ao banco
-  // sem abrir o diálogo, para uma proposta específica de um único banco.
-  const [enviandoBancoInlineKey, setEnviandoBancoInlineKey] = useState<string | null>(null);
-  async function handleEnviarBancoDireto(simulacaoId: string, numero: string, banco: any) {
-    const key = `${simulacaoId}:${banco.id}`;
-    if (enviandoBancoInlineKey) return;
-    setEnviandoBancoInlineKey(key);
-    try {
-      const res = await criar({
-        data: { simulacao_id: simulacaoId, simulacao_banco_id: banco.id },
-      });
-      const toastId = toast.loading(
-        `Enviando ${res.numero_proposta} ao ${banco.nome_banco}...`,
-      );
-      void enviarAoBancoFn({ data: { proposta_id: res.proposta_id } })
-        .then((env) => {
-          toast.success(
-            `Proposta ${res.numero_proposta} enviada ao ${banco.nome_banco} (${env.status}).`,
-            { id: toastId },
-          );
-          queryClient.invalidateQueries({ queryKey: ["simulacoes"] });
-          queryClient.invalidateQueries({ queryKey: ["propostas"] });
-        })
-        .catch((e) => {
-          const msg = e instanceof Error ? e.message : "Falha ao enviar ao banco.";
-          toast.error(
-            `Proposta ${res.numero_proposta} criada, mas envio falhou: ${msg}`,
-            { id: toastId, duration: 15000 },
-          );
-        });
-      queryClient.invalidateQueries({ queryKey: ["simulacoes"] });
-      queryClient.invalidateQueries({ queryKey: ["propostas"] });
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Não foi possível gerar a proposta.");
-    } finally {
-      setEnviandoBancoInlineKey(null);
-    }
-  }
-
 
   const itens = data?.itens ?? [];
   const kpiTotal = data?.total ?? itens.length;
@@ -424,8 +385,6 @@ function Pagina() {
     onBaixarDetalhada: handleBaixarDetalhada,
     onDuplicar: handleDuplicar,
     onEnviarProposta: handleEnviarProposta,
-    onEnviarBancoDireto: handleEnviarBancoDireto,
-    enviandoBancoInlineKey,
     onExcluir: handleExcluir,
     onRestaurar: handleRestaurar,
   };
