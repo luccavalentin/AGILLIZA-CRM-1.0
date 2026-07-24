@@ -13,6 +13,12 @@ export const PRAZO_MAX = 420;
 
 export interface WizardState {
   produto: "financiamento_imobiliario" | "home_equity";
+  tipo_imovel: string;
+  uso_imovel: string;
+  situacao_imovel: string;
+  uf: string;
+  utiliza_fgts: "S" | "N";
+  fg_financiar_despesas: boolean;
   valor_imovel: number;
   valor_entrada: number;
   valor_financiamento: number;
@@ -31,6 +37,12 @@ export interface WizardState {
 export function useWizardSimulacao(melhorTaxaAno = 0.1199) {
   const [w, setW] = useState<WizardState>({
     produto: "financiamento_imobiliario",
+    tipo_imovel: "",
+    uso_imovel: "",
+    situacao_imovel: "",
+    uf: "",
+    utiliza_fgts: "N",
+    fg_financiar_despesas: false,
     valor_imovel: 0,
     valor_entrada: 0,
     valor_financiamento: 0,
@@ -127,7 +139,11 @@ export function useWizardSimulacao(melhorTaxaAno = 0.1199) {
     w.valor_financiamento > 0 &&
     w.data_nascimento !== "" &&
     w.prazo_meses >= PRAZO_MIN &&
-    w.prazo_meses <= prazoMaxEfetivo;
+    w.prazo_meses <= prazoMaxEfetivo &&
+    w.tipo_imovel !== "" &&
+    w.uso_imovel !== "" &&
+    w.situacao_imovel !== "" &&
+    w.uf !== "";
 
   function definirPrazo(valor: number) {
     if (!Number.isFinite(valor) || valor <= 0) {

@@ -10,9 +10,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { CurrencyInput } from "@/components/simulacao/currency-input";
 import { DicaRendaMinima } from "@/components/simulacao/dica-renda-minima";
-import { PRODUTOS } from "@/lib/simulacao/schemas";
+import { PRODUTOS, TIPOS_IMOVEL, USOS_IMOVEL, SITUACOES_IMOVEL } from "@/lib/simulacao/schemas";
+import { UFS } from "@/lib/simulacao/format";
 import { formatBRL } from "@/lib/simulacao/format";
 import { formatarMeses } from "@/lib/simulacao/prazo";
 import type { WizardState } from "./use-wizard-simulacao";
@@ -115,6 +117,75 @@ export function FormularioSimulacao({
               <SelectItem value="P">PRICE</SelectItem>
             </SelectContent>
           </Select>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label>Tipo de imóvel <span className="text-destructive">*</span></Label>
+          <Select value={w.tipo_imovel} onValueChange={(v) => set("tipo_imovel", v)}>
+            <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+            <SelectContent>
+              {TIPOS_IMOVEL.map((p) => (
+                <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label>Uso do imóvel <span className="text-destructive">*</span></Label>
+          <Select value={w.uso_imovel} onValueChange={(v) => set("uso_imovel", v)}>
+            <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+            <SelectContent>
+              {USOS_IMOVEL.map((p) => (
+                <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label>Situação do imóvel <span className="text-destructive">*</span></Label>
+          <Select value={w.situacao_imovel} onValueChange={(v) => set("situacao_imovel", v)}>
+            <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+            <SelectContent>
+              {SITUACOES_IMOVEL.map((p) => (
+                <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label>UF <span className="text-destructive">*</span></Label>
+          <Select value={w.uf} onValueChange={(v) => set("uf", v)}>
+            <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+            <SelectContent>
+              {UFS.map((u) => (
+                <SelectItem key={u} value={u}>{u}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label>Utiliza FGTS? <span className="text-destructive">*</span></Label>
+          <Select value={w.utiliza_fgts} onValueChange={(v) => set("utiliza_fgts", v as WizardState["utiliza_fgts"])}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="S">Sim</SelectItem>
+              <SelectItem value="N">Não</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-1.5 md:col-span-2">
+          <label className="flex items-center gap-2 text-sm text-foreground">
+            <Checkbox
+              checked={!!w.fg_financiar_despesas}
+              onCheckedChange={(v) => set("fg_financiar_despesas", v === true)}
+            />
+            Financiar despesas (incluir custos no valor financiado)
+          </label>
         </div>
 
         {/* Simular pelo valor da parcela (cálculo reverso) */}
