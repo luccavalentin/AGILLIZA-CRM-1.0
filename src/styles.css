@@ -680,8 +680,28 @@ iframe[src*="lvbl" i] {
   animation: carga 1.2s linear infinite;
 }
 
-@keyframes piscar-aviso {
-  0%,
+/* Shimmer usado pelo Skeleton para dar sensação de carregamento premium. */
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Utilitários globais de UX: elevação sutil no hover para superfícies interativas. */
+@utility surface-hover {
+  transition:
+    background-color 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+  &:hover {
+    background-color: color-mix(in oklab, var(--accent) 50%, transparent);
+    border-color: color-mix(in oklab, var(--primary) 22%, var(--border));
+    box-shadow: var(--shadow-card);
+    transform: translateY(-1px);
+  }
+}
+
+
   100% {
     opacity: 1;
     box-shadow: 0 0 0 0 rgba(234, 179, 8, 0.55);
