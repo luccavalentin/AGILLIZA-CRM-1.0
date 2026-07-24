@@ -198,7 +198,7 @@ export function useChatConversas() {
       lista = lista.filter((c) => lembreteDevido(c.cliente_id));
     return lista;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [conversas, busca, etiquetaFiltro, filtro, etiquetasCliente, metasCliente]);
+  }, [conversas, busca, etiquetaFiltro, filtro, etiquetasCliente, metasCliente, tickMinuto]);
 
   const novosClientes = useMemo(() => {
     if (termoBusca.length < 2) return [];
