@@ -80,45 +80,28 @@ export const listarPastasDocumentos = createServerFn({ method: "GET" })
   .handler(async ({ data, context }): Promise<DocumentoPasta[]> => {
     const { supabase, userId } = context;
 
-    let { data: pastas } = await supabase
-      .from("cliente_documento_pastas")
-      .select("id, nome, slug, ordem, criado_por, parent_id")
-      .eq("cliente_id", data.cliente_id)
-      .order("ordem", { ascending: true })
-      .order("created_at", { ascending: true });
-
-    if (!pastas || pastas.length === 0) {
-      const corr = await correspondenteDoUsuario(supabase, userId);
-      if (corr) {
-        await supabase.from("cliente_documento_pastas").insert(
-          PASTAS_PADRAO.map((p) => ({
-            cliente_id: data.cliente_id,
-            correspondente_id: corr,
-            nome: p.nome,
-            slug: p.slug,
-            ordem: p.ordem,
-          })),
-        );
-        const novo = await supabase
-          .from("cliente_documento_pastas")
-          .select("id, nome, slug, ordem, criado_por, parent_id")
-          .eq("cliente_id", data.cliente_id)
-          .order("ordem", { ascending: true })
-          .order("created_at", { ascending: true });
-        pastas = novo.data ?? [];
-      } else {
-        pastas = [];
-      }
+    async function recarregar() {
+      const { data: novo } = await supabase
+        .from("cliente_documento_pastas")
+        .select("id, nome, slug, ordem, criado_por, parent_id")
+        .eq("cliente_id", data.cliente_id)
+        .order("ordem", { ascending: true })
+        .order("created_at", { ascending: true });
+      return novo ?? [];
     }
 
+    let pastas = await recarregar();
+
     const slugsExistentes = new Set(
-      (pastas ?? []).map((p: any) => p.slug).filter((slug: unknown): slug is string => typeof slug === "string" && slug.length > 0),
+      pastas.map((p: any) => p.slug).filter((slug: unknown): slug is string => typeof slug === "string" && slug.length > 0),
     );
     const faltantes = PASTAS_PADRAO.filter((p) => !slugsExistentes.has(p.slug));
     if (faltantes.length > 0) {
       const corr = await correspondenteDoUsuario(supabase, userId);
       if (corr) {
-        await supabase.from("cliente_documento_pastas").insert(
+        // Upsert com ignoreDuplicates + unique index parcial em (cliente_id, slug)
+        // evita corrida entre requisições concorrentes (StrictMode, duas abas).
+        await supabase.from("cliente_documento_pastas").upsert(
           faltantes.map((p) => ({
             cliente_id: data.cliente_id,
             correspondente_id: corr,
@@ -126,14 +109,9 @@ export const listarPastasDocumentos = createServerFn({ method: "GET" })
             slug: p.slug,
             ordem: p.ordem,
           })),
+          { onConflict: "cliente_id,slug", ignoreDuplicates: true },
         );
-        const novo = await supabase
-          .from("cliente_documento_pastas")
-          .select("id, nome, slug, ordem, criado_por, parent_id")
-          .eq("cliente_id", data.cliente_id)
-          .order("ordem", { ascending: true })
-          .order("created_at", { ascending: true });
-        pastas = novo.data ?? [];
+        pastas = await recarregar();
       }
     }
 
