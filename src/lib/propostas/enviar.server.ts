@@ -817,18 +817,25 @@ export async function enviarPropostaImpl({
         ctx,
       );
 
-      // No POST de inclusão alguns bancos devolvem códigos intermediários antes
-      // do processamento assíncrono. Só tratamos como falha imediata quando há
-      // mensagem/campo de validação claro; código isolado fica em análise e o
-      // polling posterior reconcilia com o retorno definitivo do banco.
+      // No POST de inclusão a API pode devolver `retornoIntegracao` com uma
+      // mensagem informativa (validação, aviso do banco) MESMO quando a
+      // proposta foi aceita e ganhou um `tipoSituacao` real (S/N/A/R).
+      // Pela documentação oficial só `tipoSituacao` ∈ {P,E} representa
+      // "erro ao enviar proposta". Fora esse caso a proposta CHEGOU ao
+      // banco e não deve ser classificada como "Erro no envio" — a
+      // mensagem fica preservada em `mensagem_banco` para consulta.
+      const situacaoTipoResp = String(resp?.tipoSituacao ?? "").toUpperCase().charAt(0);
       const erroBanco =
         extrairErroRetorno(resp?.retornoIntegracao, { codigoApenasComoErro: false }) ??
         extrairErroRetorno(resp?.descricaoRespostaBanco?.retornoIntegracao, {
           codigoApenasComoErro: false,
         });
-      if (erroBanco) {
+      const falhaEnvioReal =
+        situacaoTipoResp === "P" || situacaoTipoResp === "E" || ehFalhaIntegracaoBanco(resp);
+      if (erroBanco && falhaEnvioReal) {
         throw new IntegracaoBancariaError(erroBanco);
       }
+
 
       // Grava o RETORNO real do banco (taxa, parcela, financiamento, situação e
       // protocolo) em vez de apenas marcar "enviada". Assim o usuário vê o
