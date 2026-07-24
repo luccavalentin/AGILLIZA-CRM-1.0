@@ -7,7 +7,7 @@ import { avaliarRendaMinima, TAXA_MIP_MES, TAXA_DFI_MES, TAXA_ADMIN_MES } from "
 import { taxaAnoDeBanco } from "@/lib/simulacao/simulacao-rapida";
 import { completaSchema } from "@/lib/simulacao/schemas";
 import { formatBRL } from "@/lib/simulacao/format";
-import { ajustarPrazoPorIdade, prazoMaximoPorIdade } from "@/lib/simulacao/prazo";
+import { ajustarPrazoPorIdade, prazoMaximoParaProponentes } from "@/lib/simulacao/prazo";
 import {
   listarBancosAtivos,
   listarOperacoes,
@@ -186,9 +186,18 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
     });
   }
 
+  // Datas adicionais consideradas no cálculo do prazo máximo: quando o cliente
+  // é casado/união estável, o cônjuge entra na conta MESMO sem compor renda —
+  // o banco usa a idade do MAIS VELHO para o teto de idade ao término.
+  const datasProponentesPrazo = useMemo(() => {
+    const extras: string[] = [];
+    if (f.possui_conjuge && f.data_nascimento_conjuge) extras.push(f.data_nascimento_conjuge);
+    return extras;
+  }, [f.possui_conjuge, f.data_nascimento_conjuge]);
+
   const maxPrazoIdade = useMemo(
-    () => prazoMaximoPorIdade(f.data_nascimento),
-    [f.data_nascimento],
+    () => prazoMaximoParaProponentes([f.data_nascimento, ...datasProponentesPrazo]),
+    [f.data_nascimento, datasProponentesPrazo],
   );
 
   const melhorTaxaAno = useMemo(() => {
@@ -299,7 +308,7 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
       set("prazo", 0);
       return;
     }
-    const { prazo, ajustado, mensagem } = ajustarPrazoPorIdade(valor, f.data_nascimento);
+    const { prazo, ajustado, mensagem } = ajustarPrazoPorIdade(valor, f.data_nascimento, datasProponentesPrazo);
     let final = prazo;
     if (restricaoEspecial.ativo && final > restricaoEspecial.prazoMax) {
       final = restricaoEspecial.prazoMax;
@@ -318,7 +327,7 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
   // Reajusta o prazo se a data de nascimento reduzir o máximo permitido.
   useEffect(() => {
     if (maxPrazoIdade != null && f.prazo > maxPrazoIdade) {
-      const { mensagem } = ajustarPrazoPorIdade(f.prazo, f.data_nascimento);
+      const { mensagem } = ajustarPrazoPorIdade(f.prazo, f.data_nascimento, datasProponentesPrazo);
       if (mensagem) toast.warning(mensagem);
       set("prazo", maxPrazoIdade);
     }
