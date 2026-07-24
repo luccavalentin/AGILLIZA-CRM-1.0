@@ -78,10 +78,17 @@ export function LinhaDocumento({
           variant="ghost"
           onClick={() => onBaixar(doc.storage_path, doc.nome_arquivo)}
           title="Visualizar / baixar"
+          aria-label="Visualizar ou baixar documento"
         >
           <Download className="size-4" />
         </Button>
-        <Button size="icon" variant="ghost" onClick={() => onEditar(doc)} title="Editar">
+        <Button
+          size="icon"
+          variant="ghost"
+          onClick={() => onEditar(doc)}
+          title="Editar"
+          aria-label="Editar documento"
+        >
           <Pencil className="size-4" />
         </Button>
         <Button
@@ -89,6 +96,7 @@ export function LinhaDocumento({
           variant="ghost"
           onClick={() => onMarcar(doc.id, "aprovado")}
           title="Aprovar"
+          aria-label="Aprovar documento"
         >
           <Check className="size-4 text-success" />
         </Button>
@@ -97,6 +105,7 @@ export function LinhaDocumento({
           variant="ghost"
           onClick={() => onSolicitarCorrecao(doc)}
           title="Solicitar correção"
+          aria-label="Solicitar correção do documento"
         >
           <MessageSquareWarning className="size-4 text-warning" />
         </Button>
@@ -105,10 +114,17 @@ export function LinhaDocumento({
           variant="ghost"
           onClick={() => onMarcar(doc.id, "reprovado")}
           title="Reprovar"
+          aria-label="Reprovar documento"
         >
           <X className="size-4 text-destructive" />
         </Button>
-        <Button size="icon" variant="ghost" onClick={() => onExcluir(doc)} title="Excluir">
+        <Button
+          size="icon"
+          variant="ghost"
+          onClick={() => onExcluir(doc)}
+          title="Excluir"
+          aria-label="Excluir documento"
+        >
           <Trash2 className="size-4 text-destructive" />
         </Button>
       </div>
