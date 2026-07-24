@@ -26,6 +26,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { VisualizadorArquivo } from "@/components/comum/visualizador-arquivo";
 import { ToneBadge } from "@/components/crm/tone-badge";
 
@@ -57,6 +67,23 @@ export function TabDocumentos({
   const [parte, setParte] = useState("comprador1");
   const [uploading, setUploading] = useState(false);
   const [visualizando, setVisualizando] = useState<{ url: string; nome: string } | null>(null);
+  const [excluindo, setExcluindo] = useState<{ id: string; nome: string } | null>(null);
+  const [removendo, setRemovendo] = useState(false);
+
+  async function confirmarExclusao() {
+    if (!excluindo) return;
+    setRemovendo(true);
+    try {
+      await removerFn({ data: { id: excluindo.id } });
+      qc.invalidateQueries({ queryKey: ["proposta", propostaId] });
+      toast.success("Documento excluído.");
+      setExcluindo(null);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Não foi possível excluir o documento.");
+    } finally {
+      setRemovendo(false);
+    }
+  }
 
   async function onFile(file: File) {
     if (file.size > 10 * 1024 * 1024) {
@@ -194,10 +221,10 @@ export function TabDocumentos({
                   <Button
                     size="icon"
                     variant="ghost"
-                    onClick={async () => {
-                      await removerFn({ data: { id: d.id } });
-                      qc.invalidateQueries({ queryKey: ["proposta", propostaId] });
-                    }}
+                    aria-label={`Excluir ${d.nome_documento ?? "documento"}`}
+                    onClick={() =>
+                      setExcluindo({ id: d.id, nome: d.nome_documento ?? "documento" })
+                    }
                   >
                     <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>
@@ -212,6 +239,37 @@ export function TabDocumentos({
         open={!!visualizando}
         onOpenChange={(o: boolean) => !o && setVisualizando(null)}
       />
+      <AlertDialog open={!!excluindo} onOpenChange={(o) => !o && !removendo && setExcluindo(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir documento?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação removerá permanentemente <strong>{excluindo?.nome}</strong> desta proposta.
+              Não é possível desfazer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={removendo}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                confirmarExclusao();
+              }}
+              disabled={removendo}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {removendo ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Excluindo…
+                </>
+              ) : (
+                "Excluir"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
