@@ -846,7 +846,7 @@ export async function enviarPropostaImpl({
       const patchOk: Record<string, unknown> = {
         status_banco: statusBancoInicial,
         selecionado: true,
-        mensagem_banco: null,
+        mensagem_banco: erroBanco ? sanitizarMensagemErro(erroBanco) : null,
         raw_response: resp,
       };
       // situacao_banco é um enum interno (nao_enviado/em_analise/condicionado/
