@@ -66,6 +66,7 @@ function Pagina() {
   const excluir = useServerFn(excluirSimulacao);
   const restaurar = useServerFn(restaurarSimulacao);
   const criar = useServerFn(criarProposta);
+  const enviarAoBancoFn = useServerFn(enviarPropostaHomeFin);
 
   const obter = useServerFn(obterSimulacao);
   const listarColegasFn = useServerFn(listarColegas);
