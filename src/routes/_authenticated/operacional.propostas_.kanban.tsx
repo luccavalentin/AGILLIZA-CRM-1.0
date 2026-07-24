@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { ArrowLeft, Search, RotateCcw, KanbanSquare, User, Clock } from "lucide-react";
+import { ArrowLeft, Search, RotateCcw, KanbanSquare, User, Clock, FolderOpen } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { createDebouncedInvalidator } from "@/lib/realtime-debounce";
 import { BancoLogo } from "@/components/bancos/banco-logo";
@@ -22,9 +22,13 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { formatBRL, maskCpfCnpj } from "@/lib/simulacao/format";
 import { cn } from "@/lib/utils";
 import { numeroBancoParaExibir } from "@/lib/propostas/numero-banco-display";
+
+/** Máximo de cards visíveis antes de "empilhar" o restante numa pasta com busca. */
+const MAX_VISIVEIS_POR_COLUNA = 6;
 
 export const Route = createFileRoute("/_authenticated/operacional/propostas_/kanban")({
   head: () => ({ meta: [{ title: "Kanban de Propostas — Agilliza" }] }),
