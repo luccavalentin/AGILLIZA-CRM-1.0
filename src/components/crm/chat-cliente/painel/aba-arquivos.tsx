@@ -20,9 +20,13 @@ export function AbaArquivos({ clienteId }: { clienteId: string }) {
   async function abrir(storagePath: string) {
     try {
       const r = await urlFn({ data: { storage_path: storagePath } });
-      if (r?.url) window.open(r.url, "_blank", "noopener");
-    } catch {
-      /* ignore */
+      if (r?.url) {
+        window.open(r.url, "_blank", "noopener");
+      } else {
+        toast.error("Não foi possível abrir o arquivo.");
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Não foi possível abrir o arquivo.");
     }
   }
 
