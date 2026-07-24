@@ -99,7 +99,6 @@ import { cn } from "@/lib/utils";
 import {
   ParticipanteDialog,
   envolvidoParaForm,
-  participanteCompleto,
   type ParticipanteForm,
 } from "@/components/proposta/participante-form";
 import { ClienteSecao } from "@/components/proposta/cliente-secoes";
@@ -184,8 +183,6 @@ function Pagina() {
   const router = useRouter();
   const qc = useQueryClient();
   const [tab, setTab] = useState<Tab>("RESUMO");
-  const [autoAbrir, setAutoAbrir] = useState(false);
-  const [autoEnviar, setAutoEnviar] = useState(false);
   const [enviandoAuto, setEnviandoAuto] = useState(false);
   // Quando o envio falha por cadastro incompleto, destaca os campos obrigatórios pendentes.
   const [destacarObrigatorios, setDestacarObrigatorios] = useState(false);
@@ -250,7 +247,6 @@ function Pagina() {
   async function enviarAposComplementar() {
     if (enviouAutoRef.current) return;
     enviouAutoRef.current = true;
-    setAutoEnviar(false);
     setEnviandoAuto(true);
     const tid = toast.loading("Enviando proposta ao banco…");
     try {
@@ -275,44 +271,20 @@ function Pagina() {
     }
   }
 
-  // Ao chegar de "Criar proposta": se o cadastro do titular (e do cônjuge,
-  // quando existir) já está completo, dispara o envio direto ao banco.
-  // Só abre o formulário complementar quando algum campo obrigatório está
-  // pendente — evita a etapa de "validação" quando tudo já veio do CRM.
+  // Ao chegar de "Criar proposta", tenta o envio direto. A integração bancária
+  // passa a ser a fonte de verdade para validar campos faltantes.
   useEffect(() => {
     if (complementar !== 1) return;
-    if (!data) return; // aguarda os envolvidos carregarem
     if (enviouAutoRef.current) return;
-    const envolvidos = (data.envolvidos ?? []) as any[];
-    const titular = envolvidos.find(
-      (e: any) => !e.conjuge_de && (e.tipo_qualificacao === "CO" || e.tipo_qualificacao === "TI"),
-    );
-    const conjuge = titular
-      ? envolvidos.find((e: any) => String(e.conjuge_de ?? "") === String(titular.id))
-      : envolvidos.find((e: any) => e.conjuge_de);
-    const titularOk = titular ? participanteCompleto(titular) : false;
-    // Cônjuge só precisa de nome/CPF/nascimento — o restante é enviado no bloco
-    // "nomeConjuge/..." da oportunidade e não exige cadastro completo.
-    const conjugeOk = !conjuge || Boolean(conjuge.nome && conjuge.cpf_cnpj);
-    if (titularOk && conjugeOk) {
-      // Cadastro já completo (veio do CRM): dispara o envio direto, sem
-      // passar pelo formulário de validação.
-      setAutoAbrir(false);
-      // Limpa a flag da URL para que o efeito não reexecute em rerenders.
-      router.navigate({
-        to: "/operacional/propostas/$id",
-        params: { id },
-        search: {},
-        replace: true,
-      });
-      void enviarAposComplementar();
-    } else {
-      setTab("COMPRADORES");
-      setAutoAbrir(true);
-      setAutoEnviar(true);
-    }
+    router.navigate({
+      to: "/operacional/propostas/$id",
+      params: { id },
+      search: {},
+      replace: true,
+    });
+    void enviarAposComplementar();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [complementar, data]);
+  }, [complementar]);
 
 
 
@@ -525,7 +497,7 @@ function Pagina() {
 
       <div key={tab} className="animate-fade-in">
         {tab === "RESUMO" && <TabResumo proposta={p} bancos={data.bancos} propostaId={id} />}
-        {tab === "COMPRADORES" && <ClienteSecao clienteId={p.cliente_id} propostaId={id} secao="comprador" destacarObrigatorios={destacarObrigatorios} onSalvoComprador={autoEnviar ? enviarAposComplementar : () => setTab("RESUMO")} />}
+        {tab === "COMPRADORES" && <ClienteSecao clienteId={p.cliente_id} propostaId={id} secao="comprador" destacarObrigatorios={destacarObrigatorios} onSalvoComprador={() => setTab("RESUMO")} />}
         {tab === "VENDEDORES" && <ClienteSecao clienteId={p.cliente_id} propostaId={id} secao="vendedores" />}
         {tab === "IQ" && <ClienteSecao clienteId={p.cliente_id} propostaId={id} secao="iq" />}
         {tab === "IMÓVEL" && <ClienteSecao clienteId={p.cliente_id} propostaId={id} secao="imovel" />}

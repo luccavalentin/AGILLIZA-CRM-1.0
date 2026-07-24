@@ -81,6 +81,30 @@ export function ParticipanteDialog({
   const set = (patch: Partial<ParticipanteForm>) => setF((p) => ({ ...p, ...patch }));
   const setC = (patch: Partial<ParticipanteForm>) => setConjuge((p) => ({ ...p, ...patch }));
 
+  const conjugeTemDados = [
+    conjuge.nome,
+    conjuge.cpf_cnpj,
+    conjuge.data_nascimento,
+    conjuge.nome_mae,
+    conjuge.tipo_sexo,
+    conjuge.tipo_documento_identidade,
+    conjuge.numero_documento,
+    conjuge.orgao_expedidor,
+    conjuge.uf_expedicao,
+    conjuge.data_expedicao,
+    conjuge.profissao,
+    conjuge.empresa,
+    conjuge.email,
+    conjuge.celular,
+    conjuge.cep,
+    conjuge.logradouro,
+    conjuge.numero_logradouro,
+    conjuge.complemento,
+    conjuge.bairro,
+    conjuge.municipio,
+    conjuge.uf,
+  ].some((valor) => String(valor ?? "").trim().length > 0) || conjuge.renda > 0;
+
   async function buscarCep(
     cepRaw: string,
     aplicar: (patch: Partial<ParticipanteForm>) => void,
@@ -115,7 +139,7 @@ export function ParticipanteDialog({
     const faltando = camposFaltantes(f);
     setErros(faltando);
 
-    const c: ParticipanteForm | null = precisaConjuge
+    const c: ParticipanteForm | null = precisaConjuge && conjugeTemDados
       ? {
           ...conjuge,
           tipo_qualificacao: "TI",
@@ -124,7 +148,7 @@ export function ParticipanteDialog({
           regime_casamento: f.regime_casamento,
         }
       : null;
-    const faltandoC = c ? camposFaltantes(c) : new Set<string>();
+    const faltandoC = new Set<string>();
     setErrosC(faltandoC);
 
     if (faltando.size > 0 || faltandoC.size > 0) {
@@ -145,7 +169,7 @@ export function ParticipanteDialog({
         <DialogHeader>
           <DialogTitle>{titulo}</DialogTitle>
           <DialogDescription>
-            Dados complementares obrigatórios para envio da proposta aos bancos.
+            Dados complementares enviados aos bancos quando a proposta é processada.
           </DialogDescription>
         </DialogHeader>
 

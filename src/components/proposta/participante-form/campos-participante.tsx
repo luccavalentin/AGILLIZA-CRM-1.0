@@ -90,14 +90,14 @@ export function CamposParticipante({
       {/* Documento */}
       <Secao titulo="Documento de identidade">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <SelSelect label="Tipo de documento" value={f.tipo_documento_identidade} options={TIPO_DOCUMENTO_IDENTIDADE} onChange={(v) => set({ tipo_documento_identidade: v })} obrigatorio erro={err("tipo_documento_identidade")} />
-          <Campo label="Número do documento" obrigatorio erro={err("numero_documento")}>
+          <SelSelect label="Tipo de documento" value={f.tipo_documento_identidade} options={TIPO_DOCUMENTO_IDENTIDADE} onChange={(v) => set({ tipo_documento_identidade: v })} erro={err("tipo_documento_identidade")} />
+          <Campo label="Número do documento" erro={err("numero_documento")}>
             <Input value={f.numero_documento} onChange={(e) => set({ numero_documento: e.target.value })} className={cls("numero_documento")} />
           </Campo>
-          <Campo label="Órgão expedidor" obrigatorio erro={err("orgao_expedidor")}>
+          <Campo label="Órgão expedidor" erro={err("orgao_expedidor")}>
             <Input value={f.orgao_expedidor} onChange={(e) => set({ orgao_expedidor: e.target.value })} className={cls("orgao_expedidor")} />
           </Campo>
-          <SelUf label="UF de expedição" value={f.uf_expedicao} onChange={(v) => set({ uf_expedicao: v })} obrigatorio erro={err("uf_expedicao")} />
+          <SelUf label="UF de expedição" value={f.uf_expedicao} onChange={(v) => set({ uf_expedicao: v })} erro={err("uf_expedicao")} />
           <Campo label="Data de expedição">
             <DateInput value={f.data_expedicao} onChange={(v) => set({ data_expedicao: v })} />
           </Campo>

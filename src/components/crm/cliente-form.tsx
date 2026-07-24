@@ -411,11 +411,7 @@ export function ClienteForm({
     if (vazio(v.email)) s.add("email");
     if (vazio(v.telefone_celular)) s.add("telefone_celular");
     if (vazio(v.renda_total_declarada)) s.add("renda_total_declarada");
-    // Identidade / profissão
-    if (vazio(v.tipo_documento_identidade)) s.add("tipo_documento_identidade");
-    if (vazio(v.numero_documento)) s.add("numero_documento");
-    if (vazio(v.orgao_expedidor)) s.add("orgao_expedidor");
-    if (vazio(v.uf_expedicao)) s.add("uf_expedicao");
+    // Profissão
     if (vazio(v.profissao)) s.add("profissao");
     // Endereço
     if (vazio(end.cep)) s.add("cep");
@@ -439,8 +435,14 @@ export function ClienteForm({
   // incompleto), rola até o primeiro campo pendente e o foca, para que o
   // usuário veja imediatamente onde está o problema.
   const formRef = useRef<HTMLFormElement>(null);
+  const focouObrigatoriosRef = useRef(false);
   useEffect(() => {
-    if (!destacarObrigatorios || erros.size === 0) return;
+    if (!destacarObrigatorios) {
+      focouObrigatoriosRef.current = false;
+      return;
+    }
+    if (erros.size === 0 || focouObrigatoriosRef.current) return;
+    focouObrigatoriosRef.current = true;
     const t = setTimeout(() => {
       const alvo = formRef.current?.querySelector<HTMLElement>(".border-destructive");
       if (!alvo) return;
@@ -454,7 +456,7 @@ export function ClienteForm({
       }
     }, 150);
     return () => clearTimeout(t);
-  }, [destacarObrigatorios, erros]);
+  }, [destacarObrigatorios, erros.size]);
 
 
   return (
