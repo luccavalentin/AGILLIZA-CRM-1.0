@@ -602,12 +602,17 @@
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
-    /* Renderização de texto mais nítida e moderna. */
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
     font-feature-settings: "cv11", "ss01";
     letter-spacing: -0.006em;
+  }
+
+  /* Seleção de texto com identidade da marca. */
+  ::selection {
+    background-color: color-mix(in oklab, var(--primary) 22%, transparent);
+    color: var(--foreground);
   }
 
   /* Acessibilidade: foco de teclado consistente e visível em todos os portais.
@@ -617,6 +622,7 @@
     outline-offset: 2px;
     border-radius: var(--radius-sm);
   }
+
 
   /* Títulos com espaçamento levemente mais apertado (aspecto profissional). */
   h1,
