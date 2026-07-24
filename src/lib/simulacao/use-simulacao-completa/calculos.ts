@@ -29,38 +29,38 @@ export function calcularEntradaSugerida(
 }
 
 /**
- * Preenche imóvel + financiamento a partir do valor de entrada.
- * Regra: entrada = (1 - LTV) do imóvel  ⇒  imóvel = entrada / (1 - LTV).
+ * Recalcula apenas os campos "à direita" da entrada.
+ * Mantém o valor do imóvel intacto (só o usuário pode alterá-lo manualmente)
+ * e ajusta o financiamento como o resto: financiamento = imóvel - entrada.
+ * Se o imóvel ainda não foi informado, apenas guarda a entrada digitada.
  */
-export function calcularPorEntrada(valorEntrada: number, ltvMax: number): Partial<Form> {
+export function calcularPorEntrada(
+  valorEntrada: number,
+  _ltvMax: number,
+  valorImovelAtual = 0,
+): Partial<Form> {
   const entrada = Math.max(0, Number(valorEntrada) || 0);
-  if (entrada <= 0) return { valor_entrada: 0 };
-  const pctEntrada = 1 - ltvMax;
-  const imovel = Math.round(entrada / pctEntrada);
+  const imovel = Math.max(0, Number(valorImovelAtual) || 0);
+  if (imovel <= 0) {
+    return { valor_entrada: entrada };
+  }
   const fin = Math.max(0, imovel - entrada);
   return {
-    valor_imovel: imovel,
     valor_entrada: entrada,
     valor_financiamento: fin,
   };
 }
 
 /**
- * Preenche imóvel + entrada a partir do valor a financiar (lógica inversa).
- * valorImóvel = financiamento / LTV; entrada = imóvel - financiamento.
+ * Ao alterar o financiamento manualmente, não recalcula imóvel nem entrada
+ * (nada à direita para atualizar). Apenas persiste o valor digitado.
  */
-export function calcularPorFinanciamento(valorFinanciamento: number, ltvMax: number): Partial<Form> {
+export function calcularPorFinanciamento(
+  valorFinanciamento: number,
+  _ltvMax: number,
+): Partial<Form> {
   const fin = Math.max(0, Number(valorFinanciamento) || 0);
-  if (fin <= 0) return { valor_financiamento: 0 };
-  // Arredonda o imóvel para o milhar mais próximo (para cima) e garante que
-  // financiamento derivado respeite o LTV.
-  const imovel = Math.ceil(fin / ltvMax / 1000) * 1000;
-  const entrada = Math.max(0, imovel - fin);
-  return {
-    valor_imovel: imovel,
-    valor_entrada: entrada,
-    valor_financiamento: fin,
-  };
+  return { valor_financiamento: fin };
 }
 
 interface ParametrosPorParcela {
