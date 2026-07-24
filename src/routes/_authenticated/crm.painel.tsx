@@ -271,10 +271,10 @@ function Pagina() {
       });
       toast.success("Data de emissão salva.");
       qc.invalidateQueries({ queryKey: ["crm-contratos-emitidos"] });
+      qc.invalidateQueries({ queryKey: ["crm-painel"], refetchType: "none" });
     } catch (e) {
       if (anterior) qc.setQueryData(queryKey, anterior);
       toast.error(e instanceof Error ? e.message : "Falha ao salvar a data.");
-    } finally {
       qc.invalidateQueries({ queryKey: ["crm-painel"] });
     }
   }
