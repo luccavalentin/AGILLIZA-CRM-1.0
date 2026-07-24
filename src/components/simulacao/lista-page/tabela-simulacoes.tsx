@@ -20,7 +20,10 @@ import {
   AcoesSimulacao,
   ProdutoBadge,
 } from "@/components/simulacao/lista-detalhe";
+import { BancoLogo } from "@/components/bancos/banco-logo";
+import { corDoBanco } from "@/lib/bancos/cores";
 import { formatBRL } from "@/lib/simulacao/format";
+import { cn } from "@/lib/utils";
 import { formatDataHoraBR, type HandlersLinha } from "./tipos";
 
 export function TabelaSimulacoes({
@@ -48,6 +51,7 @@ export function TabelaSimulacoes({
             <TableHead className="h-10 text-right text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Valor imóvel</TableHead>
             <TableHead className="h-10 text-right text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Prazo</TableHead>
             <TableHead className="h-10 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Status</TableHead>
+            <TableHead className="h-10 text-right text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Enviar</TableHead>
             <TableHead className="h-10 w-12 text-right text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Ações</TableHead>
           </TableRow>
         </TableHeader>
@@ -56,11 +60,11 @@ export function TabelaSimulacoes({
           {isLoading &&
             Array.from({ length: 6 }).map((_, i) => (
               <TableRow key={`sk-${i}`} className="border-border/50">
-                {Array.from({ length: 8 }).map((__, j) => (
+                {Array.from({ length: 9 }).map((__, j) => (
                   <TableCell key={j} className="py-3.5">
                     <div
                       className="h-4 animate-pulse rounded bg-muted"
-                      style={{ width: `${[60, 80, 55, 70, 65, 45, 55, 30][j]}%` }}
+                      style={{ width: `${[60, 80, 55, 70, 65, 45, 55, 70, 30][j]}%` }}
                     />
                   </TableCell>
                 ))}
@@ -68,7 +72,7 @@ export function TabelaSimulacoes({
             ))}
           {!isLoading && itens.length === 0 && (
             <TableRow>
-              <TableCell colSpan={8}>
+              <TableCell colSpan={9}>
                 <div className="flex flex-col items-center gap-3 py-12 text-center">
                   <Calculator className="h-8 w-8 text-muted-foreground" />
                   <p className="text-sm text-muted-foreground">Nenhuma simulação encontrada.</p>
@@ -123,6 +127,20 @@ export function TabelaSimulacoes({
               </TableCell>
               <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                 {verExcluidas ? (
+                  <span className="text-xs text-muted-foreground">—</span>
+                ) : (
+                  <EnviarBancosInline
+                    bancos={Array.isArray(s.bancos) ? s.bancos : []}
+                    enviandoKey={handlers.enviandoBancoInlineKey ?? null}
+                    simulacaoId={s.id}
+                    onEnviar={(banco) =>
+                      handlers.onEnviarBancoDireto(s.id, s.numero_simulacao, banco)
+                    }
+                  />
+                )}
+              </TableCell>
+              <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                {verExcluidas ? (
                   <Button
                     size="sm"
                     variant="outline"
@@ -162,6 +180,88 @@ export function TabelaSimulacoes({
           ))}
         </TableBody>
       </Table>
+    </div>
+  );
+}
+
+/**
+ * Botões inline por banco, personalizados com a cor e o logo da marca.
+ * Renderiza apenas bancos ainda passíveis de envio (status "simulada").
+ * Bancos já enviados aparecem como badge sutil "Enviado".
+ */
+function EnviarBancosInline({
+  bancos,
+  enviandoKey,
+  simulacaoId,
+  onEnviar,
+}: {
+  bancos: any[];
+  enviandoKey: string | null;
+  simulacaoId: string;
+  onEnviar: (banco: any) => void;
+}) {
+  const enviaveis = bancos.filter(
+    (b) => b && b.banco_id && b.status_banco === "simulada",
+  );
+  const jaEnviados = bancos.filter(
+    (b) => b && b.banco_id && b.status_banco && b.status_banco !== "simulada",
+  );
+
+  if (enviaveis.length === 0 && jaEnviados.length === 0) {
+    return <span className="text-xs text-muted-foreground">—</span>;
+  }
+
+  return (
+    <div className="flex flex-wrap items-center justify-end gap-1.5">
+      {enviaveis.map((b: any) => {
+        const cor = corDoBanco(b.nome_banco);
+        const key = `${simulacaoId}:${b.id}`;
+        const enviando = enviandoKey === key;
+        const disabled = !!enviandoKey;
+        return (
+          <button
+            key={b.id}
+            type="button"
+            disabled={disabled}
+            onClick={() => onEnviar(b)}
+            title={`Enviar ao ${b.nome_banco}`}
+            aria-label={`Enviar proposta ao ${b.nome_banco}`}
+            style={{
+              color: cor,
+              borderColor: `${cor}40`,
+              backgroundColor: `${cor}0D`,
+            }}
+            className={cn(
+              "group/btn inline-flex h-8 items-center gap-1.5 rounded-full border px-2.5 text-xs font-semibold transition-all",
+              "hover:shadow-sm hover:brightness-95",
+              "disabled:cursor-not-allowed disabled:opacity-60",
+              enviando && "animate-pulse",
+            )}
+          >
+            <BancoLogo nome={b.nome_banco} size="xs" className="shrink-0 ring-0" />
+            <span className="max-w-[100px] truncate">
+              {enviando ? "Enviando…" : b.nome_banco}
+            </span>
+          </button>
+        );
+      })}
+      {jaEnviados.map((b: any) => {
+        const cor = corDoBanco(b.nome_banco);
+        return (
+          <span
+            key={b.id}
+            title={`Já enviado ao ${b.nome_banco}`}
+            style={{ color: cor, borderColor: `${cor}30` }}
+            className="inline-flex h-8 items-center gap-1.5 rounded-full border bg-muted/40 px-2.5 text-xs font-medium opacity-80"
+          >
+            <BancoLogo nome={b.nome_banco} size="xs" className="shrink-0 ring-0" />
+            <span className="max-w-[80px] truncate">{b.nome_banco}</span>
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              ✓
+            </span>
+          </span>
+        );
+      })}
     </div>
   );
 }
