@@ -1367,11 +1367,5 @@ html[data-crm-motion="off"] .crm-page-transition {
   animation: none !important;
 }
 
-  &::-webkit-scrollbar { width: 8px; height: 8px; }
-  &::-webkit-scrollbar-thumb {
-    background-color: color-mix(in oklab, var(--foreground) 18%, transparent);
-    border-radius: 999px;
-  }
-  &::-webkit-scrollbar-track { background: transparent; }
-}
+
 
