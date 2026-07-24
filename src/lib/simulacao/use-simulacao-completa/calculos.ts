@@ -52,15 +52,26 @@ export function calcularPorEntrada(
 }
 
 /**
- * Ao alterar o financiamento manualmente, não recalcula imóvel nem entrada
- * (nada à direita para atualizar). Apenas persiste o valor digitado.
+ * Ao alterar o financiamento manualmente, preserva o valor do imóvel
+ * (nada à esquerda é mexido) e recalcula a entrada para manter a
+ * identidade contábil: entrada = imóvel - financiamento.
+ * Se o imóvel ainda não foi informado, apenas persiste o valor digitado.
  */
 export function calcularPorFinanciamento(
   valorFinanciamento: number,
   _ltvMax: number,
+  valorImovelAtual = 0,
 ): Partial<Form> {
   const fin = Math.max(0, Number(valorFinanciamento) || 0);
-  return { valor_financiamento: fin };
+  const imovel = Math.max(0, Number(valorImovelAtual) || 0);
+  if (imovel <= 0) {
+    return { valor_financiamento: fin };
+  }
+  const finLimitado = Math.min(fin, imovel);
+  return {
+    valor_financiamento: finLimitado,
+    valor_entrada: Math.max(0, imovel - finLimitado),
+  };
 }
 
 interface ParametrosPorParcela {

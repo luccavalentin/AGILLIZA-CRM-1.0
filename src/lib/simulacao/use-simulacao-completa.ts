@@ -449,8 +449,10 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
    */
   function aplicarPorFinanciamento(valorFinanciamento: number) {
     setEntradaTocada(true);
-    const patch = calcularPorFinanciamento(valorFinanciamento, ltvMax);
-    setF((prev) => ({ ...prev, ...patch }));
+    setF((prev) => ({
+      ...prev,
+      ...calcularPorFinanciamento(valorFinanciamento, ltvMax, Number(prev.valor_imovel) || 0),
+    }));
   }
 
   /**
