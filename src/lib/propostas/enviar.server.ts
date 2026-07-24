@@ -875,7 +875,7 @@ async function enviarPropostaImplInner({
       patchOk.situacao_banco =
         mapa.banco === "erro"
           ? "em_analise"
-          : situacaoBancoDeTipo(situacaoTipo, resp?.codigoSituacaoBanco, false);
+          : situacaoBancoDeTipo(situacaoTipo, resp?.codigoSituacaoBanco, false, resp);
       const numeroBanco = numeroPropostaBancoReal(resp);
       const referenciaBanco = referenciaIntegracaoBanco(resp);
       if (numeroBanco) patchOk.numero_proposta_banco = numeroBanco;
