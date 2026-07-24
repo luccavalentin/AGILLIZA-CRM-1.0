@@ -119,6 +119,75 @@ export function FormularioSimulacao({
           </Select>
         </div>
 
+        <div className="space-y-1.5">
+          <Label>Tipo de imóvel <span className="text-destructive">*</span></Label>
+          <Select value={w.tipo_imovel} onValueChange={(v) => set("tipo_imovel", v)}>
+            <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+            <SelectContent>
+              {TIPOS_IMOVEL.map((p) => (
+                <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label>Uso do imóvel <span className="text-destructive">*</span></Label>
+          <Select value={w.uso_imovel} onValueChange={(v) => set("uso_imovel", v)}>
+            <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+            <SelectContent>
+              {USOS_IMOVEL.map((p) => (
+                <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label>Situação do imóvel <span className="text-destructive">*</span></Label>
+          <Select value={w.situacao_imovel} onValueChange={(v) => set("situacao_imovel", v)}>
+            <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+            <SelectContent>
+              {SITUACOES_IMOVEL.map((p) => (
+                <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label>UF <span className="text-destructive">*</span></Label>
+          <Select value={w.uf} onValueChange={(v) => set("uf", v)}>
+            <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+            <SelectContent>
+              {UFS.map((u) => (
+                <SelectItem key={u} value={u}>{u}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label>Utiliza FGTS? <span className="text-destructive">*</span></Label>
+          <Select value={w.utiliza_fgts} onValueChange={(v) => set("utiliza_fgts", v as WizardState["utiliza_fgts"])}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="S">Sim</SelectItem>
+              <SelectItem value="N">Não</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-1.5 md:col-span-2">
+          <label className="flex items-center gap-2 text-sm text-foreground">
+            <Checkbox
+              checked={!!w.fg_financiar_despesas}
+              onCheckedChange={(v) => set("fg_financiar_despesas", v === true)}
+            />
+            Financiar despesas (incluir custos no valor financiado)
+          </label>
+        </div>
+
         {/* Simular pelo valor da parcela (cálculo reverso) */}
         <div className="md:col-span-2">
           <div className="group relative overflow-hidden rounded-xl border border-primary/20 bg-gradient-to-br from-primary/[0.06] via-background to-background shadow-sm">
