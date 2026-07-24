@@ -16,7 +16,7 @@ import {
   restaurarSimulacao,
   obterSimulacao,
 } from "@/lib/simulacao/simulacoes.functions";
-import { criarProposta } from "@/lib/propostas/propostas.functions";
+import { criarProposta, enviarPropostaHomeFin } from "@/lib/propostas/propostas.functions";
 import { Button } from "@/components/ui/button";
 
 import { SelecionarBancosPdfDialog } from "@/components/simulacao/selecionar-bancos-pdf-dialog";
