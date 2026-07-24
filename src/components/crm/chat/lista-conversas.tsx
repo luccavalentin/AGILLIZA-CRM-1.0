@@ -148,7 +148,7 @@ export function ListaConversas({ hook }: Props) {
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="crm-scrollbar-slim flex-1 overflow-y-auto">
         {isLoading ? (
           <div className="space-y-2 p-3">
             {Array.from({ length: 5 }).map((_, i) => (
@@ -177,7 +177,7 @@ export function ListaConversas({ hook }: Props) {
                   nodes.push(
                     <div
                       key={`hdr-${dia}`}
-                      className="sticky top-0 z-[1] bg-card/95 px-3 pb-1 pt-3 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground backdrop-blur"
+                      className="sticky top-0 z-[1] border-b border-border/40 bg-card/95 px-3 pb-1.5 pt-3 text-[10px] font-semibold uppercase tracking-[0.09em] text-muted-foreground/80 backdrop-blur"
                     >
                       {dia}
                     </div>,
@@ -198,9 +198,9 @@ export function ListaConversas({ hook }: Props) {
                     key={`${c.cliente_id}::${c.atendente_id ?? ""}`}
                     onClick={() => abrirConversa(c.cliente_id, c.atendente_id)}
                     className={cn(
-                      "mx-2 mb-0.5 flex w-[calc(100%-1rem)] items-start gap-3 rounded-xl px-2.5 py-2.5 text-left transition-colors",
+                      "crm-focus-ring relative mx-2 mb-0.5 flex w-[calc(100%-1rem)] items-start gap-3 rounded-xl px-2.5 py-2.5 text-left transition-colors",
                       ativo
-                        ? "bg-primary/10 ring-1 ring-primary/20"
+                        ? "bg-primary/[0.08] shadow-[inset_3px_0_0_0_hsl(var(--primary))]"
                         : "hover:bg-muted/60",
                     )}
                   >

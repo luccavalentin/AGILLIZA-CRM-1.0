@@ -83,7 +83,7 @@ export function CardCliente({
         onDragStart();
       }}
       onDragEnd={onDragEnd}
-      className={`rounded-xl border border-border bg-card transition-[border-color,box-shadow] duration-150 hover:border-primary/40 hover:shadow-sm ${
+      className={`crm-focus-ring rounded-xl border border-border bg-card transition-[border-color,box-shadow,transform] duration-150 hover:border-primary/40 hover:shadow-md hover:-translate-y-px ${
         readOnly ? "cursor-default" : "cursor-grab active:cursor-grabbing"
       }`}
     >

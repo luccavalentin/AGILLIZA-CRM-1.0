@@ -93,16 +93,12 @@ export function KpiCards({
           type="button"
           onClick={k.onClick}
           aria-pressed={k.active}
-          className={`group relative overflow-hidden rounded-xl border px-3.5 py-3 text-left transition-all duration-200 ease-out will-change-transform hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md hover:shadow-primary/5 active:translate-y-0 active:scale-[0.98] active:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
+          className={`crm-focus-ring group relative overflow-hidden rounded-xl border px-3.5 py-3 text-left transition-[transform,box-shadow,border-color] duration-200 ease-out hover:-translate-y-px hover:border-primary/40 hover:shadow-md active:translate-y-0 active:scale-[0.99] ${
             k.active
-              ? "border-primary/50 bg-primary/[0.04] shadow-[inset_3px_0_0_0_hsl(var(--primary)),0_1px_2px_rgba(0,0,0,0.04)] ring-1 ring-primary/10"
+              ? "border-primary/50 bg-primary/[0.04] shadow-[inset_3px_0_0_0_hsl(var(--primary))] ring-1 ring-primary/10"
               : "border-border/60 bg-card"
           }`}
         >
-          <span
-            aria-hidden
-            className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-primary/[0.06] to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full"
-          />
           <div className="relative flex items-center justify-between gap-2">
             <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
               {k.label}
