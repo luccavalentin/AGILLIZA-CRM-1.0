@@ -66,19 +66,19 @@ export function TabsNav({ aba, setAba }: { aba: string; setAba: (v: string) => v
 
       {/* Desktop: abas roláveis com dica visual de que há mais */}
       <div className="relative hidden sm:block">
-        <TabsList className="flex w-full flex-nowrap justify-start gap-1 overflow-x-auto rounded-xl bg-muted/60 p-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <TabsList className="crm-scrollbar-slim flex w-full flex-nowrap justify-start gap-1 overflow-x-auto rounded-xl bg-muted/60 p-1">
           {SECOES_CLIENTE.map((s) => (
             <TabsTrigger
               key={s.v}
               value={s.v}
-              className="shrink-0 gap-1.5 whitespace-nowrap rounded-lg transition-colors hover:bg-primary/10 hover:text-primary data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md data-[state=active]:shadow-primary/25"
+              className="crm-focus-ring shrink-0 gap-1.5 whitespace-nowrap rounded-lg transition-colors hover:bg-primary/10 hover:text-primary data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
             >
               <s.Icon className="size-4" />
               {s.label}
             </TabsTrigger>
           ))}
         </TabsList>
-        <div className="pointer-events-none absolute inset-y-1 right-0 w-10 rounded-r-xl bg-gradient-to-l from-muted/90 to-transparent" />
+        <div className="pointer-events-none absolute inset-y-1 right-0 w-8 rounded-r-xl bg-gradient-to-l from-muted/90 to-transparent" />
       </div>
       <p className="mt-1.5 hidden text-[11px] text-muted-foreground sm:block">
         Deslize para ver mais seções · clique em uma aba para abrir.
