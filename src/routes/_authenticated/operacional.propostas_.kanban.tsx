@@ -515,7 +515,6 @@ function Pagina() {
                 </div>
               </div>
               <div className="flex flex-1 flex-col gap-2 overflow-y-auto p-2 [scrollbar-width:thin]">
-                {visiveis.map((c) => renderCard(c, cfg))}
                 {excedente > 0 && (
                   <button
                     type="button"
@@ -532,10 +531,12 @@ function Pagina() {
                     <Search className="h-3.5 w-3.5 opacity-70 group-hover:opacity-100" />
                   </button>
                 )}
+                {visiveis.map((c) => renderCard(c, cfg))}
                 {cards.length === 0 && (
                   <p className="px-1 py-6 text-center text-xs text-muted-foreground">Vazio</p>
                 )}
               </div>
+
             </div>
           );
         })}
