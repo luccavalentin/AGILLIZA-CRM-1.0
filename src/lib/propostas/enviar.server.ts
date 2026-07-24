@@ -136,31 +136,6 @@ function textoLivreParaBanco(v: unknown): string | undefined {
 }
 
 /**
- * Um envolvido tem o cadastro complementar completo (obrigatório para enviar
- * a proposta ao banco). Espelha a validação do formulário no front-end.
- */
-function envolvidoEnvioCompleto(e: any): boolean {
-  const base =
-    e.nome &&
-    e.cpf_cnpj &&
-    e.profissao &&
-    e.renda &&
-    e.email &&
-    e.celular &&
-    e.cep &&
-    e.logradouro &&
-    e.numero_logradouro &&
-    e.bairro &&
-    e.municipio &&
-    e.uf &&
-    e.fg_autorizacao_dados;
-  const pf = (e.tipo_pessoa ?? "F") === "F";
-  const pessoais = !pf || (e.data_nascimento && e.nome_mae && e.tipo_sexo && e.estado_civil);
-  return Boolean(base && pessoais);
-}
-
-
-/**
  * Verifica no provedor se a simulação vinculada ao banco ainda pode ser usada
  * na inclusão da proposta. Simulações com tipoSituacao "R" (recusada) ou "A"
  * (aprovada) já foram consumidas — o provedor não permite reprocessá-las.
@@ -755,48 +730,6 @@ export async function enviarPropostaImpl({
   } else if (STATUS_BLOQUEIA_NOVO_BANCO.includes(statusAtual)) {
     throw new Error("Esta proposta não aceita novos bancos no estado atual.");
   }
-
-  // documentos obrigatórios pendentes OU reprovados bloqueiam o envio
-  const { data: docsObrig } = await supabase
-    .from("proposta_documentos")
-    .select("id, status")
-    .eq("proposta_id", propostaId)
-    .eq("obrigatorio", true);
-  const bloqueantes = (docsObrig ?? []).filter(
-    (d: any) => d.status === "pendente" || d.status === "reprovado",
-  );
-  if (bloqueantes.length > 0) {
-    throw new Error(
-      `Existem ${bloqueantes.length} documento(s) obrigatório(s) pendente(s) ou reprovado(s).`,
-    );
-  }
-
-  // Cadastro complementar obrigatório: apenas dos compradores/coproponentes
-  // "independentes". Cônjuges vinculados a outro envolvido (`conjuge_de`) são
-  // editados dentro do formulário do titular e enviados ao banco pelo bloco
-  // `nomeConjuge/cpfConjuge/...` da oportunidade — não exigem o mesmo conjunto
-  // completo de campos, então não devem bloquear o envio.
-  const { data: compradores } = await supabase
-    .from("proposta_envolvidos")
-    .select("*")
-    .eq("proposta_id", propostaId)
-    .in("tipo_qualificacao", ["CO", "TI"]);
-  const principais = (compradores ?? []).filter((e: any) => !e.conjuge_de);
-  if (principais.length === 0) {
-    throw new Error(
-      "Preencha o cadastro complementar do comprador antes de enviar a proposta ao banco.",
-    );
-  }
-  const incompletos = principais.filter((e: any) => !envolvidoEnvioCompleto(e));
-  if (incompletos.length > 0) {
-    const nomes = incompletos.map((e: any) => e.nome || "sem nome").join(", ");
-    throw new Error(
-      `Cadastro complementar incompleto para: ${nomes}. Preencha todos os dados obrigatórios antes de enviar.`,
-    );
-  }
-
-
-
 
   // Bancos a enviar: por linha (bancoId) ou todos os selecionados ainda não enviados.
   let query = supabase.from("proposta_bancos").select("*").eq("proposta_id", propostaId);
