@@ -415,3 +415,40 @@ export function ClienteShell({
     </TooltipProvider>
   );
 }
+
+/** Botão "Sair" fixo no rodapé da sidebar do portal do cliente. */
+function SidebarSignOut({
+  collapsed,
+  onSignOut,
+}: {
+  collapsed: boolean;
+  onSignOut: () => void;
+}) {
+  if (collapsed) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            onClick={onSignOut}
+            aria-label="Sair"
+            className="flex h-10 w-full items-center justify-center rounded-md text-sidebar-foreground transition-colors hover:bg-white/15"
+          >
+            <LogOut className="h-[18px] w-[18px]" />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="right">Sair</TooltipContent>
+      </Tooltip>
+    );
+  }
+  return (
+    <button
+      type="button"
+      onClick={onSignOut}
+      className="flex min-h-10 w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-sidebar-foreground transition-colors hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
+    >
+      <LogOut className="h-[18px] w-[18px] shrink-0" />
+      <span className="truncate">Sair</span>
+    </button>
+  );
+}
