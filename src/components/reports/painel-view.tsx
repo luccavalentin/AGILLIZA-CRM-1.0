@@ -392,8 +392,17 @@ export function PainelView({
 
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
             <div className="lg:col-span-1">
-              <PanelCard titulo={data.ranking.titulo}>
-                <MetricList items={data.ranking.itens} colorByBank={data.chart.porBanco} />
+              <PanelCard
+                titulo={data.ranking.titulo}
+                onOpen={() => abrirDetalhe(data.ranking.titulo)}
+              >
+                <MetricList
+                  items={data.ranking.itens}
+                  colorByBank={data.chart.porBanco}
+                  onItemClick={(label, valor) =>
+                    abrirDetalhe(label, valor.toLocaleString("pt-BR"))
+                  }
+                />
               </PanelCard>
             </div>
 
@@ -429,8 +438,19 @@ export function PainelView({
               <PanelCard
                 titulo={data.distribuicao.titulo}
                 subtitulo={data.distribuicao.subtitulo}
+                onOpen={() => abrirDetalhe(data.distribuicao!.titulo)}
               >
-                <div className="h-[240px] w-full overflow-hidden">
+                <div
+                  className="h-[240px] w-full cursor-pointer overflow-hidden rounded-lg transition-colors hover:bg-primary/[0.02]"
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => abrirDetalhe(data.distribuicao!.titulo)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ")
+                      abrirDetalhe(data.distribuicao!.titulo);
+                  }}
+                  aria-label={`Ver detalhamento de ${data.distribuicao.titulo}`}
+                >
                   <ReportChartView
                     chart={{
                       titulo: data.distribuicao.titulo,
@@ -442,8 +462,17 @@ export function PainelView({
                 </div>
               </PanelCard>
               {data.recusadasPorBanco && data.recusadasPorBanco.itens.length > 0 && (
-                <PanelCard titulo={data.recusadasPorBanco.titulo}>
-                  <MetricList items={data.recusadasPorBanco.itens} colorByBank />
+                <PanelCard
+                  titulo={data.recusadasPorBanco.titulo}
+                  onOpen={() => abrirDetalhe(data.recusadasPorBanco!.titulo)}
+                >
+                  <MetricList
+                    items={data.recusadasPorBanco.itens}
+                    colorByBank
+                    onItemClick={(label, valor) =>
+                      abrirDetalhe(label, valor.toLocaleString("pt-BR"))
+                    }
+                  />
                 </PanelCard>
               )}
             </div>
@@ -455,8 +484,19 @@ export function PainelView({
                 <PanelCard
                   titulo={data.porTipoSimulacao.titulo}
                   subtitulo={data.porTipoSimulacao.subtitulo}
+                  onOpen={() => abrirDetalhe(data.porTipoSimulacao!.titulo)}
                 >
-                  <div className="h-[240px] w-full overflow-hidden">
+                  <div
+                    className="h-[240px] w-full cursor-pointer overflow-hidden rounded-lg transition-colors hover:bg-primary/[0.02]"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => abrirDetalhe(data.porTipoSimulacao!.titulo)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ")
+                        abrirDetalhe(data.porTipoSimulacao!.titulo);
+                    }}
+                    aria-label={`Ver detalhamento de ${data.porTipoSimulacao.titulo}`}
+                  >
                     <ReportChartView
                       chart={{
                         titulo: data.porTipoSimulacao.titulo,
@@ -472,9 +512,18 @@ export function PainelView({
                   titulo={data.clientesPorEtapa.titulo}
                   subtitulo={data.clientesPorEtapa.subtitulo}
                   abrirTo="/crm/painel"
+                  onOpen={() => abrirDetalhe(data.clientesPorEtapa!.titulo)}
                 >
                   <div
-                    className="w-full overflow-hidden"
+                    className="w-full cursor-pointer overflow-hidden rounded-lg transition-colors hover:bg-primary/[0.02]"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => abrirDetalhe(data.clientesPorEtapa!.titulo)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ")
+                        abrirDetalhe(data.clientesPorEtapa!.titulo);
+                    }}
+                    aria-label={`Ver detalhamento de ${data.clientesPorEtapa.titulo}`}
                     style={{
                       height: Math.min(360, Math.max(180, data.clientesPorEtapa.dados.length * 40 + 44)),
                     }}
@@ -498,18 +547,29 @@ export function PainelView({
                 <PanelCard
                   titulo={data.volumePorBanco.titulo}
                   subtitulo={data.volumePorBanco.subtitulo}
+                  onOpen={() => abrirDetalhe(data.volumePorBanco!.titulo)}
                 >
                   <MetricList
                     items={data.volumePorBanco.dados.map((d) => ({
                       label: d.label,
                       valor: d.valor,
-                      display: d.valor.toLocaleString("pt-BR", { 
+                      display: d.valor.toLocaleString("pt-BR", {
                         style: "currency",
                         currency: "BRL",
                         maximumFractionDigits: 0,
                       }),
                     }))}
                     colorByBank
+                    onItemClick={(label, valor) =>
+                      abrirDetalhe(
+                        label,
+                        valor.toLocaleString("pt-BR", {
+                          style: "currency",
+                          currency: "BRL",
+                          maximumFractionDigits: 0,
+                        }),
+                      )
+                    }
                   />
                 </PanelCard>
               )}
@@ -517,27 +577,40 @@ export function PainelView({
                 <PanelCard
                   titulo={data.topOperadores.titulo}
                   subtitulo={data.topOperadores.subtitulo}
+                  onOpen={() => abrirDetalhe(data.topOperadores!.titulo)}
                 >
-                  <MetricList items={data.topOperadores.dados} />
+                  <MetricList
+                    items={data.topOperadores.dados}
+                    onItemClick={(label, valor) =>
+                      abrirDetalhe(label, valor.toLocaleString("pt-BR"))
+                    }
+                  />
                 </PanelCard>
               )}
               {data.financeiroResumo && (
-                <PanelCard titulo={data.financeiroResumo.titulo} abrirTo="/financeiro/painel">
+                <PanelCard
+                  titulo={data.financeiroResumo.titulo}
+                  abrirTo="/financeiro/painel"
+                  onOpen={() => abrirDetalhe(data.financeiroResumo!.titulo)}
+                >
                   <div className="space-y-2">
                     {data.financeiroResumo.itens.map((i) => (
-                      <div
+                      <button
+                        type="button"
                         key={i.label}
-                        className="flex items-center justify-between rounded-lg border border-border/60 bg-card/40 px-3 py-2"
+                        onClick={() => abrirDetalhe(i.label, i.valor)}
+                        className="flex w-full items-center justify-between rounded-lg border border-border/60 bg-card/40 px-3 py-2 text-left transition-all hover:-translate-y-px hover:border-primary/40 hover:bg-primary/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       >
                         <span className="text-sm text-muted-foreground">{i.label}</span>
                         <span className="text-sm font-semibold tabular-nums">{i.valor}</span>
-                      </div>
+                      </button>
                     ))}
                   </div>
                 </PanelCard>
               )}
             </div>
           )}
+
         </>
 
       )}
