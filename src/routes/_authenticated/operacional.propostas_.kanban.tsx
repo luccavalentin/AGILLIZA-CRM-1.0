@@ -543,33 +543,52 @@ function Pagina() {
       </div>
 
       <Dialog open={pastaAberta !== null} onOpenChange={(o) => !o && setPastaAberta(null)}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>
-              {pastaAberta ? statusProposta(pastaAberta).label : ""}
-              <span className="ml-2 text-sm font-normal text-muted-foreground">
-                ({(pastaAberta ? cardsPorColuna.get(pastaAberta) ?? [] : []).length} propostas)
-              </span>
-            </DialogTitle>
-          </DialogHeader>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              autoFocus
-              placeholder="Buscar por cliente, CPF/CNPJ ou nº da proposta"
-              value={buscaPasta}
-              onChange={(e) => setBuscaPasta(e.target.value)}
-              className="h-11 rounded-xl pl-9"
+        <DialogContent className="max-w-4xl overflow-hidden rounded-2xl border border-border/60 bg-gradient-to-b from-card to-card/95 p-0 shadow-2xl">
+          <div className="relative border-b border-border/50 bg-gradient-to-r from-primary/5 via-transparent to-primary/5 px-6 py-4">
+            <span
+              aria-hidden
+              className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full opacity-60 blur-3xl"
+              style={{ background: "color-mix(in oklab, var(--primary) 18%, transparent)" }}
             />
+            <DialogHeader className="relative">
+              <DialogTitle className="flex items-center gap-2 text-base font-semibold tracking-tight">
+                <span className="inline-block h-2 w-2 rounded-full bg-primary shadow-[0_0_10px_var(--primary)]" />
+                {pastaAberta ? statusProposta(pastaAberta).label : ""}
+                <span className="ml-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                  {(pastaAberta ? cardsPorColuna.get(pastaAberta) ?? [] : []).length} propostas
+                </span>
+              </DialogTitle>
+            </DialogHeader>
           </div>
-          <div className="grid max-h-[60vh] grid-cols-1 gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
-            {pastaAberta &&
-              cardsDaPasta.map((c: any) => renderCard(c, statusProposta(pastaAberta)))}
-            {pastaAberta && cardsDaPasta.length === 0 && (
-              <p className="col-span-full py-8 text-center text-sm text-muted-foreground">
-                Nenhuma proposta encontrada.
-              </p>
-            )}
+
+          <div className="space-y-4 px-6 pb-6 pt-4">
+            <div className="group relative">
+              <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-primary" />
+              <Input
+                autoFocus
+                placeholder="Buscar por cliente, CPF/CNPJ ou nº da proposta"
+                value={buscaPasta}
+                onChange={(e) => setBuscaPasta(e.target.value)}
+                className="h-12 rounded-xl border-border/70 bg-background pl-11 pr-4 text-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.6),0_2px_8px_-2px_rgba(15,23,42,0.08),0_8px_24px_-12px_rgba(15,23,42,0.15)] transition-all duration-200 placeholder:text-muted-foreground/70 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.6),0_4px_14px_-2px_rgba(15,23,42,0.12),0_12px_32px_-12px_rgba(15,23,42,0.2)] focus-visible:border-primary/50 focus-visible:shadow-[inset_0_1px_0_rgba(255,255,255,0.6),0_0_0_4px_color-mix(in_oklab,var(--primary)_18%,transparent),0_12px_32px_-12px_color-mix(in_oklab,var(--primary)_35%,transparent)] focus-visible:ring-0"
+              />
+            </div>
+
+            <div className="grid max-h-[62vh] grid-cols-1 gap-3 overflow-y-auto pr-1 sm:grid-cols-2 [scrollbar-gutter:stable]">
+              {pastaAberta &&
+                cardsDaPasta.map((c: any) => (
+                  <div
+                    key={c.id}
+                    className="transition-transform duration-200 hover:-translate-y-0.5 hover:[transform:perspective(900px)_rotateX(2deg)_translateY(-2px)]"
+                  >
+                    {renderCard(c, statusProposta(pastaAberta!))}
+                  </div>
+                ))}
+              {pastaAberta && cardsDaPasta.length === 0 && (
+                <p className="col-span-full py-10 text-center text-sm text-muted-foreground">
+                  Nenhuma proposta encontrada.
+                </p>
+              )}
+            </div>
           </div>
         </DialogContent>
       </Dialog>
