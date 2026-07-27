@@ -226,12 +226,10 @@ export function PapelTimbradoView() {
               )}
               {dados.destinatario?.trim() && (
                 <div>
-                  <p className="font-semibold" style={{ color: modelo.destaqueTexto }}>
-                    Ao(À):
-                  </p>
                   <p className="whitespace-pre-line">{dados.destinatario}</p>
                 </div>
               )}
+
               {dados.referencia?.trim() && (
                 <p>
                   <span className="font-semibold" style={{ color: modelo.destaqueTexto }}>
