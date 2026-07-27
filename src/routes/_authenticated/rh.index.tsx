@@ -40,12 +40,102 @@ function mesLabel(iso: string) {
   return `${m}/${y.slice(2)}`;
 }
 
+type KpiRhKey = "ativos" | "afastados" | "ferias" | "total" | "custo";
+
 function Pagina() {
   const fn = useServerFn(obterKpisRh);
+  const listarFn = useServerFn(listarFuncionarios);
+  const [drill, setDrill] = useState<KpiRhKey | null>(null);
   const { data, isLoading, dataUpdatedAt } = useQuery({
     queryKey: ["rh-kpis"],
     queryFn: () => fn(),
   });
+
+  const drillQuery = useQuery({
+    enabled: !!drill,
+    queryKey: ["rh-kpi-drill", drill],
+    queryFn: async () => {
+      if (!drill) return { itens: [] as KpiDrillItem[] };
+      const statusMap: Record<KpiRhKey, string | undefined> = {
+        ativos: "ativo",
+        afastados: "afastado",
+        ferias: "ferias",
+        total: undefined,
+        custo: undefined,
+      };
+      const r = await listarFn({
+        data: { status: statusMap[drill], pagina: 1, porPagina: drill === "custo" ? 20 : 30 },
+      });
+      let itens = r.itens;
+      if (drill === "total") {
+        itens = itens.filter((f) => f.status !== "desligado");
+      }
+      if (drill === "custo") {
+        itens = [...itens]
+          .filter((f) => f.status !== "desligado")
+          .sort((a, b) => (b.salario_atual ?? 0) - (a.salario_atual ?? 0))
+          .slice(0, 10);
+      }
+      const kpiItens: KpiDrillItem[] = itens.slice(0, 15).map((f) => ({
+        label: f.nome,
+        sub: [f.cargo_nome, f.departamento_nome].filter(Boolean).join(" · ") || undefined,
+        valor: drill === "custo" ? formatBRL(f.salario_atual ?? 0) : undefined,
+        to: "/rh/funcionarios",
+      }));
+      return { itens: kpiItens };
+    },
+  });
+
+  const drillMeta: Record<
+    KpiRhKey,
+    { titulo: string; subtitulo: string; valor: string; icon: LucideIcon; tone: KpiTone; empty: string }
+  > = useMemo(
+    () => ({
+      ativos: {
+        titulo: "Funcionários ativos",
+        subtitulo: "Colaboradores com contrato ativo",
+        valor: String(data?.ativos ?? 0),
+        icon: UserCheck,
+        tone: "success",
+        empty: "Sem funcionários ativos.",
+      },
+      afastados: {
+        titulo: "Funcionários afastados",
+        subtitulo: "Colaboradores em afastamento",
+        valor: String(data?.afastados ?? 0),
+        icon: UserMinus,
+        tone: "danger",
+        empty: "Sem afastamentos ativos.",
+      },
+      ferias: {
+        titulo: "Funcionários em férias",
+        subtitulo: "Períodos de férias em curso",
+        valor: String(data?.ferias ?? 0),
+        icon: Plane,
+        tone: "brand",
+        empty: "Sem funcionários em férias.",
+      },
+      total: {
+        titulo: "Quadro total",
+        subtitulo: "Ativos, em experiência, afastados e férias",
+        valor: String(
+          (data?.ativos ?? 0) + (data?.experiencia ?? 0) + (data?.afastados ?? 0) + (data?.ferias ?? 0),
+        ),
+        icon: UsersRound,
+        tone: "brand",
+        empty: "Quadro vazio.",
+      },
+      custo: {
+        titulo: "Custo mensal estimado",
+        subtitulo: "Top 10 salários vigentes",
+        valor: formatBRL(data?.custoMensalEstimado ?? 0),
+        icon: Wallet,
+        tone: "brand",
+        empty: "Sem salários cadastrados.",
+      },
+    }),
+    [data],
+  );
 
   const admissoes = (data?.admissoesUltimos12 ?? []).map((r) => ({ ...r, label: mesLabel(r.mes) }));
   const desligamentos = (data?.desligamentosUltimos12 ?? []).map((r) => ({
