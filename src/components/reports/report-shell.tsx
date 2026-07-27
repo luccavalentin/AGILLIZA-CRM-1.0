@@ -6,39 +6,43 @@ import { Button } from "@/components/ui/button";
 export function ReportShell({
   modulo,
   titulo,
-  descricao,
+  descricao: _descricao,
   metaChips,
   scopeSelector,
   exportButtons,
+  typeSelector,
   filtros,
   children,
 }: {
   modulo: string;
   titulo: string;
-  descricao: string;
+  descricao?: string;
   metaChips: string[];
   scopeSelector?: ReactNode;
   exportButtons?: ReactNode;
+  typeSelector?: ReactNode;
   filtros?: ReactNode;
   children: ReactNode;
 }) {
   return (
-    <div className="mx-auto w-full max-w-none space-y-4 p-4 md:p-6">
-      <header className="op-hero px-4 py-3 md:px-5">
-        <div className="relative flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex min-w-0 items-center gap-3">
+    <div className="mx-auto w-full max-w-none space-y-4 p-3 sm:p-4 md:p-6">
+      <header className="op-hero px-3 py-3 sm:px-4 md:px-5">
+        <div className="relative grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 lg:flex lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex min-w-0 items-start gap-3 lg:items-center">
             <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-primary/12 text-primary ring-1 ring-primary/20">
               <BarChart3 className="h-4.5 w-4.5" />
             </span>
-            <div className="min-w-0 space-y-1">
-              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-primary/80">
-                  Relatórios · {modulo}
-                </span>
+            <div className="min-w-0 flex-1 space-y-1.5">
+              <span className="block text-[10px] font-semibold uppercase tracking-[0.16em] text-primary/80">
+                Relatórios · {modulo}
+              </span>
+              {typeSelector ? (
+                <div className="min-w-0 max-w-full sm:max-w-sm">{typeSelector}</div>
+              ) : (
                 <h1 className="truncate text-base font-bold tracking-tight text-foreground md:text-lg">
                   {titulo}
                 </h1>
-              </div>
+              )}
               <div className="flex flex-wrap gap-1.5">
                 {metaChips.map((m) => (
                   <span
@@ -51,11 +55,14 @@ export function ReportShell({
               </div>
             </div>
           </div>
-          <div className="print:hidden flex flex-wrap items-center gap-2 lg:justify-end">
+          <div className="print:hidden col-start-2 row-span-2 flex flex-col items-end gap-2 lg:col-start-auto lg:row-span-1 lg:flex-row lg:flex-wrap lg:items-center lg:justify-end">
             {scopeSelector}
             {exportButtons}
-            <Button variant="outline" size="sm" onClick={() => window.print()}>
+            <Button variant="outline" size="sm" onClick={() => window.print()} className="hidden sm:inline-flex">
               <Printer className="mr-1.5 h-3.5 w-3.5 opacity-70" /> Imprimir
+            </Button>
+            <Button variant="outline" size="icon" onClick={() => window.print()} className="sm:hidden h-8 w-8" aria-label="Imprimir">
+              <Printer className="h-4 w-4 opacity-70" />
             </Button>
           </div>
         </div>
@@ -65,6 +72,7 @@ export function ReportShell({
     </div>
   );
 }
+
 
 /** Separador semântico entre seções do relatório. */
 export function ReportSection({ titulo, children }: { titulo: string; children: ReactNode }) {
