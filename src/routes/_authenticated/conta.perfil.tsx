@@ -199,7 +199,7 @@ function Pagina() {
   const iniciais = (nome || "?").slice(0, 2).toUpperCase();
 
   return (
-    <div className="mx-auto w-full max-w-2xl space-y-6 p-4 pb-28 md:p-6">
+    <div className="mx-auto w-full max-w-6xl space-y-6 p-4 pb-28 md:p-6">
       <AdminHero
         secao="Minha conta"
         icon={<UserRound className="h-5 w-5" />}
