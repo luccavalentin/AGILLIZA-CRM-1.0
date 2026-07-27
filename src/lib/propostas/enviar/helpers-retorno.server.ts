@@ -47,18 +47,24 @@ export function statusDaEtapa(nomeEtapa: string | null): PropostaStatus | null {
  *   S = Sem Integração · P = Erro ao Enviar Proposta · N = Em Análise ·
  *   A = Crédito Aprovado · R = Crédito Recusado.
  *
- * Regras:
+ * Regras (a proposta CHEGOU ao banco quando existe protocolo):
  *  - "R" (Recusa) é decisão REAL de crédito — nunca é falha de integração.
  *  - Só considera falha quando tipoSituacao ∈ {"P","E"} (erro ao enviar).
- *  - `codigoOportunidadeBanco` sozinho NÃO confirma sucesso quando o próprio
- *    retorno veio como erro de envio; o status oficial da API prevalece.
- *  - `retornoIntegracao` com erro legível mantém a mensagem específica do banco.
+ *  - **Se o retorno traz um protocolo real do banco** (numeroPropostaBanco,
+ *    codigoPropostaBanco ou codigoOportunidadeBanco), a proposta chegou ao
+ *    banco — NÃO é falha de integração, mesmo que venha P/E ou mensagem no
+ *    retornoIntegracao (bancos usam esses campos para observações/validações
+ *    posteriores à aceitação da proposta).
  */
 export function ehFalhaIntegracaoBanco(sim: any): boolean {
   const tipo = String(sim?.tipoSituacao ?? "").toUpperCase().charAt(0);
   if (tipo !== "P" && tipo !== "E") return false;
+  // Se o banco devolveu qualquer protocolo, a proposta foi recebida — não é
+  // falha de integração; a mensagem eventual fica apenas como observação.
+  if (numeroPropostaBancoReal(sim) || referenciaIntegracaoBanco(sim)) return false;
   return true;
 }
+
 
 export const MSG_FALHA_INTEGRACAO =
   "A proposta não foi efetivada no banco (falha na integração). Reenvie para retomar o processo.";
