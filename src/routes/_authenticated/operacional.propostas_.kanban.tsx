@@ -578,7 +578,7 @@ function Pagina() {
                 cardsDaPasta.map((c: any) => (
                   <div
                     key={c.id}
-                    className="transition-transform duration-200 hover:-translate-y-0.5 hover:[transform:perspective(900px)_rotateX(2deg)_translateY(-2px)]"
+                    className="transition-transform duration-200 hover:-translate-y-1"
                   >
                     {renderCard(c, statusProposta(pastaAberta!))}
                   </div>
