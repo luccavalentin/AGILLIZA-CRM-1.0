@@ -179,10 +179,10 @@ function Pagina() {
 
       <SectionTitle>Quadro de funcionários</SectionTitle>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <ReportKpiCard titulo="Ativos" valor={String(data?.ativos ?? 0)} icon={UserCheck} tone="success" to="/rh/funcionarios" />
-        <ReportKpiCard titulo="Afastados" valor={String(data?.afastados ?? 0)} icon={UserMinus} tone="danger" to="/rh/funcionarios" />
-        <ReportKpiCard titulo="Em férias" valor={String(data?.ferias ?? 0)} icon={Plane} tone="brand" to="/rh/funcionarios" />
-        <ReportKpiCard titulo="Quadro total" valor={String((data?.ativos ?? 0) + (data?.experiencia ?? 0) + (data?.afastados ?? 0) + (data?.ferias ?? 0))} icon={UsersRound} tone="brand" to="/rh/funcionarios" />
+        <ReportKpiCard titulo="Ativos" valor={String(data?.ativos ?? 0)} icon={UserCheck} tone="success" onClick={() => setDrill("ativos")} />
+        <ReportKpiCard titulo="Afastados" valor={String(data?.afastados ?? 0)} icon={UserMinus} tone="danger" onClick={() => setDrill("afastados")} />
+        <ReportKpiCard titulo="Em férias" valor={String(data?.ferias ?? 0)} icon={Plane} tone="brand" onClick={() => setDrill("ferias")} />
+        <ReportKpiCard titulo="Quadro total" valor={String((data?.ativos ?? 0) + (data?.experiencia ?? 0) + (data?.afastados ?? 0) + (data?.ferias ?? 0))} icon={UsersRound} tone="brand" onClick={() => setDrill("total")} />
       </div>
 
       <SectionTitle>Financeiro do mês</SectionTitle>
@@ -193,10 +193,11 @@ function Pagina() {
           icon={Wallet}
           tone="brand"
           sub="Soma dos salários atuais"
+          onClick={() => setDrill("custo")}
         />
-        <ReportKpiCard titulo="Férias programadas" valor={String(data?.feriasProgramadas ?? 0)} icon={Plane} tone="brand" />
-        <ReportKpiCard titulo="Faltas no mês" valor={String(data?.faltasMes ?? 0)} icon={AlertTriangle} tone="warning" />
-        <ReportKpiCard titulo="Atestados no mês" valor={String(data?.atestadosMes ?? 0)} icon={FileClock} tone="warning" />
+        <ReportKpiCard titulo="Férias programadas" valor={String(data?.feriasProgramadas ?? 0)} icon={Plane} tone="brand" to="/rh/ferias" />
+        <ReportKpiCard titulo="Faltas no mês" valor={String(data?.faltasMes ?? 0)} icon={AlertTriangle} tone="warning" to="/rh/faltas-ocorrencias" />
+        <ReportKpiCard titulo="Atestados no mês" valor={String(data?.atestadosMes ?? 0)} icon={FileClock} tone="warning" to="/rh/atestados" />
       </div>
 
 
