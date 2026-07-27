@@ -696,21 +696,31 @@ export const registrarAlteracaoSalarial = createServerFn({ method: "POST" })
     z
       .object({
         funcionario_id: z.string().uuid(),
-        salario_novo: z.number().min(0),
+        salario_novo: z.number().positive("Novo salário deve ser maior que zero."),
         motivo: z.string().optional().nullable(),
         tipo: z.string().optional().nullable(),
-        vigencia: z.string(),
+        vigencia: z
+          .string()
+          .refine((s) => !Number.isNaN(new Date(s + "T00:00:00").getTime()), "Vigência inválida."),
       })
       .parse(data),
   )
+
   .handler(async ({ data, context }) => {
     const cid = await correspondenteId(context.supabase, context.userId);
     const { data: func } = await context.supabase
       .from("rh_funcionarios")
-      .select("salario_atual")
+      .select("salario_atual, data_admissao")
       .eq("id", data.funcionario_id)
       .maybeSingle();
     const anterior = Number(func?.salario_atual ?? 0);
+    if (func?.data_admissao && data.vigencia < func.data_admissao) {
+      throw new Error("Vigência não pode ser anterior à admissão do funcionário.");
+    }
+    if (Math.abs(data.salario_novo - anterior) < 0.01) {
+      throw new Error("O novo salário é igual ao atual — nenhuma alteração a registrar.");
+    }
+
     const { data: row, error } = await context.supabase
       .from("rh_alteracoes_salariais")
       .insert({
