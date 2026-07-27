@@ -105,6 +105,8 @@ export function ReportView({
       podeGeral={escopo?.podeGeral ?? false}
       comFiltroBanco={comFiltroBanco}
       comFiltroStatus={comFiltroStatus}
+      typeSelector={typeSelector}
     />
+
   );
 }
