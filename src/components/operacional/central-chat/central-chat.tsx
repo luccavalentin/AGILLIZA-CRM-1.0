@@ -211,7 +211,6 @@ export function CentralChatPage() {
                   const etiquetasDaConv = (etiquetaPor.get(chave) ?? [])
                     .map((id) => catalogoEtiquetas.get(id))
                     .filter(Boolean) as EtiquetaChat[];
-                  const st = estadoPor.get(chave);
                   return (
                     <li key={chave}>
                       <ThreadItem
