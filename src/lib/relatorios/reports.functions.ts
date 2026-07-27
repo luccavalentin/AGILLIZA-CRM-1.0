@@ -1555,15 +1555,16 @@ export const runReport = createServerFn({ method: "POST" })
           "Visão consolidada por banco, tipo, analistas, imobiliária e fase.",
         modulo: "Gerencial",
         kpis: [
-          { label: "Simulações", valor: int(simulacoesFiltradas.length), tone: "neutral" },
-          { label: "Volume simulado", valor: brl(totalSim), tone: "brand" },
-          { label: "Propostas", valor: int(propostasFiltradas.length), tone: "neutral" },
-          { label: "Em andamento", valor: int(andamento.length), tone: "neutral" },
-          { label: "Aprovadas", valor: int(aprovadas.length), tone: "success" },
-          { label: "Crédito recusado", valor: int(recusadas.length), tone: "danger" },
-          { label: "Contratos emitidos", valor: int(contratos.length), tone: "success" },
-          { label: "Valor contratado", valor: brl(totalContr), tone: "brand" },
+          { label: "Simulações", valor: int(simulacoesFiltradas.length), tone: "neutral", filters: [{ key: "grupo", values: ["simulacao"] }] },
+          { label: "Volume simulado", valor: brl(totalSim), tone: "brand", filters: [{ key: "grupo", values: ["simulacao"] }] },
+          { label: "Propostas", valor: int(propostasFiltradas.length), tone: "neutral", filters: [{ key: "grupo", values: ["andamento", "aprovada", "recusada", "contrato"] }] },
+          { label: "Em andamento", valor: int(andamento.length), tone: "neutral", filters: [{ key: "grupo", values: ["andamento"] }] },
+          { label: "Aprovadas", valor: int(aprovadas.length), tone: "success", filters: [{ key: "grupo", values: ["aprovada"] }] },
+          { label: "Crédito recusado", valor: int(recusadas.length), tone: "danger", filters: [{ key: "grupo", values: ["recusada"] }] },
+          { label: "Contratos emitidos", valor: int(contratos.length), tone: "success", filters: [{ key: "grupo", values: ["contrato"] }] },
+          { label: "Valor contratado", valor: brl(totalContr), tone: "brand", filters: [{ key: "grupo", values: ["contrato"] }] },
         ],
+
         charts: [
           {
             titulo: "Funil",
@@ -1609,15 +1610,27 @@ export const runReport = createServerFn({ method: "POST" })
           { key: "created_at", label: "Criada em", format: "date" },
         ],
         rows: [
-          ...simulacoesFiltradas.map((s) => ({ ...s, __origem: "Simulação" })),
+          ...simulacoesFiltradas.map((s) => ({ ...s, __origem: "Simulação", __grupo: "simulacao" })),
           ...propostasFiltradas
             .filter((p) => !contrato.includes(p.status))
-            .map((p) => ({ ...p, __origem: "Proposta" })),
-          ...contratos.map((p) => ({ ...p, __origem: "Contrato" })),
+            .map((p) => ({
+              ...p,
+              __origem: "Proposta",
+              __grupo:
+                p.status === "credito_recusado"
+                  ? "recusada"
+                  : aprovado.includes(p.status)
+                    ? "aprovada"
+                    : emAndamento.includes(p.status)
+                      ? "andamento"
+                      : "outra",
+            })),
+          ...contratos.map((p) => ({ ...p, __origem: "Contrato", __grupo: "contrato" })),
         ]
           .slice(0, 1000)
           .map((p) => ({
             origem: p.__origem,
+            grupo: p.__grupo,
             numero: p.numero_proposta ?? p.numero_simulacao ?? "—",
             numero_banco: p.numero_proposta_banco ?? "—",
             cliente: p.nome_cliente ?? "—",
@@ -1634,6 +1647,7 @@ export const runReport = createServerFn({ method: "POST" })
             valor: p.__origem === "Simulação" ? valorSim(p) : valorProc(p),
             created_at: p.created_at,
           })),
+
         filtrosDisponiveis: {
           bancos: opcoesOperacionais.bancos,
           produtos: opcoesOperacionais.produtos,

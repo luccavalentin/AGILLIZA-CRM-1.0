@@ -1,6 +1,8 @@
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ReportShell, ReportSection } from "@/components/reports/report-shell";
 import { ReportFiltersBar, VisionSelector } from "@/components/reports/report-filters-bar";
 import { ReportKpiCard, ChartCard } from "@/components/reports/report-kpi-card";
@@ -10,7 +12,8 @@ import { ExportButtons } from "@/components/reports/export-buttons";
 import { EmptyReport } from "@/components/reports/empty-report";
 import { MonthlyComparison } from "@/components/reports/monthly-comparison";
 import { runReport } from "@/lib/relatorios/reports.functions";
-import { ESCOPO_LABEL, PERIODO_LABEL, type ReportFiltros } from "@/lib/relatorios/shared";
+import { ESCOPO_LABEL, PERIODO_LABEL, type ReportFiltros, type ReportKpi } from "@/lib/relatorios/shared";
+
 
 /** Página completa de relatório reutilizada por todas as rotas de /relatorios/*. */
 export function GenericReportPage({
@@ -39,6 +42,18 @@ export function GenericReportPage({
     queryFn: () => run({ data: { codigo, filtros } }),
     staleTime: 60_000,
   });
+
+  const [kpiAberto, setKpiAberto] = useState<ReportKpi | null>(null);
+  const linhasKpi = useMemo(() => {
+    if (!kpiAberto?.filters?.length || !data?.rows) return [];
+    return data.rows.filter((r) =>
+      kpiAberto.filters!.every((f) => {
+        const cell = r[f.key];
+        return f.values.some((v) => String(cell ?? "") === String(v));
+      }),
+    );
+  }, [kpiAberto, data]);
+
 
   const metaArr = [
     `Período: ${PERIODO_LABEL[filtros.periodo]}`,
@@ -126,7 +141,11 @@ export function GenericReportPage({
             <ReportSection titulo="Indicadores">
               <div className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(160px,1fr))]">
                 {data.kpis.map((k) => (
-                  <ReportKpiCard key={k.label} kpi={k} />
+                  <ReportKpiCard
+                    key={k.label}
+                    kpi={k}
+                    onClick={k.filters?.length ? () => setKpiAberto(k) : undefined}
+                  />
                 ))}
               </div>
             </ReportSection>
@@ -138,10 +157,15 @@ export function GenericReportPage({
           <ReportSection titulo="Indicadores">
             <div className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(160px,1fr))]">
               {data.kpis.map((k) => (
-                <ReportKpiCard key={k.label} kpi={k} />
+                <ReportKpiCard
+                  key={k.label}
+                  kpi={k}
+                  onClick={k.filters?.length ? () => setKpiAberto(k) : undefined}
+                />
               ))}
             </div>
           </ReportSection>
+
 
           <ReportSection titulo={`Detalhamento — ${data.rows.length} registros`}>
             <DrilldownTable columns={data.columns} rows={data.rows} />
@@ -193,6 +217,20 @@ export function GenericReportPage({
             ))}
         </>
       )}
+
+      <Dialog open={!!kpiAberto} onOpenChange={(o) => !o && setKpiAberto(null)}>
+        <DialogContent className="max-h-[85vh] max-w-6xl overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {kpiAberto?.titulo ?? kpiAberto?.label} — {linhasKpi.length.toLocaleString("pt-BR")} registros
+            </DialogTitle>
+          </DialogHeader>
+          {data && kpiAberto && (
+            <DrilldownTable columns={data.columns} rows={linhasKpi} />
+          )}
+        </DialogContent>
+      </Dialog>
     </ReportShell>
   );
+
 }

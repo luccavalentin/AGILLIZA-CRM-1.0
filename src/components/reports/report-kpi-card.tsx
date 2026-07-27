@@ -20,13 +20,17 @@ const toneTint: Record<NonNullable<ReportKpi["tone"]>, string> = {
 };
 
 /** KPI executivo de relatório: acento lateral de tom + valor monoespaçado, com elevação ao hover. */
-export function ReportKpiCard({ kpi }: { kpi: ReportKpi }) {
+export function ReportKpiCard({
+  kpi,
+  onClick,
+}: {
+  kpi: ReportKpi;
+  onClick?: () => void;
+}) {
   const tone = kpi.tone ?? "neutral";
-  return (
-    <div
-      className="op-stat min-w-0 p-3 sm:p-4"
-      style={{ ["--op-accent" as string]: toneAccent[tone] }}
-    >
+  const clickable = typeof onClick === "function";
+  const conteudo = (
+    <>
       <div className="flex items-center justify-between gap-2">
         <p className="min-w-0 truncate text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
           {kpi.label}
@@ -41,9 +45,35 @@ export function ReportKpiCard({ kpi }: { kpi: ReportKpi }) {
         {kpi.valor}
       </p>
       {kpi.hint && <p className="mt-1.5 truncate text-xs text-muted-foreground">{kpi.hint}</p>}
+      {clickable && (
+        <p className="mt-1.5 truncate text-[10px] font-medium uppercase tracking-wide text-primary/80">
+          Ver detalhamento →
+        </p>
+      )}
+    </>
+  );
+  if (clickable) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        className="op-stat min-w-0 p-3 text-left transition-transform hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 sm:p-4"
+        style={{ ["--op-accent" as string]: toneAccent[tone] }}
+      >
+        {conteudo}
+      </button>
+    );
+  }
+  return (
+    <div
+      className="op-stat min-w-0 p-3 sm:p-4"
+      style={{ ["--op-accent" as string]: toneAccent[tone] }}
+    >
+      {conteudo}
     </div>
   );
 }
+
 
 /** Moldura padrão de gráfico. */
 export function ChartCard({
