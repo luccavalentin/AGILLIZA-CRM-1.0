@@ -248,6 +248,23 @@ function Pagina() {
           </ResponsiveContainer>
         </div>
       </PanelCard>
+
+      {drill && (
+        <KpiDrilldownDialog
+          open={!!drill}
+          onOpenChange={(o) => !o && setDrill(null)}
+          titulo={drillMeta[drill].titulo}
+          subtitulo={drillMeta[drill].subtitulo}
+          valor={drillMeta[drill].valor}
+          icon={drillMeta[drill].icon}
+          tone={drillMeta[drill].tone}
+          itens={drillQuery.data?.itens ?? []}
+          isLoading={drillQuery.isLoading}
+          linkAbrir="/rh/funcionarios"
+          linkAbrirLabel="Ver todos os funcionários"
+          empty={drillMeta[drill].empty}
+        />
+      )}
     </div>
   );
 }
