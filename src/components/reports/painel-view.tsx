@@ -309,8 +309,21 @@ export function PainelView({
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
             {data.evolucao && data.evolucao.dados.length > 1 && (
               <div className="lg:col-span-5">
-                <PanelCard titulo={data.evolucao.titulo} subtitulo={data.evolucao.subtitulo}>
-                  <div className="h-[280px] w-full overflow-hidden">
+                <PanelCard
+                  titulo={data.evolucao.titulo}
+                  subtitulo={data.evolucao.subtitulo}
+                  onOpen={() => abrirDetalhe(data.evolucao!.titulo)}
+                >
+                  <div
+                    className="h-[280px] w-full cursor-pointer overflow-hidden rounded-lg transition-colors hover:bg-primary/[0.02]"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => abrirDetalhe(data.evolucao!.titulo)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") abrirDetalhe(data.evolucao!.titulo);
+                    }}
+                    aria-label={`Ver detalhamento de ${data.evolucao.titulo}`}
+                  >
                     <ReportChartView
                       chart={{
                         titulo: data.evolucao.titulo,
@@ -328,7 +341,12 @@ export function PainelView({
             {data.funil && data.funil.etapas.some((e) => e.valor > 0) && (
               <div className="lg:col-span-3">
                 <PanelCard titulo={data.funil.titulo} subtitulo="Da simulação ao contrato">
-                  <ConversionFunnel etapas={data.funil.etapas} />
+                  <ConversionFunnel
+                    etapas={data.funil.etapas}
+                    onItemClick={(label, valor) =>
+                      abrirDetalhe(label, valor.toLocaleString("pt-BR"))
+                    }
+                  />
                 </PanelCard>
               </div>
             )}
@@ -338,15 +356,26 @@ export function PainelView({
                 titulo={data.chart.titulo}
                 subtitulo={data.chart.subtitulo}
                 abrirTo={abrirTo}
+                onOpen={() => abrirDetalhe(data.chart.titulo)}
               >
                 {data.chart.porBanco ? (
                   <MetricList
                     items={data.chart.dados.map((d) => ({ label: d.label, valor: d.valor }))}
                     colorByBank
+                    onItemClick={(label, valor) =>
+                      abrirDetalhe(label, valor.toLocaleString("pt-BR"))
+                    }
                   />
                 ) : (
                   <div
-                    className="w-full overflow-hidden"
+                    className="w-full cursor-pointer overflow-hidden rounded-lg transition-colors hover:bg-primary/[0.02]"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => abrirDetalhe(data.chart.titulo)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") abrirDetalhe(data.chart.titulo);
+                    }}
+                    aria-label={`Ver detalhamento de ${data.chart.titulo}`}
                     style={{
                       height: Math.min(420, Math.max(168, data.chart.dados.length * 52 + 44)),
                     }}
@@ -359,6 +388,7 @@ export function PainelView({
               </PanelCard>
             </div>
           </div>
+
 
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
             <div className="lg:col-span-1">
