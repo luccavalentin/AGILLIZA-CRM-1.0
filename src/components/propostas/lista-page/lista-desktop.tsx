@@ -68,7 +68,7 @@ export function ListaDesktop({
           </TableRow>
         </TableHeader>
 
-        <TableBody>
+        <TableBody className="group/table">
           {isLoading &&
             Array.from({ length: 5 }).map((_, i) => (
               <TableRow key={i}>
@@ -105,13 +105,13 @@ export function ListaDesktop({
                       "--banco-ring": `${corBanco}59`,
                     } as React.CSSProperties
                   }
-                  className="group relative cursor-pointer transition-colors hover:bg-[var(--banco-tint)] hover:shadow-[inset_3px_0_0_0_var(--banco)]"
+                  className="group/row relative cursor-pointer transition-all duration-300 ease-out hover:z-10 hover:scale-[1.005] hover:bg-[var(--banco-tint)] hover:shadow-[inset_3px_0_0_0_var(--banco),0_12px_28px_-8px_rgba(0,0,0,0.12)] group-hover/table:opacity-60 group-hover/table:hover:opacity-100 group-hover/table:hover:blur-0 [&:is(:where(.group\/table:hover)_&)]:blur-[0.3px]"
                   onClick={() =>
                     router.navigate({ to: "/operacional/propostas/$id", params: { id: p.id } })
                   }
                 >
                   <TableCell className="relative">
-                    <span className="absolute inset-y-0 left-0 w-[3px] origin-top scale-y-0 rounded-r-full bg-[var(--banco)] transition-transform duration-200 group-hover:scale-y-100" />
+                    <span className="absolute inset-y-0 left-0 w-[3px] origin-top scale-y-0 rounded-r-full bg-[var(--banco)] transition-transform duration-200 group-hover/row:scale-y-100" />
                     {(() => {
                       const nb = numeroBancoParaExibir(p.numero_proposta_banco);
                       return nb ? (
@@ -124,7 +124,7 @@ export function ListaDesktop({
                           </div>
                         </>
                       ) : (
-                        <div className="font-medium tabular-nums text-foreground transition-colors group-hover:text-[var(--banco)]">
+                        <div className="font-medium tabular-nums text-foreground transition-colors group-hover/row:text-[var(--banco)]">
                           {p.numero_proposta}
                         </div>
                       );
