@@ -152,8 +152,8 @@ export function ReportFiltersBar({
           </SelectContent>
         </Select>
 
-        {/* Intervalo de datas — ocupa uma célula do grid; inputs dividem o espaço */}
-        <div className="flex items-center gap-1.5">
+        {/* Intervalo de datas — ocupa duas colunas para não espremer os inputs */}
+        <div className="flex items-center gap-1.5 sm:col-span-2 md:col-span-1 xl:col-span-2">
           <Input
             type="date"
             aria-label="Data inicial"
@@ -170,6 +170,7 @@ export function ReportFiltersBar({
             className="h-9 min-w-0 flex-1"
           />
         </div>
+
 
         {!!bancoOpts.length && (
           <MultiSelect
