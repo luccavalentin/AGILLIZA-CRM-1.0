@@ -206,6 +206,68 @@ export function CriarVinculoInline({
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      {/* Modal dedicado: senha temporária (persiste até o admin copiar) */}
+      <Dialog
+        open={!!credenciais}
+        onOpenChange={(o) => {
+          if (!o && credenciais) {
+            const id = credenciais.idCriado;
+            setCredenciais(null);
+            onCriado(id);
+            limpar();
+            onOpenChange(false);
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Copiar senha temporária</DialogTitle>
+            <DialogDescription>
+              Esta senha não será exibida novamente — copie e repasse por canal seguro.
+            </DialogDescription>
+          </DialogHeader>
+          {credenciais && (
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <Label>E-mail</Label>
+                <Input readOnly value={credenciais.email} />
+              </div>
+              <div className="space-y-1">
+                <Label>Senha temporária</Label>
+                <div className="flex gap-2">
+                  <Input readOnly value={credenciais.senha} className="font-mono" />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => {
+                      void navigator.clipboard.writeText(credenciais.senha);
+                      toast.success("Senha copiada.");
+                    }}
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button
+              onClick={() => {
+                if (!credenciais) return;
+                const id = credenciais.idCriado;
+                setCredenciais(null);
+                onCriado(id);
+                limpar();
+                onOpenChange(false);
+              }}
+            >
+              Concluído
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 }
