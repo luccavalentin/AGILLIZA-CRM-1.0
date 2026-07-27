@@ -1973,6 +1973,7 @@ export const salvarImovelIq = createServerFn({ method: "POST" })
         imovel_uf: z.string().max(2).optional().nullable(),
         iq_nome: z.string().max(200).optional().nullable(),
         iq_comentario: z.string().max(2000).optional().nullable(),
+        imovel_matricula: z.record(z.any()).optional().nullable(),
       })
       .parse(d),
   )
