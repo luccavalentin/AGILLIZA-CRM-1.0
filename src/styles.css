@@ -1394,5 +1394,132 @@ html[data-crm-motion="off"] .crm-page-transition {
   animation: none !important;
 }
 
+/* =========================================================
+   3D Depth System — sensação tridimensional global
+   Aplica sombras multicamada, highlight superior sutil e
+   micro-transform em hover/active para botões, cards, badges
+   e inputs, sem alterar estrutura ou cores semânticas.
+   ========================================================= */
+@layer components {
+  :root {
+    --depth-highlight: color-mix(in oklab, white 55%, transparent);
+    --depth-highlight-soft: color-mix(in oklab, white 22%, transparent);
+    --depth-shadow-1: 0 1px 0 0 var(--depth-highlight-soft) inset,
+                      0 -1px 0 0 color-mix(in oklab, black 12%, transparent) inset,
+                      0 1px 2px -1px color-mix(in oklab, black 25%, transparent),
+                      0 2px 6px -2px color-mix(in oklab, black 18%, transparent);
+    --depth-shadow-2: 0 1px 0 0 var(--depth-highlight) inset,
+                      0 -1px 0 0 color-mix(in oklab, black 18%, transparent) inset,
+                      0 2px 4px -1px color-mix(in oklab, black 22%, transparent),
+                      0 8px 20px -6px color-mix(in oklab, black 28%, transparent);
+    --depth-shadow-3: 0 1px 0 0 var(--depth-highlight) inset,
+                      0 -2px 0 0 color-mix(in oklab, black 22%, transparent) inset,
+                      0 4px 10px -2px color-mix(in oklab, black 25%, transparent),
+                      0 16px 40px -12px color-mix(in oklab, black 35%, transparent);
+    --depth-press: 0 1px 0 0 color-mix(in oklab, black 20%, transparent) inset,
+                   0 2px 4px -2px color-mix(in oklab, black 30%, transparent) inset;
+  }
+  .dark {
+    --depth-highlight: color-mix(in oklab, white 14%, transparent);
+    --depth-highlight-soft: color-mix(in oklab, white 8%, transparent);
+  }
 
+  /* Botões — relevo com brilho no topo + sombra projetada */
+  button:not(:disabled):not([data-depth="off"]):not([role="tab"]):not([role="menuitem"]):not([role="option"]):not([data-radix-collection-item]):not([data-sidebar]),
+  [role="button"]:not([data-depth="off"]) {
+    box-shadow: var(--depth-shadow-1);
+    transition: transform 160ms cubic-bezier(.2,.8,.2,1), box-shadow 160ms ease, filter 160ms ease;
+    transform: translateZ(0);
+  }
+  button:not(:disabled):not([data-depth="off"]):not([role="tab"]):not([role="menuitem"]):not([role="option"]):not([data-radix-collection-item]):not([data-sidebar]):hover,
+  [role="button"]:not([data-depth="off"]):hover {
+    box-shadow: var(--depth-shadow-2);
+    transform: translateY(-1px);
+  }
+  button:not(:disabled):not([data-depth="off"]):not([role="tab"]):not([role="menuitem"]):not([role="option"]):not([data-radix-collection-item]):not([data-sidebar]):active,
+  [role="button"]:not([data-depth="off"]):active {
+    box-shadow: var(--depth-press);
+    transform: translateY(0);
+    filter: brightness(.97);
+  }
+  /* Ícones-only pequenos ficam mais discretos */
+  button.size-7:not([data-depth="off"]),
+  button.size-8:not([data-depth="off"]),
+  button.h-7:not([data-depth="off"]),
+  button.h-8:not([data-depth="off"]) {
+    box-shadow: none;
+  }
+  button.size-7:not([data-depth="off"]):hover,
+  button.size-8:not([data-depth="off"]):hover,
+  button.h-7:not([data-depth="off"]):hover,
+  button.h-8:not([data-depth="off"]):hover {
+    box-shadow: var(--depth-shadow-1);
+  }
+
+  /* Cards — profundidade multicamada com highlight no topo */
+  [data-slot="card"],
+  .depth-card {
+    box-shadow: var(--depth-shadow-2);
+    transition: box-shadow 220ms ease, transform 220ms cubic-bezier(.2,.8,.2,1);
+    transform: translateZ(0);
+  }
+  [data-slot="card"]:hover,
+  .depth-card:hover {
+    box-shadow: var(--depth-shadow-3);
+    transform: translateY(-2px);
+  }
+
+  /* Inputs e selects — leve encaixe interno (efeito "afundado") */
+  input:not([type="checkbox"]):not([type="radio"]):not([data-depth="off"]),
+  textarea:not([data-depth="off"]),
+  [data-slot="select-trigger"]:not([data-depth="off"]) {
+    box-shadow: 0 1px 0 0 var(--depth-highlight-soft),
+                inset 0 1px 2px 0 color-mix(in oklab, black 12%, transparent);
+    transition: box-shadow 160ms ease, transform 160ms ease;
+  }
+  input:not([type="checkbox"]):not([type="radio"]):not([data-depth="off"]):focus-visible,
+  textarea:not([data-depth="off"]):focus-visible,
+  [data-slot="select-trigger"]:not([data-depth="off"]):focus-visible {
+    box-shadow: 0 0 0 2px color-mix(in oklab, hsl(var(--ring)) 45%, transparent),
+                inset 0 1px 2px 0 color-mix(in oklab, black 14%, transparent);
+  }
+
+  /* Badges — pastilhas com relevo sutil */
+  [data-slot="badge"] {
+    box-shadow: 0 1px 0 0 var(--depth-highlight) inset,
+                0 -1px 0 0 color-mix(in oklab, black 14%, transparent) inset,
+                0 1px 2px -1px color-mix(in oklab, black 20%, transparent);
+  }
+
+  /* Popovers, menus e diálogos — flutuação clara sobre a página */
+  [data-slot="popover-content"],
+  [data-slot="dropdown-menu-content"],
+  [data-slot="dialog-content"],
+  [data-slot="sheet-content"],
+  [data-slot="tooltip-content"] {
+    box-shadow: var(--depth-shadow-3);
+  }
+
+  /* Avatares circulares — highlight tipo esfera */
+  [data-slot="avatar"] {
+    box-shadow: 0 1px 0 0 var(--depth-highlight) inset,
+                0 -2px 4px 0 color-mix(in oklab, black 25%, transparent) inset,
+                0 2px 6px -2px color-mix(in oklab, black 25%, transparent);
+  }
+
+  /* Opt-out por página/elemento */
+  [data-depth="flat"],
+  [data-depth="flat"] * {
+    box-shadow: none !important;
+    transform: none !important;
+  }
+}
+
+/* Respeita usuários que preferem menos movimento */
+@media (prefers-reduced-motion: reduce) {
+  button, [role="button"], [data-slot="card"], .depth-card {
+    transition: none !important;
+    transform: none !important;
+  }
+}
 
