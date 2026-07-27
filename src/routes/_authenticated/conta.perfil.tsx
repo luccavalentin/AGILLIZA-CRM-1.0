@@ -199,7 +199,7 @@ function Pagina() {
   const iniciais = (nome || "?").slice(0, 2).toUpperCase();
 
   return (
-    <div className="mx-auto w-full max-w-2xl space-y-6 p-4 pb-28 md:p-6">
+    <div className="mx-auto w-full max-w-6xl space-y-6 p-4 pb-28 md:p-6">
       <AdminHero
         secao="Minha conta"
         icon={<UserRound className="h-5 w-5" />}
@@ -343,58 +343,61 @@ function Pagina() {
 
 
 
-      <Secao
-        numero="03"
-        icon={<Lock className="size-5" />}
-        titulo="Segurança"
-        descricao="Defina uma nova senha de acesso."
-      >
-        <div className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-1.5">
-              <Label htmlFor="nova-senha" className="text-xs font-medium text-muted-foreground">
-                Nova senha
-              </Label>
-              <Input
-                id="nova-senha"
-                type="password"
-                value={novaSenha}
-                onChange={(e) => setNovaSenha(e.target.value)}
-                placeholder="Mínimo de 8 caracteres"
-              />
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Secao
+          numero="03"
+          icon={<Lock className="size-5" />}
+          titulo="Segurança"
+          descricao="Defina uma nova senha de acesso."
+        >
+          <div className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="nova-senha" className="text-xs font-medium text-muted-foreground">
+                  Nova senha
+                </Label>
+                <Input
+                  id="nova-senha"
+                  type="password"
+                  value={novaSenha}
+                  onChange={(e) => setNovaSenha(e.target.value)}
+                  placeholder="Mínimo de 8 caracteres"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="confirma-senha" className="text-xs font-medium text-muted-foreground">
+                  Confirmar nova senha
+                </Label>
+                <Input
+                  id="confirma-senha"
+                  type="password"
+                  value={confirmaSenha}
+                  onChange={(e) => setConfirmaSenha(e.target.value)}
+                />
+                {confirmaSenha.length > 0 && novaSenha !== confirmaSenha && (
+                  <p className="text-xs text-destructive">As senhas não coincidem.</p>
+                )}
+              </div>
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="confirma-senha" className="text-xs font-medium text-muted-foreground">
-                Confirmar nova senha
-              </Label>
-              <Input
-                id="confirma-senha"
-                type="password"
-                value={confirmaSenha}
-                onChange={(e) => setConfirmaSenha(e.target.value)}
-              />
-              {confirmaSenha.length > 0 && novaSenha !== confirmaSenha && (
-                <p className="text-xs text-destructive">As senhas não coincidem.</p>
-              )}
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                <ShieldCheck className="size-3.5" />
+                Use uma senha forte e exclusiva.
+              </p>
+              <Button onClick={alterarSenha} disabled={!podeSalvarSenha || salvandoSenha}>
+                {salvandoSenha && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Alterar senha
+              </Button>
             </div>
           </div>
-          <div className="flex items-center justify-between gap-3">
-            <p className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-              <ShieldCheck className="size-3.5" />
-              Use uma senha forte e exclusiva.
-            </p>
-            <Button onClick={alterarSenha} disabled={!podeSalvarSenha || salvandoSenha}>
-              {salvandoSenha && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Alterar senha
-            </Button>
-          </div>
-        </div>
-      </Secao>
+        </Secao>
 
-      <ChatSoundSetting />
+        <ChatSoundSetting />
+      </div>
+
 
       <div className="fixed inset-x-0 bottom-0 z-20 border-t border-border/60 bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/70">
-        <div className="mx-auto flex max-w-2xl items-center justify-between gap-3 px-4 py-3 md:px-6">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 md:px-6">
           <span className="flex items-center gap-2 text-xs text-muted-foreground">
             <span
               className={`size-2 rounded-full ${alterado ? "bg-amber-500" : "bg-emerald-500"}`}
