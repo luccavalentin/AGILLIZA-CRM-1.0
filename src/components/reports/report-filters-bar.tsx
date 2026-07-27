@@ -119,17 +119,17 @@ export function ReportFiltersBar({
     (filtros.imobiliarias?.length ?? 0) > 0;
 
   return (
-    <div className="space-y-3 rounded-xl border border-border bg-card p-3.5 shadow-[var(--shadow-card)]">
+    <div className="space-y-3 rounded-xl border border-border/70 bg-card p-3 shadow-[var(--shadow-card)] sm:p-3.5">
       <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-          <SlidersHorizontal className="h-3.5 w-3.5 text-primary" />
-          Filtros de pesquisa
+        <div className="flex min-w-0 items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+          <SlidersHorizontal className="h-3.5 w-3.5 shrink-0 text-primary" />
+          <span className="truncate">Filtros</span>
         </div>
         {temAlgum && (
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 text-xs"
+            className="h-7 shrink-0 text-xs"
             onClick={() => onChange({ periodo: filtros.periodo, escopo: filtros.escopo })}
           >
             Limpar
@@ -137,7 +137,8 @@ export function ReportFiltersBar({
         )}
       </div>
 
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
+
         <Select value={filtros.periodo} onValueChange={(v) => set({ periodo: v as Periodo })}>
           <SelectTrigger className="h-9 w-full">
             <SelectValue />
@@ -151,8 +152,8 @@ export function ReportFiltersBar({
           </SelectContent>
         </Select>
 
-        {/* Intervalo de datas — ocupa uma célula do grid; inputs dividem o espaço */}
-        <div className="flex items-center gap-1.5">
+        {/* Intervalo de datas — ocupa duas colunas para não espremer os inputs */}
+        <div className="flex items-center gap-1.5 sm:col-span-2 md:col-span-1 xl:col-span-2">
           <Input
             type="date"
             aria-label="Data inicial"
@@ -169,6 +170,7 @@ export function ReportFiltersBar({
             className="h-9 min-w-0 flex-1"
           />
         </div>
+
 
         {!!bancoOpts.length && (
           <MultiSelect
@@ -260,7 +262,7 @@ export function ReportFiltersBar({
           className="h-9 w-full"
         />
 
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 sm:col-span-2 md:col-span-1 xl:col-span-2">
           <Input
             value={filtros.valorMin ?? ""}
             onChange={(e) => {
@@ -282,6 +284,7 @@ export function ReportFiltersBar({
             className="h-9 min-w-0 flex-1"
           />
         </div>
+
       </div>
 
       <div className="flex justify-end">

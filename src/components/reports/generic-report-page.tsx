@@ -21,6 +21,7 @@ export function GenericReportPage({
   podeGeral,
   comFiltroBanco,
   comFiltroStatus,
+  typeSelector,
 }: {
   codigo: string;
   filtros: ReportFiltros;
@@ -29,7 +30,9 @@ export function GenericReportPage({
   podeGeral: boolean;
   comFiltroBanco?: boolean;
   comFiltroStatus?: boolean;
+  typeSelector?: import("react").ReactNode;
 }) {
+
   const run = useServerFn(runReport);
   const { data, isLoading, isError } = useQuery({
     queryKey: ["report", codigo, filtros],
@@ -71,10 +74,11 @@ export function GenericReportPage({
 
   return (
     <ReportShell
-      modulo={data?.modulo ?? "—"}
+      modulo={data?.modulo ?? "Operacional"}
       titulo={data?.titulo ?? "Relatório"}
-      descricao={data?.descricao ?? "Carregando…"}
+      typeSelector={typeSelector}
       metaChips={metaArr}
+
       scopeSelector={
         <VisionSelector
           escopo={filtros.escopo}
