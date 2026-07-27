@@ -1610,15 +1610,27 @@ export const runReport = createServerFn({ method: "POST" })
           { key: "created_at", label: "Criada em", format: "date" },
         ],
         rows: [
-          ...simulacoesFiltradas.map((s) => ({ ...s, __origem: "Simulação" })),
+          ...simulacoesFiltradas.map((s) => ({ ...s, __origem: "Simulação", __grupo: "simulacao" })),
           ...propostasFiltradas
             .filter((p) => !contrato.includes(p.status))
-            .map((p) => ({ ...p, __origem: "Proposta" })),
-          ...contratos.map((p) => ({ ...p, __origem: "Contrato" })),
+            .map((p) => ({
+              ...p,
+              __origem: "Proposta",
+              __grupo:
+                p.status === "credito_recusado"
+                  ? "recusada"
+                  : aprovado.includes(p.status)
+                    ? "aprovada"
+                    : emAndamento.includes(p.status)
+                      ? "andamento"
+                      : "outra",
+            })),
+          ...contratos.map((p) => ({ ...p, __origem: "Contrato", __grupo: "contrato" })),
         ]
           .slice(0, 1000)
           .map((p) => ({
             origem: p.__origem,
+            grupo: p.__grupo,
             numero: p.numero_proposta ?? p.numero_simulacao ?? "—",
             numero_banco: p.numero_proposta_banco ?? "—",
             cliente: p.nome_cliente ?? "—",
@@ -1635,6 +1647,7 @@ export const runReport = createServerFn({ method: "POST" })
             valor: p.__origem === "Simulação" ? valorSim(p) : valorProc(p),
             created_at: p.created_at,
           })),
+
         filtrosDisponiveis: {
           bancos: opcoesOperacionais.bancos,
           produtos: opcoesOperacionais.produtos,
