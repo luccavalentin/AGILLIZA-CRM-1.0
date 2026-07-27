@@ -59,18 +59,17 @@ function Pagina() {
     queryKey: ["fin-kpi-drill", drill, de, ate],
     queryFn: async () => {
       if (!drill) return { itens: [] as KpiDrillItem[] };
-      const tipo: "pagar" | "receber" =
-        drill === "pagar" ? "pagar" : "receber";
-      const status =
-        drill === "inadimplencia" ? "atrasada" : drill === "saldo" ? "aberta" : "aberta";
-      const params: Parameters<typeof listarContasFn>[0]["data"] = {
-        tipo,
-        status,
-        pagina: 1,
-        porPagina: 10,
-        ...(drill === "inadimplencia" ? {} : { de, ate }),
-      };
-      const r = await listarContasFn({ data: params });
+      const tipo: "pagar" | "receber" = drill === "pagar" ? "pagar" : "receber";
+      const status = drill === "inadimplencia" ? "atrasada" : "aberta";
+      const r = await listarContasFn({
+        data: {
+          tipo,
+          status,
+          pagina: 1,
+          porPagina: 10,
+          ...(drill === "inadimplencia" ? {} : { de, ate }),
+        },
+      });
       const itens: KpiDrillItem[] = r.itens.map((c) => ({
         label: c.contraparte ?? c.descricao ?? c.numero ?? "Sem descrição",
         sub: c.categoria_nome ?? c.descricao ?? undefined,
