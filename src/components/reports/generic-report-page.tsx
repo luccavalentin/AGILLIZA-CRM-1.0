@@ -217,6 +217,20 @@ export function GenericReportPage({
             ))}
         </>
       )}
+
+      <Dialog open={!!kpiAberto} onOpenChange={(o) => !o && setKpiAberto(null)}>
+        <DialogContent className="max-h-[85vh] max-w-6xl overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {kpiAberto?.titulo ?? kpiAberto?.label} — {linhasKpi.length.toLocaleString("pt-BR")} registros
+            </DialogTitle>
+          </DialogHeader>
+          {data && kpiAberto && (
+            <DrilldownTable columns={data.columns} rows={linhasKpi} />
+          )}
+        </DialogContent>
+      </Dialog>
     </ReportShell>
   );
+
 }
