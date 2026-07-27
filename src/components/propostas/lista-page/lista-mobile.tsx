@@ -35,7 +35,7 @@ export function ListaMobile({
 }: Props) {
   const router = useRouter();
   return (
-    <div className="space-y-3 md:hidden">
+    <div className="space-y-3 md:hidden group/cards">
       {isLoading &&
         Array.from({ length: 4 }).map((_, i) => (
           <Card key={i} className="rounded-2xl border-border/60 p-4 shadow-sm">
@@ -71,7 +71,7 @@ export function ListaMobile({
                   "--banco-ring": `${corBanco}26`,
                 } as React.CSSProperties
               }
-              className="group relative cursor-pointer overflow-hidden rounded-2xl border-border/60 bg-card p-0 shadow-sm ring-1 ring-inset ring-[var(--banco-ring)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:scale-[0.99] active:shadow-md"
+              className="group/card relative cursor-pointer overflow-hidden rounded-2xl border-border/60 bg-card p-0 shadow-sm ring-1 ring-inset ring-[var(--banco-ring)] transition-all duration-300 ease-out hover:z-10 hover:-translate-y-1 hover:scale-[1.02] hover:shadow-[0_18px_40px_-12px_rgba(0,0,0,0.18),0_0_0_1px_var(--banco-ring)] group-hover/cards:opacity-55 group-hover/cards:blur-[0.5px] group-hover/cards:group-hover/card:opacity-100 group-hover/cards:group-hover/card:blur-0"
               onClick={() =>
                 router.navigate({ to: "/operacional/propostas/$id", params: { id: p.id } })
               }
@@ -160,7 +160,7 @@ export function ListaMobile({
                       {formatBRL(p.valor_financiamento)}
                     </p>
                   </div>
-                  <ChevronRight className="mb-1 h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+                  <ChevronRight className="mb-1 h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover/card:translate-x-0.5" />
                 </div>
 
                 <div className="mt-3">
