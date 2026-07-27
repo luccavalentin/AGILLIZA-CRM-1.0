@@ -526,7 +526,7 @@ function AbaSimulacoes({ escopo, busca, dataInicio, dataFim }: FiltroProps) {
               <TableHead className={headCell}>Bancos simulados</TableHead>
               <TableHead className={`text-right ${headCell}`}>Valor imóvel</TableHead>
               <TableHead className={headCell}>Status</TableHead>
-              <TableHead className={`w-56 text-right ${headCell}`}>Enviar</TableHead>
+              <TableHead className={`w-[420px] text-right ${headCell}`}>Enviar</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
