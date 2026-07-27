@@ -8,10 +8,11 @@ import { TarefaDrawer } from "@/components/operacional/tarefa-drawer";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { mapaFeriados } from "@/lib/feriados-br";
-import { NavegacaoCalendario } from "@/components/operacional/calendario/navegacao-calendario";
+import { NavegacaoCalendario, type VisaoCalendario } from "@/components/operacional/calendario/navegacao-calendario";
 import { GradeCalendario } from "@/components/operacional/calendario/grade-calendario";
 import type { TarefaCelula } from "@/components/operacional/calendario/celula-dia";
 import { chaveDia } from "@/components/operacional/calendario/utils";
+
 
 export const Route = createFileRoute("/_authenticated/operacional/tarefas_/calendario")({
   head: () => ({ meta: [{ title: "Calendário de Tarefas — Agilliza" }] }),
