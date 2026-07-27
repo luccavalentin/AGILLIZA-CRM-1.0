@@ -246,10 +246,10 @@ function Pagina() {
 
       {/* KPIs */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <Kpi label="Ativas" valor={kpis.abertas} tone="primary" icon={Inbox} />
-        <Kpi label="Aguardando" valor={kpis.aguardando} tone="warning" icon={Hourglass} />
-        <Kpi label="Vencidas" valor={kpis.vencidas} tone="destructive" icon={Flame} />
-        <Kpi label="Não lidas" valor={kpis.naoLidas} tone="info" icon={Bell} />
+        <OpStat label="Ativas" value={kpis.abertas} icon={<Inbox className="h-4 w-4" />} accent="var(--primary)" />
+        <OpStat label="Aguardando" value={kpis.aguardando} icon={<Hourglass className="h-4 w-4" />} accent="var(--warning)" />
+        <OpStat label="Vencidas" value={kpis.vencidas} icon={<Flame className="h-4 w-4" />} accent="var(--destructive)" alerta={kpis.vencidas > 0} />
+        <OpStat label="Não lidas" value={kpis.naoLidas} icon={<Bell className="h-4 w-4" />} accent="var(--info)" />
       </div>
 
       {/* Filtros */}
