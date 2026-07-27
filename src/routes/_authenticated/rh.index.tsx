@@ -64,9 +64,9 @@ function Pagina() {
         custo: undefined,
       };
       const r = await listarFn({
-        data: { status: statusMap[drill], pagina: 1, porPagina: drill === "custo" ? 20 : 30 },
+        data: { status: statusMap[drill] },
       });
-      let itens = r.itens;
+      let itens = r;
       if (drill === "total") {
         itens = itens.filter((f) => f.status !== "desligado");
       }
