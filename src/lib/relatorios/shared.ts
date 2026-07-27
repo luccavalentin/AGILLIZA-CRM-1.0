@@ -101,7 +101,15 @@ export interface ReportKpi {
   valor: string;
   hint?: string;
   tone?: "brand" | "success" | "warning" | "danger" | "neutral";
+  /**
+   * Se informado, torna o KPI clicável: abre um diálogo com as linhas de
+   * `rows` que satisfazem TODOS os pares chave/valor listados.
+   */
+  filters?: Array<{ key: string; values: (string | number | boolean)[] }>;
+  /** Título opcional do diálogo de detalhamento (padrão: label). */
+  titulo?: string;
 }
+
 
 export interface ChartSerie {
   label: string;
