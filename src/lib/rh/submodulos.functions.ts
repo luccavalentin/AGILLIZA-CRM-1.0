@@ -696,13 +696,16 @@ export const registrarAlteracaoSalarial = createServerFn({ method: "POST" })
     z
       .object({
         funcionario_id: z.string().uuid(),
-        salario_novo: z.number().min(0),
+        salario_novo: z.number().positive("Novo salário deve ser maior que zero."),
         motivo: z.string().optional().nullable(),
         tipo: z.string().optional().nullable(),
-        vigencia: z.string(),
+        vigencia: z
+          .string()
+          .refine((s) => !Number.isNaN(new Date(s + "T00:00:00").getTime()), "Vigência inválida."),
       })
       .parse(data),
   )
+
   .handler(async ({ data, context }) => {
     const cid = await correspondenteId(context.supabase, context.userId);
     const { data: func } = await context.supabase
