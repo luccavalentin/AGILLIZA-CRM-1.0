@@ -181,12 +181,8 @@ export function gerarPapelTimbradoPDF(dados: PapelTimbradoDados = {}, filename?:
   }
 
   if (dados.destinatario?.trim()) {
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(11);
-    doc.setTextColor(rDest, gDest, bDest);
-    doc.text("Ao(À):", MARGEM, y);
-    y += 14;
     doc.setFont("helvetica", "normal");
+    doc.setFontSize(11);
     doc.setTextColor(rTxt, gTxt, bTxt);
     const linhas = doc.splitTextToSize(dados.destinatario.trim(), largura) as string[];
     linhas.forEach((l) => {
@@ -195,6 +191,7 @@ export function gerarPapelTimbradoPDF(dados: PapelTimbradoDados = {}, filename?:
     });
     y += 10;
   }
+
 
   if (dados.referencia?.trim()) {
     doc.setFont("helvetica", "bold");
