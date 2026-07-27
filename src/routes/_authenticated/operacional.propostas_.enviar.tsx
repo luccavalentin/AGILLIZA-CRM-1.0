@@ -434,7 +434,7 @@ function AbaSimulacoes({ escopo, busca, dataInicio, dataFim }: FiltroProps) {
       return <span className="text-xs text-muted-foreground">Nenhum banco simulado</span>;
     }
     return (
-      <div className="flex flex-wrap justify-end gap-1.5">
+      <div className="flex flex-nowrap justify-end gap-1.5 whitespace-nowrap">
         {enviaveis.map((b) => {
           const chave = `${s.id}:${b.banco_id}`;
           return (
