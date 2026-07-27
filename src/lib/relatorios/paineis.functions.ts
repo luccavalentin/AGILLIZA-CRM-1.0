@@ -1451,10 +1451,16 @@ export const getPanelDrilldown = createServerFn({ method: "POST" })
         numLabel = "Contratos emitidos";
         denLabel = "Simulações";
       } else if (chave === "conversao sim>proposta") {
-        num = enviadas.length;
+        const simIds = new Set(sims.map((s: any) => s.id).filter(Boolean));
+        const promovidas = new Set(
+          enviadas
+            .map((p: any) => p.simulacao_id)
+            .filter((id: any) => id && simIds.has(id)),
+        );
+        num = promovidas.size;
         den = sims.length;
         titulo = "Conversão simulação → proposta";
-        numLabel = "Propostas enviadas";
+        numLabel = "Simulações que viraram proposta";
         denLabel = "Simulações";
       } else if (chave === "conversao proposta>contrato") {
         num = qtdContratos;
