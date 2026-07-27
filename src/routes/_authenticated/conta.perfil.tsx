@@ -397,7 +397,7 @@ function Pagina() {
 
 
       <div className="fixed inset-x-0 bottom-0 z-20 border-t border-border/60 bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/70">
-        <div className="mx-auto flex max-w-2xl items-center justify-between gap-3 px-4 py-3 md:px-6">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 md:px-6">
           <span className="flex items-center gap-2 text-xs text-muted-foreground">
             <span
               className={`size-2 rounded-full ${alterado ? "bg-amber-500" : "bg-emerald-500"}`}
