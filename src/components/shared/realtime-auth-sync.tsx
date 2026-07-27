@@ -20,22 +20,33 @@ export function RealtimeAuthSync() {
 
   useEffect(() => {
     let cancelado = false;
-    // Guarda a identidade atual para invalidar queries/rotas SOMENTE quando
-    // o usuário realmente troca. Sem isso, o Supabase dispara SIGNED_IN em
-    // toda hidratação inicial, refresh de token entre abas e sincronização
-    // de sessão — causando "apagões" em cada troca de tela porque todos os
-    // loaders re-executam simultaneamente.
     let usuarioAtual: string | null = null;
 
-    // Aplica o token atual assim que a sessão é recuperada do storage.
+    // Reingressa canais que possam ter se conectado ANTES do token chegar
+    // ao socket. Sem isso, componentes montados na primeira renderização
+    // (ex.: sino de notificações, watchers de chat) recebem "SUBSCRIBED"
+    // mas eventos filtrados por RLS são descartados até um refresh manual.
+    function aplicarToken(token: string | null) {
+      supabase.realtime.setAuth(token);
+      for (const ch of supabase.getChannels()) {
+        // "joined" = canal já ativo antes do token correto ser aplicado.
+        // Fazemos unsubscribe/subscribe para renegociar com o novo JWT.
+        const estado = (ch as unknown as { state?: string }).state;
+        if (estado === "joined") {
+          void ch.unsubscribe().then(() => {
+            try { ch.subscribe(); } catch { /* ignora — hook original recria */ }
+          });
+        }
+      }
+    }
+
     supabase.auth.getSession().then(({ data }) => {
       if (cancelado) return;
       const token = data.session?.access_token ?? null;
       usuarioAtual = data.session?.user?.id ?? null;
-      supabase.realtime.setAuth(token);
+      aplicarToken(token);
     });
 
-    // Mantém o token do socket em dia em cada transição de identidade.
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       if (
         event !== "SIGNED_IN" &&
@@ -46,18 +57,14 @@ export function RealtimeAuthSync() {
         return;
       }
 
-      supabase.realtime.setAuth(session?.access_token ?? null);
+      aplicarToken(session?.access_token ?? null);
 
-      // Refresh de token é transparente para a UI — nunca invalidar.
       if (event === "TOKEN_REFRESHED") return;
 
       const novoUsuario = session?.user?.id ?? null;
       const identidadeMudou = novoUsuario !== usuarioAtual;
       usuarioAtual = novoUsuario;
 
-      // SIGNED_IN é emitido também na hidratação inicial e ao trocar de
-      // aba: só invalida quando a identidade realmente muda (login/logout
-      // real ou troca de conta). Isso elimina os "apagões" em navegação.
       if (!identidadeMudou) return;
 
       router.invalidate();
