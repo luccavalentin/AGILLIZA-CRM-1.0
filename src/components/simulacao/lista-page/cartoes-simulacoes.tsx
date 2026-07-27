@@ -75,7 +75,7 @@ export function CartoesSimulacoes({
             <div className="flex items-start justify-between gap-3 pl-1">
               <div className="min-w-0">
                 <p className="font-mono font-semibold text-primary">{s.numero_simulacao}</p>
-                <p className="truncate text-sm font-medium text-foreground">
+                <p className="truncate text-sm font-medium text-foreground transition-colors group-hover/card:text-primary">
                   {s.nome_cliente ?? "—"}
                 </p>
                 {escopo === "todas" && s.nome_responsavel && (
