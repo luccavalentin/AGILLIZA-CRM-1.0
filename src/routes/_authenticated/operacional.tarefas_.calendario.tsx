@@ -96,16 +96,27 @@ function Pagina() {
         </TabsList>
       </Tabs>
 
-      <NavegacaoCalendario ref={ref} hoje={hoje} onChange={setRef} />
-
+      <NavegacaoCalendario
+        ref={ref}
+        hoje={hoje}
+        visao={visao}
+        onChange={setRef}
+        onVisaoChange={alterarVisao}
+      />
 
       <GradeCalendario
         ref={ref}
+        visao={visao}
         hojeChave={chaveDia(hoje)}
         tarefasPorDia={tarefasPorDia}
         feriados={feriados}
         onSelecionar={setSel}
+        onIrPara={(d) => {
+          setRef(d);
+          setVisao("mes");
+        }}
       />
+
 
       <TarefaDrawer id={sel} onClose={() => setSel(null)} />
     </div>
