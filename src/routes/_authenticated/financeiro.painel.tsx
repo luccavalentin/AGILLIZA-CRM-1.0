@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { TrendingUp, Wallet, LineChart as LineChartIcon, AlertTriangle } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import { TrendingUp, Wallet, LineChart as LineChartIcon, AlertTriangle, type LucideIcon } from "lucide-react";
 import {
   BarChart,
   Bar,
@@ -13,12 +14,13 @@ import {
   Legend,
 } from "recharts";
 import { assertModuloPermitido } from "@/lib/route-guards";
-import { obterKpisFinanceiros } from "@/lib/financeiro/financeiro.functions";
-import { ReportKpiCard } from "@/components/financeiro/kpi-card";
+import { obterKpisFinanceiros, listarContas } from "@/lib/financeiro/financeiro.functions";
+import { ReportKpiCard, type KpiTone } from "@/components/financeiro/kpi-card";
 import { PanelHeader, SectionTitle, PanelCard } from "@/components/common/dashboard";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { formatBRL } from "@/lib/financeiro/format";
+import { KpiDrilldownDialog, type KpiDrillItem } from "@/components/reports/kpi-drilldown-dialog";
 
 export const Route = createFileRoute("/_authenticated/financeiro/painel")({
   head: () => ({ meta: [{ title: "Painel financeiro — Agilliza" }] }),
