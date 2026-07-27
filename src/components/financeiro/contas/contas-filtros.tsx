@@ -53,11 +53,12 @@ export function ContasFiltros({
   onLimpar,
 }: ContasFiltrosProps) {
   return (
-    <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
-      <div className="mb-3 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-        <SlidersHorizontal className="h-3.5 w-3.5" />
+    <div className="rounded-2xl border border-border/70 bg-gradient-to-br from-card via-card to-primary/[0.03] p-4 shadow-sm sm:p-5">
+      <div className="mb-3 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+        <SlidersHorizontal className="h-3.5 w-3.5 text-primary/70" />
         Filtros
       </div>
+
       <div className="flex flex-wrap items-end gap-3">
         <div className="flex flex-col gap-1">
           <span className="text-xs text-muted-foreground">Status</span>

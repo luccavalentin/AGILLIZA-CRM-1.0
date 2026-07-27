@@ -2,7 +2,9 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Percent, RefreshCw } from "lucide-react";
+import { Percent, RefreshCw, SlidersHorizontal } from "lucide-react";
+import { PanelHeader } from "@/components/common/dashboard";
+
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { listarComissoes, recalcularComissao } from "@/lib/financeiro/financeiro.functions";
 import {
@@ -59,32 +61,36 @@ function Pagina() {
   });
 
   return (
-    <div className="mx-auto w-full max-w-[1600px] space-y-6 p-3 sm:p-4 md:p-6">
-      <div className="min-w-0">
-        <h1 className="truncate text-xl font-semibold text-foreground">Repasses</h1>
-        <p className="text-sm text-muted-foreground">
-          Repasses calculados automaticamente a partir dos contratos emitidos, conforme as regras por banco.
-        </p>
-      </div>
+    <div className="mx-auto w-full max-w-[1600px] space-y-6 p-3 sm:p-4 md:space-y-8 md:p-6">
+      <PanelHeader
+        eyebrow="Financeiro · Repasses"
+        titulo="Repasses"
+        descricao="Repasses calculados automaticamente a partir dos contratos emitidos, conforme as regras por banco."
+        actions={
+          <Tabs value={status} onValueChange={setStatus}>
+            <TabsList>
+              {STATUS.map((s) => (
+                <TabsTrigger key={s || "all"} value={s}>
+                  {STATUS_LABEL[s]}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+        }
+      />
 
-      <Tabs value={status} onValueChange={setStatus}>
-        <TabsList>
-          {STATUS.map((s) => (
-            <TabsTrigger key={s || "all"} value={s}>
-              {STATUS_LABEL[s]}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-      </Tabs>
-
-      <div className="flex flex-wrap items-center gap-2">
-        <label className="flex items-center gap-1 text-xs text-muted-foreground">
+      <div className="flex flex-wrap items-end gap-3 rounded-2xl border border-border/70 bg-gradient-to-br from-card via-card to-primary/[0.03] p-4 shadow-sm sm:p-5">
+        <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+          <SlidersHorizontal className="h-3.5 w-3.5 text-primary/70" />
+          Período
+        </div>
+        <label className="flex flex-col gap-1 text-[11px] text-muted-foreground">
           De
-          <Input type="date" className="w-36 sm:w-40" value={de} onChange={(e) => setDe(e.target.value)} />
+          <Input type="date" className="h-9 w-36 sm:w-40" value={de} onChange={(e) => setDe(e.target.value)} />
         </label>
-        <label className="flex items-center gap-1 text-xs text-muted-foreground">
-          até
-          <Input type="date" className="w-36 sm:w-40" value={ate} onChange={(e) => setAte(e.target.value)} />
+        <label className="flex flex-col gap-1 text-[11px] text-muted-foreground">
+          Até
+          <Input type="date" className="h-9 w-36 sm:w-40" value={ate} onChange={(e) => setAte(e.target.value)} />
         </label>
         {(de || ate) && (
           <Button
@@ -101,7 +107,8 @@ function Pagina() {
       </div>
 
 
-      <div className="overflow-x-auto rounded-lg border border-border">
+      <div className="overflow-hidden rounded-2xl border border-border/70 bg-card shadow-sm">
+
         <Table className="min-w-[760px]">
           <TableHeader>
             <TableRow className="bg-muted">
