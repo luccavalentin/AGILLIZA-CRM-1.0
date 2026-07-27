@@ -781,7 +781,7 @@ export const getPanelDados = createServerFn({ method: "POST" })
       escopoEq(
         supabase
           .from("simulacoes")
-          .select("status,valor_financiamento,created_at")
+          .select("id,status,valor_financiamento,created_at")
           .is("deleted_at", null)
           .gte("created_at", de)
           .lte("created_at", ateFim)
@@ -794,7 +794,7 @@ export const getPanelDados = createServerFn({ method: "POST" })
         supabase
           .from("propostas")
           .select(
-            "status,valor_financiamento_aprovado,valor_financiamento,nome_banco,created_at,contrato_emitido_em",
+            "status,simulacao_id,valor_financiamento_aprovado,valor_financiamento,nome_banco,created_at,contrato_emitido_em",
           )
           .is("deleted_at", null)
           .or(
