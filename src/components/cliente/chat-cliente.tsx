@@ -100,8 +100,11 @@ export function ChatCliente({ altura = ALTURA_PADRAO }: { altura?: string }) {
   const { data: atendentes } = useQuery({
     queryKey: ["cliente", "atendentes"],
     queryFn: () => clienteListarAtendentes(),
+    // Pausa o polling quando a aba está em segundo plano — o watcher global
+    // já cuida de sinalizar novas mensagens, e refetch em background gasta
+    // bateria e cota do Supabase à toa.
     refetchInterval: (q: any) => (q.state.status === "error" ? false : 4000),
-    refetchIntervalInBackground: true,
+
 
   });
 
