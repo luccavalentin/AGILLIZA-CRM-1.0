@@ -21,6 +21,7 @@ import {
   ProdutoBadge,
 } from "@/components/simulacao/lista-detalhe";
 import { formatBRL } from "@/lib/simulacao/format";
+import { corDoBanco } from "@/lib/bancos/cores";
 import { formatDataHoraBR, type HandlersLinha } from "./tipos";
 
 export function TabelaSimulacoes({
