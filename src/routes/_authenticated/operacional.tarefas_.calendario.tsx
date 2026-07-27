@@ -23,10 +23,23 @@ export const Route = createFileRoute("/_authenticated/operacional/tarefas_/calen
 function Pagina() {
   const hoje = new Date();
   const [ref, setRef] = useState(new Date(hoje.getFullYear(), hoje.getMonth(), 1));
+  const [visao, setVisao] = useState<VisaoCalendario>("mes");
   const [sel, setSel] = useState<string | null>(null);
   const [escopo, setEscopo] = useState<"todas" | "minhas">(
     () => (typeof window !== "undefined" && (localStorage.getItem("tarefas:escopo") as "todas" | "minhas")) || "todas",
   );
+
+  function alterarVisao(v: VisaoCalendario) {
+    setVisao(v);
+    // Ao aproximar (zoom-in) para "dia", ancoramos no dia atual do mês exibido.
+    if (v === "dia") {
+      const base = new Date(ref);
+      if (base.getMonth() === hoje.getMonth() && base.getFullYear() === hoje.getFullYear()) {
+        setRef(new Date(hoje));
+      }
+    }
+  }
+
 
   const { data } = useQuery({
     queryKey: ["tarefas", "calendario", escopo],
