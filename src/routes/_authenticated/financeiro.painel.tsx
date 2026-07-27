@@ -324,6 +324,22 @@ function Pagina() {
           </div>
         </PanelCard>
       </div>
+
+      {drill && (
+        <KpiDrilldownDialog
+          open={!!drill}
+          onOpenChange={(o) => !o && setDrill(null)}
+          titulo={drillMeta[drill].titulo}
+          subtitulo={drillMeta[drill].subtitulo}
+          valor={drillMeta[drill].valor}
+          icon={drillMeta[drill].icon}
+          tone={drillMeta[drill].tone}
+          itens={drillQuery.data?.itens ?? []}
+          isLoading={drillQuery.isLoading}
+          linkAbrir={drillMeta[drill].to}
+          empty={drillMeta[drill].empty}
+        />
+      )}
     </div>
   );
 }
