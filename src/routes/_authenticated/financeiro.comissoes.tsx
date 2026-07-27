@@ -2,7 +2,9 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Percent, RefreshCw } from "lucide-react";
+import { Percent, RefreshCw, SlidersHorizontal } from "lucide-react";
+import { PanelHeader } from "@/components/common/dashboard";
+
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { listarComissoes, recalcularComissao } from "@/lib/financeiro/financeiro.functions";
 import {
