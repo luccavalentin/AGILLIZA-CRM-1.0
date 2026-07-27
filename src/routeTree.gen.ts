@@ -97,11 +97,11 @@ import { Route as AuthenticatedAdminPessoasRouteImport } from './routes/_authent
 import { Route as AuthenticatedAdminParametrosRouteImport } from './routes/_authenticated/admin.parametros'
 import { Route as AuthenticatedAdminNotificacoesRouteImport } from './routes/_authenticated/admin.notificacoes'
 import { Route as AuthenticatedAdminIntegracoesRouteImport } from './routes/_authenticated/admin.integracoes'
-import { Route as AuthenticatedAdminComprasRouteImport } from './routes/_authenticated/admin.compras'
 import { Route as AuthenticatedAdminBancosRouteImport } from './routes/_authenticated/admin.bancos'
 import { Route as AuthenticatedAdminBackupRouteImport } from './routes/_authenticated/admin.backup'
 import { Route as AuthenticatedAdminAuditoriaRouteImport } from './routes/_authenticated/admin.auditoria'
 import { Route as AuthenticatedAdminApisIaRouteImport } from './routes/_authenticated/admin.apis-ia'
+import { Route as AuthenticatedAdminComprasIndexRouteImport } from './routes/_authenticated/admin.compras.index'
 import { Route as AuthenticatedRhFuncionariosNovoRouteImport } from './routes/_authenticated/rh.funcionarios_.novo'
 import { Route as AuthenticatedRhFuncionariosIdRouteImport } from './routes/_authenticated/rh.funcionarios_.$id'
 import { Route as AuthenticatedOperacionalTarefasKanbanRouteImport } from './routes/_authenticated/operacional.tarefas_.kanban'
@@ -118,6 +118,8 @@ import { Route as AuthenticatedOperacionalDemandasIdRouteImport } from './routes
 import { Route as AuthenticatedCrmScanIaIdRouteImport } from './routes/_authenticated/crm.scan-ia_.$id'
 import { Route as AuthenticatedCrmClientesNovoRouteImport } from './routes/_authenticated/crm.clientes_.novo'
 import { Route as AuthenticatedCrmClientesIdRouteImport } from './routes/_authenticated/crm.clientes_.$id'
+import { Route as AuthenticatedAdminComprasPedidosRouteImport } from './routes/_authenticated/admin.compras.pedidos'
+import { Route as AuthenticatedAdminComprasAprovacoesRouteImport } from './routes/_authenticated/admin.compras.aprovacoes'
 
 const PortalRoute = PortalRouteImport.update({
   id: '/portal',
@@ -617,12 +619,6 @@ const AuthenticatedAdminIntegracoesRoute =
     path: '/admin/integracoes',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedAdminComprasRoute =
-  AuthenticatedAdminComprasRouteImport.update({
-    id: '/admin/compras',
-    path: '/admin/compras',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
 const AuthenticatedAdminBancosRoute =
   AuthenticatedAdminBancosRouteImport.update({
     id: '/admin/bancos',
@@ -645,6 +641,12 @@ const AuthenticatedAdminApisIaRoute =
   AuthenticatedAdminApisIaRouteImport.update({
     id: '/admin/apis-ia',
     path: '/admin/apis-ia',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAdminComprasIndexRoute =
+  AuthenticatedAdminComprasIndexRouteImport.update({
+    id: '/admin/compras/',
+    path: '/admin/compras/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedRhFuncionariosNovoRoute =
@@ -743,6 +745,18 @@ const AuthenticatedCrmClientesIdRoute =
     path: '/clientes/$id',
     getParentRoute: () => AuthenticatedCrmRoute,
   } as any)
+const AuthenticatedAdminComprasPedidosRoute =
+  AuthenticatedAdminComprasPedidosRouteImport.update({
+    id: '/admin/compras/pedidos',
+    path: '/admin/compras/pedidos',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAdminComprasAprovacoesRoute =
+  AuthenticatedAdminComprasAprovacoesRouteImport.update({
+    id: '/admin/compras/aprovacoes',
+    path: '/admin/compras/aprovacoes',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -774,7 +788,6 @@ export interface FileRoutesByFullPath {
   '/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
   '/admin/backup': typeof AuthenticatedAdminBackupRoute
   '/admin/bancos': typeof AuthenticatedAdminBancosRoute
-  '/admin/compras': typeof AuthenticatedAdminComprasRoute
   '/admin/integracoes': typeof AuthenticatedAdminIntegracoesRoute
   '/admin/notificacoes': typeof AuthenticatedAdminNotificacoesRoute
   '/admin/parametros': typeof AuthenticatedAdminParametrosRoute
@@ -837,6 +850,8 @@ export interface FileRoutesByFullPath {
   '/formularios/': typeof AuthenticatedFormulariosIndexRoute
   '/relatorios/': typeof AuthenticatedRelatoriosIndexRoute
   '/rh/': typeof AuthenticatedRhIndexRoute
+  '/admin/compras/aprovacoes': typeof AuthenticatedAdminComprasAprovacoesRoute
+  '/admin/compras/pedidos': typeof AuthenticatedAdminComprasPedidosRoute
   '/crm/clientes/$id': typeof AuthenticatedCrmClientesIdRoute
   '/crm/clientes/novo': typeof AuthenticatedCrmClientesNovoRoute
   '/crm/scan-ia/$id': typeof AuthenticatedCrmScanIaIdRoute
@@ -853,6 +868,7 @@ export interface FileRoutesByFullPath {
   '/operacional/tarefas/kanban': typeof AuthenticatedOperacionalTarefasKanbanRoute
   '/rh/funcionarios/$id': typeof AuthenticatedRhFuncionariosIdRoute
   '/rh/funcionarios/novo': typeof AuthenticatedRhFuncionariosNovoRoute
+  '/admin/compras/': typeof AuthenticatedAdminComprasIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -882,7 +898,6 @@ export interface FileRoutesByTo {
   '/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
   '/admin/backup': typeof AuthenticatedAdminBackupRoute
   '/admin/bancos': typeof AuthenticatedAdminBancosRoute
-  '/admin/compras': typeof AuthenticatedAdminComprasRoute
   '/admin/integracoes': typeof AuthenticatedAdminIntegracoesRoute
   '/admin/notificacoes': typeof AuthenticatedAdminNotificacoesRoute
   '/admin/parametros': typeof AuthenticatedAdminParametrosRoute
@@ -945,6 +960,8 @@ export interface FileRoutesByTo {
   '/formularios': typeof AuthenticatedFormulariosIndexRoute
   '/relatorios': typeof AuthenticatedRelatoriosIndexRoute
   '/rh': typeof AuthenticatedRhIndexRoute
+  '/admin/compras/aprovacoes': typeof AuthenticatedAdminComprasAprovacoesRoute
+  '/admin/compras/pedidos': typeof AuthenticatedAdminComprasPedidosRoute
   '/crm/clientes/$id': typeof AuthenticatedCrmClientesIdRoute
   '/crm/clientes/novo': typeof AuthenticatedCrmClientesNovoRoute
   '/crm/scan-ia/$id': typeof AuthenticatedCrmScanIaIdRoute
@@ -961,6 +978,7 @@ export interface FileRoutesByTo {
   '/operacional/tarefas/kanban': typeof AuthenticatedOperacionalTarefasKanbanRoute
   '/rh/funcionarios/$id': typeof AuthenticatedRhFuncionariosIdRoute
   '/rh/funcionarios/novo': typeof AuthenticatedRhFuncionariosNovoRoute
+  '/admin/compras': typeof AuthenticatedAdminComprasIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -994,7 +1012,6 @@ export interface FileRoutesById {
   '/_authenticated/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
   '/_authenticated/admin/backup': typeof AuthenticatedAdminBackupRoute
   '/_authenticated/admin/bancos': typeof AuthenticatedAdminBancosRoute
-  '/_authenticated/admin/compras': typeof AuthenticatedAdminComprasRoute
   '/_authenticated/admin/integracoes': typeof AuthenticatedAdminIntegracoesRoute
   '/_authenticated/admin/notificacoes': typeof AuthenticatedAdminNotificacoesRoute
   '/_authenticated/admin/parametros': typeof AuthenticatedAdminParametrosRoute
@@ -1057,6 +1074,8 @@ export interface FileRoutesById {
   '/_authenticated/formularios/': typeof AuthenticatedFormulariosIndexRoute
   '/_authenticated/relatorios/': typeof AuthenticatedRelatoriosIndexRoute
   '/_authenticated/rh/': typeof AuthenticatedRhIndexRoute
+  '/_authenticated/admin/compras/aprovacoes': typeof AuthenticatedAdminComprasAprovacoesRoute
+  '/_authenticated/admin/compras/pedidos': typeof AuthenticatedAdminComprasPedidosRoute
   '/_authenticated/crm/clientes_/$id': typeof AuthenticatedCrmClientesIdRoute
   '/_authenticated/crm/clientes_/novo': typeof AuthenticatedCrmClientesNovoRoute
   '/_authenticated/crm/scan-ia_/$id': typeof AuthenticatedCrmScanIaIdRoute
@@ -1073,6 +1092,7 @@ export interface FileRoutesById {
   '/_authenticated/operacional/tarefas_/kanban': typeof AuthenticatedOperacionalTarefasKanbanRoute
   '/_authenticated/rh/funcionarios_/$id': typeof AuthenticatedRhFuncionariosIdRoute
   '/_authenticated/rh/funcionarios_/novo': typeof AuthenticatedRhFuncionariosNovoRoute
+  '/_authenticated/admin/compras/': typeof AuthenticatedAdminComprasIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -1106,7 +1126,6 @@ export interface FileRouteTypes {
     | '/admin/auditoria'
     | '/admin/backup'
     | '/admin/bancos'
-    | '/admin/compras'
     | '/admin/integracoes'
     | '/admin/notificacoes'
     | '/admin/parametros'
@@ -1169,6 +1188,8 @@ export interface FileRouteTypes {
     | '/formularios/'
     | '/relatorios/'
     | '/rh/'
+    | '/admin/compras/aprovacoes'
+    | '/admin/compras/pedidos'
     | '/crm/clientes/$id'
     | '/crm/clientes/novo'
     | '/crm/scan-ia/$id'
@@ -1185,6 +1206,7 @@ export interface FileRouteTypes {
     | '/operacional/tarefas/kanban'
     | '/rh/funcionarios/$id'
     | '/rh/funcionarios/novo'
+    | '/admin/compras/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -1214,7 +1236,6 @@ export interface FileRouteTypes {
     | '/admin/auditoria'
     | '/admin/backup'
     | '/admin/bancos'
-    | '/admin/compras'
     | '/admin/integracoes'
     | '/admin/notificacoes'
     | '/admin/parametros'
@@ -1277,6 +1298,8 @@ export interface FileRouteTypes {
     | '/formularios'
     | '/relatorios'
     | '/rh'
+    | '/admin/compras/aprovacoes'
+    | '/admin/compras/pedidos'
     | '/crm/clientes/$id'
     | '/crm/clientes/novo'
     | '/crm/scan-ia/$id'
@@ -1293,6 +1316,7 @@ export interface FileRouteTypes {
     | '/operacional/tarefas/kanban'
     | '/rh/funcionarios/$id'
     | '/rh/funcionarios/novo'
+    | '/admin/compras'
   id:
     | '__root__'
     | '/'
@@ -1325,7 +1349,6 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/auditoria'
     | '/_authenticated/admin/backup'
     | '/_authenticated/admin/bancos'
-    | '/_authenticated/admin/compras'
     | '/_authenticated/admin/integracoes'
     | '/_authenticated/admin/notificacoes'
     | '/_authenticated/admin/parametros'
@@ -1388,6 +1411,8 @@ export interface FileRouteTypes {
     | '/_authenticated/formularios/'
     | '/_authenticated/relatorios/'
     | '/_authenticated/rh/'
+    | '/_authenticated/admin/compras/aprovacoes'
+    | '/_authenticated/admin/compras/pedidos'
     | '/_authenticated/crm/clientes_/$id'
     | '/_authenticated/crm/clientes_/novo'
     | '/_authenticated/crm/scan-ia_/$id'
@@ -1404,6 +1429,7 @@ export interface FileRouteTypes {
     | '/_authenticated/operacional/tarefas_/kanban'
     | '/_authenticated/rh/funcionarios_/$id'
     | '/_authenticated/rh/funcionarios_/novo'
+    | '/_authenticated/admin/compras/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -2036,13 +2062,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminIntegracoesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/admin/compras': {
-      id: '/_authenticated/admin/compras'
-      path: '/admin/compras'
-      fullPath: '/admin/compras'
-      preLoaderRoute: typeof AuthenticatedAdminComprasRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/admin/bancos': {
       id: '/_authenticated/admin/bancos'
       path: '/admin/bancos'
@@ -2069,6 +2088,13 @@ declare module '@tanstack/react-router' {
       path: '/admin/apis-ia'
       fullPath: '/admin/apis-ia'
       preLoaderRoute: typeof AuthenticatedAdminApisIaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/admin/compras/': {
+      id: '/_authenticated/admin/compras/'
+      path: '/admin/compras'
+      fullPath: '/admin/compras/'
+      preLoaderRoute: typeof AuthenticatedAdminComprasIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/rh/funcionarios_/novo': {
@@ -2182,6 +2208,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/crm/clientes/$id'
       preLoaderRoute: typeof AuthenticatedCrmClientesIdRouteImport
       parentRoute: typeof AuthenticatedCrmRoute
+    }
+    '/_authenticated/admin/compras/pedidos': {
+      id: '/_authenticated/admin/compras/pedidos'
+      path: '/admin/compras/pedidos'
+      fullPath: '/admin/compras/pedidos'
+      preLoaderRoute: typeof AuthenticatedAdminComprasPedidosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/admin/compras/aprovacoes': {
+      id: '/_authenticated/admin/compras/aprovacoes'
+      path: '/admin/compras/aprovacoes'
+      fullPath: '/admin/compras/aprovacoes'
+      preLoaderRoute: typeof AuthenticatedAdminComprasAprovacoesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
   }
 }
@@ -2300,7 +2340,6 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminAuditoriaRoute: typeof AuthenticatedAdminAuditoriaRoute
   AuthenticatedAdminBackupRoute: typeof AuthenticatedAdminBackupRoute
   AuthenticatedAdminBancosRoute: typeof AuthenticatedAdminBancosRoute
-  AuthenticatedAdminComprasRoute: typeof AuthenticatedAdminComprasRoute
   AuthenticatedAdminIntegracoesRoute: typeof AuthenticatedAdminIntegracoesRoute
   AuthenticatedAdminNotificacoesRoute: typeof AuthenticatedAdminNotificacoesRoute
   AuthenticatedAdminParametrosRoute: typeof AuthenticatedAdminParametrosRoute
@@ -2337,6 +2376,8 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedRhRelatoriosRoute: typeof AuthenticatedRhRelatoriosRoute
   AuthenticatedVisaoGeralPainelRoute: typeof AuthenticatedVisaoGeralPainelRoute
   AuthenticatedRhIndexRoute: typeof AuthenticatedRhIndexRoute
+  AuthenticatedAdminComprasAprovacoesRoute: typeof AuthenticatedAdminComprasAprovacoesRoute
+  AuthenticatedAdminComprasPedidosRoute: typeof AuthenticatedAdminComprasPedidosRoute
   AuthenticatedOperacionalDemandasIdRoute: typeof AuthenticatedOperacionalDemandasIdRoute
   AuthenticatedOperacionalDemandasKanbanRoute: typeof AuthenticatedOperacionalDemandasKanbanRoute
   AuthenticatedOperacionalPropostasIdRoute: typeof AuthenticatedOperacionalPropostasIdRoute
@@ -2350,6 +2391,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedOperacionalTarefasKanbanRoute: typeof AuthenticatedOperacionalTarefasKanbanRoute
   AuthenticatedRhFuncionariosIdRoute: typeof AuthenticatedRhFuncionariosIdRoute
   AuthenticatedRhFuncionariosNovoRoute: typeof AuthenticatedRhFuncionariosNovoRoute
+  AuthenticatedAdminComprasIndexRoute: typeof AuthenticatedAdminComprasIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -2365,7 +2407,6 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminAuditoriaRoute: AuthenticatedAdminAuditoriaRoute,
   AuthenticatedAdminBackupRoute: AuthenticatedAdminBackupRoute,
   AuthenticatedAdminBancosRoute: AuthenticatedAdminBancosRoute,
-  AuthenticatedAdminComprasRoute: AuthenticatedAdminComprasRoute,
   AuthenticatedAdminIntegracoesRoute: AuthenticatedAdminIntegracoesRoute,
   AuthenticatedAdminNotificacoesRoute: AuthenticatedAdminNotificacoesRoute,
   AuthenticatedAdminParametrosRoute: AuthenticatedAdminParametrosRoute,
@@ -2410,6 +2451,9 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedRhRelatoriosRoute: AuthenticatedRhRelatoriosRoute,
   AuthenticatedVisaoGeralPainelRoute: AuthenticatedVisaoGeralPainelRoute,
   AuthenticatedRhIndexRoute: AuthenticatedRhIndexRoute,
+  AuthenticatedAdminComprasAprovacoesRoute:
+    AuthenticatedAdminComprasAprovacoesRoute,
+  AuthenticatedAdminComprasPedidosRoute: AuthenticatedAdminComprasPedidosRoute,
   AuthenticatedOperacionalDemandasIdRoute:
     AuthenticatedOperacionalDemandasIdRoute,
   AuthenticatedOperacionalDemandasKanbanRoute:
@@ -2434,6 +2478,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
     AuthenticatedOperacionalTarefasKanbanRoute,
   AuthenticatedRhFuncionariosIdRoute: AuthenticatedRhFuncionariosIdRoute,
   AuthenticatedRhFuncionariosNovoRoute: AuthenticatedRhFuncionariosNovoRoute,
+  AuthenticatedAdminComprasIndexRoute: AuthenticatedAdminComprasIndexRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

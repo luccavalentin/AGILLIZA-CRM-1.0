@@ -453,13 +453,20 @@ export const navInterno: NavGroup[] = [
     label: "Diversos",
     items: [
       {
-        label: "Compras",
+        label: "Pedidos de Compras",
         icon: ShoppingCart,
-        to: "/admin/compras",
+        to: "/admin/compras/pedidos",
+        perm: { modulo: "admin.compras" },
+      },
+      {
+        label: "Aprovação de Compras",
+        icon: ShoppingCart,
+        to: "/admin/compras/aprovacoes",
         perm: { modulo: "admin.compras" },
       },
     ],
   },
+
 
 
 
