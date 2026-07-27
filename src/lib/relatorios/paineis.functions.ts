@@ -1149,7 +1149,7 @@ export const getPanelDrilldown = createServerFn({ method: "POST" })
         supabase
           .from("propostas")
           .select(
-            "id,numero_proposta,status,nome_banco,valor_financiamento,valor_financiamento_aprovado,created_at,contrato_emitido_em,clientes(nome)",
+            "id,numero_proposta,status,simulacao_id,nome_banco,valor_financiamento,valor_financiamento_aprovado,created_at,contrato_emitido_em,clientes(nome)",
           )
           .is("deleted_at", null)
           .or(
