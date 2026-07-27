@@ -40,6 +40,7 @@ export function ReportKpiCard({
   tone,
   sub,
   to,
+  onClick,
 }: {
   titulo: string;
   valor: string;
@@ -47,13 +48,16 @@ export function ReportKpiCard({
   tone: KpiTone;
   sub?: string;
   to?: string;
+  /** Se fornecido, o card vira botão (ignora `to`). Use `to` como link "Ver todos" no diálogo. */
+  onClick?: () => void;
 }) {
   const c = toneClasses[tone];
+  const clicavel = !!onClick || !!to;
   const conteudo = (
     <Card
       className={cn(
         "group relative h-full min-w-0 overflow-hidden p-4 pl-5 transition-all duration-300",
-        to &&
+        clicavel &&
           "cursor-pointer hover:-translate-y-1 hover:border-primary/40 hover:shadow-xl hover:shadow-primary/10",
       )}
       style={{ background: `linear-gradient(135deg, ${c.wash}, transparent 62%)` }}
@@ -73,7 +77,7 @@ export function ReportKpiCard({
             <p className="truncate text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground sm:text-[11px]">
               {titulo}
             </p>
-            {to && (
+            {clicavel && (
               <ArrowUpRight className="h-4 w-4 text-muted-foreground/40 transition-all group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-primary" />
             )}
           </div>
@@ -85,6 +89,18 @@ export function ReportKpiCard({
       </div>
     </Card>
   );
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        aria-label={`Ver detalhamento de ${titulo}`}
+        className="block w-full rounded-xl text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        {conteudo}
+      </button>
+    );
+  }
   return to ? (
     <Link
       to={to}
