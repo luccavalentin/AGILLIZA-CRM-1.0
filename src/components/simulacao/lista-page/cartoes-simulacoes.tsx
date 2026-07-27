@@ -29,7 +29,7 @@ export function CartoesSimulacoes({
   handlers: HandlersLinha;
 }) {
   return (
-    <div className="space-y-3 md:hidden">
+    <div className="space-y-3 md:hidden group/cards">
       {isLoading &&
         Array.from({ length: 4 }).map((_, i) => (
           <div
