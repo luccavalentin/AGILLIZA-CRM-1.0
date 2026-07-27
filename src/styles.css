@@ -384,23 +384,54 @@
 }
 
 /* ===================== Hub Operacional (Tarefas & Demandas) ===================== */
-/* Cabeçalho sóbrio com leve realce da marca à esquerda. */
+/* Cabeçalho editorial com wash sutil da marca e halo lateral. */
 .op-hero {
   position: relative;
   overflow: hidden;
   border-radius: var(--radius-2xl);
-  border: 1px solid var(--border);
-  background: var(--card);
-  box-shadow: var(--shadow-card);
+  border: 1px solid color-mix(in oklab, var(--border) 80%, transparent);
+  background:
+    radial-gradient(
+      120% 180% at 0% 0%,
+      color-mix(in oklab, var(--op-accent, var(--brand-azul-profundo)) 10%, transparent) 0%,
+      transparent 55%
+    ),
+    linear-gradient(180deg, color-mix(in oklab, var(--card) 96%, var(--background)) 0%, var(--card) 100%);
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklab, var(--foreground) 4%, transparent),
+    0 1px 2px -1px color-mix(in oklab, var(--foreground) 8%, transparent),
+    0 24px 60px -34px color-mix(in oklab, var(--op-accent, var(--brand-azul-profundo)) 40%, transparent);
 }
 .op-hero::before {
   content: "";
   position: absolute;
   left: 0;
-  top: 0;
-  bottom: 0;
+  top: 12%;
+  bottom: 12%;
   width: 3px;
-  background: var(--op-accent, var(--brand-azul-profundo));
+  border-radius: 0 3px 3px 0;
+  background: linear-gradient(
+    180deg,
+    transparent,
+    var(--op-accent, var(--brand-azul-profundo)) 20%,
+    var(--op-accent, var(--brand-azul-profundo)) 80%,
+    transparent
+  );
+  box-shadow: 0 0 24px color-mix(in oklab, var(--op-accent, var(--brand-azul-profundo)) 55%, transparent);
+}
+.op-hero::after {
+  content: "";
+  position: absolute;
+  right: -20%;
+  top: -60%;
+  width: 60%;
+  height: 220%;
+  background: radial-gradient(
+    closest-side,
+    color-mix(in oklab, var(--op-accent, var(--brand-azul-profundo)) 8%, transparent),
+    transparent 70%
+  );
+  pointer-events: none;
 }
 
 /* Cabeçalho de destaque escuro (Produção comercial) com gradiente da marca. */
@@ -450,77 +481,144 @@
   color: inherit;
 }
 
-/* Card de KPI sóbrio com fina régua de acento. */
+/* KPI editorial: wash suave da cor de acento, top-highlight e halo inferior. */
 .op-stat {
   position: relative;
   overflow: hidden;
   border-radius: var(--radius-xl);
-  border: 1px solid var(--border);
-  background: var(--card);
-  box-shadow: var(--shadow-card);
+  border: 1px solid color-mix(in oklab, var(--border) 85%, transparent);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in oklab, var(--op-accent, var(--primary)) 4%, var(--card)) 0%,
+      var(--card) 55%
+    );
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklab, #fff 40%, transparent),
+    0 1px 2px -1px color-mix(in oklab, var(--foreground) 8%, transparent),
+    0 10px 24px -18px color-mix(in oklab, var(--op-accent, var(--primary)) 45%, transparent);
   transition:
-    box-shadow 0.2s ease,
-    border-color 0.2s ease;
+    transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.25s ease,
+    border-color 0.25s ease;
 }
 .op-stat:hover {
-  border-color: color-mix(in oklab, var(--brand-azul-profundo) 24%, var(--border));
+  transform: translateY(-1px);
+  border-color: color-mix(in oklab, var(--op-accent, var(--primary)) 32%, var(--border));
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklab, #fff 50%, transparent),
+    0 2px 4px -2px color-mix(in oklab, var(--foreground) 10%, transparent),
+    0 18px 36px -20px color-mix(in oklab, var(--op-accent, var(--primary)) 55%, transparent);
 }
 .op-stat::before {
   content: "";
   position: absolute;
   left: 0;
-  top: 0;
-  bottom: 0;
-  width: 3px;
-  background: var(--op-accent, var(--primary));
+  top: 14%;
+  bottom: 14%;
+  width: 2px;
+  border-radius: 0 2px 2px 0;
+  background: linear-gradient(
+    180deg,
+    transparent,
+    var(--op-accent, var(--primary)),
+    transparent
+  );
 }
 .op-stat--alerta {
   border-color: color-mix(in oklab, var(--destructive) 40%, transparent);
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklab, #fff 40%, transparent),
+    0 1px 2px -1px color-mix(in oklab, var(--foreground) 10%, transparent),
+    0 14px 30px -18px color-mix(in oklab, var(--destructive) 50%, transparent);
 }
 
-/* Linha de item (tarefa/demanda) com barra de acento animada. */
+/* Linha (tarefa/demanda) com realce lateral e leve elevação no hover. */
 .op-row {
   position: relative;
   transition:
     background-color 0.2s ease,
-    box-shadow 0.2s ease;
+    border-color 0.2s ease,
+    box-shadow 0.25s ease,
+    transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .op-row::before {
   content: "";
   position: absolute;
   left: 0;
-  top: 0;
-  bottom: 0;
-  width: 3px;
+  top: 20%;
+  bottom: 20%;
+  width: 2px;
+  border-radius: 0 2px 2px 0;
   background: var(--op-accent, var(--primary));
-  transform: scaleY(0);
+  transform: scaleY(0.2);
   transform-origin: center;
-  transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+  opacity: 0;
+  transition:
+    transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.2s ease;
+}
+.op-row:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 1px 2px -1px color-mix(in oklab, var(--foreground) 10%, transparent),
+    0 14px 32px -18px color-mix(in oklab, var(--op-accent, var(--primary)) 40%, transparent);
 }
 .op-row:hover::before {
   transform: scaleY(1);
+  opacity: 1;
 }
 
-/* Card do Kanban com elevação sofisticada. */
+/* Card do Kanban editorial: fio superior colorido e elevação sofisticada. */
 .op-kcard {
+  position: relative;
   border-radius: var(--radius-xl);
-  border: 1px solid var(--border);
-  background: var(--card);
-  box-shadow: var(--shadow-card);
+  border: 1px solid color-mix(in oklab, var(--border) 85%, transparent);
+  background: linear-gradient(180deg, color-mix(in oklab, var(--card) 97%, var(--background)) 0%, var(--card) 100%);
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklab, #fff 45%, transparent),
+    var(--shadow-card);
   transition:
-    transform 0.2s cubic-bezier(0.22, 1, 0.36, 1),
-    box-shadow 0.2s ease,
-    border-color 0.2s ease;
+    transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.25s ease,
+    border-color 0.25s ease;
+}
+.op-kcard::after {
+  content: "";
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  top: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in oklab, var(--op-accent, var(--primary)) 55%, transparent),
+    transparent
+  );
+  opacity: 0;
+  transition: opacity 0.25s ease;
 }
 .op-kcard:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-card-hover);
-  border-color: color-mix(in oklab, var(--brand-azul-profundo) 28%, transparent);
+  transform: translateY(-3px);
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklab, #fff 55%, transparent),
+    var(--shadow-card-hover);
+  border-color: color-mix(in oklab, var(--op-accent, var(--brand-azul-profundo)) 32%, var(--border));
+}
+.op-kcard:hover::after {
+  opacity: 1;
 }
 .op-kcol {
   border-radius: var(--radius-2xl);
-  border: 1px solid var(--border);
-  background: color-mix(in oklab, var(--muted) 45%, transparent);
+  border: 1px solid color-mix(in oklab, var(--border) 80%, transparent);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in oklab, var(--muted) 30%, transparent) 0%,
+      color-mix(in oklab, var(--muted) 55%, transparent) 100%
+    );
+  box-shadow: inset 0 1px 0 color-mix(in oklab, #fff 35%, transparent);
 }
 
 
