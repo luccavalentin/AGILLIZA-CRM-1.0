@@ -781,7 +781,7 @@ export const getPanelDados = createServerFn({ method: "POST" })
       escopoEq(
         supabase
           .from("simulacoes")
-          .select("status,valor_financiamento,created_at")
+          .select("id,status,valor_financiamento,created_at")
           .is("deleted_at", null)
           .gte("created_at", de)
           .lte("created_at", ateFim)
@@ -794,7 +794,7 @@ export const getPanelDados = createServerFn({ method: "POST" })
         supabase
           .from("propostas")
           .select(
-            "status,valor_financiamento_aprovado,valor_financiamento,nome_banco,created_at,contrato_emitido_em",
+            "status,simulacao_id,valor_financiamento_aprovado,valor_financiamento,nome_banco,created_at,contrato_emitido_em",
           )
           .is("deleted_at", null)
           .or(
@@ -877,7 +877,16 @@ export const getPanelDados = createServerFn({ method: "POST" })
       0,
     );
     const ticket = contratos ? volumeContratos / contratos : 0;
-    const convSimProp = simRows.length ? (enviadas.length / simRows.length) * 100 : 0;
+    // Conversão simulação → proposta: apenas simulações do período que geraram
+    // proposta enviada (dedup por simulacao_id). Evita contar propostas avulsas
+    // ou de períodos anteriores, o que gerava taxas > 100% (clampadas em 100%).
+    const simIdsNoPeriodo = new Set(simRows.map((s: any) => s.id).filter(Boolean));
+    const simIdsPromovidas = new Set(
+      enviadas
+        .map((p: any) => p.simulacao_id)
+        .filter((id: any) => id && simIdsNoPeriodo.has(id)),
+    );
+    const convSimProp = simRows.length ? (simIdsPromovidas.size / simRows.length) * 100 : 0;
     const convPropContrato = enviadas.length ? (contratos / enviadas.length) * 100 : 0;
     const slaEmDia = demAbertas.length
       ? ((demAbertas.length - demVencidas.length) / demAbertas.length) * 100
@@ -1140,7 +1149,7 @@ export const getPanelDrilldown = createServerFn({ method: "POST" })
         supabase
           .from("propostas")
           .select(
-            "id,numero_proposta,status,nome_banco,valor_financiamento,valor_financiamento_aprovado,created_at,contrato_emitido_em,clientes(nome)",
+            "id,numero_proposta,status,simulacao_id,nome_banco,valor_financiamento,valor_financiamento_aprovado,created_at,contrato_emitido_em,clientes(nome)",
           )
           .is("deleted_at", null)
           .or(
@@ -1442,10 +1451,16 @@ export const getPanelDrilldown = createServerFn({ method: "POST" })
         numLabel = "Contratos emitidos";
         denLabel = "Simulações";
       } else if (chave === "conversao sim>proposta") {
-        num = enviadas.length;
+        const simIds = new Set(sims.map((s: any) => s.id).filter(Boolean));
+        const promovidas = new Set(
+          enviadas
+            .map((p: any) => p.simulacao_id)
+            .filter((id: any) => id && simIds.has(id)),
+        );
+        num = promovidas.size;
         den = sims.length;
         titulo = "Conversão simulação → proposta";
-        numLabel = "Propostas enviadas";
+        numLabel = "Simulações que viraram proposta";
         denLabel = "Simulações";
       } else if (chave === "conversao proposta>contrato") {
         num = qtdContratos;
