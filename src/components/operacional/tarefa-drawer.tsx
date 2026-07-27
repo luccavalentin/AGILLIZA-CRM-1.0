@@ -1,15 +1,17 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Plus, Paperclip, Download, Trash2, Tag as TagIcon, X, Calendar, User, Building2, CheckCircle2, MessageSquare, ListChecks, History, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, Paperclip, Download, Trash2, Tag as TagIcon, X, Calendar, User, Building2, CheckCircle2, MessageSquare, ListChecks, History, ChevronDown, ChevronUp, Pencil, Save } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import brandSymbol from "@/assets/brand/agilliza-symbol-oficial.png";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { VisualizadorArquivo } from "@/components/comum/visualizador-arquivo";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ToneBadge } from "@/components/crm/tone-badge";
 import { PRIORIDADE, statusTarefa } from "@/components/operacional/status";
@@ -26,7 +28,10 @@ import {
   registrarAnexoTarefa,
   removerAnexoTarefa,
   urlAnexoTarefa,
+  atualizarTarefa,
+  excluirTarefa,
 } from "@/lib/operacional/tarefas.functions";
+import { listarColegas, buscarClientesOpcoes } from "@/lib/operacional/shared.functions";
 
 function fmtData(iso: string | null): string {
   if (!iso) return "—";
@@ -36,6 +41,13 @@ function fmtData(iso: string | null): string {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+function toDatetimeLocal(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 function fmtTamanho(bytes: number | null): string {
@@ -55,6 +67,16 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
   const [historicoAberto, setHistoricoAberto] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [visualizando, setVisualizando] = useState<{ url: string; nome: string } | null>(null);
+  const [editando, setEditando] = useState(false);
+  const [form, setForm] = useState({
+    titulo: "",
+    descricao: "",
+    prioridade: "p2" as "p1" | "p2" | "p3",
+    prazo: "",
+    responsavel_id: "",
+    cliente_id: "",
+  });
+  const [salvando, setSalvando] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const toggleFn = useServerFn(toggleChecklistItem);
@@ -66,6 +88,8 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
   const registrarAnexoFn = useServerFn(registrarAnexoTarefa);
   const removerAnexoFn = useServerFn(removerAnexoTarefa);
   const urlAnexoFn = useServerFn(urlAnexoTarefa);
+  const atualizarFn = useServerFn(atualizarTarefa);
+  const excluirFn = useServerFn(excluirTarefa);
 
   const { data } = useQuery({
     queryKey: ["tarefa", id],
@@ -78,10 +102,83 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
     queryFn: () => listarTagsTarefa(),
   });
 
+  const { data: colegas } = useQuery({
+    queryKey: ["colegas"],
+    queryFn: () => listarColegas(),
+    enabled: editando,
+  });
+  const { data: clientesOpcoes } = useQuery({
+    queryKey: ["clientes-opcoes"],
+    queryFn: () => buscarClientesOpcoes({ data: {} }),
+    enabled: editando,
+  });
+
+  useEffect(() => {
+    if (!id) {
+      setEditando(false);
+    }
+  }, [id]);
+
+  useEffect(() => {
+    const t = data?.tarefa;
+    if (!t) return;
+    setForm({
+      titulo: t.titulo ?? "",
+      descricao: t.descricao ?? "",
+      prioridade: (t.prioridade as "p1" | "p2" | "p3") ?? "p2",
+      prazo: t.prazo ? toDatetimeLocal(t.prazo) : "",
+      responsavel_id: t.responsavel_id ?? "",
+      cliente_id: t.cliente_id ?? "",
+    });
+  }, [data?.tarefa?.id]);
+
   function invalidar() {
     qc.invalidateQueries({ queryKey: ["tarefa", id] });
     qc.invalidateQueries({ queryKey: ["tarefas"] });
   }
+
+  async function salvarEdicao() {
+    if (!data?.tarefa) return;
+    if (form.titulo.trim().length < 2) {
+      toast.error("Informe um título com pelo menos 2 caracteres.");
+      return;
+    }
+    setSalvando(true);
+    try {
+      await atualizarFn({
+        data: {
+          id: data.tarefa.id,
+          titulo: form.titulo.trim(),
+          descricao: form.descricao.trim() ? form.descricao.trim() : null,
+          prioridade: form.prioridade,
+          prazo: form.prazo ? new Date(form.prazo).toISOString() : null,
+          responsavel_id: form.responsavel_id || null,
+          cliente_id: form.cliente_id || null,
+        },
+      });
+      toast.success("Tarefa atualizada.");
+      setEditando(false);
+      invalidar();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao atualizar.");
+    } finally {
+      setSalvando(false);
+    }
+  }
+
+  async function excluirTarefaAtual() {
+    if (!data?.tarefa) return;
+    if (!confirm("Excluir esta tarefa? Esta ação não pode ser desfeita.")) return;
+    try {
+      await excluirFn({ data: { id: data.tarefa.id } });
+      toast.success("Tarefa excluída.");
+      qc.invalidateQueries({ queryKey: ["tarefas"] });
+      onClose();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao excluir.");
+    }
+  }
+
 
   const t = data?.tarefa;
   const tagsAtuais = data?.tags ?? [];
@@ -161,22 +258,69 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
             {/* Cabeçalho refinado */}
             <div className="relative z-10 border-b border-border/60 bg-gradient-to-br from-primary/[0.08] via-primary/[0.03] to-transparent px-6 py-5 sm:px-8 sm:py-6">
               <DialogHeader className="space-y-3">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="rounded-md bg-background/70 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground ring-1 ring-border/60 tabular-nums backdrop-blur">
-                    {t.numero}
-                  </span>
-                  <ToneBadge tone={statusTarefa(t.status).tone}>
-                    {statusTarefa(t.status).label}
-                  </ToneBadge>
-                  <ToneBadge tone="muted">{PRIORIDADE[t.prioridade as "p1"].label}</ToneBadge>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="rounded-md bg-background/70 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground ring-1 ring-border/60 tabular-nums backdrop-blur">
+                      {t.numero}
+                    </span>
+                    <ToneBadge tone={statusTarefa(t.status).tone}>
+                      {statusTarefa(t.status).label}
+                    </ToneBadge>
+                    <ToneBadge tone="muted">{PRIORIDADE[t.prioridade as "p1"].label}</ToneBadge>
+                  </div>
+                  <div className="mr-8 flex items-center gap-1.5">
+                    {!editando ? (
+                      <>
+                        <Button variant="outline" size="sm" className="h-7 gap-1 text-xs" onClick={() => setEditando(true)}>
+                          <Pencil className="h-3.5 w-3.5" /> Editar
+                        </Button>
+                        <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={excluirTarefaAtual}>
+                          <Trash2 className="h-3.5 w-3.5" /> Excluir
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs" onClick={() => setEditando(false)} disabled={salvando}>
+                          Cancelar
+                        </Button>
+                        <Button size="sm" className="h-7 gap-1 text-xs" onClick={salvarEdicao} disabled={salvando}>
+                          <Save className="h-3.5 w-3.5" /> {salvando ? "Salvando…" : "Salvar"}
+                        </Button>
+                      </>
+                    )}
+                  </div>
                 </div>
-                <DialogTitle className="text-left text-xl font-semibold leading-tight tracking-tight text-foreground sm:text-2xl">
-                  {t.titulo}
-                </DialogTitle>
-                {t.descricao && (
-                  <p className="whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
-                    {t.descricao}
-                  </p>
+                {editando ? (
+                  <div className="space-y-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Título</Label>
+                      <Input
+                        value={form.titulo}
+                        onChange={(e) => setForm((f) => ({ ...f, titulo: e.target.value }))}
+                        className="bg-background text-base font-semibold"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Descrição</Label>
+                      <Textarea
+                        value={form.descricao}
+                        onChange={(e) => setForm((f) => ({ ...f, descricao: e.target.value }))}
+                        rows={3}
+                        className="bg-background"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <DialogTitle className="text-left text-xl font-semibold leading-tight tracking-tight text-foreground sm:text-2xl">
+                      {t.titulo}
+                    </DialogTitle>
+                    {t.descricao && (
+                      <p className="whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
+                        {t.descricao}
+                      </p>
+                    )}
+                  </>
                 )}
               </DialogHeader>
             </div>
@@ -185,6 +329,59 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
             <div className="relative z-10 max-h-[calc(92dvh-9rem)] overflow-y-auto px-6 py-6 sm:px-8">
               <div className="space-y-6">
                 {/* Metadados */}
+                {editando ? (
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div className="space-y-1.5">
+                      <Label className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Prioridade</Label>
+                      <Select value={form.prioridade} onValueChange={(v) => setForm((f) => ({ ...f, prioridade: v as "p1" | "p2" | "p3" }))}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="p1">P1 — Alta</SelectItem>
+                          <SelectItem value="p2">P2 — Média</SelectItem>
+                          <SelectItem value="p3">P3 — Baixa</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Prazo</Label>
+                      <Input
+                        type="datetime-local"
+                        value={form.prazo}
+                        onChange={(e) => setForm((f) => ({ ...f, prazo: e.target.value }))}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Responsável</Label>
+                      <Select
+                        value={form.responsavel_id || "__none__"}
+                        onValueChange={(v) => setForm((f) => ({ ...f, responsavel_id: v === "__none__" ? "" : v }))}
+                      >
+                        <SelectTrigger><SelectValue placeholder="Selecionar" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__none__">Sem responsável</SelectItem>
+                          {(colegas ?? []).map((c) => (
+                            <SelectItem key={c.id} value={c.id}>{c.nome ?? c.email}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Cliente</Label>
+                      <Select
+                        value={form.cliente_id || "__none__"}
+                        onValueChange={(v) => setForm((f) => ({ ...f, cliente_id: v === "__none__" ? "" : v }))}
+                      >
+                        <SelectTrigger><SelectValue placeholder="Nenhum" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__none__">Nenhum</SelectItem>
+                          {(clientesOpcoes ?? []).map((c) => (
+                            <SelectItem key={c.id} value={c.id}>{c.nome ?? c.numero_cliente}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                ) : (
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                   <div className="flex items-center gap-2 rounded-xl border border-border/60 bg-card/70 px-3 py-2.5 text-sm backdrop-blur">
                     <User className="h-4 w-4 shrink-0 text-primary" />
@@ -210,6 +407,7 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
                     </div>
                   )}
                 </div>
+                )}
 
                 {/* Etiquetas */}
                 <section className="space-y-2.5 rounded-xl border border-border/60 bg-card/70 p-4 backdrop-blur">
