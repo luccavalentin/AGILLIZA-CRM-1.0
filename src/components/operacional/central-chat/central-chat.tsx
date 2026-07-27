@@ -222,7 +222,6 @@ export function CentralChatPage() {
                         arquivado={r.arquivado}
                         etiquetas={etiquetasDaConv}
                         etiquetaIds={etiquetaPor.get(chave) ?? []}
-                        silenciado={!!st?.silenciado_ate && new Date(st.silenciado_ate).getTime() > Date.now()}
                       />
                     </li>
                   );
