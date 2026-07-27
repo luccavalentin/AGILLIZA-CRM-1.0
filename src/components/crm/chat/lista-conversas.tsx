@@ -196,70 +196,84 @@ export function ListaConversas({ hook }: Props) {
                   selecionado === c.cliente_id &&
                   (atendenteSel == null || atendenteSel === c.atendente_id);
                 nodes.push(
-                  <button
+                  <div
                     key={`${c.cliente_id}::${c.atendente_id ?? ""}`}
-                    onClick={() => abrirConversa(c.cliente_id, c.atendente_id)}
                     className={cn(
-                      "crm-focus-ring relative mx-2 mb-0.5 flex w-[calc(100%-1rem)] items-start gap-3 rounded-xl px-2.5 py-2.5 text-left transition-colors",
+                      "group relative mx-2 mb-0.5 flex w-[calc(100%-1rem)] items-start rounded-xl transition-colors",
                       ativo
                         ? "bg-primary/[0.08] shadow-[inset_3px_0_0_0_hsl(var(--primary))]"
                         : "hover:bg-muted/60",
                     )}
                   >
-                    <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary/80 to-primary/50 text-xs font-semibold text-primary-foreground">
-                      {iniciais(c.nome)}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className={cn(
-                          "truncate text-sm",
-                          ativo ? "font-semibold text-foreground" : "font-medium text-foreground",
-                        )}>
-                          {c.nome}
-                        </span>
-                        <span className="shrink-0 text-[10px] text-muted-foreground">
-                          {new Date(c.ultima_em).toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" })}
-                        </span>
+                    <button
+                      onClick={() => abrirConversa(c.cliente_id, c.atendente_id)}
+                      className="crm-focus-ring flex flex-1 items-start gap-3 rounded-xl px-2.5 py-2.5 text-left"
+                    >
+                      <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary/80 to-primary/50 text-xs font-semibold text-primary-foreground">
+                        {iniciais(c.nome)}
                       </div>
-                      {verTodos && !c.minha && c.atendente_nome && (
-                        <span className="mt-0.5 inline-flex items-center gap-1 text-[10px] font-medium text-primary/80">
-                          <Users className="h-3 w-3" /> {c.atendente_nome}
-                        </span>
-                      )}
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="truncate text-xs text-muted-foreground">
-                          {c.ultimo_remetente === "time" ? "Você: " : ""}
-                          {c.ultima_mensagem}
-                        </span>
-                        {c.nao_lidas > 0 && (
-                          <Badge className="h-5 shrink-0 px-1.5 text-[10px]">
-                            {c.nao_lidas}
-                          </Badge>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className={cn(
+                            "truncate text-sm",
+                            ativo ? "font-semibold text-foreground" : "font-medium text-foreground",
+                          )}>
+                            {c.nome}
+                          </span>
+                          <span className="shrink-0 text-[10px] text-muted-foreground">
+                            {new Date(c.ultima_em).toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" })}
+                          </span>
+                        </div>
+                        {verTodos && !c.minha && c.atendente_nome && (
+                          <span className="mt-0.5 inline-flex items-center gap-1 text-[10px] font-medium text-primary/80">
+                            <Users className="h-3 w-3" /> {c.atendente_nome}
+                          </span>
+                        )}
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="truncate text-xs text-muted-foreground">
+                            {c.ultimo_remetente === "time" ? "Você: " : ""}
+                            {c.ultima_mensagem}
+                          </span>
+                          {c.nao_lidas > 0 && (
+                            <Badge className="h-5 shrink-0 px-1.5 text-[10px]">
+                              {c.nao_lidas}
+                            </Badge>
+                          )}
+                        </div>
+                        {(tags.length > 0 || sla || lembrete) && (
+                          <div className="mt-1 flex flex-wrap items-center gap-1">
+                            {sla && (
+                              <span className="chat-tag chat-tag-red">
+                                <Timer className="h-3 w-3" /> SLA
+                              </span>
+                            )}
+                            {lembrete && (
+                              <span className="chat-tag chat-tag-amber">
+                                <BellRing className="h-3 w-3" /> Lembrete
+                              </span>
+                            )}
+                            {tags.map((t) => (
+                              <TagChip key={t.id} etiqueta={t} />
+                            ))}
+                          </div>
                         )}
                       </div>
-                      {(tags.length > 0 || sla || lembrete) && (
-                        <div className="mt-1 flex flex-wrap items-center gap-1">
-                          {sla && (
-                            <span className="chat-tag chat-tag-red">
-                              <Timer className="h-3 w-3" /> SLA
-                            </span>
-                          )}
-                          {lembrete && (
-                            <span className="chat-tag chat-tag-amber">
-                              <BellRing className="h-3 w-3" /> Lembrete
-                            </span>
-                          )}
-                          {tags.map((t) => (
-                            <TagChip key={t.id} etiqueta={t} />
-                          ))}
-                        </div>
-                      )}
+                    </button>
+                    <div className="flex items-center pr-1.5 pt-2">
+                      <ItemAcoesMenu
+                        clienteId={c.cliente_id}
+                        nome={c.nome}
+                        arquivado={hook.arquivada(c.cliente_id)}
+                        fixado={false}
+                        apelidoAtual={null}
+                      />
                     </div>
-                  </button>,
+                  </div>,
                 );
               }
               return nodes;
             })()}
+
 
             {novosClientes.length > 0 && (
               <>
