@@ -62,7 +62,28 @@ function lerCookie(nome: string): string | undefined {
   return undefined;
 }
 
+function garantirHttps(): void {
+  // O cookie usa `Secure; SameSite=None; Partitioned`, então navegadores
+  // rejeitam silenciosamente em conexões http://. Falhar cedo, com mensagem
+  // clara, é muito melhor do que loop de login sem feedback (bug clássico
+  // em custom domains mal configurados).
+  const req = getRequest();
+  const h = req?.headers;
+  const proto = h?.get("x-forwarded-proto") ?? (req?.url?.startsWith("https://") ? "https" : null);
+  const host = h?.get("host") ?? "";
+  // Preview local do dev-server sempre acessa via https na Lovable; libera
+  // apenas 127.0.0.1/localhost para permitir testes explícitos em http.
+  const ehLocal = /^(localhost|127\.0\.0\.1)(:\d+)?$/.test(host);
+  if (proto !== "https" && !ehLocal) {
+    throw new Response(
+      "Portal do Cliente exige HTTPS. Verifique o certificado do domínio.",
+      { status: 400 },
+    );
+  }
+}
+
 export function gravarCookieSessao(cid: string, corr: string | null): void {
+  garantirHttps();
   const token = selarSessao(cid, corr);
   const maxAge = Math.floor(TTL_MS / 1000);
   setResponseHeader(
