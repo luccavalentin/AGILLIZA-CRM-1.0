@@ -1502,25 +1502,33 @@ html[data-crm-motion="off"] .crm-page-transition {
   :root {
     --depth-highlight: color-mix(in oklab, white 55%, transparent);
     --depth-highlight-soft: color-mix(in oklab, white 22%, transparent);
+    /* Sombras difusas em multicamada — halo suave, sem cortes duros */
     --depth-shadow-1: 0 1px 0 0 var(--depth-highlight-soft) inset,
-                      0 -1px 0 0 color-mix(in oklab, black 12%, transparent) inset,
-                      0 1px 2px -1px color-mix(in oklab, black 25%, transparent),
-                      0 2px 6px -2px color-mix(in oklab, black 18%, transparent);
+                      0 1px 2px -1px color-mix(in oklab, black 10%, transparent),
+                      0 4px 12px -6px color-mix(in oklab, black 10%, transparent);
     --depth-shadow-2: 0 1px 0 0 var(--depth-highlight) inset,
-                      0 -1px 0 0 color-mix(in oklab, black 18%, transparent) inset,
-                      0 2px 4px -1px color-mix(in oklab, black 22%, transparent),
-                      0 8px 20px -6px color-mix(in oklab, black 28%, transparent);
+                      0 2px 6px -2px color-mix(in oklab, black 10%, transparent),
+                      0 12px 28px -14px color-mix(in oklab, black 14%, transparent);
     --depth-shadow-3: 0 1px 0 0 var(--depth-highlight) inset,
-                      0 -2px 0 0 color-mix(in oklab, black 22%, transparent) inset,
-                      0 4px 10px -2px color-mix(in oklab, black 25%, transparent),
-                      0 16px 40px -12px color-mix(in oklab, black 35%, transparent);
-    --depth-press: 0 1px 0 0 color-mix(in oklab, black 20%, transparent) inset,
-                   0 2px 4px -2px color-mix(in oklab, black 30%, transparent) inset;
+                      0 6px 14px -6px color-mix(in oklab, black 12%, transparent),
+                      0 24px 48px -22px color-mix(in oklab, black 18%, transparent);
+    --depth-press: 0 1px 0 0 color-mix(in oklab, black 12%, transparent) inset,
+                   0 2px 4px -2px color-mix(in oklab, black 18%, transparent) inset;
   }
   .dark {
     --depth-highlight: color-mix(in oklab, white 14%, transparent);
     --depth-highlight-soft: color-mix(in oklab, white 8%, transparent);
+    --depth-shadow-1: 0 1px 0 0 var(--depth-highlight-soft) inset,
+                      0 1px 2px -1px color-mix(in oklab, black 40%, transparent),
+                      0 6px 16px -8px color-mix(in oklab, black 50%, transparent);
+    --depth-shadow-2: 0 1px 0 0 var(--depth-highlight) inset,
+                      0 4px 10px -4px color-mix(in oklab, black 45%, transparent),
+                      0 16px 36px -18px color-mix(in oklab, black 55%, transparent);
+    --depth-shadow-3: 0 1px 0 0 var(--depth-highlight) inset,
+                      0 8px 20px -8px color-mix(in oklab, black 50%, transparent),
+                      0 28px 60px -24px color-mix(in oklab, black 60%, transparent);
   }
+
 
   /* Botões — relevo com brilho no topo + sombra projetada */
   button:not(:disabled):not([data-depth="off"]):not([role="tab"]):not([role="menuitem"]):not([role="option"]):not([data-radix-collection-item]):not([data-sidebar]),
