@@ -71,7 +71,10 @@ export function ChatConversaCore({ adapter }: { adapter: ChatAdapter }) {
   }, [adapter, mensagens, mineTipo, somenteLeitura]);
 
   useEffect(() => {
-    let canal = supabase.channel(adapter.realtime.channel);
+    // Sufixo único evita que o StrictMode (double-invoke) reaproveite o mesmo
+    // tópico realtime e tente registrar `postgres_changes` após o subscribe().
+    const nomeCanal = `${adapter.realtime.channel}:${crypto.randomUUID()}`;
+    let canal = supabase.channel(nomeCanal);
     for (const b of adapter.realtime.bindings) {
       canal = canal.on(
         "postgres_changes",
