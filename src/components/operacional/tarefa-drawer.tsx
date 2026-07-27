@@ -60,6 +60,16 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
   const [historicoAberto, setHistoricoAberto] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [visualizando, setVisualizando] = useState<{ url: string; nome: string } | null>(null);
+  const [editando, setEditando] = useState(false);
+  const [form, setForm] = useState({
+    titulo: "",
+    descricao: "",
+    prioridade: "p2" as "p1" | "p2" | "p3",
+    prazo: "",
+    responsavel_id: "",
+    cliente_id: "",
+  });
+  const [salvando, setSalvando] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const toggleFn = useServerFn(toggleChecklistItem);
@@ -71,6 +81,8 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
   const registrarAnexoFn = useServerFn(registrarAnexoTarefa);
   const removerAnexoFn = useServerFn(removerAnexoTarefa);
   const urlAnexoFn = useServerFn(urlAnexoTarefa);
+  const atualizarFn = useServerFn(atualizarTarefa);
+  const excluirFn = useServerFn(excluirTarefa);
 
   const { data } = useQuery({
     queryKey: ["tarefa", id],
@@ -83,10 +95,83 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
     queryFn: () => listarTagsTarefa(),
   });
 
+  const { data: colegas } = useQuery({
+    queryKey: ["colegas"],
+    queryFn: () => listarColegas(),
+    enabled: editando,
+  });
+  const { data: clientesOpcoes } = useQuery({
+    queryKey: ["clientes-opcoes"],
+    queryFn: () => buscarClientesOpcoes({ data: {} }),
+    enabled: editando,
+  });
+
+  useEffect(() => {
+    if (!id) {
+      setEditando(false);
+    }
+  }, [id]);
+
+  useEffect(() => {
+    const t = data?.tarefa;
+    if (!t) return;
+    setForm({
+      titulo: t.titulo ?? "",
+      descricao: t.descricao ?? "",
+      prioridade: (t.prioridade as "p1" | "p2" | "p3") ?? "p2",
+      prazo: t.prazo ? toDatetimeLocal(t.prazo) : "",
+      responsavel_id: t.responsavel_id ?? "",
+      cliente_id: t.cliente_id ?? "",
+    });
+  }, [data?.tarefa?.id]);
+
   function invalidar() {
     qc.invalidateQueries({ queryKey: ["tarefa", id] });
     qc.invalidateQueries({ queryKey: ["tarefas"] });
   }
+
+  async function salvarEdicao() {
+    if (!data?.tarefa) return;
+    if (form.titulo.trim().length < 2) {
+      toast.error("Informe um título com pelo menos 2 caracteres.");
+      return;
+    }
+    setSalvando(true);
+    try {
+      await atualizarFn({
+        data: {
+          id: data.tarefa.id,
+          titulo: form.titulo.trim(),
+          descricao: form.descricao.trim() ? form.descricao.trim() : null,
+          prioridade: form.prioridade,
+          prazo: form.prazo ? new Date(form.prazo).toISOString() : null,
+          responsavel_id: form.responsavel_id || null,
+          cliente_id: form.cliente_id || null,
+        },
+      });
+      toast.success("Tarefa atualizada.");
+      setEditando(false);
+      invalidar();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao atualizar.");
+    } finally {
+      setSalvando(false);
+    }
+  }
+
+  async function excluirTarefaAtual() {
+    if (!data?.tarefa) return;
+    if (!confirm("Excluir esta tarefa? Esta ação não pode ser desfeita.")) return;
+    try {
+      await excluirFn({ data: { id: data.tarefa.id } });
+      toast.success("Tarefa excluída.");
+      qc.invalidateQueries({ queryKey: ["tarefas"] });
+      onClose();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao excluir.");
+    }
+  }
+
 
   const t = data?.tarefa;
   const tagsAtuais = data?.tags ?? [];
