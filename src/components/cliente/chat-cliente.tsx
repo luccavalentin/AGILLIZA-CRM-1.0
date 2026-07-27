@@ -256,8 +256,10 @@ export function ThreadChat({
   const { data: mensagens } = useQuery({
     queryKey: ["cliente", "mensagens", atendenteId],
     queryFn: () => clienteListarMensagens({ data: { atendente_id: atendenteId } }),
+    // Sem polling em background — quando a aba volta ao foco o refetch
+    // automático de `refetchOnWindowFocus` sincroniza as mensagens.
     refetchInterval: (q: any) => (q.state.status === "error" ? false : 2500),
-    refetchIntervalInBackground: true,
+
   });
 
 
