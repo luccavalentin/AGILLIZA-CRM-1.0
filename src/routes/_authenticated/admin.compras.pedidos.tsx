@@ -55,7 +55,7 @@ function Pagina() {
   const [filtroStatus, setFiltroStatus] = useState<"todos" | "pendente" | "aprovada" | "recusada">("todos");
 
   const sessao = useQuery({ queryKey: ["minha-sessao"], queryFn: () => getMinhaSessao() });
-  const meuId = sessao.data?.user_id ?? null;
+  const meuId = sessao.data?.profile?.id ?? null;
 
   const q = useQuery({ queryKey: ["admin-compras"], queryFn: () => listarCompras() });
 
