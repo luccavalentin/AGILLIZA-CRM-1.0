@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { MatriculaTab } from "./imovel-matricula-tab";
 import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -31,6 +33,23 @@ const UFS = [
 type Cliente = Record<string, any>;
 
 export function ImovelTab({ clienteId, cliente }: { clienteId: string; cliente: Cliente }) {
+  return (
+    <Tabs defaultValue="dados" className="space-y-4">
+      <TabsList>
+        <TabsTrigger value="dados">Dados do imóvel</TabsTrigger>
+        <TabsTrigger value="matricula">Dados da matrícula</TabsTrigger>
+      </TabsList>
+      <TabsContent value="dados" className="m-0">
+        <ImovelDadosTab clienteId={clienteId} cliente={cliente} />
+      </TabsContent>
+      <TabsContent value="matricula" className="m-0">
+        <MatriculaTab clienteId={clienteId} cliente={cliente} />
+      </TabsContent>
+    </Tabs>
+  );
+}
+
+function ImovelDadosTab({ clienteId, cliente }: { clienteId: string; cliente: Cliente }) {
   const qc = useQueryClient();
   const salvar = useServerFn(salvarImovelIq);
   const [salvando, setSalvando] = useState(false);
