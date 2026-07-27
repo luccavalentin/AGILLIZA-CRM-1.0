@@ -237,36 +237,53 @@ export const criarPessoaComAcesso = createServerFn({ method: "POST" })
     }
 
     // Garante tipo_pessoa/login_habilitado no profile (a trigger já lê o metadata,
-    // mas reforçamos aqui para robustez).
-    await supabaseAdmin
-      .from("profiles")
-      .update({
-        tipo_pessoa: tipoPrimario,
-        tipos_pessoa: tiposList,
-        login_habilitado: comLogin,
-        email: comLogin ? emailReal : null,
-      } as never)
-      .eq("id", created.user.id);
+    // mas reforçamos aqui para robustez). Se qualquer passo pós-createUser falhar,
+    // removemos o usuário do Auth para evitar cadastros órfãos (atomicidade manual).
+    try {
+      const { error: updErr } = await supabaseAdmin
+        .from("profiles")
+        .update({
+          tipo_pessoa: tipoPrimario,
+          tipos_pessoa: tiposList,
+          login_habilitado: comLogin,
+          email: comLogin ? emailReal : null,
+        } as never)
+        .eq("id", created.user.id);
+      if (updErr) throw updErr;
 
-    // Auditoria (o trigger já criou profiles + user_roles).
-    const { registrarAuditoria } = await import("@/lib/admin/audit.server");
-    await registrarAuditoria({
-      supabase,
-      userId,
-      correspondenteId,
-      acao: "pessoa.criar",
-      entidade: "profiles",
-      entidadeId: created.user.id,
-      payloadNovo: {
-        nome: data.nome,
-        acesso_tipo: acessoTipo,
-        papel,
-        tipo_pessoa: data.tipo_pessoa,
-        com_login: comLogin,
-      },
-    });
+      // Auditoria (o trigger já criou profiles + user_roles).
+      const { registrarAuditoria } = await import("@/lib/admin/audit.server");
+      await registrarAuditoria({
+        supabase,
+        userId,
+        correspondenteId,
+        acao: "pessoa.criar",
+        entidade: "profiles",
+        entidadeId: created.user.id,
+        payloadNovo: {
+          nome: data.nome,
+          acesso_tipo: acessoTipo,
+          papel,
+          tipo_pessoa: data.tipo_pessoa,
+          com_login: comLogin,
+        },
+      });
+    } catch (postErr) {
+      // Rollback: remove o auth user para não deixar cadastro parcial no ecossistema.
+      try {
+        await supabaseAdmin.auth.admin.deleteUser(created.user.id);
+      } catch {
+        /* best-effort: se falhar aqui, o admin deve limpar manualmente */
+      }
+      throw new Error(
+        postErr instanceof Error && postErr.message
+          ? `Falha ao finalizar cadastro: ${postErr.message}`
+          : "Falha ao finalizar cadastro. Tente novamente.",
+      );
+    }
 
     return { id: created.user.id, email: comLogin ? emailReal : "", senha_temporaria: comLogin ? senha : "" };
+
   });
 
 /** Carrega o perfil alvo garantindo que pertence ao mesmo ecossistema do solicitante. */
