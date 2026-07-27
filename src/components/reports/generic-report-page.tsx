@@ -141,7 +141,11 @@ export function GenericReportPage({
             <ReportSection titulo="Indicadores">
               <div className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(160px,1fr))]">
                 {data.kpis.map((k) => (
-                  <ReportKpiCard key={k.label} kpi={k} />
+                  <ReportKpiCard
+                    key={k.label}
+                    kpi={k}
+                    onClick={k.filters?.length ? () => setKpiAberto(k) : undefined}
+                  />
                 ))}
               </div>
             </ReportSection>
@@ -153,10 +157,15 @@ export function GenericReportPage({
           <ReportSection titulo="Indicadores">
             <div className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(160px,1fr))]">
               {data.kpis.map((k) => (
-                <ReportKpiCard key={k.label} kpi={k} />
+                <ReportKpiCard
+                  key={k.label}
+                  kpi={k}
+                  onClick={k.filters?.length ? () => setKpiAberto(k) : undefined}
+                />
               ))}
             </div>
           </ReportSection>
+
 
           <ReportSection titulo={`Detalhamento — ${data.rows.length} registros`}>
             <DrilldownTable columns={data.columns} rows={data.rows} />
