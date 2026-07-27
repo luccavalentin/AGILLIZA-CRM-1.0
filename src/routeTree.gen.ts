@@ -97,7 +97,6 @@ import { Route as AuthenticatedAdminPessoasRouteImport } from './routes/_authent
 import { Route as AuthenticatedAdminParametrosRouteImport } from './routes/_authenticated/admin.parametros'
 import { Route as AuthenticatedAdminNotificacoesRouteImport } from './routes/_authenticated/admin.notificacoes'
 import { Route as AuthenticatedAdminIntegracoesRouteImport } from './routes/_authenticated/admin.integracoes'
-import { Route as AuthenticatedAdminComprasRouteImport } from './routes/_authenticated/admin.compras'
 import { Route as AuthenticatedAdminBancosRouteImport } from './routes/_authenticated/admin.bancos'
 import { Route as AuthenticatedAdminBackupRouteImport } from './routes/_authenticated/admin.backup'
 import { Route as AuthenticatedAdminAuditoriaRouteImport } from './routes/_authenticated/admin.auditoria'
@@ -617,12 +616,6 @@ const AuthenticatedAdminIntegracoesRoute =
     path: '/admin/integracoes',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedAdminComprasRoute =
-  AuthenticatedAdminComprasRouteImport.update({
-    id: '/admin/compras',
-    path: '/admin/compras',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
 const AuthenticatedAdminBancosRoute =
   AuthenticatedAdminBancosRouteImport.update({
     id: '/admin/bancos',
@@ -774,7 +767,6 @@ export interface FileRoutesByFullPath {
   '/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
   '/admin/backup': typeof AuthenticatedAdminBackupRoute
   '/admin/bancos': typeof AuthenticatedAdminBancosRoute
-  '/admin/compras': typeof AuthenticatedAdminComprasRoute
   '/admin/integracoes': typeof AuthenticatedAdminIntegracoesRoute
   '/admin/notificacoes': typeof AuthenticatedAdminNotificacoesRoute
   '/admin/parametros': typeof AuthenticatedAdminParametrosRoute
@@ -882,7 +874,6 @@ export interface FileRoutesByTo {
   '/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
   '/admin/backup': typeof AuthenticatedAdminBackupRoute
   '/admin/bancos': typeof AuthenticatedAdminBancosRoute
-  '/admin/compras': typeof AuthenticatedAdminComprasRoute
   '/admin/integracoes': typeof AuthenticatedAdminIntegracoesRoute
   '/admin/notificacoes': typeof AuthenticatedAdminNotificacoesRoute
   '/admin/parametros': typeof AuthenticatedAdminParametrosRoute
@@ -994,7 +985,6 @@ export interface FileRoutesById {
   '/_authenticated/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
   '/_authenticated/admin/backup': typeof AuthenticatedAdminBackupRoute
   '/_authenticated/admin/bancos': typeof AuthenticatedAdminBancosRoute
-  '/_authenticated/admin/compras': typeof AuthenticatedAdminComprasRoute
   '/_authenticated/admin/integracoes': typeof AuthenticatedAdminIntegracoesRoute
   '/_authenticated/admin/notificacoes': typeof AuthenticatedAdminNotificacoesRoute
   '/_authenticated/admin/parametros': typeof AuthenticatedAdminParametrosRoute
@@ -1106,7 +1096,6 @@ export interface FileRouteTypes {
     | '/admin/auditoria'
     | '/admin/backup'
     | '/admin/bancos'
-    | '/admin/compras'
     | '/admin/integracoes'
     | '/admin/notificacoes'
     | '/admin/parametros'
@@ -1214,7 +1203,6 @@ export interface FileRouteTypes {
     | '/admin/auditoria'
     | '/admin/backup'
     | '/admin/bancos'
-    | '/admin/compras'
     | '/admin/integracoes'
     | '/admin/notificacoes'
     | '/admin/parametros'
@@ -1325,7 +1313,6 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/auditoria'
     | '/_authenticated/admin/backup'
     | '/_authenticated/admin/bancos'
-    | '/_authenticated/admin/compras'
     | '/_authenticated/admin/integracoes'
     | '/_authenticated/admin/notificacoes'
     | '/_authenticated/admin/parametros'
@@ -2036,13 +2023,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminIntegracoesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/admin/compras': {
-      id: '/_authenticated/admin/compras'
-      path: '/admin/compras'
-      fullPath: '/admin/compras'
-      preLoaderRoute: typeof AuthenticatedAdminComprasRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/admin/bancos': {
       id: '/_authenticated/admin/bancos'
       path: '/admin/bancos'
@@ -2300,7 +2280,6 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminAuditoriaRoute: typeof AuthenticatedAdminAuditoriaRoute
   AuthenticatedAdminBackupRoute: typeof AuthenticatedAdminBackupRoute
   AuthenticatedAdminBancosRoute: typeof AuthenticatedAdminBancosRoute
-  AuthenticatedAdminComprasRoute: typeof AuthenticatedAdminComprasRoute
   AuthenticatedAdminIntegracoesRoute: typeof AuthenticatedAdminIntegracoesRoute
   AuthenticatedAdminNotificacoesRoute: typeof AuthenticatedAdminNotificacoesRoute
   AuthenticatedAdminParametrosRoute: typeof AuthenticatedAdminParametrosRoute
@@ -2365,7 +2344,6 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminAuditoriaRoute: AuthenticatedAdminAuditoriaRoute,
   AuthenticatedAdminBackupRoute: AuthenticatedAdminBackupRoute,
   AuthenticatedAdminBancosRoute: AuthenticatedAdminBancosRoute,
-  AuthenticatedAdminComprasRoute: AuthenticatedAdminComprasRoute,
   AuthenticatedAdminIntegracoesRoute: AuthenticatedAdminIntegracoesRoute,
   AuthenticatedAdminNotificacoesRoute: AuthenticatedAdminNotificacoesRoute,
   AuthenticatedAdminParametrosRoute: AuthenticatedAdminParametrosRoute,
