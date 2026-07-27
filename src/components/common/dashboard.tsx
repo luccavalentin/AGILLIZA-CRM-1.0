@@ -200,7 +200,14 @@ export function PanelHeader({
 }
 
 /** Funil de conversão vertical (etapas com largura proporcional). */
-export function ConversionFunnel({ etapas }: { etapas: { label: string; valor: number }[] }) {
+export function ConversionFunnel({
+  etapas,
+  onItemClick,
+}: {
+  etapas: { label: string; valor: number }[];
+  /** Se fornecido, cada etapa vira um botão que abre o detalhamento da métrica. */
+  onItemClick?: (label: string, valor: number) => void;
+}) {
   const base = Math.max(1, etapas[0]?.valor ?? 1);
   const tons: Tone[] = ["brand", "brand", "success", "success"];
   return (
@@ -209,27 +216,42 @@ export function ConversionFunnel({ etapas }: { etapas: { label: string; valor: n
         const pctBase = (e.valor / base) * 100;
         const largura = Math.max(24, pctBase);
         const tone = tons[idx] ?? "brand";
-        return (
-          <div key={e.label} className="flex items-center gap-3">
-            <div className="flex-1">
-              <div className="mb-1 flex items-center justify-between gap-2">
-                <span className="truncate text-xs font-medium text-foreground">{e.label}</span>
-                <span className="shrink-0 font-mono text-xs tabular-nums text-muted-foreground">
-                  {pctBase.toLocaleString("pt-BR", {  maximumFractionDigits: 0 })}%
-                </span>
-              </div>
-              <div className="flex h-9 items-center">
-                <div
-                  className={cn(
-                    "flex h-full items-center justify-end rounded-md px-3 text-sm font-semibold tabular-nums text-white transition-all duration-500",
-                    toneBar[tone],
-                  )}
-                  style={{ width: `${largura}%` }}
-                >
-                  {e.valor.toLocaleString("pt-BR")}
-                </div>
+        const conteudo = (
+          <div className="flex-1">
+            <div className="mb-1 flex items-center justify-between gap-2">
+              <span className="truncate text-xs font-medium text-foreground">{e.label}</span>
+              <span className="shrink-0 font-mono text-xs tabular-nums text-muted-foreground">
+                {pctBase.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}%
+              </span>
+            </div>
+            <div className="flex h-9 items-center">
+              <div
+                className={cn(
+                  "flex h-full items-center justify-end rounded-md px-3 text-sm font-semibold tabular-nums text-white transition-all duration-500",
+                  toneBar[tone],
+                  onItemClick && "shadow-sm group-hover/etp:brightness-110",
+                )}
+                style={{ width: `${largura}%` }}
+              >
+                {e.valor.toLocaleString("pt-BR")}
               </div>
             </div>
+          </div>
+        );
+        return (
+          <div key={e.label} className="flex items-center gap-3">
+            {onItemClick ? (
+              <button
+                type="button"
+                onClick={() => onItemClick(e.label, e.valor)}
+                aria-label={`Ver detalhamento de ${e.label}`}
+                className="group/etp flex w-full items-center gap-3 rounded-lg text-left transition-all hover:-translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                {conteudo}
+              </button>
+            ) : (
+              conteudo
+            )}
           </div>
         );
       })}
@@ -415,15 +437,24 @@ export function PanelCard({
   titulo,
   subtitulo,
   abrirTo,
+  onOpen,
   children,
 }: {
   titulo: string;
   subtitulo?: string;
   abrirTo?: string;
+  /** Se fornecido, o card exibe um botão "Detalhar" e chama esta função ao clicar. */
+  onOpen?: () => void;
   children: ReactNode;
 }) {
   return (
-    <Card className="flex h-full min-w-0 flex-col p-4 shadow-sm transition-shadow duration-300 hover:shadow-md sm:p-5">
+    <Card
+      className={cn(
+        "flex h-full min-w-0 flex-col p-4 shadow-sm transition-all duration-300 sm:p-5",
+        onOpen && "hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md",
+        !onOpen && "hover:shadow-md",
+      )}
+    >
       <div className="mb-4 grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
         <div className="min-w-0">
           <h3 className="flex min-w-0 items-center gap-2 text-sm font-semibold tracking-tight text-foreground">
@@ -432,14 +463,25 @@ export function PanelCard({
           </h3>
           {subtitulo && <p className="mt-1 pl-3 text-xs text-muted-foreground">{subtitulo}</p>}
         </div>
-        {abrirTo && (
-          <Link
-            to={abrirTo}
-            className="group inline-flex shrink-0 items-center gap-0.5 text-xs font-medium text-primary hover:underline"
+        {onOpen ? (
+          <button
+            type="button"
+            onClick={onOpen}
+            className="group inline-flex shrink-0 items-center gap-0.5 rounded-md px-1.5 py-0.5 text-xs font-medium text-primary transition-colors hover:bg-primary/8 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            Abrir
+            Detalhar
             <ArrowUpRight className="h-3 w-3 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
-          </Link>
+          </button>
+        ) : (
+          abrirTo && (
+            <Link
+              to={abrirTo}
+              className="group inline-flex shrink-0 items-center gap-0.5 text-xs font-medium text-primary hover:underline"
+            >
+              Abrir
+              <ArrowUpRight className="h-3 w-3 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+            </Link>
+          )
         )}
       </div>
       {children}
@@ -451,20 +493,23 @@ export function PanelCard({
 export function MetricList({
   items,
   colorByBank = false,
+  onItemClick,
 }: {
   items: { label: string; valor: number; display?: string }[];
   /** Usa a cor de marca do banco em cada barra/indicador. */
   colorByBank?: boolean;
+  /** Se fornecido, cada item vira um botão que abre o detalhamento. */
+  onItemClick?: (label: string, valor: number) => void;
 }) {
   const max = Math.max(1, ...items.map((i) => i.valor));
   if (!items.length)
     return <p className="py-6 text-center text-sm text-muted-foreground">Sem dados no período.</p>;
   return (
-    <ul className="space-y-3">
+    <ul className="space-y-2.5">
       {items.map((i, idx) => {
         const cor = colorByBank ? corDoBanco(i.label) : undefined;
-        return (
-          <li key={i.label}>
+        const conteudo = (
+          <>
             <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 text-sm">
               <span className="flex min-w-0 items-center gap-2 text-foreground">
                 {colorByBank ? (
@@ -474,7 +519,14 @@ export function MetricList({
                     {idx + 1}
                   </span>
                 )}
-                <span className="truncate font-medium">{i.label}</span>
+                <span
+                  className={cn(
+                    "truncate font-medium",
+                    onItemClick && "group-hover/mi:text-primary",
+                  )}
+                >
+                  {i.label}
+                </span>
               </span>
               <span className="shrink-0 font-mono tabular-nums text-foreground">
                 {i.display ?? i.valor.toLocaleString("pt-BR")}
@@ -482,7 +534,7 @@ export function MetricList({
             </div>
             <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-muted">
               <div
-                className="h-full rounded-full transition-all duration-500"
+                className="h-full rounded-full transition-all duration-500 group-hover/mi:brightness-110"
                 style={{
                   width: `${(i.valor / max) * 100}%`,
                   background:
@@ -491,12 +543,29 @@ export function MetricList({
                 }}
               />
             </div>
+          </>
+        );
+        return (
+          <li key={i.label}>
+            {onItemClick ? (
+              <button
+                type="button"
+                onClick={() => onItemClick(i.label, i.valor)}
+                aria-label={`Ver detalhamento de ${i.label}`}
+                className="group/mi block w-full rounded-lg px-1.5 py-1 text-left transition-colors hover:bg-primary/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                {conteudo}
+              </button>
+            ) : (
+              <div className="px-1.5 py-1">{conteudo}</div>
+            )}
           </li>
         );
       })}
     </ul>
   );
 }
+
 
 /** Item de alerta compacto. */
 export function AlertRow({
