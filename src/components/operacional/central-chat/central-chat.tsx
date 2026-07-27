@@ -126,26 +126,26 @@ export function CentralChatPage() {
   const router = useRouter();
 
   return (
-    <div className="mx-auto flex h-[calc(100vh-7rem)] w-full max-w-[1400px] flex-col gap-3 px-3 py-3 lg:px-6">
-      <div className="flex items-center gap-3">
+    <div className="mx-auto flex h-[calc(100vh-6rem)] w-full max-w-[1400px] flex-col gap-3 px-2 py-2 sm:px-4 sm:py-3 lg:px-6">
+      <div className="flex items-center gap-3 px-1">
         <Button
           variant="ghost"
           size="icon"
-          className="size-8 rounded-full text-muted-foreground hover:text-foreground"
-          onClick={() => router.history.back()}
+          className="size-9 rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
+          onClick={() => (selecionado ? setSelecionado(null) : router.history.back())}
           aria-label="Voltar"
         >
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div className="min-w-0 flex-1">
-          <h1 className="truncate text-xl font-bold tracking-tight">Conversas</h1>
-          <p className="truncate text-xs text-muted-foreground">
+          <h1 className="truncate text-lg font-bold tracking-tight sm:text-xl">Conversas</h1>
+          <p className="hidden truncate text-xs text-muted-foreground sm:block">
             Colegas, clientes e demandas — tudo em um só lugar.
           </p>
         </div>
         {totalNaoLidas > 0 && (
           <Badge variant="secondary" className="rounded-full bg-primary/10 font-semibold text-primary">
-            {totalNaoLidas} não {totalNaoLidas === 1 ? "lida" : "lidas"}
+            {totalNaoLidas}
           </Badge>
         )}
         <NovaConversaDialog
@@ -155,10 +155,15 @@ export function CentralChatPage() {
         />
       </div>
 
-      <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 lg:grid-cols-[22rem_minmax(0,1fr)]">
+      <div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden rounded-3xl border border-border/50 bg-card/50 shadow-sm backdrop-blur lg:grid-cols-[20rem_minmax(0,1fr)] xl:grid-cols-[22rem_minmax(0,1fr)]">
         {/* Coluna de conversas — estilo mensageiro */}
-        <div className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-border/60 bg-card/40 backdrop-blur">
-          <div className="space-y-2.5 border-b border-border/50 p-3">
+        <div
+          className={cn(
+            "flex min-h-0 min-w-0 flex-col overflow-hidden lg:border-r lg:border-border/50",
+            selecionado ? "hidden lg:flex" : "flex",
+          )}
+        >
+          <div className="space-y-2.5 border-b border-border/40 p-3">
             <IniciarDmInline
               onCriado={(conv) =>
                 setSelecionado({ kind: "dm", conversaId: conv.id, nome: conv.nome })
@@ -174,12 +179,12 @@ export function CentralChatPage() {
               />
             </div>
             <Tabs value={aba} onValueChange={(v) => setAba(v as any)}>
-              <TabsList className="grid h-9 w-full grid-cols-5 rounded-full bg-muted/50 p-1">
-                <TabsTrigger value="todos" className="rounded-full text-[11.5px] font-semibold">Tudo</TabsTrigger>
-                <TabsTrigger value="dm" className="rounded-full text-[11.5px] font-semibold">Diretas</TabsTrigger>
-                <TabsTrigger value="cliente" className="rounded-full text-[11.5px] font-semibold">Clientes</TabsTrigger>
-                <TabsTrigger value="demanda" className="rounded-full text-[11.5px] font-semibold">Demandas</TabsTrigger>
-                <TabsTrigger value="arquivadas" className="rounded-full gap-1" aria-label="Arquivadas">
+              <TabsList className="flex h-9 w-full items-center gap-1 rounded-full bg-muted/50 p-1">
+                <TabsTrigger value="todos" className="flex-1 rounded-full text-[11.5px] font-semibold">Tudo</TabsTrigger>
+                <TabsTrigger value="dm" className="flex-1 rounded-full text-[11.5px] font-semibold">Diretas</TabsTrigger>
+                <TabsTrigger value="cliente" className="flex-1 rounded-full text-[11.5px] font-semibold">Clientes</TabsTrigger>
+                <TabsTrigger value="demanda" className="flex-1 rounded-full text-[11.5px] font-semibold">Demandas</TabsTrigger>
+                <TabsTrigger value="arquivadas" className="shrink-0 gap-1 rounded-full px-2" aria-label="Arquivadas">
                   <Archive className="size-3.5" />
                   {totalArquivadas > 0 && <span className="text-[10px]">{totalArquivadas}</span>}
                 </TabsTrigger>
@@ -204,7 +209,7 @@ export function CentralChatPage() {
                 </div>
               </div>
             ) : (
-              <ul className="divide-y divide-border/40">
+              <ul className="divide-y divide-border/30">
                 {filtradas.map((r) => {
                   const t = r.th;
                   const chave = chaveConversa(t.kind, t.id);
@@ -232,9 +237,14 @@ export function CentralChatPage() {
         </div>
 
         {/* Área da conversa */}
-        <div className="min-h-0 min-w-0">
+        <div
+          className={cn(
+            "min-h-0 min-w-0 flex-col bg-gradient-to-br from-background/60 via-background/40 to-muted/20",
+            selecionado ? "flex" : "hidden lg:flex",
+          )}
+        >
           {!selecionado ? (
-            <div className="flex h-full flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-border/60 bg-gradient-to-br from-muted/20 to-transparent p-10 text-center">
+            <div className="flex h-full flex-col items-center justify-center gap-3 p-10 text-center">
               <div className="grid size-16 place-items-center rounded-full bg-primary/10 text-primary shadow-inner">
                 <MessageCircle className="size-8" />
               </div>
@@ -246,11 +256,14 @@ export function CentralChatPage() {
               </div>
             </div>
           ) : (
-            <PainelConversa
-              selecionado={selecionado}
-              estadoPor={estadoPor}
-              etiquetaPor={etiquetaPor}
-            />
+            <div className="flex h-full min-h-0 flex-col p-2 sm:p-3">
+              <PainelConversa
+                selecionado={selecionado}
+                estadoPor={estadoPor}
+                etiquetaPor={etiquetaPor}
+                onVoltar={() => setSelecionado(null)}
+              />
+            </div>
           )}
         </div>
       </div>
