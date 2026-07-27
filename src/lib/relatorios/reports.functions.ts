@@ -1555,15 +1555,16 @@ export const runReport = createServerFn({ method: "POST" })
           "Visão consolidada por banco, tipo, analistas, imobiliária e fase.",
         modulo: "Gerencial",
         kpis: [
-          { label: "Simulações", valor: int(simulacoesFiltradas.length), tone: "neutral" },
-          { label: "Volume simulado", valor: brl(totalSim), tone: "brand" },
-          { label: "Propostas", valor: int(propostasFiltradas.length), tone: "neutral" },
-          { label: "Em andamento", valor: int(andamento.length), tone: "neutral" },
-          { label: "Aprovadas", valor: int(aprovadas.length), tone: "success" },
-          { label: "Crédito recusado", valor: int(recusadas.length), tone: "danger" },
-          { label: "Contratos emitidos", valor: int(contratos.length), tone: "success" },
-          { label: "Valor contratado", valor: brl(totalContr), tone: "brand" },
+          { label: "Simulações", valor: int(simulacoesFiltradas.length), tone: "neutral", filters: [{ key: "grupo", values: ["simulacao"] }] },
+          { label: "Volume simulado", valor: brl(totalSim), tone: "brand", filters: [{ key: "grupo", values: ["simulacao"] }] },
+          { label: "Propostas", valor: int(propostasFiltradas.length), tone: "neutral", filters: [{ key: "grupo", values: ["andamento", "aprovada", "recusada", "contrato"] }] },
+          { label: "Em andamento", valor: int(andamento.length), tone: "neutral", filters: [{ key: "grupo", values: ["andamento"] }] },
+          { label: "Aprovadas", valor: int(aprovadas.length), tone: "success", filters: [{ key: "grupo", values: ["aprovada"] }] },
+          { label: "Crédito recusado", valor: int(recusadas.length), tone: "danger", filters: [{ key: "grupo", values: ["recusada"] }] },
+          { label: "Contratos emitidos", valor: int(contratos.length), tone: "success", filters: [{ key: "grupo", values: ["contrato"] }] },
+          { label: "Valor contratado", valor: brl(totalContr), tone: "brand", filters: [{ key: "grupo", values: ["contrato"] }] },
         ],
+
         charts: [
           {
             titulo: "Funil",
