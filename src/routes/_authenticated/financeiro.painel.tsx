@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { TrendingUp, Wallet, LineChart as LineChartIcon, AlertTriangle } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import { TrendingUp, Wallet, LineChart as LineChartIcon, AlertTriangle, type LucideIcon } from "lucide-react";
 import {
   BarChart,
   Bar,
@@ -13,12 +14,13 @@ import {
   Legend,
 } from "recharts";
 import { assertModuloPermitido } from "@/lib/route-guards";
-import { obterKpisFinanceiros } from "@/lib/financeiro/financeiro.functions";
-import { ReportKpiCard } from "@/components/financeiro/kpi-card";
+import { obterKpisFinanceiros, listarContas } from "@/lib/financeiro/financeiro.functions";
+import { ReportKpiCard, type KpiTone } from "@/components/financeiro/kpi-card";
 import { PanelHeader, SectionTitle, PanelCard } from "@/components/common/dashboard";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { formatBRL } from "@/lib/financeiro/format";
+import { KpiDrilldownDialog, type KpiDrillItem } from "@/components/reports/kpi-drilldown-dialog";
 
 export const Route = createFileRoute("/_authenticated/financeiro/painel")({
   head: () => ({ meta: [{ title: "Painel financeiro — Agilliza" }] }),
@@ -34,6 +36,8 @@ function mesLabel(iso: string) {
   return `${m}/${y.slice(2)}`;
 }
 
+type KpiFinKey = "receber" | "pagar" | "saldo" | "inadimplencia";
+
 function Pagina() {
   const padrao = useMemo(() => {
     const hoje = new Date();
@@ -43,10 +47,81 @@ function Pagina() {
   }, []);
   const [de, setDe] = useState(padrao.de);
   const [ate, setAte] = useState(padrao.ate);
+  const [drill, setDrill] = useState<KpiFinKey | null>(null);
   const { data, isLoading, dataUpdatedAt } = useQuery({
     queryKey: ["fin-kpis", de, ate],
     queryFn: () => obterKpisFinanceiros({ data: { de: de || undefined, ate: ate || undefined } }),
   });
+
+  const listarContasFn = useServerFn(listarContas);
+  const drillQuery = useQuery({
+    enabled: !!drill,
+    queryKey: ["fin-kpi-drill", drill, de, ate],
+    queryFn: async () => {
+      if (!drill) return { itens: [] as KpiDrillItem[] };
+      const tipo: "pagar" | "receber" = drill === "pagar" ? "pagar" : "receber";
+      const status = drill === "inadimplencia" ? "atrasada" : "aberta";
+      const r = await listarContasFn({
+        data: {
+          tipo,
+          status,
+          pagina: 1,
+          porPagina: 10,
+          ...(drill === "inadimplencia" ? {} : { de, ate }),
+        },
+      });
+      const itens: KpiDrillItem[] = r.itens.map((c) => ({
+        label: c.contraparte ?? c.descricao ?? c.numero ?? "Sem descrição",
+        sub: c.categoria_nome ?? c.descricao ?? undefined,
+        valor: formatBRL(c.valor - c.valor_pago),
+        data: new Date(c.vencimento + "T00:00:00").toLocaleDateString("pt-BR"),
+        to: tipo === "pagar" ? "/financeiro/contas-a-pagar" : "/financeiro/contas-a-receber",
+      }));
+      return { itens };
+    },
+  });
+
+  const drillMeta: Record<
+    KpiFinKey,
+    { titulo: string; subtitulo: string; valor: string; icon: LucideIcon; tone: KpiTone; to: string; empty: string }
+  > = {
+    receber: {
+      titulo: "Contas a receber",
+      subtitulo: "Próximos vencimentos no período",
+      valor: formatBRL(data?.aReceber30d ?? 0),
+      icon: TrendingUp,
+      tone: "success",
+      to: "/financeiro/contas-a-receber",
+      empty: "Nenhum recebimento no período.",
+    },
+    pagar: {
+      titulo: "Contas a pagar",
+      subtitulo: "Próximos vencimentos no período",
+      valor: formatBRL(data?.aPagar30d ?? 0),
+      icon: Wallet,
+      tone: "warning",
+      to: "/financeiro/contas-a-pagar",
+      empty: "Nenhum pagamento no período.",
+    },
+    saldo: {
+      titulo: "Saldo projetado",
+      subtitulo: "Composto pelos recebimentos em aberto",
+      valor: formatBRL(data?.saldoProjetado ?? 0),
+      icon: LineChartIcon,
+      tone: "brand",
+      to: "/financeiro/fluxo-de-caixa",
+      empty: "Sem projeção para o período.",
+    },
+    inadimplencia: {
+      titulo: "Inadimplência",
+      subtitulo: "Contas em atraso há mais de 10 dias",
+      valor: formatBRL(data?.inadimplencia ?? 0),
+      icon: AlertTriangle,
+      tone: "danger",
+      to: "/financeiro/contas-a-receber",
+      empty: "Nenhuma conta em atraso.",
+    },
+  };
 
   const mensal = (data?.receitaDespesaMensal ?? []).map((r) => ({ ...r, label: mesLabel(r.mes) }));
   const alterado = de !== padrao.de || ate !== padrao.ate;
@@ -107,7 +182,7 @@ function Pagina() {
           icon={TrendingUp}
           tone="success"
           sub={`Hoje: ${formatBRL(data?.aReceberHoje ?? 0)}`}
-          to="/financeiro/contas-a-receber"
+          onClick={() => setDrill("receber")}
         />
         <ReportKpiCard
           titulo={`A pagar (${periodoLabel})`}
@@ -115,14 +190,14 @@ function Pagina() {
           icon={Wallet}
           tone="warning"
           sub={`Hoje: ${formatBRL(data?.aPagarHoje ?? 0)}`}
-          to="/financeiro/contas-a-pagar"
+          onClick={() => setDrill("pagar")}
         />
         <ReportKpiCard
           titulo="Saldo projetado"
           valor={formatBRL(data?.saldoProjetado ?? 0)}
           icon={LineChartIcon}
           tone="brand"
-          to="/financeiro/fluxo-de-caixa"
+          onClick={() => setDrill("saldo")}
         />
         <ReportKpiCard
           titulo="Inadimplência"
@@ -130,7 +205,7 @@ function Pagina() {
           icon={AlertTriangle}
           tone="danger"
           sub="Vencido há +10 dias"
-          to="/financeiro/contas-a-receber"
+          onClick={() => setDrill("inadimplencia")}
         />
       </div>
 
@@ -249,6 +324,22 @@ function Pagina() {
           </div>
         </PanelCard>
       </div>
+
+      {drill && (
+        <KpiDrilldownDialog
+          open={!!drill}
+          onOpenChange={(o) => !o && setDrill(null)}
+          titulo={drillMeta[drill].titulo}
+          subtitulo={drillMeta[drill].subtitulo}
+          valor={drillMeta[drill].valor}
+          icon={drillMeta[drill].icon}
+          tone={drillMeta[drill].tone}
+          itens={drillQuery.data?.itens ?? []}
+          isLoading={drillQuery.isLoading}
+          linkAbrir={drillMeta[drill].to}
+          empty={drillMeta[drill].empty}
+        />
+      )}
     </div>
   );
 }
