@@ -200,7 +200,14 @@ export function PanelHeader({
 }
 
 /** Funil de conversão vertical (etapas com largura proporcional). */
-export function ConversionFunnel({ etapas }: { etapas: { label: string; valor: number }[] }) {
+export function ConversionFunnel({
+  etapas,
+  onItemClick,
+}: {
+  etapas: { label: string; valor: number }[];
+  /** Se fornecido, cada etapa vira um botão que abre o detalhamento da métrica. */
+  onItemClick?: (label: string, valor: number) => void;
+}) {
   const base = Math.max(1, etapas[0]?.valor ?? 1);
   const tons: Tone[] = ["brand", "brand", "success", "success"];
   return (
@@ -209,27 +216,42 @@ export function ConversionFunnel({ etapas }: { etapas: { label: string; valor: n
         const pctBase = (e.valor / base) * 100;
         const largura = Math.max(24, pctBase);
         const tone = tons[idx] ?? "brand";
-        return (
-          <div key={e.label} className="flex items-center gap-3">
-            <div className="flex-1">
-              <div className="mb-1 flex items-center justify-between gap-2">
-                <span className="truncate text-xs font-medium text-foreground">{e.label}</span>
-                <span className="shrink-0 font-mono text-xs tabular-nums text-muted-foreground">
-                  {pctBase.toLocaleString("pt-BR", {  maximumFractionDigits: 0 })}%
-                </span>
-              </div>
-              <div className="flex h-9 items-center">
-                <div
-                  className={cn(
-                    "flex h-full items-center justify-end rounded-md px-3 text-sm font-semibold tabular-nums text-white transition-all duration-500",
-                    toneBar[tone],
-                  )}
-                  style={{ width: `${largura}%` }}
-                >
-                  {e.valor.toLocaleString("pt-BR")}
-                </div>
+        const conteudo = (
+          <div className="flex-1">
+            <div className="mb-1 flex items-center justify-between gap-2">
+              <span className="truncate text-xs font-medium text-foreground">{e.label}</span>
+              <span className="shrink-0 font-mono text-xs tabular-nums text-muted-foreground">
+                {pctBase.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}%
+              </span>
+            </div>
+            <div className="flex h-9 items-center">
+              <div
+                className={cn(
+                  "flex h-full items-center justify-end rounded-md px-3 text-sm font-semibold tabular-nums text-white transition-all duration-500",
+                  toneBar[tone],
+                  onItemClick && "shadow-sm group-hover/etp:brightness-110",
+                )}
+                style={{ width: `${largura}%` }}
+              >
+                {e.valor.toLocaleString("pt-BR")}
               </div>
             </div>
+          </div>
+        );
+        return (
+          <div key={e.label} className="flex items-center gap-3">
+            {onItemClick ? (
+              <button
+                type="button"
+                onClick={() => onItemClick(e.label, e.valor)}
+                aria-label={`Ver detalhamento de ${e.label}`}
+                className="group/etp flex w-full items-center gap-3 rounded-lg text-left transition-all hover:-translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                {conteudo}
+              </button>
+            ) : (
+              conteudo
+            )}
           </div>
         );
       })}
