@@ -1627,20 +1627,20 @@ html[data-crm-motion="off"] .crm-page-transition {
 
   button:not(:disabled):not([data-depth="off"]):not([role="tab"]):not([role="menuitem"]):not([role="option"]):not([data-radix-collection-item]):not([data-sidebar]):hover,
   [role="button"]:not([data-depth="off"]):hover {
-    transform: perspective(600px) translateY(-2px) translateZ(6px) rotateX(6deg);
+    transform: translateY(-2px);
     box-shadow: var(--depth-shadow-3),
                 0 12px 24px -12px color-mix(in oklab, black 40%, transparent);
   }
 
   [data-slot="card"]:hover,
   .depth-card:hover {
-    transform: perspective(900px) translateY(-4px) translateZ(10px) rotateX(3deg);
+    transform: translateY(-4px);
     box-shadow: var(--depth-shadow-3),
                 0 24px 40px -20px color-mix(in oklab, black 45%, transparent);
   }
 
   [data-slot="badge"]:hover {
-    transform: perspective(400px) translateY(-1px) translateZ(3px) rotateX(8deg);
+    transform: translateY(-1px);
     box-shadow: 0 1px 0 0 var(--depth-highlight) inset,
                 0 -1px 0 0 color-mix(in oklab, black 14%, transparent) inset,
                 0 6px 12px -6px color-mix(in oklab, black 35%, transparent);
@@ -1648,12 +1648,13 @@ html[data-crm-motion="off"] .crm-page-transition {
   }
 
   [data-slot="avatar"]:hover {
-    transform: perspective(500px) translateY(-2px) translateZ(6px) rotateX(6deg) scale(1.04);
+    transform: translateY(-2px) scale(1.04);
     box-shadow: 0 1px 0 0 var(--depth-highlight) inset,
                 0 -2px 4px 0 color-mix(in oklab, black 25%, transparent) inset,
                 0 10px 18px -8px color-mix(in oklab, black 40%, transparent);
     transition: transform 200ms cubic-bezier(.2,.8,.2,1), box-shadow 200ms ease;
   }
+
 
   input:not([type="checkbox"]):not([type="radio"]):not([data-depth="off"]):hover,
   textarea:not([data-depth="off"]):hover,
