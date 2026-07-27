@@ -29,14 +29,18 @@ import { cn } from "@/lib/utils";
 type DemandaItem = Awaited<ReturnType<typeof listarDemandas>>[number];
 
 /* ------------------------------- SLA (kanban) ------------------------------ */
-/** Texto curto de SLA no padrão da referência (Aberta há Xd / SLA vence / vencido / Concluída). */
-function fmtDur(ms: number): string {
-  const s = Math.max(Math.floor(Math.abs(ms) / 1000), 0);
-  const d = Math.floor(s / 86400);
-  const h = Math.floor((s % 86400) / 3600);
-  const m = Math.floor((s % 3600) / 60);
-  if (d > 0) return h > 0 ? `${d}d ${h}h ${m}m` : `${d}d`;
-  if (h > 0) return `${h}h ${m}m`;
+
+type Urgencia = "overdue" | "critical" | "warning" | "healthy" | "none";
+
+function fmtDur(ms: number, comSegundos = false): string {
+  const total = Math.max(Math.floor(Math.abs(ms) / 1000), 0);
+  const d = Math.floor(total / 86400);
+  const h = Math.floor((total % 86400) / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  if (d > 0) return h > 0 ? `${d}d ${h}h` : `${d}d`;
+  if (h > 0) return `${h}h ${m.toString().padStart(2, "0")}m`;
+  if (comSegundos) return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
   return `${m}m`;
 }
 function fmtDias(inicio: string, now: number): string {
@@ -48,6 +52,44 @@ function fmtDias(inicio: string, now: number): string {
 function fmtData(d: string): string {
   return new Date(d).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
 }
+
+/** Classifica urgência de SLA para colorir borda, barra e cronômetro. */
+function slaUrgency(d: DemandaItem, now: number): { level: Urgencia; restanteMs: number; progresso: number } {
+  if (d.status === "concluida" || d.status === "cancelada") return { level: "none", restanteMs: 0, progresso: 1 };
+  if (!d.prazo_sla) return { level: "none", restanteMs: 0, progresso: 0 };
+  const fim = new Date(d.prazo_sla).getTime();
+  const ini = new Date(d.sla_inicio).getTime();
+  const restante = fim - now;
+  const total = Math.max(fim - ini, 1);
+  const decorrido = Math.min(Math.max(now - ini, 0), total);
+  const progresso = decorrido / total;
+  if (restante < 0) return { level: "overdue", restanteMs: restante, progresso: 1 };
+  if (restante < 2 * 3600_000) return { level: "critical", restanteMs: restante, progresso };
+  if (restante < 24 * 3600_000) return { level: "warning", restanteMs: restante, progresso };
+  return { level: "healthy", restanteMs: restante, progresso };
+}
+
+const URG_TEXT: Record<Urgencia, string> = {
+  overdue: "text-destructive",
+  critical: "text-destructive",
+  warning: "text-warning",
+  healthy: "text-success",
+  none: "text-muted-foreground",
+};
+const URG_BAR: Record<Urgencia, string> = {
+  overdue: "bg-destructive",
+  critical: "bg-destructive",
+  warning: "bg-warning",
+  healthy: "bg-success",
+  none: "bg-muted-foreground/40",
+};
+const URG_BORDER: Record<Urgencia, string> = {
+  overdue: "border-destructive/50 hover:border-destructive",
+  critical: "border-destructive/40 hover:border-destructive/70",
+  warning: "border-warning/40 hover:border-warning/70",
+  healthy: "border-success/30 hover:border-success/60",
+  none: "border-border/70 hover:border-primary/40",
+};
 
 function SlaLine({ d, now }: { d: DemandaItem; now: number }) {
   if (d.status === "concluida") {
@@ -66,59 +108,47 @@ function SlaLine({ d, now }: { d: DemandaItem; now: number }) {
       </span>
     );
   }
-  if (d.status === "aguardando") {
-    // aguardando retorno — mostra idade desde o início ou vencimento se estiver próximo
-    if (d.prazo_sla) {
-      const restante = new Date(d.prazo_sla).getTime() - now;
-      if (restante < 0) {
-        return (
-          <span className="inline-flex items-center gap-1.5 text-destructive font-medium">
-            <AlertTriangle className="h-3.5 w-3.5" /> SLA vencido {fmtDur(restante)}
-          </span>
-        );
-      }
-      if (restante < 24 * 3600_000) {
-        return (
-          <span className="inline-flex items-center gap-1.5 text-warning">
-            <Clock className="h-3.5 w-3.5" /> SLA vence em {fmtDur(restante)}
-          </span>
-        );
-      }
-    }
+  const { level, restanteMs } = slaUrgency(d, now);
+  if (level === "none") {
+    const rot = d.status === "aguardando" ? "Aguardando" : d.status === "aberta" ? "Aberta" : "Em andamento";
     return (
       <span className="inline-flex items-center gap-1.5 text-muted-foreground">
-        <Clock className="h-3.5 w-3.5" /> Aguardando {fmtDias(d.sla_inicio, now)}
+        <Clock className="h-3.5 w-3.5" /> {rot} {fmtDias(d.sla_inicio, now)}
       </span>
     );
   }
-  // aberta / em_andamento
-  if (d.prazo_sla) {
-    const restante = new Date(d.prazo_sla).getTime() - now;
-    if (restante < 0) {
-      return (
-        <span className="inline-flex items-center gap-1.5 text-destructive font-medium">
-          <AlertTriangle className="h-3.5 w-3.5" /> SLA vencido {fmtDur(restante)}
-        </span>
-      );
-    }
-    if (restante < 24 * 3600_000) {
-      return (
-        <span className="inline-flex items-center gap-1.5 text-warning">
-          <Clock className="h-3.5 w-3.5" /> SLA vence em {fmtDur(restante)}
-        </span>
-      );
-    }
-    // >24h: mostra tempo restante em dias/horas
+  if (level === "overdue") {
     return (
-      <span className="inline-flex items-center gap-1.5 text-success/90">
-        <Clock className="h-3.5 w-3.5" /> SLA vence em {fmtDur(restante)}
+      <span className="inline-flex items-center gap-1.5 font-semibold text-destructive">
+        <span className="relative flex size-2">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-destructive/60" />
+          <span className="relative inline-flex size-2 rounded-full bg-destructive" />
+        </span>
+        <AlertTriangle className="h-3.5 w-3.5" /> Vencido {fmtDur(restanteMs)}
       </span>
     );
   }
-  const rot = d.status === "aberta" ? "Aberta" : "Em andamento";
+  if (level === "critical") {
+    return (
+      <span className="inline-flex items-center gap-1.5 font-semibold text-destructive tabular-nums">
+        <span className="relative flex size-2">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-destructive/60" />
+          <span className="relative inline-flex size-2 rounded-full bg-destructive" />
+        </span>
+        <Clock className="h-3.5 w-3.5" /> SLA em {fmtDur(restanteMs, true)}
+      </span>
+    );
+  }
+  if (level === "warning") {
+    return (
+      <span className="inline-flex items-center gap-1.5 text-warning font-medium">
+        <Clock className="h-3.5 w-3.5" /> SLA em {fmtDur(restanteMs)}
+      </span>
+    );
+  }
   return (
-    <span className="inline-flex items-center gap-1.5 text-muted-foreground">
-      <Clock className="h-3.5 w-3.5" /> {rot} {fmtDias(d.sla_inicio, now)}
+    <span className="inline-flex items-center gap-1.5 text-success">
+      <Clock className="h-3.5 w-3.5" /> SLA em {fmtDur(restanteMs)}
     </span>
   );
 }
@@ -138,21 +168,19 @@ const KanbanCard = memo(function KanbanCard({
   onDragEnd: () => void;
   onOpen: (id: string) => void;
 }) {
-  const prioBar =
-    d.prioridade === "p1"
-      ? "bg-destructive"
-      : d.prioridade === "p2"
-        ? "bg-warning"
-        : "bg-muted-foreground/40";
+  const { level, progresso } = slaUrgency(d, now);
   return (
     <div
       draggable
       onDragStart={() => onDragStart(d.id, d.status as DemandaStatus)}
       onDragEnd={onDragEnd}
       onClick={() => onOpen(d.id)}
-      className="group relative cursor-pointer overflow-hidden rounded-xl border border-border/70 bg-card p-3.5 pl-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg active:cursor-grabbing"
+      className={cn(
+        "group relative cursor-pointer overflow-hidden rounded-xl border bg-card p-3.5 pl-4 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg active:cursor-grabbing",
+        URG_BORDER[level],
+      )}
     >
-      <span className={cn("absolute inset-y-2 left-0 w-1 rounded-r-full", prioBar)} aria-hidden />
+      <span className={cn("absolute inset-y-2 left-0 w-1 rounded-r-full", URG_BAR[level])} aria-hidden />
       <div className="flex items-center justify-between gap-2">
         <span className="font-mono text-[10.5px] font-semibold uppercase tracking-wider text-muted-foreground/80">
           {d.numero ?? "DEM-—"}
@@ -176,6 +204,14 @@ const KanbanCard = memo(function KanbanCard({
       <div className="mt-2.5 border-t border-border/60 pt-2 text-[11px] tabular-nums">
         <SlaLine d={d} now={now} />
       </div>
+      {level !== "none" && (
+        <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-muted/60" aria-hidden>
+          <div
+            className={cn("h-full rounded-full transition-all", URG_BAR[level])}
+            style={{ width: `${Math.min(Math.max(progresso, 0.04), 1) * 100}%` }}
+          />
+        </div>
+      )}
     </div>
   );
 });
