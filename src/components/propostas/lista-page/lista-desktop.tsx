@@ -131,7 +131,7 @@ export function ListaDesktop({
                     })()}
                   </TableCell>
 
-                  <TableCell className="font-medium text-foreground">
+                  <TableCell className="font-medium text-foreground transition-colors group-hover/row:text-primary">
                     {p.nome_cliente ?? "—"}
                     {escopo === "todas" && p.nome_responsavel && (
                       <span className="mt-0.5 flex items-center gap-1 text-[11px] font-normal text-muted-foreground">
