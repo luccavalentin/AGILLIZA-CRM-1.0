@@ -1,15 +1,17 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Plus, Paperclip, Download, Trash2, Tag as TagIcon, X, Calendar, User, Building2, CheckCircle2, MessageSquare, ListChecks, History, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, Paperclip, Download, Trash2, Tag as TagIcon, X, Calendar, User, Building2, CheckCircle2, MessageSquare, ListChecks, History, ChevronDown, ChevronUp, Pencil, Save } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import brandSymbol from "@/assets/brand/agilliza-symbol-oficial.png";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { VisualizadorArquivo } from "@/components/comum/visualizador-arquivo";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ToneBadge } from "@/components/crm/tone-badge";
 import { PRIORIDADE, statusTarefa } from "@/components/operacional/status";
@@ -26,7 +28,10 @@ import {
   registrarAnexoTarefa,
   removerAnexoTarefa,
   urlAnexoTarefa,
+  atualizarTarefa,
+  excluirTarefa,
 } from "@/lib/operacional/tarefas.functions";
+import { listarColegas, buscarClientesOpcoes } from "@/lib/operacional/shared.functions";
 
 function fmtData(iso: string | null): string {
   if (!iso) return "—";
