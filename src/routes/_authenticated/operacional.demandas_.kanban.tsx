@@ -380,6 +380,21 @@ function Pagina() {
         )}
       </div>
 
+      {/* Legenda de SLA */}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 rounded-xl border border-border/50 bg-card/60 px-3 py-2 text-[11px] text-muted-foreground">
+        <span className="font-semibold uppercase tracking-wider text-muted-foreground/80">SLA</span>
+        <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-full bg-success" /> No prazo</span>
+        <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-full bg-warning" /> &lt; 24h</span>
+        <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-full bg-destructive" /> &lt; 2h · crítico</span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="relative flex size-2">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-destructive/60" />
+            <span className="relative inline-flex size-2 rounded-full bg-destructive" />
+          </span>
+          Vencido
+        </span>
+      </div>
+
       <div className="grid grid-cols-1 gap-4 pb-3 sm:grid-cols-2 xl:grid-cols-5">
         {COLUNAS.map((col) => {
           const cfg = statusDemanda(col);
