@@ -101,6 +101,7 @@ import { Route as AuthenticatedAdminBancosRouteImport } from './routes/_authenti
 import { Route as AuthenticatedAdminBackupRouteImport } from './routes/_authenticated/admin.backup'
 import { Route as AuthenticatedAdminAuditoriaRouteImport } from './routes/_authenticated/admin.auditoria'
 import { Route as AuthenticatedAdminApisIaRouteImport } from './routes/_authenticated/admin.apis-ia'
+import { Route as AuthenticatedAdminComprasIndexRouteImport } from './routes/_authenticated/admin.compras.index'
 import { Route as AuthenticatedRhFuncionariosNovoRouteImport } from './routes/_authenticated/rh.funcionarios_.novo'
 import { Route as AuthenticatedRhFuncionariosIdRouteImport } from './routes/_authenticated/rh.funcionarios_.$id'
 import { Route as AuthenticatedOperacionalTarefasKanbanRouteImport } from './routes/_authenticated/operacional.tarefas_.kanban'
@@ -640,6 +641,12 @@ const AuthenticatedAdminApisIaRoute =
     path: '/admin/apis-ia',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAdminComprasIndexRoute =
+  AuthenticatedAdminComprasIndexRouteImport.update({
+    id: '/admin/compras/',
+    path: '/admin/compras/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedRhFuncionariosNovoRoute =
   AuthenticatedRhFuncionariosNovoRouteImport.update({
     id: '/rh/funcionarios_/novo',
@@ -845,6 +852,7 @@ export interface FileRoutesByFullPath {
   '/operacional/tarefas/kanban': typeof AuthenticatedOperacionalTarefasKanbanRoute
   '/rh/funcionarios/$id': typeof AuthenticatedRhFuncionariosIdRoute
   '/rh/funcionarios/novo': typeof AuthenticatedRhFuncionariosNovoRoute
+  '/admin/compras/': typeof AuthenticatedAdminComprasIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -952,6 +960,7 @@ export interface FileRoutesByTo {
   '/operacional/tarefas/kanban': typeof AuthenticatedOperacionalTarefasKanbanRoute
   '/rh/funcionarios/$id': typeof AuthenticatedRhFuncionariosIdRoute
   '/rh/funcionarios/novo': typeof AuthenticatedRhFuncionariosNovoRoute
+  '/admin/compras': typeof AuthenticatedAdminComprasIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -1063,6 +1072,7 @@ export interface FileRoutesById {
   '/_authenticated/operacional/tarefas_/kanban': typeof AuthenticatedOperacionalTarefasKanbanRoute
   '/_authenticated/rh/funcionarios_/$id': typeof AuthenticatedRhFuncionariosIdRoute
   '/_authenticated/rh/funcionarios_/novo': typeof AuthenticatedRhFuncionariosNovoRoute
+  '/_authenticated/admin/compras/': typeof AuthenticatedAdminComprasIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -1174,6 +1184,7 @@ export interface FileRouteTypes {
     | '/operacional/tarefas/kanban'
     | '/rh/funcionarios/$id'
     | '/rh/funcionarios/novo'
+    | '/admin/compras/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -1281,6 +1292,7 @@ export interface FileRouteTypes {
     | '/operacional/tarefas/kanban'
     | '/rh/funcionarios/$id'
     | '/rh/funcionarios/novo'
+    | '/admin/compras'
   id:
     | '__root__'
     | '/'
@@ -1391,6 +1403,7 @@ export interface FileRouteTypes {
     | '/_authenticated/operacional/tarefas_/kanban'
     | '/_authenticated/rh/funcionarios_/$id'
     | '/_authenticated/rh/funcionarios_/novo'
+    | '/_authenticated/admin/compras/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -2051,6 +2064,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminApisIaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin/compras/': {
+      id: '/_authenticated/admin/compras/'
+      path: '/admin/compras'
+      fullPath: '/admin/compras/'
+      preLoaderRoute: typeof AuthenticatedAdminComprasIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/rh/funcionarios_/novo': {
       id: '/_authenticated/rh/funcionarios_/novo'
       path: '/rh/funcionarios/novo'
@@ -2329,6 +2349,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedOperacionalTarefasKanbanRoute: typeof AuthenticatedOperacionalTarefasKanbanRoute
   AuthenticatedRhFuncionariosIdRoute: typeof AuthenticatedRhFuncionariosIdRoute
   AuthenticatedRhFuncionariosNovoRoute: typeof AuthenticatedRhFuncionariosNovoRoute
+  AuthenticatedAdminComprasIndexRoute: typeof AuthenticatedAdminComprasIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -2412,6 +2433,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
     AuthenticatedOperacionalTarefasKanbanRoute,
   AuthenticatedRhFuncionariosIdRoute: AuthenticatedRhFuncionariosIdRoute,
   AuthenticatedRhFuncionariosNovoRoute: AuthenticatedRhFuncionariosNovoRoute,
+  AuthenticatedAdminComprasIndexRoute: AuthenticatedAdminComprasIndexRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
